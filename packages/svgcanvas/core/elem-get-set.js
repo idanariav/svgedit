@@ -1149,14 +1149,31 @@ const setSegTypeMethod = (newType) => {
 * @param {string} url - URL or path to image to use
 * @returns {void}
 */
-const setBackgroundMethod = (color, url) => {
+const setBackgroundMethod = (color, url, gradientElem) => {
   const bg = getElement('canvasBackground')
   if (!bg) { return }
   const border = bg.querySelector('rect')
   if (!border) { return }
   let bgImg = getElement('background_image')
   let bgPattern = getElement('background_pattern')
-  border.setAttribute('fill', color === 'chessboard' ? '#fff' : color)
+
+  // Handle gradient fill
+  let bgDefs = bg.querySelector('defs')
+  if (gradientElem) {
+    if (!bgDefs) {
+      bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
+      bg.insertBefore(bgDefs, border)
+    }
+    bgDefs.innerHTML = ''
+    const grad = gradientElem.cloneNode(true)
+    grad.id = 'background_gradient'
+    bgDefs.appendChild(grad)
+    border.setAttribute('fill', 'url(#background_gradient)')
+  } else {
+    if (bgDefs) { bgDefs.remove() }
+    border.setAttribute('fill', color === 'chessboard' ? '#fff' : color)
+  }
+
   if (color === 'chessboard') {
     if (!bgPattern) {
       bgPattern = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'foreignObject')

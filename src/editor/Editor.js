@@ -532,13 +532,13 @@ class Editor extends EditorStartup {
    * @param {string} url
    * @returns {void}
    */
-  setBackground (color, url) {
+  setBackground (color, url, gradientElem) {
     // if (color == this.configObj.pref('bkgd_color') && url == this.configObj.pref('bkgd_url')) { return; }
     this.configObj.pref('bkgd_color', color)
     this.configObj.pref('bkgd_url', url, true)
 
     // This should be done in  this.svgCanvas.js for the borderRect fill
-    this.svgCanvas.setBackground(color, url)
+    this.svgCanvas.setBackground(color, url, gradientElem)
   }
 
   /**

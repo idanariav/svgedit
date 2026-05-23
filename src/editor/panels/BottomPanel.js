@@ -1,7 +1,6 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import { jGraduate } from '../components/jgraduate/jQuery.jGraduate.js'
 import BottomPanelHtml from './BottomPanel.html'
-import '../components/seBgColorPicker.js'
 
 const { $id } = SvgCanvas
 
@@ -147,6 +146,19 @@ class BottomPanel {
   /**
    * @type {module}
    */
+  handleBgColorPicker (evt) {
+    const { paint } = evt.detail
+    if (paint.type === 'solidColor') {
+      const color = paint.solidColor === 'none' ? 'none' : '#' + paint.solidColor
+      this.editor.setBackground(color, '')
+    } else if (paint.type === 'linearGradient' || paint.type === 'radialGradient') {
+      this.editor.setBackground('gradient', '', paint[paint.type])
+    }
+  }
+
+  /**
+   * @type {module}
+   */
   handleStrokeAttr (type, evt) {
     this.editor.svgCanvas.setStrokeAttr(type, evt.detail.value)
   }
@@ -233,11 +245,14 @@ class BottomPanel {
     $id('opacity').addEventListener('change', this.handleOpacity.bind(this))
     $id('fill_color').init(i18next)
     $id('stroke_color').init(i18next)
-    // Background color picker
+    $id('bg_color').init(i18next)
+    // Initialize background color picker from saved preference
     const initBgColor = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
-    $id('bg_color').setColor(initBgColor)
+    $id('bg_color').setPaint(
+      new jGraduate.Paint({ alpha: 100, solidColor: initBgColor.replace('#', '') })
+    )
     $id('bg_color').addEventListener('change', (evt) => {
-      this.editor.setBackground(evt.detail.color, '')
+      this.handleBgColorPicker(evt)
     })
   }
 

@@ -1,6 +1,7 @@
 /* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
+import { jGraduate } from './components/jgraduate/jQuery.jGraduate.js'
 
 const { $id, $click, convertUnit, isValidUnit } = SvgCanvas
 const homePage = 'https://github.com/SVG-Edit/svgedit'
@@ -90,8 +91,10 @@ class MainMenu {
     // Set background
     this.editor.setBackground(bgcolor, bgurl)
     const bgColorPicker = $id('bg_color')
-    if (bgColorPicker) {
-      bgColorPicker.setColor(bgcolor)
+    if (bgColorPicker && bgcolor && bgcolor !== 'chessboard') {
+      bgColorPicker.setPaint(
+        new jGraduate.Paint({ alpha: 100, solidColor: bgcolor.replace('#', '') })
+      )
     }
 
     // set language
