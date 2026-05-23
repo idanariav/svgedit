@@ -1,6 +1,7 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import { jGraduate } from '../components/jgraduate/jQuery.jGraduate.js'
 import BottomPanelHtml from './BottomPanel.html'
+import '../components/seBgColorPicker.js'
 
 const { $id } = SvgCanvas
 
@@ -232,6 +233,12 @@ class BottomPanel {
     $id('opacity').addEventListener('change', this.handleOpacity.bind(this))
     $id('fill_color').init(i18next)
     $id('stroke_color').init(i18next)
+    // Background color picker
+    const initBgColor = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
+    $id('bg_color').setColor(initBgColor)
+    $id('bg_color').addEventListener('change', (evt) => {
+      this.editor.setBackground(evt.detail.color, '')
+    })
   }
 
   /**

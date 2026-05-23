@@ -89,9 +89,9 @@ class MainMenu {
     } = e.detail
     // Set background
     this.editor.setBackground(bgcolor, bgurl)
-    const toolBgColor = $id('tool_bg_color')
-    if (toolBgColor && bgcolor !== 'chessboard') {
-      toolBgColor.value = bgcolor
+    const bgColorPicker = $id('bg_color')
+    if (bgColorPicker) {
+      bgColorPicker.setColor(bgcolor)
     }
 
     // set language

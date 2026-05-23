@@ -967,14 +967,6 @@ class TopPanel {
     this.updateTitle()
     newSeEditorDialog.init(i18next)
     $id('tool_link_url').setAttribute('title', i18next.t('tools.set_link_url'))
-    // Background color quick-access
-    const bgColorInput = $id('tool_bg_color')
-    if (bgColorInput) {
-      bgColorInput.value = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
-      bgColorInput.addEventListener('input', (evt) => {
-        this.editor.setBackground(evt.target.value, '')
-      })
-    }
     // register action to top panel buttons
     $click($id('tool_source'), this.showSourceEditor.bind(this))
     $click($id('tool_wireframe'), this.clickWireframe.bind(this))

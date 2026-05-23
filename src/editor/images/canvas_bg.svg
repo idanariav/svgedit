@@ -1,0 +1,7 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- canvas frame -->
+  <rect fill="#fddb8c" stroke="#606060" stroke-width="2" x="2" y="2" width="28" height="28"/>
+  <!-- foreground shapes representing content on top of background -->
+  <circle cx="11" cy="16" r="5" fill="white" fill-opacity="0.75"/>
+  <rect x="17" y="11" width="10" height="10" fill="white" fill-opacity="0.75"/>
+</svg>
