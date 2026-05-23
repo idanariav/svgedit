@@ -19,3 +19,4 @@ instrumented
 dist
 coverage/coverage-summary.json
 .claude
+CLAUDE.md
