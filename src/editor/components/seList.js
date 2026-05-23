@@ -4,6 +4,10 @@ import { t } from '../locale.js'
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
+label {
+  color: var(--text-color, #333333);
+}
+
 #select-container {
   margin-top: 10px;
   display: inline-block;
@@ -15,6 +19,7 @@ template.innerHTML = `
 
 #select-container::part(value) {
   background-color: var(--main-bg-color);
+  color: var(--text-color, #333333);
 }
 
 #select-container::part(popup-toggle) {

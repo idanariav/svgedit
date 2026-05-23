@@ -5,6 +5,7 @@ template.innerHTML = `
   input{
     border:unset;
     background-color:var(--input-color);
+    color: var(--text-color, #333333);
     min-width:unset;
     width:40px;
     height:23px;
@@ -79,13 +80,13 @@ template.innerHTML = `
     display:flex;
     flex-direction:column;
     background-color:var(--icon-bg-color);
-    border:solid 1px white;
+    border:solid 1px var(--border-color, #cccccc);
     box-shadow:0 0px 10px rgb(0 0 0 / 50%);
   }
   ::slotted(*) {
     margin:2px;
     padding:3px;
-    color:white;
+    color: var(--text-color, #333333);
   }
   ::slotted(*:hover) {
     background-color: rgb(43, 60, 69);

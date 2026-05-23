@@ -5,12 +5,14 @@ template.innerHTML = `
 select {
   margin-top: 8px;
   background-color: var(--input-color);
+  color: var(--text-color, #333333);
   appearance: none;
   outline: none;
   padding: 3px;
 }
 label {
   margin-left: 2px;
+  color: var(--text-color, #333333);
 }
 ::slotted(*) {
   padding:0;

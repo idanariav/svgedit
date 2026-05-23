@@ -19,10 +19,11 @@ template.innerHTML = `
     right: -4px;
     position: relative;
     margin-right: 4px;
-    color: #fff;
+    color: var(--text-color, #333333);
   }
   elix-input {
     background-color: var(--input-color);
+    color: var(--text-color, #333333);
     border-radius: 3px;
     height: 24px;
   }

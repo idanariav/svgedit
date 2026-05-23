@@ -24,7 +24,7 @@ template.innerHTML = `
     position: relative;
     margin-left: -4px;
     margin-right: 1px;
-    color: #fff;
+    color: var(--text-color, #333333);
   }
   elix-number-spin-box {
     background-color: var(--input-color);
@@ -38,6 +38,7 @@ template.innerHTML = `
   }
   elix-number-spin-box::part(input) {
     width: 3em;
+    color: var(--text-color, #333333);
   }
   elix-number-spin-box{
     width: 54px;
