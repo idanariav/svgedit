@@ -5,7 +5,7 @@
    <stop stop-opacity="0" stop-color="#000000" offset="1"/>
   </linearGradient>
  </defs>
-  <rect id="svg_4" height="50" width="50" y="0" x="0" fill="#ffffff"/>
+  <rect id="svg_4" height="50" width="50" y="0" x="0" fill="#555555"/>
   <rect id="svg_1" height="25" width="25" y="0" x="0" fill="#a0a0a0"/>
   <rect id="svg_2" height="25" width="25" y="25" x="25" fill="#a0a0a0"/>
   <rect id="svg_3" height="50" width="50" y="0" x="0" stroke-width="2" stroke="url(#svg_7)" fill="url(#svg_7)"/>
