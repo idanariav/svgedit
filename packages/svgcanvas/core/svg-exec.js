@@ -947,6 +947,10 @@ const rasterExport = (
 
         const img = new Image()
         img.onload = () => {
+          if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard') {
+            ctx.fillStyle = opts.bgcolor
+            ctx.fillRect(0, 0, width, height)
+          }
           ctx.drawImage(img, 0, 0, width, height)
           URL.revokeObjectURL(url)
 

@@ -20,6 +20,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$cancelBtn = this._shadowRoot.querySelector('#tool_prefs_cancel')
     this.$langSelect = this._shadowRoot.querySelector('#lang_select')
     this.$bgBlocks = this._shadowRoot.querySelector('#bg_blocks')
+    this.$bgColor = this._shadowRoot.querySelector('#canvas_bg_color')
     this.$bgURL = this._shadowRoot.querySelector('#canvas_bg_url')
     this.$gridSnappingOn = this._shadowRoot.querySelector('#grid_snapping_on')
     this.$gridSnappingStep = this._shadowRoot.querySelector('#grid_snapping_step')
@@ -96,6 +97,9 @@ export class SeEditPrefsDialog extends HTMLElement {
               blk.classList.remove(curBg)
             }
           })
+          if (newValue !== 'chessboard') {
+            this.$bgColor.value = newValue
+          }
         }
         break
       case 'bgurl':
@@ -342,7 +346,8 @@ export class SeEditPrefsDialog extends HTMLElement {
       this.dispatchEvent(closeEvent)
     }
     const onSaveHandler = () => {
-      const color = this.$bgBlocks.querySelector('.cur_background').dataset.bgColor || '#FFF'
+      const selectedBlock = this.$bgBlocks.querySelector('.cur_background')
+      const color = selectedBlock ? selectedBlock.dataset.bgColor : this.$bgColor.value
       const closeEvent = new CustomEvent('change', {
         detail: {
           lang: this.$langSelect.value,
@@ -378,7 +383,13 @@ export class SeEditPrefsDialog extends HTMLElement {
       svgEditor.$click(blk, function () {
         blocks.forEach((el) => el.classList.remove(curBg))
         blk.classList.add(curBg)
+        if (blk.dataset.bgColor !== 'chessboard') {
+          currentObj.$bgColor.value = blk.dataset.bgColor
+        }
       })
+    })
+    currentObj.$bgColor.addEventListener('input', function () {
+      blocks.forEach((el) => el.classList.remove(curBg))
     })
     svgEditor.$click(this.$saveBtn, onSaveHandler)
     svgEditor.$click(this.$cancelBtn, onCancelHandler)

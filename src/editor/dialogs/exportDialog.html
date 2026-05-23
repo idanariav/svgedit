@@ -59,6 +59,10 @@
             <p id="export_select"></p>
             <se-select id="se-storage-pref" label="" options="PNG,JPEG,BMP,WEBP,PDF" values="PNG::JPEG::BMP::WEBP::PDF"></se-select>
             <se-spin-input id="se-quality" label="ui.quality" size="3" min="0" max="100" value="100" step="5" />
+            <label id="se-include-bg-label" style="display:flex;align-items:center;gap:6px;margin:10px;">
+              <input type="checkbox" id="se-include-bg" />
+              <span id="export_include_bg_label">Include background color</span>
+            </label>
         </div>
         <div id="dialog_buttons">
             <button id="export_ok"></button>

@@ -89,6 +89,10 @@ class MainMenu {
     } = e.detail
     // Set background
     this.editor.setBackground(bgcolor, bgurl)
+    const toolBgColor = $id('tool_bg_color')
+    if (toolBgColor && bgcolor !== 'chessboard') {
+      toolBgColor.value = bgcolor
+    }
 
     // set language
     if (lang && lang !== this.editor.configObj.pref('lang')) {
@@ -121,6 +125,7 @@ class MainMenu {
     }
     const imgType = e?.detail?.imgType
     const quality = e?.detail?.quality ? e?.detail?.quality / 100 : 1
+    const includeBg = e?.detail?.includeBg ?? false
     // Open placeholder window (prevents popup)
     let exportWindowName
 
@@ -145,10 +150,12 @@ class MainMenu {
       if (!this.editor.customExportImage) {
         openExportWindow()
       }
+      const bkgdColor = this.editor.configObj.curPrefs.bkgd_color
       /* const results = */ await this.editor.svgCanvas.rasterExport(
         imgType,
         quality,
-        this.editor.exportWindowName
+        this.editor.exportWindowName,
+        { includeBg, bgcolor: bkgdColor }
       )
     }
   }

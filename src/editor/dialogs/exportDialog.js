@@ -22,6 +22,8 @@ export class SeExportDialog extends HTMLElement {
     this.$exportOption = this._shadowRoot.querySelector('#se-storage-pref')
     this.$qualityCont = this._shadowRoot.querySelector('#se-quality')
     this.$input = this._shadowRoot.querySelector('#se-quality')
+    this.$includeBgLabel = this._shadowRoot.querySelector('#se-include-bg-label')
+    this.$includeBg = this._shadowRoot.querySelector('#se-include-bg')
     this.value = 1
   }
 
@@ -115,7 +117,8 @@ export class SeExportDialog extends HTMLElement {
           detail: {
             trigger: action,
             imgType: this.$exportOption.value,
-            quality: this.value
+            quality: this.value,
+            includeBg: this.$includeBg.checked
           }
         })
         this.dispatchEvent(triggerEvent)
@@ -123,11 +126,9 @@ export class SeExportDialog extends HTMLElement {
       }
     }
     const onChangeHandler = (e) => {
-      if (e.target.value === 'PDF') {
-        this.$qualityCont.style.display = 'none'
-      } else {
-        this.$qualityCont.style.display = 'block'
-      }
+      const isPDF = e.target.value === 'PDF'
+      this.$qualityCont.style.display = isPDF ? 'none' : 'block'
+      this.$includeBgLabel.style.display = isPDF ? 'none' : 'flex'
     }
     svgEditor.$click(this.$okBtn, (evt) => onSubmitHandler(evt, 'ok'))
     svgEditor.$click(this.$cancelBtn, (evt) => onSubmitHandler(evt, 'cancel'))
