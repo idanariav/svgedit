@@ -18,3 +18,4 @@ instrumented
 .idea
 dist
 coverage/coverage-summary.json
+.claude
