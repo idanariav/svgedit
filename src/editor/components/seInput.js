@@ -4,35 +4,39 @@ import { t } from '../locale.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  div {
-    height: 24px;
-    margin: 5px 1px;
-    padding: 3px;
+  :host {
+    display: inline-flex;
+    align-items: center;
   }
-  img {
-    top: 2px;
-    left: 4px;
-    position: relative;
-    filter: var(--icon-filter, none);
+  .wrap {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    gap: 5px;
+    padding: 0 8px;
+    background: var(--group-bg, #F6F7F9);
+    border: 1px solid var(--group-border, #E6E8EC);
+    border-radius: 10px;
   }
-  span {
-    bottom: 1px;
-    right: -4px;
-    position: relative;
-    margin-right: 4px;
-    color: var(--text-color, #333333);
+  span#label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted, #6B7280);
+    white-space: nowrap;
   }
   elix-input {
-    background-color: var(--input-color);
-    color: var(--text-color, #333333);
-    border-radius: 3px;
-    height: 24px;
+    background-color: var(--field-bg, #FFFFFF);
+    color: var(--fg, #1B1F24);
+    border: 1px solid var(--field-border, #DDE1E7);
+    border-radius: 7px;
+    height: 26px;
+    font-size: 12.5px;
+    font-weight: 500;
   }
   </style>
-  <div>
-  <img alt="icon" width="12" height="12" />
-  <span id="label">label</span>
-  <elix-input></elix-input>
+  <div class="wrap">
+    <span id="label"></span>
+    <elix-input></elix-input>
   </div>
 `
 
@@ -49,8 +53,7 @@ export class SEInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('div')
-    this.$img = this._shadowRoot.querySelector('img')
+    this.$div = this._shadowRoot.querySelector('.wrap')
     this.$label = this.shadowRoot.getElementById('label')
     this.$event = new CustomEvent('change')
     this.$input = this._shadowRoot.querySelector('elix-input')
@@ -78,15 +81,13 @@ export class SEInput extends HTMLElement {
         this.$div.setAttribute('title', `${t(newValue)}`)
         break
       case 'src':
-        this.$img.setAttribute('src', newValue)
-        this.$label.remove()
+        // seInput doesn't typically show an icon; silently ignore
         break
       case 'size':
         this.$input.setAttribute('size', newValue)
         break
       case 'label':
         this.$label.textContent = t(newValue)
-        this.$img.remove()
         break
       case 'value':
         this.$input.value = newValue

@@ -1,53 +1,76 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  @keyframes btnHover {
-    from {
-      background-color: var(--main-bg-color);
-    }
-
-    to {
-      background-color: var(--icon-bg-color-hover);
-    }
+  :host {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-  :host(:hover) :not(.disabled)
-  {
-    animation: btnHover 0.2s forwards;
-  }
-  div
-  {
-    height: 24px;
-    width: 24px;
-    margin: 4px 1px 4px;
-    padding: 3px;
-    background-color: var(--icon-bg-color);
+  div {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--icon, #4B5563);
     cursor: pointer;
-    border-radius: 3px;
+    transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
+    position: relative;
+    box-sizing: border-box;
   }
-  .small {
-    width: 14px;
-    height: 14px;
-    padding: 1px;
-    border-radius: 1px;
-  }
-  img {
-    border: none;
-    width: 100%;
-    height: 100%;
-    filter: var(--icon-filter, none);
+  div:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    color: var(--icon-hover, #0F172A);
   }
   .pressed {
-    background-color: var(--icon-bg-color-hover);
+    background: var(--accent-soft, #E8EFFF) !important;
+    color: var(--accent, #2962FF) !important;
+    border-color: var(--accent-border, #C7D7FF) !important;
+    box-shadow: var(--active-shadow, 0 1px 2px rgba(41,98,255,0.18)) !important;
   }
   .disabled {
-    opacity: 0.3;
+    opacity: 0.35;
     cursor: default;
+    pointer-events: none;
+  }
+  .icon-wrap {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-wrap svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+    overflow: visible;
+  }
+  /* Small variant */
+  .small {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+  .small .icon-wrap {
+    width: 16px;
+    height: 16px;
+  }
+  .small .icon-wrap svg {
+    width: 16px;
+    height: 16px;
   }
   </style>
   <div title="title">
-    <img alt="icon">
+    <span class="icon-wrap"></span>
   </div>
 `
 /**
@@ -59,12 +82,10 @@ export class ToolButton extends HTMLElement {
     */
   constructor () {
     super()
-    // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    // locate the component
     this.$div = this._shadowRoot.querySelector('div')
-    this.$img = this._shadowRoot.querySelector('img')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
   }
 
@@ -78,29 +99,20 @@ export class ToolButton extends HTMLElement {
 
   /**
    * @function attributeChangedCallback
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   * @returns {void}
    */
   attributeChangedCallback (name, oldValue, newValue) {
     if (oldValue === newValue) return
     switch (name) {
-      case 'title':
-        {
-          const shortcut = this.getAttribute('shortcut')
-          this.$div.setAttribute('title', `${t(newValue)} ${shortcut ? `[${t(shortcut)}]` : ''}`)
-        }
+      case 'title': {
+        const shortcut = this.getAttribute('shortcut')
+        this.$div.setAttribute('title', `${t(newValue)} ${shortcut ? `[${t(shortcut)}]` : ''}`)
         break
+      }
       case 'style':
         this.$div.style = newValue
         break
       case 'src':
-        if (newValue.indexOf('data:') !== -1) {
-          this.$img.setAttribute('src', newValue)
-        } else {
-          this.$img.setAttribute('src', this.imgPath + '/' + newValue)
-        }
+        this._loadIcon(newValue)
         break
       case 'pressed':
         if (newValue === null) {
@@ -130,35 +142,33 @@ export class ToolButton extends HTMLElement {
   }
 
   /**
-   * @function get
-   * @returns {any}
+   * Load an SVG icon by URL, injecting it inline into the shadow DOM.
+   * Falls back to an <img> if fetch fails.
    */
-  get title () {
-    return this.getAttribute('title')
+  async _loadIcon (src) {
+    if (!src) return
+    const url = src.indexOf('data:') !== -1 ? src : `${this.imgPath}/${src}`
+
+    // Inline SVG for theme-aware currentColor icons
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      // Fallback to img
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      img.style.width = '100%'
+      img.style.height = '100%'
+      this.$iconWrap.replaceChildren(img)
+    }
   }
 
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set title (value) {
-    this.setAttribute('title', value)
-  }
+  get title () { return this.getAttribute('title') }
+  set title (value) { this.setAttribute('title', value) }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get pressed () {
-    return this.hasAttribute('pressed')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
+  get pressed () { return this.hasAttribute('pressed') }
   set pressed (value) {
-    // boolean value => existence = true
     if (value) {
       this.setAttribute('pressed', 'true')
     } else {
@@ -166,20 +176,8 @@ export class ToolButton extends HTMLElement {
     }
   }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get disabled () {
-    return this.hasAttribute('disabled')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
+  get disabled () { return this.hasAttribute('disabled') }
   set disabled (value) {
-    // boolean value => existence = true
     if (value) {
       this.setAttribute('disabled', 'true')
     } else {
@@ -187,54 +185,19 @@ export class ToolButton extends HTMLElement {
     }
   }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get src () {
-    return this.getAttribute('src')
-  }
+  get src () { return this.getAttribute('src') }
+  set src (value) { this.setAttribute('src', value) }
 
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set src (value) {
-    this.setAttribute('src', value)
-  }
+  get size () { return this.getAttribute('size') }
+  set size (value) { this.setAttribute('size', value) }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get size () {
-    return this.getAttribute('size')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set size (value) {
-    this.setAttribute('size', value)
-  }
-
-  /**
-   * @function connectedCallback
-   * @returns {void}
-   */
   connectedCallback () {
-    // capture shortcuts
     const shortcut = this.getAttribute('shortcut')
     if (shortcut) {
-      // register the keydown event
       document.addEventListener('keydown', (e) => {
-        // only track keyboard shortcuts for the body containing the SVG-Editor
         if (e.target.nodeName !== 'BODY') return
-        // normalize key
         const key = `${(e.metaKey) ? 'meta+' : ''}${(e.ctrlKey) ? 'ctrl+' : ''}${e.key.toUpperCase()}`
         if (shortcut !== key) return
-        // launch the click event
         this.click()
         e.preventDefault()
       })

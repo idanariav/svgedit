@@ -1,54 +1,79 @@
 /* globals svgEditor */
 import '../dialogs/se-elix/define/NumberSpinBox.js'
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  div {
-    height: 24px;
-    margin: 5px 1px;
-    padding: 3px;
+  :host {
+    display: inline-flex;
+    align-items: center;
   }
-  div.imginside {
-    width: var(--global-se-spin-input-width);
+  .wrap {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    gap: 5px;
+    padding: 0 8px;
+    background: var(--group-bg, #F6F7F9);
+    border: 1px solid var(--group-border, #E6E8EC);
+    border-radius: 10px;
   }
-  img {
-    position: relative;
-    right: -4px;
-    top: 2px;
+  .icon-wrap {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--icon, #4B5563);
+    flex-shrink: 0;
   }
-  span {
-    bottom: -0.5em;
-    right: -4px;
-    position: relative;
-    margin-left: -4px;
-    margin-right: 1px;
-    color: var(--text-color, #333333);
+  .icon-wrap svg,
+  .icon-wrap img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  span#label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted, #6B7280);
+    white-space: nowrap;
   }
   elix-number-spin-box {
-    background-color: var(--input-color);
-    border-radius: 3px;
-    height: 20px;
-    margin-top: 1px;
-    vertical-align: top;
+    background-color: var(--field-bg, #FFFFFF);
+    border: 1px solid var(--field-border, #DDE1E7);
+    border-radius: 7px;
+    height: 26px;
   }
   elix-number-spin-box::part(spin-button) {
-    padding: 0px;
+    padding: 0;
+    color: var(--muted, #6B7280);
+  }
+  elix-number-spin-box::part(spin-button):hover {
+    color: var(--accent, #2962FF);
   }
   elix-number-spin-box::part(input) {
     width: 3em;
-    color: var(--text-color, #333333);
+    color: var(--fg, #1B1F24);
+    font-size: 12.5px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--ui-font, inherit);
+    background: transparent;
+    border: none;
+    padding: 0 4px 0 8px;
   }
-  elix-number-spin-box{
+  elix-number-spin-box {
     width: 54px;
-    height: 24px;
+    height: 26px;
   }
   </style>
-  <div>
-  <img alt="icon" width="24" height="24" aria-labelledby="label" />
-  <span id="label">label</span>
-  <elix-number-spin-box min="1" step="1"></elix-number-spin-box>
+  <div class="wrap">
+    <span class="icon-wrap" aria-hidden="true"></span>
+    <span id="label" style="display:none"></span>
+    <elix-number-spin-box min="1" step="1"></elix-number-spin-box>
   </div>
 `
 
@@ -65,8 +90,8 @@ export class SESpinInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('div')
-    this.$img = this._shadowRoot.querySelector('img')
+    this.$div = this._shadowRoot.querySelector('.wrap')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.getElementById('label')
     this.$event = new CustomEvent('change')
     this.$input = this._shadowRoot.querySelector('elix-number-spin-box')
@@ -98,9 +123,8 @@ export class SESpinInput extends HTMLElement {
         }
         break
       case 'src':
-        this.$img.setAttribute('src', this.imgPath + '/' + newValue)
-        this.$label.remove()
-        this.$div.classList.add('imginside')
+        this._loadIcon(newValue)
+        this.$label.style.display = 'none'
         break
       case 'size':
       // access to the underlying input box
@@ -118,8 +142,12 @@ export class SESpinInput extends HTMLElement {
         this.$input.setAttribute('max', newValue)
         break
       case 'label':
-        this.$label.textContent = t(newValue)
-        this.$img.remove()
+        if (newValue) {
+          this.$label.textContent = t(newValue)
+          this.$label.style.display = ''
+        } else {
+          this.$label.style.display = 'none'
+        }
         break
       case 'value':
         this.$input.value = newValue
@@ -127,6 +155,20 @@ export class SESpinInput extends HTMLElement {
       default:
         console.error(`unknown attribute: ${name}`)
         break
+    }
+  }
+
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
     }
   }
 

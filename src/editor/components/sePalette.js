@@ -49,69 +49,111 @@ const palette = [
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  .square {
-    height: 15px;
-    width: 15px;
-    float: left;
+  :host {
+    display: inline-flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
   }
   #palette_holder {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 36px;
+    padding: 4px 6px;
+    background: var(--group-bg, #F6F7F9);
+    border: 1px solid var(--group-border, #E6E8EC);
+    border-radius: 10px;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
-    padding: 4px;
-    background: #f0f0f0;
-    border-radius: 3px;
-    z-index: 2;
+    position: relative;
   }
-  
   #js-se-palette {
-    float: left;
-    min-width: 30px;
-    height: 15px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
+    height: 22px;
   }
-  
   div.palette_item {
-    height: 15px;
-    width: 15px;
-    float: left;
+    flex: 1;
+    min-width: 0;
+    max-width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.12);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    flex-shrink: 0;
   }
-  
+  div.palette_item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px -2px rgba(0,0,0,0.25);
+    z-index: 1;
+  }
   div.palette_item:first-child {
-    background: white;
+    background: var(--field-bg, #FFFFFF);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  .palette_expand_btn {
-    background: none;
-    border: none;
+  div.palette_item img {
     width: 14px;
     height: 14px;
-    font-size: 12px;
+    display: block;
+  }
+  .palette_expand_btn {
+    background: transparent;
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    font-size: 11px;
     cursor: pointer;
-    user-select:none;
+    user-select: none;
+    color: var(--muted, #6B7280);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
   }
-
+  .palette_expand_btn:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    color: var(--icon-hover, #0F172A);
+  }
   #palette_popup {
-    padding: 4px;
-    margin-left: 24px;
-    background: white;
-    min-width: 180px;
-    max-width: 360px;
-    min-height: 14px;
+    padding: 8px;
+    background: var(--chrome-bg, #FFFFFF);
+    border: 1px solid var(--chrome-border, #E6E8EC);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
+    min-width: 200px;
+    max-width: 380px;
+    display: flex;
     flex-wrap: wrap;
-    border-radius: 4px;
-
+    gap: 3px;
     position: absolute;
-    bottom: 36px;
-    right: 30px;
+    bottom: 48px;
+    right: 0;
+    z-index: 100;
   }
-  
+  #palette_popup div.palette_item {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
   </style>
   <div id="palette_holder" title="">
-    <div id="js-se-palette">
-    </div>
+    <div id="js-se-palette"></div>
   </div>
-  <button class="palette_expand_btn" title="Show whole palette">▼</button>
-  <!-- hidden div -->
-  <div id="palette_popup" style="display:none"/>
+  <button class="palette_expand_btn" title="Show whole palette">▾</button>
+  <!-- hidden popup -->
+  <div id="palette_popup" style="display:none"></div>
 `
 
 /**
@@ -146,7 +188,7 @@ export class SEPalette extends HTMLElement {
 
     palette.forEach((rgb) => {
       const newDiv = document.createElement('div')
-      newDiv.classList.add('square')
+      newDiv.classList.add('palette_item')
       if (rgb === 'none') {
         const img = document.createElement('img')
         img.src =

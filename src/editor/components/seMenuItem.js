@@ -2,14 +2,50 @@
 import 'elix/define/Menu.js'
 import 'elix/define/MenuItem.js'
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
+  elix-menu-item {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 7px;
+    color: var(--fg, #1B1F24);
+    font-family: var(--ui-font, inherit);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  elix-menu-item:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-wrap {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--icon, #4B5563);
+  }
+  .icon-wrap svg,
+  .icon-wrap img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  .item-label {
+    flex: 1;
+  }
   </style>
   <elix-menu-item>
-    <div style="display:flex; align-items: center;">
-      <img src="logo.svg" alt="icon" style="display:none;" width="24"/>
-      <span style="margin-left: 7px;"></span>
+    <div class="item-row">
+      <span class="icon-wrap"></span>
+      <span class="item-label"></span>
     </div>
   </elix-menu-item>
 `
@@ -25,11 +61,12 @@ export class SeMenuItem extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$img = this._shadowRoot.querySelector('img')
-    this.$label = this._shadowRoot.querySelector('span')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
+    this.$label = this._shadowRoot.querySelector('.item-label')
     this.$menuitem = this._shadowRoot.querySelector('elix-menu-item')
-    this.$svg = this.$menuitem.shadowRoot.querySelector('#checkmark')
-    this.$svg.setAttribute('style', 'display: none;')
+    // Hide the elix checkmark if present
+    const checkmark = this.$menuitem.shadowRoot?.querySelector('#checkmark')
+    if (checkmark) checkmark.setAttribute('style', 'display: none;')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
   }
 
@@ -53,8 +90,7 @@ export class SeMenuItem extends HTMLElement {
     if (oldValue === newValue) return
     switch (name) {
       case 'src':
-        this.$img.style.display = 'inline-block'
-        this.$img.setAttribute('src', this.imgPath + '/' + newValue)
+        this._loadIcon(newValue)
         break
       case 'label':
         shortcut = this.getAttribute('shortcut')
@@ -63,6 +99,20 @@ export class SeMenuItem extends HTMLElement {
       default:
         console.error(`unknown attribute: ${name}`)
         break
+    }
+  }
+
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
     }
   }
 

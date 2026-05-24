@@ -2,27 +2,50 @@ import { t } from '../locale.js'
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
-select {
-  margin-top: 8px;
-  background-color: var(--input-color);
-  color: var(--text-color, #333333);
-  appearance: none;
-  outline: none;
-  padding: 3px;
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  gap: 5px;
+  padding: 0 8px;
+  background: var(--group-bg, #F6F7F9);
+  border: 1px solid var(--group-border, #E6E8EC);
+  border-radius: 10px;
 }
 label {
-  margin-left: 2px;
-  color: var(--text-color, #333333);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, #6B7280);
+  white-space: nowrap;
+  display: none; /* hidden by default; shown when label attr is set */
+}
+select {
+  background-color: var(--field-bg, #FFFFFF);
+  color: var(--fg, #1B1F24);
+  border: 1px solid var(--field-border, #DDE1E7);
+  border-radius: 7px;
+  height: 26px;
+  padding: 0 4px 0 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--ui-font, inherit);
+  appearance: none;
+  outline: none;
+  cursor: pointer;
 }
 ::slotted(*) {
-  padding:0;
-  width:100%;
+  padding: 0;
+  width: 100%;
 }
 </style>
-  <label></label>
-  <select>
-  </select>
-
+  <div class="wrap">
+    <label></label>
+    <select></select>
+  </div>
 `
 /**
  * @class SeList
@@ -38,6 +61,7 @@ export class SeSelect extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$select = this._shadowRoot.querySelector('select')
     this.$label = this._shadowRoot.querySelector('label')
+    this.$wrap = this._shadowRoot.querySelector('.wrap')
   }
 
   /**

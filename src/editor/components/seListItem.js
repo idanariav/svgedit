@@ -1,48 +1,66 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  [aria-label="option"]{
-    padding:0.25rem 0.125rem !important;
-    background-color: var(--icon-bg-color);
+  :host {
+    display: block;
   }
-  [aria-label="option"]:hover{
-    background-color: var(--icon-bg-color-hover);
+  [aria-label="option"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--icon, #4B5563);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    box-sizing: border-box;
   }
-
+  [aria-label="option"]:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    color: var(--icon-hover, #0F172A);
+  }
   .selected {
-    background-color: var(--icon-bg-color-hover);
+    background: var(--accent-soft, #E8EFFF) !important;
+    color: var(--accent, #2962FF) !important;
+    border-color: var(--accent-border, #C7D7FF) !important;
   }
-
-  img {
-    filter: var(--icon-filter, none);
+  .icon-wrap {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
   }
-
+  .icon-wrap svg,
+  .icon-wrap img {
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
   </style>
   <div aria-label="option">
-    <img alt="icon" />
+    <span class="icon-wrap"></span>
     <slot></slot>
   </div>
 `
 /**
- * @class SeMenu
+ * @class SeListItem
  */
 export class SeListItem extends HTMLElement {
-  /**
-    * @function constructor
-    */
   constructor () {
     super()
-    // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$menuitem = this._shadowRoot.querySelector('[aria-label=option]')
-    // this.$svg = this.$menuitem.shadowRoot.querySelector('#checkmark')
-    // this.$svg.setAttribute('style', 'display: none;')
-    this.$img = this._shadowRoot.querySelector('img')
-    this.$img.setAttribute('style', 'display: none;')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
     this.$menuitem.addEventListener('mousedown', e => {
       this.$menuitem.dispatchEvent(new CustomEvent('selectedindexchange', {
@@ -53,21 +71,10 @@ export class SeListItem extends HTMLElement {
     })
   }
 
-  /**
-   * @function observedAttributes
-   * @returns {any} observed
-   */
   static get observedAttributes () {
     return ['option', 'src', 'title', 'img-height', 'selected']
   }
 
-  /**
-   * @function attributeChangedCallback
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   * @returns {void}
-   */
   attributeChangedCallback (name, oldValue, newValue) {
     if (oldValue === newValue) return
     switch (name) {
@@ -76,14 +83,13 @@ export class SeListItem extends HTMLElement {
         this.$menuitem.textContent = t(newValue)
         break
       case 'src':
-        this.$img.setAttribute('style', 'display: block;')
-        this.$img.setAttribute('src', this.imgPath + '/' + newValue)
+        this._loadIcon(newValue)
         break
       case 'title':
-        this.$img.setAttribute('title', t(newValue))
+        this.$menuitem.setAttribute('title', t(newValue))
         break
       case 'img-height':
-        this.$img.setAttribute('height', newValue)
+        // handled in _loadIcon via the attr at load time
         break
       case 'selected':
         if (newValue === 'true') {
@@ -98,69 +104,31 @@ export class SeListItem extends HTMLElement {
     }
   }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get option () {
-    return this.getAttribute('option')
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
+    }
   }
 
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set option (value) {
-    this.setAttribute('option', value)
-  }
+  get option () { return this.getAttribute('option') }
+  set option (value) { this.setAttribute('option', value) }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get title () {
-    return this.getAttribute('title')
-  }
+  get title () { return this.getAttribute('title') }
+  set title (value) { this.setAttribute('title', value) }
 
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set title (value) {
-    this.setAttribute('title', value)
-  }
+  get imgHeight () { return this.getAttribute('img-height') }
+  set imgHeight (value) { this.setAttribute('img-height', value) }
 
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get imgHeight () {
-    return this.getAttribute('img-height')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set imgHeight (value) {
-    this.setAttribute('img-height', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get src () {
-    return this.getAttribute('src')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set src (value) {
-    this.setAttribute('src', value)
-  }
+  get src () { return this.getAttribute('src') }
+  set src (value) { this.setAttribute('src', value) }
 }
 
 // Register

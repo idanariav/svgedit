@@ -49,21 +49,39 @@ switch to the plugin repo instead.
 
 Components use CSS custom properties so host environments can control colors.
 Always use these variables (with a sensible fallback) rather than hardcoding
-colors in shadow DOM templates:
+colors in shadow DOM templates.
+
+**Primary design tokens (preferred — use these for new code):**
 
 | Variable | Purpose |
 |---|---|
-| `var(--text-color)` | Input and label text |
-| `var(--input-color)` | Input field background |
-| `var(--icon-bg-color)` | Toolbar button background |
-| `var(--icon-bg-color-hover)` | Toolbar button hover background |
-| `var(--border-color)` | Borders and dividers |
-| `var(--main-bg-color)` | Top/bottom/left toolbar background |
+| `var(--fg)` | Primary text / foreground |
+| `var(--muted)` | Secondary/muted labels |
+| `var(--icon)` | Toolbar icon default color |
+| `var(--icon-hover)` | Toolbar icon hover color |
+| `var(--icon-hover-bg)` | Toolbar button hover background |
+| `var(--accent)` | Active/selected accent (blue in light, amber in dark) |
+| `var(--accent-soft)` | Active button background (tint of accent) |
+| `var(--accent-border)` | Active button border |
+| `var(--chrome-bg)` | Toolbar / panel background |
+| `var(--chrome-border)` | Toolbar / panel border |
+| `var(--field-bg)` | Input field background |
+| `var(--field-border)` | Input field border |
+| `var(--group-bg)` | Control-group tray background |
+| `var(--group-border)` | Control-group tray border |
 | `var(--workarea-bg)` | Canvas workarea background |
-| `var(--layer-bg)` | Layer panel row background |
-| `var(--dropdown-bg)` | Dropdown list background |
-| `var(--hover-highlight)` | Menu/list item hover highlight |
-| `var(--icon-filter)` | CSS filter applied to toolbar icon `<img>` elements |
+
+**Legacy aliases (kept for backward compatibility, map to tokens above):**
+
+| Variable | Alias for |
+|---|---|
+| `var(--main-bg-color)` | `--chrome-bg` |
+| `var(--text-color)` | `--fg` |
+| `var(--input-color)` | `--field-bg` |
+| `var(--border-color)` | `--chrome-border` |
+| `var(--icon-bg-color-hover)` | `--icon-hover-bg` |
+| `var(--hover-highlight)` | `--icon-hover-bg` |
+| `var(--dropdown-bg)` | `--chrome-bg` |
 
 ### Light / Dark themes
 
@@ -89,11 +107,25 @@ theme support. The `applyTheme(theme, rootEl)` helper in
 
 ### Icon recoloring
 
-Toolbar icons are loaded via `<img src="...">` inside shadow DOM components
-and cannot be recolored by CSS `color`. Instead, `--icon-filter` carries a
-CSS `filter` value (e.g. `invert(0.88) hue-rotate(180deg)` for dark mode).
-Each `se-*` component that renders icon images applies
-`filter: var(--icon-filter, none)` to its `img` rule.
+All toolbar icons in `src/editor/images/` are stroke-based SVGs using
+`stroke="currentColor"` and `fill="none"`. They are injected inline into the
+shadow DOM by each `se-*` component via the shared
+`src/editor/components/svgIconLoader.js` utility, which fetches, normalises,
+and caches each SVG.
+
+Because the icons use `currentColor`, they respond directly to the CSS `color`
+property on the host element — **no CSS `filter` is needed**. The
+`--icon-filter` variable is no longer defined or used.
+
+To recolor icons from outside a component, set `color:` on the `se-button` (or
+other `se-*` host) in a CSS rule that pierces the shadow boundary:
+```css
+se-button { color: var(--icon); }
+se-button[pressed] { color: var(--accent); }
+```
+
+Do **not** add `filter: var(--icon-filter)` to any `img` or `svg` rule — that
+pattern is retired.
 
 ---
 

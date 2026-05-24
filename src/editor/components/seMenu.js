@@ -1,34 +1,46 @@
 /* globals svgEditor */
 import 'elix/define/MenuItem.js'
 import './sePlainMenuButton.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
   :host {
-    padding: 0px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
   }
   elix-menu-button::part(menu) {
-    background-color: var(--icon-bg-color) !important;
-    color: #fff;
+    background-color: var(--chrome-bg, #fff) !important;
+    border: 1px solid var(--chrome-border, #E6E8EC) !important;
+    border-radius: 10px !important;
+    padding: 6px !important;
+    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12) !important;
+    color: var(--fg, #1B1F24) !important;
   }
   elix-menu-button::part(popup-toggle) {
-    padding: 0.25em 0.30em !important
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
   }
-  :host ::slotted([current]){
-    background-color: var(--icon-bg-color-hover) !important;
-    color: #fff;
+  :host ::slotted([current]) {
+    background: var(--icon-hover-bg, #EEF1F5) !important;
+    border-radius: 7px !important;
   }
-  :host ::slotted(*){
-    padding: 0.25em 1.25em 0.25em 0.25em !important;
-    margin: 2px;
+  :host ::slotted(*) {
+    padding: 7px 10px !important;
+    margin: 0 !important;
+    border-radius: 7px !important;
+    color: var(--fg, #1B1F24) !important;
+    font-family: var(--ui-font, inherit) !important;
+    font-size: 13px !important;
   }
   </style>
 
   <elix-menu-button id="MenuButton" aria-label="Main Menu">
     <slot></slot>
   </elix-menu-button>
-
 `
 /**
  * @class SeMenu
@@ -39,7 +51,6 @@ export class SeMenu extends HTMLElement {
     */
   constructor () {
     super()
-    // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$menu = this._shadowRoot.querySelector('elix-menu-button')
@@ -57,21 +68,12 @@ export class SeMenu extends HTMLElement {
 
   /**
    * @function attributeChangedCallback
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   * @returns {void}
    */
   attributeChangedCallback (name, oldValue, newValue) {
-    const image = new Image()
     if (oldValue === newValue) return
     switch (name) {
       case 'src':
-        image.src = this.imgPath + '/' + newValue
-        image.width = 24
-        image.height = 24
-        image.alt = 'logo'
-        this.$label.prepend(image)
+        this._loadIcon(newValue)
         break
       case 'label':
         this.$label.prepend(newValue)
@@ -79,6 +81,25 @@ export class SeMenu extends HTMLElement {
       default:
         console.error(`unknown attribute: ${name}`)
         break
+    }
+  }
+
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      // Make the logo mark use accent color
+      svgEl.style.cssText = 'width:22px;height:22px;display:block;color:var(--accent,#2962FF);'
+      svgEl.setAttribute('stroke', 'currentColor')
+      this.$label.prepend(svgEl)
+    } else {
+      const img = new Image()
+      img.src = url
+      img.width = 22
+      img.height = 22
+      img.alt = 'logo'
+      this.$label.prepend(img)
     }
   }
 

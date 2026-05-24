@@ -1,110 +1,132 @@
 /* globals svgEditor */
+import { fetchSvgEl } from './svgIconLoader.js'
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  input{
-    border:unset;
-    background-color:var(--input-color);
-    color: var(--text-color, #333333);
-    min-width:unset;
-    width:40px;
-    height:23px;
-    padding:1px 2px;
-    border:2px;
-    font: inherit;
-    margin: 2px 1px 0px 2px;
-    box-sizing:border-box;
-    text-align: center;
-    border-radius: 3px 0px 0px 3px;
-  }
-  #tool-wrapper{
-    height:20px;
-    display:flex;
-    align-items:center;
-  }
-  #icon{
-    margin-bottom:1px
-  }
-  #spinner{
-    display:flex;
-    flex-direction:column;
-  }
-  #spinner > div {
-    height: 11px;
-    width: 7px;
-    display: flex;
+  :host {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: 7px;
-    border-left:solid 1px transparent;
-    border-right:solid 1px transparent;
-    background-color:var(--input-color);
   }
-  #arrow-up{
-    height:9px;
-    margin-top: 2px;
-    margin-bottom: 1px;
-  }
-  #arrow-up, #arrow-down {
-    user-select: none;
-  }
-  @keyframes hover-arrows {
-    from {
-      background: transparent;
-      color: var(--icon-bg-color-hover);
-    }
-
-    to {
-      background: var(--icon-bg-color-hover);
-      color: var(--orange-color);
-    }
-  }
-  #arrow-up:hover, #arrow-down:hover {
-    animation: hover-arrows 0.2s forwards;
-  }
-  #down{
-    width:18px;
-    height:23px;
-    display: flex;
+  #tool-wrapper {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    background-color:var(--input-color);
-    border-radius: 0px 3px 3px 0px;
-    margin: 2px 5px 0px 1px;
-  }
-  #down > img {
-    margin-top: 2px;
-    filter: var(--icon-filter, none);
+    height: 36px;
+    gap: 5px;
+    padding: 0 8px;
+    background: var(--group-bg, #F6F7F9);
+    border: 1px solid var(--group-border, #E6E8EC);
+    border-radius: 10px;
   }
   #icon {
-    filter: var(--icon-filter, none);
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--icon, #4B5563);
+    flex-shrink: 0;
+  }
+  #icon svg, #icon img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  input {
+    border: none;
+    background: transparent;
+    color: var(--fg, #1B1F24);
+    min-width: unset;
+    width: 40px;
+    height: 22px;
+    padding: 0 2px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+  }
+  #spinner {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  #spinner > div {
+    height: 10px;
+    width: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6px;
+    color: var(--muted, #6B7280);
+    cursor: pointer;
+    user-select: none;
+    border-radius: 2px;
+  }
+  #spinner > div:hover {
+    color: var(--accent, #2962FF);
+  }
+  #down {
+    width: 18px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted, #6B7280);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+  }
+  #down:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    color: var(--icon-hover, #0F172A);
+  }
+  #down-icon {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #down-icon svg, #down-icon img {
+    width: 14px;
+    height: 14px;
+    display: block;
   }
   #options-container {
-    position:fixed
-    display:flex;
-    flex-direction:column;
-    background-color:var(--icon-bg-color);
-    border:solid 1px var(--border-color, #cccccc);
-    box-shadow:0 0px 10px rgb(0 0 0 / 50%);
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    background: var(--chrome-bg, #FFFFFF);
+    border: 1px solid var(--chrome-border, #E6E8EC);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
+    z-index: 100;
   }
   ::slotted(*) {
-    margin:2px;
-    padding:3px;
-    color: var(--text-color, #333333);
+    padding: 6px 10px;
+    border-radius: 7px;
+    color: var(--fg, #1B1F24);
+    font-size: 13px;
+    cursor: pointer;
   }
   ::slotted(*:hover) {
-    background-color: var(--icon-bg-color-hover);
+    background: var(--icon-hover-bg, #EEF1F5);
   }
   </style>
   <div id="tool-wrapper">
-    <img id="icon" alt="icon" width="18" height="18"/>
+    <span id="icon"></span>
     <input/>
     <div id="spinner">
       <div id="arrow-up">▲</div>
       <div id="arrow-down">▼</div>
     </div>
     <div id="down">
-      <img width="16" height="8" src="arrow_down.svg" alt="Zoom dropdown"/>
+      <span id="down-icon">▾</span>
     </div>
   </div>
   <div id="options-container" style="display:none">
@@ -144,19 +166,13 @@ class SeZoom extends HTMLElement {
     this.clickArea.addEventListener('click', this.handleClick.bind(this))
 
     this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.$icon = this._shadowRoot.querySelector('#icon')
 
-    this.downImageElement = this.clickArea.querySelector('img')
-    this.downImageElement.setAttribute(
-      'src',
-      (this.imgPath + '/' + this.downImageElement.getAttribute('src'))
-    )
-
-    // set src for imageElement
-    this.imageElement = this._shadowRoot.querySelector('img')
-    this.imageElement.setAttribute(
-      'src',
-      (this.imgPath + '/' + this.getAttribute('src'))
-    )
+    // Load zoom icon
+    const srcAttr = this.getAttribute('src')
+    if (srcAttr) {
+      this._loadIcon(srcAttr, this.$icon, 18)
+    }
 
     // hookup events for arrow buttons
     this.arrowUp = this._shadowRoot.querySelector('#arrow-up')
@@ -184,6 +200,22 @@ class SeZoom extends HTMLElement {
     // add an event listener to close the popup
     document.addEventListener('click', e => this.handleClose(e))
     this.changedTimeout = null
+  }
+
+  async _loadIcon (src, container, size = 18) {
+    if (!src || !container) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      svgEl.style.cssText = `width:${size}px;height:${size}px;display:block;`
+      container.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      img.style.cssText = `width:${size}px;height:${size}px;display:block;`
+      container.replaceChildren(img)
+    }
   }
 
   static get observedAttributes () {

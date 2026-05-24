@@ -2,6 +2,7 @@
 import { jGraduate, jGraduateMethod } from './jgraduate/jQuery.jGraduate.js'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -610,38 +611,85 @@ div.jGraduate_Slider img {
   right: -10px;
   bottom: 0;
 }
+  /* ── Framed swatch button ─────────────────────────────────── */
+  #picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
   #logo {
     height: 18px;
     width: 18px;
+    display: block;
+    color: var(--icon, #4B5563);
+    flex-shrink: 0;
   }
-  #block {
-    height: 17px;
-    width: 14px;
-    float: right;
-    background-color: darkgrey;
+  #logo svg,
+  #logo img {
+    width: 18px;
+    height: 18px;
+    display: block;
   }
-  #picker {
-    background: var(--input-color);
-    height: 23px;
-    line-height: 23px;
-    border-radius: 3px;
-    width: 52px;
-    display: flex;
+  /* The framed color chip */
+  #swatch {
+    position: relative;
+    width: 30px;
+    height: 24px;
+    border-radius: 7px;
+    display: inline-flex;
     align-items: center;
-    margin-right: 4px;
-    margin-top: 1px;
-    justify-content: space-evenly;
+    justify-content: center;
+    border: 1.5px solid var(--swatch-border, #C3C8D1);
+    background-color: var(--swatch-bg, #FFFFFF);
+    /* Faint checkerboard overlay for transparent/gradient chips */
+    background-image:
+      linear-gradient(45deg, var(--checker, rgba(0,0,0,0.07)) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--checker, rgba(0,0,0,0.07)) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--checker, rgba(0,0,0,0.07)) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--checker, rgba(0,0,0,0.07)) 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    box-shadow: var(--swatch-shadow, 0 1px 2px rgba(20,25,35,0.08));
+    transition: border-color 0.12s, transform 0.1s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #swatch:hover {
+    border-color: var(--swatch-border-hover, #2962FF);
+    transform: translateY(-1px);
+  }
+  /* Inner chip */
+  #block {
+    width: 22px;
+    height: 16px;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px var(--swatch-inset, rgba(0,0,0,0.18));
+    display: block;
+    pointer-events: none;
+  }
+  /* Stroke swatch variant — hollow band */
+  :host([type="stroke"]) #block {
+    background: var(--swatch-bg, #FFFFFF) !important;
+    border: 3.5px solid currentColor;
+    box-shadow: none;
+  }
+  /* Hidden label (keep for tooltip/accessibility) */
+  #label {
+    display: none;
   }
   #color_picker {
     z-index: 1000;
     bottom: 0;
   }
   </style>
-  <div id="picker">
-      <img src="logo.svg" alt="icon" id="logo">
-      <label for="color" title="" id="label"></label>
-      <div id="block">
-      </div>
+  <div id="picker" title="">
+    <span id="logo"></span>
+    <label for="color" title="" id="label"></label>
+    <div id="swatch">
+      <div id="block"></div>
+    </div>
   </div>
   <!-- hidden div -->
   <div id="color_picker"></div>
@@ -661,11 +709,27 @@ export class SeColorPicker extends HTMLElement {
     this.$logo = this._shadowRoot.getElementById('logo')
     this.$label = this._shadowRoot.getElementById('label')
     this.$block = this._shadowRoot.getElementById('block')
+    this.$swatch = this._shadowRoot.getElementById('swatch')
     this.paintBox = null
     this.i18next = null
     this.$picker = this._shadowRoot.getElementById('picker')
     this.$color_picker = this._shadowRoot.getElementById('color_picker')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
+  }
+
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$logo.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      img.style.cssText = 'width:18px;height:18px;display:block;'
+      this.$logo.replaceChildren(img)
+    }
   }
 
   /**
@@ -697,7 +761,7 @@ export class SeColorPicker extends HTMLElement {
     if (oldValue === newValue) return
     switch (name) {
       case 'src':
-        this.$logo.setAttribute('src', this.imgPath + '/' + newValue)
+        this._loadIcon(newValue)
         break
       case 'label':
         this.setAttribute('title', t(newValue))

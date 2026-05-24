@@ -1,5 +1,6 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 /**
  * @class FlyingButton
@@ -19,7 +20,7 @@ export class FlyingButton extends HTMLElement {
     this.$button = this._shadowRoot.querySelector('.menu-button')
     this.$handle = this._shadowRoot.querySelector('.handle')
     this.$overall = this._shadowRoot.querySelector('.overall')
-    this.$img = this._shadowRoot.querySelector('img')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$menu = this._shadowRoot.querySelector('.menu')
     // the last element of the div is the slot
     // we retrieve all elements added in the slot (i.e. se-buttons)
@@ -44,76 +45,95 @@ export class FlyingButton extends HTMLElement {
     template.innerHTML = `
       <style>
         :host {
-          position:relative;
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
-        @keyframes btnHover {
-          from {
-            background-color: transparent;
-          }
-
-          to {
-            background-color: var(--icon-bg-color-hover);
-          }
-        }
-        .overall .menu-button:hover {
-          animation: btnHover 0.2s forwards;
-        }
-        img {
-          border: none;
-          width: 24px;
-          height: 24px;
-          filter: var(--icon-filter, none);
-        }
-        .overall.pressed .button-icon,
-        .overall.pressed .handle {
-          background-color: var(--icon-bg-color-hover) !important;
-        }
-        .overall.pressed .menu-button {
-          background-color: var(--icon-bg-color-hover) !important;
-        }
-        .disabled {
-          opacity: 0.3;
-          cursor: default;
+        .overall {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
         .menu-button {
-          height: 24px;
-          width: 24px;
-          margin: 2px 1px 4px;
-          padding: 3px;
-          background-color: var(--icon-bg-color);
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          background: transparent;
+          color: var(--icon, #4B5563);
           cursor: pointer;
           position: relative;
-          border-radius: 3px;
-          overflow: hidden;
+          box-sizing: border-box;
+          transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
+        }
+        .menu-button:hover {
+          background: var(--icon-hover-bg, #EEF1F5);
+          color: var(--icon-hover, #0F172A);
+        }
+        .overall.pressed .menu-button {
+          background: var(--accent-soft, #E8EFFF) !important;
+          color: var(--accent, #2962FF) !important;
+          border-color: var(--accent-border, #C7D7FF) !important;
+          box-shadow: var(--active-shadow, 0 1px 2px rgba(41,98,255,0.18)) !important;
+        }
+        .disabled {
+          opacity: 0.35;
+          cursor: default;
+          pointer-events: none;
+        }
+        .icon-wrap {
+          width: 22px;
+          height: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+        .icon-wrap svg,
+        .icon-wrap img {
+          width: 22px;
+          height: 22px;
+          display: block;
         }
         .handle {
-          height: 8px;
-          width: 8px;
-          background-image: url(${imgPath}/handle.svg);
-          position:absolute;
-          bottom: 0px;
-          right: 0px;
+          position: absolute;
+          bottom: 4px;
+          right: 3px;
+          width: 6px;
+          height: 6px;
+          pointer-events: all;
+          cursor: pointer;
         }
-        .button-icon {
+        /* triangle handle indicator */
+        .handle::after {
+          content: '';
+          display: block;
+          width: 0;
+          height: 0;
+          border-style: solid;
+          border-width: 0 0 6px 6px;
+          border-color: transparent transparent var(--icon, #4B5563) transparent;
         }
         .menu {
           position: fixed;
-          background: none !important;
-          display:none;
-          margin-left: 34px;
+          background: var(--chrome-bg, #fff);
+          border: 1px solid var(--chrome-border, #E6E8EC);
+          border-radius: 10px;
+          padding: 6px;
+          display: none;
+          flex-direction: column;
+          gap: 2px;
+          margin-left: 44px;
+          z-index: 100;
+          box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
         }
         .open {
           display: flex;
-        }
-        .menu-item {
-          align-content: flex-start;
-          height: 24px;
-          width: 24px;
-          top:0px;
-          left:0px;
-        }
-        .overall {
-          background: none !important;
         }
       </style>
 
@@ -121,8 +141,8 @@ export class FlyingButton extends HTMLElement {
         <div class="menu">
           <slot></slot>
         </div>
-        <div class="menu-button">
-          <img class="button-icon" src="logo.svg" alt="icon">
+        <div class="menu-button" title="">
+          <span class="icon-wrap"></span>
           <div class="handle"></div>
         </div>
       </div>`
@@ -265,9 +285,25 @@ export class FlyingButton extends HTMLElement {
    * @function connectedCallback
    * @returns {void}
    */
+  async _loadIcon (src) {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
+    }
+  }
+
   connectedCallback () {
     this.activeSlot = this.shadowRoot.querySelector('slot').assignedElements()[0]
-    this.$img.setAttribute('src', this.imgPath + '/' + this.activeSlot.getAttribute('src'))
+    const initialSrc = this.activeSlot?.getAttribute('src')
+    if (initialSrc) this._loadIcon(initialSrc)
+
     // capture click event on the button to manage the logic
     const onClickHandler = (ev) => {
       ev.stopPropagation()
@@ -276,35 +312,31 @@ export class FlyingButton extends HTMLElement {
           if (this.pressed) {
             this.setAttribute('opened', 'opened')
           } else {
-          // launch current action
             this.activeSlot.click()
             this.setAttribute('pressed', 'pressed')
           }
           break
-        case 'SE-BUTTON':
-        // change to the current action
-          this.$img.setAttribute('src', this.imgPath + '/' + ev.target.getAttribute('src'))
+        case 'SE-BUTTON': {
+          const newSrc = ev.target.getAttribute('src')
+          if (newSrc) this._loadIcon(newSrc)
           this.activeSlot = ev.target
           this.setAttribute('pressed', 'pressed')
-          // and close the menu
           this.$menu.classList.remove('open')
           break
+        }
         case 'DIV':
-        // this is a click on the handle so let's open/close the menu.
           if (this.opened) {
             this.removeAttribute('opened')
           } else {
             this.setAttribute('opened', 'opened')
-            // In case menu scroll on top or bottom position based popup position set
             const rect = this.getBoundingClientRect()
             this.$menu.style.top = rect.top + 'px'
           }
           break
         default:
-          console.error('unkonw nodeName for:', ev.target, ev.target.className)
+          console.error('unknown nodeName for:', ev.target, ev.target.className)
       }
     }
-    // capture event from slots
     svgEditor.$click(this, onClickHandler)
     svgEditor.$click(this.$handle, onClickHandler)
   }

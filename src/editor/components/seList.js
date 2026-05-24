@@ -1,43 +1,53 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
+:host {
+  display: inline-flex;
+  align-items: center;
+}
 label {
-  color: var(--text-color, #333333);
+  display: none; /* labels hidden in the new compact chrome */
 }
-
 #select-container {
-  margin-top: 10px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--icon, #4B5563);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-
 #select-container:hover {
-  background-color: var(--icon-bg-color-hover);
+  background: var(--icon-hover-bg, #EEF1F5);
+  color: var(--icon-hover, #0F172A);
 }
-
-#select-container::part(value) {
-  background-color: var(--main-bg-color);
-  color: var(--text-color, #333333);
-}
-
-#select-container::part(popup-toggle) {
+#options-container.closed {
   display: none;
 }
-::slotted(*) {
-  padding:0;
-  width:100%;
-}
-
-.closed {
-  display: none;
-}
-
 #options-container {
   position: fixed;
+  background: var(--chrome-bg, #FFFFFF);
+  border: 1px solid var(--chrome-border, #E6E8EC);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-
+::slotted(*) {
+  padding: 0;
+  width: 100%;
+}
 </style>
   <label>Label</label>
   <div id="select-container" tabindex="0">
@@ -46,7 +56,6 @@ label {
       <slot></slot>
     </div>
   </div>
-
 `
 /**
  * @class SeList
@@ -81,26 +90,35 @@ export class SeList extends HTMLElement {
     }
   }
 
-  updateSelectedValue = (newValue) => {
-    Array.from(this.items).forEach((element) => {
+  updateSelectedValue = async (newValue) => {
+    for (const element of Array.from(this.items)) {
       if (element.getAttribute('value') === newValue) {
         element.setAttribute('selected', true)
         if (element.hasAttribute('src')) {
-        // empty current selection children
+          // empty current selection children
           while (this.$selection.firstChild) { this.$selection.removeChild(this.$selection.firstChild) }
-          // replace selection child with image of new value
-          const img = document.createElement('img')
-          img.src = this.imgPath + '/' + element.getAttribute('src')
-          img.style.height = element.getAttribute('img-height')
-          img.setAttribute('title', t(element.getAttribute('title')))
-          this.$selection.append(img)
+          const src = element.getAttribute('src')
+          const url = `${this.imgPath}/${src}`
+          const svgEl = await fetchSvgEl(url)
+          if (svgEl) {
+            const h = element.getAttribute('img-height') || '22px'
+            svgEl.style.cssText = `height:${h};width:auto;display:block;`
+            svgEl.setAttribute('title', t(element.getAttribute('title') || ''))
+            this.$selection.append(svgEl)
+          } else {
+            const img = document.createElement('img')
+            img.src = url
+            img.style.height = element.getAttribute('img-height') || '22px'
+            img.setAttribute('title', t(element.getAttribute('title') || ''))
+            this.$selection.append(img)
+          }
         } else {
-          this.$selection.textContent = t(element.getAttribute('option'))
+          this.$selection.textContent = t(element.getAttribute('option') || '')
         }
       } else {
         element.setAttribute('selected', false)
       }
-    })
+    }
   }
 
   /**

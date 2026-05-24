@@ -1,55 +1,182 @@
-/* ── Light theme (default) ─────────────────────────────────────────── */
+/* ── Light Studio theme (default) ───────────────────────────────────── */
 :root,
 .svg_editor,
 .svg_editor.theme-light {
-  --main-bg-color: #ececec;
-  --text-color: #1a1a1a;
-  --border-color: #c4c4c4;
-  --canvas-bg-color: #ffffff;
-  --workarea-bg: #d4d4d4;
-  --layer-bg: #ffffff;
-  --layer-selected-bg: #cfe1f5;
-  --link-color: #19c;
-  --ruler-color: #d4d4d4;
-  --icon-bg-color: #ececec;
-  --icon-bg-color-hover: #d0d8de;
-  --input-color: #ffffff;
-  --dropdown-bg: #ffffff;
-  --dropdown-pressed-bg: #d0d8de;
-  --hover-highlight: #fff3a8;
-  --main-menu-bg: #f5f5f5;
-  --main-menu-shadow: rgba(0, 0, 0, 0.25);
-  --bevel-light: #ffffff;
-  --scrollbar-thumb: rgba(80, 80, 80, 0.4);
-  --orange-color: #f9bc01;
-  --icon-filter: none;
+  --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* Surfaces */
+  --app-bg:        #F4F5F7;
+  --chrome-bg:     #FFFFFF;
+  --chrome-border: #E6E8EC;
+  --canvas-bg:     #F8F9FB;
+  --ruler-bg:      #FFFFFF;
+  --paper-bg:      #FFFFFF;
+  --paper-border:  #DCDFE5;
+  --paper-radius:  4px;
+  --paper-shadow:
+    0 1px 2px rgba(20,25,35,0.05),
+    0 12px 28px -10px rgba(20,25,35,0.18),
+    0 30px 60px -30px rgba(20,25,35,0.25);
+
+  /* Text */
+  --fg:    #1B1F24;
+  --muted: #6B7280;
+
+  /* Icon states */
+  --icon:           #4B5563;
+  --icon-hover:     #0F172A;
+  --icon-hover-bg:  #EEF1F5;
+  --icon-active-bg: #E2E6EC;
+
+  /* Accent */
+  --accent:        #2962FF;
+  --accent-soft:   #E8EFFF;
+  --accent-border: #C7D7FF;
+  --active-shadow: 0 1px 2px rgba(41,98,255,0.18);
+
+  /* Brand pill */
+  --brand-bg:       #F6F7F9;
+  --brand-bg-hover: #EEF1F5;
+  --brand-border:   #E6E8EC;
+  --brand-fg:       #1B1F24;
+
+  /* File-name pill */
+  --file-bg:     #F4F5F7;
+  --file-border: #E6E8EC;
+
+  /* Group trays */
+  --group-bg:     #F6F7F9;
+  --group-border: #E6E8EC;
+
+  /* Number fields */
+  --field-bg:     #FFFFFF;
+  --field-border: #DDE1E7;
+
+  /* Swatches */
+  --swatch-bg:           #FFFFFF;
+  --swatch-border:       #C3C8D1;
+  --swatch-border-hover: #2962FF;
+  --swatch-inset:        rgba(0,0,0,0.18);
+  --swatch-shadow:       0 1px 2px rgba(20,25,35,0.08);
+  --checker:             rgba(0,0,0,0.07);
+
+  /* Rulers */
+  --ruler-tick: #B5BAC3;
+  --ruler-text: #8A8F99;
+
+  /* ── Legacy aliases (consumed by remaining code + components) ─────── */
+  --main-bg-color:       var(--chrome-bg);
+  --text-color:          var(--fg);
+  --border-color:        var(--chrome-border);
+  --canvas-bg-color:     var(--paper-bg);
+  --workarea-bg:         var(--canvas-bg);
+  --layer-bg:            var(--chrome-bg);
+  --layer-selected-bg:   var(--accent-soft);
+  --link-color:          var(--accent);
+  --ruler-color:         var(--ruler-bg);
+  --icon-bg-color:       transparent;
+  --icon-bg-color-hover: var(--icon-hover-bg);
+  --input-color:         var(--field-bg);
+  --dropdown-bg:         var(--chrome-bg);
+  --dropdown-pressed-bg: var(--icon-hover-bg);
+  --hover-highlight:     var(--icon-hover-bg);
+  --main-menu-bg:        var(--chrome-bg);
+  --main-menu-shadow:    rgba(0,0,0,0.12);
+  --bevel-light:         var(--chrome-border);
+  --scrollbar-thumb:     rgba(80,80,80,0.3);
+  --orange-color:        var(--accent);
   --global-se-spin-input-width: 82px;
-  --top-toolbar-min-height: 80px;
+  --top-toolbar-min-height: 56px;
 }
 
-/* ── Dark theme ────────────────────────────────────────────────────── */
+/* ── Dark Studio theme ──────────────────────────────────────────────── */
 .svg_editor.theme-dark {
-  --main-bg-color: #2b2d31;
-  --text-color: #e6e6e6;
-  --border-color: #45474d;
-  --canvas-bg-color: #2b2d31;
-  --workarea-bg: #1e1f23;
-  --layer-bg: #232428;
-  --layer-selected-bg: #3a4a5e;
-  --link-color: #5bb0ff;
-  --ruler-color: #1e1f23;
-  --icon-bg-color: #2b2d31;
-  --icon-bg-color-hover: #3d4148;
-  --input-color: #1e1f23;
-  --dropdown-bg: #2b2d31;
-  --dropdown-pressed-bg: #3d4148;
-  --hover-highlight: #5a4d1a;
-  --main-menu-bg: #2b2d31;
-  --main-menu-shadow: rgba(0, 0, 0, 0.6);
-  --bevel-light: #3d4148;
-  --scrollbar-thumb: rgba(180, 180, 180, 0.3);
-  --orange-color: #f9bc01;
-  --icon-filter: invert(0.88) hue-rotate(180deg);
+  --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* Surfaces */
+  --app-bg:        #16181D;
+  --chrome-bg:     #1E2026;
+  --chrome-border: #2C2F37;
+  --canvas-bg:     #0F1115;
+  --ruler-bg:      #1A1C22;
+  --paper-bg:      #FAFAF8;
+  --paper-border:  #1A1C22;
+  --paper-radius:  4px;
+  --paper-shadow:
+    0 1px 2px rgba(0,0,0,0.4),
+    0 14px 36px -10px rgba(0,0,0,0.5),
+    0 40px 80px -30px rgba(0,0,0,0.65);
+
+  /* Text */
+  --fg:    #ECEEF2;
+  --muted: #9098A5;
+
+  /* Icon states */
+  --icon:           #B7BDC8;
+  --icon-hover:     #FFFFFF;
+  --icon-hover-bg:  #2A2D35;
+  --icon-active-bg: #353944;
+
+  /* Accent */
+  --accent:        #F6B23A;
+  --accent-soft:   #3A2E18;
+  --accent-border: #5A4422;
+  --active-shadow: 0 1px 0 rgba(246,178,58,0.15), 0 0 0 1px rgba(246,178,58,0.18) inset;
+
+  /* Brand pill */
+  --brand-bg:       #25282F;
+  --brand-bg-hover: #2C2F37;
+  --brand-border:   #353944;
+  --brand-fg:       #ECEEF2;
+
+  /* File-name pill */
+  --file-bg:     #16181D;
+  --file-border: #2C2F37;
+
+  /* Group trays */
+  --group-bg:     #181A20;
+  --group-border: #2C2F37;
+
+  /* Number fields */
+  --field-bg:     #14161A;
+  --field-border: #2C2F37;
+
+  /* Swatches */
+  --swatch-bg:           #2F333C;
+  --swatch-border:       #6A7180;
+  --swatch-border-hover: #F6B23A;
+  --swatch-inset:        rgba(255,255,255,0.22);
+  --swatch-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(0,0,0,0.35);
+  --checker: rgba(255,255,255,0.06);
+
+  /* Rulers */
+  --ruler-tick: #4A4F5A;
+  --ruler-text: #7A8190;
+
+  /* ── Legacy aliases ───────────────────────────────────────────────── */
+  --main-bg-color:       var(--chrome-bg);
+  --text-color:          var(--fg);
+  --border-color:        var(--chrome-border);
+  --canvas-bg-color:     var(--paper-bg);
+  --workarea-bg:         var(--canvas-bg);
+  --layer-bg:            var(--chrome-bg);
+  --layer-selected-bg:   var(--accent-soft);
+  --link-color:          var(--accent);
+  --ruler-color:         var(--ruler-bg);
+  --icon-bg-color:       transparent;
+  --icon-bg-color-hover: var(--icon-hover-bg);
+  --input-color:         var(--field-bg);
+  --dropdown-bg:         var(--chrome-bg);
+  --dropdown-pressed-bg: var(--icon-hover-bg);
+  --hover-highlight:     var(--icon-hover-bg);
+  --main-menu-bg:        var(--chrome-bg);
+  --main-menu-shadow:    rgba(0,0,0,0.5);
+  --bevel-light:         var(--chrome-border);
+  --scrollbar-thumb:     rgba(180,180,180,0.25);
+  --orange-color:        var(--accent);
 }
 
 .svg_editor * {
@@ -59,26 +186,36 @@
 .svg_editor {
   display: grid;
   grid-template-rows: minmax(var(--top-toolbar-min-height), auto) 15px 1fr 40px;
-  grid-template-columns: 40px 15px 50px 1fr 15px;
+  grid-template-columns: 56px 15px 50px 1fr 15px;
   grid-template-areas:
     "main main   main top top"
     "left corner rulerX rulerX side"
     "left rulerY workarea workarea side"
     "left bottom bottom bottom bottom";
   font-size: 8pt;
-  background: var(--main-bg-color);
-  font-family: Verdana, Helvetica, Arial;
-  color: var(--text-color);
+  background: var(--app-bg);
+  font-family: var(--ui-font, 'Inter', -apple-system, system-ui, sans-serif);
+  color: var(--fg);
   user-select: text;
   width: 100%;
   height: 100%;
 }
 
+/* ── Filename pill ────────────────────────────────────────────────── */
 #title_panel>p {
-  color: var(--text-color);
-  padding-left: 5px;
-  padding-right: 3px;
-  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--file-bg);
+  border: 1px solid var(--file-border);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  cursor: text;
+  margin: 0;
 }
 
 /* class to open the right panel */
@@ -95,8 +232,8 @@
 
 #workarea {
   grid-area: workarea;
-  background-color: var(--workarea-bg);
-  border: 1px solid var(--border-color);
+  background-color: var(--canvas-bg);
+  border: none;
   overflow: auto;
   text-align: center;
 }
@@ -114,13 +251,37 @@
   grid-area: side;
 }
 
+/* ── Panel handle ─────────────────────────────────────────────────── */
 #sidepanel_handle {
   writing-mode: vertical-rl;
-  text-orientation: upright;
-  color: var(--text-color);
+  text-orientation: mixed;
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--muted);
   position: absolute;
-  cursor: pointer;
+  right: 0;
   top: 50%;
+  cursor: pointer;
+  height: 120px;
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-right: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.12s, color 0.12s;
+  z-index: 4;
+}
+#sidepanel_handle:hover {
+  background: var(--icon-hover-bg);
+  color: var(--icon-hover);
 }
 
 .svg_editor:not(.open) #sidepanel_content {
@@ -224,87 +385,99 @@ hr {
   position: relative;
 }
 
-/* Main button
-—————————————————————————————*/
-
+/* ── Brand pill / main button ─────────────────────────────────────── */
 #main_button {
   grid-area: main;
-  color: #fff;
-  border-radius: 3px;
-  padding-block: 2px;
-  padding-left: 3px;
-  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-border);
+  border-right: 1px solid var(--chrome-border);
 }
 
 #main_icon {
-  position: relative;
-  top: -2px;
-  left: -2px;
-  width: 95px;
-  line-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 8px;
+  border-radius: 10px;
+  background: var(--brand-bg);
+  border: 1px solid var(--brand-border);
+  color: var(--brand-fg);
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+  height: 36px;
 }
 
 #main_icon:hover {
-  background: var(--icon-bg-color-hover) !important;
+  background: var(--brand-bg-hover) !important;
 }
 
 #main_icon.buttondown {
-  background: var(--icon-bg-color-hover) !important;
-  -moz-box-shadow: none !important;
-  -webkit-box-shadow: none !important;
+  background: var(--brand-bg-hover) !important;
   box-shadow: none !important;
-  border-radius: 3px 3px 0 0;
+  border-radius: 10px;
 }
 
 #logo {
-  margin-top: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
 }
 
+#logo svg,
 #logo img {
-  border: 0;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 
-#main_icon>div {
-  float: left;
+/* Logo img should keep its natural appearance */
+#logo img { filter: none; }
+
+#main_icon > div {
+  display: inline-flex;
+  align-items: center;
 }
 
 #main_button .dropdown {
-  position: absolute;
-  right: 7px;
-  top: 4px;
+  opacity: 0.55;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
 }
 
 #main_icon span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  display: block;
-  z-index: 2;
-  font-weight: bold;
-  padding-left: 34px;
-  line-height: 32px;
-  font-family: sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  color: var(--brand-fg);
+  font-family: var(--ui-font, inherit);
+  display: inline;
+  position: static;
+  padding: 0;
+  line-height: normal;
 }
 
+/* ── Main menu dropdown ───────────────────────────────────────────── */
 #main_menu {
   z-index: 12;
-  background: var(--main-menu-bg);
-  color: var(--text-color);
+  background: var(--chrome-bg);
+  color: var(--fg);
   position: relative;
   width: 230px;
-  padding: 5px;
-  -moz-box-shadow: var(--main-menu-shadow) 1px 1px 4px;
-  -webkit-box-shadow: var(--main-menu-shadow) 1px 1px 4px;
-  box-shadow: var(--main-menu-shadow) 1px 1px 4px;
+  padding: 6px;
+  box-shadow: 0 4px 16px -2px var(--main-menu-shadow);
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
   font-size: 1.1em;
   display: none;
   overflow: hidden;
   clear: both;
-  top: -9px;
+  top: 4px;
 }
 
 #main_menu ul,
@@ -315,17 +488,16 @@ hr {
 }
 
 #main_menu li {
-  /*  height: 35px;*/
   line-height: 22px;
-  padding-top: 7px;
-  padding-left: 7px;
-  margin: -5px;
+  padding: 7px 10px;
   overflow: auto;
   cursor: pointer;
+  border-radius: 7px;
+  color: var(--fg);
 }
 
 #main_menu li:hover {
-  background: var(--hover-highlight);
+  background: var(--icon-hover-bg);
 }
 
 #main_menu li>div {
@@ -339,32 +511,72 @@ hr {
 
 /*—————————————————————————————*/
 
+/* ── Top toolbar bar ──────────────────────────────────────────────── */
 #tools_top {
   grid-area: top;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   align-content: flex-start;
-  background-color: var(--main-bg-color);
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-border);
   min-height: var(--top-toolbar-min-height);
+  padding: 0 10px;
+  gap: 6px;
+  position: relative;
+  z-index: 5;
 }
 
-#tools_top>* {
+#tools_top > * {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  background-color: var(--main-bg-color);
+  align-items: center;
+  gap: 2px;
 }
 
-/*—————————————————————————————*/
+/* History group: push to the right */
+#history_panel {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: 10px;
+}
 
+/* Title panel */
+#title_panel {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Editor panel (source/wireframe) */
+#editor_panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: 10px;
+}
+
+/* ── Bottom bar ───────────────────────────────────────────────────── */
 #tools_bottom {
   grid-area: bottom;
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--chrome-bg);
+  border-top: 1px solid var(--chrome-border);
+  height: 56px;
   scrollbar-width: thin;
   /* Firefox */
 }
@@ -380,23 +592,22 @@ hr {
   margin-bottom: 8px;
 }
 
-#zoom {
-  color: var(--text-color);
-  background-color: var(--main-bg-color);
-  border: none;
-}
-
-/*—————————————————————————————*/
-
+/* ── Left toolbar ─────────────────────────────────────────────────── */
 #tools_left {
   grid-area: left;
-  border-right: none;
+  border-right: 1px solid var(--chrome-border);
+  background: var(--chrome-bg);
   margin-left: auto;
   margin-right: auto;
   overflow-y: scroll;
   scrollbar-width: none;
   /* Firefox */
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 4px;
 }
 
 #tools_left::-webkit-scrollbar {
@@ -561,9 +772,12 @@ input[type=text] {
 }
 
 .tool_sep {
-  border-left: 1px outset var(--border-color);
-  margin: 5px 1px;
-  height: 30px;
+  width: 1px;
+  height: 22px;
+  background: var(--chrome-border);
+  border: none;
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .width_label {
@@ -581,9 +795,10 @@ input[type=text] {
 
 #palette {
   margin-left: auto;
-  margin-right: 16px;
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 #stroke_expand {
@@ -666,20 +881,20 @@ ul li.current {
   width: 24px;
 }
 
-/* ── Icon filter for dark theme ────────────────────────────────────── */
-/* CSS custom properties inherit through shadow DOM boundaries, so      */
-/* --icon-filter set on .svg_editor propagates into se-* components.   */
-/* Each component's img rule must reference var(--icon-filter, none).  */
+/* ── SVG icon color (currentColor-based icons, no filter needed) ────── */
+/* Icons are inline SVGs using stroke="currentColor". Color is set       */
+/* via color: var(--icon) on the host element; pressed/active state      */
+/* switches to color: var(--accent) via the component's own styles.      */
 
-/* Direct (non-shadow-DOM) icons in the main document */
-#tools_left img,
-#tools_top img,
-#tools_bottom img {
-  filter: var(--icon-filter, none);
-}
+/* Inline SVGs in #tools_left / top / bottom inherit color from their
+   se-button host which sets color: var(--icon) in its shadow template. */
 
-/* Preserve the svgedit brand logo regardless of theme */
-#main_icon img,
-#logo img {
-  filter: none;
+/* Workarea canvas SVG content should not inherit editor colors */
+#svgcontent { color: unset; }
+
+/* Scrollbar theming */
+#zoom {
+  color: var(--fg);
+  background-color: var(--chrome-bg);
+  border: none;
 }
