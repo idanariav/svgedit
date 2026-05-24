@@ -196,7 +196,8 @@ export default class ConfigObj {
       'ext-polystar',
       'ext-storage',
       'ext-opensave',
-      'ext-layer_view'
+      'ext-layer_view',
+      'ext-theme-toggle'
     ]
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying
