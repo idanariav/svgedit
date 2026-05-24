@@ -12,22 +12,17 @@ export class SeEditPrefsDialog extends HTMLElement {
   constructor () {
     super()
     // create the shadowDom and insert the template
-    this.colorBlocks = ['#FFF', '#888', '#000', 'chessboard']
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$dialog = this._shadowRoot.querySelector('#svg_prefs')
     this.$saveBtn = this._shadowRoot.querySelector('#tool_prefs_save')
     this.$cancelBtn = this._shadowRoot.querySelector('#tool_prefs_cancel')
     this.$langSelect = this._shadowRoot.querySelector('#lang_select')
-    this.$bgBlocks = this._shadowRoot.querySelector('#bg_blocks')
-    this.$bgColor = this._shadowRoot.querySelector('#canvas_bg_color')
-    this.$bgURL = this._shadowRoot.querySelector('#canvas_bg_url')
     this.$gridSnappingOn = this._shadowRoot.querySelector('#grid_snapping_on')
     this.$gridSnappingStep = this._shadowRoot.querySelector('#grid_snapping_step')
     this.$gridColor = this._shadowRoot.querySelector('#grid_color')
     this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
-    this.$themeSelect = this._shadowRoot.querySelector('#theme_select')
   }
 
   /**
@@ -40,9 +35,6 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('common-cancel', i18next.t('common.cancel'))
     this.setAttribute('config-editor_prefs', i18next.t('config.editor_prefs'))
     this.setAttribute('config-language', i18next.t('config.language'))
-    this.setAttribute('config-background', i18next.t('config.background'))
-    this.setAttribute('common-url', i18next.t('common.url'))
-    this.setAttribute('config-editor_bg_note', i18next.t('config.editor_bg_note'))
     this.setAttribute('config-grid', i18next.t('config.grid'))
     this.setAttribute('config-snapping_onoff', i18next.t('config.snapping_onoff'))
     this.setAttribute('config-snapping_stepsize', i18next.t('config.snapping_stepsize'))
@@ -58,7 +50,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'lang', 'theme', 'canvasbg', 'bgurl', 'gridsnappingon', 'gridsnappingstep', 'gridcolor', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-language', 'config-background', 'common-url', 'config-editor_bg_note', 'config-grid', 'config-snapping_onoff', 'config-snapping_stepsize', 'config-grid_color', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
+    return ['dialog', 'lang', 'gridsnappingon', 'gridsnappingstep', 'gridcolor', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-language', 'config-grid', 'config-snapping_onoff', 'config-snapping_stepsize', 'config-grid_color', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
   }
 
   /**
@@ -70,8 +62,6 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   attributeChangedCallback (name, oldValue, newValue) {
     if (oldValue === newValue) return
-    const blocks = this.$bgBlocks.querySelectorAll('div')
-    const curBg = 'cur_background'
     let node
     switch (name) {
       case 'dialog':
@@ -83,31 +73,6 @@ export class SeEditPrefsDialog extends HTMLElement {
         break
       case 'lang':
         this.$langSelect.value = newValue
-        break
-      case 'theme':
-        this.$themeSelect.value = newValue
-        break
-      case 'canvasbg':
-        if (!newValue) {
-          if (blocks.length > 0) {
-            blocks[0].classList.add(curBg)
-          }
-        } else {
-          blocks.forEach(function (blk) {
-            const isBg = blk.dataset.bgColor === newValue
-            if (isBg) {
-              blk.classList.add(curBg)
-            } else {
-              blk.classList.remove(curBg)
-            }
-          })
-          if (newValue !== 'chessboard') {
-            this.$bgColor.value = newValue
-          }
-        }
-        break
-      case 'bgurl':
-        this.$bgURL.value = newValue
         break
       case 'gridsnappingon':
         if (newValue === 'true') {
@@ -144,18 +109,6 @@ export class SeEditPrefsDialog extends HTMLElement {
         break
       case 'config-language':
         node = this._shadowRoot.querySelector('#svginfo_lang')
-        node.textContent = newValue
-        break
-      case 'config-background':
-        node = this._shadowRoot.querySelector('#svginfo_change_background')
-        node.textContent = newValue
-        break
-      case 'common-url':
-        node = this._shadowRoot.querySelector('#svginfo_bg_url')
-        node.textContent = newValue
-        break
-      case 'config-editor_bg_note':
-        node = this._shadowRoot.querySelector('#svginfo_bg_note')
         node.textContent = newValue
         break
       case 'config-grid':
@@ -206,54 +159,6 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   set lang (value) {
     this.setAttribute('lang', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get theme () {
-    return this.getAttribute('theme')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set theme (value) {
-    this.setAttribute('theme', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get canvasbg () {
-    return this.getAttribute('canvasbg')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set canvasbg (value) {
-    this.setAttribute('canvasbg', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get bgurl () {
-    return this.getAttribute('bgurl')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set bgurl (value) {
-    this.setAttribute('bgurl', value)
   }
 
   /**
@@ -366,15 +271,10 @@ export class SeEditPrefsDialog extends HTMLElement {
       this.dispatchEvent(closeEvent)
     }
     const onSaveHandler = () => {
-      const selectedBlock = this.$bgBlocks.querySelector('.cur_background')
-      const color = selectedBlock ? selectedBlock.dataset.bgColor : this.$bgColor.value
       const closeEvent = new CustomEvent('change', {
         detail: {
           lang: this.$langSelect.value,
-          theme: this.$themeSelect.value,
           dialog: 'close',
-          bgcolor: color,
-          bgurl: this.$bgURL.value,
           gridsnappingon: this.$gridSnappingOn.checked,
           gridsnappingstep: this.$gridSnappingStep.value,
           showrulers: this.$showRulers.checked,
@@ -383,35 +283,6 @@ export class SeEditPrefsDialog extends HTMLElement {
       })
       this.dispatchEvent(closeEvent)
     }
-    // Set up editor background functionality
-    const currentObj = this
-    this.colorBlocks.forEach(function (e) {
-      const newdiv = document.createElement('div')
-      if (e === 'chessboard') {
-        newdiv.dataset.bgColor = e
-        newdiv.style.backgroundImage = 'url(data:image/gif;base64,R0lGODlhEAAQAIAAAP///9bW1iH5BAAAAAAALAAAAAAQABAAAAIfjG+gq4jM3IFLJgpswNly/XkcBpIiVaInlLJr9FZWAQA7)'
-        newdiv.classList.add('color_block')
-      } else {
-        newdiv.dataset.bgColor = e // setAttribute('data-bgcolor', e);
-        newdiv.style.backgroundColor = e
-        newdiv.classList.add('color_block')
-      }
-      currentObj.$bgBlocks.append(newdiv)
-    })
-    const blocks = this.$bgBlocks.querySelectorAll('div')
-    const curBg = 'cur_background'
-    blocks.forEach(function (blk) {
-      svgEditor.$click(blk, function () {
-        blocks.forEach((el) => el.classList.remove(curBg))
-        blk.classList.add(curBg)
-        if (blk.dataset.bgColor !== 'chessboard') {
-          currentObj.$bgColor.value = blk.dataset.bgColor
-        }
-      })
-    })
-    currentObj.$bgColor.addEventListener('input', function () {
-      blocks.forEach((el) => el.classList.remove(curBg))
-    })
     svgEditor.$click(this.$saveBtn, onSaveHandler)
     svgEditor.$click(this.$cancelBtn, onCancelHandler)
     this.$dialog.addEventListener('close', onCancelHandler)

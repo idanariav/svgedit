@@ -1,8 +1,6 @@
 /* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
-import { jGraduate } from './components/jgraduate/jQuery.jGraduate.js'
-import { applyTheme } from './themeUtil.js'
 
 const { $id, $click, convertUnit, isValidUnit } = SvgCanvas
 const homePage = 'https://github.com/SVG-Edit/svgedit'
@@ -81,28 +79,12 @@ class MainMenu {
   async savePreferences (e) {
     const {
       lang,
-      theme,
-      bgcolor,
-      bgurl,
       gridsnappingon,
       gridsnappingstep,
       gridcolor,
       showrulers,
       baseunit
     } = e.detail
-    // Apply and persist theme
-    if (theme) {
-      this.editor.configObj.pref('theme', theme)
-      applyTheme(theme, this.editor.$svgEditor)
-    }
-    // Set background
-    this.editor.setBackground(bgcolor, bgurl)
-    const bgColorPicker = $id('bg_color')
-    if (bgColorPicker && bgcolor && bgcolor !== 'chessboard') {
-      bgColorPicker.setPaint(
-        new jGraduate.Paint({ alpha: 100, solidColor: bgcolor.replace('#', '') })
-      )
-    }
 
     // set language
     if (lang && lang !== this.editor.configObj.pref('lang')) {
@@ -206,12 +188,6 @@ class MainMenu {
     }
     this.editor.configObj.preferences = true
     const $editDialog = $id('se-edit-prefs')
-    // Update background color with current one
-    const canvasBg = this.editor.configObj.curPrefs.bkgd_color
-    const url = this.editor.configObj.pref('bkgd_url')
-    if (url) {
-      $editDialog.setAttribute('bgurl', url)
-    }
     $editDialog.setAttribute(
       'gridsnappingon',
       this.editor.configObj.curConfig.gridSnapping
@@ -224,8 +200,6 @@ class MainMenu {
       'gridcolor',
       this.editor.configObj.curConfig.gridColor
     )
-    $editDialog.setAttribute('canvasbg', canvasBg)
-    $editDialog.setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     $editDialog.setAttribute('dialog', 'open')
   }
 
