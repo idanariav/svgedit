@@ -404,7 +404,7 @@ export const css = /* css */`
   /* ── Preset palette ─────────────────────────────────────────────────────── */
   .cp-preset {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     gap: 4px;
     padding: 8px;
     background: var(--group-bg);

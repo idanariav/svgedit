@@ -5,12 +5,28 @@
 
 import { hsvToRgb, rgbToHsv, hexToHsv, hsvToHex } from '../../PaintModel.js'
 
+// 72 presets in a 12-column grid: 5 rows of saturated colors (one column per hue,
+// one row per lightness level) + 1 row of grays from white to black.
+// Hue order: red → orange → yellow → chartreuse → green → spring → cyan → azure → blue → violet → magenta → rose
 const PRESETS = [
-  '#000000', '#3F3F3F', '#7A7A7A', '#B5B5B5', '#D5D5D5', '#E5E5E5', '#F2F2F2', '#FFFFFF',
-  '#7F0000', '#B71C1C', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#0A84FF',
-  '#5856D6', '#AF52DE', '#FF2D55', '#1B5E20', '#004D40', '#003F66', '#0D1B5E', '#2E1065',
-  '#FFB3B3', '#FFE0B5', '#FFF0B5', '#C9F2D5', '#B5EFEB', '#C2E5EE', '#C7D7FF', '#D9D7F5',
-  '#FFC9D6', '#7B3F00', '#A66A2E', '#C99063', '#D7B98C', '#EDD8B5', '#F5E4C3', '#4A0D2E'
+  // Row 1 — tints (s=33%, v=100%)
+  '#FFABAB', '#FFD5AB', '#FFFFAB', '#D5FFAB', '#ABFFAB', '#ABFFD5',
+  '#ABFFFF', '#ABD5FF', '#ABABFF', '#D5ABFF', '#FFABFF', '#FFABD5',
+  // Row 2 — medium saturation (s=66%, v=100%)
+  '#FF5757', '#FFAB57', '#FFFF57', '#ABFF57', '#57FF57', '#57FFAB',
+  '#57FFFF', '#57ABFF', '#5757FF', '#AB57FF', '#FF57FF', '#FF57AB',
+  // Row 3 — pure hues (s=100%, v=100%)
+  '#FF0000', '#FF8000', '#FFFF00', '#80FF00', '#00FF00', '#00FF80',
+  '#00FFFF', '#0080FF', '#0000FF', '#8000FF', '#FF00FF', '#FF0080',
+  // Row 4 — medium dark (s=100%, v=75%)
+  '#BF0000', '#BF6000', '#BFBF00', '#60BF00', '#00BF00', '#00BF60',
+  '#00BFBF', '#0060BF', '#0000BF', '#6000BF', '#BF00BF', '#BF0060',
+  // Row 5 — dark shades (s=100%, v=50%)
+  '#800000', '#804000', '#808000', '#408000', '#008000', '#008040',
+  '#008080', '#004080', '#000080', '#400080', '#800080', '#800040',
+  // Row 6 — neutrals: white → black
+  '#FFFFFF', '#E8E8E8', '#D1D1D1', '#BABABA', '#A3A3A3', '#8C8C8C',
+  '#737373', '#5C5C5C', '#454545', '#2E2E2E', '#171717', '#000000'
 ]
 
 /**
