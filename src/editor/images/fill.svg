@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <path d="m19 11-8-8-8.5 8.5a5.5 5.5 0 0 0 7.78 7.78L19 11z"/>
-  <path d="m21.5 16.5a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Wand/pen handle diagonal -->
+  <line x1="6" y1="15" x2="20" y2="4"/>
+  <!-- Diamond nib at tip -->
+  <path d="M18 2l4 4-2 2-4-4z"/>
+  <!-- Bucket body -->
+  <path d="M2 15h7v7H2z"/>
+  <!-- Bucket opening (angled) -->
+  <path d="M2 15l2-3h3l2 3"/>
 </svg>
