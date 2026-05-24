@@ -3,6 +3,7 @@ export default {
   dir: 'ltr',
   common: {
     ok: 'OK',
+    apply: 'Apply',
     cancel: 'Cancel',
     key_backspace: 'Backspace',
     key_del: 'Del',
@@ -283,7 +284,14 @@ export default {
     jgraduate_set_angle: 'Click to set Angle',
     jgraduate_deg: 'deg:',
     jgraduate_opac: 'Opac:',
-    jgraduate_set_opac: 'Click to set Opac'
+    jgraduate_set_opac: 'Click to set Opac',
+    gradient_mode_two: 'Two color',
+    gradient_mode_mono: 'Mono',
+    gradient_mode_multi: 'Multi-stop',
+    mono_settings: 'Mono Settings',
+    from_white: 'White',
+    from_black: 'Black',
+    from_transparent: 'Transparent'
   },
   notification: {
     invalidAttrValGiven: 'Invalid value given',

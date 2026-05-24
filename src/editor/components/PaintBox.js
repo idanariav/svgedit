@@ -1,4 +1,4 @@
-import { jGraduate } from './jgraduate/jQuery.jGraduate.js'
+import Paint from '@svgedit/svgcanvas/core/paint.js'
 /**
  *
  */
@@ -81,7 +81,7 @@ class PaintBox {
     } else if (color.startsWith('#')) {
       opts.solidColor = color.substr(1)
     }
-    return new jGraduate.Paint(opts)
+    return new Paint(opts)
   }
 
   /**

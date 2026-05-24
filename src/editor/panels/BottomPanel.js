@@ -1,5 +1,5 @@
 import SvgCanvas from '@svgedit/svgcanvas'
-import { jGraduate } from '../components/jgraduate/jQuery.jGraduate.js'
+import Paint from '@svgedit/svgcanvas/core/paint.js'
 import BottomPanelHtml from './BottomPanel.html'
 
 const { $id } = SvgCanvas
@@ -181,8 +181,8 @@ class BottomPanel {
     // Webkit-based browsers returned 'initial' here for no stroke
     const paint =
       color === 'none'
-        ? new jGraduate.Paint()
-        : new jGraduate.Paint({ alpha: 100, solidColor: color.substr(1) })
+        ? new Paint()
+        : new Paint({ alpha: 100, solidColor: color.substr(1) })
     if (picker === 'fill') {
       $id('fill_color').setPaint(paint)
     } else {
@@ -212,10 +212,10 @@ class BottomPanel {
     $id('palette').init(i18next)
     const { curConfig } = this.editor.configObj
     $id('fill_color').setPaint(
-      new jGraduate.Paint({ alpha: 100, solidColor: curConfig.initFill.color })
+      new Paint({ alpha: 100, solidColor: curConfig.initFill.color })
     )
     $id('stroke_color').setPaint(
-      new jGraduate.Paint({
+      new Paint({
         alpha: 100,
         solidColor: curConfig.initStroke.color
       })
@@ -249,7 +249,7 @@ class BottomPanel {
     // Initialize background color picker from saved preference
     const initBgColor = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
     $id('bg_color').setPaint(
-      new jGraduate.Paint({ alpha: 100, solidColor: initBgColor.replace('#', '') })
+      new Paint({ alpha: 100, solidColor: initBgColor.replace('#', '') })
     )
     $id('bg_color').addEventListener('change', (evt) => {
       this.handleBgColorPicker(evt)

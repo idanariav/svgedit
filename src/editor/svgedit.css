@@ -60,6 +60,27 @@
   --swatch-shadow:       0 1px 2px rgba(20,25,35,0.08);
   --checker:             rgba(0,0,0,0.07);
 
+  /* Color picker tokens */
+  --cp-modal-bg:           #FFFFFF;
+  --cp-head-bg:            #FAFBFC;
+  --cp-stage-bg:           #ECEEF2;
+  --cp-backdrop:           rgba(20, 24, 35, 0.06);
+  --cp-field-hover:        #B6BFCE;
+  --cp-focus-ring:         rgba(41, 98, 255, 0.18);
+  --cp-tab-shadow:         0 1px 2px rgba(0,0,0,.06), 0 0 0 1px rgba(20,24,35,.04);
+  --cp-stop-ring:          rgba(20, 24, 35, .30);
+  --cp-danger:             #E11D48;
+  --cp-danger-bg:          #FEE9EE;
+  --cp-btn-primary-fg:     #FFFFFF;
+  --cp-btn-primary-shadow: rgba(41, 98, 255, .28);
+  --cp-dial-bg:            #F4F5F7;
+  --cp-dial-border:        #DDE1E7;
+  --cp-dial-tick:          #B6BFCE;
+  --cp-swatch-bg:          #FFFFFF;
+  --cp-swatch-border:      #C3C8D1;
+  --cp-swatch-inset:       rgba(0, 0, 0, .18);
+  --cp-checker:            rgba(0, 0, 0, .07);
+
   /* Rulers */
   --ruler-tick: #B5BAC3;
   --ruler-text: #8A8F99;
@@ -151,6 +172,27 @@
     0 1px 2px rgba(0,0,0,0.5),
     0 0 0 1px rgba(0,0,0,0.35);
   --checker: rgba(255,255,255,0.06);
+
+  /* Color picker tokens */
+  --cp-modal-bg:           #22252C;
+  --cp-head-bg:            #1E2026;
+  --cp-stage-bg:           #0F1115;
+  --cp-backdrop:           rgba(0, 0, 0, .5);
+  --cp-field-hover:        #4B5160;
+  --cp-focus-ring:         rgba(246, 178, 58, .22);
+  --cp-tab-shadow:         0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.04);
+  --cp-stop-ring:          rgba(0, 0, 0, .6);
+  --cp-danger:             #FB7185;
+  --cp-danger-bg:          #3A1A22;
+  --cp-btn-primary-fg:     #1A1208;
+  --cp-btn-primary-shadow: rgba(246, 178, 58, .30);
+  --cp-dial-bg:            #1A1C22;
+  --cp-dial-border:        #353944;
+  --cp-dial-tick:          #4B5160;
+  --cp-swatch-bg:          #2F333C;
+  --cp-swatch-border:      #6A7180;
+  --cp-swatch-inset:       rgba(255, 255, 255, .22);
+  --cp-checker:            rgba(255, 255, 255, .06);
 
   /* Rulers */
   --ruler-tick: #4A4F5A;
