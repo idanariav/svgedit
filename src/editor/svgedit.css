@@ -8,7 +8,7 @@
   --app-bg:        #F4F5F7;
   --chrome-bg:     #FFFFFF;
   --chrome-border: #E6E8EC;
-  --canvas-bg:     #F8F9FB;
+  --canvas-bg:     #E8ECF2;
   --ruler-bg:      #FFFFFF;
   --paper-bg:      #FFFFFF;
   --paper-border:  #DCDFE5;
@@ -245,6 +245,9 @@
   text-align: center;
   vertical-align: middle;
   position: relative;
+  box-shadow: var(--paper-shadow);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--paper-radius);
 }
 
 #sidepanels {
