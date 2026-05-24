@@ -660,13 +660,12 @@ div.jGraduate_Slider img {
     border-color: var(--swatch-border-hover, #2962FF);
     transform: translateY(-1px);
   }
-  /* Inner chip — fills the full swatch area */
+  /* Inner chip — fills the full swatch interior */
   #block {
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
     border-radius: 5px;
     box-shadow: inset 0 0 0 1px var(--swatch-inset, rgba(0,0,0,0.18));
-    display: block;
     pointer-events: none;
   }
   /* Stroke swatch variant — hollow band */
