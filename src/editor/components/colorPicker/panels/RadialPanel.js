@@ -93,15 +93,19 @@ export function createRadialPanel (paint, i18next) {
     pt.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       pt.setPointerCapture(e.pointerId)
-      pt.addEventListener('pointermove', (me) => {
+      const onMove = (me) => {
         const rect = previewWrap.getBoundingClientRect()
         const x = Math.min(1, Math.max(0, (me.clientX - rect.left) / rect.width))
         const y = Math.min(1, Math.max(0, (me.clientY - rect.top) / rect.height))
         onUpdate(x, y)
         _updatePreview()
-      })
+      }
+      pt.addEventListener('pointermove', onMove)
       pt.addEventListener('pointerup', () => {
-        pt.removeEventListener('pointermove', () => {})
+        pt.removeEventListener('pointermove', onMove)
+      }, { once: true })
+      pt.addEventListener('pointercancel', () => {
+        pt.removeEventListener('pointermove', onMove)
       }, { once: true })
     })
   }

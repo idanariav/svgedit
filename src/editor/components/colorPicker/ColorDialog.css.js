@@ -226,7 +226,9 @@ export const css = /* css */`
     flex-direction: column;
     gap: 12px;
   }
-  .cp-canvas-row { display: flex; gap: 14px; }
+  /* Grid gives explicit column widths so aspect-ratio on the spectrum
+     has a known base — no flex circular-dependency for cross-axis height. */
+  .cp-canvas-row { display: grid; grid-template-columns: 1fr 22px; gap: 14px; align-items: stretch; }
   .cp-side-col {
     width: 280px;
     flex: 0 0 280px;
@@ -238,7 +240,8 @@ export const css = /* css */`
   /* ── HSV box ────────────────────────────────────────────────────────────── */
   .cp-hsv {
     position: relative;
-    flex: 1;
+    /* Grid column 1 (1fr) sets the width; aspect-ratio then sets height. */
+    width: 100%;
     aspect-ratio: 1 / 0.86;
     border-radius: 10px;
     overflow: hidden;
@@ -261,7 +264,10 @@ export const css = /* css */`
   /* ── Hue strip ──────────────────────────────────────────────────────────── */
   .cp-hue {
     position: relative;
-    width: 22px;
+    /* Grid column 2 is 22px; height comes from grid row (aspect-ratio of spectrum). */
+    width: 100%;
+    min-height: 120px; /* fallback if grid row collapses */
+    z-index: 1;        /* always rendered above spectrum in any stacking context */
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--chrome-border);
@@ -285,7 +291,7 @@ export const css = /* css */`
   }
 
   /* ── Alpha strip ────────────────────────────────────────────────────────── */
-  .cp-alpha-row { display: flex; align-items: center; gap: 10px; height: 22px; }
+  .cp-alpha-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; height: 22px; }
   .cp-alpha-icon {
     width: 22px; height: 22px;
     display: inline-flex; align-items: center; justify-content: center;
