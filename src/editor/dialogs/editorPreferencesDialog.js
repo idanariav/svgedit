@@ -27,6 +27,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$gridColor = this._shadowRoot.querySelector('#grid_color')
     this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
+    this.$themeSelect = this._shadowRoot.querySelector('#theme_select')
   }
 
   /**
@@ -57,7 +58,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'lang', 'canvasbg', 'bgurl', 'gridsnappingon', 'gridsnappingstep', 'gridcolor', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-language', 'config-background', 'common-url', 'config-editor_bg_note', 'config-grid', 'config-snapping_onoff', 'config-snapping_stepsize', 'config-grid_color', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
+    return ['dialog', 'lang', 'theme', 'canvasbg', 'bgurl', 'gridsnappingon', 'gridsnappingstep', 'gridcolor', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-language', 'config-background', 'common-url', 'config-editor_bg_note', 'config-grid', 'config-snapping_onoff', 'config-snapping_stepsize', 'config-grid_color', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
   }
 
   /**
@@ -82,6 +83,9 @@ export class SeEditPrefsDialog extends HTMLElement {
         break
       case 'lang':
         this.$langSelect.value = newValue
+        break
+      case 'theme':
+        this.$themeSelect.value = newValue
         break
       case 'canvasbg':
         if (!newValue) {
@@ -202,6 +206,22 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   set lang (value) {
     this.setAttribute('lang', value)
+  }
+
+  /**
+   * @function get
+   * @returns {any}
+   */
+  get theme () {
+    return this.getAttribute('theme')
+  }
+
+  /**
+   * @function set
+   * @returns {void}
+   */
+  set theme (value) {
+    this.setAttribute('theme', value)
   }
 
   /**
@@ -351,6 +371,7 @@ export class SeEditPrefsDialog extends HTMLElement {
       const closeEvent = new CustomEvent('change', {
         detail: {
           lang: this.$langSelect.value,
+          theme: this.$themeSelect.value,
           dialog: 'close',
           bgcolor: color,
           bgurl: this.$bgURL.value,

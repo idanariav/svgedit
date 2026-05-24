@@ -1,16 +1,55 @@
-:root {
-  --main-bg-color: #72797A;
-  --text-color: #000000;
-  --border-color: #808080;
-  --canvas-bg-color: #B2B2B2;
+/* ── Light theme (default) ─────────────────────────────────────────── */
+:root,
+.svg_editor,
+.svg_editor.theme-light {
+  --main-bg-color: #ececec;
+  --text-color: #1a1a1a;
+  --border-color: #c4c4c4;
+  --canvas-bg-color: #ffffff;
+  --workarea-bg: #d4d4d4;
+  --layer-bg: #ffffff;
+  --layer-selected-bg: #cfe1f5;
   --link-color: #19c;
-  --ruler-color: #B2B2B2;
-  --icon-bg-color: #72797A;
-  --icon-bg-color-hover: #2B3C45;
-  --input-color: #B2B2B2;
+  --ruler-color: #d4d4d4;
+  --icon-bg-color: #ececec;
+  --icon-bg-color-hover: #d0d8de;
+  --input-color: #ffffff;
+  --dropdown-bg: #ffffff;
+  --dropdown-pressed-bg: #d0d8de;
+  --hover-highlight: #fff3a8;
+  --main-menu-bg: #f5f5f5;
+  --main-menu-shadow: rgba(0, 0, 0, 0.25);
+  --bevel-light: #ffffff;
+  --scrollbar-thumb: rgba(80, 80, 80, 0.4);
   --orange-color: #f9bc01;
+  --icon-filter: none;
   --global-se-spin-input-width: 82px;
   --top-toolbar-min-height: 80px;
+}
+
+/* ── Dark theme ────────────────────────────────────────────────────── */
+.svg_editor.theme-dark {
+  --main-bg-color: #2b2d31;
+  --text-color: #e6e6e6;
+  --border-color: #45474d;
+  --canvas-bg-color: #2b2d31;
+  --workarea-bg: #1e1f23;
+  --layer-bg: #232428;
+  --layer-selected-bg: #3a4a5e;
+  --link-color: #5bb0ff;
+  --ruler-color: #1e1f23;
+  --icon-bg-color: #2b2d31;
+  --icon-bg-color-hover: #3d4148;
+  --input-color: #1e1f23;
+  --dropdown-bg: #2b2d31;
+  --dropdown-pressed-bg: #3d4148;
+  --hover-highlight: #5a4d1a;
+  --main-menu-bg: #2b2d31;
+  --main-menu-shadow: rgba(0, 0, 0, 0.6);
+  --bevel-light: #3d4148;
+  --scrollbar-thumb: rgba(180, 180, 180, 0.3);
+  --orange-color: #f9bc01;
+  --icon-filter: invert(0.88) hue-rotate(180deg);
 }
 
 .svg_editor * {
@@ -36,7 +75,7 @@
 }
 
 #title_panel>p {
-  color: white;
+  color: var(--text-color);
   padding-left: 5px;
   padding-right: 3px;
   font-weight: bold;
@@ -56,7 +95,7 @@
 
 #workarea {
   grid-area: workarea;
-  background-color: #A0A0A0;
+  background-color: var(--workarea-bg);
   border: 1px solid var(--border-color);
   overflow: auto;
   text-align: center;
@@ -78,7 +117,7 @@
 #sidepanel_handle {
   writing-mode: vertical-rl;
   text-orientation: upright;
-  color: white;
+  color: var(--text-color);
   position: absolute;
   cursor: pointer;
   top: 50%;
@@ -103,7 +142,7 @@ hr {
 }
 
 #layersLabel {
-  color: white;
+  color: var(--text-color);
 }
 
 #layerpanel {
@@ -131,18 +170,18 @@ hr {
   width: 132px;
   border-collapse: collapse;
   border: 1px solid var(--border-color);
-  background-color: #FFFFFF;
+  background-color: var(--layer-bg);
 }
 
 #layerlist tr.layer {
-  background-color: #FFFFFF;
+  background-color: var(--layer-bg);
   margin: 0;
   padding: 0;
 }
 
 #layerlist tr.layersel {
   border: 1px solid var(--border-color);
-  background-color: #CCCCCC;
+  background-color: var(--layer-selected-bg);
 }
 
 #layerlist td.layervis {
@@ -206,11 +245,11 @@ hr {
 }
 
 #main_icon:hover {
-  background: #eee !important;
+  background: var(--icon-bg-color-hover) !important;
 }
 
 #main_icon.buttondown {
-  background: #eee !important;
+  background: var(--icon-bg-color-hover) !important;
   -moz-box-shadow: none !important;
   -webkit-box-shadow: none !important;
   box-shadow: none !important;
@@ -253,13 +292,14 @@ hr {
 
 #main_menu {
   z-index: 12;
-  background: #eee;
+  background: var(--main-menu-bg);
+  color: var(--text-color);
   position: relative;
   width: 230px;
   padding: 5px;
-  -moz-box-shadow: #555 1px 1px 4px;
-  -webkit-box-shadow: #555 1px 1px 4px;
-  box-shadow: #555 1px 1px 4px;
+  -moz-box-shadow: var(--main-menu-shadow) 1px 1px 4px;
+  -webkit-box-shadow: var(--main-menu-shadow) 1px 1px 4px;
+  box-shadow: var(--main-menu-shadow) 1px 1px 4px;
   font-size: 1.1em;
   display: none;
   overflow: hidden;
@@ -285,7 +325,7 @@ hr {
 }
 
 #main_menu li:hover {
-  background: #FFC;
+  background: var(--hover-highlight);
 }
 
 #main_menu li>div {
@@ -371,7 +411,7 @@ hr {
 
 #tools_left::-webkit-scrollbar-thumb,
 #tools_bottom::-webkit-scrollbar-thumb {
-  background-color: rgb(70, 70, 70);
+  background-color: var(--scrollbar-thumb);
 }
 
 /* End scrollbar styling */
@@ -430,19 +470,19 @@ input[type=text] {
   height: 21px;
   margin: 6px 0 0 1px;
   padding: 0;
-  border-left: 1px solid #FFFFFF;
-  border-top: 1px solid #FFFFFF;
+  border-left: 1px solid var(--bevel-light);
+  border-top: 1px solid var(--bevel-light);
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  background-color: #E8E8E8;
+  background-color: var(--dropdown-bg);
 }
 
 .dropdown button.down {
   border-left: 1px solid var(--border-color);
   border-top: 1px solid var(--border-color);
-  border-right: 1px solid #FFFFFF;
-  border-bottom: 1px solid #FFFFFF;
-  background-color: #5a6162;
+  border-right: 1px solid var(--bevel-light);
+  border-bottom: 1px solid var(--bevel-light);
+  background-color: var(--dropdown-pressed-bg);
 }
 
 .dropdown ul {
@@ -465,14 +505,14 @@ input[type=text] {
   display: block;
   width: 120px;
   padding: 4px;
-  background: #E8E8E8;
-  border: 1px solid #5a6162;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-pressed-bg);
   margin: 0 0 -1px 0;
   line-height: 16px;
 }
 
 .dropdown li:hover {
-  background-color: #FFC;
+  background-color: var(--hover-highlight);
 }
 
 .dropdown li.special {
@@ -480,7 +520,7 @@ input[type=text] {
 }
 
 .dropdown li.special:hover {
-  background: #FFC;
+  background: var(--hover-highlight);
 }
 
 #font_family_dropdown-list li {
@@ -521,7 +561,7 @@ input[type=text] {
 }
 
 .tool_sep {
-  border-left: 1px outset #EEE;
+  border-left: 1px outset var(--border-color);
   margin: 5px 1px;
   height: 30px;
 }
@@ -566,7 +606,7 @@ input[type=text] {
   content: '>>';
   letter-spacing: -3px;
   font-weight: bold;
-  color: #666;
+  color: var(--text-color);
 }
 
 .expanded #toggle_stroke_tools:before {
@@ -574,7 +614,7 @@ input[type=text] {
 }
 
 #toggle_stroke_tools:hover {
-  background: white;
+  background: var(--icon-bg-color-hover);
 }
 
 #tool_opacity {
@@ -586,7 +626,7 @@ input[type=text] {
 }
 
 ul li.current {
-  background-color: #F4E284;
+  background-color: var(--hover-highlight);
 }
 
 #copyright {
@@ -624,4 +664,22 @@ ul li.current {
 
 .dropdown li.tool_button {
   width: 24px;
+}
+
+/* ── Icon filter for dark theme ────────────────────────────────────── */
+/* CSS custom properties inherit through shadow DOM boundaries, so      */
+/* --icon-filter set on .svg_editor propagates into se-* components.   */
+/* Each component's img rule must reference var(--icon-filter, none).  */
+
+/* Direct (non-shadow-DOM) icons in the main document */
+#tools_left img,
+#tools_top img,
+#tools_bottom img {
+  filter: var(--icon-filter, none);
+}
+
+/* Preserve the svgedit brand logo regardless of theme */
+#main_icon img,
+#logo img {
+  filter: none;
 }

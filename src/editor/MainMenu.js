@@ -2,6 +2,7 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
 import { jGraduate } from './components/jgraduate/jQuery.jGraduate.js'
+import { applyTheme } from './themeUtil.js'
 
 const { $id, $click, convertUnit, isValidUnit } = SvgCanvas
 const homePage = 'https://github.com/SVG-Edit/svgedit'
@@ -80,6 +81,7 @@ class MainMenu {
   async savePreferences (e) {
     const {
       lang,
+      theme,
       bgcolor,
       bgurl,
       gridsnappingon,
@@ -88,6 +90,11 @@ class MainMenu {
       showrulers,
       baseunit
     } = e.detail
+    // Apply and persist theme
+    if (theme) {
+      this.editor.configObj.pref('theme', theme)
+      applyTheme(theme, this.editor.$svgEditor)
+    }
     // Set background
     this.editor.setBackground(bgcolor, bgurl)
     const bgColorPicker = $id('bg_color')
@@ -218,6 +225,7 @@ class MainMenu {
       this.editor.configObj.curConfig.gridColor
     )
     $editDialog.setAttribute('canvasbg', canvasBg)
+    $editDialog.setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     $editDialog.setAttribute('dialog', 'open')
   }
 

@@ -41,6 +41,8 @@ export default class ConfigObj {
         */
       bkgd_color: '#FFF',
       bkgd_url: '',
+      /** UI color theme: 'light' | 'dark' */
+      theme: 'light',
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',
       // ALERT NOTICES

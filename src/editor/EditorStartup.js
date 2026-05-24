@@ -8,6 +8,7 @@ import {
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
 import Rulers from './Rulers.js'
+import { applyTheme } from './themeUtil.js'
 
 /**
    * @fires module:svgcanvas.SvgCanvas#event:svgEditorReady
@@ -74,6 +75,8 @@ class EditorStartup {
       template.innerHTML = editorTemplate
       this.$container.append(template.content.cloneNode(true))
       this.$svgEditor = this.$container.querySelector('.svg_editor')
+      // Apply saved theme before any rendering
+      applyTheme(this.configObj.pref('theme') || 'light', this.$svgEditor)
       // allow to prepare the dom without display
       this.$svgEditor.style.visibility = 'hidden'
       this.workarea = $id('workarea')

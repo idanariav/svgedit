@@ -40,8 +40,8 @@ class Dropdown extends ListComboBox {
         }
         ::slotted(*) {
           padding: 4px;
-          background: #E8E8E8;
-          border: 1px solid #5a6162;
+          background: var(--dropdown-bg, #E8E8E8);
+          border: 1px solid var(--dropdown-pressed-bg, #5a6162);
           width: 100%;
         }
         [part~="popup"] {

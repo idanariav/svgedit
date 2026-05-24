@@ -13,6 +13,7 @@ template.innerHTML = `
     top: 2px;
     left: 4px;
     position: relative;
+    filter: var(--icon-filter, none);
   }
   span {
     bottom: 1px;

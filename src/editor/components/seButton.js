@@ -36,6 +36,7 @@ template.innerHTML = `
     border: none;
     width: 100%;
     height: 100%;
+    filter: var(--icon-filter, none);
   }
   .pressed {
     background-color: var(--icon-bg-color-hover);

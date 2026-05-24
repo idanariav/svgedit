@@ -45,16 +45,55 @@ switch to the plugin repo instead.
 
 ## Theming conventions
 
-Components use CSS custom properties so host environments can control colors:
+### CSS custom properties
 
-- `var(--text-color, #333333)` — input and label text
-- `var(--input-color, #e8e8e8)` — input background
-- `var(--icon-bg-color, #f0f0f0)` — toolbar button background
-- `var(--border-color, #cccccc)` — borders and dividers
-
+Components use CSS custom properties so host environments can control colors.
 Always use these variables (with a sensible fallback) rather than hardcoding
-colors in shadow DOM templates. The Obsidian plugin sets these via
-`injectThemeGuard()` scoped to its container.
+colors in shadow DOM templates:
+
+| Variable | Purpose |
+|---|---|
+| `var(--text-color)` | Input and label text |
+| `var(--input-color)` | Input field background |
+| `var(--icon-bg-color)` | Toolbar button background |
+| `var(--icon-bg-color-hover)` | Toolbar button hover background |
+| `var(--border-color)` | Borders and dividers |
+| `var(--main-bg-color)` | Top/bottom/left toolbar background |
+| `var(--workarea-bg)` | Canvas workarea background |
+| `var(--layer-bg)` | Layer panel row background |
+| `var(--dropdown-bg)` | Dropdown list background |
+| `var(--hover-highlight)` | Menu/list item hover highlight |
+| `var(--icon-filter)` | CSS filter applied to toolbar icon `<img>` elements |
+
+### Light / Dark themes
+
+The editor root (`.svg_editor`) accepts one of two theme classes:
+
+- **`theme-light`** — default light palette (white inputs, dark text, light toolbar)
+- **`theme-dark`** — dark palette (dark inputs, light text, dark toolbar)
+
+Applying the class updates all CSS variables defined in `svgedit.css`.
+
+**From the editor** — users switch theme via the Preferences dialog
+(persisted in `localStorage` as `svg-edit-theme`).
+
+**From a host** — toggle the class directly on `.svg_editor` without going
+through the dialog:
+```js
+editorEl.classList.toggle('theme-dark', isDark)
+editorEl.classList.toggle('theme-light', !isDark)
+```
+The Obsidian plugin can use this instead of `injectThemeGuard()` for full
+theme support. The `applyTheme(theme, rootEl)` helper in
+`src/editor/themeUtil.js` is the canonical way to do this from JS.
+
+### Icon recoloring
+
+Toolbar icons are loaded via `<img src="...">` inside shadow DOM components
+and cannot be recolored by CSS `color`. Instead, `--icon-filter` carries a
+CSS `filter` value (e.g. `invert(0.88) hue-rotate(180deg)` for dark mode).
+Each `se-*` component that renders icon images applies
+`filter: var(--icon-filter, none)` to its `img` rule.
 
 ---
 

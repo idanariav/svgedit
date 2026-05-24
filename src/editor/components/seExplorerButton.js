@@ -55,6 +55,7 @@ export class ExplorerButton extends HTMLElement {
       border: none;
       width: 24px;
       height: 24px;
+      filter: var(--icon-filter, none);
     }
     .overall.pressed .button-icon,
     .overall.pressed,

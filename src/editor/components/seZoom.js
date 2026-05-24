@@ -74,6 +74,10 @@ template.innerHTML = `
   }
   #down > img {
     margin-top: 2px;
+    filter: var(--icon-filter, none);
+  }
+  #icon {
+    filter: var(--icon-filter, none);
   }
   #options-container {
     position:fixed
@@ -89,7 +93,7 @@ template.innerHTML = `
     color: var(--text-color, #333333);
   }
   ::slotted(*:hover) {
-    background-color: rgb(43, 60, 69);
+    background-color: var(--icon-bg-color-hover);
   }
   </style>
   <div id="tool-wrapper">

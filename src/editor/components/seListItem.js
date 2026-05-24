@@ -16,6 +16,10 @@ template.innerHTML = `
     background-color: var(--icon-bg-color-hover);
   }
 
+  img {
+    filter: var(--icon-filter, none);
+  }
+
   </style>
   <div aria-label="option">
     <img alt="icon" />
