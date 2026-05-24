@@ -592,7 +592,7 @@ hr {
 
 #tools_bottom se-list,
 #tools_bottom se-select {
-  margin-bottom: 8px;
+  /* no bottom margin — flexbox align-items:center handles vertical centering */
 }
 
 /* ── Left toolbar ─────────────────────────────────────────────────── */
@@ -900,4 +900,9 @@ ul li.current {
   color: var(--fg);
   background-color: var(--chrome-bg);
   border: none;
+}
+
+#stroke_width,
+#opacity {
+  color: var(--fg);
 }

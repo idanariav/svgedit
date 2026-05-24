@@ -183,6 +183,14 @@ export class SEInput extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
+    // Inject color fix directly into elix-input's shadow DOM so the native
+    // <input> inherits the correct foreground color even when the system
+    // appearance would otherwise force black text.
+    if (this.$input.shadowRoot) {
+      const s = document.createElement('style')
+      s.textContent = '[part~="inner"],input{color:inherit;-webkit-text-fill-color:inherit}'
+      this.$input.shadowRoot.appendChild(s)
+    }
     this.$input.addEventListener('change', (e) => {
       e.preventDefault()
       this.value = e.target.value

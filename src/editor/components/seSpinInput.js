@@ -46,6 +46,7 @@ template.innerHTML = `
     border: 1px solid var(--field-border, #DDE1E7);
     border-radius: 7px;
     height: 26px;
+    color: var(--fg, #1B1F24);
   }
   elix-number-spin-box::part(spin-button) {
     padding: 0;
@@ -55,18 +56,20 @@ template.innerHTML = `
     color: var(--accent, #2962FF);
   }
   elix-number-spin-box::part(input) {
-    width: 3em;
-    color: var(--fg, #1B1F24);
+    width: 40px;
+    color: inherit;
     font-size: 12.5px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     font-family: var(--ui-font, inherit);
     background: transparent;
     border: none;
-    padding: 0 4px 0 8px;
+    padding: 0 2px;
+    box-sizing: border-box;
+    text-align: center;
   }
   elix-number-spin-box {
-    width: 54px;
+    width: 62px;
     height: 26px;
   }
   </style>
@@ -261,6 +264,14 @@ export class SESpinInput extends HTMLElement {
     const childNodes = Array.from(shadow.childNodes)
     childNodes.forEach((childNode) => {
       if (childNode?.id === 'input') {
+        // Inject color fix directly into the PlainInput shadow DOM so the
+        // native <input> inside inherits the correct foreground color even when
+        // the system appearance would otherwise force black text.
+        if (childNode.shadowRoot) {
+          const s = document.createElement('style')
+          s.textContent = '[part~="inner"],input{color:inherit;-webkit-text-fill-color:inherit}'
+          childNode.shadowRoot.appendChild(s)
+        }
         childNode.addEventListener('keyup', (e) => {
           e.preventDefault()
           if (!isNaN(e.target.value)) {
