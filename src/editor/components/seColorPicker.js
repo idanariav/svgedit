@@ -665,8 +665,20 @@ div.jGraduate_Slider img {
     position: absolute;
     inset: 0;
     border-radius: 5px;
+    overflow: hidden;
     box-shadow: inset 0 0 0 1px var(--swatch-inset, rgba(0,0,0,0.18));
     pointer-events: none;
+  }
+  /* PaintBox injects a fixed-size <svg> — make it fill the block.
+     The SVG has no viewBox so the inner rect also needs 100% dimensions. */
+  #block svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #block svg rect {
+    width: 100%;
+    height: 100%;
   }
   /* Stroke swatch variant — hollow band */
   :host([type="stroke"]) #block {
