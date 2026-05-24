@@ -660,11 +660,11 @@ div.jGraduate_Slider img {
     border-color: var(--swatch-border-hover, #2962FF);
     transform: translateY(-1px);
   }
-  /* Inner chip */
+  /* Inner chip — fills the full swatch area */
   #block {
-    width: 22px;
-    height: 16px;
-    border-radius: 3px;
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
     box-shadow: inset 0 0 0 1px var(--swatch-inset, rgba(0,0,0,0.18));
     display: block;
     pointer-events: none;
