@@ -432,8 +432,8 @@ export class SelectorManager {
         height: '100%',
         x: 0,
         y: 0,
-        'stroke-width': 1,
-        stroke: '#000',
+        'stroke-width': 0,
+        stroke: 'none',
         fill: '#FFF',
         style: 'pointer-events:none'
       }

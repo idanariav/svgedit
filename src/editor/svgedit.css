@@ -8,7 +8,7 @@
   --app-bg:        #F4F5F7;
   --chrome-bg:     #FFFFFF;
   --chrome-border: #E6E8EC;
-  --canvas-bg:     #E8ECF2;
+  --canvas-bg:     #F8F9FB;
   --ruler-bg:      #FFFFFF;
   --paper-bg:      #FFFFFF;
   --paper-border:  #DCDFE5;
@@ -278,6 +278,7 @@
   border: none;
   overflow: auto;
   text-align: center;
+  padding: 56px 80px 80px 56px;
 }
 
 #svgcanvas {
