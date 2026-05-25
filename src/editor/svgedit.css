@@ -81,6 +81,18 @@
   --cp-swatch-inset:       rgba(0, 0, 0, .18);
   --cp-checker:            rgba(0, 0, 0, .07);
 
+  /* Shape library tokens */
+  --sl-modal-bg:           #FFFFFF;
+  --sl-head-bg:            #FAFBFC;
+  --sl-side-bg:            #F6F7F9;
+  --sl-field-hover:        #B6BFCE;
+  --sl-tab-shadow:         0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(20,24,35,0.04);
+  --sl-tile-shadow:        0 2px 6px rgba(41,98,255,0.12);
+  --sl-btn-primary-fg:     #FFFFFF;
+  --sl-btn-primary-shadow: rgba(41,98,255,0.28);
+  --sl-shape:              #4B5563;
+  --sl-shape-hover:        #0F172A;
+
   /* Rulers */
   --ruler-tick: #B5BAC3;
   --ruler-text: #8A8F99;
@@ -193,6 +205,18 @@
   --cp-swatch-border:      #6A7180;
   --cp-swatch-inset:       rgba(255, 255, 255, .22);
   --cp-checker:            rgba(255, 255, 255, .06);
+
+  /* Shape library tokens */
+  --sl-modal-bg:           #22252C;
+  --sl-head-bg:            #1E2026;
+  --sl-side-bg:            #1A1C22;
+  --sl-field-hover:        #4B5160;
+  --sl-tab-shadow:         0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --sl-tile-shadow:        0 2px 8px rgba(246,178,58,0.18);
+  --sl-btn-primary-fg:     #1A1208;
+  --sl-btn-primary-shadow: rgba(246,178,58,0.30);
+  --sl-shape:              #B7BDC8;
+  --sl-shape-hover:        #FFFFFF;
 
   /* Rulers */
   --ruler-tick: #4A4F5A;

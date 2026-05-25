@@ -1,4 +1,5 @@
 import './seButton.js'
+import './seShapeLibrary.js'
 import './seFlyingButton.js'
 import './seExplorerButton.js'
 import './seZoom.js'
