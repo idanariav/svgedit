@@ -1,4 +1,4 @@
-<svg width="29" height="29" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com" data-name="Ebene 1">
+<svg width="29" height="29" viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com" data-name="Ebene 1">
   <defs>
     <marker id="se_marker_start_svg_3" markerHeight="5" markerWidth="5" orient="auto" refX="50" refY="50" viewBox="0 0 100 100">
       <path d="m0,50l100,40l-30,-40l30,-40l-100,40z" fill="#f9bc01" id="svg_1" stroke="#f9bc01" stroke-width="10"/>
