@@ -586,6 +586,27 @@ class TopPanel {
   }
 
   /**
+   * @returns {void}
+   */
+  clickBoolUnion () {
+    this.editor.svgCanvas.booleanUnion()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickBoolIntersect () {
+    this.editor.svgCanvas.booleanIntersect()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickBoolSubtract () {
+    this.editor.svgCanvas.booleanSubtract()
+  }
+
+  /**
    *
    * @returns {void}
    */
@@ -1003,6 +1024,9 @@ class TopPanel {
     $click($id('tool_flip_h'), this.clickFlipHorizontal.bind(this))
     $click($id('tool_flip_v'), this.clickFlipVertical.bind(this))
     $click($id('tool_group_elements'), this.clickGroup.bind(this))
+    $click($id('tool_bool_union'), this.clickBoolUnion.bind(this))
+    $click($id('tool_bool_intersect'), this.clickBoolIntersect.bind(this))
+    $click($id('tool_bool_subtract'), this.clickBoolSubtract.bind(this))
     $id('tool_position').addEventListener('change', evt =>
       this.clickAlignEle.bind(this)(evt)
     )

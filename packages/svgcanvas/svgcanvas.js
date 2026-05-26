@@ -80,6 +80,7 @@ import {
 } from './core/recalculate.js'
 import { getSelectorManager, Selector, init as selectInit } from './core/select.js'
 import { clearSvgContentElementInit, init as clearInit } from './core/clear.js'
+import { init as booleanOpsInit } from './core/boolean-ops.js'
 import {
   getClosest,
   getParents,
@@ -282,6 +283,7 @@ class SvgCanvas {
 
     blurInit(this)
     selectedElemInit(this)
+    booleanOpsInit(this)
 
     /**
      * Transfers sessionStorage from one tab to another.

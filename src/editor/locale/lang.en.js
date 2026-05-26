@@ -198,7 +198,10 @@ export default {
     ellipse_circle_tool: 'Ellipse/Circle Tool',
     square_rect_tool: 'Square/Rect Tool',
     remember_this_choice: 'Remember this choice?',
-    remember_this_choice_title: 'If you choose to opt out of storage while remembering this choice, the URL will change so as to avoid asking again.'
+    remember_this_choice_title: 'If you choose to opt out of storage while remembering this choice, the URL will change so as to avoid asking again.',
+    bool_union: 'Boolean Union: merge selected shapes into one',
+    bool_intersect: 'Boolean Intersection: keep overlapping area only',
+    bool_subtract: 'Boolean Subtract: cut top shape from bottom shape'
   },
   layers: {
     layer: 'Layer',
