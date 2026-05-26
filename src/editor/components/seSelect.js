@@ -1,4 +1,6 @@
+/* globals svgEditor */
 import { t } from '../locale.js'
+import { fetchSvgEl } from './svgIconLoader.js'
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
@@ -15,6 +17,21 @@ template.innerHTML = `
   background: var(--group-bg, #F6F7F9);
   border: 1px solid var(--group-border, #E6E8EC);
   border-radius: 10px;
+}
+.icon-wrap {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--icon, #4B5563);
+  flex-shrink: 0;
+}
+.icon-wrap svg,
+.icon-wrap img {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 label {
   font-size: 12px;
@@ -43,6 +60,7 @@ select {
 }
 </style>
   <div class="wrap">
+    <span class="icon-wrap" aria-hidden="true"></span>
     <label></label>
     <select></select>
   </div>
@@ -61,6 +79,7 @@ export class SeSelect extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$select = this._shadowRoot.querySelector('select')
     this.$label = this._shadowRoot.querySelector('label')
+    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$wrap = this._shadowRoot.querySelector('.wrap')
   }
 
@@ -69,7 +88,7 @@ export class SeSelect extends HTMLElement {
    * @returns {any} observed
    */
   static get observedAttributes () {
-    return ['label', 'width', 'height', 'options', 'values', 'title', 'disabled']
+    return ['label', 'src', 'width', 'height', 'options', 'values', 'title', 'disabled']
   }
 
   /**
@@ -85,6 +104,10 @@ export class SeSelect extends HTMLElement {
     switch (name) {
       case 'label':
         this.$label.textContent = t(newValue)
+        this.$label.style.display = newValue ? 'inline' : 'none'
+        break
+      case 'src':
+        this._loadIcon(newValue)
         break
       case 'title':
         this.$select.setAttribute('title', t(newValue))
@@ -211,11 +234,31 @@ export class SeSelect extends HTMLElement {
     this.$select.setAttribute('disabled', value)
   }
 
+  async _loadIcon (src) {
+    if (!src) return
+    this.imgPath = this.imgPath || svgEditor?.configObj?.curConfig?.imgPath
+    if (!this.imgPath) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
+    }
+  }
+
   /**
    * @function connectedCallback
    * @returns {void}
    */
   connectedCallback () {
+    // Reload icon now that imgPath is available (attributeChangedCallback fires before connectedCallback)
+    if (this.getAttribute('src') && !this.$iconWrap.firstChild) {
+      this._loadIcon(this.getAttribute('src'))
+    }
     const currentObj = this
     this.$select.addEventListener('change', () => {
       const value = this.$select.value
