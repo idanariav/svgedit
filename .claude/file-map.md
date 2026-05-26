@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Quick lookup table — find a concern, jump to the file. Line numbers reference points of interest within large files.
 
-_Last verified: 2026-05-26_
+_Last verified: 2026-05-26_ *(updated: ext-shadow added)*
 
 ---
 
@@ -92,6 +92,7 @@ _Last verified: 2026-05-26_
 | `ext-shapes/` | Pre-made shape library |
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
+| `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — offset X/Y, blur, opacity, color |
 
 ---
 

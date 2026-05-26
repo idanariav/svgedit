@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-26_
+_Last verified: 2026-05-26_ *(updated: ext-shadow added)*
 
 ---
 
@@ -218,6 +218,13 @@ Flying button (left panel):
 
 ### ext-theme-toggle — Theme Switch (`extensions/ext-theme-toggle/`)
 - Button to toggle light ↔ dark theme (wraps `themeUtil.applyTheme()`)
+
+### ext-shadow — Drop Shadow (`extensions/ext-shadow/`)
+- Context panel shown for any single selected element (all shape types)
+- Controls: **Offset X** (`shadow_offsetX`), **Offset Y** (`shadow_offsetY`), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
+- Creates a `<filter id="{elemId}_shadow">` with a single `<feDropShadow>` primitive in `<defs>`
+- Filter region is `-50%/-50%/200%/200%` to prevent clipping at typical offset/blur values
+- **v1 limitation:** SVG's `filter` attribute can only reference one `<filter>`. Applying shadow saves any existing filter URL and restores it on shadow removal — but shadow and blur cannot coexist simultaneously
 
 ---
 

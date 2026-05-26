@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Use the Extension Contract section to understand the API when writing or modifying an extension. Use the Built-in Extensions table to quickly find which file controls a given feature.
 
-_Last verified: 2026-05-26_
+_Last verified: 2026-05-26_ *(updated: ext-shadow added)*
 
 ---
 
@@ -86,6 +86,7 @@ Use `S.importLocale()` in `init()` to load the appropriate file.
 | `ext-shapes` | Shape library modal — categorised pre-made SVG shapes (clipart) | `ext-shapes.js` |
 | `ext-storage` | Auto-save to `localStorage`; prompts to restore session on page load | `ext-storage.js` |
 | `ext-theme-toggle` | Light/dark theme toggle button injected into `#theme_panel` in top toolbar | `ext-theme-toggle.js` |
+| `ext-shadow` | Drop shadow on any single selected element — offset X/Y, blur, opacity, color; uses `<feDropShadow>` filter in `<defs>` | `ext-shadow.js` |
 
 ---
 

@@ -37,6 +37,7 @@ const svgWhiteList_ = {
   feMerge: [],
   feMergeNode: ['in'],
   feMorphology: ['in', 'operator', 'radius'],
+  feDropShadow: ['dx', 'dy', 'stdDeviation', 'flood-color', 'flood-opacity', 'in', 'result'],
   feOffset: ['dx', 'in', 'dy', 'result'],
   filter: ['color-interpolation-filters', 'filterRes', 'filterUnits', 'height', 'href', 'primitiveUnits', 'requiredFeatures', 'width', 'x', 'xlink:href', 'y'],
   foreignObject: ['font-size', 'height', 'opacity', 'requiredFeatures', 'width', 'x', 'y'],
