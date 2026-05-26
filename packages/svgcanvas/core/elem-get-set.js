@@ -36,6 +36,10 @@ export const init = (canvas) => {
   svgCanvas.setWordSpacing = setWordSpacingMethod // Set the new word spacing.
   svgCanvas.setTextLength = setTextLengthMethod // Set the new text length.
   svgCanvas.setLengthAdjust = setLengthAdjustMethod // Set the new length adjust.
+  svgCanvas.setTextPerspectiveX = setTextPerspectiveXMethod // Set horizontal perspective on text.
+  svgCanvas.setTextPerspectiveY = setTextPerspectiveYMethod // Set vertical perspective on text.
+  svgCanvas.getTextPerspectiveX = getTextPerspectiveXMethod // Get current horizontal perspective value.
+  svgCanvas.getTextPerspectiveY = getTextPerspectiveYMethod // Get current vertical perspective value.
   svgCanvas.getFontFamily = getFontFamilyMethod // The current font family
   svgCanvas.setFontFamily = setFontFamilyMethod // Set the new font family.
   svgCanvas.setFontColor = setFontColorMethod // Set the new font color.
@@ -872,6 +876,139 @@ const setLengthAdjustMethod = (value) => {
   }
   notifyTextChange(changedTextElements)
 }
+
+// ─── Text Perspective ────────────────────────────────────────────────────────
+
+/**
+ * Build the CSS 3D transform string from both perspective angles (in degrees).
+ *
+ * Naming convention:
+ *   degX  = "X perspective" = make left/right sides differ in depth
+ *           → achieved by rotating around the VERTICAL (Y) axis → rotateY
+ *   degY  = "Y perspective" = make top/bottom sides differ in depth
+ *           → achieved by rotating around the HORIZONTAL (X) axis → rotateX
+ *
+ * The rotation axis is always perpendicular to the perspective direction.
+ */
+const buildPerspectiveTransform = (degX, degY, bbox) => {
+  const x = Number(degX) || 0
+  const y = Number(degY) || 0
+  if (x === 0 && y === 0) return ''
+
+  // Scale the perspective distance to the element's own dimensions so the
+  // visual effect at any slider value is consistent regardless of text size.
+  // Using 1.5× the relevant dimension gives ≈2:1 height ratio (close vs far
+  // side) at the maximum ±80° slider value, and the formula never approaches
+  // singularity within that range.
+  //
+  //   For X perspective: d relative to width  (rotateY spans the width)
+  //   For Y perspective: d relative to height (rotateX spans the height)
+  //   For both active:   arithmetic mean of the two
+  const dX = Math.max(bbox.width * 1.5, 50)
+  const dY = Math.max(bbox.height * 1.5, 50)
+  const d = (x !== 0 && y !== 0)
+    ? Math.round((dX + dY) / 2)
+    : Math.round(x !== 0 ? dX : dY)
+
+  const parts = [`perspective(${d}px)`]
+  if (x !== 0) parts.push(`rotateY(${x}deg)`)   // X perspective → rotate around Y axis
+  if (y !== 0) parts.push(`rotateX(${y}deg)`)   // Y perspective → rotate around X axis
+  return parts.join(' ')
+}
+
+/**
+ * Set or remove the perspective CSS declarations within a style string.
+ * cx/cy are the element's centre in SVG user-space coordinates; using them as
+ * an explicit `transform-origin` keeps the element anchored to its current
+ * position regardless of browser handling of `transform-box`.
+ */
+const setTransformInStyle = (styleStr, transformValue, cx, cy) => {
+  const parts = (styleStr || '').split(';')
+    .map(s => s.trim())
+    .filter(s => s &&
+      !s.startsWith('transform:') &&
+      !s.startsWith('transform-box:') &&
+      !s.startsWith('transform-origin:') &&
+      !s.startsWith('backface-visibility:'))
+  if (transformValue) {
+    parts.push(`transform:${transformValue}`)
+    parts.push(`transform-origin:${cx}px ${cy}px`)
+    parts.push('backface-visibility:hidden')   // prevent back-face at extreme angles
+  }
+  return parts.join(';')
+}
+
+/**
+ * Apply one axis of CSS perspective to all selected text elements, with undo.
+ * @param {'x'|'y'} axis
+ * @param {number|string} val - Degrees (-80…80)
+ */
+const applyTextPerspective = (axis, val) => {
+  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+  const textElements = getSelectedTextElements()
+  if (!textElements.length) return
+
+  const batchCmd = new BatchCommand('Change text perspective')
+  textElements.forEach(elem => {
+    const attrKey = axis === 'x' ? 'data-perspective-x' : 'data-perspective-y'
+    const otherKey = axis === 'x' ? 'data-perspective-y' : 'data-perspective-x'
+
+    const oldAttr = elem.getAttribute(attrKey) || '0'
+    const oldStyle = elem.getAttribute('style') || ''
+    const otherVal = Number(elem.getAttribute(otherKey) || 0)
+
+    const degX = axis === 'x' ? Number(val) : otherVal
+    const degY = axis === 'y' ? Number(val) : otherVal
+
+    // getBBox() returns the element's geometry in SVG user-space, unaffected by
+    // CSS transforms. Using the resulting centre as an explicit transform-origin
+    // keeps the element anchored regardless of browser transform-box behaviour.
+    const bbox = elem.getBBox()
+    const cx = bbox.x + bbox.width / 2
+    const cy = bbox.y + bbox.height / 2
+
+    elem.setAttribute(attrKey, val)
+    const newTransform = buildPerspectiveTransform(degX, degY, bbox)
+    elem.setAttribute('style', setTransformInStyle(oldStyle, newTransform, cx, cy))
+
+    // ChangeElementCommand stores OLD values so undo can restore them
+    batchCmd.addSubCommand(new ChangeElementCommand(elem, { [attrKey]: oldAttr, style: oldStyle }))
+  })
+
+  if (!batchCmd.isEmpty()) svgCanvas.addCommandToHistory(batchCmd)
+}
+
+/**
+ * Set horizontal perspective (rotateY) on selected text elements.
+ * @function module:svgcanvas.SvgCanvas#setTextPerspectiveX
+ * @param {number} val - Degrees; positive = right side closer
+ */
+const setTextPerspectiveXMethod = (val) => applyTextPerspective('x', val)
+
+/**
+ * Set vertical perspective (rotateX) on selected text elements.
+ * @function module:svgcanvas.SvgCanvas#setTextPerspectiveY
+ * @param {number} val - Degrees; positive = bottom closer
+ */
+const setTextPerspectiveYMethod = (val) => applyTextPerspective('y', val)
+
+/**
+ * Get current horizontal perspective value from element.
+ * @function module:svgcanvas.SvgCanvas#getTextPerspectiveX
+ * @param {Element} elem
+ * @returns {number}
+ */
+const getTextPerspectiveXMethod = (elem) => Number(elem?.getAttribute('data-perspective-x') || 0)
+
+/**
+ * Get current vertical perspective value from element.
+ * @function module:svgcanvas.SvgCanvas#getTextPerspectiveY
+ * @param {Element} elem
+ * @returns {number}
+ */
+const getTextPerspectiveYMethod = (elem) => Number(elem?.getAttribute('data-perspective-y') || 0)
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
 * @function module:svgcanvas.SvgCanvas#getFontFamily

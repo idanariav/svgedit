@@ -187,6 +187,12 @@
     <se-select id="tool_length_adjust" label="properties.text_length_adjust"
       options="properties.text_length_adjust_spacing,properties.text_length_adjust_spacing_and_glyphs"
       values="spacing::spacingAndGlyphs"></se-select>
+
+    <!-- Text Perspective -->
+    <se-spin-input size="3" id="tool_perspective_x" min=-80 max=80 step=1
+      title="properties.text_perspective_x" src="perspective_x.svg"></se-spin-input>
+    <se-spin-input size="3" id="tool_perspective_y" min=-80 max=80 step=1
+      title="properties.text_perspective_y" src="perspective_y.svg"></se-spin-input>
   </div>
   <!-- Not visible, but still used -->
   <input id="text" type="text" size="35" />

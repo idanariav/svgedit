@@ -394,6 +394,10 @@ class TopPanel {
           $id('tool_text_length').value = elem.getAttribute('textLength') ?? 0
           $id('tool_length_adjust').value =
             elem.getAttribute('lengthAdjust') ?? 0
+          $id('tool_perspective_x').value =
+            this.editor.svgCanvas.getTextPerspectiveX(elem)
+          $id('tool_perspective_y').value =
+            this.editor.svgCanvas.getTextPerspectiveY(elem)
           $id('text').value = elem.textContent
           if (this.editor.svgCanvas.addedNew) {
             // Timeout needed for IE9
@@ -867,6 +871,20 @@ class TopPanel {
   /**
    * @type {module}
    */
+  changeTextPerspectiveX (e) {
+    this.editor.svgCanvas.setTextPerspectiveX(e.target.value)
+  }
+
+  /**
+   * @type {module}
+   */
+  changeTextPerspectiveY (e) {
+    this.editor.svgCanvas.setTextPerspectiveY(e.target.value)
+  }
+
+  /**
+   * @type {module}
+   */
   changeLengthAdjust (evt) {
     this.editor.svgCanvas.setLengthAdjust(evt.detail.value)
   }
@@ -1038,6 +1056,14 @@ class TopPanel {
     )
     $id('tool_length_adjust').addEventListener('change', evt =>
       this.changeLengthAdjust.bind(this)(evt)
+    )
+    $id('tool_perspective_x').addEventListener(
+      'change',
+      this.changeTextPerspectiveX.bind(this)
+    )
+    $id('tool_perspective_y').addEventListener(
+      'change',
+      this.changeTextPerspectiveY.bind(this)
     )
     $click($id('tool_unlink_use'), this.clickGroup.bind(this))
     $id('image_url').addEventListener('change', evt => {

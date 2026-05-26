@@ -88,6 +88,8 @@ export default {
     text_length_adjust: 'Length adjust',
     text_length_adjust_spacing: 'Spacing',
     text_length_adjust_spacing_and_glyphs: 'Spacing & Glyphs',
+    text_perspective_x: 'Horizontal perspective — positive tilts the right side toward you',
+    text_perspective_y: 'Vertical perspective — positive tilts the bottom toward you',
     r_label: 'r',
     x_label: 'x',
     y_label: 'y',
