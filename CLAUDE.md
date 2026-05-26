@@ -129,6 +129,37 @@ pattern is retired.
 
 ---
 
+## Agent reference docs (`.claude/`)
+
+The `.claude/` folder contains structured docs for fast codebase orientation.
+Read the relevant ones **at the start of any task** — they replace line-by-line
+code exploration.
+
+| Doc | When to read it |
+|-----|-----------------|
+| [`architecture.md`](.claude/architecture.md) | Understanding init flow, subsystems, or where code lives |
+| [`tools.md`](.claude/tools.md) | Adding/modifying any toolbar tool or panel control |
+| [`attributes.md`](.claude/attributes.md) | Working with shape attribute panels or the `attrChanger` handler |
+| [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
+| [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
+| [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
+
+### Keeping the docs fresh
+
+At the **end of any task** that modifies files covered by these docs, update
+the relevant doc(s) to reflect the change. Specifically:
+
+- Added, removed, or renamed a file → update `file-map.md` and `architecture.md`
+- Added or removed a toolbar tool / panel control → update `tools.md`
+- Changed which attributes are editable for a shape → update `attributes.md`
+- Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`
+- Created or changed an extension → update `extensions.md`
+
+Update the **"Last verified"** date at the top of any doc you touch.
+Changes to the docs should be included in the same commit as the code change.
+
+---
+
 ## After making changes
 
 ```bash
