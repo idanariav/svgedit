@@ -103,6 +103,7 @@ export default {
     jgraduate_reflect: 'Reflect',
     jgraduate_repeat: 'Repeat',
     r_label: 'r',
+    arc_label: 'arc',
     x_label: 'x',
     y_label: 'y',
     x1_label: 'x1',

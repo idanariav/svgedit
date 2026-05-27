@@ -213,6 +213,7 @@ class TopPanel {
     this.hideTool('xy_panel')
     if (elem) {
       const elname = elem.nodeName
+      const isCircleArcPath = elname === 'path' && elem.hasAttribute('data-arc')
 
       const angle = this.editor.svgCanvas.getRotationAngle(elem)
       $id('angle').value = angle
@@ -232,7 +233,7 @@ class TopPanel {
       if (!isNode && currentMode !== 'pathedit') {
         this.displayTool('selected_panel')
         // Elements in this array already have coord fields
-        if (['line', 'circle', 'ellipse', 'polygon'].includes(elname)) {
+        if (['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isCircleArcPath) {
           this.hideTool('xy_panel')
         } else {
           let x
@@ -279,7 +280,7 @@ class TopPanel {
         } else {
           this.displayTool('tool_topath')
         }
-        if (elname === 'path') {
+        if (elname === 'path' && !isCircleArcPath) {
           this.displayTool('tool_reorient')
         } else {
           this.hideTool('tool_reorient')
@@ -371,6 +372,10 @@ class TopPanel {
           $id(`${tagName}_${item}`).value = attrVal || 0
         })
 
+        if (tagName === 'circle') {
+          $id('circle_arc').value = 360
+        }
+
         if (tagName === 'text') {
           this.displayTool('text_panel')
           $id('tool_italic').pressed = this.editor.svgCanvas.getItalic()
@@ -421,6 +426,15 @@ class TopPanel {
           $id('g_title').disabled = tagName === 'use'
         }
       }
+
+      if (isCircleArcPath) {
+        this.displayTool('circle_panel')
+        $id('circle_cx').value = Number(elem.getAttribute('data-cx')) || 0
+        $id('circle_cy').value = Number(elem.getAttribute('data-cy')) || 0
+        $id('circle_r').value = Number(elem.getAttribute('data-r')) || 0
+        $id('circle_arc').value = Number(elem.getAttribute('data-arc')) || 360
+      }
+
       menuItems.setAttribute(
         (tagName === 'g' ? 'en' : 'dis') + 'ablemenuitems',
         '#ungroup'
@@ -547,6 +561,13 @@ class TopPanel {
   /**
    * @type {module}
    */
+  changeCircleArc (e) {
+    this.editor.svgCanvas.setCircleArc(Number(e.target.value))
+  }
+
+  /**
+   * @type {module}
+   */
   changeFontSize (e) {
     this.editor.svgCanvas.setFontSize(e.target.value)
   }
@@ -641,6 +662,15 @@ class TopPanel {
   attrChanger (e) {
     const attr = e.target.getAttribute('data-attr')
     let val = e.target.value
+
+    // For circle-arc paths, cx/cy/r must update both the data-* attr and the `d`
+    const isArcPath = this.selectedElement?.tagName === 'path' &&
+      this.selectedElement.hasAttribute('data-arc')
+    if (isArcPath && ['cx', 'cy', 'r'].includes(attr)) {
+      this.editor.svgCanvas.setCircleArcAttr(attr, Number(val))
+      return true
+    }
+
     const valid = isValidUnit(attr, val, this.selectedElement)
 
     if (!valid) {
@@ -1050,6 +1080,7 @@ class TopPanel {
     $id('angle').addEventListener('change', this.changeRotationAngle.bind(this))
     $id('blur').addEventListener('change', this.changeBlur.bind(this))
     $id('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
+    $id('circle_arc').addEventListener('change', this.changeCircleArc.bind(this))
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
     $click($id('tool_ungroup'), this.clickGroup.bind(this))
     $click($id('tool_bold'), this.clickBold.bind(this))

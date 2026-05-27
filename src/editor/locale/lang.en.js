@@ -91,6 +91,7 @@ export default {
     text_perspective_x: 'Horizontal perspective — positive tilts the right side toward you',
     text_perspective_y: 'Vertical perspective — positive tilts the bottom toward you',
     r_label: 'r',
+    arc_label: 'arc',
     x_label: 'x',
     y_label: 'y',
     x1_label: 'x1',

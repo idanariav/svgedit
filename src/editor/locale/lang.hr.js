@@ -103,6 +103,7 @@ export default {
     jgraduate_repeat: 'Repeat',
     font_family_label: 'Obitelj fontova:',
     r_label: 'r',
+    arc_label: 'arc',
     x_label: 'x',
     y_label: 'y',
     x1_label: 'x1',

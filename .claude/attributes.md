@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Find the SVG element type you're working with and see which panel controls appear and which SVG attributes they map to. "Common attributes" (fill, stroke, opacity, etc.) apply to all shapes — see the Common section at the bottom.
 
-_Last verified: 2026-05-26_
+_Last verified: 2026-05-27_
 
 **Code references:**
 - Panel markup: [src/editor/panels/TopPanel.html](../src/editor/panels/TopPanel.html)
@@ -34,8 +34,30 @@ Plus [common attributes](#common-attributes-all-shapes) including **x/y position
 | `circle_cx` | `cx` | `cx` | Center X |
 | `circle_cy` | `cy` | `cy` | Center Y |
 | `circle_r` | `r` | `r` | Radius |
+| `circle_arc` | _(none — custom handler)_ | _(see below)_ | Arc span in degrees, 1–360 (default 360) |
+
+`circle_arc` is handled by `changeCircleArc` → `svgCanvas.setCircleArc()` in [elem-get-set.js](../packages/svgcanvas/core/elem-get-set.js). It does **not** use `attrChanger`. When arc < 360 the element is converted to a `<path data-arc>` (see below).
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (position expressed as cx/cy).
+
+---
+
+## `<path data-arc>` — Circle Arc (partial circle / pie sector)
+
+When a circle's arc is set below 360°, the `<circle>` is replaced by a `<path>` that stores the circle geometry in `data-*` attributes and renders a symmetric pie-sector shape (pacman / half-circle / wedge).
+
+**Panel class:** `.circle_panel` — same panel as `<circle>`, populated from `data-*` attributes.
+
+| Control ID | Maps to DOM | Notes |
+|------------|-------------|-------|
+| `circle_cx` | `data-cx` | Center X; `attrChanger` routes to `setCircleArcAttr` |
+| `circle_cy` | `data-cy` | Center Y; `attrChanger` routes to `setCircleArcAttr` |
+| `circle_r` | `data-r` | Radius; `attrChanger` routes to `setCircleArcAttr` |
+| `circle_arc` | `data-arc` | Arc degrees; handled by `changeCircleArc` / `setCircleArc` |
+
+The `d` attribute is computed by `computeCircleArcPathD(cx, cy, r, arc)` (symmetric pie sector, mouth centred at 3-o'clock). Setting arc back to 360 converts the `<path>` back to a `<circle>`.
+
+**No x/y panel** (position expressed via cx/cy). **No "reorient path"** button (arc paths are not freehand paths). Can still be rotated/styled like any other element.
 
 ---
 

@@ -103,6 +103,7 @@ export default {
     jgraduate_reflect: '镜像',
     jgraduate_repeat: '重复',
     r_label: 'r',
+    arc_label: 'arc',
     x_label: 'x',
     y_label: 'y',
     x1_label: 'x1',

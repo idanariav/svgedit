@@ -88,6 +88,7 @@ export default {
     text_length_adjust_spacing: 'Інтервал',
     text_length_adjust_spacing_and_glyphs: 'Інтервал та Гліфи',
     r_label: 'r',
+    arc_label: 'arc',
     x_label: 'x',
     y_label: 'y',
     x1_label: 'x1',

@@ -68,6 +68,8 @@ export const init = (canvas) => {
   svgCanvas.setColor = setColorMethod // Change the current stroke/fill color/gradien
   svgCanvas.setGradient = setGradientMethod // Apply the current gradient to selected element's fill or stroke.
   svgCanvas.setPaint = setPaintMethod // Set a color/gradient to a fill/stroke.
+  svgCanvas.setCircleArc = setCircleArcMethod // Convert a circle to a pie-sector arc path (or back) with the given arc angle.
+  svgCanvas.setCircleArcAttr = setCircleArcAttrMethod // Update cx/cy/r on a circle-arc path element.
 }
 
 /**
@@ -1350,4 +1352,150 @@ const setBackgroundMethod = (color, url, gradientElem) => {
   } else if (bgImg) {
     bgImg.remove()
   }
+}
+
+// ---------------------------------------------------------------------------
+// Circle arc (pie-sector) support
+// ---------------------------------------------------------------------------
+
+/**
+ * Presentational SVG attributes copied when converting circle ↔ arc path.
+ */
+const CIRCLE_ARC_PRES_ATTRS = [
+  'fill', 'fill-opacity', 'stroke', 'stroke-width',
+  'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap',
+  'stroke-opacity', 'opacity', 'style'
+]
+
+/**
+ * Compute the SVG path `d` string for a symmetric pie-sector (pacman) arc.
+ * The "mouth" is centred at 3-o'clock (angle 0, rightward).
+ * A single SVG arc cannot represent a full circle (coincident start/end point),
+ * so this function must only be called for arcDeg in the range [1, 359].
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} r
+ * @param {number} arcDeg - arc span in degrees (1–359)
+ * @returns {string}
+ */
+const computeCircleArcPathD = (cx, cy, r, arcDeg) => {
+  const halfGap = ((360 - arcDeg) / 2) * (Math.PI / 180)
+  const startX = cx + r * Math.cos(halfGap)
+  const startY = cy + r * Math.sin(halfGap)
+  const endX = cx + r * Math.cos(-halfGap)
+  const endY = cy + r * Math.sin(-halfGap)
+  const large = arcDeg > 180 ? 1 : 0
+  return `M ${cx} ${cy} L ${startX} ${startY} A ${r} ${r} 0 ${large} 1 ${endX} ${endY} Z`
+}
+
+/**
+ * Convert the selected circle to a pie-sector arc path (or vice-versa) based
+ * on the given arc angle in degrees.
+ * - arcDegrees === 360 converts an arc path back to a <circle>.
+ * - arcDegrees < 360 converts a <circle> to a <path data-arc> (or updates an
+ *   existing arc path in place).
+ * Supports full undo/redo via BatchCommand / ChangeElementCommand.
+ * @param {number} arcDegrees
+ */
+const setCircleArcMethod = (arcDegrees) => {
+  const selected = svgCanvas.getSelectedElements()[0]
+  if (!selected) return
+  const { tagName } = selected
+  const isArcPath = tagName === 'path' && selected.hasAttribute('data-arc')
+  if (tagName !== 'circle' && !isArcPath) return
+
+  const arc = Math.max(1, Math.min(360, Math.round(Number(arcDegrees))))
+  if (!Number.isFinite(arc)) return
+
+  const cx = Number(isArcPath ? selected.getAttribute('data-cx') : selected.getAttribute('cx')) || 0
+  const cy = Number(isArcPath ? selected.getAttribute('data-cy') : selected.getAttribute('cy')) || 0
+  const r = Number(isArcPath ? selected.getAttribute('data-r') : selected.getAttribute('r')) || 0
+  const currentArc = isArcPath ? Number(selected.getAttribute('data-arc')) : 360
+  if (arc === currentArc) return
+
+  const { BatchCommand, RemoveElementCommand, InsertElementCommand, ChangeElementCommand } = svgCanvas.history
+
+  // Collect presentational attributes from elem
+  const collectPresAttrs = (elem) => CIRCLE_ARC_PRES_ATTRS.reduce((o, a) => {
+    const v = elem.getAttribute(a)
+    if (v !== null) o[a] = v
+    return o
+  }, {})
+
+  if (arc === 360) {
+    // arc path → full circle
+    const batchCmd = new BatchCommand('Restore Circle')
+    const circle = svgCanvas.addSVGElementsFromJson({
+      element: 'circle',
+      attr: { cx, cy, r, ...collectPresAttrs(selected) }
+    })
+    const eltrans = selected.getAttribute('transform')
+    if (eltrans) circle.setAttribute('transform', eltrans)
+    const { id, parentNode, nextSibling } = selected
+    batchCmd.addSubCommand(new RemoveElementCommand(selected, nextSibling, parentNode))
+    svgCanvas.clearSelection()
+    selected.remove()
+    batchCmd.addSubCommand(new InsertElementCommand(circle))
+    circle.setAttribute('id', id)
+    svgCanvas.addToSelection([circle], true)
+    svgCanvas.addCommandToHistory(batchCmd)
+    svgCanvas.call('changed', [circle])
+  } else if (tagName === 'circle') {
+    // full circle → arc path
+    const batchCmd = new BatchCommand('Create Arc')
+    const d = computeCircleArcPathD(cx, cy, r, arc)
+    const path = svgCanvas.addSVGElementsFromJson({
+      element: 'path',
+      attr: { d, 'data-cx': cx, 'data-cy': cy, 'data-r': r, 'data-arc': arc, ...collectPresAttrs(selected) }
+    })
+    const eltrans = selected.getAttribute('transform')
+    if (eltrans) path.setAttribute('transform', eltrans)
+    const { id, parentNode, nextSibling } = selected
+    batchCmd.addSubCommand(new RemoveElementCommand(selected, nextSibling, parentNode))
+    svgCanvas.clearSelection()
+    selected.remove()
+    batchCmd.addSubCommand(new InsertElementCommand(path))
+    path.setAttribute('id', id)
+    svgCanvas.addToSelection([path], true)
+    svgCanvas.addCommandToHistory(batchCmd)
+    svgCanvas.call('changed', [path])
+  } else {
+    // arc path → update arc in place
+    const oldArc = selected.getAttribute('data-arc')
+    const oldD = selected.getAttribute('d')
+    const newD = computeCircleArcPathD(cx, cy, r, arc)
+    selected.setAttribute('data-arc', arc)
+    selected.setAttribute('d', newD)
+    svgCanvas.addCommandToHistory(
+      new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
+    )
+    svgCanvas.call('changed', [selected])
+  }
+}
+
+/**
+ * Update the cx, cy, or r of a circle-arc path element, recomputing the path
+ * `d` attribute accordingly.  Used when the user edits cx/cy/r fields in the
+ * top panel while an arc path is selected.
+ * @param {'cx'|'cy'|'r'} attr
+ * @param {number} val
+ */
+const setCircleArcAttrMethod = (attr, val) => {
+  const selected = svgCanvas.getSelectedElements()[0]
+  if (!selected || selected.tagName !== 'path' || !selected.hasAttribute('data-arc')) return
+  const dataAttr = `data-${attr}` // 'cx' → 'data-cx', etc.
+  const oldDataVal = selected.getAttribute(dataAttr)
+  const oldD = selected.getAttribute('d')
+  const cx = attr === 'cx' ? val : (Number(selected.getAttribute('data-cx')) || 0)
+  const cy = attr === 'cy' ? val : (Number(selected.getAttribute('data-cy')) || 0)
+  const r = attr === 'r' ? val : (Number(selected.getAttribute('data-r')) || 0)
+  const arc = Number(selected.getAttribute('data-arc')) || 360
+  const newD = computeCircleArcPathD(cx, cy, r, arc)
+  selected.setAttribute(dataAttr, val)
+  selected.setAttribute('d', newD)
+  const { ChangeElementCommand } = svgCanvas.history
+  svgCanvas.addCommandToHistory(
+    new ChangeElementCommand(selected, { [dataAttr]: oldDataVal, d: oldD }, attr)
+  )
+  svgCanvas.call('changed', [selected])
 }
