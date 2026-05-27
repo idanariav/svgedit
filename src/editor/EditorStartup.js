@@ -720,28 +720,33 @@ class EditorStartup {
    */
   _showAddToLibraryDialog () {
     return new Promise((resolve) => {
-      const existingCats = getUserCategories()
+      const userCats = getUserCategories()
       const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
       const inputStyle = 'display:block;width:100%;margin-top:4px;padding:7px 10px;' +
         'border:1px solid var(--field-border,#DDE1E7);border-radius:7px;font-size:13px;' +
         'box-sizing:border-box;background:var(--field-bg,#FFF);color:var(--fg,#1B1F24);' +
         'font-family:inherit;outline:none'
 
-      // Category section: dropdown (if existing cats exist) or plain text input
-      const categoryHTML = existingCats.length > 0
-        ? `<select id="_asl_cat_select"
-                   style="${inputStyle}">
-             ${existingCats.map(c =>
-               `<option value="${c.replace(/"/g, '&quot;')}">${capitalize(c)}</option>`
-             ).join('')}
-             <option value="__new__">Other…</option>
-           </select>
-           <input id="_asl_cat_new" type="text" placeholder="New category name"
-                  autocomplete="off"
-                  style="${inputStyle};margin-top:6px;display:none"/>`
-        : `<input id="_asl_cat_new" type="text" placeholder="e.g. animals"
-                  autocomplete="off"
-                  style="${inputStyle}"/>`
+      // Merge user-defined categories with built-in ones (user cats first).
+      // Built-in categories are available after the shape library has loaded its index.
+      const shapeLibEl = document.getElementById('tool_shapelib')
+      const builtinOptions = shapeLibEl?.getBuiltinCategoryOptions?.() || []
+      const userCatSet = new Set(userCats.map(c => c.toLowerCase()))
+      // Only include built-in cats that don't already have a user category by the same name
+      const filteredBuiltin = builtinOptions.filter(b => !userCatSet.has(b.id.toLowerCase()))
+
+      // Always show a <select>. Pre-select "Other…" when nothing is available.
+      const allCats = [
+        ...userCats.map(c => ({ value: c, label: capitalize(c) })),
+        ...filteredBuiltin.map(b => ({ value: b.id, label: b.label }))
+      ]
+      const noExisting = allCats.length === 0
+      const catOptions = [
+        ...allCats.map(c =>
+          `<option value="${c.value.replace(/"/g, '&quot;')}">${c.label}</option>`
+        ),
+        '<option value="__new__">Other…</option>'
+      ].join('')
 
       const dlg = document.createElement('dialog')
       dlg.style.cssText = [
@@ -767,7 +772,10 @@ class EditorStartup {
         </label>
         <label style="display:block;margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
           Category
-          ${categoryHTML}
+          <select id="_asl_cat_select" style="${inputStyle}">${catOptions}</select>
+          <input id="_asl_cat_new" type="text" placeholder="New category name"
+                 autocomplete="off"
+                 style="${inputStyle};margin-top:6px;display:${noExisting ? 'block' : 'none'}"/>
         </label>
         <div style="display:flex;justify-content:flex-end;gap:8px">
           <button id="_asl_cancel"
@@ -789,23 +797,21 @@ class EditorStartup {
       dlg.showModal()
       dlg.querySelector('#_asl_label').focus()
 
-      // Show/hide the free-text input when "Other…" is selected
       const select = dlg.querySelector('#_asl_cat_select')
       const newInput = dlg.querySelector('#_asl_cat_new')
-      if (select) {
-        select.addEventListener('change', () => {
-          const isOther = select.value === '__new__'
-          newInput.style.display = isOther ? 'block' : 'none'
-          if (isOther) newInput.focus()
-        })
-      }
 
-      const getCategory = () => {
-        if (select) {
-          return select.value === '__new__' ? newInput.value.trim() : select.value
-        }
-        return newInput.value.trim()
-      }
+      // If no existing categories, pre-select "Other…" so the text input is visible immediately
+      if (noExisting) select.value = '__new__'
+
+      // Show/hide the text input when "Other…" is selected or deselected
+      select.addEventListener('change', () => {
+        const isOther = select.value === '__new__'
+        newInput.style.display = isOther ? 'block' : 'none'
+        if (isOther) newInput.focus()
+      })
+
+      const getCategory = () =>
+        select.value === '__new__' ? newInput.value.trim() : select.value
 
       const cleanup = (value) => {
         dlg.close()

@@ -582,6 +582,9 @@ export class SeShapeLibrary extends HTMLElement {
       const r = await fetch(`${this._libPath}${catId}.json`)
       const json = await r.json()
       this._catalog[catId] = json
+      // Inject any user shapes that belong to this built-in category
+      const userShapes = this._userStore?.shapes?.[catId]
+      if (userShapes) this._injectUserShapesIntoCatalog(catId, userShapes)
       return json
     } catch (e) {
       console.error(`SeShapeLibrary: failed to load category "${catId}"`, e)
@@ -597,30 +600,65 @@ export class SeShapeLibrary extends HTMLElement {
 
   // ── User shapes ────────────────────────────────────────────────────────────
   /** Read user shapes from localStorage and inject them into the catalog. */
+  /**
+   * Inject user shapes into a built-in catalog entry's data map.
+   * User shape entries are objects { svgContent, bbox } — built-in shapes are strings —
+   * so they are naturally distinguishable at render time.
+   */
+  _injectUserShapesIntoCatalog (catId, userShapes) {
+    const cat = this._catalog[catId]
+    if (!cat?.data) return
+    // Remove any previously injected user shapes (objects), leave built-in strings intact
+    for (const key of Object.keys(cat.data)) {
+      if (typeof cat.data[key] === 'object') delete cat.data[key]
+    }
+    Object.assign(cat.data, userShapes)
+  }
+
   _loadUserShapesIntoMemory () {
     this._userStore = loadUserShapes()
     for (const catId of this._userStore.categories) {
-      this._catalog[`user:${catId}`] = {
-        data: this._userStore.shapes[catId] || {},
-        isUser: true,
-        displayName: catId.charAt(0).toUpperCase() + catId.slice(1)
+      const userShapes = this._userStore.shapes[catId] || {}
+      if (this._builtinCategories.includes(catId)) {
+        // Merge into the built-in catalog entry (if already fetched)
+        this._injectUserShapesIntoCatalog(catId, userShapes)
+      } else {
+        // Purely custom category — keep as a standalone user: entry
+        this._catalog[`user:${catId}`] = {
+          data: userShapes,
+          isUser: true,
+          displayName: CAT_LABELS[catId] || (catId.charAt(0).toUpperCase() + catId.slice(1))
+        }
       }
     }
   }
 
   /** Rebuild the merged category list: user categories first, then built-ins. */
   _rebuildCategoryList () {
+    // Only add user: prefix entries for categories that have no matching built-in
+    const customUserCats = this._userStore.categories
+      .filter(c => !this._builtinCategories.includes(c))
+      .map(c => `user:${c}`)
     this._categories = [
-      ...this._userStore.categories.map(c => `user:${c}`),
+      ...customUserCats,
       ...this._builtinCategories
     ]
   }
 
   /** Re-read localStorage, update catalog, and re-render any open panel. */
   _reloadUserShapes () {
-    // Remove stale user catalog entries
+    // Remove stale purely-custom user catalog entries
     for (const key of Object.keys(this._catalog)) {
       if (key.startsWith('user:')) delete this._catalog[key]
+    }
+    // Clear user shapes previously merged into built-in catalog entries
+    for (const catId of this._builtinCategories) {
+      const cat = this._catalog[catId]
+      if (cat?.data) {
+        for (const key of Object.keys(cat.data)) {
+          if (typeof cat.data[key] === 'object') delete cat.data[key]
+        }
+      }
     }
     this._loadUserShapesIntoMemory()
     this._rebuildCategoryList()
@@ -810,7 +848,8 @@ export class SeShapeLibrary extends HTMLElement {
     const shapeData = cat.data[this._selectedId]
     if (!shapeData) return
 
-    if (cat.isUser) {
+    const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
+    if (isUser) {
       // User shape: shapeData = { svgContent, bbox }
       delete this.dataset.draw
       this.dispatchEvent(new CustomEvent('shape-insert', {
@@ -865,10 +904,11 @@ export class SeShapeLibrary extends HTMLElement {
       </div>
       <div class="sl-pop-grid">
         ${shapes.map(([id, shapeData]) => {
-          const thumb = cat?.isUser
+          const isUserShape = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
+          const thumb = isUserShape
             ? this._userShapeThumb(shapeData, 26, 26)
             : this._shapeThumb(shapeData, cat, 26, 26)
-          const label = cat?.isUser ? id : this._fmtName(id)
+          const label = isUserShape ? id : this._fmtName(id)
           return `
           <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
                   data-id="${this._escAttr(id)}" title="${this._escAttr(label)}">
@@ -1036,7 +1076,8 @@ export class SeShapeLibrary extends HTMLElement {
 
   _tileHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._categoryId
-    const isUser = !!cat?.isUser
+    // User shapes are objects { svgContent, bbox }; built-in shapes are path strings
+    const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
     const thumb = isUser
       ? this._userShapeThumb(shapeData, 40, 40)
       : this._shapeThumb(shapeData, cat, 40, 40)
@@ -1059,7 +1100,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   _rowHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._categoryId
-    const isUser = !!cat?.isUser
+    const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
     const thumb = isUser
       ? this._userShapeThumb(shapeData, 24, 24)
       : this._shapeThumb(shapeData, cat, 24, 24)
@@ -1083,7 +1124,7 @@ export class SeShapeLibrary extends HTMLElement {
   _buildFooter () {
     const cat = this._selectedId ? this._catalog[this._categoryId] : null
     const shapeData = cat?.data?.[this._selectedId]
-    const isUser = !!cat?.isUser
+    const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
     let footChip = ''
     let footMeta = ''
     if (this._selectedId && shapeData) {
@@ -1312,6 +1353,16 @@ export class SeShapeLibrary extends HTMLElement {
 
   _escAttr (str) {
     return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  }
+
+  /**
+   * Returns the built-in category list as { id, label } pairs.
+   * Used by the "Add to Shape Library" dialog to populate the category dropdown.
+   * May return [] if the index hasn't been loaded yet (library not yet opened).
+   * @returns {{ id: string, label: string }[]}
+   */
+  getBuiltinCategoryOptions () {
+    return this._builtinCategories.map(id => ({ id, label: CAT_LABELS[id] || id }))
   }
 }
 
