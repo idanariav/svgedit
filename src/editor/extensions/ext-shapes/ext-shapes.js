@@ -36,6 +36,7 @@ export default {
     let curShape
     let startX
     let startY
+    let _userShapeData = null // non-null when a user shape is selected for insertion
 
     return {
       callback () {
@@ -50,10 +51,12 @@ export default {
           canv.insertChildAtIndex($id('tools_left'), buttonTemplate, 9)
 
           // When the user picks a shape (from popover or modal), arm the canvas tool
-          $id('tool_shapelib').addEventListener('shape-insert', () => {
+          $id('tool_shapelib').addEventListener('shape-insert', (e) => {
             canv.setMode(modeId)
             // Keep the button visually pressed while the shape tool is active
             $id('tool_shapelib').setAttribute('pressed', 'true')
+            // Store user shape data for mouseDown to use
+            _userShapeData = e.detail.isUserShape ? e.detail : null
           })
         }
       },
@@ -61,30 +64,55 @@ export default {
         const mode = canv.getMode()
         if (mode !== modeId) { return undefined }
 
-        const currentD = document.getElementById('tool_shapelib').dataset.draw
         startX = opts.start_x
         const x = startX
         startY = opts.start_y
         const y = startY
-        const curStyle = canv.getStyle()
 
         startClientPos.x = opts.event.clientX
         startClientPos.y = opts.event.clientY
 
-        curShape = canv.addSVGElementsFromJson({
-          element: 'path',
-          curStyles: true,
-          attr: {
-            d: currentD,
-            id: canv.getNextId(),
-            opacity: curStyle.opacity / 2,
-            style: 'pointer-events:none'
-          }
-        })
+        if (_userShapeData) {
+          // ── User shape (SVG group) insertion ────────────────────────────────
+          const { svgContent, bbox } = _userShapeData
+          const parser = new DOMParser()
+          const parsed = parser.parseFromString(
+            `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
+            'image/svg+xml'
+          )
+          const groupEl = parsed.documentElement.firstElementChild
+          const imported = canv.getDOMDocument().importNode(groupEl, true)
+          imported.id = canv.getNextId()
 
-        curShape.setAttribute('transform', 'translate(' + x + ',' + y + ') scale(0.005) translate(' + -x + ',' + -y + ')')
+          const layer = canv.getCurrentGroup() || canv.getCurrentDrawing().getCurrentLayer()
+          layer.appendChild(imported)
 
-        canv.recalculateDimensions(curShape)
+          // Apply tiny initial scale anchored at the click point, adjusted for the shape's own origin
+          imported.setAttribute(
+            'transform',
+            `translate(${x},${y}) scale(0.005) translate(${-bbox.x},${-bbox.y})`
+          )
+          canv.recalculateDimensions(imported)
+          curShape = imported
+        } else {
+          // ── Built-in path-based shape (existing flow) ────────────────────────
+          const currentD = document.getElementById('tool_shapelib').dataset.draw
+          const curStyle = canv.getStyle()
+
+          curShape = canv.addSVGElementsFromJson({
+            element: 'path',
+            curStyles: true,
+            attr: {
+              d: currentD,
+              id: canv.getNextId(),
+              opacity: curStyle.opacity / 2,
+              style: 'pointer-events:none'
+            }
+          })
+
+          curShape.setAttribute('transform', 'translate(' + x + ',' + y + ') scale(0.005) translate(' + -x + ',' + -y + ')')
+          canv.recalculateDimensions(curShape)
+        }
 
         lastBBox = curShape.getBBox()
 

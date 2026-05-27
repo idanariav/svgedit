@@ -160,6 +160,114 @@ Changes to the docs should be included in the same commit as the code change.
 
 ---
 
+## Playwright / browser testing
+
+The project ships Playwright (`node_modules/playwright`) and the Vite dev
+server doubles as the test host.
+
+### Starting the dev server
+
+```bash
+npm start   # serves on http://localhost:8000/src/editor/index.html
+# or pick a different port to avoid conflicts:
+npm start -- --port 8001
+```
+
+### Storage-consent popup
+
+On first load the editor shows `<se-storage-dialog>` — a shadow DOM modal
+that blocks all pointer events until dismissed. **Always dismiss it before
+interacting with the canvas.**
+
+```js
+// Dismiss via shadow DOM (works even without a visible viewport):
+await page.evaluate(() => {
+  document.querySelector('se-storage-dialog')
+    ?.shadowRoot?.querySelector('#storage_ok')?.click()
+})
+await page.waitForTimeout(500)
+```
+
+Alternatively, append `?noStorageOnLoad=true` to the URL — this suppresses the
+dialog entirely and is the recommended approach for automated tests:
+
+```js
+const URL = 'http://localhost:8001/src/editor/index.html?noStorageOnLoad=true'
+```
+
+### Toolbar tools are off-screen at small viewports
+
+Left-panel tool buttons (`#tool_rect`, `#tool_ellipse`, …) report zero
+bounding-box size in headless Chromium unless the viewport is tall enough to
+show the full panel. Use JS clicks or `page.evaluate` rather than
+`page.click()` on these elements:
+
+```js
+// Works regardless of viewport size:
+await page.evaluate(() => document.querySelector('#tool_rect')?.click())
+
+// Then verify the mode changed:
+const mode = await page.evaluate(() => window.svgEditor?.svgCanvas?.getMode())
+// → 'rect'
+```
+
+### Creating / selecting elements programmatically
+
+Drawing via mouse drag is fragile in headless mode because the workarea uses
+absolute positioning anchored to scroll state. Prefer the canvas API instead:
+
+```js
+await page.evaluate(() => {
+  const canv = window.svgEditor.svgCanvas
+  const el = canv.addSVGElementsFromJson({
+    element: 'rect', curStyles: true,
+    attr: { x: 100, y: 100, width: 150, height: 100, id: canv.getNextId() }
+  })
+  canv.selectOnly([el])
+})
+```
+
+### Importing Playwright from the project
+
+The project's own `playwright` package must be used (not a global install):
+
+```js
+import { chromium } from '/Users/.../svgedit/node_modules/playwright/index.mjs'
+```
+
+### Recommended page setup
+
+```js
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+page.setDefaultTimeout(20000)
+await page.goto('http://localhost:8001/src/editor/index.html?noStorageOnLoad=true')
+await page.waitForSelector('#svgcanvas', { timeout: 10000 })
+await page.waitForTimeout(1200)  // let all extensions register
+```
+
+### Shadow DOM access pattern
+
+Most editor UI lives inside shadow roots. Query through them in `page.evaluate`:
+
+```js
+// Context menu item state:
+const disabled = await page.evaluate(() => {
+  const host = document.querySelector('se-cmenu_canvas-dialog')
+  return host?.shadowRoot?.querySelector('#se-cut')
+             ?.parentElement?.classList.contains('disabled')
+})
+
+// Shape library internals:
+const catLabels = await page.evaluate(() => {
+  const host = document.querySelector('se-shape-library')
+  return Array.from(host?.shadowRoot?.querySelectorAll('.sl-pop-cat') ?? [])
+             .map(b => b.textContent.trim())
+})
+```
+
+---
+
 ## After making changes
 
 ```bash

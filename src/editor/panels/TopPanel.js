@@ -440,12 +440,12 @@ class TopPanel {
       }
 
       this.displayTool('multiselected_panel')
-      menuItems.setAttribute('enablemenuitems', '#group')
+      menuItems.setAttribute('enablemenuitems', '#group,#add_to_shape_library')
       menuItems.setAttribute('disablemenuitems', '#ungroup')
     } else {
       menuItems.setAttribute(
         'disablemenuitems',
-        '#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back'
+        '#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back,#add_to_shape_library'
       )
     }
 
@@ -467,7 +467,7 @@ class TopPanel {
       const canCMenu = document.getElementById('se-cmenu_canvas')
       canCMenu.setAttribute(
         'enablemenuitems',
-        '#delete,#cut,#copy,#move_front,#move_up,#move_down,#move_back'
+        '#delete,#cut,#copy,#move_front,#move_up,#move_down,#move_back,#add_to_shape_library'
       )
     } else {
       $id('selLayerNames').setAttribute('disabled', 'disabled')

@@ -5,6 +5,7 @@ import {
 import {
   hasCustomHandler, getCustomHandler, injectExtendedContextMenuItemsIntoDom
 } from './contextmenu.js'
+import { addUserShape, getUserCategories } from './extensions/ext-shapes/userShapes.js'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
 import Rulers from './Rulers.js'
@@ -545,6 +546,9 @@ class EditorStartup {
         case 'move_back':
           this.svgCanvas.moveToBottomSelectedElement()
           break
+        case 'add_to_shape_library':
+          this._addSelectedToShapeLibrary()
+          break
         default:
           if (hasCustomHandler(action)) {
             getCustomHandler(action).call()
@@ -652,6 +656,177 @@ class EditorStartup {
     await this.runCallbacks()
     // Signal readiness to same-document listeners (tests/debugging hooks)
     document.dispatchEvent(new CustomEvent('svgedit:ready', { detail: this }))
+  }
+
+  /**
+   * Handle "Add to Shape Library" context menu action.
+   * Serializes the selected SVG element(s), shows a dialog for label + category,
+   * saves to localStorage, and notifies the shape library component to refresh.
+   * @returns {Promise<void>}
+   */
+  async _addSelectedToShapeLibrary () {
+    const elems = this.svgCanvas.getSelectedElements().filter(Boolean)
+    if (!elems.length) return
+
+    // Determine target element: use existing <g> if single group, otherwise clone into a temp <g>
+    let targetElem
+    let bbox
+    if (elems.length === 1 && elems[0].tagName === 'g') {
+      targetElem = elems[0]
+      bbox = elems[0].getBBox()
+    } else if (elems.length === 1) {
+      targetElem = elems[0]
+      bbox = elems[0].getBBox()
+    } else {
+      // Multiple elements: wrap clones in a temporary <g> for serialization
+      const ns = 'http://www.w3.org/2000/svg'
+      const tempG = document.createElementNS(ns, 'g')
+      elems.forEach(el => tempG.appendChild(el.cloneNode(true)))
+      targetElem = tempG
+      // Union bbox from canvas helper
+      try {
+        const sb = this.svgCanvas.getStrokedBBox(elems)
+        bbox = sb || elems[0].getBBox()
+      } catch {
+        bbox = elems[0].getBBox()
+      }
+    }
+
+    const result = await this._showAddToLibraryDialog()
+    if (!result) return
+
+    const { label, category } = result
+    if (!label || !category) return
+
+    const svgContent = new XMLSerializer().serializeToString(targetElem)
+
+    addUserShape({
+      category,
+      label,
+      svgContent,
+      bbox: { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height }
+    })
+
+    // Notify the shape library component to refresh
+    const shapeLib = document.getElementById('tool_shapelib')
+    if (shapeLib) {
+      shapeLib.dispatchEvent(new CustomEvent('user-shapes-updated'))
+    }
+  }
+
+  /**
+   * Show a native <dialog> prompting for a shape label and category.
+   * @returns {Promise<{label: string, category: string}|null>}
+   */
+  _showAddToLibraryDialog () {
+    return new Promise((resolve) => {
+      const existingCats = getUserCategories()
+      const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
+      const inputStyle = 'display:block;width:100%;margin-top:4px;padding:7px 10px;' +
+        'border:1px solid var(--field-border,#DDE1E7);border-radius:7px;font-size:13px;' +
+        'box-sizing:border-box;background:var(--field-bg,#FFF);color:var(--fg,#1B1F24);' +
+        'font-family:inherit;outline:none'
+
+      // Category section: dropdown (if existing cats exist) or plain text input
+      const categoryHTML = existingCats.length > 0
+        ? `<select id="_asl_cat_select"
+                   style="${inputStyle}">
+             ${existingCats.map(c =>
+               `<option value="${c.replace(/"/g, '&quot;')}">${capitalize(c)}</option>`
+             ).join('')}
+             <option value="__new__">Other…</option>
+           </select>
+           <input id="_asl_cat_new" type="text" placeholder="New category name"
+                  autocomplete="off"
+                  style="${inputStyle};margin-top:6px;display:none"/>`
+        : `<input id="_asl_cat_new" type="text" placeholder="e.g. animals"
+                  autocomplete="off"
+                  style="${inputStyle}"/>`
+
+      const dlg = document.createElement('dialog')
+      dlg.style.cssText = [
+        'padding:24px',
+        'border-radius:12px',
+        'border:1px solid var(--chrome-border,#E6E8EC)',
+        'background:var(--chrome-bg,#FFF)',
+        'color:var(--fg,#1B1F24)',
+        'font-family:var(--ui-font,system-ui,sans-serif)',
+        'min-width:320px',
+        'box-shadow:0 8px 30px rgba(0,0,0,.15)',
+        'outline:none'
+      ].join(';')
+
+      dlg.innerHTML = `
+        <h3 style="margin:0 0 16px;font-size:15px;font-weight:600;color:var(--fg,#1B1F24)">
+          Add to Shape Library
+        </h3>
+        <label style="display:block;margin-bottom:12px;font-size:13px;color:var(--fg,#1B1F24)">
+          Label
+          <input id="_asl_label" type="text" placeholder="e.g. My Dog" autocomplete="off"
+                 style="${inputStyle}"/>
+        </label>
+        <label style="display:block;margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
+          Category
+          ${categoryHTML}
+        </label>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button id="_asl_cancel"
+                  style="padding:7px 18px;border-radius:7px;border:1px solid var(--chrome-border,#DDE1E7);
+                         background:transparent;color:var(--fg,#1B1F24);font-size:13px;
+                         cursor:pointer;font-family:inherit">
+            Cancel
+          </button>
+          <button id="_asl_ok"
+                  style="padding:7px 18px;border-radius:7px;border:none;
+                         background:var(--accent,#2962FF);color:#FFF;font-size:13px;
+                         font-weight:600;cursor:pointer;font-family:inherit">
+            Save
+          </button>
+        </div>
+      `
+
+      document.body.appendChild(dlg)
+      dlg.showModal()
+      dlg.querySelector('#_asl_label').focus()
+
+      // Show/hide the free-text input when "Other…" is selected
+      const select = dlg.querySelector('#_asl_cat_select')
+      const newInput = dlg.querySelector('#_asl_cat_new')
+      if (select) {
+        select.addEventListener('change', () => {
+          const isOther = select.value === '__new__'
+          newInput.style.display = isOther ? 'block' : 'none'
+          if (isOther) newInput.focus()
+        })
+      }
+
+      const getCategory = () => {
+        if (select) {
+          return select.value === '__new__' ? newInput.value.trim() : select.value
+        }
+        return newInput.value.trim()
+      }
+
+      const cleanup = (value) => {
+        dlg.close()
+        document.body.removeChild(dlg)
+        resolve(value)
+      }
+
+      dlg.querySelector('#_asl_cancel').addEventListener('click', () => cleanup(null))
+
+      dlg.querySelector('#_asl_ok').addEventListener('click', () => {
+        const label = dlg.querySelector('#_asl_label').value.trim()
+        const category = getCategory()
+        cleanup(label && category ? { label, category } : null)
+      })
+
+      // Escape key
+      dlg.addEventListener('cancel', () => {
+        document.body.removeChild(dlg)
+        resolve(null)
+      })
+    })
   }
 
   /**

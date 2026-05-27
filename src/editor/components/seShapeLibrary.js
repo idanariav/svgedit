@@ -16,6 +16,7 @@
  */
 
 import { fetchSvgEl } from './svgIconLoader.js'
+import { loadUserShapes, removeUserShape } from '../extensions/ext-shapes/userShapes.js'
 
 // ── Category labels ─────────────────────────────────────────────────────────
 const CAT_LABELS = {
@@ -427,6 +428,37 @@ const CSS = `
 /* Focus rings */
 button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--cp-focus-ring, rgba(41,98,255,.18)); }
 input:focus { outline: none; }
+
+/* ── User shape tile wrappers & three-dot menu ───────────────────────────── */
+.sl-tile-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
+.sl-tile-user .sl-shape-menu {
+  position: absolute; top: 2px; right: 2px;
+  appearance: none; border: none; background: transparent;
+  width: 20px; height: 20px; border-radius: 4px;
+  font-size: 14px; line-height: 1;
+  cursor: pointer; color: var(--muted, #6B7280);
+  display: none; align-items: center; justify-content: center;
+  padding: 0;
+}
+.sl-tile-wrap:hover .sl-shape-menu { display: flex; }
+.sl-shape-menu:hover { background: var(--icon-hover-bg, #EEF1F5); color: var(--icon-hover, #0F172A); }
+
+/* ── Shape removal dropdown ──────────────────────────────────────────────── */
+.sl-shape-dropdown {
+  position: absolute; z-index: 200; top: 100%; right: 0;
+  background: var(--sl-modal-bg, #FFF);
+  border: 1px solid var(--chrome-border, #E6E8EC);
+  border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  padding: 4px 0; min-width: 160px;
+}
+.sl-shape-dropdown button {
+  appearance: none; border: none; background: transparent;
+  display: block; width: 100%; padding: 8px 14px;
+  text-align: left; cursor: pointer; font-size: 12px; font-family: inherit;
+  color: var(--fg, #1B1F24);
+}
+.sl-shape-dropdown button:hover { background: var(--icon-hover-bg, #EEF1F5); }
+.sl-shape-dropdown .sl-remove { color: #DC2626; }
 `
 
 // ── Component class ──────────────────────────────────────────────────────────
@@ -448,8 +480,10 @@ export class SeShapeLibrary extends HTMLElement {
 
     // Data
     this._libPath = ''
-    this._categories = [] // ordered array of category ids
-    this._catalog = {} // { catId: { data: {id: path}, size, fill } }
+    this._categories = [] // ordered array of category ids (user: prefixed first)
+    this._builtinCategories = [] // built-in category ids from index.json
+    this._catalog = {} // { catId: { data: {id: path|shapeEntry}, size, fill, isUser, displayName } }
+    this._userStore = { categories: [], shapes: {} } // cached user shapes data
     this._allLoaded = false
 
     // Timers / observers
@@ -496,6 +530,7 @@ export class SeShapeLibrary extends HTMLElement {
     this._renderShell()
     this._syncTheme()
     this._observeTheme()
+    this.addEventListener('user-shapes-updated', () => this._reloadUserShapes())
   }
 
   disconnectedCallback () {
@@ -524,20 +559,25 @@ export class SeShapeLibrary extends HTMLElement {
     try {
       const r = await fetch(`${this._libPath}index.json`)
       const json = await r.json()
-      this._categories = json.lib || []
-      if (this._categories.length > 0) {
-        const first = this._categories[0]
-        await this._loadCategory(first)
-        this._categoryId = first
-        this._popCatId = first
-      }
+      this._builtinCategories = json.lib || []
     } catch (e) {
       console.error('SeShapeLibrary: failed to load index', e)
+      this._builtinCategories = []
+    }
+    this._loadUserShapesIntoMemory()
+    this._rebuildCategoryList()
+    if (this._categories.length > 0) {
+      const first = this._categories[0]
+      await this._loadCategory(first)
+      this._categoryId = first
+      this._popCatId = first
     }
   }
 
   async _loadCategory (catId) {
     if (this._catalog[catId]) return this._catalog[catId]
+    // User categories are already loaded in memory — no fetch needed
+    if (catId.startsWith('user:')) return this._catalog[catId] || null
     try {
       const r = await fetch(`${this._libPath}${catId}.json`)
       const json = await r.json()
@@ -553,6 +593,61 @@ export class SeShapeLibrary extends HTMLElement {
     if (this._allLoaded) return
     await Promise.all(this._categories.map(id => this._loadCategory(id)))
     this._allLoaded = true
+  }
+
+  // ── User shapes ────────────────────────────────────────────────────────────
+  /** Read user shapes from localStorage and inject them into the catalog. */
+  _loadUserShapesIntoMemory () {
+    this._userStore = loadUserShapes()
+    for (const catId of this._userStore.categories) {
+      this._catalog[`user:${catId}`] = {
+        data: this._userStore.shapes[catId] || {},
+        isUser: true,
+        displayName: catId.charAt(0).toUpperCase() + catId.slice(1)
+      }
+    }
+  }
+
+  /** Rebuild the merged category list: user categories first, then built-ins. */
+  _rebuildCategoryList () {
+    this._categories = [
+      ...this._userStore.categories.map(c => `user:${c}`),
+      ...this._builtinCategories
+    ]
+  }
+
+  /** Re-read localStorage, update catalog, and re-render any open panel. */
+  _reloadUserShapes () {
+    // Remove stale user catalog entries
+    for (const key of Object.keys(this._catalog)) {
+      if (key.startsWith('user:')) delete this._catalog[key]
+    }
+    this._loadUserShapesIntoMemory()
+    this._rebuildCategoryList()
+
+    // If the active category was removed, fall back to the first available
+    if (this._categoryId?.startsWith('user:') && !this._categories.includes(this._categoryId)) {
+      this._categoryId = this._categories[0] || 'basic'
+    }
+    if (this._popCatId?.startsWith('user:') && !this._categories.includes(this._popCatId)) {
+      this._popCatId = this._categories[0] || 'basic'
+    }
+
+    if (this._open === 'popover') {
+      this._renderPopover()
+    } else if (this._open === 'modal') {
+      this._renderModal()
+    }
+  }
+
+  /**
+   * Return the display label for a category id.
+   * @param {string} id
+   * @returns {string}
+   */
+  _catLabel (id) {
+    if (this._catalog[id]?.isUser) return this._catalog[id].displayName
+    return CAT_LABELS[id] || id
   }
 
   _countCategory (catId) {
@@ -573,6 +668,20 @@ export class SeShapeLibrary extends HTMLElement {
     }
     const sw = (sz / 30).toFixed(1)
     return `<svg viewBox="${vb}" width="${w}" height="${h}" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" d="${path}"/></svg>`
+  }
+
+  /**
+   * Generate an SVG thumbnail for a user-saved shape entry.
+   * @param {{ svgContent: string, bbox: {x,y,width,height} }} shapeEntry
+   * @param {number} w
+   * @param {number} h
+   * @returns {string} HTML string
+   */
+  _userShapeThumb (shapeEntry, w, h) {
+    const { bbox, svgContent } = shapeEntry
+    const m = Math.max(bbox.width, bbox.height) * 0.05
+    const vb = `${bbox.x - m} ${bbox.y - m} ${bbox.width + m * 2} ${bbox.height + m * 2}`
+    return `<svg viewBox="${vb}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`
   }
 
   // ── Shell render (once) ────────────────────────────────────────────────────
@@ -698,16 +807,30 @@ export class SeShapeLibrary extends HTMLElement {
     if (!this._selectedId) return
     const cat = this._catalog[this._categoryId]
     if (!cat) return
-    const draw = cat.data[this._selectedId]
-    if (!draw) return
+    const shapeData = cat.data[this._selectedId]
+    if (!shapeData) return
 
-    // Backward compat: set dataset.draw so ext-shapes.js mouseDown can read it
-    this.dataset.draw = draw
-
-    this.dispatchEvent(new CustomEvent('shape-insert', {
-      bubbles: true, composed: true,
-      detail: { draw, categoryId: this._categoryId, shapeId: this._selectedId }
-    }))
+    if (cat.isUser) {
+      // User shape: shapeData = { svgContent, bbox }
+      delete this.dataset.draw
+      this.dispatchEvent(new CustomEvent('shape-insert', {
+        bubbles: true, composed: true,
+        detail: {
+          isUserShape: true,
+          svgContent: shapeData.svgContent,
+          bbox: shapeData.bbox,
+          categoryId: this._categoryId,
+          shapeId: this._selectedId
+        }
+      }))
+    } else {
+      // Built-in shape: shapeData is the path 'd' string
+      this.dataset.draw = shapeData
+      this.dispatchEvent(new CustomEvent('shape-insert', {
+        bubbles: true, composed: true,
+        detail: { draw: shapeData, categoryId: this._categoryId, shapeId: this._selectedId }
+      }))
+    }
     this.close()
   }
 
@@ -736,16 +859,22 @@ export class SeShapeLibrary extends HTMLElement {
       <div class="sl-pop-cats">
         ${visibleCats.map(id => `
           <button class="sl-pop-cat${id === this._popCatId ? ' is-active' : ''}" data-cat="${id}">
-            ${this._esc(CAT_LABELS[id] || id)}
+            ${this._esc(this._catLabel(id))}
           </button>`).join('')}
         <button class="sl-pop-cat sl-pop-cat-more" data-more>More…</button>
       </div>
       <div class="sl-pop-grid">
-        ${shapes.map(([id, path]) => `
+        ${shapes.map(([id, shapeData]) => {
+          const thumb = cat?.isUser
+            ? this._userShapeThumb(shapeData, 26, 26)
+            : this._shapeThumb(shapeData, cat, 26, 26)
+          const label = cat?.isUser ? id : this._fmtName(id)
+          return `
           <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
-                  data-id="${this._escAttr(id)}" title="${this._escAttr(this._fmtName(id))}">
-            ${this._shapeThumb(path, cat, 26, 26)}
-          </button>`).join('')}
+                  data-id="${this._escAttr(id)}" title="${this._escAttr(label)}">
+            ${thumb}
+          </button>`
+        }).join('')}
       </div>
       <footer class="sl-pop-foot">
         <span class="sl-pop-hint">Click a shape, then draw on canvas to size it.</span>
@@ -831,7 +960,7 @@ export class SeShapeLibrary extends HTMLElement {
           <nav class="sl-side-cats" aria-label="Shape categories">
             ${this._categories.map(id => `
               <button class="sl-cat${id === this._categoryId ? ' is-active' : ''}" data-cat="${id}">
-                <span class="sl-cat-label">${this._esc(CAT_LABELS[id] || id)}</span>
+                <span class="sl-cat-label">${this._esc(this._catLabel(id))}</span>
                 <span class="sl-cat-count">${this._countCategory(id)}</span>
               </button>`).join('')}
           </nav>
@@ -840,7 +969,7 @@ export class SeShapeLibrary extends HTMLElement {
         <section class="sl-content">
           <header class="sl-content-head">
             <div class="sl-content-title">
-              <span class="sl-content-name">${this._esc(CAT_LABELS[this._categoryId] || this._categoryId)}</span>
+              <span class="sl-content-name">${this._esc(this._catLabel(this._categoryId))}</span>
               <span class="sl-content-meta">${this._countCategory(this._categoryId)} shapes</span>
             </div>
             <div class="sl-view-toggle" role="group" aria-label="View mode">
@@ -890,7 +1019,7 @@ export class SeShapeLibrary extends HTMLElement {
     if (this._view === 'grid') {
       return groups.map(({ catId, cat, hits }) => `
         <div class="sl-search-group">
-          <div class="sl-search-group-label">${this._esc(CAT_LABELS[catId] || catId)}</div>
+          <div class="sl-search-group-label">${this._esc(this._catLabel(catId))}</div>
           <div class="sl-grid-body sl-grid-inline">
             ${hits.map(([id, p]) => this._tileHtml(id, p, cat, catId)).join('')}
           </div>
@@ -905,40 +1034,74 @@ export class SeShapeLibrary extends HTMLElement {
       </div>`).join('')
   }
 
-  _tileHtml (id, path, cat, catId) {
+  _tileHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._categoryId
+    const isUser = !!cat?.isUser
+    const thumb = isUser
+      ? this._userShapeThumb(shapeData, 40, 40)
+      : this._shapeThumb(shapeData, cat, 40, 40)
+    const label = isUser ? id : this._fmtName(id)
+    const menuBtn = isUser
+      ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
+                 aria-label="Shape options" title="Options" type="button">⋮</button>`
+      : ''
     return `
-      <button class="sl-tile${sel ? ' is-selected' : ''}"
-              data-id="${this._escAttr(id)}" data-cat="${catId}"
-              title="${this._escAttr(this._fmtName(id))}">
-        <span class="sl-tile-icon">${this._shapeThumb(path, cat, 40, 40)}</span>
-        <span class="sl-tile-name">${this._esc(this._fmtName(id))}</span>
-      </button>`
+      <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
+        <button class="sl-tile${sel ? ' is-selected' : ''}"
+                data-id="${this._escAttr(id)}" data-cat="${catId}"
+                title="${this._escAttr(label)}">
+          <span class="sl-tile-icon">${thumb}</span>
+          <span class="sl-tile-name">${this._esc(label)}</span>
+        </button>
+        ${menuBtn}
+      </div>`
   }
 
-  _rowHtml (id, path, cat, catId) {
+  _rowHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._categoryId
+    const isUser = !!cat?.isUser
+    const thumb = isUser
+      ? this._userShapeThumb(shapeData, 24, 24)
+      : this._shapeThumb(shapeData, cat, 24, 24)
+    const label = isUser ? id : this._fmtName(id)
+    const menuBtn = isUser
+      ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
+                 aria-label="Shape options" title="Options" type="button">⋮</button>`
+      : ''
     return `
-      <button class="sl-row${sel ? ' is-selected' : ''}"
-              data-id="${this._escAttr(id)}" data-cat="${catId}">
-        <span class="sl-row-icon">${this._shapeThumb(path, cat, 24, 24)}</span>
-        <span class="sl-row-name">${this._esc(this._fmtName(id))}</span>
-        <span class="sl-row-id">${this._esc(catId)} / ${this._esc(id)}</span>
-      </button>`
+      <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
+        <button class="sl-row${sel ? ' is-selected' : ''}"
+                data-id="${this._escAttr(id)}" data-cat="${catId}">
+          <span class="sl-row-icon">${thumb}</span>
+          <span class="sl-row-name">${this._esc(label)}</span>
+          <span class="sl-row-id">${this._esc(catId)} / ${this._esc(id)}</span>
+        </button>
+        ${menuBtn}
+      </div>`
   }
 
   _buildFooter () {
     const cat = this._selectedId ? this._catalog[this._categoryId] : null
-    const path = cat?.data?.[this._selectedId]
+    const shapeData = cat?.data?.[this._selectedId]
+    const isUser = !!cat?.isUser
+    let footChip = ''
+    let footMeta = ''
+    if (this._selectedId && shapeData) {
+      const thumb = isUser
+        ? this._userShapeThumb(shapeData, 22, 22)
+        : this._shapeThumb(shapeData, cat, 22, 22)
+      const label = isUser ? this._selectedId : this._fmtName(this._selectedId)
+      footChip = `<span class="sl-foot-chip">${thumb}</span>`
+      footMeta = `
+        <span class="sl-foot-meta">
+          <span class="sl-foot-name">${this._esc(label)}</span>
+          <span class="sl-foot-path">${this._esc(this._categoryId)} / ${this._esc(this._selectedId)}</span>
+        </span>`
+    }
     return `
       <footer class="sl-foot">
         <div class="sl-foot-status">
-          ${this._selectedId && path ? `
-            <span class="sl-foot-chip">${this._shapeThumb(path, cat, 22, 22)}</span>
-            <span class="sl-foot-meta">
-              <span class="sl-foot-name">${this._esc(this._fmtName(this._selectedId))}</span>
-              <span class="sl-foot-path">${this._esc(this._categoryId)} / ${this._esc(this._selectedId)}</span>
-            </span>` : `
+          ${this._selectedId && shapeData ? `${footChip}${footMeta}` : `
             <span class="sl-foot-empty">Select a shape</span>`}
         </div>
         <span class="sl-foot-spacer"></span>
@@ -1030,6 +1193,38 @@ export class SeShapeLibrary extends HTMLElement {
         this._doInsert()
       })
     })
+
+    // Three-dot menu for user shapes
+    area.querySelectorAll('.sl-shape-menu').forEach(menuBtn => {
+      menuBtn.addEventListener('click', e => {
+        e.stopPropagation()
+        // Close any open dropdown
+        area.querySelectorAll('.sl-shape-dropdown').forEach(d => d.remove())
+
+        const wrap = menuBtn.closest('.sl-tile-wrap')
+        const dropdown = document.createElement('div')
+        dropdown.className = 'sl-shape-dropdown'
+        dropdown.innerHTML = `<button class="sl-remove">Remove from library</button>`
+        wrap.appendChild(dropdown)
+
+        dropdown.querySelector('.sl-remove').addEventListener('click', ev => {
+          ev.stopPropagation()
+          dropdown.remove()
+          const rawCat = menuBtn.dataset.cat.replace(/^user:/, '')
+          removeUserShape({ category: rawCat, label: menuBtn.dataset.id })
+          this._reloadUserShapes()
+        })
+
+        // Close on outside click
+        const closeDropdown = ev => {
+          if (!dropdown.contains(ev.target)) {
+            dropdown.remove()
+            document.removeEventListener('click', closeDropdown, true)
+          }
+        }
+        setTimeout(() => document.addEventListener('click', closeDropdown, true), 0)
+      })
+    })
   }
 
   // ── Targeted DOM updates (avoid full re-render) ────────────────────────────
@@ -1097,7 +1292,7 @@ export class SeShapeLibrary extends HTMLElement {
     // Update section header
     const nameEl = modal.querySelector('.sl-content-name')
     const metaEl = modal.querySelector('.sl-content-meta')
-    if (nameEl) nameEl.textContent = CAT_LABELS[this._categoryId] || this._categoryId
+    if (nameEl) nameEl.textContent = this._catLabel(this._categoryId)
     if (metaEl) metaEl.textContent = `${this._countCategory(this._categoryId)} shapes`
 
     this._updateShapesArea()

@@ -27,6 +27,7 @@ export class SeCMenuDialog extends HTMLElement {
     this.$moveUpLink = this._shadowRoot.querySelector('#se-move-up')
     this.$moveDownLink = this._shadowRoot.querySelector('#se-move-down')
     this.$moveBackLink = this._shadowRoot.querySelector('#se-move-back')
+    this.$addToShapeLibraryLink = this._shadowRoot.querySelector('#se-add-to-shape-library')
   }
 
   /**
@@ -240,6 +241,7 @@ export class SeCMenuDialog extends HTMLElement {
     svgEditor.$click(this.$moveUpLink, (evt) => onMenuClickHandler(evt, 'move_up'))
     svgEditor.$click(this.$moveDownLink, (evt) => onMenuClickHandler(evt, 'move_down'))
     svgEditor.$click(this.$moveBackLink, (evt) => onMenuClickHandler(evt, 'move_back'))
+    svgEditor.$click(this.$addToShapeLibraryLink, (evt) => onMenuClickHandler(evt, 'add_to_shape_library'))
   }
 }
 
