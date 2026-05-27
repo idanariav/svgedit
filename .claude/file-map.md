@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Quick lookup table — find a concern, jump to the file. Line numbers reference points of interest within large files.
 
-_Last verified: 2026-05-26_ *(updated: ext-shadow added)*
+_Last verified: 2026-05-27_ *(updated: ext-cutter added)*
 
 ---
 
@@ -93,6 +93,7 @@ _Last verified: 2026-05-26_ *(updated: ext-shadow added)*
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — offset X/Y, blur, opacity, color |
+| `ext-cutter/` | Cutter (knife) tool — drag a straight line to split selected shapes into two pieces |
 
 ---
 
@@ -119,6 +120,7 @@ _Last verified: 2026-05-26_ *(updated: ext-shadow added)*
 | `core/text-actions.js` | Text cursor/selection editing |
 | `core/layer.js` | Layer CRUD |
 | `core/boolean-ops.js` | Union, intersect, subtract |
+| `core/cutter.js` | Half-plane intersection cut algorithm — `cutShapes(x1,y1,x2,y2)` |
 | `core/json.js` | JSON import/export |
 | `core/units.js` | Unit conversion (px↔em↔cm…) |
 | `core/math.js` | Transform matrix math |

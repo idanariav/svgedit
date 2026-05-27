@@ -194,6 +194,7 @@ export default class ConfigObj {
       'ext-panning',
       'ext-shapes',
       'ext-polystar',
+      'ext-cutter',
       'ext-storage',
       'ext-opensave',
       'ext-layer_view',

@@ -81,6 +81,7 @@ import {
 import { getSelectorManager, Selector, init as selectInit } from './core/select.js'
 import { clearSvgContentElementInit, init as clearInit } from './core/clear.js'
 import { init as booleanOpsInit } from './core/boolean-ops.js'
+import { init as cutterInit } from './core/cutter.js'
 import {
   getClosest,
   getParents,
@@ -284,6 +285,7 @@ class SvgCanvas {
     blurInit(this)
     selectedElemInit(this)
     booleanOpsInit(this)
+    cutterInit(this)
 
     /**
      * Transfers sessionStorage from one tab to another.

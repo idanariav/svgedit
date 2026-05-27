@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-26_ *(updated: ext-shadow added)*
+_Last verified: 2026-05-27_ *(updated: ext-cutter added)*
 
 ---
 
@@ -29,6 +29,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
 - `tool_star` / `tool_polygon` — Polystar flyout (ext-polystar)
+- `tool_cutter` — Cutter/knife tool (ext-cutter) — position 11, after polystar
 - `ext-panning` — Pan/hand tool (ext-panning) — after zoom tool
 
 ---
