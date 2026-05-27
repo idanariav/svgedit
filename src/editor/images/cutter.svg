@@ -1,11 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-     stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Blade body -->
-  <path d="M4 4 L17 17"/>
-  <!-- Blade edge -->
-  <path d="M4 6 L15 17"/>
-  <!-- Handle -->
-  <rect x="16" y="16" width="5" height="3.5" rx="1"/>
-  <!-- Cut indicator (dashed diagonal) -->
-  <line x1="8" y1="16" x2="16" y2="8" stroke-dasharray="2,2" stroke-width="1.2"/>
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg fill="currentColor" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 viewBox="0 0 512 512" xml:space="preserve">
+<g>
+	<g>
+		<polygon points="380.296,115.896 212.148,284.043 190.646,262.541 358.793,94.394 312.935,48.535 128.517,232.952 149.74,324.959 
+			241.736,346.174 426.155,161.755 		"/>
+	</g>
+</g>
+<g>
+	<g>
+		<path d="M451.241,23.448C436.12,8.328,416.014,0,394.63,0c-21.385,0-41.49,8.328-56.61,23.448l-3.584,3.584l113.221,113.22
+			l3.584-3.584C482.456,105.454,482.456,54.663,451.241,23.448z"/>
+	</g>
+</g>
+<g>
+	<g>
+		<polygon points="124.382,350.319 107.322,276.358 0.229,383.451 53.7,512 198.329,367.371 		"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="467.69" y="481.453" width="44.081" height="30.409"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="397.446" y="481.453" width="44.082" height="30.409"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="327.201" y="481.453" width="44.082" height="30.409"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="256.957" y="481.453" width="44.081" height="30.409"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="186.712" y="481.453" width="44.081" height="30.409"/>
+	</g>
+</g>
+<g>
+	<g>
+		<rect x="116.468" y="481.453" width="44.081" height="30.409"/>
+	</g>
+</g>
 </svg>
