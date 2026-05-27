@@ -100,9 +100,10 @@ export default {
       mouseDown (opts) {
         if (svgCanvas.getMode() !== 'cutter') return undefined
 
-        const zoom = svgCanvas.getZoom()
-        startX = opts.mouse_x / zoom
-        startY = opts.mouse_y / zoom
+        // mouseDown opts use start_x/start_y (already in canvas coords).
+        // mouseMove/mouseUp use mouse_x/mouse_y (screen-pixel coords, need /zoom).
+        startX = opts.start_x
+        startY = opts.start_y
 
         createPreviewLine(startX, startY)
         started = true
