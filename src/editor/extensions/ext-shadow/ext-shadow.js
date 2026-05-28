@@ -4,7 +4,11 @@
  * @license Apache-2.0
  *
  * Adds a drop shadow to any selected shape via a composed SVG filter.
- * Controls: offset X, offset Y, blur radius, opacity, color.
+ * Controls: angle (direction), length (stretch), blur radius, opacity, color.
+ *
+ * Angle 0° = 12 o'clock (shadow points up), increases clockwise.
+ * Internally the filter stores dx/dy on feDropShadow; angle/length are the UI
+ * representation only — no SVG format change for saved files.
  *
  * The filter is stored in <defs> with id "{elemId}_shadow" and uses
  * a single <feDropShadow> primitive (Baseline Widely Available since 2020).
@@ -38,6 +42,37 @@ export default {
     // elemId → previous filter URL (to restore on shadow removal)
     const prevFilterMap = {}
 
+    // --- Polar/Cartesian helpers ---
+
+    // Angle 0° = 12 o'clock (shadow points up), clockwise; SVG Y-axis is down.
+    const toOffset = (angle, length) => {
+      const r = angle * Math.PI / 180
+      return { dx: length * Math.sin(r), dy: -length * Math.cos(r) }
+    }
+
+    // Inverse: dx/dy → { angle: 0–360, length }
+    const toPolar = (dx, dy) => {
+      const length = Math.sqrt(dx * dx + dy * dy)
+      const angle = length > 0
+        ? ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360
+        : 150 // default to ~5 o'clock when length is zero
+      return { angle, length }
+    }
+
+    /**
+     * Compute filter region in userSpaceOnUse coordinates so long shadows
+     * are never clipped. Must be called after the element has layout.
+     */
+    const setFilterRegion = (filter, elem, length, blur) => {
+      const bbox = elem.getBBox()
+      const pad = Math.abs(length) + blur * 3
+      filter.setAttribute('filterUnits', 'userSpaceOnUse')
+      filter.setAttribute('x',      String(Math.floor(bbox.x - pad)))
+      filter.setAttribute('y',      String(Math.floor(bbox.y - pad)))
+      filter.setAttribute('width',  String(Math.ceil(bbox.width  + pad * 2)))
+      filter.setAttribute('height', String(Math.ceil(bbox.height + pad * 2)))
+    }
+
     /**
      * Read shadow params from an element's _shadow filter.
      * Returns null if no shadow filter is set.
@@ -51,12 +86,15 @@ export default {
       if (!filter) return null
       const ds = filter.querySelector('feDropShadow')
       if (!ds) return null
+      const dx = Number(ds.getAttribute('dx') ?? 5)
+      const dy = Number(ds.getAttribute('dy') ?? 5)
+      const { angle, length } = toPolar(dx, dy)
       return {
-        offsetX: Number(ds.getAttribute('dx') ?? 5),
-        offsetY: Number(ds.getAttribute('dy') ?? 5),
-        blur: Number(ds.getAttribute('stdDeviation') ?? 4),
+        angle:   Math.round(angle),
+        length:  Math.round(length * 10) / 10,
+        blur:    Number(ds.getAttribute('stdDeviation') ?? 4),
         opacity: Number(ds.getAttribute('flood-opacity') ?? 0.5),
-        color: ds.getAttribute('flood-color') ?? '#000000'
+        color:   ds.getAttribute('flood-color') ?? '#000000'
       }
     }
 
@@ -64,17 +102,17 @@ export default {
      * Read current panel values.
      */
     const getShadowPanelValues = () => ({
-      offsetX: Number($id('shadow_offsetX').value),
-      offsetY: Number($id('shadow_offsetY').value),
-      blur: Number($id('shadow_blur').value),
+      angle:   Number($id('shadow_angle').value),
+      length:  Number($id('shadow_length').value),
+      blur:    Number($id('shadow_blur').value),
       opacity: Number($id('shadow_opacity').value),
-      color: $id('shadow_color').value
+      color:   $id('shadow_color').value
     })
 
     /**
      * Apply, update, or remove the drop shadow on the selected element.
      * All changes are recorded in the undo history.
-     * @param {object} params - { offsetX, offsetY, blur, opacity, color } or { remove: true }
+     * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
      */
     const setShadow = (params) => {
       const elem = svgCanvas.getSelectedElements()[0]
@@ -108,7 +146,8 @@ export default {
       }
 
       // --- Apply / update path ---
-      const { offsetX, offsetY, blur, opacity, color } = params
+      const { angle, length, blur, opacity, color } = params
+      const { dx, dy } = toOffset(angle, length)
       let filter = svgCanvas.getElement(`${elemId}_shadow`)
 
       if (!filter) {
@@ -127,8 +166,8 @@ export default {
         const dropShadowEl = svgCanvas.addSVGElementsFromJson({
           element: 'feDropShadow',
           attr: {
-            dx: String(offsetX),
-            dy: String(offsetY),
+            dx: String(dx),
+            dy: String(dy),
             stdDeviation: String(blur),
             'flood-color': color,
             'flood-opacity': String(opacity)
@@ -138,14 +177,9 @@ export default {
         // Create <filter> and assemble
         filter = svgCanvas.addSVGElementsFromJson({
           element: 'filter',
-          attr: {
-            id: `${elemId}_shadow`,
-            x: '-50%',
-            y: '-50%',
-            width: '200%',
-            height: '200%'
-          }
+          attr: { id: `${elemId}_shadow` }
         })
+        setFilterRegion(filter, elem, length, blur)
         filter.append(dropShadowEl)
         svgCanvas.findDefs().append(filter)
         batchCmd.addSubCommand(new InsertElementCommand(filter))
@@ -161,12 +195,13 @@ export default {
             'flood-color': ds.getAttribute('flood-color'),
             'flood-opacity': ds.getAttribute('flood-opacity')
           }))
-          ds.setAttribute('dx', String(offsetX))
-          ds.setAttribute('dy', String(offsetY))
+          ds.setAttribute('dx', String(dx))
+          ds.setAttribute('dy', String(dy))
           ds.setAttribute('stdDeviation', String(blur))
           ds.setAttribute('flood-color', color)
           ds.setAttribute('flood-opacity', String(opacity))
         }
+        setFilterRegion(filter, elem, length, blur)
       }
 
       if (!batchCmd.isEmpty()) {
@@ -183,11 +218,11 @@ export default {
       panel.style.display = on ? '' : 'none'
       if (on && elem) {
         const p = getShadowFromElement(elem)
-        $id('shadow_offsetX').value = p?.offsetX ?? 5
-        $id('shadow_offsetY').value = p?.offsetY ?? 5
-        $id('shadow_blur').value = p?.blur ?? 4
+        $id('shadow_angle').value   = p?.angle   ?? 150
+        $id('shadow_length').value  = p?.length  ?? 10
+        $id('shadow_blur').value    = p?.blur    ?? 4
         $id('shadow_opacity').value = p?.opacity ?? 0.5
-        $id('shadow_color').value = p?.color ?? '#000000'
+        $id('shadow_color').value   = p?.color   ?? '#000000'
       }
     }
 
@@ -200,10 +235,10 @@ export default {
         panelTemplate.innerHTML = `
           <div id="shadow_panel" style="display:none">
             <div class="tool_sep"></div>
-            <se-spin-input id="shadow_offsetX" label="X" min="-100" max="100" step="1" value="5"
-              title="${svgEditor.i18next.t(`${name}:contextTools.offsetX.title`)}"></se-spin-input>
-            <se-spin-input id="shadow_offsetY" label="Y" min="-100" max="100" step="1" value="5"
-              title="${svgEditor.i18next.t(`${name}:contextTools.offsetY.title`)}"></se-spin-input>
+            <se-spin-input id="shadow_angle"  label="∠" min="0" max="359" step="5" value="150"
+              title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
+            <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="10"
+              title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
             <se-spin-input id="shadow_blur" label="B" min="0" max="50" step="1" value="4"
               title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
             <se-spin-input id="shadow_opacity" label="%" min="0" max="1" step="0.05" value="0.5"
@@ -218,7 +253,7 @@ export default {
         $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
 
         // Wire event listeners
-        ;['shadow_offsetX', 'shadow_offsetY', 'shadow_blur', 'shadow_opacity'].forEach((id) => {
+        ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity'].forEach((id) => {
           $id(id).addEventListener('change', () => setShadow(getShadowPanelValues()))
         })
         $id('shadow_color').addEventListener('change', () => setShadow(getShadowPanelValues()))

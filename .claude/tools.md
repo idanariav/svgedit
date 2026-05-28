@@ -229,10 +229,12 @@ Flying button (left panel):
 
 ### ext-shadow — Drop Shadow (`extensions/ext-shadow/`)
 - Context panel shown for any single selected element (all shape types)
-- Controls: **Offset X** (`shadow_offsetX`), **Offset Y** (`shadow_offsetY`), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
-- Creates a `<filter id="{elemId}_shadow">` with a single `<feDropShadow>` primitive in `<defs>`
-- Filter region is `-50%/-50%/200%/200%` to prevent clipping at typical offset/blur values
-- **v1 limitation:** SVG's `filter` attribute can only reference one `<filter>`. Applying shadow saves any existing filter URL and restores it on shadow removal — but shadow and blur cannot coexist simultaneously
+- Controls: **Angle ∠** (`shadow_angle`, 0–359°, clockwise from 12 o'clock), **Length L** (`shadow_length`, 0–500 px stretch), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
+- Angle + Length are the UI representation; internally converted to `dx`/`dy` on `feDropShadow`. Existing SVG files with raw `dx`/`dy` load and display correctly.
+- Clock reference: 90°=3 o'clock, 150°=5 o'clock, 180°=6 o'clock (straight down), 240°=8 o'clock, 300°=10 o'clock
+- Sunset/long-shadow recipe: Angle ~180°, Length 100–300, Blur 1–3
+- Creates a `<filter id="{elemId}_shadow" filterUnits="userSpaceOnUse">` with a single `<feDropShadow>` in `<defs>`; filter region is computed from `getBBox()` + padding so long shadows are never clipped
+- **Limitation:** SVG's `filter` attribute can only reference one `<filter>`. Applying shadow saves any existing filter URL and restores it on removal — shadow and blur cannot coexist simultaneously. If the element is resized after shadow is applied, re-apply the shadow to refresh the filter region.
 
 ---
 
