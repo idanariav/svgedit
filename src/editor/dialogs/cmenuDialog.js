@@ -198,22 +198,19 @@ export class SeCMenuDialog extends HTMLElement {
     const current = this
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
-      // Detect mouse position
       let x = e.pageX
       let y = e.pageY
-
-      const xOff = screen.width - 250 // menu width
-      const yOff = screen.height - (276 + 150) // menu height + bottom panel height and scroll bar
-
-      if (x > xOff) {
-        x = xOff
-      }
-      if (y > yOff) {
-        y = yOff
-      }
       current.$dialog.style.top = y + 'px'
       current.$dialog.style.left = x + 'px'
       current.$dialog.style.display = 'block'
+      // Clamp to viewport using actual rendered dimensions
+      const menuRect = current.$dialog.getBoundingClientRect()
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      if (menuRect.right > vw) x = Math.max(0, x - (menuRect.right - vw))
+      if (menuRect.bottom > vh) y = Math.max(0, y - (menuRect.bottom - vh))
+      current.$dialog.style.top = y + 'px'
+      current.$dialog.style.left = x + 'px'
     }
     const onMenuCloseHandler = (e) => {
       if (e.button !== 2) {

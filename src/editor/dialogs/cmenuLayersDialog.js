@@ -119,9 +119,19 @@ export class SeCMenuLayerDialog extends HTMLElement {
     const current = this
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
-      current.$dialog.style.top = e.pageY + 'px'
-      current.$dialog.style.left = e.pageX - 126 + 'px'
+      let x = e.pageX - 126
+      let y = e.pageY
+      current.$dialog.style.top = y + 'px'
+      current.$dialog.style.left = x + 'px'
       current.$dialog.style.display = 'block'
+      // Clamp to viewport using actual rendered dimensions
+      const menuRect = current.$dialog.getBoundingClientRect()
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      if (menuRect.right > vw) x = Math.max(0, x - (menuRect.right - vw))
+      if (menuRect.bottom > vh) y = Math.max(0, y - (menuRect.bottom - vh))
+      current.$dialog.style.top = y + 'px'
+      current.$dialog.style.left = x + 'px'
     }
     const onMenuCloseHandler = (e) => {
       if (e.button !== 2) {

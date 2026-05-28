@@ -764,11 +764,33 @@ export class SeShapeLibrary extends HTMLElement {
       await this._loadCategory(this._popCatId)
     }
     this._renderPopover()
-    this._shadow.querySelector('.sl-popover').style.display = ''
+    const popover = this._shadow.querySelector('.sl-popover')
+    popover.style.display = ''
     this._shadow.querySelector('.sl-modal').style.display = 'none'
     this._shadow.querySelector('.sl-backdrop').style.display = 'none'
+    // Position after display is set so we can measure actual dimensions
+    this._positionPopover(popover)
     this._attachOutsideClick()
     this._attachEscape()
+  }
+
+  _positionPopover (popover) {
+    const btnRect = this.getBoundingClientRect()
+    const popRect = popover.getBoundingClientRect()
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const gap = 8
+
+    // Prefer opening to the right of the button; flip left if it would overflow
+    let left = btnRect.right + gap
+    if (left + popRect.width > vw - gap) left = Math.max(gap, btnRect.left - gap - popRect.width)
+
+    // Align top to button, clamp so bottom stays within viewport
+    let top = Math.max(gap, btnRect.top)
+    if (top + popRect.height > vh - gap) top = Math.max(gap, vh - gap - popRect.height)
+
+    popover.style.left = `${left}px`
+    popover.style.top = `${top}px`
   }
 
   async _openModal () {
@@ -921,11 +943,6 @@ export class SeShapeLibrary extends HTMLElement {
         <button class="sl-pop-browse">Browse all${total ? ` ${total}` : ''} →</button>
       </footer>
     `
-
-    // Position anchored to the toolbar button
-    const rect = this.getBoundingClientRect()
-    popover.style.top = `${Math.max(8, rect.top)}px`
-    popover.style.left = `${rect.right + 8}px`
 
     // Events
     popover.querySelectorAll('.sl-pop-cat[data-cat]').forEach(btn => {

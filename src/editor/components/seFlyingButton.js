@@ -330,7 +330,12 @@ export class FlyingButton extends HTMLElement {
           } else {
             this.setAttribute('opened', 'opened')
             const rect = this.getBoundingClientRect()
-            this.$menu.style.top = rect.top + 'px'
+            const menuRect = this.$menu.getBoundingClientRect()
+            const vh = window.innerHeight
+            const top = menuRect.height > 0 && rect.top + menuRect.height > vh - 8
+              ? Math.max(8, vh - 8 - menuRect.height)
+              : rect.top
+            this.$menu.style.top = top + 'px'
           }
           break
         default:
