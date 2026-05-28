@@ -152,7 +152,8 @@ export default {
         curStyles: true,
         attr: {
           d: finalD,
-          id: svgCanvas.getNextId()
+          id: svgCanvas.getNextId(),
+          opacity: svgCanvas.getCurShape().opacity  // override the /2 halving applied by curStyles
         }
       })
 
