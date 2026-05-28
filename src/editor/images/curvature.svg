@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- S-curve path -->
+  <path d="M4 18 C4 18 8 18 10 12 S16 6 20 6"/>
+  <!-- Anchor dots at start and end -->
+  <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+  <circle cx="20" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+</svg>

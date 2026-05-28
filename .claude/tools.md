@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-27_ *(updated: ext-cutter added)*
+_Last verified: 2026-05-28_ *(updated: ext-curvature added)*
 
 ---
 
@@ -30,6 +30,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
 - `tool_star` / `tool_polygon` — Polystar flyout (ext-polystar)
 - `tool_cutter` — Cutter/knife tool (ext-cutter) — position 11, after polystar
+- `tool_curvature` — Curvature tool (ext-curvature) — position 12, after cutter
 - `ext-panning` — Pan/hand tool (ext-panning) — after zoom tool
 
 ---
@@ -204,6 +205,12 @@ Flying button (left panel):
 ### ext-markers — Line Markers (`extensions/ext-markers/`)
 - Context panel on lines/polylines/paths/polygons: **Marker Start**, **Marker Middle**, **Marker End**
 - Marker options: None, Left Arrow, Right Arrow, Box, Circle (all with open/filled variants)
+
+### ext-cutter — Knife/Cut Tool (`extensions/ext-cutter/`)
+- **Cutter** (`tool_cutter`): Drag a straight line across shapes to split them along that line; affects selected shapes only (or all shapes if nothing selected)
+
+### ext-curvature — Curvature Tool (`extensions/ext-curvature/`)
+- **Curvature** (`tool_curvature`): Click to place anchor points; smooth Bézier curves are auto-computed via Catmull-Rom. Double-click for a corner point. Click near start to close path. Escape to finalize open.
 
 ### ext-panning — Pan Tool (`extensions/ext-panning/`)
 - Hand/pan tool added to left panel after zoom; activates canvas panning mode
