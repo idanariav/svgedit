@@ -319,12 +319,18 @@
 
 #sidepanels {
   grid-area: side;
+  position: relative;
 }
 
 /* ── Panel handle ─────────────────────────────────────────────────── */
 #sidepanel_handle {
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  /* override the global `.svg_editor * { transform-origin: 0 0 }` so the
+     rotate happens around the handle's centre — keeps the layout box and
+     the visual box in the same place, so `right: 0` / `right: 100%`
+     position the handle predictably against the panel edges. */
+  transform-origin: center;
   transform: translateY(-50%) rotate(180deg);
   color: var(--muted);
   position: absolute;
@@ -352,6 +358,12 @@
 #sidepanel_handle:hover {
   background: var(--icon-hover-bg);
   color: var(--icon-hover);
+}
+
+/* When the panel is open, anchor the handle to the panel's left edge
+   so it stops covering the content inside. */
+.svg_editor.open #sidepanel_handle {
+  right: 100%;
 }
 
 .svg_editor:not(.open) #sidepanel_content {
