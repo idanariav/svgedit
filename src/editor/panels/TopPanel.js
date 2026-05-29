@@ -38,6 +38,16 @@ class TopPanel {
   }
 
   /**
+   * Toggle visibility of a sidepanel section by id.
+   * @param {string} id
+   * @param {boolean} visible
+   */
+  setSidepanelVisible (id, visible) {
+    const el = $id(id)
+    if (el) el.style.display = visible ? '' : 'none'
+  }
+
+  /**
    * @type {module}
    */
   get selectedElement () {
@@ -210,7 +220,8 @@ class TopPanel {
     this.hideTool('container_panel')
     this.hideTool('use_panel')
     this.hideTool('a_panel')
-    this.hideTool('xy_panel')
+    this.setSidepanelVisible('sidepanel_general', false)
+    this.setSidepanelVisible('sidepanel_text', false)
     if (elem) {
       const elname = elem.nodeName
       const isCircleArcPath = elname === 'path' && elem.hasAttribute('data-arc')
@@ -232,10 +243,12 @@ class TopPanel {
 
       if (!isNode && currentMode !== 'pathedit') {
         this.displayTool('selected_panel')
+        this.setSidepanelVisible('sidepanel_general', true)
         // Elements in this array already have coord fields
-        if (['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isCircleArcPath) {
-          this.hideTool('xy_panel')
-        } else {
+        const hasOwnCoords = ['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isCircleArcPath
+        $id('selected_x').style.display = hasOwnCoords ? 'none' : ''
+        $id('selected_y').style.display = hasOwnCoords ? 'none' : ''
+        if (!hasOwnCoords) {
           let x
           let y
 
@@ -270,8 +283,6 @@ class TopPanel {
 
           updateValue('selected_x', x)
           updateValue('selected_y', y)
-
-          this.displayTool('xy_panel')
         }
 
         // Elements in this array cannot be converted to a path
@@ -378,6 +389,7 @@ class TopPanel {
 
         if (tagName === 'text') {
           this.displayTool('text_panel')
+          this.setSidepanelVisible('sidepanel_text', true)
           $id('tool_italic').pressed = this.editor.svgCanvas.getItalic()
           $id('tool_bold').pressed = this.editor.svgCanvas.getBold()
           $id('tool_text_decoration_underline').pressed =
@@ -451,6 +463,7 @@ class TopPanel {
       const selElems = this.editor.svgCanvas.getSelectedElements()
       if (selElems.every(elem => elem.tagName === 'text')) {
         this.displayTool('text_panel')
+        this.setSidepanelVisible('sidepanel_text', true)
       }
 
       this.displayTool('multiselected_panel')
@@ -532,7 +545,7 @@ class TopPanel {
     const { undoMgr, textActions } = this.editor.svgCanvas
     if (undoMgr.getUndoStackSize() > 0) {
       undoMgr.undo()
-      this.editor.layersPanel.populateLayers()
+      this.editor.rightPanel.populateLayers()
       if (this.editor.svgCanvas.getMode() === 'textedit') {
         textActions.clear()
       }
@@ -547,7 +560,7 @@ class TopPanel {
     const { undoMgr } = this.editor.svgCanvas
     if (undoMgr.getRedoStackSize() > 0) {
       undoMgr.redo()
-      this.editor.layersPanel.populateLayers()
+      this.editor.rightPanel.populateLayers()
     }
   }
 

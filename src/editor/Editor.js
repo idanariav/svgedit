@@ -24,7 +24,7 @@ import EditorStartup from './EditorStartup.js'
 import LeftPanel from './panels/LeftPanel.js'
 import TopPanel from './panels/TopPanel.js'
 import BottomPanel from './panels/BottomPanel.js'
-import LayersPanel from './panels/LayersPanel.js'
+import RightPanel from './panels/RightPanel.js'
 import MainMenu from './MainMenu.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 
@@ -318,7 +318,7 @@ class Editor extends EditorStartup {
     this.leftPanel = new LeftPanel(this)
     this.bottomPanel = new BottomPanel(this)
     this.topPanel = new TopPanel(this)
-    this.layersPanel = new LayersPanel(this)
+    this.rightPanel = new RightPanel(this)
     this.mainMenu = new MainMenu(this)
     // makes svgEditor accessible as a global variable
     window.svgEditor = this
@@ -755,7 +755,7 @@ class Editor extends EditorStartup {
     elems.forEach((elem) => {
       const isSvgElem = elem?.tagName === 'svg'
       if (isSvgElem || this.svgCanvas.isLayer(elem)) {
-        this.layersPanel.populateLayers()
+        this.rightPanel.populateLayers()
         // if the element changed was the svg, then it could be a resolution change
         if (isSvgElem) {
           this.updateCanvas()
@@ -1114,7 +1114,7 @@ class Editor extends EditorStartup {
       this.svgCanvas.clearSelection()
       this.hideSourceEditor()
       this.zoomImage()
-      this.layersPanel.populateLayers()
+      this.rightPanel.populateLayers()
     }
 
     if (!this.svgCanvas.setSvgString(e.detail.value)) {
@@ -1258,7 +1258,7 @@ class Editor extends EditorStartup {
       this.svgCanvas.renameCurrentLayer(
         this.i18next.t('notification.common.layer') + ' 1'
       )
-      this.layersPanel.populateLayers()
+      this.rightPanel.populateLayers()
     }
 
     this.svgCanvas.runExtensions(

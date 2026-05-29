@@ -22,7 +22,7 @@ svgedit/
 │   │   ├── TopPanel.js/.html      # Horizontal toolbar — all shape + text attribute panels
 │   │   ├── LeftPanel.js/.html     # Vertical tool sidebar — drawing/selection tools
 │   │   ├── BottomPanel.js/.html   # Status bar — fill/stroke/opacity/zoom
-│   │   └── LayersPanel.js/.html   # Layer management tree
+│   │   └── RightPanel.js/.html    # Right side panel host: Layers + General/Text/Shadow/Color Shift sections
 │   │
 │   ├── components/                # Custom HTML elements (shadow DOM, reusable)
 │   │   ├── seButton.js            # Clickable icon button
@@ -87,7 +87,7 @@ svgedit/
 | **TopPanel** | `panels/TopPanel.js/.html` | Shape attribute panels, text tools, alignment, boolean ops, path node editing |
 | **LeftPanel** | `panels/LeftPanel.js/.html` | Drawing tool buttons (select, rect, circle, path, text, etc.) |
 | **BottomPanel** | `panels/BottomPanel.js/.html` | Fill/stroke colors, stroke width/style/cap/join, opacity, zoom |
-| **LayersPanel** | `panels/LayersPanel.js/.html` | Layer CRUD, reorder, visibility toggle, move-elements-to |
+| **RightPanel** | `panels/RightPanel.js/.html` | Hosts the right side panel (`#sidepanel_content`): Layers tool + context-aware sections (General, Text, Shadow, Color Shift) injected here |
 | **MainMenu** | `MainMenu.js` | Export, Document Properties, Preferences, Homepage links |
 | **Components** | `components/*.js` | Reusable shadow-DOM web elements (buttons, inputs, selects, color pickers) |
 | **Dialogs** | `dialogs/*.js` | Modal dialogs (export, prefs, image props, SVG source, alerts) |
@@ -110,7 +110,7 @@ src/editor/index.html
                     ├── leftPanel.init()
                     ├── bottomPanel.init()
                     ├── topPanel.init()
-                    ├── layersPanel.init()
+                    ├── rightPanel.init()
                     ├── mainMenu.init()
                     ├── bind svgCanvas events:
                     │     selected   → selectedChanged()   // update attribute panels
@@ -207,5 +207,5 @@ Entry points: `src/editor/index.html` (dev + ES build) · `iife-index.html` (IIF
 10. Editor.elementChanged() → updates BottomPanel coordinates
 11. SvgCanvas fires 'selected' event with new element
 12. Editor.selectedChanged() → TopPanel shows rect_panel, updates attribute inputs
-13. LayersPanel updates to show new element in active layer
+13. RightPanel updates to show new element in active layer
 ```

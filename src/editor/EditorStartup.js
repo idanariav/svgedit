@@ -133,8 +133,8 @@ class EditorStartup {
 
     this.leftPanel.init()
     this.bottomPanel.init()
+    this.rightPanel.init()
     this.topPanel.init()
-    this.layersPanel.init()
     this.mainMenu.init()
 
     const { undoMgr } = this.svgCanvas
@@ -150,7 +150,7 @@ class EditorStartup {
 
     this.rulers = new Rulers(this)
 
-    this.layersPanel.populateLayers()
+    this.rightPanel.populateLayers()
     this.selectedElement = null
     this.multiselected = false
 
@@ -247,7 +247,7 @@ class EditorStartup {
         promptMoveLayerOnce = true
         this.svgCanvas.moveSelectedToLayer(destLayer)
         this.svgCanvas.clearSelection()
-        this.layersPanel.populateLayers()
+        this.rightPanel.populateLayers()
       }
       if (destLayer) {
         if (promptMoveLayerOnce) {
@@ -479,7 +479,7 @@ class EditorStartup {
       })
     })
 
-    this.layersPanel.populateLayers()
+    this.rightPanel.populateLayers()
 
     const centerCanvas = () => {
       // this centers the canvas vertically in the this.workarea (horizontal handled in CSS)

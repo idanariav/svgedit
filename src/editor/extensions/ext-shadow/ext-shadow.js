@@ -230,27 +230,31 @@ export default {
       name: svgEditor.i18next.t(`${name}:name`),
 
       callback () {
-        // Inject the shadow panel into #tools_top
+        // Inject the shadow panel into the right side panel
         const panelTemplate = document.createElement('template')
         panelTemplate.innerHTML = `
-          <div id="shadow_panel" style="display:none">
-            <div class="tool_sep"></div>
-            <se-spin-input id="shadow_angle"  label="∠" min="0" max="359" step="5" value="150"
-              title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
-            <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="10"
-              title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
-            <se-spin-input id="shadow_blur" label="B" min="0" max="50" step="1" value="4"
-              title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
-            <se-spin-input id="shadow_opacity" label="%" min="0" max="1" step="0.05" value="0.5"
-              title="${svgEditor.i18next.t(`${name}:contextTools.opacity.title`)}"></se-spin-input>
-            <input type="color" id="shadow_color" value="#000000"
-              title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}"
-              style="width:28px;height:28px;padding:1px;border:1px solid var(--chrome-border);border-radius:4px;background:var(--field-bg);cursor:pointer;vertical-align:middle;">
-            <se-button id="shadow_remove" src="delete.svg"
-              title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
+          <div id="shadow_panel" class="sidepanel_section" style="display:none">
+            <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:name`)}</div>
+            <div class="sidepanel_section_grid">
+              <se-spin-input id="shadow_angle"  label="∠" min="0" max="359" step="5" value="150"
+                title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
+              <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="10"
+                title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
+              <se-spin-input id="shadow_blur" label="B" min="0" max="50" step="1" value="4"
+                title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
+              <se-spin-input id="shadow_opacity" label="%" min="0" max="1" step="0.05" value="0.5"
+                title="${svgEditor.i18next.t(`${name}:contextTools.opacity.title`)}"></se-spin-input>
+            </div>
+            <div class="shadow_panel_footer">
+              <input type="color" id="shadow_color" value="#000000"
+                title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}">
+              <se-button id="shadow_remove" src="delete.svg"
+                title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
+            </div>
           </div>
         `
-        $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+        const host = $id('sidepanel_content') || $id('tools_top')
+        host.appendChild(panelTemplate.content.cloneNode(true))
 
         // Wire event listeners
         ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity'].forEach((id) => {

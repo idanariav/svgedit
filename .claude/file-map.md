@@ -33,8 +33,8 @@
 | `LeftPanel.html` | Left sidebar tool buttons |
 | `BottomPanel.js` | Fill/stroke/opacity/stroke-width handlers |
 | `BottomPanel.html` | Bottom bar markup (paint, zoom, stroke controls) |
-| `LayersPanel.js` | Layer CRUD, reorder, visibility, move-elements-to |
-| `LayersPanel.html` | Layer panel markup |
+| `RightPanel.js` | Right side panel: layers + General/Text property sections |
+| `RightPanel.html` | Right side panel markup |
 
 ---
 

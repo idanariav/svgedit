@@ -59,13 +59,9 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_make_link` | Make hyperlink | — |
 | `tool_flip_h` | Flip horizontal | — |
 | `tool_flip_v` | Flip vertical | — |
-| `elem_id` *(input)* | Element ID field | — |
-| `elem_class` *(input)* | Element class field | — |
-| `angle` *(spin)* | Rotation angle | — | −180 to 180°, step 5 |
-| `blur` *(spin)* | Gaussian blur | — | 0–100, step 5 (×10 internally) |
 | `tool_position` *(list)* | Align to page | — | L/C/R/T/M/B + distribute H/V |
-| `selected_x` *(spin)* | X position | — | Hidden for line, path, text, group |
-| `selected_y` *(spin)* | Y position | — | Hidden for line, path, text, group |
+
+> `elem_id`, `elem_class`, `angle` (rotation), `blur` (Gaussian blur), `selected_x`, `selected_y` now live in the Right Side Panel — see "Right Side Panel — Properties" below.
 
 ### Multiple elements selected (`.multiselected_panel`)
 
@@ -116,12 +112,8 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_font_family` *(select)* | Font family | — | Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times |
 | `font_size` *(spin)* | Font size | — | 1–1000px, step 1 |
 | `tool_text_anchor` *(list)* | Text alignment | — | start / middle / end |
-| `tool_letter_spacing` *(spin)* | Letter spacing | — | 0–100, step 1 |
-| `tool_word_spacing` *(spin)* | Word spacing | — | 0–1000, step 1 |
-| `tool_text_length` *(spin)* | Text length | — | 0–1000 (sets `textLength` attr) |
-| `tool_length_adjust` *(select)* | Length adjust | — | spacing / spacingAndGlyphs |
-| `tool_perspective_x` *(spin)* | Perspective X | — | −80 to 80, step 1 |
-| `tool_perspective_y` *(spin)* | Perspective Y | — | −80 to 80, step 1 |
+
+> Letter spacing, word spacing, text length, length adjust, and perspective X/Y now live in the Right Side Panel "Text" section — see below.
 
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 
@@ -155,7 +147,43 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 
 ---
 
-## Layers Panel (`src/editor/panels/LayersPanel.html`)
+## Right Side Panel — Properties (`src/editor/panels/RightPanel.html`)
+
+The right side panel hosts the Layers tool (always visible) plus context-sensitive sections that appear only when an appropriate selection exists. All sections share the `.sidepanel_section` style.
+
+### `#sidepanel_general` — single element selected
+
+| ID | Tool | Notes |
+|----|------|-------|
+| `elem_id` *(input)* | Element ID field | |
+| `elem_class` *(input)* | Element class field | |
+| `angle` *(spin)* | Rotation angle | −180 to 180°, step 5 |
+| `blur` *(spin)* | Gaussian blur | 0–100, step 5 (×10 internally) |
+| `selected_x` *(spin)* | X position | Row hidden for line, circle, ellipse, polygon, and circle-arc paths |
+| `selected_y` *(spin)* | Y position | Row hidden for the same shapes as `selected_x` |
+
+### `#sidepanel_text` — `<text>` element selected (or all-text multi-select)
+
+| ID | Tool | Notes |
+|----|------|-------|
+| `tool_letter_spacing` *(spin)* | Letter spacing | 0–100, step 1 |
+| `tool_word_spacing` *(spin)* | Word spacing | 0–1000, step 1 |
+| `tool_text_length` *(spin)* | Text length | 0–1000 (sets `textLength` attr) |
+| `tool_length_adjust` *(select)* | Length adjust | spacing / spacingAndGlyphs |
+| `tool_perspective_x` *(spin)* | Perspective X | −80 to 80, step 1 |
+| `tool_perspective_y` *(spin)* | Perspective Y | −80 to 80, step 1 |
+
+### `#shadow_panel` — injected by ext-shadow
+
+See the ext-shadow entry under "Extension-Provided Tools" below.
+
+### `#color_shift_panel` — injected by ext-color-shift
+
+See the ext-color-shift entry under "Extension-Provided Tools" below.
+
+---
+
+## Layers Panel (`src/editor/panels/RightPanel.html`)
 
 | ID | Control |
 |----|---------|
@@ -230,7 +258,8 @@ Flying button (left panel):
 - Empty-state hint is shown when nothing paintable is selected (skips `<g>`, `<svg>`, `<defs>`)
 
 ### ext-shadow — Drop Shadow (`extensions/ext-shadow/`)
-- Context panel shown for any single selected element (all shape types)
+- Adds a "Shadow" section to the right side panel (`#shadow_panel`, inside `#sidepanel_content`)
+- Shown for any single selected element (all shape types)
 - Controls: **Angle ∠** (`shadow_angle`, 0–359°, clockwise from 12 o'clock), **Length L** (`shadow_length`, 0–500 px stretch), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
 - Angle + Length are the UI representation; internally converted to `dx`/`dy` on `feDropShadow`. Existing SVG files with raw `dx`/`dy` load and display correctly.
 - Clock reference: 90°=3 o'clock, 150°=5 o'clock, 180°=6 o'clock (straight down), 240°=8 o'clock, 300°=10 o'clock

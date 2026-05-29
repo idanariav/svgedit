@@ -242,6 +242,31 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 #main_menu li:hover { background: var(--icon-hover-bg); }
 ```
 
+### `.sidepanel_section` — Right side-panel sections
+Shared style for context-aware sections inside `#sidepanel_content` (General, Text, Shadow, Color Shift):
+```css
+.sidepanel_section,
+#color_shift_panel,
+#shadow_panel {
+  padding: 12px 15px 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--chrome-border);
+  color: var(--fg);
+  user-select: none;
+}
+.sidepanel_section_label,
+#color_shift_label {
+  font-weight: 600; font-size: 12px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+}
+.sidepanel_section_grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px; align-items: center;
+}
+```
+Each section sets `style.display: 'none'` until its trigger selection is active.
+
 ### Wireframe Mode
 ```css
 #workarea.wireframe #svgcontent * {

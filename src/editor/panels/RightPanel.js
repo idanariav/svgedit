@@ -1,12 +1,12 @@
 import SvgCanvas from '@svgedit/svgcanvas'
-import LayersPanelHtml from './LayersPanel.html'
+import RightPanelHtml from './RightPanel.html'
 
 const { $id, $click } = SvgCanvas
 
 /**
  *
  */
-class LayersPanel {
+class RightPanel {
   /**
    * @param {PlainObject} editor
    */
@@ -46,7 +46,7 @@ class LayersPanel {
     const template = document.createElement('template')
     const { i18next } = this.editor
 
-    template.innerHTML = LayersPanelHtml
+    template.innerHTML = RightPanelHtml
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     // layer menu added to DOM
     const menuMore = document.createElement('se-cmenu-layers')
@@ -328,4 +328,4 @@ class LayersPanel {
   }
 }
 
-export default LayersPanel
+export default RightPanel

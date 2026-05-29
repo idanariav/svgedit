@@ -147,7 +147,7 @@ export default {
       svgEditor.svgCanvas.setResolution(x, y)
       svgEditor.updateCanvas(true)
       svgEditor.zoomImage()
-      svgEditor.layersPanel.populateLayers()
+      svgEditor.rightPanel.populateLayers()
       svgEditor.topPanel.updateContextPanel()
       svgEditor.topPanel.updateTitle('untitled.svg')
     }
@@ -178,7 +178,7 @@ export default {
           size: blob.size,
           type: blob.type
         })
-        svgEditor.layersPanel.populateLayers()
+        svgEditor.rightPanel.populateLayers()
       } catch (err) {
         if (err.name !== 'AbortError') {
           return console.error(err)

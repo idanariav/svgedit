@@ -1,0 +1,61 @@
+<div id="sidepanels">
+    <se-text id="sidepanel_handle" title="ui.panel_action" text="ui.panel"></se-text>
+    <div id="sidepanel_content">
+        <div id="layerpanel">
+            <se-text id="layersLabel" text="layers.layers"></se-text>
+            <fieldset id="layerbuttons">
+                <se-button id="layer_new" title="layers.new" size="small" src="new.svg"></se-button>
+                <se-button id="layer_delete" title="layers.del" size="small" src="delete.svg"></se-button>
+                <se-button id="layer_rename" title="layers.rename" size="small" src="text.svg"></se-button>
+                <se-button id="layer_up" title="layers.move_up" size="small" src="go_up.svg"></se-button>
+                <se-button id="layer_down" title="layers.move_down" size="small" src="go_down.svg"></se-button>
+                <se-button id="layer_moreopts" title="common.more_opts" size="small" src="context_menu.svg">
+                </se-button>
+            </fieldset>
+            <table id="layerlist">
+                <tr class="layer">
+                    <td class="layervis"></td>
+                    <td class="layername">Layer 1</td>
+                </tr>
+            </table>
+            <se-select id="selLayerNames" title="layers.move_selected" label="layers.move_elems_to" options="Layer 1"
+                values="layer1" value="layer1" disabled="disabled">
+            </se-select>
+        </div>
+        <div id="sidepanel_general" class="sidepanel_section" style="display:none">
+            <div class="sidepanel_section_label">General</div>
+            <div class="sidepanel_section_grid">
+                <se-input id="elem_id" data-attr="id" size="10" label="properties.id_label"
+                    title="properties.id"></se-input>
+                <se-input id="elem_class" data-attr="class" size="10" label="properties.class_label"
+                    title="properties.class"></se-input>
+                <se-spin-input id="angle" size="3" min="-180" max="180" step="5" src="angle.svg"
+                    title="properties.angle"></se-spin-input>
+                <se-spin-input id="blur" size="2" min="0" max="100" step="5" src="blur.svg"
+                    title="properties.blur"></se-spin-input>
+                <se-spin-input id="selected_x" data-attr="x" size="4" type="text" label="properties.x_label"
+                    title="properties.pos_x"></se-spin-input>
+                <se-spin-input id="selected_y" data-attr="y" size="4" type="text" label="properties.y_label"
+                    title="properties.pos_y"></se-spin-input>
+            </div>
+        </div>
+        <div id="sidepanel_text" class="sidepanel_section" style="display:none">
+            <div class="sidepanel_section_label">Text</div>
+            <div class="sidepanel_section_grid">
+                <se-spin-input size="2" id="tool_letter_spacing" min=0 max=100 step=1
+                    title="properties.text_letter_spacing" src="letter_spacing.svg"></se-spin-input>
+                <se-spin-input size="2" id="tool_word_spacing" min=0 max=1000 step=1
+                    title="properties.text_word_spacing" src="word_spacing.svg"></se-spin-input>
+                <se-spin-input size="2" id="tool_text_length" min=0 max=1000 step=1 title="properties.text_length"
+                    src="text_length.svg"></se-spin-input>
+                <se-select id="tool_length_adjust" src="length_adjust.svg" title="properties.text_length_adjust"
+                    options="properties.text_length_adjust_spacing,properties.text_length_adjust_spacing_and_glyphs"
+                    values="spacing::spacingAndGlyphs"></se-select>
+                <se-spin-input size="3" id="tool_perspective_x" min=-80 max=80 step=1
+                    title="properties.text_perspective_x" src="perspective_x.svg"></se-spin-input>
+                <se-spin-input size="3" id="tool_perspective_y" min=-80 max=80 step=1
+                    title="properties.text_perspective_y" src="perspective_y.svg"></se-spin-input>
+            </div>
+        </div>
+    </div>
+</div>

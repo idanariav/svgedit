@@ -286,7 +286,7 @@
 
 /* class to open the right panel */
 .svg_editor.open {
-  grid-template-columns: 34px 15px 50px 1fr 220px;
+  grid-template-columns: 34px 15px 50px 1fr 280px;
 }
 
 #svgroot {
@@ -320,6 +320,19 @@
 #sidepanels {
   grid-area: side;
   position: relative;
+  /* let the grid cell constrain instead of stretch */
+  min-height: 0;
+}
+
+/* Scroll the content area, not #sidepanels — otherwise the panel handle
+   (which sits at `right: 100%` when open) gets clipped. */
+#sidepanel_content {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
 }
 
 /* ── Panel handle ─────────────────────────────────────────────────── */
@@ -467,14 +480,17 @@ hr {
   position: relative;
 }
 
-/* ── Color Shift panel (ext-color-shift) ──────────────────────────── */
-#color_shift_panel {
+/* ── Right-side panel sections (General / Text / Shadow / Color Shift) ── */
+.sidepanel_section,
+#color_shift_panel,
+#shadow_panel {
   padding: 12px 15px 10px;
   margin-top: 10px;
   border-top: 1px solid var(--chrome-border);
   color: var(--fg);
   user-select: none;
 }
+.sidepanel_section_label,
 #color_shift_label {
   font-weight: 600;
   font-size: 12px;
@@ -482,6 +498,27 @@ hr {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 8px;
+}
+.sidepanel_section_grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  align-items: center;
+}
+.shadow_panel_footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.shadow_panel_footer input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 1px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 4px;
+  background: var(--field-bg);
+  cursor: pointer;
 }
 #color_shift_hint {
   font-size: 12px;
