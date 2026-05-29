@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-29_ *(updated: bg_color now also paints the `#svgcanvas` surface so the gutter around the document picks up the picked color)*
-
 ---
 
 ## Left Panel — Drawing Tools (`src/editor/panels/LeftPanel.html`)
@@ -223,6 +221,13 @@ Flying button (left panel):
 
 ### ext-theme-toggle — Theme Switch (`extensions/ext-theme-toggle/`)
 - Button to toggle light ↔ dark theme (wraps `themeUtil.applyTheme()`)
+
+### ext-color-shift — Color Shift (`extensions/ext-color-shift/`)
+- Adds a "Color Shift" section to the right side panel (below the Layers section, inside `#sidepanel_content`)
+- Controls: **H** (`color_shift_h`, −180 to 180°), **S** (`color_shift_s`, ±100), **L** (`color_shift_l`, ±100), **T** (`color_shift_t`, ±100 — positive = more transparent), **Fill** / **Stroke** checkboxes (`color_shift_fill` / `color_shift_stroke`, both on by default), **Reset** button (`color_shift_reset`)
+- Each input commit shifts the selection by a *relative delta* against a per-selection snapshot (captured on every `selectedChanged` and on Reset). Snapshot lives in a `WeakMap` keyed by element node so multi-select with mismatched starting colours still shifts each element correctly
+- Writes `fill`, `stroke`, `fill-opacity`, `stroke-opacity` attributes; uses `BatchCommand + ChangeElementCommand` so each input commit is one undo step
+- Empty-state hint is shown when nothing paintable is selected (skips `<g>`, `<svg>`, `<defs>`)
 
 ### ext-shadow — Drop Shadow (`extensions/ext-shadow/`)
 - Context panel shown for any single selected element (all shape types)

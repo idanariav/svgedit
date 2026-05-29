@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Find the SVG element type you're working with and see which panel controls appear and which SVG attributes they map to. "Common attributes" (fill, stroke, opacity, etc.) apply to all shapes — see the Common section at the bottom.
 
-_Last verified: 2026-05-27_
-
 **Code references:**
 - Panel markup: [src/editor/panels/TopPanel.html](../src/editor/panels/TopPanel.html)
 - Attribute change handler: [src/editor/panels/TopPanel.js](../src/editor/panels/TopPanel.js) ~line 641 (`attrChanger`)

@@ -455,6 +455,67 @@ hr {
   position: relative;
 }
 
+/* ── Color Shift panel (ext-color-shift) ──────────────────────────── */
+#color_shift_panel {
+  padding: 12px 15px 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--chrome-border);
+  color: var(--fg);
+  user-select: none;
+}
+#color_shift_label {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+#color_shift_hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.color_shift_grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.color_shift_toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.color_shift_toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.color_shift_toggles input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+#color_shift_reset {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+#color_shift_reset:hover {
+  background: var(--icon-hover-bg);
+  color: var(--icon-hover);
+}
+
 /* ── Brand pill / main button ─────────────────────────────────────── */
 #main_button {
   grid-area: main;

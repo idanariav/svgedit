@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Start with the Design Tokens table to find variable names, then Grid Layout to understand positioning, then the Component CSS sections to style individual UI elements. All shadow DOM CSS lives in the component `.js` files, not in `svgedit.css`.
 
-_Last verified: 2026-05-26_
-
 **Primary CSS file:** [src/editor/svgedit.css](../src/editor/svgedit.css)
 **Component CSS:** embedded in each `src/editor/components/*.js` as a template string
 

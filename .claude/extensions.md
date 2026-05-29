@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Use the Extension Contract section to understand the API when writing or modifying an extension. Use the Built-in Extensions table to quickly find which file controls a given feature.
 
-_Last verified: 2026-05-28_ *(updated: ext-curvature added)*
-
 ---
 
 ## Extension Contract
@@ -89,6 +87,7 @@ Use `S.importLocale()` in `init()` to load the appropriate file.
 | `ext-shadow` | Drop shadow on any single selected element — offset X/Y, blur, opacity, color; uses `<feDropShadow>` filter in `<defs>` | `ext-shadow.js` |
 | `ext-cutter` | Cutter/knife tool — drag a straight line across selected shapes to split each into two independent `<path>` elements; fully undo/redo-safe | `ext-cutter.js` |
 | `ext-curvature` | Curvature tool — click-to-place smooth Bézier curves auto-computed via Catmull-Rom; double-click for corner points; Escape or click-start to finalize | `ext-curvature.js` |
+| `ext-color-shift` | HSL + transparency shift controls in the right side panel (H/S/L/T spin inputs, Fill/Stroke toggles, Reset). Relative deltas computed against a per-selection snapshot captured in a `WeakMap`; each input commit is one undo entry | `ext-color-shift.js` |
 
 ---
 

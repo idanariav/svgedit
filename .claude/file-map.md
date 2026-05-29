@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Quick lookup table — find a concern, jump to the file. Line numbers reference points of interest within large files.
 
-_Last verified: 2026-05-27_ *(updated: ext-cutter added)*
-
 ---
 
 ## Editor (UI Layer) — `src/editor/`
@@ -94,6 +92,7 @@ _Last verified: 2026-05-27_ *(updated: ext-cutter added)*
 | `ext-theme-toggle/` | Light/dark theme button |
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — offset X/Y, blur, opacity, color |
 | `ext-cutter/` | Cutter (knife) tool — drag a straight line to split selected shapes into two pieces |
+| `ext-color-shift/` | Right side-panel section: H/S/L/T relative-delta inputs + Fill/Stroke toggles to shift selection colours |
 
 ---
 

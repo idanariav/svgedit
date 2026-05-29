@@ -2,8 +2,6 @@
 
 > **How to use this doc:** Start with the Directory Tree to orient yourself, then jump to Initialization Flow to understand startup order, or Subsystems table for module responsibilities. When modifying canvas logic, see the SvgCanvas Core Modules table.
 
-_Last verified: 2026-05-26_
-
 ---
 
 ## Directory Tree
