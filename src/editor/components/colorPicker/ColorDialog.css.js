@@ -164,7 +164,32 @@ export const css = /* css */`
   .cp-tabsrow {
     padding: 14px 22px 0;
     background: var(--cp-modal-bg);
+    display: flex;
+    align-items: center;
   }
+
+  /* ── Eyedropper pick button ─────────────────────────────────────────────── */
+  .cp-eyedropper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--field-border);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--icon);
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .cp-eyedropper:hover {
+    background: var(--icon-hover-bg);
+    color: var(--icon-hover);
+    border-color: var(--cp-field-hover);
+  }
+  .cp-eyedropper svg { width: 15px; height: 15px; }
   .cp-tabs {
     display: inline-flex;
     padding: 4px;

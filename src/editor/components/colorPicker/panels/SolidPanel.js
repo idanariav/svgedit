@@ -38,5 +38,9 @@ export function createSolidPanel (paint) {
     if (s.alpha !== undefined) hsvBox.setAlpha(s.alpha)
   }
 
+  panel.setFromHex = (hex) => {
+    hsvBox.setHex(hex.replace('#', ''))
+  }
+
   return panel
 }

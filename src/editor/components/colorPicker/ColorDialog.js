@@ -8,6 +8,7 @@ import { stateToPaint } from './PaintModel.js'
 import { createSolidPanel } from './panels/SolidPanel.js'
 import { createLinearPanel } from './panels/LinearPanel.js'
 import { createRadialPanel } from './panels/RadialPanel.js'
+import { fetchSvgEl } from '../svgIconLoader.js'
 
 const CLOSE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>`
 
@@ -110,6 +111,7 @@ export class SeColorDialog extends HTMLElement {
               ${this._t('config.jgraduate_radial_gradient') || 'Radial Gradient'}
             </button>
           </div>
+          <button type="button" class="cp-eyedropper" title="Pick color from canvas" aria-label="Pick color from canvas"></button>
         </div>
         <div class="cp-body-slot"></div>
         <div class="cp-foot">
@@ -124,6 +126,20 @@ export class SeColorDialog extends HTMLElement {
     this._shadowRoot.querySelectorAll('.cp-tab').forEach(btn => {
       btn.addEventListener('click', () => this._switchTab(btn.dataset.tab))
     })
+
+    // Wire eyedropper button and load icon
+    const eyedropperBtn = this._shadowRoot.querySelector('.cp-eyedropper')
+    eyedropperBtn.addEventListener('click', () => this._startEyedropper())
+    const imgPath = window.svgEditor?.configObj?.curConfig?.imgPath
+    if (imgPath) {
+      fetchSvgEl(`${imgPath}/eye_dropper.svg`).then(svgEl => {
+        if (svgEl && eyedropperBtn.isConnected) {
+          svgEl.setAttribute('width', '15')
+          svgEl.setAttribute('height', '15')
+          eyedropperBtn.replaceChildren(svgEl)
+        }
+      })
+    }
 
     // Wire header close
     this._shadowRoot.querySelector('.cp-head-close').addEventListener('click', () => this._onCancel())
@@ -167,6 +183,25 @@ export class SeColorDialog extends HTMLElement {
     slot.innerHTML = ''
     slot.appendChild(panel)
     this._currentPanel = panel
+  }
+
+  // ── Eyedropper pick ────────────────────────────────────────────────────────
+  async _startEyedropper () {
+    if (!window.EyeDropper) {
+      console.warn('[se-color-dialog] EyeDropper API not available in this environment')
+      return
+    }
+    // Hide the dialog so the user can see the canvas while picking.
+    this.style.display = 'none'
+    try {
+      const result = await new window.EyeDropper().open()
+      const hex = result.sRGBHex.replace('#', '')
+      this._currentPanel?.setFromHex?.(hex)
+    } catch {
+      // User cancelled (Escape) — no-op.
+    } finally {
+      this.style.display = ''
+    }
   }
 
   // ── Apply / Cancel ─────────────────────────────────────────────────────────

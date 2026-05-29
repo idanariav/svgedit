@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-28_ *(updated: ext-curvature added)*
+_Last verified: 2026-05-28_ *(updated: ext-eyedropper removed from left panel; eyedropper now lives inside color picker dialogs)*
 
 ---
 
@@ -195,9 +195,6 @@ Flying button (left panel):
 
 ### ext-connector — Connector Lines (`extensions/ext-connector/`)
 - Adds a connector drawing mode for creating auto-updating diagram connector lines between objects
-
-### ext-eyedropper — Color Picker (`extensions/ext-eyedropper/`)
-- **Eyedropper** (`eyedropper`): Click an element to copy its fill, stroke, and opacity to current style
 
 ### ext-grid — Grid Toggle (`extensions/ext-grid/`)
 - **Toggle Grid** (`view_grid`): Show/hide a snapping grid overlay; resolution auto-adjusts with zoom

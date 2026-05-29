@@ -303,6 +303,17 @@ export function createRadialPanel (paint, i18next) {
 
   _updatePreview()
 
+  panel.setFromHex = (hex) => {
+    const clean = hex.replace('#', '')
+    let idx = stopBar.getSelectedIndex()
+    if (idx < 0 || idx >= panelState.stops.length) idx = 0
+    const alpha = panelState.stops[idx].alpha
+    panelState.stops[idx].color = clean
+    stopBar.setSelectedStop(idx, clean, alpha)
+    if (stopHsvBox) stopHsvBox.setHex(clean)
+    _updatePreview()
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
   panel.getPaintState = () => ({
     tab: 'radial',
