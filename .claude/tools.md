@@ -2,7 +2,7 @@
 
 > **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
-_Last verified: 2026-05-28_ *(updated: ext-eyedropper removed from left panel; eyedropper now lives inside color picker dialogs)*
+_Last verified: 2026-05-29_ *(updated: bg_color now also paints the `#svgcanvas` surface so the gutter around the document picks up the picked color)*
 
 ---
 
@@ -147,7 +147,7 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `zoom` | Zoom dropdown | 25%, 50%, 100%, 200%, 400%, 1000%, Fit to Canvas, Fit to Selection, Fit to Layer, Fit to All |
 | `fill_color` | Fill color swatch | Opens color picker; shows `none` swatch for no fill |
 | `stroke_color` | Stroke color swatch | Same picker |
-| `bg_color` | Background color | Sets canvas background |
+| `bg_color` | Background color | Sets canvas background — paints both the document rect (for export) and the surrounding `#svgcanvas` surface for a uniform look |
 | `palette` | Color palette | Quick color swatches |
 | `stroke_width` *(spin)* | Stroke width | 0–99; Shift+click steps by 0.1 |
 | `stroke_style` *(select)* | Stroke dash pattern | Solid, Dotted, Dashed, Dash-dot, Dash-dot-dot |
