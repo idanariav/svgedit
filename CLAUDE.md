@@ -155,9 +155,6 @@ the relevant doc(s) to reflect the change. Specifically:
 - Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`
 - Created or changed an extension → update `extensions.md`
 
-Update the **"Last verified"** date at the top of any doc you touch.
-Changes to the docs should be included in the same commit as the code change.
-
 ---
 
 ## Playwright / browser testing
