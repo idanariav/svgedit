@@ -46,6 +46,7 @@
 | `seFlyingButton.js` | `<se-flying-button>` | Button with sub-tool flyout |
 | `seColorPicker.js` | `<se-color-picker>` | Color selection modal |
 | `seSelect.js` | `<se-select>` | Styled `<select>` dropdown |
+| `seFontSelect.js` | `<se-font-select>` | Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface). Drop-in replacement for the old `<se-select>` font dropdown — same `value`/`addOption`/`change`/`src`/`options`/`values` interface. Powers `tool_font_family` |
 | `seList.js` | `<se-list>` | Icon-based dropdown list |
 | `seListItem.js` | `<se-list-item>` | Item inside `<se-list>` |
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |

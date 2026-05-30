@@ -359,6 +359,17 @@ height: 26px; font-size: 12.5px; font-weight: 500
 appearance: none  (custom arrow via CSS)
 ```
 
+### `se-font-select` ([seFontSelect.js](../src/editor/components/seFontSelect.js))
+
+Same `group-bg` tray as `se-select`, but the inner control is a custom `.trigger`
+button (field-bg/field-border, current font rendered in its own face) that opens a
+fixed-position `.fl-popover`. The popover reuses the **same visual language as
+`se-font-library`**: `chrome-bg`/`chrome-border` card, a `.fl-search` input box,
+and a scrollable `.fl-list` where each `.fl-item-preview` is styled with its
+option's `font-family` (per-font preview). Active row uses `accent-soft` /
+`accent-border` with an `accent`-colored check. Theme is synced by toggling
+`theme-dark`/`theme-light` on the host (matches `se-font-library`).
+
 ### `se-list` ([seList.js](../src/editor/components/seList.js))
 
 ```

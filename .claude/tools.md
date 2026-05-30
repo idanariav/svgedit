@@ -111,7 +111,7 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_text_decoration_underline` | Underline | — | |
 | `tool_text_decoration_linethrough` | Strikethrough | — | |
 | `tool_text_decoration_overline` | Overline | — | |
-| `tool_font_family` *(select)* | Font family | — | Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times; downloaded custom fonts are appended here by ext-fonts |
+| `tool_font_family` *(`<se-font-select>`)* | Font family | — | Google-style picker: search box + per-font previews (each rendered in its own face). Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times; downloaded custom fonts are appended here by ext-fonts |
 | `tool_font_library` *(`<se-font-library>`)* | Custom fonts | — | Opens a Google Fonts browser; picking a font downloads it once (cached offline in IndexedDB), applies it, and embeds it as base64 `@font-face` in `<defs>` on export. Wired by ext-fonts |
 | `font_size` *(spin)* | Font size | — | 1–1000px, step 1 |
 | `tool_text_anchor` *(list)* | Text alignment | — | start / middle / end |
