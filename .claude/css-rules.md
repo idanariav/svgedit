@@ -24,6 +24,7 @@ Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and
 | `--paper-border` | `#DCDFE5` | `#1A1C22` | SVG artboard border |
 | `--paper-radius` | `4px` | `4px` | SVG artboard corner radius |
 | `--paper-shadow` | multi-layer drop shadow | darker shadow | Box shadow on SVG paper |
+| `--paper-shadow-filter` | `drop-shadow()` chain | darker | Page shadow via CSS `filter` on `#canvasBackground` |
 
 ### Text Colors
 
@@ -149,16 +150,19 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 }
 ```
 
-### `#svgcanvas` — SVG Paper/Artboard
+### `#svgcanvas` / `#canvasBackground` — scroll area vs. document page
+`#svgcanvas` is the over-sized scroll/pan area (size = `max(workarea, contentW·zoom·canvas_expansion)`), **not** the document page — so it must stay transparent. The "paper" appearance lives on `#canvasBackground`, the SVG element sized to the document that scales with zoom. Putting the paper styling on `#svgcanvas` makes the white page appear fixed-size while objects scale (they then look like they spill off the page).
 ```css
-#svgcanvas {
-  display: inline-block;
-  background: var(--canvas-bg-color);   /* = --paper-bg (the white artboard) */
-  box-shadow: var(--paper-shadow);
-  border: 1px solid var(--paper-border);
-  border-radius: var(--paper-radius);   /* 4px */
+#svgcanvas { background: transparent; }      /* just the scroll/pan container */
+
+#canvasBackground { filter: var(--paper-shadow-filter); }   /* page drop shadow */
+#canvasBackground > rect {                   /* the page border */
+  stroke: var(--paper-border);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;         /* stays 1px at any zoom */
 }
 ```
+`--paper-shadow-filter` is the `drop-shadow()` equivalent of `--paper-shadow` (filters have no spread param), defined per theme.
 
 ### `#tools_top` — Top Toolbar
 ```css

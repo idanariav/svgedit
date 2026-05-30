@@ -17,6 +17,10 @@
     0 1px 2px rgba(20,25,35,0.05),
     0 12px 28px -10px rgba(20,25,35,0.18),
     0 30px 60px -30px rgba(20,25,35,0.25);
+  /* drop-shadow() equivalent for the document page (no spread support) */
+  --paper-shadow-filter:
+    drop-shadow(0 1px 2px rgba(20,25,35,0.10))
+    drop-shadow(0 12px 24px rgba(20,25,35,0.16));
 
   /* Text */
   --fg:    #1B1F24;
@@ -139,6 +143,10 @@
     0 1px 2px rgba(0,0,0,0.4),
     0 14px 36px -10px rgba(0,0,0,0.5),
     0 40px 80px -30px rgba(0,0,0,0.65);
+  /* drop-shadow() equivalent for the document page (no spread support) */
+  --paper-shadow-filter:
+    drop-shadow(0 1px 2px rgba(0,0,0,0.45))
+    drop-shadow(0 14px 30px rgba(0,0,0,0.5));
 
   /* Text */
   --fg:    #ECEEF2;
@@ -305,16 +313,26 @@
   padding: 56px 80px 80px 56px;
 }
 
+/* #svgcanvas is the (over-sized) scroll/pan area, not the document page, so it
+   must stay transparent. The "paper" appearance lives on #canvasBackground
+   below, which is sized to the document and scales with zoom. */
 #svgcanvas {
   line-height: normal;
   display: inline-block;
-  background: var(--canvas-bg-color);
+  background: transparent;
   text-align: center;
   vertical-align: middle;
   position: relative;
-  box-shadow: var(--paper-shadow);
-  border: 1px solid var(--paper-border);
-  border-radius: var(--paper-radius);
+}
+
+/* The document page itself — tracks the canvas size and zoom level. */
+#canvasBackground {
+  filter: var(--paper-shadow-filter);
+}
+#canvasBackground > rect {
+  stroke: var(--paper-border);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
 
 #sidepanels {
