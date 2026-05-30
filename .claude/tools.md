@@ -111,7 +111,8 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_text_decoration_underline` | Underline | — | |
 | `tool_text_decoration_linethrough` | Strikethrough | — | |
 | `tool_text_decoration_overline` | Overline | — | |
-| `tool_font_family` *(select)* | Font family | — | Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times |
+| `tool_font_family` *(select)* | Font family | — | Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times; downloaded custom fonts are appended here by ext-fonts |
+| `tool_font_library` *(`<se-font-library>`)* | Custom fonts | — | Opens a Google Fonts browser; picking a font downloads it once (cached offline in IndexedDB), applies it, and embeds it as base64 `@font-face` in `<defs>` on export. Wired by ext-fonts |
 | `font_size` *(spin)* | Font size | — | 1–1000px, step 1 |
 | `tool_text_anchor` *(list)* | Text alignment | — | start / middle / end |
 
@@ -277,6 +278,15 @@ Flying button (left panel):
 - Sunset/long-shadow recipe: Angle ~180°, Length 100–300, Blur 1–3
 - Creates a `<filter id="{elemId}_shadow" filterUnits="userSpaceOnUse">` with a single `<feDropShadow>` in `<defs>`; filter region is computed from `getBBox()` + padding so long shadows are never clipped
 - **Limitation:** SVG's `filter` attribute can only reference one `<filter>`. Applying shadow saves any existing filter URL and restores it on removal — shadow and blur cannot coexist simultaneously. If the element is resized after shadow is applied, re-apply the shadow to refresh the filter region.
+
+### ext-fonts — Custom Fonts (`extensions/ext-fonts/`)
+- Adds the `<se-font-library>` button (`tool_font_library`) to the text panel, beside the font-family select
+- Opens a Google Fonts browser popover (search + category chips: Handwriting / Sans-serif / Serif / Display / Monospace) from a bundled static catalog (`google-fonts-catalog.json`, the full ~1,934-family list generated from Google's `fonts.google.com/metadata/fonts`) — browsing/searching needs no network
+- Font names preview in their own typeface: as rows scroll into view an `IntersectionObserver` lazily injects a `text=`-subsetted Google Fonts `<link>` (a few KB, just the name's glyphs) into `document.head`. Needs network for the preview; offline, names stay in the UI font until downloaded
+- Picking a font: `fontStore.ensureFont()` fetches the WOFF2 once via the Google Fonts CSS2 API, stores it in IndexedDB (`svgedit-fonts` DB), registers it with `document.fonts` (live canvas render) and the canvas font registry (`svgCanvas.setEncodableFont`). After the one-time download it works fully offline
+- On startup ext-fonts calls `restoreAll()` to re-register every cached font and re-add it to the `tool_font_family` dropdown
+- **Embed-on-export:** `core/svg-exec.js` `embedUsedFonts()` injects a `<style>` with one base64 `@font-face` per *used* font into `<defs>` (gated on `getSvgOptionApply()`, mirrors the image-embed path). Family names are emitted **unquoted** with no `format()` so the payload has no XML-special chars and survives serialization. The `<style>` is removed right after serialization (live doc untouched). Fonts not referenced by any text are not embedded
+- `fontStore.js` is imported **only** by `seFontLibrary.js` so it stays a single bundled module instance; `ext-fonts.js` is DOM-only and reaches it via the element's `restoreCachedFonts()` method
 
 ---
 

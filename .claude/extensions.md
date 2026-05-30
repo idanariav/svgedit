@@ -88,6 +88,7 @@ Use `S.importLocale()` in `init()` to load the appropriate file.
 | `ext-cutter` | Cutter/knife tool — drag a straight line across selected shapes to split each into two independent `<path>` elements; fully undo/redo-safe | `ext-cutter.js` |
 | `ext-curvature` | Curvature tool — click-to-place smooth Bézier curves auto-computed via Catmull-Rom; double-click for corner points; Escape or click-start to finalize | `ext-curvature.js` |
 | `ext-color-shift` | HSL + transparency shift controls in the right side panel (H/S/L/T spin inputs, Fill/Stroke toggles, Reset). Relative deltas computed against a per-selection snapshot captured in a `WeakMap`; each input commit is one undo entry | `ext-color-shift.js` |
+| `ext-fonts` | Custom/handwritten font support for text. DOM-only glue: points `<se-font-library>` (Google Fonts browser) at its bundled catalog, applies a picked font (adds it to the `#tool_font_family` dropdown, selects it, calls `setFontFamily`), and on startup restores cached fonts so they work offline and re-populate the dropdown. Download/cache/embed plumbing lives in `fontStore.js` + `core/svg-exec.js` | `ext-fonts.js` |
 
 ---
 

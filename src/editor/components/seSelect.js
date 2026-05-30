@@ -203,6 +203,22 @@ export class SeSelect extends HTMLElement {
   }
 
   /**
+   * Append an <option> to the select if it is not already present.
+   * Used to inject custom (downloaded) fonts into the font-family dropdown.
+   * @param {string} value
+   * @param {string} [text]
+   * @returns {void}
+   */
+  addOption (value, text = value) {
+    const exists = Array.from(this.$select.options).some(o => o.value === value)
+    if (exists) return
+    const optionNode = document.createElement('OPTION')
+    optionNode.value = value
+    optionNode.appendChild(document.createTextNode(text))
+    this.$select.appendChild(optionNode)
+  }
+
+  /**
    * @function get
    * @returns {any}
    */

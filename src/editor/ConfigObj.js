@@ -200,7 +200,8 @@ export default class ConfigObj {
       'ext-layer_view',
       'ext-theme-toggle',
       'ext-shadow',
-      'ext-color-shift'
+      'ext-color-shift',
+      'ext-fonts'
     ]
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying

@@ -53,6 +53,7 @@
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
+| `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
 | `PaintBox.js` | `<se-paint-box>` | Fill/stroke paint control |
 | `svgIconLoader.js` | *(utility)* | Fetches, normalises, and caches SVG icons for inline injection |
 
@@ -93,6 +94,7 @@
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — offset X/Y, blur, opacity, color |
 | `ext-cutter/` | Cutter (knife) tool — drag a straight line to split selected shapes into two pieces |
 | `ext-color-shift/` | Right side-panel section: H/S/L/T relative-delta inputs + Fill/Stroke toggles to shift selection colours |
+| `ext-fonts/` | Custom font support: `ext-fonts.js` (DOM glue), `fontStore.js` (IndexedDB cache + `FontFace` registration + Google Fonts download), `google-fonts-catalog.json` (full ~1,934-family static catalog, regenerable from Google's metadata endpoint). Fonts embed as base64 `@font-face` in `<defs>` on export |
 
 ---
 

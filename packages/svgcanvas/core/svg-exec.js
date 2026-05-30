@@ -108,7 +108,18 @@ const svgCanvasToString = () => {
       element.replaceWith(svg)
     }
   })
+  // Embed used custom fonts as @font-face in <defs> so the exported SVG is
+  // self-contained. Only fonts actually referenced by text are embedded.
+  const fontStyleElem = svgCanvas.getSvgOptionApply()
+    ? embedUsedFonts()
+    : null
+
   const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
+
+  // Remove the temporary <style> so the live document is left untouched
+  if (fontStyleElem) {
+    fontStyleElem.remove()
+  }
 
   // Rewrap gsvg
   if (nakedSvgs.length) {
@@ -118,6 +129,50 @@ const svgCanvasToString = () => {
   }
 
   return output
+}
+
+/**
+ * Build an @font-face <style> element for every embeddable font actually used by
+ * text in the document and insert it into <defs>. Returns the inserted element
+ * (so it can be removed after serialization) or null if nothing was embedded.
+ * @returns {SVGStyleElement|null}
+ */
+const embedUsedFonts = () => {
+  const fonts = svgCanvas.getEncodableFonts()
+  if (!fonts || !Object.keys(fonts).length) return null
+
+  const svgContent = svgCanvas.getSvgContent()
+  // Collect the set of font-family values referenced by text/tspan elements
+  const used = new Set()
+  svgContent.querySelectorAll('text, tspan').forEach(el => {
+    const fam = el.getAttribute('font-family') || el.style.fontFamily
+    if (fam) used.add(fam.replace(/^['"]|['"]$/g, ''))
+  })
+
+  const faces = []
+  used.forEach(family => {
+    const base64 = fonts[family]
+    if (base64) {
+      // Unquoted family name + no format() keeps the payload free of XML-special
+      // characters (', ", <, >, &), so it survives serialization without entity
+      // escaping and renders whether the SVG is opened standalone or inlined.
+      // CSS permits multi-word unquoted family names and an optional format().
+      faces.push(
+        `@font-face{font-family:${family};font-style:normal;font-weight:normal;` +
+        `src:url(data:font/woff2;base64,${base64});}`
+      )
+    }
+  })
+  if (!faces.length) return null
+
+  const defs = findDefs()
+  const style = svgContent.ownerDocument.createElementNS(NS.SVG, 'style')
+  style.setAttribute('type', 'text/css')
+  // base64 + CSS punctuation contain no XML-special chars, so a text node
+  // serializes intact (createCDATASection is unsupported in HTML documents)
+  style.textContent = faces.join('')
+  defs.appendChild(style)
+  return style
 }
 
 /**

@@ -162,6 +162,7 @@ class SvgCanvas {
     this.nextPos = { x: 0, y: 0 }
     this.idprefix = 'svg_' // Prefix string for element IDs
     this.encodableImages = {}
+    this.encodableFonts = {} // { fontFamily: base64 woff2 } registry for embed-on-export
 
     this.curConfig = {
       // Default configuration options
@@ -710,6 +711,14 @@ class SvgCanvas {
 
   setEncodableImages (key, value) {
     this.encodableImages[key] = value
+  }
+
+  getEncodableFonts () {
+    return this.encodableFonts
+  }
+
+  setEncodableFont (family, base64) {
+    this.encodableFonts[family] = base64
   }
 
   getVisElems () {
