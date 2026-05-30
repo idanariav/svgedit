@@ -119,6 +119,7 @@
 | `core/text-actions.js` | Text cursor/selection editing |
 | `core/layer.js` | Layer CRUD |
 | `core/boolean-ops.js` | Union, intersect, subtract |
+| `core/clip-mask.js` | Set/release/feather clip path & mask — `setClip()`, `setMask()`, `releaseClipMask()`, `setFeather()`/`getFeather()` (bottom of 2 selected is cloned into `<defs>` as the silhouette; top shape gets the `clip-path`/`mask`; both stay visible). Signed feather: +soft edge / −strong rim; auto-converts a clip to a mask |
 | `core/cutter.js` | Half-plane intersection cut algorithm — `cutShapes(x1,y1,x2,y2)` |
 | `core/json.js` | JSON import/export |
 | `core/units.js` | Unit conversion (px↔em↔cm…) |

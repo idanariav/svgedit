@@ -228,7 +228,18 @@ These controls are always available when any element is selected.
 
 ### Multi-select (when ≥2 elements selected)
 
-Clone, Delete, Group, Hyperlink, Align L/C/R/T/M/B, Distribute H/V, Boolean ops (Union / Intersect / Subtract)
+Clone, Delete, Group, Hyperlink, Align L/C/R/T/M/B, Distribute H/V, Boolean ops (Union / Intersect / Subtract), **Set Clip / Set Mask** (`tool_clip_set` / `tool_mask_set` — require exactly 2 selected)
+
+### Clip / Mask (`clip-path`, `mask` attributes)
+
+| Control ID | SVG Attribute | Notes |
+|------------|---------------|-------|
+| `tool_clip_set` | `clip-path` on the **top** shape; **bottom** shape cloned into a `<clipPath>` in `<defs>` (bottom stays visible) | Exactly 2 selected; top panel; see `core/clip-mask.js` |
+| `tool_mask_set` | `mask` on the **top** shape; white-luminance clone of the **bottom** shape in a `<mask>` in `<defs>` | Exactly 2 selected; top panel |
+| `clipmask_feather` | `data-feather` on the element + inline `filter:blur()` on the mask silhouette (negative also sets a white stroke band + grey fill) | Right panel `#clipmask_panel`; −50…50; auto-converts a clip to a mask |
+| `clipmask_release` | removes `clip-path`/`mask` and discards the clone definition | Right panel `#clipmask_panel`; section hidden unless the element has a `clip-path`/`mask` attr |
+
+These are **action buttons**, not `attrChanger`-driven inputs — they call `svgCanvas.setClip()` / `setMask()` / `releaseClipMask()` directly.
 
 ---
 

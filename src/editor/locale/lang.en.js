@@ -47,6 +47,7 @@ export default {
     linejoin_round: 'Linejoin: Round',
     angle: 'Change rotation angle',
     blur: 'Change gaussian blur value',
+    feather: 'Feather the clip/mask edge (px). Positive = soft edge; negative = strong rim with soft interior. Converts a hard clip to a mask.',
     opacity: 'Change selected item opacity',
     circle_cx: "Change circle's cx coordinate",
     circle_cy: "Change circle's cy coordinate",
@@ -202,7 +203,10 @@ export default {
     remember_this_choice_title: 'If you choose to opt out of storage while remembering this choice, the URL will change so as to avoid asking again.',
     bool_union: 'Boolean Union: merge selected shapes into one',
     bool_intersect: 'Boolean Intersection: keep overlapping area only',
-    bool_subtract: 'Boolean Subtract: cut top shape from bottom shape'
+    bool_subtract: 'Boolean Subtract: cut top shape from bottom shape',
+    clip_set: 'Set Clip: trim the top shape to the bottom shape’s silhouette (bottom stays visible)',
+    mask_set: 'Set Mask: mask the top shape with the bottom shape’s silhouette (bottom stays visible)',
+    clip_release: 'Release Clip/Mask: drop the clip/mask from the selected shape'
   },
   layers: {
     layer: 'Layer',

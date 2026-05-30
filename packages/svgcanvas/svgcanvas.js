@@ -81,6 +81,7 @@ import {
 import { getSelectorManager, Selector, init as selectInit } from './core/select.js'
 import { clearSvgContentElementInit, init as clearInit } from './core/clear.js'
 import { init as booleanOpsInit } from './core/boolean-ops.js'
+import { init as clipMaskInit } from './core/clip-mask.js'
 import { init as cutterInit } from './core/cutter.js'
 import {
   getClosest,
@@ -285,6 +286,7 @@ class SvgCanvas {
     blurInit(this)
     selectedElemInit(this)
     booleanOpsInit(this)
+    clipMaskInit(this)
     cutterInit(this)
 
     /**

@@ -222,6 +222,7 @@ class TopPanel {
     this.hideTool('a_panel')
     this.setSidepanelVisible('sidepanel_general', false)
     this.setSidepanelVisible('sidepanel_text', false)
+    this.setSidepanelVisible('clipmask_panel', false)
     if (elem) {
       const elname = elem.nodeName
       const isCircleArcPath = elname === 'path' && elem.hasAttribute('data-arc')
@@ -244,6 +245,10 @@ class TopPanel {
       if (!isNode && currentMode !== 'pathedit') {
         this.displayTool('selected_panel')
         this.setSidepanelVisible('sidepanel_general', true)
+        if (elem.getAttribute('clip-path') || elem.getAttribute('mask')) {
+          this.setSidepanelVisible('clipmask_panel', true)
+          $id('clipmask_feather').value = this.editor.svgCanvas.getFeather(elem)
+        }
         // Elements in this array already have coord fields
         const hasOwnCoords = ['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isCircleArcPath
         $id('selected_x').style.display = hasOwnCoords ? 'none' : ''
@@ -638,6 +643,34 @@ class TopPanel {
    */
   clickBoolSubtract () {
     this.editor.svgCanvas.booleanSubtract()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickClipSet () {
+    this.editor.svgCanvas.setClip()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickMaskSet () {
+    this.editor.svgCanvas.setMask()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickClipRelease () {
+    this.editor.svgCanvas.releaseClipMask()
+  }
+
+  /**
+   * @returns {void}
+   */
+  changeFeather (e) {
+    this.editor.svgCanvas.setFeather(Number(e.target.value))
   }
 
   /**
@@ -1070,6 +1103,10 @@ class TopPanel {
     $click($id('tool_bool_union'), this.clickBoolUnion.bind(this))
     $click($id('tool_bool_intersect'), this.clickBoolIntersect.bind(this))
     $click($id('tool_bool_subtract'), this.clickBoolSubtract.bind(this))
+    $click($id('tool_clip_set'), this.clickClipSet.bind(this))
+    $click($id('tool_mask_set'), this.clickMaskSet.bind(this))
+    $click($id('clipmask_release'), this.clickClipRelease.bind(this))
+    $id('clipmask_feather').addEventListener('change', this.changeFeather.bind(this))
     $id('tool_position').addEventListener('change', evt =>
       this.clickAlignEle.bind(this)(evt)
     )

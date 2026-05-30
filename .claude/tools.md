@@ -83,6 +83,8 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_bool_union` | Boolean union | — | Merge shapes |
 | `tool_bool_intersect` | Boolean intersect | — | Keep overlap only |
 | `tool_bool_subtract` | Boolean subtract | — | Cut top from bottom |
+| `tool_clip_set` | Set clip | — | Trim the **top** shape to the **bottom** shape's silhouette; bottom is cloned into a `<clipPath>` and stays visible; requires exactly 2 selected |
+| `tool_mask_set` | Set mask | — | Mask the **top** shape with the **bottom** shape's silhouette (white-luminance clone in a `<mask>`); bottom stays visible; requires exactly 2 selected |
 
 ### Shape-specific panels (shown when element of that type is selected)
 
@@ -172,6 +174,15 @@ The right side panel hosts the Layers tool (always visible) plus context-sensiti
 | `tool_length_adjust` *(select)* | Length adjust | spacing / spacingAndGlyphs |
 | `tool_perspective_x` *(spin)* | Perspective X | −80 to 80, step 1 |
 | `tool_perspective_y` *(spin)* | Perspective Y | −80 to 80, step 1 |
+
+### `#clipmask_panel` — single clipped/masked element selected
+
+Appears when the selected element has a `clip-path` or `mask` attribute (managed in `TopPanel.js` `updateContextPanel`).
+
+| ID | Tool | Notes |
+|----|------|-------|
+| `clipmask_feather` *(spin)* | Feather the confinement edge | −50…50. **Positive** = soft/fading edge (blurs the mask silhouette). **Negative** = strong rim with soft interior (white edge band + grey interior). Applying feather to a hard clip **auto-converts it to a mask**. Stored as `data-feather` on the element; the blur lives as inline `filter:blur()` on the mask silhouette. Calls `svgCanvas.setFeather()` / `getFeather()`. |
+| `clipmask_release` | Release clip/mask | Drops the `clip-path`/`mask` reference and discards the definition. Calls `svgCanvas.releaseClipMask()`. |
 
 ### `#shadow_panel` — injected by ext-shadow
 
