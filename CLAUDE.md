@@ -43,6 +43,30 @@ switch to the plugin repo instead.
 
 ---
 
+## Technical instructions
+
+### Prefer LSP over Grep for symbol lookups
+
+**For `.ts`, `.tsx`, `.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs` files, use the `LSP` tool — not `Grep` — when answering structural questions about code.**
+
+Use LSP for: "where is X defined", "what calls X", "what does X reference", "what are the symbols in this file", "what type/signature does X have". Operations: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`, `goToImplementation`, `incomingCalls`, `outgoingCalls`.
+
+The `LSP` tool is deferred — load its schema via `ToolSearch` with `query: "select:LSP"` before the first call in a session. Subagents (Explore, Plan, general-purpose) should do the same.
+
+Grep is still correct for: free-text/comment/string searches, non-symbol patterns, file globbing, and languages without an LSP server configured.
+
+### Web Search in Plan Mode and Agent Tasks
+
+**Before finalizing any plan or spawning an agent, run a web search.**
+
+When using Plan mode (`/plan`) or spawning agents:
+- Search for current best practices related to the task (e.g. "best practices for X in 2025").
+- Search for known pitfalls or common mistakes for the approach.
+- Validate that libraries/APIs/patterns used are current and not deprecated.
+- Enrich the plan with findings before presenting it or handing off to an agent.
+
+This step is **mandatory** for non-trivial plans. Skip only for purely mechanical tasks (rename, reformat, etc.) where best practices are not a factor.
+
 ## Theming conventions
 
 ### CSS custom properties
