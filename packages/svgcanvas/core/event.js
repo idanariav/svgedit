@@ -6,13 +6,13 @@
  */
 import {
   assignAttributes, cleanupElement, getElement, getRotationAngle, snapToGrid, walkTree,
-  preventClickDefault, setHref, getBBox
+  preventClickDefault, setHref, getBBox, getStrokedBBoxDefaultVisible
 } from './utilities.js'
 import {
   convertAttrs
 } from './units.js'
 import {
-  transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform
+  transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform, matrixMultiply
 } from './math.js'
 import * as draw from './draw.js'
 import * as pathModule from './path.js'
@@ -97,6 +97,61 @@ const updateTransformList = (svgRoot, element, dx, dy) => {
   } else {
     tlist.appendItem(xform)
   }
+}
+
+// Uniform group scale for a multi-element selection. Scales every selected
+// element by the SAME factor about a common pivot (the corner/edge opposite the
+// dragged grip), so no shape is distorted and the relative layout is preserved.
+// `x`,`y` are the current pointer position in content/user coords.
+const resizeGroup = (x, y) => {
+  const svgRoot = svgCanvas.getSvgRoot()
+  const initb = svgCanvas.getInitBbox()
+  const bx = initb.x; const by = initb.y; const bw = initb.width; const bh = initb.height
+  const mode = svgCanvas.getCurrentResizeMode()
+
+  let dx = x - svgCanvas.getStartX()
+  let dy = y - svgCanvas.getStartY()
+  if (svgCanvas.getCurConfig().gridSnapping) {
+    dx = snapToGrid(dx)
+    dy = snapToGrid(dy)
+  }
+  // ignore movement on an axis we are not stretching
+  if (!mode.includes('n') && !mode.includes('s')) { dy = 0 }
+  if (!mode.includes('e') && !mode.includes('w')) { dx = 0 }
+
+  let sy = bh ? (bh + dy) / bh : 1
+  let sx = bw ? (bw + dx) / bw : 1
+  if (mode.includes('n')) { sy = bh ? (bh - dy) / bh : 1 }
+  if (mode.includes('w')) { sx = bw ? (bw - dx) / bw : 1 }
+
+  // collapse to a single uniform factor (the axis dragged furthest wins)
+  const s = Math.abs(1 - sx) >= Math.abs(1 - sy) ? sx : sy
+
+  // pivot = the fixed corner/edge opposite the dragged grip
+  const ax = bx + (mode.includes('w') ? bw : 0)
+  const ay = by + (mode.includes('n') ? bh : 0)
+
+  // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
+  const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
+
+  svgCanvas.groupResizeStart.forEach((startMatrix, elem) => {
+    const newM = matrixMultiply(gm, startMatrix)
+    const tlist = getTransformList(elem)
+    while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
+    const t = svgRoot.createSVGTransform()
+    t.setMatrix(newM)
+    tlist.appendItem(t)
+    svgCanvas.selectorManager.requestSelector(elem).resize()
+  })
+
+  // redraw the group box scaled about the same pivot
+  svgCanvas.selectorManager.showGroupSelector({
+    x: ax + (bx - ax) * s,
+    y: ay + (by - ay) * s,
+    width: bw * s,
+    height: bh * s
+  })
+  svgCanvas.call('transition', svgCanvas.getSelectedElements())
 }
 
 /**
@@ -240,6 +295,11 @@ const mouseMoveEvent = (evt) => {
       break
     }
     case 'resize': {
+      // multi-selection: uniform group scale (no per-element distortion)
+      if (svgCanvas.groupResizeStart) {
+        resizeGroup(x, y)
+        break
+      }
       // we track the resize bounding box and translate/scale the selected element
       // while the mouse is down, when mouse goes up, we use this to recalculate
       // the shape's coordinates
@@ -741,6 +801,8 @@ const mouseUpEvent = (evt) => {
             if (!selectedElements[i]) { break }
             svgCanvas.selectorManager.requestSelector(selectedElements[i]).resize()
           }
+          // refresh the group box around the (now consolidated) multi-selection
+          svgCanvas.updateGroupSelector()
           // no change in position/size, so maybe we should move to pathedit
         } else {
           t = evt.target
@@ -916,6 +978,7 @@ const mouseUpEvent = (evt) => {
   // Reset drag flag after any mouseUp
   svgCanvas.hasDragStartTransform = false
   svgCanvas.dragStartTransforms = null
+  svgCanvas.groupResizeStart = null
 
   /**
 * The main (left) mouse button is released (anywhere).
@@ -1224,6 +1287,20 @@ const mouseDownEvent = (evt) => {
       svgCanvas.setStarted(true)
       svgCanvas.setStartX(x)
       svgCanvas.setStartY(y)
+
+      // multi-selection: record per-element start matrices and the union bbox,
+      // then let mouseMove apply a single uniform group-scale matrix to each.
+      const groupElems = selectedElements.filter(Boolean)
+      if (groupElems.length > 1) {
+        svgCanvas.setInitBbox(getStrokedBBoxDefaultVisible(groupElems))
+        svgCanvas.groupResizeStart = new Map()
+        svgCanvas.dragStartTransforms = new Map()
+        groupElems.forEach((elem) => {
+          svgCanvas.groupResizeStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
+          svgCanvas.dragStartTransforms.set(elem, elem.getAttribute('transform') || '')
+        })
+        break
+      }
 
       // Getting the BBox from the selection box, since we know we
       // want to orient around it

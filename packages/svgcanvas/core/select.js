@@ -328,6 +328,9 @@ export class SelectorManager {
     this.rotateGripConnector = null
     this.rotateGrip = null
 
+    // dashed box drawn around a multi-element selection (uniform group scale)
+    this.groupSelectorRect = null
+
     this.initGroup()
   }
 
@@ -357,6 +360,8 @@ export class SelectorManager {
     this.selectorMap = {}
     this.selectors = []
     this.rubberBandBox = null
+    // the old group box was a child of the parent group we just removed
+    this.groupSelectorRect = null
 
     // add the corner grips
     Object.keys(this.selectorGrips).forEach((dir) => {
@@ -525,6 +530,80 @@ export class SelectorManager {
       this.selectorParentGroup.append(this.rubberBandBox)
     }
     return this.rubberBandBox
+  }
+
+  /**
+  * Shows a single dashed box and the 8 resize grips around a multi-element
+  * selection (uniform group-scale mode). The rotate grip is hidden because the
+  * feature is resize-only.
+  * @param {module:utilities.BBoxObject} contentBBox - Union bbox of the selection in content/user coords
+  * @returns {void}
+  */
+  showGroupSelector (contentBBox) {
+    if (!contentBBox) { return }
+    const zoom = svgCanvas.getZoom()
+    const x = contentBBox.x * zoom
+    const y = contentBBox.y * zoom
+    const w = contentBBox.width * zoom
+    const h = contentBBox.height * zoom
+
+    // lazily create the dashed group box (same style as a normal selectorRect)
+    if (!this.groupSelectorRect) {
+      this.groupSelectorRect = svgCanvas.createSVGElement({
+        element: 'path',
+        attr: {
+          id: 'groupSelectedBox',
+          fill: 'none',
+          stroke: '#22C',
+          'stroke-width': '1',
+          'stroke-dasharray': '5,5',
+          style: 'pointer-events:none'
+        }
+      })
+      this.selectorParentGroup.append(this.groupSelectorRect)
+    }
+    this.groupSelectorRect.setAttribute('d',
+      `M${x},${y} L${x + w},${y} ${x + w},${y + h} ${x},${y + h}z`)
+    this.groupSelectorRect.setAttribute('display', 'inline')
+
+    // position the shared grips at the union corners / edge midpoints
+    const gripCoords = {
+      nw: [x, y],
+      ne: [x + w, y],
+      sw: [x, y + h],
+      se: [x + w, y + h],
+      n: [x + w / 2, y],
+      w: [x, y + h / 2],
+      e: [x + w, y + h / 2],
+      s: [x + w / 2, y + h]
+    }
+    Object.entries(gripCoords).forEach(([dir, coords]) => {
+      this.selectorGrips[dir].setAttribute('cx', coords[0])
+      this.selectorGrips[dir].setAttribute('cy', coords[1])
+    })
+
+    // re-parent the grips into the (unrotated) parent group and show them
+    this.selectorGripsGroup.setAttribute('transform', '')
+    this.selectorParentGroup.append(this.selectorGripsGroup)
+    this.selectorGripsGroup.setAttribute('display', 'inline')
+    Selector.updateGripCursors(0)
+
+    // resize-only: hide the rotate grip + its connector
+    this.rotateGrip.setAttribute('display', 'none')
+    this.rotateGripConnector.setAttribute('display', 'none')
+  }
+
+  /**
+  * Hides the multi-selection group box and restores the rotate grip so that
+  * single-selection mode draws normally again.
+  * @returns {void}
+  */
+  hideGroupSelector () {
+    if (this.groupSelectorRect) {
+      this.groupSelectorRect.setAttribute('display', 'none')
+    }
+    this.rotateGrip.setAttribute('display', 'inline')
+    this.rotateGripConnector.setAttribute('display', 'inline')
   }
 }
 

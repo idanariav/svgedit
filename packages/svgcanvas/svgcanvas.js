@@ -1002,6 +1002,7 @@ class SvgCanvas {
     }
     // the copy becomes the master now
     this.selectedElements = newSelectedItems
+    this.updateGroupSelector()
   }
 
   /**

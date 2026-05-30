@@ -38,6 +38,24 @@ export const init = (canvas) => {
   svgCanvas.prepareSvg = prepareSvg
   svgCanvas.recalculateAllSelectedDimensions = recalculateAllSelectedDimensions
   svgCanvas.setRotationAngle = setRotationAngle
+  svgCanvas.updateGroupSelector = updateGroupSelectorMethod
+}
+
+/**
+ * Shows or hides the multi-selection group box + resize grips depending on how
+ * many elements are currently selected. With 2+ elements selected it draws one
+ * union bounding box (uniform group-scale); otherwise it hides it so the normal
+ * single-element selector takes over.
+ * @name module:selection.SvgCanvas#updateGroupSelector
+ * @returns {void}
+ */
+const updateGroupSelectorMethod = () => {
+  const elems = svgCanvas.getSelectedElements().filter(Boolean)
+  if (elems.length > 1) {
+    svgCanvas.selectorManager.showGroupSelector(getStrokedBBoxDefaultVisible(elems))
+  } else {
+    svgCanvas.selectorManager.hideGroupSelector()
+  }
 }
 
 /**
@@ -57,6 +75,7 @@ const clearSelectionMethod = (noCall) => {
     svgCanvas.selectorManager.releaseSelector(elem)
   })
   svgCanvas?.setEmptySelectedElements()
+  svgCanvas.updateGroupSelector()
 
   if (!noCall) {
     svgCanvas.call('selected', svgCanvas.getSelectedElements())
@@ -139,6 +158,9 @@ const addToSelectionMethod = (elemsToAdd, showGrips) => {
   while (!selectedElements[0]) {
     selectedElements.shift(0)
   }
+
+  // draw/refresh the group box when 2+ elements are selected
+  svgCanvas.updateGroupSelector()
 }
 /**
  * @name module:svgcanvas.SvgCanvas#getMouseTarget
