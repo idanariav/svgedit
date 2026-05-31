@@ -278,18 +278,34 @@ export default {
       callback () {
         // Add the context panel and its handler(s)
         const panelTemplate = document.createElement('template')
-        // create the marker panel
-        let innerHTML = '<div id="marker_panel">'
+        // create the marker panel as a Design-tab side-panel section
+        const posLabels = { start: 'Start', mid: 'Mid', end: 'End' }
+        let innerHTML = '<div id="marker_panel" class="sidepanel_section" style="display:none">'
+        innerHTML += '<div class="sidepanel_section_label">Markers</div>'
+        innerHTML += '<div class="sidepanel_btn_row">'
         mtypes.forEach((pos) => {
+          innerHTML += `<div><div class="sub_label">${posLabels[pos]}</div>`
           innerHTML += `<se-list id="${pos}_marker_list_opts" title="tools.${pos}_marker_list_opts" label="" width="22px" height="22px">`
           Object.entries(markerTypes).forEach(([marker, _mkr]) => {
             innerHTML += `<se-list-item id="mkr_${pos}_${marker}" value="${marker}" title="tools.mkr_${marker}" src="${marker}.svg" img-height="22px"></se-list-item>`
           })
-          innerHTML += '</se-list>'
+          innerHTML += '</se-list></div>'
         })
-        innerHTML += '</div>'
+        innerHTML += '</div></div>'
         panelTemplate.innerHTML = innerHTML
-        $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+        // Inject into the Design tab, right after Stroke & Opacity (before the
+        // Object section); fall back to the top toolbar if the tab is missing.
+        const designTab = $id('tab_design')
+        const objectPanel = designTab?.querySelector('.selected_panel')
+        if (designTab) {
+          if (objectPanel) {
+            designTab.insertBefore(panelTemplate.content, objectPanel)
+          } else {
+            designTab.appendChild(panelTemplate.content)
+          }
+        } else {
+          $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+        }
         // don't display the panels on start
         showPanel(false)
         mtypes.forEach((pos) => {

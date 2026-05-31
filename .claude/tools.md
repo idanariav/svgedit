@@ -169,6 +169,7 @@ container simply hides everything inside it.
 | `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
 | `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |
 | Stroke & Opacity *(always shown in tab)* | always | `stroke_width` (0–99), `opacity` (0–100%), `stroke_style` (dash), `stroke_linejoin`, `stroke_linecap`. **Moved from bottom panel**; `change` listeners bound in `TopPanel.init` (delegate to `bottomPanel` handlers) |
+| `#marker_panel` "Markers" | single line/polyline/path/polygon | `start_marker_list_opts`, `mid_marker_list_opts`, `end_marker_list_opts` (None / arrows / box / circle, open + filled). Injected by ext-markers right after Stroke & Opacity; visibility self-managed via its `selectedChanged`, independent of `updateContextPanel` |
 | `.selected_panel` "Object" | single element | `tool_topath`, `tool_path_offset` (`<se-offset-settings>` popover → `svgCanvas.offsetPath(delta)`), `tool_stroke_to_path` (→ `svgCanvas.strokeToPath()`), `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
 | `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (clip/mask require exactly 2) |
 
@@ -239,8 +240,9 @@ Flying button (left panel):
 - Settings persist via the `grid_*` prefs (see `ConfigObj.seedGridConfigFromPrefs`).
 
 ### ext-markers — Line Markers (`extensions/ext-markers/`)
-- Context panel on lines/polylines/paths/polygons: **Marker Start**, **Marker Middle**, **Marker End**
+- Injects the **Markers** section (`#marker_panel`) into the right-panel **Design tab**, right after Stroke & Opacity (falls back to `#tools_top` if the tab is missing). Three `se-list` pickers — **Start**, **Mid**, **End** — for a single selected line/polyline/path/polygon
 - Marker options: None, Left Arrow, Right Arrow, Box, Circle (all with open/filled variants)
+- Panel show/hide is self-managed in the extension's `selectedChanged` (`showPanel`), independent of `updateContextPanel`
 
 ### ext-cutter — Knife/Cut Tool (`extensions/ext-cutter/`)
 - **Cutter** (`tool_cutter`): Drag a straight line across shapes to split them along that line; affects selected shapes only (or all shapes if nothing selected)
