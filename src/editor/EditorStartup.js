@@ -590,18 +590,6 @@ class EditorStartup {
         $editDialog.setAttribute('baseunit', this.configObj.curConfig.baseUnit)
       }
 
-      if (this.configObj.curConfig.gridSnapping) {
-        $editDialog.setAttribute('gridsnappingon', true)
-      }
-
-      if (this.configObj.curConfig.snappingStep) {
-        $editDialog.setAttribute('gridsnappingstep', this.configObj.curConfig.snappingStep)
-      }
-
-      if (this.configObj.curConfig.gridColor) {
-        $editDialog.setAttribute('gridcolor', this.configObj.curConfig.gridColor)
-      }
-
       if (this.configObj.curConfig.dynamicOutput) {
         $editDialog.setAttribute('dynamicoutput', true)
       }

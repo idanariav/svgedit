@@ -73,7 +73,7 @@ Use `S.importLocale()` in `init()` to load the appropriate file.
 |-----------------|--------------|---------|
 | `ext-connector` | Connector lines that auto-update when objects move; excludes connectors from group ops | `ext-connector.js` |
 | `ext-eyedropper` | Eyedropper tool — click element to copy its fill/stroke/opacity to current style | `ext-eyedropper.js` |
-| `ext-grid` | Grid overlay on canvas with snap-to-grid; resolution auto-adjusts with zoom level | `ext-grid.js` |
+| `ext-grid` | Grid overlay + snap via `<se-grid-settings>` popover. 5 shapes (square pattern tile; iso/triangle/1pt/2pt-perspective as `<line>`s). Shape-aware snapping (`snapPointToGrid`). Persists via `grid_*` prefs. Exposes `svgEditor.updateGrid` for resize redraws | `ext-grid.js` |
 | `ext-helloworld` | Minimal example template — start here when creating a new extension | `ext-helloworld.js` |
 | `ext-layer_view` | Layer visualization enhancements | `ext-layer_view.js` |
 | `ext-markers` | Arrow/marker decorators on lines, polylines, paths, polygons (start/middle/end) | `ext-markers.js` |

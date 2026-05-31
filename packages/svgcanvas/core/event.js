@@ -5,7 +5,7 @@
  * @copyright 2011 Jeff Schiller
  */
 import {
-  assignAttributes, cleanupElement, getElement, getRotationAngle, snapToGrid, walkTree,
+  assignAttributes, cleanupElement, getElement, getRotationAngle, snapToGrid, snapPointToGrid, walkTree,
   preventClickDefault, setHref, getBBox, getStrokedBBoxDefaultVisible
 } from './utilities.js'
 import {
@@ -196,8 +196,7 @@ const mouseMoveEvent = (evt) => {
   let y = realY
 
   if (svgCanvas.getCurConfig().gridSnapping) {
-    x = snapToGrid(x)
-    y = snapToGrid(y)
+    ({ x, y } = snapPointToGrid(x, y))
   }
 
   let tlist
@@ -229,8 +228,7 @@ const mouseMoveEvent = (evt) => {
         dx = x - svgCanvas.getStartX()
         dy = y - svgCanvas.getStartY()
         if (svgCanvas.getCurConfig().gridSnapping) {
-          dx = snapToGrid(dx)
-          dy = snapToGrid(dy)
+          ({ x: dx, y: dy } = snapPointToGrid(dx, dy))
         }
 
         // Enable moving selection only if mouse has been moved at least 4 px in any direction
@@ -414,8 +412,7 @@ const mouseMoveEvent = (evt) => {
     }
     case 'line': {
       if (svgCanvas.getCurConfig().gridSnapping) {
-        x = snapToGrid(x)
-        y = snapToGrid(y)
+        ({ x, y } = snapPointToGrid(x, y))
       }
 
       let x2 = x
@@ -483,10 +480,8 @@ const mouseMoveEvent = (evt) => {
       cx = Number(shape.getAttribute('cx'))
       cy = Number(shape.getAttribute('cy'))
       if (svgCanvas.getCurConfig().gridSnapping) {
-        x = snapToGrid(x)
-        cx = snapToGrid(cx)
-        y = snapToGrid(y)
-        cy = snapToGrid(cy)
+        ({ x, y } = snapPointToGrid(x, y))
+        ;({ x: cx, y: cy } = snapPointToGrid(cx, cy))
       }
       shape.setAttribute('rx', Math.abs(x - cx))
       const ry = Math.abs(evt.shiftKey ? (x - cx) : (y - cy))
@@ -544,10 +539,10 @@ const mouseMoveEvent = (evt) => {
       y *= zoom
 
       if (svgCanvas.getCurConfig().gridSnapping) {
-        x = snapToGrid(x)
-        y = snapToGrid(y)
-        svgCanvas.setStartX(snapToGrid(svgCanvas.getStartX()))
-        svgCanvas.setStartY(snapToGrid(svgCanvas.getStartY()))
+        ({ x, y } = snapPointToGrid(x, y))
+        const sp = snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
+        svgCanvas.setStartX(sp.x)
+        svgCanvas.setStartY(sp.y)
       }
       if (evt.shiftKey) {
         const { path } = pathModule
@@ -1183,10 +1178,10 @@ const mouseDownEvent = (evt) => {
   svgCanvas.setRStartY(y)
 
   if (svgCanvas.getCurConfig().gridSnapping) {
-    x = snapToGrid(x)
-    y = snapToGrid(y)
-    svgCanvas.setStartX(snapToGrid(svgCanvas.getStartX()))
-    svgCanvas.setStartY(snapToGrid(svgCanvas.getStartY()))
+    ({ x, y } = snapPointToGrid(x, y))
+    const sp = snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
+    svgCanvas.setStartX(sp.x)
+    svgCanvas.setStartY(sp.y)
   }
 
   // if it is a selector grip, then it must be a single element selected,

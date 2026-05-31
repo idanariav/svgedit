@@ -398,6 +398,10 @@ class SvgCanvas {
     return this.curConfig.gridSnapping
   }
 
+  getGridShape () {
+    return this.curConfig.gridShape || 'square'
+  }
+
   getStartTransform () {
     return this.startTransform
   }

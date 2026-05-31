@@ -1353,13 +1353,59 @@ export const cleanupElement = element => {
  * @returns {Integer}
  */
 export const snapToGrid = value => {
+  value = Math.round(value / getSnapStepSize()) * getSnapStepSize()
+  return value
+}
+
+/**
+ * Snapping step size in px (snappingStep converted from the current base unit).
+ * @function module:utilities.getSnapStepSize
+ * @returns {Float}
+ */
+const getSnapStepSize = () => {
   const unit = svgCanvas.getBaseUnit()
   let stepSize = svgCanvas.getSnappingStep()
   if (unit !== 'px') {
     stepSize *= getTypeMap()[unit]
   }
-  value = Math.round(value / stepSize) * stepSize
-  return value
+  return stepSize
+}
+
+/**
+ * Snap a point to the nearest node of the active grid lattice.
+ * For the `square` grid (and the non-lattice perspective grids) this is just
+ * per-axis rounding, identical to calling {@link module:utilities.snapToGrid}
+ * on each coordinate. For the `isometric` and `triangle` grids the point is
+ * snapped to the nearest node of the corresponding skewed lattice by inverting
+ * its basis vectors.
+ * @function module:utilities.snapPointToGrid
+ * @param {Float} x
+ * @param {Float} y
+ * @returns {{x: Float, y: Float}}
+ */
+export const snapPointToGrid = (x, y) => {
+  const shape = svgCanvas.getGridShape ? svgCanvas.getGridShape() : 'square'
+  if (shape === 'isometric' || shape === 'triangle') {
+    const s = getSnapStepSize()
+    let ax, ay, bx, by
+    if (shape === 'isometric') {
+      // Two axes at ±30° from horizontal.
+      const c = Math.cos(Math.PI / 6)
+      const sn = Math.sin(Math.PI / 6)
+      ax = s * c; ay = s * sn
+      bx = s * c; by = -s * sn
+    } else {
+      // Triangular lattice: horizontal axis + 60° axis.
+      ax = s; ay = 0
+      bx = s / 2; by = (s * Math.sqrt(3)) / 2
+    }
+    // Solve (x,y) = m·a + n·b for integers m,n, then recompute the node.
+    const det = ax * by - bx * ay
+    const m = Math.round((x * by - bx * y) / det)
+    const n = Math.round((ax * y - x * ay) / det)
+    return { x: m * ax + n * bx, y: m * ay + n * by }
+  }
+  return { x: snapToGrid(x), y: snapToGrid(y) }
 }
 
 /**

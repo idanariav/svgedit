@@ -48,7 +48,13 @@ export default class ConfigObj {
       // ALERT NOTICES
       // Only shows in UI as far as alert notices, but useful to remember, so keeping as pref
       save_notice_done: false,
-      export_notice_done: false
+      export_notice_done: false,
+      // GRID (persisted mirror of the curConfig grid settings; see seedGridConfigFromPrefs)
+      grid_show: false,
+      grid_snapping: false,
+      grid_color: '#000',
+      grid_snapping_step: 10,
+      grid_shape: 'square'
     }
     /**
       * @tutorial ConfigOptions
@@ -163,6 +169,7 @@ export default class ConfigObj {
       noDefaultExtensions: false, // noDefaultExtensions can only be meaningfully used in `svgedit-config-iife.js` or in the URL
       // EXTENSION-RELATED (GRID)
       showGrid: false, // Set by ext-grid.js
+      gridShape: 'square', // 'square' | 'isometric' | 'triangle' | 'perspective1' | 'perspective2'. Set via the grid settings popover.
       // EXTENSION-RELATED (STORAGE)
       noStorageOnLoad: false, // Some interaction with ext-storage.js; prevent even the loading of previously saved local storage
       forceStorage: false, // Some interaction with ext-storage.js; strongly discouraged from modification as it bypasses user privacy by preventing them from choosing whether to keep local storage or not
@@ -499,5 +506,23 @@ export default class ConfigObj {
   load () {
     this.loadFromURL(this.editor)
     this.setupCurPrefs(this.editor)
+    this.seedGridConfigFromPrefs()
+  }
+
+  /**
+   * Copy the persisted `grid_*` preferences (loaded from storage as strings)
+   * into their runtime `curConfig` counterparts, coercing types. The grid
+   * settings are read at runtime from `curConfig` (by `ext-grid` and the
+   * snapping helpers), but persisted through the consent-gated prefs storage.
+   * @returns {void}
+   */
+  seedGridConfigFromPrefs () {
+    const asBool = v => v === true || v === 'true'
+    this.curConfig.showGrid = asBool(this.pref('grid_show'))
+    this.curConfig.gridSnapping = asBool(this.pref('grid_snapping'))
+    this.curConfig.gridColor = this.pref('grid_color') || this.curConfig.gridColor
+    const step = parseFloat(this.pref('grid_snapping_step'))
+    if (Number.isFinite(step) && step > 0) this.curConfig.snappingStep = step
+    this.curConfig.gridShape = this.pref('grid_shape') || this.curConfig.gridShape
   }
 }

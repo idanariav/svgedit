@@ -79,9 +79,6 @@ class MainMenu {
   async savePreferences (e) {
     const {
       lang,
-      gridsnappingon,
-      gridsnappingstep,
-      gridcolor,
       showrulers,
       baseunit
     } = e.detail
@@ -92,10 +89,7 @@ class MainMenu {
       seAlert('Changing the language needs reload')
     }
 
-    // set grid setting
-    this.editor.configObj.curConfig.gridSnapping = gridsnappingon
-    this.editor.configObj.curConfig.snappingStep = gridsnappingstep
-    this.editor.configObj.curConfig.gridColor = gridcolor
+    // set ruler / unit settings (grid settings live in the grid-settings popover)
     this.editor.configObj.curConfig.showRulers = showrulers
     if (this.editor.configObj.curConfig.showRulers) {
       this.editor.rulers.updateRulers()
@@ -188,18 +182,6 @@ class MainMenu {
     }
     this.editor.configObj.preferences = true
     const $editDialog = $id('se-edit-prefs')
-    $editDialog.setAttribute(
-      'gridsnappingon',
-      this.editor.configObj.curConfig.gridSnapping
-    )
-    $editDialog.setAttribute(
-      'gridsnappingstep',
-      this.editor.configObj.curConfig.snappingStep
-    )
-    $editDialog.setAttribute(
-      'gridcolor',
-      this.editor.configObj.curConfig.gridColor
-    )
     $editDialog.setAttribute('dialog', 'open')
   }
 

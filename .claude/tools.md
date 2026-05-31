@@ -52,7 +52,7 @@ class-based logic in `TopPanel.js` `updateContextPanel`.
 | `tool_source` | Edit SVG source | U | In `#editor_panel` (view tray) |
 | `tool_wireframe` | Wireframe mode | F | In `#editor_panel` (view tray) |
 | `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | In `#editor_panel`. Opens a popover with W/H spin-inputs, aspect presets (4:5, 5:4, 16:9, 1:1 → fixed sizes, base 1000px), and Apply/Reset. Talks to `svgCanvas.setResolution`/`getResolution` directly via the global `svgEditor` |
-| `view_grid` | Grid toggle | — | Injected into `#editor_panel` by ext-grid |
+| `grid_settings` *(`<se-grid-settings>`)* | Grid settings popover | — | Injected into `#editor_panel` by ext-grid. Show/snap toggles, shape select (square/isometric/triangle/1pt/2pt perspective), grid color, snapping step |
 | *(theme)* | Light/dark toggle | — | Injected into `#theme_panel` by ext-theme-toggle |
 | `tool_undo` | Undo | Ctrl+Z | `#history_panel`; disabled until history exists |
 | `tool_redo` | Redo | Ctrl+Y | `#history_panel`; disabled until undo exists |
@@ -202,8 +202,11 @@ Flying button (left panel):
 ### ext-connector — Connector Lines (`extensions/ext-connector/`)
 - Adds a connector drawing mode for creating auto-updating diagram connector lines between objects
 
-### ext-grid — Grid Toggle (`extensions/ext-grid/`)
-- **Toggle Grid** (`view_grid`): Show/hide a snapping grid overlay; resolution auto-adjusts with zoom
+### ext-grid — Grid Settings (`extensions/ext-grid/`)
+- **Grid settings** (`grid_settings`, `<se-grid-settings>`): popover with show-grid + snap-to-grid toggles, grid **shape** select, grid color, and snapping step. Replaces the old `view_grid` toggle button.
+- Shapes: `square` (canvas→PNG `<pattern>` tile, zoom-adjusted), plus `isometric`, `triangle`, `perspective1`, `perspective2` (drawn as `<line>`s into `#gridLines` over the canvas extent; redrawn on zoom and on canvas resize via `svgEditor.updateGrid`).
+- Snapping is shape-aware (`snapPointToGrid` in `utilities.js`): square/perspective snap per-axis; isometric/triangle snap to lattice nodes. The line-grid spacing is `step·sin(60°)` so visible intersections coincide with snap nodes.
+- Settings persist via the `grid_*` prefs (see `ConfigObj.seedGridConfigFromPrefs`).
 
 ### ext-markers — Line Markers (`extensions/ext-markers/`)
 - Context panel on lines/polylines/paths/polygons: **Marker Start**, **Marker Middle**, **Marker End**

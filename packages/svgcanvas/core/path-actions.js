@@ -14,7 +14,7 @@ import {
   transformListToTransform, getTransformList
 } from './math.js'
 import {
-  assignAttributes, getElement, getRotationAngle, snapToGrid,
+  assignAttributes, getElement, getRotationAngle, snapPointToGrid,
   getBBox
 } from './utilities.js'
 
@@ -336,10 +336,11 @@ class PathActions {
       this.#newPoint = [x, y]
 
       if (svgCanvas.getGridSnapping()) {
-        x = snapToGrid(x)
-        y = snapToGrid(y)
-        mouseX = snapToGrid(mouseX)
-        mouseY = snapToGrid(mouseY)
+        const sp = snapPointToGrid(x, y)
+        x = sp.x
+        y = sp.y
+        mouseX = x * zoom
+        mouseY = y * zoom
       }
 
       if (!stretchy) {

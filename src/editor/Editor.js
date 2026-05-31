@@ -640,6 +640,10 @@ class Editor extends EditorStartup {
       workarea.scroll()
     }
 
+    // Refresh the grid: the non-square line grids are drawn over the canvas
+    // extent, so a resolution change must re-render them (set by ext-grid).
+    this.updateGrid?.()
+
     if (
       this.configObj.urldata.storagePrompt !== true &&
       this.storagePromptState === 'ignore'

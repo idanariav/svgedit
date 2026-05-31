@@ -8,6 +8,7 @@ import { warn } from '../common/logger.js'
 
 import {
   snapToGrid,
+  snapPointToGrid,
   assignAttributes,
   getBBox,
   getRefElem,
@@ -81,8 +82,23 @@ export const remapElement = (selected, changes, m) => {
 
   const finishUp = () => {
     if (doSnapping) {
+      // Snap known coordinate pairs together so non-square (isometric /
+      // triangular) lattices land on their nodes; remaining scalar attributes
+      // (width, height, r, …) keep the simple per-axis square snap.
+      const handled = new Set()
+      for (const [xa, ya] of [['x', 'y'], ['cx', 'cy'], ['x1', 'y1'], ['x2', 'y2'], ['fx', 'fy']]) {
+        if (xa in changes && ya in changes) {
+          const sp = snapPointToGrid(changes[xa], changes[ya])
+          changes[xa] = sp.x
+          changes[ya] = sp.y
+          handled.add(xa)
+          handled.add(ya)
+        }
+      }
       for (const [attr, value] of Object.entries(changes)) {
-        changes[attr] = snapToGrid(value)
+        if (!handled.has(attr) && typeof value === 'number') {
+          changes[attr] = snapToGrid(value)
+        }
       }
     }
     assignAttributes(selected, changes, 1000, true)

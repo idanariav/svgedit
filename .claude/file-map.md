@@ -53,6 +53,7 @@
 | `seInput.js` | `<se-input>` | Text input with icon/label |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
 | `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + aspect presets + Apply/Reset) |
+| `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
@@ -66,7 +67,7 @@
 | File | Purpose |
 |------|---------|
 | `imagePropertiesDialog.js` | Modal for image element properties |
-| `editorPreferencesDialog.js` | Editor preferences modal (language, units, grid, rulers) |
+| `editorPreferencesDialog.js` | Editor preferences modal (language, units, rulers; grid settings moved to the grid-settings popover) |
 | `exportDialog.js` | Export dialog (PNG/JPG/WebP/PDF options) |
 | `svgSourceDialog.js` | View/edit raw SVG source |
 | `seAlertDialog.js` | Alert dialog (OK only) |
