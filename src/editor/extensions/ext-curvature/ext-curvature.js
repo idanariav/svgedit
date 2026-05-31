@@ -90,6 +90,21 @@ export default {
 
     await loadExtensionTranslation(svgEditor)
 
+    // svgedit's native double-click handler switches the canvas mode to
+    // 'select' (and may enter path-edit). While the curvature tool is active
+    // that desyncs the canvas mode from the still-pressed toolbar button,
+    // leaving the tool visually selected but inert. We finalize paths via our
+    // own dblclick (detail>=2) logic in mouseDown, so swallow the native
+    // dblclick over the canvas to keep the mode intact between shapes.
+    const suppressNativeDblClick = (evt) => {
+      if (svgCanvas.getMode() !== 'curvature') return
+      const root = $id('svgcanvas')
+      if (!root || root.contains(evt.target)) {
+        evt.stopPropagation()
+      }
+    }
+    window.addEventListener('dblclick', suppressNativeDblClick, true)
+
     // ── Session state ──────────────────────────────────────────────────────
     /** @type {Array<{x:number, y:number, corner:boolean}>} */
     let points = []
