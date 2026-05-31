@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 51.04 49.47"><defs><style>.cls-1{fill:none;}.cls-2{fill:#f9ba00;stroke:#f9ba00;}.cls-2,.cls-3{stroke-linecap:round;}.cls-2,.cls-3,.cls-4{stroke-linejoin:round;stroke-width:2px;}.cls-3,.cls-4{fill:#fff;stroke:#fff;}</style></defs><g id="Calque_2" data-name="Calque 2"><g id="Calque_1-2" data-name="Calque 1"><polyline class="cls-1" points="6.8 0 51.04 0 51.04 49.47 0 49.47 0 0 6.8 0"/><rect class="cls-2" x="13.23" y="15.26" width="15.82" height="18.95"/><ellipse class="cls-2" cx="29.04" cy="24.74" rx="9.68" ry="9.48"/><rect class="cls-3" x="26.71" y="22.4" width="4.67" height="4.67"/><line class="cls-4" x1="30.36" y1="24.78" x2="12.24" y2="24.78"/></g></g></svg>
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg fill="currentColor" height="800px" width="800px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 viewBox="0 0 495.65 495.65" xml:space="preserve">
+<g>
+	<path fill="currentColor" d="M480.135,52.739H195.086C87.346,52.739,0,140.091,0,247.825c0,107.738,87.346,195.086,195.086,195.086h285.049
+		c8.578,0,15.516-6.936,15.516-15.514V272.601H304.949v24.74c0,8.578-6.938,15.514-15.515,15.514h-96.966
+		c-8.578,0-15.516-6.936-15.516-15.514v-96.963c0-8.58,6.938-15.516,15.516-15.516h96.966c8.577,0,15.515,6.936,15.515,15.516
+		v22.676H495.65V68.255C495.65,59.675,488.713,52.739,480.135,52.739z"/>
+</g>
+</svg>
