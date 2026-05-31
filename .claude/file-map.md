@@ -52,6 +52,7 @@
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |
 | `seInput.js` | `<se-input>` | Text input with icon/label |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
+| `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + aspect presets + Apply/Reset) |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |

@@ -33,6 +33,7 @@ svgedit/
 │   │   ├── seSpinInput.js         # Numeric spin input with icon/label
 │   │   ├── seInput.js             # Text input with icon/label
 │   │   ├── seZoom.js              # Zoom percentage control
+│   │   ├── seCanvasSettings.js    # Canvas-resize popover (W/H + presets + Apply/Reset)
 │   │   ├── sePalette.js           # Color palette swatch grid
 │   │   ├── seShapeLibrary.js      # Shape-library modal/popover (large: 48KB)
 │   │   ├── PaintBox.js            # Fill/stroke paint control

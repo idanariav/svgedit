@@ -51,6 +51,7 @@ class-based logic in `TopPanel.js` `updateContextPanel`.
 |----|------|----------|-------|
 | `tool_source` | Edit SVG source | U | In `#editor_panel` (view tray) |
 | `tool_wireframe` | Wireframe mode | F | In `#editor_panel` (view tray) |
+| `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | In `#editor_panel`. Opens a popover with W/H spin-inputs, aspect presets (4:5, 5:4, 16:9, 1:1 → fixed sizes, base 1000px), and Apply/Reset. Talks to `svgCanvas.setResolution`/`getResolution` directly via the global `svgEditor` |
 | `view_grid` | Grid toggle | — | Injected into `#editor_panel` by ext-grid |
 | *(theme)* | Light/dark toggle | — | Injected into `#theme_panel` by ext-theme-toggle |
 | `tool_undo` | Undo | Ctrl+Z | `#history_panel`; disabled until history exists |
