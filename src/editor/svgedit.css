@@ -55,6 +55,9 @@
   /* Number fields */
   --field-bg:     #FFFFFF;
   --field-border: #DDE1E7;
+  --field-border-h: #C8CDD6;              /* field border on hover */
+  --accent-ring:  rgba(41,98,255,0.16);   /* field focus ring */
+  --section-rule: #EEF0F3;                /* light divider between sections */
 
   /* Swatches */
   --swatch-bg:           #FFFFFF;
@@ -181,6 +184,9 @@
   /* Number fields */
   --field-bg:     #14161A;
   --field-border: #2C2F37;
+  --field-border-h: #3C4150;              /* field border on hover */
+  --accent-ring:  rgba(246,178,58,0.20);  /* field focus ring */
+  --section-rule: #23262E;                /* dark divider between sections */
 
   /* Swatches */
   --swatch-bg:           #2F333C;
@@ -415,226 +421,235 @@ hr {
   padding-top: 4px;
 }
 
-#layersLabel {
-  color: var(--text-color);
-}
-
-#layerpanel {
-  user-select: none;
-  padding-left: 15px;
-}
-
-#layerbuttons {
-  margin: 0;
-  padding: 0;
-  padding-left: 2px;
-  padding-right: 2px;
-  width: 125px;
-  height: 20px;
-  border: 0px;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#layerlist {
-  margin: 1px;
-  padding: 0;
-  width: 132px;
-  border-collapse: collapse;
-  border: 1px solid var(--border-color);
-  background-color: var(--layer-bg);
-}
-
-#layerlist tr.layer {
-  background-color: var(--layer-bg);
-  margin: 0;
-  padding: 0;
-}
-
-#layerlist tr.layersel {
-  border: 1px solid var(--border-color);
-  background-color: var(--layer-selected-bg);
-}
-
-#layerlist td.layervis {
-  width: 22px;
-  cursor: pointer;
-}
-
-#layerlist td.layerinvis {
-  background-image: none;
-  cursor: pointer;
-}
-
-#layerlist td.layervis * {
-  display: block;
-}
-
-#layerlist td.layerinvis * {
-  display: none;
-}
-
-#layerlist td.layername {
-  cursor: pointer;
-}
-
-#layerlist td.layername:hover {
-  color: blue;
-}
-
-#layerlist tr.layersel td.layername {
-  font-weight: bold;
-}
-
-#selLayerLabel {
-  white-space: nowrap;
-}
-
-#selLayerNames {
-  display: block;
-  top: -8px;
-  position: relative;
-}
-
-/* ── Right-panel tab bar (Design / Text / Effects / Layers) ───────── */
+/* ── Right-panel tab bar ──────────────────────────────────────────── */
 #sidepanel_tabs {
   display: flex;
   gap: 2px;
-  padding: 8px 10px 0;
+  padding: 6px 8px 0;
   position: sticky;
   top: 0;
   background: var(--chrome-bg);
+  border-bottom: 1px solid var(--section-rule, #EEF0F3);
   z-index: 1;
 }
 .sidepanel_tab {
   flex: 1;
   appearance: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 8px 8px 0 0;
   background: transparent;
   color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px 4px;
+  font: 600 12.5px var(--ui-font);
+  padding: 9px 4px 11px;
   cursor: pointer;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  position: relative;
+  border-radius: 7px 7px 0 0;
+  transition: color 0.12s, background 0.12s;
 }
-.sidepanel_tab:hover {
+.sidepanel_tab:hover { color: var(--fg); background: var(--icon-hover-bg); }
+.sidepanel_tab.active { color: var(--accent); }
+.sidepanel_tab.active::after {
+  content: "";
+  position: absolute;
+  left: 8px; right: 8px; bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.sidepanel_tabpanel { display: none; padding: 2px 0 10px; }
+.sidepanel_tabpanel.active { display: block; }
+
+/* ── Sections ─────────────────────────────────────────────────────── */
+.sidepanel_section,
+#color_shift_panel,
+#shadow_panel {
+  padding: 14px 16px;
+  margin: 0;
+  border-top: 1px solid var(--section-rule, #EEF0F3);
   color: var(--fg);
-  background: var(--icon-hover-bg);
+  user-select: none;
 }
-.sidepanel_tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-.sidepanel_tabpanel {
-  display: none;
-}
-.sidepanel_tabpanel.active {
-  display: block;
+/* first visible section in a tab shouldn't carry a top rule */
+.sidepanel_tabpanel > .sidepanel_section:first-child { border-top: none; }
+
+.sidepanel_section_label,
+#color_shift_label {
+  font: 700 11px var(--ui-font);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+  white-space: nowrap;
 }
 
-/* Horizontal button rows inside right-panel sections (Object / Text style …) */
+/* Two-column field grid. align-items:start keeps stacked labels tidy when one
+   field wraps; row-gap is generous for the "comfortable" density. */
+.sidepanel_section_grid,
+.color_shift_grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 10px;
+  align-items: start;
+}
+/* a control that should fill the row */
+.sidepanel_section_grid .span2,
+.sidepanel_section_grid se-input[size="15"],
+.sidepanel_section_grid .image_url_field { grid-column: 1 / -1; }
+
+/* a labelled sub-block (header above a button row / segmented control) */
+.sub_label {
+  font: 600 10px var(--ui-font);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 5px 2px;
+}
+.sidepanel_subsection { margin-top: 12px; }
+
+/* ── Button rows (object actions, text style, joins/caps) ─────────── */
 .sidepanel_btn_row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
+/* group se-list/se-button into a single bordered "segmented" strip */
+.sidepanel_seg {
+  display: inline-flex;
+  align-items: center;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 34px;
+}
+.sidepanel_seg se-list,
+.sidepanel_seg se-button { --seg: 1; }
+
 .sidepanel_text_font {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin: 6px 0;
+  gap: 8px;
+  margin-top: 12px;
 }
+.sidepanel_text_font se-font-select { flex: 1; min-width: 0; }
 
-/* ── Right-side panel sections (General / Text / Shadow / Color Shift) ── */
-.sidepanel_section,
-#color_shift_panel,
-#shadow_panel {
-  padding: 12px 15px 10px;
-  margin-top: 10px;
-  border-top: 1px solid var(--chrome-border);
-  color: var(--fg);
-  user-select: none;
-}
-.sidepanel_section_label,
-#color_shift_label {
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.sidepanel_section_grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  align-items: center;
-}
-.shadow_panel_footer {
+/* ── Shadow / Clip-Mask footers ───────────────────────────────────── */
+.shadow_panel_footer,
+.clipmask_panel_footer {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 12px;
 }
 .shadow_panel_footer input[type="color"] {
-  width: 28px;
-  height: 28px;
-  padding: 1px;
-  border: 1px solid var(--chrome-border);
-  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
   background: var(--field-bg);
   cursor: pointer;
 }
-#color_shift_hint {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.4;
-}
-.color_shift_grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-bottom: 10px;
-}
+
+/* ── Color-shift toggles / reset ──────────────────────────────────── */
 .color_shift_toggles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 4px;
 }
 .color_shift_toggles label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
 }
 .color_shift_toggles input[type="checkbox"] {
   accent-color: var(--accent);
+  width: 15px; height: 15px;
   cursor: pointer;
   margin: 0;
 }
 #color_shift_reset {
   margin-left: auto;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
+  height: 32px;
+  padding: 0 14px;
+  font: 600 12.5px var(--ui-font);
   color: var(--fg);
   background: var(--field-bg);
   border: 1px solid var(--field-border);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
-#color_shift_reset:hover {
-  background: var(--icon-hover-bg);
-  color: var(--icon-hover);
+#color_shift_reset:hover { background: var(--icon-hover-bg); border-color: var(--field-border-h, #C8CDD6); }
+#color_shift_hint { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+/* ── Layers tab ───────────────────────────────────────────────────── */
+#layerpanel {
+  user-select: none;
+  padding: 14px 16px;
+}
+#layersLabel {
+  font: 700 11px var(--ui-font);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 12px;
+}
+#layerbuttons {
+  margin: 0 0 12px;
+  padding: 0;
+  width: 100%;
+  height: auto;
+  border: 0;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+}
+#layerlist {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--field-border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--field-bg);
+}
+#layerlist tr.layer { background: transparent; }
+#layerlist tr.layer + tr.layer td { border-top: 1px solid var(--section-rule, #EEF0F3); }
+#layerlist tr.layersel { background: var(--accent-soft); }
+#layerlist td {
+  padding: 9px 6px;
+  cursor: pointer;
+}
+#layerlist td.layervis {
+  width: 30px;
+  padding-left: 11px;
+  text-align: center;
+}
+#layerlist td.layervis * { display: block; }
+#layerlist td.layerinvis * { display: none; }
+#layerlist td.layername {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+#layerlist td.layername:hover { color: var(--accent); }
+#layerlist tr.layersel td.layername { font-weight: 600; }
+
+#selLayerLabel { white-space: nowrap; }
+#selLayerNames {
+  display: block;
+  position: static;
+  top: 0;
+  margin-top: 12px;
 }
 
 /* ── Brand pill / main button ─────────────────────────────────────── */

@@ -69,6 +69,16 @@ export async function fetchSvgEl (url) {
         svgEl.setAttribute('stroke-linecap', 'round')
         svgEl.setAttribute('stroke-linejoin', 'round')
 
+        // If the icon declares width/height but no viewBox, synthesise one so its
+        // content scales into the rendered box. Without a viewBox the inner shapes
+        // render at native coordinates and, combined with overflow:visible below,
+        // spill outside the icon's box (e.g. context_menu.svg overflowing the panel).
+        if (!svgEl.getAttribute('viewBox')) {
+          const w = parseFloat(svgEl.getAttribute('width'))
+          const h = parseFloat(svgEl.getAttribute('height'))
+          if (w && h) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`)
+        }
+
         svgEl.style.cssText = 'width:100%;height:100%;display:block;overflow:visible;'
         svgCache.set(url, svgEl.outerHTML)
       } else {

@@ -10,19 +10,20 @@
 
         <!-- ───────────────── DESIGN TAB ───────────────── -->
         <div id="tab_design" class="sidepanel_tabpanel active">
+            <!-- General: position first, then identity -->
             <div id="sidepanel_general" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">General</div>
                 <div class="sidepanel_section_grid">
-                    <se-input id="elem_id" data-attr="id" size="10" label="properties.id_label"
-                        title="properties.id"></se-input>
-                    <se-input id="elem_class" data-attr="class" size="10" label="properties.class_label"
-                        title="properties.class"></se-input>
-                    <se-spin-input id="angle" size="3" min="-180" max="180" step="5" src="angle.svg"
-                        title="properties.angle"></se-spin-input>
                     <se-spin-input id="selected_x" data-attr="x" size="4" type="text" label="properties.x_label"
                         title="properties.pos_x"></se-spin-input>
                     <se-spin-input id="selected_y" data-attr="y" size="4" type="text" label="properties.y_label"
                         title="properties.pos_y"></se-spin-input>
+                    <se-spin-input id="angle" size="3" min="-180" max="180" step="5" label="Rotate"
+                        title="properties.angle"></se-spin-input>
+                    <se-input id="elem_id" class="span2" data-attr="id" size="10" label="properties.id_label"
+                        title="properties.id"></se-input>
+                    <se-input id="elem_class" class="span2" data-attr="class" size="10" label="properties.class_label"
+                        title="properties.class"></se-input>
                 </div>
             </div>
 
@@ -34,8 +35,8 @@
                         title="properties.rect_width"></se-spin-input>
                     <se-spin-input id="rect_height" data-attr="height" size="4" label="properties.h_label"
                         title="properties.rect_height"></se-spin-input>
-                    <se-spin-input id="rect_rx" min=0 max=1000 step=1 size="3" title="properties.corner_radius"
-                        data-attr="Corner Radius" src="c_radius.svg"></se-spin-input>
+                    <se-spin-input id="rect_rx" min=0 max=1000 step=1 size="3" label="Radius"
+                        title="properties.corner_radius" data-attr="Corner Radius"></se-spin-input>
                 </div>
             </div>
             <div class="image_panel sidepanel_section" style="display:none">
@@ -45,9 +46,8 @@
                         title="properties.image_width"></se-spin-input>
                     <se-spin-input id="image_height" data-attr="height" size="4" type="text" label="properties.h_label"
                         title="properties.image_height"></se-spin-input>
-                </div>
-                <div class="sidepanel_section_grid" style="margin-top:6px">
-                    <se-input id="image_url" data-attr="image_url" size="15" label="properties.image_url"></se-input>
+                    <se-input id="image_url" class="span2" data-attr="image_url" size="15"
+                        label="properties.image_url"></se-input>
                 </div>
             </div>
             <div class="circle_panel sidepanel_section" style="display:none">
@@ -91,29 +91,37 @@
             <div class="sidepanel_section">
                 <div class="sidepanel_section_label">Stroke &amp; Opacity</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="stroke_width" min=0 max=99 step=1 title="properties.stroke_width" label=""
-                        src="stroke-width.svg"></se-spin-input>
-                    <se-spin-input id="opacity" min=0 max=100 step=5 title="properties.opacity"
-                        src="opacity.svg"></se-spin-input>
-                    <se-select id="stroke_style" title="properties.stroke_style" label="" width="22px" height="22px"
+                    <se-spin-input id="stroke_width" min=0 max=99 step=1 label="Stroke"
+                        title="properties.stroke_width" src="stroke-width.svg"></se-spin-input>
+                    <se-spin-input id="opacity" min=0 max=100 step=5 label="Opacity"
+                        title="properties.opacity" src="opacity.svg"></se-spin-input>
+                </div>
+                <div class="sidepanel_subsection">
+                    <div class="sub_label">Dash</div>
+                    <se-select id="stroke_style" title="properties.stroke_style"
                         options="&#8212;,...,- -,- .,- .." values="none::2,2::5,5::5,2,2,2::5,2,2,2,2,2">
                     </se-select>
-                    <se-list id="stroke_linejoin" title="properties.linejoin_miter" label="" width="22px" height="22px">
-                        <se-list-item id="linejoin_miter" value="miter" src="linejoin_miter.svg"
-                            title="properties.linejoin_miter" img-height="22px"></se-list-item>
-                        <se-list-item id="linejoin_round" value="round" src="linejoin_round.svg"
-                            title="properties.linejoin_round" img-height="22px"></se-list-item>
-                        <se-list-item id="linejoin_bevel" value="bevel" src="linejoin_bevel.svg"
-                            title="properties.linejoin_bevel" img-height="22px"></se-list-item>
-                    </se-list>
-                    <se-list id="stroke_linecap" title="properties.linecap_butt" label="" width="22px" height="22px">
-                        <se-list-item id="linecap_butt" value="butt" src="linecap_butt.svg"
-                            title="properties.linecap_butt" img-height="22px"></se-list-item>
-                        <se-list-item id="linecap_square" value="square" src="linecap_square.svg"
-                            title="properties.linecap_square" img-height="22px"></se-list-item>
-                        <se-list-item id="linecap_round" value="round" src="linecap_round.svg"
-                            title="properties.linecap_round" img-height="22px"></se-list-item>
-                    </se-list>
+                </div>
+                <div class="sidepanel_subsection">
+                    <div class="sub_label">Joins &amp; caps</div>
+                    <div class="sidepanel_btn_row">
+                        <se-list id="stroke_linejoin" title="properties.linejoin_miter" label="" width="22px" height="22px">
+                            <se-list-item id="linejoin_miter" value="miter" src="linejoin_miter.svg"
+                                title="properties.linejoin_miter" img-height="22px"></se-list-item>
+                            <se-list-item id="linejoin_round" value="round" src="linejoin_round.svg"
+                                title="properties.linejoin_round" img-height="22px"></se-list-item>
+                            <se-list-item id="linejoin_bevel" value="bevel" src="linejoin_bevel.svg"
+                                title="properties.linejoin_bevel" img-height="22px"></se-list-item>
+                        </se-list>
+                        <se-list id="stroke_linecap" title="properties.linecap_butt" label="" width="22px" height="22px">
+                            <se-list-item id="linecap_butt" value="butt" src="linecap_butt.svg"
+                                title="properties.linecap_butt" img-height="22px"></se-list-item>
+                            <se-list-item id="linecap_square" value="square" src="linecap_square.svg"
+                                title="properties.linecap_square" img-height="22px"></se-list-item>
+                            <se-list-item id="linecap_round" value="round" src="linecap_round.svg"
+                                title="properties.linecap_round" img-height="22px"></se-list-item>
+                        </se-list>
+                    </div>
                 </div>
             </div>
 
@@ -121,17 +129,17 @@
             <div class="selected_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Object</div>
                 <div class="sidepanel_btn_row">
-                    <se-button id="tool_topath" title="tools.to_path" src="to_path.svg"></se-button>
-                    <se-button id="tool_reorient" title="tools.reorient_path" src="reorient.svg"></se-button>
-                    <se-button id="tool_make_link" title="tools.make_link" src="globe_link.svg"></se-button>
+                    <se-button id="tool_topath" size="small" title="tools.to_path" src="to_path.svg"></se-button>
+                    <se-button id="tool_reorient" size="small" title="tools.reorient_path" src="reorient.svg"></se-button>
+                    <se-button id="tool_make_link" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
                 </div>
-                <div class="container_panel" style="display:none">
+                <div class="container_panel sidepanel_subsection" style="display:none">
                     <se-input id="g_title" data-attr="title" size="8" label="properties.label"></se-input>
                 </div>
-                <div class="use_panel" style="display:none">
-                    <se-button id="tool_unlink_use" title="tools.tool_unlink_use" src="unlink_use.svg"></se-button>
+                <div class="use_panel sidepanel_subsection" style="display:none">
+                    <se-button id="tool_unlink_use" size="small" title="tools.tool_unlink_use" src="unlink_use.svg"></se-button>
                 </div>
-                <div class="a_panel" style="display:none">
+                <div class="a_panel sidepanel_subsection" style="display:none">
                     <label id="tool_link_url">
                         <span id="linkLabel" class="icon_label"></span>
                         <input id="link_url" type="text" size="35" />
@@ -143,13 +151,13 @@
             <div class="multiselected_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Combine</div>
                 <div class="sidepanel_btn_row">
-                    <se-button id="tool_bool_union" title="tools.bool_union" src="bool_union.svg"></se-button>
-                    <se-button id="tool_bool_intersect" title="tools.bool_intersect"
+                    <se-button id="tool_bool_union" size="small" title="tools.bool_union" src="bool_union.svg"></se-button>
+                    <se-button id="tool_bool_intersect" size="small" title="tools.bool_intersect"
                         src="bool_intersect.svg"></se-button>
-                    <se-button id="tool_bool_subtract" title="tools.bool_subtract" src="bool_subtract.svg"></se-button>
-                    <se-button id="tool_clip_set" title="tools.clip_set" src="clip_set.svg"></se-button>
-                    <se-button id="tool_mask_set" title="tools.mask_set" src="mask_set.svg"></se-button>
-                    <se-button id="tool_make_link_multi" title="tools.make_link" src="globe_link.svg"></se-button>
+                    <se-button id="tool_bool_subtract" size="small" title="tools.bool_subtract" src="bool_subtract.svg"></se-button>
+                    <se-button id="tool_clip_set" size="small" title="tools.clip_set" src="clip_set.svg"></se-button>
+                    <se-button id="tool_mask_set" size="small" title="tools.mask_set" src="mask_set.svg"></se-button>
+                    <se-button id="tool_make_link_multi" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
                 </div>
             </div>
         </div>
@@ -157,51 +165,57 @@
         <!-- ───────────────── TEXT TAB ───────────────── -->
         <div id="tab_text" class="sidepanel_tabpanel">
             <div class="text_panel sidepanel_section" style="display:none">
-                <div class="sidepanel_section_label">Text Style</div>
-                <div class="sidepanel_btn_row">
-                    <se-button id="tool_bold" title="properties.bold" src="bold.svg" shortcut="B"></se-button>
-                    <se-button id="tool_italic" title="properties.italic" src="italic.svg" shortcut="I"></se-button>
-                    <se-button id="tool_text_decoration_underline" title="properties.text_decoration_underline"
-                        src="text_decoration_underline.svg"></se-button>
-                    <se-button id="tool_text_decoration_linethrough" title="properties.text_decoration_linethrough"
-                        src="text_decoration_linethrough.svg"></se-button>
-                    <se-button id="tool_text_decoration_overline" title="properties.text_decoration_overline"
-                        src="text_decoration_overline.svg"></se-button>
-                </div>
+                <div class="sidepanel_section_label">Font</div>
                 <div class="sidepanel_text_font">
                     <se-font-select id="tool_font_family" src="font.svg" title="properties.font_family"
                         options="properties.serif,properties.sans_serif,properties.cursive,properties.fantasy,properties.monospace,properties.courier,properties.helvetica,properties.times"
                         values="Serif::Sans-serif::Cursive::Fantasy::Monospace::Courier::Helvetica::Times"></se-font-select>
                     <se-font-library id="tool_font_library" title="Browse & embed custom fonts"></se-font-library>
                 </div>
-                <div class="sidepanel_btn_row">
-                    <se-spin-input size="2" id="font_size" min=1 max=1000 step=1 title="properties.font_size"
-                        src="fontsize.svg"></se-spin-input>
-                    <se-list id="tool_text_anchor" label="" width="22px" height="22px">
-                        <se-list-item id="tool_text_anchor_start" value="start" title="properties.text_anchor_start"
-                            src="anchor_start.svg" img-height="25px"></se-list-item>
-                        <se-list-item id="tool_text_anchor_middle" value="middle" title="properties.text_anchor_middle"
-                            src="anchor_middle.svg" img-height="25px"></se-list-item>
-                        <se-list-item id="tool_text_anchor_end" value="end" title="properties.text_anchor_end"
-                            src="anchor_end.svg" img-height="25px"></se-list-item>
-                    </se-list>
+                <div class="sidepanel_section_grid sidepanel_subsection">
+                    <se-spin-input size="2" id="font_size" min=1 max=1000 step=1 label="Size"
+                        title="properties.font_size" src="fontsize.svg"></se-spin-input>
+                    <div>
+                        <div class="sub_label">Align</div>
+                        <se-list id="tool_text_anchor" label="" width="22px" height="22px">
+                            <se-list-item id="tool_text_anchor_start" value="start" title="properties.text_anchor_start"
+                                src="anchor_start.svg" img-height="25px"></se-list-item>
+                            <se-list-item id="tool_text_anchor_middle" value="middle" title="properties.text_anchor_middle"
+                                src="anchor_middle.svg" img-height="25px"></se-list-item>
+                            <se-list-item id="tool_text_anchor_end" value="end" title="properties.text_anchor_end"
+                                src="anchor_end.svg" img-height="25px"></se-list-item>
+                        </se-list>
+                    </div>
+                </div>
+                <div class="sidepanel_subsection">
+                    <div class="sub_label">Style</div>
+                    <div class="sidepanel_btn_row">
+                        <se-button id="tool_bold" size="small" title="properties.bold" src="bold.svg" shortcut="B"></se-button>
+                        <se-button id="tool_italic" size="small" title="properties.italic" src="italic.svg" shortcut="I"></se-button>
+                        <se-button id="tool_text_decoration_underline" size="small" title="properties.text_decoration_underline"
+                            src="text_decoration_underline.svg"></se-button>
+                        <se-button id="tool_text_decoration_linethrough" size="small" title="properties.text_decoration_linethrough"
+                            src="text_decoration_linethrough.svg"></se-button>
+                        <se-button id="tool_text_decoration_overline" size="small" title="properties.text_decoration_overline"
+                            src="text_decoration_overline.svg"></se-button>
+                    </div>
                 </div>
             </div>
             <div id="sidepanel_text" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Spacing &amp; Shape</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input size="2" id="tool_letter_spacing" min=0 max=100 step=1
+                    <se-spin-input size="2" id="tool_letter_spacing" min=0 max=100 step=1 label="Letter"
                         title="properties.text_letter_spacing" src="letter_spacing.svg"></se-spin-input>
-                    <se-spin-input size="2" id="tool_word_spacing" min=0 max=1000 step=1
+                    <se-spin-input size="2" id="tool_word_spacing" min=0 max=1000 step=1 label="Word"
                         title="properties.text_word_spacing" src="word_spacing.svg"></se-spin-input>
-                    <se-spin-input size="2" id="tool_text_length" min=0 max=1000 step=1 title="properties.text_length"
-                        src="text_length.svg"></se-spin-input>
-                    <se-select id="tool_length_adjust" src="length_adjust.svg" title="properties.text_length_adjust"
+                    <se-spin-input size="2" id="tool_text_length" min=0 max=1000 step=1 label="Length"
+                        title="properties.text_length" src="text_length.svg"></se-spin-input>
+                    <se-select id="tool_length_adjust" label="Adjust" title="properties.text_length_adjust"
                         options="properties.text_length_adjust_spacing,properties.text_length_adjust_spacing_and_glyphs"
                         values="spacing::spacingAndGlyphs"></se-select>
-                    <se-spin-input size="3" id="tool_perspective_x" min=-80 max=80 step=1
+                    <se-spin-input size="3" id="tool_perspective_x" min=-80 max=80 step=1 label="Skew X"
                         title="properties.text_perspective_x" src="perspective_x.svg"></se-spin-input>
-                    <se-spin-input size="3" id="tool_perspective_y" min=-80 max=80 step=1
+                    <se-spin-input size="3" id="tool_perspective_y" min=-80 max=80 step=1 label="Skew Y"
                         title="properties.text_perspective_y" src="perspective_y.svg"></se-spin-input>
                 </div>
             </div>
@@ -212,18 +226,18 @@
             <div class="selected_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Blur</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="blur" size="2" min="0" max="100" step="5" src="blur.svg"
-                        title="properties.blur"></se-spin-input>
+                    <se-spin-input id="blur" class="span2" size="2" min="0" max="100" step="5" label="Amount"
+                        title="properties.blur" src="blur.svg"></se-spin-input>
                 </div>
             </div>
             <div id="clipmask_panel" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Clip &amp; Mask</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="clipmask_feather" size="3" min="-50" max="50" step="1" src="feather.svg"
-                        title="properties.feather"></se-spin-input>
+                    <se-spin-input id="clipmask_feather" class="span2" size="3" min="-50" max="50" step="1" label="Feather"
+                        title="properties.feather" src="feather.svg"></se-spin-input>
                 </div>
                 <div class="clipmask_panel_footer">
-                    <se-button id="clipmask_release" title="tools.clip_release" src="clip_release.svg"></se-button>
+                    <se-button id="clipmask_release" size="small" title="tools.clip_release" src="clip_release.svg"></se-button>
                 </div>
             </div>
             <!-- ext-shadow (#shadow_panel) and ext-color-shift (#color_shift_panel) inject here -->

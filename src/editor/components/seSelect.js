@@ -5,64 +5,92 @@ const template = document.createElement('template')
 template.innerHTML = `
 <style>
 :host {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
 }
-.wrap {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  gap: 5px;
-  padding: 0 8px;
-  background: var(--group-bg, #F6F7F9);
-  border: 1px solid var(--group-border, #E6E8EC);
-  border-radius: 10px;
+.top-label {
+  display: none; /* shown only when [label] is set */
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted, #6B7280);
+  margin: 0 0 5px 2px;
+  white-space: nowrap;
 }
-.icon-wrap {
-  width: 18px;
-  height: 18px;
+.field {
   display: flex;
   align-items: center;
+  height: 34px;
+  background: var(--field-bg, #F7F8FA);
+  border: 1px solid var(--field-border, #E2E5EA);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .12s, box-shadow .12s, background .12s;
+}
+.field:hover { border-color: var(--field-border-h, #C8CDD6); }
+.field:focus-within {
+  border-color: var(--accent, #2962FF);
+  background: var(--chrome-bg, #FFFFFF);
+  box-shadow: 0 0 0 3px var(--accent-ring, rgba(41,98,255,0.16));
+}
+.icon-wrap {
+  width: 30px;
+  height: 100%;
+  display: none;
+  align-items: center;
   justify-content: center;
-  color: var(--icon, #4B5563);
+  color: var(--muted, #6B7280);
+  border-right: 1px solid var(--field-border, #E2E5EA);
   flex-shrink: 0;
 }
+:host([src]:not([label])) .icon-wrap { display: flex; }
 .icon-wrap svg,
 .icon-wrap img {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: block;
 }
-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted, #6B7280);
-  white-space: nowrap;
-  display: none; /* hidden by default; shown when label attr is set */
-}
 select {
-  background-color: var(--field-bg, #FFFFFF);
+  flex: 1;
+  min-width: 0;
+  background: transparent;
   color: var(--fg, #1B1F24);
-  border: 1px solid var(--field-border, #DDE1E7);
-  border-radius: 7px;
-  height: 26px;
-  padding: 0 4px 0 8px;
-  font-size: 12.5px;
+  border: none;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
   font-weight: 500;
   font-family: var(--ui-font, inherit);
   appearance: none;
   outline: none;
   cursor: pointer;
 }
+.chev {
+  width: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint, #99A0AC);
+  pointer-events: none;
+}
+.chev svg { width: 12px; height: 12px; display: block; }
 ::slotted(*) {
   padding: 0;
   width: 100%;
 }
 </style>
-  <div class="wrap">
+  <label class="top-label"></label>
+  <div class="field">
     <span class="icon-wrap" aria-hidden="true"></span>
-    <label></label>
     <select></select>
+    <span class="chev" aria-hidden="true">
+      <svg viewBox="0 0 12 12" fill="none"><path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
   </div>
 `
 /**
@@ -78,9 +106,9 @@ export class SeSelect extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$select = this._shadowRoot.querySelector('select')
-    this.$label = this._shadowRoot.querySelector('label')
+    this.$label = this._shadowRoot.querySelector('.top-label')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$wrap = this._shadowRoot.querySelector('.wrap')
+    this.$wrap = this._shadowRoot.querySelector('.field')
   }
 
   /**
@@ -104,7 +132,8 @@ export class SeSelect extends HTMLElement {
     switch (name) {
       case 'label':
         this.$label.textContent = t(newValue)
-        this.$label.style.display = newValue ? 'inline' : 'none'
+        this.$label.style.display = newValue ? 'block' : 'none'
+        if (newValue) this.$iconWrap.style.display = 'none'
         break
       case 'src':
         this._loadIcon(newValue)

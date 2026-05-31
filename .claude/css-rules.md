@@ -57,6 +57,9 @@ Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and
 |----------|-------|------|---------|
 | `--field-bg` | `#FFFFFF` | `#14161A` | Input field background |
 | `--field-border` | `#DDE1E7` | `#2C2F37` | Input field border |
+| `--field-border-h` | `#C8CDD6` | `#3C4150` | Input field border on hover |
+| `--accent-ring` | `rgba(41,98,255,0.16)` | `rgba(246,178,58,0.20)` | Field focus ring (focus-within box-shadow) |
+| `--section-rule` | `#EEF0F3` | `#23262E` | Light divider between right-panel sections / layer rows |
 | `--group-bg` | `#F6F7F9` | `#181A20` | Control-group tray background |
 | `--group-border` | `#E6E8EC` | `#2C2F37` | Control-group tray border |
 
@@ -255,46 +258,51 @@ Holds only the color controls (`fill_color`, `stroke_color`, `bg_color`, `palett
 
 ### Right-panel tabs (`#sidepanel_tabs` / `.sidepanel_tabpanel`)
 The right panel is tabbed (Design / Text / Effects / Layers). The tab bar is sticky at
-the top of the scrolling `#sidepanel_content`; the active tab uses the accent color +
-an underline. Tab panels are hidden unless `.active`.
+the top of the scrolling `#sidepanel_content`; the active tab uses the accent color with
+an underline drawn by `::after`. Tab panels are hidden unless `.active`.
 ```css
-#sidepanel_tabs { display: flex; gap: 2px; padding: 8px 10px 0;
-  position: sticky; top: 0; background: var(--chrome-bg); z-index: 1; }
-.sidepanel_tab { flex: 1; border: none; border-bottom: 2px solid transparent;
-  background: transparent; color: var(--muted); font-weight: 600;
-  border-radius: 8px 8px 0 0; padding: 7px 4px; cursor: pointer; }
+#sidepanel_tabs { display: flex; gap: 2px; padding: 6px 8px 0;
+  position: sticky; top: 0; background: var(--chrome-bg);
+  border-bottom: 1px solid var(--section-rule); z-index: 1; }
+.sidepanel_tab { flex: 1; border: none; background: transparent;
+  color: var(--muted); font: 600 12.5px var(--ui-font);
+  border-radius: 7px 7px 0 0; padding: 9px 4px 11px; cursor: pointer; position: relative; }
 .sidepanel_tab:hover { color: var(--fg); background: var(--icon-hover-bg); }
-.sidepanel_tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.sidepanel_tabpanel { display: none; }
+.sidepanel_tab.active { color: var(--accent); }
+.sidepanel_tab.active::after { content: ""; position: absolute;
+  left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--accent); }
+.sidepanel_tabpanel { display: none; padding: 2px 0 10px; }
 .sidepanel_tabpanel.active { display: block; }
-/* horizontal button rows inside sections (Object / Text style) */
-.sidepanel_btn_row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
-.sidepanel_text_font { display: flex; align-items: center; gap: 4px; margin: 6px 0; }
+/* horizontal button rows inside sections (Object / Combine / Joins & caps) */
+.sidepanel_btn_row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sidepanel_text_font { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 ```
 
-### `.sidepanel_section` — Right side-panel sections
+### `.sidepanel_section` — Right side-panel sections ("Direction A" layout)
 Shared style for context-aware sections inside the tab panels (General, Dimensions,
-Stroke & Opacity, Object, Combine, Text, Blur, Clip & Mask, Shadow, Color Shift):
+Stroke & Opacity, Object, Combine, Font, Spacing & Shape, Blur, Clip & Mask, Shadow,
+Color Shift). Sections are divided by a light `--section-rule`; the first section in a
+tab drops its top rule. Fields are laid out in a **two-column grid where each field
+stretches to fill its cell** (the `se-*` components stack a small uppercase label above
+a single bordered field — see component CSS below), which is what makes the columns
+align. Use `.span2` on a field to make it fill the full row (e.g. ID / Class).
 ```css
-.sidepanel_section,
-#color_shift_panel,
-#shadow_panel {
-  padding: 12px 15px 10px;
-  margin-top: 10px;
-  border-top: 1px solid var(--chrome-border);
-  color: var(--fg);
-  user-select: none;
+.sidepanel_section, #color_shift_panel, #shadow_panel {
+  padding: 14px 16px; margin: 0;
+  border-top: 1px solid var(--section-rule); color: var(--fg); user-select: none;
 }
-.sidepanel_section_label,
-#color_shift_label {
-  font-weight: 600; font-size: 12px;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 8px;
+.sidepanel_tabpanel > .sidepanel_section:first-child { border-top: none; }
+.sidepanel_section_label, #color_shift_label {
+  font: 700 11px var(--ui-font); letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 12px; white-space: nowrap;
 }
-.sidepanel_section_grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 6px; align-items: center;
+.sidepanel_section_grid, .color_shift_grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; align-items: start;
 }
+.sidepanel_section_grid .span2 { grid-column: 1 / -1; }      /* full-row field */
+.sub_label { font: 600 10px var(--ui-font); letter-spacing: 0.05em;   /* sub-block header */
+  text-transform: uppercase; color: var(--muted); margin: 0 0 5px 2px; }
+.sidepanel_subsection { margin-top: 12px; }                  /* spacing between sub-blocks */
 ```
 Each section sets `style.display: 'none'` until its trigger selection is active.
 
@@ -351,40 +359,35 @@ se-button { color: var(--icon); }
 se-button[pressed] { color: var(--accent); }
 ```
 
-### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js))
+### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js)) — "Direction A"
 
+The host is `display: flex; flex-direction: column; align-items: stretch` so the
+component **fills its grid cell**. A small uppercase `.top-label` (shown only when the
+`label` attribute is set) stacks above a single bordered `.field`. The `src` icon is now
+only a fallback leading glyph shown when **no** `label` is set (`:host([src]:not([label]))`).
 ```
-Wrapper (.wrap): height 36px, inline-flex, align-items center
-  background: var(--group-bg)
-  border: 1px solid var(--group-border)
-  border-radius: 10px
-  padding: 0 8px; gap: 5px
-
-Icon wrapper: 18px × 18px, flex-shrink: 0
-
-Label: font-size 12px, font-weight 500, color: var(--muted)
-
-Input (elix-number-spin-box inner):
-  background: var(--field-bg)
-  border: 1px solid var(--field-border)
-  border-radius: 7px; height: 26px
-  font-size: 12.5px; font-weight: 500
-  color: var(--fg)
+:host: flex column, align-items stretch, min-width 0
+.top-label: 10px/600 uppercase, var(--muted), display:none until [label] set
+.field: height 34px, flex row, background var(--field-bg),
+        border 1px var(--field-border), border-radius 8px, overflow hidden
+.field:hover  → border-color var(--field-border-h)
+.field:focus-within → border var(--accent) + box-shadow 0 0 0 3px var(--accent-ring)
+.icon-wrap: 30px wide leading glyph, shown only via :host([src]:not([label]))
+elix-number-spin-box: transparent, flex:1; spin buttons are a right-edge stepper
+  (::part(spin-button) with a left border, hover → accent)
 ```
 
 ### `se-input` ([seInput.js](../src/editor/components/seInput.js))
 
-Same tray structure as `se-spin-input`. Inner `elix-input` mirrors the field styling (field-bg, field-border, same font).
+Same single-field + stacked-label treatment as `se-spin-input` (`:host` stretches,
+`.top-label` + `.field`, same hover/focus-within states). Inner `elix-input` is
+transparent and fills the field.
 
 ### `se-select` ([seSelect.js](../src/editor/components/seSelect.js))
 
-Same tray structure. Inner `<select>`:
-```
-background: var(--field-bg); color: var(--fg)
-border: 1px solid var(--field-border); border-radius: 7px
-height: 26px; font-size: 12.5px; font-weight: 500
-appearance: none  (custom arrow via CSS)
-```
+Same single-field + stacked-label treatment. The native `<select>` is transparent,
+`appearance: none`, and fills the field; a built-in `.chev` SVG chevron sits at the
+right edge. `src` icon is a fallback leading glyph only when no `label` is set.
 
 ### `se-font-select` ([seFontSelect.js](../src/editor/components/seFontSelect.js))
 

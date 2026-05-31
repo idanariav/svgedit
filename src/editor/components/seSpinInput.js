@@ -6,76 +6,94 @@ import { fetchSvgEl } from './svgIconLoader.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
+  /* Direction A field: stacked label above a single bordered field.
+     :host stretches to fill its grid cell so every field aligns. */
   :host {
-    display: inline-flex;
-    align-items: center;
-  }
-  .wrap {
-    display: inline-flex;
-    align-items: center;
-    height: 36px;
-    gap: 5px;
-    padding: 0 8px;
-    background: var(--group-bg, #F6F7F9);
-    border: 1px solid var(--group-border, #E6E8EC);
-    border-radius: 10px;
-  }
-  .icon-wrap {
-    width: 18px;
-    height: 18px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--icon, #4B5563);
-    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
   }
-  .icon-wrap svg,
-  .icon-wrap img {
-    width: 18px;
-    height: 18px;
-    display: block;
-  }
-  span#label {
-    font-size: 12px;
-    font-weight: 500;
+  .top-label {
+    display: none; /* shown only when [label] is set */
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--muted, #6B7280);
+    margin: 0 0 5px 2px;
     white-space: nowrap;
   }
+  .field {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    background: var(--field-bg, #F7F8FA);
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color .12s, box-shadow .12s, background .12s;
+  }
+  .field:hover { border-color: var(--field-border-h, #C8CDD6); }
+  .field:focus-within {
+    border-color: var(--accent, #2962FF);
+    background: var(--chrome-bg, #FFFFFF);
+    box-shadow: 0 0 0 3px var(--accent-ring, rgba(41,98,255,0.16));
+  }
+  /* leading icon only used as a fallback when no text label is set */
+  .icon-wrap {
+    width: 30px;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted, #6B7280);
+    border-right: 1px solid var(--field-border, #E2E5EA);
+    flex-shrink: 0;
+  }
+  :host([src]:not([label])) .icon-wrap { display: flex; }
+  .icon-wrap svg,
+  .icon-wrap img {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
   elix-number-spin-box {
-    background-color: var(--field-bg, #FFFFFF);
-    border: 1px solid var(--field-border, #DDE1E7);
-    border-radius: 7px;
-    height: 26px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    height: 32px;
+    width: auto;
+    flex: 1;
+    min-width: 0;
     color: var(--fg, #1B1F24);
   }
   elix-number-spin-box::part(spin-button) {
-    padding: 0;
+    padding: 0 2px;
     color: var(--muted, #6B7280);
+    border-left: 1px solid var(--field-border, #E2E5EA);
   }
   elix-number-spin-box::part(spin-button):hover {
     color: var(--accent, #2962FF);
+    background: var(--icon-hover-bg, #EEF1F5);
   }
   elix-number-spin-box::part(input) {
-    width: 40px;
+    width: 100%;
     color: inherit;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     font-family: var(--ui-font, inherit);
     background: transparent;
     border: none;
-    padding: 0 2px;
+    padding: 0 8px;
     box-sizing: border-box;
-    text-align: center;
-  }
-  elix-number-spin-box {
-    width: 62px;
-    height: 26px;
+    text-align: left;
   }
   </style>
-  <div class="wrap">
+  <label class="top-label"></label>
+  <div class="field">
     <span class="icon-wrap" aria-hidden="true"></span>
-    <span id="label" style="display:none"></span>
     <elix-number-spin-box min="1" step="1"></elix-number-spin-box>
   </div>
 `
@@ -93,9 +111,9 @@ export class SESpinInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('.wrap')
+    this.$div = this._shadowRoot.querySelector('.field')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$label = this._shadowRoot.getElementById('label')
+    this.$label = this._shadowRoot.querySelector('.top-label')
     this.$event = new CustomEvent('change')
     this.$input = this._shadowRoot.querySelector('elix-number-spin-box')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
@@ -127,7 +145,6 @@ export class SESpinInput extends HTMLElement {
         break
       case 'src':
         this._loadIcon(newValue)
-        this.$label.style.display = 'none'
         break
       case 'size':
       // access to the underlying input box
@@ -147,7 +164,9 @@ export class SESpinInput extends HTMLElement {
       case 'label':
         if (newValue) {
           this.$label.textContent = t(newValue)
-          this.$label.style.display = ''
+          this.$label.style.display = 'block'
+          // a text label takes precedence over the fallback icon
+          this.$iconWrap.style.display = 'none'
         } else {
           this.$label.style.display = 'none'
         }

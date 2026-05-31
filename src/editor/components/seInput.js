@@ -5,37 +5,61 @@ const template = document.createElement('template')
 template.innerHTML = `
   <style>
   :host {
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
   }
-  .wrap {
-    display: inline-flex;
-    align-items: center;
-    height: 36px;
-    gap: 5px;
-    padding: 0 8px;
-    background: var(--group-bg, #F6F7F9);
-    border: 1px solid var(--group-border, #E6E8EC);
-    border-radius: 10px;
-  }
-  span#label {
-    font-size: 12px;
-    font-weight: 500;
+  .top-label {
+    display: none; /* shown only when [label] is set */
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--muted, #6B7280);
+    margin: 0 0 5px 2px;
     white-space: nowrap;
   }
+  .field {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    background: var(--field-bg, #F7F8FA);
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color .12s, box-shadow .12s, background .12s;
+  }
+  .field:hover { border-color: var(--field-border-h, #C8CDD6); }
+  .field:focus-within {
+    border-color: var(--accent, #2962FF);
+    background: var(--chrome-bg, #FFFFFF);
+    box-shadow: 0 0 0 3px var(--accent-ring, rgba(41,98,255,0.16));
+  }
   elix-input {
-    background-color: var(--field-bg, #FFFFFF);
+    background: transparent;
     color: var(--fg, #1B1F24);
-    border: 1px solid var(--field-border, #DDE1E7);
-    border-radius: 7px;
-    height: 26px;
-    font-size: 12.5px;
+    border: none;
+    border-radius: 0;
+    height: 32px;
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
     font-weight: 500;
+    font-family: var(--ui-font, inherit);
+  }
+  elix-input::part(inner),
+  elix-input::part(input) {
+    padding: 0 8px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
   }
   </style>
-  <div class="wrap">
-    <span id="label"></span>
+  <label class="top-label"></label>
+  <div class="field">
     <elix-input></elix-input>
   </div>
 `
@@ -53,8 +77,8 @@ export class SEInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('.wrap')
-    this.$label = this.shadowRoot.getElementById('label')
+    this.$div = this._shadowRoot.querySelector('.field')
+    this.$label = this.shadowRoot.querySelector('.top-label')
     this.$event = new CustomEvent('change')
     this.$input = this._shadowRoot.querySelector('elix-input')
   }
@@ -87,7 +111,12 @@ export class SEInput extends HTMLElement {
         this.$input.setAttribute('size', newValue)
         break
       case 'label':
-        this.$label.textContent = t(newValue)
+        if (newValue) {
+          this.$label.textContent = t(newValue)
+          this.$label.style.display = 'block'
+        } else {
+          this.$label.style.display = 'none'
+        }
         break
       case 'value':
         this.$input.value = newValue
