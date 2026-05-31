@@ -58,6 +58,7 @@ export const init = canvas => {
   svgCanvas.moveToTopSelectedElement = moveToTopSelectedElem // Repositions the selected element to the bottom in the DOM to appear on top
   svgCanvas.moveToBottomSelectedElement = moveToBottomSelectedElem // Repositions the selected element to the top in the DOM to appear under other elements
   svgCanvas.moveUpDownSelected = moveUpDownSelected // Moves the select element up or down the stack, based on the visibly
+  svgCanvas.switchSelectedZorder = switchSelectedZorder // Reverses the z-order (stacking) of exactly two selected elements
   svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
   svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
   svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
@@ -187,6 +188,41 @@ const moveUpDownSelected = dir => {
     )
     svgCanvas.call('changed', [t])
   }
+}
+
+/**
+ * Reverses the z-order (DOM stacking) of exactly two selected elements that
+ * share the same parent layer. If one was behind the other, they swap.
+ * @function module:selected-elem.SvgCanvas#switchSelectedZorder
+ * @fires module:selected-elem.SvgCanvas#event:changed
+ * @returns {void}
+ */
+const switchSelectedZorder = () => {
+  const selected = svgCanvas.getSelectedElements().filter(Boolean)
+  if (selected.length !== 2) {
+    return
+  }
+  const [a, b] = selected
+  const parent = a.parentNode
+  if (parent !== b.parentNode) {
+    return
+  }
+  const aOldNext = a.nextSibling
+  const bOldNext = b.nextSibling
+  // Swap the two siblings' DOM positions via a placeholder
+  const tmp = document.createComment('swap')
+  parent.replaceChild(tmp, a)
+  parent.replaceChild(a, b)
+  parent.replaceChild(b, tmp)
+  const batchCmd = new BatchCommand('Switch Layers')
+  batchCmd.addSubCommand(
+    new MoveElementCommand(a, aOldNext, parent, 'Switch Layers')
+  )
+  batchCmd.addSubCommand(
+    new MoveElementCommand(b, bOldNext, parent, 'Switch Layers')
+  )
+  svgCanvas.addCommandToHistory(batchCmd)
+  svgCanvas.call('changed', [a, b])
 }
 
 /**

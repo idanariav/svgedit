@@ -64,7 +64,7 @@ export async function fetchSvgEl (url) {
 
         // Ensure consistent stroke-width for a clean look
         if (!svgEl.getAttribute('stroke-width')) {
-          svgEl.setAttribute('stroke-width', '2')
+          svgEl.setAttribute('stroke-width', '1.6')
         }
         svgEl.setAttribute('stroke-linecap', 'round')
         svgEl.setAttribute('stroke-linejoin', 'round')

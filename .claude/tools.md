@@ -58,34 +58,64 @@ class-based logic in `TopPanel.js` `updateContextPanel`.
 | `tool_redo` | Redo | Ctrl+Y | `#history_panel`; disabled until undo exists |
 | `zoom` *(`<se-zoom>`)* | Zoom dropdown | — | In `#zoom_panel`. 25/50/100/200/400/1000%, Fit to Canvas/Selection/Layer/All. **Moved here from the bottom panel**; its `change` listener is bound in `TopPanel.init` (delegates to `bottomPanel.changeZoom`) |
 
-### Single-element selected (`.selected_panel` trays)
+### Single-element selected (`.selected_panel` tray)
+
+One consolidated `.quick_tray` pill holds all object actions:
 
 | ID | Tool | Shortcut |
 |----|------|----------|
 | `tool_clone` | Clone element | D |
 | `tool_delete` | Delete element | Delete / Backspace |
-| `tool_move_top` | Bring to front | Ctrl+Shift+] |
-| `tool_move_bottom` | Send to back | Ctrl+Shift+[ |
+| `tool_arrange` *(list)* | Arrange / z-order (see below) | — |
 | `tool_flip_h` | Flip horizontal | — |
 | `tool_flip_v` | Flip vertical | — |
 | `tool_position` *(list)* | Align to page | — (L/C/R/T/M/B + distribute H/V) |
 
-### Group selected (`.g_panel` tray)
+### Multiple elements selected (`.multiselected_panel` tray)
 
-| ID | Tool | Shortcut |
-|----|------|----------|
-| `tool_ungroup` | Ungroup | — |
-
-### Multiple elements selected (`.multiselected_panel` trays)
+One consolidated `.quick_tray` pill:
 
 | ID | Tool | Shortcut |
 |----|------|----------|
 | `tool_clone_multi` | Clone all | C |
 | `tool_delete_multi` | Delete all | Delete / Backspace |
 | `tool_group_elements` | Group | G |
-| `tool_align_left/center/right/top/middle/bottom` | Align edges/centers | — |
-| `tool_align_distrib_horiz` / `tool_align_distrib_verti` | Distribute H / V | — |
+| `tool_arrange_multi` *(list)* | Arrange / z-order (incl. Switch Layers) | — |
+| `tool_align_multi` *(list)* | Align edges/centers + distribute H/V | — |
 | `tool_align_relative` *(select)* | Alignment reference | selected / largest / smallest / page |
+
+### Arrange / z-order dropdown (`tool_arrange` / `tool_arrange_multi`)
+
+An `se-list` dropdown with a **fixed** trigger icon (`move_top.svg`; static-icon
+mode of `se-list`, enabled by setting `src` on the `<se-list>` itself). One copy
+lives in each selection tray (single = `tool_arrange`, multi = `tool_arrange_multi`,
+following the `tool_clone`/`tool_clone_multi` convention). Both dispatch a `change`
+event handled by `TopPanel.clickArrange`:
+
+| Item value | Action | Canvas call | Shortcut |
+|------------|--------|-------------|----------|
+| `front` | Bring to Front | `moveToTopSelectedElement()` | Ctrl+Shift+] |
+| `forward` | Bring Forward (one step) | `moveUpDownSelected('Up')` | — |
+| `backward` | Send Backward (one step) | `moveUpDownSelected('Down')` | — |
+| `back` | Send to Back | `moveToBottomSelectedElement()` | Ctrl+Shift+[ |
+| `switch` *(`arrange_switch`, multi list only)* | Switch Layers (reverse z-order of 2) | `switchSelectedZorder()` | — |
+
+The single-element list omits the switch item; in the multi list `arrange_switch`
+is shown only when **exactly two** elements are selected. The move actions operate
+on the primary selected element.
+
+### Align dropdown (`tool_align_multi`)
+
+Multi-selection align is a single `se-list` dropdown (fixed `align.svg` face) with
+items `l/c/r/t/m/b/dh/dv`; its `change` is handled by `TopPanel.clickAlignMulti`
+→ `clickAlign` → `alignSelectedElements(value, tool_align_relative.value)`.
+(Single-element `tool_position` is the analogous align-to-page dropdown.)
+
+### Group / link selected (`.g_panel` tray)
+
+| ID | Tool | Shortcut |
+|----|------|----------|
+| `tool_ungroup` | Ungroup | — |
 
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 

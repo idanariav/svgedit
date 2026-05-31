@@ -134,7 +134,7 @@ src/editor/index.html
 |--------|---------|
 | `draw.js` | Shape creation primitives (rect, circle, ellipse, text, line, path…) |
 | `event.js` | All mouse/touch event bindings + custom event dispatch (~53KB) |
-| `selected-elem.js` | Manipulate selected element(s): move, resize, flip |
+| `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
 | `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box |
 | `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector()`/`hideGroupSelector()` draw one union box + grips around a multi-selection |
 | `path.js` | Path element state and node data |

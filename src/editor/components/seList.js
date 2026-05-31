@@ -77,8 +77,30 @@ export class SeList extends HTMLElement {
     this.$optionsContainer = this._shadowRoot.querySelector('#options-container')
     this.$optionsContainer.classList.add('closed')
     this.$selection.addEventListener('click', this.toggleList)
-    this.updateSelectedValue(this.items[0].getAttribute('value'))
+    // When a `src` is set on the list itself, the trigger shows a fixed icon
+    // that never changes to the last-picked action (action-menu behavior).
+    this.staticIcon = this.hasAttribute('src')
+    if (this.staticIcon) {
+      this.renderStaticIcon(this.getAttribute('src'))
+    } else {
+      this.updateSelectedValue(this.items[0].getAttribute('value'))
+    }
     this.isDropdownOpen = false
+  }
+
+  renderStaticIcon = async (src) => {
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    while (this.$selection.firstChild) { this.$selection.removeChild(this.$selection.firstChild) }
+    if (svgEl) {
+      svgEl.style.cssText = 'height:22px;width:auto;display:block;'
+      this.$selection.append(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.style.height = '22px'
+      this.$selection.append(img)
+    }
   }
 
   toggleList = (e) => {
@@ -91,6 +113,8 @@ export class SeList extends HTMLElement {
   }
 
   updateSelectedValue = async (newValue) => {
+    // Static-icon lists keep a fixed trigger face and no item highlight.
+    if (this.staticIcon) return
     for (const element of Array.from(this.items)) {
       if (element.getAttribute('value') === newValue) {
         element.setAttribute('selected', true)

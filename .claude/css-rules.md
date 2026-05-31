@@ -193,9 +193,14 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 ```
 
 Contextual trays carry their selection classes (`.selected_panel`,
-`.multiselected_panel`, `.g_panel`, `.path_node_panel`) plus `.quick_tray`, and start
-with inline `display:none`; `TopPanel.js` `displayTool()`/`hideTool()` toggle them
-(`#tools_top > *` provides the `display:flex` fallback when shown).
+`.multiselected_panel`, `.g_panel`, `.path_node_panel`) plus `.quick_tray`, and
+start with inline `display:none`; `TopPanel.js` `displayTool()`/`hideTool()` toggle
+them (`#tools_top > *` provides the `display:flex` fallback when shown). Each
+selection context uses a single consolidated tray (`.selected_panel` for one
+element, `.multiselected_panel` for many) holding all object actions — clone /
+delete / group / arrange / flip / align. Note `.selected_panel` and
+`.multiselected_panel` are **shared** with RightPanel sections, so the same
+`displayTool()` call toggles both the top tray and the matching side-panel section.
 
 ### `#tools_left` — Left Tool Sidebar
 ```css

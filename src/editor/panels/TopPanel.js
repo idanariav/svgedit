@@ -472,6 +472,9 @@ class TopPanel {
       }
 
       this.displayTool('multiselected_panel')
+      // Switch Layers only applies to exactly two selected elements
+      $id('arrange_switch').style.display =
+        selElems.filter(Boolean).length === 2 ? '' : 'none'
       menuItems.setAttribute('enablemenuitems', '#group,#add_to_shape_library')
       menuItems.setAttribute('disablemenuitems', '#ungroup')
     } else {
@@ -705,6 +708,15 @@ class TopPanel {
   }
 
   /**
+   * Align multiple selected elements via the align dropdown.
+   * @param {PlainObject} evt
+   * @returns {void}
+   */
+  clickAlignMulti (evt) {
+    this.clickAlign(evt.detail.value)
+  }
+
+  /**
    *
    * @type {module}
    */
@@ -869,22 +881,27 @@ class TopPanel {
   }
 
   /**
-   *
+   * Handle a selection from the Arrange (z-order) dropdown.
+   * @param {PlainObject} evt
    * @returns {void}
    */
-  moveToTopSelected () {
-    if (this.editor.selectedElement) {
-      this.editor.svgCanvas.moveToTopSelectedElement()
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  moveToBottomSelected () {
-    if (this.editor.selectedElement) {
-      this.editor.svgCanvas.moveToBottomSelectedElement()
+  clickArrange (evt) {
+    switch (evt.detail.value) {
+      case 'front':
+        this.editor.svgCanvas.moveToTopSelectedElement()
+        break
+      case 'back':
+        this.editor.svgCanvas.moveToBottomSelectedElement()
+        break
+      case 'forward':
+        this.editor.moveUpDownSelected('Up')
+        break
+      case 'backward':
+        this.editor.moveUpDownSelected('Down')
+        break
+      case 'switch':
+        this.editor.svgCanvas.switchSelectedZorder()
+        break
     }
   }
 
@@ -1094,8 +1111,8 @@ class TopPanel {
     $click($id('tool_clone_multi'), this.clickClone.bind(this))
     $click($id('tool_delete'), this.deleteSelected.bind(this))
     $click($id('tool_delete_multi'), this.deleteSelected.bind(this))
-    $click($id('tool_move_top'), this.moveToTopSelected.bind(this))
-    $click($id('tool_move_bottom'), this.moveToBottomSelected.bind(this))
+    $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
+    $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
     $click($id('tool_topath'), this.convertToPath.bind(this))
     $click($id('tool_make_link'), this.makeHyperlink.bind(this))
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
@@ -1113,18 +1130,7 @@ class TopPanel {
     $id('tool_position').addEventListener('change', evt =>
       this.clickAlignEle.bind(this)(evt)
     )
-    $click($id('tool_align_left'), () => this.clickAlign.bind(this)('left'))
-    $click($id('tool_align_right'), () => this.clickAlign.bind(this)('right'))
-    $click($id('tool_align_center'), () => this.clickAlign.bind(this)('center'))
-    $click($id('tool_align_top'), () => this.clickAlign.bind(this)('top'))
-    $click($id('tool_align_bottom'), () => this.clickAlign.bind(this)('bottom'))
-    $click($id('tool_align_middle'), () => this.clickAlign.bind(this)('middle'))
-    $click($id('tool_align_distrib_horiz'), () =>
-      this.clickAlign.bind(this)('distrib_horiz')
-    )
-    $click($id('tool_align_distrib_verti'), () =>
-      this.clickAlign.bind(this)('distrib_verti')
-    )
+    $id('tool_align_multi').addEventListener('change', this.clickAlignMulti.bind(this))
     $click($id('tool_node_clone'), this.clonePathNode.bind(this))
     $click($id('tool_node_delete'), this.deletePathNode.bind(this))
     $click($id('tool_openclose_path'), this.opencloseSubPath.bind(this))
