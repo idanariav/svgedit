@@ -253,7 +253,7 @@ export default {
             </div>
           </div>
         `
-        const host = $id('sidepanel_content') || $id('tools_top')
+        const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
         host.appendChild(panelTemplate.content.cloneNode(true))
 
         // Wire event listeners

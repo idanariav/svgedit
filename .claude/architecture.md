@@ -84,10 +84,10 @@ svgedit/
 | **EditorStartup** | `EditorStartup.js` | Async init: load config → i18n → DOM → SvgCanvas → panels → extensions |
 | **SvgCanvas** | `packages/svgcanvas/svgcanvas.js` + `core/` | All SVG creation, selection, transforms, undo/redo, path editing |
 | **ConfigObj** | `ConfigObj.js` | Settings storage, `pref(key)`, `setConfig(obj)`, localStorage persistence |
-| **TopPanel** | `panels/TopPanel.js/.html` | Shape attribute panels, text tools, alignment, boolean ops, path node editing |
+| **TopPanel** | `panels/TopPanel.js/.html` | "Quick actions" bar: view toggles, undo/redo, clone/delete, group/ungroup, layering, flip, align, zoom, path-node editing. Also **binds** the relocated zoom + stroke + opacity listeners (it inits last) |
 | **LeftPanel** | `panels/LeftPanel.js/.html` | Drawing tool buttons (select, rect, circle, path, text, etc.) |
-| **BottomPanel** | `panels/BottomPanel.js/.html` | Fill/stroke colors, stroke width/style/cap/join, opacity, zoom |
-| **RightPanel** | `panels/RightPanel.js/.html` | Hosts the right side panel (`#sidepanel_content`): Layers tool + context-aware sections (General, Text, Shadow, Color Shift) injected here |
+| **BottomPanel** | `panels/BottomPanel.js/.html` | "Colors" bar: fill/stroke/background color pickers + quick palette only |
+| **RightPanel** | `panels/RightPanel.js/.html` | Tabbed properties panel (**Design / Text / Effects / Layers**). `activateTab`/`autoSelectTab` switch tabs; shape-dimension, stroke, text, blur, clip/mask, boolean, layers sections live in the tab containers; ext-shadow/ext-color-shift inject into `#tab_effects` |
 | **MainMenu** | `MainMenu.js` | Export, Document Properties, Preferences, Homepage links |
 | **Components** | `components/*.js` | Reusable shadow-DOM web elements (buttons, inputs, selects, color pickers) |
 | **Dialogs** | `dialogs/*.js` | Modal dialogs (export, prefs, image props, SVG source, alerts) |
@@ -109,8 +109,10 @@ src/editor/index.html
                     ├── new SvgCanvas(svgcanvasEl)   // create drawing engine
                     ├── leftPanel.init()
                     ├── bottomPanel.init()
-                    ├── topPanel.init()
-                    ├── rightPanel.init()
+                    ├── rightPanel.init()      // builds the tabbed side panel
+                    ├── topPanel.init()        // LAST → can bind any control in any
+                    │                          //   panel (e.g. zoom/stroke/opacity that
+                    │                          //   physically live elsewhere)
                     ├── mainMenu.init()
                     ├── bind svgCanvas events:
                     │     selected   → selectedChanged()   // update attribute panels
@@ -204,8 +206,9 @@ Entry points: `src/editor/index.html` (dev + ES build) · `iife-index.html` (IIF
 7. SvgCanvas event.js handles mousedown/mousemove/mouseup
 8. draw.js creates <rect> element in SVG DOM
 9. SvgCanvas fires 'changed' event
-10. Editor.elementChanged() → updates BottomPanel coordinates
+10. Editor.elementChanged() → updates position/size inputs (Right panel Design tab)
 11. SvgCanvas fires 'selected' event with new element
-12. Editor.selectedChanged() → TopPanel shows rect_panel, updates attribute inputs
+12. Editor.selectedChanged() → updateContextPanel shows the rect_panel section in the
+    Design tab + the top object/arrange trays; autoSelectTab keeps Design active
 13. RightPanel updates to show new element in active layer
 ```

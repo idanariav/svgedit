@@ -498,6 +498,60 @@ hr {
   position: relative;
 }
 
+/* ── Right-panel tab bar (Design / Text / Effects / Layers) ───────── */
+#sidepanel_tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  position: sticky;
+  top: 0;
+  background: var(--chrome-bg);
+  z-index: 1;
+}
+.sidepanel_tab {
+  flex: 1;
+  appearance: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 4px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.sidepanel_tab:hover {
+  color: var(--fg);
+  background: var(--icon-hover-bg);
+}
+.sidepanel_tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.sidepanel_tabpanel {
+  display: none;
+}
+.sidepanel_tabpanel.active {
+  display: block;
+}
+
+/* Horizontal button rows inside right-panel sections (Object / Text style …) */
+.sidepanel_btn_row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+.sidepanel_text_font {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+}
+
 /* ── Right-side panel sections (General / Text / Shadow / Color Shift) ── */
 .sidepanel_section,
 #color_shift_panel,
@@ -734,9 +788,12 @@ hr {
   gap: 2px;
 }
 
-/* History group: push to the right */
-#history_panel {
-  margin-left: auto;
+/* Rounded "tray" groups in the top toolbar (view / history / object / arrange /
+   zoom / path-node). Shared visual language for all quick-action clusters. */
+#editor_panel,
+#history_panel,
+#zoom_panel,
+.quick_tray {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -744,23 +801,17 @@ hr {
   background: var(--group-bg);
   border: 1px solid var(--group-border);
   border-radius: 10px;
+}
+
+/* History group: push it (and everything after) to the right edge */
+#history_panel {
+  margin-left: auto;
 }
 
 /* Title panel */
 #title_panel {
   display: inline-flex;
   align-items: center;
-}
-
-/* Editor panel (source/wireframe) */
-#editor_panel {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  background: var(--group-bg);
-  border: 1px solid var(--group-border);
-  border-radius: 10px;
 }
 
 /* ── Bottom bar ───────────────────────────────────────────────────── */

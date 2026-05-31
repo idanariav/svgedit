@@ -27,14 +27,14 @@
 
 | File | Purpose |
 |------|---------|
-| `TopPanel.js` | Attribute change handlers; shows/hides shape panels on selection; `attrChanger()` ~line 641 |
-| `TopPanel.html` | Full markup for every shape attribute panel (rect, circle, text, path nodes, etc.) |
+| `TopPanel.js` | Quick-action handlers + `updateContextPanel` (shows/hides trays & tab sections); binds relocated zoom/stroke/opacity listeners; `attrChanger()` |
+| `TopPanel.html` | Quick-actions bar markup (view/history/object/arrange/zoom trays + path-node panel) |
 | `LeftPanel.js` | Drawing tool button handlers; mode switching |
 | `LeftPanel.html` | Left sidebar tool buttons |
-| `BottomPanel.js` | Fill/stroke/opacity/stroke-width handlers |
-| `BottomPanel.html` | Bottom bar markup (paint, zoom, stroke controls) |
-| `RightPanel.js` | Right side panel: layers + General/Text property sections |
-| `RightPanel.html` | Right side panel markup |
+| `BottomPanel.js` | Color-picker handlers + zoom/stroke/opacity handler methods (listeners bound in TopPanel) |
+| `BottomPanel.html` | Bottom "Colors" bar markup (fill/stroke/bg pickers + palette) |
+| `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
+| `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
 
 ---
 

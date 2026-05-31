@@ -33,20 +33,31 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 
 ---
 
-## Top Panel — Editing & Attribute Tools (`src/editor/panels/TopPanel.html`)
+## Top Panel — Quick Actions (`src/editor/panels/TopPanel.html`)
 
-The top panel is a horizontal flex bar. Sections are shown/hidden based on what is selected.
+The top panel is a horizontal flex bar of rounded **trays** (shared `.quick_tray`
+style, matching `#editor_panel`/`#history_panel`/`#zoom_panel`). It holds only
+selection-agnostic *quick actions* — shape attributes, text styling, stroke and
+combine ops now live in the Right Side Panel tabs. Trays are shown/hidden by the same
+class-based logic in `TopPanel.js` `updateContextPanel`.
+
+> Layout: title (left) → view tray → `#theme_panel` → `.path_node_panel` →
+> `#history_panel` (`margin-left:auto` pushes it + everything after to the right) →
+> object/arrange trays → `#zoom_panel` (far right).
 
 ### Always-visible
 
 | ID | Tool | Shortcut | Notes |
 |----|------|----------|-------|
-| `tool_source` | Edit SVG source | U | Opens raw SVG code editor |
-| `tool_wireframe` | Wireframe mode | F | Toggle outline-only rendering |
-| `tool_undo` | Undo | Ctrl+Z | Disabled until history exists |
-| `tool_redo` | Redo | Ctrl+Y | Disabled until undo exists |
+| `tool_source` | Edit SVG source | U | In `#editor_panel` (view tray) |
+| `tool_wireframe` | Wireframe mode | F | In `#editor_panel` (view tray) |
+| `view_grid` | Grid toggle | — | Injected into `#editor_panel` by ext-grid |
+| *(theme)* | Light/dark toggle | — | Injected into `#theme_panel` by ext-theme-toggle |
+| `tool_undo` | Undo | Ctrl+Z | `#history_panel`; disabled until history exists |
+| `tool_redo` | Redo | Ctrl+Y | `#history_panel`; disabled until undo exists |
+| `zoom` *(`<se-zoom>`)* | Zoom dropdown | — | In `#zoom_panel`. 25/50/100/200/400/1000%, Fit to Canvas/Selection/Layer/All. **Moved here from the bottom panel**; its `change` listener is bound in `TopPanel.init` (delegates to `bottomPanel.changeZoom`) |
 
-### Single-element selected (`.selected_panel`)
+### Single-element selected (`.selected_panel` trays)
 
 | ID | Tool | Shortcut |
 |----|------|----------|
@@ -54,77 +65,35 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 | `tool_delete` | Delete element | Delete / Backspace |
 | `tool_move_top` | Bring to front | Ctrl+Shift+] |
 | `tool_move_bottom` | Send to back | Ctrl+Shift+[ |
-| `tool_topath` | Convert to path | — |
-| `tool_reorient` | Reorient path | — |
-| `tool_make_link` | Make hyperlink | — |
 | `tool_flip_h` | Flip horizontal | — |
 | `tool_flip_v` | Flip vertical | — |
-| `tool_position` *(list)* | Align to page | — | L/C/R/T/M/B + distribute H/V |
+| `tool_position` *(list)* | Align to page | — (L/C/R/T/M/B + distribute H/V) |
 
-> `elem_id`, `elem_class`, `angle` (rotation), `blur` (Gaussian blur), `selected_x`, `selected_y` now live in the Right Side Panel — see "Right Side Panel — Properties" below.
+### Group selected (`.g_panel` tray)
 
-### Multiple elements selected (`.multiselected_panel`)
+| ID | Tool | Shortcut |
+|----|------|----------|
+| `tool_ungroup` | Ungroup | — |
+
+### Multiple elements selected (`.multiselected_panel` trays)
 
 | ID | Tool | Shortcut |
 |----|------|----------|
 | `tool_clone_multi` | Clone all | C |
 | `tool_delete_multi` | Delete all | Delete / Backspace |
 | `tool_group_elements` | Group | G |
-| `tool_make_link_multi` | Make hyperlink | — |
-| `tool_align_left` | Align left edges | — |
-| `tool_align_center` | Align centers H | — |
-| `tool_align_right` | Align right edges | — |
-| `tool_align_top` | Align top edges | — |
-| `tool_align_middle` | Align centers V | — |
-| `tool_align_bottom` | Align bottom edges | — |
-| `tool_align_distrib_horiz` | Distribute horizontally | — |
-| `tool_align_distrib_verti` | Distribute vertically | — |
-| `tool_align_relative` *(select)* | Alignment reference | — | selected / largest / smallest / page |
-| `tool_bool_union` | Boolean union | — | Merge shapes |
-| `tool_bool_intersect` | Boolean intersect | — | Keep overlap only |
-| `tool_bool_subtract` | Boolean subtract | — | Cut top from bottom |
-| `tool_clip_set` | Set clip | — | Trim the **top** shape to the **bottom** shape's silhouette; bottom is cloned into a `<clipPath>` and stays visible; requires exactly 2 selected |
-| `tool_mask_set` | Set mask | — | Mask the **top** shape with the **bottom** shape's silhouette (white-luminance clone in a `<mask>`); bottom stays visible; requires exactly 2 selected |
-
-### Shape-specific panels (shown when element of that type is selected)
-
-| Panel class | Shape | Controls |
-|-------------|-------|---------|
-| `.rect_panel` | `<rect>` | `rect_width`, `rect_height`, `rect_rx` (corner radius) |
-| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url` |
-| `.circle_panel` | `<circle>` | `circle_cx`, `circle_cy`, `circle_r` |
-| `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
-| `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |
-| `.text_panel` | `<text>` | See Text Tools below |
-| `.container_panel` | `<g>` + `<use>` | `g_title` (label) |
-| `.use_panel` | `<use>` | `tool_unlink_use` |
-| `.g_panel` | `<g>` | `tool_ungroup` |
-| `.a_panel` | `<a>` | `link_url` (text input) |
-| `.path_node_panel` | `<path>` (in pathedit mode) | Path node editing tools (see below) |
-
-### Text Tools (`.text_panel`, shown when `<text>` is selected)
-
-| ID | Control | Shortcut | Notes |
-|----|---------|----------|-------|
-| `tool_bold` | Bold | B | Toggles `font-weight` |
-| `tool_italic` | Italic | I | Toggles `font-style` |
-| `tool_text_decoration_underline` | Underline | — | |
-| `tool_text_decoration_linethrough` | Strikethrough | — | |
-| `tool_text_decoration_overline` | Overline | — | |
-| `tool_font_family` *(`<se-font-select>`)* | Font family | — | Google-style picker: search box + per-font previews (each rendered in its own face). Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times; downloaded custom fonts are appended here by ext-fonts |
-| `tool_font_library` *(`<se-font-library>`)* | Custom fonts | — | Opens a Google Fonts browser; picking a font downloads it once (cached offline in IndexedDB), applies it, and embeds it as base64 `@font-face` in `<defs>` on export. Wired by ext-fonts |
-| `font_size` *(spin)* | Font size | — | 1–1000px, step 1 |
-| `tool_text_anchor` *(list)* | Text alignment | — | start / middle / end |
-
-> Letter spacing, word spacing, text length, length adjust, and perspective X/Y now live in the Right Side Panel "Text" section — see below.
+| `tool_align_left/center/right/top/middle/bottom` | Align edges/centers | — |
+| `tool_align_distrib_horiz` / `tool_align_distrib_verti` | Distribute H / V | — |
+| `tool_align_relative` *(select)* | Alignment reference | selected / largest / smallest / page |
 
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
+
+Stays in the top bar (it is a transient mode toolbar, not a property).
 
 | ID | Control |
 |----|---------|
 | `tool_node_link` | Link/unlink control points |
-| `path_node_x` | Node X coordinate |
-| `path_node_y` | Node Y coordinate |
+| `path_node_x` / `path_node_y` | Node X / Y coordinate |
 | `seg_type` | Segment type: Straight (4) / Curve (6) |
 | `tool_node_clone` | Clone node |
 | `tool_node_delete` | Delete node |
@@ -133,69 +102,67 @@ The top panel is a horizontal flex bar. Sections are shown/hidden based on what 
 
 ---
 
-## Bottom Panel — Paint & Zoom (`src/editor/panels/BottomPanel.html`)
+## Bottom Panel — Colors (`src/editor/panels/BottomPanel.html`)
+
+Pure color controls only. Stroke geometry, opacity and zoom moved out (see above + the
+Design tab below).
 
 | ID | Control | Notes |
 |----|---------|-------|
-| `zoom` | Zoom dropdown | 25%, 50%, 100%, 200%, 400%, 1000%, Fit to Canvas, Fit to Selection, Fit to Layer, Fit to All |
 | `fill_color` | Fill color swatch | Opens color picker; shows `none` swatch for no fill |
 | `stroke_color` | Stroke color swatch | Same picker |
 | `bg_color` | Background color | Sets canvas background — paints both the document rect (for export) and the surrounding `#svgcanvas` surface for a uniform look |
 | `palette` | Color palette | Quick color swatches |
-| `stroke_width` *(spin)* | Stroke width | 0–99; Shift+click steps by 0.1 |
-| `stroke_style` *(select)* | Stroke dash pattern | Solid, Dotted, Dashed, Dash-dot, Dash-dot-dot |
-| `stroke_linejoin` *(list)* | Line join | Miter / Round / Bevel |
-| `stroke_linecap` *(list)* | Line cap | Butt / Round / Square |
-| `opacity` *(spin)* | Element opacity | 0–100%, step 5 |
 
 ---
 
 ## Right Side Panel — Properties (`src/editor/panels/RightPanel.html`)
 
-The right side panel hosts the Layers tool (always visible) plus context-sensitive sections that appear only when an appropriate selection exists. All sections share the `.sidepanel_section` style.
+Tabbed (`#sidepanel_tabs`): **Design · Text · Effects · Layers**. `RightPanel.js`
+`activateTab(name)` toggles `.active` on the tab buttons and `.sidepanel_tabpanel`
+containers (`#tab_design`/`#tab_text`/`#tab_effects`/`#tab_layers`).
+`autoSelectTab(elem, multi)` (called at the end of `updateContextPanel`) switches to
+**Text** for text selections and back to **Design** for others. Sections inside tabs
+keep their original contextual classes (`rect_panel`, `text_panel`, `selected_panel`,
+`multiselected_panel`, …) so the existing show/hide logic is unchanged; an inactive tab
+container simply hides everything inside it.
 
-### `#sidepanel_general` — single element selected
+### Design tab (`#tab_design`)
 
-| ID | Tool | Notes |
-|----|------|-------|
-| `elem_id` *(input)* | Element ID field | |
-| `elem_class` *(input)* | Element class field | |
-| `angle` *(spin)* | Rotation angle | −180 to 180°, step 5 |
-| `blur` *(spin)* | Gaussian blur | 0–100, step 5 (×10 internally) |
-| `selected_x` *(spin)* | X position | Row hidden for line, circle, ellipse, polygon, and circle-arc paths |
-| `selected_y` *(spin)* | Y position | Row hidden for the same shapes as `selected_x` |
+| Section (class/id) | Shown when | Controls |
+|--------------------|-----------|----------|
+| `#sidepanel_general` | single element | `elem_id`, `elem_class`, `angle` (rotation −180…180°), `selected_x`, `selected_y` (x/y hidden for line/circle/ellipse/polygon/arc) |
+| `.rect_panel` | `<rect>` | `rect_width`, `rect_height`, `rect_rx` |
+| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url` |
+| `.circle_panel` | `<circle>` (or circle-arc path) | `circle_cx`, `circle_cy`, `circle_r`, `circle_arc` |
+| `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
+| `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |
+| Stroke & Opacity *(always shown in tab)* | always | `stroke_width` (0–99), `opacity` (0–100%), `stroke_style` (dash), `stroke_linejoin`, `stroke_linecap`. **Moved from bottom panel**; `change` listeners bound in `TopPanel.init` (delegate to `bottomPanel` handlers) |
+| `.selected_panel` "Object" | single element | `tool_topath`, `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
+| `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (clip/mask require exactly 2) |
 
-### `#sidepanel_text` — `<text>` element selected (or all-text multi-select)
+### Text tab (`#tab_text`)
 
-| ID | Tool | Notes |
-|----|------|-------|
-| `tool_letter_spacing` *(spin)* | Letter spacing | 0–100, step 1 |
-| `tool_word_spacing` *(spin)* | Word spacing | 0–1000, step 1 |
-| `tool_text_length` *(spin)* | Text length | 0–1000 (sets `textLength` attr) |
-| `tool_length_adjust` *(select)* | Length adjust | spacing / spacingAndGlyphs |
-| `tool_perspective_x` *(spin)* | Perspective X | −80 to 80, step 1 |
-| `tool_perspective_y` *(spin)* | Perspective Y | −80 to 80, step 1 |
+| Section | Shown when | Controls |
+|---------|-----------|----------|
+| `.text_panel` "Text Style" | `<text>` (or all-text multi) | `tool_bold` (B), `tool_italic` (I), `tool_text_decoration_underline/linethrough/overline`, `tool_font_family` (`<se-font-select>`, Google-style search + per-font previews; ext-fonts appends downloaded fonts), `tool_font_library` (`<se-font-library>`, Google Fonts browser + embed-on-export), `font_size` (1–1000), `tool_text_anchor` (start/middle/end) |
+| `#sidepanel_text` "Spacing & Shape" | `<text>` (or all-text multi) | `tool_letter_spacing`, `tool_word_spacing`, `tool_text_length` (`textLength`), `tool_length_adjust`, `tool_perspective_x/y` |
 
-### `#clipmask_panel` — single clipped/masked element selected
+### Effects tab (`#tab_effects`)
 
-Appears when the selected element has a `clip-path` or `mask` attribute (managed in `TopPanel.js` `updateContextPanel`).
+| Section | Shown when | Controls |
+|---------|-----------|----------|
+| `.selected_panel` "Blur" | single element | `blur` (0–100, ×10 internally) |
+| `#clipmask_panel` | element has `clip-path`/`mask` | `clipmask_feather` (−50…50; +soft edge / −rim; applying to a hard clip auto-converts to a mask), `clipmask_release` |
+| `#shadow_panel` | injected by ext-shadow | see ext-shadow below |
+| `#color_shift_panel` | injected by ext-color-shift | see ext-color-shift below |
 
-| ID | Tool | Notes |
-|----|------|-------|
-| `clipmask_feather` *(spin)* | Feather the confinement edge | −50…50. **Positive** = soft/fading edge (blurs the mask silhouette). **Negative** = strong rim with soft interior (white edge band + grey interior). Applying feather to a hard clip **auto-converts it to a mask**. Stored as `data-feather` on the element; the blur lives as inline `filter:blur()` on the mask silhouette. Calls `svgCanvas.setFeather()` / `getFeather()`. |
-| `clipmask_release` | Release clip/mask | Drops the `clip-path`/`mask` reference and discards the definition. Calls `svgCanvas.releaseClipMask()`. |
-
-### `#shadow_panel` — injected by ext-shadow
-
-See the ext-shadow entry under "Extension-Provided Tools" below.
-
-### `#color_shift_panel` — injected by ext-color-shift
-
-See the ext-color-shift entry under "Extension-Provided Tools" below.
+ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
+`#sidepanel_content`).
 
 ---
 
-## Layers Panel (`src/editor/panels/RightPanel.html`)
+## Layers Panel — Layers tab (`#tab_layers` in `src/editor/panels/RightPanel.html`)
 
 | ID | Control |
 |----|---------|

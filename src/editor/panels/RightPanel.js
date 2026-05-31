@@ -13,6 +13,42 @@ class RightPanel {
   constructor (editor) {
     this.updateContextPanel = editor.topPanel.updateContextPanel.bind(editor.topPanel)
     this.editor = editor
+    this.activeTab = 'design'
+  }
+
+  /**
+   * Show one of the right-panel tabs (Design / Text / Effects / Layers).
+   * @param {string} name
+   * @returns {void}
+   */
+  activateTab (name) {
+    this.activeTab = name
+    document.querySelectorAll('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === name)
+    })
+    document.querySelectorAll('#sidepanel_content .sidepanel_tabpanel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === `tab_${name}`)
+    })
+  }
+
+  /**
+   * Pick the most relevant tab for the current selection: text elements open the
+   * Text tab; any other selection falls back to Design (only if the user was on
+   * Text). Other tabs are left as the user set them.
+   * @param {Element|null} elem
+   * @param {boolean} multiselected
+   * @returns {void}
+   */
+  autoSelectTab (elem, multiselected) {
+    const sel = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
+    const isText =
+      elem?.tagName === 'text' ||
+      (multiselected && sel.length > 0 && sel.every(e => e.tagName === 'text'))
+    if (isText) {
+      this.activateTab('text')
+    } else if ((elem || multiselected) && this.activeTab === 'text') {
+      this.activateTab('design')
+    }
   }
 
   /**
@@ -69,6 +105,11 @@ class RightPanel {
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => this.toggleSidePanel())
+    // Tab bar (Design / Text / Effects / Layers)
+    document.querySelectorAll('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
+      $click(btn, () => this.activateTab(btn.dataset.tab))
+    })
+    this.activateTab(this.activeTab)
     this.toggleSidePanel(this.editor.configObj.curConfig.showlayers)
   }
 

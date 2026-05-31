@@ -308,7 +308,8 @@ export default {
       name: t('name'),
 
       callback () {
-        const sidepanel = $id('sidepanel_content')
+        // Prefer the right-panel "Effects" tab; fall back to the panel root.
+        const sidepanel = $id('tab_effects') || $id('sidepanel_content')
         if (!sidepanel) return
 
         const tpl = document.createElement('template')

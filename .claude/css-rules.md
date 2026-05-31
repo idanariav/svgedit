@@ -177,16 +177,22 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
   gap: 6px;
   z-index: 5;
 }
-/* Groups inside top toolbar (e.g. #history_panel, #editor_panel) */
-#history_panel, #editor_panel {
+/* Rounded "tray" groups in the top toolbar — shared visual language for all
+   quick-action clusters (view / history / object / arrange / zoom / path-node) */
+#editor_panel, #history_panel, #zoom_panel, .quick_tray {
   display: inline-flex; align-items: center; gap: 2px;
   padding: 4px;
   background: var(--group-bg);
   border: 1px solid var(--group-border);
   border-radius: 10px;
 }
-#history_panel { margin-left: auto; } /* pushes to right edge */
+#history_panel { margin-left: auto; } /* pushes it + everything after to the right */
 ```
+
+Contextual trays carry their selection classes (`.selected_panel`,
+`.multiselected_panel`, `.g_panel`, `.path_node_panel`) plus `.quick_tray`, and start
+with inline `display:none`; `TopPanel.js` `displayTool()`/`hideTool()` toggle them
+(`#tools_top > *` provides the `display:flex` fallback when shown).
 
 ### `#tools_left` — Left Tool Sidebar
 ```css
@@ -201,7 +207,8 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 }
 ```
 
-### `#tools_bottom` — Bottom Status Bar
+### `#tools_bottom` — Bottom Color Bar
+Holds only the color controls (`fill_color`, `stroke_color`, `bg_color`, `palette`).
 ```css
 #tools_bottom {
   grid-area: bottom;
@@ -246,8 +253,28 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 #main_menu li:hover { background: var(--icon-hover-bg); }
 ```
 
+### Right-panel tabs (`#sidepanel_tabs` / `.sidepanel_tabpanel`)
+The right panel is tabbed (Design / Text / Effects / Layers). The tab bar is sticky at
+the top of the scrolling `#sidepanel_content`; the active tab uses the accent color +
+an underline. Tab panels are hidden unless `.active`.
+```css
+#sidepanel_tabs { display: flex; gap: 2px; padding: 8px 10px 0;
+  position: sticky; top: 0; background: var(--chrome-bg); z-index: 1; }
+.sidepanel_tab { flex: 1; border: none; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--muted); font-weight: 600;
+  border-radius: 8px 8px 0 0; padding: 7px 4px; cursor: pointer; }
+.sidepanel_tab:hover { color: var(--fg); background: var(--icon-hover-bg); }
+.sidepanel_tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.sidepanel_tabpanel { display: none; }
+.sidepanel_tabpanel.active { display: block; }
+/* horizontal button rows inside sections (Object / Text style) */
+.sidepanel_btn_row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.sidepanel_text_font { display: flex; align-items: center; gap: 4px; margin: 6px 0; }
+```
+
 ### `.sidepanel_section` — Right side-panel sections
-Shared style for context-aware sections inside `#sidepanel_content` (General, Text, Shadow, Color Shift):
+Shared style for context-aware sections inside the tab panels (General, Dimensions,
+Stroke & Opacity, Object, Combine, Text, Blur, Clip & Mask, Shadow, Color Shift):
 ```css
 .sidepanel_section,
 #color_shift_panel,

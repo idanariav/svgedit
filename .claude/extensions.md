@@ -98,6 +98,6 @@ Extensions can inject buttons or panels into:
 - **`#theme_panel`** in `#tools_top` — small icon-only controls (e.g. theme toggle)
 - **`#cur_context_panel`** — context strip shown in `rulerX` area when inside a group
 - **Left panel** — add a `<se-button>` via the `addToToolbar` helper or direct DOM manipulation
-- **Side panel content** — append to `#sidepanel_content`
+- **Side panel content** — the right panel is tabbed; append property/effect sections to a tab container (`#tab_design`/`#tab_text`/`#tab_effects`/`#tab_layers`), falling back to `#sidepanel_content`. ext-shadow and ext-color-shift inject into `#tab_effects`
 
 Extension context panels for shapes (e.g. marker controls) are typically appended to `#tools_top` and shown/hidden based on element selection events.

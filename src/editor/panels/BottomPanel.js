@@ -220,29 +220,16 @@ class BottomPanel {
         solidColor: curConfig.initStroke.color
       })
     )
-    $id('zoom').addEventListener('change', e =>
-      this.changeZoom.bind(this)(e.detail.value)
-    )
     $id('stroke_color').addEventListener('change', evt =>
       this.handleColorPicker.bind(this)('stroke', evt)
     )
     $id('fill_color').addEventListener('change', evt =>
       this.handleColorPicker.bind(this)('fill', evt)
     )
-    $id('stroke_width').addEventListener(
-      'change',
-      this.changeStrokeWidth.bind(this)
-    )
-    $id('stroke_style').addEventListener('change', evt =>
-      this.handleStrokeAttr.bind(this)('stroke-dasharray', evt)
-    )
-    $id('stroke_linejoin').addEventListener('change', evt =>
-      this.handleStrokeAttr.bind(this)('stroke-linejoin', evt)
-    )
-    $id('stroke_linecap').addEventListener('change', evt =>
-      this.handleStrokeAttr.bind(this)('stroke-linecap', evt)
-    )
-    $id('opacity').addEventListener('change', this.handleOpacity.bind(this))
+    // NOTE: zoom, stroke_width/style/linejoin/linecap and opacity now live in the
+    // top bar / right panel. Their `change` listeners are bound in TopPanel.init()
+    // (the last panel to initialise) so the elements exist by then; they still call
+    // back into these BottomPanel handlers.
     $id('fill_color').init(i18next)
     $id('stroke_color').init(i18next)
     $id('bg_color').init(i18next)

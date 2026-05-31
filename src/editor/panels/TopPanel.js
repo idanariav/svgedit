@@ -489,6 +489,9 @@ class TopPanel {
 
     this.editor.svgCanvas.addedNew = false
 
+    // Switch the right-panel tab to match the selection (text → Text, else Design)
+    this.editor.rightPanel.autoSelectTab(elem, this.multiselected)
+
     if ((elem && !isNode) || this.multiselected) {
       // update the selected elements' layer
       $id('selLayerNames').removeAttribute('disabled')
@@ -1174,6 +1177,23 @@ class TopPanel {
     $id('image_url').addEventListener('change', evt => {
       this.setImageURL(evt.currentTarget.value)
     })
+
+    // Controls relocated out of the bottom panel: zoom now lives in the top bar,
+    // stroke + opacity in the right "Design" tab. They are bound here (TopPanel
+    // initialises last) and delegate to the BottomPanel handlers.
+    const bp = this.editor.bottomPanel
+    $id('zoom').addEventListener('change', e => bp.changeZoom(e.detail.value))
+    $id('stroke_width').addEventListener('change', e => bp.changeStrokeWidth(e))
+    $id('stroke_style').addEventListener('change', evt =>
+      bp.handleStrokeAttr('stroke-dasharray', evt)
+    )
+    $id('stroke_linejoin').addEventListener('change', evt =>
+      bp.handleStrokeAttr('stroke-linejoin', evt)
+    )
+    $id('stroke_linecap').addEventListener('change', evt =>
+      bp.handleStrokeAttr('stroke-linecap', evt)
+    )
+    $id('opacity').addEventListener('change', e => bp.handleOpacity(e))
 
     // all top panel attributes
     ;[
