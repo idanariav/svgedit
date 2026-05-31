@@ -172,6 +172,8 @@ export default {
     make_link: 'Make (hyper)link',
     set_link_url: 'Set link URL (leave empty to remove)',
     to_path: 'Convert to Path',
+    path_offset: 'Offset / Inset Path',
+    stroke_to_path: 'Stroke to Path',
     reorient_path: 'Reorient path',
     flip_horizontal: 'Flip Horizontally',
     flip_vertical: 'Flip Vertically',

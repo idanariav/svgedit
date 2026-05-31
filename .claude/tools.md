@@ -169,7 +169,7 @@ container simply hides everything inside it.
 | `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
 | `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |
 | Stroke & Opacity *(always shown in tab)* | always | `stroke_width` (0–99), `opacity` (0–100%), `stroke_style` (dash), `stroke_linejoin`, `stroke_linecap`. **Moved from bottom panel**; `change` listeners bound in `TopPanel.init` (delegate to `bottomPanel` handlers) |
-| `.selected_panel` "Object" | single element | `tool_topath`, `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
+| `.selected_panel` "Object" | single element | `tool_topath`, `tool_path_offset` (`<se-offset-settings>` popover → `svgCanvas.offsetPath(delta)`), `tool_stroke_to_path` (→ `svgCanvas.strokeToPath()`), `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
 | `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (clip/mask require exactly 2) |
 
 ### Text tab (`#tab_text`)

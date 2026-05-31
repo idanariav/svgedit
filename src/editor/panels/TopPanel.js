@@ -774,6 +774,16 @@ class TopPanel {
   }
 
   /**
+   * Convert the selected element's stroke into a filled outline path.
+   * @returns {void}
+   */
+  strokeToPath () {
+    if (this.editor.selectedElement) {
+      this.editor.svgCanvas.strokeToPath()
+    }
+  }
+
+  /**
    *
    * @returns {void}
    */
@@ -1114,6 +1124,7 @@ class TopPanel {
     $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
     $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
     $click($id('tool_topath'), this.convertToPath.bind(this))
+    $click($id('tool_stroke_to_path'), this.strokeToPath.bind(this))
     $click($id('tool_make_link'), this.makeHyperlink.bind(this))
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
     $click($id('tool_reorient'), this.reorientPath.bind(this))
