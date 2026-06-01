@@ -107,11 +107,15 @@ export default {
         // Hide each context panel when the canvas leaves its drawing mode.
         // setMode dispatches 'modeChange' for every tool switch (button, flyout
         // sub-tool, keyboard), covering switches that don't bubble a click here.
-        // Selection-based display of these panels is handled by selectedChanged.
+        // These panels double as the editor for an already-selected star/polygon,
+        // so keep a panel visible while its shape is selected — setMode('select')
+        // also fires on canvas clicks / attribute edits with the shape still
+        // selected, and selectedChanged owns the selection-driven display.
         document.addEventListener('modeChange', (evt) => {
           const mode = evt.detail.getMode()
-          if (mode !== 'star') showPanel(false, 'star')
-          if (mode !== 'polygon') showPanel(false, 'polygon')
+          const shapes = (selElems || []).filter(Boolean).map((el) => el.getAttribute?.('shape'))
+          if (mode !== 'star' && !shapes.includes('star')) showPanel(false, 'star')
+          if (mode !== 'polygon' && !shapes.includes('regularPoly')) showPanel(false, 'polygon')
         })
         const label0 = `${name}:contextTools.0.label`
         const title0 = `${name}:contextTools.0.title`
