@@ -224,7 +224,7 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 
 ### ext-polystar — Star & Polygon (`extensions/ext-polystar/`)
 Flying button (left panel):
-- **Star tool** (`tool_star`): Context panel shows Points count, Radius Multiplier, Radial Shift
+- **Star tool** (`tool_star`): Context panel shows Points / Pointy (pointiness) / Shift (radial shift). All three fields live-rebuild the selected star's `points` via the shared `applyStarAttr`/`buildStarPoints` helpers (not just on next draw); `buildStarPoints` excludes the closing duplicate vertices when finding the centroid so live edits don't drift the shape. Labels are kept short and fields width-capped (58px, see css-rules) so the panel stays on one toolbar row down to ~1250px wide.
 - **Polygon tool** (`tool_polygon`): Context panel shows Sides count
 
 ### ext-shapes — Shape Library (`extensions/ext-shapes/`)

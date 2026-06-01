@@ -171,15 +171,19 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 ```css
 #tools_top {
   grid-area: top;
-  display: flex; flex-direction: row; flex-wrap: wrap;
-  align-items: center; align-content: flex-start;
+  display: flex; flex-direction: row; flex-wrap: nowrap;
+  align-items: center;
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--chrome-border);
   min-height: 56px;  /* var(--top-toolbar-min-height) */
   padding: 0 10px;
   gap: 6px;
   z-index: 5;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; /* single row; scroll on overflow */
 }
+/* Children keep natural width (flex-shrink:0) and don't wrap internally, so the
+   bar scrolls horizontally instead of squishing or wrapping to a second row. */
+#tools_top > * { flex-shrink: 0; flex-wrap: nowrap; }
 /* Rounded "tray" groups in the top toolbar — shared visual language for all
    quick-action clusters (view / history / object / arrange / zoom / path-node) */
 #editor_panel, #history_panel, #zoom_panel, .quick_tray {
@@ -190,6 +194,11 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
   border-radius: 10px;
 }
 #history_panel { margin-left: auto; } /* pushes it + everything after to the right */
+
+/* Polystar context fields: elix' spin-box defaults to ~184px, so the star
+   panel's three fields would wrap the toolbar to a second row. Cap them. */
+#star_panel se-spin-input,
+#polygon_panel se-spin-input { width: 58px; } /* short labels keep panel ~178px */
 ```
 
 Contextual trays carry their selection classes (`.selected_panel`,

@@ -783,9 +783,8 @@ hr {
   grid-area: top;
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  align-content: flex-start;
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--chrome-border);
   min-height: var(--top-toolbar-min-height);
@@ -793,14 +792,25 @@ hr {
   gap: 6px;
   position: relative;
   z-index: 5;
+  /* Stay a single row: overflow horizontally (thin scrollbar) instead of
+     wrapping contextual panels (e.g. the star panel) onto a second row. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+#tools_top::-webkit-scrollbar {
+  height: 3px;
 }
 
 #tools_top > * {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 2px;
+  /* Keep each group at its natural width so they scroll rather than squish. */
+  flex-shrink: 0;
 }
 
 /* Rounded "tray" groups in the top toolbar (view / history / object / arrange /
@@ -828,6 +838,14 @@ hr {
   flex-direction: row;
   align-items: center;
   gap: 6px;
+}
+
+/* Polystar context fields hold only small numbers, but elix' default spin-box
+   is ~184px wide — three of them wrap the top toolbar to a second row. Cap the
+   width (labels are kept short to match) so the star panel fits one row. */
+#star_panel se-spin-input,
+#polygon_panel se-spin-input {
+  width: 58px;
 }
 
 /* History group: push it (and everything after) to the right edge */

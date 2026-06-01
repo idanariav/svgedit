@@ -11,16 +11,16 @@ export default {
   ],
   contextTools: [
     {
-      title: 'Number of Sides',
-      label: 'points'
+      title: 'Number of points',
+      label: 'Points'
     },
     {
       title: 'Pointiness',
-      label: 'Pointiness'
+      label: 'Pointy'
     },
     {
-      title: 'Twists the star',
-      label: 'Radial Shift'
+      title: 'Radial shift (twists the star)',
+      label: 'Shift'
     },
     {
       title: 'Number of Sides',

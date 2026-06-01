@@ -71,6 +71,92 @@ export default {
      */
     const sec = (n) => 1 / Math.cos(n)
 
+    /**
+     * Recompute a star's `points` from its current attributes
+     * (point, r, starRadiusMultiplier, radialshift) about its centroid.
+     * @param {Element} elem star polygon element
+     * @returns {string|null} new points string, or null if not rebuildable
+     */
+    const buildStarPoints = (elem) => {
+      if (!elem.points || !elem.points.numberOfItems) return null
+      const point = Number(elem.getAttribute('point'))
+      const orient = elem.getAttribute('orient')
+      const radialshift = Number(elem.getAttribute('radialshift'))
+      const circumradius = Number(elem.getAttribute('r'))
+      const inradius = circumradius / elem.getAttribute('starRadiusMultiplier')
+      const list = elem.points
+      const len = list.numberOfItems
+      // The points list closes by repeating the first outer vertex (and the
+      // first inner vertex when a star has inner points). Averaging those
+      // duplicates would bias the centroid toward the top vertex and drift the
+      // shape upward on every live edit, so exclude them from the centroid.
+      const dup = isNaN(inradius) ? 1 : 2
+      const used = Math.max(len - dup, 1)
+      let xpos = 0
+      let ypos = 0
+      for (let i = 0; i < used; ++i) {
+        const pt = list.getItem(i)
+        xpos += parseFloat(pt.x)
+        ypos += parseFloat(pt.y)
+      }
+      const cx = xpos / used
+      const cy = ypos / used
+
+      let polyPoints = ''
+      for (let s = 0; point >= s; s++) {
+        let angle = 2.0 * Math.PI * (s / point)
+        if (orient === 'point') {
+          angle -= Math.PI / 2
+        } else if (orient === 'edge') {
+          angle = angle + Math.PI / point - Math.PI / 2
+        }
+
+        let x = circumradius * Math.cos(angle) + cx
+        let y = circumradius * Math.sin(angle) + cy
+
+        polyPoints += x + ',' + y + ' '
+
+        if (!isNaN(inradius)) {
+          angle = 2.0 * Math.PI * (s / point) + Math.PI / point
+          if (orient === 'point') {
+            angle -= Math.PI / 2
+          } else if (orient === 'edge') {
+            angle = angle + Math.PI / point - Math.PI / 2
+          }
+          angle += radialshift
+
+          x = inradius * Math.cos(angle) + cx
+          y = inradius * Math.sin(angle) + cy
+
+          polyPoints += x + ',' + y + ' '
+        }
+      }
+      return polyPoints
+    }
+
+    /**
+     * Apply a star attribute change to the selected star(s) and live-rebuild
+     * their geometry so the canvas updates immediately (not only on next draw).
+     * @param {string} attr attribute to change
+     * @param {string|Float} val new value
+     * @returns {void}
+     */
+    const applyStarAttr = (attr, val) => {
+      setAttr(attr, val)
+      let i = selElems.length
+      while (i--) {
+        const elem = selElems[i]
+        if (elem?.getAttribute('shape') === 'star') {
+          const oldPoints = elem.getAttribute('points')
+          const newPoints = buildStarPoints(elem)
+          if (newPoints !== null) {
+            elem.setAttribute('points', newPoints)
+            addToHistory(new ChangeElementCommand(elem, { points: oldPoints }))
+          }
+        }
+      }
+    }
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       // The callback should be used to load the DOM with the appropriate UI items
@@ -147,71 +233,13 @@ export default {
         showPanel(false, 'star')
         showPanel(false, 'polygon')
         $id('starNumPoints').addEventListener('change', (event) => {
-          setAttr('point', event.target.value)
-          const orient = 'point'
-          const point = event.target.value
-          let i = selElems.length
-          while (i--) {
-            const elem = selElems[i]
-            if (elem.hasAttribute('r')) {
-              const oldPoint = elem.getAttribute('point')
-              const oldPoints = elem.getAttribute('points')
-              const radialshift = elem.getAttribute('radialshift')
-              let xpos = 0
-              let ypos = 0
-              if (elem.points) {
-                const list = elem.points
-                const len = list.numberOfItems
-                for (let i = 0; i < len; ++i) {
-                  const pt = list.getItem(i)
-                  xpos += parseFloat(pt.x)
-                  ypos += parseFloat(pt.y)
-                }
-                const cx = xpos / len
-                const cy = ypos / len
-                const circumradius = Number(elem.getAttribute('r'))
-                const inradius = circumradius / elem.getAttribute('starRadiusMultiplier')
-
-                let polyPoints = ''
-                for (let s = 0; point >= s; s++) {
-                  let angle = 2.0 * Math.PI * (s / point)
-                  if (orient === 'point') {
-                    angle -= Math.PI / 2
-                  } else if (orient === 'edge') {
-                    angle = angle + Math.PI / point - Math.PI / 2
-                  }
-
-                  let x = circumradius * Math.cos(angle) + cx
-                  let y = circumradius * Math.sin(angle) + cy
-
-                  polyPoints += x + ',' + y + ' '
-
-                  if (!isNaN(inradius)) {
-                    angle = 2.0 * Math.PI * (s / point) + Math.PI / point
-                    if (orient === 'point') {
-                      angle -= Math.PI / 2
-                    } else if (orient === 'edge') {
-                      angle = angle + Math.PI / point - Math.PI / 2
-                    }
-                    angle += radialshift
-
-                    x = inradius * Math.cos(angle) + cx
-                    y = inradius * Math.sin(angle) + cy
-
-                    polyPoints += x + ',' + y + ' '
-                  }
-                }
-                elem.setAttribute('points', polyPoints)
-                addToHistory(new ChangeElementCommand(elem, { point: oldPoint, points: oldPoints }))
-              }
-            }
-          }
+          applyStarAttr('point', event.target.value)
         })
         $id('RadiusMultiplier').addEventListener('change', (event) => {
-          setAttr('starRadiusMultiplier', event.target.value)
+          applyStarAttr('starRadiusMultiplier', event.target.value)
         })
         $id('radialShift').addEventListener('change', (event) => {
-          setAttr('radialshift', event.target.value)
+          applyStarAttr('radialshift', event.target.value)
         })
         $id('polySides').addEventListener('change', (event) => {
           setAttr('sides', event.target.value)
@@ -442,6 +470,7 @@ export default {
           if (elem?.getAttribute('shape') === 'star') {
             if (opts.selectedElement && !opts.multiselected) {
               $id('starNumPoints').value = elem.getAttribute('point')
+              $id('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
               $id('radialShift').value = elem.getAttribute('radialshift')
               showPanel(true, 'star')
             } else {
