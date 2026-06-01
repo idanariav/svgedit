@@ -51,7 +51,7 @@ class-based logic in `TopPanel.js` `updateContextPanel`.
 |----|------|----------|-------|
 | `tool_source` | Edit SVG source | U | In `#editor_panel` (view tray) |
 | `tool_wireframe` | Wireframe mode | F | In `#editor_panel` (view tray) |
-| `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | In `#editor_panel`. Opens a popover with W/H spin-inputs, aspect presets (4:5, 5:4, 16:9, 1:1 → fixed sizes, base 1000px), and Apply/Reset. Talks to `svgCanvas.setResolution`/`getResolution` directly via the global `svgEditor` |
+| `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | In `#editor_panel`. Opens a popover with W/H spin-inputs, size presets (2-col grid), and Apply/Reset. Each preset shows ratio + size — aspect presets `4:5 (800:1000)` / `5:4 (1000:800)` / `16:9 (1000:563)` / `1:1 (1000:1000)` (base 1000px) plus the predefined `4:3` sizes moved out of Document Properties (`640:480`…`1600:1200`). Talks to `svgCanvas.setResolution`/`getResolution` directly via the global `svgEditor` |
 | `grid_settings` *(`<se-grid-settings>`)* | Grid settings popover | — | Injected into `#editor_panel` by ext-grid. Show/snap toggles, shape select (square/isometric/triangle/1pt/2pt perspective), grid color, snapping step |
 | *(theme)* | Light/dark toggle | — | Injected into `#theme_panel` by ext-theme-toggle |
 | `tool_undo` | Undo | Ctrl+Z | `#history_panel`; disabled until history exists |
@@ -214,9 +214,7 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 | ID | Item | Shortcut |
 |----|------|----------|
 | `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
-| `tool_docprops` | Document Properties | Shift+D |
 | `tool_editor_prefs` | Editor Preferences | — |
-| `tool_editor_homepage` | SVG-Edit homepage link | — |
 
 ---
 
@@ -318,4 +316,3 @@ Flying button (left panel):
 | Ctrl+Y | Redo |
 | Ctrl+Shift+] | Bring to front |
 | Ctrl+Shift+[ | Send to back |
-| Shift+D | Document Properties |

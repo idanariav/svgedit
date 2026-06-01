@@ -2,12 +2,19 @@
 import { fetchSvgEl } from './svgIconLoader.js'
 import './seSpinInput.js'
 
-// Aspect-ratio presets → fixed pixel sizes (base = longest side = 1000px).
+// Canvas size presets. Aspect-ratio presets keep the longest side at 1000px;
+// the lower block holds the predefined sizes moved out of Document Properties
+// (all 4:3). Each button shows ratio + size, e.g. "4:5 (800:1000)".
 const PRESETS = [
-  { label: '4:5', w: 800, h: 1000 },
-  { label: '5:4', w: 1000, h: 800 },
-  { label: '16:9', w: 1000, h: 563 },
-  { label: '1:1', w: 1000, h: 1000 }
+  { ratio: '4:5', w: 800, h: 1000 },
+  { ratio: '5:4', w: 1000, h: 800 },
+  { ratio: '16:9', w: 1000, h: 563 },
+  { ratio: '1:1', w: 1000, h: 1000 },
+  { ratio: '4:3', w: 640, h: 480 },
+  { ratio: '4:3', w: 800, h: 600 },
+  { ratio: '4:3', w: 1024, h: 768 },
+  { ratio: '4:3', w: 1280, h: 960 },
+  { ratio: '4:3', w: 1600, h: 1200 }
 ]
 
 const template = document.createElement('template')
@@ -56,7 +63,7 @@ template.innerHTML = `
     position: fixed;
     flex-direction: column;
     gap: 12px;
-    min-width: 220px;
+    min-width: 250px;
     padding: 12px;
     background: var(--chrome-bg, #FFFFFF);
     border: 1px solid var(--chrome-border, #E6E8EC);
@@ -70,12 +77,13 @@ template.innerHTML = `
     gap: 10px;
   }
   .presets {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
   .preset {
-    flex: 1;
-    padding: 6px 0;
+    padding: 6px 4px;
+    white-space: nowrap;
     border: 1px solid var(--field-border, #E2E5EA);
     border-radius: 7px;
     background: var(--field-bg, #F7F8FA);
@@ -163,10 +171,10 @@ class SeCanvasSettings extends HTMLElement {
     this.$reset = this._shadowRoot.querySelector('.reset')
 
     // Build preset buttons
-    PRESETS.forEach(({ label, w, h }) => {
+    PRESETS.forEach(({ ratio, w, h }) => {
       const btn = document.createElement('button')
       btn.className = 'preset'
-      btn.textContent = label
+      btn.textContent = `${ratio} (${w}:${h})`
       btn.addEventListener('click', () => {
         this.$w.value = w
         this.$h.value = h

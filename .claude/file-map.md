@@ -11,7 +11,7 @@
 | `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `ConfigObj.js` | `pref(key)`, `setConfig(obj)`, localStorage persistence (~24KB) |
-| `MainMenu.js` | Export, Document Properties, Preferences, Homepage (~8KB) |
+| `MainMenu.js` | Export, Preferences (~5KB) |
 | `Rulers.js` | Canvas ruler rendering and tick marks |
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
 | `locale.js` | i18next setup, language detection, locale file loading |
@@ -52,7 +52,7 @@
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |
 | `seInput.js` | `<se-input>` | Text input with icon/label |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
-| `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + aspect presets + Apply/Reset) |
+| `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
 | `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
 | `seOffsetSettings.js` | `<se-offset-settings>` | Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |

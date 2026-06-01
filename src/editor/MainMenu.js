@@ -1,9 +1,7 @@
-/* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
 
-const { $id, $click, convertUnit, isValidUnit } = SvgCanvas
-const homePage = 'https://github.com/SVG-Edit/svgedit'
+const { $id, $click } = SvgCanvas
 
 /**
  *
@@ -24,50 +22,10 @@ class MainMenu {
    *
    * @returns {void}
    */
-  hideDocProperties () {
-    const $imgDialog = $id('se-img-prop')
-    $imgDialog.setAttribute('dialog', 'close')
-    $imgDialog.setAttribute('save', this.editor.configObj.pref('img_save'))
-    this.editor.docprops = false
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
   hidePreferences () {
     const $editDialog = $id('se-edit-prefs')
     $editDialog.setAttribute('dialog', 'close')
     this.editor.configObj.preferences = false
-  }
-
-  /**
-   * @param {Event} e
-   * @returns {boolean} Whether there were problems saving the document properties
-   */
-  saveDocProperties (e) {
-    // set title
-    const { title, w, h, save } = e.detail
-    // set document title
-    this.editor.svgCanvas.setDocumentTitle(title)
-
-    if (w !== 'fit' && !isValidUnit('width', w)) {
-      seAlert(this.editor.i18next.t('notification.invalidAttrValGiven'))
-      return false
-    }
-    if (h !== 'fit' && !isValidUnit('height', h)) {
-      seAlert(this.editor.i18next.t('notification.invalidAttrValGiven'))
-      return false
-    }
-    if (!this.editor.svgCanvas.setResolution(w, h)) {
-      seAlert(this.editor.i18next.t('notification.noContentToFitTo'))
-      return false
-    }
-    // Set image save option
-    this.editor.configObj.pref('img_save', save)
-    this.editor.updateCanvas()
-    this.hideDocProperties()
-    return true
   }
 
   /**
@@ -150,32 +108,6 @@ class MainMenu {
    *
    * @returns {void}
    */
-  showDocProperties () {
-    if (this.editor.docprops) {
-      return
-    }
-    this.editor.docprops = true
-    const $imgDialog = $id('se-img-prop')
-
-    // update resolution option with actual resolution
-    const resolution = this.editor.svgCanvas.getResolution()
-    if (this.editor.configObj.curConfig.baseUnit !== 'px') {
-      resolution.w =
-        convertUnit(resolution.w) + this.editor.configObj.curConfig.baseUnit
-      resolution.h =
-        convertUnit(resolution.h) + this.editor.configObj.curConfig.baseUnit
-    }
-    $imgDialog.setAttribute('save', this.editor.configObj.pref('img_save'))
-    $imgDialog.setAttribute('width', resolution.w)
-    $imgDialog.setAttribute('height', resolution.h)
-    $imgDialog.setAttribute('title', this.editor.svgCanvas.getDocumentTitle())
-    $imgDialog.setAttribute('dialog', 'open')
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
   showPreferences () {
     if (this.editor.configObj.preferences) {
       return
@@ -183,14 +115,6 @@ class MainMenu {
     this.editor.configObj.preferences = true
     const $editDialog = $id('se-edit-prefs')
     $editDialog.setAttribute('dialog', 'open')
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  openHomePage () {
-    window.open(homePage, '_blank')
   }
 
   /**
@@ -202,9 +126,7 @@ class MainMenu {
     template.innerHTML = `
     <se-menu id="main_button" label="SVG-Edit" src="logo.svg" alt="logo">
         <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
-        <se-menu-item id="tool_docprops" label="tools.docprops" shortcut="shift+D" src="docprop.svg"></se-menu-item>
         <se-menu-item id="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
-        <se-menu-item id="tool_editor_homepage" label="tools.editor_homepage" src="logo.svg"></se-menu-item>
     </se-menu>`
     this.editor.$svgEditor.append(template.content.cloneNode(true))
 
@@ -221,27 +143,9 @@ class MainMenu {
       'change',
       this.clickExport.bind(this)
     )
-    $id('tool_docprops').addEventListener(
-      'click',
-      this.showDocProperties.bind(this)
-    )
     $id('tool_editor_prefs').addEventListener(
       'click',
       this.showPreferences.bind(this)
-    )
-    $id('tool_editor_homepage').addEventListener(
-      'click',
-      this.openHomePage.bind(this)
-    )
-    $id('se-img-prop').addEventListener(
-      'change',
-      function (e) {
-        if (e.detail.dialog === 'closed') {
-          this.hideDocProperties()
-        } else {
-          this.saveDocProperties(e)
-        }
-      }.bind(this)
     )
     $id('se-edit-prefs').addEventListener(
       'change',
