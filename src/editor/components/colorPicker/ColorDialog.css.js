@@ -570,6 +570,7 @@ export const css = /* css */`
     position: absolute;
     top: 0; left: 8px; right: 8px;
     height: 100%;
+    z-index: 1;        /* keep handles + arrows above the gradient track */
     pointer-events: none;
   }
   .cp-stop {
