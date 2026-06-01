@@ -104,6 +104,15 @@ export default {
             showPanel(false, 'star')
           }
         })
+        // Hide each context panel when the canvas leaves its drawing mode.
+        // setMode dispatches 'modeChange' for every tool switch (button, flyout
+        // sub-tool, keyboard), covering switches that don't bubble a click here.
+        // Selection-based display of these panels is handled by selectedChanged.
+        document.addEventListener('modeChange', (evt) => {
+          const mode = evt.detail.getMode()
+          if (mode !== 'star') showPanel(false, 'star')
+          if (mode !== 'polygon') showPanel(false, 'polygon')
+        })
         const label0 = `${name}:contextTools.0.label`
         const title0 = `${name}:contextTools.0.title`
         const label1 = `${name}:contextTools.1.label`

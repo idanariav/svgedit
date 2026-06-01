@@ -823,7 +823,8 @@ hr {
    taller than 56px, which grows the top grid row and shifts the canvas down
    when entering node-edit mode. Inline keeps it the height of a plain field. */
 .path_node_panel se-spin-input,
-.path_node_panel se-select {
+.path_node_panel se-select,
+#curvature_panel se-select {
   flex-direction: row;
   align-items: center;
   gap: 6px;

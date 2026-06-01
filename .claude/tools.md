@@ -248,7 +248,8 @@ Flying button (left panel):
 - **Cutter** (`tool_cutter`): Drag a straight line across shapes to split them along that line; affects selected shapes only (or all shapes if nothing selected)
 
 ### ext-curvature — Curvature Tool (`extensions/ext-curvature/`)
-- **Curvature** (`tool_curvature`): Click to place anchor points; smooth Bézier curves are auto-computed via Catmull-Rom. Double-click for a corner point. Click near start to close path. Escape to finalize open.
+- **Curvature** (`tool_curvature`): Click to place anchor points; smooth curves are auto-computed. Shift+click for a sharp corner anchor. Double-click (or Escape) to finalize open; click near start to close the path.
+- **Curve mode selector** (`curvature_mode`, a `se-select` in the `#curvature_panel` tray): chooses the smoothing math — **Catmull-Rom** (default, interpolating — passes through every click), **B-spline** (approximating cage; clamped to the first/last click; dependency-free), or **Spiro** (clothoid/curvature-continuous via the `spiro` npm package). The tray shows only while the tool is active and the choice persists via the `curvatureMode` pref. Builders live in `ext-curvature.js` (`buildCatmullRom` / `buildBSpline` / `buildSpiro`), dispatched by `buildPathD`.
 
 ### ext-panning — Pan Tool (`extensions/ext-panning/`)
 - Hand/pan tool added to left panel after zoom; activates canvas panning mode

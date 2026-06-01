@@ -90,6 +90,7 @@
     "jspdf": "4.0.0",
     "paper": "^0.12.18",
     "pathseg": "1.2.1",
+    "spiro": "^3.0.1",
     "svg2pdf.js": "2.7.0"
   },
   "devDependencies": {
