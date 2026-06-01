@@ -654,6 +654,20 @@ class TopPanel {
   /**
    * @returns {void}
    */
+  clickBoolExclude () {
+    this.editor.svgCanvas.booleanExclude()
+  }
+
+  /**
+   * @returns {void}
+   */
+  clickBoolDivide () {
+    this.editor.svgCanvas.booleanDivide()
+  }
+
+  /**
+   * @returns {void}
+   */
   clickClipSet () {
     this.editor.svgCanvas.setClip()
   }
@@ -1134,6 +1148,8 @@ class TopPanel {
     $click($id('tool_bool_union'), this.clickBoolUnion.bind(this))
     $click($id('tool_bool_intersect'), this.clickBoolIntersect.bind(this))
     $click($id('tool_bool_subtract'), this.clickBoolSubtract.bind(this))
+    $click($id('tool_bool_exclude'), this.clickBoolExclude.bind(this))
+    $click($id('tool_bool_divide'), this.clickBoolDivide.bind(this))
     $click($id('tool_clip_set'), this.clickClipSet.bind(this))
     $click($id('tool_mask_set'), this.clickMaskSet.bind(this))
     $click($id('clipmask_release'), this.clickClipRelease.bind(this))

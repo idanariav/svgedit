@@ -210,6 +210,8 @@ export default {
     bool_union: 'Boolean Union: merge selected shapes into one',
     bool_intersect: 'Boolean Intersection: keep overlapping area only',
     bool_subtract: 'Boolean Subtract: cut top shape from bottom shape',
+    bool_exclude: 'Boolean Exclusion: keep non-overlapping areas only',
+    bool_divide: 'Division: cut bottom shape into pieces using top shape',
     clip_set: 'Set Clip: trim the top shape to the bottom shape’s silhouette (bottom stays visible)',
     mask_set: 'Set Mask: mask the top shape with the bottom shape’s silhouette (bottom stays visible)',
     clip_release: 'Release Clip/Mask: drop the clip/mask from the selected shape'

@@ -171,7 +171,7 @@ container simply hides everything inside it.
 | Stroke & Opacity *(always shown in tab)* | always | `stroke_width` (0–99), `opacity` (0–100%), `stroke_style` (dash), `stroke_linejoin`, `stroke_linecap`. **Moved from bottom panel**; `change` listeners bound in `TopPanel.init` (delegate to `bottomPanel` handlers) |
 | `#marker_panel` "Markers" | single line/polyline/path/polygon | `start_marker_list_opts`, `mid_marker_list_opts`, `end_marker_list_opts` (None / arrows / box / circle, open + filled). Injected by ext-markers right after Stroke & Opacity; visibility self-managed via its `selectedChanged`, independent of `updateContextPanel` |
 | `.selected_panel` "Object" | single element | `tool_topath`, `tool_path_offset` (`<se-offset-settings>` popover → `svgCanvas.offsetPath(delta)`), `tool_stroke_to_path` (→ `svgCanvas.strokeToPath()`), `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
-| `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (clip/mask require exactly 2) |
+| `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract/exclude/divide`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (boolean ops & clip/mask require exactly 2; `divide` produces two separate path pieces) |
 
 ### Text tab (`#tab_text`)
 
