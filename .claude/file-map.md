@@ -157,6 +157,15 @@ Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `
 
 ---
 
+## Documentation — `docs/`
+
+| Path | Audience | Purpose |
+|------|----------|---------|
+| `docs/tutorials/` | Developers | API/config reference (CanvasAPI, EditorAPI, Events, etc.) + `tutorials.json` manifest |
+| `docs/user-tutorials/` | End users | Short promo-style how-to guides, one per tool/feature (Use case / Relevant for / How to test it / Related properties); `README.md` is the index |
+
+---
+
 ## Config & Build
 
 | File | Purpose |
