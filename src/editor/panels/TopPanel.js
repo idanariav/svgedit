@@ -162,7 +162,7 @@ class TopPanel {
         (this.selectedElement.getAttribute('opacity') || 1.0) * 100
       $id('opacity').value = opacPerc
       $id('elem_id').value = this.selectedElement.id
-      $id('elem_class').value = this.selectedElement.getAttribute('class') ?? ''
+      $id('elem_class').refresh(this.selectedElement)
     }
 
     this.editor.bottomPanel.updateToolButtonState()
@@ -1231,7 +1231,6 @@ class TopPanel {
     // all top panel attributes
     ;[
       'elem_id',
-      'elem_class',
       'circle_cx',
       'circle_cy',
       'circle_r',

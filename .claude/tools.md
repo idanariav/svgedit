@@ -162,7 +162,7 @@ container simply hides everything inside it.
 
 | Section (class/id) | Shown when | Controls |
 |--------------------|-----------|----------|
-| `#sidepanel_general` | single element | `elem_id`, `elem_class`, `angle` (rotation −180…180°), `selected_x`, `selected_y` (x/y hidden for line/circle/ellipse/polygon/arc) |
+| `#sidepanel_general` | single element | `elem_id`, `elem_class` (**`<se-class-select>`** — style-preset picker: scope-filtered dropdown of saved classes, "+" to save/update a class from the object, trash to delete; applying stamps the preset's captured attributes inline as one undo step, see `seClassSelect.js`/`classLibrary.js`), `angle` (rotation −180…180°), `selected_x`, `selected_y` (x/y hidden for line/circle/ellipse/polygon/arc) |
 | `.rect_panel` | `<rect>` | `rect_width`, `rect_height`, `rect_rx` |
 | `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url` |
 | `.circle_panel` | `<circle>` (or circle-arc path) | `circle_cx`, `circle_cy`, `circle_r`, `circle_arc` |

@@ -207,7 +207,7 @@ These controls are always available when any element is selected.
 | Control ID | SVG Attribute / Property | Range |
 |------------|--------------------------|-------|
 | `elem_id` | `id` | Free text |
-| `elem_class` | `class` | Free text |
+| `elem_class` | `class` | **`<se-class-select>`** style-preset picker (not free text). Scope-filtered dropdown of saved classes + save/update popover + delete. Picking a class **stamps the preset's captured attributes inline** onto the selection (one undo step) and tags `class="<name>"`. Does **not** go through `attrChanger` — see `seClassSelect.js` / `classLibrary.js` |
 | `angle` | `transform: rotate(…)` | −180 to 180°, step 5 |
 | `blur` | `filter: blur(…)` | 0–100, step 5 (multiplied ×10 to compute σ) |
 | `tool_position` | `transform` | Align to page: L/C/R/T/M/B + distribute H/V |
@@ -253,3 +253,10 @@ The `attrChanger` function in `TopPanel.js` (~line 641):
 4. Calls `svgCanvas.changeSelectedAttribute(attr, value)`
 
 The `changeSelectedAttribute` method in `packages/svgcanvas/core/elem-get-set.js` applies the change to the live SVG DOM and records it in undo history.
+
+**Exception — `elem_class`:** the class control is the `<se-class-select>`
+component, which is intentionally **not** bound to `attrChanger`. Applying a class
+builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) to stamp
+the preset's saved attributes plus the `class` token, then refreshes the panels
+via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
+`src/editor/classLibrary.js`.

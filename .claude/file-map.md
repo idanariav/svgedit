@@ -14,6 +14,7 @@
 | `MainMenu.js` | Export, Preferences (~5KB) |
 | `Rulers.js` | Canvas ruler rendering and tick marks |
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
+| `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines) |
@@ -51,6 +52,7 @@
 | `seListItem.js` | `<se-list-item>` | Item inside `<se-list>` |
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |
 | `seInput.js` | `<se-input>` | Text input with icon/label |
+| `seClassSelect.js` | `<se-class-select>` | Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist). Applying a class stamps its captured attributes onto the selection as one undo step. Backed by `../classLibrary.js` |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
 | `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
 | `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
