@@ -16,6 +16,7 @@
    * @returns {void}
    */
 import { fileOpen, fileSave } from 'browser-fs-access'
+import { insertImageFromHref } from '../../dialogs/insertImage.js'
 
 const name = 'opensave'
 let handle = null
@@ -88,43 +89,9 @@ export default {
         // bitmap handling
         reader = new FileReader()
         reader.onloadend = ({ target: { result } }) => {
-          /**
-              * Insert the new image until we know its dimensions.
-              * @param {Float} imageWidth
-              * @param {Float} imageHeight
-              * @returns {void}
-              */
-          const insertNewImage = (imageWidth, imageHeight) => {
-            const newImage = this.svgCanvas.addSVGElementsFromJson({
-              element: 'image',
-              attr: {
-                x: 0,
-                y: 0,
-                width: imageWidth,
-                height: imageHeight,
-                id: this.svgCanvas.getNextId(),
-                style: 'pointer-events:inherit'
-              }
-            })
-            this.svgCanvas.setHref(newImage, result)
-            this.svgCanvas.selectOnly([newImage])
-            this.svgCanvas.alignSelectedElements('m', 'page')
-            this.svgCanvas.alignSelectedElements('c', 'page')
-            this.topPanel.updateContextPanel()
-            $id('se-prompt-dialog').setAttribute('close', true)
-            resetFileInput()
-          }
-          // create dummy img so we know the default dimensions
-          let imgWidth = 100
-          let imgHeight = 100
-          const img = new Image()
-          img.style.opacity = 0
-          img.addEventListener('load', () => {
-            imgWidth = img.offsetWidth || img.naturalWidth || img.width
-            imgHeight = img.offsetHeight || img.naturalHeight || img.height
-            insertNewImage(imgWidth, imgHeight)
-          })
-          img.src = result
+          insertImageFromHref(result)
+          $id('se-prompt-dialog').setAttribute('close', true)
+          resetFileInput()
         }
         reader.readAsDataURL(file)
       }

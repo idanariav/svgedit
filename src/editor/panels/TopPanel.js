@@ -169,25 +169,6 @@ class TopPanel {
   }
 
   /**
-   * @param {PlainObject} [opts={}]
-   * @param {boolean} [opts.cancelDeletes=false]
-   * @returns {void} Resolves to `undefined`
-   */
-  promptImgURL ({ cancelDeletes = false } = {}) {
-    let curhref = this.editor.svgCanvas.getHref(this.editor.selectedElement)
-    curhref = curhref.startsWith('data:') ? '' : curhref
-    const url = prompt(
-      this.editor.i18next.t('notification.enterNewImgURL'),
-      curhref
-    )
-    if (url) {
-      this.setImageURL(url)
-    } else if (cancelDeletes) {
-      this.editor.svgCanvas.deleteSelectedElements()
-    }
-  }
-
-  /**
    * Updates the context panel tools based on the selected element.
    * @returns {void}
    */
@@ -232,15 +213,6 @@ class TopPanel {
 
       const blurval = this.editor.svgCanvas.getBlur(elem) * 10
       $id('blur').value = blurval
-
-      if (
-        this.editor.svgCanvas.addedNew &&
-        elname === 'image' &&
-        this.editor.svgCanvas.getMode() === 'image' &&
-        !this.editor.svgCanvas.getHref(elem).startsWith('data:')
-      ) {
-        /* await */ this.promptImgURL({ cancelDeletes: true })
-      }
 
       if (!isNode && currentMode !== 'pathedit') {
         this.displayTool('selected_panel')

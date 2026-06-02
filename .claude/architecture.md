@@ -43,6 +43,8 @@ svgedit/
 │   │   ├── imagePropertiesDialog.js
 │   │   ├── editorPreferencesDialog.js
 │   │   ├── exportDialog.js
+│   │   ├── imageImportDialog.js     # Insert-image dialog (file upload + URL)
+│   │   ├── insertImage.js           # insertImageFromHref() shared helper
 │   │   ├── svgSourceDialog.js
 │   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js
 │   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)

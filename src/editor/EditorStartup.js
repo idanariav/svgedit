@@ -109,6 +109,11 @@ class EditorStartup {
       exportDialog.setAttribute('id', 'se-export-dialog')
       this.$container.append(exportDialog)
       exportDialog.init(this.i18next)
+
+      const imageImportDialog = document.createElement('se-image-import-dialog')
+      imageImportDialog.setAttribute('id', 'se-image-import-dialog')
+      this.$container.append(imageImportDialog)
+      imageImportDialog.init(this.i18next)
     } catch (err) {
       console.error(err)
     }

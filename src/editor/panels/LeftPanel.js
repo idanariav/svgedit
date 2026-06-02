@@ -1,5 +1,6 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
+import { insertImageFromHref } from '../dialogs/insertImage.js'
 
 const { $id, $qa, $click } = SvgCanvas
 
@@ -135,9 +136,19 @@ class LeftPanel {
    * @returns {void}
    */
   clickImage () {
-    if (this.updateLeftPanel('tool_image')) {
-      this.editor.svgCanvas.setMode('image')
-    }
+    // Open the import dialog instead of entering a draw mode; selection tool
+    // stays active and the image is inserted centered on the canvas.
+    document.getElementById('se-image-import-dialog').setAttribute('dialog', 'open')
+  }
+
+  /**
+   * Handles the `change` event dispatched by the image import dialog.
+   * @param {CustomEvent} e
+   * @returns {void}
+   */
+  handleImageImport (e) {
+    if (e?.detail?.trigger !== 'ok' || !e?.detail?.href) return
+    insertImageFromHref(e.detail.href)
   }
 
   /**
@@ -206,6 +217,7 @@ class LeftPanel {
     $click($id('tool_fhpath'), this.clickFHPath.bind(this))
     $click($id('tool_text'), this.clickText.bind(this))
     $click($id('tool_image'), this.clickImage.bind(this))
+    $id('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
     $click($id('tool_zoom'), this.clickZoom.bind(this))
     $id('tool_zoom').addEventListener('dblclick', this.dblclickZoom.bind(this))
     $click($id('tool_path'), this.clickPath.bind(this))

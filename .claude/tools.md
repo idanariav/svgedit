@@ -22,7 +22,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_circle` | Circle | — | Sub-tool of ellipse flyout |
 | `tool_fhellipse` | Freehand ellipse | — | Sub-tool of ellipse flyout |
 | `tool_text` | Text | T | Add/edit text elements |
-| `tool_image` | Image | — | Insert image elements |
+| `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL) or URL. Inserts a centered image; no draw mode, no native prompt. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertImageFromHref` (`dialogs/insertImage.js`) |
 
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9

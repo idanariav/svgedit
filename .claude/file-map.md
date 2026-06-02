@@ -72,6 +72,8 @@
 | `imagePropertiesDialog.js` | Modal for image element properties |
 | `editorPreferencesDialog.js` | Editor preferences modal (language, units, rulers; grid settings moved to the grid-settings popover) |
 | `exportDialog.js` | Export dialog (PNG/JPG/WebP/PDF options) |
+| `imageImportDialog.js` | **Insert image** dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
+| `insertImage.js` | `insertImageFromHref(href)` — shared helper that inserts a centered image at natural size (used by the import dialog and ext-opensave) |
 | `svgSourceDialog.js` | View/edit raw SVG source |
 | `seAlertDialog.js` | Alert dialog (OK only) |
 | `seConfirmDialog.js` | Confirm dialog (OK / Cancel) |

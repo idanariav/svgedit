@@ -1043,13 +1043,8 @@ input[type=text] {
   overflow: hidden;
 }
 
-#tool_image {
-  overflow: hidden;
-}
-
 #tool_open input,
-#tool_import input,
-#tool_image input {
+#tool_import input {
   position: absolute;
   opacity: 0;
   font-size: 10em;
