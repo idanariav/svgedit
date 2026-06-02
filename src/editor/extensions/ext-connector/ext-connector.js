@@ -132,11 +132,88 @@ export default {
     }
 
     /**
-     * showPanel
-     * @param {boolean} on - Determines whether to show or hide the elements.
+     * getConnMode
+     * Reads the routing mode stored on a connector (se:conn_mode).
+     * @param {Element} line - The connector polyline.
+     * @returns {"straight"|"elbow"} Defaults to "straight".
+     */
+    const getConnMode = (line) => {
+      return line.getAttributeNS(seNs, 'conn_mode') === 'elbow' ? 'elbow' : 'straight'
+    }
+
+    /**
+     * computeConnectorPoints
+     * Builds the full ordered point list for a connector based on its routing
+     * mode. Straight keeps a single mid vertex (so marker-mid still renders);
+     * elbow emits a 4-point orthogonal "Z" route between the facing box sides.
+     * @param {module:utilities.BBoxObject} startBB
+     * @param {module:utilities.BBoxObject} endBB
+     * @param {Element} line - The connector polyline (for mode + marker offsets).
+     * @returns {module:math.XYObject[]}
+     */
+    const computeConnectorPoints = (startBB, endBB, line) => {
+      const sc = { x: startBB.x + startBB.width / 2, y: startBB.y + startBB.height / 2 }
+      const ec = { x: endBB.x + endBB.width / 2, y: endBB.y + endBB.height / 2 }
+
+      if (getConnMode(line) === 'elbow') {
+        // Push attach points outward by half the marker offset so arrowheads clear the box.
+        const offS = getOffset('start', line) / 2
+        const offE = getOffset('end', line) / 2
+        const dx = ec.x - sc.x
+        const dy = ec.y - sc.y
+        let sPt, ePt
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          // Horizontal-dominant: attach on the left/right faces.
+          if (dx >= 0) {
+            sPt = { x: startBB.x + startBB.width + offS, y: sc.y }
+            ePt = { x: endBB.x - offE, y: ec.y }
+          } else {
+            sPt = { x: startBB.x - offS, y: sc.y }
+            ePt = { x: endBB.x + endBB.width + offE, y: ec.y }
+          }
+          const midX = (sPt.x + ePt.x) / 2
+          // Note: elbow routes carry two interior vertices, so marker-mid renders at both bends.
+          return [sPt, { x: midX, y: sPt.y }, { x: midX, y: ePt.y }, ePt]
+        }
+        // Vertical-dominant: attach on the top/bottom faces.
+        if (dy >= 0) {
+          sPt = { x: sc.x, y: startBB.y + startBB.height + offS }
+          ePt = { x: ec.x, y: endBB.y - offE }
+        } else {
+          sPt = { x: sc.x, y: startBB.y - offS }
+          ePt = { x: ec.x, y: endBB.y + endBB.height + offE }
+        }
+        const midY = (sPt.y + ePt.y) / 2
+        return [sPt, { x: sPt.x, y: midY }, { x: ePt.x, y: midY }, ePt]
+      }
+
+      // Straight (default): endpoints on the box edges, single mid vertex.
+      const sPt = getBBintersect(ec.x, ec.y, startBB, getOffset('start', line))
+      const ePt = getBBintersect(sPt.x, sPt.y, endBB, getOffset('end', line))
+      return [sPt, { x: (sPt.x + ePt.x) / 2, y: (sPt.y + ePt.y) / 2 }, ePt]
+    }
+
+    /**
+     * routeConnector
+     * Recomputes and writes a connector's full geometry from both bounding boxes.
+     * @param {Element} line - The connector polyline.
+     * @param {module:utilities.BBoxObject} startBB
+     * @param {module:utilities.BBoxObject} endBB
      * @returns {void}
      */
-    const showPanel = on => {
+    const routeConnector = (line, startBB, endBB) => {
+      if (!startBB || !endBB) return
+      const pts = computeConnectorPoints(startBB, endBB, line)
+      line.setAttribute('points', pts.map((p) => `${p.x},${p.y}`).join(' '))
+    }
+
+    /**
+     * showPanel
+     * @param {boolean} on - Determines whether to show or hide the elements.
+     * @param {Element} [elem] - The selected connector, used to sync the routing toggle.
+     * @returns {void}
+     */
+    const showPanel = (on, elem) => {
       // Find the 'connector_rules' or create it if it doesn't exist.
       let connRules = $id('connector_rules')
       if (!connRules) {
@@ -154,6 +231,55 @@ export default {
       if ($id('connector_rules')) {
         $id('connector_rules').style.display = on ? 'block' : 'none'
       }
+
+      // Toggle the connector context panel (routing + leader) and sync its state.
+      const panel = $id('connector_panel')
+      if (panel) {
+        panel.style.display = on ? 'block' : 'none'
+        if (on && elem) {
+          const elbow = getConnMode(elem) === 'elbow'
+          $id('connroute_straight').pressed = !elbow
+          $id('connroute_elbow').pressed = elbow
+        }
+      }
+    }
+
+    /**
+     * setRouting
+     * Changes the routing mode of the selected connector and re-flows it.
+     * @param {"straight"|"elbow"} mode
+     * @returns {void}
+     */
+    const setRouting = (mode) => {
+      const sel = svgCanvas.getSelectedElements()[0]
+      if (!sel?.id?.startsWith('conn_')) return
+      const dataStorage = svgCanvas.getDataStorage()
+      sel.setAttributeNS(seNs, 'se:conn_mode', mode)
+      routeConnector(sel, dataStorage.get(sel, 'start_bb'), dataStorage.get(sel, 'end_bb'))
+      $id('connroute_straight').pressed = (mode !== 'elbow')
+      $id('connroute_elbow').pressed = (mode === 'elbow')
+      svgCanvas.call('changed', [sel])
+    }
+
+    /**
+     * applyLeaderPreset
+     * Restyles the selected connector as a thin leader-line callout: a slim
+     * stroke with a small filled dot at the target (end). Reuses ext-markers
+     * for the dot rather than duplicating marker creation.
+     * @returns {void}
+     */
+    const applyLeaderPreset = () => {
+      const sel = svgCanvas.getSelectedElements()[0]
+      if (!sel?.id?.startsWith('conn_')) return
+      // Thin the stroke - marker size is strokeWidth-relative so the dot shrinks too.
+      svgCanvas.changeSelectedAttribute('stroke-width', 1)
+      // Reuse the ext-markers picker to place a small filled dot at the target end.
+      const endList = $id('end_marker_list_opts')
+      if (endList) {
+        endList.setAttribute('value', 'mcircle')
+        endList.dispatchEvent(new CustomEvent('change', { detail: { value: 'mcircle' } }))
+      }
+      svgCanvas.call('changed', [sel])
     }
 
     /**
@@ -193,15 +319,10 @@ export default {
      * @param {Float} diffY
      * @returns {void}
      */
-    const updatePoints = (line, conn, bb, altBB, pre, altPre) => {
-      const srcX = altBB.x + altBB.width / 2
-      const srcY = altBB.y + altBB.height / 2
-
-      const pt = getBBintersect(srcX, srcY, bb, getOffset(pre, line))
-      setPoint(line, conn.is_start ? 0 : 'end', pt.x, pt.y, true)
-
-      const pt2 = getBBintersect(pt.x, pt.y, altBB, getOffset(altPre, line))
-      setPoint(line, conn.is_start ? 'end' : 0, pt2.x, pt2.y, true)
+    const updatePoints = (line, conn, bb, altBB) => {
+      const startBB = conn.is_start ? bb : altBB
+      const endBB = conn.is_start ? altBB : bb
+      routeConnector(line, startBB, endBB)
     }
 
     const updateLine = (diffX, diffY) => {
@@ -345,22 +466,10 @@ export default {
           // Retrieve the bounding box for the connected element at the opposite end
           const bb2 = dataStorage.get(line, `${altPre}_bb`)
 
-          // Calculate the center point of the connected element
-          const srcX = bb2?.x + bb2?.width / 2
-          const srcY = bb2?.y + bb2?.height / 2
-
-          // Update the point of the element being moved
-          const pt = getBBintersect(srcX, srcY, bb, getOffset(pre, line))
-          setPoint(line, isStart ? 0 : 'end', pt.x, pt.y, true)
-
-          // Update the point of the connected element at the opposite end
-          const pt2 = getBBintersect(
-            pt.x,
-            pt.y,
-            dataStorage.get(line, `${altPre}_bb`),
-            getOffset(altPre, line)
-          )
-          setPoint(line, isStart ? 'end' : 0, pt2.x, pt2.y, true)
+          // Recompute the whole route from both bounding boxes (handles straight + elbow)
+          const startBB = isStart ? bb : bb2
+          const endBB = isStart ? bb2 : bb
+          routeConnector(line, startBB, endBB)
         }
       }
     }
@@ -406,6 +515,29 @@ export default {
             svgCanvas.setMode('connector')
           }
         })
+
+        // Add the connector context panel (routing toggle + leader preset) as a
+        // Design-tab side-panel section, shown only when a connector is selected.
+        const panelTemplate = document.createElement('template')
+        panelTemplate.innerHTML = `
+          <div id="connector_panel" class="sidepanel_section" style="display:none">
+            <div class="sidepanel_section_label">Connector</div>
+            <div class="sidepanel_btn_row">
+              <se-button id="connroute_straight" title="${name}:routing.straight" src="conn_straight.svg"></se-button>
+              <se-button id="connroute_elbow" title="${name}:routing.elbow" src="conn_elbow.svg"></se-button>
+              <se-button id="connleader" title="${name}:routing.leader" src="conn_leader.svg"></se-button>
+            </div>
+          </div>
+        `
+        const designTab = $id('tab_design')
+        if (designTab) {
+          designTab.appendChild(panelTemplate.content)
+        } else {
+          $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+        }
+        $click($id('connroute_straight'), () => setRouting('straight'))
+        $click($id('connroute_elbow'), () => setRouting('elbow'))
+        $click($id('connleader'), () => applyLeaderPreset())
       },
       mouseDown (opts) {
         // Retrieve necessary data from the SVG canvas and the event object
@@ -586,21 +718,15 @@ export default {
           }
         }
 
-        // Update the end point of the connector
-        const bb = svgCanvas.getStrokedBBox([endElem])
-        const pt = getBBintersect(
-          startX,
-          startY,
-          bb,
-          getOffset('start', curLine)
-        )
-        setPoint(curLine, 'end', pt.x, pt.y, true)
-
         // Save metadata to the connector
+        const bb = svgCanvas.getStrokedBBox([endElem])
         dataStorage.put(curLine, 'c_start', startId)
         dataStorage.put(curLine, 'c_end', endId)
         dataStorage.put(curLine, 'end_bb', bb)
         curLine.setAttributeNS(seNs, 'se:connector', connStr)
+
+        // Route the finalized connector from both bounding boxes
+        routeConnector(curLine, dataStorage.get(curLine, 'start_bb'), bb)
         curLine.setAttribute('opacity', 1)
 
         // Finalize the connector
@@ -638,7 +764,7 @@ export default {
             selectorManager.requestSelector(elem).showGrips(false)
 
             // Show panel depending on selection state
-            showPanel(opts.selectedElement && !opts.multiselected)
+            showPanel(opts.selectedElement && !opts.multiselected, elem)
           } else {
             // Hide panel if no connector start
             showPanel(false)

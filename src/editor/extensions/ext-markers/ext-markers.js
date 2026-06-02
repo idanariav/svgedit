@@ -51,13 +51,33 @@ export default {
       box:
         { element: 'path', attr: { d: 'M20,20 L20,80 L80,80 L80,20 Z' } },
       mcircle:
-        { element: 'circle', attr: { r: 30, cx: 50, cy: 50 } }
+        { element: 'circle', attr: { r: 30, cx: 50, cy: 50 } },
+      triangle:
+        { element: 'path', attr: { d: 'M0,10 L100,50 L0,90 Z' } },
+      diamond:
+        { element: 'path', attr: { d: 'M0,50 L50,10 L100,50 L50,90 Z' } },
+      openarrow:
+        { element: 'path', attr: { d: 'M0,10 L100,50 L0,90' } },
+      star:
+        { element: 'path', attr: { d: 'M50,5 L61,39 L97,39 L68,61 L79,95 L50,75 L21,95 L32,61 L3,39 L39,39 Z' } },
+      xmark:
+        { element: 'path', attr: { d: 'M20,20 L80,80 M80,20 L20,80' } },
+      forwardslash:
+        { element: 'path', attr: { d: 'M20,80 L80,20' } },
+      reverseslash:
+        { element: 'path', attr: { d: 'M20,20 L80,80' } },
+      verticalslash:
+        { element: 'path', attr: { d: 'M50,10 L50,90' } }
     };
 
     // duplicate shapes to support unfilled (open) marker types with an _o suffix
-    ['leftarrow', 'rightarrow', 'box', 'mcircle'].forEach((v) => {
+    ['leftarrow', 'rightarrow', 'box', 'mcircle', 'triangle', 'star', 'diamond'].forEach((v) => {
       markerTypes[v + '_o'] = markerTypes[v]
     })
+
+    // markers that are open strokes (lines / chevron) - never filled, even
+    // without the _o suffix, otherwise SVG auto-closes them for the fill
+    const strokeOnly = ['openarrow', 'forwardslash', 'reverseslash', 'verticalslash', 'xmark']
 
     /**
     * @param {Element} elem - A graphic element will have an attribute like marker-start
@@ -131,7 +151,7 @@ export default {
       })
 
       const mel = addElem(markerTypes[seType])
-      const fillcolor = (seType.substr(-2) === '_o')
+      const fillcolor = (seType.substr(-2) === '_o' || strokeOnly.includes(seType))
         ? 'none'
         : color
 

@@ -82,7 +82,7 @@
 
 | Folder | Adds |
 |--------|------|
-| `ext-connector/` | Connector/arrow lines between objects |
+| `ext-connector/` | Connector/arrow lines between objects; straight/elbow routing + leader-line preset (`#connector_panel`) |
 | `ext-eyedropper/` | Eyedropper color-pick tool |
 | `ext-grid/` | Grid overlay + snap |
 | `ext-helloworld/` | Minimal example template |

@@ -169,7 +169,7 @@ container simply hides everything inside it.
 | `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
 | `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |
 | Stroke & Opacity *(always shown in tab)* | always | `stroke_width` (0–99), `opacity` (0–100%), `stroke_style` (dash), `stroke_linejoin`, `stroke_linecap`. **Moved from bottom panel**; `change` listeners bound in `TopPanel.init` (delegate to `bottomPanel` handlers) |
-| `#marker_panel` "Markers" | single line/polyline/path/polygon | `start_marker_list_opts`, `mid_marker_list_opts`, `end_marker_list_opts` (None / arrows / box / circle, open + filled). Injected by ext-markers right after Stroke & Opacity; visibility self-managed via its `selectedChanged`, independent of `updateContextPanel` |
+| `#marker_panel` "Markers" | single line/polyline/path/polygon | `start_marker_list_opts`, `mid_marker_list_opts`, `end_marker_list_opts` (None / arrows / triangle / diamond / open-V / box / circle / star / X / slashes, open + filled). Injected by ext-markers right after Stroke & Opacity; visibility self-managed via its `selectedChanged`, independent of `updateContextPanel` |
 | `.selected_panel` "Object" | single element | `tool_topath`, `tool_path_offset` (`<se-offset-settings>` popover → `svgCanvas.offsetPath(delta)`), `tool_stroke_to_path` (→ `svgCanvas.strokeToPath()`), `tool_reorient`, `tool_make_link`; nested `.container_panel` (`g_title`), `.use_panel` (`tool_unlink_use`), `.a_panel` (`link_url`) |
 | `.multiselected_panel` "Combine" | 2+ elements | `tool_bool_union/intersect/subtract/exclude/divide`, `tool_clip_set`, `tool_mask_set`, `tool_make_link_multi` (boolean ops & clip/mask require exactly 2; `divide` produces two separate path pieces) |
 
@@ -230,6 +230,10 @@ Flying button (left panel):
 
 ### ext-connector — Connector Lines (`extensions/ext-connector/`)
 - Adds a connector drawing mode for creating auto-updating diagram connector lines between objects
+- **Connector context panel** (`#connector_panel`, injected into the Design tab, shown via `showPanel` only when a single connector is selected) with three `se-button`s:
+  - **Straight** (`connroute_straight`) / **Elbow** (`connroute_elbow`): routing mode toggle. Mode is stored on the connector as the `se:conn_mode` attribute (`'straight'` default | `'elbow'`). All geometry flows through `routeConnector`/`computeConnectorPoints`: straight = 3-point collinear polyline; elbow = 4-point orthogonal "Z" route attaching at the facing box sides (note: elbow carries two interior vertices, so `marker-mid` renders at both bends).
+  - **Leader** (`connleader`, `applyLeaderPreset`): one-click callout preset — thins the stroke to 1 and places a small filled dot (`mcircle`) at the target end by reusing the ext-markers picker (dispatches `change` on `#end_marker_list_opts`).
+  - ⚠️ Panel button IDs must **not** start with `conn_` — that prefix is reserved for connector elements (`[id^="conn_"]`).
 
 ### ext-grid — Grid Settings (`extensions/ext-grid/`)
 - **Grid settings** (`grid_settings`, `<se-grid-settings>`): popover with show-grid + snap-to-grid toggles, grid **shape** select, grid color, and snapping step. Replaces the old `view_grid` toggle button.
@@ -239,7 +243,8 @@ Flying button (left panel):
 
 ### ext-markers — Line Markers (`extensions/ext-markers/`)
 - Injects the **Markers** section (`#marker_panel`) into the right-panel **Design tab**, right after Stroke & Opacity (falls back to `#tools_top` if the tab is missing). Three `se-list` pickers — **Start**, **Mid**, **End** — for a single selected line/polyline/path/polygon
-- Marker options: None, Left Arrow, Right Arrow, Box, Circle (all with open/filled variants)
+- Marker options: None, Left Arrow, Right Arrow, Triangle, Diamond, Open Arrow (V), Box, Circle, Star, X, and Forward/Reverse/Vertical Slash. Filled shapes (arrows, triangle, diamond, box, circle, star) also have open `_o` variants. Open-stroke types (`openarrow`, slashes, `xmark`) are forced `fill:none` via the `strokeOnly` set so SVG doesn't auto-close them.
+- Marker geometry is defined in the `markerTypes` map (100×100 box, forward = +x); each type needs a matching icon in `src/editor/images/<id>.svg`
 - Panel show/hide is self-managed in the extension's `selectedChanged` (`showPanel`), independent of `updateContextPanel`
 
 ### ext-cutter — Knife/Cut Tool (`extensions/ext-cutter/`)

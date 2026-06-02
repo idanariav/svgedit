@@ -8,5 +8,10 @@ export default {
     {
       title: 'Connecter deux objets'
     }
-  ]
+  ],
+  routing: {
+    straight: 'Routage droit',
+    elbow: 'Routage orthogonal (coude)',
+    leader: 'Style ligne de repère'
+  }
 }

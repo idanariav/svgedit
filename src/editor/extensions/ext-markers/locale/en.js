@@ -12,12 +12,15 @@ export default {
     { id: 'star', title: 'Star' },
     { id: 'xmark', title: 'X' },
     { id: 'triangle', title: 'Triangle' },
+    { id: 'diamond', title: 'Diamond' },
+    { id: 'openarrow', title: 'Open Arrow' },
     { id: 'mcircle', title: 'Circle' },
     { id: 'leftarrow_o', title: 'Open Left Arrow' },
     { id: 'rightarrow_o', title: 'Open Right Arrow' },
     { id: 'box_o', title: 'Open Box' },
     { id: 'star_o', title: 'Open Star' },
     { id: 'triangle_o', title: 'Open Triangle' },
+    { id: 'diamond_o', title: 'Open Diamond' },
     { id: 'mcircle_o', title: 'Open Circle' }
   ],
   contextTools: [

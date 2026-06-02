@@ -8,5 +8,10 @@ export default {
     {
       title: 'Connect two objects'
     }
-  ]
+  ],
+  routing: {
+    straight: 'Straight routing',
+    elbow: 'Elbow (orthogonal) routing',
+    leader: 'Leader-line style'
+  }
 }
