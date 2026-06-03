@@ -429,6 +429,7 @@ const mouseMoveEvent = (evt) => {
       break
     }
     case 'foreignObject': // fall through
+    case 'frame':
     case 'square':
     case 'rect':
     case 'image': {
@@ -869,6 +870,7 @@ const mouseUpEvent = (evt) => {
     }
       break
     case 'foreignObject':
+    case 'frame':
     case 'square':
     case 'rect':
     case 'image': {
@@ -1058,7 +1060,7 @@ const mouseUpEvent = (evt) => {
       if (svgCanvas.getCurrentMode() === 'path') {
         svgCanvas.pathActions.toEditMode(element)
       } else if (svgCanvas.getCurConfig().selectNew) {
-        const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib']
+        const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame']
         if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey) {
           svgCanvas.setMode('select')
         }
@@ -1366,6 +1368,35 @@ const mouseDownEvent = (evt) => {
       })
       setHref(newImage, svgCanvas.getLastGoodImgUrl())
       preventClickDefault(newImage)
+      break
+    } case 'frame': {
+      // A frame is a plain rect marked with data-frame, used to define an export
+      // region. It is never part of an exported image (stripped in svg-exec.js).
+      // Drawn with fixed presentation attrs (not curStyles) so it always looks
+      // like a dashed outline regardless of the current shape style.
+      svgCanvas.setStarted(true)
+      svgCanvas.setStartX(x)
+      svgCanvas.setStartY(y)
+      const frameCount = svgCanvas.getSvgContent().querySelectorAll('[data-frame]').length
+      const frameEl = svgCanvas.addSVGElementsFromJson({
+        element: 'rect',
+        curStyles: false,
+        attr: {
+          x,
+          y,
+          width: 0,
+          height: 0,
+          id: svgCanvas.getNextId(),
+          'data-frame': '1',
+          fill: 'transparent',
+          stroke: '#3b82f6',
+          'stroke-dasharray': '6 4',
+          'stroke-width': 1.5
+        }
+      })
+      const title = frameEl.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'title')
+      title.textContent = `Frame ${frameCount + 1}`
+      frameEl.appendChild(title)
       break
     } case 'square':
     // TODO: once we create the rect, we lose information that this was a square

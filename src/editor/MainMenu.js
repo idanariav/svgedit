@@ -70,6 +70,7 @@ class MainMenu {
     const imgType = e?.detail?.imgType
     const quality = e?.detail?.quality ? e?.detail?.quality / 100 : 1
     const includeBg = e?.detail?.includeBg ?? false
+    const crop = this.resolveFrameCrop(e?.detail?.frameId)
     // Open placeholder window (prevents popup)
     let exportWindowName
 
@@ -89,7 +90,7 @@ class MainMenu {
       if (!this.editor.customExportPDF && !chrome) {
         openExportWindow()
       }
-      this.editor.svgCanvas.exportPDF(exportWindowName)
+      this.editor.svgCanvas.exportPDF(exportWindowName, undefined, crop)
     } else {
       if (!this.editor.customExportImage) {
         openExportWindow()
@@ -99,9 +100,34 @@ class MainMenu {
         imgType,
         quality,
         this.editor.exportWindowName,
-        { includeBg, bgcolor: bkgdColor }
+        { includeBg, bgcolor: bkgdColor, crop }
       )
     }
+  }
+
+  /**
+   * Resolve an export region picker value to a crop box in viewBox/user-space
+   * coordinates. Frames are `[data-frame]` rects whose x/y/width/height
+   * attributes are authoritative (svgedit bakes transforms into them on edit);
+   * `getBBox()` is used as a fallback.
+   * @param {string} [frameId] - The selected frame's element id, or '' for the whole canvas.
+   * @returns {?{x: number, y: number, w: number, h: number}} The crop box, or null for the whole canvas.
+   */
+  resolveFrameCrop (frameId) {
+    if (!frameId) return null
+    const content = this.editor.svgCanvas.getSvgContent()
+    const frame = content?.querySelector(`#${CSS.escape(frameId)}`)
+    if (!frame) return null
+    const num = (attr) => Number(frame.getAttribute(attr))
+    let x = num('x')
+    let y = num('y')
+    let w = num('width')
+    let h = num('height')
+    if (!w || !h) {
+      const bb = frame.getBBox()
+      x = bb.x; y = bb.y; w = bb.width; h = bb.height
+    }
+    return { x, y, w, h }
   }
 
   /**

@@ -192,6 +192,7 @@ class TopPanel {
     this.hideTool('selected_panel')
     this.hideTool('multiselected_panel')
     this.hideTool('g_panel')
+    this.hideTool('frame_panel')
     this.hideTool('rect_panel')
     this.hideTool('circle_panel')
     this.hideTool('ellipse_panel')
@@ -416,6 +417,13 @@ class TopPanel {
         }
       }
 
+      // A frame is a data-frame rect: it keeps the standard rect dimension panel
+      // and additionally shows the editable Frame name field.
+      if (tagName === 'rect' && elem.hasAttribute('data-frame')) {
+        this.displayTool('frame_panel')
+        $id('frame_name').value = this.editor.svgCanvas.getTitle() || ''
+      }
+
       if (isCircleArcPath) {
         this.displayTool('circle_panel')
         $id('circle_cx').value = Number(elem.getAttribute('data-cx')) || 0
@@ -497,6 +505,19 @@ class TopPanel {
     $editorDialog.setAttribute('value', origSource)
     $editorDialog.setAttribute('copysec', Boolean(forSaving))
     $editorDialog.setAttribute('applysec', !forSaving)
+  }
+
+  /**
+   * Activates the frame-drawing mode. The frame button lives in the top panel
+   * but behaves like a left-panel drawing tool, so clear any pressed left-panel
+   * tool and mark the frame button active. The button's pressed state is kept in
+   * sync with the canvas mode by the modeChange listener in EditorStartup.
+   * @returns {void}
+   */
+  clickFrame () {
+    $qa('#tools_left *[pressed]').forEach((b) => { b.pressed = false })
+    $id('tool_frame').pressed = true
+    this.editor.svgCanvas.setMode('frame')
   }
 
   /**
@@ -1099,7 +1120,7 @@ class TopPanel {
     newSeEditorDialog.init(i18next)
     $id('tool_link_url').setAttribute('title', i18next.t('tools.set_link_url'))
     // register action to top panel buttons
-    $click($id('tool_source'), this.showSourceEditor.bind(this))
+    $click($id('tool_frame'), this.clickFrame.bind(this))
     $click($id('tool_wireframe'), this.clickWireframe.bind(this))
     $click($id('tool_undo'), this.clickUndo.bind(this))
     $click($id('tool_redo'), this.clickRedo.bind(this))

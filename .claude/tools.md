@@ -49,7 +49,7 @@ class-based logic in `TopPanel.js` `updateContextPanel`.
 
 | ID | Tool | Shortcut | Notes |
 |----|------|----------|-------|
-| `tool_source` | Edit SVG source | U | In `#editor_panel` (view tray) |
+| `tool_frame` | Frame (export region) | U | In `#editor_panel` (view tray). **Replaced the old `tool_source` (Edit SVG source) button** — `showSourceEditor()` in `TopPanel.js` and the `se-svg-editor-dialog` component are kept (still used by ext-opensave's save-while-editing path), only the button + its click registration were removed. `clickFrame()` clears left-panel pressed state and `setMode('frame')`; the button's pressed state is bound to the canvas mode by `EditorStartup.modeListener`. A frame is a `<rect data-frame="1">` with a `<title>` name (default `Frame N`) and a dashed-accent / transparent-fill style; it's a normal selectable rect (drawn via the `'frame'` case in `core/event.js`, reusing rect drag logic). Frames mark export regions — see Export below |
 | `tool_wireframe` | Wireframe mode | F | In `#editor_panel` (view tray) |
 | `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | In `#editor_panel`. Opens a popover with W/H spin-inputs, size presets (2-col grid), and Apply/Reset. Each preset shows ratio + size — aspect presets `4:5 (800:1000)` / `5:4 (1000:800)` / `16:9 (1000:563)` / `1:1 (1000:1000)` (base 1000px) plus the predefined `4:3` sizes moved out of Document Properties (`640:480`…`1600:1200`). Talks to `svgCanvas.setResolution`/`getResolution` directly via the global `svgEditor` |
 | `grid_settings` *(`<se-grid-settings>`)* | Grid settings popover | — | Injected into `#editor_panel` by ext-grid. Show/snap toggles, shape select (square/isometric/triangle/1pt/2pt perspective), grid color, snapping step |
@@ -215,6 +215,19 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 |----|------|----------|
 | `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
 | `tool_editor_prefs` | Editor Preferences | — |
+
+**Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a
+`#se-export-region` `<se-select>`, rebuilt each time it opens from the canvas'
+`[data-frame]` rects — "Whole canvas" (value `""`) plus one entry per frame
+(labelled by its `<title>`), pre-selecting the currently selected frame. The chosen
+`frameId` rides on the dialog's `change` detail. `MainMenu.clickExport` resolves it
+via `resolveFrameCrop(frameId)` to a `{x,y,w,h}` crop box (from the frame's
+`x/y/width/height` attrs, `getBBox()` fallback) and passes `crop` to
+`rasterExport(...,{crop})` / `exportPDF(name, type, crop)`. In `core/svg-exec.js`
+both export paths **always strip `[data-frame]` elements** from the clone (frames
+never appear in an image) and, when a crop is given, narrow the clone's `viewBox`
+and set an explicit `width`/`height` (required for Firefox `<img>` rasterization)
+sized to the frame. `File → Save` is unaffected — it keeps frames in the document.
 
 ---
 

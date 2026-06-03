@@ -294,6 +294,13 @@ class EditorStartup {
       this.svgCanvas.setGroupTitle(evt.currentTarget.value)
     })
 
+    // Frame name reuses the <title>-child mechanism (setGroupTitle works on any
+    // selected element, with undo). The name labels the frame in the export
+    // region picker.
+    $id('frame_name').addEventListener('change', (evt) => {
+      this.svgCanvas.setGroupTitle(evt.currentTarget.value)
+    })
+
     let lastX = null; let lastY = null
     let panning = false; let keypan = false
     let previousMode = 'select'
@@ -928,6 +935,11 @@ class EditorStartup {
     const mode = this.svgCanvas.getMode()
 
     this.setCursorStyle(mode)
+    // The frame tool button lives in the top panel but acts like a drawing tool,
+    // so keep its pressed state bound to the canvas mode (cleared when any other
+    // tool is selected, by button/flyout/keyboard or the auto-return to select).
+    const frameBtn = $id('tool_frame')
+    if (frameBtn) frameBtn.pressed = mode === 'frame'
   }
 
   /**

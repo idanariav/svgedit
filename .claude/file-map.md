@@ -153,7 +153,7 @@
 All toolbar icons are stroke-based SVGs using `stroke="currentColor" fill="none"`.
 They recolor automatically via CSS `color:` property — no filter needed.
 
-Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `c_radius.svg`
+Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `c_radius.svg`, `frame.svg` (Frame export-region tool)
 
 ---
 

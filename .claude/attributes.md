@@ -23,6 +23,22 @@ Plus [common attributes](#common-attributes-all-shapes) including **x/y position
 
 ---
 
+## `<rect data-frame>` — Frame (export region)
+
+A frame is an ordinary `<rect>` tagged `data-frame="1"` (drawn with the top-panel
+`tool_frame`). It marks a region for partial export; it's never part of an exported
+image (stripped in `core/svg-exec.js`) but **is** saved in the document.
+
+**Panel class:** `.frame_panel` (shown in addition to the normal `.rect_panel`).
+
+| Control ID | Maps to DOM | Notes |
+|------------|-------------|-------|
+| `frame_name` | `<title>` child | Export-region label (default `Frame N`). Wired in `EditorStartup.js` to `svgCanvas.setGroupTitle()` (same `<title>`+undo mechanism as group labels) — **not** `attrChanger`. Populates the export dialog's region picker |
+
+`updateContextPanel` shows `.frame_panel` when `tagName === 'rect' && elem.hasAttribute('data-frame')`. Width/height/radius still come from the shared `.rect_panel`. Plus [common attributes](#common-attributes-all-shapes).
+
+---
+
 ## `<circle>` — Circle
 
 **Panel class:** `.circle_panel` (split across two `<div>`s)

@@ -20,6 +20,7 @@ export class SeExportDialog extends HTMLElement {
     this.$okBtn = this._shadowRoot.querySelector('#export_ok')
     this.$cancelBtn = this._shadowRoot.querySelector('#export_cancel')
     this.$exportOption = this._shadowRoot.querySelector('#se-storage-pref')
+    this.$region = this._shadowRoot.querySelector('#se-export-region')
     this.$qualityCont = this._shadowRoot.querySelector('#se-quality')
     this.$input = this._shadowRoot.querySelector('#se-quality')
     this.$includeBgLabel = this._shadowRoot.querySelector('#se-include-bg-label')
@@ -59,6 +60,7 @@ export class SeExportDialog extends HTMLElement {
     switch (name) {
       case 'dialog':
         if (newValue === 'open') {
+          this._populateRegions()
           this.$dialog.open()
         } else {
           this.$dialog.close()
@@ -97,6 +99,34 @@ export class SeExportDialog extends HTMLElement {
   }
 
   /**
+   * Rebuild the region dropdown from the frames currently on the canvas. Each
+   * frame is a `[data-frame]` rect; its label is its `<title>` (fallback
+   * "Frame N"). "Whole canvas" (value "") is always first. If a frame is
+   * currently selected it is pre-selected.
+   * @returns {void}
+   */
+  _populateRegions () {
+    const select = this.$region?.$select
+    if (!select) return
+    while (select.firstChild) select.removeChild(select.firstChild)
+    this.$region.addOption('', 'Whole canvas')
+
+    const canvas = svgEditor?.svgCanvas
+    const content = canvas?.getSvgContent?.()
+    const frames = content ? content.querySelectorAll('[data-frame]') : []
+    frames.forEach((frame, i) => {
+      const titleEl = frame.querySelector('title')
+      const label = (titleEl && titleEl.textContent.trim()) || `Frame ${i + 1}`
+      this.$region.addOption(frame.id, label)
+    })
+
+    // Pre-select the currently selected frame, if any.
+    const selected = canvas?.getSelectedElements?.()?.[0]
+    this.$region.value =
+      selected && selected.hasAttribute?.('data-frame') ? selected.id : ''
+  }
+
+  /**
    * @function connectedCallback
    * @returns {void}
    */
@@ -118,7 +148,8 @@ export class SeExportDialog extends HTMLElement {
             trigger: action,
             imgType: this.$exportOption.value,
             quality: this.value,
-            includeBg: this.$includeBg.checked
+            includeBg: this.$includeBg.checked,
+            frameId: this.$region.value
           }
         })
         this.dispatchEvent(triggerEvent)

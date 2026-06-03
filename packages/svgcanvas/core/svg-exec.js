@@ -979,6 +979,24 @@ const rasterExport = (
 
     const svgClone = svgElement.cloneNode(true)
 
+    // Frames mark export regions and must never appear in an exported image.
+    svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
+
+    // When a crop region (a frame's bounds) is supplied, narrow the clone's
+    // viewBox to it and set an explicit intrinsic size (Firefox renders nothing
+    // from an SVG <img> without width/height) so only that region is rasterized.
+    const res = svgCanvas.getResolution()
+    let width = res.w
+    let height = res.h
+    if (opts.crop) {
+      const { x, y, w, h } = opts.crop
+      svgClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`)
+      svgClone.setAttribute('width', w)
+      svgClone.setAttribute('height', h)
+      width = w
+      height = h
+    }
+
     convertImagesToBase64(svgClone)
       .then(() => {
         const svgData = new XMLSerializer().serializeToString(svgClone)
@@ -994,9 +1012,6 @@ const rasterExport = (
           return
         }
 
-        const res = svgCanvas.getResolution()
-        const width = res.w
-        const height = res.h
         canvas.width = width
         canvas.height = height
 
@@ -1059,13 +1074,28 @@ const rasterExport = (
  */
 const exportPDF = (
   windowName = 'svg.pdf',
-  outputType = isChrome() ? 'save' : 'dataurlstring'
+  outputType = isChrome() ? 'save' : 'dataurlstring',
+  crop = null
 ) => {
   return new Promise((resolve, reject) => {
     const res = svgCanvas.getResolution()
-    const orientation = res.w > res.h ? 'landscape' : 'portrait'
-    const unit = 'pt'
     const svgElement = svgCanvas.getSvgContent().cloneNode(true)
+
+    // Frames mark export regions and must never appear in an exported image.
+    svgElement.querySelectorAll('[data-frame]').forEach(f => f.remove())
+
+    // Crop to a frame's bounds when supplied (see rasterExport for rationale).
+    let outW = res.w
+    let outH = res.h
+    if (crop) {
+      svgElement.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.w} ${crop.h}`)
+      svgElement.setAttribute('width', crop.w)
+      svgElement.setAttribute('height', crop.h)
+      outW = crop.w
+      outH = crop.h
+    }
+    const orientation = outW > outH ? 'landscape' : 'portrait'
+    const unit = 'pt'
 
     convertImagesToBase64(svgElement)
       .then(() => {
@@ -1077,20 +1107,20 @@ const exportPDF = (
 
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
-        canvas.width = res.w
-        canvas.height = res.h
+        canvas.width = outW
+        canvas.height = outH
 
         const img = new Image()
         img.onload = () => {
-          ctx.drawImage(img, 0, 0, res.w, res.h)
+          ctx.drawImage(img, 0, 0, outW, outH)
           URL.revokeObjectURL(url)
 
           const imgData = canvas.toDataURL('image/png')
-          const doc = new JsPDF({ orientation, unit, format: [res.w, res.h] })
+          const doc = new JsPDF({ orientation, unit, format: [outW, outH] })
 
           const docTitle = svgCanvas.getDocumentTitle()
           doc.setProperties({ title: docTitle })
-          doc.addImage(imgData, 'PNG', 0, 0, res.w, res.h)
+          doc.addImage(imgData, 'PNG', 0, 0, outW, outH)
 
           const { issues, issueCodes } = getIssues()
           const obj = { issues, issueCodes, windowName, outputType }
