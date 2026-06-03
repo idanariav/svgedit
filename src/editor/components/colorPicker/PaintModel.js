@@ -186,10 +186,12 @@ export function paintToState (paint) {
   }
 
   const stops = extractStops(el)
-  const safeStops = stops.length >= 2 ? stops : [
-    { color: '000000', position: 0, alpha: 100 },
-    { color: 'ffffff', position: 100, alpha: 100 }
-  ]
+  const safeStops = stops.length >= 2
+    ? stops
+    : [
+        { color: '000000', position: 0, alpha: 100 },
+        { color: 'ffffff', position: 100, alpha: 100 }
+      ]
 
   const monoColor = el.getAttribute('data-monocolor')
   const monoMode = el.getAttribute('data-monomode') || 'white'

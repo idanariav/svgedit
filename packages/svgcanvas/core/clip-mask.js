@@ -164,8 +164,10 @@ const releaseClipMask = () => {
     return
   }
 
-  const refAttr = elem.getAttribute('clip-path') ? 'clip-path'
-    : elem.getAttribute('mask') ? 'mask'
+  const refAttr = elem.getAttribute('clip-path')
+    ? 'clip-path'
+    : elem.getAttribute('mask')
+      ? 'mask'
       : null
   if (!refAttr) {
     warn('Selected element has no clip or mask to release', null, 'clip-mask')

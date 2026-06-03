@@ -1,3 +1,4 @@
+/* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
 

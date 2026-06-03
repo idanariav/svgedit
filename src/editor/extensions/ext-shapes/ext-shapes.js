@@ -25,7 +25,7 @@ export default {
   async init () {
     const svgEditor = this
     const canv = svgEditor.svgCanvas
-    const { $id, $click } = canv
+    const { $id } = canv
     const svgroot = canv.getSvgRoot()
     let lastBBox = {}
     await loadExtensionTranslation(svgEditor)

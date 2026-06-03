@@ -10,7 +10,7 @@ import { createLinearPanel } from './panels/LinearPanel.js'
 import { createRadialPanel } from './panels/RadialPanel.js'
 import { fetchSvgEl } from '../svgIconLoader.js'
 
-const CLOSE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>`
+const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 
 /**
  * @class SeColorDialog
@@ -32,8 +32,11 @@ export class SeColorDialog extends HTMLElement {
   }
 
   set paint (p) { this._paint = p }
+  get paint () { return this._paint }
   set type (t) { this._type = t }
+  get type () { return this._type }
   set i18next (i) { this._i18next = i }
+  get i18next () { return this._i18next }
 
   connectedCallback () {
     this._activeTab = this._inferTab()
@@ -154,11 +157,11 @@ export class SeColorDialog extends HTMLElement {
     })
 
     // Mount initial panel
-    this._switchTab(this._activeTab, true)
+    this._switchTab(this._activeTab)
   }
 
   // ── Tab switching ──────────────────────────────────────────────────────────
-  _switchTab (tab, initial = false) {
+  _switchTab (tab) {
     this._activeTab = tab
 
     // Update tab button states

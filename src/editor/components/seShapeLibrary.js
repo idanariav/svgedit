@@ -33,18 +33,18 @@ const CAT_LABELS = {
   object: 'Objects',
   raphael_1: 'Raphael · Set 1',
   raphael_2: 'Raphael · Set 2',
-  symbol: 'Symbols',
+  symbol: 'Symbols'
 }
 
 // ── Icon SVG strings ─────────────────────────────────────────────────────────
-const STAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9L3.5 9.8l5.9-.9z"/></svg>`
-const STAR18 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9L3.5 9.8l5.9-.9z"/></svg>`
-const SEARCH16 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg>`
-const SEARCH13 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg>`
-const CLOSE18 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>`
-const CLOSE12 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="12" height="12"><path d="M6 6l12 12M18 6L6 18"/></svg>`
-const GRID_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>`
-const ROWS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="16" height="4" rx="1.2"/><rect x="4" y="10" width="16" height="4" rx="1.2"/><rect x="4" y="16" width="16" height="4" rx="1.2"/></svg>`
+const STAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9L3.5 9.8l5.9-.9z"/></svg>'
+const STAR18 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9L3.5 9.8l5.9-.9z"/></svg>'
+const SEARCH16 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg>'
+const SEARCH13 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg>'
+const CLOSE18 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+const CLOSE12 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="12" height="12"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+const GRID_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>'
+const ROWS_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="16" height="4" rx="1.2"/><rect x="4" y="10" width="16" height="4" rx="1.2"/><rect x="4" y="16" width="16" height="4" rx="1.2"/></svg>'
 
 // ── Component CSS ────────────────────────────────────────────────────────────
 const CSS = `
@@ -875,7 +875,8 @@ export class SeShapeLibrary extends HTMLElement {
       // User shape: shapeData = { svgContent, bbox }
       delete this.dataset.draw
       this.dispatchEvent(new CustomEvent('shape-insert', {
-        bubbles: true, composed: true,
+        bubbles: true,
+        composed: true,
         detail: {
           isUserShape: true,
           svgContent: shapeData.svgContent,
@@ -888,7 +889,8 @@ export class SeShapeLibrary extends HTMLElement {
       // Built-in shape: shapeData is the path 'd' string
       this.dataset.draw = shapeData
       this.dispatchEvent(new CustomEvent('shape-insert', {
-        bubbles: true, composed: true,
+        bubbles: true,
+        composed: true,
         detail: { draw: shapeData, categoryId: this._categoryId, shapeId: this._selectedId }
       }))
     }
@@ -1051,7 +1053,7 @@ export class SeShapeLibrary extends HTMLElement {
       return this._buildSearchResults()
     }
     const cat = this._catalog[this._categoryId]
-    if (!cat) return `<div class="sl-loading">Loading…</div>`
+    if (!cat) return '<div class="sl-loading">Loading…</div>'
 
     const shapes = Object.entries(cat.data)
     if (this._view === 'grid') {
@@ -1159,7 +1161,9 @@ export class SeShapeLibrary extends HTMLElement {
     return `
       <footer class="sl-foot">
         <div class="sl-foot-status">
-          ${this._selectedId && shapeData ? `${footChip}${footMeta}` : `
+          ${this._selectedId && shapeData
+? `${footChip}${footMeta}`
+: `
             <span class="sl-foot-empty">Select a shape</span>`}
         </div>
         <span class="sl-foot-spacer"></span>
@@ -1262,7 +1266,7 @@ export class SeShapeLibrary extends HTMLElement {
         const wrap = menuBtn.closest('.sl-tile-wrap')
         const dropdown = document.createElement('div')
         dropdown.className = 'sl-shape-dropdown'
-        dropdown.innerHTML = `<button class="sl-remove">Remove from library</button>`
+        dropdown.innerHTML = '<button class="sl-remove">Remove from library</button>'
         wrap.appendChild(dropdown)
 
         dropdown.querySelector('.sl-remove').addEventListener('click', ev => {

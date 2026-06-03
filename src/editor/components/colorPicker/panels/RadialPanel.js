@@ -7,7 +7,7 @@ import { createSlider } from './shared/Slider.js'
 import { createHsvBox } from './shared/HsvBox.js'
 import { paintToState } from '../PaintModel.js'
 
-const CHEV_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>`
+const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>'
 
 /**
  * @param {object} paint
@@ -137,7 +137,7 @@ export function createRadialPanel (paint, i18next) {
   // Shape section
   const shapeSection = document.createElement('div')
   shapeSection.className = 'cp-section'
-  shapeSection.innerHTML = `<div class="cp-section-title">Shape</div>`
+  shapeSection.innerHTML = '<div class="cp-section-title">Shape</div>'
 
   const radiusSlider = createSlider({ label: t('config.jgraduate_radius') || 'Radius', min: 0, max: 100, value: panelState.r, unit: '%' })
   const ellipSlider = createSlider({ label: t('config.jgraduate_ellip') || 'Ellipse', min: 0, max: 200, value: panelState.ellip, unit: '%' })
@@ -153,7 +153,7 @@ export function createRadialPanel (paint, i18next) {
   // Focal point section
   const focalSection = document.createElement('div')
   focalSection.className = 'cp-section'
-  focalSection.innerHTML = `<div class="cp-section-title">Focal Point</div>`
+  focalSection.innerHTML = '<div class="cp-section-title">Focal Point</div>'
   const matchLabel = document.createElement('label')
   matchLabel.className = 'cp-check'
   matchLabel.innerHTML = `<input type="checkbox" ${panelState.matchCenter ? 'checked' : ''}><span class="cp-check-box"></span><span class="cp-check-label">${t('config.jgraduate_match_center') || 'Match center'}</span>`
@@ -174,7 +174,7 @@ export function createRadialPanel (paint, i18next) {
   // Settings section
   const settingsSection = document.createElement('div')
   settingsSection.className = 'cp-section'
-  settingsSection.innerHTML = `<div class="cp-section-title">Settings</div>`
+  settingsSection.innerHTML = '<div class="cp-section-title">Settings</div>'
 
   const selectWrap = document.createElement('div')
   selectWrap.className = 'cp-select'
@@ -257,7 +257,7 @@ export function createRadialPanel (paint, i18next) {
     let stops = panelState.stops
     if (panelState.mode === 'mono') {
       const first = stops[0] || { color: '000000', alpha: 100 }
-      let endColor, endAlpha = 100
+      let endColor; let endAlpha = 100
       if (panelState.monoMode === 'white') { endColor = '#ffffff' } else if (panelState.monoMode === 'black') { endColor = '#000000' } else { endColor = '#' + first.color; endAlpha = 0 }
       stops = [{ color: first.color, position: 0, alpha: first.alpha }, { color: endColor.replace('#', ''), position: 100, alpha: endAlpha }]
     }

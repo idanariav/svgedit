@@ -30,7 +30,7 @@ export function createDial (initialAngle = 0) {
         <!-- inner filled circle -->
         <circle cx="36" cy="36" r="28" fill="var(--cp-dial-bg,#F4F5F7)" stroke="var(--cp-dial-border,#DDE1E7)" stroke-width="1.5"/>
         <!-- tick marks (8 at 45° increments) -->
-        ${[0,45,90,135,180,225,270,315].map(a => {
+        ${[0, 45, 90, 135, 180, 225, 270, 315].map(a => {
           const rad = (a - 90) * Math.PI / 180
           const x1 = 36 + Math.cos(rad) * 24
           const y1 = 36 + Math.sin(rad) * 24

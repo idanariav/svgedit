@@ -163,19 +163,22 @@ export default {
       svgCanvas.getSelectedElements().filter(isPaintable)
 
     const captureSnapshot = (elem) => {
-      const fillRaw   = elem.getAttribute('fill')
+      const fillRaw = elem.getAttribute('fill')
       const strokeRaw = elem.getAttribute('stroke')
-      const fill   = fillRaw   ?? '#000000'  // SVG default for non-stroked paints
+      const fill = fillRaw ?? '#000000' // SVG default for non-stroked paints
       const stroke = strokeRaw ?? 'none'
-      const fillOpacity   = parseFloat(elem.getAttribute('fill-opacity')   ?? '1')
+      const fillOpacity = parseFloat(elem.getAttribute('fill-opacity') ?? '1')
       const strokeOpacity = parseFloat(elem.getAttribute('stroke-opacity') ?? '1')
-      const fillRgb   = parseColor(fill)
+      const fillRgb = parseColor(fill)
       const strokeRgb = parseColor(stroke)
       return {
-        fillRaw, strokeRaw,
-        fill, stroke,
-        fillOpacity, strokeOpacity,
-        fillHSL:   fillRgb   ? rgbToHsl(fillRgb)   : null,
+        fillRaw,
+        strokeRaw,
+        fill,
+        stroke,
+        fillOpacity,
+        strokeOpacity,
+        fillHSL: fillRgb ? rgbToHsl(fillRgb) : null,
         strokeHSL: strokeRgb ? rgbToHsl(strokeRgb) : null
       }
     }
@@ -194,7 +197,7 @@ export default {
       s: Number($id('color_shift_s').value) || 0,
       l: Number($id('color_shift_l').value) || 0,
       t: Number($id('color_shift_t').value) || 0,
-      applyFill:   $id('color_shift_fill').checked,
+      applyFill: $id('color_shift_fill').checked,
       applyStroke: $id('color_shift_stroke').checked
     })
 
@@ -294,8 +297,8 @@ export default {
 
     const updateVisibility = () => {
       const panel = $id('color_shift_panel')
-      const hint  = $id('color_shift_hint')
-      const body  = $id('color_shift_body')
+      const hint = $id('color_shift_hint')
+      const body = $id('color_shift_body')
       if (!panel) return
       const hasPaintable = paintableSelection().length > 0
       hint.style.display = hasPaintable ? 'none' : ''
@@ -354,7 +357,7 @@ export default {
 
         $id('color_shift_reset').addEventListener('click', () => {
           resetInputs()
-          applyShift()       // delta=0 → restores snapshot values
+          applyShift() // delta=0 → restores snapshot values
         })
 
         updateVisibility()

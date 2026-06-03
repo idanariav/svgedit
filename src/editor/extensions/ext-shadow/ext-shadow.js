@@ -67,9 +67,9 @@ export default {
       const bbox = elem.getBBox()
       const pad = Math.abs(length) + blur * 3
       filter.setAttribute('filterUnits', 'userSpaceOnUse')
-      filter.setAttribute('x',      String(Math.floor(bbox.x - pad)))
-      filter.setAttribute('y',      String(Math.floor(bbox.y - pad)))
-      filter.setAttribute('width',  String(Math.ceil(bbox.width  + pad * 2)))
+      filter.setAttribute('x', String(Math.floor(bbox.x - pad)))
+      filter.setAttribute('y', String(Math.floor(bbox.y - pad)))
+      filter.setAttribute('width', String(Math.ceil(bbox.width + pad * 2)))
       filter.setAttribute('height', String(Math.ceil(bbox.height + pad * 2)))
     }
 
@@ -90,11 +90,11 @@ export default {
       const dy = Number(ds.getAttribute('dy') ?? 5)
       const { angle, length } = toPolar(dx, dy)
       return {
-        angle:   Math.round(angle),
-        length:  Math.round(length * 10) / 10,
-        blur:    Number(ds.getAttribute('stdDeviation') ?? 4),
+        angle: Math.round(angle),
+        length: Math.round(length * 10) / 10,
+        blur: Number(ds.getAttribute('stdDeviation') ?? 4),
         opacity: Number(ds.getAttribute('flood-opacity') ?? 0.5),
-        color:   ds.getAttribute('flood-color') ?? '#000000'
+        color: ds.getAttribute('flood-color') ?? '#000000'
       }
     }
 
@@ -102,11 +102,11 @@ export default {
      * Read current panel values.
      */
     const getShadowPanelValues = () => ({
-      angle:   Number($id('shadow_angle').value),
-      length:  Number($id('shadow_length').value),
-      blur:    Number($id('shadow_blur').value),
+      angle: Number($id('shadow_angle').value),
+      length: Number($id('shadow_length').value),
+      blur: Number($id('shadow_blur').value),
       opacity: Number($id('shadow_opacity').value),
-      color:   $id('shadow_color').value
+      color: $id('shadow_color').value
     })
 
     /**
@@ -218,11 +218,11 @@ export default {
       panel.style.display = on ? '' : 'none'
       if (on && elem) {
         const p = getShadowFromElement(elem)
-        $id('shadow_angle').value   = p?.angle   ?? 150
-        $id('shadow_length').value  = p?.length  ?? 10
-        $id('shadow_blur').value    = p?.blur    ?? 4
+        $id('shadow_angle').value = p?.angle ?? 150
+        $id('shadow_length').value = p?.length ?? 10
+        $id('shadow_blur').value = p?.blur ?? 4
         $id('shadow_opacity').value = p?.opacity ?? 0.5
-        $id('shadow_color').value   = p?.color   ?? '#000000'
+        $id('shadow_color').value = p?.color ?? '#000000'
       }
     }
 

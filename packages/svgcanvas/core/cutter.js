@@ -97,7 +97,7 @@ const cutShapes = (x1, y1, x2, y2) => {
   // Unit direction and perpendicular vectors
   const ux = dx / len
   const uy = dy / len
-  const px = -uy  // perpendicular (rotated 90° CCW)
+  const px = -uy // perpendicular (rotated 90° CCW)
   const py = ux
 
   // Extend the line far beyond any realistic canvas content

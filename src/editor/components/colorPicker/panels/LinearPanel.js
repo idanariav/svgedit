@@ -8,7 +8,7 @@ import { createSlider } from './shared/Slider.js'
 import { createHsvBox } from './shared/HsvBox.js'
 import { paintToState } from '../PaintModel.js'
 
-const CHEV_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>`
+const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>'
 
 /**
  * @param {object} paint
@@ -83,7 +83,7 @@ export function createLinearPanel (paint, i18next) {
   // Direction section
   const dirSection = document.createElement('div')
   dirSection.className = 'cp-section'
-  dirSection.innerHTML = `<div class="cp-section-title">Direction</div>`
+  dirSection.innerHTML = '<div class="cp-section-title">Direction</div>'
   const dial = createDial(panelState.angle)
   dirSection.appendChild(dial)
   rightCol.appendChild(dirSection)
@@ -91,7 +91,7 @@ export function createLinearPanel (paint, i18next) {
   // Settings section
   const settingsSection = document.createElement('div')
   settingsSection.className = 'cp-section'
-  settingsSection.innerHTML = `<div class="cp-section-title">Settings</div>`
+  settingsSection.innerHTML = '<div class="cp-section-title">Settings</div>'
 
   // Spread method select
   const selectWrap = document.createElement('div')
@@ -124,7 +124,10 @@ export function createLinearPanel (paint, i18next) {
   // Opacity slider
   const opacSlider = createSlider({
     label: t('config.jgraduate_opac') || 'Opacity',
-    min: 0, max: 100, value: panelState.alpha, unit: '%'
+    min: 0,
+    max: 100,
+    value: panelState.alpha,
+    unit: '%'
   })
   opacSlider.addEventListener('change', e => { panelState.alpha = e.detail.value })
   settingsSection.appendChild(opacSlider)
@@ -162,7 +165,7 @@ export function createLinearPanel (paint, i18next) {
     let gradCSS
     if (panelState.mode === 'mono') {
       const firstStop = panelState.stops[0] || { color: '000000', alpha: 100 }
-      let endColor, endAlpha = 100
+      let endColor; let endAlpha = 100
       if (panelState.monoMode === 'white') { endColor = '#ffffff' } else if (panelState.monoMode === 'black') { endColor = '#000000' } else { endColor = '#' + firstStop.color; endAlpha = 0 }
       gradCSS = `linear-gradient(${panelState.angle}deg, #${firstStop.color} 0%, rgba(${_hexToRgb(endColor)},${endAlpha / 100}) 100%)`
     } else {

@@ -39,7 +39,7 @@ const PRESETS = [
 export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null) {
   const safeHex = /^[0-9a-fA-F]{6}$/.test(initialHex) ? initialHex : '2962ff'
   const { h: initH, s: initS, v: initV } = hexToHsv(safeHex)
-  let state = { h: initH, s: initS, v: initV, a: initialAlpha }
+  const state = { h: initH, s: initS, v: initV, a: initialAlpha }
   const origHex = currentHex || safeHex
 
   // ── DOM structure ──────────────────────────────────────────────────────────

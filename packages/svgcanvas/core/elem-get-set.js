@@ -913,8 +913,8 @@ const buildPerspectiveTransform = (degX, degY, bbox) => {
     : Math.round(x !== 0 ? dX : dY)
 
   const parts = [`perspective(${d}px)`]
-  if (x !== 0) parts.push(`rotateY(${x}deg)`)   // X perspective → rotate around Y axis
-  if (y !== 0) parts.push(`rotateX(${y}deg)`)   // Y perspective → rotate around X axis
+  if (x !== 0) parts.push(`rotateY(${x}deg)`) // X perspective → rotate around Y axis
+  if (y !== 0) parts.push(`rotateX(${y}deg)`) // Y perspective → rotate around X axis
   return parts.join(' ')
 }
 
@@ -935,7 +935,7 @@ const setTransformInStyle = (styleStr, transformValue, cx, cy) => {
   if (transformValue) {
     parts.push(`transform:${transformValue}`)
     parts.push(`transform-origin:${cx}px ${cy}px`)
-    parts.push('backface-visibility:hidden')   // prevent back-face at extreme angles
+    parts.push('backface-visibility:hidden') // prevent back-face at extreme angles
   }
   return parts.join(';')
 }

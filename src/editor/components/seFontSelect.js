@@ -123,7 +123,7 @@ export class SeFontSelect extends HTMLElement {
   constructor () {
     super()
     this._shadow = this.attachShadow({ mode: 'open' })
-    this._options = []          // [{ value, label }]
+    this._options = [] // [{ value, label }]
     this._value = ''
     this._open = false
     this._query = ''
