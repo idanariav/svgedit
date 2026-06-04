@@ -54,6 +54,7 @@ Pick a topic and start drawing.
 - [Theme Toggle](theme-toggle.md) — light or dark editor
 
 ## Files & history
+- [Frame](frame.md) — mark a region to export on its own
 - [Export](export.md) — save as PNG, JPG, WebP, or PDF
 - [Open, Save & Import](open-save-import.md) — editable SVG files
 - [Editing Basics](editing-basics.md) — undo, redo, clone, delete
