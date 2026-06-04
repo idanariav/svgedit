@@ -197,6 +197,36 @@ Entry points: `src/editor/index.html` (dev + ES build) · `iife-index.html` (IIF
 
 ---
 
+## Host bridge (`window.svgEditHost`)
+
+An **optional, feature-detected** global an embedding host (e.g. the Obsidian
+plugin) may install so the editor can reach host-only resources. It is
+deliberately host-agnostic — no Obsidian naming — so it respects the repo
+boundary. When the global is absent, all dependent UI is hidden and standalone
+svgedit is unchanged.
+
+Methods (all optional, async):
+
+| Method | Returns | Used by |
+|---|---|---|
+| `pickVaultImage()` | `{ dataUrl, link } \| null` | Image dialog "Import from vault" |
+| `pickVaultFile()` | `{ link } \| null` | "Add to Shape Library" link control |
+
+**Provenance stamping — `data-vault-link`.** Both flows record the returned
+`link` as a `data-vault-link` attribute on the inserted element(s):
+
+- Image import → stamps the single `<image>` (`dialogs/insertImage.js`).
+- Shape insert → stamps the imported root **and every descendant**
+  (`extensions/ext-shapes/ext-shapes.js`) so the link survives ungroup / partial
+  deletion; it disappears only when the last stamped element is gone.
+
+`data-*` attributes round-trip through sanitize (explicit bypass in
+`packages/svgcanvas/core/sanitize.js`) and `getSvgString()` serialization — the
+same mechanism `data-frame` (frame export) relies on. The host reads the
+attribute back from the serialized SVG on save; svgedit emits no events for it.
+
+---
+
 ## Event Flow Example: Draw a Rectangle
 
 ```

@@ -881,6 +881,7 @@ export class SeShapeLibrary extends HTMLElement {
           isUserShape: true,
           svgContent: shapeData.svgContent,
           bbox: shapeData.bbox,
+          linkedFile: shapeData.linkedFile,
           categoryId: this._categoryId,
           shapeId: this._selectedId
         }

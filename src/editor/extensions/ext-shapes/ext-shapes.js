@@ -93,6 +93,19 @@ export default {
             `translate(${x},${y}) scale(0.005) translate(${-bbox.x},${-bbox.y})`
           )
           canv.recalculateDimensions(imported)
+
+          // Stamp a provenance link onto the imported root AND every descendant.
+          // Stamping every element (not just the wrapper) keeps the link alive
+          // through ungroup / partial deletion — the embedding host's save-time
+          // scan only drops the link once the last stamped element is gone.
+          if (_userShapeData.linkedFile) {
+            const stamp = el => {
+              el.setAttribute('data-vault-link', _userShapeData.linkedFile)
+              for (const child of el.children) stamp(child)
+            }
+            stamp(imported)
+          }
+
           curShape = imported
         } else {
           // ── Built-in path-based shape (existing flow) ────────────────────────

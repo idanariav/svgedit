@@ -81,7 +81,7 @@ Use `S.importLocale()` in `init()` to load the appropriate file.
 | `ext-overview_window` | Mini canvas preview in side panel with draggable viewport indicator | `ext-overview_window.js` |
 | `ext-panning` | Hand/pan tool for touch and tablet navigation | `ext-panning.js` |
 | `ext-polystar` | Star tool (points, radius multiplier, radial shift) and Polygon tool (sides) | `ext-polystar.js` |
-| `ext-shapes` | Shape library modal — categorised pre-made SVG shapes (clipart) | `ext-shapes.js` |
+| `ext-shapes` | Shape library modal — categorised pre-made SVG shapes (clipart). Also user-saved shapes (`userShapes.js`, `localStorage`); a saved shape may carry an optional `linkedFile` (a host-provided vault link via `window.svgEditHost.pickVaultFile`) which is stamped as `data-vault-link` on the imported root + every descendant on insert | `ext-shapes.js`, `userShapes.js` |
 | `ext-storage` | Auto-save to `localStorage`; prompts to restore session on page load | `ext-storage.js` |
 | `ext-theme-toggle` | Light/dark theme toggle button injected into `#theme_panel` in top toolbar | `ext-theme-toggle.js` |
 | `ext-shadow` | Drop shadow on any single selected element — offset X/Y, blur, opacity, color; uses `<feDropShadow>` filter in `<defs>` | `ext-shadow.js` |

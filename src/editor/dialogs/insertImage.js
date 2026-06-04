@@ -8,9 +8,12 @@
  * is inserted so the user still gets an editable element.
  *
  * @param {string} href - A data URL or remote image URL to use as the source.
+ * @param {{ vaultLink?: string }} [opts] - Optional extras. When `vaultLink` is
+ *   set, the inserted `<image>` is stamped with `data-vault-link` so an embedding
+ *   host can track the image's provenance.
  * @returns {void}
  */
-export const insertImageFromHref = (href) => {
+export const insertImageFromHref = (href, opts = {}) => {
   const svgCanvas = svgEditor.svgCanvas
 
   /**
@@ -31,6 +34,7 @@ export const insertImageFromHref = (href) => {
       }
     })
     svgCanvas.setHref(newImage, href)
+    if (opts.vaultLink) newImage.setAttribute('data-vault-link', opts.vaultLink)
     svgCanvas.selectOnly([newImage])
     svgCanvas.alignSelectedElements('m', 'page')
     svgCanvas.alignSelectedElements('c', 'page')

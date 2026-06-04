@@ -695,7 +695,7 @@ class EditorStartup {
     const result = await this._showAddToLibraryDialog()
     if (!result) return
 
-    const { label, category } = result
+    const { label, category, linkedFile } = result
     if (!label || !category) return
 
     const svgContent = new XMLSerializer().serializeToString(targetElem)
@@ -704,7 +704,8 @@ class EditorStartup {
       category,
       label,
       svgContent,
-      bbox: { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height }
+      bbox: { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height },
+      linkedFile
     })
 
     // Notify the shape library component to refresh
@@ -716,7 +717,7 @@ class EditorStartup {
 
   /**
    * Show a native <dialog> prompting for a shape label and category.
-   * @returns {Promise<{label: string, category: string}|null>}
+   * @returns {Promise<{label: string, category: string, linkedFile: ?string}|null>}
    */
   _showAddToLibraryDialog () {
     return new Promise((resolve) => {
@@ -748,6 +749,25 @@ class EditorStartup {
         '<option value="__new__">Other…</option>'
       ].join('')
 
+      // Optional vault-file link — only when an embedding host can pick one.
+      const hasVault = typeof window.svgEditHost?.pickVaultFile === 'function'
+      const vaultControl = hasVault
+        ? `
+        <div style="margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
+          <span style="display:block;margin-bottom:4px">Linked vault file (optional)</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="_asl_vault_link" type="text" readonly placeholder="None"
+                   style="${inputStyle};margin-top:0;flex:1"/>
+            <button id="_asl_vault_btn" type="button"
+                    style="padding:7px 12px;border-radius:7px;border:1px solid var(--chrome-border,#DDE1E7);
+                           background:transparent;color:var(--fg,#1B1F24);font-size:13px;cursor:pointer;
+                           font-family:inherit;white-space:nowrap">
+              Link…
+            </button>
+          </div>
+        </div>`
+        : ''
+
       const dlg = document.createElement('dialog')
       dlg.style.cssText = [
         'padding:24px',
@@ -777,6 +797,7 @@ class EditorStartup {
                  autocomplete="off"
                  style="${inputStyle};margin-top:6px;display:${noExisting ? 'block' : 'none'}"/>
         </label>
+        ${vaultControl}
         <div style="display:flex;justify-content:flex-end;gap:8px">
           <button id="_asl_cancel"
                   style="padding:7px 18px;border-radius:7px;border:1px solid var(--chrome-border,#DDE1E7);
@@ -813,6 +834,18 @@ class EditorStartup {
       const getCategory = () =>
         select.value === '__new__' ? newInput.value.trim() : select.value
 
+      // Optional provenance link chosen via the host picker.
+      let linkedFile = null
+      if (hasVault) {
+        const linkInput = dlg.querySelector('#_asl_vault_link')
+        dlg.querySelector('#_asl_vault_btn').addEventListener('click', async () => {
+          const r = await window.svgEditHost?.pickVaultFile?.()
+          if (!r) return
+          linkedFile = r.link || null
+          linkInput.value = linkedFile || ''
+        })
+      }
+
       const cleanup = (value) => {
         dlg.close()
         document.body.removeChild(dlg)
@@ -824,7 +857,7 @@ class EditorStartup {
       dlg.querySelector('#_asl_ok').addEventListener('click', () => {
         const label = dlg.querySelector('#_asl_label').value.trim()
         const category = getCategory()
-        cleanup(label && category ? { label, category } : null)
+        cleanup(label && category ? { label, category, linkedFile } : null)
       })
 
       // Escape key

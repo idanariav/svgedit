@@ -22,7 +22,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_circle` | Circle | — | Sub-tool of ellipse flyout |
 | `tool_fhellipse` | Freehand ellipse | — | Sub-tool of ellipse flyout |
 | `tool_text` | Text | T | Add/edit text elements |
-| `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL) or URL. Inserts a centered image; no draw mode, no native prompt. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertImageFromHref` (`dialogs/insertImage.js`) |
+| `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL), URL, or **Import from vault** (only when a host provides `window.svgEditHost.pickVaultImage` — see [architecture.md](architecture.md) "Host bridge"). Inserts a centered image; no draw mode, no native prompt. A vault import carries a provenance `vaultLink` through the dialog `change` event → `handleImageImport` → `insertImageFromHref(href, { vaultLink })`, which stamps `data-vault-link` on the `<image>`. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertImageFromHref` (`dialogs/insertImage.js`) |
 
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
@@ -240,6 +240,7 @@ Flying button (left panel):
 
 ### ext-shapes — Shape Library (`extensions/ext-shapes/`)
 - **Shape Library** (`tool_shapelib`): Opens modal with categorized pre-made SVG shapes
+- **User shapes** (`extensions/ext-shapes/userShapes.js`, `localStorage` key `svg-edit-user-shapes`): "Add to Shape Library" (`EditorStartup._showAddToLibraryDialog`) saves the selection as `{ svgContent, bbox, linkedFile? }`. When a host exposes `window.svgEditHost.pickVaultFile`, the dialog shows an optional **Linked vault file** control; the chosen link is persisted as `linkedFile` and threaded through the `shape-insert` event detail. On insert, `ext-shapes.js` stamps `data-vault-link` onto the imported root **and every descendant** so the link survives ungroup / partial deletion (see [architecture.md](architecture.md) "Host bridge").
 
 ### ext-connector — Connector Lines (`extensions/ext-connector/`)
 - Adds a connector drawing mode for creating auto-updating diagram connector lines between objects

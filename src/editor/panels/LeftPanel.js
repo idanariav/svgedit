@@ -148,7 +148,7 @@ class LeftPanel {
    */
   handleImageImport (e) {
     if (e?.detail?.trigger !== 'ok' || !e?.detail?.href) return
-    insertImageFromHref(e.detail.href)
+    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink })
   }
 
   /**

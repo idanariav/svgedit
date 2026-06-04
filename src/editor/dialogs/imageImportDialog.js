@@ -34,8 +34,12 @@ export class SeImageImportDialog extends HTMLElement {
     this.$error = this._shadowRoot.querySelector('#image_import_error')
     this.$cancelBtn = this._shadowRoot.querySelector('#image_import_cancel')
     this.$okBtn = this._shadowRoot.querySelector('#image_import_ok')
+    this.$vaultOr = this._shadowRoot.querySelector('#image_vault_or')
+    this.$vaultBtn = this._shadowRoot.querySelector('#image_vault_btn')
     // pending href to insert (data URL for files, raw URL for the URL field)
     this.href = ''
+    // optional provenance link carried alongside a vault-imported image
+    this.vaultLink = ''
   }
 
   /**
@@ -78,6 +82,11 @@ export class SeImageImportDialog extends HTMLElement {
           // tokens resolve to the right palette (the dialog lives outside the
           // themed `.svg_editor` scope).
           this.classList.toggle('theme-dark', !!document.querySelector('.svg_editor')?.classList.contains('theme-dark'))
+          // Reveal the "Import from vault" option only when an embedding host
+          // exposes a picker. Standalone svgedit keeps just file/URL.
+          const hasVault = typeof window.svgEditHost?.pickVaultImage === 'function'
+          this.$vaultBtn.style.display = hasVault ? '' : 'none'
+          this.$vaultOr.style.display = hasVault ? '' : 'none'
           this.$dialog.open()
         } else {
           this.$dialog.close()
@@ -134,6 +143,7 @@ export class SeImageImportDialog extends HTMLElement {
    */
   reset () {
     this.href = ''
+    this.vaultLink = ''
     this.$fileInput.value = ''
     this.$urlInput.value = ''
     this.$previewRow.classList.remove('show')
@@ -166,6 +176,8 @@ export class SeImageImportDialog extends HTMLElement {
    */
   handleFile (file) {
     if (!file || !file.type.includes('image')) return
+    // A locally-picked file has no vault provenance; drop any stale link.
+    this.vaultLink = ''
     const reader = new FileReader()
     reader.onloadend = ({ target: { result } }) => {
       this.showPreview(result, file.name)
@@ -223,6 +235,8 @@ export class SeImageImportDialog extends HTMLElement {
         this.reset()
         return
       }
+      // A pasted URL has no vault provenance; drop any stale link.
+      this.vaultLink = ''
       // probe the URL; only enable insert once it loads
       const probe = new Image()
       probe.onload = () => this.showPreview(url)
@@ -242,6 +256,15 @@ export class SeImageImportDialog extends HTMLElement {
       }
     })
 
+    // Vault import — delegates to the embedding host's picker. The host returns
+    // a data URL (embedded inline) plus a provenance `link` to record.
+    svgEditor.$click(this.$vaultBtn, async () => {
+      const r = await window.svgEditHost?.pickVaultImage?.()
+      if (!r) return
+      this.vaultLink = r.link || ''
+      this.showPreview(r.dataUrl)
+    })
+
     // Footer + close
     svgEditor.$click(this.$cancelBtn, close)
     svgEditor.$click(this.$closeBtn, close)
@@ -249,7 +272,7 @@ export class SeImageImportDialog extends HTMLElement {
     svgEditor.$click(this.$okBtn, () => {
       if (!this.href) return
       this.dispatchEvent(new CustomEvent('change', {
-        detail: { trigger: 'ok', href: this.href }
+        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined }
       }))
       close()
     })

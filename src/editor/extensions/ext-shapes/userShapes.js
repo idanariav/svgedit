@@ -7,7 +7,9 @@
  *     categories: string[],        // ordered list of user-defined category names
  *     shapes: {
  *       [category]: {
- *         [label]: { svgContent: string, bbox: { x, y, width, height } }
+ *         // `linkedFile` is optional — a provenance link an embedding host can
+ *         // stamp onto every inserted element (see ext-shapes.js).
+ *         [label]: { svgContent: string, bbox: { x, y, width, height }, linkedFile?: string }
  *       }
  *     }
  *   }
@@ -75,9 +77,9 @@ export function saveUserShapes (store) {
 
 /**
  * Add (or overwrite) a shape. Creates the category if it doesn't exist.
- * @param {{ category: string, label: string, svgContent: string, bbox: {x,y,width,height} }} opts
+ * @param {{ category: string, label: string, svgContent: string, bbox: {x,y,width,height}, linkedFile?: ?string }} opts
  */
-export function addUserShape ({ category, label, svgContent, bbox }) {
+export function addUserShape ({ category, label, svgContent, bbox, linkedFile }) {
   const store = loadUserShapes()
 
   // Normalize: trim whitespace and lowercase so "Animals" and "animals" merge
@@ -90,7 +92,9 @@ export function addUserShape ({ category, label, svgContent, bbox }) {
     store.shapes[category] = {}
   }
 
-  store.shapes[category][label] = { svgContent, bbox }
+  const entry = { svgContent, bbox }
+  if (linkedFile) entry.linkedFile = linkedFile
+  store.shapes[category][label] = entry
   saveUserShapes(store)
 }
 

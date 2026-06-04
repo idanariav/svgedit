@@ -196,6 +196,26 @@
         box-shadow: 0 0 0 3px var(--accent-ring, rgba(41, 98, 255, 0.16));
     }
 
+    /* Vault import button (shown only when a host bridge is present) */
+    #image_vault_btn {
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        border: 1px solid var(--field-border, #DDE1E7);
+        background: var(--field-bg, #FFFFFF);
+        color: var(--fg, #1B1F24);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 9px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: border-color .12s, background .12s;
+    }
+
+    #image_vault_btn:hover {
+        border-color: var(--accent, #2962FF);
+    }
+
     /* Preview */
     #image_preview_row {
         display: none;
@@ -305,6 +325,9 @@
 
             <label id="image_url_label" for="image_url_input">Image URL</label>
             <input type="text" id="image_url_input" placeholder="Paste an image URL" />
+
+            <div class="image_import_or" id="image_vault_or" style="display:none"><span>or</span></div>
+            <button type="button" id="image_vault_btn" style="display:none">Import from vault…</button>
 
             <div id="image_preview_row">
                 <img id="image_preview" alt="" />
