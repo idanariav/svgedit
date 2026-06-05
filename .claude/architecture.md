@@ -221,18 +221,23 @@ that select how the drawing is inserted:
 - **Editable (whole-drawing unlocked)** — `{ dataUrl, link, editableSvg }` where
   `editableSvg` is the full `<svg>…</svg>` source. When that field is a
   non-empty string the editor inserts the drawing as **real, editable elements**
-  via `insertSvgElements` (`dialogs/insertImage.js`): a single wrapper `<g>`
-  holding the source's shapes/paths/text + `<defs>`, IDs uniquified, centered on
-  page, inserted as one undoable `BatchCommand`. `editable` implies unlocked, so
-  `locked` is ignored and `data-vault-locked` is never set. `dataUrl` is still
-  used for the dialog's preview thumbnail.
+  via `insertSvgElements` (`dialogs/insertImage.js`): the source's drawable
+  top-level elements go in as **individual, directly-selectable** elements in the
+  current layer (NOT wrapped in one group — wrapping made multi-object drawings
+  select as one giant group with grips in empty canvas and shapes unclickable);
+  paint-server/defs content goes to the canvas `<defs>`. IDs are uniquified
+  together, the import is centered on page and multi-selected (so it still moves
+  as a unit right after import), and recorded as one undoable `BatchCommand`.
+  `editable` implies unlocked, so `locked` is ignored and `data-vault-locked` is
+  never set. `dataUrl` is still used for the dialog's preview thumbnail.
 
 **Provenance stamping — `data-vault-link`.** All flows record the returned
 `link` as a `data-vault-link` attribute on the inserted element(s):
 
 - Image import → stamps the single `<image>` (`dialogs/insertImage.js`).
-- Editable SVG import → stamps the wrapper `<g>` only (`dialogs/insertImage.js`);
-  it is never re-baked, so no per-descendant stamping is needed.
+- Editable SVG import → stamps each inserted top-level element
+  (`dialogs/insertImage.js`); the host's backlink reconciler dedupes by link
+  value, so the repeats collapse to one backlink. Never re-baked.
 - Shape insert → stamps the imported root **and every descendant**
   (`extensions/ext-shapes/ext-shapes.js`) so the link survives ungroup / partial
   deletion; it disappears only when the last stamped element is gone.

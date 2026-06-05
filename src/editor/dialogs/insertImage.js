@@ -60,19 +60,23 @@ export const insertImageFromHref = (href, opts = {}) => {
 
 /**
  * Insert the contents of an SVG document onto the canvas as real, editable
- * elements wrapped in a single `<g>` (a movable/resizable group of
- * paths/shapes/text), rather than a flattened `<image>` embed.
+ * elements, rather than a flattened `<image>` embed.
  *
- * This backs the host plugin's "Unlocked" import mode: the user gets one
- * selected group that resizes/moves as a unit and can be entered (double-click)
- * or ungrouped to edit individual shapes. Locked imports keep using
- * `insertImageFromHref`.
+ * This backs the host plugin's "Unlocked" import mode. The source's drawable
+ * top-level elements are inserted as **individual, directly-selectable**
+ * elements in the current layer (NOT wrapped in one group — that would make a
+ * multi-object drawing select as a single giant group with grips floating in
+ * empty canvas and individual shapes unselectable). They are multi-selected
+ * right after import so they still move together, but each is independently
+ * clickable afterwards. Locked imports keep using `insertImageFromHref`.
  *
  * @param {string} svgString - Full `<svg>…</svg>` source to insert.
  * @param {{ vaultLink?: string }} [opts] - Optional extras. When `vaultLink` is
- *   set, the wrapper `<g>` is stamped with `data-vault-link` so an embedding
- *   host can track provenance. No `data-vault-locked` is set — editable
- *   imports are always unlocked and never re-baked from the source.
+ *   set, every inserted top-level element is stamped with `data-vault-link` so
+ *   an embedding host can track provenance (the host's backlink reconciler
+ *   dedupes by link value, so repeats collapse to one backlink). No
+ *   `data-vault-locked` is set — editable imports are always unlocked and never
+ *   re-baked from the source.
  * @returns {void}
  */
 export const insertSvgElements = (svgString, opts = {}) => {
@@ -83,62 +87,85 @@ export const insertSvgElements = (svgString, opts = {}) => {
   const root = parsed.documentElement
   if (!root || root.getElementsByTagName('parsererror').length) return
 
-  const wrapper = doc.createElementNS(svgCanvas.NS.SVG, 'g')
-
-  // Move the source's <defs> content in first so gradient/filter/marker/<use>
-  // references survive (uniquifyElems remaps url(#…)/href within the subtree).
-  root.querySelectorAll(':scope > defs').forEach((defs) => {
-    Array.from(defs.children).forEach((node) => {
-      wrapper.appendChild(doc.adoptNode(node))
-    })
-  })
-
-  // Collect the visible content. Prefer the children of each top-level layer
-  // group; fall back to the root's element children when there are no layers.
-  const layers = Array.from(root.children).filter(
-    (n) => n.tagName === 'g' && n.classList.contains('layer')
-  )
-  const skip = new Set(['title', 'defs', 'metadata'])
-  if (layers.length) {
-    layers.forEach((layer) => {
-      Array.from(layer.children).forEach((node) => {
-        if (node.tagName !== 'title') wrapper.appendChild(doc.adoptNode(node))
-      })
-    })
-  } else {
-    Array.from(root.children).forEach((node) => {
-      if (!skip.has(node.tagName)) wrapper.appendChild(doc.adoptNode(node))
+  // Split the source into defs/paint-server content (goes to <defs>) and
+  // drawable top-level elements (go to the layer). `<defs>` may sit at the root
+  // or, rarely, inside a layer group — route its children to defs either way.
+  const defsNodes = []
+  const drawNodes = []
+  const collectDefs = (container) => {
+    Array.from(container.children).forEach((node) => {
+      if (node.localName === 'defs') {
+        Array.from(node.children).forEach((d) => defsNodes.push(d))
+      }
     })
   }
+  const collectDrawables = (container) => {
+    Array.from(container.children).forEach((node) => {
+      const tag = node.localName
+      if (tag === 'title' || tag === 'metadata' || tag === 'defs') return
+      drawNodes.push(node)
+    })
+  }
+  const layers = Array.from(root.children).filter(
+    (n) => n.localName === 'g' && n.classList.contains('layer')
+  )
+  // The root-level <defs> sits alongside the layers, so scan it regardless of
+  // whether the drawables come from layers or the root.
+  collectDefs(root)
+  if (layers.length) {
+    layers.forEach(collectDefs)
+    layers.forEach(collectDrawables)
+  } else {
+    collectDrawables(root)
+  }
 
-  wrapper.id = svgCanvas.getNextId()
-  svgCanvas.getCurrentDrawing().getCurrentLayer().appendChild(wrapper)
+  if (!drawNodes.length) return
 
-  // Every visible descendant needs an id so uniquifyElems can reassign it a
-  // fresh one (and keep internal references consistent).
-  wrapper.querySelectorAll('*').forEach((el) => {
+  // Adopt everything into a detached temp <g> and uniquify there so ids and
+  // url(#…)/href references remap together across both defs and drawables.
+  const temp = doc.createElementNS(svgCanvas.NS.SVG, 'g')
+  ;[...defsNodes, ...drawNodes].forEach((node) => {
+    temp.appendChild(doc.adoptNode(node))
+  })
+  temp.querySelectorAll('*').forEach((el) => {
     if (!el.id) el.id = svgCanvas.getNextId()
   })
-  svgCanvas.uniquifyElems(wrapper)
+  temp.id = svgCanvas.getNextId()
+  svgCanvas.uniquifyElems(temp)
 
-  if (opts.vaultLink) wrapper.setAttribute('data-vault-link', opts.vaultLink)
+  // Distribute: defs/paint-server elements into the canvas <defs>, drawable
+  // elements into the current layer (stamped with the provenance link).
+  const canvasDefs = svgCanvas.findDefs()
+  defsNodes.forEach((node) => canvasDefs.appendChild(node))
 
-  svgCanvas.selectOnly([wrapper])
+  const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+  drawNodes.forEach((node) => {
+    layer.appendChild(node)
+    if (opts.vaultLink) node.setAttribute('data-vault-link', opts.vaultLink)
+  })
 
-  // Center on the page, same as insertImageFromHref's align('m','page') +
-  // align('c','page'), but as a single non-undoable move so it can be bundled
-  // with the insert into one history entry (one undo reverses the whole import).
+  svgCanvas.selectOnly(drawNodes)
+
+  // Center the whole import on the page (combined bbox), same idea as
+  // insertImageFromHref's align('m'/'c','page'), as a single non-undoable move
+  // so it bundles into one history entry.
   const batchCmd = new svgCanvas.history.BatchCommand('Insert SVG elements')
-  batchCmd.addSubCommand(new svgCanvas.history.InsertElementCommand(wrapper))
-  const bbox = svgCanvas.getStrokedBBox([wrapper])
+  ;[...defsNodes, ...drawNodes].forEach((node) => {
+    batchCmd.addSubCommand(new svgCanvas.history.InsertElementCommand(node))
+  })
+  const bbox = svgCanvas.getStrokedBBox(drawNodes)
   if (bbox) {
     const dx = svgCanvas.getContentW() / 2 - (bbox.x + bbox.width / 2)
     const dy = svgCanvas.getContentH() / 2 - (bbox.y + bbox.height / 2)
-    const moveCmd = svgCanvas.moveSelectedElements([dx], [dy], false)
+    const moveCmd = svgCanvas.moveSelectedElements(
+      drawNodes.map(() => dx),
+      drawNodes.map(() => dy),
+      false
+    )
     if (moveCmd && !moveCmd.isEmpty()) batchCmd.addSubCommand(moveCmd)
   }
   svgCanvas.addCommandToHistory(batchCmd)
-  svgCanvas.call('changed', [wrapper])
+  svgCanvas.call('changed', drawNodes)
 
   svgEditor.topPanel.updateContextPanel()
 }
