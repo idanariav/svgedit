@@ -44,7 +44,7 @@ svgedit/
 │   │   ├── editorPreferencesDialog.js
 │   │   ├── exportDialog.js
 │   │   ├── imageImportDialog.js     # Insert-image dialog (file upload + URL)
-│   │   ├── insertImage.js           # insertImageFromHref() shared helper
+│   │   ├── insertImage.js           # insertImageFromHref() + insertSvgElements() helpers
 │   │   ├── svgSourceDialog.js
 │   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js
 │   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)
@@ -209,13 +209,30 @@ Methods (all optional, async):
 
 | Method | Returns | Used by |
 |---|---|---|
-| `pickVaultImage()` | `{ dataUrl, link } \| null` | Image dialog "Import from vault" |
+| `pickVaultImage()` | `{ dataUrl, link, locked?, editableSvg? } \| null` | Image dialog "Import from vault" |
 | `pickVaultFile()` | `{ link } \| null` | "Add to Shape Library" link control |
 
-**Provenance stamping — `data-vault-link`.** Both flows record the returned
+**Locked vs. unlocked imports.** `pickVaultImage()` returns one of two shapes
+that select how the drawing is inserted:
+
+- **Embed (locked / raster / frame crop)** — `{ dataUrl, link, locked? }`. Goes
+  through `insertImageFromHref` as a single `<image>`. `locked` additionally
+  stamps `data-vault-locked` so the host re-bakes content from source.
+- **Editable (whole-drawing unlocked)** — `{ dataUrl, link, editableSvg }` where
+  `editableSvg` is the full `<svg>…</svg>` source. When that field is a
+  non-empty string the editor inserts the drawing as **real, editable elements**
+  via `insertSvgElements` (`dialogs/insertImage.js`): a single wrapper `<g>`
+  holding the source's shapes/paths/text + `<defs>`, IDs uniquified, centered on
+  page, inserted as one undoable `BatchCommand`. `editable` implies unlocked, so
+  `locked` is ignored and `data-vault-locked` is never set. `dataUrl` is still
+  used for the dialog's preview thumbnail.
+
+**Provenance stamping — `data-vault-link`.** All flows record the returned
 `link` as a `data-vault-link` attribute on the inserted element(s):
 
 - Image import → stamps the single `<image>` (`dialogs/insertImage.js`).
+- Editable SVG import → stamps the wrapper `<g>` only (`dialogs/insertImage.js`);
+  it is never re-baked, so no per-descendant stamping is needed.
 - Shape insert → stamps the imported root **and every descendant**
   (`extensions/ext-shapes/ext-shapes.js`) so the link survives ungroup / partial
   deletion; it disappears only when the last stamped element is gone.

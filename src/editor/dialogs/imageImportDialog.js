@@ -40,6 +40,10 @@ export class SeImageImportDialog extends HTMLElement {
     this.href = ''
     // optional provenance link carried alongside a vault-imported image
     this.vaultLink = ''
+    // whether a vault-imported image should be inserted as a "locked" embed
+    this.locked = false
+    // full <svg>…</svg> source for an editable (unlocked) whole-drawing import
+    this.editableSvg = ''
   }
 
   /**
@@ -144,6 +148,8 @@ export class SeImageImportDialog extends HTMLElement {
   reset () {
     this.href = ''
     this.vaultLink = ''
+    this.locked = false
+    this.editableSvg = ''
     this.$fileInput.value = ''
     this.$urlInput.value = ''
     this.$previewRow.classList.remove('show')
@@ -178,6 +184,8 @@ export class SeImageImportDialog extends HTMLElement {
     if (!file || !file.type.includes('image')) return
     // A locally-picked file has no vault provenance; drop any stale link.
     this.vaultLink = ''
+    this.locked = false
+    this.editableSvg = ''
     const reader = new FileReader()
     reader.onloadend = ({ target: { result } }) => {
       this.showPreview(result, file.name)
@@ -237,6 +245,8 @@ export class SeImageImportDialog extends HTMLElement {
       }
       // A pasted URL has no vault provenance; drop any stale link.
       this.vaultLink = ''
+      this.locked = false
+      this.editableSvg = ''
       // probe the URL; only enable insert once it loads
       const probe = new Image()
       probe.onload = () => this.showPreview(url)
@@ -262,6 +272,10 @@ export class SeImageImportDialog extends HTMLElement {
       const r = await window.svgEditHost?.pickVaultImage?.()
       if (!r) return
       this.vaultLink = r.link || ''
+      // An editable (unlocked) whole-drawing import carries the full <svg>
+      // source; `locked` is irrelevant in that case (editable implies unlocked).
+      this.editableSvg = r.editableSvg || ''
+      this.locked = this.editableSvg ? false : !!r.locked
       this.showPreview(r.dataUrl)
     })
 
@@ -272,7 +286,7 @@ export class SeImageImportDialog extends HTMLElement {
     svgEditor.$click(this.$okBtn, () => {
       if (!this.href) return
       this.dispatchEvent(new CustomEvent('change', {
-        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined }
+        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, editableSvg: this.editableSvg || undefined }
       }))
       close()
     })

@@ -1,6 +1,6 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
-import { insertImageFromHref } from '../dialogs/insertImage.js'
+import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'
 
 const { $id, $qa, $click } = SvgCanvas
 
@@ -148,7 +148,13 @@ class LeftPanel {
    */
   handleImageImport (e) {
     if (e?.detail?.trigger !== 'ok' || !e?.detail?.href) return
-    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink })
+    // An editable (unlocked) whole-drawing import inserts real SVG elements;
+    // everything else (locked embeds, raster images, frame crops) stays <image>.
+    if (e.detail.editableSvg) {
+      insertSvgElements(e.detail.editableSvg, { vaultLink: e.detail.vaultLink })
+      return
+    }
+    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked })
   }
 
   /**
