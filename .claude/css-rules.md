@@ -493,4 +493,6 @@ se-button[pressed]{ color: var(--accent); }
 se-button img { filter: var(--icon-filter); }  /* ❌ retired */
 ```
 
-Icons are injected by `src/editor/components/svgIconLoader.js` which fetches, normalises, and caches each SVG file.
+Icons are injected by `src/editor/components/svgIconLoader.js`, which normalises and caches each SVG. The SVG source is resolved from the **inlined** registry in `src/editor/images/iconRegistry.js` (bundled at build time); `fetch()` is only a fallback for `data:` URIs or icons absent from the registry.
+
+> **Stylesheet loading:** `svgedit.css` (which `@import`s `tablet.css`) is **not** loaded via `<link>`. It is imported as a string (`./svgedit.css?inline`) and injected once as `<style data-svgedit-css>` by `EditorStartup.injectSvgeditStyles()`, so the editor needs no runtime CSS file.

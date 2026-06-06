@@ -1,5 +1,6 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
+import { fetchSvgEl } from '../components/svgIconLoader.js'
 
 const { $id, $click } = SvgCanvas
 
@@ -298,11 +299,12 @@ class RightPanel {
       const layerVis = document.createElement('td')
       layerVis.className = (!drawing.getLayerVisibility(name)) ? 'layerinvis layervis' : 'layervis'
 
-      // fix the eye icon lost at right layers
-      const _eye = document.createElement('img')
-      _eye.src = './images/eye.svg'
+      // fix the eye icon lost at right layers (inline SVG from the bundle)
+      const _eye = document.createElement('span')
       _eye.style.width = '14px'
-      _eye.style.width = '14px'
+      _eye.style.height = '14px'
+      _eye.style.display = 'inline-block'
+      fetchSvgEl('eye.svg').then(svg => { if (svg) _eye.appendChild(svg) })
       layerVis.appendChild(_eye)
 
       const layerName = document.createElement('td')

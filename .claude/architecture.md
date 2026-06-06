@@ -129,7 +129,7 @@ src/editor/index.html
                     │     exported   → exportHandler()
                     │     ... (15+ events)
                     ├── readySignal()                // fire 'svgEditorReady' event
-                    ├── dynamically import each extension
+                    ├── resolve each extension from extensionRegistry.js (inlined)
                     └── setBackground()
 ```
 
@@ -175,7 +175,8 @@ src/editor/index.html
 ## Extension Plugin Lifecycle
 
 1. Host sets `setConfig({ extensions: ['ext-polystar', 'ext-grid', ...] })`
-2. `EditorStartup` dynamically imports each: `import('./extensions/ext-name/ext-name.js')`
+2. `EditorStartup` resolves each from the inlined `extensionRegistry.js` (eager
+   glob — bundled into `Editor.js`, no runtime fetch from `extPath`)
 3. Each extension default-exports `{ name: 'ext-name', init(S) { ... } }`
 4. `init(S)` receives a context object `S` with `svgCanvas`, `editor`, `addLangData`, etc.
 5. Extension can: add buttons to panels, register new `mode` handlers, listen for canvas events, inject UI HTML
@@ -190,15 +191,36 @@ See [extensions.md](extensions.md) for the full extension reference.
 npm run build
   ├── builds packages/svgcanvas  → dist/svgcanvas.js
   └── builds src/editor          → dist/editor/
-        ├── Editor.js            (ES module — for npm consumers)
-        ├── iife-Editor.js       (self-contained bundle — for <script> tag)
-        └── assets/              (CSS, icons, locale files)
+        ├── Editor.js            (self-contained ES module — all assets inlined)
+        ├── iife-Editor.js       (self-contained IIFE — for <script> tag)
+        └── *.html               (entry pages; copy-static.mjs)
 
 npm start           → Vite dev server on http://localhost:8000
 npm run build-docs  → JSDoc HTML docs
 ```
 
 Entry points: `src/editor/index.html` (dev + ES build) · `iife-index.html` (IIFE build) · `xdomain-index.html` (cross-domain iframe mode)
+
+### Self-contained bundle (no runtime asset folder)
+
+`Editor.js` inlines **every** asset so a consumer (e.g. the Obsidian plugin's
+esbuild) can bundle it into a single file with no `images/`/`extensions/`/CSS
+folder and **no custom loaders**. The inlining mechanism is Vite's
+`import.meta.glob({ eager: true })` / `?raw` / `?inline`, which Rollup resolves
+statically:
+
+| Asset | Inlined via | Entry point |
+|---|---|---|
+| Toolbar icons + cursors | `import.meta.glob('*.svg', '?raw')` | [`images/iconRegistry.js`](../src/editor/images/iconRegistry.js) → `svgIconLoader.js` |
+| Extensions | `import.meta.glob('ext-*/ext-*.js', eager)` | [`extensions/extensionRegistry.js`](../src/editor/extensions/extensionRegistry.js) |
+| Extension + UI locales | `import.meta.glob('locale/*.js', eager)` | each `ext-*.js`; `locale.js` |
+| `svgedit.css` (+ tablet) | `import css from './svgedit.css?inline'` | `EditorStartup.injectSvgeditStyles()` |
+| Shape library JSON | `import.meta.glob('shapelib/*.json', eager)` | `components/seShapeLibrary.js` |
+| Google-fonts catalog | static JSON import | `components/seFontLibrary.js` |
+
+Runtime `fetch()` survives only for genuinely external/dynamic content
+(Google-fonts network downloads, user-supplied SVG URLs) and as guarded
+fallbacks behind the inlined data.
 
 ---
 

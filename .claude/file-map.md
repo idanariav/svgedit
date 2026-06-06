@@ -65,7 +65,7 @@
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
 | `PaintBox.js` | `<se-paint-box>` | Fill/stroke paint control |
-| `svgIconLoader.js` | *(utility)* | Fetches, normalises, and caches SVG icons for inline injection |
+| `svgIconLoader.js` | *(utility)* | Normalises + caches SVG icons for inline injection; resolves source from the inlined `images/iconRegistry.js` (fetch fallback only) |
 
 ---
 
@@ -159,6 +159,13 @@ They recolor automatically via CSS `color:` property — no filter needed.
 
 Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `c_radius.svg`, `frame.svg` (Frame export-region tool)
 
+| File | Purpose |
+|------|---------|
+| `iconRegistry.js` | Inlines every `*.svg` + `cursors/*.svg` into the bundle (eager `?raw` glob); `getRawIcon()` / `getIconDataUri()` resolve icons with no runtime fetch |
+
+`extensions/extensionRegistry.js` does the equivalent for extensions (eager glob
+of `ext-*/ext-*.js`, bundled into `Editor.js`).
+
 ---
 
 ## Documentation — `docs/`
@@ -175,6 +182,7 @@ Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `
 | File | Purpose |
 |------|---------|
 | `vite.config.mjs` | Vite build config (ES + IIFE outputs, plugins, entry points) |
+| `scripts/copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are **not** copied) |
 | `package.json` | Scripts: `build`, `start` (dev server :8000), `build-docs` |
 | `packages/svgcanvas/package.json` | svgcanvas workspace package |
 | `CLAUDE.md` | This repo's coding guidelines for AI agents |

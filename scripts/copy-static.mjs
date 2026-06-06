@@ -7,16 +7,16 @@ const outDir = resolve(root, 'dist/editor')
 
 await mkdir(outDir, { recursive: true })
 
+// NOTE: CSS, images, extensions and locale files are now inlined into the
+// self-contained Editor.js bundle (see iconRegistry.js, extensionRegistry.js,
+// and the `?inline` / import.meta.glob imports), so they are no longer copied
+// as loose runtime assets.
 const targets = [
   ['src/editor/index.html', 'index.html'],
   ['src/editor/xdomain-index.html', 'xdomain-index.html'],
   ['src/editor/iife-index.html', 'iife-index.html'],
   ['src/editor/browser-not-supported.html', 'browser-not-supported.html'],
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
-  ['src/editor/svgedit.css', 'svgedit.css'],
-  ['src/editor/tablet.css', 'tablet.css'],
-  ['src/editor/images', 'images'],
-  ['src/editor/extensions', 'extensions'],
   // Test harness assets for Playwright (unit-style tests in browser)
   ['src/editor/tests', 'tests'],
   ['node_modules/pathseg/pathseg.js', 'tests/vendor/pathseg/pathseg.js']

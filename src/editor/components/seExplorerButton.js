@@ -1,4 +1,5 @@
 /* globals svgEditor */
+import { getIconDataUri } from '../images/iconRegistry.js'
 
 /**
  * @class ExplorerButton
@@ -83,7 +84,7 @@ export class ExplorerButton extends HTMLElement {
     .handle {
       height: 8px;
       width: 8px;
-      background-image: url(${imgPath}/handle.svg);
+      background-image: url("${getIconDataUri('handle.svg') ?? `${imgPath}/handle.svg`}");
       position:absolute;
       bottom: 0px;
       right: 0px;

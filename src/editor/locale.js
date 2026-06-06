@@ -67,7 +67,10 @@ export const putLocale = async function (givenParam, goodLangs) {
   if (!goodLangs.includes(langParam) && langParam !== 'test') {
     langParam = 'en'
   }
-  const module = await import(`./locale/lang.${encodeURIComponent(langParam)}.js`)
+  // UI translations are inlined into the bundle (statically resolved glob) so
+  // the editor needs no runtime locale/ folder. Falls back to English.
+  const locales = import.meta.glob('./locale/lang.*.js', { eager: true })
+  const module = locales[`./locale/lang.${langParam}.js`] || locales['./locale/lang.en.js']
   i18next.init({
     lng: langParam,
     debug: false,

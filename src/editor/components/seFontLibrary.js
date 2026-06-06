@@ -15,6 +15,9 @@
  */
 
 import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.js'
+// Inlined Google-fonts catalog (bundled at build time) — removes the runtime
+// fetch. The `catalog` attribute is still honoured as a fallback.
+import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'
 
 const CAT_LABELS = {
   handwriting: 'Handwriting',
@@ -190,12 +193,15 @@ export class SeFontLibrary extends HTMLElement {
   }
 
   async _loadCatalog () {
-    if (this._loaded || !this._catalogPath) return
+    if (this._loaded) return
     try {
-      const r = await fetch(this._catalogPath)
-      const json = await r.json()
-      this._fonts = json.fonts || []
-      this._categories = json.categories || []
+      let json = googleFontsCatalog
+      if (!json && this._catalogPath) {
+        const r = await fetch(this._catalogPath)
+        json = await r.json()
+      }
+      this._fonts = json?.fonts || []
+      this._categories = json?.categories || []
       this._loaded = true
     } catch (e) {
       console.error('SeFontLibrary: failed to load catalog', e)

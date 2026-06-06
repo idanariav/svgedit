@@ -18,6 +18,16 @@
 import { fetchSvgEl } from './svgIconLoader.js'
 import { loadUserShapes, removeUserShape } from '../extensions/ext-shapes/userShapes.js'
 
+// Inlined shape library data (bundled at build time). Keyed by file basename
+// without `.json` — e.g. `index`, `animal`, `arrow`. This removes the runtime
+// fetch of `shapelib/*.json`; the `lib` attribute is still honoured as a
+// fallback for custom external libraries.
+const shapeLibModules = import.meta.glob('../extensions/ext-shapes/shapelib/*.json', { eager: true, import: 'default' })
+const shapeLibData = {}
+for (const [p, data] of Object.entries(shapeLibModules)) {
+  shapeLibData[p.slice(p.lastIndexOf('/') + 1).replace(/\.json$/, '')] = data
+}
+
 // ── Category labels ─────────────────────────────────────────────────────────
 const CAT_LABELS = {
   basic: 'Basic',
@@ -561,14 +571,17 @@ export class SeShapeLibrary extends HTMLElement {
   // ── Data loading ───────────────────────────────────────────────────────────
   async _loadIndex () {
     if (!this._libPath) return
-    try {
-      const r = await fetch(`${this._libPath}index.json`)
-      const json = await r.json()
-      this._builtinCategories = json.lib || []
-    } catch (e) {
-      console.error('SeShapeLibrary: failed to load index', e)
-      this._builtinCategories = []
+    let json = shapeLibData.index
+    if (!json) {
+      try {
+        const r = await fetch(`${this._libPath}index.json`)
+        json = await r.json()
+      } catch (e) {
+        console.error('SeShapeLibrary: failed to load index', e)
+        json = { lib: [] }
+      }
     }
+    this._builtinCategories = json.lib || []
     this._loadUserShapesIntoMemory()
     this._rebuildCategoryList()
     if (this._categories.length > 0) {
@@ -583,18 +596,21 @@ export class SeShapeLibrary extends HTMLElement {
     if (this._catalog[catId]) return this._catalog[catId]
     // User categories are already loaded in memory — no fetch needed
     if (catId.startsWith('user:')) return this._catalog[catId] || null
-    try {
-      const r = await fetch(`${this._libPath}${catId}.json`)
-      const json = await r.json()
-      this._catalog[catId] = json
-      // Inject any user shapes that belong to this built-in category
-      const userShapes = this._userStore?.shapes?.[catId]
-      if (userShapes) this._injectUserShapesIntoCatalog(catId, userShapes)
-      return json
-    } catch (e) {
-      console.error(`SeShapeLibrary: failed to load category "${catId}"`, e)
-      return null
+    let json = shapeLibData[catId]
+    if (!json) {
+      try {
+        const r = await fetch(`${this._libPath}${catId}.json`)
+        json = await r.json()
+      } catch (e) {
+        console.error(`SeShapeLibrary: failed to load category "${catId}"`, e)
+        return null
+      }
     }
+    this._catalog[catId] = json
+    // Inject any user shapes that belong to this built-in category
+    const userShapes = this._userStore?.shapes?.[catId]
+    if (userShapes) this._injectUserShapesIntoCatalog(catId, userShapes)
+    return json
   }
 
   async _loadAllCategories () {

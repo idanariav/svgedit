@@ -5,6 +5,8 @@
  * Uses currentColor so icons inherit their color from CSS `color:` on the host.
  */
 
+import { getRawIcon } from '../images/iconRegistry.js'
+
 // Cache fetched+serialised SVG strings keyed by URL to avoid re-fetching
 const svgCache = new Map()
 
@@ -17,8 +19,13 @@ const svgCache = new Map()
 export async function fetchSvgEl (url) {
   if (!svgCache.has(url)) {
     try {
-      const res = await fetch(url)
-      const text = await res.text()
+      // Inlined icons resolve synchronously from the bundle; only fall back to
+      // fetch for data: URIs or icons not present in the registry.
+      let text = getRawIcon(url)
+      if (text == null) {
+        const res = await fetch(url)
+        text = await res.text()
+      }
       const parser = new DOMParser()
       const doc = parser.parseFromString(text, 'image/svg+xml')
       const svgEl = doc.querySelector('svg')

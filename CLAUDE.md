@@ -297,5 +297,12 @@ npm run build
 npm run sync-svgedit
 ```
 
-Commit here first, then commit the synced `svgedit-dist/` in the plugin with
-a message referencing this repo's commit.
+Commit here first, then commit the synced output in the plugin with a message
+referencing this repo's commit.
+
+> **Self-contained bundle:** `dist/editor/Editor.js` now inlines every asset
+> (icons, CSS, extensions, locales, shape library, fonts catalog). A consumer
+> only needs that **single file** — no `images/`/`extensions/`/CSS folder and no
+> custom esbuild loaders. See the "Self-contained bundle" section in
+> [`.claude/architecture.md`](.claude/architecture.md). The plugin's
+> `sync-svgedit` therefore only needs `Editor.js` (drop the asset-copy steps).

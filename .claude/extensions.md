@@ -51,19 +51,32 @@ export default {
 
 ### How Extensions Load
 
+Extensions are **inlined into the bundle** (no runtime fetch from `extPath`).
+They are statically resolved through
+[`extensions/extensionRegistry.js`](../src/editor/extensions/extensionRegistry.js),
+which eagerly globs every `ext-*/ext-*.js` so Rollup bundles them into the
+single `Editor.js`.
+
 1. Host calls `editor.setConfig({ extensions: ['ext-polystar', 'ext-grid', ...] })`
-2. `EditorStartup.init()` iterates the list and calls:
+2. `EditorStartup.extAndLocaleFunc()` iterates the list and resolves each from
+   the registry:
    ```js
-   const { default: ext } = await import(`./extensions/${name}/${name}.js`)
-   svgCanvas.addExtension(ext.name, ext.init)
+   const imported = getExtension(name)          // from extensionRegistry.js
+   svgCanvas.addExtension(imported.default.name, imported.default.init)
    ```
 3. `svgCanvas.addExtension()` calls `ext.init(S)` and stores returned hooks
 4. Canvas events then dispatch to all registered extension hooks
 
+> **Adding a new built-in extension:** drop it in `extensions/ext-<name>/` and
+> add its name to `defaultExtensions` in `ConfigObj.js`. The registry glob picks
+> it up automatically — no manual import needed.
+
 ### i18n in Extensions
 
-Each extension has a `locale/` subfolder with JSON files per language.
-Use `S.importLocale()` in `init()` to load the appropriate file.
+Each extension has a `locale/` subfolder with JS modules per language. These are
+**inlined** via `import.meta.glob('./locale/*.js', { eager: true })` inside each
+extension's `loadExtensionTranslation()` (falls back to `en`). There is no
+runtime `import(`./locale/${lang}.js`)` any more.
 
 ---
 

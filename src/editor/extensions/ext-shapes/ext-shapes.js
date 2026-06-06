@@ -8,16 +8,14 @@
  */
 const name = 'shapes'
 
-const loadExtensionTranslation = async function (svgEditor) {
-  let translationModule
+const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  try {
-    translationModule = await import(`./locale/${lang}.js`)
-  } catch (_error) {
-    console.warn(`Missing translation (${lang}) for ${name} - using 'en'`)
-    translationModule = await import('./locale/en.js')
+  // Locale files are inlined into the bundle (statically resolved glob).
+  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
+  if (translationModule) {
+    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
-  svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
 }
 
 export default {

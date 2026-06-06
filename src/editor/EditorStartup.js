@@ -11,6 +11,10 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import Rulers from './Rulers.js'
 import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
+import { getIconDataUri } from './images/iconRegistry.js'
+import { getExtension } from './extensions/extensionRegistry.js'
+// svgedit.css `@import`s tablet.css, so this single inline import carries both.
+import svgeditCss from './svgedit.css?inline'
 
 /**
    * @fires module:svgcanvas.SvgCanvas#event:svgEditorReady
@@ -42,6 +46,20 @@ const readySignal = () => {
   }
 }
 
+/**
+ * Inject the editor stylesheet (inlined into the bundle) into the document head
+ * once. Replaces the former `<link href="svgedit.css">` so the editor needs no
+ * runtime CSS file. Idempotent.
+ * @returns {void}
+ */
+const injectSvgeditStyles = () => {
+  if (document.querySelector('style[data-svgedit-css]')) return
+  const styleEl = document.createElement('style')
+  styleEl.setAttribute('data-svgedit-css', '')
+  styleEl.textContent = svgeditCss
+  document.head.append(styleEl)
+}
+
 const { $id, $click, convertUnit } = SvgCanvas
 
 /**
@@ -63,6 +81,7 @@ class EditorStartup {
   * @returns {void}
   */
   async init () {
+    injectSvgeditStyles()
     if ('localStorage' in window) {
       this.storage = window.localStorage
     }
@@ -894,8 +913,10 @@ class EditorStartup {
             /**
              * @type {module:SVGthis.ExtensionObject}
              */
-            // Vite cannot statically analyze these dynamic extension imports.
-            const imported = await import(/* @vite-ignore */ `${this.configObj.curConfig.extPath}/${encodeURIComponent(extname)}/${encodeURIComponent(extname)}.js`)
+            // Extensions are inlined into the bundle via extensionRegistry.js
+            // (statically resolved), so no runtime fetch from extPath is needed.
+            const imported = getExtension(extname)
+            if (!imported) throw new Error(`Unknown extension: ${extname}`)
             const { name = extname, init: initfn } = imported.default
             return this.addExtension(name, (initfn && initfn.bind(this)), { langParam: 'en' }) /** @todo  change to current lng */
           } catch (err) {
@@ -998,7 +1019,10 @@ class EditorStartup {
       case 'square':
       case 'star':
       case 'polygon':
-        cs = `url("./images/cursors/${mode}_cursor.svg"), crosshair`
+        {
+          const cur = getIconDataUri(`cursors/${mode}_cursor.svg`)
+          cs = cur ? `url("${cur}"), crosshair` : 'crosshair'
+        }
         break
       case 'text':
         // #TODO: Cursor should be changed back to default after text element was created
