@@ -43,6 +43,8 @@ export default class ConfigObj {
       bkgd_url: '',
       /** UI color theme: 'light' | 'dark' */
       theme: 'light',
+      /** Touch-first tablet shell on/off (see uiMode.js) */
+      tabletMode: false,
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',
       // ALERT NOTICES

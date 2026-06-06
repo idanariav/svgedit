@@ -1,0 +1,349 @@
+/* ============================================================
+   svgedit · Tablet Mode — touch-first shell
+   Everything here is scoped under `.svg_editor.ui-tablet`, set by
+   uiMode.js. Colors inherit from svgedit.css design tokens
+   (--accent, --chrome-bg, --fg, …); only geometry + visibility
+   change here. See: panels/TabletShell.js, uiMode.js.
+   ============================================================ */
+
+.svg_editor.ui-tablet {
+  /* touch sizing */
+  --hit: 56px;
+  --hit-sm: 46px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  /* Collapse the desktop grid: canvas fills the whole shell, the
+     command bar + sheet ride on top as an absolute overlay. */
+  grid-template-rows: 0 0 1fr 0;
+  grid-template-columns: 0 0 0 1fr 0;
+}
+
+/* Hide the desktop shells. Only one shell is interactive at a time. */
+.svg_editor.ui-tablet #tools_top,
+.svg_editor.ui-tablet #tools_left,
+.svg_editor.ui-tablet #sidepanels,
+.svg_editor.ui-tablet #tools_bottom,
+.svg_editor.ui-tablet #ruler_corner,
+.svg_editor.ui-tablet #ruler_x,
+.svg_editor.ui-tablet #ruler_y {
+  display: none !important;
+}
+
+/* The tablet shell only exists while the mode is on. */
+.svg_editor:not(.ui-tablet) .tablet-shell {
+  display: none;
+}
+
+/* Canvas clears the floating command bar; no browser pan/zoom hijack. */
+.svg_editor.ui-tablet #workarea {
+  padding: 84px 32px 32px;
+  touch-action: none;
+}
+
+/* Keep the SVG-Edit menu reachable (it owns the toggle back to desktop). */
+.svg_editor.ui-tablet #main_button {
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  z-index: 60;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+/* ---------- The shell overlay ---------- */
+.svg_editor.ui-tablet .tablet-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none; /* let the canvas underneath receive events */
+}
+.svg_editor.ui-tablet .tablet-shell > * {
+  pointer-events: auto;
+}
+
+/* ---------- Command bar ---------- */
+.svg_editor.ui-tablet .ts-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 0 150px; /* left pad reserves room for #main_button */
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--chrome-border);
+}
+.svg_editor.ui-tablet .ts-grow { flex: 1; }
+
+/* centered segmented tool group */
+.svg_editor.ui-tablet .ts-toolgroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--app-bg, var(--workarea-bg));
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--r-pill);
+  padding: 5px;
+}
+.svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 46px; height: 46px; border-radius: 99px; }
+.svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 24px; height: 24px; }
+
+.svg_editor.ui-tablet .ts-zlabel {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 46px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+.svg_editor.ui-tablet .ts-stylechip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--field-border);
+  border-radius: 50%;
+  background: var(--field-bg);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.svg_editor.ui-tablet .ts-stylechip .dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18);
+}
+.svg_editor.ui-tablet .ts-done {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  border: none;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+/* ---------- Generic tool button ---------- */
+.svg_editor.ui-tablet .tbtn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--icon);
+  width: var(--hit);
+  height: var(--hit);
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  transition: background .14s ease, color .14s ease, transform .08s ease;
+  flex: 0 0 auto;
+}
+.svg_editor.ui-tablet .tbtn svg { width: 26px; height: 26px; display: block; }
+.svg_editor.ui-tablet .tbtn:active { transform: scale(.92); }
+.svg_editor.ui-tablet .tbtn.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+.svg_editor.ui-tablet .tbtn:not(.is-active):hover {
+  background: var(--icon-hover-bg);
+  color: var(--icon-hover);
+}
+.svg_editor.ui-tablet .tbtn[disabled] { opacity: .32; pointer-events: none; }
+.svg_editor.ui-tablet .tbtn.sm { width: var(--hit-sm); height: var(--hit-sm); border-radius: 10px; }
+.svg_editor.ui-tablet .tbtn.sm svg { width: 22px; height: 22px; }
+
+/* a tool button that carries a small dropdown caret */
+.svg_editor.ui-tablet .tbtn.has-caret::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: .55;
+}
+
+/* tray divider */
+.svg_editor.ui-tablet .ts-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 10px 4px;
+  background: var(--chrome-border);
+  flex: 0 0 auto;
+}
+
+/* button row helper */
+.svg_editor.ui-tablet .ts-row { display: flex; align-items: center; gap: 4px; }
+.svg_editor.ui-tablet .ts-row.gap8 { gap: 8px; }
+
+/* ---------- Swatches ---------- */
+.svg_editor.ui-tablet .swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 1px 2px rgba(20, 25, 35, .08);
+  transition: transform .1s ease;
+}
+.svg_editor.ui-tablet .swatch:active { transform: scale(.9); }
+.svg_editor.ui-tablet .swatch.is-on {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 3px var(--accent);
+}
+.svg_editor.ui-tablet .swatch.none {
+  background:
+    linear-gradient(45deg, transparent 45%, #E11D48 45%, #E11D48 55%, transparent 55%),
+    #fff;
+}
+
+/* ---------- Slider ---------- */
+.svg_editor.ui-tablet .slider-row { display: flex; align-items: center; gap: 12px; }
+.svg_editor.ui-tablet .slider-row .lab {
+  font-size: 13px; font-weight: 600; color: var(--muted); min-width: 50px;
+}
+.svg_editor.ui-tablet .slider-row .val {
+  font-size: 13px; font-weight: 600; color: var(--fg); min-width: 34px;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.svg_editor.ui-tablet input[type=range].te-range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--icon-hover-bg);
+  outline: none;
+}
+.svg_editor.ui-tablet input[type=range].te-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--accent-border);
+  box-shadow: 0 2px 6px rgba(20, 25, 35, .2);
+  cursor: pointer;
+}
+
+/* section label */
+.svg_editor.ui-tablet .sec-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+/* ---------- Popover ---------- */
+.svg_editor.ui-tablet .ts-pop {
+  position: absolute;
+  z-index: 50;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--r-md);
+  box-shadow: 0 18px 50px rgba(20, 25, 35, .2), 0 2px 8px rgba(20, 25, 35, .1);
+  padding: 16px;
+}
+.svg_editor.ui-tablet .swrow { display: flex; gap: 9px; flex-wrap: wrap; max-width: 232px; }
+
+/* dropdown menu list */
+.svg_editor.ui-tablet .menu { display: flex; flex-direction: column; min-width: 188px; }
+.svg_editor.ui-tablet .menu-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+  text-align: left;
+}
+.svg_editor.ui-tablet .menu-item:hover { background: var(--icon-hover-bg); }
+.svg_editor.ui-tablet .menu-item .mi-ic {
+  width: 22px; height: 22px; display: grid; place-items: center;
+  color: var(--icon); flex: 0 0 auto;
+}
+.svg_editor.ui-tablet .menu-item .mi-ic svg { width: 21px; height: 21px; }
+
+/* shape-library grid (popover) */
+.svg_editor.ui-tablet .lib-grid { display: grid; grid-template-columns: repeat(5, 56px); gap: 8px; }
+.svg_editor.ui-tablet .lib-cell {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid var(--field-border);
+  background: var(--field-bg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--fg);
+}
+.svg_editor.ui-tablet .lib-cell:hover { background: var(--icon-hover-bg); border-color: var(--accent-border); }
+.svg_editor.ui-tablet .lib-cell svg { width: 30px; height: 30px; display: block; }
+
+/* ---------- Bottom sheet ---------- */
+.svg_editor.ui-tablet .ts-sheet {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--r-lg);
+  box-shadow: 0 18px 50px rgba(20, 25, 35, .2), 0 2px 8px rgba(20, 25, 35, .1);
+  padding: 12px 22px 20px;
+  transform: translateY(calc(100% + 28px));
+  transition: transform .28s cubic-bezier(.2, .8, .25, 1);
+}
+.svg_editor.ui-tablet .ts-sheet.show { transform: translateY(0); }
+.svg_editor.ui-tablet .ts-sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--chrome-border);
+  margin: 0 auto 12px;
+}
+.svg_editor.ui-tablet .ts-sheet .kind {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: capitalize;
+  position: absolute;
+  top: 16px;
+  left: 22px;
+}
+.svg_editor.ui-tablet .ts-sheet .closeb { position: absolute; top: 12px; right: 16px; }
+.svg_editor.ui-tablet .ts-sheet-row { display: flex; align-items: flex-end; gap: 22px; }
+.svg_editor.ui-tablet .sheet-col { display: flex; flex-direction: column; gap: 9px; }
+.svg_editor.ui-tablet .sheet-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--chrome-border);
+  margin: 2px;
+}
+.svg_editor.ui-tablet .slider-mini { width: 170px; }
+.svg_editor.ui-tablet .ts-actions { display: flex; gap: 6px; }

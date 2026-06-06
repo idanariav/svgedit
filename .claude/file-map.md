@@ -11,13 +11,15 @@
 | `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `ConfigObj.js` | `pref(key)`, `setConfig(obj)`, localStorage persistence (~24KB) |
-| `MainMenu.js` | Export, Preferences (~5KB) |
+| `MainMenu.js` | Export, Preferences, **Tablet mode toggle** (`clickTabletMode`) (~5KB) |
 | `Rulers.js` | Canvas ruler rendering and tick marks |
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
+| `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell). Mirrors `themeUtil.js`; persistence of the `tabletMode` pref is the caller's job |
 | `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
-| `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines) |
+| `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |
+| `tablet.css` | Tablet-mode touch sizing + shell layout, all scoped under `.svg_editor.ui-tablet` (collapses the desktop grid, hides the four panels, styles the command bar/sheet/popovers). Colors inherit from svgedit.css tokens |
 | `index.html` | Dev + ES-module build entry point |
 | `iife-index.html` | Self-contained IIFE build entry |
 | `xdomain-index.html` | Cross-domain iframe mode entry |
@@ -36,6 +38,8 @@
 | `BottomPanel.html` | Bottom "Colors" bar markup (fill/stroke/bg pickers + palette) |
 | `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
 | `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
+| `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, wraps the Editor's `selectedChanged`/`elementChanged`/`zoomChanged` handlers (because `svgCanvas.bind` keeps only one handler per event), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
+| `TabletShell.html` | Tablet shell skeleton (`.tablet-shell` overlay: `.ts-topbar` command bar + `.ts-sheet` bottom sheet) |
 
 ---
 

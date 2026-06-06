@@ -1,6 +1,7 @@
 /* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
+import { applyUiMode } from './uiMode.js'
 
 const { $id, $click } = SvgCanvas
 
@@ -17,6 +18,16 @@ class MainMenu {
      * @type {Integer}
      */
     this.editor.exportWindowCt = 0
+  }
+
+  /**
+   * Toggle the touch-first tablet shell on/off and persist the choice.
+   * @returns {void}
+   */
+  clickTabletMode () {
+    const on = !this.editor.configObj.pref('tabletMode')
+    this.editor.configObj.pref('tabletMode', on, true)
+    applyUiMode(on, this.editor.$svgEditor)
   }
 
   /**
@@ -153,6 +164,7 @@ class MainMenu {
     template.innerHTML = `
     <se-menu id="main_button" label="SVG-Edit" src="logo.svg" alt="logo">
         <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
+        <se-menu-item id="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
         <se-menu-item id="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
     </se-menu>`
     this.editor.$svgEditor.append(template.content.cloneNode(true))
@@ -170,6 +182,7 @@ class MainMenu {
       'change',
       this.clickExport.bind(this)
     )
+    $click($id('tool_tablet_mode'), this.clickTabletMode.bind(this))
     $id('tool_editor_prefs').addEventListener(
       'click',
       this.showPreferences.bind(this)

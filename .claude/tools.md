@@ -214,7 +214,19 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 | ID | Item | Shortcut |
 |----|------|----------|
 | `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
+| `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
 | `tool_editor_prefs` | Editor Preferences | — |
+
+**Tablet mode** (`MainMenu.clickTabletMode`): flips `applyUiMode` (`uiMode.js`) and
+persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
+class — `tablet.css` hides the four desktop panels and shows `TabletShell`
+(`panels/TabletShell.js`): a slim top **command bar** (Select / Draw / Pen /
+Curvature / Line / Shapes ▾ / Text / Cutter · default-style chip · zoom · undo/redo
+· Done) and a contextual **bottom sheet** (Fill / Stroke swatches with a "More…"
+→ `seColorPicker` entry, Stroke-width + Opacity sliders, Arrange align/layer/flip,
+Object duplicate/delete) that rises on selection. Every control resolves to an
+existing `svgCanvas.*`/`editor.*` call — no new modes or engine changes. Layers,
+boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a
 `#se-export-region` `<se-select>`, rebuilt each time it opens from the canvas'

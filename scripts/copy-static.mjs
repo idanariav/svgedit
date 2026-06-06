@@ -14,6 +14,7 @@ const targets = [
   ['src/editor/browser-not-supported.html', 'browser-not-supported.html'],
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
   ['src/editor/svgedit.css', 'svgedit.css'],
+  ['src/editor/tablet.css', 'tablet.css'],
   ['src/editor/images', 'images'],
   ['src/editor/extensions', 'extensions'],
   // Test harness assets for Playwright (unit-style tests in browser)

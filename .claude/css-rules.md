@@ -138,6 +138,19 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 
 **Open state** (side panel expanded): adds class `.open` to `.svg_editor`, changing column 5 from `15px` to `220px`.
 
+**Tablet mode** (touch-first shell): adds class `.ui-tablet` to `.svg_editor`
+(via `uiMode.js`). All tablet styling lives in [src/editor/tablet.css](../src/editor/tablet.css),
+`@import`ed at the top of `svgedit.css` and **entirely scoped under
+`.svg_editor.ui-tablet`** — colors inherit from the tokens above; only geometry +
+visibility change. It collapses the grid (`grid-template-rows: 0 0 1fr 0;
+grid-template-columns: 0 0 0 1fr 0`) so `#workarea` fills the shell, `display:none`s
+`#tools_top/#tools_left/#sidepanels/#tools_bottom` (+ rulers), floats `#main_button`
+top-left, and renders the `.tablet-shell` overlay (`.ts-topbar` command bar +
+`.ts-sheet` bottom sheet, both built by `panels/TabletShell.js`). The desktop and
+tablet shells are mutually exclusive — `.svg_editor:not(.ui-tablet) .tablet-shell`
+is hidden. Touch sizing tokens (`--hit: 56px`, `--hit-sm: 46px`, `--r-md/lg/pill`)
+are defined on the `.ui-tablet` root.
+
 ---
 
 ## Key Selector Rules

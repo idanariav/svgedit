@@ -141,6 +141,7 @@ export default {
     selected_objects: 'selected objects',
     smallest_object: 'smallest object',
     export_img: 'Export',
+    tablet_mode: 'Tablet mode',
     import_doc: 'Import SVG',
     align_to_page: 'Align Element to Page',
     align_bottom: 'Align Bottom',

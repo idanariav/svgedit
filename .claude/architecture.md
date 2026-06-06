@@ -91,6 +91,7 @@ svgedit/
 | **LeftPanel** | `panels/LeftPanel.js/.html` | Drawing tool buttons (select, rect, circle, path, text, etc.) |
 | **BottomPanel** | `panels/BottomPanel.js/.html` | "Colors" bar: fill/stroke/background color pickers + quick palette only |
 | **RightPanel** | `panels/RightPanel.js/.html` | Tabbed properties panel (**Design / Text / Effects / Layers**). `activateTab`/`autoSelectTab` switch tabs; shape-dimension, stroke, text, blur, clip/mask, boolean, layers sections live in the tab containers; ext-shadow/ext-color-shift inject into `#tab_effects` |
+| **TabletShell** | `panels/TabletShell.js/.html` + `tablet.css` + `uiMode.js` | Optional touch-first shell (command bar + contextual bottom sheet) layered over `#workarea`. A presentation layer only — every control calls an existing `svgCanvas.*`/`editor.*` method. Toggled from the SVG-Edit menu (`MainMenu.clickTabletMode` → `applyUiMode` + `tabletMode` pref); shown only while `.svg_editor` has the `ui-tablet` class. Hides the four desktop panels via CSS |
 | **MainMenu** | `MainMenu.js` | Export, Preferences |
 | **Components** | `components/*.js` | Reusable shadow-DOM web elements (buttons, inputs, selects, color pickers) |
 | **Dialogs** | `dialogs/*.js` | Modal dialogs (export, prefs, image props, SVG source, alerts) |
@@ -117,6 +118,10 @@ src/editor/index.html
                     │                          //   panel (e.g. zoom/stroke/opacity that
                     │                          //   physically live elsewhere)
                     ├── mainMenu.init()
+                    ├── tabletShell.init()     // builds tablet command bar + sheet;
+                    │                          //   wraps Editor.selectedChanged/
+                    │                          //   elementChanged/zoomChanged BEFORE the
+                    │                          //   svgCanvas event binds below run
                     ├── bind svgCanvas events:
                     │     selected   → selectedChanged()   // update attribute panels
                     │     changed    → elementChanged()    // update coordinates

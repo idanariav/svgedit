@@ -25,6 +25,7 @@ import LeftPanel from './panels/LeftPanel.js'
 import TopPanel from './panels/TopPanel.js'
 import BottomPanel from './panels/BottomPanel.js'
 import RightPanel from './panels/RightPanel.js'
+import TabletShell from './panels/TabletShell.js'
 import MainMenu from './MainMenu.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 
@@ -319,6 +320,7 @@ class Editor extends EditorStartup {
     this.bottomPanel = new BottomPanel(this)
     this.topPanel = new TopPanel(this)
     this.rightPanel = new RightPanel(this)
+    this.tabletShell = new TabletShell(this)
     this.mainMenu = new MainMenu(this)
     // makes svgEditor accessible as a global variable
     window.svgEditor = this
