@@ -92,14 +92,25 @@
 }
 .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 46px; height: 46px; border-radius: 99px; }
 .svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 24px; height: 24px; }
-/* Embedded <se-shape-library> button — match the touch toolgroup hit size. */
+/* Embedded <se-shape-library> button — match the touch toolgroup buttons
+   (46px round hit area, 24px icon). The --sl-* custom properties inherit
+   through the component's shadow boundary (see seShapeLibrary.js). */
 .svg_editor.ui-tablet .ts-toolgroup se-shape-library {
-  width: 46px;
-  height: 46px;
+  --sl-tool-size: 46px;
+  /* The other toolgroup icons render ~34px (svgIconLoader injects an inline
+     width:100% that beats the .tbtn svg rule); match that so the library icon
+     isn't visibly smaller. */
+  --sl-tool-icon-size: 34px;
+  --sl-tool-radius: 99px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+
+/* The select cursor's filled mass sits toward the top-left of its viewBox, so
+   geometric centering reads as off-centre inside the active blue circle. Nudge
+   it down-right a touch so it looks centred. */
+.svg_editor.ui-tablet .ts-tool-select svg { transform: translate(2px, 1px); }
 
 .svg_editor.ui-tablet .ts-zlabel {
   font-size: 13px;

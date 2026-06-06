@@ -52,9 +52,9 @@ const CSS = `
 :host { display: inline-flex; align-items: center; justify-content: center; }
 
 .sl-tool {
-  width: 40px; height: 40px;
+  width: var(--sl-tool-size, 40px); height: var(--sl-tool-size, 40px);
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid transparent; border-radius: 10px;
+  border: 1px solid transparent; border-radius: var(--sl-tool-radius, 10px);
   background: transparent; cursor: pointer;
   color: var(--icon, #4B5563);
   font-family: var(--ui-font, system-ui, sans-serif);
@@ -67,7 +67,12 @@ const CSS = `
   box-shadow: var(--active-shadow, 0 1px 2px rgba(41,98,255,.18));
 }
 .sl-tool svg { display: block; }
-.sl-tool-icon { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; }
+.sl-tool-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: var(--sl-tool-icon-size, 22px); height: var(--sl-tool-icon-size, 22px);
+}
+/* Let the icon track --sl-tool-icon-size (overrides the inline width/height). */
+.sl-tool-icon svg { width: 100%; height: 100%; }
 
 /* ── Popover ─────────────────────────────────────────────────────────────── */
 .sl-popover {

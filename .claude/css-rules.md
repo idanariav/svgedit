@@ -149,7 +149,12 @@ top-left, and renders the `.tablet-shell` overlay (`.ts-topbar` command bar +
 `.ts-sheet` bottom sheet, both built by `panels/TabletShell.js`). The desktop and
 tablet shells are mutually exclusive — `.svg_editor:not(.ui-tablet) .tablet-shell`
 is hidden. Touch sizing tokens (`--hit: 56px`, `--hit-sm: 46px`, `--r-md/lg/pill`)
-are defined on the `.ui-tablet` root.
+are defined on the `.ui-tablet` root. The embedded `<se-shape-library>` button is
+sized to the touch toolgroup via the component's `--sl-tool-size` /
+`--sl-tool-icon-size` / `--sl-tool-radius` custom properties (defaults 40/22/10px
+in `seShapeLibrary.js`; these inherit through the shadow boundary). The select
+cursor icon gets a small `translate(2px,1px)` nudge (`.ts-tool-select svg`) so its
+top-left-weighted shape reads as centred in the active blue circle.
 
 ---
 

@@ -109,7 +109,8 @@ class TabletShell {
     TOOLS.forEach((t) => {
       if (!t) { sep(); return }
       const [mode, icon, label] = t
-      const b = this.makeBtn(icon, { title: label, tap: () => this.svgCanvas.setMode(mode) })
+      const b = this.makeBtn(icon, { title: label, tap: () => this.selectTool(mode) })
+      b.classList.add('ts-tool-' + mode)
       this.toolBtns[mode] = b
       tg.append(b)
     })
@@ -157,6 +158,21 @@ class TabletShell {
     this.shapeLib.setAttribute('lib', `${extPath}/ext-shapes/shapelib/`)
     this.shapeLib.setAttribute('src', 'shapelib.svg')
     tg.append(this.shapeLib)
+  }
+
+  // Activate a command-bar tool. Tablet has no curve-mode selector, so the
+  // curvature tool defaults to Spiro (smoothest for touch) — driven through the
+  // existing #curvature_mode select so ext-curvature updates its live mode and
+  // persists the choice.
+  selectTool (mode) {
+    this.svgCanvas.setMode(mode)
+    if (mode === 'curvature') {
+      const sel = $id('curvature_mode')
+      if (sel && sel.value !== 'spiro') {
+        sel.value = 'spiro'
+        sel.dispatchEvent(new CustomEvent('change', { detail: { value: 'spiro' } }))
+      }
+    }
   }
 
   shapeIcon () {

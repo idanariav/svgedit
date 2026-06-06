@@ -127,7 +127,7 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (no po
 | `tool_length_adjust` | select | `lengthAdjust` | `spacing` / `spacingAndGlyphs` |
 | `tool_perspective_x` | spin | custom transform | −80 to 80, step 1 |
 | `tool_perspective_y` | spin | custom transform | −80 to 80, step 1 |
-| `#text` *(hidden input)* | text | text content | Not shown in UI; updated programmatically |
+| `#text` *(hidden input)* | text | text content | Not shown in UI (offscreen via `#text` in svgedit.css); the text-edit key buffer wired by `textActions.setInputElem`. Lives at the **editor root** (`editorTemplate.html`), not inside a panel, so it stays focusable when a panel is hidden — e.g. tablet mode (`#tools_top` is `display:none`, and `focus()` on a `display:none` subtree is a no-op) |
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (text position handled internally).
 
