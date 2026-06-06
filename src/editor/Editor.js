@@ -428,8 +428,14 @@ class Editor extends EditorStartup {
       }
       return true
     })
-    // register the keydown event
-    document.addEventListener('keydown', (e) => {
+    // register the keydown event. Remove any previously-registered handler
+    // first so re-initialising the editor (e.g. a host opening a different
+    // file) does not stack multiple listeners, which would fire each shortcut
+    // — most visibly paste — once per accumulated listener.
+    if (this.keydownHandler) {
+      document.removeEventListener('keydown', this.keydownHandler)
+    }
+    this.keydownHandler = (e) => {
       // only track keyboard shortcuts for the body containing the SVG-Editor
       if (e.target.nodeName !== 'BODY') return
       // normalize key
@@ -443,7 +449,8 @@ class Editor extends EditorStartup {
       if (keyHandler[key].pd) {
         e.preventDefault()
       }
-    })
+    }
+    document.addEventListener('keydown', this.keydownHandler)
 
     // Misc additional actions
 
