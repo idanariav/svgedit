@@ -221,12 +221,15 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
 class — `tablet.css` hides the four desktop panels and shows `TabletShell`
 (`panels/TabletShell.js`): a slim top **command bar** (Select / Draw / Pen /
-Curvature / Line / Shapes ▾ / Text / Cutter · default-style chip · zoom · undo/redo
-· Done) and a contextual **bottom sheet** (Fill / Stroke swatches with a "More…"
-→ `seColorPicker` entry, Stroke-width + Opacity sliders, Arrange align/layer/flip,
-Object duplicate/delete) that rises on selection. Every control resolves to an
-existing `svgCanvas.*`/`editor.*` call — no new modes or engine changes. Layers,
-boolean ops, effects, full text typography, etc. are intentionally desktop-only.
+Curvature / Line / Shapes ▾ / Text / Cutter / Shape library · default-style chip ·
+zoom · undo/redo · Done) and a contextual **bottom sheet** (Fill / Stroke swatches
+with a "More…" → `seColorPicker` entry, Stroke-width + Opacity sliders, Arrange
+align/layer/flip, Object duplicate/delete) that rises on selection. The Shape
+library is the real `<se-shape-library>` component embedded in the bar — ext-shapes
+arms insertion via its element-agnostic document-level `shape-insert` listener (see
+ext-shapes in extensions.md). Every control resolves to an existing
+`svgCanvas.*`/`editor.*` call — no new modes or engine changes. Layers, boolean ops, effects, full text typography, etc. are
+intentionally desktop-only.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a
 `#se-export-region` `<se-select>`, rebuilt each time it opens from the canvas'

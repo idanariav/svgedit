@@ -145,6 +145,18 @@ class TabletShell {
     const cut = this.makeBtn('cutter.svg', { title: 'Cutter', tap: () => this.svgCanvas.setMode('cutter') })
     this.toolBtns.cutter = cut
     tg.append(cut)
+
+    // Shape library — reuse the real <se-shape-library> component. ext-shapes
+    // handles its `shape-insert` event via a document-level listener (decoupled
+    // from the desktop #tool_shapelib element), so this instance drives the same
+    // insertion flow. Picking arms the 'shapelib' mode; the user then drags to
+    // place the shape on the canvas, exactly like desktop.
+    const extPath = this.editor.configObj.curConfig.extPath
+    this.shapeLib = document.createElement('se-shape-library')
+    this.shapeLib.setAttribute('title', 'Shape library')
+    this.shapeLib.setAttribute('lib', `${extPath}/ext-shapes/shapelib/`)
+    this.shapeLib.setAttribute('src', 'shapelib.svg')
+    tg.append(this.shapeLib)
   }
 
   shapeIcon () {
@@ -434,8 +446,12 @@ class TabletShell {
     wrap('elementChanged', () => { this.syncSheetValues(); this.syncHistory() })
     wrap('zoomChanged', () => this.syncZoom())
     document.addEventListener('modeChange', () => {
-      this.syncTools(this.svgCanvas.getMode())
+      const mode = this.svgCanvas.getMode()
+      this.syncTools(mode)
       this.paintStyleDot()
+      // The shape-library button presses itself when armed; clear it once the
+      // user switches away from the 'shapelib' mode.
+      if (this.shapeLib && mode !== 'shapelib') this.shapeLib.removeAttribute('pressed')
     })
   }
 

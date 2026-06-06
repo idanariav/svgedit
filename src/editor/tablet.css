@@ -92,6 +92,14 @@
 }
 .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 46px; height: 46px; border-radius: 99px; }
 .svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 24px; height: 24px; }
+/* Embedded <se-shape-library> button — match the touch toolgroup hit size. */
+.svg_editor.ui-tablet .ts-toolgroup se-shape-library {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .svg_editor.ui-tablet .ts-zlabel {
   font-size: 13px;

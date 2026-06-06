@@ -37,6 +37,27 @@ export default {
     let startX
     let startY
     let _userShapeData = null // non-null when a user shape is selected for insertion
+    let _armedDraw = null // path `d` of the armed built-in shape (null for user shapes)
+
+    /**
+     * Arm the shape tool from a `shape-insert` event detail. This is the single
+     * entry point for the insertion flow — decoupled from any specific DOM
+     * element so multiple hosts (the desktop left-panel button AND, e.g., the
+     * tablet command bar) can drive it. The next canvas mousedown places the
+     * armed shape; geometry comes from the event detail, not a DOM dataset.
+     * @param {object} detail - `shape-insert` detail ({ draw } | user-shape data)
+     * @param {Element} [target] - originating library element to mark pressed
+     * @returns {void}
+     */
+    const armShapeInsert = (detail = {}, target) => {
+      canv.setMode(modeId)
+      _userShapeData = detail.isUserShape ? detail : null
+      _armedDraw = detail.isUserShape ? null : (detail.draw ?? null)
+      // Keep the originating library button visually pressed while armed
+      target?.setAttribute?.('pressed', 'true')
+    }
+    // Expose for programmatic callers (kept element-agnostic)
+    svgEditor.armShapeInsert = armShapeInsert
 
     return {
       callback () {
@@ -50,13 +71,11 @@ export default {
           `
           canv.insertChildAtIndex($id('tools_left'), buttonTemplate, 9)
 
-          // When the user picks a shape (from popover or modal), arm the canvas tool
-          $id('tool_shapelib').addEventListener('shape-insert', (e) => {
-            canv.setMode(modeId)
-            // Keep the button visually pressed while the shape tool is active
-            $id('tool_shapelib').setAttribute('pressed', 'true')
-            // Store user shape data for mouseDown to use
-            _userShapeData = e.detail.isUserShape ? e.detail : null
+          // `shape-insert` bubbles + is composed, so a single document-level
+          // listener catches every `se-shape-library` instance (desktop or
+          // tablet). `e.target` is retargeted to the dispatching host element.
+          document.addEventListener('shape-insert', (e) => {
+            armShapeInsert(e.detail, e.target)
           })
         }
       },
@@ -109,7 +128,7 @@ export default {
           curShape = imported
         } else {
           // ── Built-in path-based shape (existing flow) ────────────────────────
-          const currentD = document.getElementById('tool_shapelib').dataset.draw
+          const currentD = _armedDraw
           const curStyle = canv.getStyle()
 
           curShape = canv.addSVGElementsFromJson({
