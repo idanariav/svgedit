@@ -1113,6 +1113,15 @@ const dblClickEvent = (evt) => {
     return
   }
   draw.setContext(mouseTarget)
+
+  // Now that we've entered the group, select the actual element that was
+  // double-clicked so the user doesn't have to click a second time.
+  // getMouseTarget walks up from evt.target to the direct child of the
+  // (now current) group, which is exactly the element under the cursor.
+  const childTarget = svgCanvas.getMouseTarget(evt)
+  if (childTarget && childTarget.parentNode === svgCanvas.getCurrentGroup()) {
+    svgCanvas.selectOnly([childTarget], true)
+  }
 }
 
 /**
