@@ -119,8 +119,8 @@ export class SeCMenuLayerDialog extends HTMLElement {
     const current = this
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
-      let x = e.pageX - 126
-      let y = e.pageY
+      let x = e.clientX - 126
+      let y = e.clientY
       current.$dialog.style.top = y + 'px'
       current.$dialog.style.left = x + 'px'
       current.$dialog.style.display = 'block'
