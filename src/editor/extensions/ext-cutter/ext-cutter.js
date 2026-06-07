@@ -132,6 +132,8 @@ export default {
         const dy = endY - startY
         if (Math.sqrt(dx * dx + dy * dy) >= 2) {
           svgCanvas.cutShapes(startX, startY, endX, endY)
+          // Return to the select tool once a cut is made (mirrors pen/pencil).
+          svgEditor.leftPanel.clickSelect()
         }
 
         // keep:false — no element for the event loop to manage

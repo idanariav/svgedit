@@ -303,6 +303,9 @@ export default {
 
       points = []
       isDrawing = false
+
+      // Return to the select tool once a shape is finalized (mirrors pen/pencil).
+      svgEditor.leftPanel.clickSelect()
     }
 
     // ── Anchor-point indicators (small circles drawn over the layer) ───────
