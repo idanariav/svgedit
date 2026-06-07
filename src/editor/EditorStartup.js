@@ -400,6 +400,41 @@ class EditorStartup {
       }
     })
 
+    // Native clipboard paste (Ctrl/Cmd+V). This is the single arbiter for paste:
+    // the system clipboard tells us whether the content is svgedit's own (an
+    // internal copy mirrors its JSON onto the clipboard) or an external SVG
+    // document (e.g. "Copy as SVG" from another editor like Excalidraw), which
+    // is imported as real, editable elements. Remove any prior listener first so
+    // re-initialising the editor does not stack handlers.
+    if (this.pasteHandler) {
+      document.removeEventListener('paste', this.pasteHandler)
+    }
+    this.pasteHandler = (e) => {
+      // Let editable fields (inputs, text areas) keep their native paste.
+      const t = e.target
+      if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
+      const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain')
+      if (!text) return
+      // (a) svgedit's own internal clipboard → existing internal paste.
+      try {
+        if (Array.isArray(JSON.parse(text))) {
+          e.preventDefault()
+          this.pasteInCenter()
+          return
+        }
+      } catch { /* not internal JSON, fall through */ }
+      // (b) external SVG document (e.g. Excalidraw "Copy as SVG").
+      if (/<svg[\s\S]*<\/svg>/i.test(text)) {
+        e.preventDefault()
+        const el = this.svgCanvas.importSvgString(text)
+        this.svgCanvas.alignSelectedElements('m', 'page')
+        this.svgCanvas.alignSelectedElements('c', 'page')
+        this.svgCanvas.selectOnly([el])
+        this.topPanel.updateContextPanel()
+      }
+    }
+    document.addEventListener('paste', this.pasteHandler)
+
     // Add a new shortcut for zoom in/out : Alt + Wheels
     this.workarea.addEventListener('wheel', (e) => {
       if (e.altKey) {

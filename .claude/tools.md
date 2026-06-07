@@ -353,3 +353,13 @@ Flying button (left panel):
 | Ctrl+Y | Redo |
 | Ctrl+Shift+] | Bring to front |
 | Ctrl+Shift+[ | Send to back |
+| Ctrl/Cmd+C | Copy (mirrors to system clipboard) |
+| Ctrl/Cmd+X | Cut |
+| Ctrl/Cmd+V | Paste — handled by a native `paste` listener, not a keyboard shortcut |
+
+**Paste sources.** Paste is driven by a single native `paste` listener
+(`EditorStartup.js`), not the `v` keyboard shortcut. It accepts both svgedit's own
+internal clipboard (an internal copy, pasted via `pasteInCenter`) and an external
+**SVG document** pasted from another app (e.g. Excalidraw's "Copy as SVG") — the
+latter is imported as real, editable elements via `importSvgString`. See the
+"System-clipboard paste" note in `architecture.md`.

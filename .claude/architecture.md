@@ -269,6 +269,20 @@ that select how the drawing is inserted:
   (`extensions/ext-shapes/ext-shapes.js`) so the link survives ungroup / partial
   deletion; it disappears only when the last stamped element is gone.
 
+**System-clipboard paste (Ctrl/Cmd+V).** A single native `paste` listener in
+`EditorStartup.js` (`this.pasteHandler`, registered with a remove-before-add
+guard like `keydownHandler`) is the sole arbiter of paste; there is **no** `v`
+keyboard shortcut in `Editor.js` anymore. The system clipboard decides the path:
+internal copy mirrors its JSON array onto the clipboard
+(`copySelectedElements` in `core/selected-elem.js` → `navigator.clipboard.writeText`)
+so the handler can distinguish svgedit's own clipboard (a JSON array →
+`pasteInCenter()` → `pasteElements`, reading `sessionStorage`) from an external
+SVG document (`<svg>…</svg>` text, e.g. another editor's "Copy as SVG" → imported
+as editable elements via `importSvgString`, then centered + selected). Editable
+fields (`INPUT`/`TEXTAREA`/contentEditable) are skipped so their native paste
+works. This single-arbiter design avoids double-pasting when both an internal copy
+and external SVG are present.
+
 `data-*` attributes round-trip through sanitize (explicit bypass in
 `packages/svgcanvas/core/sanitize.js`) and `getSvgString()` serialization — the
 same mechanism `data-frame` (frame export) relies on. The host reads the

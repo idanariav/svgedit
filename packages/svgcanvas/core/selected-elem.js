@@ -761,6 +761,13 @@ const copySelectedElements = () => {
   sessionStorage.setItem(svgCanvas.getClipboardID(), data)
   svgCanvas.flashStorage()
 
+  // Also mirror onto the system clipboard so the native paste handler can tell
+  // an internal copy apart from external content (e.g. an SVG copied from
+  // another app). Write may reject (permissions / no user gesture) — ignore.
+  try {
+    navigator.clipboard?.writeText(data)?.catch(() => {})
+  } catch { /* clipboard unavailable */ }
+
   // Context menu might not exist (it is provided by editor.js).
   const canvMenu = document.getElementById('se-cmenu_canvas')
   canvMenu?.setAttribute('enablemenuitems', '#paste,#paste_in_place')

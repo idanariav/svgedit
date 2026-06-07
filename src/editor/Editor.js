@@ -302,12 +302,6 @@ class Editor extends EditorStartup {
         }
       },
       {
-        key: modKey + 'v',
-        fn: () => {
-          this.pasteInCenter()
-        }
-      },
-      {
         key: 'escape',
         fn: () => {
           if (this.enableToolCancel) {
