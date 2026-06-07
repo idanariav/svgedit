@@ -257,7 +257,7 @@ Flying button (left panel):
 - **Polygon tool** (`tool_polygon`): Context panel shows Sides count
 
 ### ext-shapes — Shape Library (`extensions/ext-shapes/`)
-- **Shape Library** (`tool_shapelib`): Opens modal with categorized pre-made SVG shapes
+- **Shape Library** (`tool_shapelib`): Opens modal with categorized pre-made SVG shapes. A default virtual **"All"** tab (id `'all'`, first in the sidebar and the popover chip row, selected by default) aggregates every category, rendered as category-labelled groups (same grouped layout as search results, via `_renderGroups`). The component tracks the active tab (`_categoryId`) separately from the selected shape's own category (`_selectedCat`) so selecting/inserting from a grouped view keeps the "All" tab intact.
 - **User shapes** (`extensions/ext-shapes/userShapes.js`, `localStorage` key `svg-edit-user-shapes`): "Add to Shape Library" (`EditorStartup._showAddToLibraryDialog`) saves the selection as `{ svgContent, bbox, linkedFile? }`. When a host exposes `window.svgEditHost.pickVaultFile`, the dialog shows an optional **Linked vault file** control; the chosen link is persisted as `linkedFile` and threaded through the `shape-insert` event detail. On insert, `ext-shapes.js` stamps `data-vault-link` onto the imported root **and every descendant** so the link survives ungroup / partial deletion (see [architecture.md](architecture.md) "Host bridge").
 
 ### ext-connector — Connector Lines (`extensions/ext-connector/`)
