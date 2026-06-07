@@ -150,6 +150,36 @@ equals (=) characters from being parsed. Removing these characters seem
 to allow the import to work as expected.
 <!-- Todo: Is this still occurring? -->
 
+## Persisting user data in a host store (`userDataAdapter`)
+
+By default the editor stores two pieces of user customization in its own
+`localStorage`: the **custom palette colors** (key `svg-edit-custom-palette`)
+and the **saved shape library** (key `svg-edit-user-shapes`).
+
+An embedding application that wants this data kept in *its own* store (so it
+survives updates or syncs with the host) can supply a `userDataAdapter` via
+`setConfig` before the editor initializes:
+
+```js
+svgEditor.setConfig({
+  userDataAdapter: {
+    getPalette () { return overridesMap },          // sync; { [index]: '#rrggbb' }
+    setPalette (overrides) { /* persist full map */ },
+    getUserShapes () { return store },              // sync; { categories, shapes }
+    setUserShapes (store) { /* persist full store */ }
+  }
+})
+```
+
+- **Reads are synchronous** — the palette and shape library render synchronously,
+  so the host should hydrate the adapter from its data file *before* constructing
+  the editor and keep an in-memory copy.
+- **Writes are fire-and-forget** — `setPalette` / `setUserShapes` are called with
+  the *full* current state on every edit (palette change/reset, shape add/remove);
+  the host may persist asynchronously.
+- When `userDataAdapter` is omitted or `null`, both fall back to the original
+  `localStorage` behavior described above — standalone SVG-Edit is unchanged.
+
 ## Customizing stylesheets
 
 As of version 3.0, stylesheets can be indicated dynamically (and

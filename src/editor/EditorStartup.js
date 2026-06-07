@@ -6,6 +6,7 @@ import {
   hasCustomHandler, getCustomHandler, injectExtendedContextMenuItemsIntoDom
 } from './contextmenu.js'
 import { addUserShape, getUserCategories } from './extensions/ext-shapes/userShapes.js'
+import { setUserDataAdapter } from './userDataAdapter.js'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
 import Rulers from './Rulers.js'
@@ -81,6 +82,11 @@ class EditorStartup {
   * @returns {void}
   */
   async init () {
+    // Register the optional host storage adapter before any component is
+    // constructed (the editor template below instantiates <se-palette> and the
+    // shape library, which read user data on creation). Falls back to
+    // localStorage when no adapter was configured.
+    setUserDataAdapter(this.configObj.curConfig.userDataAdapter)
     injectSvgeditStyles()
     if ('localStorage' in window) {
       this.storage = window.localStorage

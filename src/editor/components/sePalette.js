@@ -1,6 +1,7 @@
 /* globals svgEditor */
 /* eslint-disable max-len */
 import Paint from '@svgedit/svgcanvas/core/paint.js'
+import { getUserDataAdapter } from '../userDataAdapter.js'
 
 const DEFAULT_PALETTE = [
   'none',
@@ -50,6 +51,11 @@ const DEFAULT_PALETTE = [
 const STORAGE_KEY = 'svg-edit-custom-palette'
 
 const loadOverrides = () => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    const parsed = adapter.getPalette()
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
@@ -61,6 +67,13 @@ const loadOverrides = () => {
 }
 
 const saveOverrides = (overrides) => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    // Always hand the host the full overrides map (including `{}` on reset);
+    // the host decides how to clear its own store.
+    adapter.setPalette(overrides)
+    return
+  }
   if (Object.keys(overrides).length === 0) {
     localStorage.removeItem(STORAGE_KEY)
   } else {

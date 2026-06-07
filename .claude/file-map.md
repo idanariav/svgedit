@@ -16,6 +16,7 @@
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
 | `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell). Mirrors `themeUtil.js`; persistence of the `tabletMode` pref is the caller's job |
 | `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
+| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette + saved shapes in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js` + `userShapes.js` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |

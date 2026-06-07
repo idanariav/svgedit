@@ -1,5 +1,9 @@
 /**
- * userShapes.js — localStorage utilities for user-saved shape library entries.
+ * userShapes.js — persistence utilities for user-saved shape library entries.
+ *
+ * Reads/writes go through the optional host storage adapter when one is
+ * registered (see userDataAdapter.js); otherwise they fall back to localStorage
+ * under the key below. The schema is identical on both paths.
  *
  * Storage key: 'svg-edit-user-shapes'
  * Schema:
@@ -15,21 +19,17 @@
  *   }
  */
 
+import { getUserDataAdapter } from '../../userDataAdapter.js'
+
 const STORAGE_KEY = 'svg-edit-user-shapes'
 
 /**
- * Load and validate the user shapes store from localStorage.
- * Returns a safe default if the data is missing or corrupt.
+ * Validate an already-parsed store object into a safe { categories, shapes }
+ * shape. Returns a safe default if the data is missing or corrupt.
+ * @param {*} raw
  * @returns {{ categories: string[], shapes: Object }}
  */
-export function loadUserShapes () {
-  let raw
-  try {
-    raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
-  } catch {
-    raw = null
-  }
-
+function normalizeStore (raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { categories: [], shapes: {} }
   }
@@ -68,10 +68,36 @@ export function loadUserShapes () {
 }
 
 /**
- * Persist the full store to localStorage.
+ * Load and validate the user shapes store. Reads from the host storage adapter
+ * when configured, otherwise from localStorage. Returns a safe default if the
+ * data is missing or corrupt.
+ * @returns {{ categories: string[], shapes: Object }}
+ */
+export function loadUserShapes () {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    return normalizeStore(adapter.getUserShapes())
+  }
+  let raw
+  try {
+    raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+  } catch {
+    raw = null
+  }
+  return normalizeStore(raw)
+}
+
+/**
+ * Persist the full store. Writes to the host storage adapter when configured,
+ * otherwise to localStorage.
  * @param {{ categories: string[], shapes: Object }} store
  */
 export function saveUserShapes (store) {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    adapter.setUserShapes(store)
+    return
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
 }
 

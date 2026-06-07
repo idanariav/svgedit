@@ -15,6 +15,7 @@ svgedit/
 │   ├── MainMenu.js                # File-menu operations (export, doc props, prefs)
 │   ├── Rulers.js                  # Canvas ruler rendering
 │   ├── themeUtil.js               # applyTheme() helper — canonical way to switch light/dark
+│   ├── userDataAdapter.js         # Registry for optional host storage adapter (palette + user shapes); localStorage fallback
 │   ├── locale.js                  # i18next setup and language loading
 │   ├── contextmenu.js             # Right-click context menu
 │   │
@@ -182,6 +183,32 @@ src/editor/index.html
 5. Extension can: add buttons to panels, register new `mode` handlers, listen for canvas events, inject UI HTML
 
 See [extensions.md](extensions.md) for the full extension reference.
+
+---
+
+## Host data persistence (`userDataAdapter`)
+
+By default the editor persists two pieces of user customization to its own
+`localStorage`: the **custom palette** (`sePalette.js`, key
+`svg-edit-custom-palette`) and the **saved shape library** (`userShapes.js`, key
+`svg-edit-user-shapes`).
+
+An embedding host that wants this data in *its own* store (so it survives
+updates / syncs) passes an adapter via `setConfig`:
+
+```js
+setConfig({ userDataAdapter: {
+  getPalette (), setPalette (overrides),       // sync read / fire-and-forget write
+  getUserShapes (), setUserShapes (store)
+}})
+```
+
+`EditorStartup.init()` registers it once into the `userDataAdapter.js` module
+registry **before** any component is constructed; `sePalette.js` and
+`userShapes.js` resolve it via `getUserDataAdapter()`. Reads are synchronous;
+writes receive the full current state on every edit. When no adapter is set,
+both fall back to the localStorage behavior above — standalone svgedit is
+unchanged.
 
 ---
 
