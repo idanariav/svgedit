@@ -433,9 +433,15 @@ class EditorStartup {
       if (/<svg[\s\S]*<\/svg>/i.test(text)) {
         e.preventDefault()
         const el = this.svgCanvas.importSvgString(text)
+        if (!el) return
+        // importSvgString places the document as a single non-editable <use>
+        // referencing a <symbol> in <defs> — which looks like one opaque image
+        // object on the canvas. Select it, then ungroup so the real shapes
+        // (paths, text, …) become an editable group.
+        this.svgCanvas.selectOnly([el])
+        this.svgCanvas.ungroupSelectedElement()
         this.svgCanvas.alignSelectedElements('m', 'page')
         this.svgCanvas.alignSelectedElements('c', 'page')
-        this.svgCanvas.selectOnly([el])
         this.topPanel.updateContextPanel()
       }
     }

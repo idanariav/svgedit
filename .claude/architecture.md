@@ -322,7 +322,9 @@ internal copy mirrors its JSON array onto the clipboard
 so the handler can distinguish svgedit's own clipboard (a JSON array →
 `pasteInCenter()` → `pasteElements`, reading `sessionStorage`) from an external
 SVG document (`<svg>…</svg>` text, e.g. another editor's "Copy as SVG" → imported
-as editable elements via `importSvgString`, then centered + selected). Editable
+via `importSvgString`, then `selectOnly` + `ungroupSelectedElement` to convert the
+non-editable `<use>`/`<symbol>` reference into a real editable group, then centered).
+Without the ungroup step the paste lands as one opaque, non-editable object. Editable
 fields (`INPUT`/`TEXTAREA`/contentEditable) are skipped so their native paste
 works. This single-arbiter design avoids double-pasting when both an internal copy
 and external SVG are present.

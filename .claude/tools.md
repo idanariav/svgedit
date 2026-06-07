@@ -361,5 +361,6 @@ Flying button (left panel):
 (`EditorStartup.js`), not the `v` keyboard shortcut. It accepts both svgedit's own
 internal clipboard (an internal copy, pasted via `pasteInCenter`) and an external
 **SVG document** pasted from another app (e.g. Excalidraw's "Copy as SVG") — the
-latter is imported as real, editable elements via `importSvgString`. See the
+latter is imported via `importSvgString` then `ungroupSelectedElement`ed into a
+real, editable group (otherwise it lands as one opaque `<use>` object). See the
 "System-clipboard paste" note in `architecture.md`.
