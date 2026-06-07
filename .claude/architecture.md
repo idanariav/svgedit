@@ -210,6 +210,23 @@ writes receive the full current state on every edit. When no adapter is set,
 both fall back to the localStorage behavior above — standalone svgedit is
 unchanged.
 
+### Live refresh across instances — `svgEditor.reloadUserData()`
+
+When several editor instances share one backing store, a write by one instance
+leaves the others showing their stale in-memory copy. The public method
+`svgEditor.reloadUserData()` (on `Editor`, see `Editor.js`) re-reads **both**
+stores from the adapter (or localStorage fallback) and re-renders the palette
+and shape library **for that instance only** — the host calls it on every
+*other* open instance after a write. It resolves both components through the
+instance's own root (`this.$svgEditor`), never a document-wide query, and
+no-ops safely when a component isn't mounted. Mechanics:
+
+- **Palette** — `sePalette.js` exposes a public `reload()` that re-runs
+  `loadOverrides()` + `renderSwatches()`.
+- **Shape library** — dispatches the existing `user-shapes-updated` event on
+  each `se-shape-library` element (desktop `#tool_shapelib` and the tablet
+  shell's instance), driving `_reloadUserShapes()`.
+
 ---
 
 ## Build Pipeline

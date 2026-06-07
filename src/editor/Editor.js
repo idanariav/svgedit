@@ -1430,6 +1430,34 @@ class Editor extends EditorStartup {
     }
     return this.svgCanvas.addExtension(name, initfn, initArgs)
   }
+
+  /**
+   * Re-read user data (custom palette + saved shape library) from the host
+   * storage adapter — or the localStorage fallback — and re-render the
+   * corresponding components for THIS editor instance only.
+   *
+   * Intended for hosts that back the palette and shape library with a shared
+   * store across multiple open editor instances: after one instance writes,
+   * the host calls `reloadUserData()` on every OTHER open instance so they
+   * drop their stale in-memory copy and re-render. Resolves both components
+   * through this instance's own DOM root (`this.$svgEditor`), never a
+   * document-wide query, so it can't refresh a sibling instance. Safely
+   * no-ops when a component isn't mounted.
+   * @function module:SVGEditor.reloadUserData
+   * @returns {void}
+   */
+  reloadUserData () {
+    const root = this.$svgEditor
+    if (!root) return
+    // Palette: re-read overrides and re-render swatches via the component's
+    // own public hook (no reaching into its private fields).
+    root.querySelector('se-palette')?.reload?.()
+    // Shape library: trigger the existing reload path. querySelectorAll covers
+    // both the desktop (#tool_shapelib) and tablet-shell instances.
+    root.querySelectorAll('se-shape-library').forEach((lib) => {
+      lib.dispatchEvent(new CustomEvent('user-shapes-updated'))
+    })
+  }
 }
 
 export default Editor

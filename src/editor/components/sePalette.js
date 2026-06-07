@@ -337,6 +337,17 @@ export class SEPalette extends HTMLElement {
 
   connectedCallback () {}
 
+  /**
+   * Re-read the override map from the host adapter (or localStorage fallback)
+   * and re-render the swatches. Lets a host live-refresh this palette instance
+   * after another editor instance wrote to the shared store.
+   * @returns {void}
+   */
+  reload () {
+    this._overrides = loadOverrides()
+    this.renderSwatches()
+  }
+
   // ── Palette state ────────────────────────────────────────────────────────
   getColor (i) {
     const override = this._overrides[i]
