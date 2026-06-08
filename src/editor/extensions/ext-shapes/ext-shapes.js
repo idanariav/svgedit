@@ -109,7 +109,12 @@ export default {
             'transform',
             `translate(${x},${y}) scale(0.005) translate(${-bbox.x},${-bbox.y})`
           )
-          canv.recalculateDimensions(imported)
+          // NOTE: deliberately *no* recalculateDimensions here. For container
+          // elements (`<g>`, `<image>`, …) recalc cannot bake a scale into
+          // geometry, so `getBBox()` keeps reporting the un-scaled local bbox —
+          // which made the drag-resize ratio in mouseMove off by the seed scale
+          // (the shape stayed ~0 size). Instead, mouseMove sizes the shape
+          // deterministically from the saved bbox, and mouseUp recalcs once.
 
           // Stamp a provenance link onto the imported root AND every descendant.
           // Stamping every element (not just the wrapper) keeps the link alive
@@ -159,6 +164,35 @@ export default {
 
         const x = opts.mouse_x / zoom
         const y = opts.mouse_y / zoom
+
+        if (_userShapeData) {
+          // ── User shape: size deterministically from the saved bbox ──────────
+          // Drives placement straight off `bbox` (the content's own coordinate
+          // space) instead of the path-shape's incremental getBBox()/transform
+          // accumulation, which breaks for container elements whose transform
+          // can't be flattened. The transform is rewritten from scratch each
+          // move (no recalc until mouseUp), keeping the saved bbox valid.
+          const { bbox } = _userShapeData
+          const newbox = {
+            x: Math.min(startX, x),
+            y: Math.min(startY, y),
+            width: Math.abs(x - startX),
+            height: Math.abs(y - startY)
+          }
+          let sx = (newbox.width / bbox.width) || 0
+          let sy = (newbox.height / bbox.height) || 0
+          if (!evt.shiftKey) {
+            // Default: uniform scale (preserve aspect). Shift = free resize.
+            const min = Math.min(sx, sy)
+            sx = min
+            sy = min
+          }
+          curShape.setAttribute(
+            'transform',
+            `translate(${newbox.x},${newbox.y}) scale(${sx},${sy}) translate(${-bbox.x},${-bbox.y})`
+          )
+          return
+        }
 
         const tlist = curShape.transform.baseVal
         const box = curShape.getBBox()
@@ -212,6 +246,12 @@ export default {
         if (mode !== modeId) { return undefined }
 
         const keepObject = (opts.event.clientX !== startClientPos.x && opts.event.clientY !== startClientPos.y)
+
+        // Finalize the user shape's transform once (bakes primitives into
+        // geometry, normalizes containers) now that resizing is done.
+        if (_userShapeData && keepObject) {
+          canv.recalculateDimensions(curShape)
+        }
 
         return {
           keep: keepObject,
