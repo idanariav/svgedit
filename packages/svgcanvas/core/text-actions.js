@@ -326,40 +326,11 @@ class TextActions {
    * @returns {void}
    * @private
    */
-  #selectAll = (evt) => {
-    this.#setSelection(0, this.#curtext.textContent.length)
-    evt.target.removeEventListener('click', this.#selectAll)
-  }
-
-  /**
-   *
-   * @param {Event} evt
-   * @returns {void}
-   * @private
-   */
-  #selectWord = (evt) => {
+  #selectAll = () => {
     if (!this.#allowDbl || !this.#curtext) {
       return
     }
-    const zoom = svgCanvas.getZoom()
-    const ept = transformPoint(evt.pageX, evt.pageY, svgCanvas.getrootSctm())
-    const mouseX = ept.x * zoom
-    const mouseY = ept.y * zoom
-    const pt = this.#screenToPt(mouseX, mouseY)
-
-    const index = this.#getIndexFromPoint(pt.x, pt.y)
-    const str = this.#curtext.textContent
-    const first = str.slice(0, index).replace(/[a-z\d]+$/i, '').length
-    const m = str.slice(index).match(/^[a-z\d]+/i)
-    const last = (m ? m[0].length : 0) + index
-    this.#setSelection(first, last)
-
-    // Set tripleclick
-    svgCanvas.$click(evt.target, this.#selectAll)
-
-    setTimeout(() => {
-      evt.target.removeEventListener('click', this.#selectAll)
-    }, 300)
+    this.#setSelection(0, this.#curtext.textContent.length)
   }
 
   /**
@@ -571,8 +542,8 @@ class TextActions {
     this.#chardata.length = len
     this.#textinput.focus()
 
-    this.#curtext.removeEventListener('dblclick', this.#selectWord)
-    this.#curtext.addEventListener('dblclick', this.#selectWord)
+    this.#curtext.removeEventListener('dblclick', this.#selectAll)
+    this.#curtext.addEventListener('dblclick', this.#selectAll)
 
     if (!len) {
       end = { x: this.#textbb.x + this.#textbb.width / 2, width: 0 }
