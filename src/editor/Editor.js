@@ -19,6 +19,7 @@ import './dialogs/index.js'
 import { isMac } from '@svgedit/svgcanvas/common/browser'
 
 import SvgCanvas from '@svgedit/svgcanvas'
+import Paint from '@svgedit/svgcanvas/core/paint.js'
 import ConfigObj from './ConfigObj.js'
 import EditorStartup from './EditorStartup.js'
 import LeftPanel from './panels/LeftPanel.js'
@@ -552,6 +553,19 @@ class Editor extends EditorStartup {
     if (svgcanvas) {
       const isSolid = color && color !== 'none' && color !== 'chessboard' && color !== 'gradient' && !url
       svgcanvas.style.background = isSolid ? color : ''
+    }
+
+    // Keep the bottom-panel background swatch in sync when the background is set
+    // programmatically (e.g. a host restoring a saved per-document background).
+    // Otherwise the swatch only reflects the pref read once at BottomPanel.init,
+    // so the canvas would show the restored color while the swatch stayed white.
+    // Solid colors only; gradients/images/chessboard fall back to the swatch's
+    // own default rendering, matching the init path.
+    const bgPicker = $id('bg_color')
+    if (bgPicker && color && color !== 'gradient' && color !== 'chessboard' && !gradientElem && !url) {
+      bgPicker.setPaint(
+        new Paint({ alpha: 100, solidColor: color === 'none' ? 'none' : color.replace('#', '') })
+      )
     }
   }
 
