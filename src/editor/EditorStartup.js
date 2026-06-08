@@ -823,20 +823,25 @@ class EditorStartup {
       ].join('')
 
       // Optional vault-file link — only when an embedding host provides a file
-      // list. The input filters an inline <datalist>; the chosen path maps back
-      // to the host's link on save (see linkByPath below).
+      // list. A native <datalist> can't be forced to open *below* the input
+      // (Chromium decides direction by viewport space), so we render our own
+      // suggestion list, absolutely positioned under the field. The chosen path
+      // maps back to the host's link on save (see linkByPath below).
       const linkByPath = new Map(vaultFiles.map(f => [f.path, f.link]))
-      const vaultOptions = vaultFiles
-        .map(f => `<option value="${f.path.replace(/"/g, '&quot;')}"></option>`)
-        .join('')
       const vaultControl = hasVault
         ? `
         <div style="margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
           <span style="display:block;margin-bottom:4px">Linked vault file (optional)</span>
-          <input id="_asl_vault_link" type="text" list="_asl_vault_list"
-                 placeholder="Type to search files…" autocomplete="off"
-                 style="${inputStyle};margin-top:0"/>
-          <datalist id="_asl_vault_list">${vaultOptions}</datalist>
+          <div style="position:relative">
+            <input id="_asl_vault_link" type="text"
+                   placeholder="Type to search files…" autocomplete="off"
+                   style="${inputStyle};margin-top:0"/>
+            <ul id="_asl_vault_menu" style="position:absolute;top:calc(100% + 2px);
+                left:0;right:0;z-index:10;max-height:180px;overflow-y:auto;margin:0;
+                padding:4px 0;list-style:none;background:var(--chrome-bg,#FFF);
+                border:1px solid var(--field-border,#DDE1E7);border-radius:7px;
+                box-shadow:0 6px 20px rgba(0,0,0,.15);display:none"></ul>
+          </div>
         </div>`
         : ''
 
@@ -912,6 +917,68 @@ class EditorStartup {
         if (!hasVault) return null
         const path = dlg.querySelector('#_asl_vault_link').value.trim()
         return path ? (linkByPath.get(path) || null) : null
+      }
+
+      // Custom suggestion dropdown that always opens below the input, with the
+      // host-provided order preserved (active drawing first). Selecting an entry
+      // stamps its path into the input; getLinkedFile() maps it back to a link.
+      if (hasVault) {
+        const linkInput = dlg.querySelector('#_asl_vault_link')
+        const menu = dlg.querySelector('#_asl_vault_menu')
+        const escText = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        const optStyle = 'padding:6px 10px;cursor:pointer;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;font-size:13px'
+        let shown = []
+        let activeIdx = -1
+
+        const closeMenu = () => { menu.style.display = 'none'; activeIdx = -1 }
+        const highlight = () => {
+          [...menu.children].forEach((li, i) => {
+            li.style.background = i === activeIdx ? 'var(--accent,#2962FF)' : 'transparent'
+            li.style.color = i === activeIdx ? '#FFF' : 'var(--fg,#1B1F24)'
+          })
+        }
+        const renderMenu = () => {
+          const q = linkInput.value.trim().toLowerCase()
+          shown = q ? vaultFiles.filter(f => f.path.toLowerCase().includes(q)) : vaultFiles.slice()
+          if (!shown.length) { closeMenu(); return }
+          menu.innerHTML = shown
+            .map((f, i) => `<li data-idx="${i}" style="${optStyle}">${escText(f.path)}</li>`)
+            .join('')
+          activeIdx = -1
+          menu.style.display = 'block'
+        }
+        const choose = (i) => {
+          if (i < 0 || i >= shown.length) return
+          linkInput.value = shown[i].path
+          closeMenu()
+        }
+
+        linkInput.addEventListener('focus', renderMenu)
+        linkInput.addEventListener('input', renderMenu)
+        linkInput.addEventListener('keydown', (e) => {
+          if (menu.style.display === 'none') return
+          if (e.key === 'ArrowDown') {
+            e.preventDefault(); activeIdx = Math.min(activeIdx + 1, shown.length - 1); highlight()
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight()
+          } else if (e.key === 'Enter' && activeIdx >= 0) {
+            e.preventDefault(); choose(activeIdx)
+          } else if (e.key === 'Escape') {
+            // Close the dropdown without dismissing the whole dialog.
+            e.preventDefault(); e.stopPropagation(); closeMenu()
+          }
+        })
+        // mousedown (not click) fires before the input's blur hides the menu.
+        menu.addEventListener('mousedown', (e) => {
+          const li = e.target.closest('li')
+          if (li) { e.preventDefault(); choose(Number(li.dataset.idx)) }
+        })
+        menu.addEventListener('mousemove', (e) => {
+          const li = e.target.closest('li')
+          if (li) { activeIdx = Number(li.dataset.idx); highlight() }
+        })
+        linkInput.addEventListener('blur', () => setTimeout(closeMenu, 120))
       }
 
       const cleanup = (value) => {
