@@ -183,6 +183,7 @@ of `ext-*/ext-*.js`, bundled into `Editor.js`).
 | File | Purpose |
 |------|---------|
 | `vite.config.mjs` | Vite build config (ES + IIFE outputs, plugins, entry points) |
+| `src/vite-env.d.ts` | Ambient TS declarations for Vite imports (`vite/client` + `*.html` as string) so the IDE resolves template/`?inline` imports |
 | `scripts/copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are **not** copied) |
 | `package.json` | Scripts: `build`, `start` (dev server :8000), `build-docs` |
 | `packages/svgcanvas/package.json` | svgcanvas workspace package |
