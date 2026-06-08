@@ -737,28 +737,26 @@ class EditorStartup {
     const elems = this.svgCanvas.getSelectedElements().filter(Boolean)
     if (!elems.length) return
 
-    // Determine target element: use existing <g> if single group, otherwise clone into a temp <g>
+    // Determine target element: a single element is serialized as-is, multiple
+    // elements are wrapped in a temporary <g>. In every case the serialized
+    // content keeps each element's own `transform`, so the bbox must be measured
+    // in that same (parent/user) coordinate space — `getStrokedBBox` accounts
+    // for the transform, whereas a bare `getBBox()` does not, which would leave
+    // the thumbnail off-centre and clipped.
     let targetElem
-    let bbox
-    if (elems.length === 1 && elems[0].tagName === 'g') {
+    if (elems.length === 1) {
       targetElem = elems[0]
-      bbox = elems[0].getBBox()
-    } else if (elems.length === 1) {
-      targetElem = elems[0]
-      bbox = elems[0].getBBox()
     } else {
-      // Multiple elements: wrap clones in a temporary <g> for serialization
       const ns = 'http://www.w3.org/2000/svg'
       const tempG = document.createElementNS(ns, 'g')
       elems.forEach(el => tempG.appendChild(el.cloneNode(true)))
       targetElem = tempG
-      // Union bbox from canvas helper
-      try {
-        const sb = this.svgCanvas.getStrokedBBox(elems)
-        bbox = sb || elems[0].getBBox()
-      } catch {
-        bbox = elems[0].getBBox()
-      }
+    }
+    let bbox
+    try {
+      bbox = this.svgCanvas.getStrokedBBox(elems) || elems[0].getBBox()
+    } catch {
+      bbox = elems[0].getBBox()
     }
 
     const result = await this._showAddToLibraryDialog()
