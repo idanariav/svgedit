@@ -967,12 +967,6 @@ export class SeShapeLibrary extends HTMLElement {
   // ── Popover render ─────────────────────────────────────────────────────────
   _renderPopover () {
     const popover = this._shadow.querySelector('.sl-popover')
-    const all = this._popEntries()
-    const q = this._popQuery.toLowerCase()
-    const shapes = q
-      ? all.filter(([id]) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q))
-      : all.slice(0, 24)
-
     const visibleCats = this._categories.slice(0, 7)
     const total = this._totalCount()
 
@@ -992,20 +986,7 @@ export class SeShapeLibrary extends HTMLElement {
           </button>`).join('')}
         <button class="sl-pop-cat sl-pop-cat-more" data-more>More…</button>
       </div>
-      <div class="sl-pop-grid">
-        ${shapes.map(([id, shapeData, cat, catId]) => {
-          const isUserShape = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
-          const thumb = isUserShape
-            ? this._userShapeThumb(shapeData, 26, 26)
-            : this._shapeThumb(shapeData, cat, 26, 26)
-          const label = isUserShape ? id : this._fmtName(id)
-          return `
-          <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
-                  data-id="${this._escAttr(id)}" data-cat="${this._escAttr(catId)}" title="${this._escAttr(label)}">
-            ${thumb}
-          </button>`
-        }).join('')}
-      </div>
+      <div class="sl-pop-grid">${this._popGridHtml()}</div>
       <footer class="sl-pop-foot">
         <span class="sl-pop-hint">Click a shape, then draw on canvas to size it.</span>
         <button class="sl-pop-browse">Browse all${total ? ` ${total}` : ''} →</button>
@@ -1030,22 +1011,20 @@ export class SeShapeLibrary extends HTMLElement {
       this._openModal()
     })
 
-    popover.querySelectorAll('.sl-chip[data-id]').forEach(chip => {
-      chip.addEventListener('click', e => {
-        e.stopPropagation()
-        this._selectedCat = chip.dataset.cat || this._popCatId
-        this._selectedId = chip.dataset.id
-        this._doInsert()
-      })
-    })
+    this._bindPopChips(popover)
 
     const filterInput = popover.querySelector('.sl-pop-search-box input')
     filterInput?.addEventListener('input', () => {
       clearTimeout(this._searchTimer)
       this._searchTimer = setTimeout(() => {
+        // Update only the grid — re-rendering the whole popover would rebuild
+        // the input element and reset the caret, reversing typed characters.
         this._popQuery = filterInput.value
-        this._renderPopover()
-        this._shadow.querySelector('.sl-pop-search-box input')?.focus()
+        const grid = popover.querySelector('.sl-pop-grid')
+        if (grid) {
+          grid.innerHTML = this._popGridHtml()
+          this._bindPopChips(popover)
+        }
       }, 200)
     })
 
@@ -1053,6 +1032,40 @@ export class SeShapeLibrary extends HTMLElement {
       e.stopPropagation()
       this._categoryId = this._popCatId
       this._openModal()
+    })
+  }
+
+  /** Build the popover grid markup for the current filter query. */
+  _popGridHtml () {
+    const all = this._popEntries()
+    const q = this._popQuery.toLowerCase()
+    const shapes = q
+      ? all.filter(([id]) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q))
+      : all.slice(0, 24)
+
+    return shapes.map(([id, shapeData, cat, catId]) => {
+      const isUserShape = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
+      const thumb = isUserShape
+        ? this._userShapeThumb(shapeData, 26, 26)
+        : this._shapeThumb(shapeData, cat, 26, 26)
+      const label = isUserShape ? id : this._fmtName(id)
+      return `
+          <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
+                  data-id="${this._escAttr(id)}" data-cat="${this._escAttr(catId)}" title="${this._escAttr(label)}">
+            ${thumb}
+          </button>`
+    }).join('')
+  }
+
+  /** Bind click handlers to the popover's shape chips. */
+  _bindPopChips (popover) {
+    popover.querySelectorAll('.sl-chip[data-id]').forEach(chip => {
+      chip.addEventListener('click', e => {
+        e.stopPropagation()
+        this._selectedCat = chip.dataset.cat || this._popCatId
+        this._selectedId = chip.dataset.id
+        this._doInsert()
+      })
     })
   }
 
