@@ -788,7 +788,13 @@ class EditorStartup {
    * Show a native <dialog> prompting for a shape label and category.
    * @returns {Promise<{label: string, category: string, linkedFile: ?string}|null>}
    */
-  _showAddToLibraryDialog () {
+  async _showAddToLibraryDialog () {
+    // An embedding host can expose the linkable files up front so the dialog can
+    // offer them inline (a native <datalist>) rather than delegating to a host
+    // picker. Delegating opened a second modal that rendered *behind* this
+    // top-layer <dialog>; an inline datalist popup shares the top layer instead.
+    const hasVault = typeof window.svgEditHost?.listVaultFiles === 'function'
+    const vaultFiles = hasVault ? (await window.svgEditHost.listVaultFiles()) || [] : []
     return new Promise((resolve) => {
       const userCats = getUserCategories()
       const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
@@ -818,22 +824,21 @@ class EditorStartup {
         '<option value="__new__">Other…</option>'
       ].join('')
 
-      // Optional vault-file link — only when an embedding host can pick one.
-      const hasVault = typeof window.svgEditHost?.pickVaultFile === 'function'
+      // Optional vault-file link — only when an embedding host provides a file
+      // list. The input filters an inline <datalist>; the chosen path maps back
+      // to the host's link on save (see linkByPath below).
+      const linkByPath = new Map(vaultFiles.map(f => [f.path, f.link]))
+      const vaultOptions = vaultFiles
+        .map(f => `<option value="${f.path.replace(/"/g, '&quot;')}"></option>`)
+        .join('')
       const vaultControl = hasVault
         ? `
         <div style="margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
           <span style="display:block;margin-bottom:4px">Linked vault file (optional)</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="_asl_vault_link" type="text" readonly placeholder="None"
-                   style="${inputStyle};margin-top:0;flex:1"/>
-            <button id="_asl_vault_btn" type="button"
-                    style="padding:7px 12px;border-radius:7px;border:1px solid var(--chrome-border,#DDE1E7);
-                           background:transparent;color:var(--fg,#1B1F24);font-size:13px;cursor:pointer;
-                           font-family:inherit;white-space:nowrap">
-              Link…
-            </button>
-          </div>
+          <input id="_asl_vault_link" type="text" list="_asl_vault_list"
+                 placeholder="Type to search files…" autocomplete="off"
+                 style="${inputStyle};margin-top:0"/>
+          <datalist id="_asl_vault_list">${vaultOptions}</datalist>
         </div>`
         : ''
 
@@ -903,16 +908,12 @@ class EditorStartup {
       const getCategory = () =>
         select.value === '__new__' ? newInput.value.trim() : select.value
 
-      // Optional provenance link chosen via the host picker.
-      let linkedFile = null
-      if (hasVault) {
-        const linkInput = dlg.querySelector('#_asl_vault_link')
-        dlg.querySelector('#_asl_vault_btn').addEventListener('click', async () => {
-          const r = await window.svgEditHost?.pickVaultFile?.()
-          if (!r) return
-          linkedFile = r.link || null
-          linkInput.value = linkedFile || ''
-        })
+      // Resolve the chosen file path (from the datalist) back to the host link.
+      // Only a path the host actually offered counts; free text is ignored.
+      const getLinkedFile = () => {
+        if (!hasVault) return null
+        const path = dlg.querySelector('#_asl_vault_link').value.trim()
+        return path ? (linkByPath.get(path) || null) : null
       }
 
       const cleanup = (value) => {
@@ -926,7 +927,7 @@ class EditorStartup {
       dlg.querySelector('#_asl_ok').addEventListener('click', () => {
         const label = dlg.querySelector('#_asl_label').value.trim()
         const category = getCategory()
-        cleanup(label && category ? { label, category, linkedFile } : null)
+        cleanup(label && category ? { label, category, linkedFile: getLinkedFile() } : null)
       })
 
       // Escape key
