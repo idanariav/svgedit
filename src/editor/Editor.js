@@ -544,17 +544,6 @@ class Editor extends EditorStartup {
     // This should be done in  this.svgCanvas.js for the borderRect fill
     this.svgCanvas.setBackground(color, url, gradientElem)
 
-    // Mirror the chosen color onto #svgcanvas (the expanded drawing surface
-    // that visually surrounds the document rect) so the gutter around the
-    // document picks it up too — otherwise the picked color reads as a small
-    // rectangle floating in white. Solid colors only; gradients, images, and
-    // the chessboard pattern fall back to the default surface bg.
-    const svgcanvas = this.svgCanvas?.getContainer?.() ?? document.getElementById('svgcanvas')
-    if (svgcanvas) {
-      const isSolid = color && color !== 'none' && color !== 'chessboard' && color !== 'gradient' && !url
-      svgcanvas.style.background = isSolid ? color : ''
-    }
-
     // Keep the bottom-panel background swatch in sync when the background is set
     // programmatically (e.g. a host restoring a saved per-document background).
     // Otherwise the swatch only reflects the pref read once at BottomPanel.init,
