@@ -133,15 +133,20 @@ const svgCanvasToString = () => {
 
 /**
  * Build an @font-face <style> element for every embeddable font actually used by
- * text in the document and insert it into <defs>. Returns the inserted element
- * (so it can be removed after serialization) or null if nothing was embedded.
+ * text in the given SVG root and insert it into that root's <defs>. Returns the
+ * inserted element (so it can be removed after serialization) or null if nothing
+ * was embedded.
+ *
+ * Works on any root — the live document (SVG export) or a detached clone (raster/
+ * PDF export, where text rendered by an <img> has no access to the document's
+ * fonts and would otherwise fall back to a default family).
+ * @param {SVGSVGElement} [svgContent=svgCanvas.getSvgContent()] - The SVG root to embed into
  * @returns {SVGStyleElement|null}
  */
-const embedUsedFonts = () => {
+const embedUsedFonts = (svgContent = svgCanvas.getSvgContent()) => {
   const fonts = svgCanvas.getEncodableFonts()
   if (!fonts || !Object.keys(fonts).length) return null
 
-  const svgContent = svgCanvas.getSvgContent()
   // Collect the set of font-family values referenced by text/tspan elements
   const used = new Set()
   svgContent.querySelectorAll('text, tspan').forEach(el => {
@@ -165,7 +170,12 @@ const embedUsedFonts = () => {
   })
   if (!faces.length) return null
 
-  const defs = findDefs()
+  // Find (or create) the <defs> within the supplied root, not the live document.
+  let defs = svgContent.getElementsByTagNameNS(NS.SVG, 'defs')[0]
+  if (!defs) {
+    defs = svgContent.ownerDocument.createElementNS(NS.SVG, 'defs')
+    svgContent.insertBefore(defs, svgContent.firstChild)
+  }
   const style = svgContent.ownerDocument.createElementNS(NS.SVG, 'style')
   style.setAttribute('type', 'text/css')
   // base64 + CSS punctuation contain no XML-special chars, so a text node
@@ -982,6 +992,11 @@ const rasterExport = (
     // Frames mark export regions and must never appear in an exported image.
     svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
 
+    // Inline used custom fonts as base64 @font-face. The clone is rendered via an
+    // <img>, which has no access to the document's fonts, so without this the
+    // text would rasterize with a default font instead of the chosen one.
+    embedUsedFonts(svgClone)
+
     // When a crop region (a frame's bounds) is supplied, narrow the clone's
     // viewBox to it and set an explicit intrinsic size (Firefox renders nothing
     // from an SVG <img> without width/height) so only that region is rasterized.
@@ -1083,6 +1098,10 @@ const exportPDF = (
 
     // Frames mark export regions and must never appear in an exported image.
     svgElement.querySelectorAll('[data-frame]').forEach(f => f.remove())
+
+    // Inline used custom fonts so the <img>-rendered clone keeps the chosen font
+    // (see rasterExport for rationale).
+    embedUsedFonts(svgElement)
 
     // Crop to a frame's bounds when supplied (see rasterExport for rationale).
     let outW = res.w

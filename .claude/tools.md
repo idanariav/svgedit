@@ -245,7 +245,9 @@ via `resolveFrameCrop(frameId)` to a `{x,y,w,h}` crop box (from the frame's
 both export paths **always strip `[data-frame]` elements** from the clone (frames
 never appear in an image) and, when a crop is given, narrow the clone's `viewBox`
 and set an explicit `width`/`height` (required for Firefox `<img>` rasterization)
-sized to the frame. `File → Save` is unaffected — it keeps frames in the document.
+sized to the frame. Both paths also call `embedUsedFonts(clone)` so custom fonts
+survive rasterization (the `<img>` has no access to the document's fonts — see
+Fonts below). `File → Save` is unaffected — it keeps frames in the document.
 
 ---
 
@@ -324,7 +326,7 @@ Flying button (left panel):
 - Font names preview in their own typeface: as rows scroll into view an `IntersectionObserver` lazily injects a `text=`-subsetted Google Fonts `<link>` (a few KB, just the name's glyphs) into `document.head`. Needs network for the preview; offline, names stay in the UI font until downloaded
 - Picking a font: `fontStore.ensureFont()` fetches the WOFF2 once via the Google Fonts CSS2 API, stores it in IndexedDB (`svgedit-fonts` DB), registers it with `document.fonts` (live canvas render) and the canvas font registry (`svgCanvas.setEncodableFont`). After the one-time download it works fully offline
 - On startup ext-fonts calls `restoreAll()` to re-register every cached font and re-add it to the `tool_font_family` dropdown
-- **Embed-on-export:** `core/svg-exec.js` `embedUsedFonts()` injects a `<style>` with one base64 `@font-face` per *used* font into `<defs>` (gated on `getSvgOptionApply()`, mirrors the image-embed path). Family names are emitted **unquoted** with no `format()` so the payload has no XML-special chars and survives serialization. The `<style>` is removed right after serialization (live doc untouched). Fonts not referenced by any text are not embedded
+- **Embed-on-export:** `core/svg-exec.js` `embedUsedFonts(svgRoot)` injects a `<style>` with one base64 `@font-face` per *used* font into the root's `<defs>` (finds/creates `<defs>` on the passed root, not the live doc). Family names are emitted **unquoted** with no `format()` so the payload has no XML-special chars and survives serialization. Fonts not referenced by any text are not embedded. Three callers: (1) the SVG-string path (`svgCanvasToString`) embeds into the *live* doc gated on `getSvgOptionApply()`, then removes the `<style>` right after serialization (live doc untouched); (2) `rasterExport` and (3) `exportPDF` embed unconditionally into their *clone* — without this, text rendered through the `<img>` element falls back to a default font since the `<img>` has no access to `document.fonts`
 - `fontStore.js` is imported **only** by `seFontLibrary.js` so it stays a single bundled module instance; `ext-fonts.js` is DOM-only and reaches it via the element's `restoreCachedFonts()` method
 
 ---
