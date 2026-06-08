@@ -1,5 +1,6 @@
 /* globals svgEditor */
 import cMenuLayersDialog from './cmenuLayersDialog.html'
+import { positionContextMenu } from './positionContextMenu.js'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuLayersDialog
@@ -119,19 +120,7 @@ export class SeCMenuLayerDialog extends HTMLElement {
     const current = this
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
-      let x = e.clientX - 126
-      let y = e.clientY
-      current.$dialog.style.top = y + 'px'
-      current.$dialog.style.left = x + 'px'
-      current.$dialog.style.display = 'block'
-      // Clamp to viewport using actual rendered dimensions
-      const menuRect = current.$dialog.getBoundingClientRect()
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      if (menuRect.right > vw) x = Math.max(0, x - (menuRect.right - vw))
-      if (menuRect.bottom > vh) y = Math.max(0, y - (menuRect.bottom - vh))
-      current.$dialog.style.top = y + 'px'
-      current.$dialog.style.left = x + 'px'
+      positionContextMenu(current.$dialog, e.clientX, e.clientY, -126)
     }
     const onMenuCloseHandler = (e) => {
       if (e.button !== 2) {

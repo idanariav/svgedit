@@ -807,21 +807,33 @@ export class SeShapeLibrary extends HTMLElement {
 
   _positionPopover (popover) {
     const btnRect = this.getBoundingClientRect()
-    const popRect = popover.getBoundingClientRect()
+    // `position: fixed` is resolved against the nearest transformed/contained
+    // ancestor (e.g. Obsidian's workspace leaf), not necessarily the viewport,
+    // so the style coords we set are offset from the viewport coords we compute
+    // below. Render at the origin to measure that offset and correct for it
+    // (a no-op in the plain-viewport case where blockLeft/blockTop are 0).
+    popover.style.left = '0px'
+    popover.style.top = '0px'
+    const zeroRect = popover.getBoundingClientRect()
+    const blockLeft = zeroRect.left
+    const blockTop = zeroRect.top
+    const popW = zeroRect.width
+    const popH = zeroRect.height
     const vw = window.innerWidth
     const vh = window.innerHeight
     const gap = 8
 
     // Prefer opening to the right of the button; flip left if it would overflow
     let left = btnRect.right + gap
-    if (left + popRect.width > vw - gap) left = Math.max(gap, btnRect.left - gap - popRect.width)
+    if (left + popW > vw - gap) left = Math.max(gap, btnRect.left - gap - popW)
 
     // Align top to button, clamp so bottom stays within viewport
     let top = Math.max(gap, btnRect.top)
-    if (top + popRect.height > vh - gap) top = Math.max(gap, vh - gap - popRect.height)
+    if (top + popH > vh - gap) top = Math.max(gap, vh - gap - popH)
 
-    popover.style.left = `${left}px`
-    popover.style.top = `${top}px`
+    // Convert the viewport target back into the containing block's coordinates.
+    popover.style.left = `${left - blockLeft}px`
+    popover.style.top = `${top - blockTop}px`
   }
 
   async _openModal () {
