@@ -1110,6 +1110,11 @@ class TopPanel {
     const { i18next } = this.editor
     template.innerHTML = topPanelHTML
     this.editor.$svgEditor.append(template.content.cloneNode(true))
+    // Optionally hide the drawing-name panel (host UI may already show the filename)
+    if (this.editor.configObj.curConfig.hideTitle) {
+      const titlePanel = $id('title_panel')
+      if (titlePanel) titlePanel.style.display = 'none'
+    }
     // svg editor source dialoag added to DOM
     const newSeEditorDialog = document.createElement(
       'se-svg-source-editor-dialog'

@@ -166,6 +166,8 @@ export default class ConfigObj {
       baseUnit: 'px',
       snappingStep: 10,
       showRulers: true,
+      hideTitle: false, // Hide the drawing-name (e.g. "untitled.svg") panel in the top bar; useful when the host UI already shows the filename
+
       // SOURCE OUTPUT BEHAVIOR
       dynamicOutput: false,
       // URL BEHAVIOR CONFIGURATION
