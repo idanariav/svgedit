@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { isMac } from '@svgedit/svgcanvas/common/browser'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -196,7 +197,10 @@ export class ToolButton extends HTMLElement {
     if (shortcut) {
       document.addEventListener('keydown', (e) => {
         if (e.target.nodeName !== 'BODY') return
-        const key = `${(e.metaKey) ? 'meta+' : ''}${(e.ctrlKey) ? 'ctrl+' : ''}${e.key.toUpperCase()}`
+        // Treat the platform "command" modifier as the shortcut's `ctrl+`
+        // prefix: Cmd (metaKey) on Mac, Ctrl (ctrlKey) elsewhere.
+        const cmdDown = isMac() ? e.metaKey : e.ctrlKey
+        const key = `${cmdDown ? 'ctrl+' : ''}${e.key.toUpperCase()}`
         if (shortcut !== key) return
         this.click()
         e.preventDefault()
