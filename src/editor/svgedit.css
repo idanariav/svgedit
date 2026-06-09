@@ -365,16 +365,16 @@
 #sidepanel_handle {
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  /* override the global `.svg_editor * { transform-origin: 0 0 }` so the
-     rotate happens around the handle's centre — keeps the layout box and
-     the visual box in the same place, so `right: 0` / `right: 100%`
-     position the handle predictably against the panel edges. */
-  transform-origin: center;
-  transform: translateY(-50%) rotate(180deg);
   color: var(--muted);
   position: absolute;
   right: 0;
+  /* Centre vertically with a negative margin (height is fixed) rather than a
+     `transform: translateY(-50%)`. A GPU compositor can fail to paint the
+     rotated vertical text when `writing-mode` is combined with a transform on
+     the same element (the label then renders as a blank tab), so the handle is
+     kept transform-free. */
   top: 50%;
+  margin-top: -60px;
   cursor: pointer;
   height: 120px;
   width: 28px;
