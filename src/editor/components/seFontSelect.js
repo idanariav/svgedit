@@ -256,8 +256,22 @@ export class SeFontSelect extends HTMLElement {
     if (left + rect.width > window.innerWidth - gap) left = Math.max(gap, window.innerWidth - gap - rect.width)
     let top = btn.bottom + gap
     if (top + rect.height > window.innerHeight - gap) top = Math.max(gap, btn.top - gap - rect.height)
+    top = Math.max(gap, top)
     this._popover.style.left = `${left}px`
-    this._popover.style.top = `${Math.max(gap, top)}px`
+    this._popover.style.top = `${top}px`
+    // `left`/`top` are viewport coordinates, but a `position: fixed` element is
+    // resolved against the nearest ancestor that establishes a containing block
+    // (any transform/filter/contain/perspective/will-change). Embedders such as
+    // Obsidian — or their themes — routinely set those on a pane, which would
+    // otherwise fling this popover far off the trigger. Re-measure and correct by
+    // the delta so it lands under the trigger regardless of the containing block.
+    const after = this._popover.getBoundingClientRect()
+    const dx = left - after.left
+    const dy = top - after.top
+    if (dx || dy) {
+      this._popover.style.left = `${left + dx}px`
+      this._popover.style.top = `${top + dy}px`
+    }
   }
 
   _visibleOptions () {
