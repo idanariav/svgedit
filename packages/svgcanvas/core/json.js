@@ -8,9 +8,6 @@
 import { getElement, assignAttributes, cleanupElement } from './utilities.js'
 import { NS } from './namespaces.js'
 
-let svgCanvas = null
-let svgdoc_ = null
-
 /**
  * @function module:json.jsonContext#getSelectedElements
  * @returns {Element[]} the array with selected DOM elements
@@ -26,15 +23,14 @@ let svgdoc_ = null
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-  svgdoc_ = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
+  const svgdoc_ = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
 /**
 * @function module:json.getJsonFromSvgElements Iterate element and return json format
 * @param {ArgumentsArray} data - element
 * @returns {svgRootElement}
 */
-export const getJsonFromSvgElements = (data) => {
+  const getJsonFromSvgElements = (data) => {
   if (!data) return null
 
   // Text node
@@ -80,7 +76,7 @@ export const getJsonFromSvgElements = (data) => {
 * @type {module:utilities.EditorContext#addSVGElementsFromJson|module:path.EditorContext#addSVGElementsFromJson}
 */
 
-export const addSVGElementsFromJson = (data) => {
+  const addSVGElementsFromJson = (data) => {
   if (!svgdoc_) { return null }
   if (data === null || data === undefined) return svgdoc_.createTextNode('')
   if (typeof data === 'string') return svgdoc_.createTextNode(data)
@@ -90,7 +86,7 @@ export const addSVGElementsFromJson = (data) => {
   let shape = null
   if (typeof id === 'string' && id) {
     try {
-      shape = getElement(id)
+      shape = svgCanvas.getElement(id)
     } catch (e) {
       // Ignore (CSS selector may be invalid); fallback to getElementById below
     }
@@ -149,4 +145,8 @@ export const addSVGElementsFromJson = (data) => {
   }
 
   return shape
+  }
+
+  svgCanvas.getJsonFromSvgElements = getJsonFromSvgElements
+  svgCanvas.addSVGElementsFromJson = addSVGElementsFromJson
 }

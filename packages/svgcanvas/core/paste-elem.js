@@ -8,16 +8,15 @@ const {
   InsertElementCommand, BatchCommand
 } = hstry
 
-let svgCanvas = null
-
 /**
+* Reentrant init: `pasteElements` is created per-instance, closed over this
+* canvas, so several editors can coexist in one realm.
 * @function module:paste-elem.init
-* @param {module:paste-elem.pasteContext} pasteContext
+* @param {module:paste-elem.pasteContext} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas
 
 /**
 * @function module:svgcanvas.SvgCanvas#pasteElements
@@ -28,7 +27,7 @@ export const init = (canvas) => {
 * @fires module:svgcanvas.SvgCanvas#event:ext_IDsUpdated
 * @returns {void}
 */
-export const pasteElementsMethod = (type, x, y) => {
+  const pasteElementsMethod = (type, x, y) => {
   const rawClipboard = sessionStorage.getItem(svgCanvas.getClipboardID())
   let clipb
   try {
@@ -163,4 +162,7 @@ export const pasteElementsMethod = (type, x, y) => {
 
   svgCanvas.addCommandToHistory(batchCmd)
   svgCanvas.call('changed', pasted)
+  }
+
+  svgCanvas.pasteElements = pasteElementsMethod
 }

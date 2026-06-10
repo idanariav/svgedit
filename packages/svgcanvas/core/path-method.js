@@ -200,16 +200,13 @@ if (
   })
 }
 
-let svgCanvas = null
-
 /**
 * @function module:path-actions.init
 * @param {module:path-actions.svgCanvas} pathMethodsContext
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas // per-instance; the methods + classes below close over it
 
 /* eslint-disable max-len */
 /**
@@ -220,7 +217,7 @@ export const init = (canvas) => {
 * @returns {ArgumentsArray}
 */
 /* eslint-enable max-len */
-export const ptObjToArrMethod = (type, segItem) => {
+  const ptObjToArrMethod = (type, segItem) => {
   const segData = svgCanvas.getSegData()
   const props = segData[type]
   return props.map((prop) => {
@@ -234,7 +231,7 @@ export const ptObjToArrMethod = (type, segItem) => {
 * @param {module:math.XYObject} altPt
 * @returns {module:math.XYObject}
 */
-export const getGripPtMethod = (seg, altPt) => {
+  const getGripPtMethod = (seg, altPt) => {
   const { path: pth } = seg
   let out = {
     x: altPt ? altPt.x : seg.item.x,
@@ -257,7 +254,7 @@ export const getGripPtMethod = (seg, altPt) => {
 * @param {module:path.Path} pth
 * @returns {module:math.XYObject}
 */
-export const getPointFromGripMethod = (pt, pth) => {
+  const getPointFromGripMethod = (pt, pth) => {
   const out = {
     x: pt.x,
     y: pt.y
@@ -278,10 +275,10 @@ export const getPointFromGripMethod = (pt, pth) => {
 * @function module:path.getGripContainer
 * @returns {Element}
 */
-export const getGripContainerMethod = () => {
-  let c = getElement('pathpointgrip_container')
+  const getGripContainerMethod = () => {
+  let c = svgCanvas.getElement('pathpointgrip_container')
   if (!c) {
-    const parentElement = getElement('selectorParentGroup')
+    const parentElement = svgCanvas.getElement('selectorParentGroup')
     c = document.createElementNS(NS.SVG, 'g')
     parentElement.append(c)
     c.id = 'pathpointgrip_container'
@@ -297,11 +294,11 @@ export const getGripContainerMethod = () => {
 * @param {Integer} y
 * @returns {SVGCircleElement}
 */
-export const addPointGripMethod = (index, x, y) => {
+  const addPointGripMethod = (index, x, y) => {
   // create the container of all the point grips
   const pointGripContainer = getGripContainerMethod()
 
-  let pointGrip = getElement(`pathpointgrip_${index}`)
+  let pointGrip = svgCanvas.getElement(`pathpointgrip_${index}`)
   // create it
   if (!pointGrip) {
     pointGrip = document.createElementNS(NS.SVG, 'circle')
@@ -347,8 +344,8 @@ export const addPointGripMethod = (index, x, y) => {
 * @param {string} id
 * @returns {SVGCircleElement}
 */
-export const addCtrlGripMethod = (id) => {
-  let pointGrip = getElement('ctrlpointgrip_' + id)
+  const addCtrlGripMethod = (id) => {
+  let pointGrip = svgCanvas.getElement('ctrlpointgrip_' + id)
   if (pointGrip) { return pointGrip }
 
   pointGrip = document.createElementNS(NS.SVG, 'circle')
@@ -375,8 +372,8 @@ export const addCtrlGripMethod = (id) => {
 * @param {string} id
 * @returns {SVGLineElement}
 */
-export const getCtrlLineMethod = (id) => {
-  let ctrlLine = getElement('ctrlLine_' + id)
+  const getCtrlLineMethod = (id) => {
+  let ctrlLine = svgCanvas.getElement('ctrlLine_' + id)
   if (ctrlLine) { return ctrlLine }
 
   ctrlLine = document.createElementNS(NS.SVG, 'line')
@@ -395,7 +392,7 @@ export const getCtrlLineMethod = (id) => {
 * @param {boolean} update
 * @returns {SVGCircleElement}
 */
-export const getPointGripMethod = (seg, update) => {
+  const getPointGripMethod = (seg, update) => {
   const { index } = seg
   const pointGrip = addPointGripMethod(index)
 
@@ -415,7 +412,7 @@ export const getPointGripMethod = (seg, update) => {
 * @param {Segment} seg
 * @returns {PlainObject<string, SVGLineElement|SVGCircleElement>}
 */
-export const getControlPointsMethod = (seg) => {
+  const getControlPointsMethod = (seg) => {
   const { item, index } = seg
   if (!('x1' in item) || !('x2' in item)) { return null }
   const cpt = {}
@@ -466,7 +463,7 @@ export const getControlPointsMethod = (seg) => {
 * @param {SVGPathElement} elem
 * @returns {void}
 */
-export const replacePathSegMethod = (type, index, pts, elem) => {
+  const replacePathSegMethod = (type, index, pts, elem) => {
   const path = svgCanvas.getPathObj()
   const pth = elem || path.elem
   const pathFuncs = svgCanvas.getPathFuncs()
@@ -498,9 +495,9 @@ export const replacePathSegMethod = (type, index, pts, elem) => {
 * @param {boolean} update
 * @returns {SVGPathElement}
 */
-export const getSegSelectorMethod = (seg, update) => {
+  const getSegSelectorMethod = (seg, update) => {
   const { index } = seg
-  let segLine = getElement(`segline_${index}`)
+  let segLine = svgCanvas.getElement(`segline_${index}`)
   if (!segLine) {
     const pointGripContainer = getGripContainerMethod()
     // create segline
@@ -542,7 +539,7 @@ export const getSegSelectorMethod = (seg, update) => {
 /**
 *
 */
-export class Segment {
+  class Segment {
   /**
   * @param {Integer} index
   * @param {SVGPathSeg} item
@@ -756,7 +753,7 @@ export class Segment {
 /**
 *
 */
-export class Path {
+  class Path {
   /**
   * @param {SVGPathElement} elem
   * @throws {Error} If constructed without a path element
@@ -1208,4 +1205,15 @@ export class Path {
 
     return clsd
   }
+  }
+
+  // Attach the per-instance path helpers + Path class to the canvas (path.js
+  // used to import and attach these; it now reads them off the instance).
+  svgCanvas.replacePathSeg = replacePathSegMethod
+  svgCanvas.addPointGrip = addPointGripMethod
+  svgCanvas.addCtrlGrip = addCtrlGripMethod
+  svgCanvas.getCtrlLine = getCtrlLineMethod
+  svgCanvas.getGripPt = getGripPtMethod
+  svgCanvas.getPointFromGrip = getPointFromGripMethod
+  svgCanvas.PathClass = Path
 }

@@ -4,7 +4,7 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import topPanelHTML from './TopPanel.html'
 
-const { $qa, $id, $click, isValidUnit, getTypeMap, convertUnit } = SvgCanvas
+const { $click, isValidUnit, getTypeMap, convertUnit } = SvgCanvas
 
 /*
  * register actions for left panel
@@ -24,6 +24,7 @@ class TopPanel {
    * @type {module}
    */
   displayTool (className) {
+    const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // default display is 'none' so removing the property will make the panel visible
     $qa(`.${className}`).map(el => el.style.removeProperty('display'))
   }
@@ -32,6 +33,7 @@ class TopPanel {
    * @type {module}
    */
   hideTool (className) {
+    const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $qa(`.${className}`).forEach(el => {
       el.style.display = 'none'
     })
@@ -43,6 +45,7 @@ class TopPanel {
    * @param {boolean} visible
    */
   setSidepanelVisible (id, visible) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const el = $id(id)
     if (el) el.style.display = visible ? '' : 'none'
   }
@@ -101,6 +104,7 @@ class TopPanel {
    * @returns {void}
    */
   update () {
+    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     let i
     let len
     // set title
@@ -173,6 +177,7 @@ class TopPanel {
    * @returns {void}
    */
   updateContextPanel () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     let elem = this.editor.selectedElement
     // If element has just been deleted, consider it null
     if (!elem?.parentNode) {
@@ -188,7 +193,7 @@ class TopPanel {
         : null
 
     const isNode = currentMode === 'pathedit'
-    const menuItems = document.getElementById('se-cmenu_canvas')
+    const menuItems = $id('se-cmenu_canvas')
     this.hideTool('selected_panel')
     this.hideTool('multiselected_panel')
     this.hideTool('g_panel')
@@ -482,7 +487,7 @@ class TopPanel {
       $id('selLayerNames').setAttribute('value', currentLayerName)
 
       // Enable regular menu options
-      const canCMenu = document.getElementById('se-cmenu_canvas')
+      const canCMenu = $id('se-cmenu_canvas')
       canCMenu.setAttribute(
         'enablemenuitems',
         '#delete,#cut,#copy,#move_front,#move_up,#move_down,#move_back,#add_to_shape_library'
@@ -498,7 +503,7 @@ class TopPanel {
    * @returns {void}
    */
   showSourceEditor (e, forSaving) {
-    const $editorDialog = document.getElementById('se-svg-editor-dialog')
+    const $editorDialog = $id('se-svg-editor-dialog')
     if ($editorDialog.getAttribute('dialog') === 'open') return
     const origSource = this.editor.svgCanvas.getSvgString()
     $editorDialog.setAttribute('dialog', 'open')
@@ -515,6 +520,7 @@ class TopPanel {
    * @returns {void}
    */
   clickFrame () {
+    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $qa('#tools_left *[pressed]').forEach((b) => { b.pressed = false })
     $id('tool_frame').pressed = true
     this.editor.svgCanvas.setMode('frame')
@@ -525,6 +531,7 @@ class TopPanel {
    * @returns {void}
    */
   clickWireframe () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $id('tool_wireframe').pressed = !$id('tool_wireframe').pressed
     this.editor.workarea.classList.toggle('wireframe')
 
@@ -532,7 +539,9 @@ class TopPanel {
     if (!wfRules) {
       const fcRules = document.createElement('style')
       fcRules.setAttribute('id', 'wireframe_rules')
-      document.getElementsByTagName('head')[0].appendChild(fcRules)
+      // Keep the wireframe <style> inside this editor's container so multiple
+      // editors don't share (and clobber) a single head-level #wireframe_rules.
+      this.editor.$container.appendChild(fcRules)
     } else {
       while (wfRules.firstChild) {
         wfRules.removeChild(wfRules.firstChild)
@@ -593,6 +602,7 @@ class TopPanel {
    * @type {module}
    */
   changeRotationAngle (e) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.editor.svgCanvas.setRotationAngle(e.target.value)
     if (Number.parseInt(e.target.value) === 0) {
       $id('tool_reorient').classList.add('disabled')
@@ -707,6 +717,7 @@ class TopPanel {
    * @returns {void}
    */
   clickAlign (pos) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     let value = $id('tool_align_relative').value
     if (value === '') {
       value = 'selected'
@@ -841,6 +852,7 @@ class TopPanel {
    * @returns {void}
    */
   linkControlPoints () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $id('tool_node_link').pressed = !$id('tool_node_link').pressed
     const linked = !!$id('tool_node_link').pressed
     this.path.linkControlPoints(linked)
@@ -871,6 +883,7 @@ class TopPanel {
    * @returns {void}
    */
   addSubPath () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const button = $id('tool_add_subpath')
     const sp = !button.classList.contains('pressed')
     button.pressed = sp
@@ -1030,6 +1043,7 @@ class TopPanel {
    * @returns {void}
    */
   setImageURL (url) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const { editor } = this
     if (!url) {
       url = editor.defaultImageURL
@@ -1069,6 +1083,7 @@ class TopPanel {
    *
    */
   updateTitle (title) {
+    const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (title) this.editor.title = title
     const titleElement = $qa('#title_panel > p')[0]
     if (titleElement) titleElement.textContent = this.editor.title
@@ -1080,6 +1095,7 @@ class TopPanel {
    * @returns {void}
    */
   togglePathEditMode (editMode, elems) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (editMode) {
       this.displayTool('path_node_panel')
     } else {
@@ -1105,6 +1121,7 @@ class TopPanel {
    * @type {module}
    */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Top panel
     const template = document.createElement('template')
     const { i18next } = this.editor

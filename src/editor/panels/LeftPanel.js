@@ -2,7 +2,7 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
 import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'
 
-const { $id, $qa, $click } = SvgCanvas
+const { $click } = SvgCanvas
 
 /*
  * register actions for left panel
@@ -28,6 +28,7 @@ class LeftPanel {
    * @returns {boolean} Whether the button was disabled or not
    */
   updateLeftPanel (button) {
+    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (button.disabled) return false
     // remove the pressed state on other(s) button(s)
     $qa('#tools_left *[pressed]').forEach((b) => {
@@ -138,7 +139,7 @@ class LeftPanel {
   clickImage () {
     // Open the import dialog instead of entering a draw mode; selection tool
     // stays active and the image is inserted centered on the canvas.
-    document.getElementById('se-image-import-dialog').setAttribute('dialog', 'open')
+    this.editor.$id('se-image-import-dialog').setAttribute('dialog', 'open')
   }
 
   /**
@@ -203,6 +204,7 @@ class LeftPanel {
    * @type {module}
    */
   add (id, handler) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $click($id(id), () => {
       if (this.updateLeftPanel(id)) {
         handler()
@@ -214,6 +216,7 @@ class LeftPanel {
    * @type {module}
    */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Left panel
     const template = document.createElement('template')
     template.innerHTML = leftPanelHTML

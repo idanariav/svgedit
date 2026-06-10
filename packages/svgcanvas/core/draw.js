@@ -24,16 +24,20 @@ const RandomizeModes = {
   ALWAYS_RANDOMIZE: 1,
   NEVER_RANDOMIZE: 2
 }
+// randomization mode is a global setting (not per-drawing), so it stays shared.
 let randIds = RandomizeModes.LET_DOCUMENT_DECIDE
-// Array with current disabled elements (for in-group editing)
-let disabledElems = []
+
+// Re-export the imported Layer class (the layer/context functions below become
+// per-instance, but the class itself is stateless and stays module-level).
+export { Layer }
 
 /**
  * Get a HistoryRecordingService.
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
  * @param {module:history.HistoryRecordingService} [hrService] - if exists, return it instead of creating a new service.
  * @returns {module:history.HistoryRecordingService}
  */
-const historyRecordingService = (hrService) => {
+const historyRecordingService = (svgCanvas, hrService) => {
   return hrService || new HistoryRecordingService(svgCanvas.undoMgr)
 }
 
@@ -812,22 +816,26 @@ export const randomizeIds = (enableRandomization, currentDrawing) => {
  * @returns {void}
  */
 
-let svgCanvas
 /**
+ * Reentrant init: the layer/context operations below are created per SvgCanvas
+ * instance (closed over `svgCanvas` and a per-instance `disabledElems`) and
+ * attached to the canvas, so several editors coexist in one realm. The Drawing
+ * and Layer classes above are stateless w.r.t. the canvas and stay shared.
  * @function module:draw.init
  * @param {module:draw.DrawCanvasInit} canvas
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas
+  // Disabled elements during in-group editing (per instance).
+  let disabledElems = []
 
 /**
  * Updates layer system.
  * @function module:draw.identifyLayers
  * @returns {void}
  */
-export const identifyLayers = () => {
+  const identifyLayers = () => {
   leaveContext()
   svgCanvas.getCurrentDrawing().identifyLayers()
 }
@@ -837,7 +845,7 @@ export const identifyLayers = () => {
  * @function module:draw.identifyLayers
  * @returns {void}
  */
-export const indexCurrentLayer = () => {
+  const indexCurrentLayer = () => {
   return svgCanvas.getCurrentDrawing().indexCurrentLayer()
 }
 
@@ -851,10 +859,10 @@ export const indexCurrentLayer = () => {
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {void}
  */
-export const createLayer = (name, hrService) => {
+  const createLayer = (name, hrService) => {
   const newLayer = svgCanvas
     .getCurrentDrawing()
-    .createLayer(name, historyRecordingService(hrService))
+    .createLayer(name, historyRecordingService(svgCanvas, hrService))
   svgCanvas.clearSelection()
   svgCanvas.call('changed', [newLayer])
 }
@@ -869,11 +877,11 @@ export const createLayer = (name, hrService) => {
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {void}
  */
-export const cloneLayer = (name, hrService) => {
+  const cloneLayer = (name, hrService) => {
   // Clone the current layer and make the cloned layer the new current layer
   const newLayer = svgCanvas
     .getCurrentDrawing()
-    .cloneLayer(name, historyRecordingService(hrService))
+    .cloneLayer(name, historyRecordingService(svgCanvas, hrService))
   if (!newLayer) {
     warn('cloneLayer: no layer returned', null, 'draw')
     return
@@ -891,7 +899,7 @@ export const cloneLayer = (name, hrService) => {
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {boolean} `true` if an old layer group was found to delete
  */
-export const deleteCurrentLayer = () => {
+  const deleteCurrentLayer = () => {
   const { BatchCommand, RemoveElementCommand } = svgCanvas.history
   const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
   if (!currentLayer) {
@@ -922,7 +930,7 @@ export const deleteCurrentLayer = () => {
  * @param {string} name - The name of the layer you want to switch to.
  * @returns {boolean} true if the current layer was switched, otherwise false
  */
-export const setCurrentLayer = name => {
+  const setCurrentLayer = name => {
   const result = svgCanvas.getCurrentDrawing().setCurrentLayer(toXml(name))
   if (result) {
     svgCanvas.clearSelection()
@@ -939,13 +947,13 @@ export const setCurrentLayer = name => {
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {boolean} Whether the rename succeeded
  */
-export const renameCurrentLayer = newName => {
+  const renameCurrentLayer = newName => {
   const drawing = svgCanvas.getCurrentDrawing()
   const layer = drawing.getCurrentLayer()
   if (layer) {
     const result = drawing.setCurrentLayerName(
       newName,
-      historyRecordingService()
+      historyRecordingService(svgCanvas)
     )
     if (result) {
       svgCanvas.call('changed', [layer])
@@ -964,7 +972,7 @@ export const renameCurrentLayer = newName => {
  * 0 and (number of layers - 1)
  * @returns {boolean} `true` if the current layer position was changed, `false` otherwise.
  */
-export const setCurrentLayerPosition = newPos => {
+  const setCurrentLayerPosition = newPos => {
   const { MoveElementCommand } = svgCanvas.history
   const drawing = svgCanvas.getCurrentDrawing()
   const result = drawing.setCurrentLayerPosition(newPos)
@@ -989,7 +997,7 @@ export const setCurrentLayerPosition = newPos => {
  * @param {boolean} bVisible - Whether the layer should be visible
  * @returns {boolean} true if the layer's visibility was set, false otherwise
  */
-export const setLayerVisibility = (layerName, bVisible) => {
+  const setLayerVisibility = (layerName, bVisible) => {
   const { ChangeElementCommand } = svgCanvas.history
   const drawing = svgCanvas.getCurrentDrawing()
   const layerGroup = drawing.getLayerByName(layerName)
@@ -1021,7 +1029,7 @@ export const setLayerVisibility = (layerName, bVisible) => {
  * @param {string} layerName - The name of the layer you want to which you want to move the selected elements
  * @returns {boolean} Whether the selected elements were moved to the layer.
  */
-export const moveSelectedToLayer = layerName => {
+  const moveSelectedToLayer = layerName => {
   const { BatchCommand, MoveElementCommand } = svgCanvas.history
   // find the layer
   const drawing = svgCanvas.getCurrentDrawing()
@@ -1062,8 +1070,8 @@ export const moveSelectedToLayer = layerName => {
  * @param {module:history.HistoryRecordingService} hrService
  * @returns {void}
  */
-export const mergeLayer = hrService => {
-  svgCanvas.getCurrentDrawing().mergeLayer(historyRecordingService(hrService))
+  const mergeLayer = hrService => {
+  svgCanvas.getCurrentDrawing().mergeLayer(historyRecordingService(svgCanvas, hrService))
   svgCanvas.clearSelection()
   leaveContext()
   svgCanvas.changeSvgContent()
@@ -1074,10 +1082,10 @@ export const mergeLayer = hrService => {
  * @param {module:history.HistoryRecordingService} hrService
  * @returns {void}
  */
-export const mergeAllLayers = hrService => {
+  const mergeAllLayers = hrService => {
   svgCanvas
     .getCurrentDrawing()
-    .mergeAllLayers(historyRecordingService(hrService))
+    .mergeAllLayers(historyRecordingService(svgCanvas, hrService))
   svgCanvas.clearSelection()
   leaveContext()
   svgCanvas.changeSvgContent()
@@ -1090,7 +1098,7 @@ export const mergeAllLayers = hrService => {
  * @fires module:svgcanvas.SvgCanvas#event:contextset
  * @returns {void}
  */
-export const leaveContext = () => {
+  const leaveContext = () => {
   const len = disabledElems.length
   const dataStorage = svgCanvas.getDataStorage()
   if (len) {
@@ -1119,13 +1127,13 @@ export const leaveContext = () => {
  * @fires module:svgcanvas.SvgCanvas#event:contextset
  * @returns {void}
  */
-export const setContext = elem => {
+  const setContext = elem => {
   const dataStorage = svgCanvas.getDataStorage()
   leaveContext()
   if (typeof elem === 'string') {
     const id = elem
     try {
-      elem = getElement(id)
+      elem = svgCanvas.getElement(id)
     } catch (e) {
       elem = null
     }
@@ -1177,11 +1185,21 @@ export const setContext = elem => {
   })
   svgCanvas.clearSelection()
   svgCanvas.call('contextset', svgCanvas.getCurrentGroup())
-}
+  }
 
-/**
- * @memberof module:draw
- * @class Layer
- * @see {@link module:layer.Layer}
- */
-export { Layer }
+  // Attach the per-instance layer/context operations to the canvas.
+  svgCanvas.identifyLayers = identifyLayers
+  svgCanvas.indexCurrentLayer = indexCurrentLayer
+  svgCanvas.createLayer = createLayer
+  svgCanvas.cloneLayer = cloneLayer
+  svgCanvas.deleteCurrentLayer = deleteCurrentLayer
+  svgCanvas.setCurrentLayer = setCurrentLayer
+  svgCanvas.renameCurrentLayer = renameCurrentLayer
+  svgCanvas.setCurrentLayerPosition = setCurrentLayerPosition
+  svgCanvas.setLayerVisibility = setLayerVisibility
+  svgCanvas.moveSelectedToLayer = moveSelectedToLayer
+  svgCanvas.mergeLayer = mergeLayer
+  svgCanvas.mergeAllLayers = mergeAllLayers
+  svgCanvas.leaveContext = leaveContext
+  svgCanvas.setContext = setContext
+}

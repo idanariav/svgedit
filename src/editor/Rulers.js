@@ -1,7 +1,7 @@
 import rulersTemplate from './templates/rulersTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
 
-const { $id, getTypeMap } = SvgCanvas
+const { getTypeMap } = SvgCanvas
 
 /**
  *
@@ -24,7 +24,7 @@ class Rulers {
     const template = document.createElement('template')
     template.innerHTML = rulersTemplate
     this.editor.$svgEditor.append(template.content.cloneNode(true))
-    const { $id } = SvgCanvas
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.rulerX = $id('ruler_x')
     this.rulerY = $id('ruler_y')
     this.rulerCorner = $id('ruler_corner')
@@ -57,8 +57,9 @@ class Rulers {
    * @returns {void}
    */
   updateRulers (scanvas, zoom) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (!zoom) { zoom = this.svgCanvas.getZoom() }
-    if (!scanvas) { scanvas = document.getElementById('svgcanvas') }
+    if (!scanvas) { scanvas = $id('svgcanvas') }
 
     let d; let i
     const limit = 30000

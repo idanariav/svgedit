@@ -20,7 +20,6 @@ import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
 
 const { BatchCommand } = hstry
-let svgCanvas = null
 
 /**
  * @function module:selection.init
@@ -28,18 +27,7 @@ let svgCanvas = null
  * @returns {void}
  */
 export const init = (canvas) => {
-  svgCanvas = canvas
-  svgCanvas.getMouseTarget = getMouseTargetMethod
-  svgCanvas.clearSelection = clearSelectionMethod
-  svgCanvas.addToSelection = addToSelectionMethod
-  svgCanvas.getIntersectionList = getIntersectionListMethod
-  svgCanvas.runExtensions = runExtensionsMethod
-  svgCanvas.groupSvgElem = groupSvgElem
-  svgCanvas.prepareSvg = prepareSvg
-  svgCanvas.recalculateAllSelectedDimensions = recalculateAllSelectedDimensions
-  svgCanvas.setRotationAngle = setRotationAngle
-  svgCanvas.updateGroupSelector = updateGroupSelectorMethod
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
 
 /**
  * Shows or hides the multi-selection group box + resize grips depending on how
@@ -477,7 +465,7 @@ const setRotationAngle = (val, preventUndo) => {
     )
     svgCanvas.call('changed', selectedElements)
   }
-  // const pointGripContainer = getElement('pathpointgrip_container');
+  // const pointGripContainer = svgCanvas.getElement('pathpointgrip_container');
   // if (elem.nodeName === 'path' && pointGripContainer) {
   //   pathActions.setPointContainerTransform(elem.getAttribute('transform'));
   // }
@@ -512,4 +500,16 @@ const recalculateAllSelectedDimensions = () => {
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.call('changed', selectedElements)
   }
+  }
+
+  svgCanvas.getMouseTarget = getMouseTargetMethod
+  svgCanvas.clearSelection = clearSelectionMethod
+  svgCanvas.addToSelection = addToSelectionMethod
+  svgCanvas.getIntersectionList = getIntersectionListMethod
+  svgCanvas.runExtensions = runExtensionsMethod
+  svgCanvas.groupSvgElem = groupSvgElem
+  svgCanvas.prepareSvg = prepareSvg
+  svgCanvas.recalculateAllSelectedDimensions = recalculateAllSelectedDimensions
+  svgCanvas.setRotationAngle = setRotationAngle
+  svgCanvas.updateGroupSelector = updateGroupSelectorMethod
 }

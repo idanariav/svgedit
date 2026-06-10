@@ -30,7 +30,6 @@ import {
   transformListToTransform,
   getTransformList
 } from './math.js'
-import { recalculateDimensions } from './recalculate.js'
 import { isGecko } from '../common/browser.js'
 import { getParents } from '../common/util.js'
 
@@ -42,31 +41,13 @@ const {
   ChangeElementCommand
 } = hstry
 
-let svgCanvas = null
-
 /**
  * @function module:selected-elem.init
  * @param {module:selected-elem.elementContext} elementContext
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-  svgCanvas.copySelectedElements = copySelectedElements
-  svgCanvas.groupSelectedElements = groupSelectedElements // Wraps all the selected elements in a group (`g`) element.
-  svgCanvas.pushGroupProperties = pushGroupProperty // Pushes all appropriate parent group properties down to its children
-  svgCanvas.ungroupSelectedElement = ungroupSelectedElement // Unwraps all the elements in a selected group (`g`) element
-  svgCanvas.moveToTopSelectedElement = moveToTopSelectedElem // Repositions the selected element to the bottom in the DOM to appear on top
-  svgCanvas.moveToBottomSelectedElement = moveToBottomSelectedElem // Repositions the selected element to the top in the DOM to appear under other elements
-  svgCanvas.moveUpDownSelected = moveUpDownSelected // Moves the select element up or down the stack, based on the visibly
-  svgCanvas.switchSelectedZorder = switchSelectedZorder // Reverses the z-order (stacking) of exactly two selected elements
-  svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
-  svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
-  svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
-  svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.
-  svgCanvas.cycleElement = cycleElement // Select the next/previous element within the current layer.
-  svgCanvas.deleteSelectedElements = deleteSelectedElements // Removes all selected elements from the DOM and adds the change to the history
-  svgCanvas.flipSelectedElements = flipSelectedElements // Flips selected elements horizontally or vertically
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
 
 /**
  * Repositions the selected element to the bottom in the DOM to appear on top of
@@ -267,7 +248,7 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
         tlist.appendItem(xform)
       }
 
-      const cmd = recalculateDimensions(selected)
+      const cmd = svgCanvas.recalculateDimensions(selected)
       if (cmd) {
         batchCmd.addSubCommand(cmd)
       } else if ((selected.getAttribute('transform') || '') !== existingTransform) {
@@ -651,7 +632,7 @@ const deleteSelectedElements = () => {
       // this will unselect the element and remove the selectedOutline
       svgCanvas.gettingSelectorManager().releaseSelector(t)
       // Remove the path if present.
-      pathModule.removePath_(t.id)
+      svgCanvas.removePath_(t.id)
       // Get the parent if it's a single-child anchor
       if (parent.tagName === 'a' && parent.childNodes.length === 1) {
         t = parent
@@ -721,7 +702,7 @@ const flipSelectedElements = (scaleX, scaleY) => {
       svgCanvas.setStartTransform(existingTransform)
     }
 
-    const cmd = recalculateDimensions(selected)
+    const cmd = svgCanvas.recalculateDimensions(selected)
 
     if (svgCanvas.setStartTransform) {
       svgCanvas.setStartTransform(prevStartTransform)
@@ -769,7 +750,7 @@ const copySelectedElements = () => {
   } catch { /* clipboard unavailable */ }
 
   // Context menu might not exist (it is provided by editor.js).
-  const canvMenu = document.getElementById('se-cmenu_canvas')
+  const canvMenu = svgCanvas.$id('se-cmenu_canvas')
   canvMenu?.setAttribute('enablemenuitems', '#paste,#paste_in_place')
 }
 
@@ -1110,7 +1091,7 @@ const convertToGroup = elem => {
     const xform = svgCanvas.getSvgRoot().createSVGTransform()
     xform.setTranslate(pt.x, pt.y)
     tlist.appendItem(xform)
-    recalculateDimensions(elem)
+    svgCanvas.recalculateDimensions(elem)
     svgCanvas.call('selected', [elem])
   } else if (dataStorage.has($elem, 'symbol')) {
     elem = dataStorage.get($elem, 'symbol')
@@ -1224,7 +1205,7 @@ const convertToGroup = elem => {
     // are removed
     walkTreePost(g, n => {
       try {
-        recalculateDimensions(n)
+        svgCanvas.recalculateDimensions(n)
       } catch (e) {
         error('Error recalculating dimensions', e, 'selected-elem')
       }
@@ -1276,7 +1257,7 @@ const ungroupSelectedElement = () => {
       warn('Unexpected <use> without local reference:', g, 'selected-elem')
       return
     }
-    const symbol = getElement(href.slice(1))
+    const symbol = svgCanvas.getElement(href.slice(1))
     if (!symbol) {
       warn('Unexpected <use> without resolved reference:', g, 'selected-elem')
       return
@@ -1353,7 +1334,7 @@ const updateCanvas = (w, h) => {
   svgCanvas.getSvgRoot().setAttribute('width', w)
   svgCanvas.getSvgRoot().setAttribute('height', h)
   const zoom = svgCanvas.getZoom()
-  const bg = document.getElementById('canvasBackground')
+  const bg = svgCanvas.$id('canvasBackground')
   const oldX = Number(svgCanvas.getSvgContent().getAttribute('x'))
   const oldY = Number(svgCanvas.getSvgContent().getAttribute('y'))
   const x = (w - svgCanvas.contentW * zoom) / 2
@@ -1374,7 +1355,7 @@ const updateCanvas = (w, h) => {
     y
   })
 
-  const bgImg = getElement('background_image')
+  const bgImg = svgCanvas.getElement('background_image')
   if (bgImg) {
     assignAttributes(bgImg, {
       width: '100%',
@@ -1453,4 +1434,21 @@ const cycleElement = next => {
   }
   svgCanvas.selectOnly([elem], true)
   svgCanvas.call('selected', selectedElements)
+  }
+
+  svgCanvas.copySelectedElements = copySelectedElements
+  svgCanvas.groupSelectedElements = groupSelectedElements // Wraps all the selected elements in a group (`g`) element.
+  svgCanvas.pushGroupProperties = pushGroupProperty // Pushes all appropriate parent group properties down to its children
+  svgCanvas.ungroupSelectedElement = ungroupSelectedElement // Unwraps all the elements in a selected group (`g`) element
+  svgCanvas.moveToTopSelectedElement = moveToTopSelectedElem // Repositions the selected element to the bottom in the DOM to appear on top
+  svgCanvas.moveToBottomSelectedElement = moveToBottomSelectedElem // Repositions the selected element to the top in the DOM to appear under other elements
+  svgCanvas.moveUpDownSelected = moveUpDownSelected // Moves the select element up or down the stack, based on the visibly
+  svgCanvas.switchSelectedZorder = switchSelectedZorder // Reverses the z-order (stacking) of exactly two selected elements
+  svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
+  svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
+  svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
+  svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.
+  svgCanvas.cycleElement = cycleElement // Select the next/previous element within the current layer.
+  svgCanvas.deleteSelectedElements = deleteSelectedElements // Removes all selected elements from the DOM and adds the change to the history
+  svgCanvas.flipSelectedElements = flipSelectedElements // Flips selected elements horizontally or vertically
 }

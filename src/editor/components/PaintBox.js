@@ -71,7 +71,7 @@ class PaintBox {
     const opts = { alpha: opac }
     if (color.startsWith('url(#')) {
       let refElem = svgCanvas.getRefElem(color)
-      refElem = (refElem) ? refElem.cloneNode(true) : document.querySelectorAll('#' + type + '_color defs *')[0]
+      refElem = (refElem) ? refElem.cloneNode(true) : svgCanvas.$qa('#' + type + '_color defs *')[0]
       if (!refElem) {
         console.error(`the color ${color} is referenced by an url that can't be identified - using 'none'`)
         opts.solidColor = 'none'

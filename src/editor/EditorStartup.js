@@ -14,6 +14,7 @@ import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
+import { setActiveEditor, isActiveEditor } from './domScope.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
 
@@ -61,7 +62,7 @@ const injectSvgeditStyles = () => {
   document.head.append(styleEl)
 }
 
-const { $id, $click, convertUnit } = SvgCanvas
+const { $click, convertUnit, scopedId, scopedQa, scopedQq } = SvgCanvas
 
 /**
  *
@@ -73,7 +74,23 @@ class EditorStartup {
   constructor (div) {
     this.extensionsAdded = false
     this.messageQueue = []
-    this.$container = div ?? $id('svg_editor')
+    this.$container = div ?? document.getElementById('svg_editor')
+    // Mark this container so web components / dialogs nested under it can resolve
+    // their owning editor via closestRoot() (see domScope.js).
+    this.$container.setAttribute('data-svgedit-root', '')
+    // Become the "active" editor on any interaction, so document-level keyboard
+    // shortcut / paste handlers (registered by every mounted editor) only fire
+    // for the focused one (see domScope.js, Editor.setKeyHandlers, pasteHandler).
+    const activate = () => { setActiveEditor(this); this.svgCanvas?.activateUtilities?.() }
+    this.$container.addEventListener('pointerdown', activate, true)
+    this.$container.addEventListener('focusin', activate, true)
+    // Resolve element lookups within this editor's own container so multiple
+    // editors mounted in the same document don't collide on the fixed element
+    // IDs baked into the template (svgcanvas, workarea, the se-* dialogs, …).
+    // Methods read these off `this`; nested callbacks capture them lexically.
+    this.$id = scopedId(this.$container)
+    this.$qa = scopedQa(this.$container)
+    this.$qq = scopedQq(this.$container)
   }
 
   /**
@@ -82,6 +99,7 @@ class EditorStartup {
   * @returns {void}
   */
   async init () {
+    const { $id } = this // container-scoped lookup (see constructor)
     // Register the optional host storage adapter before any component is
     // constructed (the editor template below instantiates <se-palette> and the
     // shape library, which read user data on creation). Falls back to
@@ -151,7 +169,8 @@ class EditorStartup {
     */
     this.svgCanvas = new SvgCanvas(
       $id('svgcanvas'),
-      this.configObj.curConfig
+      this.configObj.curConfig,
+      this.$container // scope canvas element lookups to this editor's container
     )
 
     // once svgCanvas is init - adding listener to the changes of the current mode
@@ -259,7 +278,7 @@ class EditorStartup {
     $id('se-img-prop').setAttribute('save', this.configObj.pref('img_save'))
 
     // Lose focus for select elements when changed (Allows keyboard shortcuts to work better)
-    const selElements = document.querySelectorAll('select')
+    const selElements = this.$qa('select') // container-scoped (see constructor)
     Array.from(selElements).forEach(function (element) {
       element.addEventListener('change', function (evt) {
         evt.currentTarget.blur()
@@ -397,6 +416,7 @@ class EditorStartup {
 
     document.addEventListener('keydown', (e) => {
       if (e.target.nodeName !== 'BODY') return
+      if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       if (e.code.toLowerCase() === 'space') {
         this.svgCanvas.spaceKey = keypan = true
         e.preventDefault()
@@ -416,6 +436,7 @@ class EditorStartup {
       document.removeEventListener('paste', this.pasteHandler)
     }
     this.pasteHandler = (e) => {
+      if (!isActiveEditor(this)) return // only the focused editor handles paste
       // Let editable fields (inputs, text areas) keep their native paste.
       const t = e.target
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
@@ -570,11 +591,11 @@ class EditorStartup {
     addListenerMulti(window, 'load resize', centerCanvas)
 
     // Prevent browser from erroneously repopulating fields
-    const inputEles = document.querySelectorAll('input')
+    const inputEles = this.$qa('input') // container-scoped (see constructor)
     Array.from(inputEles).forEach(function (inputEle) {
       inputEle.setAttribute('autocomplete', 'off')
     })
-    const selectEles = document.querySelectorAll('select')
+    const selectEles = this.$qa('select') // container-scoped (see constructor)
     Array.from(selectEles).forEach(function (inputEle) {
       inputEle.setAttribute('autocomplete', 'off')
     })
@@ -776,7 +797,7 @@ class EditorStartup {
     })
 
     // Notify the shape library component to refresh
-    const shapeLib = document.getElementById('tool_shapelib')
+    const shapeLib = this.$id('tool_shapelib') // container-scoped (see constructor)
     if (shapeLib) {
       shapeLib.dispatchEvent(new CustomEvent('user-shapes-updated'))
     }
@@ -803,7 +824,7 @@ class EditorStartup {
 
       // Merge user-defined categories with built-in ones (user cats first).
       // Built-in categories are available after the shape library has loaded its index.
-      const shapeLibEl = document.getElementById('tool_shapelib')
+      const shapeLibEl = this.$id('tool_shapelib') // container-scoped (see constructor)
       const builtinOptions = shapeLibEl?.getBuiltinCategoryOptions?.() || []
       const userCatSet = new Set(userCats.map(c => c.toLowerCase()))
       // Only include built-in cats that don't already have a user category by the same name
@@ -1102,6 +1123,7 @@ class EditorStartup {
 * @param {Event} evt custom modeChange event
 */
   modeListener (evt) {
+    const { $id } = this // container-scoped lookup (see constructor)
     const mode = this.svgCanvas.getMode()
 
     this.setCursorStyle(mode)

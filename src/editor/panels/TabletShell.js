@@ -1,8 +1,5 @@
-import SvgCanvas from '@svgedit/svgcanvas'
 import tabletShellHTML from './TabletShell.html'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
-
-const { $id } = SvgCanvas
 
 // Preset palette for the lightweight swatch popovers (custom colors go through
 // the existing seColorPicker via the "More…" entry).
@@ -57,6 +54,7 @@ class TabletShell {
 
   /** @returns {void} */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const tpl = document.createElement('template')
     tpl.innerHTML = tabletShellHTML
     this.editor.$svgEditor.append(tpl.content.cloneNode(true))
@@ -103,6 +101,7 @@ class TabletShell {
   /* ─────────────────── command bar ─────────────────── */
 
   buildToolgroup () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const tg = $id('ts_toolgroup')
     const sep = () => tg.append(this.el('div', 'ts-sep'))
 
@@ -165,6 +164,7 @@ class TabletShell {
   // existing #curvature_mode select so ext-curvature updates its live mode and
   // persists the choice.
   selectTool (mode) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.svgCanvas.setMode(mode)
     if (mode === 'curvature') {
       const sel = $id('curvature_mode')
@@ -180,6 +180,7 @@ class TabletShell {
   }
 
   buildRightControls () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // Default-style chip — pick stroke/fill/width before drawing
     $id('ts_stylechip').addEventListener('click', (e) => {
       e.stopPropagation()
@@ -242,6 +243,7 @@ class TabletShell {
 
   // A row of preset swatches + a "More…" entry that opens the full seColorPicker.
   swatchRow (current, onPick, type) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const row = this.el('div', 'swrow')
     PRESET_COLORS.forEach((c) => {
       const s = this.swatchEl(c)
@@ -307,6 +309,7 @@ class TabletShell {
   }
 
   buildSheet () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const row = this.sheetRow
     row.replaceChildren()
     const elem = this.selectedElems[0]
@@ -494,6 +497,7 @@ class TabletShell {
   }
 
   paintStyleDot () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const dot = $id('ts_styledot')
     if (!dot) return
     const stroke = this.svgCanvas.getColor('stroke')

@@ -15,8 +15,6 @@ import { warn } from '../common/logger.js'
 // Element types that cannot be converted to a path
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
-let svgCanvas = null
-
 // Shared paper.js scope — lazy-initialised once on first use
 let paperScope = null
 const getPaperScope = () => {
@@ -77,7 +75,7 @@ const getStyleAttrs = (elem) => {
  * @param {number} x2 - Cut line end X (SVG coordinates)
  * @param {number} y2 - Cut line end Y (SVG coordinates)
  */
-const cutShapes = (x1, y1, x2, y2) => {
+const cutShapes = (svgCanvas, x1, y1, x2, y2) => {
   // Prefer selected elements; fall back to all shapes in the current layer
   // (mirrors Illustrator knife tool: selection scopes the cut, but is optional)
   let elems = svgCanvas.getSelectedElements().filter(Boolean)
@@ -205,6 +203,6 @@ const cutShapes = (x1, y1, x2, y2) => {
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-  svgCanvas.cutShapes = cutShapes
+  const svgCanvas = canvas
+  svgCanvas.cutShapes = (x1, y1, x2, y2) => cutShapes(svgCanvas, x1, y1, x2, y2)
 }

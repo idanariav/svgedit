@@ -22,6 +22,7 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import ConfigObj from './ConfigObj.js'
 import EditorStartup from './EditorStartup.js'
+import { isActiveEditor, setActiveEditor } from './domScope.js'
 import LeftPanel from './panels/LeftPanel.js'
 import TopPanel from './panels/TopPanel.js'
 import BottomPanel from './panels/BottomPanel.js'
@@ -30,7 +31,7 @@ import TabletShell from './panels/TabletShell.js'
 import MainMenu from './MainMenu.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 
-const { $id, $click, decode64 } = SvgCanvas
+const { $click, decode64 } = SvgCanvas
 
 /**
  *
@@ -401,6 +402,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   setAll () {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const keyHandler = {} // will contain the action for each pressed key
 
     this.shortcuts.forEach((shortcut) => {
@@ -433,6 +435,7 @@ class Editor extends EditorStartup {
     this.keydownHandler = (e) => {
       // only track keyboard shortcuts for the body containing the SVG-Editor
       if (e.target.nodeName !== 'BODY') return
+      if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       // normalize key
       const key = `${e.altKey ? 'alt+' : ''}${e.shiftKey ? 'shift+' : ''}${
         e.metaKey ? 'meta+' : ''
@@ -450,7 +453,7 @@ class Editor extends EditorStartup {
     // Misc additional actions
 
     // Make 'return' keypress trigger the change event
-    const elements = document.getElementsByClassName('attr_changer')
+    const elements = this.$container.getElementsByClassName('attr_changer') // scoped to this editor
     Array.from(elements).forEach(function (element) {
       element.addEventListener('keydown', function (evt) {
         evt.currentTarget.dispatchEvent(new Event('change'))
@@ -461,6 +464,18 @@ class Editor extends EditorStartup {
       evt.currentTarget.dispatchEvent(new Event('change'))
       evt.preventDefault()
     })
+  }
+
+  /**
+   * Tear down document-level listeners this editor registered, so a closed
+   * editor never reacts to shortcuts/paste (operating on a torn-down canvas) and
+   * isn't left as the "active" editor. Call before discarding the instance.
+   * @returns {void}
+   */
+  destroy () {
+    if (this.keydownHandler) document.removeEventListener('keydown', this.keydownHandler)
+    if (this.pasteHandler) document.removeEventListener('paste', this.pasteHandler)
+    setActiveEditor(null)
   }
 
   // parents() https://stackoverflow.com/a/12981248
@@ -537,6 +552,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   setBackground (color, url, gradientElem) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     // if (color == this.configObj.pref('bkgd_color') && url == this.configObj.pref('bkgd_url')) { return; }
     this.configObj.pref('bkgd_color', color)
     this.configObj.pref('bkgd_url', url, true)
@@ -565,6 +581,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   updateCanvas (center, newCtr) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const zoom = this.svgCanvas.getZoom()
     const { workarea } = this
     const cnvs = $id('svgcanvas')
@@ -668,8 +685,9 @@ class Editor extends EditorStartup {
         stroke-width: ${1 / this.svgCanvas.getZoom()}px;
       }
     `
-    if (document.querySelectorAll('#wireframe_rules').length > 0) {
-      document.querySelector('#wireframe_rules').textContent =
+    const wfRules = this.$qq('#wireframe_rules') // container-scoped (see EditorStartup constructor)
+    if (wfRules) {
+      wfRules.textContent =
         this.workarea.classList.contains('wireframe') ? rule : ''
     }
   }
@@ -719,6 +737,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   elementTransition (win, elems) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const mode = this.svgCanvas.getMode()
     const elem = elems[0]
 
@@ -858,6 +877,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   zoomChanged (win, bbox, autoCenter) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const scrbar = 15
     const zInfo = this.svgCanvas.setBBoxZoom(
       bbox,
@@ -910,6 +930,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   contextChanged (win, context) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     let linkStr = ''
     if (context) {
       let str = ''
@@ -943,6 +964,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   setIcon (elem, iconId) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const img = document.createElement('img')
     img.src = this.configObj.curConfig.imgPath + iconId
     const icon = typeof iconId === 'string' ? img : iconId.cloneNode(true)
@@ -992,6 +1014,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   zoomImage (multiplier) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const resolution = this.svgCanvas.getResolution()
     multiplier = multiplier ? resolution.zoom * multiplier : 1
     // setResolution(res.w * multiplier, res.h * multiplier, true);
@@ -1093,6 +1116,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   rotateSelected (cw, step) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     if (!this.selectedElement || this.multiselected) {
       return
     }
@@ -1109,6 +1133,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   hideSourceEditor () {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const $editorDialog = $id('se-svg-editor-dialog')
     $editorDialog.setAttribute('dialog', 'closed')
   }
@@ -1118,6 +1143,7 @@ class Editor extends EditorStartup {
    * @returns {void} Resolves to `undefined`
    */
   async saveSourceEditor (e) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     const $editorDialog = $id('se-svg-editor-dialog')
     if ($editorDialog.getAttribute('dialog') !== 'open') return
     const saveChanges = () => {
@@ -1146,6 +1172,7 @@ class Editor extends EditorStartup {
    * @returns {void} Resolves to `undefined`
    */
   cancelOverlays (e) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     if ($id('dialog_box') != null) $id('dialog_box').style.display = 'none'
     const $editorDialog = $id('se-svg-editor-dialog')
     const editingsource = $editorDialog.getAttribute('dialog') === 'open'
@@ -1177,7 +1204,7 @@ class Editor extends EditorStartup {
   toggleDynamicOutput (e) {
     this.configObj.curConfig.dynamicOutput = e.detail.dynamic
     this.svgCanvas.setConfig(this.configObj.curConfig)
-    const $editorDialog = document.getElementById('se-svg-editor-dialog')
+    const $editorDialog = this.$id('se-svg-editor-dialog') // container-scoped (see EditorStartup constructor)
     const origSource = this.svgCanvas.getSvgString()
     $editorDialog.setAttribute('dialog', 'open')
     $editorDialog.setAttribute('value', origSource)
@@ -1252,6 +1279,7 @@ class Editor extends EditorStartup {
    * @returns {void} A Promise which resolves to `undefined`
    */
   setLang (lang) {
+    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     this.langChanged = true
     this.configObj.pref('lang', lang)
     const $editDialog = $id('se-edit-prefs')

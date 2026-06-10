@@ -12,39 +12,25 @@ import { transformListToTransform, transformBox, transformPoint, matrixMultiply,
 import { NS } from './namespaces'
 import { warn } from '../common/logger.js'
 
-let svgCanvas
 // change radius if touch screen
 const gripRadius = window.ontouchstart ? 10 : 4
 
 /**
- * Private singleton manager for selector state
+ * Reentrant init: the Selector/SelectorManager classes are defined per
+ * SvgCanvas instance (closed over `svgCanvas` and the per-instance
+ * `selectorManager` created at the end of init), so several editors can coexist
+ * in one realm. The manager + Selector class are attached to the canvas.
+ * @function module:select.init
+ * @param {module:svgcanvas.SvgCanvas} canvas
+ * @returns {void}
  */
-class SelectModule {
-  #selectorManager = null
-
-  /**
-   * Initialize the select module with canvas
-   * @param {Object} canvas - The SVG canvas instance
-   * @returns {void}
-   */
-  init (canvas) {
-    svgCanvas = canvas
-    this.#selectorManager = new SelectorManager()
-  }
-
-  /**
-   * Get the singleton SelectorManager instance
-   * @returns {SelectorManager} The SelectorManager instance
-   */
-  getSelectorManager () {
-    return this.#selectorManager
-  }
-}
+export const init = (canvas) => {
+  const svgCanvas = canvas
 
 /**
 * Private class for DOM element selection boxes.
 */
-export class Selector {
+class Selector {
   /**
   * @param {Integer} id - Internally identify the selector
   * @param {Element} elem - DOM element associated with this selector
@@ -116,11 +102,11 @@ export class Selector {
   */
   showGrips (show) {
     const bShow = show ? 'inline' : 'none'
-    selectModule.getSelectorManager().selectorGripsGroup.setAttribute('display', bShow)
+    selectorManager.selectorGripsGroup.setAttribute('display', bShow)
     const elem = this.selectedElement
     this.hasGrips = show
     if (elem && show) {
-      this.selectorGroup.append(selectModule.getSelectorManager().selectorGripsGroup)
+      this.selectorGroup.append(selectorManager.selectorGripsGroup)
       Selector.updateGripCursors(getRotationAngle(elem))
     }
   }
@@ -133,7 +119,7 @@ export class Selector {
   resize (bbox) {
     const dataStorage = svgCanvas.getDataStorage()
     const selectedBox = this.selectorRect
-    const mgr = selectModule.getSelectorManager()
+    const mgr = selectorManager
     const selectedGrips = mgr.selectorGrips
     const selected = this.selectedElement
     const zoom = svgCanvas.getZoom()
@@ -279,14 +265,14 @@ export class Selector {
   * @returns {void}
   */
   static updateGripCursors (angle) {
-    const dirArr = Object.keys(selectModule.getSelectorManager().selectorGrips)
+    const dirArr = Object.keys(selectorManager.selectorGrips)
     let steps = Math.round(angle / 45)
     if (steps < 0) { steps += 8 }
     while (steps > 0) {
       dirArr.push(dirArr.shift())
       steps--
     }
-    Object.values(selectModule.getSelectorManager().selectorGrips).forEach((gripElement, i) => {
+    Object.values(selectorManager.selectorGrips).forEach((gripElement, i) => {
       gripElement.setAttribute('style', `cursor:${dirArr[i]}-resize`)
     })
   }
@@ -295,7 +281,7 @@ export class Selector {
 /**
 * Manage all selector objects (selection boxes).
 */
-export class SelectorManager {
+class SelectorManager {
   /**
    * Sets up properties and calls `initGroup`.
    */
@@ -414,7 +400,7 @@ export class SelectorManager {
     this.selectorGripsGroup.append(this.rotateGrip)
     dataStorage.put(this.rotateGrip, 'type', 'rotate')
 
-    if (document.getElementById('canvasBackground')) { return }
+    if (svgCanvas.$id('canvasBackground')) { return } // scoped: each editor gets its own
 
     const [width, height] = svgCanvas.curConfig.dimensions
     const canvasbg = svgCanvas.createSVGElement({
@@ -642,22 +628,10 @@ export class SelectorManager {
  * @property {module:select.Dimensions} dimensions
  */
 
-// Export singleton instance for backward compatibility
-const selectModule = new SelectModule()
-
-/**
- * Initializes this module.
- * @function module:select.init
- * @param {module:select.Config} config - An object containing configurable parameters (imgPath)
- * @param {module:select.SVGFactory} svgFactory - An object implementing the SVGFactory interface.
- * @returns {void}
- */
-export const init = (canvas) => {
-  selectModule.init(canvas)
+  // Per-instance selector manager + class, attached for consumers (svgcanvas.js
+  // reads svgCanvas.selectorManager and exposes the Selector class via getSelector()).
+  const selectorManager = new SelectorManager()
+  svgCanvas.selectorManager = selectorManager
+  svgCanvas.getSelectorManager = () => selectorManager
+  svgCanvas.SelectorClass = Selector
 }
-
-/**
- * @function module:select.getSelectorManager
- * @returns {module:select.SelectorManager} The SelectorManager instance.
- */
-export const getSelectorManager = () => selectModule.getSelectorManager()

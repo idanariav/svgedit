@@ -14,16 +14,13 @@ import {
 } from './utilities.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'
 
-let svgCanvas = null
-
 /**
  * @function module:text-actions.init
  * @param {module:text-actions.svgCanvas} textActionsContext
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas // per-instance; the TextActions class below closes over it
 
 /**
  * Group: Text edit functions
@@ -103,7 +100,7 @@ class TextActions {
     if (!empty) {
       this.#textinput.setSelectionRange(index, index)
     }
-    this.#cursor = getElement('text_cursor')
+    this.#cursor = svgCanvas.getElement('text_cursor')
     if (!this.#cursor) {
       this.#cursor = document.createElementNS(NS.SVG, 'line')
       assignAttributes(this.#cursor, {
@@ -111,7 +108,7 @@ class TextActions {
         stroke: '#333',
         'stroke-width': 1
       })
-      getElement('selectorParentGroup').append(this.#cursor)
+      svgCanvas.getElement('selectorParentGroup').append(this.#cursor)
     }
 
     if (!this.#blinker) {
@@ -156,7 +153,7 @@ class TextActions {
       this.#textinput.setSelectionRange(start, end)
     }
 
-    this.#selblock = getElement('text_selectblock')
+    this.#selblock = svgCanvas.getElement('text_selectblock')
     if (!this.#selblock) {
       this.#selblock = document.createElementNS(NS.SVG, 'path')
       assignAttributes(this.#selblock, {
@@ -165,7 +162,7 @@ class TextActions {
         opacity: 0.5,
         style: 'pointer-events:none'
       })
-      getElement('selectorParentGroup').append(this.#selblock)
+      svgCanvas.getElement('selectorParentGroup').append(this.#selblock)
     }
 
     const startbb = this.#chardata[start]
@@ -584,5 +581,6 @@ class TextActions {
   }
 }
 
-// Export singleton instance for backward compatibility
-export const textActionsMethod = new TextActions()
+  // Per-instance TextActions, attached to this canvas.
+  svgCanvas.textActions = new TextActions()
+}

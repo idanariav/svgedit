@@ -3,7 +3,7 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
 import { applyUiMode } from './uiMode.js'
 
-const { $id, $click } = SvgCanvas
+const { $click } = SvgCanvas
 
 /**
  *
@@ -35,6 +35,7 @@ class MainMenu {
    * @returns {void}
    */
   hidePreferences () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const $editDialog = $id('se-edit-prefs')
     $editDialog.setAttribute('dialog', 'close')
     this.editor.configObj.preferences = false
@@ -147,6 +148,7 @@ class MainMenu {
    * @returns {void}
    */
   showPreferences () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (this.editor.configObj.preferences) {
       return
     }
@@ -159,6 +161,7 @@ class MainMenu {
    * @type {module}
    */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Top panel
     const template = document.createElement('template')
     template.innerHTML = `
@@ -174,9 +177,7 @@ class MainMenu {
      * Associate all button actions as well as non-button keyboard shortcuts.
      */
     $click($id('tool_export'), function () {
-      document
-        .getElementById('se-export-dialog')
-        .setAttribute('dialog', 'open')
+      $id('se-export-dialog').setAttribute('dialog', 'open')
     })
     $id('se-export-dialog').addEventListener(
       'change',

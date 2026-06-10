@@ -1,8 +1,5 @@
-import SvgCanvas from '@svgedit/svgcanvas'
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import BottomPanelHtml from './BottomPanel.html'
-
-const { $id } = SvgCanvas
 
 /*
  * register actions for left panel
@@ -89,6 +86,7 @@ class BottomPanel {
    * @returns {void}
    */
   updateToolButtonState () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const bNoFill = this.editor.svgCanvas.getColor('fill') === 'none'
     const bNoStroke = this.editor.svgCanvas.getColor('stroke') === 'none'
     const buttonsNeedingStroke = ['tool_fhpath', 'tool_line']
@@ -175,6 +173,7 @@ class BottomPanel {
    * @type {module}
    */
   handlePalette (e) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
     // shift key or right click for stroke
     const { picker, color } = e.detail
@@ -202,6 +201,7 @@ class BottomPanel {
    * @type {module}
    */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // register actions for Bottom panel
     const template = document.createElement('template')
     const { i18next } = this.editor
@@ -247,6 +247,7 @@ class BottomPanel {
    * @type {module}
    */
   updateColorpickers (apply) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $id('fill_color').update(
       this.editor.svgCanvas,
       this.editor.selectedElement,

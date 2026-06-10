@@ -18,17 +18,14 @@ import {
   getBBox
 } from './utilities.js'
 
-let svgCanvas = null
-let path = null
-
 /**
 * @function module:path-actions.init
 * @param {module:path-actions.svgCanvas} pathActionsContext
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
+  let path = null // current path being edited (per instance)
 
 /**
  * Convert a path to one with only absolute or relative values.
@@ -38,7 +35,7 @@ export const init = (canvas) => {
  * @param {boolean} toRel - true of convert to relative
  * @returns {string}
  */
-export const convertPath = (pth, toRel) => {
+  const convertPath = (pth, toRel) => {
   const { pathSegList } = pth
   const len = pathSegList.numberOfItems
   let curx = 0; let cury = 0
@@ -332,7 +329,7 @@ class PathActions {
       const zoom = svgCanvas.getZoom()
       let x = mouseX / zoom
       let y = mouseY / zoom
-      let stretchy = getElement('path_stretch_line')
+      let stretchy = svgCanvas.getElement('path_stretch_line')
       this.#newPoint = [x, y]
 
       if (svgCanvas.getGridSnapping()) {
@@ -351,7 +348,7 @@ class PathActions {
           'stroke-width': '0.5',
           fill: 'none'
         })
-        getElement('selectorParentGroup').append(stretchy)
+        svgCanvas.getElement('selectorParentGroup').append(stretchy)
       }
       stretchy.setAttribute('display', 'inline')
 
@@ -399,7 +396,7 @@ class PathActions {
         // Remove previous path object if previously created
         svgCanvas.removePath_(id)
 
-        const newpath = getElement(id)
+        const newpath = svgCanvas.getElement(id)
         let newseg
         let sSeg
         const len = seglist.numberOfItems
@@ -446,7 +443,7 @@ class PathActions {
             if (path.matrix) {
               svgCanvas.recalcRotatedPath()
             }
-            pathActionsMethod.toEditMode(path.elem)
+            svgCanvas.pathActions.toEditMode(path.elem)
             path.selectPt()
             return false
           }
@@ -620,7 +617,7 @@ class PathActions {
           svgCanvas.replacePathSeg(6, index, [ptX, ptY, lastX, lastY, altX, altY], drawnPath)
         }
       } else {
-        const stretchy = getElement('path_stretch_line')
+        const stretchy = svgCanvas.getElement('path_stretch_line')
         if (stretchy) {
           const prev = seglist.getItem(index)
           if (prev.pathSegType === 6) {
@@ -706,7 +703,7 @@ class PathActions {
     if (svgCanvas.getCurrentMode() === 'path') {
       this.#newPoint = null
       if (!drawnPath) {
-        element = getElement(svgCanvas.getId())
+        element = svgCanvas.getElement(svgCanvas.getId())
         svgCanvas.setStarted(false)
         this.#firstCtrl = null
       }
@@ -738,12 +735,12 @@ class PathActions {
       rubberBox.setAttribute('display', 'none')
 
       if (rubberBox.getAttribute('width') <= 2 && rubberBox.getAttribute('height') <= 2) {
-        pathActionsMethod.toSelectMode(evt.target)
+        svgCanvas.pathActions.toSelectMode(evt.target)
       }
 
       // else, move back to select mode
     } else {
-      pathActionsMethod.toSelectMode(evt.target)
+      svgCanvas.pathActions.toSelectMode(evt.target)
     }
     this.#hasMoved = false
     return undefined
@@ -798,8 +795,8 @@ class PathActions {
       svgCanvas.setCurrentMode('path')
       this.#subpath = true
     } else {
-      pathActionsMethod.clear(true)
-      pathActionsMethod.toEditMode(path.elem)
+      svgCanvas.pathActions.clear(true)
+      svgCanvas.pathActions.toEditMode(path.elem)
     }
   }
 
@@ -809,7 +806,7 @@ class PathActions {
     */
   select (target) {
     if (this.#currentPath === target) {
-      pathActionsMethod.toEditMode(target)
+      svgCanvas.pathActions.toEditMode(target)
       svgCanvas.setCurrentMode('pathedit')
       // going into pathedit mode
     } else {
@@ -856,11 +853,11 @@ class PathActions {
     const drawnPath = svgCanvas.getDrawnPath()
     this.#currentPath = null
     if (drawnPath) {
-      const elem = getElement(svgCanvas.getId())
-      const psl = getElement('path_stretch_line')
+      const elem = svgCanvas.getElement(svgCanvas.getId())
+      const psl = svgCanvas.getElement('path_stretch_line')
       psl.parentNode.removeChild(psl)
       elem.parentNode.removeChild(elem)
-      const pathpointgripContainer = getElement('pathpointgrip_container')
+      const pathpointgripContainer = svgCanvas.getElement('pathpointgrip_container')
       const elements = pathpointgripContainer.querySelectorAll('*')
       for (const el of elements) {
         el.setAttribute('display', 'none')
@@ -1097,7 +1094,7 @@ class PathActions {
     * @returns {void}
     */
   deletePathNode () {
-    if (!pathActionsMethod.canDeleteNodes) { return }
+    if (!svgCanvas.pathActions.canDeleteNodes) { return }
     path.storeD()
 
     const selPts = path.selected_pts
@@ -1157,7 +1154,7 @@ class PathActions {
 
     // Completely delete a path with 1 or 0 segments
     if (path.elem.pathSegList.numberOfItems <= 1) {
-      pathActionsMethod.toSelectMode(path.elem)
+      svgCanvas.pathActions.toSelectMode(path.elem)
       svgCanvas.canvas.deleteSelectedElements()
       return
     }
@@ -1236,7 +1233,7 @@ class PathActions {
           const newseg = elem.createSVGPathSegLinetoAbs(lastM.x, lastM.y)
           segList.insertItemBefore(newseg, i)
           // Can this be done better?
-          pathActionsMethod.fixEnd(elem)
+          svgCanvas.pathActions.fixEnd(elem)
           break
         }
       }
@@ -1254,6 +1251,7 @@ class PathActions {
   }
 }
 
-// Export singleton instance for backward compatibility
-export const pathActionsMethod = new PathActions()
+  // Per-instance PathActions, attached to this canvas.
+  svgCanvas.pathActions = new PathActions()
+}
 // end pathActions

@@ -16,9 +16,9 @@ import { warn } from '../common/logger.js'
 // Element types that cannot be converted to a path for boolean operations
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
-let svgCanvas = null
-
-// Lazy-initialised paper.js scope — created once on first use
+// Lazy-initialised paper.js scope — created once on first use. This is a
+// stateless reusable compute scope (each op clears it), so it's safe to share
+// across editor instances; only the SvgCanvas reference must be per-instance.
 let paperScope = null
 const getPaperScope = () => {
   if (!paperScope) {
@@ -202,7 +202,7 @@ const performBooleanOp = (type, canvas) => {
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
+  const svgCanvas = canvas
   svgCanvas.booleanUnion = () => performBooleanOp('union', svgCanvas)
   svgCanvas.booleanIntersect = () => performBooleanOp('intersect', svgCanvas)
   svgCanvas.booleanSubtract = () => performBooleanOp('subtract', svgCanvas)

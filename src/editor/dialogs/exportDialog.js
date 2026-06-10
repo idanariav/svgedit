@@ -141,7 +141,7 @@ export class SeExportDialog extends HTMLElement {
     })
     const onSubmitHandler = (e, action) => {
       if (action === 'cancel') {
-        document.getElementById('se-export-dialog').setAttribute('dialog', 'close')
+        this.setAttribute('dialog', 'close')
       } else {
         const triggerEvent = new CustomEvent('change', {
           detail: {
@@ -153,7 +153,7 @@ export class SeExportDialog extends HTMLElement {
           }
         })
         this.dispatchEvent(triggerEvent)
-        document.getElementById('se-export-dialog').setAttribute('dialog', 'close')
+        this.setAttribute('dialog', 'close')
       }
     }
     const onChangeHandler = (e) => {

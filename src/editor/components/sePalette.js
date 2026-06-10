@@ -2,6 +2,7 @@
 /* eslint-disable max-len */
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
+import { closestRoot } from '../domScope.js'
 
 const DEFAULT_PALETTE = [
   'none',
@@ -447,13 +448,14 @@ export class SEPalette extends HTMLElement {
   }
 
   _openEditDialog (i) {
-    document.querySelector('se-color-dialog')?.remove()
+    const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
+    root.querySelector('se-color-dialog')?.remove()
     const color = this.getColor(i)
     const dialog = document.createElement('se-color-dialog')
     dialog.paint = new Paint({ alpha: 100, solidColor: color.slice(1) })
     dialog.type = 'fill'
     dialog.i18next = svgEditor.i18next
-    document.body.appendChild(dialog)
+    ;(root.body ?? root).appendChild(dialog)
     dialog.addEventListener('change', (evt) => {
       const paint = evt.detail.paint
       if (paint?.type !== 'solidColor' || !paint.solidColor) return

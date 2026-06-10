@@ -1472,6 +1472,15 @@ export const insertChildAtIndex = (parent, child, index = 0) => {
 export const $id = id => document.getElementById(id)
 export const $qq = sel => document.querySelector(sel)
 export const $qa = sel => [...document.querySelectorAll(sel)]
+// Scoped variants: resolve within a given root element instead of the whole
+// document. svgedit's chrome uses fixed element IDs (svgcanvas, workarea, …),
+// so when more than one editor is mounted in the same document a global
+// getElementById returns the first instance's element. Binding $id/$qq/$qa to
+// the owning editor's container lets multiple editors coexist (see svgcanvas.js
+// and the editor's per-instance $id).
+export const scopedId = root => id => root.querySelector(`[id="${CSS.escape(id)}"]`)
+export const scopedQq = root => sel => root.querySelector(sel)
+export const scopedQa = root => sel => [...root.querySelectorAll(sel)]
 export const $click = (element, handler) => {
   element.addEventListener('click', handler)
   element.addEventListener('touchend', handler)

@@ -32,7 +32,6 @@ import { isGecko, isChrome, isWebkit } from '../common/browser.js'
 import * as pathModule from './path.js'
 import { NS } from './namespaces.js'
 import * as draw from './draw.js'
-import { recalculateDimensions } from './recalculate.js'
 import { getParents, getClosest } from '../common/util.js'
 
 const {
@@ -42,27 +41,13 @@ const {
   BatchCommand
 } = history
 
-let svgCanvas = null
-
 /**
  * @function module:svg-exec.init
  * @param {module:svg-exec.SvgCanvas#init} svgContext
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-  svgCanvas.setSvgString = setSvgString
-  svgCanvas.importSvgString = importSvgString
-  svgCanvas.uniquifyElems = uniquifyElemsMethod
-  svgCanvas.setUseData = setUseDataMethod
-  svgCanvas.convertGradients = convertGradientsMethod
-  svgCanvas.removeUnusedDefElems = removeUnusedDefElemsMethod // remove DOM elements inside the `<defs>` if they are notreferred to,
-  svgCanvas.svgCanvasToString = svgCanvasToString // Main function to set up the SVG content for output.
-  svgCanvas.svgToString = svgToString // Sub function ran on each SVG element to convert it to a string as desired.
-  svgCanvas.embedImage = embedImage // Converts a given image file to a data URL when possibl
-  svgCanvas.rasterExport = rasterExport // Generates a PNG (or JPG, BMP, WEBP) Data URL based on the current image
-  svgCanvas.exportPDF = exportPDF // Generates a PDF based on the current image, then calls "exportedPDF"
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
 
 /**
  * Main function to set up the SVG content for output.
@@ -85,7 +70,7 @@ const svgCanvasToString = () => {
 
   // Move out of in-group editing mode
   if (svgCanvas.getCurrentGroup()) {
-    draw.leaveContext()
+    svgCanvas.leaveContext()
     svgCanvas.selectOnly([svgCanvas.getCurrentGroup()])
   }
 
@@ -617,7 +602,7 @@ const setSvgString = (xmlString, preventUndo) => {
     }
 
     // identify layers
-    draw.identifyLayers()
+    svgCanvas.identifyLayers()
 
     // Give ID for any visible layer children missing one
     const chiElems = content.children
@@ -674,7 +659,7 @@ const setSvgString = (xmlString, preventUndo) => {
     svgCanvas.setZoom(1)
 
     svgCanvas.clearSelection()
-    pathModule.clearData()
+    svgCanvas.clearData()
     svgCanvas.getSvgRoot().append(svgCanvas.selectorManager.selectorParentGroup)
 
     if (!preventUndo) svgCanvas.addCommandToHistory(batchCmd)
@@ -819,7 +804,7 @@ const importSvgString = (xmlString, preserveDimension) => {
 
     if (!preserveDimension) {
       useEl.setAttribute('transform', ts)
-      recalculateDimensions(useEl)
+      svgCanvas.recalculateDimensions(useEl)
     }
     dataStorage.put(useEl, 'symbol', symbol)
     dataStorage.put(useEl, 'ref', symbol)
@@ -1484,4 +1469,17 @@ const convertGradientsMethod = elem => {
       }
     }
   })
+  }
+
+  svgCanvas.setSvgString = setSvgString
+  svgCanvas.importSvgString = importSvgString
+  svgCanvas.uniquifyElems = uniquifyElemsMethod
+  svgCanvas.setUseData = setUseDataMethod
+  svgCanvas.convertGradients = convertGradientsMethod
+  svgCanvas.removeUnusedDefElems = removeUnusedDefElemsMethod // remove DOM elements inside the `<defs>` if they are notreferred to,
+  svgCanvas.svgCanvasToString = svgCanvasToString // Main function to set up the SVG content for output.
+  svgCanvas.svgToString = svgToString // Sub function ran on each SVG element to convert it to a string as desired.
+  svgCanvas.embedImage = embedImage // Converts a given image file to a data URL when possibl
+  svgCanvas.rasterExport = rasterExport // Generates a PNG (or JPG, BMP, WEBP) Data URL based on the current image
+  svgCanvas.exportPDF = exportPDF // Generates a PDF based on the current image, then calls "exportedPDF"
 }

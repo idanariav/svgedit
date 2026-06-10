@@ -21,19 +21,15 @@ const {
   UndoManager, HistoryEventTypes
 } = hstry
 
-let svgCanvas = null
-
 /**
 * @function module:undo.init
 * @param {module:undo.undoContext} undoContext
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-  canvas.undoMgr = getUndoManager()
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
 
-export const getUndoManager = () => {
+  const getUndoManager = () => {
   return new UndoManager({
     /**
      * @param {string} eventType One of the HistoryEvent types
@@ -70,11 +66,11 @@ export const getUndoManager = () => {
         if (cmdType === 'MoveElementCommand') {
           const parent = isApply ? cmd.newParent : cmd.oldParent
           if (parent === svgCanvas.getSvgContent()) {
-            draw.identifyLayers()
+            svgCanvas.identifyLayers()
           }
         } else if (cmdType === 'InsertElementCommand' || cmdType === 'RemoveElementCommand') {
           if (cmd.parent === svgCanvas.getSvgContent()) {
-            draw.identifyLayers()
+            svgCanvas.identifyLayers()
           }
           if (cmdType === 'InsertElementCommand') {
             if (isApply) {
@@ -91,7 +87,7 @@ export const getUndoManager = () => {
           if (cmd.elem.tagName === 'title' &&
             cmd.elem.parentNode.parentNode === svgCanvas.getSvgContent()
           ) {
-            draw.identifyLayers()
+            svgCanvas.identifyLayers()
           }
           const values = isApply ? cmd.newValues : cmd.oldValues
           // If stdDeviation was changed, update the blur.
@@ -132,7 +128,7 @@ export const getUndoManager = () => {
 * @param {Element} elem - The (text) DOM element to clone
 * @returns {Element} Cloned element
 */
-export const ffClone = (elem) => {
+  const ffClone = (elem) => {
   if (!isGecko()) { return elem }
   const clone = elem.cloneNode(true)
   elem.before(clone)
@@ -151,7 +147,7 @@ export const ffClone = (elem) => {
 * @param {Element[]} elems - The DOM elements to apply the change to
 * @returns {void}
 */
-export const changeSelectedAttributeNoUndoMethod = (attr, newValue, elems) => {
+  const changeSelectedAttributeNoUndoMethod = (attr, newValue, elems) => {
   if (attr === 'id') {
     // if the user is changing the id, then de-select the element first
     // change the ID, then re-select it with the new ID
@@ -293,7 +289,7 @@ export const changeSelectedAttributeNoUndoMethod = (attr, newValue, elems) => {
 * @param {Element[]} elems - The DOM elements to apply the change to
 * @returns {void}
 */
-export const changeSelectedAttributeMethod = (attr, val, elems) => {
+  const changeSelectedAttributeMethod = (attr, val, elems) => {
   const selectedElements = svgCanvas.getSelectedElements()
   elems = elems || selectedElements
   svgCanvas.undoMgr.beginUndoableChange(attr, elems)
@@ -305,4 +301,9 @@ export const changeSelectedAttributeMethod = (attr, val, elems) => {
     // svgCanvas.addCommandToHistory(batchCmd);
     svgCanvas.undoMgr.addCommandToHistory(batchCmd)
   }
+  }
+
+  svgCanvas.undoMgr = getUndoManager()
+  svgCanvas.changeSelectedAttributeNoUndo = changeSelectedAttributeNoUndoMethod
+  svgCanvas.changeSelectedAttribute = changeSelectedAttributeMethod
 }

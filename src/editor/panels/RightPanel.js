@@ -2,7 +2,7 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 
-const { $id, $click } = SvgCanvas
+const { $click } = SvgCanvas
 
 /**
  *
@@ -24,10 +24,10 @@ class RightPanel {
    */
   activateTab (name) {
     this.activeTab = name
-    document.querySelectorAll('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
+    this.editor.$qa('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === name)
     })
-    document.querySelectorAll('#sidepanel_content .sidepanel_tabpanel').forEach(panel => {
+    this.editor.$qa('#sidepanel_content .sidepanel_tabpanel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `tab_${name}`)
     })
   }
@@ -80,6 +80,7 @@ class RightPanel {
    * @returns {void}
    */
   init () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const template = document.createElement('template')
     const { i18next } = this.editor
 
@@ -107,7 +108,7 @@ class RightPanel {
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => this.toggleSidePanel())
     // Tab bar (Design / Text / Effects / Layers)
-    document.querySelectorAll('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
+    this.editor.$qa('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
       $click(btn, () => this.activateTab(btn.dataset.tab))
     })
     this.activateTab(this.activeTab)
@@ -161,11 +162,11 @@ class RightPanel {
       // This matches what this.editor.svgCanvas does
       // TODO: make this behavior less brittle (svg-editor should get which
       // layer is selected from the canvas and then select that one in the UI)
-      const elements = document.querySelectorAll('#layerlist tr.layer')
+      const elements = this.editor.$qa('#layerlist tr.layer')
       Array.prototype.forEach.call(elements, function (el) {
         el.classList.remove('layersel')
       })
-      document.querySelector('#layerlist tr.layer').classList.add('layersel')
+      this.editor.$qq('#layerlist tr.layer').classList.add('layersel')
     }
   }
 
@@ -195,7 +196,7 @@ class RightPanel {
 
   index (el) {
     if (!el) return -1
-    return Array.from(document.querySelector('#layerlist tbody').children).indexOf(el)
+    return Array.from(this.editor.$qq('#layerlist tbody').children).indexOf(el)
   }
 
   /**
@@ -204,7 +205,7 @@ class RightPanel {
    */
   mergeLayer () {
     if (
-      (this.index(document.querySelector('#layerlist tr.layersel')) - 1) ===
+      (this.index(this.editor.$qq('#layerlist tr.layersel')) - 1) ===
       this.editor.svgCanvas.getCurrentDrawing().getNumLayers() - 1
     ) {
       return
@@ -230,7 +231,7 @@ class RightPanel {
    * @returns {void}
    */
   layerRename () {
-    const ele = document.querySelector('#layerlist tr.layersel td.layername')
+    const ele = this.editor.$qq('#layerlist tr.layersel td.layername')
     const oldName = (ele) ? ele.textContent : ''
     const newName = prompt(this.editor.i18next.t('notification.enterNewLayerName'), '')
     if (!newName) {
@@ -280,6 +281,7 @@ class RightPanel {
    * @returns {void}
    */
   populateLayers () {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.editor.svgCanvas.clearSelection()
     const self = this
     const layerlist = $id('layerlist').querySelector('tbody')

@@ -1,5 +1,6 @@
 /* globals svgEditor */
 import { getIconDataUri } from '../images/iconRegistry.js'
+import { closestRoot } from '../domScope.js'
 
 /**
  * @class ExplorerButton
@@ -28,7 +29,7 @@ export class ExplorerButton extends HTMLElement {
     this.imgPath = svgEditor.configObj.curConfig.imgPath
 
     // Closes opened (pressed) lib menu on click on the canvas
-    const workarea = document.getElementById('workarea')
+    const workarea = closestRoot(this).querySelector('[id="workarea"]')
     workarea.addEventListener('click', (e) => {
       this.$menu.classList.remove('open')
       this.$lib.classList.remove('open-lib')

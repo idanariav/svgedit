@@ -3,6 +3,7 @@ import Paint from '@svgedit/svgcanvas/core/paint.js'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { closestRoot } from '../domScope.js'
 import './colorPicker/index.js'
 
 const template = document.createElement('template')
@@ -231,13 +232,14 @@ export class SeColorPicker extends HTMLElement {
    * Open the <se-color-dialog> modal for this swatch.
    */
   openColorDialog () {
+    const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
     // Remove any existing dialog
-    document.querySelector('se-color-dialog')?.remove()
+    root.querySelector('se-color-dialog')?.remove()
     const dialog = document.createElement('se-color-dialog')
     dialog.paint = this.paintBox.paint
     dialog.type = this.type
     dialog.i18next = this.i18next
-    document.body.appendChild(dialog)
+    ;(root.body ?? root).appendChild(dialog)
     dialog.addEventListener('change', (evt) => {
       const paint = new Paint({ copy: evt.detail.paint })
       this.setPaint(paint)

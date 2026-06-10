@@ -23,8 +23,6 @@ import {
 } from './math.js'
 import { convertToNum } from './units.js'
 
-let svgCanvas = null
-
 const flipBoxCoordinate = (value) => {
   if (value === null || value === undefined) return null
   const str = String(value).trim()
@@ -56,8 +54,7 @@ const flipAttributeInBoxUnits = (elem, attr) => {
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas // per-instance; remapElement below is closed over it
 
 // Map path segment types to their corresponding commands
 const pathMap = [
@@ -72,7 +69,7 @@ const pathMap = [
  * @param {SVGMatrix} m - The transformation matrix
  * @returns {void}
  */
-export const remapElement = (selected, changes, m) => {
+  const remapElement = (selected, changes, m) => {
   const remap = (x, y) => transformPoint(x, y, m)
   const scalew = (w) => m.a * w
   const scaleh = (h) => m.d * h
@@ -539,4 +536,7 @@ export const remapElement = (selected, changes, m) => {
     default:
       break
   }
+  }
+
+  svgCanvas.remapElement = remapElement
 }

@@ -15,62 +15,15 @@ import {
 } from './units.js'
 import { getParents } from '../common/util.js'
 
-let svgCanvas = null
-
 /**
 * @function module:elem-get-set.init
 * @param {module:elem-get-set.elemContext} elemContext
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-  svgCanvas.getBold = getBoldMethod // Check whether selected element is bold or not.
-  svgCanvas.setBold = setBoldMethod // Make the selected element bold or normal.
-  svgCanvas.getItalic = getItalicMethod // Check whether selected element is in italics or not.
-  svgCanvas.setItalic = setItalicMethod // Make the selected element italic or normal.
-  svgCanvas.hasTextDecoration = hasTextDecorationMethod // Check whether the selected element has the given text decoration or not.
-  svgCanvas.addTextDecoration = addTextDecorationMethod // Adds the given value to the text decoration
-  svgCanvas.removeTextDecoration = removeTextDecorationMethod // Removes the given value from the text decoration
-  svgCanvas.setTextAnchor = setTextAnchorMethod // Set the new text anchor.
-  svgCanvas.setLetterSpacing = setLetterSpacingMethod // Set the new letter spacing.
-  svgCanvas.setWordSpacing = setWordSpacingMethod // Set the new word spacing.
-  svgCanvas.setTextLength = setTextLengthMethod // Set the new text length.
-  svgCanvas.setLengthAdjust = setLengthAdjustMethod // Set the new length adjust.
-  svgCanvas.setTextPerspectiveX = setTextPerspectiveXMethod // Set horizontal perspective on text.
-  svgCanvas.setTextPerspectiveY = setTextPerspectiveYMethod // Set vertical perspective on text.
-  svgCanvas.getTextPerspectiveX = getTextPerspectiveXMethod // Get current horizontal perspective value.
-  svgCanvas.getTextPerspectiveY = getTextPerspectiveYMethod // Get current vertical perspective value.
-  svgCanvas.getFontFamily = getFontFamilyMethod // The current font family
-  svgCanvas.setFontFamily = setFontFamilyMethod // Set the new font family.
-  svgCanvas.setFontColor = setFontColorMethod // Set the new font color.
-  svgCanvas.getFontColor = getFontColorMethod // The current font color
-  svgCanvas.getFontSize = getFontSizeMethod // The current font size
-  svgCanvas.setFontSize = setFontSizeMethod // Applies the given font size to the selected element.
-  svgCanvas.getText = getTextMethod // current text (`textContent`) of the selected element
-  svgCanvas.setTextContent = setTextContentMethod // Updates the text element with the given string.
-  svgCanvas.setImageURL = setImageURLMethod // Sets the new image URL for the selected image element
-  svgCanvas.setLinkURL = setLinkURLMethod // Sets the new link URL for the selected anchor element.
-  svgCanvas.setRectRadius = setRectRadiusMethod // Sets the `rx` and `ry` values to the selected `rect` element
-  svgCanvas.makeHyperlink = makeHyperlinkMethod // Wraps the selected element(s) in an anchor element or converts group to one.
-  svgCanvas.removeHyperlink = removeHyperlinkMethod
-  svgCanvas.setSegType = setSegTypeMethod // Sets the new segment type to the selected segment(s).
-  svgCanvas.setStrokeWidth = setStrokeWidthMethod // Sets the stroke width for the current selected elements.
-  svgCanvas.getResolution = getResolutionMethod // The current dimensions and zoom level in an object
-  svgCanvas.getTitle = getTitleMethod // the current group/SVG's title contents or `undefined` if no element
-  svgCanvas.setGroupTitle = setGroupTitleMethod // Sets the group/SVG's title content.
-  svgCanvas.setStrokeAttr = setStrokeAttrMethod // Set the given stroke-related attribute the given value for selected elements.
-  svgCanvas.setBackground = setBackgroundMethod // Set the background of the editor (NOT the actual document).
-  svgCanvas.setDocumentTitle = setDocumentTitleMethod // Adds/updates a title element for the document with the given name.
-  svgCanvas.getEditorNS = getEditorNSMethod // Returns the editor's namespace URL, optionally adding it to the root element.
-  svgCanvas.setResolution = setResolutionMethod // Changes the document's dimensions to the given size.
-  svgCanvas.setBBoxZoom = setBBoxZoomMethod // Sets the zoom level on the canvas-side based on the given value.
-  svgCanvas.setCurrentZoom = setZoomMethod // Sets the zoom to the given level.
-  svgCanvas.setColor = setColorMethod // Change the current stroke/fill color/gradien
-  svgCanvas.setGradient = setGradientMethod // Apply the current gradient to selected element's fill or stroke.
-  svgCanvas.setPaint = setPaintMethod // Set a color/gradient to a fill/stroke.
-  svgCanvas.setCircleArc = setCircleArcMethod // Convert a circle to a pie-sector arc path (or back) with the given arc angle.
-  svgCanvas.setCircleArcAttr = setCircleArcAttrMethod // Update cx/cy/r on a circle-arc path element.
-}
+  const svgCanvas = canvas // per-instance; methods below are closed over it
+  // The method attachments are at the end of init (after the function
+  // declarations) so each instance binds its own closures.
 
 /**
 * @function module:elem-get-set.SvgCanvas#getResolution
@@ -1289,12 +1242,12 @@ const setSegTypeMethod = (newType) => {
 * @returns {void}
 */
 const setBackgroundMethod = (color, url, gradientElem) => {
-  const bg = getElement('canvasBackground')
+  const bg = svgCanvas.getElement('canvasBackground')
   if (!bg) { return }
   const border = bg.querySelector('rect')
   if (!border) { return }
-  let bgImg = getElement('background_image')
-  let bgPattern = getElement('background_pattern')
+  let bgImg = svgCanvas.getElement('background_image')
+  let bgPattern = svgCanvas.getElement('background_pattern')
 
   // Handle gradient fill
   let bgDefs = bg.querySelector('defs')
@@ -1498,4 +1451,52 @@ const setCircleArcAttrMethod = (attr, val) => {
     new ChangeElementCommand(selected, { [dataAttr]: oldDataVal, d: oldD }, attr)
   )
   svgCanvas.call('changed', [selected])
+  }
+
+  svgCanvas.getBold = getBoldMethod // Check whether selected element is bold or not.
+  svgCanvas.setBold = setBoldMethod // Make the selected element bold or normal.
+  svgCanvas.getItalic = getItalicMethod // Check whether selected element is in italics or not.
+  svgCanvas.setItalic = setItalicMethod // Make the selected element italic or normal.
+  svgCanvas.hasTextDecoration = hasTextDecorationMethod // Check whether the selected element has the given text decoration or not.
+  svgCanvas.addTextDecoration = addTextDecorationMethod // Adds the given value to the text decoration
+  svgCanvas.removeTextDecoration = removeTextDecorationMethod // Removes the given value from the text decoration
+  svgCanvas.setTextAnchor = setTextAnchorMethod // Set the new text anchor.
+  svgCanvas.setLetterSpacing = setLetterSpacingMethod // Set the new letter spacing.
+  svgCanvas.setWordSpacing = setWordSpacingMethod // Set the new word spacing.
+  svgCanvas.setTextLength = setTextLengthMethod // Set the new text length.
+  svgCanvas.setLengthAdjust = setLengthAdjustMethod // Set the new length adjust.
+  svgCanvas.setTextPerspectiveX = setTextPerspectiveXMethod // Set horizontal perspective on text.
+  svgCanvas.setTextPerspectiveY = setTextPerspectiveYMethod // Set vertical perspective on text.
+  svgCanvas.getTextPerspectiveX = getTextPerspectiveXMethod // Get current horizontal perspective value.
+  svgCanvas.getTextPerspectiveY = getTextPerspectiveYMethod // Get current vertical perspective value.
+  svgCanvas.getFontFamily = getFontFamilyMethod // The current font family
+  svgCanvas.setFontFamily = setFontFamilyMethod // Set the new font family.
+  svgCanvas.setFontColor = setFontColorMethod // Set the new font color.
+  svgCanvas.getFontColor = getFontColorMethod // The current font color
+  svgCanvas.getFontSize = getFontSizeMethod // The current font size
+  svgCanvas.setFontSize = setFontSizeMethod // Applies the given font size to the selected element.
+  svgCanvas.getText = getTextMethod // current text (`textContent`) of the selected element
+  svgCanvas.setTextContent = setTextContentMethod // Updates the text element with the given string.
+  svgCanvas.setImageURL = setImageURLMethod // Sets the new image URL for the selected image element
+  svgCanvas.setLinkURL = setLinkURLMethod // Sets the new link URL for the selected anchor element.
+  svgCanvas.setRectRadius = setRectRadiusMethod // Sets the `rx` and `ry` values to the selected `rect` element
+  svgCanvas.makeHyperlink = makeHyperlinkMethod // Wraps the selected element(s) in an anchor element or converts group to one.
+  svgCanvas.removeHyperlink = removeHyperlinkMethod
+  svgCanvas.setSegType = setSegTypeMethod // Sets the new segment type to the selected segment(s).
+  svgCanvas.setStrokeWidth = setStrokeWidthMethod // Sets the stroke width for the current selected elements.
+  svgCanvas.getResolution = getResolutionMethod // The current dimensions and zoom level in an object
+  svgCanvas.getTitle = getTitleMethod // the current group/SVG's title contents or `undefined` if no element
+  svgCanvas.setGroupTitle = setGroupTitleMethod // Sets the group/SVG's title content.
+  svgCanvas.setStrokeAttr = setStrokeAttrMethod // Set the given stroke-related attribute the given value for selected elements.
+  svgCanvas.setBackground = setBackgroundMethod // Set the background of the editor (NOT the actual document).
+  svgCanvas.setDocumentTitle = setDocumentTitleMethod // Adds/updates a title element for the document with the given name.
+  svgCanvas.getEditorNS = getEditorNSMethod // Returns the editor's namespace URL, optionally adding it to the root element.
+  svgCanvas.setResolution = setResolutionMethod // Changes the document's dimensions to the given size.
+  svgCanvas.setBBoxZoom = setBBoxZoomMethod // Sets the zoom level on the canvas-side based on the given value.
+  svgCanvas.setCurrentZoom = setZoomMethod // Sets the zoom to the given level.
+  svgCanvas.setColor = setColorMethod // Change the current stroke/fill color/gradien
+  svgCanvas.setGradient = setGradientMethod // Apply the current gradient to selected element's fill or stroke.
+  svgCanvas.setPaint = setPaintMethod // Set a color/gradient to a fill/stroke.
+  svgCanvas.setCircleArc = setCircleArcMethod // Convert a circle to a pie-sector arc path (or back) with the given arc angle.
+  svgCanvas.setCircleArcAttr = setCircleArcAttrMethod // Update cx/cy/r on a circle-arc path element.
 }

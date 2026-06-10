@@ -13,30 +13,17 @@ import Paint from './core/paint.js'
 import * as pathModule from './core/path.js'
 import * as history from './core/history.js'
 import * as draw from './core/draw.js'
-import { init as pasteInit, pasteElementsMethod } from './core/paste-elem.js'
+import { init as pasteInit } from './core/paste-elem.js'
 import { init as touchInit } from './core/touch.js'
 import { svgRootElement } from './core/svgroot.js'
-import {
-  init as undoInit,
-  changeSelectedAttributeNoUndoMethod,
-  changeSelectedAttributeMethod
-} from './core/undo.js'
+import { init as undoInit } from './core/undo.js'
 import { init as selectionInit } from './core/selection.js'
-import { init as textActionsInit, textActionsMethod } from './core/text-actions.js'
+import { init as textActionsInit } from './core/text-actions.js'
 import { init as eventInit } from './core/event.js'
-import {
-  init as jsonInit,
-  getJsonFromSvgElements,
-  addSVGElementsFromJson
-} from './core/json.js'
+import { init as jsonInit } from './core/json.js'
 import * as elemGetSet from './core/elem-get-set.js'
 import { init as selectedElemInit } from './core/selected-elem.js'
-import {
-  init as blurInit,
-  setBlurNoUndo,
-  setBlurOffsets,
-  setBlur
-} from './core/blur-event.js'
+import { init as blurInit } from './core/blur-event.js'
 import { sanitizeSvg } from './core/sanitize.js'
 import { getReverseNS, NS } from './core/namespaces.js'
 import {
@@ -61,6 +48,9 @@ import {
   $id,
   $qa,
   $qq,
+  scopedId,
+  scopedQa,
+  scopedQq,
   $click,
   getFeGaussianBlur,
   stringToHTML,
@@ -73,13 +63,10 @@ import {
 } from './core/math.js'
 import { convertToNum, init as unitsInit, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
 import { init as svgInit } from './core/svg-exec.js'
-import { remapElement, init as coordsInit } from './core/coords.js'
-import {
-  recalculateDimensions,
-  init as recalculateInit
-} from './core/recalculate.js'
-import { getSelectorManager, Selector, init as selectInit } from './core/select.js'
-import { clearSvgContentElementInit, init as clearInit } from './core/clear.js'
+import { init as coordsInit } from './core/coords.js'
+import { init as recalculateInit } from './core/recalculate.js'
+import { init as selectInit } from './core/select.js'
+import { init as clearInit } from './core/clear.js'
 import { init as booleanOpsInit } from './core/boolean-ops.js'
 import { init as pathOffsetInit } from './core/path-offset.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
@@ -119,11 +106,10 @@ class SvgCanvas {
    * @param {HTMLElement} container - The container HTML element that should hold the SVG root element
    * @param {module:SVGeditor.configObj.curConfig} config - An object that contains configuration data
    */
-  constructor (container, config) {
+  constructor (container, config, scopeRoot = null) {
     // imported function made available as methods
     this.initializeSvgCanvasMethods()
     unitsInit(this)
-    const { pathActions } = pathModule
 
     // initialize class variables
     this.saveOptions = { round_digits: 2 } // Object with save options
@@ -182,6 +168,19 @@ class SvgCanvas {
     // NOTE: This is not actually a SVG document, but an HTML document.
     this.svgdoc = window.document
     this.container = container
+    // Resolve element lookups within the owning editor's container rather than
+    // the whole document, so several editors can share the same fixed IDs
+    // (svgcanvas, svgcontent, …) without colliding. Falls back to the global
+    // document lookups when no scope root is supplied (e.g. standalone use).
+    // initializeSvgCanvasMethods() above set the global $id/$qq/$qa; override
+    // them here now that the scope root is known. core/event.js and the editor
+    // extensions read these off the instance, so they inherit the scoping.
+    this.scopeRoot = scopeRoot
+    if (scopeRoot) {
+      this.$id = scopedId(scopeRoot)
+      this.$qq = scopedQq(scopeRoot)
+      this.$qa = scopedQa(scopeRoot)
+    }
     // This is a container for the document being edited, not the document itself.
     this.svgroot = svgRootElement(this.svgdoc, dimensions)
     container.append(this.svgroot)
@@ -244,9 +243,9 @@ class SvgCanvas {
     selectionInit(this)
 
     this.nsMap = getReverseNS()
-    this.selectorManager = getSelectorManager()
+    // this.selectorManager is attached per-instance by selectInit()
 
-    this.pathActions = pathActions
+    // this.pathActions is attached per-instance by pathActionsInit() (run inside pathModule.init)
     pathModule.init(this)
     // Interface strings, usually for title elements
     this.uiStrings = {}
@@ -280,7 +279,7 @@ class SvgCanvas {
     container.addEventListener('DOMMouseScroll', this.DOMMouseScrollEvent)
 
     // Alias function
-    this.linkControlPoints = pathActions.linkControlPoints
+    this.linkControlPoints = this.pathActions.linkControlPoints
     this.curCommand = null
     this.filter = null
     this.filterHidden = false
@@ -804,7 +803,7 @@ class SvgCanvas {
   }
 
   getSelector () {
-    return Selector
+    return this.SelectorClass
   }
 
   getMode () {
@@ -1065,7 +1064,7 @@ class SvgCanvas {
    */
   setUiStrings (strs) {
     Object.assign(this.uiStrings, strs.notification)
-    pathModule.setUiStrings(strs)
+    this.setUiStrings(strs)
   }
 
   /**
@@ -1300,10 +1299,9 @@ class SvgCanvas {
   }
 
   initializeSvgCanvasMethods () {
-    this.getJsonFromSvgElements = getJsonFromSvgElements
-    this.addSVGElementsFromJson = addSVGElementsFromJson
-    this.clearSvgContentElement = clearSvgContentElementInit
-    this.textActions = textActionsMethod
+    // getJsonFromSvgElements / addSVGElementsFromJson are attached per-instance by jsonInit()
+    // clearSvgContentElement is attached per-instance by clearInit()
+    // textActions is attached per-instance by textActionsInit()
     this.getStrokedBBox = getStrokedBBoxDefaultVisible
     this.getVisibleElements = getVisibleElements
     this.stringToHTML = stringToHTML
@@ -1322,34 +1320,25 @@ class SvgCanvas {
     this.setHref = setHref
     this.getBBox = utilsGetBBox
     this.getRotationAngle = getRotationAngle
-    this.getElement = getElement
+    // Per-instance element lookup: query THIS canvas's own svgroot, so several
+    // editors don't resolve ids against a shared module-level svgroot.
+    this.getElement = (id) => this.svgroot?.querySelector(`#${CSS.escape(id)}`)
+    // utilities.js keeps a small amount of module-level state (svgCanvas/svgroot_)
+    // shared by its by-name-imported helpers (findDefs, getVisibleElements, …).
+    // Re-point it at this canvas when this editor becomes the focused one, so
+    // those helpers operate on the active editor (see editor focus handler).
+    this.activateUtilities = () => utilsInit(this)
     this.getRefElem = getRefElem
     this.assignAttributes = assignAttributes
     this.cleanupElement = cleanupElement
-    this.remapElement = remapElement
-    this.recalculateDimensions = recalculateDimensions
+    // remapElement / recalculateDimensions are attached per-instance by coordsInit() / recalculateInit()
     this.sanitizeSvg = sanitizeSvg
-    this.pasteElements = pasteElementsMethod // Remembers the current selected elements on the clipboard.
-    this.identifyLayers = draw.identifyLayers
-    this.createLayer = draw.createLayer
-    this.cloneLayer = draw.cloneLayer
-    this.deleteCurrentLayer = draw.deleteCurrentLayer
-    this.setCurrentLayer = draw.setCurrentLayer
-    this.renameCurrentLayer = draw.renameCurrentLayer
-    this.setCurrentLayerPosition = draw.setCurrentLayerPosition
-    this.indexCurrentLayer = draw.indexCurrentLayer
-    this.setLayerVisibility = draw.setLayerVisibility
-    this.moveSelectedToLayer = draw.moveSelectedToLayer
-    this.mergeLayer = draw.mergeLayer
-    this.mergeAllLayers = draw.mergeAllLayers
-    this.leaveContext = draw.leaveContext
-    this.setContext = draw.setContext
-    this.changeSelectedAttributeNoUndo = changeSelectedAttributeNoUndoMethod // This function makes the changes to the elements. It does not add the change to the history stack.
-    this.changeSelectedAttribute = changeSelectedAttributeMethod // Change the given/selected element and add the original value to the history stack.
-    this.setBlurNoUndo = setBlurNoUndo // Sets the `stdDeviation` blur value on the selected element without being undoable.
-    this.setBlurOffsets = setBlurOffsets // Sets the `x`, `y`, `width`, `height` values of the filter element in order to make the blur not be clipped. Removes them if not neeeded.
-    this.setBlur = setBlur // Adds/updates the blur filter to the selected element.
-    this.smoothControlPoints = pathModule.smoothControlPoints
+    // pasteElements is attached per-instance by pasteInit()
+    // The layer/context operations (identifyLayers, createLayer, leaveContext, …)
+    // are attached per-instance by draw.init().
+    // changeSelectedAttributeNoUndo / changeSelectedAttribute are attached per-instance by undoInit()
+    // setBlurNoUndo / setBlurOffsets / setBlur are attached per-instance by blurInit().
+    // smoothControlPoints is attached per-instance by pathModule.init()
     this.getTypeMap = getTypeMap
     this.history = history // object with all histor methods
     this.NS = NS
@@ -1376,6 +1365,9 @@ class SvgCanvas {
 SvgCanvas.$id = $id
 SvgCanvas.$qq = $qq
 SvgCanvas.$qa = $qa
+SvgCanvas.scopedId = scopedId
+SvgCanvas.scopedQq = scopedQq
+SvgCanvas.scopedQa = scopedQa
 SvgCanvas.$click = $click
 SvgCanvas.encode64 = encode64
 SvgCanvas.decode64 = decode64

@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
+import { closestRoot } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuLayersDialog
@@ -17,8 +18,10 @@ export class SeCMenuLayerDialog extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     this.source = ''
+    // Resolved in connectedCallback once attached (see domScope.js); the
+    // element isn't in the DOM yet at construction time.
     this._workarea = undefined
-    this.$sidePanels = document.getElementById('sidepanels')
+    this.$sidePanels = null
     this.$dialog = this._shadowRoot.querySelector('#cmenu_layers')
     this.$duplicateLink = this._shadowRoot.querySelector('#se-dupe')
     this.$deleteLink = this._shadowRoot.querySelector('#se-layer-delete')
@@ -58,8 +61,11 @@ export class SeCMenuLayerDialog extends HTMLElement {
     switch (name) {
       case 'value':
         this.source = newValue
-        if (newValue !== '' && newValue !== undefined) {
-          this._workarea = document.getElementById(this.source)
+        // The DOM lookup is deferred to connectedCallback (the menu element may
+        // not be attached yet, and a global getElementById would pick another
+        // editor's element when several are open).
+        if (this.isConnected && newValue !== '' && newValue !== undefined) {
+          this._workarea = closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`)
         }
         break
       case 'layers-dupe':
@@ -118,6 +124,11 @@ export class SeCMenuLayerDialog extends HTMLElement {
    */
   connectedCallback () {
     const current = this
+    // Now attached: resolve this editor's own elements (see domScope.js).
+    if (this.source) {
+      this._workarea = closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`)
+    }
+    this.$sidePanels = closestRoot(this).querySelector('[id="sidepanels"]')
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
       positionContextMenu(current.$dialog, e.clientX, e.clientY, -126)

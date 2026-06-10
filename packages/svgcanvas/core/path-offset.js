@@ -27,10 +27,14 @@ const SCALE = 1000
 // Flattening tolerance (in user units) for converting curves to line segments.
 const FLATTEN_TOLERANCE = 0.25
 
-let svgCanvas = null
+// Reentrant init: the offset operations and their lazy paper.js scope are
+// created per SvgCanvas instance (closed over `svgCanvas` below) so several
+// editors can coexist in one realm. Stateless helpers above stay shared.
+export const init = (canvas) => {
+  const svgCanvas = canvas
 
-// Lazy-initialised paper.js scope — created once on first use (mirrors boolean-ops.js)
-let paperScope = null
+  // Lazy-initialised paper.js scope — created once per instance on first use
+  let paperScope = null
 const getPaperScope = () => {
   if (!paperScope) {
     paperScope = new paper.PaperScope()
@@ -273,13 +277,6 @@ const strokeToPath = () => {
   replaceWithPath(elem, d, styleAttrs)
 }
 
-/**
- * @function module:path-offset.init
- * @param {module:svgcanvas.SvgCanvas} canvas
- * @returns {void}
- */
-export const init = canvas => {
-  svgCanvas = canvas
   svgCanvas.offsetPath = offsetPath
   svgCanvas.strokeToPath = strokeToPath
 }

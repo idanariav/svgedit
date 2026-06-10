@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
+import { closestRoot } from '../domScope.js'
 const template = document.createElement('template')
 template.innerHTML = cMenuDialogHTML
 /**
@@ -15,7 +16,9 @@ export class SeCMenuDialog extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this._workarea = document.getElementById('workarea')
+    // Resolved in connectedCallback (the element isn't attached yet here, so
+    // its owning editor container can't be found at construction time).
+    this._workarea = null
     this.$dialog = this._shadowRoot.querySelector('#cmenu_canvas')
     this.$copyLink = this._shadowRoot.querySelector('#se-copy')
     this.$cutLink = this._shadowRoot.querySelector('#se-cut')
@@ -197,6 +200,8 @@ export class SeCMenuDialog extends HTMLElement {
    */
   connectedCallback () {
     const current = this
+    // Now attached: bind to this editor's own workarea (see domScope.js).
+    this._workarea = closestRoot(this).querySelector('[id="workarea"]')
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
       positionContextMenu(current.$dialog, e.clientX, e.clientY)

@@ -13,15 +13,8 @@ import {
   getRefElem, findDefs,
   getBBox as utilsGetBBox
 } from './utilities.js'
-import {
-  init as pathMethodInit, ptObjToArrMethod, getGripPtMethod,
-  getPointFromGripMethod, addPointGripMethod, getGripContainerMethod, addCtrlGripMethod,
-  getCtrlLineMethod, getPointGripMethod, getControlPointsMethod, replacePathSegMethod,
-  getSegSelectorMethod, Path
-} from './path-method.js'
-import {
-  init as pathActionsInit, pathActionsMethod
-} from './path-actions.js'
+import { init as pathMethodInit } from './path-method.js'
+import { init as pathActionsInit } from './path-actions.js'
 
 const segData = {
   2: ['x', 'y'], // PATHSEG_MOVETO_ABS
@@ -35,7 +28,16 @@ const segData = {
   18: ['x', 'y'] // PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS
 }
 
-let svgCanvas
+/**
+ * Reentrant init: all path state (current path, pathData, pathFuncs,
+ * linkControlPts, uiStrings) and the helpers/classes below are created per
+ * SvgCanvas instance, closed over `svgCanvas`, so several editors coexist in one
+ * realm. The init body (attachments + sub-inits) is at the end of this closure.
+ * @function module:path.init
+ * @param {module:svgcanvas.SvgCanvas} canvas
+ */
+export const init = (canvas) => {
+  const svgCanvas = canvas
 /**
  * @tutorial LocaleDocs
  * @typedef {module:locale.LocaleStrings|PlainObject} module:path.uiStrings
@@ -48,7 +50,7 @@ const uiStrings = {}
 * @param {module:path.uiStrings} strs
 * @returns {void}
 */
-export const setUiStrings = (strs) => {
+  const setUiStrings = (strs) => {
   Object.assign(uiStrings, strs.ui)
 }
 
@@ -65,7 +67,7 @@ let pathData = {}
 * @param {boolean} lcp
 * @returns {void}
 */
-export const setLinkControlPoints = (lcp) => {
+  const setLinkControlPoints = (lcp) => {
   linkControlPts = lcp
 }
 
@@ -74,7 +76,7 @@ export const setLinkControlPoints = (lcp) => {
  * @type {null|module:path.Path}
  * @memberof module:path
 */
-export let path = null
+  let path = null
 
 /**
 * @external MouseEvent
@@ -224,37 +226,7 @@ export let path = null
 * @param {module:path.EditorContext} editorContext
 * @returns {void}
 */
-export const init = (canvas) => {
-  svgCanvas = canvas
-  svgCanvas.replacePathSeg = replacePathSegMethod
-  svgCanvas.addPointGrip = addPointGripMethod
-  svgCanvas.removePath_ = removePath_
-  svgCanvas.getPath_ = getPath_
-  svgCanvas.addCtrlGrip = addCtrlGripMethod
-  svgCanvas.getCtrlLine = getCtrlLineMethod
-  svgCanvas.getGripPt = getGripPt
-  svgCanvas.getPointFromGrip = getPointFromGripMethod
-  svgCanvas.setLinkControlPoints = setLinkControlPoints
-  svgCanvas.reorientGrads = reorientGrads
-  svgCanvas.recalcRotatedPath = recalcRotatedPath
-  svgCanvas.getSegData = () => { return segData }
-  svgCanvas.getUIStrings = () => { return uiStrings }
-  svgCanvas.getPathObj = () => { return path }
-  svgCanvas.setPathObj = (obj) => { path = obj }
-  svgCanvas.getPathFuncs = () => { return pathFuncs }
-  svgCanvas.getLinkControlPts = () => { return linkControlPts }
-  pathFuncs = [0, 'ClosePath']
-  const pathFuncsStrs = [
-    'Moveto', 'Lineto', 'CurvetoCubic', 'CurvetoQuadratic', 'Arc',
-    'LinetoHorizontal', 'LinetoVertical', 'CurvetoCubicSmooth', 'CurvetoQuadraticSmooth'
-  ]
-  pathFuncsStrs.forEach((s) => {
-    pathFuncs.push(s + 'Abs')
-    pathFuncs.push(s + 'Rel')
-  })
-  pathActionsInit(svgCanvas)
-  pathMethodInit(svgCanvas)
-}
+// (init body relocated to the end of the file — see bottom)
 
 /* eslint-disable max-len */
 /**
@@ -265,7 +237,6 @@ export const init = (canvas) => {
 * @returns {ArgumentsArray}
 */
 /* eslint-enable max-len */
-export const ptObjToArr = ptObjToArrMethod
 
 /**
 * @function module:path.getGripPt
@@ -273,7 +244,6 @@ export const ptObjToArr = ptObjToArrMethod
 * @param {module:math.XYObject} altPt
 * @returns {module:math.XYObject}
 */
-export const getGripPt = getGripPtMethod
 
 /**
 * @function module:path.getPointFromGrip
@@ -281,7 +251,6 @@ export const getGripPt = getGripPtMethod
 * @param {module:path.Path} pth
 * @returns {module:math.XYObject}
 */
-export const getPointFromGrip = getPointFromGripMethod
 
 /**
 * Requires prior call to `setUiStrings` if `xlink:title`
@@ -292,13 +261,11 @@ export const getPointFromGrip = getPointFromGripMethod
 * @param {Integer} y
 * @returns {SVGCircleElement}
 */
-export const addPointGrip = addPointGripMethod
 
 /**
 * @function module:path.getGripContainer
 * @returns {Element}
 */
-export const getGripContainer = getGripContainerMethod
 
 /**
 * Requires prior call to `setUiStrings` if `xlink:title`
@@ -307,14 +274,12 @@ export const getGripContainer = getGripContainerMethod
 * @param {string} id
 * @returns {SVGCircleElement}
 */
-export const addCtrlGrip = addCtrlGripMethod
 
 /**
 * @function module:path.getCtrlLine
 * @param {string} id
 * @returns {SVGLineElement}
 */
-export const getCtrlLine = getCtrlLineMethod
 
 /**
 * @function module:path.getPointGrip
@@ -322,14 +287,12 @@ export const getCtrlLine = getCtrlLineMethod
 * @param {boolean} update
 * @returns {SVGCircleElement}
 */
-export const getPointGrip = getPointGripMethod
 
 /**
 * @function module:path.getControlPoints
 * @param {Segment} seg
 * @returns {PlainObject<string, SVGLineElement|SVGCircleElement>}
 */
-export const getControlPoints = getControlPointsMethod
 
 /**
 * This replaces the segment at the given index. Type is given as number.
@@ -340,7 +303,6 @@ export const getControlPoints = getControlPointsMethod
 * @param {SVGPathElement} elem
 * @returns {void}
 */
-export const replacePathSeg = replacePathSegMethod
 
 /**
 * @function module:path.getSegSelector
@@ -348,7 +310,6 @@ export const replacePathSeg = replacePathSegMethod
 * @param {boolean} update
 * @returns {SVGPathElement}
 */
-export const getSegSelector = getSegSelectorMethod
 
 /**
  * @typedef {PlainObject} Point
@@ -364,7 +325,7 @@ export const getSegSelector = getSegSelectorMethod
 * @param {Point} pt - Object with x and y values (third point)
 * @returns {Point[]} Array of two "smoothed" point objects
 */
-export const smoothControlPoints = (ct1, ct2, pt) => {
+  const smoothControlPoints = (ct1, ct2, pt) => {
   // each point must not be the origin
   const x1 = ct1.x - pt.x
   const y1 = ct1.y - pt.y
@@ -410,10 +371,10 @@ export const smoothControlPoints = (ct1, ct2, pt) => {
 * @param {SVGPathElement} elem
 * @returns {module:path.Path}
 */
-export const getPath_ = (elem) => {
+  const getPath_ = (elem) => {
   let p = pathData[elem.id]
   if (!p) {
-    p = pathData[elem.id] = new Path(elem)
+    p = pathData[elem.id] = new svgCanvas.PathClass(elem)
   }
   return p
 }
@@ -423,7 +384,7 @@ export const getPath_ = (elem) => {
 * @param {string} id
 * @returns {void}
 */
-export const removePath_ = (id) => {
+  const removePath_ = (id) => {
   if (id in pathData) { delete pathData[id] }
 }
 
@@ -466,7 +427,7 @@ const getRotVals = (x, y) => {
 * be optimized or even taken care of by `recalculateDimensions`
 * @returns {void}
 */
-export const recalcRotatedPath = () => {
+  const recalcRotatedPath = () => {
   const currentPath = path?.elem
   if (!currentPath) { return }
   angle = getRotationAngle(currentPath, true)
@@ -558,7 +519,7 @@ export const recalcRotatedPath = () => {
 * @function module:path.clearData
 * @returns {void}
 */
-export const clearData = () => {
+  const clearData = () => {
   pathData = {}
 }
 
@@ -569,7 +530,7 @@ export const clearData = () => {
 * @param {SVGMatrix} m
 * @returns {void}
 */
-export const reorientGrads = (elem, m) => {
+  const reorientGrads = (elem, m) => {
   const bb = utilsGetBBox(elem)
   for (let i = 0; i < 2; i++) {
     const type = i === 0 ? 'fill' : 'stroke'
@@ -630,7 +591,7 @@ const pathMap = [
  * @param {boolean} toRel - true of convert to relative
  * @returns {string}
  */
-export const convertPath = (pth, toRel) => {
+  const convertPath = (pth, toRel) => {
   const { pathSegList } = pth
   const len = pathSegList.numberOfItems
   let curx = 0; let cury = 0
@@ -812,5 +773,33 @@ const pathDSegment = (letter, points, morePoints, lastPoint) => {
 * Group: Path edit functions.
 * Functions relating to editing path elements.
 */
-export const pathActions = pathActionsMethod
 // end pathActions
+
+  // ── init body (relocated here so it runs after the declarations above) ──
+  svgCanvas.removePath_ = removePath_
+  svgCanvas.getPath_ = getPath_
+  svgCanvas.setUiStrings = setUiStrings
+  svgCanvas.setLinkControlPoints = setLinkControlPoints
+  svgCanvas.smoothControlPoints = smoothControlPoints
+  svgCanvas.reorientGrads = reorientGrads
+  svgCanvas.recalcRotatedPath = recalcRotatedPath
+  svgCanvas.clearData = clearData
+  svgCanvas.getSegData = () => { return segData }
+  svgCanvas.getUIStrings = () => { return uiStrings }
+  svgCanvas.getPathObj = () => { return path }
+  svgCanvas.setPathObj = (obj) => { path = obj }
+  svgCanvas.getPathFuncs = () => { return pathFuncs }
+  svgCanvas.getLinkControlPts = () => { return linkControlPts }
+  pathFuncs = [0, 'ClosePath']
+  const pathFuncsStrs = [
+    'Moveto', 'Lineto', 'CurvetoCubic', 'CurvetoQuadratic', 'Arc',
+    'LinetoHorizontal', 'LinetoVertical', 'CurvetoCubicSmooth', 'CurvetoQuadraticSmooth'
+  ]
+  pathFuncsStrs.forEach((s) => {
+    pathFuncs.push(s + 'Abs')
+    pathFuncs.push(s + 'Rel')
+  })
+  // Sub-modules attach their own per-instance helpers/classes to this canvas.
+  pathActionsInit(svgCanvas)
+  pathMethodInit(svgCanvas)
+}

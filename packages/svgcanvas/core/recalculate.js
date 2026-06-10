@@ -14,7 +14,6 @@ import {
   findDefs
 } from './utilities.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
-import { remapElement } from './coords.js'
 import {
   isIdentity,
   matrixMultiply,
@@ -25,8 +24,6 @@ import {
 } from './math.js'
 import { mergeDeep } from '../common/util.js'
 
-let svgCanvas
-
 /**
  * Initialize the recalculate module with the SVG canvas.
  * @function module:recalculate.init
@@ -34,8 +31,7 @@ let svgCanvas
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
 
 /**
  * Updates a `<clipPath>` element's values based on the given translation.
@@ -46,7 +42,7 @@ export const init = canvas => {
  * @param {Element} elem - The element referencing the clipPath
  * @returns {string|undefined} The clip-path attribute used after updates.
  */
-export const updateClipPath = (attr, tx, ty, elem) => {
+  const updateClipPath = (attr, tx, ty, elem) => {
   const clipPath = getRefElem(attr)
   if (!clipPath) return undefined
   if (elem && clipPath.id) {
@@ -138,7 +134,7 @@ export const updateClipPath = (attr, tx, ty, elem) => {
  * @param {Element} selected - The DOM element to recalculate
  * @returns {Command|null} Undo command object with the resulting change, or null if no change
  */
-export const recalculateDimensions = selected => {
+  const recalculateDimensions = selected => {
   if (!selected) return null
 
   // Don't recalculate dimensions for groups - this would push their transforms down to children
@@ -701,7 +697,7 @@ export const recalculateDimensions = selected => {
         tlist.appendItem(newTransform)
       } else {
         // Remap other elements normally
-        remapElement(selected, changes, m)
+        svgCanvas.remapElement(selected, changes, m)
       }
 
       // Restore rotation if needed
@@ -722,7 +718,7 @@ export const recalculateDimensions = selected => {
         )
 
         // Remap the element with the extra transformation
-        remapElement(selected, changes, extraTransform)
+        svgCanvas.remapElement(selected, changes, extraTransform)
 
         if (tlist.numberOfItems) {
           tlist.insertItemBefore(newRotation, 0)
@@ -762,7 +758,7 @@ export const recalculateDimensions = selected => {
         tlist.appendItem(newTransform)
       } else {
         // Remap other elements normally
-        remapElement(selected, changes, m)
+        svgCanvas.remapElement(selected, changes, m)
       }
 
       // Restore rotation if needed
@@ -805,7 +801,7 @@ export const recalculateDimensions = selected => {
         tlist.appendItem(newTransform)
       } else {
         // Remap other elements normally
-        remapElement(selected, changes, m)
+        svgCanvas.remapElement(selected, changes, m)
       }
     } else {
       // Rotation or other transformations
@@ -835,4 +831,8 @@ export const recalculateDimensions = selected => {
   batchCmd.addSubCommand(new ChangeElementCommand(selected, initial))
 
   return batchCmd
+  }
+
+  svgCanvas.updateClipPath = updateClipPath
+  svgCanvas.recalculateDimensions = recalculateDimensions
 }

@@ -45,7 +45,7 @@ export default {
     // Override the original groupSelectedElements to exclude connectors
     svgCanvas.groupSelectedElements = function (...args) {
       // Remove connectors from selection
-      svgCanvas.removeFromSelection(document.querySelectorAll('[id^="conn_"]'))
+      svgCanvas.removeFromSelection(svgCanvas.$qa('[id^="conn_"]'))
 
       // Call the original method
       return originalGroupSelectedElements.apply(this, args)
@@ -356,7 +356,7 @@ export default {
       const dataStorage = svgCanvas.getDataStorage()
 
       // Query all connector elements (id startss with conn_)
-      const connectors = document.querySelectorAll('[id^="conn_"]')
+      const connectors = svgCanvas.$qa('[id^="conn_"]')
       // Reset connections array
       connections = []
 
@@ -372,7 +372,7 @@ export default {
 
           // If part is null or undefined, fetch it and store it
           if (!part) {
-            part = document.getElementById(
+            part = svgCanvas.$id(
               connector.attributes['se:connector'].value.split(' ')[i]
             )
             dataStorage.put(connector, `c_${pos}`, part.id)
@@ -383,7 +383,7 @@ export default {
             )
           } else {
             // If part is already stored, fetch it by ID
-            part = document.getElementById(part)
+            part = svgCanvas.$id(part)
           }
 
           // Add the part to the parts array
@@ -699,7 +699,7 @@ export default {
 
         // Prevent duplicate connectors
         const dupe = Array.from(
-          document.querySelectorAll('[id^="conn_"]')
+          svgCanvas.$qa('[id^="conn_"]')
         ).filter(
           conn =>
             conn.getAttributeNS(seNs, 'connector') === connStr ||
@@ -848,7 +848,7 @@ export default {
         return { remove }
       },
       toolButtonStateUpdate (opts) {
-        const button = document.getElementById('tool_connect')
+        const button = svgCanvas.$id('tool_connect')
         if (opts.nostroke && button.pressed === true) {
           svgEditor.clickSelect()
         }

@@ -25,23 +25,14 @@ const {
   ChangeElementCommand
 } = hstry
 
-let svgCanvas = null
-let moveSelectionThresholdReached = false
-
 /**
 * @function module:undo.init
 * @param {module:undo.eventContext} eventContext
 * @returns {void}
 */
 export const init = (canvas) => {
-  svgCanvas = canvas
-  svgCanvas.mouseDownEvent = mouseDownEvent
-  svgCanvas.mouseMoveEvent = mouseMoveEvent
-  svgCanvas.dblClickEvent = dblClickEvent
-  svgCanvas.mouseUpEvent = mouseUpEvent
-  svgCanvas.mouseOutEvent = mouseOutEvent
-  svgCanvas.DOMMouseScrollEvent = DOMMouseScrollEvent
-}
+  const svgCanvas = canvas // per-instance; functions below are closed over it
+  let moveSelectionThresholdReached = false
 
 const getBsplinePoint = (t) => {
   const spline = { x: 0, y: 0 }
@@ -188,7 +179,7 @@ const mouseMoveEvent = (evt) => {
   const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
   const mouseX = pt.x * zoom
   const mouseY = pt.y * zoom
-  const shape = getElement(svgCanvas.getId())
+  const shape = svgCanvas.getElement(svgCanvas.getId())
 
   let realX = mouseX / zoom
   let x = realX
@@ -679,7 +670,7 @@ const mouseUpEvent = (evt) => {
   const x = mouseX / zoom
   const y = mouseY / zoom
 
-  let element = getElement(svgCanvas.getId())
+  let element = svgCanvas.getElement(svgCanvas.getId())
   let keep = false
 
   const realX = x
@@ -1102,7 +1093,7 @@ const dblClickEvent = (evt) => {
   }
   // Reset context
   if (svgCanvas.getCurrentGroup()) {
-    draw.leaveContext()
+    svgCanvas.leaveContext()
   }
 
   if ((parent.tagName !== 'g' && parent.tagName !== 'a') ||
@@ -1112,7 +1103,7 @@ const dblClickEvent = (evt) => {
     // Escape from in-group edit
     return
   }
-  draw.setContext(mouseTarget)
+  svgCanvas.setContext(mouseTarget)
 
   // Now that we've entered the group, select the actual element that was
   // double-clicked so the user doesn't have to click a second time.
@@ -1568,7 +1559,7 @@ const DOMMouseScrollEvent = (e) => {
   if (!screenCTM) { return }
   svgCanvas.setRootSctm(screenCTM.inverse())
 
-  const workarea = document.getElementById('workarea')
+  const workarea = svgCanvas.$id('workarea')
   const scrbar = 15
   const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
@@ -1634,8 +1625,16 @@ const DOMMouseScrollEvent = (e) => {
   }
 
   svgCanvas.setZoom(zoomlevel)
-  document.getElementById('zoom').value = ((zoomlevel * 100).toFixed(1))
+  svgCanvas.$id('zoom').value = ((zoomlevel * 100).toFixed(1))
 
   svgCanvas.call('updateCanvas', { center: false, newCtr })
   svgCanvas.call('zoomDone')
+  }
+
+  svgCanvas.mouseDownEvent = mouseDownEvent
+  svgCanvas.mouseMoveEvent = mouseMoveEvent
+  svgCanvas.dblClickEvent = dblClickEvent
+  svgCanvas.mouseUpEvent = mouseUpEvent
+  svgCanvas.mouseOutEvent = mouseOutEvent
+  svgCanvas.DOMMouseScrollEvent = DOMMouseScrollEvent
 }

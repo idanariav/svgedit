@@ -165,7 +165,9 @@ export class SeMenuItem extends HTMLElement {
         if (shortcut !== key) return
         // launch the click event
         if (this.id) {
-          document.getElementById(this.id).click()
+          // Click this very menu item (a global getElementById(this.id) could
+          // resolve to another editor's item with the same id).
+          this.click()
         }
         e.preventDefault()
       })
