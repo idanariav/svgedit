@@ -404,9 +404,10 @@ class EditorStartup {
       return true
     })
 
-    // preventing browser's scaling with Ctrl+wheel
+    // Prevent the browser's native scroll/scaling on Ctrl/Cmd+wheel so the
+    // svgcanvas zoom handler (DOMMouseScrollEvent) is the only effect.
     this.$container.addEventListener('wheel', (e) => {
-      if (e.ctrlKey) {
+      if (e.ctrlKey || e.metaKey) {
         e.preventDefault()
       }
     })
@@ -480,15 +481,18 @@ class EditorStartup {
     }
     document.addEventListener('paste', this.pasteHandler)
 
-    // Add a new shortcut for zoom in/out : Alt + Wheels
+    // Wheel navigation:
+    //   plain wheel        → scroll the canvas up/down (native vertical scroll)
+    //   Shift + wheel      → scroll the canvas left/right
+    //   Ctrl/Cmd + wheel   → zoom in/out (handled by svgcanvas DOMMouseScrollEvent,
+    //                         which zooms toward the pointer)
     this.workarea.addEventListener('wheel', (e) => {
-      if (e.altKey) {
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault()
-        this.svgCanvas.setZoom(e.deltaY > 0 ? this.svgCanvas.getZoom() * 0.9 : this.svgCanvas.getZoom() * 1.1, true)
-        this.updateCanvas(true)
-        $id('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
+        this.workarea.scrollLeft += (e.deltaY || e.deltaX)
       }
-    })
+      // plain wheel falls through to the browser's native vertical scroll
+    }, { passive: false })
 
     document.addEventListener('keyup', (e) => {
       if (e.target.nodeName !== 'BODY') return

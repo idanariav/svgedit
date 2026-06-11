@@ -1547,7 +1547,7 @@ const mouseDownEvent = (evt) => {
 const DOMMouseScrollEvent = (e) => {
   const zoom = svgCanvas.getZoom()
   const { $id } = svgCanvas
-  if (!e.shiftKey) { return }
+  if (!e.ctrlKey && !e.metaKey) { return }
 
   e.preventDefault()
 
