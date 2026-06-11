@@ -198,14 +198,14 @@ export class SeFontSelect extends HTMLElement {
   addOption (value, text = value) {
     if (this._options.some(o => o.value === value)) return
     this._options.push({ value, label: text })
-    if (this._open) this._renderList()
+    if (this._open) this._renderItems()
   }
 
   get value () { return this._value }
   set value (v) {
     this._value = v == null ? '' : v
     this._renderTrigger()
-    if (this._open) this._renderList()
+    if (this._open) this._renderItems()
   }
 
   _labelFor (value) {
@@ -257,20 +257,28 @@ export class SeFontSelect extends HTMLElement {
     let top = btn.bottom + gap
     if (top + rect.height > window.innerHeight - gap) top = Math.max(gap, btn.top - gap - rect.height)
     top = Math.max(gap, top)
-    this._popover.style.left = `${left}px`
-    this._popover.style.top = `${top}px`
     // `left`/`top` are viewport coordinates, but a `position: fixed` element is
     // resolved against the nearest ancestor that establishes a containing block
     // (any transform/filter/contain/perspective/will-change). Embedders such as
     // Obsidian — or their themes — routinely set those on a pane, which would
     // otherwise fling this popover far off the trigger. Re-measure and correct by
     // the delta so it lands under the trigger regardless of the containing block.
-    const after = this._popover.getBoundingClientRect()
-    const dx = left - after.left
-    const dy = top - after.top
-    if (dx || dy) {
-      this._popover.style.left = `${left + dx}px`
-      this._popover.style.top = `${top + dy}px`
+    //
+    // A single correction is exact when the containing block is only translated,
+    // but a scaled ancestor (UI zoom, a `scale()` pane transform) makes one delta
+    // over/undershoot. Iterate: the residual shrinks each pass and converges in a
+    // couple of rounds, so cap the loop and bail once it's within a pixel.
+    let styleLeft = left
+    let styleTop = top
+    for (let i = 0; i < 4; i++) {
+      this._popover.style.left = `${styleLeft}px`
+      this._popover.style.top = `${styleTop}px`
+      const after = this._popover.getBoundingClientRect()
+      const dx = left - after.left
+      const dy = top - after.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) break
+      styleLeft += dx
+      styleTop += dy
     }
   }
 
@@ -280,8 +288,8 @@ export class SeFontSelect extends HTMLElement {
     return this._options.filter(o => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
   }
 
+  /** Render the popover chrome (search box + list container) once on open. */
   _renderList () {
-    const opts = this._visibleOptions()
     this._popover.innerHTML = `
       <div class="fl-head">
         <div class="fl-search">
@@ -290,30 +298,39 @@ export class SeFontSelect extends HTMLElement {
                  autocomplete="off" spellcheck="false" aria-label="Search fonts">
         </div>
       </div>
-      <div class="fl-list" role="presentation">
-        ${opts.length
-          ? opts.map(o => `
-            <button class="fl-item${o.value === this._value ? ' is-active' : ''}" role="option"
-                    aria-selected="${o.value === this._value}" data-value="${this._escAttr(o.value)}">
-              <span class="fl-item-preview" style="font-family:'${this._escAttr(o.value)}', sans-serif">${this._esc(o.label)}</span>
-              <span class="fl-check">${CHECK_ICON}</span>
-            </button>`).join('')
-          : '<div class="fl-empty">No fonts found</div>'}
-      </div>
+      <div class="fl-list" role="presentation"></div>
     `
-
-    this._popover.querySelectorAll('.fl-item[data-value]').forEach(btn => {
-      btn.addEventListener('click', () => this._pick(btn.dataset.value))
-    })
+    this._renderItems()
 
     const input = this._popover.querySelector('.fl-search input')
     input?.addEventListener('input', () => {
       clearTimeout(this._searchTimer)
       this._searchTimer = setTimeout(() => {
+        // Update only the list — re-rendering the whole popover would rebuild
+        // the search input and reset the caret, reversing typed characters.
         this._query = input.value
-        this._renderList()
-        this._shadow.querySelector('.fl-search input')?.focus()
+        this._renderItems()
       }, 150)
+    })
+  }
+
+  /** Build the filtered font list and bind its item clicks, leaving the search
+   *  input untouched so typing isn't disrupted. */
+  _renderItems () {
+    const list = this._popover.querySelector('.fl-list')
+    if (!list) return
+    const opts = this._visibleOptions()
+    list.innerHTML = opts.length
+      ? opts.map(o => `
+        <button class="fl-item${o.value === this._value ? ' is-active' : ''}" role="option"
+                aria-selected="${o.value === this._value}" data-value="${this._escAttr(o.value)}">
+          <span class="fl-item-preview" style="font-family:'${this._escAttr(o.value)}', sans-serif">${this._esc(o.label)}</span>
+          <span class="fl-check">${CHECK_ICON}</span>
+        </button>`).join('')
+      : '<div class="fl-empty">No fonts found</div>'
+
+    list.querySelectorAll('.fl-item[data-value]').forEach(btn => {
+      btn.addEventListener('click', () => this._pick(btn.dataset.value))
     })
   }
 

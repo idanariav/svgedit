@@ -238,8 +238,30 @@ export class SeFontLibrary extends HTMLElement {
     if (left + rect.width > window.innerWidth - gap) left = Math.max(gap, window.innerWidth - gap - rect.width)
     let top = btn.bottom + gap
     if (top + rect.height > window.innerHeight - gap) top = Math.max(gap, window.innerHeight - gap - rect.height)
-    pop.style.left = `${left}px`
-    pop.style.top = `${top}px`
+    top = Math.max(gap, top)
+    // `left`/`top` are viewport coordinates, but a `position: fixed` element is
+    // resolved against the nearest ancestor that establishes a containing block
+    // (any transform/filter/contain/perspective/will-change). Embedders such as
+    // Obsidian — or their themes — routinely set those on a pane, which would
+    // otherwise fling this popover far off the trigger. Re-measure and correct by
+    // the delta so it lands under the trigger regardless of the containing block.
+    //
+    // A single correction is exact when the containing block is only translated,
+    // but a scaled ancestor (UI zoom, a `scale()` pane transform) makes one delta
+    // over/undershoot. Iterate: the residual shrinks each pass and converges in a
+    // couple of rounds, so cap the loop and bail once it's within a pixel.
+    let styleLeft = left
+    let styleTop = top
+    for (let i = 0; i < 4; i++) {
+      pop.style.left = `${styleLeft}px`
+      pop.style.top = `${styleTop}px`
+      const after = pop.getBoundingClientRect()
+      const dx = left - after.left
+      const dy = top - after.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) break
+      styleLeft += dx
+      styleTop += dy
+    }
   }
 
   _visibleFonts () {
@@ -248,9 +270,10 @@ export class SeFontLibrary extends HTMLElement {
     return this._fonts.filter(f => f.category === this._catId)
   }
 
+  /** Render the popover chrome (search box, category tabs, list container) once
+   *  on open. The category tabs and list are refreshed in place afterwards. */
   _render () {
     const pop = this._shadow.querySelector('.fl-popover')
-    const fonts = this._visibleFonts()
     pop.innerHTML = `
       <div class="fl-head">
         <div class="fl-search">
@@ -265,16 +288,7 @@ export class SeFontLibrary extends HTMLElement {
             ${this._esc(CAT_LABELS[id] || id)}
           </button>`).join('')}
       </div>
-      <div class="fl-list">
-        ${fonts.length
-          ? fonts.map(f => `
-            <button class="fl-item${isCached(f.family) ? ' is-cached' : ''}" data-family="${this._escAttr(f.family)}">
-              <span class="fl-item-preview" style="font-family:'${this._escAttr(f.family)}', sans-serif">${this._esc(f.family)}</span>
-              <span class="fl-item-name">${this._esc(CAT_LABELS[f.category] || f.category)}</span>
-              <span class="fl-dot" title="Downloaded"></span>
-            </button>`).join('')
-          : '<div class="fl-empty">No fonts found</div>'}
-      </div>
+      <div class="fl-list"></div>
       <div class="fl-foot">First use downloads the font once, then it works offline.</div>
     `
 
@@ -283,17 +297,52 @@ export class SeFontLibrary extends HTMLElement {
         e.stopPropagation()
         this._catId = btn.dataset.cat
         this._query = ''
+        // A category click is a fresh selection: rebuild fully so the search
+        // box clears and the active-tab highlight resets.
         this._render()
       })
     })
 
-    pop.querySelectorAll('.fl-item[data-family]').forEach(btn => {
+    const input = pop.querySelector('.fl-search input')
+    input?.addEventListener('input', () => {
+      clearTimeout(this._searchTimer)
+      this._searchTimer = setTimeout(() => {
+        // Update only the list + tab highlight — re-rendering the whole popover
+        // would rebuild the search input and reset the caret, reversing typed
+        // characters.
+        this._query = input.value
+        pop.querySelectorAll('.fl-cat[data-cat]').forEach(c => {
+          c.classList.toggle('is-active', c.dataset.cat === this._catId && !this._query)
+        })
+        this._renderItems()
+      }, 180)
+    })
+
+    this._renderItems()
+  }
+
+  /** Build the filtered font list, bind item clicks and set up lazy previews,
+   *  leaving the search input untouched so typing isn't disrupted. */
+  _renderItems () {
+    const pop = this._shadow.querySelector('.fl-popover')
+    const list = pop.querySelector('.fl-list')
+    if (!list) return
+    const fonts = this._visibleFonts()
+    list.innerHTML = fonts.length
+      ? fonts.map(f => `
+        <button class="fl-item${isCached(f.family) ? ' is-cached' : ''}" data-family="${this._escAttr(f.family)}">
+          <span class="fl-item-preview" style="font-family:'${this._escAttr(f.family)}', sans-serif">${this._esc(f.family)}</span>
+          <span class="fl-item-name">${this._esc(CAT_LABELS[f.category] || f.category)}</span>
+          <span class="fl-dot" title="Downloaded"></span>
+        </button>`).join('')
+      : '<div class="fl-empty">No fonts found</div>'
+
+    list.querySelectorAll('.fl-item[data-family]').forEach(btn => {
       btn.addEventListener('click', () => this._pick(btn))
     })
 
     // Lazily load in-font previews for rows as they scroll into view
     this._io?.disconnect()
-    const list = pop.querySelector('.fl-list')
     this._io = new IntersectionObserver((entries) => {
       entries.forEach(en => {
         if (en.isIntersecting) {
@@ -302,17 +351,7 @@ export class SeFontLibrary extends HTMLElement {
         }
       })
     }, { root: list, rootMargin: '120px' })
-    pop.querySelectorAll('.fl-item[data-family]').forEach(el => this._io.observe(el))
-
-    const input = pop.querySelector('.fl-search input')
-    input?.addEventListener('input', () => {
-      clearTimeout(this._searchTimer)
-      this._searchTimer = setTimeout(() => {
-        this._query = input.value
-        this._render()
-        this._shadow.querySelector('.fl-search input')?.focus()
-      }, 180)
-    })
+    list.querySelectorAll('.fl-item[data-family]').forEach(el => this._io.observe(el))
   }
 
   async _pick (btn) {
