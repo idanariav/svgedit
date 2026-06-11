@@ -12,8 +12,7 @@ import {
   transformPoint, getMatrix
 } from './math.js'
 import {
-  assignAttributes, getRotationAngle,
-  getElement
+  assignAttributes, getRotationAngle
 } from './utilities.js'
 
 const TYPE_TO_CMD = {

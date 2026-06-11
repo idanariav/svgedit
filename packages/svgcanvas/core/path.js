@@ -6,7 +6,6 @@
  * @copyright 2011 Alexis Deveria, 2011 Jeff Schiller
  */
 
-import { shortFloat } from './units.js'
 import { transformPoint, getTransformList } from './math.js'
 import {
   getRotationAngle, getBBox,
@@ -488,7 +487,7 @@ const getRotVals = (x, y) => {
       const val = seg[prop]
       return val === null || val === undefined ? 0 : val
     })
-    replacePathSeg(type, i, points)
+    svgCanvas.replacePathSeg(type, i, points)
   } // loop for each point
 
   /* box = */ getBBox(currentPath)
@@ -571,202 +570,6 @@ const getRotVals = (x, y) => {
       }
     }
   }
-}
-
-/**
-* This is how we map paths to our preferred relative segment types.
-* @name module:path.pathMap
-* @type {GenericArray}
-*/
-const pathMap = [
-  0, 'z', 'M', 'm', 'L', 'l', 'C', 'c', 'Q', 'q', 'A', 'a',
-  'H', 'h', 'V', 'v', 'S', 's', 'T', 't'
-]
-
-/**
- * Convert a path to one with only absolute or relative values.
- * @todo move to pathActions.js
- * @function module:path.convertPath
- * @param {SVGPathElement} pth - the path to convert
- * @param {boolean} toRel - true of convert to relative
- * @returns {string}
- */
-  const convertPath = (pth, toRel) => {
-  const { pathSegList } = pth
-  const len = pathSegList.numberOfItems
-  let curx = 0; let cury = 0
-  let d = ''
-  let lastM = null
-
-  for (let i = 0; i < len; ++i) {
-    const seg = pathSegList.getItem(i)
-    // if these properties are not in the segment, set them to zero
-    let x = seg.x || 0
-    let y = seg.y || 0
-    let x1 = seg.x1 || 0
-    let y1 = seg.y1 || 0
-    let x2 = seg.x2 || 0
-    let y2 = seg.y2 || 0
-
-    const type = seg.pathSegType
-    let letter = pathMap[type][toRel ? 'toLowerCase' : 'toUpperCase']()
-
-    switch (type) {
-      case 1: // z,Z closepath (Z/z)
-        d += 'z'
-        if (lastM) {
-          curx = lastM[0]
-          cury = lastM[1]
-        }
-        break
-      case 12: // absolute horizontal line (H)
-        x -= curx
-      // Fallthrough
-      case 13: // relative horizontal line (h)
-        if (toRel) {
-          y = 0
-          curx += x
-          letter = 'l'
-        } else {
-          y = cury
-          x += curx
-          curx = x
-          letter = 'L'
-        }
-        // Convert to "line" for easier editing
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 14: // absolute vertical line (V)
-        y -= cury
-      // Fallthrough
-      case 15: // relative vertical line (v)
-        if (toRel) {
-          x = 0
-          cury += y
-          letter = 'l'
-        } else {
-          x = curx
-          y += cury
-          cury = y
-          letter = 'L'
-        }
-        // Convert to "line" for easier editing
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 2: // absolute move (M)
-      case 4: // absolute line (L)
-      case 18: // absolute smooth quad (T)
-      case 10: // absolute elliptical arc (A)
-        x -= curx
-        y -= cury
-      // Fallthrough
-      case 5: // relative line (l)
-      case 3: // relative move (m)
-      case 19: // relative smooth quad (t)
-        if (toRel) {
-          curx += x
-          cury += y
-        } else {
-          x += curx
-          y += cury
-          curx = x
-          cury = y
-        }
-        if (type === 2 || type === 3) { lastM = [curx, cury] }
-
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 6: // absolute cubic (C)
-        x -= curx; x1 -= curx; x2 -= curx
-        y -= cury; y1 -= cury; y2 -= cury
-      // Fallthrough
-      case 7: // relative cubic (c)
-        if (toRel) {
-          curx += x
-          cury += y
-        } else {
-          x += curx; x1 += curx; x2 += curx
-          y += cury; y1 += cury; y2 += cury
-          curx = x
-          cury = y
-        }
-        d += pathDSegment(letter, [[x1, y1], [x2, y2], [x, y]])
-        break
-      case 8: // absolute quad (Q)
-        x -= curx; x1 -= curx
-        y -= cury; y1 -= cury
-      // Fallthrough
-      case 9: // relative quad (q)
-        if (toRel) {
-          curx += x
-          cury += y
-        } else {
-          x += curx; x1 += curx
-          y += cury; y1 += cury
-          curx = x
-          cury = y
-        }
-        d += pathDSegment(letter, [[x1, y1], [x, y]])
-        break
-      // Fallthrough
-      case 11: // relative elliptical arc (a)
-        if (toRel) {
-          curx += x
-          cury += y
-        } else {
-          x += curx
-          y += cury
-          curx = x
-          cury = y
-        }
-        d += pathDSegment(letter, [[seg.r1, seg.r2]], [
-          seg.angle,
-          (seg.largeArcFlag ? 1 : 0),
-          (seg.sweepFlag ? 1 : 0)
-        ], [x, y])
-        break
-      case 16: // absolute smooth cubic (S)
-        x -= curx; x2 -= curx
-        y -= cury; y2 -= cury
-      // Fallthrough
-      case 17: // relative smooth cubic (s)
-        if (toRel) {
-          curx += x
-          cury += y
-        } else {
-          x += curx; x2 += curx
-          y += cury; y2 += cury
-          curx = x
-          cury = y
-        }
-        d += pathDSegment(letter, [[x2, y2], [x, y]])
-        break
-    } // switch on path segment type
-  } // for each segment
-  return d
-}
-
-/**
- * TODO: refactor callers in `convertPath` to use `getPathDFromSegments` instead of this function.
- * Legacy code refactored from `svgcanvas.pathActions.convertPath`.
- * @param {string} letter - path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
- * @param {GenericArray<GenericArray<Integer>>} points - x,y points
- * @param {GenericArray<GenericArray<Integer>>} [morePoints] - x,y points
- * @param {Integer[]} [lastPoint] - x,y point
- * @returns {string}
- */
-const pathDSegment = (letter, points, morePoints, lastPoint) => {
-  points.forEach((pnt, i) => {
-    points[i] = shortFloat(pnt)
-  })
-  let segment = letter + points.join(' ')
-  if (morePoints) {
-    segment += ` ${morePoints.join(' ')}`
-  }
-  if (lastPoint) {
-    segment += ` ${shortFloat(lastPoint)}`
-  }
-  return segment
 }
 
 /**

@@ -9,7 +9,6 @@ import { NS } from './namespaces.js'
 import { transformPoint, matrixMultiply, getTransformList, transformListToTransform } from './math.js'
 import {
   assignAttributes,
-  getElement,
   getBBox as utilsGetBBox
 } from './utilities.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'

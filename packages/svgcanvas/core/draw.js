@@ -9,7 +9,7 @@ import Layer from './layer.js'
 import HistoryRecordingService from './historyrecording.js'
 
 import { NS } from './namespaces.js'
-import { toXml, getElement } from './utilities.js'
+import { toXml } from './utilities.js'
 import { copyElem as utilCopyElem } from './copy-elem.js'
 import { getParentsUntil } from '../common/util.js'
 import { warn } from '../common/logger.js'

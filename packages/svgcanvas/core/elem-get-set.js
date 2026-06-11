@@ -8,7 +8,7 @@ import Paint from './paint.js'
 import { NS } from './namespaces.js'
 import {
   getVisibleElements, getStrokedBBoxDefaultVisible, findDefs,
-  walkTree, getHref, setHref, getElement
+  walkTree, getHref, setHref
 } from './utilities.js'
 import {
   convertToNum

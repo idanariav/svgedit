@@ -8,12 +8,10 @@
 
 import { NS } from './namespaces.js'
 import * as hstry from './history.js'
-import * as pathModule from './path.js'
 import { warn, error } from '../common/logger.js'
 import {
   getStrokedBBoxDefaultVisible,
   setHref,
-  getElement,
   getHref,
   getVisibleElements,
   findDefs,

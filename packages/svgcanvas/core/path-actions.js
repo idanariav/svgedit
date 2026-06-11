@@ -14,7 +14,7 @@ import {
   transformListToTransform, getTransformList
 } from './math.js'
 import {
-  assignAttributes, getElement, getRotationAngle, snapPointToGrid,
+  assignAttributes, getRotationAngle, snapPointToGrid,
   getBBox
 } from './utilities.js'
 

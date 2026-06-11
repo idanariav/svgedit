@@ -29,7 +29,6 @@ import {
 } from './math.js'
 import { convertUnit, shortFloat, convertToNum } from './units.js'
 import { isGecko, isChrome, isWebkit } from '../common/browser.js'
-import * as pathModule from './path.js'
 import { NS } from './namespaces.js'
 import * as draw from './draw.js'
 import { getParents, getClosest } from '../common/util.js'

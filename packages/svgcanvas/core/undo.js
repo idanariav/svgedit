@@ -4,7 +4,6 @@
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
-import * as draw from './draw.js'
 import * as hstry from './history.js'
 import { BBOX_AFFECTING_ATTRS } from './history.js'
 import {

@@ -5,7 +5,7 @@
  * @copyright 2011 Jeff Schiller
  */
 import {
-  assignAttributes, cleanupElement, getElement, getRotationAngle, snapToGrid, snapPointToGrid, walkTree,
+  assignAttributes, cleanupElement, getRotationAngle, snapToGrid, snapPointToGrid, walkTree,
   preventClickDefault, setHref, getBBox, getStrokedBBoxDefaultVisible
 } from './utilities.js'
 import {
@@ -14,7 +14,6 @@ import {
 import {
   transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform, matrixMultiply
 } from './math.js'
-import * as draw from './draw.js'
 import * as pathModule from './path.js'
 import * as hstry from './history.js'
 import { findPos } from '../../svgcanvas/common/util.js'

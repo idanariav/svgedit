@@ -500,6 +500,7 @@ class TopPanel {
    * @returns {void}
    */
   showSourceEditor (e, forSaving) {
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const $editorDialog = $id('se-svg-editor-dialog')
     if ($editorDialog.getAttribute('dialog') === 'open') return
     const origSource = this.editor.svgCanvas.getSvgString()
