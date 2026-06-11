@@ -1002,7 +1002,9 @@ const rasterExport = (
     // (which only accepts valid CSS colors, not the sentinel string 'gradient').
     if (opts.includeBg && opts.bgcolor === 'gradient') {
       const bgEl = svgCanvas.getElement('canvasBackground')
-      const gradEl = bgEl?.querySelector('defs > #background_gradient')
+      // The bg gradient carries a per-application id (background_gradient_N), so
+      // match it by tag rather than a fixed id.
+      const gradEl = bgEl?.querySelector('defs > linearGradient, defs > radialGradient')
       if (gradEl) {
         let defs = svgClone.querySelector('defs')
         if (!defs) {

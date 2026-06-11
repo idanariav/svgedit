@@ -25,6 +25,11 @@ export const init = (canvas) => {
   // The method attachments are at the end of init (after the function
   // declarations) so each instance binds its own closures.
 
+  // Monotonic counter for the canvas-background gradient id (see
+  // setBackgroundMethod) — a fresh id per application forces the rect's fill
+  // paint server to re-resolve.
+  let bgGradientSeq = 0
+
 /**
 * @function module:elem-get-set.SvgCanvas#getResolution
 * @returns {DimensionsAndZoom} The current dimensions and zoom level in an object
@@ -1252,15 +1257,24 @@ const setBackgroundMethod = (color, url, gradientElem) => {
   // Handle gradient fill
   let bgDefs = bg.querySelector('defs')
   if (gradientElem) {
-    if (!bgDefs) {
-      bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
-      bg.insertBefore(bgDefs, border)
-    }
-    bgDefs.innerHTML = ''
+    // Replace the <defs> NODE on every application rather than swapping its
+    // children. Some engines (Electron/Obsidian) cache a rect's paint-server
+    // resolution against the <defs> node identity: if the gradient reference is
+    // ever evaluated while unresolved (e.g. restored during load before the
+    // canvas paints), reusing the same <defs> node — even with a fresh child id
+    // and a changed `fill` string — won't re-resolve it, so the background
+    // stays white. This is exactly why a solid→gradient toggle recovers (the
+    // solid branch removes the <defs> node) but gradient→gradient does not.
+    // Recreating the node forces the re-resolution.
+    if (bgDefs) { bgDefs.remove() }
+    bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
+    bg.insertBefore(bgDefs, border)
     const grad = gradientElem.cloneNode(true)
-    grad.id = 'background_gradient'
+    // A fresh id per application also keeps the `fill` reference string unique.
+    const gradId = `background_gradient_${++bgGradientSeq}`
+    grad.id = gradId
     bgDefs.appendChild(grad)
-    border.setAttribute('fill', 'url(#background_gradient)')
+    border.setAttribute('fill', `url(#${gradId})`)
   } else {
     if (bgDefs) { bgDefs.remove() }
     // 'gradient' without a gradientElem (e.g. missing saved data) → fall back to white
