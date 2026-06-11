@@ -20,6 +20,7 @@ import { isMac } from '@svgedit/svgcanvas/common/browser'
 
 import SvgCanvas from '@svgedit/svgcanvas'
 import Paint from '@svgedit/svgcanvas/core/paint.js'
+import { Command } from '@svgedit/svgcanvas/core/history.js'
 import ConfigObj from './ConfigObj.js'
 import EditorStartup from './EditorStartup.js'
 import { isActiveEditor, setActiveEditor } from './domScope.js'
@@ -546,12 +547,79 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * Rebuild a gradient element from the serialized XML stored in prefs.
+   * @param {string} xml
+   * @returns {Element|undefined}
+   */
+  gradientElemFromXml (xml) {
+    if (!xml) { return undefined }
+    try {
+      return new DOMParser().parseFromString(xml, 'image/svg+xml').documentElement
+    } catch (_) {
+      return undefined
+    }
+  }
+
+  /**
    *
    * @param {string} color
    * @param {string} url
+   * @param {Element} [gradientElem]
+   * @param {boolean} [recordUndo] - When true, push the change onto the undo stack
+   *   so it can be reverted with the Undo button. Programmatic callers (init,
+   *   host restore) leave this false to avoid polluting history.
    * @returns {void}
    */
-  setBackground (color, url, gradientElem) {
+  setBackground (color, url, gradientElem, recordUndo = false) {
+    // Capture the previous background state before mutating prefs so the undo
+    // command can restore it.
+    const prev = {
+      color: this.configObj.pref('bkgd_color'),
+      url: this.configObj.pref('bkgd_url') || '',
+      gradient: this.configObj.pref('bkgd_gradient') || ''
+    }
+
+    this.applyBackgroundState(color, url, gradientElem)
+
+    if (!recordUndo) { return }
+
+    const next = {
+      color,
+      url: url || '',
+      gradient: gradientElem ? new XMLSerializer().serializeToString(gradientElem) : ''
+    }
+    // Nothing actually changed → don't record a no-op undo step.
+    if (prev.color === next.color && prev.url === next.url && prev.gradient === next.gradient) {
+      return
+    }
+
+    const editor = this
+    const cmd = new Command()
+    cmd.text = 'Change canvas background'
+    cmd.type = () => 'ChangeBackgroundCommand'
+    cmd.elements = () => []
+    cmd.apply = (handler) => {
+      Command.prototype.apply.call(cmd, handler, () => {
+        editor.applyBackgroundState(next.color, next.url, editor.gradientElemFromXml(next.gradient))
+      })
+    }
+    cmd.unapply = (handler) => {
+      Command.prototype.unapply.call(cmd, handler, () => {
+        editor.applyBackgroundState(prev.color, prev.url, editor.gradientElemFromXml(prev.gradient))
+      })
+    }
+    this.svgCanvas.undoMgr.addCommandToHistory(cmd)
+  }
+
+  /**
+   * Apply a background state to the canvas, prefs, and bottom-panel swatch.
+   * Does not touch the undo stack.
+   * @param {string} color
+   * @param {string} url
+   * @param {Element} [gradientElem]
+   * @returns {void}
+   */
+  applyBackgroundState (color, url, gradientElem) {
     const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     // if (color == this.configObj.pref('bkgd_color') && url == this.configObj.pref('bkgd_url')) { return; }
     this.configObj.pref('bkgd_color', color)

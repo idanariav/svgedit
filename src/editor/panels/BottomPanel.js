@@ -148,9 +148,9 @@ class BottomPanel {
     const { paint } = evt.detail
     if (paint.type === 'solidColor') {
       const color = paint.solidColor === 'none' ? 'none' : '#' + paint.solidColor
-      this.editor.setBackground(color, '')
+      this.editor.setBackground(color, '', undefined, true)
     } else if (paint.type === 'linearGradient' || paint.type === 'radialGradient') {
-      this.editor.setBackground('gradient', '', paint[paint.type])
+      this.editor.setBackground('gradient', '', paint[paint.type], true)
     }
   }
 
