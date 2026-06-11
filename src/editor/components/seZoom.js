@@ -311,9 +311,14 @@ class SeZoom extends HTMLElement {
    * initialises the popup menu position
    */
   initPopup () {
+    const gap = 4
     const zoomPos = this.getBoundingClientRect()
     const popupPos = this.optionsContainer.getBoundingClientRect()
-    const top = zoomPos.top - popupPos.height
+    // Default to opening downward (zoom lives in the top panel); flip above
+    // only when the menu would overflow the bottom of the viewport.
+    const below = zoomPos.bottom + gap
+    const fitsBelow = below + popupPos.height <= window.innerHeight
+    const top = fitsBelow ? below : zoomPos.top - popupPos.height - gap
     const left = zoomPos.left
 
     this.optionsContainer.style.position = 'fixed'
