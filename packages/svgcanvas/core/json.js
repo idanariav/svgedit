@@ -124,6 +124,9 @@ export const init = (canvas) => {
       'stroke-linecap': curShape.stroke_linecap,
       'stroke-opacity': curShape.stroke_opacity,
       'fill-opacity': curShape.fill_opacity,
+      // Paint the stroke beneath the fill so it grows outward instead of
+      // eating into the fill (keeps text/shape interiors fully visible).
+      'paint-order': 'stroke',
       opacity,
       style: 'pointer-events:inherit'
     }, 100)

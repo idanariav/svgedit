@@ -585,6 +585,9 @@ const setStrokeWidthMethod = (val) => {
   }
   if (elems.length > 0) {
     svgCanvas.changeSelectedAttribute('stroke-width', val, elems)
+    // Paint the stroke beneath the fill so it grows outward rather than
+    // shrinking the visible fill (matters most for outlined text).
+    svgCanvas.changeSelectedAttribute('paint-order', 'stroke', elems)
     svgCanvas.call('changed', selectedElements)
   }
 }
