@@ -334,7 +334,7 @@ const cloneSelectedElements = (x, y) => {
   }
 
   if (!batchCmd.isEmpty()) {
-    svgCanvas.addToSelection(copiedElements.reverse()) // Need to reverse for correct selection-adding
+    svgCanvas.addToSelection(copiedElements.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
     moveSelectedElements(x, y, false)
     svgCanvas.addCommandToHistory(batchCmd)
   }

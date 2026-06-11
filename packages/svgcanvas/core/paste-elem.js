@@ -130,7 +130,7 @@ export const init = (canvas) => {
   }
 
   if (!pasted.length) return
-  svgCanvas.selectOnly(pasted)
+  svgCanvas.selectOnly(pasted, true) // show grips so the pasted element is ready to resize
 
   if (type !== 'in_place') {
     let ctrX; let ctrY
