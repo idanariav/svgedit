@@ -477,9 +477,6 @@ class TopPanel {
 
     this.editor.svgCanvas.addedNew = false
 
-    // Switch the right-panel tab to match the selection (text → Text, else Design)
-    this.editor.rightPanel.autoSelectTab(elem, this.multiselected)
-
     if ((elem && !isNode) || this.multiselected) {
       // update the selected elements' layer
       $id('selLayerNames').removeAttribute('disabled')

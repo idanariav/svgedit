@@ -791,6 +791,11 @@ class Editor extends EditorStartup {
     // Deal with pathedit mode
     this.topPanel.togglePathEditMode(isNode, elems)
     this.topPanel.updateContextPanel()
+    // Switch the right-panel tab to match the selection (text → Text, else
+    // Design). Done here, on selection change only — not in updateContextPanel,
+    // which also runs on attribute edits and would yank the user off Design
+    // mid-edit (e.g. when changing a text object's stroke width).
+    this.rightPanel.autoSelectTab(this.selectedElement, this.multiselected)
     this.svgCanvas.runExtensions(
       'selectedChanged',
       /** @type {module:svgcanvas.SvgCanvas#event:ext_selectedChanged} */ {
