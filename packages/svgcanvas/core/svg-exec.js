@@ -997,6 +997,30 @@ const rasterExport = (
       height = h
     }
 
+    // When the background is a gradient, inject it into the SVG clone so the
+    // gradient renders as part of the SVG image rather than via ctx.fillStyle
+    // (which only accepts valid CSS colors, not the sentinel string 'gradient').
+    if (opts.includeBg && opts.bgcolor === 'gradient') {
+      const bgEl = svgCanvas.getElement('canvasBackground')
+      const gradEl = bgEl?.querySelector('defs > #background_gradient')
+      if (gradEl) {
+        let defs = svgClone.querySelector('defs')
+        if (!defs) {
+          defs = svgClone.ownerDocument.createElementNS(NS.SVG, 'defs')
+          svgClone.insertBefore(defs, svgClone.firstChild)
+        }
+        const gradClone = gradEl.cloneNode(true)
+        gradClone.id = 'export_bg_gradient'
+        defs.appendChild(gradClone)
+        const bgRect = svgClone.ownerDocument.createElementNS(NS.SVG, 'rect')
+        bgRect.setAttribute('width', '100%')
+        bgRect.setAttribute('height', '100%')
+        bgRect.setAttribute('fill', 'url(#export_bg_gradient)')
+        bgRect.setAttribute('style', 'pointer-events:none')
+        defs.after(bgRect)
+      }
+    }
+
     convertImagesToBase64(svgClone)
       .then(() => {
         const svgData = new XMLSerializer().serializeToString(svgClone)
@@ -1017,7 +1041,7 @@ const rasterExport = (
 
         const img = new Image()
         img.onload = () => {
-          if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard') {
+          if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard' && opts.bgcolor !== 'gradient') {
             ctx.fillStyle = opts.bgcolor
             ctx.fillRect(0, 0, width, height)
           }

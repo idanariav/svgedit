@@ -41,6 +41,7 @@ export default class ConfigObj {
         */
       bkgd_color: '#FFF',
       bkgd_url: '',
+      bkgd_gradient: '',
       /** UI color theme: 'light' | 'dark' */
       theme: 'light',
       /** Touch-first tablet shell on/off (see uiMode.js) */

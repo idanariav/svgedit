@@ -263,7 +263,19 @@ class EditorStartup {
 
     this.svgCanvas.textActions.setInputElem($id('text'))
 
-    this.setBackground(this.configObj.pref('bkgd_color'), this.configObj.pref('bkgd_url'))
+    const bkgdColor = this.configObj.pref('bkgd_color')
+    if (bkgdColor === 'gradient') {
+      const gradXml = this.configObj.pref('bkgd_gradient')
+      let gradElem = null
+      if (gradXml) {
+        try {
+          gradElem = new DOMParser().parseFromString(gradXml, 'image/svg+xml').documentElement
+        } catch (_) { /* fall through — gradient lost, background resets to default */ }
+      }
+      this.setBackground('gradient', '', gradElem || undefined)
+    } else {
+      this.setBackground(bkgdColor, this.configObj.pref('bkgd_url'))
+    }
 
     // update resolution option with actual resolution
     const res = this.svgCanvas.getResolution()

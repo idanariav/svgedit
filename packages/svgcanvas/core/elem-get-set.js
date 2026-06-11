@@ -1263,7 +1263,9 @@ const setBackgroundMethod = (color, url, gradientElem) => {
     border.setAttribute('fill', 'url(#background_gradient)')
   } else {
     if (bgDefs) { bgDefs.remove() }
-    border.setAttribute('fill', color === 'chessboard' ? '#fff' : color)
+    // 'gradient' without a gradientElem (e.g. missing saved data) → fall back to white
+    const fillColor = (color === 'chessboard' || color === 'gradient') ? '#fff' : color
+    border.setAttribute('fill', fillColor)
   }
 
   if (color === 'chessboard') {

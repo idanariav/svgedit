@@ -556,6 +556,12 @@ class Editor extends EditorStartup {
     // if (color == this.configObj.pref('bkgd_color') && url == this.configObj.pref('bkgd_url')) { return; }
     this.configObj.pref('bkgd_color', color)
     this.configObj.pref('bkgd_url', url, true)
+    // Persist the gradient XML so it can be restored on next load.
+    if (gradientElem) {
+      this.configObj.pref('bkgd_gradient', new XMLSerializer().serializeToString(gradientElem))
+    } else {
+      this.configObj.pref('bkgd_gradient', '')
+    }
 
     // This should be done in  this.svgCanvas.js for the borderRect fill
     this.svgCanvas.setBackground(color, url, gradientElem)
