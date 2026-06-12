@@ -175,13 +175,18 @@ class BottomPanel {
   handlePalette (e) {
     const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
-    // shift key or right click for stroke
+    // `picker` is the destination chosen via the palette's target button.
     const { picker, color } = e.detail
     // Webkit-based browsers returned 'initial' here for no stroke
     const paint =
       color === 'none'
         ? new Paint()
         : new Paint({ alpha: 100, solidColor: color.substr(1) })
+    if (picker === 'background') {
+      $id('bg_color').setPaint(paint)
+      this.editor.setBackground(color, '', undefined, true)
+      return
+    }
     if (picker === 'fill') {
       $id('fill_color').setPaint(paint)
     } else {

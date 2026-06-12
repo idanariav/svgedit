@@ -86,6 +86,17 @@ const NONE_SWATCH_SVG = 'data:image/svg+xml;charset=utf-8;base64,PHN2ZyB2aWV3Qm9
 
 const PENCIL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l11-11-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>'
 
+// Where a clicked swatch sends its color. Cycled via the target button; the
+// icon shown on that button reflects the active target so it's clear what the
+// custom palette will change.
+const TARGETS = ['fill', 'stroke', 'background']
+const TARGET_LABELS = { fill: 'fill', stroke: 'stroke', background: 'background' }
+const TARGET_ICONS = {
+  fill: '<svg viewBox="0 0 24 24" width="15" height="15"><rect x="4" y="4" width="16" height="16" rx="3" fill="currentColor"/></svg>',
+  stroke: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>',
+  background: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9.5h17"/><path d="M9.5 3.5v17"/></svg>'
+}
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -190,7 +201,8 @@ template.innerHTML = `
     justify-content: center;
   }
   .palette_edit_btn,
-  .palette_expand_btn {
+  .palette_target_btn,
+  .reset_btn {
     background: transparent;
     border: none;
     width: 22px;
@@ -208,7 +220,8 @@ template.innerHTML = `
     padding: 0;
   }
   .palette_edit_btn:hover,
-  .palette_expand_btn:hover {
+  .palette_target_btn:hover,
+  .reset_btn:hover {
     background: var(--icon-hover-bg, #EEF1F5);
     color: var(--icon-hover, #0F172A);
   }
@@ -216,57 +229,30 @@ template.innerHTML = `
     background: var(--accent-soft, #E0EAFD);
     color: var(--accent, #2563EB);
   }
-  #palette_popup {
-    padding: 8px;
-    background: var(--chrome-bg, #FFFFFF);
-    border: 1px solid var(--chrome-border, #E6E8EC);
-    border-radius: 10px;
-    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
-    min-width: 200px;
-    max-width: 380px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: absolute;
-    bottom: 48px;
-    right: 0;
-    z-index: 100;
+  /* The target button is the primary control here — keep its glyph at full
+     foreground strength so it reads as an actionable selector, not a hint. */
+  .palette_target_btn {
+    color: var(--fg, #0F172A);
   }
-  #palette_popup_grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-  }
-  #palette_popup div.palette_item {
-    flex: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
+  .palette_target_btn svg {
+    display: block;
   }
   .reset_btn {
-    background: transparent;
-    border: none;
-    color: var(--muted, #6B7280);
-    font-size: 11px;
-    padding: 2px 0 0;
-    cursor: pointer;
-    align-self: flex-start;
-    text-decoration: underline;
+    display: none;
+    font-size: 13px;
+    line-height: 1;
   }
-  .reset_btn:hover {
-    color: var(--fg, #0F172A);
+  /* Global reset only matters while editing and only if something was changed. */
+  :host(.edit-mode) .reset_btn.has-overrides {
+    display: flex;
   }
   </style>
   <div id="palette_holder" title="">
     <div id="js-se-palette"></div>
   </div>
   <button class="palette_edit_btn" title="Edit palette colors" aria-pressed="false">${PENCIL_SVG}</button>
-  <button class="palette_expand_btn" title="Show whole palette">▾</button>
-  <!-- hidden popup -->
-  <div id="palette_popup" style="display:none">
-    <div id="palette_popup_grid"></div>
-    <button class="reset_btn" style="display:none">Reset palette</button>
-  </div>
+  <button class="reset_btn" title="Reset palette colors" aria-label="Reset palette colors">↺</button>
+  <button class="palette_target_btn" title="Color target"></button>
 `
 
 /**
@@ -283,21 +269,16 @@ export class SEPalette extends HTMLElement {
     this.$holder = this._shadowRoot.getElementById('palette_holder')
     this.$strip = this._shadowRoot.getElementById('js-se-palette')
     this.$editBtn = this._shadowRoot.querySelector('button.palette_edit_btn')
-    this.$expandBtn = this._shadowRoot.querySelector('button.palette_expand_btn')
-    this.$popUp = this._shadowRoot.getElementById('palette_popup')
-    this.$popupGrid = this._shadowRoot.getElementById('palette_popup_grid')
+    this.$targetBtn = this._shadowRoot.querySelector('button.palette_target_btn')
     this.$resetBtn = this._shadowRoot.querySelector('.reset_btn')
 
     this._overrides = loadOverrides()
     this._editMode = false
+    this._target = 'fill'
 
-    svgEditor.$click(this.$expandBtn, (e) => {
+    svgEditor.$click(this.$targetBtn, (e) => {
       e.stopPropagation()
-      if (this.$popUp.style.display === 'none') {
-        this.showPopUp()
-      } else {
-        this.hidePopUp()
-      }
+      this._cycleTarget()
     })
 
     svgEditor.$click(this.$editBtn, (e) => {
@@ -310,10 +291,7 @@ export class SEPalette extends HTMLElement {
       this._resetAll()
     })
 
-    svgEditor.svgCanvas.container.addEventListener('click', () =>
-      this.hidePopUp()
-    )
-
+    this._renderTargetBtn()
     this.renderSwatches()
   }
 
@@ -362,13 +340,11 @@ export class SEPalette extends HTMLElement {
   // ── Rendering ────────────────────────────────────────────────────────────
   renderSwatches () {
     this.$strip.replaceChildren()
-    this.$popupGrid.replaceChildren()
     DEFAULT_PALETTE.forEach((_, i) => {
       this.$strip.append(this._buildSwatch(i))
-      this.$popupGrid.append(this._buildSwatch(i))
     })
     const hasOverrides = Object.keys(this._overrides).length > 0
-    this.$resetBtn.style.display = hasOverrides ? '' : 'none'
+    this.$resetBtn.classList.toggle('has-overrides', hasOverrides)
   }
 
   _buildSwatch (i) {
@@ -430,13 +406,12 @@ export class SEPalette extends HTMLElement {
       this._openEditDialog(i)
       return
     }
-    const picker = evt.shiftKey || evt.button === 2 ? 'stroke' : 'fill'
     let color = this.getColor(i)
     if (color === 'none' || color === 'transparent' || color === 'initial') {
       color = 'none'
     }
     this.dispatchEvent(new CustomEvent('change', {
-      detail: { picker, color },
+      detail: { picker: this._target, color },
       bubbles: false
     }))
   }
@@ -471,19 +446,24 @@ export class SEPalette extends HTMLElement {
     this.renderSwatches()
   }
 
+  // ── Color target ─────────────────────────────────────────────────────────
   /**
-   * Shows popUp window with the whole palette
+   * Advance the destination a clicked swatch paints (fill → stroke →
+   * background → fill) and reflect it on the target button.
+   * @returns {void}
    */
-  showPopUp () {
-    this.$popUp.style.display = 'flex'
-    this.$expandBtn.textContent = '▲'
-    this.$expandBtn.setAttribute('title', 'Hide palette window')
+  _cycleTarget () {
+    const idx = TARGETS.indexOf(this._target)
+    this._target = TARGETS[(idx + 1) % TARGETS.length]
+    this._renderTargetBtn()
   }
 
-  hidePopUp () {
-    this.$popUp.style.display = 'none'
-    this.$expandBtn.textContent = '▼'
-    this.$expandBtn.setAttribute('title', 'Show palette window')
+  _renderTargetBtn () {
+    const label = TARGET_LABELS[this._target]
+    this.$targetBtn.innerHTML = TARGET_ICONS[this._target]
+    this.$targetBtn.dataset.target = this._target
+    this.$targetBtn.setAttribute('title', `Color target: ${label} (click to change)`)
+    this.$targetBtn.setAttribute('aria-label', `Color target: ${label}`)
   }
 }
 
