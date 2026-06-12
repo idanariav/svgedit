@@ -69,24 +69,26 @@ export function createLinearPanel (paint, i18next) {
   const stopBar = createStopBar(panelState.stops, panelState.mode)
   leftCol.appendChild(stopBar)
 
-  // Inline HsvBox for editing selected stop
+  // ── Colors column (right) — stop color editor, like the Solid tab ───────────
+  const colorsCol = document.createElement('div')
+  colorsCol.className = 'cp-grad-colors'
   const stopColorSection = document.createElement('div')
   stopColorSection.className = 'cp-stop-color-editor'
-  stopColorSection.style.display = 'none'
   let stopHsvBox = null
-  leftCol.appendChild(stopColorSection)
+  colorsCol.appendChild(stopColorSection)
 
-  // ── Right column ───────────────────────────────────────────────────────────
-  const rightCol = document.createElement('div')
-  rightCol.className = 'cp-grad-right'
+  // ── Bottom row — Direction + Settings ───────────────────────────────────────
+  const bottomRow = document.createElement('div')
+  bottomRow.className = 'cp-grad-bottom'
 
   // Direction section
   const dirSection = document.createElement('div')
   dirSection.className = 'cp-section'
   dirSection.innerHTML = '<div class="cp-section-title">Direction</div>'
   const dial = createDial(panelState.angle)
+  dial.classList.add('cp-dir-body')
   dirSection.appendChild(dial)
-  rightCol.appendChild(dirSection)
+  bottomRow.appendChild(dirSection)
 
   // Settings section
   const settingsSection = document.createElement('div')
@@ -131,7 +133,7 @@ export function createLinearPanel (paint, i18next) {
   })
   opacSlider.addEventListener('change', e => { panelState.alpha = e.detail.value })
   settingsSection.appendChild(opacSlider)
-  rightCol.appendChild(settingsSection)
+  bottomRow.appendChild(settingsSection)
 
   // Mono settings section
   const monoSection = document.createElement('div')
@@ -155,10 +157,16 @@ export function createLinearPanel (paint, i18next) {
       _updatePreview()
     })
   })
-  rightCol.appendChild(monoSection)
+  bottomRow.appendChild(monoSection)
 
-  panel.appendChild(leftCol)
-  panel.appendChild(rightCol)
+  // Direction/Settings sit in the empty space under the stop list, on the left.
+  leftCol.appendChild(bottomRow)
+
+  const topRow = document.createElement('div')
+  topRow.className = 'cp-grad-top'
+  topRow.appendChild(leftCol)
+  topRow.appendChild(colorsCol)
+  panel.appendChild(topRow)
 
   // ── Wiring ─────────────────────────────────────────────────────────────────
   function _updatePreview () {
@@ -195,15 +203,13 @@ export function createLinearPanel (paint, i18next) {
     _updatePreview()
   })
 
-  stopBar.addEventListener('stop-select', (e) => {
-    const idx = e.detail.index
+  // Build/rebuild the inline HsvBox in the colors column for a given stop.
+  function _mountStopEditor (idx) {
     const stop = panelState.stops[idx]
     if (!stop) return
-    // Build/rebuild inline HsvBox for this stop
     stopColorSection.innerHTML = ''
     stopHsvBox = createHsvBox(stop.color, stop.alpha)
     stopColorSection.appendChild(stopHsvBox)
-    stopColorSection.style.display = ''
     stopHsvBox.addEventListener('color-change', (ce) => {
       const sidx = stopBar.getSelectedIndex()
       if (sidx >= 0 && sidx < panelState.stops.length) {
@@ -213,13 +219,16 @@ export function createLinearPanel (paint, i18next) {
         _updatePreview()
       }
     })
-  })
+  }
+
+  stopBar.addEventListener('stop-select', (e) => _mountStopEditor(e.detail.index))
 
   dial.addEventListener('change', (e) => {
     panelState.angle = e.detail.angle
     _updatePreview()
   })
 
+  _mountStopEditor(stopBar.getSelectedIndex())
   _updatePreview()
 
   panel.setFromHex = (hex) => {

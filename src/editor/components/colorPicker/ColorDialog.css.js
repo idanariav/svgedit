@@ -232,7 +232,7 @@ export const css = /* css */`
     gap: 24px;
   }
   .cp-body-solid { gap: 22px; align-items: flex-start; }
-  .cp-body-grad { gap: 22px; align-items: flex-start; }
+  .cp-body-grad { flex-direction: column; gap: 20px; align-items: stretch; }
   .cp-section { display: flex; flex-direction: column; gap: 8px; }
   .cp-section-title {
     font-size: 11px;
@@ -456,13 +456,37 @@ export const css = /* css */`
   }
 
   /* ── Gradient layout ────────────────────────────────────────────────────── */
+  /* Top row: gradient controls (wide) on the left, a narrow vertical color
+     editor on the right. Direction/Settings stack full-width in the bottom row. */
+  .cp-grad-top {
+    display: flex; gap: 22px; align-items: flex-start;
+  }
   .cp-grad-left {
     flex: 1; min-width: 0;
     display: flex; flex-direction: column; gap: 14px;
   }
-  .cp-grad-right {
-    width: 260px; flex: 0 0 260px;
+  .cp-grad-colors {
+    flex: 0 0 300px; min-width: 0; display: flex;
+  }
+  /* Stack the picker vertically so the colors column stays narrow:
+     current/new + inputs + preset palette on top, the saturation/hue and
+     alpha scales beneath them. */
+  .cp-stop-color-editor > div { flex-direction: column; align-items: stretch; }
+  .cp-stop-color-editor .cp-side-col { order: 1; width: 100%; flex: none; }
+  .cp-stop-color-editor .cp-canvas-col { order: 2; width: 100%; flex: none; }
+
+  /* Direction/Settings group: tucked under the stop list in the left column,
+     stacked and filling the column width. */
+  .cp-grad-bottom {
     display: flex; flex-direction: column; gap: 18px;
+    margin-top: 4px; padding-top: 16px;
+    border-top: 1px solid var(--chrome-border);
+  }
+  .cp-grad-bottom > .cp-section { width: 100%; }
+  /* Direction lays its dial and presets in a full-width row. */
+  .cp-dir-body { display: flex; align-items: center; gap: 18px; }
+  .cp-dir-body .cp-dir-presets {
+    flex: 1; grid-template-columns: repeat(8, 1fr);
   }
 
   /* ── Mode toggle ────────────────────────────────────────────────────────── */
@@ -800,6 +824,6 @@ export const css = /* css */`
   .cp-btn-primary:hover { filter: brightness(1.06); }
   .cp-btn-primary:active { transform: translateY(1px); }
 
-  /* ── Stop color editor (inline in gradient panels) ──────────────────────── */
-  .cp-stop-color-editor { padding: 0; }
+  /* ── Stop color editor (right column of gradient panels) ────────────────── */
+  .cp-stop-color-editor { padding: 0; flex: 1; min-width: 0; display: flex; }
 `

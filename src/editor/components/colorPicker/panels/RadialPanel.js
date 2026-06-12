@@ -124,15 +124,17 @@ export function createRadialPanel (paint, i18next) {
   const stopBar = createStopBar(panelState.stops, panelState.mode)
   leftCol.appendChild(stopBar)
 
-  // Inline HsvBox for stop editing
+  // ── Colors column (right) — stop color editor, like the Solid tab ───────────
+  const colorsCol = document.createElement('div')
+  colorsCol.className = 'cp-grad-colors'
   const stopColorSection = document.createElement('div')
-  stopColorSection.style.display = 'none'
+  stopColorSection.className = 'cp-stop-color-editor'
   let stopHsvBox = null
-  leftCol.appendChild(stopColorSection)
+  colorsCol.appendChild(stopColorSection)
 
-  // ── Right column ───────────────────────────────────────────────────────────
-  const rightCol = document.createElement('div')
-  rightCol.className = 'cp-grad-right'
+  // ── Bottom row — Shape + Focal Point + Settings ─────────────────────────────
+  const bottomRow = document.createElement('div')
+  bottomRow.className = 'cp-grad-bottom'
 
   // Shape section
   const shapeSection = document.createElement('div')
@@ -148,7 +150,7 @@ export function createRadialPanel (paint, i18next) {
   shapeSection.appendChild(radiusSlider)
   shapeSection.appendChild(ellipSlider)
   shapeSection.appendChild(angleSlider)
-  rightCol.appendChild(shapeSection)
+  bottomRow.appendChild(shapeSection)
 
   // Focal point section
   const focalSection = document.createElement('div')
@@ -169,7 +171,7 @@ export function createRadialPanel (paint, i18next) {
     _updateMarkers()
   })
   focalSection.appendChild(matchLabel)
-  rightCol.appendChild(focalSection)
+  bottomRow.appendChild(focalSection)
 
   // Settings section
   const settingsSection = document.createElement('div')
@@ -204,7 +206,7 @@ export function createRadialPanel (paint, i18next) {
   const opacSlider = createSlider({ label: t('config.jgraduate_opac') || 'Opacity', min: 0, max: 100, value: panelState.alpha, unit: '%' })
   opacSlider.addEventListener('change', e => { panelState.alpha = e.detail.value })
   settingsSection.appendChild(opacSlider)
-  rightCol.appendChild(settingsSection)
+  bottomRow.appendChild(settingsSection)
 
   // Mono settings
   const monoSection = document.createElement('div')
@@ -228,10 +230,16 @@ export function createRadialPanel (paint, i18next) {
       _updatePreview()
     })
   })
-  rightCol.appendChild(monoSection)
+  bottomRow.appendChild(monoSection)
 
-  panel.appendChild(leftCol)
-  panel.appendChild(rightCol)
+  // Shape/Focal/Settings sit in the empty space under the stop list, on the left.
+  leftCol.appendChild(bottomRow)
+
+  const topRow = document.createElement('div')
+  topRow.className = 'cp-grad-top'
+  topRow.appendChild(leftCol)
+  topRow.appendChild(colorsCol)
+  panel.appendChild(topRow)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function _hexToRgb (hex) {
@@ -282,14 +290,12 @@ export function createRadialPanel (paint, i18next) {
     _updatePreview()
   })
 
-  stopBar.addEventListener('stop-select', (e) => {
-    const idx = e.detail.index
+  function _mountStopEditor (idx) {
     const stop = panelState.stops[idx]
     if (!stop) return
     stopColorSection.innerHTML = ''
     stopHsvBox = createHsvBox(stop.color, stop.alpha)
     stopColorSection.appendChild(stopHsvBox)
-    stopColorSection.style.display = ''
     stopHsvBox.addEventListener('color-change', (ce) => {
       const sidx = stopBar.getSelectedIndex()
       if (sidx >= 0 && sidx < panelState.stops.length) {
@@ -299,8 +305,11 @@ export function createRadialPanel (paint, i18next) {
         _updatePreview()
       }
     })
-  })
+  }
 
+  stopBar.addEventListener('stop-select', (e) => _mountStopEditor(e.detail.index))
+
+  _mountStopEditor(stopBar.getSelectedIndex())
   _updatePreview()
 
   panel.setFromHex = (hex) => {
