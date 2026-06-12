@@ -11,13 +11,15 @@
 | `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `ConfigObj.js` | `pref(key)`, `setConfig(obj)`, localStorage persistence (~24KB) |
-| `MainMenu.js` | Export, Preferences, **Tablet mode toggle** (`clickTabletMode`), **Hotkey Manager** launcher (`tool_hotkeys` → opens `se-hotkey-dialog`) (~5KB) |
-| `Hotkeys.js` | `HotkeyManager` — single registry for all keyboard shortcuts. Ingests the editor-level `Editor.shortcuts` array + component `[shortcut]` buttons (pushed via `registerEl`), owns one document keydown dispatcher, conflict detection, per-user overrides, and the read API for `se-hotkey-dialog`. Persists overrides via `userDataAdapter` (`getHotkeys`/`setHotkeys`) or localStorage `svg-edit-hotkeys`. Exports `formatHotkey` |
+| `MainMenu.js` | Export, Preferences, **Tablet mode toggle** (`clickTabletMode`), **Hotkey Manager** launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), **Favorites** launcher (`tool_favorites` → opens `se-favorites-dialog`) (~5KB) |
+| `Hotkeys.js` | `HotkeyManager` — single registry for all keyboard shortcuts. Ingests the editor-level `Editor.shortcuts` array + component `[shortcut]` buttons (pushed via `registerEl`), owns one document keydown dispatcher, conflict detection, per-user overrides, and the read API for `se-hotkey-dialog`. Persists overrides via `userDataAdapter` (`getHotkeys`/`setHotkeys`) or localStorage `svg-edit-hotkeys`. Exports `formatHotkey`, `GROUP_ORDER`, and `getAction(id)` (used by the favorites menu) |
+| `favorites.js` | Persistence for the quick-action **favorites** list (ordered array of action ids): `loadFavorites` (falls back to `DEFAULT_FAVORITES` = cut/copy/paste/delete_selected), `saveFavorites`, `toggleFavorite`. Via `userDataAdapter` (`getFavorites`/`setFavorites`) or localStorage `svg-edit-favorites` |
+| `favoriteActions.js` | Catalog of favoritable actions — a superset of the hotkey registry. Derives trigger entries from `Hotkeys.js`, adds `EXTRA_TRIGGERS` (paste) and `VALUE_CONTROLS` (stroke width, fill/stroke colour — rendered as live widgets). Exports `buildFavoritesCatalog` (for the dialog), `getFavoriteMeta`, `isValueControl`, `VALUE_CONTROLS`, `runFavoriteTrigger` (for the menu) |
 | `Rulers.js` | Canvas ruler rendering and tick marks |
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
 | `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell). Mirrors `themeUtil.js`; persistence of the `tabletMode` pref is the caller's job |
 | `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
-| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette, saved shapes, **and hotkey overrides** (`getHotkeys`/`setHotkeys`) in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js`, `userShapes.js` + `Hotkeys.js` |
+| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette, saved shapes, **hotkey overrides** (`getHotkeys`/`setHotkeys`), **and quick-action favorites** (`getFavorites`/`setFavorites`) in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js`, `userShapes.js`, `Hotkeys.js` + `favorites.js` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |
@@ -82,6 +84,8 @@
 | `insertImage.js` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink })` — inserts a vault drawing as real, editable elements (individual directly-selectable shapes in the layer, defs → canvas `<defs>`, undoable) for the host's "Unlocked" import mode |
 | `svgSourceDialog.js` | View/edit raw SVG source |
 | `hotkeyDialog.js` | **Hotkey Manager** modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback. Pure view over `Editor.hotkeys` (`Hotkeys.js`) |
+| `favoritesDialog.js` | **Favorites** manager modal (`se-favorites-dialog`) — grouped list of every favoritable action (via `buildFavoritesCatalog`) with a star toggle each. Pure view over `favorites.js`; starred actions populate the canvas quick-action menu |
+| `cmenuDialog.js` | Canvas **quick-action menu** (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu. On `contextmenu` it rebuilds from `loadFavorites()`: trigger actions as icon+label rows (`runFavoriteTrigger`), value controls (stroke width, fill/stroke colour) as live widgets seeded from the selection. Plain `<ul>` (not `role=menu`). Disables selection-dependent rows when nothing is selected |
 | `seAlertDialog.js` | Alert dialog (OK only) |
 | `seConfirmDialog.js` | Confirm dialog (OK / Cancel) |
 | `sePromptDialog.js` | Prompt dialog (text input) |

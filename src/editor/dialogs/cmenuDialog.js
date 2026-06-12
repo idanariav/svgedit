@@ -2,9 +2,31 @@
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot } from '../domScope.js'
+import { fetchSvgEl } from '../components/svgIconLoader.js'
+import { loadFavorites } from '../favorites.js'
+import {
+  getFavoriteMeta,
+  isValueControl,
+  VALUE_CONTROLS,
+  runFavoriteTrigger
+} from '../favoriteActions.js'
+
 const template = document.createElement('template')
 template.innerHTML = cMenuDialogHTML
+
+// Actions that stay available with no selection; everything else is disabled
+// when nothing is selected (mirrors the original context menu's behaviour).
+const ALWAYS_ENABLED = new Set([
+  'paste', 'paste_in_place', 'select_all', 'zoom_in', 'zoom_out'
+])
+
 /**
+ * Canvas quick-action menu. On right-click it rebuilds itself from the user's
+ * favorites (see `favorites.js` / `favoriteActions.js`): trigger actions render
+ * as icon + label rows; value controls (stroke width, fill/stroke colour) render
+ * as a live widget so the value is adjustable in place. It is intentionally a
+ * plain `<ul>` (not `role="menu"`) so embedding inputs does not break screen
+ * readers.
  * @class SeCMenuDialog
  */
 export class SeCMenuDialog extends HTMLElement {
@@ -20,178 +42,15 @@ export class SeCMenuDialog extends HTMLElement {
     // its owning editor container can't be found at construction time).
     this._workarea = null
     this.$dialog = this._shadowRoot.querySelector('#cmenu_canvas')
-    this.$copyLink = this._shadowRoot.querySelector('#se-copy')
-    this.$cutLink = this._shadowRoot.querySelector('#se-cut')
-    this.$pasteLink = this._shadowRoot.querySelector('#se-paste')
-    this.$pasteInPlaceLink = this._shadowRoot.querySelector('#se-paste-in-place')
-    this.$deleteLink = this._shadowRoot.querySelector('#se-delete')
-    this.$groupLink = this._shadowRoot.querySelector('#se-group')
-    this.$ungroupLink = this._shadowRoot.querySelector('#se-ungroup')
-    this.$moveFrontLink = this._shadowRoot.querySelector('#se-move-front')
-    this.$moveUpLink = this._shadowRoot.querySelector('#se-move-up')
-    this.$moveDownLink = this._shadowRoot.querySelector('#se-move-down')
-    this.$moveBackLink = this._shadowRoot.querySelector('#se-move-back')
-    this.$addToShapeLibraryLink = this._shadowRoot.querySelector('#se-add-to-shape-library')
+    this.i18next = null
   }
 
   /**
-   * @function init
-   * @param {any} name
+   * @param {object} i18next
    * @returns {void}
    */
   init (i18next) {
-    this.setAttribute('tools-cut', i18next.t('tools.cut'))
-    this.setAttribute('tools-copy', i18next.t('tools.copy'))
-    this.setAttribute('tools-paste', i18next.t('tools.paste'))
-    this.setAttribute('tools-paste_in_place', i18next.t('tools.paste_in_place'))
-    this.setAttribute('tools-delete', i18next.t('tools.delete'))
-    this.setAttribute('tools-group', i18next.t('tools.group'))
-    this.setAttribute('tools-ungroup', i18next.t('tools.ungroup'))
-    this.setAttribute('tools-move_front', i18next.t('tools.move_front'))
-    this.setAttribute('tools-move_up', i18next.t('tools.move_up'))
-    this.setAttribute('tools-move_down', i18next.t('tools.move_down'))
-    this.setAttribute('tools-move_back', i18next.t('tools.move_back'))
-  }
-
-  /**
-   * @function observedAttributes
-   * @returns {any} observed
-   */
-  static get observedAttributes () {
-    return ['disableallmenu', 'enablemenuitems', 'disablemenuitems', 'tools-cut',
-      'tools-copy', 'tools-paste', 'tools-paste_in_place', 'tools-delete', 'tools-group',
-      'tools-ungroup', 'tools-move_front', 'tools-move_up', 'tools-move_down',
-      'tools-move_back']
-  }
-
-  /**
-   * @function attributeChangedCallback
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   * @returns {void}
-   */
-  attributeChangedCallback (name, oldValue, newValue) {
-    let eles = []
-    let textnode
-    const sdowRoot = this._shadowRoot
-    switch (name) {
-      case 'disableallmenu':
-        if (newValue === 'true') {
-          const elesli = sdowRoot.querySelectorAll('li')
-          elesli.forEach(function (eleli) {
-            eleli.classList.add('disabled')
-          })
-        }
-        break
-      case 'enablemenuitems':
-        eles = newValue.split(',')
-        eles.forEach(function (ele) {
-          const selEle = sdowRoot.querySelector('a[href*="' + ele + '"]')
-          selEle.parentElement.classList.remove('disabled')
-        })
-        break
-      case 'disablemenuitems':
-        eles = newValue.split(',')
-        eles.forEach(function (ele) {
-          const selEle = sdowRoot.querySelector('a[href*="' + ele + '"]')
-          selEle.parentElement.classList.add('disabled')
-        })
-        break
-      case 'tools-cut':
-        textnode = document.createTextNode(newValue)
-        this.$cutLink.prepend(textnode)
-        break
-      case 'tools-copy':
-        textnode = document.createTextNode(newValue)
-        this.$copyLink.prepend(textnode)
-        break
-      case 'tools-paste':
-        this.$pasteLink.textContent = newValue
-        break
-      case 'tools-paste_in_place':
-        this.$pasteInPlaceLink.textContent = newValue
-        break
-      case 'tools-delete':
-        textnode = document.createTextNode(newValue)
-        this.$deleteLink.prepend(textnode)
-        break
-      case 'tools-group':
-        textnode = document.createTextNode(newValue)
-        this.$groupLink.prepend(textnode)
-        break
-      case 'tools-ungroup':
-        textnode = document.createTextNode(newValue)
-        this.$ungroupLink.prepend(textnode)
-        break
-      case 'tools-move_front':
-        textnode = document.createTextNode(newValue)
-        this.$moveFrontLink.prepend(textnode)
-        break
-      case 'tools-move_up':
-        textnode = document.createTextNode(newValue)
-        this.$moveUpLink.prepend(textnode)
-        break
-      case 'tools-move_down':
-        textnode = document.createTextNode(newValue)
-        this.$moveDownLink.prepend(textnode)
-        break
-      case 'tools-move_back':
-        textnode = document.createTextNode(newValue)
-        this.$moveBackLink.prepend(textnode)
-        break
-      default:
-      // super.attributeChangedCallback(name, oldValue, newValue);
-        break
-    }
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get disableallmenu () {
-    return this.getAttribute('disableallmenu')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set disableallmenu (value) {
-    this.setAttribute('disableallmenu', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get enablemenuitems () {
-    return this.getAttribute('enablemenuitems')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set enablemenuitems (value) {
-    this.setAttribute('enablemenuitems', value)
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get disablemenuitems () {
-    return this.getAttribute('disablemenuitems')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set disablemenuitems (value) {
-    this.setAttribute('disablemenuitems', value)
+    this.i18next = i18next
   }
 
   /**
@@ -204,35 +63,114 @@ export class SeCMenuDialog extends HTMLElement {
     this._workarea = closestRoot(this).querySelector('[id="workarea"]')
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
+      current._build()
       positionContextMenu(current.$dialog, e.clientX, e.clientY)
     }
     const onMenuCloseHandler = (e) => {
-      if (e.button !== 2) {
-        current.$dialog.style.display = 'none'
-      }
-    }
-    const onMenuClickHandler = (e, action) => {
-      const triggerEvent = new CustomEvent('change', {
-        detail: {
-          trigger: action
-        }
-      })
-      this.dispatchEvent(triggerEvent)
+      // Right-clicks (button 2) reposition rather than close.
+      if (e.button !== 2) current._hide()
     }
     this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
     this._workarea.addEventListener('mousedown', onMenuCloseHandler)
-    svgEditor.$click(this.$cutLink, (evt) => onMenuClickHandler(evt, 'cut'))
-    svgEditor.$click(this.$copyLink, (evt) => onMenuClickHandler(evt, 'copy'))
-    svgEditor.$click(this.$pasteLink, (evt) => onMenuClickHandler(evt, 'paste'))
-    svgEditor.$click(this.$pasteInPlaceLink, (evt) => onMenuClickHandler(evt, 'paste_in_place'))
-    svgEditor.$click(this.$deleteLink, (evt) => onMenuClickHandler(evt, 'delete'))
-    svgEditor.$click(this.$groupLink, (evt) => onMenuClickHandler(evt, 'group'))
-    svgEditor.$click(this.$ungroupLink, (evt) => onMenuClickHandler(evt, 'ungroup'))
-    svgEditor.$click(this.$moveFrontLink, (evt) => onMenuClickHandler(evt, 'move_front'))
-    svgEditor.$click(this.$moveUpLink, (evt) => onMenuClickHandler(evt, 'move_up'))
-    svgEditor.$click(this.$moveDownLink, (evt) => onMenuClickHandler(evt, 'move_down'))
-    svgEditor.$click(this.$moveBackLink, (evt) => onMenuClickHandler(evt, 'move_back'))
-    svgEditor.$click(this.$addToShapeLibraryLink, (evt) => onMenuClickHandler(evt, 'add_to_shape_library'))
+  }
+
+  /** @returns {void} */
+  _hide () {
+    this.$dialog.style.display = 'none'
+  }
+
+  /** Rebuild the menu contents from the user's favorites. */
+  _build () {
+    const editor = svgEditor
+    this.$dialog.replaceChildren()
+    const hasSelection = !!(editor.selectedElement || editor.multiselected)
+    let rendered = 0
+    loadFavorites().forEach((id) => {
+      const meta = getFavoriteMeta(editor, id)
+      if (!meta) return
+      const disabled = !hasSelection && !ALWAYS_ENABLED.has(id)
+      const li = isValueControl(id)
+        ? this._valueRow(editor, id, meta, disabled)
+        : this._triggerRow(editor, id, meta, disabled)
+      this.$dialog.append(li)
+      rendered++
+    })
+    if (!rendered) {
+      const li = document.createElement('li')
+      li.className = 'qa-empty'
+      li.textContent = '—'
+      this.$dialog.append(li)
+    }
+  }
+
+  /**
+   * A one-shot trigger row (icon + label).
+   * @returns {HTMLLIElement}
+   */
+  _triggerRow (editor, id, meta, disabled) {
+    const li = document.createElement('li')
+    if (disabled) li.classList.add('disabled')
+    const a = document.createElement('a')
+    a.href = `#${id}`
+    const icon = document.createElement('span')
+    icon.className = 'qa-icon'
+    a.append(icon)
+    const label = document.createElement('span')
+    label.className = 'qa-label'
+    label.textContent = meta.label
+    a.append(label)
+    if (meta.src) this._loadIcon(icon, meta.src)
+    li.append(a)
+    svgEditor.$click(a, (e) => {
+      e.preventDefault()
+      this._hide()
+      runFavoriteTrigger(editor, id)
+    })
+    return li
+  }
+
+  /**
+   * A value-control row hosting a live widget seeded from the selection.
+   * @returns {HTMLLIElement}
+   */
+  _valueRow (editor, id, meta, disabled) {
+    const li = document.createElement('li')
+    li.className = 'qa-value'
+    if (disabled) li.classList.add('disabled')
+    const label = document.createElement('span')
+    label.className = 'qa-vlabel'
+    label.textContent = meta.label
+    li.append(label)
+    const ctrl = VALUE_CONTROLS[id]
+    const widget = ctrl.create(editor)
+    li.append(widget)
+    widget.addEventListener('change', ctrl.onChange(editor))
+    // Seed after the widget is connected so its shadow DOM / paintBox exist.
+    requestAnimationFrame(() => {
+      try {
+        ctrl.seed(widget, editor)
+      } catch (err) {
+        console.error('Failed to seed favorite value control', id, err)
+      }
+    })
+    return li
+  }
+
+  /**
+   * Inject an inline icon (cached) into a row's icon slot.
+   * @returns {Promise<void>}
+   */
+  async _loadIcon (host, src) {
+    const url = `${svgEditor.configObj.curConfig.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      host.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = ''
+      host.replaceChildren(img)
+    }
   }
 }
 

@@ -12,13 +12,15 @@ svgedit/
 │   ├── Editor.js                  # Main class (extends EditorStartup) — menus, events, top-level handlers
 │   ├── EditorStartup.js           # Async init sequence — panels, canvas, extensions, i18n
 │   ├── ConfigObj.js               # Configuration + localStorage preferences
-│   ├── MainMenu.js                # File-menu operations (export, doc props, prefs, hotkey manager)
+│   ├── MainMenu.js                # File-menu operations (export, doc props, prefs, hotkey manager, favorites)
 │   ├── Hotkeys.js                 # HotkeyManager — central registry + dispatcher for all keyboard shortcuts
+│   ├── favorites.js               # Quick-action favorites store (load/save/toggle; svg-edit-favorites)
+│   ├── favoriteActions.js         # Catalog of favoritable actions (registry superset: triggers + value controls)
 │   ├── Rulers.js                  # Canvas ruler rendering
 │   ├── themeUtil.js               # applyTheme() helper — canonical way to switch light/dark
-│   ├── userDataAdapter.js         # Registry for optional host storage adapter (palette + user shapes + hotkeys); localStorage fallback
+│   ├── userDataAdapter.js         # Registry for optional host storage adapter (palette + user shapes + hotkeys + favorites); localStorage fallback
 │   ├── locale.js                  # i18next setup and language loading
-│   ├── contextmenu.js             # Right-click context menu
+│   ├── contextmenu.js             # Extension custom-handler hook for context-menu actions (see also dialogs/cmenuDialog.js — the canvas quick-action menu)
 │   │
 │   ├── panels/                    # 4 UI panels (each has .js + .html)
 │   │   ├── TopPanel.js/.html      # Horizontal toolbar — all shape + text attribute panels
@@ -94,8 +96,9 @@ svgedit/
 | **BottomPanel** | `panels/BottomPanel.js/.html` | "Colors" bar: fill/stroke/background color pickers + quick palette only |
 | **RightPanel** | `panels/RightPanel.js/.html` | Tabbed properties panel (**Design / Text / Effects / Layers**). `activateTab`/`autoSelectTab` switch tabs; shape-dimension, stroke, text, blur, clip/mask, boolean, layers sections live in the tab containers; ext-shadow/ext-color-shift inject into `#tab_effects` |
 | **TabletShell** | `panels/TabletShell.js/.html` + `tablet.css` + `uiMode.js` | Optional touch-first shell (command bar + contextual bottom sheet) layered over `#workarea`. A presentation layer only — every control calls an existing `svgCanvas.*`/`editor.*` method. Toggled from the SVG-Edit menu (`MainMenu.clickTabletMode` → `applyUiMode` + `tabletMode` pref); shown only while `.svg_editor` has the `ui-tablet` class. Hides the four desktop panels via CSS |
-| **MainMenu** | `MainMenu.js` | Export, Preferences, Tablet mode, Hotkey Manager |
-| **HotkeyManager** | `Hotkeys.js` | Single registry + dispatcher for **all** keyboard shortcuts. Ingests `Editor.shortcuts` (editor-level, incl. curated keyless dropdown/context commands) and **every** `se-button` (pushed via `registerEl` on connect, bindable even with no default `shortcut`) + `se-menu-item[shortcut]`; installs one document keydown listener (replacing the old per-button + `setAll()` listeners); does conflict detection and per-user overrides (persisted via `userDataAdapter` `getHotkeys`/`setHotkeys` or localStorage `svg-edit-hotkeys`). Read by `se-hotkey-dialog` |
+| **MainMenu** | `MainMenu.js` | Export, Preferences, Tablet mode, Hotkey Manager, Favorites |
+| **HotkeyManager** | `Hotkeys.js` | Single registry + dispatcher for **all** keyboard shortcuts. Ingests `Editor.shortcuts` (editor-level, incl. curated keyless dropdown/context commands) and **every** `se-button` (pushed via `registerEl` on connect, bindable even with no default `shortcut`) + `se-menu-item[shortcut]`; installs one document keydown listener (replacing the old per-button + `setAll()` listeners); does conflict detection and per-user overrides (persisted via `userDataAdapter` `getHotkeys`/`setHotkeys` or localStorage `svg-edit-hotkeys`). Read by `se-hotkey-dialog`. Exposes `getAction(id)` for the favorites menu |
+| **Favorites / quick-action menu** | `favorites.js`, `favoriteActions.js`, `dialogs/favoritesDialog.js`, `dialogs/cmenuDialog.js` | Canvas right-click menu rebuilt per-open from user-starred favorites. `favoriteActions.js` catalog = hotkey registry superset (triggers + paste + live value controls). `se-favorites-dialog` curates the list (star toggles); `se-cmenu_canvas-dialog` renders it. Persisted via `userDataAdapter` `getFavorites`/`setFavorites` or localStorage `svg-edit-favorites` |
 | **Components** | `components/*.js` | Reusable shadow-DOM web elements (buttons, inputs, selects, color pickers) |
 | **Dialogs** | `dialogs/*.js` | Modal dialogs (export, prefs, image props, SVG source, alerts) |
 | **Extensions** | `extensions/ext-*/` | Plugin system — adds tools, UI, and canvas behaviors |
@@ -190,11 +193,12 @@ See [extensions.md](extensions.md) for the full extension reference.
 
 ## Host data persistence (`userDataAdapter`)
 
-By default the editor persists three pieces of user customization to its own
+By default the editor persists four pieces of user customization to its own
 `localStorage`: the **custom palette** (`sePalette.js`, key
 `svg-edit-custom-palette`), the **saved shape library** (`userShapes.js`, key
-`svg-edit-user-shapes`), and **hotkey overrides** (`Hotkeys.js`, key
-`svg-edit-hotkeys`).
+`svg-edit-user-shapes`), **hotkey overrides** (`Hotkeys.js`, key
+`svg-edit-hotkeys`), and **quick-action favorites** (`favorites.js`, key
+`svg-edit-favorites`).
 
 An embedding host that wants this data in *its own* store (so it survives
 updates / syncs) passes an adapter via `setConfig`:
@@ -203,13 +207,14 @@ updates / syncs) passes an adapter via `setConfig`:
 setConfig({ userDataAdapter: {
   getPalette (), setPalette (overrides),       // sync read / fire-and-forget write
   getUserShapes (), setUserShapes (store),
-  getHotkeys (), setHotkeys (overrides)        // hotkey overrides { id: [keys] }
+  getHotkeys (), setHotkeys (overrides),       // hotkey overrides { id: [keys] }
+  getFavorites (), setFavorites (ids)          // quick-action favorites [id, …]
 }})
 ```
 
 `EditorStartup.init()` registers it once into the `userDataAdapter.js` module
 registry **before** any component is constructed; `sePalette.js`,
-`userShapes.js`, and `Hotkeys.js` resolve it via `getUserDataAdapter()`. Reads
+`userShapes.js`, `Hotkeys.js`, and `favorites.js` resolve it via `getUserDataAdapter()`. Reads
 are synchronous; writes receive the full current state on every edit. Each
 method is independent and optional — a host can implement only some. When no
 adapter (or method) is set, that data falls back to the localStorage behavior

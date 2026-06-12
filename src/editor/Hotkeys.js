@@ -303,6 +303,17 @@ export default class HotkeyManager {
   /* -------------------------------------------------------------- effective */
 
   /**
+   * The registered descriptor for an action id (or undefined). Used by the
+   * quick-action favorites menu to resolve an id to its live label / element /
+   * editor handler.
+   * @param {string} id
+   * @returns {HotkeyAction|undefined}
+   */
+  getAction (id) {
+    return this.actions.get(id)
+  }
+
+  /**
    * The effective canonical keys for an action (override if set, else default).
    * @param {string} id
    * @returns {string[]}

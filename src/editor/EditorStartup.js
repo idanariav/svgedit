@@ -165,6 +165,11 @@ class EditorStartup {
       hotkeyDialog.setAttribute('id', 'se-hotkey-dialog')
       this.$container.append(hotkeyDialog)
       hotkeyDialog.init(this.i18next)
+      // Favorites manager dialog added to DOM
+      const favoritesDialog = document.createElement('se-favorites-dialog')
+      favoritesDialog.setAttribute('id', 'se-favorites-dialog')
+      this.$container.append(favoritesDialog)
+      favoritesDialog.init(this.i18next)
     } catch (err) {
       console.error(err)
     }

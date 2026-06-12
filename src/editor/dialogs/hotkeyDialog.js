@@ -28,10 +28,16 @@ export class SeHotkeyDialog extends HTMLElement {
     this.$close = this._shadowRoot.querySelector('#hk_close')
     this.$done = this._shadowRoot.querySelector('#hk_done')
     this.$resetAll = this._shadowRoot.querySelector('#hk_reset_all')
+    this.$search = this._shadowRoot.querySelector('#hk_search')
+    this.$filterAssigned = this._shadowRoot.querySelector('#hk_filter_assigned')
+    this.$filterText = this._shadowRoot.querySelector('#hk_filter_text')
     // When set, the dialog is recording a new key for { id }; { error } holds
     // a transient conflict message to show under that row.
     this._recording = null
     this._captureHandler = null
+    // Search / filter state.
+    this._query = ''
+    this._assignedOnly = false
   }
 
   /**
@@ -43,6 +49,8 @@ export class SeHotkeyDialog extends HTMLElement {
     this.$done.textContent = i18next.t('common.ok')
     this.$resetAll.textContent = i18next.t('hotkeys.reset_all')
     this.$close.setAttribute('aria-label', i18next.t('common.cancel'))
+    this.$search.setAttribute('placeholder', i18next.t('hotkeys.search'))
+    this.$filterText.textContent = i18next.t('hotkeys.assigned_only')
   }
 
   static get observedAttributes () {
@@ -76,18 +84,40 @@ export class SeHotkeyDialog extends HTMLElement {
     })
     // Delegate row actions (add / remove / reset).
     this.$list.addEventListener('click', (e) => this._onListClick(e))
+    this.$search.addEventListener('input', () => {
+      this._query = this.$search.value
+      this._render()
+    })
+    this.$filterAssigned.addEventListener('change', () => {
+      this._assignedOnly = this.$filterAssigned.checked
+      this._render()
+    })
   }
 
-  /** Build the grouped list of actions. */
+  /** Build the grouped list of actions, applying the search / filter. */
   _render () {
     const hk = svgEditor?.hotkeys
     if (!hk) return
+    const q = this._query.trim().toLowerCase()
     const groups = hk.listForUi()
-    const html = groups.map((g) => {
+      .map((g) => ({
+        group: g.group,
+        actions: g.actions.filter((a) => {
+          // "Assigned" = has an effective binding or a fixed (readonly) one.
+          if (this._assignedOnly && !(a.keys.length || a.readonly)) return false
+          if (q && !a.label.toLowerCase().includes(q)) return false
+          return true
+        })
+      }))
+      .filter((g) => g.actions.length)
+    if (!groups.length) {
+      this.$list.innerHTML = `<div class="hk-empty">${escapeHtml(t('hotkeys.no_results'))}</div>`
+      return
+    }
+    this.$list.innerHTML = groups.map((g) => {
       const rows = g.actions.map((a) => this._rowHtml(a)).join('')
       return `<div class="hk-group-title">${escapeHtml(g.group)}</div>${rows}`
     }).join('')
-    this.$list.innerHTML = html
   }
 
   /** @param {object} a a UI action snapshot */

@@ -280,6 +280,13 @@ export class SESpinInput extends HTMLElement {
    */
   connectedCallback () {
     const shadow = this.$input.shadowRoot
+    if (!shadow) {
+      // Dynamically-created instances (e.g. in the quick-action menu) connect
+      // before the inner elix spin box has upgraded; retry next frame once its
+      // shadow root exists.
+      requestAnimationFrame(() => this.connectedCallback())
+      return
+    }
     const childNodes = Array.from(shadow.childNodes)
     childNodes.forEach((childNode) => {
       if (childNode?.id === 'input') {

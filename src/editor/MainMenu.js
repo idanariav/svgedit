@@ -172,6 +172,7 @@ class MainMenu {
         <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
         <se-menu-item id="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
         <se-menu-item id="tool_hotkeys" label="tools.hotkey_manager" src="keyboard.svg"></se-menu-item>
+        <se-menu-item id="tool_favorites" label="tools.favorites_manager" src="star.svg"></se-menu-item>
         <se-menu-item id="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
     </se-menu>`
     this.editor.$svgEditor.append(template.content.cloneNode(true))
@@ -190,6 +191,9 @@ class MainMenu {
     $click($id('tool_tablet_mode'), this.clickTabletMode.bind(this))
     $click($id('tool_hotkeys'), function () {
       $id('se-hotkey-dialog').setAttribute('dialog', 'open')
+    })
+    $click($id('tool_favorites'), function () {
+      $id('se-favorites-dialog').setAttribute('dialog', 'open')
     })
     $id('tool_editor_prefs').addEventListener(
       'click',

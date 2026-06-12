@@ -2,17 +2,22 @@
     .contextMenu {
         position: fixed;
         z-index: 99999;
-        border: solid 1px rgba(0, 0, 0, .33);
-        background: rgba(255, 255, 255, .95);
+        min-width: 200px;
+        border: solid 1px var(--chrome-border, rgba(0, 0, 0, .33));
+        background: var(--chrome-bg, rgba(255, 255, 255, .98));
+        color: var(--fg, #222);
         padding: 5px 0;
         margin: 0px;
         display: none;
         font: 12px/15px Lucida Sans, Helvetica, Verdana, sans-serif;
         border-radius: 5px;
-        -moz-border-radius: 5px;
-        -moz-box-shadow: 2px 5px 10px rgba(0, 0, 0, .3);
-        -webkit-box-shadow: 2px 5px 10px rgba(0, 0, 0, .3);
         box-shadow: 2px 5px 10px rgba(0, 0, 0, .3);
+    }
+
+    .contextMenu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
     }
 
     .contextMenu li {
@@ -21,101 +26,100 @@
         margin: 0px;
     }
 
-    .contextMenu .shortcut {
-        width: 115px;
-        text-align: right;
-        float: right;
-    }
-
     .contextMenu a {
         -moz-user-select: none;
         -webkit-user-select: none;
         user-select: none;
-        color: #222;
+        color: var(--fg, #222);
         text-decoration: none;
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         line-height: 20px;
-        height: 20px;
-        background-position: 6px center;
-        background-repeat: no-repeat;
+        min-height: 20px;
         outline: none;
-        padding: 0px 15px 1px 20px;
-    }
-
-    .contextMenu li.hover a {
-        background-color: #2e5dea;
-        color: white;
+        padding: 2px 15px 2px 12px;
         cursor: default;
     }
 
+    .contextMenu a .qa-icon {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--icon, #4B5563);
+        flex-shrink: 0;
+    }
+
+    .contextMenu a .qa-icon svg,
+    .contextMenu a .qa-icon img {
+        width: 16px;
+        height: 16px;
+        display: block;
+    }
+
+    .contextMenu a .qa-label {
+        flex: 1 1 auto;
+        white-space: nowrap;
+    }
+
+    .contextMenu li:not(.disabled) a:hover {
+        background-color: var(--accent, #2e5dea);
+        color: #fff;
+    }
+
+    .contextMenu li:not(.disabled) a:hover .qa-icon {
+        color: #fff;
+    }
+
     .contextMenu li.disabled a {
-        color: #999;
+        color: var(--muted, #999);
         pointer-events: none;
     }
 
-    .contextMenu li.hover.disabled a {
-        background-color: transparent;
+    .contextMenu li.disabled a .qa-icon {
+        opacity: .5;
+    }
+
+    /* Value-control rows host a live widget (stroke width, colour…). */
+    .contextMenu li.qa-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+    }
+
+    .contextMenu li.qa-value.disabled {
+        opacity: .5;
+        pointer-events: none;
+    }
+
+    .contextMenu li.qa-value .qa-vlabel {
+        flex-shrink: 0;
+        min-width: 54px;
+        color: var(--muted, #6b7280);
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .contextMenu li.qa-value se-spin-input {
+        flex: 1 1 auto;
+        min-width: 90px;
+    }
+
+    .contextMenu .qa-empty {
+        padding: 4px 15px;
+        color: var(--muted, #999);
+        font-style: italic;
     }
 
     .contextMenu li.separator {
-        border-top: solid 1px #E3E3E3;
+        border-top: solid 1px var(--chrome-border, #E3E3E3);
         padding-top: 5px;
         margin-top: 5px;
     }
 </style>
-<ul id="cmenu_canvas" class="contextMenu">
-    <li>
-        <a href="#cut" id="se-cut">
-            <span class="shortcut">META+X</span>
-        </a>
-    </li>
-    <li>
-        <a href="#copy" id="se-copy">
-            <span class="shortcut">META+C</span>
-        </a>
-    </li>
-    <li>
-        <a href="#paste" id="se-paste"></a>
-    </li>
-    <li>
-        <a href="#paste_in_place" id="se-paste-in-place"></a>
-    </li>
-    <li class="separator">
-        <a href="#delete" id="se-delete">
-            <span class="shortcut">BACKSPACE</span>
-        </a>
-    </li>
-    <li class="separator">
-        <a href="#group" id="se-group">
-            <span class="shortcut">G</span>
-        </a>
-    </li>
-    <li>
-        <a href="#ungroup" id="se-ungroup">
-            <span class="shortcut">G</span>
-        </a>
-    </li>
-    <li class="separator">
-        <a href="#move_front" id="se-move-front">
-            <span class="shortcut">CTRL+SHFT+]</span>
-        </a>
-    </li>
-    <li>
-        <a href="#move_up" id="se-move-up">
-            <span class="shortcut">CTRL+]</span>
-        </a>
-    </li>
-    <li>
-        <a href="#move_down" id="se-move-down">
-            <span class="shortcut">CTRL+[</span>
-        </a>
-    </li>
-    <li>
-        <a href="#move_back" id="se-move-back">
-            <span class="shortcut">CTRL+SHFT+[</span>
-        </a>
-    </li>
-    <li class="separator disabled">
-        <a href="#add_to_shape_library" id="se-add-to-shape-library">Add to Shape Library</a>
-    </li>
-</ul>
+<ul id="cmenu_canvas" class="contextMenu"></ul>

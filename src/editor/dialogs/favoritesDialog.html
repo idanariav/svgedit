@@ -3,14 +3,14 @@
         display: none;
     }
 
-    #hotkey_dialog::part(frame) {
+    #favorites_dialog::part(frame) {
         padding: 0;
         background: transparent;
         border: none;
         box-shadow: none;
     }
 
-    #hk_container {
+    #fav_container {
         width: 560px;
         max-width: 90vw;
         max-height: 80vh;
@@ -25,7 +25,7 @@
         overflow: hidden;
     }
 
-    #hk_header {
+    #fav_header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -33,12 +33,12 @@
         border-bottom: 1px solid var(--chrome-border, #e0e0e0);
     }
 
-    #hk_title {
+    #fav_title {
         font-size: 15px;
         font-weight: 600;
     }
 
-    #hk_close {
+    #fav_close {
         border: none;
         background: transparent;
         color: var(--muted, #6b7280);
@@ -49,20 +49,25 @@
         border-radius: 6px;
     }
 
-    #hk_close:hover {
+    #fav_close:hover {
         background: var(--icon-hover-bg, #eef1f5);
         color: var(--fg, #1B1F24);
     }
 
-    #hk_toolbar {
+    #fav_hint {
+        padding: 10px 16px 0;
+        color: var(--muted, #6b7280);
+        font-size: 12px;
+    }
+
+    #fav_toolbar {
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 10px 16px;
-        border-bottom: 1px solid var(--chrome-border, #e0e0e0);
     }
 
-    #hk_search {
+    #fav_search {
         flex: 1 1 auto;
         min-width: 0;
         padding: 6px 10px;
@@ -74,11 +79,11 @@
         outline: none;
     }
 
-    #hk_search:focus {
+    #fav_search:focus {
         border-color: var(--accent, #2563eb);
     }
 
-    #hk_filter {
+    #fav_filter {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -89,20 +94,20 @@
         user-select: none;
     }
 
-    .hk-empty {
+    .fav-empty {
         color: var(--muted, #9ca3af);
         font-style: italic;
         padding: 16px 0;
         text-align: center;
     }
 
-    #hk_list {
+    #fav_list {
         overflow-y: auto;
         padding: 8px 16px;
         flex: 1 1 auto;
     }
 
-    .hk-group-title {
+    .fav-group-title {
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -111,7 +116,7 @@
         margin: 14px 0 4px;
     }
 
-    .hk-row {
+    .fav-row {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -119,101 +124,50 @@
         border-bottom: 1px solid var(--chrome-border, #f0f0f0);
     }
 
-    .hk-label {
+    .fav-label {
         flex: 1 1 auto;
         min-width: 0;
     }
 
-    .hk-keys {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        justify-content: flex-end;
-        align-items: center;
-    }
-
-    .hk-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 6px;
-        background: var(--field-bg, #f3f4f6);
-        border: 1px solid var(--field-border, #d1d5db);
-        border-radius: 5px;
-        font-family: ui-monospace, Menlo, monospace;
-        font-size: 12px;
-        white-space: nowrap;
-    }
-
-    .hk-chip-remove {
+    .fav-star {
         border: none;
         background: transparent;
-        color: var(--muted, #6b7280);
+        color: var(--muted, #9ca3af);
         cursor: pointer;
-        font-size: 12px;
-        line-height: 1;
-        padding: 0;
-    }
-
-    .hk-chip-remove:hover {
-        color: var(--accent, #2563eb);
-    }
-
-    .hk-none {
-        color: var(--muted, #9ca3af);
-        font-style: italic;
-        font-size: 12px;
-    }
-
-    .hk-readonly {
-        color: var(--muted, #9ca3af);
-        font-size: 12px;
-        font-family: ui-monospace, Menlo, monospace;
-    }
-
-    .hk-btn {
-        border: 1px solid var(--field-border, #d1d5db);
-        background: var(--field-bg, #fff);
-        color: var(--fg, #1B1F24);
+        padding: 2px;
+        line-height: 0;
         border-radius: 6px;
-        padding: 3px 8px;
-        font-size: 12px;
-        cursor: pointer;
-        white-space: nowrap;
+        flex-shrink: 0;
     }
 
-    .hk-btn:hover {
+    .fav-star:hover {
         background: var(--icon-hover-bg, #eef1f5);
-    }
-
-    .hk-row-actions {
-        display: flex;
-        gap: 4px;
-    }
-
-    .hk-recording {
         color: var(--accent, #2563eb);
-        font-size: 12px;
-        font-style: italic;
-        padding: 2px 6px;
     }
 
-    .hk-conflict {
-        color: #d33;
-        font-size: 11px;
-        margin-top: 2px;
-        text-align: right;
+    .fav-star.is-fav {
+        color: var(--accent, #2563eb);
     }
 
-    #hk_footer {
+    .fav-star.is-fav svg {
+        fill: currentColor;
+    }
+
+    .fav-star svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+    }
+
+    #fav_footer {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         padding: 12px 16px;
         border-top: 1px solid var(--chrome-border, #e0e0e0);
     }
 
-    #hk_done {
+    #fav_done {
         background: var(--accent, #2563eb);
         color: #fff;
         border: none;
@@ -222,35 +176,21 @@
         font-size: 13px;
         cursor: pointer;
     }
-
-    #hk_reset_all {
-        background: transparent;
-        border: 1px solid var(--field-border, #d1d5db);
-        color: var(--fg, #1B1F24);
-        border-radius: 6px;
-        padding: 6px 12px;
-        font-size: 13px;
-        cursor: pointer;
-    }
-
-    #hk_reset_all:hover {
-        background: var(--icon-hover-bg, #eef1f5);
-    }
 </style>
-<elix-dialog id="hotkey_dialog" aria-label="Hotkey Manager" closed>
-    <div id="hk_container">
-        <div id="hk_header">
-            <span id="hk_title">Keyboard shortcuts</span>
-            <button id="hk_close" aria-label="Close">✕</button>
+<elix-dialog id="favorites_dialog" aria-label="Favorites" closed>
+    <div id="fav_container">
+        <div id="fav_header">
+            <span id="fav_title">Favorites</span>
+            <button id="fav_close" aria-label="Close">✕</button>
         </div>
-        <div id="hk_toolbar">
-            <input id="hk_search" type="text" placeholder="Search" autocomplete="off" />
-            <label id="hk_filter"><input id="hk_filter_assigned" type="checkbox" /><span id="hk_filter_text">Assigned only</span></label>
+        <div id="fav_hint"></div>
+        <div id="fav_toolbar">
+            <input id="fav_search" type="text" placeholder="Search" autocomplete="off" />
+            <label id="fav_filter"><input id="fav_filter_fav" type="checkbox" /><span id="fav_filter_text">Favorited only</span></label>
         </div>
-        <div id="hk_list"></div>
-        <div id="hk_footer">
-            <button id="hk_reset_all">Reset all</button>
-            <button id="hk_done">Done</button>
+        <div id="fav_list"></div>
+        <div id="fav_footer">
+            <button id="fav_done">Done</button>
         </div>
     </div>
 </elix-dialog>

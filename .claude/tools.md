@@ -216,12 +216,14 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 | `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
 | `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
 | `tool_hotkeys` | Open the **Hotkey Manager** (`se-hotkey-dialog`) | — |
+| `tool_favorites` | Open the **Favorites** manager (`se-favorites-dialog`) | — |
 | `tool_editor_prefs` | Editor Preferences | — |
 
 **Hotkey Manager** (`tool_hotkeys` → opens `se-hotkey-dialog`, `dialogs/hotkeyDialog.js`):
 lists every registered action grouped by category and lets the user add (via a key
 recorder), remove, reset, or reset-all its hotkeys; an action may hold multiple keys
-and a combo already bound elsewhere is blocked. All shortcut dispatch is owned by the
+and a combo already bound elsewhere is blocked. A **search box** and an **"Assigned
+only"** filter (label substring + bound/decorative check) narrow the list. All shortcut dispatch is owned by the
 central `HotkeyManager` (`Hotkeys.js`). Three sources feed it:
 - **Editor-level** entries in the `Editor.shortcuts` array (nudge/rotate/clone/zoom/
   cut/copy/select-all/escape, plus the curated **keyless** commands that live in
@@ -239,6 +241,24 @@ standalone, localStorage `svg-edit-hotkeys`. **To give a button a default shortc
 add a `shortcut="…"` attribute; to merely make it bindable, nothing is needed —
 registration is automatic from its `id`.** Group buckets live in `GROUP_BY_ID` /
 `GROUP_ORDER` in `Hotkeys.js`; add an `id` there to place a new button's row.
+
+**Favorites + canvas quick-action menu** (`tool_favorites` → `se-favorites-dialog`,
+`dialogs/favoritesDialog.js`): the right-click menu on the canvas
+(`se-cmenu_canvas-dialog`, `dialogs/cmenuDialog.js`) is no longer static — it is
+rebuilt on every open from the user's **favorites** (`favorites.js`, localStorage
+`svg-edit-favorites` or `userDataAdapter` `getFavorites`/`setFavorites`; seeded with
+cut/copy/paste/delete when empty). The Favorites dialog lists every favoritable
+action grouped by category with a star toggle each; a **search box** and a
+**"Favorited only"** filter narrow the list. The catalog (`favoriteActions.js`)
+is a **superset of the hotkey registry**: all registry actions (executed via
+`getAction(id)`'s `run()`/`el.click()`), plus `EXTRA_TRIGGERS` (paste, which has no
+registry entry) and `VALUE_CONTROLS` — stroke width / fill / stroke colour rendered
+as **live widgets** (`se-spin-input` / `se-colorpicker`) seeded from the selection and
+wired to the same `BottomPanel` handlers, so the value is adjustable in the menu
+without opening a panel. Rows for selection-dependent actions are disabled when
+nothing is selected (except `ALWAYS_ENABLED`: paste, select-all, zoom). To add a new
+value control, extend `VALUE_CONTROLS` with `{ group, labelKey, src, create, seed,
+onChange }`.
 
 **Tablet mode** (`MainMenu.clickTabletMode`): flips `applyUiMode` (`uiMode.js`) and
 persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
