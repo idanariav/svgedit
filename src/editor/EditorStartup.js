@@ -706,9 +706,7 @@ class EditorStartup {
         this.rulers.display(false)
       }
 
-      if (this.configObj.curConfig.showRulers) {
-        $editDialog.setAttribute('showrulers', true)
-      }
+      $editDialog.setAttribute('showrulers', this.configObj.curConfig.showRulers ? 'true' : 'false')
 
       if (this.configObj.curConfig.baseUnit) {
         $editDialog.setAttribute('baseunit', this.configObj.curConfig.baseUnit)

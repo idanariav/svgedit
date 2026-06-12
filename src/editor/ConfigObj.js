@@ -166,7 +166,7 @@ export default class ConfigObj {
       gridColor: '#000',
       baseUnit: 'px',
       snappingStep: 10,
-      showRulers: true,
+      showRulers: false,
       hideTitle: false, // Hide the drawing-name (e.g. "untitled.svg") panel in the top bar; useful when the host UI already shows the filename
 
       // SOURCE OUTPUT BEHAVIOR

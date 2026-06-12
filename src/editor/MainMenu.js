@@ -63,7 +63,10 @@ class MainMenu {
     // set ruler / unit settings (grid settings live in the grid-settings popover)
     this.editor.configObj.curConfig.showRulers = showrulers
     if (this.editor.configObj.curConfig.showRulers) {
+      this.editor.rulers.display(true)
       this.editor.rulers.updateRulers()
+    } else {
+      this.editor.rulers.display(false)
     }
     this.editor.configObj.curConfig.baseUnit = baseunit
     this.editor.svgCanvas.setConfig(this.editor.configObj.curConfig)
