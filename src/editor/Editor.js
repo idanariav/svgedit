@@ -1154,7 +1154,8 @@ class Editor extends EditorStartup {
     } else {
       this.curContext = null
     }
-    $id('cur_context_panel').style.display = context ? 'block' : 'none'
+    // The layer > group breadcrumb is not useful in this fork — keep it hidden.
+    $id('cur_context_panel').style.display = 'none'
     $id('cur_context_panel').innerHTML = linkStr
   }
 
