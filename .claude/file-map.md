@@ -11,12 +11,13 @@
 | `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `ConfigObj.js` | `pref(key)`, `setConfig(obj)`, localStorage persistence (~24KB) |
-| `MainMenu.js` | Export, Preferences, **Tablet mode toggle** (`clickTabletMode`) (~5KB) |
+| `MainMenu.js` | Export, Preferences, **Tablet mode toggle** (`clickTabletMode`), **Hotkey Manager** launcher (`tool_hotkeys` → opens `se-hotkey-dialog`) (~5KB) |
+| `Hotkeys.js` | `HotkeyManager` — single registry for all keyboard shortcuts. Ingests the editor-level `Editor.shortcuts` array + component `[shortcut]` buttons (pushed via `registerEl`), owns one document keydown dispatcher, conflict detection, per-user overrides, and the read API for `se-hotkey-dialog`. Persists overrides via `userDataAdapter` (`getHotkeys`/`setHotkeys`) or localStorage `svg-edit-hotkeys`. Exports `formatHotkey` |
 | `Rulers.js` | Canvas ruler rendering and tick marks |
 | `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
 | `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell). Mirrors `themeUtil.js`; persistence of the `tabletMode` pref is the caller's job |
 | `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
-| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette + saved shapes in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js` + `userShapes.js` |
+| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette, saved shapes, **and hotkey overrides** (`getHotkeys`/`setHotkeys`) in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js`, `userShapes.js` + `Hotkeys.js` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |
@@ -80,6 +81,7 @@
 | `imageImportDialog.js` | **Insert image** dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
 | `insertImage.js` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink })` — inserts a vault drawing as real, editable elements (individual directly-selectable shapes in the layer, defs → canvas `<defs>`, undoable) for the host's "Unlocked" import mode |
 | `svgSourceDialog.js` | View/edit raw SVG source |
+| `hotkeyDialog.js` | **Hotkey Manager** modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback. Pure view over `Editor.hotkeys` (`Hotkeys.js`) |
 | `seAlertDialog.js` | Alert dialog (OK only) |
 | `seConfirmDialog.js` | Confirm dialog (OK / Cancel) |
 | `sePromptDialog.js` | Prompt dialog (text input) |

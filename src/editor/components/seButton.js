@@ -1,7 +1,6 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { isMac } from '@svgedit/svgcanvas/common/browser'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -193,17 +192,16 @@ export class ToolButton extends HTMLElement {
   set size (value) { this.setAttribute('size', value) }
 
   connectedCallback () {
-    const shortcut = this.getAttribute('shortcut')
-    if (shortcut) {
-      document.addEventListener('keydown', (e) => {
-        if (e.target.nodeName !== 'BODY') return
-        // Treat the platform "command" modifier as the shortcut's `ctrl+`
-        // prefix: Cmd (metaKey) on Mac, Ctrl (ctrlKey) elsewhere.
-        const cmdDown = isMac() ? e.metaKey : e.ctrlKey
-        const key = `${cmdDown ? 'ctrl+' : ''}${e.key.toUpperCase()}`
-        if (shortcut !== key) return
-        this.click()
-        e.preventDefault()
+    // Register this button as a hotkey-able action with the central
+    // HotkeyManager — whether or not it ships a default `shortcut`, so every
+    // toolbar/panel action can be listed and (re)bound from the Hotkey Manager.
+    // Late-loading extension buttons register themselves the same way.
+    if (this.id) {
+      svgEditor?.hotkeys?.registerEl({
+        id: this.id,
+        el: this,
+        label: this.getAttribute('title'),
+        rawKey: this.getAttribute('shortcut')
       })
     }
   }

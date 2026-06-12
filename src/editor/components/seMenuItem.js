@@ -153,23 +153,14 @@ export class SeMenuItem extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    // capture shortcuts
-    const shortcut = this.getAttribute('shortcut')
-    if (shortcut) {
-      // register the keydown event
-      document.addEventListener('keydown', (e) => {
-        // only track keyboard shortcuts for the body containing the SVG-Editor
-        if (e.target.nodeName !== 'BODY') return
-        // normalize key
-        const key = `${(e.metaKey) ? 'meta+' : ''}${(e.ctrlKey) ? 'ctrl+' : ''}${(e.shiftKey) ? 'shift+' : ''}${e.key.toUpperCase()}`
-        if (shortcut !== key) return
-        // launch the click event
-        if (this.id) {
-          // Click this very menu item (a global getElementById(this.id) could
-          // resolve to another editor's item with the same id).
-          this.click()
-        }
-        e.preventDefault()
+    // Shortcut dispatch is owned by the central HotkeyManager; register this
+    // menu item's action so it can be listed, rebound, or removed.
+    if (this.id && this.hasAttribute('shortcut')) {
+      svgEditor?.hotkeys?.registerEl({
+        id: this.id,
+        el: this,
+        label: this.getAttribute('label'),
+        rawKey: this.getAttribute('shortcut')
       })
     }
   }

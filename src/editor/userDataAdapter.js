@@ -1,7 +1,8 @@
 /**
  * userDataAdapter.js — module-level registry for an optional host storage
- * adapter used to persist user customizations (custom palette colors and the
- * saved shape library) outside the editor's own `localStorage`.
+ * adapter used to persist user customizations (custom palette colors, the
+ * saved shape library, and custom hotkey bindings) outside the editor's own
+ * `localStorage`.
  *
  * A consumer supplies the adapter through `setConfig({ userDataAdapter })`; the
  * editor registers it here once during `init()` (see EditorStartup.js). Both the
@@ -18,8 +19,14 @@
  *     getPalette(): object,                     // overrides map, e.g. { 6: '#abc' }
  *     setPalette(overrides: object): void,      // full overrides map
  *     getUserShapes(): { categories, shapes },  // user shape store
- *     setUserShapes(store): void                // full store
+ *     setUserShapes(store): void,               // full store
+ *     getHotkeys(): object,                     // overrides map, e.g. { tool_rect: ['r'] }
+ *     setHotkeys(overrides: object): void       // full overrides map
  *   }
+ *
+ * `getHotkeys`/`setHotkeys` back the Hotkey Manager (see `Hotkeys.js`). They are
+ * optional like the others: when absent (or no adapter at all) hotkey bindings
+ * fall back to `localStorage` key `svg-edit-hotkeys`.
  */
 
 let _adapter = null

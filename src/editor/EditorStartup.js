@@ -159,6 +159,12 @@ class EditorStartup {
       imageImportDialog.setAttribute('id', 'se-image-import-dialog')
       this.$container.append(imageImportDialog)
       imageImportDialog.init(this.i18next)
+
+      // Hotkey Manager dialog added to DOM
+      const hotkeyDialog = document.createElement('se-hotkey-dialog')
+      hotkeyDialog.setAttribute('id', 'se-hotkey-dialog')
+      this.$container.append(hotkeyDialog)
+      hotkeyDialog.init(this.i18next)
     } catch (err) {
       console.error(err)
     }

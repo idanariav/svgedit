@@ -118,10 +118,10 @@ export default class ConfigObj {
       * @property {boolean} [layerView=false] Set for 'ext-layer_view.js'; determines whether or not only current layer is shown by default
       *   Set and used in `svgcanvas.js` (`mouseUp`).
       * @property {?module:SVGEditor.UserDataAdapter} [userDataAdapter=null] Optional host storage adapter for persisting user customizations
-      *   (custom palette colors and the saved shape library) outside the editor's own `localStorage`. When `null`, both fall back to `localStorage`
-      *   (keys `svg-edit-custom-palette` and `svg-edit-user-shapes`). Reads are synchronous; writes are called with the full current state on every edit
+      *   (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage`. When `null`, all fall back to `localStorage`
+      *   (keys `svg-edit-custom-palette`, `svg-edit-user-shapes`, `svg-edit-hotkeys`). Reads are synchronous; writes are called with the full current state on every edit
       *   and may be persisted asynchronously by the host. Registered once during `init()`; see `userDataAdapter.js`. Shape:
-      *   `{ getPalette(): object, setPalette(overrides: object): void, getUserShapes(): {categories, shapes}, setUserShapes(store): void }`.
+      *   `{ getPalette(): object, setPalette(overrides: object): void, getUserShapes(): {categories, shapes}, setUserShapes(store): void, getHotkeys(): object, setHotkeys(overrides: object): void }`.
      */
     const defaultExtPath = (() => {
       if (typeof document === 'undefined' || !document.baseURI) return './extensions'

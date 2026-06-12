@@ -1,0 +1,210 @@
+<style>
+    :not(:defined) {
+        display: none;
+    }
+
+    #hotkey_dialog::part(frame) {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    #hk_container {
+        width: 560px;
+        max-width: 90vw;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--chrome-bg, #fff);
+        color: var(--fg, #1B1F24);
+        border: 1px solid var(--chrome-border, #d0d0d0);
+        border-radius: 10px;
+        font-family: var(--ui-font, Verdana, Helvetica, sans-serif);
+        font-size: 13px;
+        overflow: hidden;
+    }
+
+    #hk_header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--chrome-border, #e0e0e0);
+    }
+
+    #hk_title {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    #hk_close {
+        border: none;
+        background: transparent;
+        color: var(--muted, #6b7280);
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    #hk_close:hover {
+        background: var(--icon-hover-bg, #eef1f5);
+        color: var(--fg, #1B1F24);
+    }
+
+    #hk_list {
+        overflow-y: auto;
+        padding: 8px 16px;
+        flex: 1 1 auto;
+    }
+
+    .hk-group-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted, #6b7280);
+        margin: 14px 0 4px;
+    }
+
+    .hk-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--chrome-border, #f0f0f0);
+    }
+
+    .hk-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .hk-keys {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .hk-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 6px;
+        background: var(--field-bg, #f3f4f6);
+        border: 1px solid var(--field-border, #d1d5db);
+        border-radius: 5px;
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .hk-chip-remove {
+        border: none;
+        background: transparent;
+        color: var(--muted, #6b7280);
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .hk-chip-remove:hover {
+        color: var(--accent, #2563eb);
+    }
+
+    .hk-none {
+        color: var(--muted, #9ca3af);
+        font-style: italic;
+        font-size: 12px;
+    }
+
+    .hk-readonly {
+        color: var(--muted, #9ca3af);
+        font-size: 12px;
+        font-family: ui-monospace, Menlo, monospace;
+    }
+
+    .hk-btn {
+        border: 1px solid var(--field-border, #d1d5db);
+        background: var(--field-bg, #fff);
+        color: var(--fg, #1B1F24);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .hk-btn:hover {
+        background: var(--icon-hover-bg, #eef1f5);
+    }
+
+    .hk-row-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .hk-recording {
+        color: var(--accent, #2563eb);
+        font-size: 12px;
+        font-style: italic;
+        padding: 2px 6px;
+    }
+
+    .hk-conflict {
+        color: #d33;
+        font-size: 11px;
+        margin-top: 2px;
+        text-align: right;
+    }
+
+    #hk_footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-top: 1px solid var(--chrome-border, #e0e0e0);
+    }
+
+    #hk_done {
+        background: var(--accent, #2563eb);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 16px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    #hk_reset_all {
+        background: transparent;
+        border: 1px solid var(--field-border, #d1d5db);
+        color: var(--fg, #1B1F24);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    #hk_reset_all:hover {
+        background: var(--icon-hover-bg, #eef1f5);
+    }
+</style>
+<elix-dialog id="hotkey_dialog" aria-label="Hotkey Manager" closed>
+    <div id="hk_container">
+        <div id="hk_header">
+            <span id="hk_title">Keyboard shortcuts</span>
+            <button id="hk_close" aria-label="Close">✕</button>
+        </div>
+        <div id="hk_list"></div>
+        <div id="hk_footer">
+            <button id="hk_reset_all">Reset all</button>
+            <button id="hk_done">Done</button>
+        </div>
+    </div>
+</elix-dialog>

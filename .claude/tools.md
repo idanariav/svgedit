@@ -215,7 +215,30 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 |----|------|----------|
 | `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
 | `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
+| `tool_hotkeys` | Open the **Hotkey Manager** (`se-hotkey-dialog`) | — |
 | `tool_editor_prefs` | Editor Preferences | — |
+
+**Hotkey Manager** (`tool_hotkeys` → opens `se-hotkey-dialog`, `dialogs/hotkeyDialog.js`):
+lists every registered action grouped by category and lets the user add (via a key
+recorder), remove, reset, or reset-all its hotkeys; an action may hold multiple keys
+and a combo already bound elsewhere is blocked. All shortcut dispatch is owned by the
+central `HotkeyManager` (`Hotkeys.js`). Three sources feed it:
+- **Editor-level** entries in the `Editor.shortcuts` array (nudge/rotate/clone/zoom/
+  cut/copy/select-all/escape, plus the curated **keyless** commands that live in
+  dropdowns or the canvas context menu — move-to-front/back, switch z-order, the six
+  aligns, add-to-shape-library — which ship unbound and run via direct `svgCanvas`/
+  `topPanel` calls).
+- **Every `se-button`** auto-registers in `connectedCallback` via
+  `svgEditor.hotkeys.registerEl(...)` — **whether or not it has a `shortcut`
+  attribute** — so every toolbar/panel/extension action is listable and bindable
+  (its `shortcut="…"`, if any, is the default; otherwise it shows *Unassigned*).
+- **`se-menu-item`** with a `shortcut`.
+
+Overrides persist through the `userDataAdapter` (`getHotkeys`/`setHotkeys`) or,
+standalone, localStorage `svg-edit-hotkeys`. **To give a button a default shortcut,
+add a `shortcut="…"` attribute; to merely make it bindable, nothing is needed —
+registration is automatic from its `id`.** Group buckets live in `GROUP_BY_ID` /
+`GROUP_ORDER` in `Hotkeys.js`; add an `id` there to place a new button's row.
 
 **Tablet mode** (`MainMenu.clickTabletMode`): flips `applyUiMode` (`uiMode.js`) and
 persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
