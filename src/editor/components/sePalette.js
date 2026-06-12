@@ -82,6 +82,70 @@ const saveOverrides = (overrides) => {
   }
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+// A solid override is a hex/'none' string; a gradient override is a JSON-safe
+// object so it survives the localStorage / host-adapter round-trip.
+const isGradientOverride = (val) =>
+  !!val && typeof val === 'object' && typeof val.xml === 'string'
+
+// Rehydrate a stored gradient definition into a live SVG element. Wrapping the
+// markup in an <svg> guarantees the element lands in the SVG namespace.
+const gradientElFromXml = (xml) => {
+  try {
+    const doc = new DOMParser().parseFromString(
+      `<svg xmlns="${SVG_NS}">${xml}</svg>`, 'image/svg+xml'
+    )
+    return doc.querySelector('linearGradient, radialGradient')
+  } catch {
+    return null
+  }
+}
+
+// Build a CSS gradient string so a swatch can preview the stored gradient.
+const gradientToCss = (el) => {
+  if (!el) return null
+  const stops = Array.from(el.querySelectorAll('stop')).map((stop) => {
+    const offset = parseFloat(stop.getAttribute('offset') || '0')
+    const style = stop.getAttribute('style') || ''
+    const colorMatch = style.match(/stop-color:\s*(#?[0-9a-fA-F]{3,8})/)
+    const color = colorMatch
+      ? colorMatch[1]
+      : (stop.getAttribute('stop-color') || '#000000')
+    const hex = color.startsWith('#') ? color : `#${color}`
+    return `${hex} ${Math.round(offset * 100)}%`
+  })
+  if (stops.length < 2) return null
+  const list = stops.join(', ')
+  if (el.tagName.toLowerCase() === 'radialgradient') {
+    return `radial-gradient(circle, ${list})`
+  }
+  // SVG x1/y1→x2/y2 (y axis points down) → CSS angle (0deg = to top, clockwise).
+  const dx = parseFloat(el.getAttribute('x2') ?? '1') - parseFloat(el.getAttribute('x1') ?? '0')
+  const dy = parseFloat(el.getAttribute('y2') ?? '0') - parseFloat(el.getAttribute('y1') ?? '0')
+  const deg = (Math.round(Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360
+  return `linear-gradient(${deg}deg, ${list})`
+}
+
+// Reconstruct a Paint from a stored override (gradient object or color string).
+const paintFromOverride = (val) => {
+  if (isGradientOverride(val)) {
+    const el = gradientElFromXml(val.xml)
+    if (el) {
+      return new Paint(
+        val.type === 'radialGradient'
+          ? { radialGradient: el, alpha: val.alpha ?? 100 }
+          : { linearGradient: el, alpha: val.alpha ?? 100 }
+      )
+    }
+  }
+  const color = typeof val === 'string' ? val : 'none'
+  return new Paint({
+    alpha: 100,
+    solidColor: color === 'none' ? null : color.slice(1)
+  })
+}
+
 const NONE_SWATCH_SVG = 'data:image/svg+xml;charset=utf-8;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgY2xhc3M9InN2Z19pY29uIj48c3ZnIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+CiAgICA8bGluZSBmaWxsPSJub25lIiBzdHJva2U9IiNkNDAwMDAiIGlkPSJzdmdfOTAiIHkyPSIyNCIgeDI9IjI0IiB5MT0iMCIgeDE9IjAiLz4KICAgIDxsaW5lIGlkPSJzdmdfOTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0MDAwMCIgeTI9IjI0IiB4Mj0iMCIgeTE9IjAiIHgxPSIyNCIvPgogIDwvc3ZnPjwvc3ZnPg=='
 
 const PENCIL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l11-11-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>'
@@ -353,17 +417,22 @@ export class SEPalette extends HTMLElement {
     swatch.classList.add('palette_item')
     const customised = this.isCustomised(i)
     if (customised) swatch.classList.add('is-customised')
-    if (color === 'none') {
+    if (isGradientOverride(color)) {
+      const cssGrad = gradientToCss(gradientElFromXml(color.xml))
+      if (cssGrad) swatch.style.backgroundImage = cssGrad
+      swatch.dataset.rgb = 'gradient'
+    } else if (color === 'none') {
       const img = document.createElement('img')
       img.src = NONE_SWATCH_SVG
       img.style.width = '15px'
       img.style.height = '15px'
       img.alt = 'No color'
       swatch.append(img)
+      swatch.dataset.rgb = color
     } else {
       swatch.style.backgroundColor = color
+      swatch.dataset.rgb = color
     }
-    swatch.dataset.rgb = color
     swatch.dataset.index = String(i)
     svgEditor.$click(swatch, (evt) => this._onSwatchClick(evt, i))
     swatch.addEventListener('contextmenu', (evt) => this._onSwatchContextMenu(evt, i))
@@ -406,7 +475,15 @@ export class SEPalette extends HTMLElement {
       this._openEditDialog(i)
       return
     }
-    let color = this.getColor(i)
+    const val = this.getColor(i)
+    if (isGradientOverride(val)) {
+      this.dispatchEvent(new CustomEvent('change', {
+        detail: { picker: this._target, paint: paintFromOverride(val) },
+        bubbles: false
+      }))
+      return
+    }
+    let color = val
     if (color === 'none' || color === 'transparent' || color === 'initial') {
       color = 'none'
     }
@@ -425,16 +502,24 @@ export class SEPalette extends HTMLElement {
   _openEditDialog (i) {
     const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
     root.querySelector('se-color-dialog')?.remove()
-    const color = this.getColor(i)
     const dialog = document.createElement('se-color-dialog')
-    dialog.paint = new Paint({ alpha: 100, solidColor: color.slice(1) })
+    // Seed with the swatch's current value so the dialog opens on the matching
+    // tab (solid / linear / radial) and gradients stay editable.
+    dialog.paint = paintFromOverride(this.getColor(i))
     dialog.type = 'fill'
     dialog.i18next = svgEditor.i18next
     ;(root.body ?? root).appendChild(dialog)
     dialog.addEventListener('change', (evt) => {
       const paint = evt.detail.paint
-      if (paint?.type !== 'solidColor' || !paint.solidColor) return
-      this._overrides[i] = '#' + paint.solidColor
+      if (paint?.type === 'solidColor' && paint.solidColor) {
+        this._overrides[i] = '#' + paint.solidColor
+      } else if (paint?.type === 'linearGradient' || paint?.type === 'radialGradient') {
+        const el = paint[paint.type]
+        if (!el) return
+        this._overrides[i] = { type: paint.type, xml: el.outerHTML, alpha: paint.alpha ?? 100 }
+      } else {
+        return
+      }
       saveOverrides(this._overrides)
       this.renderSwatches()
     }, { once: true })

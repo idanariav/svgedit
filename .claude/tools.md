@@ -143,7 +143,7 @@ Design tab below).
 | `fill_color` | Fill color swatch | Opens color picker; shows `none` swatch for no fill |
 | `stroke_color` | Stroke color swatch | Same picker |
 | `bg_color` | Background color | Sets canvas background — paints both the document rect (for export) and the surrounding `#svgcanvas` surface for a uniform look |
-| `palette` | Color palette | Quick color swatches. A **target button** (right of the pencil) cycles the destination a clicked swatch paints — fill → stroke → background → fill — its icon reflecting the active target. The pencil toggles edit mode (recolor swatches; a global reset appears while editing if any overrides exist) |
+| `palette` | Color palette | Quick color swatches. A **target button** (right of the pencil) cycles the destination a clicked swatch paints — fill → stroke → background → fill — its icon reflecting the active target. The pencil toggles edit mode. In edit mode a swatch opens the full color dialog, so an override can be a **solid color or a linear/radial gradient** (gradients are stored as `{type, xml, alpha}` and render as a CSS-gradient swatch; clicking dispatches a ready-made `Paint`). A global reset appears while editing if any overrides exist |
 
 ---
 

@@ -176,7 +176,21 @@ class BottomPanel {
     const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
     // `picker` is the destination chosen via the palette's target button.
-    const { picker, color } = e.detail
+    const { picker, color, paint: incomingPaint } = e.detail
+    // Gradient swatches dispatch a ready-made Paint instead of a color string.
+    if (incomingPaint) {
+      if (picker === 'background') {
+        $id('bg_color').setPaint(incomingPaint)
+        if (incomingPaint.type === 'linearGradient' || incomingPaint.type === 'radialGradient') {
+          this.editor.setBackground('gradient', '', incomingPaint[incomingPaint.type], true)
+        }
+        return
+      }
+      $id(picker === 'fill' ? 'fill_color' : 'stroke_color').setPaint(incomingPaint)
+      this.editor.svgCanvas.setPaint(picker, incomingPaint)
+      this.updateToolButtonState()
+      return
+    }
     // Webkit-based browsers returned 'initial' here for no stroke
     const paint =
       color === 'none'
