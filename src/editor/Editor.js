@@ -923,6 +923,10 @@ class Editor extends EditorStartup {
     // which also runs on attribute edits and would yank the user off Design
     // mid-edit (e.g. when changing a text object's stroke width).
     this.rightPanel.autoSelectTab(this.selectedElement, this.multiselected)
+    // Some tools (e.g. curvature/path, text) commit a new element by firing
+    // only 'selected', not 'changed', so refresh the empty-canvas watermark
+    // here too — otherwise it lingers after drawing with those tools.
+    this.updateCanvasWatermark()
     this.svgCanvas.runExtensions(
       'selectedChanged',
       /** @type {module:svgcanvas.SvgCanvas#event:ext_selectedChanged} */ {
