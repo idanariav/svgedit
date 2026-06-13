@@ -134,6 +134,12 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 | `rulerY` | `#rulers .ruler_y` | Vertical ruler |
 | `workarea` | `#workarea` | Canvas scroll area |
 | `side` | `#sidepanels` | Right side panel (layers, overview; collapsible) |
+
+**Empty-canvas watermark** — `#canvas_watermark` is an absolutely-positioned,
+`pointer-events:none` overlay inside `#svgcanvas` (centered, `opacity:0.07`) whose
+background image is the full-color brand `logo.svg`. Hidden by default; gets the
+`.visible` class only while the drawing has no objects. Toggled by
+`Editor.updateCanvasWatermark()` (called on `changed`/`afterClear` and at startup).
 | `bottom` | `#tools_bottom` | Bottom status bar |
 
 **Open state** (side panel expanded): adds class `.open` to `.svg_editor`, changing column 5 from `15px` to `220px`.

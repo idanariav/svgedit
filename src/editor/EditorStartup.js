@@ -1058,6 +1058,8 @@ class EditorStartup {
    */
   async extAndLocaleFunc () {
     this.$svgEditor.style.visibility = 'visible'
+    // Show the brand watermark on the initially-empty canvas.
+    this.updateCanvasWatermark()
     try {
       // load standard extensions
       await Promise.all(

@@ -30,6 +30,7 @@ import TabletShell from './panels/TabletShell.js'
 import MainMenu from './MainMenu.js'
 import HotkeyManager from './Hotkeys.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
+import { getIconDataUri } from './images/iconRegistry.js'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -1013,6 +1014,8 @@ class Editor extends EditorStartup {
       this.bottomPanel.updateColorpickers()
     }
 
+    this.updateCanvasWatermark()
+
     this.svgCanvas.runExtensions(
       'elementChanged',
       /** @type {module:svgcanvas.SvgCanvas#event:ext_elementChanged} */ {
@@ -1034,9 +1037,27 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * Show the faint brand watermark on the canvas only while the drawing has no
+   * objects yet (e.g. a freshly opened document). Lazily sets the background
+   * image on first call, then toggles visibility on every content change.
+   * @returns {void}
+   */
+  updateCanvasWatermark () {
+    const el = this.$id('canvas_watermark')
+    if (!el) return
+    if (!el.style.backgroundImage) {
+      const uri = getIconDataUri('logo.svg')
+      if (uri) el.style.backgroundImage = `url("${uri}")`
+    }
+    const isEmpty = this.svgCanvas.getVisibleElements().length === 0
+    el.classList.toggle('visible', isEmpty)
+  }
+
+  /**
    * @returns {void}
    */
   afterClear (win) {
+    this.updateCanvasWatermark()
     this.svgCanvas.runExtensions('afterClear')
   }
 

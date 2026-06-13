@@ -333,6 +333,25 @@
   position: relative;
 }
 
+/* Brand watermark — centered on the empty page, behind nothing (sits above the
+   paper background). Hidden by default; shown via #canvas_watermark.visible when
+   the drawing has no objects yet. Never intercepts pointer events. */
+#canvas_watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: none;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 160px 160px;
+  opacity: 0.07;
+}
+
+#canvas_watermark.visible {
+  display: block;
+}
+
 /* The document page itself — tracks the canvas size and zoom level. */
 #canvasBackground {
   filter: var(--paper-shadow-filter);
@@ -694,7 +713,6 @@ hr {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
 }
 
 #logo svg,

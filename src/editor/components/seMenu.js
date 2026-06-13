@@ -2,6 +2,7 @@
 import 'elix/define/MenuItem.js'
 import './sePlainMenuButton.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { getRawIcon } from '../images/iconRegistry.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -87,11 +88,22 @@ export class SeMenu extends HTMLElement {
   async _loadIcon (src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
+    // The brand logo is a full-color mark — inline it raw so it keeps its own
+    // colors, rather than running it through the monochrome currentColor
+    // normaliser used for toolbar icons.
+    const raw = getRawIcon(url)
+    if (raw) {
+      const doc = new DOMParser().parseFromString(raw, 'image/svg+xml')
+      const svgEl = doc.querySelector('svg')
+      if (svgEl) {
+        svgEl.style.cssText = 'width:22px;height:22px;display:block;'
+        this.$label.prepend(svgEl)
+        return
+      }
+    }
     const svgEl = await fetchSvgEl(url)
     if (svgEl) {
-      // Make the logo mark use accent color
-      svgEl.style.cssText = 'width:22px;height:22px;display:block;color:var(--accent,#2962FF);'
-      svgEl.setAttribute('stroke', 'currentColor')
+      svgEl.style.cssText = 'width:22px;height:22px;display:block;'
       this.$label.prepend(svgEl)
     } else {
       const img = new Image()

@@ -1,6 +1,9 @@
 <div class="svg_editor">
   <div id="workarea">
-    <div id="svgcanvas"></div>
+    <div id="svgcanvas">
+      <!-- Faint brand watermark shown only on an empty drawing (no objects yet). -->
+      <div id="canvas_watermark" aria-hidden="true"></div>
+    </div>
   </div>
   <!-- Not visible, but still used (text edit buffer). Lives at the editor root
        (not inside a panel) so it stays focusable when a panel is hidden — e.g.
