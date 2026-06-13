@@ -679,6 +679,10 @@ const mouseUpEvent = (evt) => {
   const useUnit = false // (svgCanvas.getCurConfig().baseUnit !== 'px');
   svgCanvas.setStarted(false)
   let t
+  // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
+  // Resize must be flattened via recalculateDimensions (which bakes the scale into
+  // real attributes like width/height/font-size), not consolidated into a matrix.
+  const operationMode = svgCanvas.getCurrentMode()
   switch (svgCanvas.getCurrentMode()) {
     // intentionally fall-through to select here
     case 'resize':
@@ -741,8 +745,15 @@ const mouseUpEvent = (evt) => {
             // For groups, we always consolidate the transforms (recalculateDimensions returns null for groups)
             const isGroup = elem.tagName === 'g' || elem.tagName === 'a'
 
-            // If element has 2+ transforms, or is a group with a drag translate, consolidate
-            if ((tlist.numberOfItems > 1 && hasDragTranslate) || (isGroup && hasDragTranslate)) {
+            // If element has 2+ transforms, or is a group with a drag translate, consolidate.
+            // Skip this for non-group resize: a resize tlist is [translate, scale, translate]
+            // and would wrongly match here, baking a matrix onto the element instead of letting
+            // recalculateDimensions scale its attributes (width/height/font-size/…). Groups keep
+            // consolidating (recalculateDimensions returns null for them).
+            if (
+              (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate) ||
+              (isGroup && hasDragTranslate)
+            ) {
               const consolidatedMatrix = transformListToTransform(tlist).matrix
 
               // Clear the transform list
@@ -776,6 +787,12 @@ const mouseUpEvent = (evt) => {
 
           if (!batchCmd.isEmpty()) {
             svgCanvas.addCommandToHistory(batchCmd)
+            // A resize bakes the scale into real attributes (font-size, width, height, …)
+            // via recalculateDimensions. Fire 'changed' so the context panel reflects the
+            // new values instead of the pre-resize ones.
+            if (operationMode === 'resize') {
+              svgCanvas.call('changed', selectedElements.filter(Boolean))
+            }
           }
 
           // Clear the stored transforms AND reset the flag together

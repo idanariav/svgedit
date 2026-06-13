@@ -386,7 +386,10 @@ class TopPanel {
             'value',
             elem.getAttribute('text-anchor')
           )
-          $id('font_size').value = elem.getAttribute('font-size')
+          // Show at most 1 decimal so resized sizes read "20.4" not "20.41258606"
+          $id('font_size').value = Number(
+            parseFloat(elem.getAttribute('font-size')).toFixed(1)
+          )
           $id('tool_letter_spacing').value =
             elem.getAttribute('letter-spacing') ?? 0
           $id('tool_word_spacing').value =
