@@ -498,6 +498,10 @@ class Editor extends EditorStartup {
     const success = this.svgCanvas.setSvgString(str) !== false
     if (success) {
       this.updateCanvas()
+      // Loading replaces the whole drawing without firing elementChanged, so
+      // refresh the empty-canvas brand watermark to match the new content
+      // (otherwise it lingers when a non-empty drawing is loaded).
+      this.updateCanvasWatermark()
       return
     }
     if (!noAlert) seAlert(this.i18next.t('notification.errorLoadingSVG'))
