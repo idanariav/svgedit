@@ -174,7 +174,7 @@ export default {
     reorient_path: '调整路径',
     ungroup: '取消组合元素',
     docprops: '文档属性',
-    editor_homepage: 'SVG-Edit 主页',
+    editor_homepage: 'Sketch Editor 主页',
     move_bottom: '移至底部',
     move_top: '移至顶部',
     node_clone: '复制节点',
@@ -317,7 +317,7 @@ export default {
     exportNoforeignObject: 'foreignObject 元素将不会显示',
     exportNoDashArray: '描边将显示为填充效果',
     exportNoText: '文字显示可能与预期不符',
-    editorPreferencesMsg: '默认情况下，只要您的设备支持，SVG-Edit 会将您的编辑偏好设置和 SVG 内容本地保存在您的电脑上，这样您每次重新打开 SVG-Edit 时，就无需再费力重新设置或导入内容了。但如果您出于隐私考虑，不希望这些信息留在您的设备上，只需在下方切换选项，轻松关闭这一默认功能即可！',
+    editorPreferencesMsg: '默认情况下，只要您的设备支持，Sketch Editor 会将您的编辑偏好设置和 SVG 内容本地保存在您的电脑上，这样您每次重新打开 Sketch Editor 时，就无需再费力重新设置或导入内容了。但如果您出于隐私考虑，不希望这些信息留在您的设备上，只需在下方切换选项，轻松关闭这一默认功能即可！',
     source_dialog_note: '将此框中的内容复制到文本编辑器中，然后以 .svg 为扩展名保存该文件。'
   }
 }

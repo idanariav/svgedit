@@ -174,7 +174,7 @@ export default {
     reorient_path: 'Réorienter le chemin',
     ungroup: 'Dégrouper les éléments',
     docprops: 'Propriétés du document',
-    editor_homepage: "Page d'accueil de SVG-Edit",
+    editor_homepage: "Page d'accueil de Sketch Editor",
     move_bottom: 'Déplacer vers le bas',
     move_top: 'Déplacer vers le haut',
     node_clone: 'Cloner le nœud',
@@ -320,7 +320,7 @@ export default {
     exportNoforeignObject: 'foreignObject elements will not appear',
     exportNoDashArray: 'Strokes will appear filled',
     exportNoText: 'Text may not appear as expected',
-    editorPreferencesMsg: 'By default and where supported, SVG-Edit can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load SVG-Edit. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
+    editorPreferencesMsg: 'By default and where supported, Sketch Editor can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load Sketch Editor. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
     source_dialog_note: 'Copy the contents of this box into a text editor, then save the file with a .svg extension.'
   }
 }

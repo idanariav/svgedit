@@ -174,7 +174,7 @@ export default {
     reorient_path: 'Reorient path',
     ungroup: '그룹 해제 요소',
     docprops: '문서 속성',
-    editor_homepage: 'SVG-Edit Home Page',
+    editor_homepage: 'Sketch Editor Home Page',
     move_bottom: '아래로 이동',
     move_top: '상단으로 이동',
     node_clone: 'Clone Node',
@@ -319,7 +319,7 @@ export default {
     exportNoforeignObject: 'foreignObject elements will not appear',
     exportNoDashArray: 'Strokes will appear filled',
     exportNoText: 'Text may not appear as expected',
-    editorPreferencesMsg: 'By default and where supported, SVG-Edit can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load SVG-Edit. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
+    editorPreferencesMsg: 'By default and where supported, Sketch Editor can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load Sketch Editor. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
     source_dialog_note: 'Copy the contents of this box into a text editor, then save the file with a .svg extension.'
   }
 }

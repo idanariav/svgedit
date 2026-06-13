@@ -317,7 +317,7 @@ export default {
     exportNoforeignObject: 'foreignObject-element kommer inte att visas',
     exportNoDashArray: 'Strokes kommer att visas fyllda',
     exportNoText: 'Text kanske inte visas som förväntat',
-    editorPreferencesMsg: 'Som standard och där det stöds kan SVG-Edit lagra dina redigeringsinställningar och SVG-innehåll lokalt på din maskin så att du inte behöver lägga till dessa igen varje gång du laddar SVG-Edit. Om du av integritetsskäl inte vill lagra denna information på din maskin kan du byta bort från standardalternativet nedan.',
+    editorPreferencesMsg: 'Som standard och där det stöds kan Sketch Editor lagra dina redigeringsinställningar och SVG-innehåll lokalt på din maskin så att du inte behöver lägga till dessa igen varje gång du laddar Sketch Editor. Om du av integritetsskäl inte vill lagra denna information på din maskin kan du byta bort från standardalternativet nedan.',
     source_dialog_note: 'Kopiera innehållet i den här rutan till en textredigerare och spara sedan filen med filtillägget .svg.'
   }
 }

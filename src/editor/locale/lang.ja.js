@@ -174,7 +174,7 @@ export default {
     reorient_path: '現在の角度を０度とする',
     ungroup: 'グループ化を解除',
     docprops: '文書のプロパティ',
-    editor_homepage: 'SVG-Edit Home Page',
+    editor_homepage: 'Sketch Editor Home Page',
     move_bottom: '奥に移動',
     move_top: '手前に移動',
     node_clone: 'ノードを複製',
@@ -317,7 +317,7 @@ export default {
     exportNoforeignObject: 'foreignObject elements will not appear',
     exportNoDashArray: 'Strokes will appear filled',
     exportNoText: 'Text may not appear as expected',
-    editorPreferencesMsg: 'By default and where supported, SVG-Edit can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load SVG-Edit. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
+    editorPreferencesMsg: 'By default and where supported, Sketch Editor can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load Sketch Editor. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
     source_dialog_note: 'Copy the contents of this box into a text editor, then save the file with a .svg extension.'
   }
 }

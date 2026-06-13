@@ -168,7 +168,7 @@ class MainMenu {
     // add Top panel
     const template = document.createElement('template')
     template.innerHTML = `
-    <se-menu id="main_button" label="SVG-Edit" src="logo.svg" alt="logo">
+    <se-menu id="main_button" label="Sketch Editor" src="logo.svg" alt="logo">
         <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
         <se-menu-item id="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
         <se-menu-item id="tool_hotkeys" label="tools.hotkey_manager" src="keyboard.svg"></se-menu-item>

@@ -171,7 +171,7 @@ export default {
     reorient_path: 'Path yeniden yönlendir',
     ungroup: 'Ögelerin Grubunu çöz',
     docprops: 'Belge Seçenekleri',
-    editor_homepage: 'SVG-Edit Ana Sayfası',
+    editor_homepage: 'Sketch Editor Ana Sayfası',
     move_bottom: 'Alta gönder',
     move_top: 'Öne gönder',
     node_clone: 'Düğüm Klonla',
@@ -317,7 +317,7 @@ export default {
     exportNoforeignObject: 'foreignObject ögeleri görüntülenmeyecek',
     exportNoDashArray: "Çizgiler 'sürekli' görüntülenecek",
     exportNoText: 'Metin beklenildiği şekilde görüntülenmeyebilir',
-    editorPreferencesMsg: "Varsayılan olarak ve destekleniyorsa, SVG-Edit seçimlerinizi ve SVG dosyayı bilgisayarınızda yerel olarak kaydedebilir dolayısıyla SVG-Edit'i her açtığınızda tekrar yüklemek zorunda değilsiniz. Eğer gizlilik gereği bu özelliği kapatmak isterseniz aşağıdaki seçeneklerden yapabilrisiniz.",
+    editorPreferencesMsg: "Varsayılan olarak ve destekleniyorsa, Sketch Editor seçimlerinizi ve SVG dosyayı bilgisayarınızda yerel olarak kaydedebilir dolayısıyla Sketch Editor'i her açtığınızda tekrar yüklemek zorunda değilsiniz. Eğer gizlilik gereği bu özelliği kapatmak isterseniz aşağıdaki seçeneklerden yapabilrisiniz.",
     source_dialog_note: 'Bu kutu içeriğini metin düzenleyiciye kopyalayın, sonra dosyayı .svg eklentisi ile kaydedin.'
   }
 }

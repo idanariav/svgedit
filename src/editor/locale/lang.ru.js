@@ -174,7 +174,7 @@ export default {
     reorient_path: 'Изменить ориентацию контура',
     ungroup: 'Разгруппировать элементы',
     docprops: 'Свойства документа',
-    editor_homepage: 'SVG-Edit Home Page',
+    editor_homepage: 'Sketch Editor Home Page',
     move_bottom: 'Опустить',
     move_top: 'Поднять',
     node_clone: 'Создать копию узла',
@@ -319,7 +319,7 @@ export default {
     exportNoforeignObject: 'foreignObject элементы не отобразятся',
     exportNoDashArray: 'Strokes will appear filled',
     exportNoText: 'Текст может показываться не так как должен',
-    editorPreferencesMsg: 'By default and where supported, SVG-Edit can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load SVG-Edit. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
+    editorPreferencesMsg: 'By default and where supported, Sketch Editor can store your editor preferences and SVG content locally on your machine so you do not need to add these back each time you load Sketch Editor. If, for privacy reasons, you do not wish to store this information on your machine, you can change away from the default option below.',
     source_dialog_note: 'Скопируйте содержмиое этого блока в текстовый редактор, затем сохраните файл с расширением .svg.'
   }
 }
