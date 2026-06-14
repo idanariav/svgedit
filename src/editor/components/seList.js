@@ -263,12 +263,29 @@ export class SeList extends HTMLElement {
     const selectedContainerPosition = this.$selection.getBoundingClientRect()
     const optionsContainerPosition = this.$optionsContainer.getBoundingClientRect()
     // list is bottom of frame - needs to open from above
-    if (selectedContainerPosition.bottom + optionsContainerPosition.height > windowHeight) {
-      this.$optionsContainer.style.top = selectedContainerPosition.top - optionsContainerPosition.height + 'px'
-      this.$optionsContainer.style.left = selectedContainerPosition.left + 'px'
-    } else {
-      this.$optionsContainer.style.top = selectedContainerPosition.bottom + 'px'
-      this.$optionsContainer.style.left = selectedContainerPosition.left + 'px'
+    const left = selectedContainerPosition.left
+    const top = selectedContainerPosition.bottom + optionsContainerPosition.height > windowHeight
+      ? selectedContainerPosition.top - optionsContainerPosition.height
+      : selectedContainerPosition.bottom
+    // `left`/`top` are viewport coordinates, but a `position: fixed` element is
+    // resolved against the nearest ancestor that establishes a containing block
+    // (any transform/filter/contain/perspective/will-change). Embedders such as
+    // Obsidian — or their themes — routinely set those on a pane, which would
+    // otherwise fling this list far off the trigger. Re-measure and correct by
+    // the delta so it lands under the trigger regardless of the containing block.
+    // A scaled ancestor makes one delta over/undershoot, so iterate until the
+    // residual is sub-pixel (converges in a couple of rounds).
+    let styleLeft = left
+    let styleTop = top
+    for (let i = 0; i < 4; i++) {
+      this.$optionsContainer.style.left = `${styleLeft}px`
+      this.$optionsContainer.style.top = `${styleTop}px`
+      const after = this.$optionsContainer.getBoundingClientRect()
+      const dx = left - after.left
+      const dy = top - after.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) break
+      styleLeft += dx
+      styleTop += dy
     }
   }
 

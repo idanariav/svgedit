@@ -488,8 +488,29 @@ class SeClassSelect extends HTMLElement {
     if (top + pop.height > window.innerHeight - 8) {
       top = Math.max(8, anchor.top - pop.height - gap)
     }
-    this.$popover.style.top = `${top}px`
-    this.$popover.style.left = `${left}px`
+    // `left`/`top` are viewport coordinates, but a `position: fixed` element is
+    // resolved against the nearest ancestor that establishes a containing block
+    // (any transform/filter/contain/perspective/will-change). Embedders such as
+    // Obsidian — or their themes — routinely set those on a pane, which would
+    // otherwise fling this popover far off the trigger. Re-measure and correct by
+    // the delta so it lands under the trigger regardless of the containing block.
+    //
+    // A single correction is exact when the containing block is only translated,
+    // but a scaled ancestor (UI zoom, a `scale()` pane transform) makes one delta
+    // over/undershoot. Iterate: the residual shrinks each pass and converges in a
+    // couple of rounds, so cap the loop and bail once it's within a pixel.
+    let styleLeft = left
+    let styleTop = top
+    for (let i = 0; i < 4; i++) {
+      this.$popover.style.left = `${styleLeft}px`
+      this.$popover.style.top = `${styleTop}px`
+      const after = this.$popover.getBoundingClientRect()
+      const dx = left - after.left
+      const dy = top - after.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) break
+      styleLeft += dx
+      styleTop += dy
+    }
   }
 
   handleClose (e) {

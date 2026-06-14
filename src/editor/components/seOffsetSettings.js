@@ -225,8 +225,26 @@ class SeOffsetSettings extends HTMLElement {
         : Math.max(margin, window.innerHeight - pop.height - margin)
     }
 
-    this.$popup.style.top = `${top}px`
-    this.$popup.style.left = `${left}px`
+    // `left`/`top` are viewport coordinates, but a `position: fixed` element is
+    // resolved against the nearest ancestor that establishes a containing block
+    // (any transform/filter/contain/perspective/will-change). Embedders such as
+    // Obsidian — or their themes — routinely set those on a pane, which would
+    // otherwise fling this popup far off the trigger. Re-measure and correct by
+    // the delta so it lands under the trigger regardless of the containing block.
+    // A scaled ancestor makes one delta over/undershoot, so iterate until the
+    // residual is sub-pixel (converges in a couple of rounds).
+    let styleLeft = left
+    let styleTop = top
+    for (let i = 0; i < 4; i++) {
+      this.$popup.style.left = `${styleLeft}px`
+      this.$popup.style.top = `${styleTop}px`
+      const after = this.$popup.getBoundingClientRect()
+      const dx = left - after.left
+      const dy = top - after.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) break
+      styleLeft += dx
+      styleTop += dy
+    }
   }
 
   apply () {
