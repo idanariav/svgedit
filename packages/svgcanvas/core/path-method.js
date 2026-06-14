@@ -925,36 +925,6 @@ export const init = (canvas) => {
   * @param {Integer} index
   * @returns {void}
   */
-  deleteSeg (index) {
-    const seg = this.segs[index]
-    const list = this.elem.pathSegList
-
-    seg.show(false)
-    const { next } = seg
-    if (seg.mate) {
-      // Make the next point be the "M" point
-      const pt = [next.item.x, next.item.y]
-      replacePathSegMethod(2, next.index, pt)
-
-      // Reposition last node
-      replacePathSegMethod(4, seg.index, pt)
-
-      list.removeItem(seg.mate.index)
-    } else if (!seg.prev) {
-      // First node of open path, make next point the M
-      // const {item} = seg;
-      const pt = [next.item.x, next.item.y]
-      replacePathSegMethod(2, seg.next.index, pt)
-      list.removeItem(index)
-    } else {
-      list.removeItem(index)
-    }
-  }
-
-  /**
-  * @param {Integer} index
-  * @returns {void}
-  */
   removePtFromSelection (index) {
     const pos = this.selected_pts.indexOf(index)
     if (pos === -1) {

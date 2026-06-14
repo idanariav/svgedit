@@ -127,9 +127,19 @@ Stays in the top bar (it is a transient mode toolbar, not a property).
 | `path_node_x` / `path_node_y` | Node X / Y coordinate |
 | `seg_type` | Segment type: Straight (4) / Curve (6) |
 | `tool_node_clone` | Clone node |
-| `tool_node_delete` | Delete node |
+| `tool_node_delete` | Delete node — **severs** the path at the node (also bound to `Backspace`/`Delete` while in pathedit mode) |
 | `tool_openclose_path` | Toggle open / closed path |
 | `tool_add_subpath` | Add sub-path |
+
+**Delete-node semantics (sever / open):** Deleting a node removes it *and* the
+two segments touching it, splitting the path open at that point — an open line
+becomes two separate lines, a closed shape becomes a single open path. The
+logic lives in `pathActions.deletePathNode()` →
+`buildSeveredPathData(path)` ([`packages/svgcanvas/core/path-actions.js`](../packages/svgcanvas/core/path-actions.js)),
+which rebuilds the `d` attribute from `path.segs`. The `Backspace`/`Delete`
+key is wired to it via the `delete_selected` hotkey in
+[`src/editor/Editor.js`](../src/editor/Editor.js) (guarded by
+`getMode() === 'pathedit'` and `pathActions.canDeleteNodes`).
 
 ---
 

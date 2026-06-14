@@ -347,7 +347,11 @@ class Editor extends EditorStartup {
         label: 'hotkeys.delete_selected',
         key: ['delete/backspace', true],
         fn: () => {
-          if (this.selectedElement || this.multiselected) {
+          if (this.svgCanvas.getMode() === 'pathedit') {
+            if (this.svgCanvas.pathActions.canDeleteNodes) {
+              this.svgCanvas.pathActions.deletePathNode()
+            }
+          } else if (this.selectedElement || this.multiselected) {
             this.svgCanvas.deleteSelectedElements()
           }
         }

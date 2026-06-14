@@ -224,6 +224,99 @@ const pathDSegment = (letter, points, morePoints, lastPoint) => {
 }
 
 /**
+ * Build a new `d` attribute for `path` with every selected node *severed* —
+ * i.e. the node and the two segments touching it are removed, splitting the
+ * path open at that point (an open line becomes two lines; a closed shape is
+ * cut into a single open path). Untouched sub-paths are preserved verbatim.
+ * @param {module:path.Path} pathObj - the path being edited
+ * @returns {string} the rebuilt `d`, or '' if nothing renderable remains
+ */
+const buildSeveredPathData = (pathObj) => {
+  const { segs } = pathObj
+  const deleted = new Set(pathObj.selected_pts)
+
+  // Split segs into sub-paths of drawable points (M starts one, Z closes it).
+  const subpaths = []
+  let cur = null
+  segs.forEach((seg, i) => {
+    if (seg.type === 2) { // M
+      cur = { points: [], closed: false }
+      subpaths.push(cur)
+      cur.points.push({ idx: i, seg })
+    } else if (seg.type === 1) { // Z
+      if (cur) { cur.closed = true }
+    } else if (cur) { // L / C / ... drawable point
+      cur.points.push({ idx: i, seg })
+    }
+  })
+
+  // Emit one point with the given role ('M' = start, 'L' = forced straight,
+  // 'orig' = keep its own command).
+  const emitPt = (pt, role) => {
+    const it = pt.seg.item
+    const x = shortFloat(it.x)
+    const y = shortFloat(it.y)
+    if (role === 'M') { return `M ${x} ${y}` }
+    if (role === 'orig' && pt.seg.type === 6) { // cubic curve
+      return `C ${shortFloat(it.x1)} ${shortFloat(it.y1)} ` +
+        `${shortFloat(it.x2)} ${shortFloat(it.y2)} ${x} ${y}`
+    }
+    return `L ${x} ${y}`
+  }
+
+  const out = []
+  subpaths.forEach((sp) => {
+    const m = sp.points.length
+    const delPositions = sp.points
+      .map((p, i) => (deleted.has(p.idx) ? i : -1))
+      .filter((i) => i >= 0)
+
+    // No node removed here: keep the sub-path exactly as it was.
+    if (!delPositions.length) {
+      const parts = sp.points.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
+      if (sp.closed) { parts.push('Z') }
+      out.push(parts.join(' '))
+      return
+    }
+
+    // A node was removed -> the sub-path opens. For a closed sub-path, rotate so
+    // it begins right after the first cut; the original start point (M) becomes
+    // a straight node when it lands mid-run (the closing edge is straight).
+    const originalStartIdx = sp.points[0].idx
+    let pts = sp.points
+    if (sp.closed) {
+      const rot = (delPositions[0] + 1) % m
+      pts = sp.points.slice(rot).concat(sp.points.slice(0, rot))
+    }
+
+    // Break surviving points into contiguous runs at each deleted node.
+    const runs = []
+    let run = []
+    pts.forEach((p) => {
+      if (deleted.has(p.idx)) {
+        if (run.length) { runs.push(run) }
+        run = []
+      } else {
+        run.push(p)
+      }
+    })
+    if (run.length) { runs.push(run) }
+
+    runs.forEach((r) => {
+      if (r.length < 2) { return } // a lone point renders nothing
+      const parts = r.map((p, i) => {
+        if (i === 0) { return emitPt(p, 'M') }
+        if (p.idx === originalStartIdx) { return emitPt(p, 'L') }
+        return emitPt(p, 'orig')
+      })
+      out.push(parts.join(' '))
+    })
+  })
+
+  return out.join(' ').trim()
+}
+
+/**
 * Group: Path edit functions.
 * Functions relating to editing path elements.
 * @class PathActions
@@ -1097,73 +1190,20 @@ class PathActions {
     if (!svgCanvas.pathActions.canDeleteNodes) { return }
     path.storeD()
 
-    const selPts = path.selected_pts
+    const newD = buildSeveredPathData(path)
 
-    let i = selPts.length
-    while (i--) {
-      const pt = selPts[i]
-      path.deleteSeg(pt)
-    }
-
-    // Cleanup
-    const cleanup = () => {
-      const segList = path.elem.pathSegList
-      let len = segList.numberOfItems
-
-      const remItems = (pos, count) => {
-        while (count--) {
-          segList.removeItem(pos)
-        }
-      }
-
-      if (len <= 1) { return true }
-
-      while (len--) {
-        const item = segList.getItem(len)
-        if (item.pathSegType === 1) {
-          const prev = segList.getItem(len - 1)
-          const nprev = segList.getItem(len - 2)
-          if (prev.pathSegType === 2) {
-            remItems(len - 1, 2)
-            cleanup()
-            break
-          } else if (nprev.pathSegType === 2) {
-            remItems(len - 2, 3)
-            cleanup()
-            break
-          }
-        } else if (item.pathSegType === 2 && len > 0) {
-          const prevType = segList.getItem(len - 1).pathSegType
-          // Path has M M
-          if (prevType === 2) {
-            remItems(len - 1, 1)
-            cleanup()
-            break
-            // Entire path ends with Z M
-          } else if (prevType === 1 && segList.numberOfItems - 1 === len) {
-            remItems(len, 1)
-            cleanup()
-            break
-          }
-        }
-      }
-      return false
-    }
-
-    cleanup()
-
-    // Completely delete a path with 1 or 0 segments
-    if (path.elem.pathSegList.numberOfItems <= 1) {
+    // Nothing renderable left (no sub-path with >= 2 points): drop the element
+    if (!newD) {
       svgCanvas.pathActions.toSelectMode(path.elem)
       svgCanvas.canvas.deleteSelectedElements()
       return
     }
 
+    path.elem.setAttribute('d', newD)
+
     path.init()
     path.clearSelection()
 
-    // TODO: Find right way to select point now
-    // path.selectPt(selPt);
     if (window.opera) { // Opera repaints incorrectly
       path.elem.setAttribute('d', path.elem.getAttribute('d'))
     }
