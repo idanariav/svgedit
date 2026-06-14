@@ -258,6 +258,26 @@
         display: block;
     }
 
+    /* "Import as paths" toggle — only shown for editable SVG imports */
+    #image_paths_row {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--fg, #1B1F24);
+        cursor: pointer;
+    }
+
+    #image_paths_row.show {
+        display: flex;
+    }
+
+    #image_paths_toggle {
+        cursor: pointer;
+        accent-color: var(--accent, #2962FF);
+    }
+
     /* Footer */
     #image_import_footer {
         display: flex;
@@ -334,6 +354,10 @@
                 <span id="image_preview_name"></span>
             </div>
             <div id="image_import_error">Could not load that image URL.</div>
+            <label id="image_paths_row">
+                <input type="checkbox" id="image_paths_toggle" />
+                <span id="image_paths_label">Import as editable paths</span>
+            </label>
         </div>
         <div id="image_import_footer">
             <button id="image_import_cancel" type="button">Cancel</button>

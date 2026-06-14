@@ -36,6 +36,8 @@ export class SeImageImportDialog extends HTMLElement {
     this.$okBtn = this._shadowRoot.querySelector('#image_import_ok')
     this.$vaultOr = this._shadowRoot.querySelector('#image_vault_or')
     this.$vaultBtn = this._shadowRoot.querySelector('#image_vault_btn')
+    this.$pathsRow = this._shadowRoot.querySelector('#image_paths_row')
+    this.$pathsToggle = this._shadowRoot.querySelector('#image_paths_toggle')
     // pending href to insert (data URL for files, raw URL for the URL field)
     this.href = ''
     // optional provenance link carried alongside a vault-imported image
@@ -44,6 +46,8 @@ export class SeImageImportDialog extends HTMLElement {
     this.locked = false
     // full <svg>…</svg> source for an editable (unlocked) whole-drawing import
     this.editableSvg = ''
+    // whether an editable SVG import converts its shapes to <path> elements
+    this.asPaths = false
   }
 
   /**
@@ -150,6 +154,9 @@ export class SeImageImportDialog extends HTMLElement {
     this.vaultLink = ''
     this.locked = false
     this.editableSvg = ''
+    this.asPaths = false
+    this.$pathsToggle.checked = false
+    this.$pathsRow.classList.remove('show')
     this.$fileInput.value = ''
     this.$urlInput.value = ''
     this.$previewRow.classList.remove('show')
@@ -177,6 +184,10 @@ export class SeImageImportDialog extends HTMLElement {
 
   /**
    * Read a File object as a data URL and preview it.
+   *
+   * SVG files are additionally read as text and stashed in `editableSvg` so the
+   * insert routes through `insertSvgElements` (real, editable elements) rather
+   * than being flattened into a locked `<image>` embed like a raster file.
    * @param {File} file
    * @returns {void}
    */
@@ -186,11 +197,21 @@ export class SeImageImportDialog extends HTMLElement {
     this.vaultLink = ''
     this.locked = false
     this.editableSvg = ''
+    const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)
+    // The "import as paths" toggle only applies to editable SVG imports.
+    this.$pathsRow.classList.toggle('show', isSvg)
     const reader = new FileReader()
     reader.onloadend = ({ target: { result } }) => {
       this.showPreview(result, file.name)
     }
     reader.readAsDataURL(file)
+    if (isSvg) {
+      const textReader = new FileReader()
+      textReader.onloadend = ({ target: { result } }) => {
+        this.editableSvg = result
+      }
+      textReader.readAsText(file)
+    }
   }
 
   /**
@@ -243,10 +264,12 @@ export class SeImageImportDialog extends HTMLElement {
         this.reset()
         return
       }
-      // A pasted URL has no vault provenance; drop any stale link.
+      // A pasted URL has no vault provenance; drop any stale link. URL imports
+      // are locked <image> embeds, so the "import as paths" toggle never applies.
       this.vaultLink = ''
       this.locked = false
       this.editableSvg = ''
+      this.$pathsRow.classList.remove('show')
       // probe the URL; only enable insert once it loads
       const probe = new Image()
       probe.onload = () => this.showPreview(url)
@@ -276,7 +299,14 @@ export class SeImageImportDialog extends HTMLElement {
       // source; `locked` is irrelevant in that case (editable implies unlocked).
       this.editableSvg = r.editableSvg || ''
       this.locked = this.editableSvg ? false : !!r.locked
+      // Offer the "import as paths" toggle only for editable SVG imports.
+      this.$pathsRow.classList.toggle('show', !!this.editableSvg)
       this.showPreview(r.dataUrl)
+    })
+
+    // "Import as paths" toggle — default off (native shapes).
+    this.$pathsToggle.addEventListener('change', () => {
+      this.asPaths = this.$pathsToggle.checked
     })
 
     // Footer + close
@@ -286,7 +316,7 @@ export class SeImageImportDialog extends HTMLElement {
     svgEditor.$click(this.$okBtn, () => {
       if (!this.href) return
       this.dispatchEvent(new CustomEvent('change', {
-        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, editableSvg: this.editableSvg || undefined }
+        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, editableSvg: this.editableSvg || undefined, asPaths: this.asPaths || undefined }
       }))
       close()
     })

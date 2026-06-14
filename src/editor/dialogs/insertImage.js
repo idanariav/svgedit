@@ -1,4 +1,50 @@
 /* globals svgEditor */
+import { getPathDFromElement } from '@svgedit/svgcanvas/core/utilities.js'
+
+// Basic shapes that get converted to <path> on import, and the geometry
+// attributes that become meaningless once they are paths.
+const SHAPE_TO_PATH_TAGS = ['rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']
+const GEOMETRY_ATTRS = ['x', 'y', 'width', 'height', 'cx', 'cy', 'r', 'rx', 'ry', 'x1', 'y1', 'x2', 'y2', 'points']
+
+/**
+ * Replace a basic-shape element with an equivalent `<path>`, carrying over all
+ * of its own attributes (fill/stroke/transform/id/data-*) so styling and
+ * provenance survive. The element must already be in the live DOM — rect
+ * conversion relies on `getBBox()`. No history command is recorded; the caller
+ * owns the insert history.
+ * @param {Element} el - The shape to convert (in the DOM).
+ * @param {Document} doc - Owning document for createElementNS.
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
+ * @returns {Element} The new `<path>`, or the original element if not convertible.
+ */
+const shapeToPath = (el, doc, svgCanvas) => {
+  const d = getPathDFromElement(el)
+  if (!d) return el
+  const path = doc.createElementNS(svgCanvas.NS.SVG, 'path')
+  Array.from(el.attributes).forEach(({ name, value }) => path.setAttribute(name, value))
+  GEOMETRY_ATTRS.forEach((n) => path.removeAttribute(n))
+  path.setAttribute('d', d)
+  el.replaceWith(path)
+  return path
+}
+
+/**
+ * Convert any basic shapes in an imported subtree to `<path>` elements so every
+ * imported object is node-editable as a path. Top-level shapes are replaced (the
+ * new path is returned); shapes nested inside groups are converted in place.
+ * Non-shape nodes (`g`, `text`, `image`, `use`, existing `path`) pass through.
+ * @param {Element} node - A top-level imported drawable, in the DOM.
+ * @param {Document} doc
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
+ * @returns {Element} The node to keep referencing (a new path if it was a shape).
+ */
+const convertShapesToPaths = (node, doc, svgCanvas) => {
+  if (SHAPE_TO_PATH_TAGS.includes(node.localName)) {
+    return shapeToPath(node, doc, svgCanvas)
+  }
+  node.querySelectorAll(SHAPE_TO_PATH_TAGS.join(',')).forEach((el) => shapeToPath(el, doc, svgCanvas))
+  return node
+}
 
 /**
  * Insert an image element on the canvas from an href (data URL or remote URL).
@@ -63,15 +109,21 @@ export const insertImageFromHref = (href, opts = {}) => {
  * elements, rather than a flattened `<image>` embed.
  *
  * This backs the host plugin's "Unlocked" import mode. The source's drawable
- * top-level elements are inserted as **individual, directly-selectable**
- * elements in the current layer (NOT wrapped in one group — that would make a
- * multi-object drawing select as a single giant group with grips floating in
- * empty canvas and individual shapes unselectable). They are multi-selected
- * right after import so they still move together, but each is independently
- * clickable afterwards. Locked imports keep using `insertImageFromHref`.
+ * top-level elements are inserted into the current layer; a multi-element import
+ * is wrapped in a single `<g>` so the drawing moves and selects as one unit
+ * (double-click to enter the group and edit individual members), mirroring
+ * Excalidraw's import grouping. A single-element import is inserted bare (no
+ * wrapper). Locked imports keep using `insertImageFromHref`.
+ *
+ * When `opts.asPaths` is true (the dialog's "import as paths" toggle), basic
+ * shapes (rect/circle/ellipse/line/polyline/polygon), including those nested in
+ * groups, are converted to `<path>` (see `convertShapesToPaths`) so every
+ * imported object is node-editable as a path. Default is off — shapes stay
+ * native.
  *
  * @param {string} svgString - Full `<svg>…</svg>` source to insert.
- * @param {{ vaultLink?: string }} [opts] - Optional extras. When `vaultLink` is
+ * @param {{ vaultLink?: string, asPaths?: boolean }} [opts] - Optional extras.
+ *   When `vaultLink` is
  *   set, every inserted top-level element is stamped with `data-vault-link` so
  *   an embedding host can track provenance (the host's backlink reconciler
  *   dedupes by link value, so repeats collapse to one backlink). No
@@ -144,28 +196,57 @@ export const insertSvgElements = (svgString, opts = {}) => {
     if (opts.vaultLink) node.setAttribute('data-vault-link', opts.vaultLink)
   })
 
-  svgCanvas.selectOnly(drawNodes)
+  // When requested (the dialog's "import as paths" toggle), convert basic shapes
+  // to <path> now that the nodes are in the DOM. Top-level shapes are replaced by
+  // their new path (track the replacement); groups keep their identity. Default
+  // is off — imports stay as native shapes (rect/circle/…).
+  const finalNodes = opts.asPaths
+    ? drawNodes.map((node) => convertShapesToPaths(node, doc, svgCanvas))
+    : drawNodes
 
-  // Center the whole import on the page (combined bbox), same idea as
-  // insertImageFromHref's align('m'/'c','page'), as a single non-undoable move
-  // so it bundles into one history entry.
   const batchCmd = new svgCanvas.history.BatchCommand('Insert SVG elements')
-  ;[...defsNodes, ...drawNodes].forEach((node) => {
+  defsNodes.forEach((node) => {
     batchCmd.addSubCommand(new svgCanvas.history.InsertElementCommand(node))
   })
-  const bbox = svgCanvas.getStrokedBBox(drawNodes)
+
+  // A multi-element import is wrapped in one <g> so the drawing moves/selects as
+  // a unit (double-click to edit members), like Excalidraw's import grouping. A
+  // single element needs no wrapper. The group's InsertElementCommand records the
+  // whole subtree, so the import stays one undo step.
+  let unit
+  if (finalNodes.length > 1) {
+    const group = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: svgCanvas.getNextId() }
+    })
+    finalNodes.forEach((node) => group.appendChild(node))
+    batchCmd.addSubCommand(new svgCanvas.history.InsertElementCommand(group))
+    unit = [group]
+  } else {
+    finalNodes.forEach((node) => {
+      batchCmd.addSubCommand(new svgCanvas.history.InsertElementCommand(node))
+    })
+    unit = finalNodes
+  }
+
+  svgCanvas.selectOnly(unit)
+
+  // Center the whole import on the page (combined bbox), same idea as
+  // insertImageFromHref's align('m'/'c','page'), bundled into the same history
+  // entry as the insert.
+  const bbox = svgCanvas.getStrokedBBox(unit)
   if (bbox) {
     const dx = svgCanvas.getContentW() / 2 - (bbox.x + bbox.width / 2)
     const dy = svgCanvas.getContentH() / 2 - (bbox.y + bbox.height / 2)
     const moveCmd = svgCanvas.moveSelectedElements(
-      drawNodes.map(() => dx),
-      drawNodes.map(() => dy),
+      unit.map(() => dx),
+      unit.map(() => dy),
       false
     )
     if (moveCmd && !moveCmd.isEmpty()) batchCmd.addSubCommand(moveCmd)
   }
   svgCanvas.addCommandToHistory(batchCmd)
-  svgCanvas.call('changed', drawNodes)
+  svgCanvas.call('changed', unit)
 
   svgEditor.topPanel.updateContextPanel()
 }
