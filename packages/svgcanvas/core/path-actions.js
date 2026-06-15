@@ -328,6 +328,7 @@ class PathActions {
   #firstCtrl = null
   #currentPath = null
   #hasMoved = false
+  #downOnPath = false
 
   /**
   * This function converts a polyline (created by the fh_path tool) into
@@ -595,6 +596,7 @@ class PathActions {
     path.storeD();
 
     ({ id } = evt.target)
+    this.#downOnPath = false
     let curPt
     if (id.startsWith('pathpointgrip_')) {
       // Select this point
@@ -621,6 +623,13 @@ class PathActions {
       curPt = Number(parts[0])
       const ctrlNum = Number(parts[1])
       path.selectPt(curPt, ctrlNum)
+    } else if (mouseTarget === path.elem || evt.target === path.elem) {
+      // Clicked the path's own stroke (between grips), not a grip. The stroke
+      // runs right under the control handles, so a near-miss here must NOT
+      // marquee-select, reselect a neighbouring node, or exit edit mode —
+      // only the node/handle grips themselves change the selection.
+      this.#downOnPath = true
+      return undefined
     }
 
     // Start selection box
@@ -731,6 +740,10 @@ class PathActions {
       }
       return
     }
+    // Mousedown landed on the path's own stroke (not a grip): ignore any
+    // drag so it can't marquee-select or reselect a neighbouring node.
+    if (this.#downOnPath) { return }
+
     // if we are dragging a point, let's move it
     if (path.dragging) {
       const pt = svgCanvas.getPointFromGrip({
@@ -774,6 +787,7 @@ class PathActions {
         // Note that addPtsToSelection is not being run
         if (sel) { path.selected_pts.push(seg.index) }
       })
+      path.refreshCtrlPtDisplay()
     }
   }
 
@@ -808,6 +822,14 @@ class PathActions {
     }
 
     // Edit mode
+    // Mousedown was on the path's own stroke (not a grip): leave the current
+    // node selection untouched and stay in edit mode.
+    if (this.#downOnPath) {
+      this.#downOnPath = false
+      this.#hasMoved = false
+      return undefined
+    }
+
     const rubberBox = svgCanvas.getRubberBox()
     if (path.dragging) {
       const lastPt = path.cur_pt

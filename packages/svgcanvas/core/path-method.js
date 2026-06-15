@@ -291,8 +291,11 @@ export const init = (canvas) => {
 * @param {Integer} index
 * @param {Integer} x
 * @param {Integer} y
-* @returns {SVGCircleElement}
+* @returns {SVGRectElement}
 */
+  // Side length of the square anchor-node grips. Larger than the round
+  // control-point handles (r: 3) so the node reads as the primary target.
+  const NODE_GRIP_SIZE = 9
   const addPointGripMethod = (index, x, y) => {
   // create the container of all the point grips
   const pointGripContainer = getGripContainerMethod()
@@ -300,11 +303,15 @@ export const init = (canvas) => {
   let pointGrip = svgCanvas.getElement(`pathpointgrip_${index}`)
   // create it
   if (!pointGrip) {
-    pointGrip = document.createElementNS(NS.SVG, 'circle')
+    // Anchor nodes are drawn as squares (vs. round control-point handles)
+    // so the two can be told apart and aimed at when they overlap.
+    pointGrip = document.createElementNS(NS.SVG, 'rect')
     const atts = {
       id: `pathpointgrip_${index}`,
       display: 'none',
-      r: 4,
+      width: NODE_GRIP_SIZE,
+      height: NODE_GRIP_SIZE,
+      rx: 1,
       fill: '#0FF',
       stroke: '#00F',
       'stroke-width': 2,
@@ -329,8 +336,8 @@ export const init = (canvas) => {
   if (x && y) {
     // set up the point grip element and display it
     assignAttributes(pointGrip, {
-      cx: x,
-      cy: y,
+      x: x - NODE_GRIP_SIZE / 2,
+      y: y - NODE_GRIP_SIZE / 2,
       display: 'inline'
     })
   }
@@ -351,7 +358,7 @@ export const init = (canvas) => {
   const atts = {
     id: 'ctrlpointgrip_' + id,
     display: 'none',
-    r: 4,
+    r: 3,
     fill: '#0FF',
     stroke: '#55F',
     'stroke-width': 1,
@@ -378,6 +385,7 @@ export const init = (canvas) => {
   ctrlLine = document.createElementNS(NS.SVG, 'line')
   assignAttributes(ctrlLine, {
     id: 'ctrlLine_' + id,
+    display: 'none',
     stroke: '#555',
     'stroke-width': 1,
     style: 'pointer-events:none'
@@ -398,8 +406,8 @@ export const init = (canvas) => {
   if (update) {
     const pt = getGripPtMethod(seg)
     assignAttributes(pointGrip, {
-      cx: pt.x,
-      cy: pt.y,
+      x: pt.x - NODE_GRIP_SIZE / 2,
+      y: pt.y - NODE_GRIP_SIZE / 2,
       display: 'inline'
     })
   }
@@ -431,12 +439,13 @@ export const init = (canvas) => {
     const pt = getGripPtMethod(seg, { x: item['x' + i], y: item['y' + i] })
     const gpt = getGripPtMethod(seg, { x: segItems[i - 1].x, y: segItems[i - 1].y })
 
+    // Position only — visibility is driven by node selection
+    // (see Path#refreshCtrlPtDisplay), not by repositioning.
     assignAttributes(ctrlLine, {
       x1: pt.x,
       y1: pt.y,
       x2: gpt.x,
-      y2: gpt.y,
-      display: 'inline'
+      y2: gpt.y
     })
 
     cpt[`c${i}_line`] = ctrlLine
@@ -446,8 +455,7 @@ export const init = (canvas) => {
 
     assignAttributes(pointGrip, {
       cx: pt.x,
-      cy: pt.y,
-      display: 'inline'
+      cy: pt.y
     })
     cpt['c' + i] = pointGrip
   }
@@ -568,6 +576,20 @@ export const init = (canvas) => {
   }
 
   /**
+   * Show/hide a single control handle (grip + its line) of this segment.
+   * `which` is 'c1' (handle near the previous node) or 'c2' (handle near
+   * this node).
+   * @param {"c1"|"c2"} which
+   * @param {boolean} y
+   * @returns {void}
+   */
+  showCtrlPt (which, y) {
+    const display = y ? 'inline' : 'none'
+    this.ctrlpts?.[which]?.setAttribute('display', display)
+    this.ctrlpts?.[`${which}_line`]?.setAttribute('display', display)
+  }
+
+  /**
    * @param {boolean} y
    * @returns {void}
    */
@@ -584,8 +606,9 @@ export const init = (canvas) => {
     if (this.ptgrip) {
       this.ptgrip.setAttribute('display', y ? 'inline' : 'none')
       this.segsel.setAttribute('display', y ? 'inline' : 'none')
-      // Show/hide all control points if available
-      this.showCtrlPts(y)
+      // Control points stay hidden here; only the active node's handles are
+      // revealed, by Path#refreshCtrlPtDisplay.
+      this.showCtrlPts(false)
     }
   }
 
@@ -621,8 +644,8 @@ export const init = (canvas) => {
     if (this.ptgrip) {
       const pt = getGripPtMethod(this)
       assignAttributes(this.ptgrip, {
-        cx: pt.x,
-        cy: pt.y
+        x: pt.x - NODE_GRIP_SIZE / 2,
+        y: pt.y - NODE_GRIP_SIZE / 2
       })
 
       getSegSelectorMethod(this, true)
@@ -932,6 +955,7 @@ export const init = (canvas) => {
     }
     this.segs[index].select(false)
     this.selected_pts.splice(pos, 1)
+    this.refreshCtrlPtDisplay()
   }
 
   /**
@@ -943,6 +967,26 @@ export const init = (canvas) => {
       this.select(false)
     })
     this.selected_pts = []
+  }
+
+  /**
+  * Reveal only the control handles belonging to the currently selected
+  * node(s), and hide every other handle. A node at index `i` owns the
+  * incoming handle on its own segment (`c2`) and the outgoing handle on the
+  * next segment (`c1`).
+  * @returns {void}
+  */
+  refreshCtrlPtDisplay () {
+    this.eachSeg(function () {
+      // 'this' is the segment here
+      this.showCtrlPts(false)
+    })
+    this.selected_pts.forEach((index) => {
+      const seg = this.segs[index]
+      if (!seg) { return }
+      seg.showCtrlPt('c2', true)
+      seg.next?.showCtrlPt('c1', true)
+    })
   }
 
   /**
@@ -1062,6 +1106,7 @@ export const init = (canvas) => {
       cur.setType(newType, points)
     }
     const path = svgCanvas.getPathObj()
+    path.refreshCtrlPtDisplay()
     path.endChanges(text)
   }
 
@@ -1072,7 +1117,9 @@ export const init = (canvas) => {
   */
   selectPt (pt, ctrlNum) {
     this.clearSelection()
-    if (!pt) {
+    // `pt == null` means "no point given"; index 0 is a valid node and must
+    // not fall through to auto-selecting the last node.
+    if (pt == null) {
       this.eachSeg(function (i) {
         // 'this' is the segment here.
         if (this.prev) {
@@ -1147,6 +1194,7 @@ export const init = (canvas) => {
 
     const closedSubpath = Path.subpathIsClosed(this.selected_pts[0])
     svgCanvas.addPtsToSelection({ grips, closedSubpath })
+    this.refreshCtrlPtDisplay()
   }
 
   // STATIC

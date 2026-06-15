@@ -131,6 +131,27 @@ Stays in the top bar (it is a transient mode toolbar, not a property).
 | `tool_openclose_path` | Toggle open / closed path |
 | `tool_add_subpath` | Add sub-path |
 
+**Click targets in pathedit:** Only the node/handle **grips** change the
+selection. Clicking the path's own stroke (the segment lines between grips) is
+inert — it neither marquee-selects, reselects a neighbouring node, nor exits
+edit mode — because the stroke runs directly under the control handles and a
+near-miss must not steal the selection. This is handled by the `#downOnPath`
+guard in `pathActions.mouseDown`/`mouseMove`/`mouseUp`
+([`packages/svgcanvas/core/path-actions.js`](../packages/svgcanvas/core/path-actions.js)).
+Clicking empty canvas still exits to select mode; dragging a marquee from empty
+canvas still multi-selects nodes.
+
+**Node vs. control-point grips:** Anchor nodes render as **squares**
+(`<rect>`, side `NODE_GRIP_SIZE = 9`) while bézier control handles render as
+smaller **circles** (`r: 3`) — distinct shape + size so they can be told apart
+and aimed at when they overlap. Control handles are shown **only for the
+currently selected node(s)**: a node at index `i` owns the incoming handle on
+its own segment (`c2`) and the outgoing handle on the next segment (`c1`).
+Visibility is driven entirely by selection via `Path#refreshCtrlPtDisplay()`
+(grip creation/repositioning no longer force handles visible). All of this
+lives in [`packages/svgcanvas/core/path-method.js`](../packages/svgcanvas/core/path-method.js)
+(`addPointGrip`, `addCtrlGrip`, `Segment#showCtrlPt`, `Path#refreshCtrlPtDisplay`).
+
 **Delete-node semantics (sever / open):** Deleting a node removes it *and* the
 two segments touching it, splitting the path open at that point — an open line
 becomes two separate lines, a closed shape becomes a single open path. The
