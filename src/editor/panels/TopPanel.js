@@ -212,7 +212,7 @@ class TopPanel {
     this.setSidepanelVisible('clipmask_panel', false)
     if (elem) {
       const elname = elem.nodeName
-      const isCircleArcPath = elname === 'path' && elem.hasAttribute('data-arc')
+      const isArcPath = elname === 'path' && elem.hasAttribute('data-arc')
 
       const angle = this.editor.svgCanvas.getRotationAngle(elem)
       $id('angle').value = angle
@@ -228,7 +228,7 @@ class TopPanel {
           $id('clipmask_feather').value = this.editor.svgCanvas.getFeather(elem)
         }
         // Elements in this array already have coord fields
-        const hasOwnCoords = ['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isCircleArcPath
+        const hasOwnCoords = ['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isArcPath
         $id('selected_x').style.display = hasOwnCoords ? 'none' : ''
         $id('selected_y').style.display = hasOwnCoords ? 'none' : ''
         if (!hasOwnCoords) {
@@ -274,7 +274,7 @@ class TopPanel {
         } else {
           this.displayTool('tool_topath')
         }
-        if (elname === 'path' && !isCircleArcPath) {
+        if (elname === 'path' && !isArcPath) {
           this.displayTool('tool_reorient')
         } else {
           this.hideTool('tool_reorient')
@@ -370,6 +370,10 @@ class TopPanel {
           $id('circle_arc').value = 360
         }
 
+        if (tagName === 'ellipse') {
+          $id('ellipse_arc').value = 360
+        }
+
         if (tagName === 'text') {
           this.displayTool('text_panel')
           this.setSidepanelVisible('sidepanel_text', true)
@@ -432,12 +436,28 @@ class TopPanel {
         $id('frame_name').value = this.editor.svgCanvas.getTitle() || ''
       }
 
-      if (isCircleArcPath) {
-        this.displayTool('circle_panel')
-        $id('circle_cx').value = Number(elem.getAttribute('data-cx')) || 0
-        $id('circle_cy').value = Number(elem.getAttribute('data-cy')) || 0
-        $id('circle_r').value = Number(elem.getAttribute('data-r')) || 0
-        $id('circle_arc').value = Number(elem.getAttribute('data-arc')) || 360
+      if (isArcPath) {
+        // An arc path stores its geometry in data-* attrs. rx === ry means it
+        // came from a circle (show the circle panel); otherwise an ellipse.
+        const dataNum = (a) => Number(elem.getAttribute(a)) || 0
+        const rFallback = dataNum('data-r') // legacy single-radius arc paths
+        const rx = elem.hasAttribute('data-rx') ? dataNum('data-rx') : rFallback
+        const ry = elem.hasAttribute('data-ry') ? dataNum('data-ry') : rFallback
+        const arc = Number(elem.getAttribute('data-arc')) || 360
+        if (rx === ry) {
+          this.displayTool('circle_panel')
+          $id('circle_cx').value = dataNum('data-cx')
+          $id('circle_cy').value = dataNum('data-cy')
+          $id('circle_r').value = rx
+          $id('circle_arc').value = arc
+        } else {
+          this.displayTool('ellipse_panel')
+          $id('ellipse_cx').value = dataNum('data-cx')
+          $id('ellipse_cy').value = dataNum('data-cy')
+          $id('ellipse_rx').value = rx
+          $id('ellipse_ry').value = ry
+          $id('ellipse_arc').value = arc
+        }
       }
 
       menuItems.setAttribute(
@@ -746,7 +766,7 @@ class TopPanel {
     // For circle-arc paths, cx/cy/r must update both the data-* attr and the `d`
     const isArcPath = this.selectedElement?.tagName === 'path' &&
       this.selectedElement.hasAttribute('data-arc')
-    if (isArcPath && ['cx', 'cy', 'r'].includes(attr)) {
+    if (isArcPath && ['cx', 'cy', 'r', 'rx', 'ry'].includes(attr)) {
       this.editor.svgCanvas.setCircleArcAttr(attr, Number(val))
       return true
     }
@@ -1183,6 +1203,7 @@ class TopPanel {
     $id('blur').addEventListener('change', this.changeBlur.bind(this))
     $id('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
     $id('circle_arc').addEventListener('change', this.changeCircleArc.bind(this))
+    $id('ellipse_arc').addEventListener('change', this.changeCircleArc.bind(this))
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
     $click($id('tool_ungroup'), this.clickGroup.bind(this))
     $click($id('tool_bold'), this.clickBold.bind(this))

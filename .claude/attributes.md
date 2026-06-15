@@ -56,20 +56,31 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (posit
 
 ---
 
-## `<path data-arc>` — Circle Arc (partial circle / pie sector)
+## `<path data-arc>` — Arc (partial circle/ellipse / pie sector)
 
-When a circle's arc is set below 360°, the `<circle>` is replaced by a `<path>` that stores the circle geometry in `data-*` attributes and renders a symmetric pie-sector shape (pacman / half-circle / wedge).
+When a **circle's or ellipse's** arc is set below 360°, the `<circle>`/`<ellipse>`
+is replaced by a `<path>` that stores the geometry in `data-*` attributes and
+renders a symmetric pie-sector shape (pacman / half-disc / wedge). A single
+unified code path covers both shapes — a circle is just the `rx === ry` case.
 
-**Panel class:** `.circle_panel` — same panel as `<circle>`, populated from `data-*` attributes.
+**Panel class:** `.circle_panel` (when `data-rx === data-ry`) or `.ellipse_panel`
+(otherwise) — the same panels as `<circle>`/`<ellipse>`, populated from `data-*`
+attributes. `TopPanel.updateContextPanel` picks the panel by comparing the radii.
 
 | Control ID | Maps to DOM | Notes |
 |------------|-------------|-------|
-| `circle_cx` | `data-cx` | Center X; `attrChanger` routes to `setCircleArcAttr` |
-| `circle_cy` | `data-cy` | Center Y; `attrChanger` routes to `setCircleArcAttr` |
-| `circle_r` | `data-r` | Radius; `attrChanger` routes to `setCircleArcAttr` |
-| `circle_arc` | `data-arc` | Arc degrees; handled by `changeCircleArc` / `setCircleArc` |
+| `circle_cx` / `ellipse_cx` | `data-cx` | Center X; `attrChanger` routes to `setCircleArcAttr` |
+| `circle_cy` / `ellipse_cy` | `data-cy` | Center Y; `attrChanger` routes to `setCircleArcAttr` |
+| `circle_r` | `data-rx` + `data-ry` | Radius (circular arc); an `r` edit sets both radii |
+| `ellipse_rx` | `data-rx` | Horizontal radius; routes to `setCircleArcAttr` |
+| `ellipse_ry` | `data-ry` | Vertical radius; routes to `setCircleArcAttr` |
+| `circle_arc` / `ellipse_arc` | `data-arc` | Arc degrees; both wired to `changeCircleArc` / `setCircleArc` |
 
-The `d` attribute is computed by `computeCircleArcPathD(cx, cy, r, arc)` (symmetric pie sector, mouth centred at 3-o'clock). Setting arc back to 360 converts the `<path>` back to a `<circle>`.
+The `d` attribute is computed by `computeArcPathD(cx, cy, rx, ry, arc)` (symmetric
+pie sector, mouth centred at 3-o'clock; uses SVG's elliptical-arc command with
+independent radii). Setting arc back to 360 converts the `<path>` back to a
+`<circle>` when `rx === ry`, else to an `<ellipse>`. Legacy arc paths that stored
+a single `data-r` are read with `data-r` as a fallback for both radii.
 
 **No x/y panel** (position expressed via cx/cy). **No "reorient path"** button (arc paths are not freehand paths). Can still be rotated/styled like any other element.
 
@@ -85,6 +96,9 @@ The `d` attribute is computed by `computeCircleArcPathD(cx, cy, r, arc)` (symmet
 | `ellipse_cy` | `cy` | `cy` | Center Y |
 | `ellipse_rx` | `rx` | `rx` | Horizontal radius |
 | `ellipse_ry` | `ry` | `ry` | Vertical radius |
+| `ellipse_arc` | _(none — custom handler)_ | _(see below)_ | Arc span in degrees, 1–360 (default 360) |
+
+`ellipse_arc` is wired to the same `changeCircleArc` → `svgCanvas.setCircleArc()` handler as `circle_arc`. When arc < 360 the `<ellipse>` is converted to a `<path data-arc>` (see [Arc](#path-data-arc--arc-partial-circleellipse--pie-sector)).
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (position expressed as cx/cy).
 
