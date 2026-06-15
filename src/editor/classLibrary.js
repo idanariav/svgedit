@@ -10,8 +10,14 @@
  * Preset shape:
  *   { name: string, scope: 'text'|'shape'|'any', attrs: { [attr]: string } }
  *
+ * Reads/writes go through the optional host storage adapter when one is
+ * registered (see userDataAdapter.js); otherwise they fall back to the
+ * localStorage key below. The schema is identical on both paths.
+ *
  * @module classLibrary
  */
+
+import { getUserDataAdapter } from './userDataAdapter.js'
 
 const STORAGE_KEY = 'svg-edit-class-library'
 
@@ -68,6 +74,11 @@ export const attrCatalog = scope =>
  * @returns {Array<{name:string,scope:string,attrs:Object}>}
  */
 export const getClasses = () => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    const parsed = adapter.getClasses()
+    return Array.isArray(parsed) ? parsed : []
+  }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     const parsed = raw ? JSON.parse(raw) : []
@@ -83,6 +94,11 @@ export const getClasses = () => {
  * @returns {void}
  */
 const writeClasses = classes => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    adapter.setClasses(classes)
+    return
+  }
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(classes))
   } catch {

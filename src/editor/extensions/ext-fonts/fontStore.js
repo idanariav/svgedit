@@ -12,8 +12,15 @@
  *   - Mirror it into the canvas' encodable-font registry so it gets embedded as
  *     a base64 `@font-face` in `<defs>` on export (see core/svg-exec.js).
  *
+ * When a host storage adapter is registered (see userDataAdapter.js), font
+ * persistence is routed through it instead of IndexedDB — letting an embedding
+ * host (e.g. the Obsidian plugin) keep fonts in a synced vault folder. The
+ * IndexedDB path below remains the standalone-svgedit fallback.
+ *
  * @license MIT
  */
+
+import { getUserDataAdapter } from '../../userDataAdapter.js'
 
 const DB_NAME = 'svgedit-fonts'
 const STORE = 'fonts'
@@ -157,6 +164,16 @@ export const ensureFont = async (family) => {
     await registerFont(family, _cache.get(family))
     return
   }
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    // Host-backed store (e.g. synced vault folder). `_cache` was populated by
+    // restoreAll() at startup, so a cache miss here means the font is new:
+    // download once, hand the binary to the host to persist, then register.
+    const woff2Base64 = await downloadGoogleFont(family)
+    await adapter.saveFont(family, woff2Base64)
+    await registerFont(family, woff2Base64)
+    return
+  }
   let record = await getRecord(family)
   // Re-download entries saved by an older version (e.g. v1's wrong-subset font)
   if (record && record.v !== REC_VERSION) record = null
@@ -174,6 +191,21 @@ export const ensureFont = async (family) => {
  * @returns {Promise<string[]>} families restored
  */
 export const restoreAll = async () => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    let records = []
+    try {
+      records = await adapter.getFonts()
+    } catch (e) {
+      console.warn('fontStore: failed to read host fonts', e)
+      return []
+    }
+    await Promise.all((records || []).map(r =>
+      registerFont(r.family, r.woff2Base64).catch(e =>
+        console.warn(`fontStore: failed to restore "${r.family}"`, e))
+    ))
+    return (records || []).map(r => r.family)
+  }
   let records = []
   try {
     records = await getAllRecords()
