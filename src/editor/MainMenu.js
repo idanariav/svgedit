@@ -1,7 +1,7 @@
 /* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
 import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
-import { applyUiMode } from './uiMode.js'
+import { applyUiMode, isTabletMode } from './uiMode.js'
 
 const { $click } = SvgCanvas
 
@@ -25,7 +25,7 @@ class MainMenu {
    * @returns {void}
    */
   clickTabletMode () {
-    const on = !this.editor.configObj.pref('tabletMode')
+    const on = !isTabletMode(this.editor.configObj.pref('tabletMode'))
     this.editor.configObj.pref('tabletMode', on, true)
     applyUiMode(on, this.editor.$svgEditor)
   }

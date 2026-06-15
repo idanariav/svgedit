@@ -15,5 +15,18 @@
 export const applyUiMode = (on, rootEl) => {
   const el = rootEl ?? document.querySelector('.svg_editor')
   if (!el) return
-  el.classList.toggle('ui-tablet', Boolean(on))
+  el.classList.toggle('ui-tablet', isTabletMode(on))
 }
+
+/**
+ * Normalise a `tabletMode` value into a real boolean.
+ *
+ * The pref is persisted to `localStorage` as a string, so desktop mode comes
+ * back as the string `'false'` — which is truthy under a plain `Boolean()`
+ * cast. Both the startup apply and the menu toggle must read it through here so
+ * a saved desktop choice survives a reload.
+ *
+ * @param {boolean|string} val - the stored or in-memory `tabletMode` value
+ * @returns {boolean}
+ */
+export const isTabletMode = (val) => val === true || val === 'true'
