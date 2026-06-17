@@ -228,7 +228,7 @@ export default {
         evt.stopPropagation()
       }
     }
-    window.addEventListener('dblclick', suppressNativeDblClick, true)
+    window.addEventListener('dblclick', suppressNativeDblClick, { capture: true, signal: svgEditor.listenerAbort.signal })
 
     // ── Session state ──────────────────────────────────────────────────────
     /** @type {Array<{x:number, y:number, corner:boolean}>} */
@@ -385,7 +385,7 @@ export default {
         // the single reliable source of truth for showing/hiding it.
         document.addEventListener('modeChange', (evt) => {
           showPanel(evt.detail.getMode() === 'curvature')
-        })
+        }, { signal: svgEditor.listenerAbort.signal })
       },
 
       mouseDown (opts) {

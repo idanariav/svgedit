@@ -625,6 +625,10 @@ class Editor extends EditorStartup {
   destroy () {
     if (this.hotkeys) this.hotkeys.unregister()
     if (this.pasteHandler) document.removeEventListener('paste', this.pasteHandler)
+    // Remove all document/window listeners wired through the abort signal
+    // (modeChange, key handling, resize, …). Without this they leak onto
+    // document/window per editor instance and keep firing on a dead editor.
+    this.listenerAbort?.abort()
     setActiveEditor(null)
   }
 

@@ -74,7 +74,7 @@ export default {
           // tablet). `e.target` is retargeted to the dispatching host element.
           document.addEventListener('shape-insert', (e) => {
             armShapeInsert(e.detail, e.target)
-          })
+          }, { signal: svgEditor.listenerAbort.signal })
         }
       },
       mouseDown (opts) {

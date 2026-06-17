@@ -120,7 +120,7 @@ export default {
           if (svgCanvas.getSelectedElements().length === 0) {
             resetCurrentStyle()
           }
-        })
+        }, { signal: svgEditor.listenerAbort.signal })
 
         // Positions helper
         svgEditor.workarea.addEventListener('mousemove', (e) => {
@@ -143,7 +143,7 @@ export default {
           if (e.key === 'Escape' && svgCanvas.getMode() === name) {
             cancelHandler()
           }
-        })
+        }, { signal: svgEditor.listenerAbort.signal })
       },
       // if we have selected an element, grab its paint and enable the eye dropper button
       selectedChanged: getStyle,

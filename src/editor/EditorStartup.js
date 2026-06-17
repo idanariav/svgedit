@@ -74,6 +74,14 @@ class EditorStartup {
   constructor (div) {
     this.extensionsAdded = false
     this.messageQueue = []
+    // Document/window-level listeners this editor registers (modeChange, key
+    // handling, resize, …) are all wired through this controller's signal so
+    // destroy() can tear them down in one shot. Without it, every torn-down
+    // editor (each drawing open / markdown↔drawing toggle / file switch in a
+    // tab) leaks its listeners onto document/window, and they keep firing on a
+    // dead instance — e.g. modeListener hitting `this.workarea.style` after the
+    // workarea is gone. See Editor.destroy().
+    this.listenerAbort = new AbortController()
     this.$container = div ?? document.getElementById('svg_editor')
     // Mark this container so web components / dialogs nested under it can resolve
     // their owning editor via closestRoot() (see domScope.js).
@@ -186,7 +194,7 @@ class EditorStartup {
 
     // once svgCanvas is init - adding listener to the changes of the current mode
     this.modeEvent = this.svgCanvas.modeEvent
-    document.addEventListener('modeChange', (evt) => this.modeListener(evt))
+    document.addEventListener('modeChange', (evt) => this.modeListener(evt), { signal: this.listenerAbort.signal })
 
     /** if true - selected tool can be cancelled with Esc key
      * disables on dragging (mousedown) to avoid changing mode in the middle of drawing
@@ -429,7 +437,7 @@ class EditorStartup {
         this.svgCanvas.setMode(previousMode ?? 'select')
       }
       panning = false
-    })
+    }, { signal: this.listenerAbort.signal })
 
     // Allows quick change to the select mode while panning mode is active
     this.workarea.addEventListener('dblclick', (evt) => {
@@ -448,7 +456,7 @@ class EditorStartup {
         this.workarea.style.cursor = zoomOutIcon
         e.preventDefault()
       }
-    })
+    }, { signal: this.listenerAbort.signal })
 
     // Native clipboard paste (Ctrl/Cmd+V). This is the single arbiter for paste:
     // the system clipboard tells us whether the content is svgedit's own (an
@@ -515,7 +523,7 @@ class EditorStartup {
         this.workarea.style.cursor = zoomInIcon
         e.preventDefault()
       }
-    })
+    }, { signal: this.listenerAbort.signal })
 
     /**
      * @function module:SVGthis.setPanning
@@ -582,7 +590,7 @@ class EditorStartup {
         this.workarea['scroll' + (type === 'width' ? 'Left' : 'Top')] -= (curval - val) / 2
         winWh[type] = curval
       })
-    })
+    }, { signal: this.listenerAbort.signal })
 
     this.workarea.addEventListener('scroll', () => {
       this.rulers.manageScroll()
@@ -733,7 +741,7 @@ class EditorStartup {
       if (e.key !== 'svgedit_clipboard') { return }
 
       this.enableOrDisableClipboard()
-    }.bind(this))
+    }.bind(this), { signal: this.listenerAbort.signal })
 
     window.addEventListener('beforeunload', function (e) {
     // Suppress warning if page is empty
@@ -748,7 +756,7 @@ class EditorStartup {
         return this.i18next.t('notification.unsavedChanges')
       }
       return true
-    }.bind(this))
+    }.bind(this), { signal: this.listenerAbort.signal })
 
     // Use HTML5 File API: http://www.w3.org/TR/FileAPI/
     // if browser has HTML5 File API support, then we will show the open menu item
@@ -1166,6 +1174,10 @@ class EditorStartup {
    * @param {string} mode
    */
   setCursorStyle (mode) {
+    // A torn-down editor whose listeners survived would reach here with no
+    // workarea; bail rather than throw on `this.workarea.style` (defence in
+    // depth — destroy() should already have removed those listeners).
+    if (!this.workarea) return
     let cs = 'auto'
     switch (mode) {
       case 'ext-panning':

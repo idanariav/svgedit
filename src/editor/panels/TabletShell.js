@@ -471,7 +471,7 @@ class TabletShell {
       // The shape-library button presses itself when armed; clear it once the
       // user switches away from the 'shapelib' mode.
       if (this.shapeLib && mode !== 'shapelib') this.shapeLib.removeAttribute('pressed')
-    })
+    }, { signal: this.editor.listenerAbort.signal })
   }
 
   syncTools (mode) {

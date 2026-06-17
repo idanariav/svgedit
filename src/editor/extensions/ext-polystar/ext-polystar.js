@@ -39,10 +39,14 @@ export default {
      * @returns {void}
      */
     const showPanel = (on, tool) => {
+      // A torn-down editor's leaked modeChange listener (see below) could reach
+      // here after its panel is gone; bail rather than throw on null.style.
+      const panel = $id(`${tool}_panel`)
+      if (!panel) return
       if (on) {
-        $id(`${tool}_panel`).style.removeProperty('display')
+        panel.style.removeProperty('display')
       } else {
-        $id(`${tool}_panel`).style.display = 'none'
+        panel.style.display = 'none'
       }
     }
 
@@ -200,7 +204,7 @@ export default {
           const shapes = (selElems || []).filter(Boolean).map((el) => el.getAttribute?.('shape'))
           if (mode !== 'star' && !shapes.includes('star')) showPanel(false, 'star')
           if (mode !== 'polygon' && !shapes.includes('regularPoly')) showPanel(false, 'polygon')
-        })
+        }, { signal: svgEditor.listenerAbort.signal })
         const label0 = `${name}:contextTools.0.label`
         const title0 = `${name}:contextTools.0.title`
         const label1 = `${name}:contextTools.1.label`
