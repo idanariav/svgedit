@@ -10,7 +10,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 
 | ID | Tool | Shortcut | Notes |
 |----|------|----------|-------|
-| `tool_select` | Select / pointer | S | Select, move, resize existing elements. With 2+ elements selected a single union box + 8 grips appears (rotate grip hidden); dragging any grip applies a **uniform group scale** about the opposite corner/edge — every shape keeps its aspect and relative position. See `select.js` `showGroupSelector` and `event.js` `resizeGroup`. **Shift+drag** locks movement to the dominant axis (H or V); **Shift+drag the rotate grip** snaps rotation to 15° steps (both in `event.js` `mouseMoveEvent`). |
+| `tool_select` | Select / pointer | S | Select, move, resize existing elements. With 2+ elements selected a single union box + 8 grips appears (rotate grip hidden); dragging any grip applies a **uniform group scale** about the opposite corner/edge — every shape keeps its aspect and relative position. See `select.js` `showGroupSelector` and `event.js` `resizeGroup`. **Shift+drag** locks movement to the dominant axis (H or V); **Shift+drag the rotate grip** snaps rotation to 15° steps (both in `event.js` `mouseMoveEvent`). Clicking stacked/overlapping shapes **prefers an already-selected element** under the cursor over the topmost one (`event.js` `mouseDownEvent`, via `document.elementsFromPoint`). |
 | `tool_zoom` | Zoom | Z | Zoom in/out; double-click to fit content |
 | `tool_fhpath` | Freehand pencil | Q | Draw freehand path |
 | `tool_line` | Line | L | Draw straight line |

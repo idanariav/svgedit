@@ -1191,6 +1191,26 @@ const mouseDownEvent = (evt) => {
     mouseTarget = mouseTarget.firstChild
   }
 
+  // Prefer an already-selected element under the cursor over the topmost one
+  // (matches Excalidraw). When stacked shapes overlap, a plain click keeps the
+  // current selection if it lies under the pointer instead of grabbing the top
+  // element. Skipped for grips, shift-click (additive) and right-click.
+  if (
+    svgCanvas.getCurrentMode() === 'select' && !evt.shiftKey && !rightClick &&
+    mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
+  ) {
+    const sel = selectedElements.filter(Boolean)
+    if (sel.length && !sel.includes(mouseTarget)) {
+      // elementsFromPoint is ordered top→bottom; pick the topmost element that
+      // is (or contains) a currently-selected element.
+      const stack = document.elementsFromPoint(evt.clientX, evt.clientY)
+      for (const node of stack) {
+        const hit = sel.find((s) => s === node || s.contains(node))
+        if (hit) { mouseTarget = hit; break }
+      }
+    }
+  }
+
   // realX/y ignores grid-snap value
   const realX = x
   svgCanvas.setStartX(x)
