@@ -788,8 +788,15 @@ class EditorStartup {
    * @returns {Promise<void>}
    */
   async _addSelectedToShapeLibrary () {
-    const elems = this.svgCanvas.getSelectedElements().filter(Boolean)
+    let elems = this.svgCanvas.getSelectedElements().filter(Boolean)
     if (!elems.length) return
+
+    // Drop a full-canvas backdrop rect so saved shapes don't bundle the page
+    // background (e.g. a colour rect baked into the drawing's content). The
+    // backdrop is a filled <rect> that covers the entire selection bounds; when
+    // it's stripped the remaining artwork keeps its own (smaller) bbox. Guarded
+    // so it never empties the selection and never touches an outline-only frame.
+    elems = this._stripBackdropRects(elems)
 
     // Determine target element: a single element is serialized as-is, multiple
     // elements are wrapped in a temporary <g>. In every case the serialized
@@ -834,6 +841,47 @@ class EditorStartup {
     if (shapeLib) {
       shapeLib.dispatchEvent(new CustomEvent('user-shapes-updated'))
     }
+  }
+
+  /**
+   * Remove full-canvas backdrop rect(s) from a selection so shapes saved to the
+   * library don't carry the page/canvas background. A backdrop is a *filled*
+   * `<rect>` whose stroked bbox covers the whole selection bounds. Only applied
+   * when other elements remain (a lone rect, or an outline-only frame, is kept).
+   * @param {Element[]} elems - selected, live (in-DOM) elements
+   * @returns {Element[]} the elements to serialize (backdrops removed)
+   */
+  _stripBackdropRects (elems) {
+    if (elems.length < 2) return elems
+
+    let overall
+    try {
+      overall = this.svgCanvas.getStrokedBBox(elems)
+    } catch {
+      return elems
+    }
+    if (!overall) return elems
+
+    const eps = 1
+    const isBackdrop = (el) => {
+      if (el.tagName !== 'rect') return false
+      const fill = el.getAttribute('fill') ?? el.style?.fill
+      if (fill === 'none' || fill === 'transparent') return false
+      let b
+      try {
+        b = this.svgCanvas.getStrokedBBox([el])
+      } catch {
+        return false
+      }
+      if (!b) return false
+      return b.x <= overall.x + eps && b.y <= overall.y + eps &&
+        b.x + b.width >= overall.x + overall.width - eps &&
+        b.y + b.height >= overall.y + overall.height - eps
+    }
+
+    const kept = elems.filter(el => !isBackdrop(el))
+    // Never empty the selection — if everything looks like a backdrop, keep all.
+    return (kept.length && kept.length < elems.length) ? kept : elems
   }
 
   /**
