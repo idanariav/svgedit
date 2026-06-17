@@ -220,6 +220,10 @@ const mouseMoveEvent = (evt) => {
         if (svgCanvas.getCurConfig().gridSnapping) {
           ({ x: dx, y: dy } = snapPointToGrid(dx, dy))
         }
+        // Shift locks movement to the dominant axis (match Excalidraw)
+        if (evt.shiftKey) {
+          if (Math.abs(dx) > Math.abs(dy)) { dy = 0 } else { dx = 0 }
+        }
 
         // Enable moving selection only if mouse has been moved at least 4 px in any direction
         // This prevents objects from being accidentally moved when (initially) selected
@@ -583,7 +587,7 @@ const mouseMoveEvent = (evt) => {
         angle = snapToGrid(angle)
       }
       if (evt.shiftKey) { // restrict rotations to nice angles (WRS)
-        const snap = 45
+        const snap = 15
         angle = Math.round(angle / snap) * snap
       }
 

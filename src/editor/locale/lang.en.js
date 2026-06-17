@@ -165,6 +165,8 @@ export default {
     clone_down_big: 'Clone down (10px)',
     clone_left_big: 'Clone left (10px)',
     clone_right_big: 'Clone right (10px)',
+    flip_horizontal: 'Flip horizontally',
+    flip_vertical: 'Flip vertically',
     rotate_ccw_fine: 'Rotate −0.1°',
     rotate_cw_fine: 'Rotate +0.1°',
     rotate_ccw: 'Rotate −5°',

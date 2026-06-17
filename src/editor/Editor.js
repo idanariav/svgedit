@@ -342,6 +342,24 @@ class Editor extends EditorStartup {
         }
       },
       {
+        id: 'flip_horizontal',
+        group: 'Edit',
+        label: 'hotkeys.flip_horizontal',
+        key: 'shift+h',
+        fn: () => {
+          this.svgCanvas.flipSelectedElements(-1, 1)
+        }
+      },
+      {
+        id: 'flip_vertical',
+        group: 'Edit',
+        label: 'hotkeys.flip_vertical',
+        key: 'shift+v',
+        fn: () => {
+          this.svgCanvas.flipSelectedElements(1, -1)
+        }
+      },
+      {
         id: 'delete_selected',
         group: 'Edit',
         label: 'hotkeys.delete_selected',

@@ -10,7 +10,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 
 | ID | Tool | Shortcut | Notes |
 |----|------|----------|-------|
-| `tool_select` | Select / pointer | S | Select, move, resize existing elements. With 2+ elements selected a single union box + 8 grips appears (rotate grip hidden); dragging any grip applies a **uniform group scale** about the opposite corner/edge — every shape keeps its aspect and relative position. See `select.js` `showGroupSelector` and `event.js` `resizeGroup`. |
+| `tool_select` | Select / pointer | S | Select, move, resize existing elements. With 2+ elements selected a single union box + 8 grips appears (rotate grip hidden); dragging any grip applies a **uniform group scale** about the opposite corner/edge — every shape keeps its aspect and relative position. See `select.js` `showGroupSelector` and `event.js` `resizeGroup`. **Shift+drag** locks movement to the dominant axis (H or V); **Shift+drag the rotate grip** snaps rotation to 15° steps (both in `event.js` `mouseMoveEvent`). |
 | `tool_zoom` | Zoom | Z | Zoom in/out; double-click to fit content |
 | `tool_fhpath` | Freehand pencil | Q | Draw freehand path |
 | `tool_line` | Line | L | Draw straight line |
@@ -67,8 +67,8 @@ One consolidated `.quick_tray` pill holds all object actions:
 | `tool_clone` | Clone element | D |
 | `tool_delete` | Delete element | Delete / Backspace |
 | `tool_arrange` *(list)* | Arrange / z-order (see below) | — |
-| `tool_flip_h` | Flip horizontal | — |
-| `tool_flip_v` | Flip vertical | — |
+| `tool_flip_h` | Flip horizontal | Shift+H (`flip_horizontal` hotkey → `flipSelectedElements(-1, 1)`) |
+| `tool_flip_v` | Flip vertical | Shift+V (`flip_vertical` hotkey → `flipSelectedElements(1, -1)`) |
 | `tool_position` *(list)* | Align to page | — (L/C/R/T/M/B + distribute H/V) |
 
 ### Multiple elements selected (`.multiselected_panel` tray)
