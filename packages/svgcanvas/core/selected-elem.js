@@ -668,12 +668,33 @@ const flipSelectedElements = (scaleX, scaleY) => {
   selectedElements.forEach(selected => {
     if (!selected) return
 
-    const bbox = getStrokedBBoxDefaultVisible([selected])
-    if (!bbox) return
+    const localBBox = selected.getBBox()
+    if (!localBBox) return
 
-    const cx = bbox.x + bbox.width / 2
-    const cy = bbox.y + bbox.height / 2
     const existingTransform = selected.getAttribute('transform') || ''
+    const tlist = getTransformList(selected)
+    const elemMatrix = transformListToTransform(tlist).matrix
+
+    // Pivot the flip around the element's *true* axis-aligned bbox centre in
+    // parent space. getStrokedBBoxDefaultVisible reports the bbox in the
+    // element's un-rotated frame, so using it as the pivot would shift rotated
+    // or skewed elements. Transform the geometry corners by the element's own
+    // matrix and take the axis-aligned centre instead.
+    const corners = [
+      [localBBox.x, localBBox.y],
+      [localBBox.x + localBBox.width, localBBox.y],
+      [localBBox.x, localBBox.y + localBBox.height],
+      [localBBox.x + localBBox.width, localBBox.y + localBBox.height]
+    ].map(([x, y]) => {
+      const pt = svgRoot.createSVGPoint()
+      pt.x = x
+      pt.y = y
+      return pt.matrixTransform(elemMatrix)
+    })
+    const xs = corners.map(p => p.x)
+    const ys = corners.map(p => p.y)
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2
 
     const flipMatrix = svgRoot
       .createSVGMatrix()
@@ -681,11 +702,13 @@ const flipSelectedElements = (scaleX, scaleY) => {
       .scaleNonUniform(scaleX, scaleY)
       .translate(-cx, -cy)
 
-    const tlist = getTransformList(selected)
-    const combinedMatrix = matrixMultiply(
-      transformListToTransform(tlist).matrix,
-      flipMatrix
-    )
+    // Apply the flip *after* (on top of) the existing transform so the mirror
+    // happens in the element's visible coordinate space — flipMatrix · existing.
+    // This keeps the element's bbox centre exactly where it was. We collapse the
+    // whole list into a single matrix rather than going through
+    // recalculateDimensions, which decomposes rotation/scale and would relocate
+    // rotated or non-uniformly scaled elements.
+    const combinedMatrix = matrixMultiply(flipMatrix, elemMatrix)
 
     const flipTransform = svgRoot.createSVGTransform()
     flipTransform.setMatrix(combinedMatrix)
@@ -693,22 +716,7 @@ const flipSelectedElements = (scaleX, scaleY) => {
     tlist.clear()
     tlist.appendItem(flipTransform)
 
-    const prevStartTransform = svgCanvas.getStartTransform
-      ? svgCanvas.getStartTransform()
-      : null
-    if (svgCanvas.setStartTransform) {
-      svgCanvas.setStartTransform(existingTransform)
-    }
-
-    const cmd = svgCanvas.recalculateDimensions(selected)
-
-    if (svgCanvas.setStartTransform) {
-      svgCanvas.setStartTransform(prevStartTransform)
-    }
-
-    if (cmd) {
-      batchCmd.addSubCommand(cmd)
-    } else if ((selected.getAttribute('transform') || '') !== existingTransform) {
+    if ((selected.getAttribute('transform') || '') !== existingTransform) {
       batchCmd.addSubCommand(
         new ChangeElementCommand(selected, { transform: existingTransform })
       )
