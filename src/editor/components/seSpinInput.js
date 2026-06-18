@@ -2,6 +2,7 @@
 import '../dialogs/se-elix/define/NumberSpinBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { attachIdleBlur } from './fieldAutoBlur.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -317,6 +318,9 @@ export class SESpinInput extends HTMLElement {
       this.value = e.target.value
       this.dispatchEvent(this.$event)
     })
+    // Release focus after a short idle period so tool shortcuts / Delete reach
+    // the canvas instead of being swallowed by this field.
+    attachIdleBlur(this)
   }
 }
 

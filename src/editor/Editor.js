@@ -31,6 +31,7 @@ import MainMenu from './MainMenu.js'
 import HotkeyManager from './Hotkeys.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 import { getIconDataUri } from './images/iconRegistry.js'
+import { blurActiveField } from './components/fieldAutoBlur.js'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -940,6 +941,12 @@ class Editor extends EditorStartup {
     if (this.selectedElement && !isNode) {
       this.topPanel.update()
     } // if (elem)
+
+    // Nothing selected anymore: release any panel field still holding focus, so
+    // a field can't outlive its element's selection (and keep swallowing keys).
+    if (!this.selectedElement && !this.multiselected) {
+      blurActiveField()
+    }
 
     // Deal with pathedit mode
     this.topPanel.togglePathEditMode(isNode, elems)

@@ -70,6 +70,7 @@
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
 | `PaintBox.js` | `<se-paint-box>` | Fill/stroke paint control |
 | `svgIconLoader.js` | *(utility)* | Normalises + caches SVG icons for inline injection; resolves source from the inlined `images/iconRegistry.js` (fetch fallback only) |
+| `fieldAutoBlur.js` | *(utility)* | Releases keyboard focus held by panel input fields: `attachIdleBlur(host)` blurs a field after `FIELD_IDLE_BLUR_MS` idle (used by `seSpinInput`/`seInput`); `blurActiveField()` blurs the deep-focused node on deselection (called from `Editor.selectedChanged`). Keeps tool shortcuts / Delete from being swallowed by a focused field |
 
 ---
 
