@@ -60,6 +60,36 @@ export class SeMenu extends HTMLElement {
   }
 
   /**
+   * Guard against a stuck-hidden menu button.
+   *
+   * elix's open/close effect machinery is re-entrant on close (the popup's
+   * close event fires the source's `close()` again), and in that path elix
+   * writes `display: none` onto the whole `elix-menu-button` host. Normally the
+   * close transition completes and elix clears it instantly, but in a host
+   * whose runtime stalls that transition (observed in the Obsidian plugin: the
+   * button vanished and could no longer be opened after using the Favorites
+   * dialog), the inline `display: none` is set and never removed. The source
+   * button must always be visible — only its child `#popup` ever hides — so
+   * clear any inline `display: none` the moment it appears.
+   * @returns {void}
+   */
+  connectedCallback () {
+    this._displayGuard = new MutationObserver(() => {
+      if (this.$menu.style.display === 'none') this.$menu.style.display = ''
+    })
+    this._displayGuard.observe(this.$menu, { attributes: true, attributeFilter: ['style'] })
+  }
+
+  /**
+   * @function disconnectedCallback
+   * @returns {void}
+   */
+  disconnectedCallback () {
+    this._displayGuard?.disconnect()
+    this._displayGuard = null
+  }
+
+  /**
    * @function observedAttributes
    * @returns {any} observed
    */
