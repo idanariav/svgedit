@@ -1125,7 +1125,6 @@ const mouseUpEvent = (evt) => {
 }
 
 const dblClickEvent = (evt) => {
-  const selectedElements = svgCanvas.getSelectedElements()
   const evtTarget = evt.target
   const parent = evtTarget.parentNode
 
@@ -1140,22 +1139,14 @@ const dblClickEvent = (evt) => {
   // Do nothing if already in current group
   if (parent === svgCanvas.getCurrentGroup()) { return }
 
-  if ((tagName === 'g' || tagName === 'a') && getRotationAngle(mouseTarget)) {
-    // TODO: Allow method of in-group editing without having to do
-    // this (similar to editing rotated paths)
-
-    // Editing inside a rotated group bakes the group's rotation down into its
-    // children (so the group transform becomes identity for in-group editing).
-    // This must be recorded in history — otherwise a later undo reverts only
-    // the subsequent edit and leaves the group permanently destructured with
-    // its rotation lost (grouping bug #1).
-    const cmd = svgCanvas.pushGroupProperties(mouseTarget, true)
-    if (cmd && !cmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(cmd)
-    }
-    mouseTarget = selectedElements[0]
-    svgCanvas.clearSelection(true)
-  }
+  // Enter the group non-destructively: we keep the group's transform on the
+  // <g> and edit children in the group's local coordinate space (mapped via
+  // getMatrixToContent / toCurrentGroupLocalDelta). Previously a rotated group
+  // was "baked" here — its rotation pushed down onto every child and the
+  // group's own transform removed — which left the group fragile and, combined
+  // with the in-group move not being recorded, dissolved the group on the next
+  // undo. No baking is needed; this mirrors how rotated paths are edited
+  // in-place.
   // Reset context
   if (svgCanvas.getCurrentGroup()) {
     svgCanvas.leaveContext()
@@ -1239,6 +1230,44 @@ const mouseDownEvent = (evt) => {
 
   if (mouseTarget.tagName === 'a' && mouseTarget.childNodes.length === 1) {
     mouseTarget = mouseTarget.firstChild
+  }
+
+  // Ctrl/Cmd-click drills straight into a group and selects the clicked child in
+  // one click (Excalidraw parity), without leaving the group via double-click.
+  // Reuses the same non-destructive entry path as dblClickEvent (no transform
+  // bake). On macOS a Ctrl-click is delivered as a right-click, so gate on
+  // !rightClick; metaKey covers Cmd, ctrlKey covers other platforms.
+  if (
+    svgCanvas.getCurrentMode() === 'select' && (evt.metaKey || evt.ctrlKey) &&
+    !rightClick && !evt.shiftKey &&
+    (mouseTarget.tagName === 'g' || mouseTarget.tagName === 'a') &&
+    mouseTarget !== svgCanvas.getCurrentGroup()
+  ) {
+    if (svgCanvas.getCurrentGroup()) { svgCanvas.leaveContext() }
+    svgCanvas.setContext(mouseTarget)
+    const childTarget = svgCanvas.getMouseTarget(evt)
+    if (childTarget && childTarget.parentNode === svgCanvas.getCurrentGroup()) {
+      svgCanvas.selectOnly([childTarget], true)
+      mouseTarget = childTarget
+    }
+  }
+
+  // Exit in-group editing when a click lands outside the current group (empty
+  // canvas or another element). Without this the editor stays trapped in the
+  // group's context after drilling in, so every later click selects an
+  // individual child instead of the whole group — making the group feel
+  // "destroyed". Mirrors Excalidraw, where clicking outside clears
+  // editingGroupId. Clicks on a child inside the group, on its selection grips,
+  // or a Ctrl/Cmd drill-in (handled above) keep the context.
+  const curGroup = svgCanvas.getCurrentGroup()
+  if (
+    curGroup && svgCanvas.getCurrentMode() === 'select' &&
+    !evt.metaKey && !evt.ctrlKey &&
+    mouseTarget !== svgCanvas.selectorManager.selectorParentGroup &&
+    mouseTarget !== curGroup && !curGroup.contains(mouseTarget)
+  ) {
+    svgCanvas.leaveContext()
+    mouseTarget = svgCanvas.getMouseTarget(evt)
   }
 
   // Prefer an already-selected element under the cursor over the topmost one

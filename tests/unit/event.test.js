@@ -194,4 +194,36 @@ describe('event', () => {
       canvas.mouseDownEvent({ button: 0 })
     }).not.toThrow()
   })
+
+  it('dblClickEvent() enters a group without baking its transform into children', () => {
+    // Regression guard: entering a group (even a rotated one) must use
+    // setContext and must NOT call pushGroupProperties, which previously baked
+    // the group's transform into its children and dissolved the group on undo.
+    const group = /** @type {SVGGElement} */ (createSvgElement('g'))
+    group.setAttribute('transform', 'rotate(30 100 100)')
+    const child = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    group.append(child)
+    contentGroup.append(group)
+
+    let pushed = false
+    let contextEntered = null
+    canvas.getMouseTarget = () => group
+    canvas.getCurrentDrawing = () => ({ getCurrentLayer: () => contentGroup })
+    canvas.setContext = (el) => { contextEntered = el; canvas._cg = el }
+    canvas.leaveContext = () => { canvas._cg = null }
+    canvas.getCurrentGroup = () => canvas._cg || null
+    canvas.selectOnly = () => {}
+    canvas.pushGroupProperties = () => { pushed = true }
+    canvas.addCommandToHistory = () => {}
+
+    canvas.dblClickEvent({
+      clientX: 50,
+      clientY: 50,
+      target: child,
+      preventDefault () {}
+    })
+
+    expect(pushed).toBe(false)
+    expect(contextEntered).toBe(group)
+  })
 })

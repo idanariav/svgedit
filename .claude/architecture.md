@@ -364,3 +364,35 @@ attribute back from the serialized SVG on save; svgedit emits no events for it.
     Design tab + the top object/arrange trays; autoSelectTab keeps Design active
 13. RightPanel updates to show new element in active layer
 ```
+
+---
+
+## Group editing (drill-in)
+
+Groups are native `<g>` containers. Selection/editing follows an Excalidraw-style
+*isolation* model on top of that DOM (it does **not** use flat `groupIds` metadata):
+
+- **Single click** on any grouped element selects the **whole group** — `getMouseTarget`
+  (`core/selection.js`) walks up to the `<g>` that is a direct child of the current layer
+  when no group context is active.
+- **Double-click** (or **Ctrl/Cmd-click**) **drills into** the group: `setContext(group)`
+  sets `currentGroup` (the analog of Excalidraw's `editingGroupId`), dims sibling content,
+  and selects the clicked child. Both paths live in `core/event.js`
+  (`dblClickEvent` and the Ctrl/Cmd branch in `mouseDownEvent`).
+- **Non-destructive — never bakes.** Entering a *rotated/scaled* group keeps the group's
+  transform on the `<g>`. Children are edited in the group's **local coordinate space**:
+  pointer deltas are mapped through `toCurrentGroupLocalDelta` /
+  `getMatrixToContent` (`core/math.js`), so a dragged child tracks the cursor 1:1 while the
+  group transform stays intact. The old behavior pushed the group's rotation down onto every
+  child (`pushGroupProperties`) and cleared the group transform — that is **gone** from the
+  entry path (the move was also unrecorded, so the next undo removed the `<g>` and dissolved
+  the group). `pushGroupProperty` itself is kept, used only by ungroup/import/menu paths.
+- **Moving a child never re-parents it.** The drag only changes the child's own `transform`
+  (consolidated/recorded as one `BatchCommand` in the `mouseUp` select-case), so group
+  membership is preserved and undo/redo round-trips.
+- **Exiting** a group context: a single click on empty canvas (or any element outside the
+  current group) calls `leaveContext` — the `mouseDownEvent` select branch clears
+  `currentGroup` whenever the click target is not the group or one of its descendants. Without
+  this the editor stayed trapped in drill-in mode after moving a child, so every later click
+  selected an individual child instead of the whole group — making the group *feel*
+  destroyed even though the `<g>` was intact. Double-clicking outside also exits.
