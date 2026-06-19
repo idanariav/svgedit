@@ -122,6 +122,9 @@ describe('event', () => {
       getCurrentMode () {
         return this.currentMode || 'zoom'
       },
+      getCurrentGroup () {
+        return null
+      },
       setCurrentMode (mode) {
         this.currentMode = mode
       },

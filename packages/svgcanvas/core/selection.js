@@ -14,7 +14,10 @@ import {
   transformPoint,
   transformListToTransform,
   rectsIntersect,
-  getTransformList
+  getTransformList,
+  getMatrixToContent,
+  transformBox,
+  isIdentity
 } from './math.js'
 import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
@@ -275,9 +278,19 @@ const getVisibleElementsAndBBoxes = (parent) => {
   }
   const contentElems = []
   const elements = parent.children
+  // When the parent is a transformed container (e.g. rubber-band selecting
+  // while editing inside a group), child bboxes are returned in the parent's
+  // local space. Map them to content space so intersection testing matches the
+  // rubber band, which is tracked in content coords. No-op for an untransformed
+  // parent such as a layer.
+  const toContent = parent.nodeType === 1 ? getMatrixToContent(parent) : null
+  const mapBox = (bb) => {
+    if (!bb || !toContent || isIdentity(toContent)) { return bb }
+    return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
+  }
   Array.from(elements).forEach((elem) => {
     if (elem.getBBox) {
-      contentElems.push({ elem, bbox: getStrokedBBoxDefaultVisible([elem]) })
+      contentElems.push({ elem, bbox: mapBox(getStrokedBBoxDefaultVisible([elem])) })
     }
   })
   return contentElems.reverse()

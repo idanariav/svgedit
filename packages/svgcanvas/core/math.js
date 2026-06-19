@@ -284,6 +284,32 @@ export const getMatrix = elem => {
 }
 
 /**
+ * Accumulates the transform matrices of an element and its ancestor
+ * `<g>`/`<a>` containers up to (but not including) the element whose `id`
+ * matches `stopId` (the SVG content root by default). The result maps a point
+ * expressed in `elem`'s own local coordinate space into content/user space.
+ *
+ * For a top-level element (no transformed ancestors) this is the identity
+ * matrix, so callers gating on a current group get a no-op outside groups.
+ * @function getMatrixToContent
+ * @param {Element} elem - The element whose local space is the source
+ * @param {string} [stopId] - id of the ancestor to stop at (exclusive)
+ * @returns {SVGMatrix} Matrix mapping `elem`-local coords to content coords
+ */
+export const getMatrixToContent = (elem, stopId = 'svgcontent') => {
+  let m = svg.createSVGMatrix() // identity
+  let el = elem
+  while (el && el.id !== stopId && el.tagName !== 'svg') {
+    if ((el.tagName === 'g' || el.tagName === 'a') &&
+        el.transform?.baseVal?.numberOfItems) {
+      m = matrixMultiply(transformListToTransform(getTransformList(el)).matrix, m)
+    }
+    el = el.parentNode
+  }
+  return m
+}
+
+/**
  * Returns a coordinate snapped to the nearest 45-degree angle.
  * @function snapToAngle
  * @param {number} x1 - First point's x

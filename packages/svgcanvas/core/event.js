@@ -12,7 +12,7 @@ import {
   convertAttrs
 } from './units.js'
 import {
-  transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform, matrixMultiply
+  transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform, matrixMultiply, getMatrixToContent
 } from './math.js'
 import * as pathModule from './path.js'
 import * as hstry from './history.js'
@@ -88,6 +88,31 @@ const updateTransformList = (svgRoot, element, dx, dy) => {
     tlist.appendItem(xform)
   }
 }
+
+// When editing inside a group (after double-clicking in), the directly
+// selected children and any newly drawn shapes live in the group's local
+// coordinate space, but pointer math is done in content/user space. These
+// helpers convert between the two using the current group's accumulated
+// matrix. Outside a group context they are no-ops, preserving prior behavior.
+const toCurrentGroupLocalDelta = (dx, dy) => {
+  const g = svgCanvas.getCurrentGroup()
+  if (!g) { return { dx, dy } }
+  const inv = getMatrixToContent(g).inverse()
+  // a delta is a vector: apply only the linear part (ignore translation e,f)
+  return { dx: inv.a * dx + inv.c * dy, dy: inv.b * dx + inv.d * dy }
+}
+const toCurrentGroupLocalPoint = (x, y) => {
+  const g = svgCanvas.getCurrentGroup()
+  if (!g) { return { x, y } }
+  const p = transformPoint(x, y, getMatrixToContent(g).inverse())
+  return { x: p.x, y: p.y }
+}
+// Modes that operate on existing elements / the selection, working in content
+// (user) space. Every other mode is a "create" mode whose new geometry must be
+// placed in the current group's local space while editing inside a group.
+const CONTENT_SPACE_MODES = ['select', 'multiselect', 'resize', 'rotate', 'pathedit', 'textedit', 'zoom']
+const isCreateInCurrentGroup = () =>
+  !CONTENT_SPACE_MODES.includes(svgCanvas.getCurrentMode()) && !!svgCanvas.getCurrentGroup()
 
 // Uniform group scale for a multi-element selection. Scales every selected
 // element by the SAME factor about a common pivot (the corner/edge opposite the
@@ -185,6 +210,14 @@ const mouseMoveEvent = (evt) => {
   let realY = mouseY / zoom
   let y = realY
 
+  // Match the mouseDown remap: while drawing inside a group, size/position the
+  // shape in the group's local space (no-op outside a group / in select modes).
+  if (isCreateInCurrentGroup()) {
+    ({ x, y } = toCurrentGroupLocalPoint(x, y))
+    realX = x
+    realY = y
+  }
+
   if (svgCanvas.getCurConfig().gridSnapping) {
     ({ x, y } = snapPointToGrid(x, y))
   }
@@ -232,9 +265,14 @@ const mouseMoveEvent = (evt) => {
         moveSelectionThresholdReached = moveSelectionThresholdReached || deltaThresholdReached
 
         if (moveSelectionThresholdReached) {
+          // Inside a transformed group the children's translate lives in the
+          // group's local space, so map the content-space delta accordingly
+          // (no-op at top level). Fixes child dragging too far in a scaled/
+          // rotated group.
+          const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(dx, dy)
           selectedElements.forEach((el) => {
             if (el) {
-              updateTransformList(svgRoot, el, dx, dy)
+              updateTransformList(svgRoot, el, ldx, ldy)
               // update our internal bbox that we're tracking while dragging
               svgCanvas.selectorManager.requestSelector(el).resize()
             }
@@ -1106,8 +1144,15 @@ const dblClickEvent = (evt) => {
     // TODO: Allow method of in-group editing without having to do
     // this (similar to editing rotated paths)
 
-    // Ungroup and regroup
-    svgCanvas.pushGroupProperties(mouseTarget)
+    // Editing inside a rotated group bakes the group's rotation down into its
+    // children (so the group transform becomes identity for in-group editing).
+    // This must be recorded in history — otherwise a later undo reverts only
+    // the subsequent edit and leaves the group permanently destructured with
+    // its rotation lost (grouping bug #1).
+    const cmd = svgCanvas.pushGroupProperties(mouseTarget, true)
+    if (cmd && !cmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(cmd)
+    }
     mouseTarget = selectedElements[0]
     svgCanvas.clearSelection(true)
   }
@@ -1185,6 +1230,11 @@ const mouseDownEvent = (evt) => {
 
   let x = mouseX / zoom
   let y = mouseY / zoom
+  // When drawing inside a group, work in the group's local coordinate space so
+  // new shapes land under the cursor (not offset/scaled by the group transform).
+  if (isCreateInCurrentGroup()) {
+    ({ x, y } = toCurrentGroupLocalPoint(x, y))
+  }
   let mouseTarget = svgCanvas.getMouseTarget(evt)
 
   if (mouseTarget.tagName === 'a' && mouseTarget.childNodes.length === 1) {

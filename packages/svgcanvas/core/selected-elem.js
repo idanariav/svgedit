@@ -962,6 +962,11 @@ const pushGroupProperty = (g, undoable) => {
 
         // [Tr] = [Rg] [Rc] [Rc2_inv]
 
+        // Capture the child's pre-bake transform so the change is undoable.
+        // Without this, undo restores the group's rotation but leaves the
+        // baked rotation on the children, producing a double transform.
+        const oldChildXform = elem.getAttribute('transform') || ''
+
         // get group's rotation matrix (Rg)
         const rgm = glist.getItem(0).matrix
 
@@ -1012,6 +1017,13 @@ const pushGroupProperty = (g, undoable) => {
           } else {
             chtlist.appendItem(tr)
           }
+        }
+
+        // Record the child's transform change for undo/redo
+        if (undoable) {
+          batchCmd.addSubCommand(
+            new ChangeElementCommand(elem, { transform: oldChildXform })
+          )
         }
       } else {
         // more complicated than just a rotate
