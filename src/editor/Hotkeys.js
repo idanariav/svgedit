@@ -92,6 +92,32 @@ const expandEditorKey = (key) =>
   String(key).split('/').map((k) => normalizeSpec(k)).filter(Boolean)
 
 /**
+ * The deepest focused element, piercing shadow roots. A keydown inside a
+ * shadow-DOM field (e.g. an `se-spin-input`) retargets `e.target` to the host
+ * custom element, so the only reliable way to tell whether the user is typing
+ * is to follow `activeElement` down through each open shadow root.
+ * @returns {?Element}
+ */
+const deepActiveElement = () => {
+  let el = document.activeElement
+  while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement
+  return el
+}
+
+/**
+ * Whether focus is currently in a text-entry field (native input/textarea/select
+ * or a contenteditable). Keystrokes there belong to the field, not to editor
+ * shortcuts, so the dispatcher must stand down.
+ * @returns {boolean}
+ */
+const isTypingTarget = () => {
+  const el = deepActiveElement()
+  if (!el) return false
+  const tag = el.nodeName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true
+}
+
+/**
  * Build the canonical key string for a keydown event, or null for a lone
  * modifier press (which must never bind).
  * @param {KeyboardEvent} e
@@ -467,8 +493,17 @@ export default class HotkeyManager {
     this._load()
     if (this._handler) document.removeEventListener('keydown', this._handler)
     this._handler = (e) => {
-      if (e.target.nodeName !== 'BODY') return
       if (!isActiveEditor(this.editor)) return
+      // Fire only when this editor owns the keystroke. In the standalone editor a
+      // canvas click drops focus to `<body>`; when embedded (e.g. the Obsidian
+      // plugin) the editor lives inside a container and `<body>` is the host's,
+      // so accept either the page body or anything inside this editor's own
+      // container. Never steal keystrokes aimed at a focused text field.
+      const container = this.editor?.$container
+      const { target } = e
+      const owned = target === document.body ||
+        (container && (target === container || container.contains(target)))
+      if (!owned || isTypingTarget()) return
       const combo = pressedCombo(e)
       if (!combo) return
       const id = this.reverseMap().get(combo)
