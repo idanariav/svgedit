@@ -381,6 +381,11 @@ class SeClassSelect extends HTMLElement {
         Object.entries(preset.attrs).forEach(([k, v]) =>
           setAttrIfChanged(elem, k, v, oldAttrs)
         )
+        // Mirror the normal stroke-width path: paint the stroke beneath the
+        // fill so it grows outward rather than inward (matters for text).
+        if ('stroke-width' in preset.attrs) {
+          setAttrIfChanged(elem, 'paint-order', 'stroke', oldAttrs)
+        }
       }
       if (Object.keys(oldAttrs).length) {
         batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
