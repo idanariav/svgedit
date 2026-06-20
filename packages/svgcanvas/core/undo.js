@@ -184,12 +184,13 @@ export const init = (canvas) => {
       continue
     }
 
-    let oldval = attr === '#text' ? elem.textContent : elem.getAttribute(attr)
+    let oldval = attr === '#text' ? svgCanvas.getTextWithNewlines(elem) : elem.getAttribute(attr)
     if (!oldval) { oldval = '' }
     if (oldval !== String(newValue)) {
       if (attr === '#text') {
         // const oldW = utilsGetBBox(elem).width;
-        elem.textContent = newValue
+        // Multiline values (with `\n`) become tspans; single-line stays plain text.
+        svgCanvas.setMultilineText(elem, newValue)
 
         // FF bug occurs on on rotated elements
         if ((/rotate/).test(elem.getAttribute('transform'))) {

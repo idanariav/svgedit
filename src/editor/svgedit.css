@@ -1097,6 +1097,8 @@ input[type=text] {
 #text {
   position: absolute;
   left: -9999px;
+  white-space: pre;
+  resize: none;
 }
 
 .bottom-icon {

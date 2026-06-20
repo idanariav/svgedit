@@ -9,7 +9,9 @@ import { NS } from './namespaces.js'
 import { transformPoint, matrixMultiply, getTransformList, transformListToTransform } from './math.js'
 import {
   assignAttributes,
-  getBBox as utilsGetBBox
+  getBBox as utilsGetBBox,
+  getTextWithNewlines,
+  TEXT_LINE_HEIGHT
 } from './utilities.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'
 
@@ -33,7 +35,7 @@ class TextActions {
   #cursor = null
   #selblock = null
   #blinker = null
-  #chardata = []
+  #chardata = [] // per textarea-caret-position: { x, y(row top), height }
   #textbb = null // , transbb;
   #matrix = null
   #lastX = null
@@ -95,7 +97,7 @@ class TextActions {
       }
     }
 
-    const charbb = this.#chardata[index]
+    const charbb = this.#chardata[index] ?? this.#chardata[this.#chardata.length - 1]
     if (!empty) {
       this.#textinput.setSelectionRange(index, index)
     }
@@ -117,8 +119,8 @@ class TextActions {
       }, 600)
     }
 
-    const startPt = this.#ptToScreen(charbb.x, this.#textbb.y)
-    const endPt = this.#ptToScreen(charbb.x, this.#textbb.y + this.#textbb.height)
+    const startPt = this.#ptToScreen(charbb.x, charbb.y)
+    const endPt = this.#ptToScreen(charbb.x, charbb.y + charbb.height)
 
     assignAttributes(this.#cursor, {
       x1: startPt.x,
@@ -164,37 +166,28 @@ class TextActions {
       svgCanvas.getElement('selectorParentGroup').append(this.#selblock)
     }
 
-    const startbb = this.#chardata[start]
-    const endbb = this.#chardata[end]
-
     this.#cursor.setAttribute('visibility', 'hidden')
 
-    const tl = this.#ptToScreen(startbb.x, this.#textbb.y)
-    const tr = this.#ptToScreen(startbb.x + (endbb.x - startbb.x), this.#textbb.y)
-    const bl = this.#ptToScreen(startbb.x, this.#textbb.y + this.#textbb.height)
-    const br = this.#ptToScreen(
-      startbb.x + (endbb.x - startbb.x),
-      this.#textbb.y + this.#textbb.height
-    )
-
-    const dstr =
-      'M' +
-      tl.x +
-      ',' +
-      tl.y +
-      ' L' +
-      tr.x +
-      ',' +
-      tr.y +
-      ' ' +
-      br.x +
-      ',' +
-      br.y +
-      ' ' +
-      bl.x +
-      ',' +
-      bl.y +
-      'z'
+    // Highlight the selection as one quad per row it spans. Consecutive caret
+    // positions on the same row share a `y`; a change in `y` marks a row break.
+    const cd = this.#chardata
+    const quad = (e0, e1) => {
+      const tl = this.#ptToScreen(e0.x, e0.y)
+      const tr = this.#ptToScreen(e1.x, e1.y)
+      const bl = this.#ptToScreen(e0.x, e0.y + e0.height)
+      const br = this.#ptToScreen(e1.x, e1.y + e1.height)
+      return `M${tl.x},${tl.y} L${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}z `
+    }
+    let dstr = ''
+    let runStart = start
+    for (let k = start + 1; k <= end; k++) {
+      const rowBreak = (k === end) || (cd[k].y !== cd[k - 1].y)
+      if (rowBreak) {
+        const runEnd = (k === end) ? end : (k - 1)
+        dstr += quad(cd[runStart], cd[runEnd])
+        runStart = k
+      }
+    }
 
     assignAttributes(this.#selblock, {
       d: dstr,
@@ -210,32 +203,28 @@ class TextActions {
    * @private
    */
   #getIndexFromPoint = (mouseX, mouseY) => {
-    // Position cursor here
-    const pt = svgCanvas.getSvgRoot().createSVGPoint()
-    pt.x = mouseX
-    pt.y = mouseY
-
+    const cd = this.#chardata
     // No content, so return 0
-    if (this.#chardata.length === 1) {
+    if (!cd || cd.length <= 1) {
       return 0
     }
-    // Determine if cursor should be on left or right of character
-    let charpos = this.#curtext.getCharNumAtPosition(pt)
-    if (charpos < 0) {
-      // Out of text range, look at mouse coords
-      charpos = this.#chardata.length - 2
-      if (mouseX <= this.#chardata[0].x) {
-        charpos = 0
+    // Pick the caret position nearest the point. Vertical (row) distance is
+    // weighted strongly over horizontal so a click lands on the clicked row
+    // first, then the closest caret within it. This is row-aware, so multiline
+    // text resolves clicks to the correct line.
+    let best = 0
+    let bestScore = Infinity
+    for (let k = 0; k < cd.length; k++) {
+      const e = cd[k]
+      let vdist = 0
+      if (mouseY < e.y) { vdist = e.y - mouseY } else if (mouseY > e.y + e.height) { vdist = mouseY - (e.y + e.height) }
+      const score = vdist * 1000 + Math.abs(e.x - mouseX)
+      if (score < bestScore) {
+        bestScore = score
+        best = k
       }
-    } else if (charpos >= this.#chardata.length - 2) {
-      charpos = this.#chardata.length - 2
     }
-    const charbb = this.#chardata[charpos]
-    const mid = charbb.x + charbb.width / 2
-    if (mouseX > mid) {
-      charpos++
-    }
-    return charpos
+    return best
   }
 
   /**
@@ -326,7 +315,7 @@ class TextActions {
     if (!this.#allowDbl || !this.#curtext) {
       return
     }
-    this.#setSelection(0, this.#curtext.textContent.length)
+    this.#setSelection(0, this.#textinput.value.length)
   }
 
   /**
@@ -471,8 +460,8 @@ class TextActions {
       svgCanvas.call('selected', [this.#curtext])
       svgCanvas.addToSelection([this.#curtext], true)
     }
-    if (!this.#curtext?.textContent.length) {
-      // No content, so delete
+    if (this.#curtext && !getTextWithNewlines(this.#curtext).length) {
+      // No content (not even blank rows), so delete
       svgCanvas.deleteSelectedElements()
     }
 
@@ -510,12 +499,6 @@ class TextActions {
     if (!this.#curtext) {
       return
     }
-    let i
-    let end
-    // if (supportsEditableText()) {
-    //   curtext.select();
-    //   return;
-    // }
 
     if (!this.#curtext.parentNode) {
       // Result of the ffClone, need to get correct element
@@ -524,8 +507,11 @@ class TextActions {
       svgCanvas.selectorManager.requestSelector(this.#curtext).showGrips(false)
     }
 
-    const str = this.#curtext.textContent
-    const len = str.length
+    // The edit buffer (a <textarea>) is the source of truth for line breaks —
+    // its value carries the `\n`s that the rendered SVG (one <tspan> per row)
+    // does not. `chardata` is therefore indexed by *textarea caret position*.
+    const value = this.#textinput.value
+    const len = value.length
 
     this.#textbb = utilsGetBBox(this.#curtext)
 
@@ -534,48 +520,81 @@ class TextActions {
     // when editing text inside a group with transforms
     this.#matrix = this.#getAccumulatedMatrix(this.#curtext)
 
-    this.#chardata = []
-    this.#chardata.length = len
     this.#textinput.focus()
 
     this.#curtext.removeEventListener('dblclick', this.#selectAll)
     this.#curtext.addEventListener('dblclick', this.#selectAll)
 
-    if (!len) {
-      end = { x: this.#textbb.x + this.#textbb.width / 2, width: 0 }
+    // Row geometry. tspans are positioned at absolute `y = textY + row*lineH`
+    // (see utilities.setMultilineText) so per-row baselines are exactly
+    // computable — no need to read each rendered glyph's y.
+    const fontSize = parseFloat(window.getComputedStyle(this.#curtext).fontSize) ||
+      parseFloat(this.#curtext.getAttribute('font-size')) || 16
+    const lineHeight = fontSize * TEXT_LINE_HEIGHT
+    const ascent = fontSize * 0.8
+    const cursorHeight = fontSize
+    let row0Baseline = parseFloat(this.#curtext.getAttribute('y'))
+    if (isNaN(row0Baseline)) {
+      row0Baseline = this.#textbb.y + ascent
+    }
+    const rowTop = (row) => row0Baseline + row * lineHeight - ascent
+
+    // Anchor x for blank rows / empty text — the row's reference point, which
+    // is the (shared) tspan x = text x attribute.
+    let anchorX = parseFloat(this.#curtext.getAttribute('x'))
+    if (isNaN(anchorX)) {
+      anchorX = this.#textbb.x + this.#textbb.width / 2
     }
 
-    for (i = 0; i < len; i++) {
-      const start = this.#curtext.getStartPositionOfChar(i)
-      end = this.#curtext.getEndPositionOfChar(i)
-
-      if (!supportsGoodTextCharPos()) {
-        const zoom = svgCanvas.getZoom()
+    // Phase 1: gather rendered glyph x-extents (no newlines in this index space).
+    const renderedLen = this.#curtext.getNumberOfChars
+      ? this.#curtext.getNumberOfChars()
+      : this.#curtext.textContent.length
+    const goodPos = supportsGoodTextCharPos()
+    const zoom = svgCanvas.getZoom()
+    const glyph = new Array(renderedLen)
+    for (let s = 0; s < renderedLen; s++) {
+      const start = this.#curtext.getStartPositionOfChar(s)
+      const end = this.#curtext.getEndPositionOfChar(s)
+      let x0 = start.x
+      let x1 = end.x
+      if (!goodPos) {
         const offset = svgCanvas.contentW * zoom
-        start.x -= offset
-        end.x -= offset
-
-        start.x /= zoom
-        end.x /= zoom
+        x0 = (x0 - offset) / zoom
+        x1 = (x1 - offset) / zoom
       }
-
-      // Get a "bbox" equivalent for each character. Uses the
-      // bbox data of the actual text for y, height purposes
-
-      // TODO: Decide if y, width and height are actually necessary
-      this.#chardata[i] = {
-        x: start.x,
-        y: this.#textbb.y, // start.y?
-        width: end.x - start.x,
-        height: this.#textbb.height
-      }
+      glyph[s] = { x0, x1 }
     }
 
-    // Add a last bbox for cursor at end of text
-    this.#chardata.push({
-      x: end.x,
-      width: 0
-    })
+    // Phase 2: walk the textarea value, producing a caret box per position.
+    const chardata = new Array(len + 1)
+    let s = 0 // rendered char index
+    let row = 0
+    let rowStartS = 0 // value of `s` at the start of the current row
+    for (let k = 0; k <= len; k++) {
+      const ch = k < len ? value[k] : undefined
+      let x
+      if (ch !== undefined && ch !== '\n') {
+        // caret sits at the left edge of a rendered char
+        x = glyph[s] ? glyph[s].x0 : anchorX
+      } else if (s > rowStartS && glyph[s - 1]) {
+        // caret at the end of a non-empty row (before a `\n` or end of text)
+        x = glyph[s - 1].x1
+      } else {
+        // empty row
+        x = anchorX
+      }
+      chardata[k] = { x, y: rowTop(row), height: cursorHeight }
+
+      if (ch !== undefined && ch !== '\n') {
+        s++
+      } else if (ch === '\n') {
+        row++
+        rowStartS = s
+      }
+    }
+    this.#chardata = chardata
+
     this.#setSelection(this.#textinput.selectionStart, this.#textinput.selectionEnd, true)
   }
 }

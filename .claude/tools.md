@@ -21,7 +21,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_ellipse` *(flying)* | Ellipse | E | Also contains Circle and Freehand Ellipse sub-tools |
 | `tool_circle` | Circle | — | Sub-tool of ellipse flyout |
 | `tool_fhellipse` | Freehand ellipse | — | Sub-tool of ellipse flyout |
-| `tool_text` | Text | T | Add/edit text elements |
+| `tool_text` | Text | T | Add/edit text elements. **Multiline:** the hidden edit buffer (`#text`) is a `<textarea>`; while editing, **Shift+Enter** inserts a new row and **plain Enter** commits + exits edit mode. SVG has no newline char, so each row is rendered as one absolutely-positioned `<tspan>` (shared `x` so `text-anchor` aligns rows, `y` stepped by `font-size × 1.2`) by `setMultilineText` in [packages/svgcanvas/core/utilities.js](../packages/svgcanvas/core/utilities.js); `getTextWithNewlines` reconstructs the `\n`-joined value. All `#text` reads/writes route through these two helpers (`elem-get-set.js`, `undo.js`, `history.js`). The caret/selection engine ([core/text-actions.js](../packages/svgcanvas/core/text-actions.js)) indexes `#chardata` by **textarea caret position** (incl. `\n`) and is row-aware (per-row caret y, per-row selection quads, nearest-row click hit-testing) |
 | `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL), URL, or **Import from vault** (only when a host provides `window.svgEditHost.pickVaultImage` — see [architecture.md](architecture.md) "Host bridge"). Inserts a centered image; no draw mode, no native prompt. A vault import carries a provenance `vaultLink` through the dialog `change` event → `handleImageImport`. A locally-picked **SVG file** (browse/drag-drop, detected by `image/svg+xml` type or `.svg` name in `handleFile`) is read as text into `editableSvg` so it imports as editable shapes too — not a frozen `<image>`. If `editableSvg` is set (whole-drawing **unlocked** import — vault or local SVG file), it routes to `insertSvgElements(editableSvg, { vaultLink, asPaths })` — drawable top-level elements into the layer (defs → canvas `<defs>`); a multi-element import is wrapped in one `<g>` so it moves/selects as a unit (double-click to edit members, like Excalidraw's import grouping), a single element is inserted bare. When the dialog's **"Import as editable paths"** checkbox (`#image_paths_toggle`, shown only for editable-SVG imports, **default off**) is checked, `asPaths` is passed and basic shapes (rect/circle/ellipse/line/polyline/polygon), including those nested in groups, are converted to `<path>` (`convertShapesToPaths` in `dialogs/insertImage.js`, a history-free DOM swap that copies each shape's own attrs/style onto the path); off → shapes stay native; `g`/`text`/`image`/`use`/existing `path` always pass through. Otherwise (locked embed / raster / frame crop / SVG-by-URL) `insertImageFromHref(href, { vaultLink, locked })`, which stamps `data-vault-link` (and `data-vault-locked` when locked) on the `<image>`. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertSvgElements` / `insertImageFromHref` (`dialogs/insertImage.js`) |
 
 **Extensions add (in order):**
@@ -208,7 +208,7 @@ container simply hides everything inside it.
 
 | Section | Shown when | Controls |
 |---------|-----------|----------|
-| `.text_panel` "Text Style" | `<text>` (or all-text multi) | `tool_bold` (B), `tool_italic` (I), `tool_text_decoration_underline/linethrough/overline`, `tool_font_family` (`<se-font-select>`, Google-style search + per-font previews; ext-fonts appends downloaded fonts), `tool_font_library` (`<se-font-library>`, Google Fonts browser + embed-on-export), `font_size` (1–1000), `tool_text_anchor` (start/middle/end) |
+| `.text_panel` "Text Style" | `<text>` (or all-text multi) | `tool_bold` (B), `tool_italic` (I), `tool_text_decoration_underline/linethrough/overline`, `tool_font_family` (`<se-font-select>`, Google-style search + per-font previews; ext-fonts appends downloaded fonts), `tool_font_library` (`<se-font-library>`, Google Fonts browser + embed-on-export), `font_size` (1–1000), `tool_text_anchor` — **row alignment** left/center/right (the `se-list` keeps SVG `text-anchor` values `start`/`middle`/`end` but is **labelled/iconed** left/center/right via `align_left.svg`/`align_center.svg`/`align_right.svg`; it aligns multiline rows because every row's `<tspan>` shares the text's `x`) |
 | `#sidepanel_text` "Spacing & Shape" | `<text>` (or all-text multi) | `tool_letter_spacing`, `tool_word_spacing`, `tool_text_length` (`textLength`), `tool_length_adjust`, `tool_perspective_x/y` |
 
 ### Effects tab (`#tab_effects`)
@@ -424,6 +424,8 @@ Flying button (left panel):
 | G | Group elements |
 | B | Bold (text) |
 | I | Italic (text) |
+| Shift+Enter | New row in the current text object (while editing) |
+| Enter | Commit text + exit edit mode (while editing) |
 | Delete / Backspace | Delete selected |
 | Ctrl+Z | Undo |
 | Ctrl+Y | Redo |

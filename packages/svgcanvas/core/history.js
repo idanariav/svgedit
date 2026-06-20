@@ -7,7 +7,7 @@
  */
 
 import { NS } from './namespaces.js'
-import { getHref, setHref, getRotationAngle, getBBox } from './utilities.js'
+import { getHref, setHref, getRotationAngle, getBBox, getTextWithNewlines, setMultilineText } from './utilities.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.js'
 
 // Attributes that affect an element's bounding box. Only these require
@@ -358,7 +358,7 @@ export class ChangeElementCommand extends Command {
     this.oldValues = attrs
     for (const attr in attrs) {
       if (attr === '#text') {
-        this.newValues[attr] = (elem) ? elem.textContent : ''
+        this.newValues[attr] = (elem) ? getTextWithNewlines(elem) : ''
       } else if (attr === '#href') {
         this.newValues[attr] = getHref(elem)
       } else {
@@ -379,7 +379,7 @@ export class ChangeElementCommand extends Command {
       Object.entries(this.newValues).forEach(([attr, value]) => {
         const isNullishOrEmpty = value === null || value === undefined || value === ''
         if (attr === '#text') {
-          this.elem.textContent = value === null || value === undefined ? '' : String(value)
+          setMultilineText(this.elem, value)
         } else if (attr === '#href') {
           if (isNullishOrEmpty) {
             this.elem.removeAttribute('href')
@@ -416,7 +416,7 @@ export class ChangeElementCommand extends Command {
       Object.entries(this.oldValues).forEach(([attr, value]) => {
         const isNullishOrEmpty = value === null || value === undefined || value === ''
         if (attr === '#text') {
-          this.elem.textContent = value === null || value === undefined ? '' : String(value)
+          setMultilineText(this.elem, value)
         } else if (attr === '#href') {
           if (isNullishOrEmpty) {
             this.elem.removeAttribute('href')

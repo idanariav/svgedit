@@ -304,6 +304,64 @@ export const bboxToObj = ({ x, y, width, height }) => {
 }
 
 /**
+ * Multiplier applied to font-size to derive the row step for multiline text.
+ * @type {Float}
+ */
+export const TEXT_LINE_HEIGHT = 1.2
+
+/**
+ * Read a `<text>` element's content as a newline-joined string. Multiline text
+ * is stored as one `<tspan>` per row (SVG has no newline character), so this
+ * reconstructs the `\n`-separated value used by the edit buffer and undo
+ * history. A single-line `<text>` (no tspans) falls back to plain `textContent`.
+ * @function module:utilities.getTextWithNewlines
+ * @param {Element} elem - The `<text>` element
+ * @returns {string}
+ */
+export const getTextWithNewlines = (elem) => {
+  if (!elem) { return '' }
+  const tspans = Array.from(elem.children).filter((c) => c.tagName === 'tspan')
+  if (tspans.length) {
+    return tspans.map((t) => t.textContent).join('\n')
+  }
+  return elem.textContent
+}
+
+/**
+ * Render a `\n`-separated string onto a `<text>` element. A single line is set
+ * as plain `textContent` (no tspans); multiple lines become one absolutely
+ * positioned `<tspan>` per row sharing the text's `x` (so `text-anchor` aligns
+ * them) and stepping `y` by the line height. Absolute `y` per row (rather than
+ * `dy` accumulation) is robust to blank rows and is what `recalculate` bakes.
+ * @function module:utilities.setMultilineText
+ * @param {Element} elem - The `<text>` element
+ * @param {string} value - The new content, rows separated by `\n`
+ * @param {Float} [fontSizeFallback=16] - Used when the element has no font-size
+ * @returns {void}
+ */
+export const setMultilineText = (elem, value, fontSizeFallback = 16) => {
+  const val = value === null || value === undefined ? '' : String(value)
+  const lines = val.split('\n')
+  if (lines.length <= 1) {
+    // Single row — plain text node (also clears any existing tspans)
+    elem.textContent = val
+    return
+  }
+  const x = parseFloat(elem.getAttribute('x')) || 0
+  const baseY = parseFloat(elem.getAttribute('y')) || 0
+  const fontSize = parseFloat(elem.getAttribute('font-size')) || fontSizeFallback
+  const lineHeight = fontSize * TEXT_LINE_HEIGHT
+  elem.textContent = '' // remove all existing children
+  lines.forEach((line, i) => {
+    const tspan = document.createElementNS(NS.SVG, 'tspan')
+    tspan.setAttribute('x', x)
+    tspan.setAttribute('y', baseY + i * lineHeight)
+    tspan.textContent = line
+    elem.append(tspan)
+  })
+}
+
+/**
  * @callback module:utilities.TreeWalker
  * @param {Element} elem - DOM element being traversed
  * @returns {void}

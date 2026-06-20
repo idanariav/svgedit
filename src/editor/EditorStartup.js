@@ -360,6 +360,15 @@ class EditorStartup {
       this.svgCanvas.setTextContent(evt.currentTarget.value)
     })
 
+    // Shift+Enter inserts a new row (default textarea behavior); plain Enter
+    // commits the text and exits edit mode (no newline inserted).
+    $id('text').addEventListener('keydown', (evt) => {
+      if (evt.key === 'Enter' && !evt.shiftKey) {
+        evt.preventDefault()
+        this.svgCanvas.textActions.toSelectMode(true)
+      }
+    })
+
     $id('link_url').addEventListener('change', (evt) => {
       if (evt.currentTarget.value.length) {
         this.svgCanvas.setLinkURL(evt.currentTarget.value)

@@ -8,7 +8,7 @@ import Paint from './paint.js'
 import { NS } from './namespaces.js'
 import {
   getVisibleElements, getStrokedBBoxDefaultVisible, findDefs,
-  walkTree, getHref, setHref
+  walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
 } from './utilities.js'
 import {
   convertToNum
@@ -769,6 +769,11 @@ const setTextAnchorMethod = (value) => {
   if (changedTextElements.length > 0) {
     svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
   }
+  // Alignment shifts every glyph's x, so re-measure the caret while editing.
+  if (svgCanvas.getCurrentMode() === 'textedit') {
+    svgCanvas.textActions.init()
+    svgCanvas.textActions.setCursor()
+  }
   notifyTextChange(changedTextElements)
 }
 
@@ -1045,6 +1050,12 @@ const setFontSizeMethod = (val) => {
   if (changedTextElements.length > 0) {
     svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
   }
+  // Re-flow multiline rows so line spacing tracks the new font size.
+  changedTextElements.forEach((el) => {
+    if (Array.from(el.children).some((c) => c.tagName === 'tspan')) {
+      setMultilineTextMethod(el, getTextWithNewlinesMethod(el))
+    }
+  })
   if (!textElements.some(el => el.textContent)) {
     svgCanvas.textActions.setCursor()
   }
@@ -1052,13 +1063,40 @@ const setFontSizeMethod = (val) => {
 }
 
 /**
+* Read a `<text>` element's content as a newline-joined string. Multiline text
+* is stored as one `<tspan>` per row (SVG has no newline character), so this
+* rebuilds the `\n`-separated value the edit buffer and undo history use. A
+* single-line `<text>` (no tspans) falls back to plain `textContent`.
+* @function module:svgcanvas.SvgCanvas#getTextWithNewlines
+* @param {Element} elem - The `<text>` element
+* @returns {string}
+*/
+const getTextWithNewlinesMethod = (elem) => getTextWithNewlines(elem)
+
+/**
+* Render a `\n`-separated string onto a `<text>` element. A single line is set
+* as plain `textContent` (no tspans, keeping simple text clean); multiple lines
+* become one absolutely-positioned `<tspan>` per row sharing the text's `x` (so
+* `text-anchor` aligns them) and stepping `y` by the line height. Absolute `y`
+* per row (rather than `dy` accumulation) is robust to blank rows and is what
+* `recalculate` already bakes during move/scale.
+* @function module:svgcanvas.SvgCanvas#setMultilineText
+* @param {Element} elem - The `<text>` element
+* @param {string} value - The new content, rows separated by `\n`
+* @returns {void}
+*/
+const setMultilineTextMethod = (elem, value) => {
+  setMultilineText(elem, value, parseFloat(svgCanvas.getCurText('font_size')) || 16)
+}
+
+/**
 * @function module:svgcanvas.SvgCanvas#getText
-* @returns {string} The current text (`textContent`) of the selected element
+* @returns {string} The current text of the selected element (newline-joined for multiline)
 */
 const getTextMethod = () => {
   const selectedElements = svgCanvas.getSelectedElements()
   const selected = selectedElements[0]
-  return (selected) ? selected.textContent : ''
+  return (selected) ? getTextWithNewlinesMethod(selected) : ''
 }
 
 /**
@@ -1529,7 +1567,9 @@ const setCircleArcAttrMethod = (attr, val) => {
   svgCanvas.getFontColor = getFontColorMethod // The current font color
   svgCanvas.getFontSize = getFontSizeMethod // The current font size
   svgCanvas.setFontSize = setFontSizeMethod // Applies the given font size to the selected element.
-  svgCanvas.getText = getTextMethod // current text (`textContent`) of the selected element
+  svgCanvas.getText = getTextMethod // current text (newline-joined for multiline) of the selected element
+  svgCanvas.getTextWithNewlines = getTextWithNewlinesMethod // newline-joined content of a `<text>` element
+  svgCanvas.setMultilineText = setMultilineTextMethod // renders a `\n`-separated string as tspans
   svgCanvas.setTextContent = setTextContentMethod // Updates the text element with the given string.
   svgCanvas.setImageURL = setImageURLMethod // Sets the new image URL for the selected image element
   svgCanvas.setLinkURL = setLinkURLMethod // Sets the new link URL for the selected anchor element.

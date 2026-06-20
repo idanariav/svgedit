@@ -405,7 +405,7 @@ class TopPanel {
             this.editor.svgCanvas.getTextPerspectiveX(elem)
           $id('tool_perspective_y').value =
             this.editor.svgCanvas.getTextPerspectiveY(elem)
-          $id('text').value = elem.textContent
+          $id('text').value = this.editor.svgCanvas.getTextWithNewlines(elem)
           if (this.editor.svgCanvas.addedNew) {
             // Timeout needed for IE9
             setTimeout(() => {

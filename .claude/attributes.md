@@ -134,14 +134,14 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (no po
 | `tool_text_decoration_overline` | button (toggle) | `text-decoration: overline` | |
 | `tool_font_family` | select | `font-family` | Serif, Sans-serif, Cursive, Fantasy, Monospace, Courier, Helvetica, Times |
 | `font_size` | spin | `font-size` | 1–1000, step 1 |
-| `tool_text_anchor` | list | `text-anchor` | start / middle / end |
+| `tool_text_anchor` | list | `text-anchor` | start / middle / end — **labelled left/center/right** (row alignment); aligns multiline rows since each row `<tspan>` shares the text's `x` |
 | `tool_letter_spacing` | spin | `letter-spacing` | 0–100, step 1 |
 | `tool_word_spacing` | spin | `word-spacing` | 0–1000, step 1 |
 | `tool_text_length` | spin | `textLength` | 0–1000 |
 | `tool_length_adjust` | select | `lengthAdjust` | `spacing` / `spacingAndGlyphs` |
 | `tool_perspective_x` | spin | custom transform | −80 to 80, step 1 |
 | `tool_perspective_y` | spin | custom transform | −80 to 80, step 1 |
-| `#text` *(hidden input)* | text | text content | Not shown in UI (offscreen via `#text` in svgedit.css); the text-edit key buffer wired by `textActions.setInputElem`. Lives at the **editor root** (`editorTemplate.html`), not inside a panel, so it stays focusable when a panel is hidden — e.g. tablet mode (`#tools_top` is `display:none`, and `focus()` on a `display:none` subtree is a no-op) |
+| `#text` *(hidden textarea)* | textarea | text content (multiline) | Not shown in UI (offscreen via `#text` in svgedit.css); the text-edit key buffer wired by `textActions.setInputElem`. A **`<textarea>`** (was an `<input>`) so it holds newlines: **Shift+Enter** = new row, **plain Enter** = commit/exit (keydown handler in `EditorStartup.js`). Multiline content renders as one `<tspan>` per row via `setMultilineText`; reads via `getTextWithNewlines` (both in `core/utilities.js`). Lives at the **editor root** (`editorTemplate.html`), not inside a panel, so it stays focusable when a panel is hidden — e.g. tablet mode (`#tools_top` is `display:none`, and `focus()` on a `display:none` subtree is a no-op) |
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (text position handled internally).
 
