@@ -1367,8 +1367,13 @@ const mouseDownEvent = (evt) => {
       if (rightClick) { svgCanvas.setStarted(false) }
 
       if (mouseTarget !== svgRoot) {
+        // On right-click with an existing selection, keep that selection so the
+        // context menu acts on the already-selected element(s) instead of
+        // grabbing whatever unselected element happens to be under the cursor.
+        const keepSelectionForRightClick =
+          rightClick && selectedElements.filter(Boolean).length > 0
         // if this element is not yet selected, clear selection and select it
-        if (!selectedElements.includes(mouseTarget)) {
+        if (!selectedElements.includes(mouseTarget) && !keepSelectionForRightClick) {
           // only clear selection if shift is not pressed (otherwise, add
           // element to selection)
           if (!evt.shiftKey) {
