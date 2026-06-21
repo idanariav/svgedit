@@ -787,15 +787,9 @@ const mouseUpEvent = (evt) => {
             // For groups, we always consolidate the transforms (recalculateDimensions returns null for groups)
             const isGroup = elem.tagName === 'g' || elem.tagName === 'a'
 
-            // If element has 2+ transforms, or is a group with a drag translate, consolidate.
-            // Skip this for non-group resize: a resize tlist is [translate, scale, translate]
-            // and would wrongly match here, baking a matrix onto the element instead of letting
-            // recalculateDimensions scale its attributes (width/height/font-size/…). Groups keep
-            // consolidating (recalculateDimensions returns null for them).
-            if (
-              (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate) ||
-              (isGroup && hasDragTranslate)
-            ) {
+            // Groups keep the drag baked as a single matrix transform on the
+            // <g> (recalculateDimensions returns null for them).
+            if (isGroup && hasDragTranslate) {
               const consolidatedMatrix = transformListToTransform(tlist).matrix
 
               // Clear the transform list
@@ -813,7 +807,30 @@ const mouseUpEvent = (evt) => {
               return
             }
 
-            // For non-group elements with simple transforms, try recalculateDimensions
+            // A non-group element whose transform list still holds the existing
+            // transform plus the dummy drag translate (2+ items): consolidate
+            // them into one matrix so recalculateDimensions can bake the move
+            // into the geometry below. Without this the translate is left as a
+            // matrix transform on the element — and path-edit then draws node
+            // grips from the un-translated pathSegList, i.e. at the original
+            // location. Skip for resize: that tlist is [translate, scale,
+            // translate] and must reach recalculateDimensions to scale real
+            // attributes (width/height/font-size/…) rather than bake a matrix.
+            if (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate) {
+              const consolidatedMatrix = transformListToTransform(tlist).matrix
+
+              // Clear the transform list
+              while (tlist.numberOfItems > 0) {
+                tlist.removeItem(0)
+              }
+
+              // Add the consolidated matrix
+              const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
+              newTransform.setMatrix(consolidatedMatrix)
+              tlist.appendItem(newTransform)
+            }
+
+            // For non-group elements, bake the transform into geometry via recalculateDimensions
             const cmd = svgCanvas.recalculateDimensions(elem)
             if (cmd) {
               batchCmd.addSubCommand(cmd)
