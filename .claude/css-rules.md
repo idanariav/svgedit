@@ -361,6 +361,20 @@ Each section sets `style.display: 'none'` until its trigger selection is active.
 }
 ```
 
+### No-fill shapes are outline-only for selection
+Shapes inherit `pointer-events: all` from the layer `<g>` (set in
+`packages/svgcanvas/core/layer.js`), so by default a `fill="none"` shape captures
+clicks across its whole interior. This rule restores SVG's expected behavior for
+no-fill shapes: only the stroke is hit-testable, and the empty interior is
+click-through to whatever lies behind. It keys on the `fill` **attribute** (the
+form svgedit's color tools write), so it self-applies/reverts as fill changes and
+also covers imported SVGs using `fill="none"`.
+```css
+#svgcontent [fill="none"] {
+  pointer-events: stroke;
+}
+```
+
 ---
 
 ## Shadow DOM Component CSS

@@ -944,6 +944,13 @@ hr {
 
 /*—————————————————————————————*/
 
+/* No-fill shapes are selectable by their outline only; clicks pass through the
+   empty interior to whatever lies behind. Overrides the pointer-events:all that
+   shapes inherit from the layer <g> (see layer.js). */
+#svgcontent [fill="none"] {
+  pointer-events: stroke;
+}
+
 #workarea.wireframe #svgcontent * {
   fill: none;
   stroke: #000;
