@@ -16,7 +16,10 @@
  */
 
 import { fetchSvgEl } from './svgIconLoader.js'
-import { loadUserShapes, removeUserShape } from '../extensions/ext-shapes/userShapes.js'
+import {
+  loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
+  deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
+} from '../extensions/ext-shapes/userShapes.js'
 
 // Inlined shape library data (bundled at build time). Keyed by file basename
 // without `.json` — e.g. `index`, `animal`, `arrow`. This removes the runtime
@@ -477,6 +480,57 @@ input:focus { outline: none; }
 }
 .sl-shape-dropdown button:hover { background: var(--icon-hover-bg, #EEF1F5); }
 .sl-shape-dropdown .sl-remove { color: #DC2626; }
+.sl-shape-dropdown .sl-menu-empty { color: var(--muted, #6B7280); cursor: default; }
+.sl-shape-dropdown .sl-menu-empty:hover { background: transparent; }
+
+/* ── Category wrapper & ⋮ menu (sidebar) ─────────────────────────────────── */
+.sl-cat-wrap { position: relative; display: block; }
+.sl-cat-menu {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  appearance: none; border: none; background: transparent;
+  width: 20px; height: 20px; border-radius: 4px;
+  font-size: 14px; line-height: 1; cursor: pointer;
+  color: var(--muted, #6B7280);
+  display: none; align-items: center; justify-content: center; padding: 0;
+}
+.sl-cat-wrap:hover .sl-cat-menu { display: flex; }
+.sl-cat-menu:hover { background: var(--icon-hover-bg, #EEF1F5); color: var(--icon-hover, #0F172A); }
+/* Make room for the menu button (covers the count) on hover. */
+.sl-cat-wrap:hover .sl-cat-count { opacity: 0; }
+
+/* ── Inline rename input (hosted in a dropdown popover) ───────────────────── */
+.sl-shape-dropdown.sl-rename-pop { padding: 6px; }
+.sl-inline-edit {
+  font: inherit; font-size: 12px;
+  padding: 5px 8px; width: 100%; box-sizing: border-box;
+  border: 1px solid var(--accent-border, #C7D7FF); border-radius: 5px;
+  background: var(--field-bg, #FFF); color: var(--fg, #1B1F24);
+  outline: none;
+}
+.sl-inline-edit:focus { border-color: var(--accent, #2962FF); }
+
+/* ── Hidden-categories restore section ───────────────────────────────────── */
+.sl-hidden-section { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--chrome-border, #E6E8EC); }
+.sl-hidden-toggle {
+  appearance: none; border: none; background: transparent;
+  width: 100%; text-align: left; padding: 6px 12px;
+  font: inherit; font-size: 11px; font-weight: 600;
+  color: var(--muted, #6B7280); cursor: pointer;
+}
+.sl-hidden-toggle::before { content: '▸ '; }
+.sl-hidden-toggle.is-open::before { content: '▾ '; }
+.sl-hidden-toggle:hover { color: var(--fg, #1B1F24); }
+.sl-hidden-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px; font-size: 12px; color: var(--fg, #1B1F24);
+}
+.sl-hidden-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-hidden-restore {
+  appearance: none; border: 1px solid var(--field-border, #DDE1E7);
+  background: var(--field-bg, #FFF); color: var(--accent, #2962FF);
+  border-radius: 5px; padding: 2px 8px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.sl-hidden-restore:hover { border-color: var(--accent-border, #C7D7FF); background: var(--accent-soft, #E8EFFF); }
 `
 
 // ── Component class ──────────────────────────────────────────────────────────
@@ -622,7 +676,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   async _loadAllCategories () {
     if (this._allLoaded) return
-    await Promise.all(this._categories.filter(id => id !== ALL_CAT).map(id => this._loadCategory(id)))
+    await Promise.all((this._allCategoryIds || []).map(id => this._loadCategory(id)))
     this._allLoaded = true
   }
 
@@ -661,21 +715,69 @@ export class SeShapeLibrary extends HTMLElement {
     }
   }
 
-  /** Rebuild the merged category list: user categories first, then built-ins. */
+  /**
+   * Rebuild the category list and the display-merge groups. Categories that
+   * share the same display label (e.g. two built-in sets both renamed
+   * "Raphael") collapse into ONE sidebar entry that aggregates their shapes —
+   * a non-destructive merge that works for read-only built-in categories.
+   */
   _rebuildCategoryList () {
+    const hidden = this._userStore.hidden || []
     // Only add user: prefix entries for categories that have no matching built-in
     const customUserCats = this._userStore.categories
       .filter(c => !this._builtinCategories.includes(c))
       .map(c => `user:${c}`)
-    this._categories = [
-      ALL_CAT,
+    // Full ordered id list (user categories first, then visible built-ins)
+    this._allCategoryIds = [
       ...customUserCats,
-      ...this._builtinCategories
+      ...this._builtinCategories.filter(c => !hidden.includes(c))
     ]
+
+    // Group by display label (case-insensitive). The first id seen for a label
+    // is that group's representative; the sidebar shows one entry per group.
+    this._catGroups = new Map() // repId -> [catId…]
+    this._catGroupOf = new Map() // catId -> repId
+    const repByLabel = new Map() // labelKey -> repId
+    for (const id of this._allCategoryIds) {
+      const key = this._catLabel(id).trim().toLowerCase()
+      let rep = repByLabel.get(key)
+      if (rep === undefined) {
+        rep = id
+        repByLabel.set(key, rep)
+        this._catGroups.set(rep, [])
+      }
+      this._catGroups.get(rep).push(id)
+      this._catGroupOf.set(id, rep)
+    }
+    this._categories = [ALL_CAT, ...this._catGroups.keys()]
   }
 
-  /** Re-read localStorage, update catalog, and re-render any open panel. */
-  _reloadUserShapes () {
+  /** Load every category id in a representative's display-merge group. */
+  async _loadCategoryGroup (repId) {
+    if (repId === ALL_CAT) { await this._loadAllCategories(); return }
+    const ids = this._catGroups?.get(repId) || [repId]
+    await Promise.all(ids.map(id => this._catalog[id] ? null : this._loadCategory(id)))
+  }
+
+  /** Flatten a merge-group's shapes into [shapeId, data, cat, catId] tuples. */
+  _groupEntries (repId) {
+    const ids = this._catGroups?.get(repId) || [repId]
+    const out = []
+    for (const id of ids) {
+      const cat = this._catalog[id]
+      if (!cat?.data) continue
+      for (const [sid, p] of Object.entries(cat.data)) out.push([sid, p, cat, id])
+    }
+    return out
+  }
+
+  /**
+   * Re-read localStorage, update catalog, and re-render any open panel.
+   * When `selectLabel` is given (after a rename/merge) the view re-selects the
+   * group now carrying that label so the user stays on the merged category.
+   * @param {string} [selectLabel]
+   */
+  _reloadUserShapes (selectLabel) {
     // Remove stale purely-custom user catalog entries
     for (const key of Object.keys(this._catalog)) {
       if (key.startsWith('user:')) delete this._catalog[key]
@@ -692,11 +794,19 @@ export class SeShapeLibrary extends HTMLElement {
     this._loadUserShapesIntoMemory()
     this._rebuildCategoryList()
 
-    // If the active category was removed, fall back to the first available
-    if (this._categoryId?.startsWith('user:') && !this._categories.includes(this._categoryId)) {
+    // After a rename/merge, follow the (possibly new) representative for the label
+    if (selectLabel != null) {
+      const key = selectLabel.trim().toLowerCase()
+      for (const rep of this._catGroups.keys()) {
+        if (this._catLabel(rep).trim().toLowerCase() === key) { this._categoryId = rep; break }
+      }
+    }
+
+    // If the active category was removed or hidden, fall back to the first available
+    if (this._categoryId && !this._categories.includes(this._categoryId)) {
       this._categoryId = this._categories[0] || 'basic'
     }
-    if (this._popCatId?.startsWith('user:') && !this._categories.includes(this._popCatId)) {
+    if (this._popCatId && !this._categories.includes(this._popCatId)) {
       this._popCatId = this._categories[0] || 'basic'
     }
 
@@ -714,13 +824,18 @@ export class SeShapeLibrary extends HTMLElement {
    */
   _catLabel (id) {
     if (id === ALL_CAT) return 'All'
+    // Display-name overrides are keyed by canonical id (built-in id or raw user cat name)
+    const overrides = this._userStore?.categoryLabels || {}
+    const rawId = id.startsWith('user:') ? id.slice(5) : id
+    if (overrides[rawId]) return overrides[rawId]
     if (this._catalog[id]?.isUser) return this._catalog[id].displayName
     return CAT_LABELS[id] || id
   }
 
   _countCategory (catId) {
     if (catId === ALL_CAT) return this._totalCount()
-    return Object.keys(this._catalog[catId]?.data ?? {}).length
+    const ids = this._catGroups?.get(catId) || [catId]
+    return ids.reduce((n, id) => n + Object.keys(this._catalog[id]?.data ?? {}).length, 0)
   }
 
   _totalCount () {
@@ -952,16 +1067,14 @@ export class SeShapeLibrary extends HTMLElement {
   _popEntries () {
     if (this._popCatId === ALL_CAT) {
       const out = []
-      for (const catId of this._categories) {
-        if (catId === ALL_CAT) continue
+      for (const catId of this._allCategoryIds || []) {
         const cat = this._catalog[catId]
-        if (!cat) continue
+        if (!cat?.data) continue
         for (const [id, data] of Object.entries(cat.data)) out.push([id, data, cat, catId])
       }
       return out
     }
-    const cat = this._catalog[this._popCatId]
-    return cat ? Object.entries(cat.data).map(([id, data]) => [id, data, cat, this._popCatId]) : []
+    return this._groupEntries(this._popCatId)
   }
 
   // ── Popover render ─────────────────────────────────────────────────────────
@@ -999,7 +1112,7 @@ export class SeShapeLibrary extends HTMLElement {
         e.stopPropagation()
         const id = btn.dataset.cat
         this._popCatId = id
-        if (!this._catalog[id]) await this._loadCategory(id)
+        await this._loadCategoryGroup(id)
         this._selectedId = null
         this._renderPopover()
       })
@@ -1097,11 +1210,17 @@ export class SeShapeLibrary extends HTMLElement {
         <aside class="sl-side">
           <nav class="sl-side-cats" aria-label="Shape categories">
             ${this._categories.map(id => `
-              <button class="sl-cat${id === this._categoryId ? ' is-active' : ''}" data-cat="${id}">
-                <span class="sl-cat-label">${this._esc(this._catLabel(id))}</span>
-                <span class="sl-cat-count">${this._countCategory(id)}</span>
-              </button>`).join('')}
+              <div class="sl-cat-wrap">
+                <button class="sl-cat${id === this._categoryId ? ' is-active' : ''}" data-cat="${id}">
+                  <span class="sl-cat-label">${this._esc(this._catLabel(id))}</span>
+                  <span class="sl-cat-count">${this._countCategory(id)}</span>
+                </button>
+                ${id === ALL_CAT
+? ''
+: `<button class="sl-cat-menu" data-cat="${this._escAttr(id)}" aria-label="Category options" title="Options" type="button">⋮</button>`}
+              </div>`).join('')}
           </nav>
+          ${this._buildHiddenSection()}
         </aside>
         <div class="sl-divider" aria-hidden="true"></div>
         <section class="sl-content">
@@ -1134,43 +1253,51 @@ export class SeShapeLibrary extends HTMLElement {
     if (this._categoryId === ALL_CAT) {
       return this._buildAllResults()
     }
-    const cat = this._catalog[this._categoryId]
-    if (!cat) return '<div class="sl-loading">Loading…</div>'
+    const ids = this._catGroups?.get(this._categoryId) || [this._categoryId]
+    if (!ids.some(id => this._catalog[id])) return '<div class="sl-loading">Loading…</div>'
 
-    const shapes = Object.entries(cat.data)
+    const entries = this._groupEntries(this._categoryId)
     if (this._view === 'grid') {
-      return `<div class="sl-grid-body">${shapes.map(([id, p]) => this._tileHtml(id, p, cat, this._categoryId)).join('')}</div>`
+      return `<div class="sl-grid-body">${entries.map(([id, p, cat, cid]) => this._tileHtml(id, p, cat, cid)).join('')}</div>`
     }
-    return `<div class="sl-list-body">${shapes.map(([id, p]) => this._rowHtml(id, p, cat, this._categoryId)).join('')}</div>`
+    return `<div class="sl-list-body">${entries.map(([id, p, cat, cid]) => this._rowHtml(id, p, cat, cid)).join('')}</div>`
   }
 
   /** Grouped rendering of every real category for the "All" tab. */
   _buildAllResults () {
-    const groups = []
-    for (const catId of this._categories) {
-      if (catId === ALL_CAT) continue
-      const cat = this._catalog[catId]
-      if (!cat) continue
-      const hits = Object.entries(cat.data)
-      if (hits.length) groups.push({ catId, cat, hits })
-    }
+    const groups = this._collectGroups(() => true)
     if (!groups.length) return '<div class="sl-loading">Loading…</div>'
     return this._renderGroups(groups)
   }
 
   _buildSearchResults () {
     const q = this._query.toLowerCase()
-    const groups = []
-    for (const catId of this._categories) {
-      const cat = this._catalog[catId]
-      if (!cat) continue
-      const hits = Object.entries(cat.data).filter(([id]) =>
-        id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
-      )
-      if (hits.length) groups.push({ catId, cat, hits })
-    }
+    const match = id => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
+    const groups = this._collectGroups(match)
     if (!groups.length) return `<div class="sl-empty">No shapes found for &ldquo;${this._esc(this._query)}&rdquo;</div>`
     return this._renderGroups(groups)
+  }
+
+  /**
+   * Build label-merged groups across every category id, keeping each shape's own
+   * cat metadata (so thumbnails size correctly even when a merged group spans
+   * categories with different `size`/`fill`).
+   * @param {(shapeId:string)=>boolean} shapeFilter
+   * @returns {{label:string, hits:Array<[string,*,object,string]>}[]}
+   */
+  _collectGroups (shapeFilter) {
+    const map = new Map() // repId -> { label, hits: [] }
+    for (const catId of this._allCategoryIds || []) {
+      const cat = this._catalog[catId]
+      if (!cat?.data) continue
+      const rep = this._catGroupOf?.get(catId) || catId
+      let g = map.get(rep)
+      if (!g) { g = { label: this._catLabel(rep), hits: [] }; map.set(rep, g) }
+      for (const [id, p] of Object.entries(cat.data)) {
+        if (shapeFilter(id)) g.hits.push([id, p, cat, catId])
+      }
+    }
+    return [...map.values()].filter(g => g.hits.length)
   }
 
   /**
@@ -1181,19 +1308,19 @@ export class SeShapeLibrary extends HTMLElement {
    */
   _renderGroups (groups) {
     if (this._view === 'grid') {
-      return groups.map(({ catId, cat, hits }) => `
+      return groups.map(({ label, hits }) => `
         <div class="sl-search-group">
-          <div class="sl-search-group-label">${this._esc(this._catLabel(catId))}</div>
+          <div class="sl-search-group-label">${this._esc(label)}</div>
           <div class="sl-grid-body sl-grid-inline">
-            ${hits.map(([id, p]) => this._tileHtml(id, p, cat, catId)).join('')}
+            ${hits.map(([id, p, cat, catId]) => this._tileHtml(id, p, cat, catId)).join('')}
           </div>
         </div>`).join('')
     }
-    return groups.map(({ catId, cat, hits }) => `
+    return groups.map(({ label, hits }) => `
       <div class="sl-search-group">
-        <div class="sl-search-group-label">${this._esc(this._catLabel(catId))}</div>
+        <div class="sl-search-group-label">${this._esc(label)}</div>
         <div class="sl-list-body sl-list-inline">
-          ${hits.map(([id, p]) => this._rowHtml(id, p, cat, catId)).join('')}
+          ${hits.map(([id, p, cat, catId]) => this._rowHtml(id, p, cat, catId)).join('')}
         </div>
       </div>`).join('')
   }
@@ -1296,10 +1423,14 @@ export class SeShapeLibrary extends HTMLElement {
         this._query = ''
         const searchInput = modal.querySelector('.sl-search input')
         if (searchInput) searchInput.value = ''
-        if (!this._catalog[id]) await this._loadCategory(id)
+        await this._loadCategoryGroup(id)
         this._refreshModalContent()
       })
     })
+
+    // Category ⋮ menus and the "show hidden" restore section
+    this._bindCategoryMenus(modal)
+    this._bindHiddenSection(modal)
 
     // View toggle
     modal.querySelectorAll('.sl-view-btn[data-view]').forEach(btn => {
@@ -1364,37 +1495,228 @@ export class SeShapeLibrary extends HTMLElement {
       })
     })
 
-    // Three-dot menu for user shapes
+    // Three-dot menu for user shapes: Rename, Move to…, Remove
     area.querySelectorAll('.sl-shape-menu').forEach(menuBtn => {
       menuBtn.addEventListener('click', e => {
         e.stopPropagation()
-        // Close any open dropdown
-        area.querySelectorAll('.sl-shape-dropdown').forEach(d => d.remove())
-
         const wrap = menuBtn.closest('.sl-tile-wrap')
-        const dropdown = document.createElement('div')
-        dropdown.className = 'sl-shape-dropdown'
-        dropdown.innerHTML = '<button class="sl-remove">Remove from library</button>'
-        wrap.appendChild(dropdown)
-
-        dropdown.querySelector('.sl-remove').addEventListener('click', ev => {
-          ev.stopPropagation()
-          dropdown.remove()
-          const rawCat = menuBtn.dataset.cat.replace(/^user:/, '')
-          removeUserShape({ category: rawCat, label: menuBtn.dataset.id })
-          this._reloadUserShapes()
-        })
-
-        // Close on outside click
-        const closeDropdown = ev => {
-          if (!dropdown.contains(ev.target)) {
-            dropdown.remove()
-            document.removeEventListener('click', closeDropdown, true)
+        const rawCat = menuBtn.dataset.cat.replace(/^user:/, '')
+        const label = menuBtn.dataset.id
+        this._openDropdown(wrap, [
+          {
+            label: 'Rename',
+            keepOpen: true,
+            onClick: dropdown => this._renderRenameInput(dropdown, label, newLabel => {
+              renameUserShape({ category: rawCat, oldLabel: label, newLabel })
+              this._reloadUserShapes()
+            })
+          },
+          {
+            label: 'Move to…',
+            keepOpen: true,
+            onClick: dropdown => this._renderMoveSubmenu(dropdown, rawCat, label)
+          },
+          {
+            label: 'Remove from library',
+            cls: 'sl-remove',
+            onClick: () => {
+              removeUserShape({ category: rawCat, label })
+              this._reloadUserShapes()
+            }
           }
-        }
-        setTimeout(() => document.addEventListener('click', closeDropdown, true), 0)
+        ])
       })
     })
+  }
+
+  /**
+   * Open a small dropdown menu anchored inside `wrap` (a relatively-positioned
+   * `.sl-*-wrap`). `items` are { label, cls?, keepOpen?, onClick }. A non-keepOpen
+   * item closes the dropdown before running; a keepOpen item receives the
+   * dropdown element so it can repopulate itself (used for submenus).
+   * @param {HTMLElement} wrap
+   * @param {{label:string, cls?:string, keepOpen?:boolean, onClick:Function}[]} items
+   * @returns {HTMLElement}
+   */
+  _openDropdown (wrap, items) {
+    this._shadow.querySelectorAll('.sl-shape-dropdown').forEach(d => d.remove())
+    const dropdown = document.createElement('div')
+    dropdown.className = 'sl-shape-dropdown'
+    this._fillDropdown(dropdown, items)
+    wrap.appendChild(dropdown)
+
+    // Use composedPath() so clicks *inside* the dropdown are recognised — at the
+    // document level a shadow-DOM event target is retargeted to the host, which
+    // would otherwise make every click look like an outside click.
+    const closeDropdown = ev => {
+      if (!ev.composedPath().includes(dropdown)) {
+        dropdown.remove()
+        document.removeEventListener('click', closeDropdown, true)
+      }
+    }
+    setTimeout(() => document.addEventListener('click', closeDropdown, true), 0)
+    return dropdown
+  }
+
+  /** Populate (or repopulate) a dropdown element with item buttons. */
+  _fillDropdown (dropdown, items) {
+    dropdown.replaceChildren()
+    for (const it of items) {
+      const b = document.createElement('button')
+      if (it.cls) b.className = it.cls
+      b.textContent = it.label
+      b.addEventListener('click', ev => {
+        ev.stopPropagation()
+        if (it.keepOpen) { it.onClick(dropdown); return }
+        dropdown.remove()
+        it.onClick()
+      })
+      dropdown.appendChild(b)
+    }
+  }
+
+  /** Repopulate a dropdown with the list of move-target categories. */
+  _renderMoveSubmenu (dropdown, fromCat, label) {
+    const targets = this._categories
+      .filter(id => id !== ALL_CAT && id.replace(/^user:/, '') !== fromCat)
+    if (!targets.length) {
+      this._fillDropdown(dropdown, [{ label: 'No other categories', cls: 'sl-menu-empty', onClick: () => {} }])
+      return
+    }
+    this._fillDropdown(dropdown, targets.map(id => ({
+      label: this._catLabel(id),
+      onClick: () => {
+        moveUserShape({ category: fromCat, label, toCategory: id.replace(/^user:/, '') })
+        this._reloadUserShapes()
+      }
+    })))
+  }
+
+  /**
+   * Turn an open dropdown into a rename text-input popover. The input lives in
+   * the dropdown (a sibling of the tile/category button) — never *inside* a
+   * <button>, where selection and typing break. Commits on Enter/blur, cancels
+   * on Escape; `onCommit(newValue)` runs only when the value actually changed.
+   * @param {HTMLElement} dropdown
+   * @param {string} current
+   * @param {(v:string)=>void} onCommit
+   */
+  _renderRenameInput (dropdown, current, onCommit) {
+    dropdown.replaceChildren()
+    dropdown.classList.add('sl-rename-pop')
+    const input = document.createElement('input')
+    input.className = 'sl-inline-edit'
+    input.value = current
+    dropdown.appendChild(input)
+    input.focus()
+    input.select()
+
+    let done = false
+    const finish = commit => {
+      if (done) return
+      done = true
+      const val = input.value.trim()
+      dropdown.remove()
+      if (commit && val && val !== current) onCommit(val)
+    }
+    input.addEventListener('click', ev => ev.stopPropagation())
+    input.addEventListener('keydown', ev => {
+      ev.stopPropagation()
+      if (ev.key === 'Enter') { ev.preventDefault(); finish(true) } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false) }
+    })
+    input.addEventListener('blur', () => finish(true))
+  }
+
+  /** Bind the ⋮ menu on each category in the sidebar. */
+  _bindCategoryMenus (modal) {
+    modal.querySelectorAll('.sl-cat-menu[data-cat]').forEach(menuBtn => {
+      menuBtn.addEventListener('click', e => {
+        e.stopPropagation()
+        const id = menuBtn.dataset.cat
+        const wrap = menuBtn.closest('.sl-cat-wrap')
+        const isUser = id.startsWith('user:')
+        // Operate on every category merged under this sidebar entry
+        const members = this._catGroups?.get(id) || [id]
+        const items = [
+          {
+            label: 'Rename',
+            keepOpen: true,
+            onClick: dropdown => this._renderRenameInput(dropdown, this._catLabel(id), newLabel => {
+              // Rename every member so the group stays merged under the new name.
+              // User members rename their real key (merging on collision); built-in
+              // members are read-only, so only their display label changes.
+              for (const mid of members) {
+                if (mid.startsWith('user:')) renameUserCategory({ category: mid.slice(5), newName: newLabel })
+                else setCategoryLabel({ category: mid, label: newLabel })
+              }
+              this._reloadUserShapes(newLabel)
+            })
+          }
+        ]
+        if (isUser) {
+          items.push({
+            label: 'Delete category',
+            cls: 'sl-remove',
+            onClick: () => {
+              const count = this._countCategory(id)
+              const msg = count
+                ? `Delete "${this._catLabel(id)}" and its ${count} shape${count === 1 ? '' : 's'}?`
+                : `Delete "${this._catLabel(id)}"?`
+              // eslint-disable-next-line no-alert
+              if (window.confirm(msg)) {
+                for (const mid of members) if (mid.startsWith('user:')) deleteUserCategory({ category: mid.slice(5) })
+                this._reloadUserShapes()
+              }
+            }
+          })
+        } else {
+          items.push({
+            label: 'Hide category',
+            cls: 'sl-remove',
+            onClick: () => {
+              for (const mid of members) if (!mid.startsWith('user:')) hideCategory({ category: mid })
+              this._reloadUserShapes()
+            }
+          })
+        }
+        this._openDropdown(wrap, items)
+      })
+    })
+  }
+
+  /** Bind the "Show hidden" toggle and per-row restore buttons. */
+  _bindHiddenSection (modal) {
+    modal.querySelector('.sl-hidden-toggle')?.addEventListener('click', () => {
+      this._hiddenExpanded = !this._hiddenExpanded
+      const list = modal.querySelector('.sl-hidden-list')
+      if (list) list.hidden = !this._hiddenExpanded
+      modal.querySelector('.sl-hidden-toggle')?.classList.toggle('is-open', this._hiddenExpanded)
+    })
+    modal.querySelectorAll('.sl-hidden-restore[data-cat]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        unhideCategory({ category: btn.dataset.cat })
+        this._reloadUserShapes()
+      })
+    })
+  }
+
+  /** Markup for the collapsible "Show hidden (N)" section under the sidebar. */
+  _buildHiddenSection () {
+    const hidden = (this._userStore?.hidden || []).filter(id => this._builtinCategories.includes(id))
+    if (!hidden.length) return ''
+    const rows = hidden.map(id => `
+      <div class="sl-hidden-row">
+        <span class="sl-hidden-name">${this._esc(this._catLabel(id))}</span>
+        <button class="sl-hidden-restore" data-cat="${this._escAttr(id)}" type="button" title="Restore">Restore</button>
+      </div>`).join('')
+    return `
+      <div class="sl-hidden-section">
+        <button class="sl-hidden-toggle${this._hiddenExpanded ? ' is-open' : ''}" type="button">
+          Hidden (${hidden.length})
+        </button>
+        <div class="sl-hidden-list"${this._hiddenExpanded ? '' : ' hidden'}>${rows}</div>
+      </div>`
   }
 
   // ── Targeted DOM updates (avoid full re-render) ────────────────────────────

@@ -196,7 +196,10 @@ See [extensions.md](extensions.md) for the full extension reference.
 By default the editor persists four pieces of user customization to its own
 `localStorage`: the **custom palette** (`sePalette.js`, key
 `svg-edit-custom-palette`), the **saved shape library** (`userShapes.js`, key
-`svg-edit-user-shapes`), **hotkey overrides** (`Hotkeys.js`, key
+`svg-edit-user-shapes` — store is `{ categories, shapes, categoryLabels, hidden }`,
+where `categoryLabels` holds display-name overrides and `hidden` holds non-destructively
+hidden built-in category ids; see [tools.md](tools.md) "Library management"),
+**hotkey overrides** (`Hotkeys.js`, key
 `svg-edit-hotkeys`), and **quick-action favorites** (`favorites.js`, key
 `svg-edit-favorites`).
 
