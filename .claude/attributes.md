@@ -156,6 +156,7 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (text 
 | `image_width` | `width` | `width` | px |
 | `image_height` | `height` | `height` | px |
 | `image_url` | `image_url` | `href` / `xlink:href` | URL text input |
+| `tool_trace_image` | — | — | **Convert to editable SVG** button — vectorizes the raster into editable `<path>`s via `imagetracerjs` (`dialogs/traceImage.js` + `se-trace-dialog`); not an attribute editor |
 
 Plus [common attributes](#common-attributes-all-shapes) including **x/y position**.
 

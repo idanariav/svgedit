@@ -195,7 +195,7 @@ container simply hides everything inside it.
 |--------------------|-----------|----------|
 | `#sidepanel_general` | single element | `elem_id`, `elem_class` (**`<se-class-select>`** — style-preset picker: scope-filtered dropdown of saved classes, "+" to save/update a class from the object, trash to delete; applying stamps the preset's captured attributes inline as one undo step, see `seClassSelect.js`/`classLibrary.js`), `angle` (rotation −180…180°), `selected_x`, `selected_y` (x/y hidden for line/circle/ellipse/polygon/arc) |
 | `.rect_panel` | `<rect>` | `rect_width`, `rect_height`, `rect_rx` |
-| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url` |
+| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url`; **`tool_trace_image`** (**Convert to editable SVG**) — opens `se-trace-dialog` (style preset + palette slider), then `traceImageToSvg` (`dialogs/traceImage.js`) vectorizes the raster into editable `<path>`s overlaid on the original (non-destructive); wired in `RightPanel.init`. Save traced pieces via the existing `add_to_shape_library` action |
 | `.circle_panel` | `<circle>` (or circle-arc path) | `circle_cx`, `circle_cy`, `circle_r`, `circle_arc` |
 | `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
 | `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |

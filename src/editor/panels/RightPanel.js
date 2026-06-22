@@ -1,6 +1,7 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
+import { traceImageToSvg } from '../dialogs/traceImage.js'
 
 const { $click } = SvgCanvas
 
@@ -107,6 +108,30 @@ class RightPanel {
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => this.toggleSidePanel())
+    // "Convert to editable SVG" (image trace): open the options dialog for the
+    // selected <image>, then run the trace when the user confirms.
+    const traceDialog = $id('se-trace-dialog')
+    $click($id('tool_trace_image'), () => {
+      const sel = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
+      if (sel[0]?.tagName !== 'image') return
+      traceDialog._targetImage = sel[0]
+      traceDialog.setAttribute('dialog', 'open')
+    })
+    traceDialog?.addEventListener('change', async (e) => {
+      if (e.detail?.trigger !== 'ok') return
+      const img = traceDialog._targetImage
+      if (!img) return
+      traceDialog.setBusy(true)
+      try {
+        await traceImageToSvg(img, {
+          preset: e.detail.preset,
+          numberofcolors: e.detail.numberofcolors
+        })
+        traceDialog.setAttribute('dialog', 'close')
+      } catch (err) {
+        traceDialog.showError(err.message)
+      }
+    })
     // Tab bar (Design / Text / Effects / Layers)
     this.editor.$qa('#sidepanel_tabs .sidepanel_tab').forEach(btn => {
       $click(btn, () => this.activateTab(btn.dataset.tab))

@@ -168,6 +168,12 @@ class EditorStartup {
       this.$container.append(imageImportDialog)
       imageImportDialog.init(this.i18next)
 
+      // Image-trace ("Convert to editable SVG") options dialog
+      const traceDialog = document.createElement('se-trace-dialog')
+      traceDialog.setAttribute('id', 'se-trace-dialog')
+      this.$container.append(traceDialog)
+      traceDialog.init(this.i18next)
+
       // Hotkey Manager dialog added to DOM
       const hotkeyDialog = document.createElement('se-hotkey-dialog')
       hotkeyDialog.setAttribute('id', 'se-hotkey-dialog')

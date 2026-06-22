@@ -49,6 +49,8 @@ svgedit/
 │   │   ├── exportDialog.js
 │   │   ├── imageImportDialog.js     # Insert-image dialog (file upload + URL)
 │   │   ├── insertImage.js           # insertImageFromHref() + insertSvgElements() helpers
+│   │   ├── traceImage.js            # traceImageToSvg() — raster <image> → editable paths (imagetracerjs)
+│   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
 │   │   ├── svgSourceDialog.js
 │   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js
 │   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)

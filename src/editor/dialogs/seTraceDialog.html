@@ -1,0 +1,225 @@
+<style>
+    :not(:defined) {
+        display: none;
+    }
+
+    /* Rendered outside the themed .svg_editor scope, so mirror the design
+       tokens here and reflect the active theme onto the host (see
+       seTraceDialog.js). Values must stay in sync with svgedit.css. */
+    :host {
+        --chrome-bg: #FFFFFF;
+        --chrome-border: #E6E8EC;
+        --fg: #1B1F24;
+        --muted: #6B7280;
+        --icon-hover-bg: #EEF1F5;
+        --field-bg: #FFFFFF;
+        --field-border: #DDE1E7;
+        --field-border-h: #C8CDD6;
+        --group-bg: #F6F7F9;
+        --accent: #2962FF;
+        --accent-soft: #E8EFFF;
+        --accent-ring: rgba(41, 98, 255, 0.16);
+    }
+
+    :host(.theme-dark) {
+        --chrome-bg: #1E2026;
+        --chrome-border: #2C2F37;
+        --fg: #ECEEF2;
+        --muted: #9098A5;
+        --icon-hover-bg: #2A2D35;
+        --field-bg: #14161A;
+        --field-border: #2C2F37;
+        --field-border-h: #3C4150;
+        --group-bg: #181A20;
+        --accent: #F6B23A;
+        --accent-soft: #3A2E18;
+        --accent-ring: rgba(246, 178, 58, 0.20);
+    }
+
+    #trace_container {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        width: 340px;
+        max-width: 92vw;
+        background: var(--chrome-bg, #FFFFFF);
+        color: var(--fg, #1B1F24);
+        border: 1px solid var(--chrome-border, #E6E8EC);
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+    }
+
+    #trace_header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--chrome-border, #E6E8EC);
+    }
+
+    #trace_title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    #trace_close {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--muted, #6B7280);
+        font-size: 18px;
+        line-height: 1;
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s, color .12s;
+    }
+
+    #trace_close:hover {
+        background: var(--icon-hover-bg, #F1F3F5);
+        color: var(--fg, #1B1F24);
+    }
+
+    #trace_body {
+        padding: 16px;
+    }
+
+    .trace_field {
+        margin-bottom: 14px;
+    }
+
+    .trace_field:last-child {
+        margin-bottom: 0;
+    }
+
+    .trace_label {
+        display: block;
+        margin: 0 0 6px 2px;
+        font-size: 12px;
+        color: var(--muted, #6B7280);
+    }
+
+    #trace_preset {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: var(--fg, #1B1F24);
+        background: var(--field-bg, #FFFFFF);
+        border: 1px solid var(--field-border, #DDE1E7);
+        border-radius: 8px;
+    }
+
+    #trace_preset:focus {
+        outline: none;
+        border-color: var(--accent, #2962FF);
+        box-shadow: 0 0 0 3px var(--accent-ring, rgba(41, 98, 255, 0.16));
+    }
+
+    .trace_colors_head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+    }
+
+    #trace_colors_val {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--fg, #1B1F24);
+    }
+
+    #trace_colors {
+        width: 100%;
+        accent-color: var(--accent, #2962FF);
+    }
+
+    #trace_error {
+        display: none;
+        margin-top: 12px;
+        font-size: 12px;
+        color: #e5484d;
+    }
+
+    #trace_error.show {
+        display: block;
+    }
+
+    #trace_footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 14px 16px;
+        border-top: 1px solid var(--chrome-border, #E6E8EC);
+    }
+
+    #trace_footer button {
+        appearance: none;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .12s, border-color .12s, opacity .12s;
+    }
+
+    #trace_cancel {
+        border: 1px solid var(--field-border, #DDE1E7);
+        background: var(--field-bg, #FFFFFF);
+        color: var(--fg, #1B1F24);
+    }
+
+    #trace_cancel:hover {
+        border-color: var(--field-border-h, #C8CDD6);
+    }
+
+    #trace_ok {
+        border: 1px solid var(--accent, #2962FF);
+        background: var(--accent, #2962FF);
+        color: #FFFFFF;
+    }
+
+    #trace_ok:disabled {
+        opacity: 0.45;
+        cursor: default;
+    }
+
+    /* Amber accent in dark theme needs dark text for contrast. */
+    :host(.theme-dark) #trace_ok {
+        color: #1B1F24;
+    }
+</style>
+<elix-dialog id="trace_box" aria-label="trace image" closed>
+    <div id="trace_container">
+        <div id="trace_header">
+            <p id="trace_title">Convert to editable SVG</p>
+            <button id="trace_close" type="button" aria-label="Close">&#x2715;</button>
+        </div>
+        <div id="trace_body">
+            <div class="trace_field">
+                <label class="trace_label" id="trace_preset_label" for="trace_preset">Style</label>
+                <select id="trace_preset">
+                    <option value="lineart">Line art</option>
+                    <option value="color" selected>Color</option>
+                    <option value="detailed">Detailed</option>
+                    <option value="posterized">Posterized</option>
+                </select>
+            </div>
+            <div class="trace_field">
+                <div class="trace_colors_head">
+                    <label class="trace_label" id="trace_colors_label" for="trace_colors">Colors</label>
+                    <span id="trace_colors_val">16</span>
+                </div>
+                <input type="range" id="trace_colors" min="2" max="32" step="1" value="16" />
+            </div>
+            <div id="trace_error">Could not trace this image.</div>
+        </div>
+        <div id="trace_footer">
+            <button id="trace_cancel" type="button">Cancel</button>
+            <button id="trace_ok" type="button">Convert</button>
+        </div>
+    </div>
+</elix-dialog>

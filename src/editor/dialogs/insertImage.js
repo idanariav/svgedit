@@ -122,13 +122,17 @@ export const insertImageFromHref = (href, opts = {}) => {
  * native.
  *
  * @param {string} svgString - Full `<svg>…</svg>` source to insert.
- * @param {{ vaultLink?: string, asPaths?: boolean }} [opts] - Optional extras.
+ * @param {{ vaultLink?: string, asPaths?: boolean, fitTo?: {x: number, y: number, width: number, height: number} }} [opts] - Optional extras.
  *   When `vaultLink` is
  *   set, every inserted top-level element is stamped with `data-vault-link` so
  *   an embedding host can track provenance (the host's backlink reconciler
  *   dedupes by link value, so repeats collapse to one backlink). No
  *   `data-vault-locked` is set — editable imports are always unlocked and never
  *   re-baked from the source.
+ *   When `fitTo` is set (a user-space rect), the import is scaled/translated to
+ *   overlay that rect — mapping the source SVG's intrinsic size onto it —
+ *   instead of being centered on the page. Used by the image-trace feature to
+ *   drop the vectorized paths directly over the source image.
  * @returns {void}
  */
 export const insertSvgElements = (svgString, opts = {}) => {
@@ -138,6 +142,9 @@ export const insertSvgElements = (svgString, opts = {}) => {
   const parsed = new DOMParser().parseFromString(svgString, 'image/svg+xml')
   const root = parsed.documentElement
   if (!root || root.getElementsByTagName('parsererror').length) return
+  // Source intrinsic size, used to fit the import onto opts.fitTo when present.
+  const srcW = parseFloat(root.getAttribute('width')) || 0
+  const srcH = parseFloat(root.getAttribute('height')) || 0
 
   // Split the source into defs/paint-server content (goes to <defs>) and
   // drawable top-level elements (go to the layer). `<defs>` may sit at the root
@@ -231,19 +238,32 @@ export const insertSvgElements = (svgString, opts = {}) => {
 
   svgCanvas.selectOnly(unit)
 
-  // Center the whole import on the page (combined bbox), same idea as
-  // insertImageFromHref's align('m'/'c','page'), bundled into the same history
-  // entry as the insert.
-  const bbox = svgCanvas.getStrokedBBox(unit)
-  if (bbox) {
-    const dx = svgCanvas.getContentW() / 2 - (bbox.x + bbox.width / 2)
-    const dy = svgCanvas.getContentH() / 2 - (bbox.y + bbox.height / 2)
-    const moveCmd = svgCanvas.moveSelectedElements(
-      unit.map(() => dx),
-      unit.map(() => dy),
-      false
-    )
-    if (moveCmd && !moveCmd.isEmpty()) batchCmd.addSubCommand(moveCmd)
+  if (opts.fitTo && srcW && srcH) {
+    // Overlay the source rect: map the import's intrinsic size onto opts.fitTo
+    // via a translate/scale transform on the wrapping group (same group-resize
+    // pattern as ext-shapes — no recalculate needed for a container <g>). The
+    // trace is always multi-path, so `unit` is a single wrapping <g> here.
+    const { x, y, width, height } = opts.fitTo
+    const sx = width / srcW
+    const sy = height / srcH
+    unit.forEach((el) => {
+      el.setAttribute('transform', `translate(${x},${y}) scale(${sx},${sy})`)
+    })
+  } else {
+    // Center the whole import on the page (combined bbox), same idea as
+    // insertImageFromHref's align('m'/'c','page'), bundled into the same history
+    // entry as the insert.
+    const bbox = svgCanvas.getStrokedBBox(unit)
+    if (bbox) {
+      const dx = svgCanvas.getContentW() / 2 - (bbox.x + bbox.width / 2)
+      const dy = svgCanvas.getContentH() / 2 - (bbox.y + bbox.height / 2)
+      const moveCmd = svgCanvas.moveSelectedElements(
+        unit.map(() => dx),
+        unit.map(() => dy),
+        false
+      )
+      if (moveCmd && !moveCmd.isEmpty()) batchCmd.addSubCommand(moveCmd)
+    }
   }
   svgCanvas.addCommandToHistory(batchCmd)
   svgCanvas.call('changed', unit)
