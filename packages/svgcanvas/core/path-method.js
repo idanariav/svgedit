@@ -9,10 +9,10 @@
 import { NS } from './namespaces.js'
 import { ChangeElementCommand } from './history.js'
 import {
-  transformPoint, getMatrix
+  transformPoint, getMatrix, getMatrixToContent, matrixMultiply, isIdentity
 } from './math.js'
 import {
-  assignAttributes, getRotationAngle
+  assignAttributes
 } from './utilities.js'
 
 const TYPE_TO_CMD = {
@@ -1143,9 +1143,20 @@ export const init = (canvas) => {
   */
   update () {
     const { elem } = this
-    if (getRotationAngle(elem)) {
-      this.matrix = getMatrix(elem)
-      this.imatrix = this.matrix.inverse()
+    // Map the path's local coordinates all the way to content space so grips
+    // track the path wherever it actually renders. This must honor any
+    // non-identity transform (scale, translate, skew, rotation), not just
+    // rotation, and must include transforms on ancestor <g>/<a> groups — not
+    // only the path's own transform. Imported/ungrouped SVGs are the common
+    // case: each path carries a residual scale matrix (e.g.
+    // matrix(0.15625 …)) while the move the user applied lives on an ancestor
+    // group. Using only the element's own matrix left grips at the original,
+    // un-moved location. The matrix/imatrix round-trip in getGripPt /
+    // getPointFromGrip keeps node editing consistent in that space.
+    const m = matrixMultiply(getMatrixToContent(elem), getMatrix(elem))
+    if (!isIdentity(m)) {
+      this.matrix = m
+      this.imatrix = m.inverse()
     } else {
       this.matrix = null
       this.imatrix = null
