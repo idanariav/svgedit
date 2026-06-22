@@ -1,18 +1,20 @@
 {
     "lib": [
         "basic",
-        "animal",
         "arrow",
+        "animal",
+        "people",
+        "symbol",
+        "weather",
+        "object",
+        "brands",
+        "ui",
+        "comms",
+        "math",
         "dialog_balloon",
         "electronics",
         "flowchart",
         "game",
-        "math",
-        "misc",
-        "music",
-        "object",
-        "raphael_1",
-        "raphael_2",
-        "symbol"
+        "music"
     ]
 }

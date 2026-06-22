@@ -36,17 +36,19 @@ const CAT_LABELS = {
   basic: 'Basic',
   animal: 'Animals',
   arrow: 'Arrows',
+  people: 'People',
+  symbol: 'Symbols',
+  weather: 'Weather & Nature',
+  object: 'Objects',
+  brands: 'Web & Brands',
+  ui: 'UI & Tools',
+  comms: 'Communication',
+  math: 'Math',
   dialog_balloon: 'Dialog balloons',
   electronics: 'Electronics',
   flowchart: 'Flowchart',
   game: 'Game',
-  math: 'Math',
-  misc: 'Miscellaneous',
-  music: 'Music',
-  object: 'Objects',
-  raphael_1: 'Raphael · Set 1',
-  raphael_2: 'Raphael · Set 2',
-  symbol: 'Symbols'
+  music: 'Music'
 }
 
 // Virtual category id for the default tab that aggregates every shape.
@@ -843,11 +845,16 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   // ── Shape thumbnail ────────────────────────────────────────────────────────
-  _shapeThumb (path, catData, w, h) {
-    const sz = catData?.size ?? 300
+  // `name` lets a category provide per-shape render overrides (`overrides[name]`
+  // → { size, fill }). Needed because the redistributed library mixes shapes
+  // authored in different coordinate spaces / fill modes within one category
+  // (e.g. 32-unit filled Raphael icons sitting next to 300-unit stroked shapes).
+  _shapeThumb (path, catData, w, h, name) {
+    const ov = catData?.overrides?.[name]
+    const sz = ov?.size ?? catData?.size ?? 300
     const off = sz * 0.05
     const vb = `${-off} ${-off} ${sz + off * 2} ${sz + off * 2}`
-    if (catData?.fill) {
+    if (ov?.fill ?? catData?.fill) {
       return `<svg viewBox="${vb}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${path}"/></svg>`
     }
     const sw = (sz / 30).toFixed(1)
@@ -1160,7 +1167,7 @@ export class SeShapeLibrary extends HTMLElement {
       const isUserShape = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
       const thumb = isUserShape
         ? this._userShapeThumb(shapeData, 26, 26)
-        : this._shapeThumb(shapeData, cat, 26, 26)
+        : this._shapeThumb(shapeData, cat, 26, 26, id)
       const label = isUserShape ? id : this._fmtName(id)
       return `
           <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
@@ -1331,7 +1338,7 @@ export class SeShapeLibrary extends HTMLElement {
     const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
     const thumb = isUser
       ? this._userShapeThumb(shapeData, 40, 40)
-      : this._shapeThumb(shapeData, cat, 40, 40)
+      : this._shapeThumb(shapeData, cat, 40, 40, id)
     const label = isUser ? id : this._fmtName(id)
     const menuBtn = isUser
       ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
@@ -1354,7 +1361,7 @@ export class SeShapeLibrary extends HTMLElement {
     const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
     const thumb = isUser
       ? this._userShapeThumb(shapeData, 24, 24)
-      : this._shapeThumb(shapeData, cat, 24, 24)
+      : this._shapeThumb(shapeData, cat, 24, 24, id)
     const label = isUser ? id : this._fmtName(id)
     const menuBtn = isUser
       ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
@@ -1382,7 +1389,7 @@ export class SeShapeLibrary extends HTMLElement {
     if (this._selectedId && shapeData) {
       const thumb = isUser
         ? this._userShapeThumb(shapeData, 22, 22)
-        : this._shapeThumb(shapeData, cat, 22, 22)
+        : this._shapeThumb(shapeData, cat, 22, 22, this._selectedId)
       const label = isUser ? this._selectedId : this._fmtName(this._selectedId)
       footChip = `<span class="sl-foot-chip">${thumb}</span>`
       footMeta = `
