@@ -895,6 +895,10 @@ class Editor extends EditorStartup {
     // extent, so a resolution change must re-render them (set by ext-grid).
     this.updateGrid?.()
 
+    // Proportion markers are anchored to the canvas width/height, so a
+    // resolution change must reposition them (set by ext-proportion-markers).
+    this.updateProportionMarkers?.()
+
     if (
       this.configObj.urldata.storagePrompt !== true &&
       this.storagePromptState === 'ignore'

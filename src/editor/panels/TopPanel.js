@@ -569,6 +569,13 @@ class TopPanel {
       }
     }
     this.editor.updateWireFrame()
+
+    // Markers + proportion snapping ride along with wireframe mode. Write the
+    // snap flag to the canvas-side config object (svgCanvas.curConfig is a
+    // separate object from the editor's configObj.curConfig after mergeDeep).
+    const on = $id('tool_wireframe').pressed
+    this.editor.svgCanvas.getCurConfig().wireframeSnapping = on
+    this.editor.updateProportionMarkers?.()
   }
 
   /**

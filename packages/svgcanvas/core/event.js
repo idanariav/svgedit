@@ -16,6 +16,7 @@ import {
 } from './math.js'
 import * as pathModule from './path.js'
 import * as hstry from './history.js'
+import { proportionLines } from './proportions.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 
 const {
@@ -243,6 +244,9 @@ const mouseMoveEvent = (evt) => {
           }
         }
         svgCanvas.hasDragStartTransform = true
+        // Snapshot the selection bbox at drag start so proportion snapping can
+        // test edge/center positions against the candidate (post-delta) bbox.
+        svgCanvas.dragStartBBox = getStrokedBBoxDefaultVisible(selectedElements)
       }
       // we temporarily use a translate on the element(s) being dragged
       // this transform is removed upon mousing up and the element is
@@ -252,6 +256,31 @@ const mouseMoveEvent = (evt) => {
         dy = y - svgCanvas.getStartY()
         if (svgCanvas.getCurConfig().gridSnapping) {
           ({ x: dx, y: dy } = snapPointToGrid(dx, dy))
+        }
+        // Wireframe proportion snapping: align the moving selection's edges or
+        // center to the canvas proportion lines (x = w·f, y = h·f). On a match,
+        // ask the markers extension to draw a guide line in the marker's color.
+        if (svgCanvas.getCurConfig().wireframeSnapping && svgCanvas.dragStartBBox) {
+          const res = svgCanvas.getResolution()
+          const tol = 8 / zoom // ~8 screen px
+          const bb = svgCanvas.dragStartBBox
+          const snapAxis = (lines, refs) => {
+            let best = null
+            for (const ln of lines) {
+              for (const r of refs) {
+                const d = ln.pos - r
+                if (Math.abs(d) <= tol && (best === null || Math.abs(d) < Math.abs(best.delta))) {
+                  best = { delta: d, pos: ln.pos, color: ln.color }
+                }
+              }
+            }
+            return best
+          }
+          const sx = snapAxis(proportionLines(res.w), [bb.x + dx, bb.x + dx + bb.width / 2, bb.x + dx + bb.width])
+          const sy = snapAxis(proportionLines(res.h), [bb.y + dy, bb.y + dy + bb.height / 2, bb.y + dy + bb.height])
+          if (sx) dx += sx.delta
+          if (sy) dy += sy.delta
+          svgCanvas.showSnapGuides?.({ x: sx, y: sy })
         }
         // Shift locks movement to the dominant axis (match Excalidraw)
         if (evt.shiftKey) {
@@ -694,6 +723,8 @@ const mouseOutEvent = (evt) => {
 const mouseUpEvent = (evt) => {
   evt.preventDefault()
   moveSelectionThresholdReached = false
+  svgCanvas.dragStartBBox = null
+  svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
   if (evt.button === 2) { return }
   if (!svgCanvas.getStarted()) { return }
 

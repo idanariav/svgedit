@@ -163,6 +163,7 @@ export default class ConfigObj {
       // EDITOR OPTIONS
       // Change the following to preferences (already in the Editor Options dialog)?
       gridSnapping: false,
+      wireframeSnapping: false, // Synced at runtime by clickWireframe; snap to canvas proportion lines while wireframe is on
       gridColor: '#000',
       baseUnit: 'px',
       snappingStep: 10,
@@ -205,6 +206,7 @@ export default class ConfigObj {
     this.defaultExtensions = [
       'ext-connector',
       'ext-grid',
+      'ext-proportion-markers',
       // 'ext-imagelib',
       // 'ext-arrows',
       'ext-markers',

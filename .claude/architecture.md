@@ -65,6 +65,7 @@ svgedit/
 │   │   ├── ext-overview_window/   # Mini canvas preview window
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
+│   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart)
 │   │   ├── ext-storage/           # Auto-save to browser localStorage
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
@@ -169,6 +170,7 @@ src/editor/index.html
 | `json.js` | JSON import/export of SVG data |
 | `units.js` | Unit conversion (px, em, cm, mm, in…) |
 | `math.js` | Transform matrix operations |
+| `proportions.js` | Wireframe proportion-marker tiers (fractions/sizes/colors) + `proportionLines()`; shared by `event.js` snapping and `ext-proportion-markers` |
 | `paste-elem.js` | Paste operation handler |
 | `copy-elem.js` | Copy element to clipboard |
 | `clear.js` | Clear canvas |

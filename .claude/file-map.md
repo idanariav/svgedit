@@ -109,6 +109,7 @@
 | `ext-overview_window/` | Mini canvas preview |
 | `ext-panning/` | Pan/hand tool |
 | `ext-polystar/` | Star and polygon tools |
+| `ext-proportion-markers/` | Wireframe-only edge proportion tick markers (companion to proportion snapping in `event.js`) |
 | `ext-shapes/` | Pre-made shape library |
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
