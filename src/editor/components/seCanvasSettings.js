@@ -1,11 +1,13 @@
 /* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
+import { getUserDataAdapter } from '../userDataAdapter.js'
 import './seSpinInput.js'
 
-// Canvas size presets. Aspect-ratio presets keep the longest side at 1000px;
-// the lower block holds the predefined sizes moved out of Document Properties
-// (all 4:3). Each button shows ratio + size, e.g. "4:5 (800:1000)".
-const PRESETS = [
+// Built-in canvas size presets, used when the user has not curated their own
+// list. Aspect-ratio presets keep the longest side at 1000px; the lower block
+// holds the predefined sizes moved out of Document Properties (all 4:3). Each
+// button shows ratio + size, e.g. "4:5 (800:1000)".
+const DEFAULT_PRESETS = [
   { ratio: '4:5', w: 800, h: 1000 },
   { ratio: '5:4', w: 1000, h: 800 },
   { ratio: '16:9', w: 1000, h: 563 },
@@ -16,6 +18,76 @@ const PRESETS = [
   { ratio: '4:3', w: 1280, h: 960 },
   { ratio: '4:3', w: 1600, h: 1200 }
 ]
+
+const STORAGE_KEY = 'svg-edit-canvas-presets'
+
+/**
+ * Keep only well-formed preset entries (finite positive w/h, string ratio).
+ * @param {Array} arr
+ * @returns {Array<{ratio:string,w:number,h:number}>}
+ */
+const sanitizePresets = (arr) =>
+  (Array.isArray(arr) ? arr : [])
+    .filter(p =>
+      p && typeof p.ratio === 'string' &&
+      Number.isFinite(p.w) && p.w > 0 &&
+      Number.isFinite(p.h) && p.h > 0)
+    .map(({ ratio, w, h }) => ({ ratio, w, h }))
+
+/**
+ * Load the user's canvas presets via the host adapter, else localStorage.
+ * Falls back to a copy of DEFAULT_PRESETS when nothing valid is stored.
+ * @returns {Array<{ratio:string,w:number,h:number}>}
+ */
+const loadPresets = () => {
+  try {
+    const adapter = getUserDataAdapter()
+    if (adapter && typeof adapter.getCanvasPresets === 'function') {
+      const stored = sanitizePresets(adapter.getCanvasPresets())
+      return stored.length ? stored : DEFAULT_PRESETS.map(p => ({ ...p }))
+    }
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      const stored = sanitizePresets(raw ? JSON.parse(raw) : null)
+      return stored.length ? stored : DEFAULT_PRESETS.map(p => ({ ...p }))
+    }
+  } catch (err) {
+    console.error('Failed to load canvas presets', err)
+  }
+  return DEFAULT_PRESETS.map(p => ({ ...p }))
+}
+
+/**
+ * Persist the canvas presets via the host adapter, else localStorage.
+ * @param {Array} presets
+ * @returns {void}
+ */
+const savePresets = (presets) => {
+  try {
+    const adapter = getUserDataAdapter()
+    if (adapter && typeof adapter.setCanvasPresets === 'function') {
+      adapter.setCanvasPresets(presets.map(p => ({ ...p })))
+    } else if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(presets))
+    }
+  } catch (err) {
+    console.error('Failed to persist canvas presets', err)
+  }
+}
+
+const gcd = (a, b) => (b ? gcd(b, a % b) : a)
+
+/**
+ * Reduce w:h to a ratio label, e.g. 800x1000 → "4:5".
+ * @param {number} w
+ * @param {number} h
+ * @returns {string}
+ */
+const computeRatio = (w, h) => {
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return ''
+  const d = gcd(w, h) || 1
+  return `${w / d}:${h / d}`
+}
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -98,6 +170,82 @@ template.innerHTML = `
     border-color: var(--accent-border, #C7D7FF);
     background: var(--icon-hover-bg, #EEF1F5);
   }
+  .manage-toggle {
+    align-self: flex-end;
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #6B7280);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background .12s, color .12s;
+  }
+  .manage-toggle:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    color: var(--icon-hover, #0F172A);
+  }
+  .manage {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .manage-row {
+    display: grid;
+    grid-template-columns: 1fr 64px 64px auto;
+    gap: 5px;
+    align-items: center;
+  }
+  .manage-row input {
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 6px;
+    background: var(--field-bg, #F7F8FA);
+    color: var(--fg, #1B1F24);
+    font: inherit;
+    font-size: 12px;
+  }
+  .manage-row input:focus {
+    outline: none;
+    border-color: var(--accent-border, #C7D7FF);
+  }
+  .del {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 6px;
+    background: var(--field-bg, #F7F8FA);
+    color: var(--muted, #6B7280);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .del:hover {
+    border-color: var(--danger, #E5484D);
+    color: var(--danger, #E5484D);
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
+  .add-preset {
+    padding: 6px 0;
+    border: 1px dashed var(--field-border, #E2E5EA);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--fg, #1B1F24);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .add-preset:hover {
+    border-color: var(--accent-border, #C7D7FF);
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
   .actions {
     display: flex;
     gap: 6px;
@@ -139,9 +287,18 @@ template.innerHTML = `
       <se-spin-input id="canvas_h" label="H" min="1" step="1"></se-spin-input>
     </div>
     <div class="presets"></div>
+    <button class="manage-toggle" type="button">✎ Manage presets</button>
+    <div class="manage">
+      <div class="manage-rows"></div>
+      <button class="add-preset" type="button">+ Add preset</button>
+    </div>
     <div class="actions">
       <button class="reset">Reset</button>
       <button class="apply">Apply</button>
+    </div>
+    <div class="actions manage-actions" style="display:none">
+      <button class="cancel-manage reset">Cancel</button>
+      <button class="save-manage apply">Save</button>
     </div>
   </div>
 `
@@ -169,18 +326,15 @@ class SeCanvasSettings extends HTMLElement {
     this.$presets = this._shadowRoot.querySelector('.presets')
     this.$apply = this._shadowRoot.querySelector('.apply')
     this.$reset = this._shadowRoot.querySelector('.reset')
+    this.$manageToggle = this._shadowRoot.querySelector('.manage-toggle')
+    this.$manage = this._shadowRoot.querySelector('.manage')
+    this.$manageRows = this._shadowRoot.querySelector('.manage-rows')
+    this.$addPreset = this._shadowRoot.querySelector('.add-preset')
+    this.$applyActions = this._shadowRoot.querySelector('.actions:not(.manage-actions)')
+    this.$manageActions = this._shadowRoot.querySelector('.manage-actions')
 
-    // Build preset buttons
-    PRESETS.forEach(({ ratio, w, h }) => {
-      const btn = document.createElement('button')
-      btn.className = 'preset'
-      btn.textContent = `${ratio} (${w}:${h})`
-      btn.addEventListener('click', () => {
-        this.$w.value = w
-        this.$h.value = h
-      })
-      this.$presets.append(btn)
-    })
+    // Current preset list; (re)loaded on open so host/plugin edits are picked up.
+    this.presets = []
 
     this.$trigger.addEventListener('click', e => {
       e.stopPropagation()
@@ -188,6 +342,10 @@ class SeCanvasSettings extends HTMLElement {
     })
     this.$apply.addEventListener('click', () => this.apply())
     this.$reset.addEventListener('click', () => this.reset())
+    this.$manageToggle.addEventListener('click', () => this.enterManageMode())
+    this.$addPreset.addEventListener('click', () => this.addManageRow())
+    this._shadowRoot.querySelector('.save-manage').addEventListener('click', () => this.saveManage())
+    this._shadowRoot.querySelector('.cancel-manage').addEventListener('click', () => this.exitManageMode())
     // Light-dismiss: close on outside click / Esc
     document.addEventListener('click', this.handleClose)
     this.addEventListener('keydown', this.handleKeyDown)
@@ -235,6 +393,10 @@ class SeCanvasSettings extends HTMLElement {
     this._original = { w: Math.round(res.w), h: Math.round(res.h) }
     this.$w.value = this._original.w
     this.$h.value = this._original.h
+    // (Re)load presets each open so host/plugin edits are reflected.
+    this.presets = loadPresets()
+    this.renderPresets()
+    this.exitManageMode()
     this.$popup.style.display = 'flex'
     this.$trigger.setAttribute('aria-expanded', 'true')
     this.positionPopup()
@@ -243,6 +405,123 @@ class SeCanvasSettings extends HTMLElement {
   close () {
     this.$popup.style.display = 'none'
     this.$trigger.setAttribute('aria-expanded', 'false')
+  }
+
+  /**
+   * Rebuild the preset grid from `this.presets`. Each button stages its size
+   * into the W/H inputs on click.
+   */
+  renderPresets () {
+    this.$presets.replaceChildren()
+    this.presets.forEach(({ ratio, w, h }) => {
+      const btn = document.createElement('button')
+      btn.className = 'preset'
+      btn.textContent = `${ratio} (${w}:${h})`
+      btn.addEventListener('click', () => {
+        this.$w.value = w
+        this.$h.value = h
+      })
+      this.$presets.append(btn)
+    })
+  }
+
+  /**
+   * Switch the popover into preset-management mode: hide the grid, show one
+   * editable row per preset plus the Add/Save/Cancel controls.
+   */
+  enterManageMode () {
+    this.$manageRows.replaceChildren()
+    this.presets.forEach(p => this.addManageRow(p))
+    this.$presets.style.display = 'none'
+    this.$manageToggle.style.display = 'none'
+    this.$applyActions.style.display = 'none'
+    this.$manage.style.display = 'flex'
+    this.$manageActions.style.display = 'flex'
+    this.positionPopup()
+  }
+
+  /** Leave management mode and restore the normal preset view. */
+  exitManageMode () {
+    this.$presets.style.display = 'grid'
+    this.$manageToggle.style.display = 'block'
+    this.$applyActions.style.display = 'flex'
+    this.$manage.style.display = 'none'
+    this.$manageActions.style.display = 'none'
+  }
+
+  /**
+   * Append one editable preset row. Pre-fills from `preset` when editing an
+   * existing entry, else from the current W/H inputs when adding.
+   * @param {{ratio:string,w:number,h:number}} [preset]
+   */
+  addManageRow (preset) {
+    const row = document.createElement('div')
+    row.className = 'manage-row'
+
+    const w = preset ? preset.w : parseInt(this.$w.value, 10) || ''
+    const h = preset ? preset.h : parseInt(this.$h.value, 10) || ''
+    const ratio = preset ? preset.ratio : computeRatio(Number(w), Number(h))
+
+    const labelInput = document.createElement('input')
+    labelInput.className = 'r-label'
+    labelInput.placeholder = 'ratio'
+    labelInput.value = ratio
+    // Mark the label as auto so W/H edits keep refreshing it until the user
+    // types their own label.
+    labelInput.dataset.autoLabel = preset ? '' : 'true'
+
+    const wInput = document.createElement('input')
+    wInput.className = 'r-w'
+    wInput.type = 'number'
+    wInput.min = '1'
+    wInput.placeholder = 'W'
+    wInput.value = w
+
+    const hInput = document.createElement('input')
+    hInput.className = 'r-h'
+    hInput.type = 'number'
+    hInput.min = '1'
+    hInput.placeholder = 'H'
+    hInput.value = h
+
+    const refreshLabel = () => {
+      if (labelInput.dataset.autoLabel !== 'true') return
+      const computed = computeRatio(parseInt(wInput.value, 10), parseInt(hInput.value, 10))
+      if (computed) labelInput.value = computed
+    }
+    wInput.addEventListener('input', refreshLabel)
+    hInput.addEventListener('input', refreshLabel)
+    labelInput.addEventListener('input', () => { labelInput.dataset.autoLabel = '' })
+
+    const del = document.createElement('button')
+    del.className = 'del'
+    del.type = 'button'
+    del.title = 'Remove preset'
+    del.textContent = '×'
+    del.addEventListener('click', () => row.remove())
+
+    row.append(labelInput, wInput, hInput, del)
+    this.$manageRows.append(row)
+  }
+
+  /**
+   * Collect valid rows into `this.presets`, persist, and leave manage mode.
+   */
+  saveManage () {
+    const next = []
+    this.$manageRows.querySelectorAll('.manage-row').forEach(row => {
+      const w = parseInt(row.querySelector('.r-w').value, 10)
+      const h = parseInt(row.querySelector('.r-h').value, 10)
+      let ratio = row.querySelector('.r-label').value.trim()
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return
+      if (!ratio) ratio = computeRatio(w, h)
+      next.push({ ratio, w, h })
+    })
+    this.presets = next
+    savePresets(next)
+    this.renderPresets()
+    this.exitManageMode()
+    this.positionPopup()
   }
 
   /**

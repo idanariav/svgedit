@@ -62,7 +62,7 @@
 | `seInput.js` | `<se-input>` | Text input with icon/label |
 | `seClassSelect.js` | `<se-class-select>` | Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist). Applying a class stamps its captured attributes onto the selection as one undo step. Backed by `../classLibrary.js` |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
-| `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
+| `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset). Presets are user-editable via a "Manage presets" mode (add/edit/remove rows, GCD-autofilled labels) and persist via the `userDataAdapter` (`getCanvasPresets`/`setCanvasPresets`), falling back to `localStorage` key `svg-edit-canvas-presets`; built-in `DEFAULT_PRESETS` seed an empty list |
 | `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
 | `seOffsetSettings.js` | `<se-offset-settings>` | Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |

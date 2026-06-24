@@ -24,6 +24,8 @@
  *     setHotkeys(overrides: object): void,      // full overrides map
  *     getClasses(): Array,                      // style-preset "class" library
  *     setClasses(classes: Array): void,         // full class array
+ *     getCanvasPresets(): Array<{ratio,w,h}>,   // canvas-size presets
+ *     setCanvasPresets(presets: Array): void,   // full presets array
  *     getFonts(): Promise<Array<{family,woff2Base64}>>, // persisted custom fonts
  *     saveFont(family: string, woff2Base64: string): Promise<void> // persist one font
  *   }
@@ -33,7 +35,10 @@
  * fall back to `localStorage` key `svg-edit-hotkeys`.
  *
  * `getClasses`/`setClasses` back the class library (`classLibrary.js`), falling
- * back to `localStorage` key `svg-edit-class-library`. `getFonts`/`saveFont`
+ * back to `localStorage` key `svg-edit-class-library`.
+ * `getCanvasPresets`/`setCanvasPresets` back the canvas-settings preset list
+ * (`seCanvasSettings.js`), falling back to `localStorage` key
+ * `svg-edit-canvas-presets`. `getFonts`/`saveFont`
  * back the custom-font cache (`ext-fonts/fontStore.js`); the async signatures
  * let a host read/write font binaries from a synced vault folder, falling back
  * to IndexedDB (`svgedit-fonts`) when absent.
