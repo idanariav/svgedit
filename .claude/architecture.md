@@ -59,7 +59,6 @@ svgedit/
 │   │   ├── ext-connector/         # Connector/arrow tool for diagrams
 │   │   ├── ext-eyedropper/        # Pick color/style from canvas element
 │   │   ├── ext-grid/              # Grid overlay + snap-to-grid
-│   │   ├── ext-helloworld/        # Example/template extension
 │   │   ├── ext-layer_view/        # Layer visualization
 │   │   ├── ext-markers/           # Arrow/marker decorators on lines
 │   │   ├── ext-opensave/          # File open / save / import dialogs

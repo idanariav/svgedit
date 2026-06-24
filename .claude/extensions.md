@@ -87,7 +87,6 @@ runtime `import(`./locale/${lang}.js`)` any more.
 | `ext-connector` | Connector lines that auto-update when objects move; straight/elbow routing toggle + leader-line preset (`#connector_panel`, `se:conn_mode`); excludes connectors from group ops | `ext-connector.js` |
 | `ext-eyedropper` | Eyedropper tool — click element to copy its fill/stroke/opacity to current style | `ext-eyedropper.js` |
 | `ext-grid` | Grid overlay + snap via `<se-grid-settings>` popover. 5 shapes (square pattern tile; iso/triangle/1pt/2pt-perspective as `<line>`s). Shape-aware snapping (`snapPointToGrid`). Persists via `grid_*` prefs. Exposes `svgEditor.updateGrid` for resize redraws | `ext-grid.js` |
-| `ext-helloworld` | Minimal example template — start here when creating a new extension | `ext-helloworld.js` |
 | `ext-layer_view` | Layer visualization enhancements | `ext-layer_view.js` |
 | `ext-markers` | Arrow/marker decorators on lines, polylines, paths, polygons (start/middle/end). Set: arrows, triangle, diamond, open-V arrow, box, circle, star, X, slashes (filled + open `_o` variants) | `ext-markers.js` |
 | `ext-opensave` | File open, save, clear, import image (drag-drop), append SVG | `ext-opensave.js` |

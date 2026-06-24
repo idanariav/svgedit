@@ -103,7 +103,6 @@
 | `ext-connector/` | Connector/arrow lines between objects; straight/elbow routing + leader-line preset (`#connector_panel`) |
 | `ext-eyedropper/` | Eyedropper color-pick tool |
 | `ext-grid/` | Grid overlay + snap |
-| `ext-helloworld/` | Minimal example template |
 | `ext-layer_view/` | Layer visualization |
 | `ext-markers/` | Arrow/marker decorators |
 | `ext-opensave/` | File open/save/import/append |
