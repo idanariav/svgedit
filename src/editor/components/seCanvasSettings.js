@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
+import { loadLayouts, saveLayouts, captureCurrentLayout, applyLayout } from '../canvasLayouts.js'
 import './seSpinInput.js'
 
 // Built-in canvas size presets, used when the user has not curated their own
@@ -277,6 +278,101 @@ template.innerHTML = `
   .apply:hover {
     border-color: var(--accent, #2962FF);
   }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted, #6B7280);
+    border-top: 1px solid var(--chrome-border, #E6E8EC);
+    padding-top: 10px;
+  }
+  .layouts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .layouts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .layouts-empty {
+    font-size: 11.5px;
+    color: var(--muted, #6B7280);
+    padding: 2px 0;
+  }
+  .layout-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 5px;
+    align-items: center;
+  }
+  .layout-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg, #1B1F24);
+  }
+  .layout-apply {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--accent-border, #C7D7FF);
+    background: var(--accent-soft, #E8EFFF);
+    color: var(--accent, #2962FF);
+    transition: border-color .12s;
+  }
+  .layout-apply:hover {
+    border-color: var(--accent, #2962FF);
+  }
+  .layout-overwrite {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 6px;
+    background: var(--field-bg, #F7F8FA);
+    color: var(--muted, #6B7280);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .layout-overwrite:hover {
+    border-color: var(--accent-border, #C7D7FF);
+    color: var(--accent, #2962FF);
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
+  .layout-add {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px;
+  }
+  .layout-name {
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid var(--field-border, #E2E5EA);
+    border-radius: 6px;
+    background: var(--field-bg, #F7F8FA);
+    color: var(--fg, #1B1F24);
+    font: inherit;
+    font-size: 12px;
+  }
+  .layout-name:focus {
+    outline: none;
+    border-color: var(--accent-border, #C7D7FF);
+  }
+  .save-layout {
+    white-space: nowrap;
+    padding: 0 12px;
+  }
   </style>
   <button class="trigger" title="Canvas settings" aria-haspopup="dialog" aria-expanded="false">
     <span id="icon"></span>
@@ -291,6 +387,14 @@ template.innerHTML = `
     <div class="manage">
       <div class="manage-rows"></div>
       <button class="add-preset" type="button">+ Add preset</button>
+    </div>
+    <div class="layouts-section">
+      <div class="section-label">Layouts</div>
+      <div class="layouts-list"></div>
+      <div class="layout-add">
+        <input class="layout-name" type="text" placeholder="New layout name">
+        <button class="add-preset save-layout" type="button">+ Save current</button>
+      </div>
     </div>
     <div class="actions">
       <button class="reset">Reset</button>
@@ -332,9 +436,15 @@ class SeCanvasSettings extends HTMLElement {
     this.$addPreset = this._shadowRoot.querySelector('.add-preset')
     this.$applyActions = this._shadowRoot.querySelector('.actions:not(.manage-actions)')
     this.$manageActions = this._shadowRoot.querySelector('.manage-actions')
+    this.$layoutsSection = this._shadowRoot.querySelector('.layouts-section')
+    this.$layoutsList = this._shadowRoot.querySelector('.layouts-list')
+    this.$layoutName = this._shadowRoot.querySelector('.layout-name')
+    this.$saveLayout = this._shadowRoot.querySelector('.save-layout')
 
     // Current preset list; (re)loaded on open so host/plugin edits are picked up.
     this.presets = []
+    // Current saved-layout list; (re)loaded on open.
+    this.layouts = []
 
     this.$trigger.addEventListener('click', e => {
       e.stopPropagation()
@@ -346,6 +456,10 @@ class SeCanvasSettings extends HTMLElement {
     this.$addPreset.addEventListener('click', () => this.addManageRow())
     this._shadowRoot.querySelector('.save-manage').addEventListener('click', () => this.saveManage())
     this._shadowRoot.querySelector('.cancel-manage').addEventListener('click', () => this.exitManageMode())
+    this.$saveLayout.addEventListener('click', () => this.saveCurrentLayout())
+    this.$layoutName.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); this.saveCurrentLayout() }
+    })
     // Light-dismiss: close on outside click / Esc
     document.addEventListener('click', this.handleClose)
     this.addEventListener('keydown', this.handleKeyDown)
@@ -396,6 +510,9 @@ class SeCanvasSettings extends HTMLElement {
     // (Re)load presets each open so host/plugin edits are reflected.
     this.presets = loadPresets()
     this.renderPresets()
+    // (Re)load saved layouts each open.
+    this.layouts = loadLayouts()
+    this.renderLayouts()
     this.exitManageMode()
     this.$popup.style.display = 'flex'
     this.$trigger.setAttribute('aria-expanded', 'true')
@@ -435,6 +552,7 @@ class SeCanvasSettings extends HTMLElement {
     this.$presets.style.display = 'none'
     this.$manageToggle.style.display = 'none'
     this.$applyActions.style.display = 'none'
+    this.$layoutsSection.style.display = 'none'
     this.$manage.style.display = 'flex'
     this.$manageActions.style.display = 'flex'
     this.positionPopup()
@@ -445,6 +563,7 @@ class SeCanvasSettings extends HTMLElement {
     this.$presets.style.display = 'grid'
     this.$manageToggle.style.display = 'block'
     this.$applyActions.style.display = 'flex'
+    this.$layoutsSection.style.display = 'flex'
     this.$manage.style.display = 'none'
     this.$manageActions.style.display = 'none'
   }
@@ -521,6 +640,92 @@ class SeCanvasSettings extends HTMLElement {
     savePresets(next)
     this.renderPresets()
     this.exitManageMode()
+    this.positionPopup()
+  }
+
+  /**
+   * Rebuild the saved-layouts list. Each row applies / overwrites / removes one
+   * saved layout (canvas template).
+   */
+  renderLayouts () {
+    this.$layoutsList.replaceChildren()
+    if (!this.layouts.length) {
+      const empty = document.createElement('div')
+      empty.className = 'layouts-empty'
+      empty.textContent = 'No saved layouts yet.'
+      this.$layoutsList.append(empty)
+      return
+    }
+    this.layouts.forEach((layout, i) => {
+      const row = document.createElement('div')
+      row.className = 'layout-row'
+
+      const name = document.createElement('span')
+      name.className = 'layout-name-text'
+      name.textContent = layout.name
+      name.title = `${layout.name} (${layout.w}×${layout.h})`
+
+      const applyBtn = document.createElement('button')
+      applyBtn.className = 'layout-apply'
+      applyBtn.type = 'button'
+      applyBtn.textContent = 'Apply'
+      applyBtn.title = 'Apply this layout'
+      applyBtn.addEventListener('click', () => {
+        applyLayout(layout)
+        this.close()
+      })
+
+      const overwriteBtn = document.createElement('button')
+      overwriteBtn.className = 'layout-overwrite'
+      overwriteBtn.type = 'button'
+      overwriteBtn.textContent = '⤓'
+      overwriteBtn.title = 'Overwrite with current canvas'
+      overwriteBtn.addEventListener('click', () => this.overwriteLayout(i))
+
+      const del = document.createElement('button')
+      del.className = 'del'
+      del.type = 'button'
+      del.title = 'Remove layout'
+      del.textContent = '×'
+      del.addEventListener('click', () => this.removeLayout(i))
+
+      row.append(name, applyBtn, overwriteBtn, del)
+      this.$layoutsList.append(row)
+    })
+  }
+
+  /** Save the current canvas as a new layout under the typed name. */
+  saveCurrentLayout () {
+    const name = this.$layoutName.value.trim()
+    if (!name) return
+    // Overwrite in place if the name already exists, else append.
+    const layout = captureCurrentLayout(name)
+    const existing = this.layouts.findIndex(l => l.name === name)
+    if (existing >= 0) {
+      this.layouts[existing] = layout
+    } else {
+      this.layouts.push(layout)
+    }
+    saveLayouts(this.layouts)
+    this.$layoutName.value = ''
+    this.renderLayouts()
+    this.positionPopup()
+  }
+
+  /** Re-capture the current canvas into an existing layout, keeping its name. */
+  overwriteLayout (index) {
+    const existing = this.layouts[index]
+    if (!existing) return
+    this.layouts[index] = captureCurrentLayout(existing.name)
+    saveLayouts(this.layouts)
+    this.renderLayouts()
+  }
+
+  /** Delete a saved layout. */
+  removeLayout (index) {
+    this.layouts.splice(index, 1)
+    saveLayouts(this.layouts)
+    this.renderLayouts()
     this.positionPopup()
   }
 
