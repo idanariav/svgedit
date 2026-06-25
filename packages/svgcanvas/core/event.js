@@ -1735,30 +1735,18 @@ const DOMMouseScrollEvent = (e) => {
   const scrbar = 15
   const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
-  // mouse relative to content area in content pixels
-  const pt = transformPoint(e.clientX, e.clientY, svgCanvas.getrootSctm())
-
-  // full work area width in screen pixels
-  const editorFullW = parseFloat(getComputedStyle(workarea, null).width.replace('px', ''))
-  const editorFullH = parseFloat(getComputedStyle(workarea, null).height.replace('px', ''))
-
   // work area width minus scroll and ruler in screen pixels
-  const editorW = editorFullW - scrbar - rulerwidth
-  const editorH = editorFullH - scrbar - rulerwidth
+  const editorW = parseFloat(getComputedStyle(workarea, null).width.replace('px', '')) - scrbar - rulerwidth
+  const editorH = parseFloat(getComputedStyle(workarea, null).height.replace('px', '')) - scrbar - rulerwidth
 
   // work area width in content pixels
   const workareaViewW = editorW * svgCanvas.getrootSctm().a
   const workareaViewH = editorH * svgCanvas.getrootSctm().d
 
-  // content offset from canvas in screen pixels
-  const wOffset = findPos(workarea)
-  const wOffsetLeft = wOffset.left + rulerwidth
-  const wOffsetTop = wOffset.top + rulerwidth
-
   const delta = (e.wheelDelta) ? e.wheelDelta : (e.detail) ? -e.detail : 0
   if (!delta) { return }
 
-  let factor = Math.max(3 / 4, Math.min(4 / 3, (delta)))
+  const factor = Math.max(3 / 4, Math.min(4 / 3, (delta)))
 
   let wZoom; let hZoom
   if (factor > 1) {
@@ -1768,12 +1756,54 @@ const DOMMouseScrollEvent = (e) => {
     wZoom = Math.floor(editorW / workareaViewW * factor * 100) / 100
     hZoom = Math.floor(editorH / workareaViewH * factor * 100) / 100
   }
-  let zoomlevel = Math.min(wZoom, hZoom)
-  zoomlevel = Math.min(10, Math.max(0.01, zoomlevel))
+  const zoomlevel = Math.min(wZoom, hZoom)
   if (zoomlevel === zoom) {
     return
   }
-  factor = zoomlevel / zoom
+  zoomAtPoint(zoomlevel, e.clientX, e.clientY)
+}
+
+/**
+ * Apply a zoom level while keeping a given screen point fixed under the
+ * pointer/fingers. Shared by the Ctrl+wheel handler and the tablet-mode
+ * pinch gesture (see `core/touch.js`).
+ * @param {number} zoomlevel - target zoom (clamped to [0.01, 10])
+ * @param {number} clientX - screen x of the zoom anchor
+ * @param {number} clientY - screen y of the zoom anchor
+ * @fires module:event.SvgCanvas#event:updateCanvas
+ * @fires module:event.SvgCanvas#event:zoomDone
+ * @returns {void}
+ */
+const zoomAtPoint = (zoomlevel, clientX, clientY) => {
+  const zoom = svgCanvas.getZoom()
+  const { $id } = svgCanvas
+
+  // Get screenCTM from the first child group of svgcontent
+  // Note: svgcontent itself has x/y offset attributes, so we use its first child
+  const svgContent = $id('svgcontent')
+  const rootGroup = svgContent?.querySelector('g')
+  const screenCTM = rootGroup?.getScreenCTM?.()
+  if (!screenCTM) { return }
+  svgCanvas.setRootSctm(screenCTM.inverse())
+
+  zoomlevel = Math.min(10, Math.max(0.01, zoomlevel))
+  if (zoomlevel === zoom) { return }
+  const factor = zoomlevel / zoom
+
+  const workarea = svgCanvas.$id('workarea')
+  const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
+
+  // full work area size in screen pixels
+  const editorFullW = parseFloat(getComputedStyle(workarea, null).width.replace('px', ''))
+  const editorFullH = parseFloat(getComputedStyle(workarea, null).height.replace('px', ''))
+
+  // anchor point relative to content area in content pixels
+  const pt = transformPoint(clientX, clientY, svgCanvas.getrootSctm())
+
+  // content offset from canvas in screen pixels
+  const wOffset = findPos(workarea)
+  const wOffsetLeft = wOffset.left + rulerwidth
+  const wOffsetTop = wOffset.top + rulerwidth
 
   // top left of workarea in content pixels before zoom
   const topLeftOld = transformPoint(wOffsetLeft, wOffsetTop, svgCanvas.getrootSctm())
@@ -1801,7 +1831,7 @@ const DOMMouseScrollEvent = (e) => {
 
   svgCanvas.call('updateCanvas', { center: false, newCtr })
   svgCanvas.call('zoomDone')
-  }
+}
 
   svgCanvas.mouseDownEvent = mouseDownEvent
   svgCanvas.mouseMoveEvent = mouseMoveEvent
@@ -1809,4 +1839,5 @@ const DOMMouseScrollEvent = (e) => {
   svgCanvas.mouseUpEvent = mouseUpEvent
   svgCanvas.mouseOutEvent = mouseOutEvent
   svgCanvas.DOMMouseScrollEvent = DOMMouseScrollEvent
+  svgCanvas.zoomAtPoint = zoomAtPoint
 }

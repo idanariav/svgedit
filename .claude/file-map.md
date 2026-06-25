@@ -127,7 +127,7 @@
 |------|---------|
 | `svgcanvas.js` | `SvgCanvas` class — aggregates all core modules (~36KB) |
 | `core/draw.js` | Shape creation primitives |
-| `core/event.js` | All mouse/touch event bindings (~53KB) |
+| `core/event.js` | All mouse/touch event bindings (~53KB); exposes `svgCanvas.zoomAtPoint(zoom, clientX, clientY)` shared by Ctrl+wheel zoom and tablet pinch |
 | `core/selected-elem.js` | Move, resize, flip selected elements |
 | `core/selection.js` | Selection list management |
 | `core/select.js` | Rubber-band selector + resize handles UI |
@@ -153,7 +153,7 @@
 | `core/paste-elem.js` | Paste handler |
 | `core/copy-elem.js` | Copy handler |
 | `core/clear.js` | Clear canvas |
-| `core/touch.js` | Mobile touch event support |
+| `core/touch.js` | Mobile touch event support; two-finger **pinch-to-zoom** in tablet mode (calls `svgCanvas.zoomAtPoint`) |
 | `core/blur-event.js` | Blur filter UI helpers |
 | `core/dataStorage.js` | Internal element data store |
 | `core/namespaces.js` | SVG/XML namespace constants |

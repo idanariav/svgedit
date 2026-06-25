@@ -174,7 +174,7 @@ src/editor/index.html
 | `paste-elem.js` | Paste operation handler |
 | `copy-elem.js` | Copy element to clipboard |
 | `clear.js` | Clear canvas |
-| `touch.js` | Mobile touch event support |
+| `touch.js` | Mobile touch event support; tablet-mode two-finger pinch-to-zoom via `svgCanvas.zoomAtPoint` |
 | `blur-event.js` | Gaussian blur filter UI helpers |
 | `dataStorage.js` | Internal element data storage |
 | `namespaces.js` | SVG/XML namespace constants |
