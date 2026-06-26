@@ -438,6 +438,21 @@ const setGradientMethod = (type) => {
 }
 
 /**
+* Read a stop's effective color/opacity, whether stored as presentation
+* attributes (`stop-color`/`stop-opacity`) or inline in the `style` attribute.
+* @param {SVGStopElement} stop
+* @returns {{color: string|null, opacity: string|null}}
+*/
+const readStop = (stop) => {
+  const style = stop.getAttribute('style') || ''
+  const colorMatch = style.match(/stop-color\s*:\s*([^;]+)/i)
+  const opacityMatch = style.match(/stop-opacity\s*:\s*([^;]+)/i)
+  const color = (colorMatch ? colorMatch[1] : stop.getAttribute('stop-color'))?.trim().toLowerCase() ?? null
+  const opacity = (opacityMatch ? opacityMatch[1] : stop.getAttribute('stop-opacity'))?.trim() ?? null
+  return { color, opacity }
+}
+
+/**
 * Check if exact gradient already exists.
 * @function module:svgcanvas~findDuplicateGradient
 * @param {SVGGradientElement} grad - The gradient DOM element to compare to others
@@ -503,10 +518,12 @@ const findDuplicateGradient = (grad) => {
     while (j--) {
       const stop = stops[j]
       const ostop = ostops[j]
+      const sVals = readStop(stop)
+      const oVals = readStop(ostop)
 
       if (stop.getAttribute('offset') !== ostop.getAttribute('offset') ||
-        stop.getAttribute('stop-opacity') !== ostop.getAttribute('stop-opacity') ||
-        stop.getAttribute('stop-color') !== ostop.getAttribute('stop-color')) {
+        sVals.opacity !== oVals.opacity ||
+        sVals.color !== oVals.color) {
         break
       }
     }
