@@ -157,6 +157,11 @@ class EditorStartup {
       const promptBox = document.createElement('se-prompt-dialog')
       promptBox.setAttribute('id', 'se-prompt-dialog')
       this.$container.append(promptBox)
+      // on-brand text prompt dialog (replaces native window.prompt)
+      const textPromptBox = document.createElement('se-text-prompt-dialog')
+      textPromptBox.setAttribute('id', 'se-text-prompt-dialog')
+      this.$container.append(textPromptBox)
+      textPromptBox.init(this.i18next)
       // Export dialog added to DOM
       const exportDialog = document.createElement('se-export-dialog')
       exportDialog.setAttribute('id', 'se-export-dialog')

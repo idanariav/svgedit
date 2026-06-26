@@ -92,7 +92,8 @@
 | `cmenuDialog.js` | Canvas **quick-action menu** (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu. On `contextmenu` it rebuilds from `loadFavorites()`: trigger actions as icon+label rows (`runFavoriteTrigger`), value controls (stroke width, fill/stroke colour) as live widgets seeded from the selection. Plain `<ul>` (not `role=menu`). Disables selection-dependent rows when nothing is selected |
 | `seAlertDialog.js` | Alert dialog (OK only) |
 | `seConfirmDialog.js` | Confirm dialog (OK / Cancel) |
-| `sePromptDialog.js` | Prompt dialog (text input) |
+| `sePromptDialog.js` | Legacy elix prompt dialog (`se-prompt-dialog`) — used by ext-opensave as a "loading" indicator (title + Cancel), not a real text prompt |
+| `seTextPromptDialog.js` / `.html` | **Text prompt** dialog (`se-text-prompt-dialog`) — on-brand replacement for native `window.prompt`. Self-themed shadow DOM; exposes promise-based global `window.sePrompt(message, value, opts)` resolving to the entered string or `null`. Used for layer add/clone/rename (works in Obsidian/Electron where native `prompt` is broken) |
 | `se-elix/` | Elix accessibility library (ARIA-compliant dialog base) |
 
 ---

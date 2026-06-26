@@ -53,6 +53,7 @@ svgedit/
 │   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
 │   │   ├── svgSourceDialog.js
 │   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js
+│   │   ├── seTextPromptDialog.js     # on-brand window.prompt replacement (window.sePrompt)
 │   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)
 │   │
 │   ├── extensions/                # Optional plugin modules (see extensions.md)

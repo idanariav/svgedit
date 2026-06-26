@@ -1,0 +1,172 @@
+<style>
+    :not(:defined) {
+        display: none;
+    }
+
+    /* The dialog is rendered outside the themed .svg_editor scope, so it can
+       not inherit the editor's design tokens. Mirror the relevant tokens here
+       and reflect the active theme onto the host (see seTextPromptDialog.js).
+       Values must stay in sync with svgedit.css. */
+    :host {
+        --chrome-bg: #FFFFFF;
+        --chrome-border: #E6E8EC;
+        --fg: #1B1F24;
+        --muted: #6B7280;
+        --icon-hover-bg: #EEF1F5;
+        --field-bg: #FFFFFF;
+        --field-border: #DDE1E7;
+        --field-border-h: #C8CDD6;
+        --accent: #2962FF;
+        --accent-ring: rgba(41, 98, 255, 0.16);
+    }
+
+    :host(.theme-dark) {
+        --chrome-bg: #1E2026;
+        --chrome-border: #2C2F37;
+        --fg: #ECEEF2;
+        --muted: #9098A5;
+        --icon-hover-bg: #2A2D35;
+        --field-bg: #14161A;
+        --field-border: #2C2F37;
+        --field-border-h: #3C4150;
+        --accent: #F6B23A;
+        --accent-ring: rgba(246, 178, 58, 0.20);
+    }
+
+    #text_prompt_container {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        width: 340px;
+        max-width: 92vw;
+        background: var(--chrome-bg, #FFFFFF);
+        color: var(--fg, #1B1F24);
+        border: 1px solid var(--chrome-border, #E6E8EC);
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+    }
+
+    #text_prompt_header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--chrome-border, #E6E8EC);
+    }
+
+    #text_prompt_title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    #text_prompt_close {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--muted, #6B7280);
+        font-size: 18px;
+        line-height: 1;
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background .12s, color .12s;
+    }
+
+    #text_prompt_close:hover {
+        background: var(--icon-hover-bg, #F1F3F5);
+        color: var(--fg, #1B1F24);
+    }
+
+    #text_prompt_body {
+        padding: 16px;
+    }
+
+    #text_prompt_message {
+        display: block;
+        margin: 0 0 8px 2px;
+        font-size: 13px;
+        color: var(--muted, #6B7280);
+    }
+
+    #text_prompt_input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: var(--fg, #1B1F24);
+        background: var(--field-bg, #FFFFFF);
+        border: 1px solid var(--field-border, #DDE1E7);
+        border-radius: 8px;
+        transition: border-color .12s, box-shadow .12s;
+    }
+
+    #text_prompt_input:focus {
+        outline: none;
+        border-color: var(--accent, #2962FF);
+        box-shadow: 0 0 0 3px var(--accent-ring, rgba(41, 98, 255, 0.16));
+    }
+
+    #text_prompt_footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 14px 16px;
+        border-top: 1px solid var(--chrome-border, #E6E8EC);
+    }
+
+    #text_prompt_footer button {
+        appearance: none;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .12s, border-color .12s, opacity .12s;
+    }
+
+    #text_prompt_cancel {
+        border: 1px solid var(--field-border, #DDE1E7);
+        background: var(--field-bg, #FFFFFF);
+        color: var(--fg, #1B1F24);
+    }
+
+    #text_prompt_cancel:hover {
+        border-color: var(--field-border-h, #C8CDD6);
+    }
+
+    #text_prompt_ok {
+        border: 1px solid var(--accent, #2962FF);
+        background: var(--accent, #2962FF);
+        color: #FFFFFF;
+    }
+
+    #text_prompt_ok:disabled {
+        opacity: 0.45;
+        cursor: default;
+    }
+
+    /* Amber accent in dark theme needs dark text for contrast. */
+    :host(.theme-dark) #text_prompt_ok {
+        color: #1B1F24;
+    }
+</style>
+<elix-dialog id="text_prompt_box" aria-label="prompt" closed>
+    <div id="text_prompt_container">
+        <div id="text_prompt_header">
+            <p id="text_prompt_title">Enter a value</p>
+            <button id="text_prompt_close" type="button" aria-label="Close">&#x2715;</button>
+        </div>
+        <div id="text_prompt_body">
+            <label id="text_prompt_message" for="text_prompt_input"></label>
+            <input type="text" id="text_prompt_input" />
+        </div>
+        <div id="text_prompt_footer">
+            <button id="text_prompt_cancel" type="button">Cancel</button>
+            <button id="text_prompt_ok" type="button">OK</button>
+        </div>
+    </div>
+</elix-dialog>

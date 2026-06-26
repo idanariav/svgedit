@@ -1,3 +1,4 @@
+/* globals seAlert, sePrompt */
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
@@ -153,14 +154,14 @@ class RightPanel {
   /**
    * @returns {void}
    */
-  newLayer () {
+  async newLayer () {
     let uniqName
     let i = this.editor.svgCanvas.getCurrentDrawing().getNumLayers()
     do {
       uniqName = this.editor.i18next.t('layers.layer') + ' ' + ++i
     } while (this.editor.svgCanvas.getCurrentDrawing().hasLayer(uniqName))
 
-    const newName = prompt(
+    const newName = await sePrompt(
       this.editor.i18next.t('notification.enterUniqueLayerName'),
       uniqName
     )
@@ -168,7 +169,7 @@ class RightPanel {
       return
     }
     if (this.editor.svgCanvas.getCurrentDrawing().hasLayer(newName)) {
-      alert(this.editor.i18next.t('notification.dupeLayerName'))
+      seAlert(this.editor.i18next.t('notification.dupeLayerName'))
       return
     }
     this.editor.svgCanvas.createLayer(newName)
@@ -199,11 +200,11 @@ class RightPanel {
    *
    * @returns {void}
    */
-  cloneLayer () {
+  async cloneLayer () {
     const name =
       this.editor.svgCanvas.getCurrentDrawing().getCurrentLayerName() + ' copy'
 
-    const newName = prompt(
+    const newName = await sePrompt(
       this.editor.i18next.t('notification.enterUniqueLayerName'),
       name
     )
@@ -211,7 +212,7 @@ class RightPanel {
       return
     }
     if (this.editor.svgCanvas.getCurrentDrawing().hasLayer(newName)) {
-      alert(this.editor.i18next.t('notification.dupeLayerName'))
+      seAlert(this.editor.i18next.t('notification.dupeLayerName'))
       return
     }
     this.editor.svgCanvas.cloneLayer(newName)
@@ -255,10 +256,10 @@ class RightPanel {
   /**
    * @returns {void}
    */
-  layerRename () {
+  async layerRename () {
     const ele = this.editor.$qq('#layerlist tr.layersel td.layername')
     const oldName = (ele) ? ele.textContent : ''
-    const newName = prompt(this.editor.i18next.t('notification.enterNewLayerName'), '')
+    const newName = await sePrompt(this.editor.i18next.t('notification.enterNewLayerName'), oldName)
     if (!newName) {
       return
     }
@@ -266,7 +267,7 @@ class RightPanel {
       oldName === newName ||
       this.editor.svgCanvas.getCurrentDrawing().hasLayer(newName)
     ) {
-      alert(this.editor.i18next.t('notification.layerHasThatName'))
+      seAlert(this.editor.i18next.t('notification.layerHasThatName'))
       return
     }
     this.editor.svgCanvas.renameCurrentLayer(newName)
