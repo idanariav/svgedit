@@ -162,6 +162,17 @@ in `seShapeLibrary.js`; these inherit through the shadow boundary). The select
 cursor icon gets a small `translate(2px,1px)` nudge (`.ts-tool-select svg`) so its
 top-left-weighted shape reads as centred in the active blue circle.
 
+> **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline
+> `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves
+> that percentage against the button box, but the iOS/Android WebView (Obsidian
+> mobile) collapses it to a near-zero intrinsic size — icons render tiny. Every
+> tablet icon-size rule (`.tbtn svg`, `.ts-toolgroup .tbtn svg`, `.tbtn.sm svg`,
+> `.menu-item .mi-ic svg`, `.lib-cell svg`) therefore uses `!important` so the
+> explicit pixel size beats the inline style on all platforms. The embedded
+> shape-library button does **not** need this (it sizes via `--sl-tool-icon-size`,
+> not the injected inline style) — which is why it was the only icon that rendered
+> correctly before the fix.
+
 ---
 
 ## Key Selector Rules

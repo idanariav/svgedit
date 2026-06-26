@@ -91,16 +91,13 @@
   padding: 5px;
 }
 .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 46px; height: 46px; border-radius: 99px; }
-.svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 24px; height: 24px; }
+.svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 26px !important; height: 26px !important; }
 /* Embedded <se-shape-library> button — match the touch toolgroup buttons
-   (46px round hit area, 24px icon). The --sl-* custom properties inherit
+   (46px round hit area, 26px icon). The --sl-* custom properties inherit
    through the component's shadow boundary (see seShapeLibrary.js). */
 .svg_editor.ui-tablet .ts-toolgroup se-shape-library {
   --sl-tool-size: 46px;
-  /* The other toolgroup icons render ~34px (svgIconLoader injects an inline
-     width:100% that beats the .tbtn svg rule); match that so the library icon
-     isn't visibly smaller. */
-  --sl-tool-icon-size: 34px;
+  --sl-tool-icon-size: 26px;
   --sl-tool-radius: 99px;
   display: inline-flex;
   align-items: center;
@@ -168,7 +165,12 @@
   transition: background .14s ease, color .14s ease, transform .08s ease;
   flex: 0 0 auto;
 }
-.svg_editor.ui-tablet .tbtn svg { width: 26px; height: 26px; display: block; }
+/* svgIconLoader stamps an inline `style="width:100%;height:100%"` on every
+   injected icon. Chromium resolves that percentage against the button box, but
+   the iOS/Android WebView (Obsidian mobile) collapses it to a near-zero
+   intrinsic size, rendering tiny icons. `!important` lets these explicit pixel
+   sizes override the inline style so icons render consistently everywhere. */
+.svg_editor.ui-tablet .tbtn svg { width: 26px !important; height: 26px !important; display: block; }
 .svg_editor.ui-tablet .tbtn:active { transform: scale(.92); }
 .svg_editor.ui-tablet .tbtn.is-active {
   background: var(--accent);
@@ -180,7 +182,7 @@
 }
 .svg_editor.ui-tablet .tbtn[disabled] { opacity: .32; pointer-events: none; }
 .svg_editor.ui-tablet .tbtn.sm { width: var(--hit-sm); height: var(--hit-sm); border-radius: 10px; }
-.svg_editor.ui-tablet .tbtn.sm svg { width: 22px; height: 22px; }
+.svg_editor.ui-tablet .tbtn.sm svg { width: 22px !important; height: 22px !important; }
 
 /* a tool button that carries a small dropdown caret */
 .svg_editor.ui-tablet .tbtn.has-caret::after {
@@ -305,7 +307,7 @@
   width: 22px; height: 22px; display: grid; place-items: center;
   color: var(--icon); flex: 0 0 auto;
 }
-.svg_editor.ui-tablet .menu-item .mi-ic svg { width: 21px; height: 21px; }
+.svg_editor.ui-tablet .menu-item .mi-ic svg { width: 21px !important; height: 21px !important; }
 
 /* shape-library grid (popover) */
 .svg_editor.ui-tablet .lib-grid { display: grid; grid-template-columns: repeat(5, 56px); gap: 8px; }
@@ -321,7 +323,7 @@
   color: var(--fg);
 }
 .svg_editor.ui-tablet .lib-cell:hover { background: var(--icon-hover-bg); border-color: var(--accent-border); }
-.svg_editor.ui-tablet .lib-cell svg { width: 30px; height: 30px; display: block; }
+.svg_editor.ui-tablet .lib-cell svg { width: 30px !important; height: 30px !important; display: block; }
 
 /* ---------- Bottom sheet ---------- */
 .svg_editor.ui-tablet .ts-sheet {

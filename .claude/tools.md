@@ -294,7 +294,7 @@ onChange }`.
 **Tablet mode** (`MainMenu.clickTabletMode`): flips `applyUiMode` (`uiMode.js`) and
 persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
 class — `tablet.css` hides the four desktop panels and shows `TabletShell`
-(`panels/TabletShell.js`): a slim top **command bar** (Select / Draw / Pen /
+(`panels/TabletShell.js`): a slim top **command bar** (Select / Pan / Draw / Pen /
 Curvature / Line / Shapes ▾ / Text / Cutter / Shape library · default-style chip ·
 zoom · undo/redo · Done) and a contextual **bottom sheet** (Fill / Stroke swatches
 with a "More…" → `seColorPicker` entry, Stroke-width + Opacity sliders, Arrange
@@ -305,8 +305,9 @@ ext-shapes in extensions.md). Every control resolves to an existing
 `svgCanvas.*`/`editor.*` call — no new modes or engine changes. The Curvature
 tool defaults to **Spiro** in tablet (no curve-mode tray there) — `selectTool`
 drives the hidden `#curvature_mode` select so ext-curvature updates + persists the
-choice. Layers, boolean ops, effects, full text typography, etc. are
-intentionally desktop-only.
+choice. The **Pan** tool drives `setMode('ext-panning')` (same flow as the desktop
+pan button) so touch-drag scrolls the workarea via the ext-panning hooks. Layers,
+boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a
 `#se-export-region` `<se-select>`, rebuilt each time it opens from the canvas'

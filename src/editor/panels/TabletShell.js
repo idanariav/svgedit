@@ -14,6 +14,7 @@ const PRESET_COLORS = [
 // `line` and `text`.
 const TOOLS = [
   ['select', 'select.svg', 'Select'],
+  ['ext-panning', 'panning.svg', 'Pan'],
   null,
   ['fhpath', 'pencil.svg', 'Draw'],
   ['path', 'pen.svg', 'Pen'],
