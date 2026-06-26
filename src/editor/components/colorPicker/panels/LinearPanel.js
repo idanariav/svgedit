@@ -170,15 +170,19 @@ export function createLinearPanel (paint, i18next) {
 
   // ── Wiring ─────────────────────────────────────────────────────────────────
   function _updatePreview () {
+    // CSS 0deg points "to top" (first color at bottom), whereas the SVG mapping
+    // (angleToCoords) puts the first stop where the dial points. Offset by 180°
+    // so the preview matches the rendered shape.
+    const cssAngle = panelState.angle + 180
     let gradCSS
     if (panelState.mode === 'mono') {
       const firstStop = panelState.stops[0] || { color: '000000', alpha: 100 }
       let endColor; let endAlpha = 100
       if (panelState.monoMode === 'white') { endColor = '#ffffff' } else if (panelState.monoMode === 'black') { endColor = '#000000' } else { endColor = '#' + firstStop.color; endAlpha = 0 }
-      gradCSS = `linear-gradient(${panelState.angle}deg, #${firstStop.color} 0%, rgba(${_hexToRgb(endColor)},${endAlpha / 100}) 100%)`
+      gradCSS = `linear-gradient(${cssAngle}deg, #${firstStop.color} 0%, rgba(${_hexToRgb(endColor)},${endAlpha / 100}) 100%)`
     } else {
       const sorted = [...panelState.stops].sort((a, b) => a.position - b.position)
-      gradCSS = `linear-gradient(${panelState.angle}deg, ${sorted.map(s => `rgba(${_hexToRgb('#' + s.color)},${s.alpha / 100}) ${s.position}%`).join(', ')})`
+      gradCSS = `linear-gradient(${cssAngle}deg, ${sorted.map(s => `rgba(${_hexToRgb('#' + s.color)},${s.alpha / 100}) ${s.position}%`).join(', ')})`
     }
     previewFill.style.background = gradCSS
   }

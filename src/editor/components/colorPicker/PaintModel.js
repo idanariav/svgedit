@@ -100,25 +100,28 @@ export function interpolateStopColor (stops, position) {
 
 /**
  * Convert dial angle (0=up, clockwise) to SVG gradient x1/y1/x2/y2 (0-1 range).
+ * The dial direction points to where the first stop sits, so the first stop
+ * (top of the stop list) renders at the top of the shape at 0°.
  * @param {number} angleDeg
  */
 export function angleToCoords (angleDeg) {
   const a = angleDeg * (Math.PI / 180)
   return {
-    x1: (0.5 - Math.sin(a) * 0.5).toFixed(4),
-    y1: (0.5 + Math.cos(a) * 0.5).toFixed(4),
-    x2: (0.5 + Math.sin(a) * 0.5).toFixed(4),
-    y2: (0.5 - Math.cos(a) * 0.5).toFixed(4)
+    x1: (0.5 + Math.sin(a) * 0.5).toFixed(4),
+    y1: (0.5 - Math.cos(a) * 0.5).toFixed(4),
+    x2: (0.5 - Math.sin(a) * 0.5).toFixed(4),
+    y2: (0.5 + Math.cos(a) * 0.5).toFixed(4)
   }
 }
 
 /**
  * Convert SVG x1/y1/x2/y2 back to dial angle in degrees.
+ * Inverse of {@link angleToCoords}.
  * @param {{x1:string|number,y1:string|number,x2:string|number,y2:string|number}} coords
  */
 export function coordsToAngle ({ x1, y1, x2, y2 }) {
-  const dx = parseFloat(x2) - parseFloat(x1)
-  const dy = parseFloat(y1) - parseFloat(y2) // SVG y-axis is inverted relative to math
+  const dx = parseFloat(x1) - parseFloat(x2)
+  const dy = parseFloat(y2) - parseFloat(y1)
   let angle = Math.atan2(dx, dy) * (180 / Math.PI)
   if (angle < 0) angle += 360
   return Math.round(angle)
