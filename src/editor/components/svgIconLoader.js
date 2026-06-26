@@ -86,6 +86,23 @@ export async function fetchSvgEl (url) {
           if (w && h) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`)
         }
 
+        // iOS/Android WebView (Obsidian mobile) does not reliably resolve the
+        // `width:100%/height:100%` inline style below when the icon sits in a
+        // centered flex/grid button, collapsing it to a near-zero intrinsic
+        // size. Stamp explicit width/height attributes from the viewBox so the
+        // WebView has a sane intrinsic fallback; Chromium (desktop) still
+        // honors the percentage style and is unaffected.
+        if (!svgEl.getAttribute('width') && !svgEl.getAttribute('height')) {
+          const vb = svgEl.getAttribute('viewBox')
+          if (vb) {
+            const [, , w, h] = vb.split(/[\s,]+/).map(Number)
+            if (w && h) {
+              svgEl.setAttribute('width', String(w))
+              svgEl.setAttribute('height', String(h))
+            }
+          }
+        }
+
         svgEl.style.cssText = 'width:100%;height:100%;display:block;overflow:visible;'
         svgCache.set(url, svgEl.outerHTML)
       } else {

@@ -440,7 +440,9 @@ export default class ConfigObj {
     }
     Object.entries(opts).forEach(([key, val]) => {
       // Only allow prefs defined in configObj.defaultPrefs or...
-      if (this.defaultPrefs[key]) {
+      // Membership test (`key in`), not truthiness: prefs whose default is falsy
+      // (e.g. `tabletMode: false`, `bkgd_url: ''`) must still be settable here.
+      if (key in this.defaultPrefs) {
         if (cfgCfg.overwrite === false && (
           this.curConfig.preventAllURLConfig ||
           this.curPrefs[key])
@@ -450,7 +452,9 @@ export default class ConfigObj {
         if (cfgCfg.allowInitialUserOverride === true) {
           this.defaultPrefs[key] = val
         } else {
-          this.pref(key, val)
+          // mayBeEmpty=true so an explicit falsy value (false/'') is written
+          // rather than treated as a getter (see pref()).
+          this.pref(key, val, true)
         }
       } else if (['extensions', 'userExtensions', 'allowedOrigins'].includes(key)) {
         if (cfgCfg.overwrite === false &&
