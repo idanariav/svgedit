@@ -1,7 +1,7 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
-import { buildFavoritesCatalog } from '../favoriteActions.js'
-import { loadFavorites, toggleFavorite } from '../favorites.js'
+import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.js'
+import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'
 import favoritesDialogHTML from './favoritesDialog.html'
 
 const template = document.createElement('template')
@@ -23,6 +23,9 @@ const STAR_SVG =
  * `favoriteActions.js`) grouped by category and lets the user star/unstar each.
  * Starred actions populate the right-click quick-action menu. State lives in the
  * favorites store (see `favorites.js`); this component is purely the view.
+ *
+ * When "Favorited only" is active the list switches to a flat, ordered view that
+ * mirrors the context-menu order, with drag handles so the user can reorder entries.
  * @class SeFavoritesDialog
  */
 export class SeFavoritesDialog extends HTMLElement {
@@ -39,9 +42,12 @@ export class SeFavoritesDialog extends HTMLElement {
     this.$search = this._shadowRoot.querySelector('#fav_search')
     this.$filterFav = this._shadowRoot.querySelector('#fav_filter_fav')
     this.$filterText = this._shadowRoot.querySelector('#fav_filter_text')
+    this.$reorderHint = this._shadowRoot.querySelector('#fav_reorder_hint')
     // Search / filter state.
     this._query = ''
     this._favOnly = false
+    // Drag-reorder state.
+    this._dragId = null
   }
 
   /**
@@ -55,6 +61,7 @@ export class SeFavoritesDialog extends HTMLElement {
     this.$close.setAttribute('aria-label', i18next.t('common.cancel'))
     this.$search.setAttribute('placeholder', i18next.t('favorites.search'))
     this.$filterText.textContent = i18next.t('favorites.favorited_only')
+    this.$reorderHint.textContent = i18next.t('favorites.drag_to_reorder')
   }
 
   static get observedAttributes () {
@@ -89,19 +96,53 @@ export class SeFavoritesDialog extends HTMLElement {
       this._favOnly = this.$filterFav.checked
       this._render()
     })
+    // Drag-to-reorder (only active in favorites-only view).
+    this.$list.addEventListener('dragstart', (e) => this._onDragStart(e))
+    this.$list.addEventListener('dragover', (e) => this._onDragOver(e))
+    this.$list.addEventListener('dragleave', (e) => this._onDragLeave(e))
+    this.$list.addEventListener('drop', (e) => this._onDrop(e))
+    this.$list.addEventListener('dragend', () => this._onDragEnd())
   }
 
-  /** Build the grouped list of favoritable actions, applying search / filter. */
+  /**
+   * Build the list, applying search / filter.
+   *
+   * Favorites-only mode: shows the user's favorites in stored (= menu) order as a
+   * flat list with drag handles so the order can be rearranged.
+   * Normal mode: shows the full grouped catalog for browsing and starring.
+   */
   _render () {
     const editor = svgEditor
     if (!editor?.hotkeys) return
-    const favs = new Set(loadFavorites())
     const q = this._query.trim().toLowerCase()
+
+    if (this._favOnly) {
+      this.$reorderHint.hidden = false
+      const favIds = loadFavorites()
+      const rows = favIds
+        .filter((id) => {
+          if (!q) return true
+          const meta = getFavoriteMeta(editor, id)
+          return meta && meta.label.toLowerCase().includes(q)
+        })
+        .map((id) => {
+          const meta = getFavoriteMeta(editor, id)
+          return this._reorderRowHtml(id, meta ? meta.label : id)
+        })
+      if (!rows.length) {
+        this.$list.innerHTML = `<div class="fav-empty">${escapeHtml(t('favorites.no_results'))}</div>`
+        return
+      }
+      this.$list.innerHTML = rows.join('')
+      return
+    }
+
+    this.$reorderHint.hidden = true
+    const favs = new Set(loadFavorites())
     const groups = buildFavoritesCatalog(editor)
       .map((g) => ({
         group: g.group,
         actions: g.actions.filter((a) => {
-          if (this._favOnly && !favs.has(a.id)) return false
           if (q && !a.label.toLowerCase().includes(q)) return false
           return true
         })
@@ -115,6 +156,16 @@ export class SeFavoritesDialog extends HTMLElement {
       const rows = g.actions.map((a) => this._rowHtml(a, favs.has(a.id))).join('')
       return `<div class="fav-group-title">${escapeHtml(g.group)}</div>${rows}`
     }).join('')
+  }
+
+  /** Row for the reorder (favorites-only) view — always starred, has drag handle. */
+  _reorderRowHtml (id, label) {
+    return '<div class="fav-row" draggable="true" data-id="' + escapeHtml(id) + '">' +
+      '<span class="fav-drag" aria-hidden="true">⠿</span>' +
+      '<span class="fav-label">' + escapeHtml(label) + '</span>' +
+      '<button class="fav-star is-fav" data-id="' + escapeHtml(id) + '" ' +
+      'aria-pressed="true" title="' + escapeHtml(t('favorites.toggle')) + '">' + STAR_SVG + '</button>' +
+      '</div>'
   }
 
   /** @param {{id:string, label:string}} a @param {boolean} isFav */
@@ -132,6 +183,53 @@ export class SeFavoritesDialog extends HTMLElement {
     if (!btn) return
     toggleFavorite(btn.dataset.id)
     this._render()
+  }
+
+  // ── Drag-to-reorder handlers ────────────────────────────────────────────────
+
+  _onDragStart (e) {
+    const row = e.target.closest('.fav-row[draggable]')
+    if (!row) return
+    this._dragId = row.dataset.id
+    row.classList.add('dragging')
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  _onDragOver (e) {
+    if (!this._dragId) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const row = e.target.closest('.fav-row[draggable]')
+    if (!row || row.dataset.id === this._dragId) return
+    this.$list.querySelectorAll('.fav-row.drag-over')
+      .forEach((r) => r.classList.remove('drag-over'))
+    row.classList.add('drag-over')
+  }
+
+  _onDragLeave (e) {
+    const row = e.target.closest('.fav-row[draggable]')
+    if (row) row.classList.remove('drag-over')
+  }
+
+  _onDrop (e) {
+    e.preventDefault()
+    const targetRow = e.target.closest('.fav-row[draggable]')
+    if (!targetRow || !this._dragId || targetRow.dataset.id === this._dragId) return
+    const targetId = targetRow.dataset.id
+    const favs = loadFavorites()
+    const reordered = favs.filter((id) => id !== this._dragId)
+    const toIdx = reordered.indexOf(targetId)
+    const rect = targetRow.getBoundingClientRect()
+    const insertIdx = e.clientY < rect.top + rect.height / 2 ? toIdx : toIdx + 1
+    reordered.splice(insertIdx, 0, this._dragId)
+    saveFavorites(reordered)
+    this._render()
+  }
+
+  _onDragEnd () {
+    this._dragId = null
+    this.$list.querySelectorAll('.fav-row.dragging, .fav-row.drag-over')
+      .forEach((r) => r.classList.remove('dragging', 'drag-over'))
   }
 }
 

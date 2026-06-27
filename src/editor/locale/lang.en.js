@@ -131,6 +131,7 @@ export default {
     toggle: 'Toggle favorite',
     search: 'Search',
     favorited_only: 'Favorited only',
+    drag_to_reorder: 'Drag to reorder',
     no_results: 'No matches',
     label_stroke_width: 'Stroke width',
     label_fill_color: 'Fill color',

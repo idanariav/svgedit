@@ -94,6 +94,35 @@
         user-select: none;
     }
 
+    .fav-drag {
+        color: var(--muted, #9ca3af);
+        cursor: grab;
+        font-size: 14px;
+        line-height: 1;
+        flex-shrink: 0;
+        user-select: none;
+        padding: 0 2px;
+    }
+
+    .fav-drag:active {
+        cursor: grabbing;
+    }
+
+    .fav-row.dragging {
+        opacity: 0.4;
+    }
+
+    .fav-row.drag-over {
+        border-top: 2px solid var(--accent, #2563eb);
+    }
+
+    #fav_reorder_hint {
+        font-size: 11px;
+        color: var(--muted, #9ca3af);
+        font-style: italic;
+        padding: 4px 16px 0;
+    }
+
     .fav-empty {
         color: var(--muted, #9ca3af);
         font-style: italic;
@@ -188,6 +217,7 @@
             <input id="fav_search" type="text" placeholder="Search" autocomplete="off" />
             <label id="fav_filter"><input id="fav_filter_fav" type="checkbox" /><span id="fav_filter_text">Favorited only</span></label>
         </div>
+        <div id="fav_reorder_hint" hidden></div>
         <div id="fav_list"></div>
         <div id="fav_footer">
             <button id="fav_done">Done</button>
