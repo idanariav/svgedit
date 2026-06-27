@@ -794,7 +794,7 @@ const groupSelectedElements = (type, urlArg) => {
   const g = svgCanvas.addSVGElementsFromJson({
     element: type,
     attr: {
-      id: svgCanvas.getNextId()
+      id: svgCanvas.getNextId(type)
     }
   })
   if (type === 'a') {

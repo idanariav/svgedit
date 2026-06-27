@@ -810,8 +810,8 @@ class SvgCanvas {
     return this.currentMode
   } // The current editor mode string
 
-  getNextId () {
-    return this.getCurrentDrawing().getNextId()
+  getNextId (elemType = null) {
+    return this.getCurrentDrawing().getNextId(elemType)
   }
 
   getCurCommand () {

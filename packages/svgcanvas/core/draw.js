@@ -209,43 +209,61 @@ export class Drawing {
   }
 
   /**
+   * Computes the ID prefix for a given element type, respecting the nonce.
+   * @param {string|null} elemType
+   * @returns {string}
+   */
+  _makePrefix (elemType) {
+    if (elemType) {
+      return this.nonce_ ? `${elemType}_${this.nonce_}_` : `${elemType}_`
+    }
+    return this.nonce_ ? `${this.idPrefix}${this.nonce_}_` : this.idPrefix
+  }
+
+  /**
    * Returns the latest object id as a string.
+   * Reflects the element type set by the most recent getNextId() call so that
+   * mousemove/mouseup handlers can re-find the element currently being drawn.
    * @returns {string} The latest object Id.
    */
   getId () {
-    return this.nonce_
-      ? `${this.idPrefix}${this.nonce_}_${this.obj_num}`
-      : this.idPrefix + this.obj_num
+    return this._makePrefix(this._lastElemType) + this.obj_num
   }
 
   /**
    * Returns the next object Id as a string.
+   * @param {string|null} [elemType] - SVG element tag name (e.g. 'rect', 'g').
+   *   When provided the ID uses the tag as prefix (e.g. 'rect_3') instead of
+   *   the default 'svg_' prefix. releaseId() only recycles the default-prefix
+   *   IDs, so tool-prefixed IDs never recycle — the counter just advances.
    * @returns {string} The next object Id to use.
    */
-  getNextId () {
+  getNextId (elemType = null) {
+    // Store so getId() returns a matching ID for the same element.
+    this._lastElemType = elemType
+    const prefix = this._makePrefix(elemType)
+
     const oldObjNum = this.obj_num
     let restoreOldObjNum = false
 
     // If there are any released numbers in the release stack,
     // use the last one instead of the next obj_num.
-    // We need to temporarily use obj_num as that is what getId() depends on.
     if (this.releasedNums.length > 0) {
       this.obj_num = this.releasedNums.pop()
       restoreOldObjNum = true
     } else {
-      // If we are not using a released id, then increment the obj_num.
       this.obj_num++
     }
 
     // Ensure the ID does not exist.
-    let id = this.getId()
+    let id = prefix + this.obj_num
     while (this.getElem_(id)) {
       if (restoreOldObjNum) {
         this.obj_num = oldObjNum
         restoreOldObjNum = false
       }
       this.obj_num++
-      id = this.getId()
+      id = prefix + this.obj_num
     }
     // Restore the old object number if required.
     if (restoreOldObjNum) {

@@ -457,7 +457,7 @@ class PathActions {
           curStyles: true,
           attr: {
             d: dAttr,
-            id: svgCanvas.getNextId(),
+            id: svgCanvas.getNextId('path'),
             opacity: svgCanvas.getOpacity() / 2
           }
         }))

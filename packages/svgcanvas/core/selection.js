@@ -377,7 +377,7 @@ const groupSvgElem = (elem) => {
   elem.replaceWith(g)
   g.appendChild(elem)
   dataStorage.put(g, 'gsvg', elem)
-  g.id = svgCanvas.getNextId()
+  g.id = svgCanvas.getNextId('g')
 }
 
 /**

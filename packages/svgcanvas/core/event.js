@@ -1512,7 +1512,7 @@ const mouseDownEvent = (evt) => {
         curStyles: true,
         attr: {
           points: svgCanvas.getDAttr(),
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('polyline'),
           fill: 'none',
           opacity: curShape.opacity / 2,
           'stroke-linecap': 'round',
@@ -1533,7 +1533,7 @@ const mouseDownEvent = (evt) => {
           y,
           width: 0,
           height: 0,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('image'),
           opacity: curShape.opacity / 2,
           style: 'pointer-events:inherit'
         }
@@ -1558,7 +1558,7 @@ const mouseDownEvent = (evt) => {
           y,
           width: 0,
           height: 0,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('rect'),
           'data-frame': '1',
           fill: 'transparent',
           stroke: '#3b82f6',
@@ -1586,7 +1586,7 @@ const mouseDownEvent = (evt) => {
           y,
           width: 0,
           height: 0,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('rect'),
           opacity: curShape.opacity / 2
         }
       })
@@ -1602,7 +1602,7 @@ const mouseDownEvent = (evt) => {
           y1: y,
           x2: x,
           y2: y,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('line'),
           stroke: curShape.stroke,
           'stroke-width': strokeW,
           'stroke-dasharray': curShape.stroke_dasharray,
@@ -1624,7 +1624,7 @@ const mouseDownEvent = (evt) => {
           cx: x,
           cy: y,
           r: 0,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('circle'),
           opacity: curShape.opacity / 2
         }
       })
@@ -1639,7 +1639,7 @@ const mouseDownEvent = (evt) => {
           cy: y,
           rx: 0,
           ry: 0,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('ellipse'),
           opacity: curShape.opacity / 2
         }
       })
@@ -1652,7 +1652,7 @@ const mouseDownEvent = (evt) => {
         attr: {
           x,
           y,
-          id: svgCanvas.getNextId(),
+          id: svgCanvas.getNextId('text'),
           fill: svgCanvas.getCurText('fill'),
           'stroke-width': svgCanvas.getCurText('stroke_width'),
           'font-size': svgCanvas.getCurText('font_size'),

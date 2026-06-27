@@ -285,6 +285,14 @@
                     options="Layer 1" values="layer1" value="layer1" disabled="disabled">
                 </se-select>
             </div>
+            <!-- Objects list: appears when a <g> group is selected -->
+            <div id="objects_panel" style="display:none">
+                <div id="objects_panel_header">
+                    <span id="objects_panel_label">Group</span>
+                    <input id="group_name_input" type="text" placeholder="name…" />
+                </div>
+                <ul id="objects_list" class="object-list"></ul>
+            </div>
         </div>
     </div>
 </div>

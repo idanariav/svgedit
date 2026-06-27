@@ -139,6 +139,14 @@ class RightPanel {
     })
     this.activateTab(this.activeTab)
     this.toggleSidePanel(this.editor.configObj.curConfig.showlayers)
+
+    // Group name input in objects panel — renames the group context, not necessarily
+    // the currently selected element (which may be a child of the group).
+    $id('group_name_input')?.addEventListener('change', (evt) => {
+      const g = this._groupContext
+      if (!g) return
+      g.setAttribute('data-name', evt.target.value)
+    })
   }
 
   toggleSidePanel (displayFlag) {
@@ -396,6 +404,80 @@ class RightPanel {
     self.editor.svgCanvas.runExtensions(
       'layersChanged'
     )
+  }
+
+  /**
+   * Shows or hides the objects panel depending on whether the selected element
+   * is a user <g> group or an element inside one. When visible, lists all
+   * children of the nearest ancestor group, highlighting the selected child.
+   * The panel stays visible as long as the selection is within a group context.
+   * @param {Element|null} elem - The currently selected SVG element (or null).
+   */
+  updateObjectList (elem) {
+    const { $id } = this.editor
+    const panel = $id('objects_panel')
+    const listEl = $id('objects_list')
+    const nameInput = $id('group_name_input')
+    if (!panel) return
+
+    // Layers are <g> elements that are direct children of the SVG drawing root.
+    // User groups are any other <g> elements nested inside a layer.
+    const svgContent = this.editor.svgCanvas.getSvgContent()
+    const isLayerGroup = (el) => el?.tagName === 'g' && el.parentElement === svgContent
+
+    // Walk up from elem to find the nearest ancestor that is a user group.
+    // Returns the group element, or null if no group context exists.
+    const findGroupContext = (el) => {
+      if (!el) return null
+      // If the element itself is a non-layer group, that is our context.
+      if (el.tagName === 'g' && !isLayerGroup(el)) return el
+      // Otherwise walk up to find a parent group that is not a layer.
+      let parent = el.parentElement
+      while (parent && parent !== svgContent) {
+        if (parent.tagName === 'g' && !isLayerGroup(parent)) return parent
+        parent = parent.parentElement
+      }
+      return null
+    }
+
+    const groupEl = findGroupContext(elem)
+    this._groupContext = groupEl
+    panel.style.display = groupEl ? '' : 'none'
+    if (!groupEl) {
+      if (listEl) listEl.innerHTML = ''
+      return
+    }
+
+    if (nameInput) nameInput.value = groupEl.getAttribute('data-name') || ''
+
+    const buildList = (parentEl) => {
+      const ul = document.createElement('ul')
+      ul.className = 'object-list'
+      for (const child of parentEl.childNodes) {
+        if (child.nodeType !== 1 || child.tagName === 'title') continue
+        const li = document.createElement('li')
+        const span = document.createElement('span')
+        span.className = 'object-list-item'
+        if (child === elem) span.classList.add('selected')
+        const label = child.getAttribute('data-name') || child.id || child.tagName
+        span.textContent = label
+        span.title = label
+        span.addEventListener('click', () => {
+          this.editor.svgCanvas.selectOnly([child], true)
+        })
+        li.appendChild(span)
+        if (child.tagName === 'g') {
+          li.appendChild(buildList(child))
+        }
+        ul.appendChild(li)
+      }
+      return ul
+    }
+
+    if (listEl) {
+      listEl.innerHTML = ''
+      listEl.appendChild(buildList(groupEl))
+    }
   }
 }
 
