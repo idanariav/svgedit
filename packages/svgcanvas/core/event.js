@@ -899,12 +899,18 @@ const mouseUpEvent = (evt) => {
           // no change in position/size, so maybe we should move to pathedit
         } else {
           t = evt.target
-          if (selectedElements[0].nodeName === 'path' && !selectedElements[1]) {
-            svgCanvas.pathActions.select(selectedElements[0])
+          // Shift-click on an already-selected element removes it from the
+          // selection. evt.target may be a child of a selected <g> (or the path
+          // interior), so resolve up to the selected element actually under the
+          // pointer. This takes priority over path-edit entry so a shift-click
+          // always deselects rather than diving into a single selected path.
+          const shiftHit = evt.shiftKey &&
+            selectedElements.find((s) => s && (s === t || s.contains(t)))
+          if (shiftHit && tempJustSelected !== shiftHit) {
+            svgCanvas.removeFromSelection([shiftHit])
+          } else if (!evt.shiftKey && selectedElements[0].nodeName === 'path' && !selectedElements[1]) {
             // if it was a path
-            // else, if it was selected and this is a shift-click, remove it from selection
-          } else if (evt.shiftKey && tempJustSelected !== t) {
-            svgCanvas.removeFromSelection([t])
+            svgCanvas.pathActions.select(selectedElements[0])
           }
         } // no change in mouse position
 
