@@ -351,6 +351,38 @@ and external SVG are present.
 same mechanism `data-frame` (frame export) relies on. The host reads the
 attribute back from the serialized SVG on save; svgedit emits no events for it.
 
+**Referenced `<defs>` travel with a copy.** A selection that uses gradients,
+filters, markers, masks or clip-paths references them by `url(#id)` into the
+canvas `<defs>` — those def elements are **not** selected, so a naive copy left
+the references dangling when pasted into another drawing (and
+`restoreRefElements` then appended a literal `"undefined"` text node into
+`<defs>`, corrupting it). Both copy paths now collect the transitively
+referenced defs via `getReferencedDefElements(elems)`
+(`packages/svgcanvas/core/utilities.js`):
+- **Clipboard copy/paste** — `copySelectedElements` tags each referenced def's
+  JSON with `_defs:true` and prepends them to the clipboard array; `pasteElements`
+  recreates `_defs` entries in `<defs>` **first** (so the shapes' refs resolve),
+  with the existing id-remap keeping references consistent.
+- **Shape library** — `_addSelectedToShapeLibrary` (`EditorStartup.js`) serializes
+  the referenced defs into a leading `<defs>…</defs>` so the saved `svgContent` is
+  self-contained; on insert, `ext-shapes.js` splits the defs off, imports both,
+  and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)` so repeated
+  insertions get independent, collision-free ids.
+
+`restoreRefElements` (`svgcanvas.js`) only restores a missing ref when it was
+actually tracked in `this.removedElements` (guards against the `append(undefined)`
+corruption above).
+
+**Copy/paste & duplicate keep the source id prefix.** A copy preserves the
+copied element's own id prefix instead of forcing the default `svg_` — e.g.
+`ellipse_1` → `ellipse_2`, a renamed `foo_1` → `foo_2`, a `<g>` `svg_18` → `svg_19`.
+Both paths derive the prefix by stripping the trailing digits of the source id
+and call `Drawing.getNextIdWithPrefix(prefix)` (`core/draw.js`), which bumps the
+shared `obj_num` counter until the id is unused (so no duplicate is produced; the
+number follows the global counter, not literally source+1). Paste applies this in
+`checkIDs` (`core/paste-elem.js`); duplicate applies it via the `copyElem(el, getNextId)`
+closure (`core/copy-elem.js` now passes the source element to `getNextId`).
+
 ---
 
 ## Event Flow Example: Draw a Rectangle

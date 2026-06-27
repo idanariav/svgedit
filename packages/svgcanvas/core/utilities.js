@@ -1303,6 +1303,105 @@ export const getRefElem = attrVal => {
   const id = url[0] === '#' ? url.slice(1) : url
   return getElement(id)
 }
+
+/**
+ * Attributes whose value may be a `url(#id)` reference to a `<defs>` element
+ * (paint servers, filters, markers, masks, clip-paths).
+ * @type {string[]}
+ */
+const REF_ATTRS = [
+  'clip-path', 'fill', 'filter', 'marker-end', 'marker-mid',
+  'marker-start', 'mask', 'stroke'
+]
+
+/**
+ * Collect the `<defs>` elements (gradients, filters, markers, masks,
+ * clip-paths, …) transitively referenced by the given elements, so a
+ * copy/paste or shape-library save can carry its paint servers along instead
+ * of leaving dangling `url(#…)` references when pasted into another document.
+ * @function module:utilities.getReferencedDefElements
+ * @param {Element[]} elems - root elements to scan (descendants are scanned too)
+ * @returns {Element[]} de-duplicated referenced def elements, dependencies first
+ */
+export const getReferencedDefElements = (elems) => {
+  const seen = new Set()
+  const ordered = []
+  const idsOf = (el) => {
+    const ids = []
+    REF_ATTRS.forEach((name) => {
+      const url = getUrlFromAttr(el.getAttribute?.(name))
+      if (url) ids.push(url[0] === '#' ? url.slice(1) : url)
+    })
+    const href = getHref(el)
+    if (href?.startsWith('#')) ids.push(href.slice(1))
+    return ids
+  }
+  const visit = (el) => {
+    idsOf(el).forEach((id) => {
+      const ref = getElement(id)
+      // Only collect <defs>-resident elements, not on-canvas references.
+      if (ref && !seen.has(ref) && ref.closest?.('defs')) {
+        seen.add(ref)
+        visit(ref) // nested refs (e.g. gradient href→gradient) collected first
+        ordered.push(ref)
+      }
+    })
+  }
+  elems.forEach((root) => {
+    if (!root) return
+    visit(root)
+    root.querySelectorAll?.('*').forEach(visit)
+  })
+  return ordered
+}
+
+/**
+ * Rewrite every `id` on the given root elements (and their descendants) to a
+ * fresh id, then update any internal `url(#…)` / `href="#…"` references so they
+ * keep pointing at the renamed elements. Used when inserting a stored shape so
+ * repeated insertions don't collide on ids with each other or the canvas.
+ * @function module:utilities.remapElementIdsAndRefs
+ * @param {Element[]} rootEls - root elements to remap (self + descendants)
+ * @param {function(): string} getNewId - supplies a fresh unique id per call
+ * @returns {PlainObject<string, string>} map of old id → new id
+ */
+export const remapElementIdsAndRefs = (rootEls, getNewId) => {
+  const idMap = {}
+  const allEls = []
+  rootEls.forEach((root) => {
+    if (!root) return
+    if (root.getAttribute?.('id')) allEls.push(root)
+    root.querySelectorAll?.('*').forEach((e) => allEls.push(e))
+  })
+  // First pass: assign new ids.
+  allEls.forEach((el) => {
+    const old = el.getAttribute?.('id')
+    if (old) {
+      const fresh = getNewId()
+      idMap[old] = fresh
+      el.setAttribute('id', fresh)
+    }
+  })
+  // Second pass: rewrite references to the renamed ids.
+  allEls.forEach((el) => {
+    REF_ATTRS.forEach((name) => {
+      const val = el.getAttribute?.(name)
+      const url = getUrlFromAttr(val)
+      if (!url) return
+      const refId = url[0] === '#' ? url.slice(1) : url
+      if (refId in idMap) el.setAttribute(name, val.replace(`#${refId}`, `#${idMap[refId]}`))
+    })
+    const plainHref = el.getAttribute?.('href')
+    if (plainHref?.startsWith('#') && plainHref.slice(1) in idMap) {
+      el.setAttribute('href', `#${idMap[plainHref.slice(1)]}`)
+    }
+    const xlinkHref = el.getAttributeNS?.(NS.XLINK, 'href')
+    if (xlinkHref?.startsWith('#') && xlinkHref.slice(1) in idMap) {
+      el.setAttributeNS(NS.XLINK, 'href', `#${idMap[xlinkHref.slice(1)]}`)
+    }
+  })
+  return idMap
+}
 /**
  * Get the reference element associated with the given attribute value.
  * @function module:utilities.getFeGaussianBlur

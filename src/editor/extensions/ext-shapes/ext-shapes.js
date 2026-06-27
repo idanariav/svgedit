@@ -97,9 +97,25 @@ export default {
             `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
             'image/svg+xml'
           )
-          const groupEl = parsed.documentElement.firstElementChild
-          const imported = canv.getDOMDocument().importNode(groupEl, true)
-          imported.id = canv.getNextId()
+          // A saved shape may carry its referenced paint servers in a leading
+          // <defs>. Split it from the shape, import both, then remap every id to
+          // a fresh one as a unit so repeated insertions never collide (with
+          // each other or with the canvas) while cross-references stay intact.
+          const children = [...parsed.documentElement.children]
+          const defsNode = children.find(c => c.tagName === 'defs')
+          const shapeNode = children.find(c => c.tagName !== 'defs')
+          const doc = canv.getDOMDocument()
+          const imported = doc.importNode(shapeNode, true)
+          const importedDefs = defsNode
+            ? [...defsNode.children].map(c => doc.importNode(c, true))
+            : []
+          canv.remapElementIdsAndRefs([imported, ...importedDefs], () => canv.getNextId())
+          if (!imported.id) imported.id = canv.getNextId()
+
+          if (importedDefs.length) {
+            const defs = canv.findDefs()
+            importedDefs.forEach(d => defs.appendChild(d))
+          }
 
           const layer = canv.getCurrentGroup() || canv.getCurrentDrawing().getCurrentLayer()
           layer.appendChild(imported)

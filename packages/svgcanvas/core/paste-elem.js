@@ -56,7 +56,11 @@ export const init = (canvas) => {
 */
   const checkIDs = (elem) => {
     if (elem.attr?.id) {
-      changedIDs[elem.attr.id] = svgCanvas.getNextId()
+      // Keep the copied element's own id prefix (e.g. `ellipse_1` → `ellipse_2`)
+      // rather than forcing the default `svg_`; the trailing number is bumped to
+      // the next free value so no duplicate id is ever produced.
+      const prefix = String(elem.attr.id).replace(/\d+$/, '') || 'svg_'
+      changedIDs[elem.attr.id] = svgCanvas.getNextIdWithPrefix(prefix)
       elem.attr.id = changedIDs[elem.attr.id]
     }
     if (elem.children) elem.children.forEach((child) => checkIDs(child))
@@ -115,11 +119,25 @@ export const init = (canvas) => {
     })
   })
 
+  // Referenced paint servers (gradients/filters/…) carried alongside the copy.
+  // Recreate them in <defs> *first* so the pasted shapes' url(#…) references
+  // resolve immediately (otherwise restoreRefElements would see them missing).
+  const defsEntries = clipb.filter(e => e?._defs)
+  const elemEntries = clipb.filter(e => e && !e._defs)
+
+  defsEntries.forEach((elem) => {
+    const defEl = svgCanvas.addSVGElementsFromJson(elem)
+    if (defEl) {
+      svgCanvas.findDefs().appendChild(defEl) // move out of the layer into <defs>
+      batchCmd.addSubCommand(new InsertElementCommand(defEl))
+    }
+  })
+
   // Move elements to lastClickPoint
-  let len = clipb.length
+  let len = elemEntries.length
   if (!len) return
   while (len--) {
-    const elem = clipb[len]
+    const elem = elemEntries[len]
     if (!elem) { continue }
 
     const copy = svgCanvas.addSVGElementsFromJson(elem)

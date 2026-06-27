@@ -846,7 +846,15 @@ class EditorStartup {
     const { label, category, linkedFile } = result
     if (!label || !category) return
 
-    const svgContent = new XMLSerializer().serializeToString(targetElem)
+    // Bundle the referenced paint servers (gradients, filters, markers, …) into
+    // the saved markup so the shape stays self-contained — otherwise its
+    // url(#…) references dangle when it's inserted into a different drawing.
+    const serializer = new XMLSerializer()
+    const defEls = this.svgCanvas.getReferencedDefElements?.(elems) || []
+    const defsMarkup = defEls.length
+      ? `<defs>${defEls.map(d => serializer.serializeToString(d)).join('')}</defs>`
+      : ''
+    const svgContent = defsMarkup + serializer.serializeToString(targetElem)
 
     addUserShape({
       category,

@@ -35,6 +35,8 @@ import {
   getHref,
   setHref,
   getRefElem,
+  getReferencedDefElements,
+  remapElementIdsAndRefs,
   getRotationAngle,
   getBBoxOfElementAsPath,
   convertToPath,
@@ -814,6 +816,10 @@ class SvgCanvas {
     return this.getCurrentDrawing().getNextId(elemType)
   }
 
+  getNextIdWithPrefix (prefix) {
+    return this.getCurrentDrawing().getNextIdWithPrefix(prefix)
+  }
+
   getCurCommand () {
     return this.curCommand
   }
@@ -926,7 +932,11 @@ class SvgCanvas {
       if (val?.startsWith('url(')) {
         const id = getUrlFromAttr(val).slice(1)
         const ref = getElement(id)
-        if (!ref) {
+        // Only restore a ref we actually tracked when it was removed. Appending
+        // a missing (undefined) entry injects a literal "undefined" text node
+        // into <defs> and never restores the paint server (e.g. cross-document
+        // paste, where the def was never removed from *this* canvas).
+        if (!ref && this.removedElements[id]) {
           findDefs().append(this.removedElements[id])
           delete this.removedElements[id]
         }
@@ -1315,6 +1325,8 @@ class SvgCanvas {
     this.convertToNum = convertToNum
     this.convertUnit = convertUnit
     this.findDefs = findDefs
+    this.getReferencedDefElements = getReferencedDefElements
+    this.remapElementIdsAndRefs = remapElementIdsAndRefs
     this.getUrlFromAttr = getUrlFromAttr
     this.getHref = getHref
     this.setHref = setHref

@@ -17,6 +17,7 @@ import {
   findDefs,
   getRotationAngle,
   getRefElem,
+  getReferencedDefElements,
   getBBox as utilsGetBBox,
   walkTreePost,
   assignAttributes,
@@ -741,9 +742,18 @@ const flipSelectedElements = (scaleX, scaleY) => {
  */
 const copySelectedElements = () => {
   const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-  const data = JSON.stringify(
-    selectedElements.map(x => svgCanvas.getJsonFromSvgElements(x))
-  )
+  const elemsJson = selectedElements.map(x => svgCanvas.getJsonFromSvgElements(x))
+  // Carry the referenced paint servers (gradients, filters, markers, …) on the
+  // clipboard, tagged `_defs`, so a paste into another drawing recreates them
+  // instead of leaving dangling url(#…) references and a corrupted <defs>.
+  const defsJson = getReferencedDefElements(selectedElements)
+    .map(d => {
+      const json = svgCanvas.getJsonFromSvgElements(d)
+      if (json) json._defs = true
+      return json
+    })
+    .filter(Boolean)
+  const data = JSON.stringify([...defsJson, ...elemsJson])
   // Use sessionStorage for the clipboard data.
   sessionStorage.setItem(svgCanvas.getClipboardID(), data)
   svgCanvas.flashStorage()

@@ -273,6 +273,24 @@ export class Drawing {
   }
 
   /**
+   * Returns the next free object Id that keeps a given literal prefix, bumping
+   * the shared counter until the id is unused. Lets a paste/duplicate preserve
+   * the copied element's own prefix (e.g. `ellipse_1` → `ellipse_2`) instead of
+   * forcing the default `svg_` prefix. Like the tag-prefixed `getNextId(type)`
+   * path, it never recycles released numbers.
+   * @param {string} prefix - The id prefix to keep (e.g. `ellipse_`, `svg_`).
+   * @returns {string} The next unused id with that prefix.
+   */
+  getNextIdWithPrefix (prefix) {
+    let id
+    do {
+      this.obj_num++
+      id = prefix + this.obj_num
+    } while (this.getElem_(id))
+    return id
+  }
+
+  /**
    * Releases the object Id, letting it be used as the next id in getNextId().
    * This method DOES NOT remove any elements from the DOM, it is expected
    * that client code will do this.
@@ -741,7 +759,14 @@ export class Drawing {
    * @returns {Element}
    */
   copyElem (el) {
-    const getNextIdClosure = () => this.getNextId()
+    // Preserve each source element's own id prefix (e.g. `ellipse_1` →
+    // `ellipse_2`) instead of forcing the default `svg_`, matching paste.
+    const getNextIdClosure = (srcEl) => {
+      const srcId = srcEl?.getAttribute?.('id')
+      if (!srcId) return this.getNextId()
+      const prefix = String(srcId).replace(/\d+$/, '') || this.idPrefix
+      return this.getNextIdWithPrefix(prefix)
+    }
     return utilCopyElem(el, getNextIdClosure)
   }
 }

@@ -5,7 +5,8 @@ import dataStorage from './dataStorage.js'
  * Create a clone of an element, updating its ID and its children's IDs when needed.
  * @function module:utilities.copyElem
  * @param {Element} el - DOM element to clone
- * @param {module:utilities.GetNextID} getNextId - The getter of the next unique ID.
+ * @param {module:utilities.GetNextID} getNextId - The getter of the next unique
+ *   ID. Receives the source element so callers can preserve its id prefix.
  * @returns {Element} The cloned element
  */
 export const copyElem = (el, getNextId) => {
@@ -21,7 +22,7 @@ export const copyElem = (el, getNextId) => {
   })
   // set the copied element's new id
   newEl.removeAttribute('id')
-  newEl.id = getNextId()
+  newEl.id = getNextId(el)
 
   // now create copies of all children
   el.childNodes.forEach((child) => {
