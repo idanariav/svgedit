@@ -66,6 +66,7 @@ svgedit/
 │   │   ├── ext-overview_window/   # Mini canvas preview window
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
+│   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart)
 │   │   ├── ext-storage/           # Auto-save to browser localStorage

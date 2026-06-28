@@ -111,6 +111,7 @@
 | `ext-overview_window/` | Mini canvas preview |
 | `ext-panning/` | Pan/hand tool |
 | `ext-polystar/` | Star and polygon tools |
+| `ext-brush/` | Pressure-sensitive brush tool (`perfect-freehand` filled-outline strokes; pen pressure via passive PointerEvent side-channel) |
 | `ext-proportion-markers/` | Wireframe-only edge proportion tick markers (companion to proportion snapping in `event.js`) |
 | `ext-shapes/` | Pre-made shape library |
 | `ext-storage/` | localStorage auto-save |

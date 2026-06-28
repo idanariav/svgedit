@@ -17,6 +17,7 @@ const TOOLS = [
   ['ext-panning', 'panning.svg', 'Pan'],
   null,
   ['fhpath', 'pencil.svg', 'Draw'],
+  ['brush', 'brush.svg', 'Brush'],
   ['path', 'pen.svg', 'Pen'],
   ['curvature', 'curvature.svg', 'Curvature'],
   null,
