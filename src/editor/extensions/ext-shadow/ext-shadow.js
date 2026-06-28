@@ -58,17 +58,26 @@ export default {
     }
 
     /**
-     * Compute filter region in userSpaceOnUse coordinates so long shadows
-     * are never clipped. Must be called after the element has layout.
+     * Set the filter region as fractions of the element's bounding box
+     * (objectBoundingBox units) rather than absolute userSpaceOnUse
+     * coordinates, so the region tracks the element when it is moved,
+     * duplicated, or pasted. An absolute region is left behind on a move (the
+     * element's geometry is rewritten but the <defs> region is not), dropping
+     * the element outside its own filter and rendering it completely invisible.
+     * The absolute shadow padding is converted to bbox fractions at creation
+     * time so long shadows still are not clipped. Must be called after the
+     * element has layout.
      */
     const setFilterRegion = (filter, elem, length, blur) => {
       const bbox = elem.getBBox()
       const pad = Math.abs(length) + blur * 3
-      filter.setAttribute('filterUnits', 'userSpaceOnUse')
-      filter.setAttribute('x', String(Math.floor(bbox.x - pad)))
-      filter.setAttribute('y', String(Math.floor(bbox.y - pad)))
-      filter.setAttribute('width', String(Math.ceil(bbox.width + pad * 2)))
-      filter.setAttribute('height', String(Math.ceil(bbox.height + pad * 2)))
+      const w = bbox.width || 1
+      const h = bbox.height || 1
+      filter.setAttribute('filterUnits', 'objectBoundingBox')
+      filter.setAttribute('x', String(-pad / w))
+      filter.setAttribute('y', String(-pad / h))
+      filter.setAttribute('width', String((w + pad * 2) / w))
+      filter.setAttribute('height', String((h + pad * 2) / h))
     }
 
     /**

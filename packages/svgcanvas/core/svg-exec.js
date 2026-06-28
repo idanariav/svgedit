@@ -48,74 +48,74 @@ const {
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
-/**
+  /**
  * Main function to set up the SVG content for output.
  * @function module:svgcanvas.SvgCanvas#svgCanvasToString
  * @returns {string} The SVG image for output
  */
-const svgCanvasToString = () => {
+  const svgCanvasToString = () => {
   // keep calling it until there are none to remove
-  while (svgCanvas.removeUnusedDefElems() > 0) {} // eslint-disable-line no-empty
+    while (svgCanvas.removeUnusedDefElems() > 0) {} // eslint-disable-line no-empty
 
-  svgCanvas.pathActions.clear(true)
+    svgCanvas.pathActions.clear(true)
 
-  // Keep SVG-Edit comment on top
-  const childNodesElems = svgCanvas.getSvgContent().childNodes
-  childNodesElems.forEach((node, i) => {
-    if (i && node.nodeType === 8 && node.data.includes('Created with')) {
-      svgCanvas.getSvgContent().firstChild.before(node)
-    }
-  })
-
-  // Move out of in-group editing mode
-  if (svgCanvas.getCurrentGroup()) {
-    svgCanvas.leaveContext()
-    svgCanvas.selectOnly([svgCanvas.getCurrentGroup()])
-  }
-
-  const nakedSvgs = []
-
-  // Unwrap gsvg if it has no special attributes (only id and style)
-  const gsvgElems = svgCanvas.getSvgContent().querySelectorAll('g[data-gsvg]')
-  Array.prototype.forEach.call(gsvgElems, element => {
-    const attrs = element.attributes
-    let len = attrs.length
-    for (let i = 0; i < len; i++) {
-      if (attrs[i].nodeName === 'id' || attrs[i].nodeName === 'style') {
-        len--
+    // Keep SVG-Edit comment on top
+    const childNodesElems = svgCanvas.getSvgContent().childNodes
+    childNodesElems.forEach((node, i) => {
+      if (i && node.nodeType === 8 && node.data.includes('Created with')) {
+        svgCanvas.getSvgContent().firstChild.before(node)
       }
-    }
-    // No significant attributes, so ungroup
-    if (len <= 0) {
-      const svg = element.firstChild
-      nakedSvgs.push(svg)
-      element.replaceWith(svg)
-    }
-  })
-  // Embed used custom fonts as @font-face in <defs> so the exported SVG is
-  // self-contained. Only fonts actually referenced by text are embedded.
-  const fontStyleElem = svgCanvas.getSvgOptionApply()
-    ? embedUsedFonts()
-    : null
-
-  const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
-
-  // Remove the temporary <style> so the live document is left untouched
-  if (fontStyleElem) {
-    fontStyleElem.remove()
-  }
-
-  // Rewrap gsvg
-  if (nakedSvgs.length) {
-    Array.prototype.forEach.call(nakedSvgs, el => {
-      svgCanvas.groupSvgElem(el)
     })
+
+    // Move out of in-group editing mode
+    if (svgCanvas.getCurrentGroup()) {
+      svgCanvas.leaveContext()
+      svgCanvas.selectOnly([svgCanvas.getCurrentGroup()])
+    }
+
+    const nakedSvgs = []
+
+    // Unwrap gsvg if it has no special attributes (only id and style)
+    const gsvgElems = svgCanvas.getSvgContent().querySelectorAll('g[data-gsvg]')
+    Array.prototype.forEach.call(gsvgElems, element => {
+      const attrs = element.attributes
+      let len = attrs.length
+      for (let i = 0; i < len; i++) {
+        if (attrs[i].nodeName === 'id' || attrs[i].nodeName === 'style') {
+          len--
+        }
+      }
+      // No significant attributes, so ungroup
+      if (len <= 0) {
+        const svg = element.firstChild
+        nakedSvgs.push(svg)
+        element.replaceWith(svg)
+      }
+    })
+    // Embed used custom fonts as @font-face in <defs> so the exported SVG is
+    // self-contained. Only fonts actually referenced by text are embedded.
+    const fontStyleElem = svgCanvas.getSvgOptionApply()
+      ? embedUsedFonts()
+      : null
+
+    const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
+
+    // Remove the temporary <style> so the live document is left untouched
+    if (fontStyleElem) {
+      fontStyleElem.remove()
+    }
+
+    // Rewrap gsvg
+    if (nakedSvgs.length) {
+      Array.prototype.forEach.call(nakedSvgs, el => {
+        svgCanvas.groupSvgElem(el)
+      })
+    }
+
+    return output
   }
 
-  return output
-}
-
-/**
+  /**
  * Build an @font-face <style> element for every embeddable font actually used by
  * text in the given SVG root and insert it into that root's <defs>. Returns the
  * inserted element (so it can be removed after serialization) or null if nothing
@@ -127,295 +127,295 @@ const svgCanvasToString = () => {
  * @param {SVGSVGElement} [svgContent=svgCanvas.getSvgContent()] - The SVG root to embed into
  * @returns {SVGStyleElement|null}
  */
-const embedUsedFonts = (svgContent = svgCanvas.getSvgContent()) => {
-  const fonts = svgCanvas.getEncodableFonts()
-  if (!fonts || !Object.keys(fonts).length) return null
+  const embedUsedFonts = (svgContent = svgCanvas.getSvgContent()) => {
+    const fonts = svgCanvas.getEncodableFonts()
+    if (!fonts || !Object.keys(fonts).length) return null
 
-  // Collect the set of font-family values referenced by text/tspan elements
-  const used = new Set()
-  svgContent.querySelectorAll('text, tspan').forEach(el => {
-    const fam = el.getAttribute('font-family') || el.style.fontFamily
-    if (fam) used.add(fam.replace(/^['"]|['"]$/g, ''))
-  })
+    // Collect the set of font-family values referenced by text/tspan elements
+    const used = new Set()
+    svgContent.querySelectorAll('text, tspan').forEach(el => {
+      const fam = el.getAttribute('font-family') || el.style.fontFamily
+      if (fam) used.add(fam.replace(/^['"]|['"]$/g, ''))
+    })
 
-  const faces = []
-  used.forEach(family => {
-    const base64 = fonts[family]
-    if (base64) {
+    const faces = []
+    used.forEach(family => {
+      const base64 = fonts[family]
+      if (base64) {
       // Unquoted family name + no format() keeps the payload free of XML-special
       // characters (', ", <, >, &), so it survives serialization without entity
       // escaping and renders whether the SVG is opened standalone or inlined.
       // CSS permits multi-word unquoted family names and an optional format().
-      faces.push(
+        faces.push(
         `@font-face{font-family:${family};font-style:normal;font-weight:normal;` +
         `src:url(data:font/woff2;base64,${base64});}`
-      )
+        )
+      }
+    })
+    if (!faces.length) return null
+
+    // Find (or create) the <defs> within the supplied root, not the live document.
+    let defs = svgContent.getElementsByTagNameNS(NS.SVG, 'defs')[0]
+    if (!defs) {
+      defs = svgContent.ownerDocument.createElementNS(NS.SVG, 'defs')
+      svgContent.insertBefore(defs, svgContent.firstChild)
     }
-  })
-  if (!faces.length) return null
-
-  // Find (or create) the <defs> within the supplied root, not the live document.
-  let defs = svgContent.getElementsByTagNameNS(NS.SVG, 'defs')[0]
-  if (!defs) {
-    defs = svgContent.ownerDocument.createElementNS(NS.SVG, 'defs')
-    svgContent.insertBefore(defs, svgContent.firstChild)
+    const style = svgContent.ownerDocument.createElementNS(NS.SVG, 'style')
+    style.setAttribute('type', 'text/css')
+    // base64 + CSS punctuation contain no XML-special chars, so a text node
+    // serializes intact (createCDATASection is unsupported in HTML documents)
+    style.textContent = faces.join('')
+    defs.appendChild(style)
+    return style
   }
-  const style = svgContent.ownerDocument.createElementNS(NS.SVG, 'style')
-  style.setAttribute('type', 'text/css')
-  // base64 + CSS punctuation contain no XML-special chars, so a text node
-  // serializes intact (createCDATASection is unsupported in HTML documents)
-  style.textContent = faces.join('')
-  defs.appendChild(style)
-  return style
-}
 
-/**
+  /**
  * Sub function ran on each SVG element to convert it to a string as desired.
  * @function module:svgcanvas.SvgCanvas#svgToString
  * @param {Element} elem - The SVG element to convert
  * @param {Integer} indent - Number of spaces to indent this tag
  * @returns {string} The given element as an SVG tag
  */
-const svgToString = (elem, indent) => {
-  const curConfig = svgCanvas.getCurConfig()
-  const nsMap = svgCanvas.getNsMap()
-  const out = []
-  const unit = curConfig.baseUnit
-  const unitRe = new RegExp(`^-?[\\d\\.]+${unit}$`)
+  const svgToString = (elem, indent) => {
+    const curConfig = svgCanvas.getCurConfig()
+    const nsMap = svgCanvas.getNsMap()
+    const out = []
+    const unit = curConfig.baseUnit
+    const unitRe = new RegExp(`^-?[\\d\\.]+${unit}$`)
 
-  if (elem) {
-    cleanupElement(elem)
-    const attrs = [...elem.attributes]
-    const childs = elem.childNodes
-    attrs.sort((a, b) => {
-      return a.name > b.name ? -1 : 1
-    })
+    if (elem) {
+      cleanupElement(elem)
+      const attrs = [...elem.attributes]
+      const childs = elem.childNodes
+      attrs.sort((a, b) => {
+        return a.name > b.name ? -1 : 1
+      })
 
-    for (let i = 0; i < indent; i++) {
-      out.push(' ')
-    }
-    out.push('<')
-    out.push(elem.localName)
-    if (elem.id === 'svgcontent') {
-      // Process root element separately
-      const res = svgCanvas.getResolution()
-
-      let vb = ''
-      // TODO: Allow this by dividing all values by current baseVal
-      // Note that this also means we should properly deal with this on import
-      // if (curConfig.baseUnit !== 'px') {
-      //   const unit = curConfig.baseUnit;
-      //   const unitM = getTypeMap()[unit];
-      //   res.w = shortFloat(res.w / unitM);
-      //   res.h = shortFloat(res.h / unitM);
-      //   vb = ' viewBox="' + [0, 0, res.w, res.h].join(' ') + '"';
-      //   res.w += unit;
-      //   res.h += unit;
-      // }
-      if (curConfig.dynamicOutput) {
-        vb = elem.getAttribute('viewBox')
-        if (!vb) {
-          vb = [0, 0, res.w, res.h].join(' ')
-        }
-        out.push(` viewBox="${vb}" xmlns="${NS.SVG}"`)
-      } else {
-        if (unit !== 'px') {
-          res.w = convertUnit(res.w, unit) + unit
-          res.h = convertUnit(res.h, unit) + unit
-        }
-        out.push(
-          ' width="' + res.w + '" height="' + res.h + '" xmlns="' + NS.SVG + '"'
-        )
+      for (let i = 0; i < indent; i++) {
+        out.push(' ')
       }
+      out.push('<')
+      out.push(elem.localName)
+      if (elem.id === 'svgcontent') {
+      // Process root element separately
+        const res = svgCanvas.getResolution()
 
-      const nsuris = {}
+        let vb = ''
+        // TODO: Allow this by dividing all values by current baseVal
+        // Note that this also means we should properly deal with this on import
+        // if (curConfig.baseUnit !== 'px') {
+        //   const unit = curConfig.baseUnit;
+        //   const unitM = getTypeMap()[unit];
+        //   res.w = shortFloat(res.w / unitM);
+        //   res.h = shortFloat(res.h / unitM);
+        //   vb = ' viewBox="' + [0, 0, res.w, res.h].join(' ') + '"';
+        //   res.w += unit;
+        //   res.h += unit;
+        // }
+        if (curConfig.dynamicOutput) {
+          vb = elem.getAttribute('viewBox')
+          if (!vb) {
+            vb = [0, 0, res.w, res.h].join(' ')
+          }
+          out.push(` viewBox="${vb}" xmlns="${NS.SVG}"`)
+        } else {
+          if (unit !== 'px') {
+            res.w = convertUnit(res.w, unit) + unit
+            res.h = convertUnit(res.h, unit) + unit
+          }
+          out.push(
+            ' width="' + res.w + '" height="' + res.h + '" xmlns="' + NS.SVG + '"'
+          )
+        }
 
-      // Check elements for namespaces, add if found
-      const csElements = elem.querySelectorAll('*')
-      const cElements = Array.prototype.slice.call(csElements)
-      cElements.push(elem)
-      Array.prototype.forEach.call(cElements, el => {
+        const nsuris = {}
+
+        // Check elements for namespaces, add if found
+        const csElements = elem.querySelectorAll('*')
+        const cElements = Array.prototype.slice.call(csElements)
+        cElements.push(elem)
+        Array.prototype.forEach.call(cElements, el => {
         // const el = this;
         // for some elements have no attribute
-        const uri = el.namespaceURI
-        if (
-          uri &&
+          const uri = el.namespaceURI
+          if (
+            uri &&
           !nsuris[uri] &&
           nsMap[uri] &&
           nsMap[uri] !== 'xmlns' &&
           nsMap[uri] !== 'xml'
-        ) {
-          nsuris[uri] = true
-          out.push(` xmlns:${nsMap[uri]}="${uri}"`)
-        }
-        if (el.attributes.length > 0) {
-          for (const [, attr] of Object.entries(el.attributes)) {
-            const u = attr.namespaceURI
-            if (u && !nsuris[u] && nsMap[u] !== 'xmlns' && nsMap[u] !== 'xml') {
-              nsuris[u] = true
-              out.push(` xmlns:${nsMap[u]}="${u}"`)
+          ) {
+            nsuris[uri] = true
+            out.push(` xmlns:${nsMap[uri]}="${uri}"`)
+          }
+          if (el.attributes.length > 0) {
+            for (const [, attr] of Object.entries(el.attributes)) {
+              const u = attr.namespaceURI
+              if (u && !nsuris[u] && nsMap[u] !== 'xmlns' && nsMap[u] !== 'xml') {
+                nsuris[u] = true
+                out.push(` xmlns:${nsMap[u]}="${u}"`)
+              }
             }
           }
-        }
-      })
+        })
 
-      let i = attrs.length
-      const attrNames = [
-        'width',
-        'height',
-        'xmlns',
-        'x',
-        'y',
-        'viewBox',
-        'id',
-        'overflow'
-      ]
-      while (i--) {
-        const attr = attrs[i]
-        const attrVal = toXml(attr.value)
+        let i = attrs.length
+        const attrNames = [
+          'width',
+          'height',
+          'xmlns',
+          'x',
+          'y',
+          'viewBox',
+          'id',
+          'overflow'
+        ]
+        while (i--) {
+          const attr = attrs[i]
+          const attrVal = toXml(attr.value)
 
-        // Namespaces have already been dealt with, so skip
-        if (attr.nodeName.startsWith('xmlns:')) {
-          continue
-        }
+          // Namespaces have already been dealt with, so skip
+          if (attr.nodeName.startsWith('xmlns:')) {
+            continue
+          }
 
-        // only serialize attributes we don't use internally
-        if (
-          attrVal !== '' &&
+          // only serialize attributes we don't use internally
+          if (
+            attrVal !== '' &&
           !attrNames.includes(attr.localName) &&
           (!attr.namespaceURI || nsMap[attr.namespaceURI])
-        ) {
-          out.push(' ')
-          out.push(attr.nodeName)
-          out.push('="')
-          out.push(attrVal)
-          out.push('"')
-        }
-      }
-    } else {
-      // Skip empty defs
-      if (elem.nodeName === 'defs' && !elem.firstChild) {
-        return ''
-      }
-
-      const mozAttrs = ['-moz-math-font-style', '_moz-math-font-style']
-      for (let i = attrs.length - 1; i >= 0; i--) {
-        const attr = attrs[i]
-        let attrVal = toXml(attr.value)
-        // remove bogus attributes added by Gecko
-        if (mozAttrs.includes(attr.localName)) {
-          continue
-        }
-        if (attrVal === 'null') {
-          const styleName = attr.localName.replace(/-[a-z]/g, s =>
-            s[1].toUpperCase()
-          )
-          if (Object.prototype.hasOwnProperty.call(elem.style, styleName)) {
-            continue
-          }
-        }
-        if (attrVal !== '') {
-          if (attrVal.startsWith('pointer-events')) {
-            continue
-          }
-          if (attr.localName === 'class' && attrVal.startsWith('se_')) {
-            continue
-          }
-          out.push(' ')
-          if (attr.localName === 'd') {
-            attrVal = svgCanvas.pathActions.convertPath(elem, true)
-          }
-          if (!isNaN(attrVal)) {
-            attrVal = shortFloat(attrVal)
-          } else if (unitRe.test(attrVal)) {
-            attrVal = shortFloat(attrVal) + unit
-          }
-
-          // Embed images when saving
-          if (
-            svgCanvas.getSvgOptionApply() &&
-            elem.nodeName === 'image' &&
-            attr.localName === 'href' &&
-            svgCanvas.getSvgOptionImages() &&
-            svgCanvas.getSvgOptionImages() === 'embed'
           ) {
-            const img = svgCanvas.getEncodableImages(attrVal)
-            if (img) {
-              attrVal = img
-            }
-          }
-
-          // map various namespaces to our fixed namespace prefixes
-          // (the default xmlns attribute itself does not get a prefix)
-          if (
-            !attr.namespaceURI ||
-            attr.namespaceURI === NS.SVG ||
-            nsMap[attr.namespaceURI]
-          ) {
+            out.push(' ')
             out.push(attr.nodeName)
             out.push('="')
             out.push(attrVal)
             out.push('"')
           }
         }
-      }
-    }
+      } else {
+      // Skip empty defs
+        if (elem.nodeName === 'defs' && !elem.firstChild) {
+          return ''
+        }
 
-    if (elem.hasChildNodes()) {
-      out.push('>')
-      indent++
-      let bOneLine = false
-
-      for (let i = 0; i < childs.length; i++) {
-        const child = childs.item(i)
-        switch (child.nodeType) {
-          case 1: // element node
-            out.push('\n')
-            out.push(svgCanvas.svgToString(child, indent))
-            break
-          case 3: {
-            // text node
-            const str = child.nodeValue.replace(/^\s+|\s+$/g, '')
-            if (str !== '') {
-              bOneLine = true
-              out.push(String(toXml(str)))
-            }
-            break
+        const mozAttrs = ['-moz-math-font-style', '_moz-math-font-style']
+        for (let i = attrs.length - 1; i >= 0; i--) {
+          const attr = attrs[i]
+          let attrVal = toXml(attr.value)
+          // remove bogus attributes added by Gecko
+          if (mozAttrs.includes(attr.localName)) {
+            continue
           }
-          case 4: // cdata node
-            out.push('\n')
-            out.push(new Array(indent + 1).join(' '))
-            out.push('<![CDATA[')
-            out.push(child.nodeValue)
-            out.push(']]>')
-            break
-          case 8: // comment
-            out.push('\n')
-            out.push(new Array(indent + 1).join(' '))
-            out.push('<!--')
-            out.push(child.data)
-            out.push('-->')
-            break
-        } // switch on node type
-      }
-      indent--
-      if (!bOneLine) {
-        out.push('\n')
-        for (let i = 0; i < indent; i++) {
-          out.push(' ')
+          if (attrVal === 'null') {
+            const styleName = attr.localName.replace(/-[a-z]/g, s =>
+              s[1].toUpperCase()
+            )
+            if (Object.prototype.hasOwnProperty.call(elem.style, styleName)) {
+              continue
+            }
+          }
+          if (attrVal !== '') {
+            if (attrVal.startsWith('pointer-events')) {
+              continue
+            }
+            if (attr.localName === 'class' && attrVal.startsWith('se_')) {
+              continue
+            }
+            out.push(' ')
+            if (attr.localName === 'd') {
+              attrVal = svgCanvas.pathActions.convertPath(elem, true)
+            }
+            if (!isNaN(attrVal)) {
+              attrVal = shortFloat(attrVal)
+            } else if (unitRe.test(attrVal)) {
+              attrVal = shortFloat(attrVal) + unit
+            }
+
+            // Embed images when saving
+            if (
+              svgCanvas.getSvgOptionApply() &&
+            elem.nodeName === 'image' &&
+            attr.localName === 'href' &&
+            svgCanvas.getSvgOptionImages() &&
+            svgCanvas.getSvgOptionImages() === 'embed'
+            ) {
+              const img = svgCanvas.getEncodableImages(attrVal)
+              if (img) {
+                attrVal = img
+              }
+            }
+
+            // map various namespaces to our fixed namespace prefixes
+            // (the default xmlns attribute itself does not get a prefix)
+            if (
+              !attr.namespaceURI ||
+            attr.namespaceURI === NS.SVG ||
+            nsMap[attr.namespaceURI]
+            ) {
+              out.push(attr.nodeName)
+              out.push('="')
+              out.push(attrVal)
+              out.push('"')
+            }
+          }
         }
       }
-      out.push('</')
-      out.push(elem.localName)
-      out.push('>')
-    } else {
-      out.push('/>')
-    }
-  }
-  return out.join('')
-} // end svgToString()
 
-/**
+      if (elem.hasChildNodes()) {
+        out.push('>')
+        indent++
+        let bOneLine = false
+
+        for (let i = 0; i < childs.length; i++) {
+          const child = childs.item(i)
+          switch (child.nodeType) {
+            case 1: // element node
+              out.push('\n')
+              out.push(svgCanvas.svgToString(child, indent))
+              break
+            case 3: {
+            // text node
+              const str = child.nodeValue.replace(/^\s+|\s+$/g, '')
+              if (str !== '') {
+                bOneLine = true
+                out.push(String(toXml(str)))
+              }
+              break
+            }
+            case 4: // cdata node
+              out.push('\n')
+              out.push(new Array(indent + 1).join(' '))
+              out.push('<![CDATA[')
+              out.push(child.nodeValue)
+              out.push(']]>')
+              break
+            case 8: // comment
+              out.push('\n')
+              out.push(new Array(indent + 1).join(' '))
+              out.push('<!--')
+              out.push(child.data)
+              out.push('-->')
+              break
+          } // switch on node type
+        }
+        indent--
+        if (!bOneLine) {
+          out.push('\n')
+          for (let i = 0; i < indent; i++) {
+            out.push(' ')
+          }
+        }
+        out.push('</')
+        out.push(elem.localName)
+        out.push('>')
+      } else {
+        out.push('/>')
+      }
+    }
+    return out.join('')
+  } // end svgToString()
+
+  /**
  * This function sets the current drawing as the input SVG XML.
  * @function module:svgcanvas.SvgCanvas#setSvgString
  * @param {string} xmlString - The SVG as XML text.
@@ -428,250 +428,251 @@ const svgToString = (elem, indent) => {
  * @returns {boolean} This function returns `false` if the set was
  *     unsuccessful, `true` otherwise.
  */
-const setSvgString = (xmlString, preventUndo) => {
-  const curConfig = svgCanvas.getCurConfig()
-  const dataStorage = svgCanvas.getDataStorage()
-  try {
+  const setSvgString = (xmlString, preventUndo) => {
+    const curConfig = svgCanvas.getCurConfig()
+    const dataStorage = svgCanvas.getDataStorage()
+    try {
     // convert string into XML document
-    const newDoc = text2xml(xmlString)
-    if (
-      newDoc.firstElementChild &&
+      const newDoc = text2xml(xmlString)
+      if (
+        newDoc.firstElementChild &&
       newDoc.firstElementChild.namespaceURI !== NS.SVG
-    ) {
+      ) {
+        return false
+      }
+
+      svgCanvas.prepareSvg(newDoc)
+
+      const batchCmd = new BatchCommand('Change Source')
+
+      // remove old svg document
+      const { nextSibling } = svgCanvas.getSvgContent()
+
+      svgCanvas.getSvgContent().remove()
+      const oldzoom = svgCanvas.getSvgContent()
+      batchCmd.addSubCommand(
+        new RemoveElementCommand(oldzoom, nextSibling, svgCanvas.getSvgRoot())
+      )
+
+      // set new svg document
+      // If DOM3 adoptNode() available, use it. Otherwise fall back to DOM2 importNode()
+      if (svgCanvas.getDOMDocument().adoptNode) {
+        svgCanvas.setSvgContent(
+          svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
+        )
+      } else {
+        svgCanvas.setSvgContent(
+          svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
+        )
+      }
+
+      svgCanvas.getSvgRoot().append(svgCanvas.getSvgContent())
+      const content = svgCanvas.getSvgContent()
+
+      svgCanvas.current_drawing_ = new draw.Drawing(
+        svgCanvas.getSvgContent(),
+        svgCanvas.getIdPrefix()
+      )
+
+      // retrieve or set the nonce
+      const nonce = svgCanvas.getCurrentDrawing().getNonce()
+      if (nonce) {
+        svgCanvas.call('setnonce', nonce)
+      } else {
+        svgCanvas.call('unsetnonce')
+      }
+
+      // change image href vals if possible
+      const elements = content.querySelectorAll('image')
+      Array.prototype.forEach.call(elements, image => {
+        preventClickDefault(image)
+        const val = svgCanvas.getHref(image)
+        if (val) {
+          if (val.startsWith('data:')) {
+          // Check if an SVG-edit data URI
+            const m = val.match(/svgedit_url=(.*?);/)
+            // const m = val.match(/svgedit_url=(?<url>.*?);/);
+            if (m) {
+              const url = decodeURIComponent(m[1])
+              // const url = decodeURIComponent(m.groups.url);
+              const iimg = new Image()
+              iimg.addEventListener('load', () => {
+              // Set the href attribute to the data URL
+                setHref(image, val)
+              })
+              iimg.src = url
+            }
+          }
+          // Add to encodableImages if it loads
+          svgCanvas.embedImage(val)
+        }
+      })
+      // Duplicate id replace changes
+      const nodes = content.querySelectorAll('[id]')
+      const ids = {}
+      const totalNodes = nodes.length
+
+      for (let i = 0; i < totalNodes; i++) {
+        const currentId = nodes[i].id ? nodes[i].id : 'undefined'
+        if (isNaN(ids[currentId])) {
+          ids[currentId] = 0
+        }
+        ids[currentId]++
+      }
+
+      Object.entries(ids).forEach(([key, value]) => {
+        if (value > 1) {
+          const nodes = content.querySelectorAll(`[id="${key}"]`)
+          for (let i = 1; i < nodes.length; i++) {
+            nodes[i].setAttribute('id', svgCanvas.getNextId())
+          }
+        }
+      })
+
+      // Wrap child SVGs in group elements
+      const svgElements = content.querySelectorAll('svg')
+      Array.prototype.forEach.call(svgElements, element => {
+      // Skip if it's in a <defs>
+        if (getClosest(element.parentNode, 'defs')) {
+          return
+        }
+
+        svgCanvas.uniquifyElems(element)
+
+        // Check if it already has a gsvg group
+        const pa = element.parentNode
+        if (pa.childNodes.length === 1 && pa.nodeName === 'g') {
+          dataStorage.put(pa, 'gsvg', element)
+          pa.id = pa.id || svgCanvas.getNextId()
+        } else {
+          svgCanvas.groupSvgElem(element)
+        }
+      })
+
+      // For Firefox: Put all paint elems in defs
+      if (isGecko()) {
+        const svgDefs = findDefs()
+        const findElems = content.querySelectorAll(
+          'linearGradient, radialGradient, pattern'
+        )
+        Array.prototype.forEach.call(findElems, ele => {
+          svgDefs.appendChild(ele)
+        })
+      }
+
+      // Set ref element for <use> elements
+
+      // TODO: This should also be done if the object is re-added through "redo"
+      svgCanvas.setUseData(content)
+
+      svgCanvas.convertGradients(content)
+      svgCanvas.convertDropShadowFilters(content)
+
+      const attrs = {
+        id: 'svgcontent',
+        overflow: curConfig.show_outside_canvas ? 'visible' : 'hidden'
+      }
+
+      let percs = false
+
+      // determine proper size
+      if (content.getAttribute('viewBox')) {
+        const viBox = content.getAttribute('viewBox')
+        const vb = viBox.split(/[ ,]+/)
+        const vbWidth = Number(vb[2])
+        const vbHeight = Number(vb[3])
+        if (Number.isFinite(vbWidth)) {
+          attrs.width = vbWidth
+        }
+        if (Number.isFinite(vbHeight)) {
+          attrs.height = vbHeight
+        }
+      // handle content that doesn't have a viewBox
+      } else {
+        ;['width', 'height'].forEach(dim => {
+        // Set to 100 if not given
+          const val = content.getAttribute(dim) || '100%'
+          if (String(val).slice(-1) === '%') {
+          // Use user units if percentage given
+            percs = true
+          } else {
+            attrs[dim] = convertToNum(dim, val)
+          }
+        })
+      }
+
+      // identify layers
+      svgCanvas.identifyLayers()
+
+      // Give ID for any visible layer children missing one
+      const chiElems = content.children
+      Array.prototype.forEach.call(chiElems, chiElem => {
+        const visElems = chiElem.querySelectorAll(svgCanvas.getVisElems())
+        Array.prototype.forEach.call(visElems, elem => {
+          if (!elem.id) {
+            elem.id = svgCanvas.getNextId()
+          }
+        })
+      })
+
+      // Percentage width/height, so let's base it on visible elements
+      if (percs) {
+        const bb = getStrokedBBoxDefaultVisible()
+        if (bb && typeof bb === 'object') {
+          attrs.width = bb.width + bb.x
+          attrs.height = bb.height + bb.y
+        } else {
+          if (attrs.width === null || attrs.width === undefined) {
+            attrs.width = 100
+          }
+          if (attrs.height === null || attrs.height === undefined) {
+            attrs.height = 100
+          }
+        }
+      }
+
+      // Just in case negative numbers are given or
+      // result from the percs calculation
+      if (!Number.isFinite(attrs.width) || attrs.width <= 0) {
+        attrs.width = 100
+      }
+      if (!Number.isFinite(attrs.height) || attrs.height <= 0) {
+        attrs.height = 100
+      }
+
+      for (const [key, value] of Object.entries(attrs)) {
+        content.setAttribute(key, value)
+      }
+      svgCanvas.contentW = attrs.width
+      svgCanvas.contentH = attrs.height
+
+      batchCmd.addSubCommand(new InsertElementCommand(svgCanvas.getSvgContent()))
+      // update root to the correct size
+      const width = content.getAttribute('width')
+      const height = content.getAttribute('height')
+      const changes = { width, height }
+      batchCmd.addSubCommand(
+        new ChangeElementCommand(svgCanvas.getSvgRoot(), changes)
+      )
+
+      // reset zoom
+      svgCanvas.setZoom(1)
+
+      svgCanvas.clearSelection()
+      svgCanvas.clearData()
+      svgCanvas.getSvgRoot().append(svgCanvas.selectorManager.selectorParentGroup)
+
+      if (!preventUndo) svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('sourcechanged', [svgCanvas.getSvgContent()])
+    } catch (e) {
+      error('Error setting SVG string', e, 'svg-exec')
       return false
     }
 
-    svgCanvas.prepareSvg(newDoc)
-
-    const batchCmd = new BatchCommand('Change Source')
-
-    // remove old svg document
-    const { nextSibling } = svgCanvas.getSvgContent()
-
-    svgCanvas.getSvgContent().remove()
-    const oldzoom = svgCanvas.getSvgContent()
-    batchCmd.addSubCommand(
-      new RemoveElementCommand(oldzoom, nextSibling, svgCanvas.getSvgRoot())
-    )
-
-    // set new svg document
-    // If DOM3 adoptNode() available, use it. Otherwise fall back to DOM2 importNode()
-    if (svgCanvas.getDOMDocument().adoptNode) {
-      svgCanvas.setSvgContent(
-        svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
-      )
-    } else {
-      svgCanvas.setSvgContent(
-        svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
-      )
-    }
-
-    svgCanvas.getSvgRoot().append(svgCanvas.getSvgContent())
-    const content = svgCanvas.getSvgContent()
-
-    svgCanvas.current_drawing_ = new draw.Drawing(
-      svgCanvas.getSvgContent(),
-      svgCanvas.getIdPrefix()
-    )
-
-    // retrieve or set the nonce
-    const nonce = svgCanvas.getCurrentDrawing().getNonce()
-    if (nonce) {
-      svgCanvas.call('setnonce', nonce)
-    } else {
-      svgCanvas.call('unsetnonce')
-    }
-
-    // change image href vals if possible
-    const elements = content.querySelectorAll('image')
-    Array.prototype.forEach.call(elements, image => {
-      preventClickDefault(image)
-      const val = svgCanvas.getHref(image)
-      if (val) {
-        if (val.startsWith('data:')) {
-          // Check if an SVG-edit data URI
-          const m = val.match(/svgedit_url=(.*?);/)
-          // const m = val.match(/svgedit_url=(?<url>.*?);/);
-          if (m) {
-            const url = decodeURIComponent(m[1])
-            // const url = decodeURIComponent(m.groups.url);
-            const iimg = new Image()
-            iimg.addEventListener('load', () => {
-              // Set the href attribute to the data URL
-              setHref(image, val)
-            })
-            iimg.src = url
-          }
-        }
-        // Add to encodableImages if it loads
-        svgCanvas.embedImage(val)
-      }
-    })
-    // Duplicate id replace changes
-    const nodes = content.querySelectorAll('[id]')
-    const ids = {}
-    const totalNodes = nodes.length
-
-    for (let i = 0; i < totalNodes; i++) {
-      const currentId = nodes[i].id ? nodes[i].id : 'undefined'
-      if (isNaN(ids[currentId])) {
-        ids[currentId] = 0
-      }
-      ids[currentId]++
-    }
-
-    Object.entries(ids).forEach(([key, value]) => {
-      if (value > 1) {
-        const nodes = content.querySelectorAll(`[id="${key}"]`)
-        for (let i = 1; i < nodes.length; i++) {
-          nodes[i].setAttribute('id', svgCanvas.getNextId())
-        }
-      }
-    })
-
-    // Wrap child SVGs in group elements
-    const svgElements = content.querySelectorAll('svg')
-    Array.prototype.forEach.call(svgElements, element => {
-      // Skip if it's in a <defs>
-      if (getClosest(element.parentNode, 'defs')) {
-        return
-      }
-
-      svgCanvas.uniquifyElems(element)
-
-      // Check if it already has a gsvg group
-      const pa = element.parentNode
-      if (pa.childNodes.length === 1 && pa.nodeName === 'g') {
-        dataStorage.put(pa, 'gsvg', element)
-        pa.id = pa.id || svgCanvas.getNextId()
-      } else {
-        svgCanvas.groupSvgElem(element)
-      }
-    })
-
-    // For Firefox: Put all paint elems in defs
-    if (isGecko()) {
-      const svgDefs = findDefs()
-      const findElems = content.querySelectorAll(
-        'linearGradient, radialGradient, pattern'
-      )
-      Array.prototype.forEach.call(findElems, ele => {
-        svgDefs.appendChild(ele)
-      })
-    }
-
-    // Set ref element for <use> elements
-
-    // TODO: This should also be done if the object is re-added through "redo"
-    svgCanvas.setUseData(content)
-
-    svgCanvas.convertGradients(content)
-
-    const attrs = {
-      id: 'svgcontent',
-      overflow: curConfig.show_outside_canvas ? 'visible' : 'hidden'
-    }
-
-    let percs = false
-
-    // determine proper size
-    if (content.getAttribute('viewBox')) {
-      const viBox = content.getAttribute('viewBox')
-      const vb = viBox.split(/[ ,]+/)
-      const vbWidth = Number(vb[2])
-      const vbHeight = Number(vb[3])
-      if (Number.isFinite(vbWidth)) {
-        attrs.width = vbWidth
-      }
-      if (Number.isFinite(vbHeight)) {
-        attrs.height = vbHeight
-      }
-      // handle content that doesn't have a viewBox
-    } else {
-      ;['width', 'height'].forEach(dim => {
-        // Set to 100 if not given
-        const val = content.getAttribute(dim) || '100%'
-        if (String(val).slice(-1) === '%') {
-          // Use user units if percentage given
-          percs = true
-        } else {
-          attrs[dim] = convertToNum(dim, val)
-        }
-      })
-    }
-
-    // identify layers
-    svgCanvas.identifyLayers()
-
-    // Give ID for any visible layer children missing one
-    const chiElems = content.children
-    Array.prototype.forEach.call(chiElems, chiElem => {
-      const visElems = chiElem.querySelectorAll(svgCanvas.getVisElems())
-      Array.prototype.forEach.call(visElems, elem => {
-        if (!elem.id) {
-          elem.id = svgCanvas.getNextId()
-        }
-      })
-    })
-
-    // Percentage width/height, so let's base it on visible elements
-    if (percs) {
-      const bb = getStrokedBBoxDefaultVisible()
-      if (bb && typeof bb === 'object') {
-        attrs.width = bb.width + bb.x
-        attrs.height = bb.height + bb.y
-      } else {
-        if (attrs.width === null || attrs.width === undefined) {
-          attrs.width = 100
-        }
-        if (attrs.height === null || attrs.height === undefined) {
-          attrs.height = 100
-        }
-      }
-    }
-
-    // Just in case negative numbers are given or
-    // result from the percs calculation
-    if (!Number.isFinite(attrs.width) || attrs.width <= 0) {
-      attrs.width = 100
-    }
-    if (!Number.isFinite(attrs.height) || attrs.height <= 0) {
-      attrs.height = 100
-    }
-
-    for (const [key, value] of Object.entries(attrs)) {
-      content.setAttribute(key, value)
-    }
-    svgCanvas.contentW = attrs.width
-    svgCanvas.contentH = attrs.height
-
-    batchCmd.addSubCommand(new InsertElementCommand(svgCanvas.getSvgContent()))
-    // update root to the correct size
-    const width = content.getAttribute('width')
-    const height = content.getAttribute('height')
-    const changes = { width, height }
-    batchCmd.addSubCommand(
-      new ChangeElementCommand(svgCanvas.getSvgRoot(), changes)
-    )
-
-    // reset zoom
-    svgCanvas.setZoom(1)
-
-    svgCanvas.clearSelection()
-    svgCanvas.clearData()
-    svgCanvas.getSvgRoot().append(svgCanvas.selectorManager.selectorParentGroup)
-
-    if (!preventUndo) svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('sourcechanged', [svgCanvas.getSvgContent()])
-  } catch (e) {
-    error('Error setting SVG string', e, 'svg-exec')
-    return false
+    return true
   }
 
-  return true
-}
-
-/**
+  /**
  * This function imports the input SVG XML as a `<symbol>` in the `<defs>`, then adds a
  * `<use>` to the current layer.
  * @function module:svgcanvas.SvgCanvas#importSvgString
@@ -686,230 +687,230 @@ const setSvgString = (xmlString, preventUndo) => {
  * arbitrary transform lists, but makes some assumptions about how the transform list
  * was obtained
  */
-const importSvgString = (xmlString, preserveDimension) => {
-  const dataStorage = svgCanvas.getDataStorage()
-  let j
-  let ts
-  let useEl
-  try {
+  const importSvgString = (xmlString, preserveDimension) => {
+    const dataStorage = svgCanvas.getDataStorage()
+    let j
+    let ts
+    let useEl
+    try {
     // Get unique ID
-    const uid = hashCode(xmlString)
+      const uid = hashCode(xmlString)
 
-    let useExisting = false
-    // Look for symbol and make sure symbol exists in image
-    if (svgCanvas.getImportIds(uid) && svgCanvas.getImportIds(uid).symbol) {
-      const parents = getParents(svgCanvas.getImportIds(uid).symbol, '#svgroot')
-      if (parents?.length) {
-        useExisting = true
+      let useExisting = false
+      // Look for symbol and make sure symbol exists in image
+      if (svgCanvas.getImportIds(uid) && svgCanvas.getImportIds(uid).symbol) {
+        const parents = getParents(svgCanvas.getImportIds(uid).symbol, '#svgroot')
+        if (parents?.length) {
+          useExisting = true
+        }
       }
-    }
 
-    const batchCmd = new BatchCommand('Import Image')
-    let symbol
-    if (useExisting) {
-      symbol = svgCanvas.getImportIds(uid).symbol
-      ts = svgCanvas.getImportIds(uid).xform
-    } else {
+      const batchCmd = new BatchCommand('Import Image')
+      let symbol
+      if (useExisting) {
+        symbol = svgCanvas.getImportIds(uid).symbol
+        ts = svgCanvas.getImportIds(uid).xform
+      } else {
       // convert string into XML document
-      const newDoc = text2xml(xmlString)
+        const newDoc = text2xml(xmlString)
 
-      svgCanvas.prepareSvg(newDoc)
+        svgCanvas.prepareSvg(newDoc)
 
-      // import new svg document into our document
-      // If DOM3 adoptNode() available, use it. Otherwise fall back to DOM2 importNode()
-      const svg = svgCanvas.getDOMDocument().adoptNode
-        ? svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
-        : svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
+        // import new svg document into our document
+        // If DOM3 adoptNode() available, use it. Otherwise fall back to DOM2 importNode()
+        const svg = svgCanvas.getDOMDocument().adoptNode
+          ? svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
+          : svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
 
-      svgCanvas.uniquifyElems(svg)
+        svgCanvas.uniquifyElems(svg)
 
-      const innerw = convertToNum('width', svg.getAttribute('width'))
-      const innerh = convertToNum('height', svg.getAttribute('height'))
-      const innervb = svg.getAttribute('viewBox')
-      // if no explicit viewbox, create one out of the width and height
-      const vb = innervb ? innervb.split(/[ ,]+/) : [0, 0, innerw, innerh]
-      for (j = 0; j < 4; ++j) {
-        vb[j] = Number(vb[j])
-      }
+        const innerw = convertToNum('width', svg.getAttribute('width'))
+        const innerh = convertToNum('height', svg.getAttribute('height'))
+        const innervb = svg.getAttribute('viewBox')
+        // if no explicit viewbox, create one out of the width and height
+        const vb = innervb ? innervb.split(/[ ,]+/) : [0, 0, innerw, innerh]
+        for (j = 0; j < 4; ++j) {
+          vb[j] = Number(vb[j])
+        }
 
-      // TODO: properly handle preserveAspectRatio
-      const // canvasw = +svgContent.getAttribute('width'),
-        rawCanvash = Number(svgCanvas.getSvgContent().getAttribute('height'))
-      const canvash =
+        // TODO: properly handle preserveAspectRatio
+        const // canvasw = +svgContent.getAttribute('width'),
+          rawCanvash = Number(svgCanvas.getSvgContent().getAttribute('height'))
+        const canvash =
         Number.isFinite(rawCanvash) && rawCanvash > 0
           ? rawCanvash
           : (Number(svgCanvas.getCurConfig().dimensions?.[1]) || 100)
-      // imported content should be 1/3 of the canvas on its largest dimension
+        // imported content should be 1/3 of the canvas on its largest dimension
 
-      const vbWidth = vb[2]
-      const vbHeight = vb[3]
-      const importW = Number.isFinite(vbWidth) && vbWidth > 0 ? vbWidth : (innerw > 0 ? innerw : 100)
-      const importH = Number.isFinite(vbHeight) && vbHeight > 0 ? vbHeight : (innerh > 0 ? innerh : 100)
-      const safeImportW = Number.isFinite(importW) && importW > 0 ? importW : 100
-      const safeImportH = Number.isFinite(importH) && importH > 0 ? importH : 100
-      ts =
+        const vbWidth = vb[2]
+        const vbHeight = vb[3]
+        const importW = Number.isFinite(vbWidth) && vbWidth > 0 ? vbWidth : (innerw > 0 ? innerw : 100)
+        const importH = Number.isFinite(vbHeight) && vbHeight > 0 ? vbHeight : (innerh > 0 ? innerh : 100)
+        const safeImportW = Number.isFinite(importW) && importW > 0 ? importW : 100
+        const safeImportH = Number.isFinite(importH) && importH > 0 ? importH : 100
+        ts =
         safeImportH > safeImportW
           ? 'scale(' + canvash / 3 / safeImportH + ')'
           : 'scale(' + canvash / 3 / safeImportW + ')'
 
-      // Hack to make recalculateDimensions understand how to scale
-      ts = `translate(0) ${ts} translate(0)`
+        // Hack to make recalculateDimensions understand how to scale
+        ts = `translate(0) ${ts} translate(0)`
 
-      symbol = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'symbol')
-      const defs = findDefs()
+        symbol = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'symbol')
+        const defs = findDefs()
 
-      if (isGecko()) {
+        if (isGecko()) {
         // Move all gradients into root for Firefox, workaround for this bug:
         // https://bugzilla.mozilla.org/show_bug.cgi?id=353575
         // TODO: Make this properly undo-able.
-        const elements = svg.querySelectorAll(
-          'linearGradient, radialGradient, pattern'
-        )
-        Array.prototype.forEach.call(elements, el => {
-          defs.appendChild(el)
-        })
-      }
+          const elements = svg.querySelectorAll(
+            'linearGradient, radialGradient, pattern'
+          )
+          Array.prototype.forEach.call(elements, el => {
+            defs.appendChild(el)
+          })
+        }
 
-      while (svg.firstChild) {
-        const first = svg.firstChild
-        symbol.append(first)
-      }
-      const attrs = svg.attributes
-      for (const attr of attrs) {
+        while (svg.firstChild) {
+          const first = svg.firstChild
+          symbol.append(first)
+        }
+        const attrs = svg.attributes
+        for (const attr of attrs) {
         // Ok for `NamedNodeMap`
-        symbol.setAttribute(attr.nodeName, attr.value)
+          symbol.setAttribute(attr.nodeName, attr.value)
+        }
+        symbol.id = svgCanvas.getNextId()
+
+        // Store data
+        svgCanvas.setImportIds(uid, {
+          symbol,
+          xform: ts
+        })
+
+        findDefs().append(symbol)
+        batchCmd.addSubCommand(new InsertElementCommand(symbol))
       }
-      symbol.id = svgCanvas.getNextId()
 
-      // Store data
-      svgCanvas.setImportIds(uid, {
-        symbol,
-        xform: ts
-      })
-
-      findDefs().append(symbol)
-      batchCmd.addSubCommand(new InsertElementCommand(symbol))
-    }
-
-    useEl = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'use')
-    useEl.id = svgCanvas.getNextId()
-    svgCanvas.setHref(useEl, '#' + symbol.id)
-    ;(
-      svgCanvas.getCurrentGroup() ||
+      useEl = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'use')
+      useEl.id = svgCanvas.getNextId()
+      svgCanvas.setHref(useEl, '#' + symbol.id)
+      ;(
+        svgCanvas.getCurrentGroup() ||
       svgCanvas.getCurrentDrawing().getCurrentLayer()
-    ).append(useEl)
-    batchCmd.addSubCommand(new InsertElementCommand(useEl))
-    svgCanvas.clearSelection()
+      ).append(useEl)
+      batchCmd.addSubCommand(new InsertElementCommand(useEl))
+      svgCanvas.clearSelection()
 
-    if (!preserveDimension) {
-      useEl.setAttribute('transform', ts)
-      svgCanvas.recalculateDimensions(useEl)
+      if (!preserveDimension) {
+        useEl.setAttribute('transform', ts)
+        svgCanvas.recalculateDimensions(useEl)
+      }
+      dataStorage.put(useEl, 'symbol', symbol)
+      dataStorage.put(useEl, 'ref', symbol)
+      svgCanvas.addToSelection([useEl])
+
+      // TODO: Find way to add this in a recalculateDimensions-parsable way
+      // if (vb[0] !== 0 || vb[1] !== 0) {
+      //   ts = 'translate(' + (-vb[0]) + ',' + (-vb[1]) + ') ' + ts;
+      // }
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', [svgCanvas.getSvgContent()])
+    } catch (e) {
+      error('Error importing SVG string', e, 'svg-exec')
+      return null
     }
-    dataStorage.put(useEl, 'symbol', symbol)
-    dataStorage.put(useEl, 'ref', symbol)
-    svgCanvas.addToSelection([useEl])
 
-    // TODO: Find way to add this in a recalculateDimensions-parsable way
-    // if (vb[0] !== 0 || vb[1] !== 0) {
-    //   ts = 'translate(' + (-vb[0]) + ',' + (-vb[1]) + ') ' + ts;
-    // }
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', [svgCanvas.getSvgContent()])
-  } catch (e) {
-    error('Error importing SVG string', e, 'svg-exec')
-    return null
+    // we want to return the element so we can automatically select it
+    return useEl
   }
-
-  // we want to return the element so we can automatically select it
-  return useEl
-}
-/**
+  /**
  * Function to run when image data is found.
  * @callback module:svgcanvas.ImageEmbeddedCallback
  * @param {string|false} result Data URL
  * @returns {void}
  */
-/**
+  /**
  * Converts a given image file to a data URL when possible, then runs a given callback.
  * @function module:svgcanvas.SvgCanvas#embedImage
  * @param {string} src - The path/URL of the image
  * @returns {Promise<string|false>} Resolves to a Data URL (string|false)
  */
-const embedImage = src => {
+  const embedImage = src => {
   // Todo: Remove this Promise in favor of making an async/await `Image.load` utility
-  return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
     // load in the image and once it's loaded, get the dimensions
-    const imgI = new Image()
-    imgI.addEventListener('load', e => {
+      const imgI = new Image()
+      imgI.addEventListener('load', e => {
       // create a canvas the same size as the raster image
-      const cvs = document.createElement('canvas')
-      cvs.width = e.currentTarget.width
-      cvs.height = e.currentTarget.height
-      // load the raster image into the canvas
-      cvs.getContext('2d').drawImage(e.currentTarget, 0, 0)
-      // retrieve the data: URL
-      try {
-        let urldata = ';svgedit_url=' + encodeURIComponent(src)
-        urldata = cvs.toDataURL().replace(';base64', urldata + ';base64')
-        svgCanvas.setEncodableImages(src, urldata)
-      } catch (e) {
-        svgCanvas.setEncodableImages(src, false)
-      }
-      svgCanvas.setGoodImage(src)
-      resolve(svgCanvas.getEncodableImages(src))
-    })
-    imgI.addEventListener('error', e => {
-      reject(
-        new Error(
+        const cvs = document.createElement('canvas')
+        cvs.width = e.currentTarget.width
+        cvs.height = e.currentTarget.height
+        // load the raster image into the canvas
+        cvs.getContext('2d').drawImage(e.currentTarget, 0, 0)
+        // retrieve the data: URL
+        try {
+          let urldata = ';svgedit_url=' + encodeURIComponent(src)
+          urldata = cvs.toDataURL().replace(';base64', urldata + ';base64')
+          svgCanvas.setEncodableImages(src, urldata)
+        } catch (e) {
+          svgCanvas.setEncodableImages(src, false)
+        }
+        svgCanvas.setGoodImage(src)
+        resolve(svgCanvas.getEncodableImages(src))
+      })
+      imgI.addEventListener('error', e => {
+        reject(
+          new Error(
           `error loading image: ${e.currentTarget.attributes.src.value}`
+          )
         )
-      )
+      })
+      imgI.setAttribute('src', src)
     })
-    imgI.setAttribute('src', src)
-  })
-}
+  }
 
-/**
+  /**
  * @typedef {PlainObject} module:svgcanvas.IssuesAndCodes
  * @property {string[]} issueCodes The locale-independent code names
  * @property {string[]} issues The localized descriptions
  */
 
-/**
+  /**
  * Codes only is useful for locale-independent detection.
  * @returns {module:svgcanvas.IssuesAndCodes}
  */
-const getIssues = () => {
-  const uiStrings = svgCanvas.getUIStrings()
-  // remove the selected outline before serializing
-  svgCanvas.clearSelection()
+  const getIssues = () => {
+    const uiStrings = svgCanvas.getUIStrings()
+    // remove the selected outline before serializing
+    svgCanvas.clearSelection()
 
-  // Check for known CanVG issues
-  const issues = []
-  const issueCodes = []
+    // Check for known CanVG issues
+    const issues = []
+    const issueCodes = []
 
-  // Selector and notice
-  const issueList = {
-    feGaussianBlur: uiStrings.NoBlur,
-    foreignObject: uiStrings.NoforeignObject,
-    '[stroke-dasharray]': uiStrings.NoDashArray
-  }
-  const content = svgCanvas.getSvgContent()
-
-  // Add font/text check if Canvas Text API is not implemented
-  if (!('font' in document.querySelector('CANVAS').getContext('2d'))) {
-    issueList.text = uiStrings.NoText
-  }
-
-  for (const [sel, descr] of Object.entries(issueList)) {
-    if (content.querySelectorAll(sel).length) {
-      issueCodes.push(sel)
-      issues.push(descr)
+    // Selector and notice
+    const issueList = {
+      feGaussianBlur: uiStrings.NoBlur,
+      foreignObject: uiStrings.NoforeignObject,
+      '[stroke-dasharray]': uiStrings.NoDashArray
     }
+    const content = svgCanvas.getSvgContent()
+
+    // Add font/text check if Canvas Text API is not implemented
+    if (!('font' in document.querySelector('CANVAS').getContext('2d'))) {
+      issueList.text = uiStrings.NoText
+    }
+
+    for (const [sel, descr] of Object.entries(issueList)) {
+      if (content.querySelectorAll(sel).length) {
+        issueCodes.push(sel)
+        issues.push(descr)
+      }
+    }
+    return { issues, issueCodes }
   }
-  return { issues, issueCodes }
-}
-/**
+  /**
  * @typedef {PlainObject} module:svgcanvas.ImageedResults
  * @property {string} datauri Contents as a Data URL
  * @property {string} bloburl May be the empty string
@@ -922,36 +923,36 @@ const getIssues = () => {
  * @property {string} WindowName A convenience for passing along a `window.name` to target a window on which the  could be added
  */
 
-/**
+  /**
  * Utility function to convert all external image links in an SVG element to Base64 data URLs.
  * @param {SVGElement} svgElement - The SVG element to process.
  * @returns {Promise<void>}
  */
-const convertImagesToBase64 = async svgElement => {
-  const imageElements = svgElement.querySelectorAll('image')
-  const promises = Array.from(imageElements).map(async img => {
-    const href = img.getAttribute('xlink:href') || img.getAttribute('href')
-    if (href && !href.startsWith('data:')) {
-      try {
-        const response = await fetch(href)
-        const blob = await response.blob()
-        const reader = new FileReader()
-        return new Promise(resolve => {
-          reader.onload = () => {
-            setHref(img, reader.result)
-            resolve()
-          }
-          reader.readAsDataURL(blob)
-        })
-      } catch (err) {
-        error('Failed to fetch image', err, 'svg-exec')
+  const convertImagesToBase64 = async svgElement => {
+    const imageElements = svgElement.querySelectorAll('image')
+    const promises = Array.from(imageElements).map(async img => {
+      const href = img.getAttribute('xlink:href') || img.getAttribute('href')
+      if (href && !href.startsWith('data:')) {
+        try {
+          const response = await fetch(href)
+          const blob = await response.blob()
+          const reader = new FileReader()
+          return new Promise(resolve => {
+            reader.onload = () => {
+              setHref(img, reader.result)
+              resolve()
+            }
+            reader.readAsDataURL(blob)
+          })
+        } catch (err) {
+          error('Failed to fetch image', err, 'svg-exec')
+        }
       }
-    }
-  })
-  await Promise.all(promises)
-}
+    })
+    await Promise.all(promises)
+  }
 
-/**
+  /**
  * Generates a raster image (PNG, JPEG, etc.) from the SVG content.
  * @param {string} [imgType='PNG'] - The image type to generate.
  * @param {number} [quality=1.0] - The image quality (for JPEG).
@@ -959,541 +960,579 @@ const convertImagesToBase64 = async svgElement => {
  * @param {Object} [opts={}] - Additional options.
  * @returns {Promise<Object>} Resolves to an object containing export data.
  */
-const rasterExport = (
-  imgType = 'PNG',
-  quality = 1.0,
-  windowName = 'Exported Image',
-  opts = {}
-) => {
-  return new Promise((resolve, reject) => {
-    const type = imgType === 'ICO' ? 'BMP' : imgType
-    const mimeType = `image/${type.toLowerCase()}`
-    const { issues, issueCodes } = getIssues()
-    const svgElement = svgCanvas.getSvgContent()
+  const rasterExport = (
+    imgType = 'PNG',
+    quality = 1.0,
+    windowName = 'Exported Image',
+    opts = {}
+  ) => {
+    return new Promise((resolve, reject) => {
+      const type = imgType === 'ICO' ? 'BMP' : imgType
+      const mimeType = `image/${type.toLowerCase()}`
+      const { issues, issueCodes } = getIssues()
+      const svgElement = svgCanvas.getSvgContent()
 
-    const svgClone = svgElement.cloneNode(true)
+      const svgClone = svgElement.cloneNode(true)
 
-    // Frames mark export regions and must never appear in an exported image.
-    svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
+      // Frames mark export regions and must never appear in an exported image.
+      svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
 
-    // Inline used custom fonts as base64 @font-face. The clone is rendered via an
-    // <img>, which has no access to the document's fonts, so without this the
-    // text would rasterize with a default font instead of the chosen one.
-    embedUsedFonts(svgClone)
+      // Inline used custom fonts as base64 @font-face. The clone is rendered via an
+      // <img>, which has no access to the document's fonts, so without this the
+      // text would rasterize with a default font instead of the chosen one.
+      embedUsedFonts(svgClone)
 
-    // When a crop region (a frame's bounds) is supplied, narrow the clone's
-    // viewBox to it and set an explicit intrinsic size (Firefox renders nothing
-    // from an SVG <img> without width/height) so only that region is rasterized.
-    const res = svgCanvas.getResolution()
-    let width = res.w
-    let height = res.h
-    if (opts.crop) {
-      const { x, y, w, h } = opts.crop
-      svgClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`)
-      svgClone.setAttribute('width', w)
-      svgClone.setAttribute('height', h)
-      width = w
-      height = h
-    }
-
-    // When the background is a gradient, inject it into the SVG clone so the
-    // gradient renders as part of the SVG image rather than via ctx.fillStyle
-    // (which only accepts valid CSS colors, not the sentinel string 'gradient').
-    if (opts.includeBg && opts.bgcolor === 'gradient') {
-      const bgEl = svgCanvas.getElement('canvasBackground')
-      // The bg gradient carries a per-application id (background_gradient_N), so
-      // match it by tag rather than a fixed id.
-      const gradEl = bgEl?.querySelector('defs > linearGradient, defs > radialGradient')
-      if (gradEl) {
-        let defs = svgClone.querySelector('defs')
-        if (!defs) {
-          defs = svgClone.ownerDocument.createElementNS(NS.SVG, 'defs')
-          svgClone.insertBefore(defs, svgClone.firstChild)
-        }
-        const gradClone = gradEl.cloneNode(true)
-        gradClone.id = 'export_bg_gradient'
-        defs.appendChild(gradClone)
-        const bgRect = svgClone.ownerDocument.createElementNS(NS.SVG, 'rect')
-        bgRect.setAttribute('width', '100%')
-        bgRect.setAttribute('height', '100%')
-        bgRect.setAttribute('fill', 'url(#export_bg_gradient)')
-        bgRect.setAttribute('style', 'pointer-events:none')
-        defs.after(bgRect)
+      // When a crop region (a frame's bounds) is supplied, narrow the clone's
+      // viewBox to it and set an explicit intrinsic size (Firefox renders nothing
+      // from an SVG <img> without width/height) so only that region is rasterized.
+      const res = svgCanvas.getResolution()
+      let width = res.w
+      let height = res.h
+      if (opts.crop) {
+        const { x, y, w, h } = opts.crop
+        svgClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`)
+        svgClone.setAttribute('width', w)
+        svgClone.setAttribute('height', h)
+        width = w
+        height = h
       }
-    }
 
-    convertImagesToBase64(svgClone)
-      .then(() => {
-        const svgData = new XMLSerializer().serializeToString(svgClone)
-        const svgBlob = new Blob([svgData], {
-          type: 'image/svg+xml;charset=utf-8'
-        })
-        const url = URL.createObjectURL(svgBlob)
-
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          reject(new Error('Canvas 2D context not available'))
-          return
-        }
-
-        canvas.width = width
-        canvas.height = height
-
-        const img = new Image()
-        img.onload = () => {
-          if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard' && opts.bgcolor !== 'gradient') {
-            ctx.fillStyle = opts.bgcolor
-            ctx.fillRect(0, 0, width, height)
+      // When the background is a gradient, inject it into the SVG clone so the
+      // gradient renders as part of the SVG image rather than via ctx.fillStyle
+      // (which only accepts valid CSS colors, not the sentinel string 'gradient').
+      if (opts.includeBg && opts.bgcolor === 'gradient') {
+        const bgEl = svgCanvas.getElement('canvasBackground')
+        // The bg gradient carries a per-application id (background_gradient_N), so
+        // match it by tag rather than a fixed id.
+        const gradEl = bgEl?.querySelector('defs > linearGradient, defs > radialGradient')
+        if (gradEl) {
+          let defs = svgClone.querySelector('defs')
+          if (!defs) {
+            defs = svgClone.ownerDocument.createElementNS(NS.SVG, 'defs')
+            svgClone.insertBefore(defs, svgClone.firstChild)
           }
-          ctx.drawImage(img, 0, 0, width, height)
-          URL.revokeObjectURL(url)
+          const gradClone = gradEl.cloneNode(true)
+          gradClone.id = 'export_bg_gradient'
+          defs.appendChild(gradClone)
+          const bgRect = svgClone.ownerDocument.createElementNS(NS.SVG, 'rect')
+          bgRect.setAttribute('width', '100%')
+          bgRect.setAttribute('height', '100%')
+          bgRect.setAttribute('fill', 'url(#export_bg_gradient)')
+          bgRect.setAttribute('style', 'pointer-events:none')
+          defs.after(bgRect)
+        }
+      }
 
-          const datauri = canvas.toDataURL(mimeType, quality)
-          let blobUrl
+      convertImagesToBase64(svgClone)
+        .then(() => {
+          const svgData = new XMLSerializer().serializeToString(svgClone)
+          const svgBlob = new Blob([svgData], {
+            type: 'image/svg+xml;charset=utf-8'
+          })
+          const url = URL.createObjectURL(svgBlob)
 
-          const onExportComplete = blobUrl => {
-            const exportObj = {
-              datauri,
-              bloburl: blobUrl,
-              svg: svgData,
-              issues,
-              issueCodes,
-              type: imgType,
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            reject(new Error('Canvas 2D context not available'))
+            return
+          }
+
+          canvas.width = width
+          canvas.height = height
+
+          const img = new Image()
+          img.onload = () => {
+            if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard' && opts.bgcolor !== 'gradient') {
+              ctx.fillStyle = opts.bgcolor
+              ctx.fillRect(0, 0, width, height)
+            }
+            ctx.drawImage(img, 0, 0, width, height)
+            URL.revokeObjectURL(url)
+
+            const datauri = canvas.toDataURL(mimeType, quality)
+            let blobUrl
+
+            const onExportComplete = blobUrl => {
+              const exportObj = {
+                datauri,
+                bloburl: blobUrl,
+                svg: svgData,
+                issues,
+                issueCodes,
+                type: imgType,
+                mimeType,
+                quality,
+                windowName
+              }
+              if (!opts.avoidEvent) {
+                svgCanvas.call('exported', exportObj)
+              }
+              resolve(exportObj)
+            }
+
+            canvas.toBlob(
+              blob => {
+                blobUrl = URL.createObjectURL(blob)
+                onExportComplete(blobUrl)
+              },
               mimeType,
-              quality,
-              windowName
-            }
-            if (!opts.avoidEvent) {
-              svgCanvas.call('exported', exportObj)
-            }
-            resolve(exportObj)
+              quality
+            )
           }
 
-          canvas.toBlob(
-            blob => {
-              blobUrl = URL.createObjectURL(blob)
-              onExportComplete(blobUrl)
-            },
-            mimeType,
-            quality
-          )
-        }
+          img.onerror = err => {
+            console.error('Failed to load SVG into image element:', err)
+            reject(err)
+          }
 
-        img.onerror = err => {
-          console.error('Failed to load SVG into image element:', err)
-          reject(err)
-        }
+          img.src = url
+        })
+        .catch(reject)
+    })
+  }
 
-        img.src = url
-      })
-      .catch(reject)
-  })
-}
-
-/**
+  /**
  * Exports the SVG content as a PDF.
  * @param {string} [windowName='svg.pdf'] - The window name or file name.
  * @param {string} [outputType='save'|'dataurlstring'] - The output type for jsPDF.
  * @returns {Promise<Object>} Resolves to an object containing PDF export data.
  */
-const exportPDF = (
-  windowName = 'svg.pdf',
-  outputType = isChrome() ? 'save' : 'dataurlstring',
-  crop = null
-) => {
-  return new Promise((resolve, reject) => {
-    const res = svgCanvas.getResolution()
-    const svgElement = svgCanvas.getSvgContent().cloneNode(true)
+  const exportPDF = (
+    windowName = 'svg.pdf',
+    outputType = isChrome() ? 'save' : 'dataurlstring',
+    crop = null
+  ) => {
+    return new Promise((resolve, reject) => {
+      const res = svgCanvas.getResolution()
+      const svgElement = svgCanvas.getSvgContent().cloneNode(true)
 
-    // Frames mark export regions and must never appear in an exported image.
-    svgElement.querySelectorAll('[data-frame]').forEach(f => f.remove())
+      // Frames mark export regions and must never appear in an exported image.
+      svgElement.querySelectorAll('[data-frame]').forEach(f => f.remove())
 
-    // Inline used custom fonts so the <img>-rendered clone keeps the chosen font
-    // (see rasterExport for rationale).
-    embedUsedFonts(svgElement)
+      // Inline used custom fonts so the <img>-rendered clone keeps the chosen font
+      // (see rasterExport for rationale).
+      embedUsedFonts(svgElement)
 
-    // Crop to a frame's bounds when supplied (see rasterExport for rationale).
-    let outW = res.w
-    let outH = res.h
-    if (crop) {
-      svgElement.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.w} ${crop.h}`)
-      svgElement.setAttribute('width', crop.w)
-      svgElement.setAttribute('height', crop.h)
-      outW = crop.w
-      outH = crop.h
-    }
-    const orientation = outW > outH ? 'landscape' : 'portrait'
-    const unit = 'pt'
+      // Crop to a frame's bounds when supplied (see rasterExport for rationale).
+      let outW = res.w
+      let outH = res.h
+      if (crop) {
+        svgElement.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.w} ${crop.h}`)
+        svgElement.setAttribute('width', crop.w)
+        svgElement.setAttribute('height', crop.h)
+        outW = crop.w
+        outH = crop.h
+      }
+      const orientation = outW > outH ? 'landscape' : 'portrait'
+      const unit = 'pt'
 
-    convertImagesToBase64(svgElement)
-      .then(() => {
-        const svgData = new XMLSerializer().serializeToString(svgElement)
-        const svgBlob = new Blob([svgData], {
-          type: 'image/svg+xml;charset=utf-8'
+      convertImagesToBase64(svgElement)
+        .then(() => {
+          const svgData = new XMLSerializer().serializeToString(svgElement)
+          const svgBlob = new Blob([svgData], {
+            type: 'image/svg+xml;charset=utf-8'
+          })
+          const url = URL.createObjectURL(svgBlob)
+
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          canvas.width = outW
+          canvas.height = outH
+
+          const img = new Image()
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, outW, outH)
+            URL.revokeObjectURL(url)
+
+            const imgData = canvas.toDataURL('image/png')
+            const doc = new JsPDF({ orientation, unit, format: [outW, outH] })
+
+            const docTitle = svgCanvas.getDocumentTitle()
+            doc.setProperties({ title: docTitle })
+            doc.addImage(imgData, 'PNG', 0, 0, outW, outH)
+
+            const { issues, issueCodes } = getIssues()
+            const obj = { issues, issueCodes, windowName, outputType }
+
+            obj.output = doc.output(
+              outputType,
+              outputType === 'save' ? windowName : undefined
+            )
+
+            svgCanvas.call('exportedPDF', obj)
+            resolve(obj)
+          }
+
+          img.onerror = err => {
+            error('Failed to load SVG into image element', err, 'svg-exec')
+            reject(err)
+          }
+
+          img.src = url
         })
-        const url = URL.createObjectURL(svgBlob)
-
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        canvas.width = outW
-        canvas.height = outH
-
-        const img = new Image()
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, outW, outH)
-          URL.revokeObjectURL(url)
-
-          const imgData = canvas.toDataURL('image/png')
-          const doc = new JsPDF({ orientation, unit, format: [outW, outH] })
-
-          const docTitle = svgCanvas.getDocumentTitle()
-          doc.setProperties({ title: docTitle })
-          doc.addImage(imgData, 'PNG', 0, 0, outW, outH)
-
-          const { issues, issueCodes } = getIssues()
-          const obj = { issues, issueCodes, windowName, outputType }
-
-          obj.output = doc.output(
-            outputType,
-            outputType === 'save' ? windowName : undefined
-          )
-
-          svgCanvas.call('exportedPDF', obj)
-          resolve(obj)
-        }
-
-        img.onerror = err => {
-          error('Failed to load SVG into image element', err, 'svg-exec')
-          reject(err)
-        }
-
-        img.src = url
-      })
-      .catch(reject)
-  })
-}
-/**
+        .catch(reject)
+    })
+  }
+  /**
  * Ensure each element has a unique ID.
  * @function module:svgcanvas.SvgCanvas#uniquifyElems
  * @param {Element} g - The parent element of the tree to give unique IDs
  * @returns {void}
  */
-const uniquifyElemsMethod = g => {
-  const ids = {}
-  // TODO: Handle markers and connectors. These are not yet re-identified properly
-  // as their referring elements do not get remapped.
-  //
-  // <marker id='se_marker_end_svg_7'/>
-  // <polyline id='svg_7' se:connector='svg_1 svg_6' marker-end='url(#se_marker_end_svg_7)'/>
-  //
-  // Problem #1: if svg_1 gets renamed, we do not update the polyline's se:connector attribute
-  // Problem #2: if the polyline svg_7 gets renamed, we do not update the marker id nor the polyline's marker-end attribute
-  const refElems = [
-    'filter',
-    'linearGradient',
-    'pattern',
-    'radialGradient',
-    'symbol',
-    'textPath',
-    'use'
-  ]
+  const uniquifyElemsMethod = g => {
+    const ids = {}
+    // TODO: Handle markers and connectors. These are not yet re-identified properly
+    // as their referring elements do not get remapped.
+    //
+    // <marker id='se_marker_end_svg_7'/>
+    // <polyline id='svg_7' se:connector='svg_1 svg_6' marker-end='url(#se_marker_end_svg_7)'/>
+    //
+    // Problem #1: if svg_1 gets renamed, we do not update the polyline's se:connector attribute
+    // Problem #2: if the polyline svg_7 gets renamed, we do not update the marker id nor the polyline's marker-end attribute
+    const refElems = [
+      'filter',
+      'linearGradient',
+      'pattern',
+      'radialGradient',
+      'symbol',
+      'textPath',
+      'use'
+    ]
 
-  walkTree(g, n => {
+    walkTree(g, n => {
     // if it's an element node
-    if (n.nodeType === 1) {
+      if (n.nodeType === 1) {
       // and the element has an ID
-      if (n.id) {
+        if (n.id) {
         // and we haven't tracked this ID yet
-        if (!(n.id in ids)) {
+          if (!(n.id in ids)) {
           // add this id to our map
-          ids[n.id] = { elem: null, attrs: [], hrefs: [] }
+            ids[n.id] = { elem: null, attrs: [], hrefs: [] }
+          }
+          ids[n.id].elem = n
         }
-        ids[n.id].elem = n
-      }
 
-      // now search for all attributes on this element that might refer
-      // to other elements
-      svgCanvas.getrefAttrs().forEach(attr => {
-        const attrnode = n.getAttributeNode(attr)
-        if (attrnode) {
+        // now search for all attributes on this element that might refer
+        // to other elements
+        svgCanvas.getrefAttrs().forEach(attr => {
+          const attrnode = n.getAttributeNode(attr)
+          if (attrnode) {
           // the incoming file has been sanitized, so we should be able to safely just strip off the leading #
-          const url = svgCanvas.getUrlFromAttr(attrnode.value)
-          const refid = url ? url.substr(1) : null
+            const url = svgCanvas.getUrlFromAttr(attrnode.value)
+            const refid = url ? url.substr(1) : null
+            if (refid) {
+              if (!(refid in ids)) {
+              // add this id to our map
+                ids[refid] = { elem: null, attrs: [], hrefs: [] }
+              }
+              ids[refid].attrs.push(attrnode)
+            }
+          }
+        })
+
+        // check xlink:href now
+        const href = svgCanvas.getHref(n)
+        // TODO: what if an <image> or <a> element refers to an element internally?
+        if (href && refElems.includes(n.nodeName)) {
+          const refid = href.substr(1)
           if (refid) {
             if (!(refid in ids)) {
-              // add this id to our map
+            // add this id to our map
               ids[refid] = { elem: null, attrs: [], hrefs: [] }
             }
-            ids[refid].attrs.push(attrnode)
+            ids[refid].hrefs.push(n)
           }
         }
-      })
+      }
+    })
 
-      // check xlink:href now
-      const href = svgCanvas.getHref(n)
-      // TODO: what if an <image> or <a> element refers to an element internally?
-      if (href && refElems.includes(n.nodeName)) {
-        const refid = href.substr(1)
-        if (refid) {
-          if (!(refid in ids)) {
-            // add this id to our map
-            ids[refid] = { elem: null, attrs: [], hrefs: [] }
-          }
-          ids[refid].hrefs.push(n)
+    // in ids, we now have a map of ids, elements and attributes, let's re-identify
+    for (const oldid in ids) {
+      if (!oldid) {
+        continue
+      }
+      const { elem } = ids[oldid]
+      if (elem) {
+        const newid = svgCanvas.getNextId()
+
+        // assign element its new id
+        elem.id = newid
+
+        // remap all url() attributes
+        const { attrs } = ids[oldid]
+        let j = attrs.length
+        while (j--) {
+          const attr = attrs[j]
+          attr.ownerElement.setAttribute(attr.name, `url(#${newid})`)
         }
-      }
-    }
-  })
 
-  // in ids, we now have a map of ids, elements and attributes, let's re-identify
-  for (const oldid in ids) {
-    if (!oldid) {
-      continue
-    }
-    const { elem } = ids[oldid]
-    if (elem) {
-      const newid = svgCanvas.getNextId()
-
-      // assign element its new id
-      elem.id = newid
-
-      // remap all url() attributes
-      const { attrs } = ids[oldid]
-      let j = attrs.length
-      while (j--) {
-        const attr = attrs[j]
-        attr.ownerElement.setAttribute(attr.name, `url(#${newid})`)
-      }
-
-      // remap all href attributes
-      const hreffers = ids[oldid].hrefs
-      let k = hreffers.length
-      while (k--) {
-        const hreffer = hreffers[k]
-        svgCanvas.setHref(hreffer, '#' + newid)
+        // remap all href attributes
+        const hreffers = ids[oldid].hrefs
+        let k = hreffers.length
+        while (k--) {
+          const hreffer = hreffers[k]
+          svgCanvas.setHref(hreffer, '#' + newid)
+        }
       }
     }
   }
-}
 
-/**
+  /**
  * Assigns reference data for each use element.
  * @function module:svgcanvas.SvgCanvas#setUseData
  * @param {Element} parent
  * @returns {void}
  */
-const setUseDataMethod = parent => {
-  let elems = parent
+  const setUseDataMethod = parent => {
+    let elems = parent
 
-  if (parent.tagName !== 'use') {
+    if (parent.tagName !== 'use') {
     // elems = elems.find('use');
-    elems = elems.querySelectorAll('use')
+      elems = elems.querySelectorAll('use')
+    }
+
+    Array.prototype.forEach.call(elems, (el, _) => {
+      const dataStorage = svgCanvas.getDataStorage()
+      const href = svgCanvas.getHref(el)
+      if (!href || !href.startsWith('#')) {
+        return
+      }
+      const id = href.substr(1)
+      const refElem = svgCanvas.getElement(id)
+      if (!refElem) {
+        return
+      }
+      dataStorage.put(el, 'ref', refElem)
+      if (refElem.tagName === 'symbol' || refElem.tagName === 'svg') {
+        dataStorage.put(el, 'symbol', refElem)
+        dataStorage.put(el, 'ref', refElem)
+      }
+    })
   }
 
-  Array.prototype.forEach.call(elems, (el, _) => {
-    const dataStorage = svgCanvas.getDataStorage()
-    const href = svgCanvas.getHref(el)
-    if (!href || !href.startsWith('#')) {
-      return
-    }
-    const id = href.substr(1)
-    const refElem = svgCanvas.getElement(id)
-    if (!refElem) {
-      return
-    }
-    dataStorage.put(el, 'ref', refElem)
-    if (refElem.tagName === 'symbol' || refElem.tagName === 'svg') {
-      dataStorage.put(el, 'symbol', refElem)
-      dataStorage.put(el, 'ref', refElem)
-    }
-  })
-}
-
-/**
+  /**
  * Looks at DOM elements inside the `<defs>` to see if they are referred to,
  * removes them from the DOM if they are not.
  * @function module:svgcanvas.SvgCanvas#removeUnusedDefElems
  * @returns {Integer} The number of elements that were removed
  */
-const removeUnusedDefElemsMethod = () => {
-  const defs = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')
-  if (!defs || !defs.length) {
-    return 0
-  }
+  const removeUnusedDefElemsMethod = () => {
+    const defs = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')
+    if (!defs || !defs.length) {
+      return 0
+    }
 
-  // if (!defs.firstChild) { return; }
+    // if (!defs.firstChild) { return; }
 
-  const defelemUses = []
-  let numRemoved = 0
-  const attrs = [
-    'fill',
-    'stroke',
-    'filter',
-    'marker-start',
-    'marker-mid',
-    'marker-end'
-  ]
-  const alen = attrs.length
+    const defelemUses = []
+    let numRemoved = 0
+    const attrs = [
+      'fill',
+      'stroke',
+      'filter',
+      'marker-start',
+      'marker-mid',
+      'marker-end'
+    ]
+    const alen = attrs.length
 
-  const allEls = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, '*')
-  const allLen = allEls.length
+    const allEls = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, '*')
+    const allLen = allEls.length
 
-  let i
-  let j
-  for (i = 0; i < allLen; i++) {
-    const el = allEls[i]
-    for (j = 0; j < alen; j++) {
-      const ref = svgCanvas.getUrlFromAttr(el.getAttribute(attrs[j]))
-      if (ref) {
-        defelemUses.push(ref.substr(1))
+    let i
+    let j
+    for (i = 0; i < allLen; i++) {
+      const el = allEls[i]
+      for (j = 0; j < alen; j++) {
+        const ref = svgCanvas.getUrlFromAttr(el.getAttribute(attrs[j]))
+        if (ref) {
+          defelemUses.push(ref.substr(1))
+        }
+      }
+
+      // gradients can refer to other gradients
+      const href = getHref(el)
+      if (href && href.startsWith('#')) {
+        defelemUses.push(href.substr(1))
       }
     }
 
-    // gradients can refer to other gradients
-    const href = getHref(el)
-    if (href && href.startsWith('#')) {
-      defelemUses.push(href.substr(1))
-    }
-  }
-
-  Array.prototype.forEach.call(defs, (def, i) => {
-    const defelems = def.querySelectorAll(
-      'linearGradient, radialGradient, filter, marker, svg, symbol'
-    )
-    i = defelems.length
-    while (i--) {
-      const defelem = defelems[i]
-      const { id } = defelem
-      if (!defelemUses.includes(id)) {
+    Array.prototype.forEach.call(defs, (def, i) => {
+      const defelems = def.querySelectorAll(
+        'linearGradient, radialGradient, filter, marker, svg, symbol'
+      )
+      i = defelems.length
+      while (i--) {
+        const defelem = defelems[i]
+        const { id } = defelem
+        if (!defelemUses.includes(id)) {
         // Not found, so remove (but remember)
-        svgCanvas.setRemovedElements(id, defelem)
-        defelem.remove()
-        numRemoved++
+          svgCanvas.setRemovedElements(id, defelem)
+          defelem.remove()
+          numRemoved++
+        }
       }
-    }
-  })
+    })
 
-  return numRemoved
-}
-/**
+    return numRemoved
+  }
+  /**
  * Converts gradients from userSpaceOnUse to objectBoundingBox.
  * @function module:svgcanvas.SvgCanvas#convertGradients
  * @param {Element} elem
  * @returns {void}
  */
-const convertGradientsMethod = elem => {
-  let elems = elem.querySelectorAll('linearGradient, radialGradient')
-  if (!elems.length && isWebkit()) {
+  const convertGradientsMethod = elem => {
+    let elems = elem.querySelectorAll('linearGradient, radialGradient')
+    if (!elems.length && isWebkit()) {
     // Bug in webkit prevents regular *Gradient selector search
-    elems = Array.prototype.filter.call(elem.querySelectorAll('*'), curThis => {
-      return curThis.tagName.includes('Gradient')
-    })
-  }
-  Array.prototype.forEach.call(elems, grad => {
-    if (grad.getAttribute('gradientUnits') === 'userSpaceOnUse') {
-      const svgContent = svgCanvas.getSvgContent()
-      // TODO: Support more than one element with this ref by duplicating parent grad
-      let fillStrokeElems = svgContent.querySelectorAll(
-        '[fill="url(#' + grad.id + ')"],[stroke="url(#' + grad.id + ')"]'
-      )
-      if (!fillStrokeElems.length) {
-        const tmpFillStrokeElems = svgContent.querySelectorAll(
-          '[*|href="#' + grad.id + '"]'
+      elems = Array.prototype.filter.call(elem.querySelectorAll('*'), curThis => {
+        return curThis.tagName.includes('Gradient')
+      })
+    }
+    Array.prototype.forEach.call(elems, grad => {
+      if (grad.getAttribute('gradientUnits') === 'userSpaceOnUse') {
+        const svgContent = svgCanvas.getSvgContent()
+        // TODO: Support more than one element with this ref by duplicating parent grad
+        let fillStrokeElems = svgContent.querySelectorAll(
+          '[fill="url(#' + grad.id + ')"],[stroke="url(#' + grad.id + ')"]'
         )
-        if (!tmpFillStrokeElems.length) {
-          return
-        } else {
-          if (
-            (tmpFillStrokeElems[0].tagName === 'linearGradient' ||
+        if (!fillStrokeElems.length) {
+          const tmpFillStrokeElems = svgContent.querySelectorAll(
+            '[*|href="#' + grad.id + '"]'
+          )
+          if (!tmpFillStrokeElems.length) {
+            return
+          } else {
+            if (
+              (tmpFillStrokeElems[0].tagName === 'linearGradient' ||
               tmpFillStrokeElems[0].tagName === 'radialGradient') &&
             tmpFillStrokeElems[0].getAttribute('gradientUnits') ===
               'userSpaceOnUse'
-          ) {
-            fillStrokeElems = svgContent.querySelectorAll(
-              '[fill="url(#' +
+            ) {
+              fillStrokeElems = svgContent.querySelectorAll(
+                '[fill="url(#' +
                 tmpFillStrokeElems[0].id +
                 ')"],[stroke="url(#' +
                 tmpFillStrokeElems[0].id +
                 ')"]'
-            )
-          } else {
-            return
+              )
+            } else {
+              return
+            }
           }
         }
-      }
-      // get object's bounding box
-      const bb = utilsGetBBox(fillStrokeElems[0])
+        // get object's bounding box
+        const bb = utilsGetBBox(fillStrokeElems[0])
 
-      // This will occur if the element is inside a <defs> or a <symbol>,
-      // in which we shouldn't need to convert anyway.
-      if (!bb) {
-        return
-      }
-      if (grad.tagName === 'linearGradient') {
-        const gCoords = {
-          x1: grad.getAttribute('x1'),
-          y1: grad.getAttribute('y1'),
-          x2: grad.getAttribute('x2'),
-          y2: grad.getAttribute('y2')
-        }
-
-        // If has transform, convert
-        const tlist = getTransformList(grad)
-        if (tlist?.numberOfItems > 0) {
-          const m = transformListToTransform(tlist).matrix
-          const pt1 = transformPoint(gCoords.x1, gCoords.y1, m)
-          const pt2 = transformPoint(gCoords.x2, gCoords.y2, m)
-
-          gCoords.x1 = pt1.x
-          gCoords.y1 = pt1.y
-          gCoords.x2 = pt2.x
-          gCoords.y2 = pt2.y
-          grad.removeAttribute('gradientTransform')
-        }
-        grad.setAttribute('x1', (gCoords.x1 - bb.x) / bb.width)
-        grad.setAttribute('y1', (gCoords.y1 - bb.y) / bb.height)
-        grad.setAttribute('x2', (gCoords.x2 - bb.x) / bb.width)
-        grad.setAttribute('y2', (gCoords.y2 - bb.y) / bb.height)
-        grad.removeAttribute('gradientUnits')
-      } else if (grad.tagName === 'radialGradient') {
-        const getNum = (value, fallback) => {
-          const num = Number(value)
-          return Number.isFinite(num) ? num : fallback
-        }
-        let cx = getNum(grad.getAttribute('cx'), 0.5)
-        let cy = getNum(grad.getAttribute('cy'), 0.5)
-        let r = getNum(grad.getAttribute('r'), 0.5)
-        let fx = getNum(grad.getAttribute('fx'), cx)
-        let fy = getNum(grad.getAttribute('fy'), cy)
-
-        // If has transform, convert
-        const tlist = getTransformList(grad)
-        if (tlist?.numberOfItems > 0) {
-          const m = transformListToTransform(tlist).matrix
-          const cpt = transformPoint(cx, cy, m)
-          const fpt = transformPoint(fx, fy, m)
-          const rpt = transformPoint(cx + r, cy, m)
-          cx = cpt.x
-          cy = cpt.y
-          fx = fpt.x
-          fy = fpt.y
-          r = Math.hypot(rpt.x - cpt.x, rpt.y - cpt.y)
-          grad.removeAttribute('gradientTransform')
-        }
-
-        if (!bb.width || !bb.height) {
+        // This will occur if the element is inside a <defs> or a <symbol>,
+        // in which we shouldn't need to convert anyway.
+        if (!bb) {
           return
         }
-        grad.setAttribute('cx', (cx - bb.x) / bb.width)
-        grad.setAttribute('cy', (cy - bb.y) / bb.height)
-        grad.setAttribute('fx', (fx - bb.x) / bb.width)
-        grad.setAttribute('fy', (fy - bb.y) / bb.height)
-        grad.setAttribute('r', r / Math.max(bb.width, bb.height))
-        grad.removeAttribute('gradientUnits')
+        if (grad.tagName === 'linearGradient') {
+          const gCoords = {
+            x1: grad.getAttribute('x1'),
+            y1: grad.getAttribute('y1'),
+            x2: grad.getAttribute('x2'),
+            y2: grad.getAttribute('y2')
+          }
+
+          // If has transform, convert
+          const tlist = getTransformList(grad)
+          if (tlist?.numberOfItems > 0) {
+            const m = transformListToTransform(tlist).matrix
+            const pt1 = transformPoint(gCoords.x1, gCoords.y1, m)
+            const pt2 = transformPoint(gCoords.x2, gCoords.y2, m)
+
+            gCoords.x1 = pt1.x
+            gCoords.y1 = pt1.y
+            gCoords.x2 = pt2.x
+            gCoords.y2 = pt2.y
+            grad.removeAttribute('gradientTransform')
+          }
+          grad.setAttribute('x1', (gCoords.x1 - bb.x) / bb.width)
+          grad.setAttribute('y1', (gCoords.y1 - bb.y) / bb.height)
+          grad.setAttribute('x2', (gCoords.x2 - bb.x) / bb.width)
+          grad.setAttribute('y2', (gCoords.y2 - bb.y) / bb.height)
+          grad.removeAttribute('gradientUnits')
+        } else if (grad.tagName === 'radialGradient') {
+          const getNum = (value, fallback) => {
+            const num = Number(value)
+            return Number.isFinite(num) ? num : fallback
+          }
+          let cx = getNum(grad.getAttribute('cx'), 0.5)
+          let cy = getNum(grad.getAttribute('cy'), 0.5)
+          let r = getNum(grad.getAttribute('r'), 0.5)
+          let fx = getNum(grad.getAttribute('fx'), cx)
+          let fy = getNum(grad.getAttribute('fy'), cy)
+
+          // If has transform, convert
+          const tlist = getTransformList(grad)
+          if (tlist?.numberOfItems > 0) {
+            const m = transformListToTransform(tlist).matrix
+            const cpt = transformPoint(cx, cy, m)
+            const fpt = transformPoint(fx, fy, m)
+            const rpt = transformPoint(cx + r, cy, m)
+            cx = cpt.x
+            cy = cpt.y
+            fx = fpt.x
+            fy = fpt.y
+            r = Math.hypot(rpt.x - cpt.x, rpt.y - cpt.y)
+            grad.removeAttribute('gradientTransform')
+          }
+
+          if (!bb.width || !bb.height) {
+            return
+          }
+          grad.setAttribute('cx', (cx - bb.x) / bb.width)
+          grad.setAttribute('cy', (cy - bb.y) / bb.height)
+          grad.setAttribute('fx', (fx - bb.x) / bb.width)
+          grad.setAttribute('fy', (fy - bb.y) / bb.height)
+          grad.setAttribute('r', r / Math.max(bb.width, bb.height))
+          grad.removeAttribute('gradientUnits')
+        }
       }
-    }
-  })
+    })
+  }
+  /**
+ * Normalize drop-shadow filters (those built around an `<feDropShadow>`, as
+ * produced by ext-shadow) from an absolute `userSpaceOnUse` region to an
+ * `objectBoundingBox` region anchored to the referencing element's bounding
+ * box. An absolute region is left behind when the element is moved or pasted —
+ * the element's geometry is rewritten but the filter region in `<defs>` is not,
+ * so the element falls outside its own filter region and is rendered entirely
+ * invisible (while still selectable). Re-deriving the region from the current
+ * bbox both fixes already-misaligned filters and makes them track the element
+ * from then on.
+ * @function module:svgcanvas.SvgCanvas#convertDropShadowFilters
+ * @param {Element} elem
+ * @returns {void}
+ */
+  const convertDropShadowFiltersMethod = elem => {
+    const filters = elem.querySelectorAll('filter')
+    Array.prototype.forEach.call(filters, filter => {
+      const ds = filter.querySelector('feDropShadow')
+      if (!ds || filter.getAttribute('filterUnits') !== 'userSpaceOnUse') {
+        return
+      }
+      // Locate the element wearing this filter so the region can be based on its
+      // bbox. Each ext-shadow filter is referenced by exactly one element.
+      const ref = elem.querySelector(`[filter="url(#${filter.id})"]`)
+      if (!ref) { return }
+      const bb = utilsGetBBox(ref)
+      if (!bb || !bb.width || !bb.height) { return }
+      const dx = Number(ds.getAttribute('dx')) || 0
+      const dy = Number(ds.getAttribute('dy')) || 0
+      const blur = Number(ds.getAttribute('stdDeviation')) || 0
+      const pad = Math.hypot(dx, dy) + blur * 3
+      filter.setAttribute('filterUnits', 'objectBoundingBox')
+      filter.setAttribute('x', String(-pad / bb.width))
+      filter.setAttribute('y', String(-pad / bb.height))
+      filter.setAttribute('width', String((bb.width + pad * 2) / bb.width))
+      filter.setAttribute('height', String((bb.height + pad * 2) / bb.height))
+    })
   }
 
   svgCanvas.setSvgString = setSvgString
@@ -1501,6 +1540,7 @@ const convertGradientsMethod = elem => {
   svgCanvas.uniquifyElems = uniquifyElemsMethod
   svgCanvas.setUseData = setUseDataMethod
   svgCanvas.convertGradients = convertGradientsMethod
+  svgCanvas.convertDropShadowFilters = convertDropShadowFiltersMethod
   svgCanvas.removeUnusedDefElems = removeUnusedDefElemsMethod // remove DOM elements inside the `<defs>` if they are notreferred to,
   svgCanvas.svgCanvasToString = svgCanvasToString // Main function to set up the SVG content for output.
   svgCanvas.svgToString = svgToString // Sub function ran on each SVG element to convert it to a string as desired.
