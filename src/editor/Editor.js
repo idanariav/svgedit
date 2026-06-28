@@ -522,7 +522,10 @@ class Editor extends EditorStartup {
     if (success) {
       this.updateCanvas()
       // Loading replaces the whole drawing without firing elementChanged, so
-      // refresh the empty-canvas brand watermark to match the new content
+      // refresh the layers panel to match the loaded drawing's layers
+      // (otherwise it keeps showing the stale layer list from before the load).
+      this.rightPanel.populateLayers()
+      // ...and refresh the empty-canvas brand watermark to match the new content
       // (otherwise it lingers when a non-empty drawing is loaded).
       this.updateCanvasWatermark()
       return
