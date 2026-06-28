@@ -236,7 +236,7 @@ ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
 | `layer_down` | Move layer down in stack |
 | `layer_moreopts` | More options menu |
 | *(layer list)* | Layer rows with visibility toggle + name |
-| `selLayerNames` | Move selected elements to another layer |
+| `selLayerNames` | Move selected elements to another layer. A trailing **"+ New layer…"** option (sentinel value `NEW_LAYER_OPTION_VALUE`, exported from `RightPanel.js`, appended via `se-select.addOption` in `populateLayers`) prompts for a name, creates the layer, and moves the current selection onto it in one step (`RightPanel.moveSelectedToNewLayer`; handled in `EditorStartup.js`'s change listener) |
 
 ---
 

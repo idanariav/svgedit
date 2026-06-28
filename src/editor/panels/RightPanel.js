@@ -6,6 +6,10 @@ import { traceImageToSvg } from '../dialogs/traceImage.js'
 
 const { $click } = SvgCanvas
 
+// Sentinel value used as the last option of the "Move elements to" dropdown.
+// Selecting it creates a new layer and moves the selection there in one step.
+export const NEW_LAYER_OPTION_VALUE = '__svgedit_move_to_new_layer__'
+
 /**
  *
  */
@@ -160,9 +164,11 @@ class RightPanel {
   }
 
   /**
-   * @returns {void}
+   * Prompt the user for a unique new layer name, suggesting the next "Layer N".
+   * Returns the chosen name, or null if the user cancelled or the name is taken.
+   * @returns {Promise<string|null>}
    */
-  async newLayer () {
+  async promptUniqueLayerName () {
     let uniqName
     let i = this.editor.svgCanvas.getCurrentDrawing().getNumLayers()
     do {
@@ -174,13 +180,47 @@ class RightPanel {
       uniqName
     )
     if (!newName) {
-      return
+      return null
     }
     if (this.editor.svgCanvas.getCurrentDrawing().hasLayer(newName)) {
       seAlert(this.editor.i18next.t('notification.dupeLayerName'))
+      return null
+    }
+    return newName
+  }
+
+  /**
+   * @returns {void}
+   */
+  async newLayer () {
+    const newName = await this.promptUniqueLayerName()
+    if (!newName) {
       return
     }
     this.editor.svgCanvas.createLayer(newName)
+    this.updateContextPanel()
+    this.populateLayers()
+  }
+
+  /**
+   * Create a new layer and move the currently selected elements onto it,
+   * combining the "new layer" and "move elements to" actions into one step.
+   * @returns {void}
+   */
+  async moveSelectedToNewLayer () {
+    const newName = await this.promptUniqueLayerName()
+    if (!newName) {
+      // Restore the dropdown so it no longer shows the "+ New layer…" option.
+      this.populateLayers()
+      return
+    }
+    // createLayer clears the selection, so capture it first and re-select before
+    // moving (moveSelectedToLayer acts on the current selection).
+    const selected = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
+    this.editor.svgCanvas.createLayer(newName)
+    this.editor.svgCanvas.selectOnly(selected)
+    this.editor.svgCanvas.moveSelectedToLayer(newName)
+    this.editor.svgCanvas.clearSelection()
     this.updateContextPanel()
     this.populateLayers()
   }
@@ -354,6 +394,13 @@ class RightPanel {
     }
     $id('selLayerNames').setAttribute('options', text)
     $id('selLayerNames').setAttribute('values', values)
+    // Append a trailing "+ New layer…" entry; choosing it creates a layer and
+    // moves the current selection onto it (handled in EditorStartup). addOption
+    // sets an explicit value, avoiding se-select's value/text aliasing.
+    $id('selLayerNames').addOption(
+      NEW_LAYER_OPTION_VALUE,
+      this.editor.i18next.t('layers.move_elems_to_new')
+    )
     // handle selection of layer
     const nelements = $id('layerlist').querySelectorAll('td.layername')
     Array.from(nelements).forEach(function (element) {

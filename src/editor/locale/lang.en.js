@@ -305,6 +305,7 @@ export default {
     merge_down: 'Merge Down',
     merge_all: 'Merge All',
     move_elems_to: 'Move elements to:',
+    move_elems_to_new: '+ New layer…',
     move_selected: 'Move selected elements to a different layer'
   },
   config: {

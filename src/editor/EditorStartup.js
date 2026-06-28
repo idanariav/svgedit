@@ -15,6 +15,7 @@ import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
 import { setActiveEditor, isActiveEditor } from './domScope.js'
+import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
 
@@ -331,6 +332,10 @@ class EditorStartup {
     let promptMoveLayerOnce = false
     $id('selLayerNames').addEventListener('change', (evt) => {
       const destLayer = evt.detail.value
+      if (destLayer === NEW_LAYER_OPTION_VALUE) {
+        this.rightPanel.moveSelectedToNewLayer()
+        return
+      }
       const confirmStr = this.i18next.t('notification.QmoveElemsToLayer').replace('%s', destLayer)
       /**
     * @param {boolean} ok
