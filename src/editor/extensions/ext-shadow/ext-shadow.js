@@ -125,6 +125,13 @@ export default {
       const elem = svgCanvas.getSelectedElements()[0]
       if (!elem) return
 
+      // Length is the on/off control: a zero-length shadow means "no shadow",
+      // so route it through the removal path instead of creating an invisible
+      // filter. This keeps length 0 ⟺ no shadow unambiguous.
+      if (!params.remove && Number(params.length) === 0) {
+        params = { remove: true }
+      }
+
       const elemId = elem.id
       const batchCmd = new BatchCommand('Set shadow')
 
@@ -226,7 +233,9 @@ export default {
       if (on && elem) {
         const p = getShadowFromElement(elem)
         $id('shadow_angle').value = p?.angle ?? 150
-        $id('shadow_length').value = p?.length ?? 10
+        // Default length 0 when the element has no shadow, so the panel clearly
+        // reflects "no shadow" rather than showing phantom active values.
+        $id('shadow_length').value = p?.length ?? 0
         $id('shadow_blur').value = p?.blur ?? 4
         $id('shadow_opacity').value = p?.opacity ?? 0.5
         $id('shadow_color').value = p?.color ?? '#000000'
@@ -245,7 +254,7 @@ export default {
             <div class="sidepanel_section_grid">
               <se-spin-input id="shadow_angle"  label="∠" min="0" max="359" step="5" value="150"
                 title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
-              <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="10"
+              <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="0"
                 title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
               <se-spin-input id="shadow_blur" label="B" min="0" max="50" step="1" value="4"
                 title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
