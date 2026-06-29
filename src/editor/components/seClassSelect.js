@@ -390,11 +390,15 @@ class SeClassSelect extends HTMLElement {
       if (Object.keys(oldAttrs).length) {
         batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
       }
-      // A captured drop shadow can't be stamped as a flat attribute — rebuild a
-      // per-element `{id}_shadow` filter via the shadow extension's API, adding
-      // its undo subcommands to this same batch.
+      // A captured drop shadow / outline can't be stamped as a flat attribute —
+      // rebuild the per-element effect filter via the extension APIs, adding the
+      // undo subcommands to this same batch. Both share one filter (fx-filter),
+      // so order doesn't matter; each preserves the other's slice.
       if (preset?.shadow && svgEditor.shadowApi) {
         svgEditor.shadowApi.apply(elem, preset.shadow, batch)
+      }
+      if (preset?.outline && svgEditor.outlineApi) {
+        svgEditor.outlineApi.apply(elem, preset.outline, batch)
       }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
@@ -472,6 +476,24 @@ class SeClassSelect extends HTMLElement {
       row.append(cb, nameEl, valEl)
       this.$checklist.append(row)
     }
+
+    // Outline is likewise captured as structured params, not a flat attribute.
+    const outline = svgEditor.outlineApi?.read(elem) || editing?.outline
+    if (outline) {
+      const row = document.createElement('label')
+      row.className = 'checkrow'
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.dataset.outline = 'true'
+      cb.checked = true
+      const nameEl = document.createElement('span')
+      nameEl.textContent = 'outline'
+      const valEl = document.createElement('span')
+      valEl.className = 'val'
+      valEl.textContent = `O${outline.width}`
+      row.append(cb, nameEl, valEl)
+      this.$checklist.append(row)
+    }
   }
 
   save () {
@@ -495,6 +517,11 @@ class SeClassSelect extends HTMLElement {
     const shadow = shadowCb?.checked
       ? (svgEditor.shadowApi?.read(elem) || this._editingPreset?.shadow)
       : undefined
+    // Capture the outline (structured params) when its row is checked.
+    const outlineCb = this.$checklist.querySelector('input[data-outline]')
+    const outline = outlineCb?.checked
+      ? (svgEditor.outlineApi?.read(elem) || this._editingPreset?.outline)
+      : undefined
     const existing = getClass(name)
     if (existing && this._editingPreset?.name !== name) {
       if (!window.confirm(`A class named "${name}" already exists. Overwrite it?`)) {
@@ -503,6 +530,7 @@ class SeClassSelect extends HTMLElement {
     }
     const preset = { name, scope, attrs }
     if (shadow) preset.shadow = shadow
+    if (outline) preset.outline = outline
     saveClass(preset)
     this.closeSave()
     // Tag the source object with the new class (a no-op on its attributes) so

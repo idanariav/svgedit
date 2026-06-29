@@ -1497,15 +1497,16 @@ export const init = canvas => {
     })
   }
   /**
- * Normalize drop-shadow filters (those built around an `<feDropShadow>`, as
- * produced by ext-shadow) from an absolute `userSpaceOnUse` region to an
- * `objectBoundingBox` region anchored to the referencing element's bounding
- * box. An absolute region is left behind when the element is moved or pasted —
- * the element's geometry is rewritten but the filter region in `<defs>` is not,
- * so the element falls outside its own filter region and is rendered entirely
- * invisible (while still selectable). Re-deriving the region from the current
- * bbox both fixes already-misaligned filters and makes them track the element
- * from then on.
+ * Re-derive the region of every effect filter (built by fx-filter: an
+ * `<feDropShadow>` for the shadow slice and/or an `<feMorphology>` for the
+ * outline slice) from the referencing element's current bounding box, in
+ * absolute `userSpaceOnUse` units. Effect filters use an absolute region (a
+ * bbox-relative region collapses to nothing for axis-aligned lines, whose bbox
+ * is zero in one dimension, hiding the line); re-deriving on load realigns a
+ * filter to wherever its element now sits and migrates any legacy
+ * `objectBoundingBox` shadow filter to the absolute scheme. Padding mirrors
+ * fx-filter's setRegion (half the stroke plus whichever effect reaches
+ * furthest).
  * @function module:svgcanvas.SvgCanvas#convertDropShadowFilters
  * @param {Element} elem
  * @returns {void}
@@ -1514,24 +1515,34 @@ export const init = canvas => {
     const filters = elem.querySelectorAll('filter')
     Array.prototype.forEach.call(filters, filter => {
       const ds = filter.querySelector('feDropShadow')
-      if (!ds || filter.getAttribute('filterUnits') !== 'userSpaceOnUse') {
+      const morph = filter.querySelector('feMorphology')
+      if (!ds && !morph) {
         return
       }
       // Locate the element wearing this filter so the region can be based on its
-      // bbox. Each ext-shadow filter is referenced by exactly one element.
+      // bbox. Each effect filter is referenced by exactly one element.
       const ref = elem.querySelector(`[filter="url(#${filter.id})"]`)
       if (!ref) { return }
       const bb = utilsGetBBox(ref)
-      if (!bb || !bb.width || !bb.height) { return }
-      const dx = Number(ds.getAttribute('dx')) || 0
-      const dy = Number(ds.getAttribute('dy')) || 0
-      const blur = Number(ds.getAttribute('stdDeviation')) || 0
-      const pad = Math.hypot(dx, dy) + blur * 3
-      filter.setAttribute('filterUnits', 'objectBoundingBox')
-      filter.setAttribute('x', String(-pad / bb.width))
-      filter.setAttribute('y', String(-pad / bb.height))
-      filter.setAttribute('width', String((bb.width + pad * 2) / bb.width))
-      filter.setAttribute('height', String((bb.height + pad * 2) / bb.height))
+      if (!bb) { return }
+      // Pad for whichever effect reaches furthest (mirrors fx-filter setRegion).
+      const sw = Number(ref.getAttribute('stroke-width')) || 0
+      let pad = 0
+      if (ds) {
+        const dx = Number(ds.getAttribute('dx')) || 0
+        const dy = Number(ds.getAttribute('dy')) || 0
+        const blur = Number(ds.getAttribute('stdDeviation')) || 0
+        pad = Math.max(pad, Math.hypot(dx, dy) + blur * 3)
+      }
+      if (morph) {
+        pad = Math.max(pad, Math.abs(Number(morph.getAttribute('radius')) || 0))
+      }
+      pad += sw / 2
+      filter.setAttribute('filterUnits', 'userSpaceOnUse')
+      filter.setAttribute('x', String(bb.x - pad))
+      filter.setAttribute('y', String(bb.y - pad))
+      filter.setAttribute('width', String(bb.width + pad * 2))
+      filter.setAttribute('height', String(bb.height + pad * 2))
     })
   }
 

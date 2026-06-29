@@ -219,10 +219,11 @@ container simply hides everything inside it.
 | `.selected_panel` "Blur" | single element | `blur` (0–100, ×10 internally) |
 | `#clipmask_panel` | element has `clip-path`/`mask` | `clipmask_feather` (−50…50; +soft edge / −rim; applying to a hard clip auto-converts to a mask), `clipmask_release` |
 | `#shadow_panel` | injected by ext-shadow | see ext-shadow below |
+| `#outline_panel` | injected by ext-outline; line-family only | see ext-outline below |
 | `#color_shift_panel` | injected by ext-color-shift | see ext-color-shift below |
 
-ext-shadow and ext-color-shift now inject into `#tab_effects` (falling back to
-`#sidepanel_content`).
+ext-shadow, ext-outline, and ext-color-shift now inject into `#tab_effects`
+(falling back to `#sidepanel_content`).
 
 ---
 
@@ -402,12 +403,22 @@ Flying button (left panel):
 - Shown for any single selected element (all shape types)
 - Controls: **Angle ∠** (`shadow_angle`, 0–359°, clockwise from 12 o'clock), **Length L** (`shadow_length`, 0–500 px stretch), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
 - **Length is the on/off control: length 0 ⟺ no shadow.** The panel defaults Length to 0 when the selected element has no shadow (so it doesn't show phantom active values), and setting Length to 0 routes through the removal path. This prevents the old confusion where nudging any control silently created a shadow from pre-filled defaults.
-- **Class-library integration:** exposes `svgEditor.shadowApi = { read(elem), apply(elem, params, batchCmd) }`. The `<se-class-select>` save popover shows a **shadow** checklist row when the element/preset has a shadow; the captured params are stored on the preset as `shadow: {angle,length,blur,opacity,color}` and re-stamped per-element (each target gets its own `{id}_shadow` filter) on apply, sharing the class's undo batch. `read`/`apply` operate on an explicit element, unlike the panel's `setShadow` which targets the current selection.
+- **Class-library integration:** exposes `svgEditor.shadowApi = { read(elem), apply(elem, params, batchCmd) }`. The `<se-class-select>` save popover shows a **shadow** checklist row when the element/preset has a shadow; the captured params are stored on the preset as `shadow: {angle,length,blur,opacity,color}` and re-stamped on apply, sharing the class's undo batch. `read`/`apply` operate on an explicit element, unlike the panel's `setShadow` which targets the current selection.
 - Angle + Length are the UI representation; internally converted to `dx`/`dy` on `feDropShadow`. Existing SVG files with raw `dx`/`dy` load and display correctly.
 - Clock reference: 90°=3 o'clock, 150°=5 o'clock, 180°=6 o'clock (straight down), 240°=8 o'clock, 300°=10 o'clock
-- Sunset/long-shadow recipe: Angle ~180°, Length 100–300, Blur 1–3
-- Creates a `<filter id="{elemId}_shadow" filterUnits="userSpaceOnUse">` with a single `<feDropShadow>` in `<defs>`; filter region is computed from `getBBox()` + padding so long shadows are never clipped
-- **Limitation:** SVG's `filter` attribute can only reference one `<filter>`. Applying shadow saves any existing filter URL and restores it on removal — shadow and blur cannot coexist simultaneously. If the element is resized after shadow is applied, re-apply the shadow to refresh the filter region.
+- Filter construction is delegated to the shared **`fx-filter.js` composer** (see extensions.md): the shadow shares one per-element filter with the outline effect, so the two coexist. Region is `userSpaceOnUse`, re-derived on move via the extension's `mouseUp`/`elementChanged`/`selectedChanged` hooks.
+
+### ext-outline — Outline / Halo (`extensions/ext-outline/`)
+- Adds an "Outline" section to `#tab_effects` (`#outline_panel`), inserted right after `#shadow_panel`. Gives a line a second outline color around its own stroke (e.g. a white line with a black halo, like a text outline).
+- **Shown for line-family elements only:** `line`, `polyline`, `path`, `polygon`.
+- Controls: **Width O** (`outline_width`, 0–50 px halo thickness), **Opacity** (`outline_opacity`, 0–1), **Color** (`outline_color`), **Remove** (`outline_remove`). **Width 0 ⟺ no outline** (mirrors shadow's length-0 convention).
+- Built from `feMorphology(dilate, radius=width)` → `feFlood(color)` → `feComposite(operator=in)` → `feMerge[outline, SourceGraphic]`. Caveat: dilate gives mildly boxy corners at large widths (negligible on thin lines).
+- **Class-library integration:** exposes `svgEditor.outlineApi = { read, apply }`; the save popover shows an **outline** checklist row, storing `outline: {width,color,opacity}` on the preset.
+- Shares the single per-element filter with shadow via `fx-filter.js`; the two can be on the same line simultaneously.
+
+### Filter coexistence (ext-shadow + ext-outline)
+- SVG's `filter` attribute references only one `<filter>`. Both effects compose into ONE filter (`{id}_fx`, or a legacy `{id}_shadow` reused in place) via `fx-filter.js`, so shadow + outline coexist and are independently editable. A pre-existing *foreign* filter (e.g. blur) is saved and restored when both effects are removed — so an effect still cannot coexist with blur.
+- `feMorphology`/`feMerge` need `result` in the sanitize whitelist (added in `sanitize.js`) to survive save/load.
 
 ### ext-fonts — Custom Fonts (`extensions/ext-fonts/`)
 - Adds the `<se-font-library>` button (`tool_font_library`) to the text panel, beside the font-family select

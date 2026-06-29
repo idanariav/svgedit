@@ -222,6 +222,7 @@ export default class ConfigObj {
       'ext-layer_view',
       'ext-theme-toggle',
       'ext-shadow',
+      'ext-outline',
       'ext-color-shift',
       'ext-fonts'
     ]

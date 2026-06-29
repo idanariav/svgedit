@@ -202,6 +202,11 @@ export default {
         const m = elem.getAttribute(nam)
         if (m) { pline.setAttribute(nam, elem.getAttribute(nam)) }
       })
+      // Carry over any effect filter (outline/shadow). The polyline reuses the
+      // line's id below, so the filter url still resolves; without this the
+      // halo/shadow would be dropped when a mid-marker forces the conversion.
+      const filterAttr = elem.getAttribute('filter')
+      if (filterAttr) { pline.setAttribute('filter', filterAttr) }
 
       const batchCmd = new BatchCommand()
       batchCmd.addSubCommand(new RemoveElementCommand(elem, elem.parentNode))

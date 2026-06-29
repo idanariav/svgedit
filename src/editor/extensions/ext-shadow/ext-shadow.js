@@ -10,9 +10,17 @@
  * Internally the filter stores dx/dy on feDropShadow; angle/length are the UI
  * representation only — no SVG format change for saved files.
  *
- * The filter is stored in <defs> with id "{elemId}_shadow" and uses
- * a single <feDropShadow> primitive (Baseline Widely Available since 2020).
+ * The drop shadow shares a single per-element filter with the outline effect
+ * via the {@link module:fx-filter} composer, so the two can coexist on one
+ * element (an element's `filter` attribute references only one filter). This
+ * extension only owns the shadow slice of the combined spec; shadow-only output
+ * is identical to the legacy single-`<feDropShadow>` filter.
+ *
+ * Angle/length are this extension's UI representation only — they are converted
+ * to/from the filter's dx/dy here; no SVG format change for saved files.
  */
+
+import { createFxComposer } from '../fx-filter.js'
 
 const name = 'shadow'
 
@@ -31,14 +39,13 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const {
-      BatchCommand, InsertElementCommand, RemoveElementCommand, ChangeElementCommand
-    } = svgCanvas.history
+    const { BatchCommand } = svgCanvas.history
     const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
-    // elemId → previous filter URL (to restore on shadow removal)
-    const prevFilterMap = {}
+    // Shared filter composer (one instance for all effect extensions, so they
+    // agree on the per-element filter and the restore-on-removal bookkeeping).
+    const fx = svgEditor.fxFilter || (svgEditor.fxFilter = createFxComposer(svgCanvas))
 
     // --- Polar/Cartesian helpers ---
 
@@ -58,50 +65,20 @@ export default {
     }
 
     /**
-     * Set the filter region as fractions of the element's bounding box
-     * (objectBoundingBox units) rather than absolute userSpaceOnUse
-     * coordinates, so the region tracks the element when it is moved,
-     * duplicated, or pasted. An absolute region is left behind on a move (the
-     * element's geometry is rewritten but the <defs> region is not), dropping
-     * the element outside its own filter and rendering it completely invisible.
-     * The absolute shadow padding is converted to bbox fractions at creation
-     * time so long shadows still are not clipped. Must be called after the
-     * element has layout.
-     */
-    const setFilterRegion = (filter, elem, length, blur) => {
-      const bbox = elem.getBBox()
-      const pad = Math.abs(length) + blur * 3
-      const w = bbox.width || 1
-      const h = bbox.height || 1
-      filter.setAttribute('filterUnits', 'objectBoundingBox')
-      filter.setAttribute('x', String(-pad / w))
-      filter.setAttribute('y', String(-pad / h))
-      filter.setAttribute('width', String((w + pad * 2) / w))
-      filter.setAttribute('height', String((h + pad * 2) / h))
-    }
-
-    /**
-     * Read shadow params from an element's _shadow filter.
-     * Returns null if no shadow filter is set.
+     * Read shadow params from an element's shared effect filter.
+     * Returns null if no shadow is set.
      */
     const getShadowFromElement = (elem) => {
       if (!elem) return null
-      const filterId = `${elem.id}_shadow`
-      const filterAttr = elem.getAttribute('filter')
-      if (!filterAttr || !filterAttr.includes(filterId)) return null
-      const filter = svgCanvas.getElement(filterId)
-      if (!filter) return null
-      const ds = filter.querySelector('feDropShadow')
-      if (!ds) return null
-      const dx = Number(ds.getAttribute('dx') ?? 5)
-      const dy = Number(ds.getAttribute('dy') ?? 5)
-      const { angle, length } = toPolar(dx, dy)
+      const { shadow } = fx.readEffects(elem)
+      if (!shadow) return null
+      const { angle, length } = toPolar(shadow.dx, shadow.dy)
       return {
         angle: Math.round(angle),
         length: Math.round(length * 10) / 10,
-        blur: Number(ds.getAttribute('stdDeviation') ?? 4),
-        opacity: Number(ds.getAttribute('flood-opacity') ?? 0.5),
-        color: ds.getAttribute('flood-color') ?? '#000000'
+        blur: shadow.blur,
+        opacity: shadow.opacity,
+        color: shadow.color
       }
     }
 
@@ -119,102 +96,28 @@ export default {
     /**
      * Apply, update, or remove the drop shadow on a specific element, recording
      * every change into the supplied batch command (no commit, no selection
-     * assumptions). Shared by the panel's setShadow and the class library's
-     * apply path so both build per-element `{id}_shadow` filters identically.
+     * assumptions). Reads the current combined spec, mutates only the shadow
+     * slice, and writes it back via the shared composer — so any existing
+     * outline on the element is preserved. Shared by the panel's setShadow and
+     * the class library's apply path.
      * @param {Element} elem
      * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
      * @param {BatchCommand} batchCmd
      */
     const applyShadowToElement = (elem, params, batchCmd) => {
       if (!elem) return
-      const elemId = elem.id
+      const spec = fx.readEffects(elem)
 
       // Length is the on/off control: a zero-length shadow means "no shadow",
-      // so route it through the removal path instead of creating an invisible
-      // filter. This keeps length 0 ⟺ no shadow unambiguous.
-      if (!params.remove && Number(params.length) === 0) {
-        params = { remove: true }
-      }
-
-      // --- Remove path ---
-      if (params.remove) {
-        const filter = svgCanvas.getElement(`${elemId}_shadow`)
-        const oldFilterAttr = elem.getAttribute('filter')
-        if (filter) {
-          batchCmd.addSubCommand(new RemoveElementCommand(filter, filter.parentNode))
-          filter.remove()
-        }
-        if (oldFilterAttr) {
-          batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr }))
-          const saved = prevFilterMap[elemId]
-          if (saved) {
-            elem.setAttribute('filter', saved)
-            delete prevFilterMap[elemId]
-          } else {
-            elem.removeAttribute('filter')
-          }
-        }
-        return
-      }
-
-      // --- Apply / update path ---
-      const { angle, length, blur, opacity, color } = params
-      const { dx, dy } = toOffset(angle, length)
-      let filter = svgCanvas.getElement(`${elemId}_shadow`)
-
-      if (!filter) {
-        // Save any pre-existing non-shadow filter for later restoration
-        const existingFilter = elem.getAttribute('filter')
-        if (existingFilter && !existingFilter.includes('_shadow')) {
-          prevFilterMap[elemId] = existingFilter
-        }
-
-        // Record old filter attr for undo
-        batchCmd.addSubCommand(
-          new ChangeElementCommand(elem, { filter: existingFilter ?? '' })
-        )
-
-        // Create <feDropShadow>
-        const dropShadowEl = svgCanvas.addSVGElementsFromJson({
-          element: 'feDropShadow',
-          attr: {
-            dx: String(dx),
-            dy: String(dy),
-            stdDeviation: String(blur),
-            'flood-color': color,
-            'flood-opacity': String(opacity)
-          }
-        })
-
-        // Create <filter> and assemble
-        filter = svgCanvas.addSVGElementsFromJson({
-          element: 'filter',
-          attr: { id: `${elemId}_shadow` }
-        })
-        setFilterRegion(filter, elem, length, blur)
-        filter.append(dropShadowEl)
-        svgCanvas.findDefs().append(filter)
-        batchCmd.addSubCommand(new InsertElementCommand(filter))
-        elem.setAttribute('filter', `url(#${elemId}_shadow)`)
+      // so clear the shadow slice. This keeps length 0 ⟺ no shadow unambiguous.
+      if (params.remove || Number(params.length) === 0) {
+        spec.shadow = null
       } else {
-        // Update existing filter in-place
-        const ds = filter.querySelector('feDropShadow')
-        if (ds) {
-          batchCmd.addSubCommand(new ChangeElementCommand(ds, {
-            dx: ds.getAttribute('dx'),
-            dy: ds.getAttribute('dy'),
-            stdDeviation: ds.getAttribute('stdDeviation'),
-            'flood-color': ds.getAttribute('flood-color'),
-            'flood-opacity': ds.getAttribute('flood-opacity')
-          }))
-          ds.setAttribute('dx', String(dx))
-          ds.setAttribute('dy', String(dy))
-          ds.setAttribute('stdDeviation', String(blur))
-          ds.setAttribute('flood-color', color)
-          ds.setAttribute('flood-opacity', String(opacity))
-        }
-        setFilterRegion(filter, elem, length, blur)
+        const { angle, length, blur, opacity, color } = params
+        const { dx, dy } = toOffset(angle, length)
+        spec.shadow = { dx, dy, blur, color, opacity }
       }
+      fx.writeEffects(elem, spec, batchCmd)
     }
 
     /**
@@ -298,6 +201,7 @@ export default {
       },
 
       selectedChanged (opts) {
+        if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
         if (!opts.selectedElement || opts.multiselected) {
           showPanel(false)
           return
@@ -308,6 +212,17 @@ export default {
           return
         }
         showPanel(true, opts.selectedElement)
+      },
+
+      // The effect filter region is an absolute box (see fx-filter setRegion),
+      // re-derived after a move. A move bakes the drag transform into geometry
+      // without firing 'changed', but this mouseUp hook runs after that bake.
+      mouseUp () {
+        svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
+      },
+
+      elementChanged (opts) {
+        (opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
       }
     }
   }

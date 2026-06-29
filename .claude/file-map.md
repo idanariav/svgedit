@@ -116,7 +116,9 @@
 | `ext-shapes/` | Pre-made shape library |
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
-| `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — offset X/Y, blur, opacity, color |
+| `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — angle/length, blur, opacity, color (delegates to `fx-filter.js`) |
+| `ext-outline/` | Second outline/halo color around a line's stroke via `feMorphology` dilate filter — width, opacity, color; line-family only (delegates to `fx-filter.js`) |
+| `fx-filter.js` | Shared per-element filter composer for ext-shadow + ext-outline: one filter (`{id}_fx`) holding both effect blocks; `userSpaceOnUse` region with `refreshRegion` for move-tracking. Not an extension (not auto-registered) |
 | `ext-cutter/` | Cutter (knife) tool — drag a straight line to split selected shapes into two pieces |
 | `ext-color-shift/` | Right side-panel section: H/S/L/T relative-delta inputs + Fill/Stroke toggles to shift selection colours |
 | `ext-fonts/` | Custom font support: `ext-fonts.js` (DOM glue), `fontStore.js` (IndexedDB cache + `FontFace` registration + Google Fonts download), `google-fonts-catalog.json` (full ~1,934-family static catalog, regenerable from Google's metadata endpoint). Fonts embed as base64 `@font-face` in `<defs>` on export |
