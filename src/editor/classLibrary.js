@@ -8,7 +8,13 @@
  * key, mirroring how the editor theme persists under `svg-edit-theme`.
  *
  * Preset shape:
- *   { name: string, scope: 'text'|'shape'|'any', attrs: { [attr]: string } }
+ *   { name: string, scope: 'text'|'shape'|'any', attrs: { [attr]: string },
+ *     shadow?: { angle, length, blur, opacity, color } }
+ *
+ * A drop shadow is not a plain attribute (it is a `filter` reference plus a
+ * `<filter>`/`<feDropShadow>` node in <defs>), so it is captured separately as
+ * structured params under `shadow` and re-applied via the shadow extension's
+ * API rather than stamped like the flat `attrs`.
  *
  * Reads/writes go through the optional host storage adapter when one is
  * registered (see userDataAdapter.js); otherwise they fall back to the

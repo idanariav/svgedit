@@ -401,6 +401,8 @@ Flying button (left panel):
 - Adds a "Shadow" section to the right side panel (`#shadow_panel`, inside `#sidepanel_content`)
 - Shown for any single selected element (all shape types)
 - Controls: **Angle ∠** (`shadow_angle`, 0–359°, clockwise from 12 o'clock), **Length L** (`shadow_length`, 0–500 px stretch), **Blur** (`shadow_blur`), **Opacity** (`shadow_opacity`), **Color** (`shadow_color`), **Remove** button (`shadow_remove`)
+- **Length is the on/off control: length 0 ⟺ no shadow.** The panel defaults Length to 0 when the selected element has no shadow (so it doesn't show phantom active values), and setting Length to 0 routes through the removal path. This prevents the old confusion where nudging any control silently created a shadow from pre-filled defaults.
+- **Class-library integration:** exposes `svgEditor.shadowApi = { read(elem), apply(elem, params, batchCmd) }`. The `<se-class-select>` save popover shows a **shadow** checklist row when the element/preset has a shadow; the captured params are stored on the preset as `shadow: {angle,length,blur,opacity,color}` and re-stamped per-element (each target gets its own `{id}_shadow` filter) on apply, sharing the class's undo batch. `read`/`apply` operate on an explicit element, unlike the panel's `setShadow` which targets the current selection.
 - Angle + Length are the UI representation; internally converted to `dx`/`dy` on `feDropShadow`. Existing SVG files with raw `dx`/`dy` load and display correctly.
 - Clock reference: 90°=3 o'clock, 150°=5 o'clock, 180°=6 o'clock (straight down), 240°=8 o'clock, 300°=10 o'clock
 - Sunset/long-shadow recipe: Angle ~180°, Length 100–300, Blur 1–3

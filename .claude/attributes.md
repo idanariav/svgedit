@@ -290,4 +290,7 @@ component, which is intentionally **not** bound to `attrChanger`. Applying a cla
 builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) to stamp
 the preset's saved attributes plus the `class` token, then refreshes the panels
 via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
-`src/editor/classLibrary.js`.
+`src/editor/classLibrary.js`. A preset may also carry a `shadow` block
+(`{angle,length,blur,opacity,color}`) captured/re-applied via `svgEditor.shadowApi`
+(from ext-shadow) — a drop shadow can't be stamped as a flat attribute, so it is
+rebuilt per-element into the same undo batch on apply.

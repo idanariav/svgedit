@@ -117,13 +117,17 @@ export default {
     })
 
     /**
-     * Apply, update, or remove the drop shadow on the selected element.
-     * All changes are recorded in the undo history.
+     * Apply, update, or remove the drop shadow on a specific element, recording
+     * every change into the supplied batch command (no commit, no selection
+     * assumptions). Shared by the panel's setShadow and the class library's
+     * apply path so both build per-element `{id}_shadow` filters identically.
+     * @param {Element} elem
      * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
+     * @param {BatchCommand} batchCmd
      */
-    const setShadow = (params) => {
-      const elem = svgCanvas.getSelectedElements()[0]
+    const applyShadowToElement = (elem, params, batchCmd) => {
       if (!elem) return
+      const elemId = elem.id
 
       // Length is the on/off control: a zero-length shadow means "no shadow",
       // so route it through the removal path instead of creating an invisible
@@ -131,9 +135,6 @@ export default {
       if (!params.remove && Number(params.length) === 0) {
         params = { remove: true }
       }
-
-      const elemId = elem.id
-      const batchCmd = new BatchCommand('Set shadow')
 
       // --- Remove path ---
       if (params.remove) {
@@ -152,9 +153,6 @@ export default {
           } else {
             elem.removeAttribute('filter')
           }
-        }
-        if (!batchCmd.isEmpty()) {
-          svgCanvas.addCommandToHistory(batchCmd)
         }
         return
       }
@@ -197,7 +195,7 @@ export default {
         filter.append(dropShadowEl)
         svgCanvas.findDefs().append(filter)
         batchCmd.addSubCommand(new InsertElementCommand(filter))
-        svgCanvas.changeSelectedAttributeNoUndo('filter', `url(#${elemId}_shadow)`)
+        elem.setAttribute('filter', `url(#${elemId}_shadow)`)
       } else {
         // Update existing filter in-place
         const ds = filter.querySelector('feDropShadow')
@@ -217,10 +215,29 @@ export default {
         }
         setFilterRegion(filter, elem, length, blur)
       }
+    }
 
+    /**
+     * Apply/update/remove the shadow on the current selection, committing the
+     * change as one undo step. Thin wrapper over {@link applyShadowToElement}.
+     * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
+     */
+    const setShadow = (params) => {
+      const elem = svgCanvas.getSelectedElements()[0]
+      if (!elem) return
+      const batchCmd = new BatchCommand('Set shadow')
+      applyShadowToElement(elem, params, batchCmd)
       if (!batchCmd.isEmpty()) {
         svgCanvas.addCommandToHistory(batchCmd)
       }
+    }
+
+    // Expose a minimal shadow API so other subsystems (e.g. the class library)
+    // can read an element's shadow parameters and stamp them onto other
+    // elements without duplicating the filter-construction logic.
+    svgEditor.shadowApi = {
+      read: getShadowFromElement,
+      apply: applyShadowToElement
     }
 
     /**

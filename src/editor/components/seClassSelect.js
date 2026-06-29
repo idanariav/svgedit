@@ -390,6 +390,12 @@ class SeClassSelect extends HTMLElement {
       if (Object.keys(oldAttrs).length) {
         batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
       }
+      // A captured drop shadow can't be stamped as a flat attribute — rebuild a
+      // per-element `{id}_shadow` filter via the shadow extension's API, adding
+      // its undo subcommands to this same batch.
+      if (preset?.shadow && svgEditor.shadowApi) {
+        svgEditor.shadowApi.apply(elem, preset.shadow, batch)
+      }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
     // Refresh the panels so the stamped fill/size/etc. are reflected. These
@@ -443,6 +449,29 @@ class SeClassSelect extends HTMLElement {
       row.append(cb, nameEl, valEl)
       this.$checklist.append(row)
     })
+
+    // Drop shadow is captured as structured params, not a flat attribute, so it
+    // gets a dedicated row — shown only when there is a shadow to capture (on
+    // the element or already on the preset being edited).
+    const shadowApi = svgEditor.shadowApi
+    const elemShadow = shadowApi?.read(elem)
+    const presetShadow = editing?.shadow
+    const shadow = elemShadow || presetShadow
+    if (shadow) {
+      const row = document.createElement('label')
+      row.className = 'checkrow'
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.dataset.shadow = 'true'
+      cb.checked = true
+      const nameEl = document.createElement('span')
+      nameEl.textContent = 'shadow'
+      const valEl = document.createElement('span')
+      valEl.className = 'val'
+      valEl.textContent = `∠${shadow.angle} L${shadow.length}`
+      row.append(cb, nameEl, valEl)
+      this.$checklist.append(row)
+    }
   }
 
   save () {
@@ -460,13 +489,21 @@ class SeClassSelect extends HTMLElement {
       const v = elem.getAttribute(attr) ?? this._editingPreset?.attrs?.[attr]
       if (v != null) attrs[attr] = v
     })
+    // Capture the drop shadow (structured params) when its row is checked,
+    // reading live values off the element or falling back to the edited preset.
+    const shadowCb = this.$checklist.querySelector('input[data-shadow]')
+    const shadow = shadowCb?.checked
+      ? (svgEditor.shadowApi?.read(elem) || this._editingPreset?.shadow)
+      : undefined
     const existing = getClass(name)
     if (existing && this._editingPreset?.name !== name) {
       if (!window.confirm(`A class named "${name}" already exists. Overwrite it?`)) {
         return
       }
     }
-    saveClass({ name, scope, attrs })
+    const preset = { name, scope, attrs }
+    if (shadow) preset.shadow = shadow
+    saveClass(preset)
     this.closeSave()
     // Tag the source object with the new class (a no-op on its attributes) so
     // the dropdown reflects it and panels refresh.
