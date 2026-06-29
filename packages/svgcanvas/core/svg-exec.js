@@ -67,10 +67,14 @@ export const init = canvas => {
       }
     })
 
-    // Move out of in-group editing mode
-    if (svgCanvas.getCurrentGroup()) {
+    // Move out of in-group editing mode. Capture the group first: leaveContext()
+    // nulls currentGroup, so reading getCurrentGroup() afterwards would pass
+    // [null] to selectOnly — silently emptying the selection without firing
+    // 'selected', desyncing the editor's selectedElement from the canvas.
+    const groupToReselect = svgCanvas.getCurrentGroup()
+    if (groupToReselect) {
       svgCanvas.leaveContext()
-      svgCanvas.selectOnly([svgCanvas.getCurrentGroup()])
+      svgCanvas.selectOnly([groupToReselect])
     }
 
     const nakedSvgs = []
