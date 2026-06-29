@@ -102,7 +102,7 @@
 
 | Folder | Adds |
 |--------|------|
-| `ext-connector/` | Connector/arrow lines between objects; straight/elbow routing + leader-line preset (`#connector_panel`) |
+| `ext-connector/` | Line-binding engine for the Line tool: binds line endpoints to shapes (`se:bind-start`/`se:bind-end`) and tracks them on move. Alt = free endpoint. Recognises legacy `se:connector` polylines |
 | `ext-eyedropper/` | Eyedropper color-pick tool |
 | `ext-grid/` | Grid overlay + snap |
 | `ext-layer_view/` | Layer visualization |

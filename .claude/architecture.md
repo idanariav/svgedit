@@ -57,7 +57,7 @@ svgedit/
 │   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)
 │   │
 │   ├── extensions/                # Optional plugin modules (see extensions.md)
-│   │   ├── ext-connector/         # Connector/arrow tool for diagrams
+│   │   ├── ext-connector/         # Line-binding engine behind the Line tool (endpoint↔shape binding)
 │   │   ├── ext-eyedropper/        # Pick color/style from canvas element
 │   │   ├── ext-grid/              # Grid overlay + snap-to-grid
 │   │   ├── ext-layer_view/        # Layer visualization

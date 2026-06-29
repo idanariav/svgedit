@@ -84,7 +84,7 @@ runtime `import(`./locale/${lang}.js`)` any more.
 
 | Extension folder | What it adds | Key file |
 |-----------------|--------------|---------|
-| `ext-connector` | Connector lines that auto-update when objects move; straight/elbow routing toggle + leader-line preset (`#connector_panel`, `se:conn_mode`); excludes connectors from group ops | `ext-connector.js` |
+| `ext-connector` | Line-binding engine behind the core **Line tool** (no button/mode of its own). Lets a drawn `<line>` bind either endpoint to a shape (`se:bind-start`/`se:bind-end`); bound endpoints snap to the shape edge and track it when it moves. Auto-binds on release near a shape; **Alt** keeps an endpoint free. Excludes bound lines from group ops. Still recognises legacy `se:connector` polylines (straight/elbow). | `ext-connector.js` |
 | `ext-eyedropper` | Eyedropper tool — click element to copy its fill/stroke/opacity to current style | `ext-eyedropper.js` |
 | `ext-grid` | Grid overlay + snap via `<se-grid-settings>` popover. 5 shapes (square pattern tile; iso/triangle/1pt/2pt-perspective as `<line>`s). Shape-aware snapping (`snapPointToGrid`). Persists via `grid_*` prefs. Exposes `svgEditor.updateGrid` for resize redraws | `ext-grid.js` |
 | `ext-layer_view` | Layer visualization enhancements | `ext-layer_view.js` |

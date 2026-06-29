@@ -1,6 +1,19 @@
 /**
  * @file ext-connector.js
  *
+ * Line-binding engine. Powers the **Line tool**: a line drawn in `line` mode can
+ * have either endpoint independently bound to a shape (auto-binds when released
+ * near one; hold Alt to keep an endpoint free). Bound endpoints track their shape
+ * as it moves/resizes and snap to the shape's edge.
+ *
+ * Binding is stored per-endpoint on the `<line>`:
+ *   se:bind-start = elemId   (start point x1,y1 is bound; absent = free)
+ *   se:bind-end   = elemId   (end point x2,y2 is bound; absent = free)
+ *
+ * Legacy `<polyline>` connectors (se:connector="startId endId", both ends bound,
+ * cardinal/elbow routing) are still recognised so older saved diagrams keep
+ * tracking. New lines use the simpler two-point `<line>` + se:bind-* model.
+ *
  * @license MIT
  *
  * @copyright 2010 Alexis Deveria
@@ -25,16 +38,14 @@ export default {
   async init (S) {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { getElement, $id, $click, addSVGElementsFromJson } = svgCanvas
+    const { getElement, $id, addSVGElementsFromJson } = svgCanvas
     const { svgroot, selectorManager } = S
     const seNs = svgCanvas.getEditorNS()
     await loadExtensionTranslation(svgEditor)
 
     let startX
     let startY
-    let curLine
-    let startElem
-    let endElem
+    let startElem            // shape under the cursor when a line draw began (pending start binding)
 
     let started = false
     let connections = []
@@ -51,34 +62,56 @@ export default {
       [9, 9], [-9, 9], [9, -9], [-9, -9]
     ]
 
+    // ── Binding identity helpers ─────────────────────────────────────────────
+
+    /**
+     * Returns the bound element ids for a connector, normalising the new
+     * per-endpoint `se:bind-*` scheme and the legacy `se:connector` scheme.
+     * @param {Element} el
+     * @returns {{start: string|null, end: string|null}}
+     */
+    const getBindIds = (el) => {
+      const legacy = el.getAttributeNS(seNs, 'connector')
+      if (legacy) {
+        const [s, e] = legacy.split(' ')
+        return { start: s || null, end: e || null }
+      }
+      return {
+        start: el.getAttributeNS(seNs, 'bind-start') || null,
+        end: el.getAttributeNS(seNs, 'bind-end') || null
+      }
+    }
+
+    /** All elements that carry a binding (new lines + legacy polylines). */
+    const getBoundConnectors = () => {
+      const svgContent = svgCanvas.getSvgContent()
+      return Array.from(svgContent.querySelectorAll('line, polyline')).filter((el) => {
+        const { start, end } = getBindIds(el)
+        return start || end
+      })
+    }
+
     // Save the original groupSelectedElements method
     const originalGroupSelectedElements = svgCanvas.groupSelectedElements
 
-    // Override the original groupSelectedElements to exclude connectors
+    // Override the original groupSelectedElements to exclude bound connectors —
+    // grouping a bound line with its target would double-transform it.
     svgCanvas.groupSelectedElements = function (...args) {
-      // Remove connectors from selection
-      svgCanvas.removeFromSelection(svgCanvas.$qa('[id^="conn_"]'))
-
-      // Call the original method
+      svgCanvas.removeFromSelection(getBoundConnectors())
       return originalGroupSelectedElements.apply(this, args)
     }
 
     // Save the original moveSelectedElements method
     const originalMoveSelectedElements = svgCanvas.moveSelectedElements
 
-    // Override the original moveSelectedElements to handle connectors
+    // Override the original moveSelectedElements to keep bound lines in sync.
     svgCanvas.moveSelectedElements = function (...args) {
-      // Call the original method and store its result
       const cmd = originalMoveSelectedElements.apply(this, args)
-
-      // Update connectors
       updateConnectors(svgCanvas.getSelectedElements())
-
-      // Return the result of the original method
       return cmd
     }
 
-    // ── Cardinal-point geometry ──────────────────────────────────────────────
+    // ── Cardinal-point geometry (legacy polyline connectors) ─────────────────
 
     /**
      * Returns the midpoint of the face of `bb` that faces toward (fromX, fromY),
@@ -129,6 +162,8 @@ export default {
         if (!el || el === svgContent || el.tagName === 'svg') return false
         // Exclude our own overlay and connector lines.
         if (el.id?.startsWith('conn_') || el.id?.startsWith('se_conn_')) return false
+        // Lines/polylines are strokes, not bindable shapes — never a target.
+        if (el.tagName === 'line' || el.tagName === 'polyline') return false
         // Must be a descendant of svgcontent (possibly inside a layer <g>).
         let node = el.parentNode
         while (node) {
@@ -149,7 +184,7 @@ export default {
     // ── Hover highlight ──────────────────────────────────────────────────────
 
     /**
-     * Creates the connector hover-highlight overlay in svgroot (above svgcontent).
+     * Creates the hover-highlight overlay in svgroot (above svgcontent).
      * Contains a shape outline rect and four cardinal snap-point circles.
      */
     const createHighlightLayer = () => {
@@ -306,9 +341,6 @@ export default {
      * via the svgroot CTM. Used so mouseMove can call findConnectableAt.
      */
     const svgContentToScreen = (svgX, svgY) => {
-      // svgcontent may be offset within svgroot (x/y attrs on the nested <svg>).
-      // The safest route: create a temporary SVG point on svgcontent and transform
-      // it through the whole chain to screen space.
       const svgContent = svgCanvas.getSvgContent()
       const ctm = svgContent.getScreenCTM()
       if (!ctm) return { x: svgX, y: svgY }
@@ -319,12 +351,11 @@ export default {
       return { x: r.x, y: r.y }
     }
 
-
-    // ── Legacy geometry (kept for elbow mode) ────────────────────────────────
+    // ── Edge-intersection geometry ───────────────────────────────────────────
 
     /**
      * getBBintersect — finds the intersection of the line from bb-center to (x,y)
-     * with the bounding box perimeter. Still used by elbow mode.
+     * with the bounding box perimeter, optionally inflated by `offset`.
      * @param {Float} x
      * @param {Float} y
      * @param {module:utilities.BBoxObject} bb
@@ -369,25 +400,19 @@ export default {
 
     /**
      * getOffset
-     * @param {"start"|"end"} side - The side of the line ("start" or "end") where the marker may be present.
+     * @param {"start"|"end"} side - The side of the line where a marker may be present.
      * @param {Element} line - The line element to check for a marker.
-     * @returns {Float} - Returns the calculated offset if a marker is present, otherwise returns 0.
+     * @returns {Float} - The endpoint offset if a marker is present, else 0.
      */
     const getOffset = (side, line) => {
-      // Check for marker attribute on the given side ("marker-start" or "marker-end")
       const hasMarker = line.getAttribute('marker-' + side)
-
-      // Calculate size based on stroke-width, multiplied by a constant factor (here, 5)
-      // TODO: This factor should ideally be based on the actual size of the marker.
+      // TODO: This factor should ideally be based on the actual marker size.
       const size = line.getAttribute('stroke-width') * 5
-
-      // Return calculated size if marker is present, otherwise return 0.
       return hasMarker ? size : 0
     }
 
     /**
-     * getConnMode
-     * Reads the routing mode stored on a connector (se:conn_mode).
+     * getConnMode — reads the routing mode stored on a legacy connector.
      * @param {Element} line - The connector polyline.
      * @returns {"straight"|"elbow"} Defaults to "straight".
      */
@@ -396,14 +421,7 @@ export default {
     }
 
     /**
-     * computeConnectorPoints
-     * Builds the full ordered point list for a connector based on its routing mode.
-     *
-     * Straight mode: exits from the cardinal face (N/S/E/W midpoint) of each shape,
-     * giving clean orthogonal exits instead of arbitrary edge intersections.
-     *
-     * Elbow mode: 4-point orthogonal "Z" route between facing box sides (unchanged).
-     *
+     * computeConnectorPoints — point list for a legacy `<polyline>` connector.
      * @param {module:utilities.BBoxObject} startBB
      * @param {module:utilities.BBoxObject} endBB
      * @param {Element} line - The connector polyline (for mode + marker offsets).
@@ -414,14 +432,12 @@ export default {
       const ec = { x: endBB.x + endBB.width / 2, y: endBB.y + endBB.height / 2 }
 
       if (getConnMode(line) === 'elbow') {
-        // Push attach points outward by half the marker offset so arrowheads clear the box.
         const offS = getOffset('start', line) / 2
         const offE = getOffset('end', line) / 2
         const dx = ec.x - sc.x
         const dy = ec.y - sc.y
         let sPt, ePt
         if (Math.abs(dx) >= Math.abs(dy)) {
-          // Horizontal-dominant: attach on the left/right faces.
           if (dx >= 0) {
             sPt = { x: startBB.x + startBB.width + offS, y: sc.y }
             ePt = { x: endBB.x - offE, y: ec.y }
@@ -430,10 +446,8 @@ export default {
             ePt = { x: endBB.x + endBB.width + offE, y: ec.y }
           }
           const midX = (sPt.x + ePt.x) / 2
-          // Note: elbow routes carry two interior vertices, so marker-mid renders at both bends.
           return [sPt, { x: midX, y: sPt.y }, { x: midX, y: ePt.y }, ePt]
         }
-        // Vertical-dominant: attach on the top/bottom faces.
         if (dy >= 0) {
           sPt = { x: sc.x, y: startBB.y + startBB.height + offS }
           ePt = { x: ec.x, y: endBB.y - offE }
@@ -445,16 +459,14 @@ export default {
         return [sPt, { x: sPt.x, y: midY }, { x: ePt.x, y: midY }, ePt]
       }
 
-      // Straight mode: use cardinal face midpoints for clean N/S/E/W exits.
-      // The start exits from the face nearest to the end, and vice-versa.
+      // Straight mode: cardinal face midpoints for clean N/S/E/W exits.
       const sPt = getCardinalPoint(ec.x, ec.y, startBB, getOffset('start', line))
       const ePt = getCardinalPoint(sc.x, sc.y, endBB, getOffset('end', line))
       return [sPt, { x: (sPt.x + ePt.x) / 2, y: (sPt.y + ePt.y) / 2 }, ePt]
     }
 
     /**
-     * routeConnector
-     * Recomputes and writes a connector's full geometry from both bounding boxes.
+     * routeConnector — recompute a legacy polyline's geometry from both bboxes.
      * @param {Element} line - The connector polyline.
      * @param {module:utilities.BBoxObject} startBB
      * @param {module:utilities.BBoxObject} endBB
@@ -467,215 +479,129 @@ export default {
     }
 
     /**
-     * showPanel
-     * @param {boolean} on - Determines whether to show or hide the elements.
-     * @param {Element} [elem] - The selected connector, used to sync the routing toggle.
+     * routeLineBinding — snaps a two-point `<line>`'s bound endpoint(s) to the
+     * edge of their target shape. A bound endpoint aims at the opposite endpoint
+     * (or, if that end is also bound, at the opposite shape's centre). Free
+     * endpoints are left untouched.
+     * @param {Element} line
      * @returns {void}
      */
-    const showPanel = (on, elem) => {
-      // Find the 'connector_rules' or create it if it doesn't exist.
-      let connRules = $id('connector_rules')
-      if (!connRules) {
-        connRules = document.createElement('style')
-        connRules.setAttribute('id', 'connector_rules')
-        document.getElementsByTagName('head')[0].appendChild(connRules)
-      }
-
-      // Update the content of <style> element to either hide or show certain elements.
-      connRules.textContent = !on
-        ? ''
-        : '#tool_clone, #tool_topath, #tool_angle, #xy_panel { display: none !important; }'
-
-      // Update the display property of the <style> element itself based on the 'on' value.
-      if ($id('connector_rules')) {
-        $id('connector_rules').style.display = on ? 'block' : 'none'
-      }
-
-      // Toggle the connector context panel (routing + leader) and sync its state.
-      const panel = $id('connector_panel')
-      if (panel) {
-        panel.style.display = on ? 'block' : 'none'
-        if (on && elem) {
-          const elbow = getConnMode(elem) === 'elbow'
-          $id('connroute_straight').pressed = !elbow
-          $id('connroute_elbow').pressed = elbow
-        }
-      }
-    }
-
-    /**
-     * setRouting
-     * Changes the routing mode of the selected connector and re-flows it.
-     * @param {"straight"|"elbow"} mode
-     * @returns {void}
-     */
-    const setRouting = (mode) => {
-      const sel = svgCanvas.getSelectedElements()[0]
-      if (!sel?.id?.startsWith('conn_')) return
+    const routeLineBinding = (line) => {
       const dataStorage = svgCanvas.getDataStorage()
-      sel.setAttributeNS(seNs, 'se:conn_mode', mode)
-      routeConnector(sel, dataStorage.get(sel, 'start_bb'), dataStorage.get(sel, 'end_bb'))
-      $id('connroute_straight').pressed = (mode !== 'elbow')
-      $id('connroute_elbow').pressed = (mode === 'elbow')
-      svgCanvas.call('changed', [sel])
+      const { start: sId, end: eId } = getBindIds(line)
+      const startBB = sId ? dataStorage.get(line, 'start_bb') : null
+      const endBB = eId ? dataStorage.get(line, 'end_bb') : null
+      if (!startBB && !endBB) return
+
+      let x1 = Number(line.getAttribute('x1'))
+      let y1 = Number(line.getAttribute('y1'))
+      let x2 = Number(line.getAttribute('x2'))
+      let y2 = Number(line.getAttribute('y2'))
+
+      // Aim each bound endpoint toward the opposite end.
+      const startAim = endBB
+        ? { x: endBB.x + endBB.width / 2, y: endBB.y + endBB.height / 2 }
+        : { x: x2, y: y2 }
+      const endAim = startBB
+        ? { x: startBB.x + startBB.width / 2, y: startBB.y + startBB.height / 2 }
+        : { x: x1, y: y1 }
+
+      if (startBB) {
+        const p = getBBintersect(startAim.x, startAim.y, startBB, getOffset('start', line))
+        x1 = p.x; y1 = p.y
+        line.setAttribute('x1', x1)
+        line.setAttribute('y1', y1)
+      }
+      if (endBB) {
+        const p = getBBintersect(endAim.x, endAim.y, endBB, getOffset('end', line))
+        x2 = p.x; y2 = p.y
+        line.setAttribute('x2', x2)
+        line.setAttribute('y2', y2)
+      }
     }
 
-    /**
-     * applyLeaderPreset
-     * Restyles the selected connector as a thin leader-line callout: a slim
-     * stroke with a small filled dot at the target (end). Reuses ext-markers
-     * for the dot rather than duplicating marker creation.
-     * @returns {void}
-     */
-    const applyLeaderPreset = () => {
-      const sel = svgCanvas.getSelectedElements()[0]
-      if (!sel?.id?.startsWith('conn_')) return
-      // Thin the stroke - marker size is strokeWidth-relative so the dot shrinks too.
-      svgCanvas.changeSelectedAttribute('stroke-width', 1)
-      // Reuse the ext-markers picker to place a small filled dot at the target end.
-      const endList = $id('end_marker_list_opts')
-      if (endList) {
-        endList.setAttribute('value', 'mcircle')
-        endList.dispatchEvent(new CustomEvent('change', { detail: { value: 'mcircle' } }))
-      }
-      svgCanvas.call('changed', [sel])
-    }
-
-    /**
-     * setPoint
-     * @param {Element} elem - The SVG element.
-     * @param {Integer|"end"} pos - The position index or "end".
-     * @param {Float} x - The x-coordinate.
-     * @param {Float} y - The y-coordinate.
-     * @param {boolean} [setMid] - Whether to set the midpoint.
-     * @returns {void}
-     */
-    const setPoint = (elem, pos, x, y, setMid) => {
-      // Create a new SVG point
-      const pts = elem.points
-      const pt = svgroot.createSVGPoint()
-      pt.x = x
-      pt.y = y
-
-      // If position is "end", set it to the last index
-      if (pos === 'end') {
-        pos = pts.numberOfItems - 1
-      }
-
-      // Try replacing the point at the specified position
-      pts.replaceItem(pt, pos)
-
-      // Optionally, set the midpoint
-      if (setMid) {
-        const ptStart = pts.getItem(0)
-        const ptEnd = pts.getItem(pts.numberOfItems - 1)
-        setPoint(elem, 1, (ptEnd.x + ptStart.x) / 2, (ptEnd.y + ptStart.y) / 2)
+    /** Re-routes any connector (new line or legacy polyline) from cached bboxes. */
+    const routeAny = (line) => {
+      if (line.tagName === 'line') {
+        routeLineBinding(line)
+      } else {
+        const dataStorage = svgCanvas.getDataStorage()
+        routeConnector(line, dataStorage.get(line, 'start_bb'), dataStorage.get(line, 'end_bb'))
       }
     }
 
     /**
+     * updateLine — live-drag update (select mode). Shifts each tracked endpoint's
+     * cached bbox by the drag delta and re-routes.
      * @param {Float} diffX
      * @param {Float} diffY
      * @returns {void}
      */
-    const updatePoints = (line, conn, bb, altBB) => {
-      const startBB = conn.is_start ? bb : altBB
-      const endBB = conn.is_start ? altBB : bb
-      routeConnector(line, startBB, endBB)
-    }
-
     const updateLine = (diffX, diffY) => {
       const dataStorage = svgCanvas.getDataStorage()
-
       for (const conn of connections) {
-        const {
-          connector: line,
-          is_start: isStart,
-          start_x: startX,
-          start_y: startY
-        } = conn
-
+        const { connector: line, is_start: isStart, start_x: sx, start_y: sy } = conn
         const pre = isStart ? 'start' : 'end'
-        const altPre = isStart ? 'end' : 'start'
-
-        // Update bbox for this element
         const bb = { ...dataStorage.get(line, `${pre}_bb`) }
-        bb.x = startX + diffX
-        bb.y = startY + diffY
-
+        bb.x = sx + diffX
+        bb.y = sy + diffY
         dataStorage.put(line, `${pre}_bb`, bb)
-
-        // Get center point of connected element
-        const altBB = dataStorage.get(line, `${altPre}_bb`)
-
-        updatePoints(line, conn, bb, altBB, pre, altPre)
+        if (line.tagName === 'line') {
+          routeLineBinding(line)
+        } else {
+          const altPre = isStart ? 'end' : 'start'
+          const altBB = dataStorage.get(line, `${altPre}_bb`)
+          routeConnector(line, isStart ? bb : altBB, isStart ? altBB : bb)
+        }
       }
     }
 
-    // Finds connectors associated with selected elements
+    /**
+     * findConnectors — collects { connector, bound element, is_start } records
+     * for every connector whose bound element is in (or a descendant of) `elems`.
+     * Free endpoints are skipped. Caches c_start/c_end + bboxes in dataStorage.
+     * @param {Element[]} [elems]
+     * @returns {void}
+     */
     const findConnectors = (elems = []) => {
-      // Fetch data storage object from svgCanvas
       const dataStorage = svgCanvas.getDataStorage()
-
-      // Query all connector elements (id starts with conn_)
-      const connectors = svgCanvas.$qa('[id^="conn_"]')
-      // Reset connections array
+      const connectors = getBoundConnectors()
       connections = []
 
-      // Loop through each connector
       for (const connector of connectors) {
-        let addThis = false // Flag to indicate whether to add this connector
-        const parts = [] // To hold the starting and ending elements connected by the connector
+        const ids = getBindIds(connector)
+        const idArr = [ids.start, ids.end]
+        const parts = []
 
-        // Loop through the connector ends ("start" and "end")
         for (const [i, pos] of ['start', 'end'].entries()) {
-          // Fetch connected element and its bounding box
-          let part = dataStorage.get(connector, `c_${pos}`)
+          const boundId = idArr[i]
+          if (!boundId) { parts.push(null); continue } // free end
 
-          // If part is null or undefined, fetch it and store it
+          let part = dataStorage.get(connector, `c_${pos}`)
           if (!part) {
-            part = svgCanvas.$id(
-              connector.attributes['se:connector'].value.split(' ')[i]
-            )
-            dataStorage.put(connector, `c_${pos}`, part.id)
-            dataStorage.put(
-              connector,
-              `${pos}_bb`,
-              svgCanvas.getStrokedBBox([part])
-            )
+            part = svgCanvas.$id(boundId)
+            if (part) {
+              dataStorage.put(connector, `c_${pos}`, part.id)
+              dataStorage.put(connector, `${pos}_bb`, svgCanvas.getStrokedBBox([part]))
+            }
           } else {
-            // If part is already stored, fetch it by ID
             part = svgCanvas.$id(part)
           }
-
-          // Add the part to the parts array
           parts.push(part)
         }
 
-        // Loop through the starting and ending elements connected by the connector
         for (let i = 0; i < 2; i++) {
           const cElem = parts[i]
-          const parents = svgCanvas.getParents(cElem?.parentNode)
+          if (!cElem || !cElem.parentNode) continue // free or removed end
 
-          // Check if the element is part of a selected group
+          let addThis = false
+          const parents = svgCanvas.getParents(cElem.parentNode)
           for (const el of parents) {
-            if (elems.includes(el)) {
-              addThis = true
-              break
-            }
+            if (elems.includes(el)) { addThis = true; break }
           }
 
-          // If element is missing or parent is null, remove the connector
-          if (!cElem || !cElem.parentNode) {
-            connector.remove()
-            continue
-          }
-
-          // If element is in the selection or part of a selected group
           if (elems.includes(cElem) || addThis) {
             const bb = svgCanvas.getStrokedBBox([cElem])
-
-            // Add connection information to the connections array
             connections.push({
               elem: cElem,
               connector,
@@ -689,72 +615,57 @@ export default {
     }
 
     /**
-     * Updates the connectors based on selected elements.
-     * @param {Element[]} [elems] - Optional array of selected elements.
+     * updateConnectors — re-route every connector bound to one of `elems`.
+     * @param {Element[]} [elems]
      * @returns {void}
      */
-    const updateConnectors = elems => {
+    const updateConnectors = (elems) => {
       const dataStorage = svgCanvas.getDataStorage()
-
-      // Find connectors associated with selected elements
       findConnectors(elems)
+      if (!connections.length) return
 
-      if (connections.length) {
-        // Iterate through each connection to update its state
-        for (const conn of connections) {
-          const {
-            elem,
-            connector: line,
-            is_start: isStart,
-            start_x: startX,
-            start_y: startY
-          } = conn
+      for (const conn of connections) {
+        const { elem, connector: line, is_start: isStart, start_x: sx, start_y: sy } = conn
+        const pre = isStart ? 'start' : 'end'
+        const bb = svgCanvas.getStrokedBBox([elem])
+        bb.x = sx
+        bb.y = sy
+        dataStorage.put(line, `${pre}_bb`, bb)
 
-          // Determine whether the connection starts or ends with this element
-          const pre = isStart ? 'start' : 'end'
-
-          // Update the bounding box for this element
-          const bb = svgCanvas.getStrokedBBox([elem])
-          bb.x = startX
-          bb.y = startY
-          dataStorage.put(line, `${pre}_bb`, bb)
-
-          // Determine the opposite end ('start' or 'end') of the connection
+        if (line.tagName === 'line') {
+          routeLineBinding(line)
+        } else {
           const altPre = isStart ? 'end' : 'start'
-
-          // Retrieve the bounding box for the connected element at the opposite end
           const bb2 = dataStorage.get(line, `${altPre}_bb`)
-
-          // Recompute the whole route from both bounding boxes (handles straight + elbow)
-          const startBB = isStart ? bb : bb2
-          const endBB = isStart ? bb2 : bb
-          routeConnector(line, startBB, endBB)
+          routeConnector(line, isStart ? bb : bb2, isStart ? bb2 : bb)
         }
       }
     }
 
     /**
-     * Do on reset.
+     * reset — populate dataStorage for every bound connector after a load/reset
+     * so tracking works immediately on a reopened document.
      * @returns {void}
      */
     const reset = () => {
       const dataStorage = svgCanvas.getDataStorage()
-      // Make sure all connectors have data set
-      const svgContent = svgCanvas.getSvgContent()
-      const elements = svgContent.querySelectorAll('*')
-      elements.forEach(element => {
-        const conn = element.getAttributeNS(seNs, 'connector')
-        if (conn) {
-          const connData = conn.split(' ')
-          const sbb = svgCanvas.getStrokedBBox([getElement(connData[0])])
-          const ebb = svgCanvas.getStrokedBBox([getElement(connData[1])])
-          dataStorage.put(element, 'c_start', connData[0])
-          dataStorage.put(element, 'c_end', connData[1])
-          dataStorage.put(element, 'start_bb', sbb)
-          dataStorage.put(element, 'end_bb', ebb)
-          svgCanvas.getEditorNS(true)
+      for (const connector of getBoundConnectors()) {
+        const { start, end } = getBindIds(connector)
+        if (start) {
+          const el = getElement(start)
+          if (el) {
+            dataStorage.put(connector, 'c_start', start)
+            dataStorage.put(connector, 'start_bb', svgCanvas.getStrokedBBox([el]))
+          }
         }
-      })
+        if (end) {
+          const el = getElement(end)
+          if (el) {
+            dataStorage.put(connector, 'c_end', end)
+            dataStorage.put(connector, 'end_bb', svgCanvas.getStrokedBBox([el]))
+          }
+        }
+      }
     }
 
     reset()
@@ -762,51 +673,15 @@ export default {
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
-        // Add the button and its handler(s)
-        const buttonTemplate = document.createElement('template')
-        const title = `${name}:buttons.0.title`
-        buttonTemplate.innerHTML = `
-         <se-button id="tool_connect" title="${title}" src="conn.svg"></se-button>
-         `
-        $id('tools_left').append(buttonTemplate.content.cloneNode(true))
-        $click($id('tool_connect'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_connect')) {
-            svgCanvas.setMode('connector')
-          }
-        })
-
-        // Add the connector context panel (routing toggle + leader preset) as a
-        // Design-tab side-panel section, shown only when a connector is selected.
-        const panelTemplate = document.createElement('template')
-        panelTemplate.innerHTML = `
-          <div id="connector_panel" class="sidepanel_section" style="display:none">
-            <div class="sidepanel_section_label">Connector</div>
-            <div class="sidepanel_btn_row">
-              <se-button id="connroute_straight" title="${name}:routing.straight" src="conn_straight.svg"></se-button>
-              <se-button id="connroute_elbow" title="${name}:routing.elbow" src="conn_elbow.svg"></se-button>
-              <se-button id="connleader" title="${name}:routing.leader" src="conn_leader.svg"></se-button>
-            </div>
-          </div>
-        `
-        const designTab = $id('tab_design')
-        if (designTab) {
-          designTab.appendChild(panelTemplate.content)
-        } else {
-          $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
-        }
-        $click($id('connroute_straight'), () => setRouting('straight'))
-        $click($id('connroute_elbow'), () => setRouting('elbow'))
-        $click($id('connleader'), () => applyLeaderPreset())
-
         // Create the SVG hover-highlight overlay (outline + snap dots).
         createHighlightLayer()
 
         // Pre-draw hover highlight: the extension's mouseMove hook only fires
         // while the mouse button is held, so we attach a direct DOM listener
-        // on the workarea for idle hover detection.
+        // on the workarea for idle hover detection in line mode.
         const workarea = document.querySelector('#workarea') || $id('svgcanvas')
         workarea?.addEventListener('mousemove', (e) => {
-          if (svgCanvas.getMode() !== 'connector' || started) return
+          if (svgCanvas.getMode() !== 'line' || started) return
           const hovered = findConnectableAt(e.clientX, e.clientY)
           if (hovered === currentHoverElem) {
             if (hovered) updateSnapHighlight(e.clientX, e.clientY, hovered)
@@ -818,97 +693,35 @@ export default {
         })
       },
       mouseDown (opts) {
-        // Retrieve necessary data from the SVG canvas and the event object
-        const dataStorage = svgCanvas.getDataStorage()
-        const { event: e, start_x: sX, start_y: sY } = opts
+        const { event: e } = opts
         const mode = svgCanvas.getMode()
-        const {
-          curConfig: { initStroke }
-        } = svgEditor.configObj
 
-        if (mode === 'connector') {
-          // Return if the line is already started
-          if (started) return undefined
-
-          // Use proximity detection instead of bare e.target so overlays don't
-          // block binding. Scans a ring of offsets around the cursor.
-          startElem = findConnectableAt(e.clientX, e.clientY)
-          if (!startElem) return undefined
-
-          // Retrieve the bounding box and calculate the center of the start element
-          const bb = svgCanvas.getStrokedBBox([startElem])
-          const x = bb.x + bb.width / 2
-          const y = bb.y + bb.height / 2
-
-          // Set the flag to indicate the line has started
+        if (mode === 'line') {
+          // Core creates the <line>; we only record which shape (if any) the
+          // start point landed on, for binding at mouseUp.
           started = true
-
-          // Hide hover highlight while drawing
+          startElem = findConnectableAt(e.clientX, e.clientY)
           hideHoverHighlight()
-
-          // Create a new polyline element
-          curLine = addSVGElementsFromJson({
-            element: 'polyline',
-            attr: {
-              id: 'conn_' + svgCanvas.getNextId(),
-              points: `${x},${y} ${x},${y} ${sX},${sY}`,
-              stroke:
-                initStroke.color === 'none'
-                  ? 'none'
-                  : `#${initStroke.color}`,
-              'stroke-width':
-                !startElem.stroke_width || startElem.stroke_width === 0
-                  ? initStroke.width
-                  : startElem.stroke_width,
-              fill: 'none',
-              opacity: initStroke.opacity,
-              style: 'pointer-events:none'
-            }
-          })
-
-          // Store the bounding box of the start element
-          dataStorage.put(curLine, 'start_bb', bb)
-
-          return {
-            started: true
-          }
+          return undefined
         }
 
         if (mode === 'select') {
-          // Record drag-start mouse position so mouseMove can compute the correct
-          // delta (diffX = current - startX). Without this, startX/startY hold stale
-          // values from the last connector draw and updateLine routes to the wrong place.
-          startX = sX
-          startY = sY
+          // Record drag-start so the select-mode mouseMove computes the right delta.
+          startX = opts.start_x
+          startY = opts.start_y
           findConnectors(opts.selectedElements)
         }
-
         return undefined
       },
       mouseMove (opts) {
-        const dataStorage = svgCanvas.getDataStorage()
         const zoom = svgCanvas.getZoom()
         const x = opts.mouse_x / zoom
         const y = opts.mouse_y / zoom
         const mode = svgCanvas.getMode()
 
-        if (mode === 'connector') {
-          if (started && curLine) {
-            // Live-update the connector endpoint so the line follows the cursor.
-            // This was previously gated behind connections.length === 0 which
-            // made the line invisible during drag.
-            const startBB = dataStorage.get(curLine, 'start_bb')
-            if (startBB) {
-              const pt = getBBintersect(x, y, startBB, getOffset('start', curLine))
-              startX = pt.x
-              startY = pt.y
-              setPoint(curLine, 0, pt.x, pt.y, true)
-            }
-            setPoint(curLine, 'end', x, y, true)
-
-            // Show snap highlight on the potential end target (not the start shape).
-            // Convert svgcontent coords to screen so findConnectableAt and the
-            // highlight functions all work in the same coordinate space.
+        if (mode === 'line') {
+          if (started) {
+            // Highlight the shape the end point would bind to.
             const screenPt = svgContentToScreen(x, y)
             const candidate = findConnectableAt(screenPt.x, screenPt.y)
             const hovered = (candidate && candidate !== startElem) ? candidate : null
@@ -920,16 +733,14 @@ export default {
               updateSnapHighlight(screenPt.x, screenPt.y, hovered)
             }
           }
-          // Pre-draw hover is handled by the direct DOM listener in callback().
           return
         }
 
-        // SELECT mode: update connectors when bound elements are being dragged.
-        // The guard is now scoped to this branch only so connector drawing is
-        // never blocked by an empty connections array.
+        // SELECT mode: update bound lines while their shapes are dragged.
         if (!connections.length) return
         if (!startX || !startY) return
 
+        const dataStorage = svgCanvas.getDataStorage()
         const diffX = x - startX
         const diffY = y - startY
 
@@ -939,165 +750,91 @@ export default {
             elem.transform.baseVal.clear()
           }
         }
-        if (connections.length) {
-          updateLine(diffX, diffY)
-        }
+        if (connections.length) updateLine(diffX, diffY)
       },
       mouseUp (opts) {
-        // Get necessary data and initial setups
-        const dataStorage = svgCanvas.getDataStorage()
-        const { event: e } = opts
-
-        // Early exit if not in connector mode
-        if (svgCanvas.getMode() !== 'connector') return undefined
-
-        // Use proximity detection for the end element.
-        const endCandidate = findConnectableAt(e.clientX, e.clientY)
-
-        if (endCandidate === startElem) {
-          // Released on the start shape: stay in "started" state for two-click mode.
-          started = true
-          return {
-            keep: true,
-            element: null,
-            started
-          }
-        }
-
-        if (!endCandidate) {
-          // Released on empty canvas: cancel the connector.
-          curLine?.remove()
-          started = false
-          hideHoverHighlight()
-          return {
-            keep: false,
-            element: null,
-            started: false
-          }
-        }
-
-        // Valid end element
-        endElem = endCandidate
-
-        const startId = startElem?.id || ''
-        const endId = endElem?.id || ''
-        const connStr = `${startId} ${endId}`
-        const altStr = `${endId} ${startId}`
-
-        // Prevent duplicate connectors
-        const dupe = Array.from(
-          svgCanvas.$qa('[id^="conn_"]')
-        ).filter(
-          conn =>
-            conn.getAttributeNS(seNs, 'connector') === connStr ||
-            conn.getAttributeNS(seNs, 'connector') === altStr
-        )
-
-        if (dupe.length) {
-          curLine.remove()
-          started = false
-          hideHoverHighlight()
-          return {
-            keep: false,
-            element: null,
-            started: false
-          }
-        }
-
-        // Save metadata to the connector
-        const bb = svgCanvas.getStrokedBBox([endElem])
-        dataStorage.put(curLine, 'c_start', startId)
-        dataStorage.put(curLine, 'c_end', endId)
-        dataStorage.put(curLine, 'end_bb', bb)
-        curLine.setAttributeNS(seNs, 'se:connector', connStr)
-
-        // Route the finalized connector from both bounding boxes
-        routeConnector(curLine, dataStorage.get(curLine, 'start_bb'), bb)
-        curLine.setAttribute('opacity', 1)
-
-        // Finalize the connector
-        svgCanvas.addToSelection([curLine])
-        svgCanvas.moveToBottomSelectedElement()
-        selectorManager.requestSelector(curLine).showGrips(false)
+        const { event: e, element: line } = opts
+        if (svgCanvas.getMode() !== 'line') return undefined
 
         started = false
         hideHoverHighlight()
-        return {
-          keep: true,
-          element: curLine,
-          started
+
+        if (!line || line.tagName !== 'line') { startElem = null; return undefined }
+
+        // Alt held → keep both endpoints free regardless of nearby shapes.
+        if (e.altKey) { startElem = null; return undefined }
+
+        const dataStorage = svgCanvas.getDataStorage()
+        const endElem = findConnectableAt(e.clientX, e.clientY)
+        const startBind = (startElem && startElem.parentNode) ? startElem : null
+        const endBind = (endElem && endElem.parentNode && endElem !== startBind) ? endElem : null
+        startElem = null
+
+        let bound = false
+        if (startBind) {
+          line.setAttributeNS(seNs, 'se:bind-start', startBind.id)
+          dataStorage.put(line, 'c_start', startBind.id)
+          dataStorage.put(line, 'start_bb', svgCanvas.getStrokedBBox([startBind]))
+          bound = true
         }
+        if (endBind) {
+          line.setAttributeNS(seNs, 'se:bind-end', endBind.id)
+          dataStorage.put(line, 'c_end', endBind.id)
+          dataStorage.put(line, 'end_bb', svgCanvas.getStrokedBBox([endBind]))
+          bound = true
+        }
+        if (bound) routeLineBinding(line)
+
+        // Leave keep/element to core (a non-zero line is already kept).
+        return undefined
       },
       selectedChanged (opts) {
-        // Get necessary data storage and SVG content
-        const dataStorage = svgCanvas.getDataStorage()
-        const svgContent = svgCanvas.getSvgContent()
-
-        // Always hide the hover overlay when selection changes
         hideHoverHighlight()
+        if (!getBoundConnectors().length) return
 
-        // Exit early if there are no connectors
-        if (!svgContent.querySelectorAll('[id^="conn_"]').length) return
-
-        // If the current mode is 'connector', switch to 'select'
-        if (svgCanvas.getMode() === 'connector') {
-          svgCanvas.setMode('select')
-        }
-
-        // Get currently selected elements
+        const dataStorage = svgCanvas.getDataStorage()
         const { elems: selElems } = opts
 
-        // Iterate through selected elements
+        // Legacy polyline connectors keep their endpoint grips hidden (their
+        // shape is driven by binding). New <line>s behave like normal lines.
         for (const elem of selElems) {
-          // If the element has a connector start, handle it
-          if (elem && dataStorage.has(elem, 'c_start')) {
+          if (elem?.id?.startsWith('conn_') && dataStorage.has(elem, 'c_start')) {
             selectorManager.requestSelector(elem).showGrips(false)
-
-            // Show panel depending on selection state
-            showPanel(opts.selectedElement && !opts.multiselected, elem)
-          } else {
-            // Hide panel if no connector start
-            showPanel(false)
           }
         }
 
-        // Update connectors based on selected elements.
-        // Use opts.elems directly — getSelectedElements() may not yet reflect the
-        // new selection state when this event fires.
         updateConnectors(selElems.filter(Boolean))
       },
       // Fires on every mousemove while elements are being dragged/resized.
-      // This is the primary hook for keeping connectors in sync during interactive drag
-      // because svgCanvas moves elements via SVG transforms (not attribute changes)
-      // and does NOT fire 'changed' on mouseUp for move operations.
+      // Primary hook for keeping bound lines in sync during interactive drag,
+      // because svgCanvas moves elements via SVG transforms (not attribute
+      // changes) and does NOT fire 'changed' on mouseUp for move operations.
       elementTransition (opts) {
-        if (started) return  // don't interfere during connector drawing
+        if (started) return // don't interfere during line drawing
         const elems = opts.elems?.filter(Boolean) || []
         if (elems.length) updateConnectors(elems)
       },
       elementChanged (opts) {
-        // Get the necessary data storage
         const dataStorage = svgCanvas.getDataStorage()
-
-        // Get the first element from the options; exit early if it's null
         let [elem] = opts.elems
         if (!elem) return
 
-        // Reinitialize if it's the main SVG content
+        // Reinitialize on document (re)load.
         if (elem.tagName === 'svg' && elem.id === 'svgcontent') {
           reset()
         }
 
-        // Check for marker attributes and update offsets
+        // Track marker presence for endpoint offsets; convert a line to a
+        // polyline when a mid-marker is applied (SVG <line> has no mid vertex).
         const { markerStart, markerMid, markerEnd } = elem.attributes
         if (markerStart || markerMid || markerEnd) {
-          curLine = elem
           dataStorage.put(elem, 'start_off', Boolean(markerStart))
           dataStorage.put(elem, 'end_off', Boolean(markerEnd))
 
-          // Convert lines to polyline if there's a mid-marker
           if (elem.tagName === 'line' && markerMid) {
             const { x1, x2, y1, y2, id } = elem.attributes
+            const bindStart = elem.getAttributeNS(seNs, 'bind-start')
+            const bindEnd = elem.getAttributeNS(seNs, 'bind-end')
 
             const midPt = `${(Number(x1.value) + Number(x2.value)) / 2},${
               (Number(y1.value) + Number(y2.value)) / 2
@@ -1113,6 +850,9 @@ export default {
                 opacity: elem.getAttribute('opacity') || 1
               }
             })
+            // Preserve per-endpoint bindings across the conversion.
+            if (bindStart) pline.setAttributeNS(seNs, 'se:bind-start', bindStart)
+            if (bindEnd) pline.setAttributeNS(seNs, 'se:bind-end', bindEnd)
 
             elem.insertAdjacentElement('afterend', pline)
             elem.remove()
@@ -1123,12 +863,20 @@ export default {
           }
         }
 
-        // Update connectors based on the current element.
-        // Use the element from opts.elems directly — getSelectedElements() may be empty
-        // by the time this event fires (selection can be cleared before the 'changed' event).
-        if (elem?.id.startsWith('conn_')) {
-          const start = getElement(dataStorage.get(elem, 'c_start'))
-          updateConnectors([start])
+        // If the changed element is itself a connector, re-route it (e.g. a new
+        // marker changed its endpoint offset). Otherwise re-route lines bound to it.
+        const ids = getBindIds(elem)
+        if (ids.start || ids.end) {
+          // Ensure bboxes are cached, then route.
+          if (ids.start && !dataStorage.get(elem, 'start_bb')) {
+            const el = getElement(ids.start)
+            if (el) dataStorage.put(elem, 'start_bb', svgCanvas.getStrokedBBox([el]))
+          }
+          if (ids.end && !dataStorage.get(elem, 'end_bb')) {
+            const el = getElement(ids.end)
+            if (el) dataStorage.put(elem, 'end_bb', svgCanvas.getStrokedBBox([el]))
+          }
+          routeAny(elem)
         } else {
           updateConnectors([elem])
         }
@@ -1136,6 +884,7 @@ export default {
       IDsUpdated (input) {
         const remove = []
         input.elems.forEach(function (elem) {
+          // Legacy both-ends connector attribute.
           if ('se:connector' in elem.attr) {
             elem.attr['se:connector'] = elem.attr['se:connector']
               .split(' ')
@@ -1143,22 +892,19 @@ export default {
                 return input.changes[oldID]
               })
               .join(' ')
-
-            // Check validity - the field would be something like 'svg_21 svg_22', but
-            // if one end is missing, it would be 'svg_21' and therefore fail this test
+            // Drop the connector if one end failed to remap (e.g. 'svg_21 ').
             if (!/. ./.test(elem.attr['se:connector'])) {
               remove.push(elem.attr.id)
             }
           }
+          // New per-endpoint bindings: remap each independently; leave free ends.
+          for (const a of ['se:bind-start', 'se:bind-end']) {
+            if (a in elem.attr && input.changes[elem.attr[a]]) {
+              elem.attr[a] = input.changes[elem.attr[a]]
+            }
+          }
         })
         return { remove }
-      },
-      toolButtonStateUpdate (opts) {
-        const button = svgCanvas.$id('tool_connect')
-        if (opts.nostroke && button.pressed === true) {
-          svgEditor.clickSelect()
-        }
-        button.disabled = opts.nostroke
       }
     }
   }

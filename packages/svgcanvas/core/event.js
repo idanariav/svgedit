@@ -1091,7 +1091,8 @@ const mouseUpEvent = (evt) => {
   const extResult = svgCanvas.runExtensions('mouseUp', {
     event: evt,
     mouse_x: mouseX,
-    mouse_y: mouseY
+    mouse_y: mouseY,
+    element
   }, true)
 
   extResult.forEach((r) => {

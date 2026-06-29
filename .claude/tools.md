@@ -14,7 +14,7 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_zoom` | Zoom | Z | Zoom in/out; double-click to fit content |
 | `tool_fhpath` | Freehand pencil | Q | Draw freehand path (uniform stroke width) |
 | `tool_brush` | Pressure brush | — | Variable-width freehand brush; pen pressure (Apple Pencil/Wacom) sets thickness. Provided by `ext-brush` (mode `'brush'`); renders a filled `<path>` outline via `perfect-freehand`. See `extensions.md` |
-| `tool_line` | Line | L | Draw straight line |
+| `tool_line` | Line / arrow | L | Draw a straight two-point `<line>`. Either endpoint can **bind to a shape**: release an endpoint over (or within ~12px of) a shape and it auto-binds, snapping to the shape's edge and tracking it as the shape moves/resizes. **Hold Alt** while releasing to force a free/floating endpoint. Endpoints not over a shape float in space. Binding + tracking is provided by `ext-connector` (now the line-binding engine — no separate connector tool); turn a line into an arrow via the **markers** start/mid/end panel (`ext-markers`). |
 | `tool_path` | Bezier path | P | Point-by-point path creation |
 | `tool_rect` *(flying)* | Rectangle | R | Also contains Square and Freehand Rect sub-tools |
 | `tool_square` | Square | — | Sub-tool of rect flyout |
@@ -344,12 +344,17 @@ Flying button (left panel):
   - **Display-merge of like-named categories**: `_rebuildCategoryList` groups categories that share a display label (case-insensitive) into one sidebar entry — `this._catGroups` (repId → member ids), `this._catGroupOf` (id → repId), `this._allCategoryIds` (full list). `this._categories` holds only representatives. This makes renaming two categories to the same name **merge** them in the UI — and crucially lets read-only built-ins merge (rename two built-ins to the same label → one sidebar entry): the shapes are aggregated at render time via `_groupEntries`/`_collectGroups` (each shape keeps its own `cat` for correct thumbnail sizing), counts sum across members (`_countCategory`), and All/search/popover iterate `_allCategoryIds`. Category-menu actions apply to every group member; rename passes the new label to `_reloadUserShapes(selectLabel)` to keep the view on the merged entry. The persisted store is unchanged by display-merge (it only records per-category label overrides), so nothing is duplicated.
   - **Persistence**: all of the above lives in the same `svg-edit-user-shapes` store, so it round-trips through the host `userDataAdapter` (e.g. Obsidian's `data.json`) like the rest of the user shapes — no separate storage.
 
-### ext-connector — Connector Lines (`extensions/ext-connector/`)
-- Adds a connector drawing mode for creating auto-updating diagram connector lines between objects
-- **Connector context panel** (`#connector_panel`, injected into the Design tab, shown via `showPanel` only when a single connector is selected) with three `se-button`s:
-  - **Straight** (`connroute_straight`) / **Elbow** (`connroute_elbow`): routing mode toggle. Mode is stored on the connector as the `se:conn_mode` attribute (`'straight'` default | `'elbow'`). All geometry flows through `routeConnector`/`computeConnectorPoints`: straight = 3-point collinear polyline; elbow = 4-point orthogonal "Z" route attaching at the facing box sides (note: elbow carries two interior vertices, so `marker-mid` renders at both bends).
-  - **Leader** (`connleader`, `applyLeaderPreset`): one-click callout preset — thins the stroke to 1 and places a small filled dot (`mcircle`) at the target end by reusing the ext-markers picker (dispatches `change` on `#end_marker_list_opts`).
-  - ⚠️ Panel button IDs must **not** start with `conn_` — that prefix is reserved for connector elements (`[id^="conn_"]`).
+### ext-connector — Line-binding engine (`extensions/ext-connector/`)
+- **No toolbar button or mode of its own.** It is the binding engine behind the core **Line tool** (`mode === 'line'`): it lets a drawn `<line>` bind either endpoint to a shape and keeps bound endpoints glued to their shape.
+- **Per-endpoint binding model** — stored on the `<line>`:
+  - `se:bind-start` = elemId — start point (`x1,y1`) is bound; attribute absent = free
+  - `se:bind-end` = elemId — end point (`x2,y2`) is bound; attribute absent = free
+  - Bbox cache (`start_bb`/`end_bb`) lives in the `DataStorage` WeakMap. A bound endpoint is placed at the shape-edge intersection (`getBBintersect`) of the line aimed at the opposite end, offset outward when a marker is present (`getOffset`). `routeLineBinding(line)` does this; `routeAny` dispatches line→`routeLineBinding`, polyline→`routeConnector`.
+- **Draw flow** (core creates the `<line>`; the extension only binds): `mouseDown` records the shape under the press as the pending start; `mouseMove` shows the snap highlight on the end target; `mouseUp` reads `opts.element` (added to the core mouseUp ext payload in `event.js`), and unless **Alt** is held, sets `se:bind-start`/`se:bind-end` for whichever endpoints landed on a shape, then `routeLineBinding`. Returns `undefined` so core keeps/culls the line normally.
+- **Tracking**: `findConnectors`/`updateConnectors` scan `getBoundConnectors()` (lines/polylines carrying a binding) and re-route those bound to a moved element. Driven by the `elementTransition` (interactive drag), `selectedChanged`, `elementChanged`, and the overridden `moveSelectedElements` hooks.
+- **Hover affordance**: a single SVG overlay (`#se_conn_hover` + N/S/E/W snap dots) created in `callback()`; a direct `#workarea` mousemove listener shows it when `mode === 'line'` and idle.
+- **Legacy back-compat**: existing `<polyline>` connectors with `se:connector="startId endId"` (both ends bound, straight/elbow cardinal routing via `routeConnector`/`computeConnectorPoints`, `se:conn_mode`) are still recognised by `getBindIds`/`reset`/`IDsUpdated` and keep tracking. The straight/elbow **routing toggle, leader preset, and the connector context panel/button were removed** in the line-tool merge — those affordances no longer exist for new lines.
+  - ⚠️ The `conn_` id prefix is still reserved for legacy connector elements (`[id^="conn_"]`); the hover-overlay uses the `se_conn_` prefix.
 
 ### ext-grid — Grid Settings (`extensions/ext-grid/`)
 - **Grid settings** (`grid_settings`, `<se-grid-settings>`): popover with show-grid + snap-to-grid toggles, grid **shape** select, grid color, and snapping step. Replaces the old `view_grid` toggle button.
