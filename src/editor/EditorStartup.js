@@ -90,7 +90,19 @@ class EditorStartup {
     // Become the "active" editor on any interaction, so document-level keyboard
     // shortcut / paste handlers (registered by every mounted editor) only fire
     // for the focused one (see domScope.js, Editor.setKeyHandlers, pasteHandler).
-    const activate = () => { setActiveEditor(this); this.svgCanvas?.activateUtilities?.() }
+    // Also repoint the `window.svgEditor` global at this instance: it is set once
+    // per editor in the constructor, so it otherwise points at the *last*
+    // constructed editor, not the focused one. The ~55 components/dialogs that
+    // read the global (e.g. se-class-select.applyClass) would then operate on the
+    // wrong (or a destroyed) canvas — querying its empty selection and silently
+    // no-op'ing — which makes editing the focused drawing feel "locked" whenever
+    // a second drawing has ever been opened in the document. Repointing on every
+    // interaction keeps the global tracking the drawing the user is actually in.
+    const activate = () => {
+      setActiveEditor(this)
+      window.svgEditor = this
+      this.svgCanvas?.activateUtilities?.()
+    }
     this.$container.addEventListener('pointerdown', activate, true)
     this.$container.addEventListener('focusin', activate, true)
     // Resolve element lookups within this editor's own container so multiple
