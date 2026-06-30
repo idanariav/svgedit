@@ -15,9 +15,12 @@
  * Plus Fill and Stroke toggles to scope the shift to one channel or both,
  * and a Reset button that reverts to the snapshot.
  *
- * On every selection change the snapshot is recaptured from each element's
- * current `fill`, `stroke`, `fill-opacity`, `stroke-opacity` attributes, and
- * the four inputs zero. Each input change rebuilds the element state from
+ * The applied delta is remembered per element, so reselecting an element
+ * repopulates the inputs with the shift currently applied to it (and the
+ * snapshot stays pinned to the element's pre-shift colours so Reset can still
+ * revert). Elements with no active shift re-baseline their snapshot on every
+ * selection, so colour changes made by other means become the new baseline.
+ * Each input change rebuilds the element state from
  *   snapshot + current delta — so successive shifts overwrite each other
  * cleanly rather than compounding, and Reset (delta=0) restores the snapshot.
  */
@@ -154,6 +157,11 @@ export default {
     // Per-element baseline. Keyed by element node so multi-select works even
     // when elements have different starting colours.
     const snapshots = new WeakMap()
+    // Per-element applied delta {h,s,l,t}, so reselecting an element restores
+    // the inputs to the shift currently applied to it.
+    const deltas = new WeakMap()
+
+    const isZeroDelta = (d) => !d || (!d.h && !d.s && !d.l && !d.t)
 
     const isPaintable = (el) => el && PAINTABLE_TAGS.has(el.tagName)
 
@@ -264,6 +272,10 @@ export default {
           }
         }
 
+        // Remember the delta applied to this element so reselecting it
+        // restores the inputs (and so a zero delta re-baselines on select).
+        deltas.set(elem, { h, s, l, t })
+
         if (Object.keys(oldAttrs).length) {
           batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
         }
@@ -280,17 +292,26 @@ export default {
     }
 
     /**
-     * Refresh the per-element snapshots from current element state and
-     * zero the inputs. Called on every selection change and on Reset
-     * (where we also re-apply a zero-delta shift so the element reverts
-     * to whatever the previous snapshot was).
+     * Sync panel ↔ selection on every selection change.
+     *
+     * Elements with no active shift re-baseline their snapshot from current
+     * state, so colour changes made elsewhere become the new baseline. Elements
+     * with an active shift keep their original snapshot so Reset still reverts.
+     * The inputs are populated from the representative (first) element's delta,
+     * so reselecting a shifted element shows the shift applied to it.
      */
-    const reseed = () => {
-      // Recompute fresh snapshots so the next shift is relative to "now".
-      for (const elem of paintableSelection()) {
-        snapshots.set(elem, captureSnapshot(elem))
+    const syncToSelection = () => {
+      const elems = paintableSelection()
+      for (const elem of elems) {
+        if (isZeroDelta(deltas.get(elem))) {
+          snapshots.set(elem, captureSnapshot(elem))
+        }
       }
-      resetInputs()
+      const d = (elems[0] && deltas.get(elems[0])) || { h: 0, s: 0, l: 0, t: 0 }
+      $id('color_shift_h').value = d.h || 0
+      $id('color_shift_s').value = d.s || 0
+      $id('color_shift_l').value = d.l || 0
+      $id('color_shift_t').value = d.t || 0
     }
 
     const updateVisibility = () => {
@@ -362,7 +383,7 @@ export default {
       },
 
       selectedChanged (_opts) {
-        reseed()
+        syncToSelection()
         updateVisibility()
       }
     }
