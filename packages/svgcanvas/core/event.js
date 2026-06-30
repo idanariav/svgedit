@@ -170,6 +170,33 @@ const resizeGroup = (x, y) => {
   svgCanvas.call('transition', svgCanvas.getSelectedElements())
 }
 
+// Rotate a multi-element selection rigidly about its union center by `angle`
+// degrees (absolute, measured from drag start). Each element gets the group
+// rotation matrix R(angle, cx, cy) pre-multiplied onto the matrix it had when
+// the drag began (svgCanvas.groupRotateStart), so the relative layout is
+// preserved and no shape is individually re-centered. Mirrors resizeGroup.
+const rotateGroup = (angle) => {
+  const svgRoot = svgCanvas.getSvgRoot()
+  const { x: cx, y: cy } = svgCanvas.groupRotateCenter
+  const rot = svgRoot.createSVGTransform()
+  rot.setRotate(angle, cx, cy)
+  const rm = rot.matrix
+
+  svgCanvas.groupRotateStart.forEach((startMatrix, elem) => {
+    const newM = matrixMultiply(rm, startMatrix)
+    const tlist = getTransformList(elem)
+    while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
+    const t = svgRoot.createSVGTransform()
+    t.setMatrix(newM)
+    tlist.appendItem(t)
+    svgCanvas.selectorManager.requestSelector(elem).resize()
+  })
+
+  // rotate the group box + grips rigidly about the union center
+  svgCanvas.selectorManager.showGroupSelector(svgCanvas.groupRotateBBox, angle)
+  svgCanvas.call('transition', svgCanvas.getSelectedElements())
+}
+
 /**
  *
  * @param {MouseEvent} evt
@@ -642,6 +669,16 @@ const mouseMoveEvent = (evt) => {
       break
     }
     case 'rotate': {
+      // multi-selection: rotate the whole group rigidly about the union center
+      if (svgCanvas.groupRotateStart) {
+        cx = svgCanvas.groupRotateCenter.x
+        cy = svgCanvas.groupRotateCenter.y
+        angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
+        if (svgCanvas.getCurConfig().gridSnapping) { angle = snapToGrid(angle) }
+        if (evt.shiftKey) { angle = Math.round(angle / 15) * 15 }
+        rotateGroup(angle < -180 ? (360 + angle) : angle)
+        break
+      }
       box = getBBox(selected)
       cx = box.x + box.width / 2
       cy = box.y + box.height / 2
@@ -1061,12 +1098,26 @@ const mouseUpEvent = (evt) => {
       keep = true
       element = null
       svgCanvas.setCurrentMode('select')
+      const isGroupRotate = !!svgCanvas.groupRotateStart
       const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
       if (!batchCmd.isEmpty()) {
         svgCanvas.addCommandToHistory(batchCmd)
       }
-      // perform recalculation to weed out any stray identity transforms that might get stuck
-      svgCanvas.recalculateAllSelectedDimensions()
+      if (isGroupRotate) {
+        // Each element carries a baked R·M matrix transform; finishUndoableChange
+        // already recorded those per-element changes. Skip recalculateDimensions
+        // (it would try to decompose the matrix) and just refresh the boxes.
+        svgCanvas.groupRotateStart = null
+        svgCanvas.groupRotateCenter = null
+        svgCanvas.groupRotateBBox = null
+        selectedElements.filter(Boolean).forEach((elem) => {
+          svgCanvas.selectorManager.requestSelector(elem).resize()
+        })
+        svgCanvas.updateGroupSelector()
+      } else {
+        // perform recalculation to weed out any stray identity transforms that might get stuck
+        svgCanvas.recalculateAllSelectedDimensions()
+      }
       svgCanvas.call('changed', selectedElements)
       break
     } default:
@@ -1079,6 +1130,9 @@ const mouseUpEvent = (evt) => {
   svgCanvas.hasDragStartTransform = false
   svgCanvas.dragStartTransforms = null
   svgCanvas.groupResizeStart = null
+  svgCanvas.groupRotateStart = null
+  svgCanvas.groupRotateCenter = null
+  svgCanvas.groupRotateBBox = null
 
   /**
 * The main (left) mouse button is released (anywhere).
@@ -1226,6 +1280,71 @@ const dblClickEvent = (evt) => {
   }
 }
 
+// Screen-pixel radius within which a fill-less element near the cursor is
+// preferred over a filled shape under the exact click point (see
+// findStrokeElementNearPoint).
+const HIT_TOLERANCE = 8
+
+/**
+ * Is `el` a fill-less, stroke-painted element? Such elements (freedraw paths,
+ * lines, polylines, hollow shapes) are only hittable on their thin stroke, so
+ * the browser's native hit-test rarely lands on them when they overlap a filled
+ * shape. Detected via computed style so it generalizes to any `fill:none`
+ * element regardless of how the fill/stroke were set.
+ * @param {Element} el
+ * @returns {boolean}
+ */
+const isStrokeOnlyElement = (el) => {
+  if (!el || !(el instanceof SVGGraphicsElement)) { return false }
+  const cs = getComputedStyle(el)
+  if (cs.fill !== 'none') { return false }
+  return cs.stroke !== 'none' && parseFloat(cs.strokeWidth) > 0
+}
+
+/**
+ * Proximity hit-testing for fill-less elements. When a plain native hit-test
+ * lands on a filled shape (or empty canvas), look in a small screen-space radius
+ * around the click for a stroke-only element and prefer it — so thin lines over
+ * a filled rectangle become easy to grab. Samples nearest-first and reuses the
+ * browser's own hit-testing (`elementsFromPoint`), which already accounts for
+ * transforms, zoom and stroke width. Group isolation is honored by resolving
+ * each sampled node through `getMouseTargetFromNode`.
+ * @param {MouseEvent} evt
+ * @param {Element} currentTarget - the element the native hit-test resolved to
+ * @returns {Element|null} a nearby stroke-only selectable element, or null
+ */
+const findStrokeElementNearPoint = (evt, currentTarget) => {
+  // Already on a stroke-only element (or a selector grip) — nothing to upgrade.
+  if (
+    currentTarget === svgCanvas.selectorManager.selectorParentGroup ||
+    isStrokeOnlyElement(currentTarget)
+  ) {
+    return null
+  }
+  const parentContext =
+    svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()
+  // [radius, angleCount] rings, nearest first; the 0-radius ring is the click.
+  const rings = [[0, 1], [HIT_TOLERANCE / 2, 8], [HIT_TOLERANCE, 8]]
+  for (const [radius, angleCount] of rings) {
+    for (let i = 0; i < angleCount; i++) {
+      const a = (i / angleCount) * 2 * Math.PI
+      const px = evt.clientX + Math.cos(a) * radius
+      const py = evt.clientY + Math.sin(a) * radius
+      const stack = document.elementsFromPoint(px, py)
+      for (const node of stack) {
+        const target = svgCanvas.getMouseTargetFromNode(node)
+        if (
+          target && target.parentNode === parentContext &&
+          isStrokeOnlyElement(target)
+        ) {
+          return target
+        }
+      }
+    }
+  }
+  return null
+}
+
 /**
  * Follows these conditions:
  * - When we are in a create mode, the element is added to the canvas but the
@@ -1341,6 +1460,37 @@ const mouseDownEvent = (evt) => {
       for (const node of stack) {
         const hit = sel.find((s) => s === node || s.contains(node))
         if (hit) { mouseTarget = hit; break }
+      }
+    }
+  }
+
+  // Make fill-less elements (freedraw lines, paths, hollow shapes) easy to grab:
+  // when the click landed on a filled shape or empty canvas, prefer a stroke-only
+  // element within HIT_TOLERANCE px of the cursor. Runs last so it has final say
+  // over the plain native hit-test. Skipped for right-click and selector grips.
+  if (
+    svgCanvas.getCurrentMode() === 'select' && !rightClick &&
+    mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
+  ) {
+    const strokeHit = findStrokeElementNearPoint(evt, mouseTarget)
+    if (strokeHit) { mouseTarget = strokeHit }
+  }
+
+  // Treat the whole selection bbox as a move handle: when a click that would
+  // otherwise hit empty canvas (and start a rubber-band) lands inside the
+  // current selection's bounding box, keep the selection and drag it instead.
+  // This makes fill-less shapes (whose interior is empty canvas) and the gaps
+  // between a shape and its bbox edges grab-able. A click on a real element is
+  // left alone so you can still select something inside the bbox.
+  if (
+    svgCanvas.getCurrentMode() === 'select' && !rightClick && !evt.shiftKey &&
+    mouseTarget === svgRoot
+  ) {
+    const sel = selectedElements.filter(Boolean)
+    if (sel.length) {
+      const bb = getStrokedBBoxDefaultVisible(sel)
+      if (bb && x >= bb.x && x <= bb.x + bb.width && y >= bb.y && y <= bb.y + bb.height) {
+        mouseTarget = sel[0]
       }
     }
   }
@@ -1685,11 +1835,24 @@ const mouseDownEvent = (evt) => {
       svgCanvas.textActions.mouseDown(evt, mouseTarget, svgCanvas.getStartX(), svgCanvas.getStartY())
       svgCanvas.setStarted(true)
       break
-    case 'rotate':
+    case 'rotate': {
       svgCanvas.setStarted(true)
       // we are starting an undoable change (a drag-rotation)
       svgCanvas.undoMgr.beginUndoableChange('transform', selectedElements)
+      // multi-selection: capture each element's start matrix + the union center
+      // so mouseMove can rotate the whole selection rigidly about that center.
+      const rotElems = selectedElements.filter(Boolean)
+      if (rotElems.length > 1) {
+        const ubb = getStrokedBBoxDefaultVisible(rotElems)
+        svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
+        svgCanvas.groupRotateBBox = ubb
+        svgCanvas.groupRotateStart = new Map()
+        rotElems.forEach((elem) => {
+          svgCanvas.groupRotateStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
+        })
+      }
       break
+    }
     default:
       // This could occur in an extension
       break

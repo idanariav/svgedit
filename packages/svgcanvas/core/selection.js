@@ -161,7 +161,23 @@ const getMouseTargetMethod = (evt) => {
   if (!evt) {
     return null
   }
-  let mouseTarget = evt.target
+  return getMouseTargetFromNode(evt.target)
+}
+/**
+ * Resolve a raw DOM node (e.g. the literal element under the cursor) to the
+ * selectable element it represents, honoring the current group-isolation
+ * context. Shared by `getMouseTarget` (which passes `evt.target`) and the
+ * proximity hit-testing in `event.js` (which passes nodes from
+ * `elementsFromPoint`).
+ * @function module:svgcanvas.SvgCanvas#getMouseTargetFromNode
+ * @param {Element} node
+ * @returns {Element|null}
+ */
+const getMouseTargetFromNode = (node) => {
+  if (!node) {
+    return null
+  }
+  let mouseTarget = node
 
   // if it was a <use>, Opera and WebKit return the SVGElementInstance
   if (mouseTarget.correspondingUseElement) {
@@ -516,6 +532,7 @@ const recalculateAllSelectedDimensions = () => {
   }
 
   svgCanvas.getMouseTarget = getMouseTargetMethod
+  svgCanvas.getMouseTargetFromNode = getMouseTargetFromNode
   svgCanvas.clearSelection = clearSelectionMethod
   svgCanvas.addToSelection = addToSelectionMethod
   svgCanvas.getIntersectionList = getIntersectionListMethod

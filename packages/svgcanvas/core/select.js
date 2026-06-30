@@ -519,13 +519,13 @@ class SelectorManager {
   }
 
   /**
-  * Shows a single dashed box and the 8 resize grips around a multi-element
-  * selection (uniform group-scale mode). The rotate grip is hidden because the
-  * feature is resize-only.
+  * Shows a single dashed box, the 8 resize grips and the rotate grip around a
+  * multi-element selection (uniform group-scale + group-rotate mode).
   * @param {module:utilities.BBoxObject} contentBBox - Union bbox of the selection in content/user coords
+  * @param {Float} [angle] - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
   * @returns {void}
   */
-  showGroupSelector (contentBBox) {
+  showGroupSelector (contentBBox, angle = 0) {
     if (!contentBBox) { return }
     const zoom = svgCanvas.getZoom()
     const x = contentBBox.x * zoom
@@ -568,15 +568,28 @@ class SelectorManager {
       this.selectorGrips[dir].setAttribute('cy', coords[1])
     })
 
-    // re-parent the grips into the (unrotated) parent group and show them
-    this.selectorGripsGroup.setAttribute('transform', '')
+    // position the rotate grip + its connector at the top-center of the box
+    // (mirrors the single-element selector in resize())
+    this.rotateGripConnector.setAttribute('x1', x + w / 2)
+    this.rotateGripConnector.setAttribute('y1', y)
+    this.rotateGripConnector.setAttribute('x2', x + w / 2)
+    this.rotateGripConnector.setAttribute('y2', y - gripRadius * 5)
+    this.rotateGrip.setAttribute('cx', x + w / 2)
+    this.rotateGrip.setAttribute('cy', y - gripRadius * 5)
+    this.rotateGrip.setAttribute('display', 'inline')
+    this.rotateGripConnector.setAttribute('display', 'inline')
+
+    // re-parent the grips into the parent group and show them. During a live
+    // group rotation, rotate the box + all grips rigidly about the union center
+    // (in zoomed coords) so they track the rotating selection.
+    const xform = angle
+      ? `rotate(${angle},${x + w / 2},${y + h / 2})`
+      : ''
+    this.groupSelectorRect.setAttribute('transform', xform)
+    this.selectorGripsGroup.setAttribute('transform', xform)
     this.selectorParentGroup.append(this.selectorGripsGroup)
     this.selectorGripsGroup.setAttribute('display', 'inline')
-    Selector.updateGripCursors(0)
-
-    // resize-only: hide the rotate grip + its connector
-    this.rotateGrip.setAttribute('display', 'none')
-    this.rotateGripConnector.setAttribute('display', 'none')
+    Selector.updateGripCursors(angle)
   }
 
   /**
@@ -587,7 +600,11 @@ class SelectorManager {
   hideGroupSelector () {
     if (this.groupSelectorRect) {
       this.groupSelectorRect.setAttribute('display', 'none')
+      this.groupSelectorRect.setAttribute('transform', '')
     }
+    // clear any group-rotation transform so it doesn't leak into the
+    // single-element selector that shares the grips group
+    this.selectorGripsGroup.setAttribute('transform', '')
     this.rotateGrip.setAttribute('display', 'inline')
     this.rotateGripConnector.setAttribute('display', 'inline')
   }

@@ -153,7 +153,7 @@ src/editor/index.html
 | `event.js` | All mouse/touch event bindings + custom event dispatch (~53KB) |
 | `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
 | `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box |
-| `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector()`/`hideGroupSelector()` draw one union box + grips around a multi-selection |
+| `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector(bbox, angle)`/`hideGroupSelector()` draw one union box + 8 resize grips **+ the rotate grip** around a multi-selection (the optional `angle` rotates the box+grips rigidly during a live group rotation) |
 | `path.js` | Path element state and node data |
 | `path-actions.js` | Path editing operations (add/delete/move nodes) |
 | `path-method.js` | Path utility methods |
@@ -414,7 +414,31 @@ Groups are native `<g>` containers. Selection/editing follows an Excalidraw-styl
 
 - **Single click** on any grouped element selects the **whole group** — `getMouseTarget`
   (`core/selection.js`) walks up to the `<g>` that is a direct child of the current layer
-  when no group context is active.
+  when no group context is active. The walk-up itself is factored into
+  `getMouseTargetFromNode(node)` (same file), so any raw DOM node — not just `evt.target`
+  — can be resolved to its selectable element while honoring group isolation.
+- **Proximity hit-testing for fill-less elements.** A `fill="none"` line/path is only
+  hittable on its thin stroke, so the native hit-test usually misses it when it overlaps a
+  filled shape. `findStrokeElementNearPoint` (`core/event.js`) samples `elementsFromPoint`
+  in a small screen-space radius (`HIT_TOLERANCE`, 8px) around a select-mode click and
+  prefers a nearby stroke-only element (resolved via `getMouseTargetFromNode`) over the
+  filled shape under the exact pixel. Runs last in the `mouseDownEvent` select branch so it
+  has final say; skipped for right-click and selector grips.
+- **Selection bbox is a move handle.** When a select-mode click would otherwise hit empty
+  canvas (`mouseTarget === svgRoot`, e.g. the hollow interior of a fill-less shape or the
+  gap between a shape and its bbox edge) but lands inside the current selection's union bbox
+  (`getStrokedBBoxDefaultVisible`), the `mouseDownEvent` select branch retargets to the
+  selection so the drag moves it instead of starting a rubber-band. A click on a real
+  element inside the bbox is left alone, so you can still select something within it.
+- **Multi-selection rotation.** A 2+ element selection can be rotated, not just resized.
+  `showGroupSelector` shows the rotate grip; dragging it enters `rotate` mode with
+  `svgCanvas.groupRotateStart` (per-element start matrices) + `groupRotateCenter` (union
+  center) captured in `mouseDownEvent`. `rotateGroup` (`core/event.js`, mirrors `resizeGroup`)
+  applies `R(angle, cx, cy)·startMatrix` to each element so the layout rotates rigidly. Undo
+  is recorded by the existing `beginUndoableChange('transform', selectedElements)` /
+  `finishUndoableChange()` pair (already multi-element aware); the group-rotate mouseUp skips
+  `recalculateAllSelectedDimensions` (which would decompose the baked matrices) and refreshes
+  the boxes via `updateGroupSelector`.
 - **Double-click** (or **Ctrl/Cmd-click**) **drills into** the group: `setContext(group)`
   sets `currentGroup` (the analog of Excalidraw's `editingGroupId`), dims sibling content,
   and selects the clicked child. Both paths live in `core/event.js`
