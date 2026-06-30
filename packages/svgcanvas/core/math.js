@@ -310,7 +310,7 @@ export const getMatrixToContent = (elem, stopId = 'svgcontent') => {
 }
 
 /**
- * Returns a coordinate snapped to the nearest 45-degree angle.
+ * Returns a coordinate snapped to the nearest 15-degree angle.
  * @function snapToAngle
  * @param {number} x1 - First point's x
  * @param {number} y1 - First point's y
@@ -319,7 +319,7 @@ export const getMatrixToContent = (elem, stopId = 'svgcontent') => {
  * @returns {AngleCoord45} The angle-snapped coordinates and angle
  */
 export const snapToAngle = (x1, y1, x2, y2) => {
-  const snap = Math.PI / 4 // 45 degrees
+  const snap = Math.PI / 12 // 15 degrees
   const dx = x2 - x1
   const dy = y2 - y1
   const angle = Math.atan2(dy, dx)
