@@ -226,6 +226,10 @@ class EditorStartup {
     this.defaultImageURL = `${this.configObj.curConfig.imgPath}/logo.svg`
     const zoomInIcon = 'crosshair'
     const zoomOutIcon = 'crosshair'
+    // Cursor shown over a movable target in select mode (a selectable element or
+    // anywhere inside the current selection's bbox). Hotspot centered (12 12).
+    const moveCursorUri = getIconDataUri('move.svg')
+    const moveCursor = moveCursorUri ? `url("${moveCursorUri}") 12 12, move` : 'move'
     this.uiContext = 'toolbars'
 
     // For external openers
@@ -431,6 +435,35 @@ class EditorStartup {
 
       if (evt.type === 'mouseup') { panning = false }
       return false
+    })
+    // Show the move cursor whenever a left-click at the pointer would move
+    // something: over a selectable element (would be selected then moved) or
+    // anywhere inside the current selection's bbox (bbox-drag). Only in select
+    // mode while not already dragging/panning, so it never fights the
+    // drawing/resize/rotate cursors.
+    $id('svgcanvas').addEventListener('mousemove', (evt) => {
+      const canv = this.svgCanvas
+      if (panning || canv.spaceKey || canv.getStarted() || canv.getMode() !== 'select') { return }
+      const svgRoot = canv.getSvgRoot()
+      const target = canv.getMouseTarget(evt)
+      let movable = target && target !== svgRoot &&
+        target !== canv.selectorManager.selectorParentGroup
+      // Over empty canvas: still movable if the pointer is inside the current
+      // selection's bounding box (matches the bbox-drag behaviour in mouseDown).
+      if (!movable) {
+        const sel = canv.getSelectedElements().filter(Boolean)
+        if (sel.length) {
+          let l = Infinity; let t = Infinity; let r = -Infinity; let b = -Infinity
+          for (const el of sel) {
+            const rect = el.getBoundingClientRect()
+            l = Math.min(l, rect.left); t = Math.min(t, rect.top)
+            r = Math.max(r, rect.right); b = Math.max(b, rect.bottom)
+          }
+          movable = evt.clientX >= l && evt.clientX <= r &&
+            evt.clientY >= t && evt.clientY <= b
+        }
+      }
+      this.workarea.style.cursor = movable ? moveCursor : 'auto'
     })
     $id('svgcanvas').addEventListener('mousedown', (evt) => {
       this.enableToolCancel = false
