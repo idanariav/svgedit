@@ -165,8 +165,22 @@ export default {
 
     const isPaintable = (el) => el && PAINTABLE_TAGS.has(el.tagName)
 
-    const paintableSelection = () =>
-      svgCanvas.getSelectedElements().filter(isPaintable)
+    // Expand a selected node into the paintable elements it represents. A
+    // paintable leaf is itself; a `<g>` (possibly nested) yields its paintable
+    // descendants, so selecting a group shifts every shape inside it.
+    const collectPaintable = (el, out) => {
+      if (!el) return
+      if (isPaintable(el)) out.push(el)
+      else if (el.tagName === 'g') {
+        for (const child of el.children) collectPaintable(child, out)
+      }
+    }
+
+    const paintableSelection = () => {
+      const out = []
+      for (const el of svgCanvas.getSelectedElements()) collectPaintable(el, out)
+      return out
+    }
 
     const captureSnapshot = (elem) => {
       const fillRaw = elem.getAttribute('fill')
