@@ -531,6 +531,22 @@ const pathMap = [
           // Fallback to 'd' attribute if setPathData is unavailable or throws.
         }
       }
+
+      // Arc paths (see `setCircleArc`/`readArcGeom` in elem-get-set.js) store their
+      // pie-sector geometry in data-cx/cy/rx/ry so the panel and later arc edits can
+      // recompute `d` from it. Without this, a move/resize here (which only rewrites
+      // `d`) leaves those attrs stale, so the next arc/cx/cy/rx/ry edit snaps the
+      // shape back to its pre-move/resize geometry. The M point is always the
+      // center and the (sole) A/a segment always carries the radii.
+      if (selected.hasAttribute('data-arc')) {
+        const arcSeg = changes.d.find(seg => seg.type === 10 || seg.type === 11)
+        selected.setAttribute('data-cx', changes.d[0].x)
+        selected.setAttribute('data-cy', changes.d[0].y)
+        if (arcSeg) {
+          selected.setAttribute('data-rx', arcSeg.r1)
+          selected.setAttribute('data-ry', arcSeg.r2)
+        }
+      }
       break
     }
     default:
