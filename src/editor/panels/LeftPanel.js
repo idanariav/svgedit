@@ -30,6 +30,11 @@ class LeftPanel {
   updateLeftPanel (button) {
     const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (button.disabled) return false
+    // switching tools exits lock mode (see lockTool / double-click gesture)
+    this.editor.svgCanvas.setToolLocked(false)
+    $qa('#tools_left *[locked]').forEach((b) => {
+      b.removeAttribute('locked')
+    })
     // remove the pressed state on other(s) button(s)
     $qa('#tools_left *[pressed]').forEach((b) => {
       b.pressed = false
@@ -37,6 +42,22 @@ class LeftPanel {
     // pressed state for the clicked button
     $id(button).pressed = true
     return true
+  }
+
+  /**
+   * Lock the currently-selected drawing tool (double-click gesture). A locked
+   * tool stays active after each object is created instead of reverting to
+   * select; switching to another tool clears the lock (see updateLeftPanel).
+   * @function this.lockTool
+   * @param {Element} visibleEl The toolbar element to mark locked (an se-button,
+   *   or the se-flyingbutton host for a shape variant)
+   * @returns {void}
+   */
+  lockTool (visibleEl) {
+    this.editor.svgCanvas.setToolLocked(true)
+    visibleEl.setAttribute('locked', 'true')
+    // close the flyout menu that a double-click may have opened
+    if (visibleEl.tagName === 'SE-FLYINGBUTTON') visibleEl.opened = false
   }
 
   /**
@@ -239,6 +260,16 @@ class LeftPanel {
     $click($id('tool_ellipse'), this.clickEllipse.bind(this))
     $click($id('tool_circle'), this.clickCircle.bind(this))
     $click($id('tool_fhellipse'), this.clickFHEllipse.bind(this))
+
+    // double-click a drawing tool to lock it (stays selected after each object).
+    // Plain buttons bind on themselves; shape groups bind on the flyout host
+    // (the variant buttons live in a menu that's hidden when collapsed), which
+    // locks whatever variant is currently active.
+    const lockable = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_rect', 'tools_ellipse']
+    lockable.forEach((id) => {
+      const el = $id(id)
+      el.addEventListener('dblclick', () => this.lockTool(el))
+    })
   }
 }
 

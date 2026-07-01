@@ -1069,6 +1069,8 @@ const mouseUpEvent = (evt) => {
       break
     case 'text':
       keep = true
+      // Mark this as a freshly-placed text so lock mode can re-arm the text tool
+      svgCanvas.setTextFreshCreate(true)
       svgCanvas.selectOnly([element])
       svgCanvas.textActions.start(element)
       break
@@ -1216,10 +1218,15 @@ const mouseUpEvent = (evt) => {
       element.setAttribute('style', 'pointer-events:inherit')
       cleanupElement(element)
       if (svgCanvas.getCurrentMode() === 'path') {
-        svgCanvas.pathActions.toEditMode(element)
+        if (svgCanvas.getToolLocked()) {
+          // Lock mode: re-arm the path tool to draw another path
+          svgCanvas.setMode('path')
+        } else {
+          svgCanvas.pathActions.toEditMode(element)
+        }
       } else if (svgCanvas.getCurConfig().selectNew) {
         const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame']
-        if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey) {
+        if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
           svgCanvas.setMode('select')
         }
         svgCanvas.selectOnly([element], true)
@@ -1241,6 +1248,8 @@ const dblClickEvent = (evt) => {
   const { tagName } = mouseTarget
 
   if (tagName === 'text' && svgCanvas.getCurrentMode() !== 'textedit') {
+    // Editing an existing text (not a fresh placement) — don't let lock mode re-arm the text tool
+    svgCanvas.setTextFreshCreate(false)
     const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
     svgCanvas.textActions.select(mouseTarget, pt.x, pt.y)
   }

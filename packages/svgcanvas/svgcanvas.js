@@ -121,6 +121,8 @@ class SvgCanvas {
     this.started = false // Boolean indicating whether or not a draw action has been this.started
     this.startTransform = null // String with an element's initial transform attribute value
     this.currentMode = 'select' // String indicating the current editor mode
+    this.toolLocked = false // Boolean: keep the active draw tool selected after each object (lock mode)
+    this.textFreshCreate = false // Boolean: the current text was just placed via the text tool (vs editing an existing one)
     this.currentResizeMode = 'none' // String with the current direction in which an element is being resized
     this.justSelected = null // The DOM element that was just selected
     this.rubberBox = null // DOM element for selection rectangle drawn by the user
@@ -469,6 +471,24 @@ class SvgCanvas {
   setCurrentMode (cm) {
     this.currentMode = cm
     return this.currentMode
+  }
+
+  getToolLocked () {
+    return this.toolLocked
+  }
+
+  setToolLocked (b) {
+    this.toolLocked = b
+    return this.toolLocked
+  }
+
+  getTextFreshCreate () {
+    return this.textFreshCreate
+  }
+
+  setTextFreshCreate (b) {
+    this.textFreshCreate = b
+    return this.textFreshCreate
   }
 
   getDrawnPath () {

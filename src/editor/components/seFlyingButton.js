@@ -81,6 +81,11 @@ export class FlyingButton extends HTMLElement {
           border-color: var(--accent-border, #C7D7FF) !important;
           box-shadow: var(--active-shadow, 0 1px 2px rgba(41,98,255,0.18)) !important;
         }
+        /* lock mode: tool stays selected after each object (double-click to toggle) */
+        .overall.locked .menu-button {
+          outline: 2px solid var(--accent, #2962FF);
+          outline-offset: -2px;
+        }
         .disabled {
           opacity: 0.35;
           cursor: default;
@@ -154,7 +159,7 @@ export class FlyingButton extends HTMLElement {
    * @returns {any} observed
    */
   static get observedAttributes () {
-    return ['title', 'pressed', 'disabled', 'opened']
+    return ['title', 'pressed', 'locked', 'disabled', 'opened']
   }
 
   /**
@@ -178,6 +183,13 @@ export class FlyingButton extends HTMLElement {
           this.$overall.classList.add('pressed')
         } else {
           this.$overall.classList.remove('pressed')
+        }
+        break
+      case 'locked':
+        if (newValue) {
+          this.$overall.classList.add('locked')
+        } else {
+          this.$overall.classList.remove('locked')
         }
         break
       case 'opened':

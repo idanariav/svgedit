@@ -428,6 +428,11 @@ Hover:
   border-color: var(--accent-border, #C7D7FF) !important
   box-shadow: var(--active-shadow)
 
+.locked (tool lock mode — stacks on .pressed):
+  outline: 2px solid var(--accent, #2962FF)
+  outline-offset: -2px
+  (se-flyingbutton mirrors this via .overall.locked .menu-button)
+
 .disabled:
   opacity: 0.35
   pointer-events: none

@@ -442,7 +442,11 @@ class TextActions {
    * @returns {void}
    */
   toSelectMode (selectElem) {
-    svgCanvas.setCurrentMode('select')
+    // Lock mode: a freshly-placed text re-arms the text tool instead of
+    // dropping back to select, so the user can place several texts in a row.
+    // Use setCurrentMode (not setMode) to avoid re-entering textActions.clear().
+    const relock = svgCanvas.getToolLocked() && svgCanvas.getTextFreshCreate()
+    svgCanvas.setCurrentMode(relock ? 'text' : 'select')
     clearInterval(this.#blinker)
     this.#blinker = null
     if (this.#selblock) {
@@ -453,7 +457,7 @@ class TextActions {
     }
     this.#curtext.style.cursor = 'move'
 
-    if (selectElem) {
+    if (selectElem && !relock) {
       svgCanvas.clearSelection()
       this.#curtext.style.cursor = 'move'
 
@@ -468,6 +472,7 @@ class TextActions {
     this.#textinput.blur()
 
     this.#curtext = false
+    svgCanvas.setTextFreshCreate(false)
 
     // if (supportsEditableText()) {
     //   curtext.removeAttribute('editable');

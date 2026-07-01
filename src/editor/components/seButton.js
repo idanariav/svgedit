@@ -35,6 +35,11 @@ template.innerHTML = `
     border-color: var(--accent-border, #C7D7FF) !important;
     box-shadow: var(--active-shadow, 0 1px 2px rgba(41,98,255,0.18)) !important;
   }
+  /* lock mode: tool stays selected after each object (double-click to toggle) */
+  .locked {
+    outline: 2px solid var(--accent, #2962FF);
+    outline-offset: -2px;
+  }
   .disabled {
     opacity: 0.35;
     cursor: default;
@@ -94,7 +99,7 @@ export class ToolButton extends HTMLElement {
    * @returns {any} observed
    */
   static get observedAttributes () {
-    return ['title', 'src', 'pressed', 'disabled', 'size', 'style']
+    return ['title', 'src', 'pressed', 'locked', 'disabled', 'size', 'style']
   }
 
   /**
@@ -119,6 +124,13 @@ export class ToolButton extends HTMLElement {
           this.$div.classList.remove('pressed')
         } else {
           this.$div.classList.add('pressed')
+        }
+        break
+      case 'locked':
+        if (newValue === null) {
+          this.$div.classList.remove('locked')
+        } else {
+          this.$div.classList.add('locked')
         }
         break
       case 'size':

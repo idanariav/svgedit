@@ -25,6 +25,20 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_text` | Text | T | Add/edit text elements. **Multiline:** the hidden edit buffer (`#text`) is a `<textarea>`; while editing, **Shift+Enter** inserts a new row and **plain Enter** commits + exits edit mode. SVG has no newline char, so each row is rendered as one absolutely-positioned `<tspan>` (shared `x` so `text-anchor` aligns rows, `y` stepped by `font-size × 1.2`) by `setMultilineText` in [packages/svgcanvas/core/utilities.js](../packages/svgcanvas/core/utilities.js); `getTextWithNewlines` reconstructs the `\n`-joined value. All `#text` reads/writes route through these two helpers (`elem-get-set.js`, `undo.js`, `history.js`). The caret/selection engine ([core/text-actions.js](../packages/svgcanvas/core/text-actions.js)) indexes `#chardata` by **textarea caret position** (incl. `\n`) and is row-aware (per-row caret y, per-row selection quads, nearest-row click hit-testing) |
 | `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL), URL, or **Import from vault** (only when a host provides `window.svgEditHost.pickVaultImage` — see [architecture.md](architecture.md) "Host bridge"). Inserts a centered image; no draw mode, no native prompt. A vault import carries a provenance `vaultLink` through the dialog `change` event → `handleImageImport`. A locally-picked **SVG file** (browse/drag-drop, detected by `image/svg+xml` type or `.svg` name in `handleFile`) is read as text into `editableSvg` so it imports as editable shapes too — not a frozen `<image>`. If `editableSvg` is set (whole-drawing **unlocked** import — vault or local SVG file), it routes to `insertSvgElements(editableSvg, { vaultLink, asPaths })` — drawable top-level elements into the layer (defs → canvas `<defs>`); a multi-element import is wrapped in one `<g>` so it moves/selects as a unit (double-click to edit members, like Excalidraw's import grouping), a single element is inserted bare. When the dialog's **"Import as editable paths"** checkbox (`#image_paths_toggle`, shown only for editable-SVG imports, **default off**) is checked, `asPaths` is passed and basic shapes (rect/circle/ellipse/line/polyline/polygon), including those nested in groups, are converted to `<path>` (`convertShapesToPaths` in `dialogs/insertImage.js`, a history-free DOM swap that copies each shape's own attrs/style onto the path); off → shapes stay native; `g`/`text`/`image`/`use`/existing `path` always pass through. Otherwise (locked embed / raster / frame crop / SVG-by-URL) `insertImageFromHref(href, { vaultLink, locked })`, which stamps `data-vault-link` (and `data-vault-locked` when locked) on the `<image>`. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertSvgElements` / `insertImageFromHref` (`dialogs/insertImage.js`) |
 
+**Lock mode (double-click a drawing tool):** normally a tool reverts to Select
+after one object is created. **Double-clicking** a drawing tool *locks* it so it
+stays active for drawing many objects in a row; switching to any other tool exits
+lock mode. Locked tools show a distinct accent **outline ring** (on top of the
+pressed style — `.locked` class in `seButton.js` / `seFlyingButton.js`). Lockable
+tools: `tool_fhpath`, `tool_line`, `tool_path`, `tool_text`, and the two shape
+flyouts (`tools_rect`, `tools_ellipse` — the dblclick binds on the flyout **host**,
+locking whichever variant is active). State lives on the canvas
+(`svgCanvas.getToolLocked()` / `setToolLocked()`); `LeftPanel.lockTool` sets it and
+`LeftPanel.updateLeftPanel` clears it on tool switch. The reset is gated in
+`event.js` `mouseUpEvent` (shapes/line/pencil skip `setMode('select')`; path
+re-arms `path` instead of `toEditMode`) and in `text-actions.js` `toSelectMode`
+(a freshly-placed text — flagged via `setTextFreshCreate` — re-arms `text`).
+
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
 - `tool_star` / `tool_polygon` — Polystar flyout (ext-polystar)
