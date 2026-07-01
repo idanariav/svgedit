@@ -106,6 +106,30 @@ class Layer {
   }
 
   /**
+   * Lock or unlock this layer. A locked layer keeps its existing contents but
+   * does not receive newly drawn/pasted objects (they go to the next unlocked
+   * layer). Persisted as the namespaced `se:locked` attribute so it survives
+   * save/load.
+   * @param {boolean} locked - If true, lock the layer; otherwise unlock it.
+   * @returns {void}
+   */
+  setLocked (locked) {
+    if (locked) {
+      this.group_.setAttributeNS(NS.SE, 'se:locked', 'true')
+    } else {
+      this.group_.removeAttributeNS(NS.SE, 'locked')
+    }
+  }
+
+  /**
+   * Is this layer locked?
+   * @returns {boolean} True if locked.
+   */
+  isLocked () {
+    return this.group_.getAttributeNS(NS.SE, 'locked') === 'true'
+  }
+
+  /**
    * Get layer opacity.
    * @returns {Float} Opacity value.
    */

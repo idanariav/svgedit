@@ -177,6 +177,7 @@ Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `
 | File | Purpose |
 |------|---------|
 | `iconRegistry.js` | Inlines every `*.svg` + `cursors/*.svg` into the bundle (eager `?raw` glob); `getRawIcon()` / `getIconDataUri()` resolve icons with no runtime fetch |
+| `lock.svg` / `lock_open.svg` | Closed/open padlock icons for the per-row **layer lock** toggle (`td.layerlock`) in the Layers panel. Open = unlocked (clickable hint), closed = locked; `RightPanel.populateLayers` picks/swaps them by state — see [tools.md](tools.md) "Layers Panel" |
 | `move.svg` | Dual-purpose: as the **select-mode move cursor** (used raw via `getIconDataUri`, so it bakes a white-halo + dark-glyph for visibility on any canvas — cursors can't inherit `currentColor`) and, if injected via `svgIconLoader`, both strokes normalize to `currentColor`. See `tool_select` in [tools.md](tools.md) |
 
 `extensions/extensionRegistry.js` does the equivalent for extensions (eager glob

@@ -444,6 +444,33 @@ describe('draw.Drawing', function () {
     cleanupSVG(svg)
   })
 
+  it('Test layer locking and getTargetLayerGroup()', function () {
+    const drawing = new draw.Drawing(svg)
+    setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+
+    // Current layer is the top one (LAYER3, index 2) and starts unlocked.
+    assert.equal(drawing.getCurrentLayerName(), LAYER3)
+    assert.equal(drawing.getLayerLocked(LAYER3), false)
+    assert.equal(drawing.getTargetLayerGroup(), drawing.all_layers[2].getGroup())
+
+    // Lock the top layer: new content should redirect to the layer below it.
+    drawing.setLayerLocked(LAYER3, true)
+    assert.equal(drawing.getLayerLocked(LAYER3), true)
+    assert.equal(drawing.getTargetLayerGroup(), drawing.all_layers[1].getGroup())
+
+    // Lock every layer: falls back to the current layer so drawing is never blocked.
+    drawing.setLayerLocked(LAYER1, true)
+    drawing.setLayerLocked(LAYER2, true)
+    assert.equal(drawing.getTargetLayerGroup(), drawing.all_layers[2].getGroup())
+
+    // Unlocking restores normal targeting.
+    drawing.setLayerLocked(LAYER3, false)
+    assert.equal(drawing.getTargetLayerGroup(), drawing.all_layers[2].getGroup())
+
+    cleanupSVG(svg)
+  })
+
   it('Test setCurrentLayerName()', function () {
     const mockHrService = {
       changeElement () {

@@ -657,6 +657,14 @@ hr {
 }
 #layerlist td.layervis * { display: block; }
 #layerlist td.layerinvis * { display: none; }
+#layerlist td.layerlock {
+  width: 22px;
+  padding-left: 4px;
+  text-align: center;
+}
+#layerlist td.layerlock * { display: block; color: var(--muted); }
+#layerlist td.layerlock:hover * { color: var(--icon-hover, var(--fg)); }
+#layerlist td.layerlock.locked * { color: var(--accent); }
 #layerlist td.layername {
   font-size: 13px;
   font-weight: 500;

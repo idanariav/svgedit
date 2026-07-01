@@ -65,6 +65,14 @@ describe('Layer', function () {
     layer.setOpacity(2)
     assert.equal(layer.getOpacity(), 0.25)
 
+    assert.equal(layer.isLocked(), false)
+    layer.setLocked(true)
+    assert.equal(layer.isLocked(), true)
+    assert.equal(group.getAttributeNS(NS.SE, 'locked'), 'true')
+    layer.setLocked(false)
+    assert.equal(layer.isLocked(), false)
+    assert.equal(group.getAttributeNS(NS.SE, 'locked'), null)
+
     const rect = document.createElementNS(NS.SVG, 'rect')
     const circle = document.createElementNS(NS.SVG, 'circle')
     layer.appendChildren([rect, circle])

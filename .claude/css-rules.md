@@ -364,6 +364,19 @@ align. Use `.span2` on a field to make it fill the full row (e.g. ID / Class).
 ```
 Each section sets `style.display: 'none'` until its trigger selection is active.
 
+### Layer-row cells (`#layerlist`)
+Each `tr.layer` has icon cells before the name. The visibility cell (`td.layervis`,
+hidden via `td.layerinvis * { display:none }`) and the **lock cell**:
+```css
+#layerlist td.layerlock { width: 22px; padding-left: 4px; text-align: center; }
+#layerlist td.layerlock * { display: block; color: var(--muted); }          /* unlocked */
+#layerlist td.layerlock:hover * { color: var(--icon-hover, var(--fg)); }
+#layerlist td.layerlock.locked * { color: var(--accent); }                   /* locked */
+```
+The icon itself differs by state — `lock_open.svg` when unlocked (muted, signals it's
+clickable), `lock.svg` when locked (accent). `RightPanel.populateLayers` picks the icon
+and swaps it on click via its `renderLockIcon` helper.
+
 ### Wireframe Mode
 ```css
 #workarea.wireframe #svgcontent * {

@@ -718,6 +718,67 @@ export class Drawing {
   }
 
   /**
+   * Returns whether the layer is locked. If the layer name is not valid, then
+   * this function returns `false`.
+   * @param {string} layerName - The name of the layer which you want to query.
+   * @returns {boolean} The locked state of the layer, or `false` if the layer name was invalid.
+   */
+  getLayerLocked (layerName) {
+    const layer = this.layer_map[layerName]
+    return layer ? layer.isLocked() : false
+  }
+
+  /**
+   * Sets the locked state of the layer. A locked layer keeps its contents but
+   * does not receive newly drawn/pasted objects. If the layer name is not valid,
+   * this returns `null`; otherwise it returns the layer's `SVGGElement`. This is
+   * not an undo-able action (locking is a meta-action on the layer).
+   * @param {string} layerName - The name of the layer to lock/unlock.
+   * @param {boolean} bLocked - Whether the layer should be locked.
+   * @returns {?SVGGElement} The layer group if `layerName` was valid, otherwise `null`.
+   */
+  setLayerLocked (layerName, bLocked) {
+    if (typeof bLocked !== 'boolean') {
+      return null
+    }
+    const layer = this.layer_map[layerName]
+    if (!layer) {
+      return null
+    }
+    layer.setLocked(bLocked)
+    return layer.getGroup()
+  }
+
+  /**
+   * Returns the layer group that should receive newly created content. If the
+   * current layer is unlocked, that's the current layer. If it's locked, the
+   * nearest unlocked layer below it (lower z-order) is used, then the nearest
+   * above; if every layer is locked, falls back to the current layer so drawing
+   * is never blocked. Does not change the current layer.
+   * @returns {SVGGElement|null} The target layer group, or null if there is no current layer.
+   */
+  getTargetLayerGroup () {
+    if (!this.current_layer) {
+      return this.getCurrentLayer()
+    }
+    if (!this.current_layer.isLocked()) {
+      return this.current_layer.getGroup()
+    }
+    const idx = this.indexCurrentLayer()
+    for (let i = idx - 1; i >= 0; i--) {
+      if (!this.all_layers[i].isLocked()) {
+        return this.all_layers[i].getGroup()
+      }
+    }
+    for (let i = idx + 1; i < this.all_layers.length; i++) {
+      if (!this.all_layers[i].isLocked()) {
+        return this.all_layers[i].getGroup()
+      }
+    }
+    return this.current_layer.getGroup()
+  }
+
+  /**
    * Returns the opacity of the given layer.  If the input name is not a layer, `null` is returned.
    * @param {string} layerName - name of the layer on which to get the opacity
    * @returns {?Float} The opacity value of the given layer.  This will be a value between 0.0 and 1.0, or `null`
@@ -1066,6 +1127,34 @@ export const init = canvas => {
 }
 
 /**
+ * Sets the locked state of the layer. A locked layer keeps its contents but does
+ * not receive newly drawn/pasted objects. Returns `true` if applied. Not undo-able.
+ * @function module:draw.setLayerLocked
+ * @param {string} layerName - The name of the layer to lock/unlock
+ * @param {boolean} bLocked - Whether the layer should be locked
+ * @returns {boolean} true if the layer's locked state was set, false otherwise
+ */
+  const setLayerLocked = (layerName, bLocked) => {
+  const drawing = svgCanvas.getCurrentDrawing()
+  const layer = drawing.setLayerLocked(layerName, bLocked)
+  if (!layer) {
+    warn('setLayerLocked: layer not found', layerName, 'draw')
+    return false
+  }
+  return true
+}
+
+/**
+ * Returns whether the named layer is locked.
+ * @function module:draw.getLayerLocked
+ * @param {string} layerName - The name of the layer to query
+ * @returns {boolean} true if the layer is locked
+ */
+  const getLayerLocked = (layerName) => {
+  return svgCanvas.getCurrentDrawing().getLayerLocked(layerName)
+}
+
+/**
  * Moves the selected elements to layerName. If the name is not a valid layer name, then `false`
  * is returned. Otherwise it returns `true`. This is an undo-able action.
  * @function module:draw.moveSelectedToLayer
@@ -1240,6 +1329,8 @@ export const init = canvas => {
   svgCanvas.renameCurrentLayer = renameCurrentLayer
   svgCanvas.setCurrentLayerPosition = setCurrentLayerPosition
   svgCanvas.setLayerVisibility = setLayerVisibility
+  svgCanvas.setLayerLocked = setLayerLocked
+  svgCanvas.getLayerLocked = getLayerLocked
   svgCanvas.moveSelectedToLayer = moveSelectedToLayer
   svgCanvas.mergeLayer = mergeLayer
   svgCanvas.mergeAllLayers = mergeAllLayers

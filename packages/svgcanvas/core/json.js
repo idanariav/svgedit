@@ -99,7 +99,9 @@ export const init = (canvas) => {
     }
   }
   // if shape is a path but we need to create a rect/ellipse, then remove the path
-  const currentLayer = svgCanvas?.getDrawing?.()?.getCurrentLayer?.()
+  // Resolve the layer that should receive new content: the current layer, unless
+  // it is locked, in which case the nearest unlocked layer is used instead.
+  const targetLayer = svgCanvas?.getDrawing?.()?.getTargetLayerGroup?.()
   if (shape && data.element !== shape.tagName) {
     shape.remove()
     shape = null
@@ -107,8 +109,8 @@ export const init = (canvas) => {
   if (!shape) {
     const ns = data.namespace || NS.SVG
     shape = svgdoc_.createElementNS(ns, data.element)
-    if (currentLayer) {
-      (svgCanvas.getCurrentGroup() || currentLayer).append(shape)
+    if (targetLayer) {
+      (svgCanvas.getCurrentGroup() || targetLayer).append(shape)
     }
   }
   const curShape = svgCanvas.getCurShape?.() || {}

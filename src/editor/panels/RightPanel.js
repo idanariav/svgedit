@@ -361,6 +361,12 @@ class RightPanel {
     const layerlist = $id('layerlist').querySelector('tbody')
     while (layerlist.firstChild) { layerlist.removeChild(layerlist.firstChild) }
 
+    // Render the open/closed padlock into a lock-cell's icon span.
+    const renderLockIcon = (span, locked) => {
+      while (span.firstChild) { span.removeChild(span.firstChild) }
+      fetchSvgEl(locked ? 'lock.svg' : 'lock_open.svg').then(svg => { if (svg) span.appendChild(svg) })
+    }
+
     $id('selLayerNames').setAttribute('options', '')
     const drawing = this.editor.svgCanvas.getCurrentDrawing()
     const currentLayerName = drawing.getCurrentLayerName()
@@ -383,10 +389,21 @@ class RightPanel {
       fetchSvgEl('eye.svg').then(svg => { if (svg) _eye.appendChild(svg) })
       layerVis.appendChild(_eye)
 
+      const layerLock = document.createElement('td')
+      layerLock.className = drawing.getLayerLocked(name) ? 'layerlock locked' : 'layerlock'
+      const _lock = document.createElement('span')
+      _lock.style.width = '14px'
+      _lock.style.height = '14px'
+      _lock.style.display = 'inline-block'
+      // Open padlock when unlocked (signals it's clickable), closed when locked.
+      renderLockIcon(_lock, drawing.getLayerLocked(name))
+      layerLock.appendChild(_lock)
+
       const layerName = document.createElement('td')
       layerName.className = 'layername'
       layerName.textContent = name
       layerTr.appendChild(layerVis)
+      layerTr.appendChild(layerLock)
       layerTr.appendChild(layerName)
       layerlist.appendChild(layerTr)
       values = (values) ? values + '::' + name : name
@@ -435,6 +452,22 @@ class RightPanel {
         // run extension if layer visibility is changed from listener
         self.editor.svgCanvas.runExtensions(
           'layerVisChanged'
+        )
+      })
+    })
+    const lockElements = $id('layerlist').querySelectorAll('td.layerlock')
+    Array.from(lockElements).forEach(function (element) {
+      $click(element, function (evt) {
+        const ele = evt.currentTarget.parentNode.querySelector('td.layername')
+        const name = (ele) ? ele.textContent : ''
+        const locked = evt.currentTarget.classList.contains('locked')
+        self.editor.svgCanvas.setLayerLocked(name, !locked)
+        evt.currentTarget.classList.toggle('locked')
+        const span = evt.currentTarget.querySelector('span')
+        if (span) { renderLockIcon(span, !locked) }
+        // run extension when layer lock state is changed from listener
+        self.editor.svgCanvas.runExtensions(
+          'layersChanged'
         )
       })
     })

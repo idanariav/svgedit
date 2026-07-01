@@ -237,7 +237,8 @@ ext-shadow, ext-outline, and ext-color-shift now inject into `#tab_effects`
 | `layer_up` | Move layer up in stack |
 | `layer_down` | Move layer down in stack |
 | `layer_moreopts` | More options menu |
-| *(layer list)* | Layer rows with visibility toggle + name |
+| *(layer list)* | Layer rows with visibility toggle (`td.layervis`, eye icon) + **lock toggle** (`td.layerlock`, open/closed padlock) + name |
+| *(lock toggle)* | `td.layerlock` per row toggles a layer's **locked** state (`locked` class). Shows an **open** padlock (`lock_open.svg`, muted) when unlocked and a **closed** padlock (`lock.svg`, accent) when locked, swapped via `renderLockIcon` in `populateLayers`. A locked layer keeps its contents but does not receive **new** objects — `addSVGElementsFromJson` redirects them to the nearest unlocked layer via `Drawing.getTargetLayerGroup()` (does not change the selected layer). Persisted on the layer `<g>` as `se:locked="true"`. API: `svgCanvas.setLayerLocked(name, bool)` / `getLayerLocked(name)` (non-undoable). Built in `RightPanel.populateLayers`, mirroring the visibility toggle |
 | `selLayerNames` | Move selected elements to another layer. A trailing **"+ New layer…"** option (sentinel value `NEW_LAYER_OPTION_VALUE`, exported from `RightPanel.js`, appended via `se-select.addOption` in `populateLayers`) prompts for a name, creates the layer, and moves the current selection onto it in one step (`RightPanel.moveSelectedToNewLayer`; handled in `EditorStartup.js`'s change listener) |
 
 ---
