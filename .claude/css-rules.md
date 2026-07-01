@@ -140,6 +140,12 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 background image is the full-color brand `logo.svg`. Hidden by default; gets the
 `.visible` class only while the drawing has no objects. Toggled by
 `Editor.updateCanvasWatermark()` (called on `changed`/`afterClear` and at startup).
+
+**Layer Focus badge** — `#layer_focus_badge` is a `pointer-events:none` pill that
+shows the active layer name while Layer Focus mode is on (ext-layer_view). It is a
+**sibling** of `#workarea` placed in the same `grid-area: workarea` cell (not a
+child of the scroll container), so it stays pinned to the viewport top instead of
+scrolling with the canvas. Hidden by default; shown via the `.visible` class.
 | `bottom` | `#tools_bottom` | Bottom status bar |
 
 **Open state** (side panel expanded): adds class `.open` to `.svg_editor`, changing column 5 from `15px` to `220px`.

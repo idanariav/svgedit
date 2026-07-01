@@ -321,6 +321,31 @@
   padding: 56px 80px 80px 56px;
 }
 
+/* Layer Focus badge — shows the active layer name over the canvas while Layer
+   Focus mode is on. Placed in the same grid cell as #workarea (a sibling, not a
+   child) so it stays pinned to the top of the viewport instead of scrolling with
+   the canvas content. Never intercepts pointer events. */
+#layer_focus_badge {
+  grid-area: workarea;
+  align-self: start;
+  justify-self: center;
+  margin-top: 10px;
+  z-index: 6;
+  display: none;
+  pointer-events: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+}
+#layer_focus_badge.visible {
+  display: inline-flex;
+}
+
 /* #svgcanvas is the (over-sized) scroll/pan area, not the document page, so it
    must stay transparent. The "paper" appearance lives on #canvasBackground
    below, which is sized to the document and scales with zoom. */
