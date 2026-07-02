@@ -4,8 +4,16 @@
  * Mirror drawing mode: while active, every newly drawn element gets a
  * reflected twin across the canvas center axis (vertical by default;
  * Shift+click the toggle for horizontal). A dashed axis line is shown while
- * the mode is on. Twins are independent elements after creation (stamped
- * `se:mirror-of="<sourceId>"`, no live link — that's the Wave 2 upgrade).
+ * the mode is on.
+ *
+ * Live linked symmetry: twins are stamped `se:mirror-of="<sourceId>"` +
+ * `se:mirror-axis`, and stay synced with their source — editing/moving the
+ * source rebuilds the twin's reflected geometry (during the drag too, via
+ * `elementTransition`), whether or not the mode is still on. Syncs are
+ * deliberately non-undoable (ext-connector's re-routing precedent): undoing
+ * a source edit re-fires `elementChanged`, which re-syncs the twin to match.
+ * Dragging a twin directly breaks the link so the manual edit sticks;
+ * dragging source and twin together also unlinks (both then move normally).
  *
  * Detection: new hand-drawn elements are committed by core `event.js` as a
  * bare `InsertElementCommand` through `svgCanvas.addCommandToHistory`. This
@@ -25,6 +33,7 @@
 const name = 'mirror'
 
 const MIRROR_OF_ATTR = 'se:mirror-of'
+const AXIS_ATTR = 'se:mirror-axis'
 
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
@@ -99,6 +108,7 @@ export default {
       const clone = src.cloneNode(true)
       svgCanvas.remapElementIdsAndRefs([clone], () => svgCanvas.getNextId())
       clone.setAttribute(MIRROR_OF_ATTR, src.id)
+      clone.setAttribute(AXIS_ATTR, ax)
       const own = clone.getAttribute('transform')
       let tf
       if (clone.tagName === 'text') {
@@ -120,6 +130,76 @@ export default {
         svgCanvas.recalculateDimensions(clone)
       } catch { /* keep the transform form */ }
       return clone
+    }
+
+    /** Find the live twin of an element (the element mirroring `src`). */
+    const findTwin = (src) => {
+      if (!src.id) return null
+      for (const el of svgCanvas.getSvgContent().querySelectorAll('g > *')) {
+        if (el.getAttribute(MIRROR_OF_ATTR) === src.id) return el
+      }
+      return null
+    }
+
+    /**
+     * Rebuild `twin`'s reflected geometry/style from its source. Builds a
+     * fresh reflected clone, copies its attributes and subtree onto the
+     * existing twin node (keeping the twin's id + link stamps), then drops
+     * the temp. Non-undoable by design — undo of the source edit re-fires
+     * elementChanged, which re-syncs.
+     * @param {Element} src
+     * @param {Element} twin
+     * @returns {void}
+     */
+    const syncTwin = (src, twin) => {
+      const ax = twin.getAttribute(AXIS_ATTR) === 'h' ? 'h' : 'v'
+      busy = true
+      try {
+        const fresh = makeTwin(src, ax)
+        if (!fresh) return
+        const keep = new Set([MIRROR_OF_ATTR, AXIS_ATTR, 'id'])
+        for (const attr of Array.from(twin.attributes)) {
+          if (!keep.has(attr.name) && !fresh.hasAttribute(attr.name)) {
+            twin.removeAttribute(attr.name)
+          }
+        }
+        for (const attr of Array.from(fresh.attributes)) {
+          if (!keep.has(attr.name)) twin.setAttribute(attr.name, attr.value)
+        }
+        if (fresh.childNodes.length || twin.childNodes.length) {
+          twin.replaceChildren(...Array.from(fresh.childNodes))
+        }
+        fresh.remove()
+      } finally {
+        busy = false
+      }
+    }
+
+    /**
+     * Live-link dispatcher for elementChanged/elementTransition: sources
+     * re-sync their twins; a twin the user drags directly is unlinked so the
+     * manual edit sticks (interactive only — undo/programmatic changes must
+     * not sever links).
+     * @param {Element[]} elems
+     * @param {boolean} interactive - True during a live drag.
+     * @returns {void}
+     */
+    const handleLinkedElems = (elems, interactive) => {
+      if (busy) return
+      for (const el of elems) {
+        if (!el || el.nodeType !== 1 || el.tagName === 'svg') continue
+        if (el.hasAttribute(MIRROR_OF_ATTR)) {
+          if (interactive) {
+            el.removeAttribute(MIRROR_OF_ATTR)
+            el.removeAttribute(AXIS_ATTR)
+          }
+          continue
+        }
+        const twin = findTwin(el)
+        // Skip when source and twin move together (both selected): the twin
+        // is being dragged in its own right, not shadowing the source.
+        if (twin && !elems.includes(twin)) syncTwin(el, twin)
+      }
     }
 
     // Wrap history: a bare InsertElementCommand while the mode is on is a
@@ -202,6 +282,10 @@ export default {
         // Canvas resize fires elementChanged with the <svg> element — the
         // axis position depends on the resolution.
         if (opts.elems.some((el) => el?.tagName === 'svg')) drawAxis()
+        handleLinkedElems(opts.elems, false)
+      },
+      elementTransition (opts) {
+        handleLinkedElems(opts.elems, true)
       },
       callback () {
         const buttonTemplate = document.createElement('template')

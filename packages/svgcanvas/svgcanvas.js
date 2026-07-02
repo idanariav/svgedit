@@ -73,6 +73,7 @@ import { init as booleanOpsInit } from './core/boolean-ops.js'
 import { init as pathOffsetInit } from './core/path-offset.js'
 import { init as pathSimplifyInit } from './core/path-simplify.js'
 import { init as cornerRadiusInit } from './core/corner-radius.js'
+import { init as taperStrokeInit } from './core/taper-stroke.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
 import { init as cutterInit } from './core/cutter.js'
 import {
@@ -296,6 +297,7 @@ class SvgCanvas {
     pathOffsetInit(this)
     pathSimplifyInit(this)
     cornerRadiusInit(this)
+    taperStrokeInit(this)
     clipMaskInit(this)
     cutterInit(this)
 

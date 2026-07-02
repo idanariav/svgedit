@@ -1,6 +1,7 @@
 {
     "lib": [
         "basic",
+        "accents",
         "arrow",
         "animal",
         "people",

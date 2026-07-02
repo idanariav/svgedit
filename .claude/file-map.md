@@ -67,6 +67,9 @@
 | `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
 | `seOffsetSettings.js` | `<se-offset-settings>` | Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
 | `seRepeatSettings.js` | `<se-repeat-settings>` | Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected by ext-repeat |
+| `seGuidesSettings.js` | `<se-guides-settings>` | Guides popover (thirds/golden/center overlay toggles, "+ Vertical/Horizontal" guide drops, clear-all → ext-guides `svgCanvas` API); injected into `#editor_panel` by ext-guides |
+| `seMotionSettings.js` | `<se-motion-settings>` | Motion-line popover (direction, count, length, gap, curve + Apply/Update → `svgCanvas.applyMotionLines`); seeded from `svgCanvas.getMotionParams()`; injected by ext-motion-lines |
+| `seTaperSettings.js` | `<se-taper-settings>` | Taper-stroke popover (start/end tip % + Apply/Update/Remove → `svgCanvas.applyTaperStroke`/`removeTaperStroke`); seeded from `svgCanvas.getTaperParams()`; injected by ext-taper |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
@@ -117,8 +120,11 @@
 | `ext-smart-guides/` | Smart alignment guides overlay + `tool_smart_snap` toggle (view tray). Renders `svgCanvas.showSmartGuides(payload)` for the object-to-object snapping in `core/smart-guides.js`/`event.js` |
 | `ext-corner-radius/` | "Corners" Design-tab section (`corner_radius_value`) → `svgCanvas.applyCornerRadius(r)`; drops stale rounding attrs when `d` is rewritten outside the pipeline |
 | `ext-repeat/` | Radial/grid repeat (array) tool: `svgCanvas.repeatSelection(params)` + `getRepeatParams()`, `se:repeat*` stamping for re-edit, popover buttons in Object/Combine sections |
-| `ext-mirror/` | Mirror drawing mode (`tool_mirror` view-tray toggle; Shift+click = horizontal axis) + "Mirror-copy selection" buttons. Wraps `addCommandToHistory` to twin freshly drawn elements in one undo batch |
-| `ext-shapes/` | Pre-made shape library |
+| `ext-mirror/` | Mirror drawing mode (`tool_mirror` view-tray toggle; Shift+click = horizontal axis) + "Mirror-copy selection" buttons. Wraps `addCommandToHistory` to twin freshly drawn elements in one undo batch. **Live linked symmetry:** twins (`se:mirror-of` + `se:mirror-axis`) re-sync to source edits via `elementChanged`/`elementTransition` (non-undoable, connector-style); dragging a twin unlinks it |
+| `ext-guides/` | Draggable ruler guides + composition overlays: `#rulerGuides` interactive overlay in `svgroot` (drag from a ruler or "+ Vertical/Horizontal" popover buttons; guides persist as `se:guides` on `#svgcontent` and are snap targets in `core/smart-guides.js`); thirds/golden/center overlays in `#compOverlays` on `#canvasBackground` (`guides_*` prefs); `<se-guides-settings>` view-tray popover |
+| `ext-motion-lines/` | Parametric motion-line (speed-line) generator: `svgCanvas.applyMotionLines(params)` + `getMotionParams()`, `se:motion*` stamping for re-edit (ext-repeat scheme), `<se-motion-settings>` popover in Object/Combine sections |
+| `ext-taper/` | UI glue for tapered strokes (`core/taper-stroke.js`): `<se-taper-settings>` popover in the Object section, self-managed visibility via `svgCanvas.canTaperStroke` |
+| `ext-shapes/` | Pre-made shape library (incl. the stroke-based **Accents** decoration category — droplets, sparkles, motion arcs, speed lines, puffs — in `shapelib/accents.json`) |
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — angle/length, blur, opacity, color (delegates to `fx-filter.js`) |
@@ -157,6 +163,7 @@
 | `core/path-simplify.js` | `simplifyFreehand(polyline, tol)` (pencil-commit curve fitting) + `smoothSelectedPath(tol)` ("Smooth Path" action) via paper.js `simplify()` (flatten→refit for existing paths) |
 | `core/smart-guides.js` | Object-to-object snapping math: `collectSnapTargets`, `snapMovingBBox` (edge/center, same-kind beats mixed), `findEqualSpacing`; consumed by the select-move branch in `event.js` |
 | `core/corner-radius.js` | Attribute-driven corner fillets: `applyCornerRadius(r)`/`canRoundCorners` (`se:corner-radius` + `se:orig-d`), `roundedPathD` arc-fillet geometry, `remapCornerSource` (called from `coords.js` to keep the source in sync with baked transforms) |
+| `core/taper-stroke.js` | Tapered strokes: `applyTaperStroke({start,end})`/`removeTaperStroke()`/`canTaperStroke` — stroked open path → filled variable-width outline (paper.js normal offsetting + `simplify()` refit); centerline in `se:taper-d`, width/paint in `se:taper-style`, profile in `se:taper`; `remapTaperSource` keeps them in sync from `coords.js` |
 | `core/clip-mask.js` | Set/release/feather clip path & mask — `setClip()`, `setMask()`, `releaseClipMask()`, `setFeather()`/`getFeather()` (bottom of 2 selected is cloned into `<defs>` as the silhouette; top shape gets the `clip-path`/`mask`; both stay visible). Signed feather: +soft edge / −strong rim; auto-converts a clip to a mask |
 | `core/cutter.js` | Half-plane intersection cut algorithm — `cutShapes(x1,y1,x2,y2)` |
 | `core/json.js` | JSON import/export |

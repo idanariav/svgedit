@@ -355,6 +355,8 @@ const mouseMoveEvent = (evt) => {
           // (no-op at top level). Fixes child dragging too far in a scaled/
           // rotated group.
           const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(dx, dy)
+          // Candidate delta for transformAgain — committed in mouseUp.
+          svgCanvas.pendingMoveDelta = { dx, dy }
           selectedElements.forEach((el) => {
             if (el) {
               updateTransformList(svgRoot, el, ldx, ldy)
@@ -793,6 +795,8 @@ const mouseUpEvent = (evt) => {
   svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
   svgCanvas.smartSnapTargets = null
   svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines
+  const pendingMove = svgCanvas.pendingMoveDelta
+  svgCanvas.pendingMoveDelta = null
   if (evt.button === 2) { return }
   if (!svgCanvas.getStarted()) { return }
 
@@ -944,6 +948,10 @@ const mouseUpEvent = (evt) => {
           })
 
           if (!batchCmd.isEmpty()) {
+            // A committed drag-move is the repeatable delta for transformAgain.
+            if (pendingMove && operationMode !== 'resize') {
+              svgCanvas.lastMoveDelta = pendingMove
+            }
             svgCanvas.addCommandToHistory(batchCmd)
             // A resize bakes the scale into real attributes (font-size, width, height, …)
             // via recalculateDimensions. Fire 'changed' so the context panel reflects the

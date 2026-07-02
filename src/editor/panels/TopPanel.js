@@ -845,6 +845,23 @@ class TopPanel {
   }
 
   /**
+   * Select every element sharing a property with the current selection.
+   * @param {Event} evt - `change` event from the select-same dropdown.
+   * @returns {void}
+   */
+  clickSelectSame (evt) {
+    this.editor.svgCanvas.selectSameAs(evt.detail.value)
+  }
+
+  /**
+   * Uniform stroke-width + round joins/caps across the selection.
+   * @returns {void}
+   */
+  clickNormalizeStrokes () {
+    this.editor.svgCanvas.normalizeStrokes()
+  }
+
+  /**
    *
    * @returns {void}
    */
@@ -1198,6 +1215,8 @@ class TopPanel {
     $click($id('tool_topath'), this.convertToPath.bind(this))
     $click($id('tool_smooth_path'), this.smoothPath.bind(this))
     $click($id('tool_stroke_to_path'), this.strokeToPath.bind(this))
+    $id('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
+    $click($id('tool_normalize_strokes'), this.clickNormalizeStrokes.bind(this))
     $click($id('tool_make_link'), this.makeHyperlink.bind(this))
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
     $click($id('tool_reorient'), this.reorientPath.bind(this))

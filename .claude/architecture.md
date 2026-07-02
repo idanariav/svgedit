@@ -71,8 +71,11 @@ svgedit/
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
-│   │   ├── ext-mirror/            # Mirror drawing mode + mirror-copy action
-│   │   ├── ext-shapes/            # Pre-made shape library (clipart)
+│   │   ├── ext-mirror/            # Mirror drawing mode + live linked symmetry
+│   │   ├── ext-guides/            # Draggable ruler guides + composition overlays
+│   │   ├── ext-motion-lines/      # Parametric motion-line (speed-line) generator
+│   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
+│   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
 │   │   ├── ext-storage/           # Auto-save to browser localStorage
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │
@@ -176,6 +179,7 @@ src/editor/index.html
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `smoothSelectedPath` ("Smooth Path" action) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
+| `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting; `remapTaperSource` keeps the centerline in sync from `coords.js` |
 | `json.js` | JSON import/export of SVG data |
 | `units.js` | Unit conversion (px, em, cm, mm, in…) |
 | `math.js` | Transform matrix operations |

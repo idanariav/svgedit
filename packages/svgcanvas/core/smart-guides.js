@@ -72,6 +72,14 @@ export const collectSnapTargets = (svgCanvas, excludeElems) => {
   targets.push({
     left: 0, cx: res.w / 2, right: res.w, top: 0, cy: res.h / 2, bottom: res.h, isPage: true
   })
+  // Ruler guides (ext-guides) snap on their own axis only: a vertical guide
+  // carries just x-keys, a horizontal one just y-keys, so the other axis'
+  // comparisons come out NaN and never match.
+  const rulerGuides = svgCanvas.getRulerGuides?.()
+  if (rulerGuides) {
+    for (const gx of rulerGuides.v) targets.push({ left: gx, cx: gx, right: gx, isGuide: true })
+    for (const gy of rulerGuides.h) targets.push({ top: gy, cy: gy, bottom: gy, isGuide: true })
+  }
   return targets
 }
 
@@ -132,7 +140,7 @@ export const findEqualSpacing = (bb, dx, dy, targets, tol) => {
   const m = toEdges({ x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height })
   const overlapV = (t) => t.bottom >= m.top && t.top <= m.bottom
   const overlapH = (t) => t.right >= m.left && t.left <= m.right
-  const real = targets.filter((t) => !t.isPage)
+  const real = targets.filter((t) => !t.isPage && !t.isGuide)
 
   let x = null
   const lefts = real.filter((t) => overlapV(t) && t.right <= m.left + tol)

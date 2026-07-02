@@ -223,6 +223,8 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
   if (!Array.isArray(dx)) {
     dx /= zoom
     dy /= zoom
+    // Remember the delta (content units) so transformAgain can repeat it.
+    if (undoable && (dx || dy)) svgCanvas.lastMoveDelta = { dx, dy }
   }
 
   const batchCmd = new BatchCommand('position')
@@ -336,6 +338,114 @@ const cloneSelectedElements = (x, y) => {
     svgCanvas.addToSelection(copiedElements.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
     moveSelectedElements(x, y, false)
     svgCanvas.addCommandToHistory(batchCmd)
+  }
+}
+
+/**
+ * Repeat the last duplicate+transform (Illustrator's "Transform Again"):
+ * clone the selection and offset it by the most recently committed move
+ * delta (drag or nudge, recorded in `svgCanvas.lastMoveDelta` in content
+ * units). Because the clones become the selection, pressing it repeatedly
+ * builds a chain of evenly spaced copies.
+ * @function module:selected-elem.SvgCanvas#transformAgain
+ * @returns {void}
+ */
+const transformAgain = () => {
+  const selected = svgCanvas.getSelectedElements().filter(Boolean)
+  if (!selected.length) return
+  const d = svgCanvas.lastMoveDelta || { dx: 10, dy: 10 }
+  // cloneSelectedElements feeds moveSelectedElements, which divides by zoom —
+  // pre-multiply so the recorded content-unit delta is applied exactly.
+  const zoom = svgCanvas.getZoom()
+  cloneSelectedElements(d.dx * zoom, d.dy * zoom)
+}
+
+/**
+ * Extend the selection to every element (in the current group context, or on
+ * any visible layer) that shares a property with the primary selected element.
+ * @function module:selected-elem.SvgCanvas#selectSameAs
+ * @param {"fill"|"stroke"|"type"} criterion
+ * @returns {void}
+ */
+const selectSameAs = criterion => {
+  const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
+  if (!ref) return
+  const norm = (el, attr, def) => {
+    const v = el.getAttribute(attr)
+    return v === null || v === '' ? def : v.toLowerCase()
+  }
+  const matches = el => {
+    switch (criterion) {
+      case 'fill':
+        return norm(el, 'fill', '#000000') === norm(ref, 'fill', '#000000')
+      case 'stroke':
+        return norm(el, 'stroke', 'none') === norm(ref, 'stroke', 'none')
+      case 'type':
+      default:
+        return el.tagName === ref.tagName
+    }
+  }
+  const found = []
+  const scan = parent => {
+    for (const el of parent.children) {
+      if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
+      if (matches(el)) found.push(el)
+    }
+  }
+  const group = svgCanvas.getCurrentGroup()
+  if (group) {
+    scan(group)
+  } else {
+    for (const layer of svgCanvas.getSvgContent().children) {
+      if (layer.tagName !== 'g') continue
+      if (layer.getAttribute('display') === 'none' || layer.style.display === 'none') continue
+      scan(layer)
+    }
+  }
+  if (found.length) {
+    svgCanvas.selectOnly(found, true)
+  }
+}
+
+/**
+ * One-click stroke cleanup across the selection (groups included): every
+ * stroked element gets the primary element's stroke-width plus round
+ * joins/caps — uniform confident linework in one undo step.
+ * @function module:selected-elem.SvgCanvas#normalizeStrokes
+ * @returns {void}
+ */
+const normalizeStrokes = () => {
+  const selected = svgCanvas.getSelectedElements().filter(Boolean)
+  if (!selected.length) return
+  const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
+  const targets = []
+  const collect = el => {
+    if (skip.has(el.tagName)) return
+    if (el.tagName === 'g' || el.tagName === 'a') {
+      for (const c of el.children) collect(c)
+      return
+    }
+    if ((el.getAttribute('stroke') || 'none') !== 'none') targets.push(el)
+  }
+  selected.forEach(collect)
+  if (!targets.length) return
+
+  const width = targets[0].getAttribute('stroke-width') || '1'
+  const batchCmd = new BatchCommand('Normalize strokes')
+  const changeAttr = (el, attr, val) => {
+    const old = el.getAttribute(attr)
+    if (old === val) return
+    el.setAttribute(attr, val)
+    batchCmd.addSubCommand(new ChangeElementCommand(el, { [attr]: old }))
+  }
+  for (const el of targets) {
+    changeAttr(el, 'stroke-width', width)
+    changeAttr(el, 'stroke-linejoin', 'round')
+    changeAttr(el, 'stroke-linecap', 'round')
+  }
+  if (!batchCmd.isEmpty()) {
+    svgCanvas.addCommandToHistory(batchCmd)
+    svgCanvas.call('changed', targets)
   }
 }
 /**
@@ -1474,6 +1584,9 @@ const cycleElement = next => {
   svgCanvas.switchSelectedZorder = switchSelectedZorder // Reverses the z-order (stacking) of exactly two selected elements
   svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
   svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
+  svgCanvas.transformAgain = transformAgain // Repeat the last duplicate+transform (clone offset by the last committed move delta)
+  svgCanvas.selectSameAs = selectSameAs // Select all elements sharing the primary selection's fill/stroke/type
+  svgCanvas.normalizeStrokes = normalizeStrokes // Uniform stroke-width + round joins/caps across the selection
   svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
   svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.
   svgCanvas.cycleElement = cycleElement // Select the next/previous element within the current layer.

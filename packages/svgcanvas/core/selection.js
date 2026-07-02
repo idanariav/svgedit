@@ -221,6 +221,10 @@ const getMouseTargetFromNode = (node) => {
     )
   ) {
     mouseTarget = mouseTarget.parentNode
+    // The node isn't inside the drawing at all (interactive overlays like
+    // the ruler guides, editor chrome) — treat it like empty canvas instead
+    // of walking off the top of the document.
+    if (!mouseTarget) return svgCanvas.getSvgRoot()
   }
 
   return mouseTarget

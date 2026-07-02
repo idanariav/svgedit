@@ -91,16 +91,19 @@ export default {
       }
 
       // Alignment lines span the moving bbox and the matched target bbox.
+      // A ruler-guide target has no cross-axis extent — highlight the whole
+      // guide instead.
+      const res = svgCanvas.getResolution()
       if (payload.x) {
         const t = payload.x.target
-        const y1 = Math.min(mEdges.top, t.top) * zoom
-        const y2 = Math.max(mEdges.bottom, t.bottom) * zoom
+        const y1 = (t.isGuide ? 0 : Math.min(mEdges.top, t.top)) * zoom
+        const y2 = (t.isGuide ? res.h : Math.max(mEdges.bottom, t.bottom)) * zoom
         addLine(frag, payload.x.pos * zoom, y1, payload.x.pos * zoom, y2)
       }
       if (payload.y) {
         const t = payload.y.target
-        const x1 = Math.min(mEdges.left, t.left) * zoom
-        const x2 = Math.max(mEdges.right, t.right) * zoom
+        const x1 = (t.isGuide ? 0 : Math.min(mEdges.left, t.left)) * zoom
+        const x2 = (t.isGuide ? res.w : Math.max(mEdges.right, t.right)) * zoom
         addLine(frag, x1, payload.y.pos * zoom, x2, payload.y.pos * zoom)
       }
 

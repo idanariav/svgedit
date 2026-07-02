@@ -6,6 +6,7 @@
 
 import { warn } from '../common/logger.js'
 import { remapCornerSource } from './corner-radius.js'
+import { remapTaperSource } from './taper-stroke.js'
 
 import {
   snapToGrid,
@@ -557,6 +558,12 @@ const pathMap = [
       // pre-move/resize geometry.
       if (selected.hasAttribute('se:orig-d')) {
         remapCornerSource(selected, remap, scalew, scaleh)
+      }
+      // Same idea for tapered strokes: keep the stored centerline + width in
+      // sync with the baked transform and regenerate the outline from them
+      // (see core/taper-stroke.js).
+      if (selected.hasAttribute('se:taper-d')) {
+        remapTaperSource(selected, remap, scalew, scaleh)
       }
       break
     }

@@ -34,6 +34,7 @@ for (const [p, data] of Object.entries(shapeLibModules)) {
 // ── Category labels ─────────────────────────────────────────────────────────
 const CAT_LABELS = {
   basic: 'Basic',
+  accents: 'Accents',
   animal: 'Animals',
   arrow: 'Arrows',
   people: 'People',

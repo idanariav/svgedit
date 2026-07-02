@@ -403,6 +403,15 @@ class Editor extends EditorStartup {
         }
       },
       {
+        id: 'transform_again',
+        group: 'Clone',
+        label: 'hotkeys.transform_again',
+        key: ['mod+d', true],
+        fn: () => {
+          this.svgCanvas.transformAgain()
+        }
+      },
+      {
         id: 'escape',
         group: 'Selection',
         label: 'hotkeys.escape',
