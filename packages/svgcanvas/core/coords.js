@@ -5,6 +5,7 @@
  */
 
 import { warn } from '../common/logger.js'
+import { remapCornerSource } from './corner-radius.js'
 
 import {
   snapToGrid,
@@ -546,6 +547,16 @@ const pathMap = [
           selected.setAttribute('data-rx', arcSeg.r1)
           selected.setAttribute('data-ry', arcSeg.r2)
         }
+      }
+
+      // Corner-rounded paths store their pre-fillet source in `se:orig-d`
+      // (see core/corner-radius.js). Keep it in sync with the baked
+      // transform and regenerate `d` from it (also fixes the fillet arcs,
+      // which the generic seg remap above only approximates under flips) —
+      // otherwise the next radius edit snaps the shape back to its
+      // pre-move/resize geometry.
+      if (selected.hasAttribute('se:orig-d')) {
+        remapCornerSource(selected, remap, scalew, scaleh)
       }
       break
     }

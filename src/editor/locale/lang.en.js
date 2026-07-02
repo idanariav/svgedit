@@ -250,6 +250,7 @@ export default {
     set_link_url: 'Set link URL (leave empty to remove)',
     to_path: 'Convert to Path',
     path_offset: 'Offset / Inset Path',
+    smooth_path: 'Smooth Path',
     stroke_to_path: 'Stroke to Path',
     reorient_path: 'Reorient path',
     flip_horizontal: 'Flip Horizontally',

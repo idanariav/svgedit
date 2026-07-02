@@ -68,6 +68,10 @@ svgedit/
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
 │   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
+│   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
+│   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
+│   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
+│   │   ├── ext-mirror/            # Mirror drawing mode + mirror-copy action
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart)
 │   │   ├── ext-storage/           # Auto-save to browser localStorage
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
@@ -169,6 +173,9 @@ src/editor/index.html
 | `text-actions.js` | Text element editing (cursor, selection) |
 | `layer.js` | Layer CRUD (add, delete, rename, reorder) |
 | `boolean-ops.js` | Union, intersect, subtract operations |
+| `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `smoothSelectedPath` ("Smooth Path" action) |
+| `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
+| `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
 | `json.js` | JSON import/export of SVG data |
 | `units.js` | Unit conversion (px, em, cm, mm, in…) |
 | `math.js` | Transform matrix operations |

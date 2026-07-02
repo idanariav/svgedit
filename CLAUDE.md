@@ -194,6 +194,16 @@ npm start   # serves on http://localhost:8000/src/editor/index.html
 npm start -- --port 8001
 ```
 
+> ⚠️ **The dev server does NOT serve `packages/svgcanvas` from source.**
+> `@svgedit/svgcanvas` resolves through the workspace symlink to the package's
+> `main`: `packages/svgcanvas/dist/svgcanvas.js` — a **built artifact**. After
+> any change under `packages/svgcanvas/`, rebuild it before testing:
+> ```bash
+> npx vite build packages/svgcanvas
+> ```
+> then reload the page (no server restart needed). Editor-side files
+> (`src/editor/**`) are served from source as usual.
+
 ### Storage-consent popup
 
 On first load the editor shows `<se-storage-dialog>` — a shadow DOM modal
@@ -209,12 +219,34 @@ await page.evaluate(() => {
 await page.waitForTimeout(500)
 ```
 
-Alternatively, append `?noStorageOnLoad=true` to the URL — this suppresses the
-dialog entirely and is the recommended approach for automated tests:
+Appending `?noStorageOnLoad=true` to the URL suppresses the *prompt content*,
+but the `<se-storage-dialog>` element can **still be present and intercept
+pointer events** (real `page.mouse` clicks hit it instead of the canvas). For
+real-input tests, always remove it explicitly after load:
 
 ```js
 const URL = 'http://localhost:8001/src/editor/index.html?noStorageOnLoad=true'
+await page.evaluate(() => { document.querySelector('se-storage-dialog')?.remove() })
 ```
+
+### Coordinate mapping for real mouse drags
+
+Do **not** derive the content origin from
+`svgcontent.getBoundingClientRect()` — for an inner `<svg>` it returns the
+union of its *rendered children*, not the viewport box (empty canvas ⇒ wrong
+origin). Use the outer `#svgroot` rect plus `#svgcontent`'s `x`/`y` attrs:
+
+```js
+const rootRect = document.querySelector('#svgroot').getBoundingClientRect()
+const content = document.querySelector('#svgcontent')
+const ox = rootRect.left + Number(content.getAttribute('x'))
+const oy = rootRect.top + Number(content.getAttribute('y'))
+// clientX = ox + contentX * zoom, clientY = oy + contentY * zoom
+```
+
+Note: a select-mode drag commits as a `matrix(1 0 0 1 dx dy)` transform on the
+element — `x`/`y` attributes are **not** rewritten. Assert on effective
+position (attr + matrix offset), not on the attribute alone.
 
 ### Toolbar tools are off-screen at small viewports
 

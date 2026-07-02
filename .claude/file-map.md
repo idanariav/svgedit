@@ -66,6 +66,7 @@
 | `seCanvasSettings.js` | `<se-canvas-settings>` | Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset). Presets are user-editable via a "Manage presets" mode (add/edit/remove rows, GCD-autofilled labels) and persist via the `userDataAdapter` (`getCanvasPresets`/`setCanvasPresets`), falling back to `localStorage` key `svg-edit-canvas-presets`; built-in `DEFAULT_PRESETS` seed an empty list. Also hosts a **Layouts** section (save current canvas as a named template, Apply/Overwrite/Remove) backed by `../canvasLayouts.js` |
 | `seGridSettings.js` | `<se-grid-settings>` | Grid-settings popover (show/snap toggles, shape select, color, step); injected into `#editor_panel` by ext-grid |
 | `seOffsetSettings.js` | `<se-offset-settings>` | Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
+| `seRepeatSettings.js` | `<se-repeat-settings>` | Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected by ext-repeat |
 | `sePalette.js` | `<se-palette>` | Color palette swatch grid |
 | `seShapeLibrary.js` | `<se-shape-library>` | Shape library modal (48KB) |
 | `seFontLibrary.js` | `<se-font-library>` | Google Fonts browser popover (search + category chips, lazy in-font previews via `text=` subset). Picks a font → downloads it once via `fontStore.js`, dispatches `font-pick`. Sole importer of `fontStore.js` (keeps it single-instance) |
@@ -113,6 +114,10 @@
 | `ext-polystar/` | Star and polygon tools |
 | `ext-brush/` | Pressure-sensitive brush tool (`perfect-freehand` filled-outline strokes; pen pressure via passive PointerEvent side-channel) |
 | `ext-proportion-markers/` | Wireframe-only edge proportion tick markers (companion to proportion snapping in `event.js`) |
+| `ext-smart-guides/` | Smart alignment guides overlay + `tool_smart_snap` toggle (view tray). Renders `svgCanvas.showSmartGuides(payload)` for the object-to-object snapping in `core/smart-guides.js`/`event.js` |
+| `ext-corner-radius/` | "Corners" Design-tab section (`corner_radius_value`) → `svgCanvas.applyCornerRadius(r)`; drops stale rounding attrs when `d` is rewritten outside the pipeline |
+| `ext-repeat/` | Radial/grid repeat (array) tool: `svgCanvas.repeatSelection(params)` + `getRepeatParams()`, `se:repeat*` stamping for re-edit, popover buttons in Object/Combine sections |
+| `ext-mirror/` | Mirror drawing mode (`tool_mirror` view-tray toggle; Shift+click = horizontal axis) + "Mirror-copy selection" buttons. Wraps `addCommandToHistory` to twin freshly drawn elements in one undo batch |
 | `ext-shapes/` | Pre-made shape library |
 | `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
@@ -149,6 +154,9 @@
 | `core/layer.js` | Layer CRUD |
 | `core/boolean-ops.js` | Union, intersect, subtract, exclude (XOR), divide (split bottom by top into separate pieces) |
 | `core/path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening) |
+| `core/path-simplify.js` | `simplifyFreehand(polyline, tol)` (pencil-commit curve fitting) + `smoothSelectedPath(tol)` ("Smooth Path" action) via paper.js `simplify()` (flatten→refit for existing paths) |
+| `core/smart-guides.js` | Object-to-object snapping math: `collectSnapTargets`, `snapMovingBBox` (edge/center, same-kind beats mixed), `findEqualSpacing`; consumed by the select-move branch in `event.js` |
+| `core/corner-radius.js` | Attribute-driven corner fillets: `applyCornerRadius(r)`/`canRoundCorners` (`se:corner-radius` + `se:orig-d`), `roundedPathD` arc-fillet geometry, `remapCornerSource` (called from `coords.js` to keep the source in sync with baked transforms) |
 | `core/clip-mask.js` | Set/release/feather clip path & mask — `setClip()`, `setMask()`, `releaseClipMask()`, `setFeather()`/`getFeather()` (bottom of 2 selected is cloned into `<defs>` as the silhouette; top shape gets the `clip-path`/`mask`; both stay visible). Signed feather: +soft edge / −strong rim; auto-converts a clip to a mask |
 | `core/cutter.js` | Half-plane intersection cut algorithm — `cutShapes(x1,y1,x2,y2)` |
 | `core/json.js` | JSON import/export |

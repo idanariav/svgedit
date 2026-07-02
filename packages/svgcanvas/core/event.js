@@ -17,6 +17,7 @@ import {
 import * as pathModule from './path.js'
 import * as hstry from './history.js'
 import { proportionLines } from './proportions.js'
+import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 
 const {
@@ -308,6 +309,34 @@ const mouseMoveEvent = (evt) => {
           if (sx) dx += sx.delta
           if (sy) dy += sy.delta
           svgCanvas.showSnapGuides?.({ x: sx, y: sy })
+        }
+        // Smart object-to-object snapping: align the moving selection's
+        // edges/centers to other elements' edges/centers (or the page), and
+        // snap to the midpoint between its two nearest neighbors (equal
+        // spacing). Skipped inside a group context — bboxes of children of a
+        // transformed group are not in content space.
+        if (svgCanvas.getCurConfig().smartSnapping !== false &&
+          svgCanvas.dragStartBBox && !svgCanvas.getCurrentGroup()) {
+          if (!svgCanvas.smartSnapTargets) {
+            svgCanvas.smartSnapTargets = collectSnapTargets(svgCanvas, selectedElements)
+          }
+          const tol = 8 / zoom // ~8 screen px
+          const bb = svgCanvas.dragStartBBox
+          const snap = snapMovingBBox(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
+          const spacing = findEqualSpacing(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
+          // Per-axis precedence: same-kind alignment (edge↔edge/center↔center)
+          // > equal spacing > mixed alignment (edge↔center).
+          const useSpacingX = spacing.x && !(snap.x?.same)
+          const useSpacingY = spacing.y && !(snap.y?.same)
+          if (useSpacingX) { dx += spacing.x.delta } else if (snap.x) { dx += snap.x.delta }
+          if (useSpacingY) { dy += spacing.y.delta } else if (snap.y) { dy += snap.y.delta }
+          svgCanvas.showSmartGuides?.({
+            x: useSpacingX ? null : snap.x,
+            y: useSpacingY ? null : snap.y,
+            spacingX: useSpacingX ? spacing.x : null,
+            spacingY: useSpacingY ? spacing.y : null,
+            moving: { x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height }
+          })
         }
         // Shift locks movement to the dominant axis (match Excalidraw)
         if (evt.shiftKey) {
@@ -762,6 +791,8 @@ const mouseUpEvent = (evt) => {
   moveSelectionThresholdReached = false
   svgCanvas.dragStartBBox = null
   svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
+  svgCanvas.smartSnapTargets = null
+  svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines
   if (evt.button === 2) { return }
   if (!svgCanvas.getStarted()) { return }
 
@@ -998,7 +1029,11 @@ const mouseUpEvent = (evt) => {
       const commaIndex = coords.indexOf(',')
       keep = commaIndex >= 0 ? coords.includes(',', commaIndex + 1) : coords.includes(' ', coords.indexOf(' ') + 1)
       if (keep) {
-        element = svgCanvas.pathActions.smoothPolylineIntoPath(element)
+        // Fit smooth cubics through the raw points (paper.js simplify) unless
+        // disabled; falls back to the legacy every-3-points smoothing inside.
+        element = svgCanvas.getCurConfig().pencilSimplify === false
+          ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
+          : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilSimplifyTolerance)
       }
       break
     } case 'line': {
