@@ -107,8 +107,12 @@ export default {
       const res = svgCanvas.getResolution()
       const clone = src.cloneNode(true)
       svgCanvas.remapElementIdsAndRefs([clone], () => svgCanvas.getNextId())
-      clone.setAttribute(MIRROR_OF_ATTR, src.id)
-      clone.setAttribute(AXIS_ATTR, ax)
+      // Namespaced (not plain setAttribute) so svgToString's xmlns:se
+      // detection picks it up — otherwise a saved drawing with only mirror
+      // twins (no other se:-namespaced attrs) serializes se:mirror-of/-axis
+      // with no xmlns:se declaration, which fails to reparse on reload.
+      clone.setAttributeNS(NS.SE, MIRROR_OF_ATTR, src.id)
+      clone.setAttributeNS(NS.SE, AXIS_ATTR, ax)
       const own = clone.getAttribute('transform')
       let tf
       if (clone.tagName === 'text') {
