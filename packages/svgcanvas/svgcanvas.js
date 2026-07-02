@@ -74,6 +74,8 @@ import { init as pathOffsetInit } from './core/path-offset.js'
 import { init as pathSimplifyInit } from './core/path-simplify.js'
 import { init as cornerRadiusInit } from './core/corner-radius.js'
 import { init as taperStrokeInit } from './core/taper-stroke.js'
+import { init as textPathInit } from './core/text-path.js'
+import { init as shapeBuilderInit } from './core/shape-builder.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
 import { init as cutterInit } from './core/cutter.js'
 import {
@@ -298,6 +300,8 @@ class SvgCanvas {
     pathSimplifyInit(this)
     cornerRadiusInit(this)
     taperStrokeInit(this)
+    textPathInit(this)
+    shapeBuilderInit(this)
     clipMaskInit(this)
     cutterInit(this)
 

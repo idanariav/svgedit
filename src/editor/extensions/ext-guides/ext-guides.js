@@ -88,7 +88,9 @@ export default {
     const syncGuidePos = () => {
       const content = svgCanvas.getSvgContent()
       for (const attr of ['x', 'y', 'width', 'height']) {
-        guideSvg.setAttribute(attr, content.getAttribute(attr))
+        const v = content.getAttribute(attr)
+        // A freshly loaded document has no x/y yet (updateCanvas sets them).
+        if (v !== null) guideSvg.setAttribute(attr, v)
       }
     }
 

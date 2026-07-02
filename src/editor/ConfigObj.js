@@ -214,6 +214,8 @@ export default class ConfigObj {
       'ext-guides',
       'ext-motion-lines',
       'ext-taper',
+      'ext-text-path',
+      'ext-shape-builder',
       // 'ext-imagelib',
       // 'ext-arrows',
       'ext-markers',

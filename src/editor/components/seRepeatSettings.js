@@ -117,6 +117,7 @@ template.innerHTML = `
     <div class="mode">
       <button class="mode-radial" aria-pressed="true">Radial</button>
       <button class="mode-grid" aria-pressed="false">Grid</button>
+      <button class="mode-path" aria-pressed="false">Path</button>
     </div>
     <div class="fields fields-radial">
       <div class="row2">
@@ -136,6 +137,18 @@ template.innerHTML = `
       <div class="row2">
         <se-spin-input id="repeat_gap_x" label="Gap X" min="-500" max="1000" step="1" value="20"></se-spin-input>
         <se-spin-input id="repeat_gap_y" label="Gap Y" min="-500" max="1000" step="1" value="20"></se-spin-input>
+      </div>
+    </div>
+    <div class="fields fields-path" style="display:none">
+      <div class="row2">
+        <se-spin-input id="repeat_path_count" label="Copies" min="1" max="72" step="1" value="8"></se-spin-input>
+        <se-spin-input id="repeat_path_offset" label="Start %" min="0" max="100" step="1" value="0"></se-spin-input>
+      </div>
+      <div class="row2">
+        <se-spin-input id="repeat_path_span" label="Span %" min="1" max="100" step="1" value="100"></se-spin-input>
+        <div class="mode" style="align-self:end">
+          <button class="path-follow" aria-pressed="true">Rotate along</button>
+        </div>
       </div>
     </div>
     <div class="actions">
@@ -167,16 +180,24 @@ class SeRepeatSettings extends HTMLElement {
     this.$popup = this._shadowRoot.querySelector('#options-container')
     this.$radial = this._shadowRoot.querySelector('.mode-radial')
     this.$grid = this._shadowRoot.querySelector('.mode-grid')
+    this.$path = this._shadowRoot.querySelector('.mode-path')
     this.$fieldsRadial = this._shadowRoot.querySelector('.fields-radial')
     this.$fieldsGrid = this._shadowRoot.querySelector('.fields-grid')
+    this.$fieldsPath = this._shadowRoot.querySelector('.fields-path')
     this.$centerCanvas = this._shadowRoot.querySelector('.center-canvas')
     this.$centerSelection = this._shadowRoot.querySelector('.center-selection')
+    this.$follow = this._shadowRoot.querySelector('.path-follow')
     this.$apply = this._shadowRoot.querySelector('.apply')
 
     this.$radial.addEventListener('click', () => this._setMode('radial'))
     this.$grid.addEventListener('click', () => this._setMode('grid'))
+    this.$path.addEventListener('click', () => this._setMode('path'))
     this.$centerCanvas.addEventListener('click', () => this._setCenter('canvas'))
     this.$centerSelection.addEventListener('click', () => this._setCenter('selection'))
+    this.$follow.addEventListener('click', () => {
+      this.$follow.setAttribute('aria-pressed',
+        String(this.$follow.getAttribute('aria-pressed') !== 'true'))
+    })
 
     this.$trigger.addEventListener('click', e => {
       e.stopPropagation()
@@ -211,8 +232,10 @@ class SeRepeatSettings extends HTMLElement {
     this._mode = mode
     this.$radial.setAttribute('aria-pressed', String(mode === 'radial'))
     this.$grid.setAttribute('aria-pressed', String(mode === 'grid'))
+    this.$path.setAttribute('aria-pressed', String(mode === 'path'))
     this.$fieldsRadial.style.display = mode === 'radial' ? 'flex' : 'none'
     this.$fieldsGrid.style.display = mode === 'grid' ? 'flex' : 'none'
+    this.$fieldsPath.style.display = mode === 'path' ? 'flex' : 'none'
   }
 
   _setCenter (center) {
@@ -242,11 +265,16 @@ class SeRepeatSettings extends HTMLElement {
         this._shadowRoot.querySelector('#repeat_count').value = existing.count
         this._shadowRoot.querySelector('#repeat_sweep').value = existing.sweep
         this._setCenter(existing.center)
-      } else {
+      } else if (existing.mode === 'grid') {
         this._shadowRoot.querySelector('#repeat_rows').value = existing.rows
         this._shadowRoot.querySelector('#repeat_cols').value = existing.cols
         this._shadowRoot.querySelector('#repeat_gap_x').value = existing.gapX
         this._shadowRoot.querySelector('#repeat_gap_y').value = existing.gapY
+      } else {
+        this._shadowRoot.querySelector('#repeat_path_count').value = existing.count
+        this._shadowRoot.querySelector('#repeat_path_offset').value = existing.offset
+        this._shadowRoot.querySelector('#repeat_path_span').value = existing.span
+        this.$follow.setAttribute('aria-pressed', String(!!existing.follow))
       }
     }
     this.$apply.textContent = existing ? 'Update' : 'Apply'
@@ -303,20 +331,31 @@ class SeRepeatSettings extends HTMLElement {
       const v = parseFloat(this._shadowRoot.querySelector(id).value)
       return Number.isFinite(v) ? v : fallback
     }
-    const params = this._mode === 'radial'
-      ? {
-          mode: 'radial',
-          count: Math.max(1, Math.round(num('#repeat_count', 6))),
-          sweep: num('#repeat_sweep', 360),
-          center: this._center
-        }
-      : {
-          mode: 'grid',
-          rows: Math.max(1, Math.round(num('#repeat_rows', 2))),
-          cols: Math.max(1, Math.round(num('#repeat_cols', 3))),
-          gapX: num('#repeat_gap_x', 20),
-          gapY: num('#repeat_gap_y', 20)
-        }
+    let params
+    if (this._mode === 'radial') {
+      params = {
+        mode: 'radial',
+        count: Math.max(1, Math.round(num('#repeat_count', 6))),
+        sweep: num('#repeat_sweep', 360),
+        center: this._center
+      }
+    } else if (this._mode === 'grid') {
+      params = {
+        mode: 'grid',
+        rows: Math.max(1, Math.round(num('#repeat_rows', 2))),
+        cols: Math.max(1, Math.round(num('#repeat_cols', 3))),
+        gapX: num('#repeat_gap_x', 20),
+        gapY: num('#repeat_gap_y', 20)
+      }
+    } else {
+      params = {
+        mode: 'path',
+        count: Math.max(1, Math.round(num('#repeat_path_count', 8))),
+        offset: num('#repeat_path_offset', 0),
+        span: num('#repeat_path_span', 100),
+        follow: this.$follow.getAttribute('aria-pressed') === 'true'
+      }
+    }
     svgEditor.svgCanvas.repeatSelection?.(params)
     this.close()
   }

@@ -75,6 +75,8 @@ svgedit/
 │   │   ├── ext-guides/            # Draggable ruler guides + composition overlays
 │   │   ├── ext-motion-lines/      # Parametric motion-line (speed-line) generator
 │   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
+│   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
+│   │   ├── ext-shape-builder/     # Interactive paint-to-merge region mode
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
 │   │   ├── ext-storage/           # Auto-save to browser localStorage
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
@@ -180,6 +182,8 @@ src/editor/index.html
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting; `remapTaperSource` keeps the centerline in sync from `coords.js` |
+| `text-path.js` | Text on path: attach/detach a `<textPath>` (href + xlink:href), rail auto-converted to `<path>`, `textPathOffset(pct)` for startOffset |
+| `shape-builder.js` | Shape-builder region math (`svgCanvas.shapeBuilder`): planar arrangement via iterative paper.js booleans; merge/delete gestures as BatchCommands |
 | `json.js` | JSON import/export of SVG data |
 | `units.js` | Unit conversion (px, em, cm, mm, in…) |
 | `math.js` | Transform matrix operations |

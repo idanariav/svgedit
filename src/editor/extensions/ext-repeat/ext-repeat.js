@@ -36,9 +36,11 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
-const serializeParams = (p) => p.mode === 'radial'
-  ? `radial;count=${p.count};sweep=${p.sweep};center=${p.center}`
-  : `grid;rows=${p.rows};cols=${p.cols};gapX=${p.gapX};gapY=${p.gapY}`
+const serializeParams = (p) => {
+  if (p.mode === 'radial') return `radial;count=${p.count};sweep=${p.sweep};center=${p.center}`
+  if (p.mode === 'grid') return `grid;rows=${p.rows};cols=${p.cols};gapX=${p.gapX};gapY=${p.gapY}`
+  return `path;count=${p.count};offset=${p.offset};span=${p.span};follow=${p.follow ? 1 : 0};rail=${p.rail || ''}`
+}
 
 const parseParams = (str) => {
   if (!str) return null
@@ -59,6 +61,16 @@ const parseParams = (str) => {
       cols: parseInt(vals.cols) || 3,
       gapX: parseFloat(vals.gapX) || 0,
       gapY: parseFloat(vals.gapY) || 0
+    }
+  }
+  if (mode === 'path') {
+    return {
+      mode,
+      count: parseInt(vals.count) || 8,
+      offset: parseFloat(vals.offset) || 0,
+      span: parseFloat(vals.span) || 100,
+      follow: vals.follow === '1',
+      rail: vals.rail || null
     }
   }
   return null
@@ -113,6 +125,27 @@ export default {
       sources = sources.filter((el) => !el.hasAttribute('data-frame'))
       if (!sources.length) return
 
+      // Path mode rides a rail: the topmost selected <path> (fresh apply) or
+      // the rail id stored in the stamped params (re-edit). The rail itself
+      // is never cloned or stamped.
+      let rail = null
+      if (params.mode === 'path') {
+        const byId = (id) => id &&
+          svgCanvas.getSvgContent().querySelector(`#${CSS.escape(id)}`)
+        rail = byId(params.rail)
+        if (!rail && uid && sources[0]) {
+          rail = byId(parseParams(sources[0].getAttribute(PARAMS_ATTR))?.rail)
+        }
+        if (!rail) {
+          const paths = sources.filter((el) => el.tagName === 'path').sort((a, b) =>
+            a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+          rail = paths[paths.length - 1] || null
+        }
+        sources = sources.filter((el) => el !== rail)
+        if (!rail || rail.tagName !== 'path' || !sources.length) return
+        params.rail = rail.id
+      }
+
       const { BatchCommand, InsertElementCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
       const batchCmd = new BatchCommand('Repeat')
 
@@ -156,6 +189,38 @@ export default {
         const step = full ? params.sweep / total : params.sweep / (total - 1)
         for (let k = 1; k < total; ++k) {
           transforms.push(`rotate(${k * step} ${cx} ${cy})`)
+        }
+      } else if (params.mode === 'path') {
+        // Distribute copies along the rail by arc length; the source unit
+        // stays where it is. `follow` rotates each copy to the tangent.
+        const total = rail.getTotalLength()
+        if (!total) return
+        const bb = svgCanvas.getStrokedBBox(sources)
+        const cx = bb.x + bb.width / 2
+        const cy = bb.y + bb.height / 2
+        const m = rail.transform?.baseVal?.consolidate?.()?.matrix || null
+        const mapPt = (p) => m
+          ? { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }
+          : p
+        const n = Math.max(1, params.count)
+        // Closed rail + full span: i/n spacing so f=0 and f=1 don't stack.
+        const closed = /[zZ]\s*$/.test(rail.getAttribute('d') || '')
+        const denom = closed && params.span >= 100 ? n : Math.max(1, n - 1)
+        for (let i = 0; i < n; ++i) {
+          // Closed rails wrap around; open rails clamp so the last copy sits
+          // at the end instead of jumping back to the start.
+          let f = (params.offset + params.span * i / denom) / 100
+          f = closed ? ((f % 1) + 1) % 1 : Math.min(1, Math.max(0, f))
+          const len = f * total
+          const p = mapPt(rail.getPointAtLength(len))
+          let tf = `translate(${p.x - cx} ${p.y - cy})`
+          if (params.follow) {
+            const p1 = mapPt(rail.getPointAtLength(Math.max(0, len - 0.5)))
+            const p2 = mapPt(rail.getPointAtLength(Math.min(total, len + 0.5)))
+            const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
+            tf = `rotate(${ang} ${p.x} ${p.y}) ${tf}`
+          }
+          transforms.push(tf)
         }
       } else {
         const bb = svgCanvas.getStrokedBBox(sources)
