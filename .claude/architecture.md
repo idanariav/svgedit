@@ -43,7 +43,7 @@ svgedit/
 │   │   ├── PaintBox.js            # Fill/stroke paint control
 │   │   └── svgIconLoader.js       # Shared utility: fetches + inlines SVG icons
 │   │
-│   ├── dialogs/                   # Modal dialogs (custom elements, Elix-based)
+│   ├── dialogs/                   # Modal dialogs (custom elements, native <dialog>-based)
 │   │   ├── imagePropertiesDialog.js
 │   │   ├── editorPreferencesDialog.js
 │   │   ├── exportDialog.js
@@ -52,9 +52,9 @@ svgedit/
 │   │   ├── traceImage.js            # traceImageToSvg() — raster <image> → editable paths (imagetracerjs)
 │   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
 │   │   ├── svgSourceDialog.js
-│   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js
-│   │   ├── seTextPromptDialog.js     # on-brand window.prompt replacement (window.sePrompt)
-│   │   └── se-elix/               # Elix accessibility library (ARIA dialogs)
+│   │   ├── SePlainAlertDialog.js     # native-<dialog> choice-prompt base class
+│   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js / seSelectDialog.js
+│   │   └── seTextPromptDialog.js     # on-brand window.prompt replacement (window.sePrompt)
 │   │
 │   ├── extensions/                # Optional plugin modules (see extensions.md)
 │   │   ├── ext-connector/         # Line-binding engine behind the Line tool (endpoint↔shape binding)

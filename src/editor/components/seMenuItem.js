@@ -47,11 +47,10 @@ template.innerHTML = `
 `
 /**
  * @class SeMenuItem
- * A single row inside a `<se-menu>` popup. Previously wrapped elix's
- * `<elix-menu-item>` purely for its hover/selection styling and ARIA role;
- * both are provided directly here (`:host(:hover)` + a `menuitem` role),
- * since the actual click action was always wired directly to this element
- * (see MainMenu.js), not through elix's Menu selection machinery.
+ * A single row inside a `<se-menu>` popup: plain hover/selection styling and
+ * a `menuitem` ARIA role via `:host(:hover)` + `role="menuitem"`. The actual
+ * click action is wired directly to this element (see MainMenu.js), not
+ * through any menu-selection machinery.
  */
 export class SeMenuItem extends HTMLElement {
   /**

@@ -32,7 +32,7 @@ template.innerHTML = `
     color: var(--fg, #1B1F24);
   }
   /* The popover attribute leaves default UA sizing/positioning off; anchor
-     it below the trigger, matching the previous elix-menu-button popup. */
+     it below the trigger, matching the previous popup placement. */
   #menuPopup:popover-open {
     position: fixed;
     inset: unset;
@@ -58,14 +58,12 @@ template.innerHTML = `
 `
 /**
  * @class SeMenu
- * Toolbar hamburger-menu button + popup, replacing elix's
- * MenuButton/PlainMenuButton/PlainBorderButton stack. The popup is a native
- * Popover (light-dismiss on outside click/Escape, no JS needed for that
- * part); `#popupToggle`'s `popovertarget` attribute wires the open/close
- * toggle declaratively. A click on any slotted `<se-menu-item>` closes the
- * popup, mirroring elix Menu's auto-dismiss-on-select behavior (the actual
- * menu actions are wired directly to each item's own click listener in
- * MainMenu.js, unaffected by this change).
+ * Toolbar hamburger-menu button + popup. The popup is a native Popover
+ * (light-dismiss on outside click/Escape, no JS needed for that part);
+ * `#popupToggle`'s `popovertarget` attribute wires the open/close toggle
+ * declaratively. A click on any slotted `<se-menu-item>` closes the popup
+ * (menu actions are wired directly to each item's own click listener in
+ * MainMenu.js, unaffected by this).
  */
 export class SeMenu extends HTMLElement {
   /**
@@ -106,7 +104,7 @@ export class SeMenu extends HTMLElement {
 
   /**
    * Position the popup just below the trigger, clamped to the viewport
-   * (same placement elix's menu popup used). Called from the 'toggle'
+   * (same placement the previous menu popup used). Called from the 'toggle'
    * event, by which point the popover is already in the top layer and its
    * dimensions can be measured.
    * @returns {void}

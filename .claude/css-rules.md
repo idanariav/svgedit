@@ -236,7 +236,7 @@ top-left-weighted shape reads as centred in the active blue circle.
 }
 #history_panel { margin-left: auto; } /* pushes it + everything after to the right */
 
-/* Polystar context fields: elix' spin-box defaults to ~184px, so the star
+/* Polystar context fields: the spin-box defaults to ~184px, so the star
    panel's three fields would wrap the toolbar to a second row. Cap them. */
 #star_panel se-spin-input,
 #polygon_panel se-spin-input { width: 58px; } /* short labels keep panel ~178px */
@@ -469,14 +469,14 @@ only a fallback leading glyph shown when **no** `label` is set (`:host([src]:not
 .field:hover  → border-color var(--field-border-h)
 .field:focus-within → border var(--accent) + box-shadow 0 0 0 3px var(--accent-ring)
 .icon-wrap: 30px wide leading glyph, shown only via :host([src]:not([label]))
-elix-number-spin-box: transparent, flex:1; spin buttons are a right-edge stepper
-  (::part(spin-button) with a left border, hover → accent)
+.num-input: plain native <input>, transparent, flex:1; `.spin-buttons` is a
+  right-edge column of two `.spin-btn`s (border-left, hover → accent)
 ```
 
 ### `se-input` ([seInput.js](../src/editor/components/seInput.js))
 
 Same single-field + stacked-label treatment as `se-spin-input` (`:host` stretches,
-`.top-label` + `.field`, same hover/focus-within states). Inner `elix-input` is
+`.top-label` + `.field`, same hover/focus-within states). Inner native `<input>` is
 transparent and fills the field.
 
 ### `se-select` ([seSelect.js](../src/editor/components/seSelect.js))

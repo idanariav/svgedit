@@ -120,11 +120,9 @@ template.innerHTML = `
 
 /**
  * @class SESpinInput
- * Plain (non-elix) numeric spin input: a text field plus up/down step
- * buttons. Mirrors elix's SpinBox/NumberSpinBox behavior this component
- * used to delegate to: single-click step (no press-and-hold repeat — elix
- * never implemented that either), ArrowUp/ArrowDown keyboard stepping,
- * min/max clamping, and step-precision value formatting.
+ * Plain numeric spin input: a text field plus up/down step buttons —
+ * single-click step (no press-and-hold repeat), ArrowUp/ArrowDown keyboard
+ * stepping, min/max clamping, and step-precision value formatting.
  */
 export class SESpinInput extends HTMLElement {
   /**
@@ -145,9 +143,9 @@ export class SESpinInput extends HTMLElement {
     this.$downBtn = this._shadowRoot.querySelector('.spin-down')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
 
-    // Matches the previous elix template's hardcoded defaults
-    // (<elix-number-spin-box min="1" step="1">) for consumers that don't
-    // set their own min/max/step attributes.
+    // Matches the previous spin-box template's hardcoded defaults
+    // (min="1" step="1") for consumers that don't set their own
+    // min/max/step attributes.
     this._min = 1
     this._max = null
     this._stepValue = 1
@@ -232,7 +230,7 @@ export class SESpinInput extends HTMLElement {
   }
 
   // Number of digits after the decimal point in the step value, used to
-  // format stepped values the same way elix's NumberSpinBox did.
+  // format stepped values at matching precision.
   get _precision () {
     const match = /\.(\d)+$/.exec(String(this._stepValue))
     return match && match[1] ? match[1].length : 0

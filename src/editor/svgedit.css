@@ -963,7 +963,7 @@ hr {
   gap: 6px;
 }
 
-/* Polystar context fields hold only small numbers, but elix' default spin-box
+/* Polystar context fields hold only small numbers, but the default spin-box
    is ~184px wide — three of them wrap the top toolbar to a second row. Cap the
    width (labels are kept short to match) so the star panel fits one row. */
 #star_panel se-spin-input,

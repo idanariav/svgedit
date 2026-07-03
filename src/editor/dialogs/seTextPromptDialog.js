@@ -114,7 +114,7 @@ export class SeTextPromptDialog extends HTMLElement {
         cancel()
       }
     })
-    // Closing via backdrop / Esc on the elix dialog itself counts as cancel.
+    // Closing via backdrop / Esc on the dialog itself counts as cancel.
     this.$dialog.addEventListener('close', () => this._settle(null))
   }
 }

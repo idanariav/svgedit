@@ -1,4 +1,3 @@
-import 'elix/define/Input.js'
 import { t } from '../locale.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 
@@ -37,9 +36,10 @@ template.innerHTML = `
     background: var(--chrome-bg, #FFFFFF);
     box-shadow: 0 0 0 3px var(--accent-ring, rgba(41,98,255,0.16));
   }
-  elix-input {
+  input {
     background: transparent;
     color: var(--fg, #1B1F24);
+    -webkit-text-fill-color: var(--fg, #1B1F24);
     border: none;
     border-radius: 0;
     height: 32px;
@@ -48,20 +48,14 @@ template.innerHTML = `
     font-size: 13px;
     font-weight: 500;
     font-family: var(--ui-font, inherit);
-  }
-  elix-input::part(inner),
-  elix-input::part(input) {
     padding: 0 8px;
-    width: 100%;
-    height: 100%;
     box-sizing: border-box;
-    background: transparent;
-    border: none;
   }
+  input:focus { outline: none; }
   </style>
   <label class="top-label"></label>
   <div class="field">
-    <elix-input></elix-input>
+    <input type="text" />
   </div>
 `
 
@@ -81,7 +75,7 @@ export class SEInput extends HTMLElement {
     this.$div = this._shadowRoot.querySelector('.field')
     this.$label = this.shadowRoot.querySelector('.top-label')
     this.$event = new CustomEvent('change')
-    this.$input = this._shadowRoot.querySelector('elix-input')
+    this.$input = this._shadowRoot.querySelector('input')
   }
 
   /**
@@ -213,14 +207,6 @@ export class SEInput extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    // Inject color fix directly into elix-input's shadow DOM so the native
-    // <input> inherits the correct foreground color even when the system
-    // appearance would otherwise force black text.
-    if (this.$input.shadowRoot) {
-      const s = document.createElement('style')
-      s.textContent = '[part~="inner"],input{color:inherit;-webkit-text-fill-color:inherit}'
-      this.$input.shadowRoot.appendChild(s)
-    }
     this.$input.addEventListener('change', (e) => {
       e.preventDefault()
       this.value = e.target.value

@@ -44,10 +44,9 @@ template.innerHTML = `
  * row of choice buttons (one per string in `choices`), resolving via
  * `whenClosed()` to `{ choice }` — the clicked button's label, the choice
  * matching a pressed first-letter key, or (on Escape) nothing, mirroring
- * `keyChoice` being set instead. Replaces the previous elix `PlainAlertDialog`
- * subclass; `choices`/`open()`/`close()`/`opened`/`whenClosed()`/`keyChoice`
- * are the same public surface its four consumers (seAlertDialog,
- * seConfirmDialog, sePromptDialog, seSelectDialog) already used.
+ * `keyChoice` being set instead. `choices`/`open()`/`close()`/`opened`/
+ * `whenClosed()`/`keyChoice` are the public surface its four consumers
+ * (seAlertDialog, seConfirmDialog, sePromptDialog, seSelectDialog) use.
  */
 export default class SePlainAlertDialog extends HTMLElement {
   constructor () {
@@ -63,9 +62,9 @@ export default class SePlainAlertDialog extends HTMLElement {
     this._autoAttached = false
     this._closeResolvers = []
 
-    // Elix's AlertDialog let the user pick a choice by its initial letter;
-    // Escape recorded a 'Cancel' keyChoice for callers to fall back on
-    // (native showModal() already closes on Escape on its own).
+    // Lets the user pick a choice by its initial letter; Escape records a
+    // 'Cancel' keyChoice for callers to fall back on (native showModal()
+    // already closes on Escape on its own).
     this.$dialog.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this.keyChoice = 'Cancel'
@@ -119,8 +118,8 @@ export default class SePlainAlertDialog extends HTMLElement {
 
   /**
    * Opens the dialog, auto-attaching it to the end of `document.body` if it
-   * isn't already in the document (matching elix Overlay's convenience
-   * behavior); if auto-attached, it's removed again on close.
+   * isn't already in the document (a convenience for callers that construct
+   * this element ad hoc); if auto-attached, it's removed again on close.
    * @returns {void}
    */
   open () {
@@ -152,4 +151,4 @@ export default class SePlainAlertDialog extends HTMLElement {
   }
 }
 
-customElements.define('se-elix-alert-dialog', SePlainAlertDialog)
+customElements.define('se-plain-alert-dialog', SePlainAlertDialog)
