@@ -91,6 +91,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    alias: {
+      'paper/dist/paper-core.js': resolve(__dirname, 'tests/unit/mocks/paper-core-stub.js')
+    },
     setupFiles: ['tests/unit/setup-vitest.js'],
     include: ['tests/**/*.test.{js,ts}'],
     exclude: ['tests/e2e/**'],

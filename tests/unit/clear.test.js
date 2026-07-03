@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clearSvgContentElementInit, init as initClear } from '../../packages/svgcanvas/core/clear.js'
+import { init as initClear } from '../../packages/svgcanvas/core/clear.js'
 
 const buildCanvas = (showOutside = false) => {
   const svgContent = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -25,7 +25,7 @@ describe('clearSvgContentElementInit', () => {
     const { canvas, svgContent, svgRoot } = buildCanvas(false)
     initClear(canvas)
 
-    clearSvgContentElementInit()
+    canvas.clearSvgContentElement()
 
     expect(svgRoot.contains(svgContent)).toBe(true)
     expect(svgContent.childNodes[0].nodeType).toBe(Node.COMMENT_NODE)
@@ -44,7 +44,7 @@ describe('clearSvgContentElementInit', () => {
     svgContent.setAttribute('class', 'stale')
     initClear(canvas)
 
-    clearSvgContentElementInit()
+    canvas.clearSvgContentElement()
 
     expect(svgContent.getAttribute('viewBox')).toBe(null)
     expect(svgContent.getAttribute('class')).toBe(null)
@@ -54,7 +54,7 @@ describe('clearSvgContentElementInit', () => {
     const { canvas, svgContent } = buildCanvas(true)
     initClear(canvas)
 
-    clearSvgContentElementInit()
+    canvas.clearSvgContentElement()
 
     expect(svgContent.getAttribute('overflow')).toBe('visible')
   })

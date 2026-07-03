@@ -47,7 +47,8 @@ describe('select', function () {
     },
     getSvgRoot () { return svgroot },
     getSvgContent () { return svgContent },
-    getDataStorage () { return dataStorage }
+    getDataStorage () { return dataStorage },
+    $id (id) { return svgroot.querySelector(`#${id}`) }
   }
 
   /**
@@ -97,16 +98,23 @@ describe('select', function () {
   })
 
   it('Test svgedit.select package', function () {
+    // select.js's init is reentrant: it attaches a per-instance
+    // SelectorManager (plus the Selector/SelectorManager classes, for
+    // instanceof checks) onto the canvas rather than exporting module-level
+    // singletons, so several editors can coexist in one realm.
     assert.ok(select)
-    assert.ok(select.Selector)
-    assert.ok(select.SelectorManager)
     assert.ok(select.init)
-    assert.ok(select.getSelectorManager)
     assert.equal(typeof select, typeof {})
-    assert.equal(typeof select.Selector, typeof function () { /* empty fn */ })
-    assert.equal(typeof select.SelectorManager, typeof function () { /* empty fn */ })
     assert.equal(typeof select.init, typeof function () { /* empty fn */ })
-    assert.equal(typeof select.getSelectorManager, typeof function () { /* empty fn */ })
+
+    select.init(mockSvgCanvas)
+    assert.ok(mockSvgCanvas.getSelectorManager)
+    assert.ok(mockSvgCanvas.SelectorClass)
+    assert.ok(mockSvgCanvas.SelectorManagerClass)
+    assert.equal(typeof mockSvgCanvas.getSelectorManager, typeof function () { /* empty fn */ })
+    assert.equal(typeof mockSvgCanvas.SelectorClass, typeof function () { /* empty fn */ })
+    assert.equal(typeof mockSvgCanvas.SelectorManagerClass, typeof function () { /* empty fn */ })
+    assert.ok(mockSvgCanvas.getSelectorManager() instanceof mockSvgCanvas.SelectorManagerClass)
   })
 
   it('Test Selector DOM structure', function () {

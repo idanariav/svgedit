@@ -1,6 +1,6 @@
 import 'pathseg'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { init as pathActionsInit, pathActionsMethod } from '../../packages/svgcanvas/core/path-actions.js'
+import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import { init as utilitiesInit } from '../../packages/svgcanvas/core/utilities.js'
 import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
@@ -10,6 +10,10 @@ describe('PathActions', () => {
   let pathElement
   let svgCanvas
   let mockPath
+  // path-actions.js's init attaches a per-instance PathActions onto the
+  // canvas (svgCanvas.pathActions = new PathActions()) rather than exporting
+  // a module-level singleton.
+  let pathActionsMethod
 
   beforeEach(() => {
     // Create mock SVG elements
@@ -122,6 +126,7 @@ describe('PathActions', () => {
       getGripPt: vi.fn((seg) => ({ x: seg.item.x, y: seg.item.y })),
       getContainer: vi.fn(() => svgRoot),
       getMouseTarget: vi.fn(() => pathElement),
+      getElement: vi.fn((id) => svgRoot.querySelector(`#${id}`)),
       smoothControlPoints: vi.fn(),
       removePath_: vi.fn(),
       recalcRotatedPath: vi.fn(),
@@ -146,6 +151,7 @@ describe('PathActions', () => {
     utilitiesInit(svgCanvas)
     unitsInit(svgCanvas)
     pathActionsInit(svgCanvas)
+    pathActionsMethod = svgCanvas.pathActions
   })
 
   afterEach(() => {
@@ -226,6 +232,12 @@ describe('PathActions', () => {
       drawnPath.setAttribute('d', 'M10,10 L50,50')
       svgCanvas.getDrawnPath.mockReturnValue(drawnPath)
 
+      // mouseMove only updates the stretchy line if mouseDown already
+      // created it (svgCanvas.getElement('path_stretch_line')).
+      const stretchy = document.createElementNS(NS.SVG, 'path')
+      stretchy.id = 'path_stretch_line'
+      svgRoot.append(stretchy)
+
       pathActionsMethod.mouseMove(120, 120)
 
       // Should update path stretchy line
@@ -261,6 +273,7 @@ describe('PathActions', () => {
       mockPath.dragging = [100, 100]
       mockPath.cur_pt = 1
 
+      pathActionsMethod.mouseMove(105, 105)
       const mockEvent = { target: pathElement, shiftKey: false }
       pathActionsMethod.mouseUp(mockEvent, pathElement, 105, 105)
 
@@ -361,6 +374,7 @@ describe('PathActions', () => {
     })
 
     it('should switch to select mode if in pathedit mode', () => {
+      pathActionsMethod.toEditMode(pathElement)
       svgCanvas.getCurrentMode.mockReturnValue('pathedit')
       svgCanvas.getDrawnPath.mockReturnValue(null)
 
@@ -412,6 +426,7 @@ describe('PathActions', () => {
     it('should return selected node point', () => {
       mockPath.selected_pts = [1]
       svgCanvas.getPath_.mockReturnValue(mockPath)
+      pathActionsMethod.toEditMode(pathElement)
 
       const result = pathActionsMethod.getNodePoint()
 
@@ -425,6 +440,7 @@ describe('PathActions', () => {
     it('should return first point if no selection', () => {
       mockPath.selected_pts = []
       svgCanvas.getPath_.mockReturnValue(mockPath)
+      pathActionsMethod.toEditMode(pathElement)
 
       const result = pathActionsMethod.getNodePoint()
 
@@ -458,6 +474,12 @@ describe('PathActions', () => {
   describe('deletePathNode', () => {
     it('should delete selected path nodes', () => {
       pathActionsMethod.toEditMode(pathElement)
+      // deletePathNode rebuilds `d` by severing the selected node (see
+      // buildSeveredPathData) rather than calling path.deleteSeg. A 4th point
+      // keeps one surviving run with >= 2 points so the path isn't dropped
+      // entirely (the "nothing renderable left" branch, which instead calls
+      // deleteSelectedElements).
+      mockPath.segs.push({ index: 3, item: { x: 130, y: 50 }, type: 4, selected: false, move: vi.fn() })
       mockPath.selected_pts = [1]
 
       // Mock canDeleteNodes property
@@ -466,22 +488,10 @@ describe('PathActions', () => {
         configurable: true
       })
 
-      // Mock pathSegList on the element
-      Object.defineProperty(pathElement, 'pathSegList', {
-        value: {
-          numberOfItems: 3,
-          getItem: vi.fn((i) => ({
-            pathSegType: i === 0 ? 2 : 4 // M then L segments
-          })),
-          removeItem: vi.fn()
-        },
-        configurable: true
-      })
-
       pathActionsMethod.deletePathNode()
 
       expect(mockPath.storeD).toHaveBeenCalled()
-      expect(mockPath.deleteSeg).toHaveBeenCalled()
+      expect(pathElement.getAttribute('d')).toBe('M 90 10 L 130 50')
       expect(mockPath.init).toHaveBeenCalled()
       expect(mockPath.clearSelection).toHaveBeenCalled()
     })

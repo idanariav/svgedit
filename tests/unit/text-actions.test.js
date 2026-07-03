@@ -1,6 +1,6 @@
 import 'pathseg'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { init as textActionsInit, textActionsMethod } from '../../packages/svgcanvas/core/text-actions.js'
+import { init as textActionsInit } from '../../packages/svgcanvas/core/text-actions.js'
 import { init as utilitiesInit } from '../../packages/svgcanvas/core/utilities.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 
@@ -10,6 +10,10 @@ describe('TextActions', () => {
   let textElement
   let inputElement
   let mockSelectorManager
+  // text-actions.js's init attaches a per-instance TextActions onto the
+  // canvas (svgCanvas.textActions = new TextActions()) rather than exporting
+  // a module-level singleton.
+  let textActionsMethod
 
   beforeEach(() => {
     // Create mock SVG elements
@@ -73,12 +77,16 @@ describe('TextActions', () => {
       getrootSctm: () => svgRoot.getScreenCTM?.() || { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
       $click: vi.fn(),
       contentW: 640,
-      textActions: textActionsMethod
+      getElement: vi.fn((id) => svgRoot.querySelector(`#${id}`)),
+      getToolLocked: vi.fn(() => false),
+      getTextFreshCreate: vi.fn(() => false),
+      setTextFreshCreate: vi.fn()
     }
 
     // Initialize utilities and text-actions modules
     utilitiesInit(svgCanvas)
     textActionsInit(svgCanvas)
+    textActionsMethod = svgCanvas.textActions
     textActionsMethod.setInputElem(inputElement)
   })
 
@@ -484,12 +492,16 @@ describe('TextActions', () => {
     })
 
     it('should handle mouseMove without shift key', () => {
+      textActionsMethod.start(textElement)
+      textActionsMethod.init()
       const evt = { shiftKey: false, clientX: 100, clientY: 100 }
       textActionsMethod.mouseMove(10, 20, evt)
       expect(true).toBe(true)
     })
 
     it('should handle mouseDown with different mouse button', () => {
+      textActionsMethod.start(textElement)
+      textActionsMethod.init()
       const evt = { button: 2 }
       textActionsMethod.mouseDown(evt, null, 10, 20)
       expect(true).toBe(true)
@@ -498,6 +510,13 @@ describe('TextActions', () => {
     it('should handle mouseUp with valid cursor position', () => {
       const elem = document.createElementNS(NS.SVG, 'text')
       elem.textContent = 'test'
+      elem.getStartPositionOfChar = vi.fn((i) => ({ x: 100 + i * 10, y: 100 }))
+      elem.getEndPositionOfChar = vi.fn((i) => ({ x: 100 + (i + 1) * 10, y: 100 }))
+      elem.getCharNumAtPosition = vi.fn(() => 0)
+      elem.getBBox = vi.fn(() => ({ x: 100, y: 90, width: 40, height: 20 }))
+      svgRoot.append(elem)
+      textActionsMethod.start(elem)
+      textActionsMethod.init()
       const evt = { target: elem }
       textActionsMethod.mouseUp(evt, elem, 10, 20)
       expect(true).toBe(true)
@@ -505,6 +524,13 @@ describe('TextActions', () => {
 
     it('should handle toSelectMode with valid element', () => {
       const elem = document.createElementNS(NS.SVG, 'text')
+      elem.getStartPositionOfChar = vi.fn((i) => ({ x: 100 + i * 10, y: 100 }))
+      elem.getEndPositionOfChar = vi.fn((i) => ({ x: 100 + (i + 1) * 10, y: 100 }))
+      elem.getCharNumAtPosition = vi.fn(() => 0)
+      elem.getBBox = vi.fn(() => ({ x: 100, y: 90, width: 40, height: 20 }))
+      svgRoot.append(elem)
+      textActionsMethod.start(elem)
+      textActionsMethod.init()
       textActionsMethod.toSelectMode(elem)
       expect(true).toBe(true)
     })

@@ -1244,4 +1244,5 @@ export const init = (canvas) => {
   svgCanvas.getGripPt = getGripPtMethod
   svgCanvas.getPointFromGrip = getPointFromGripMethod
   svgCanvas.PathClass = Path
+  svgCanvas.SegmentClass = Segment
 }

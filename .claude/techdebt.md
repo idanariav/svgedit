@@ -48,28 +48,16 @@ future refactors" — each needs its own planning pass before execution:
 
 ---
 
-## Test infrastructure (discovered during the Phase 1-11 cleanup)
+## Test infrastructure — e2e (Playwright)
 
-Automated coverage is unreliable in this environment for three pre-existing,
-unrelated reasons (confirmed via `git log -S` / `git merge-base --is-ancestor`
-to predate the cleanup session — not caused by it):
+`npx vitest run` is clean (fixed 2026-07-03). The Playwright e2e suite
+(`node scripts/run-e2e.mjs`) still has two known breaks, unrelated to vitest:
 
-1. `coords.js` → `taper-stroke.js` → bare `paper/dist/paper-core.js` import
-   breaks unbundled-ES-module test harnesses and jsdom (introduced by the
-   "Wave 2" Milani commit `72888e39`).
-2. The `#tool_source` button was removed by an earlier "Frame tool" commit
-   (`01301bdd`), breaking several e2e specs that rely on the `setSvgSource`
-   test helper.
-3. `mainmenu.spec.js` references a `showDocProperties` method that no longer
-   exists on `MainMenu.js`.
-
-Net effect: `npx vitest run` sits at a fixed 179-failed/219-passed baseline
-that has to be treated as a known-bad floor rather than a signal — every
-phase of the cleanup had to fall back to hand-written real-browser Playwright
-scripts for actual regression verification instead of trusting the test
-suite. Worth a dedicated session to either fix the harness (paper.js import),
-update the stale specs (`#tool_source`, `showDocProperties`), or both — until
-then, don't trust a green/red vitest delta alone as proof of no regression.
+- The `#tool_source` button was removed by an earlier "Frame tool" commit
+  (`01301bdd`), breaking several specs that rely on the `setSvgSource` test
+  helper.
+- `tests/e2e/mainmenu.spec.js` references a `showDocProperties` method that
+  no longer exists on `MainMenu.js` (the doc-properties dialog was removed).
 
 ---
 

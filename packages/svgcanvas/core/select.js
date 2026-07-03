@@ -651,4 +651,5 @@ class SelectorManager {
   svgCanvas.selectorManager = selectorManager
   svgCanvas.getSelectorManager = () => selectorManager
   svgCanvas.SelectorClass = Selector
+  svgCanvas.SelectorManagerClass = SelectorManager
 }

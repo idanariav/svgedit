@@ -1217,7 +1217,7 @@ class PathActions {
     // Nothing renderable left (no sub-path with >= 2 points): drop the element
     if (!newD) {
       svgCanvas.pathActions.toSelectMode(path.elem)
-      svgCanvas.canvas.deleteSelectedElements()
+      svgCanvas.deleteSelectedElements()
       return
     }
 

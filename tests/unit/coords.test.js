@@ -5,6 +5,7 @@ import * as coords from '../../packages/svgcanvas/core/coords.js'
 describe('coords', function () {
   let elemId = 1
   let svg
+  let coordsCanvas
   const root = document.createElement('div')
   root.id = 'root'
   root.style.visibility = 'hidden'
@@ -41,18 +42,14 @@ describe('coords', function () {
       get (elem, key) { return null },
       has (elem, key) { return false }
     }
-    coords.init(
-      /**
-      * @implements {module:coords.EditorContext}
-      */
-      {
-        getGridSnapping () { return false },
-        getDrawing () { return drawing },
-        getCurrentDrawing () { return drawing },
-        getDataStorage () { return mockDataStorage },
-        getSvgRoot () { return svg }
-      }
-    )
+    coordsCanvas = {
+      getGridSnapping () { return false },
+      getDrawing () { return drawing },
+      getCurrentDrawing () { return drawing },
+      getDataStorage () { return mockDataStorage },
+      getSvgRoot () { return svg }
+    }
+    coords.init(coordsCanvas)
   })
 
   /**
@@ -86,7 +83,7 @@ describe('coords', function () {
     m.c = 0; m.d = 1
     m.e = 100; m.f = -50
 
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     assert.equal(rect.getAttribute('x'), '300')
     assert.equal(rect.getAttribute('y'), '100')
@@ -113,7 +110,7 @@ describe('coords', function () {
     m.c = 0; m.d = 0.5
     m.e = 0; m.f = 0
 
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     assert.equal(rect.getAttribute('x'), '0')
     assert.equal(rect.getAttribute('y'), '0')
@@ -140,7 +137,7 @@ describe('coords', function () {
     m.c = 0; m.d = 1
     m.e = 100; m.f = -50
 
-    coords.remapElement(circle, attrs, m)
+    coordsCanvas.remapElement(circle, attrs, m)
 
     assert.equal(circle.getAttribute('cx'), '300')
     assert.equal(circle.getAttribute('cy'), '100')
@@ -166,7 +163,7 @@ describe('coords', function () {
     m.c = 0; m.d = 0.5
     m.e = 0; m.f = 0
 
-    coords.remapElement(circle, attrs, m)
+    coordsCanvas.remapElement(circle, attrs, m)
 
     assert.equal(circle.getAttribute('cx'), '400')
     assert.equal(circle.getAttribute('cy'), '75')
@@ -200,7 +197,7 @@ describe('coords', function () {
     m.e = 0
     m.f = 0
 
-    coords.remapElement(rect, { x: 0, y: 0, width: 10, height: 10 }, m)
+    coordsCanvas.remapElement(rect, { x: 0, y: 0, width: 10, height: 10 }, m)
 
     const newId = rect.getAttribute('fill').replace('url(#', '').replace(')', '')
     const mirrored = defs.ownerDocument.getElementById(newId)
@@ -230,7 +227,7 @@ describe('coords', function () {
     m.c = 0; m.d = 1
     m.e = 100; m.f = -50
 
-    coords.remapElement(ellipse, attrs, m)
+    coordsCanvas.remapElement(ellipse, attrs, m)
 
     assert.equal(ellipse.getAttribute('cx'), '300')
     assert.equal(ellipse.getAttribute('cy'), '100')
@@ -259,7 +256,7 @@ describe('coords', function () {
     m.c = 0; m.d = 0.5
     m.e = 0; m.f = 0
 
-    coords.remapElement(ellipse, attrs, m)
+    coordsCanvas.remapElement(ellipse, attrs, m)
 
     assert.equal(ellipse.getAttribute('cx'), '400')
     assert.equal(ellipse.getAttribute('cy'), '75')
@@ -288,7 +285,7 @@ describe('coords', function () {
     m.c = 0; m.d = 1
     m.e = 100; m.f = -50
 
-    coords.remapElement(line, attrs, m)
+    coordsCanvas.remapElement(line, attrs, m)
 
     assert.equal(line.getAttribute('x1'), '150')
     assert.equal(line.getAttribute('y1'), '50')
@@ -317,7 +314,7 @@ describe('coords', function () {
     m.c = 0; m.d = 0.5
     m.e = 0; m.f = 0
 
-    coords.remapElement(line, attrs, m)
+    coordsCanvas.remapElement(line, attrs, m)
 
     assert.equal(line.getAttribute('x1'), '100')
     assert.equal(line.getAttribute('y1'), '50')
@@ -342,14 +339,14 @@ describe('coords', function () {
     m.c = 0; m.d = 1
     m.e = 100; m.f = -50
 
-    coords.remapElement(text, attrs, m)
+    coordsCanvas.remapElement(text, attrs, m)
 
     assert.equal(text.getAttribute('x'), '150')
     assert.equal(text.getAttribute('y'), '50')
   })
 
   it('Does not throw with grid snapping enabled and detached elements', function () {
-    coords.init({
+    coordsCanvas = {
       getGridSnapping () { return true },
       getDrawing () {
         return {
@@ -361,13 +358,14 @@ describe('coords', function () {
           getNextId () { return String(elemId++) }
         }
       }
-    })
+    }
+    coords.init(coordsCanvas)
     const rect = document.createElementNS(NS.SVG, 'rect')
     rect.setAttribute('width', '10')
     rect.setAttribute('height', '10')
     const attrs = { x: 0, y: 0, width: 10, height: 10 }
     const m = svg.createSVGMatrix().translate(5, 5)
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
     assert.equal(rect.getAttribute('x'), '5')
     assert.equal(rect.getAttribute('y'), '5')
   })
@@ -391,7 +389,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     const grads = defs.querySelectorAll('linearGradient')
     assert.equal(grads.length, 2)
@@ -411,7 +409,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     assert.equal(rect.getAttribute('fill'), 'url(external.svg#grad)')
     assert.equal(svg.querySelectorAll('linearGradient').length, 0)
@@ -425,7 +423,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -2
     m.d = 1
-    coords.remapElement(path, {}, m)
+    coordsCanvas.remapElement(path, {}, m)
 
     const d = path.getAttribute('d')
     const match = /A\s*([-\d.]+),([-\d.]+)\s+([-\d.]+)\s+(\d+)\s+(\d+)\s+([-\d.]+),([-\d.]+)/.exec(d)
@@ -464,7 +462,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = -1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // Should create a mirrored gradient or keep original
     assert.ok(svg.querySelectorAll('radialGradient').length >= 1)
@@ -482,7 +480,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(image, attrs, m)
+    coordsCanvas.remapElement(image, attrs, m)
 
     // Image with negative scale should get matrix transform or have updated attributes
     assert.ok(image.transform.baseVal.numberOfItems > 0 || image.getAttribute('width') !== '100')
@@ -502,7 +500,7 @@ describe('coords', function () {
     m.d = 2
     m.e = 50
     m.f = 50
-    coords.remapElement(fo, attrs, m)
+    coordsCanvas.remapElement(fo, attrs, m)
 
     assert.equal(Number.parseFloat(fo.getAttribute('x')), 70)
     assert.equal(Number.parseFloat(fo.getAttribute('y')), 70)
@@ -523,7 +521,7 @@ describe('coords', function () {
     m.d = 2
     m.e = 50
     m.f = 50
-    coords.remapElement(use, attrs, m)
+    coordsCanvas.remapElement(use, attrs, m)
 
     // Use elements should not be remapped, attributes remain unchanged
     assert.equal(use.getAttribute('x'), '10')
@@ -543,7 +541,7 @@ describe('coords', function () {
     m.d = 1
     m.e = 10
     m.f = 20
-    coords.remapElement(text, attrs, m)
+    coordsCanvas.remapElement(text, attrs, m)
 
     assert.equal(Number.parseFloat(text.getAttribute('x')), 60)
     assert.equal(Number.parseFloat(text.getAttribute('y')), 70)
@@ -566,7 +564,7 @@ describe('coords', function () {
     m.d = 1
     m.e = 5
     m.f = 10
-    coords.remapElement(tspan, attrs, m)
+    coordsCanvas.remapElement(tspan, attrs, m)
 
     assert.equal(Number.parseFloat(tspan.getAttribute('x')), 60)
     assert.equal(Number.parseFloat(tspan.getAttribute('y')), 65)
@@ -595,7 +593,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // userSpaceOnUse gradients should not be mirrored
     assert.equal(svg.querySelectorAll('linearGradient').length, initialGradCount)
@@ -619,7 +617,7 @@ describe('coords', function () {
     m.d = 2
     m.e = 5
     m.f = 5
-    coords.remapElement(polyline, attrs, m)
+    coordsCanvas.remapElement(polyline, attrs, m)
 
     const points = polyline.getAttribute('points')
     // Points should be transformed
@@ -643,7 +641,7 @@ describe('coords', function () {
     m.d = 2
     m.e = 10
     m.f = 10
-    coords.remapElement(polygon, attrs, m)
+    coordsCanvas.remapElement(polygon, attrs, m)
 
     const points = polygon.getAttribute('points')
     // Points should be transformed
@@ -658,7 +656,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = 2
     m.d = 2
-    coords.remapElement(g, attrs, m)
+    coordsCanvas.remapElement(g, attrs, m)
 
     // Group elements get handled (may or may not add transform)
     // Just verify it doesn't crash
@@ -685,7 +683,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // Should create a new gradient with flipped percentages or keep original
     const newGrads = svg.querySelectorAll('linearGradient')
@@ -706,7 +704,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = -1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // Width and height should remain positive
     assert.ok(Number.parseFloat(rect.getAttribute('width')) > 0)
@@ -724,7 +722,7 @@ describe('coords', function () {
     m.d = 2
     m.e = 5
     m.f = 5
-    coords.remapElement(path, attrs, m)
+    coordsCanvas.remapElement(path, attrs, m)
 
     const d = path.getAttribute('d')
     // Path should be transformed (coordinates change)
@@ -751,7 +749,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // Should mirror the stroke gradient or keep original
     assert.ok(svg.querySelectorAll('linearGradient').length >= 1)
@@ -770,7 +768,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     // Should not crash, gradient stays as is
     assert.equal(rect.getAttribute('fill'), 'url(#nonexistentGrad)')
@@ -791,7 +789,7 @@ describe('coords', function () {
     m.d = 1
 
     const changes = { x: 10, y: 10, width: 50, height: 50 }
-    coords.remapElement(rect, changes, m)
+    coordsCanvas.remapElement(rect, changes, m)
 
     // Should apply transform for skew
     assert.ok(true) // Just test it doesn't crash
@@ -810,7 +808,7 @@ describe('coords', function () {
     m.d = -1
 
     const changes = { cx: 50, cy: 50, rx: 30, ry: 20 }
-    coords.remapElement(ellipse, changes, m)
+    coordsCanvas.remapElement(ellipse, changes, m)
 
     // Radii should remain positive
     assert.ok(Number.parseFloat(ellipse.getAttribute('rx')) > 0)
@@ -829,7 +827,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = { cx: 50, cy: 50, r: 25 }
-    coords.remapElement(circle, changes, m)
+    coordsCanvas.remapElement(circle, changes, m)
 
     assert.ok(circle.getAttribute('cx') !== '50' ||
               circle.getAttribute('r') !== '25')
@@ -850,7 +848,7 @@ describe('coords', function () {
     m.d = 0
 
     const changes = { x1: 0, y1: 0, x2: 10, y2: 10 }
-    coords.remapElement(line, changes, m)
+    coordsCanvas.remapElement(line, changes, m)
 
     // Line should be remapped
     assert.ok(true)
@@ -866,7 +864,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = { d: 'M 10,10 L 20,20' }
-    coords.remapElement(path, changes, m)
+    coordsCanvas.remapElement(path, changes, m)
 
     assert.ok(path.getAttribute('d') !== null)
   })
@@ -895,7 +893,7 @@ describe('coords', function () {
     const m = svg.createSVGMatrix()
     m.a = -1
     m.d = 1
-    coords.remapElement(rect, attrs, m)
+    coordsCanvas.remapElement(rect, attrs, m)
 
     assert.ok(svg.querySelectorAll('linearGradient').length >= 2)
   })
@@ -913,7 +911,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = { x: 10, y: 10, width: 0, height: 50 }
-    coords.remapElement(rect, changes, m)
+    coordsCanvas.remapElement(rect, changes, m)
 
     assert.ok(true) // Should not crash
   })
@@ -931,7 +929,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = { x: 10, y: 10, width: 50, height: 0 }
-    coords.remapElement(rect, changes, m)
+    coordsCanvas.remapElement(rect, changes, m)
 
     assert.ok(true) // Should not crash
   })
@@ -948,7 +946,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = { cx: 50, cy: 50, r: 0 }
-    coords.remapElement(circle, changes, m)
+    coordsCanvas.remapElement(circle, changes, m)
 
     assert.ok(true) // Should not crash
   })
@@ -963,7 +961,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = {}
-    coords.remapElement(symbol, changes, m)
+    coordsCanvas.remapElement(symbol, changes, m)
 
     assert.ok(true)
   })
@@ -977,7 +975,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = {}
-    coords.remapElement(defs, changes, m)
+    coordsCanvas.remapElement(defs, changes, m)
 
     assert.ok(true)
   })
@@ -993,7 +991,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = {}
-    coords.remapElement(marker, changes, m)
+    coordsCanvas.remapElement(marker, changes, m)
 
     assert.ok(true)
   })
@@ -1008,7 +1006,7 @@ describe('coords', function () {
     m.d = 2
 
     const changes = {}
-    coords.remapElement(style, changes, m)
+    coordsCanvas.remapElement(style, changes, m)
 
     assert.ok(true)
   })

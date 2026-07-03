@@ -66,9 +66,12 @@ describe('flipSelectedElements', () => {
 
     svgCanvas.flipSelectedElements(-1, 1)
 
-    expect(Number(line.getAttribute('x1'))).toBe(30)
-    expect(Number(line.getAttribute('x2'))).toBe(10)
-    expect(line.hasAttribute('transform')).toBe(false)
+    // flipSelectedElements collapses the flip into a transform matrix rather
+    // than baking it into raw coordinates, so non-rotated/skewed elements
+    // aren't relocated (see selected-elem.js flipSelectedElements comments).
+    expect(Number(line.getAttribute('x1'))).toBe(10)
+    expect(Number(line.getAttribute('x2'))).toBe(30)
+    expect(line.getAttribute('transform')).toMatch(/matrix\(\s*-1[,\s]+0[,\s]+0[,\s]+1[,\s]+40[,\s]+0\s*\)/)
     expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize + 1)
   })
 
@@ -89,9 +92,9 @@ describe('flipSelectedElements', () => {
     svgCanvas.selectOnly([line], true)
     svgCanvas.flipSelectedElements(-1, 1)
 
-    expect(Number(line.getAttribute('x1'))).toBe(130)
-    expect(Number(line.getAttribute('x2'))).toBe(110)
-    expect(line.hasAttribute('transform')).toBe(false)
+    expect(Number(line.getAttribute('x1'))).toBe(10)
+    expect(Number(line.getAttribute('x2'))).toBe(30)
+    expect(line.getAttribute('transform')).toMatch(/matrix\(\s*-1[,\s]+0[,\s]+0[,\s]+1[,\s]+140[,\s]+0\s*\)/)
 
     svgCanvas.undoMgr.undo()
 

@@ -90,7 +90,7 @@ describe('utilities bbox', function () {
             pts.splice(pts.length, 0, pt.x, pt.y)
           }
         })
-        path.replacePathSeg(type, i, pts, pth)
+        mockSvgCanvas.replacePathSeg(type, i, pts, pth)
       }
       return undefined
     }
@@ -99,6 +99,10 @@ describe('utilities bbox', function () {
   const EPSILON = 0.001
 
   let svgroot
+  // path.js's init attaches a per-instance replacePathSeg (via path-method.js)
+  // onto the canvas rather than exporting it, so mockPathActions.resetOrientation
+  // below needs a reference to the same canvas instance passed to path.init.
+  let mockSvgCanvas
   beforeEach(() => {
     document.body.textContent = ''
 
@@ -113,7 +117,7 @@ describe('utilities bbox', function () {
     })
     sandbox.append(svgroot)
 
-    const mockSvgCanvas = {
+    mockSvgCanvas = {
       createSVGElement (jsonMap) {
         const elem = document.createElementNS(NS.SVG, jsonMap.element)
         Object.entries(jsonMap.attr).forEach(([attr, value]) => {

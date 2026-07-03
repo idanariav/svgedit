@@ -27,7 +27,7 @@ describe('draw context', () => {
 
   beforeEach(() => {
     draw.init(canvas)
-    draw.leaveContext()
+    canvas.leaveContext()
 
     currentGroup = null
     calls.length = 0
@@ -45,18 +45,18 @@ describe('draw context', () => {
   })
 
   afterEach(() => {
-    draw.leaveContext()
+    canvas.leaveContext()
     document.body.innerHTML = ''
   })
 
   it('ignores unknown element ids', () => {
-    expect(() => draw.setContext('does-not-exist')).not.toThrow()
+    expect(() => canvas.setContext('does-not-exist')).not.toThrow()
     expect(currentGroup).toBe(null)
     expect(calls.length).toBe(0)
   })
 
   it('handles non-numeric opacity and restores it', () => {
-    draw.setContext(editGroup)
+    canvas.setContext(editGroup)
 
     expect(currentGroup).toBe(editGroup)
     expect(calls[0]).toStrictEqual({ event: 'contextset', arg: editGroup })
@@ -64,7 +64,7 @@ describe('draw context', () => {
     expect(sibling.getAttribute('style')).toBe('pointer-events: none')
     expect(dataStorage.get(sibling, 'orig_opac')).toBe('inherit')
 
-    draw.leaveContext()
+    canvas.leaveContext()
 
     expect(currentGroup).toBe(null)
     expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { init as selectInit, getSelectorManager, Selector, SelectorManager } from '../../packages/svgcanvas/core/select.js'
+import { init as selectInit } from '../../packages/svgcanvas/core/select.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 
 describe('Select Module', () => {
@@ -58,6 +58,7 @@ describe('Select Module', () => {
       getSvgContent: () => svgContent,
       getZoom: () => 1,
       getDataStorage: () => mockDataStorage,
+      $id: (id) => svgRoot.querySelector(`#${id}`),
       curConfig: {
         imgPath: 'images',
         dimensions: [640, 480]
@@ -83,19 +84,19 @@ describe('Select Module', () => {
 
   describe('Module initialization', () => {
     it('should initialize and return SelectorManager singleton', () => {
-      const manager = getSelectorManager()
+      const manager = svgCanvas.getSelectorManager()
       expect(manager).toBeDefined()
-      expect(manager).toBeInstanceOf(SelectorManager)
+      expect(manager).toBeInstanceOf(svgCanvas.SelectorManagerClass)
     })
 
     it('should return the same SelectorManager instance', () => {
-      const manager1 = getSelectorManager()
-      const manager2 = getSelectorManager()
+      const manager1 = svgCanvas.getSelectorManager()
+      const manager2 = svgCanvas.getSelectorManager()
       expect(manager1).toBe(manager2)
     })
 
     it('should not expose private selectorManager field', () => {
-      const manager = getSelectorManager()
+      const manager = svgCanvas.getSelectorManager()
       expect(manager.selectorManager).toBeUndefined()
       expect(manager.selectorManager_).toBeUndefined()
     })
@@ -105,7 +106,7 @@ describe('Select Module', () => {
     let manager
 
     beforeEach(() => {
-      manager = getSelectorManager()
+      manager = svgCanvas.getSelectorManager()
     })
 
     it('should have initialized all required properties', () => {
@@ -136,7 +137,7 @@ describe('Select Module', () => {
     describe('requestSelector', () => {
       it('should create a new selector for an element', () => {
         const selector = manager.requestSelector(rectElement)
-        expect(selector).toBeInstanceOf(Selector)
+        expect(selector).toBeInstanceOf(svgCanvas.SelectorClass)
         expect(selector.selectedElement).toBe(rectElement)
         expect(selector.locked).toBe(true)
       })
@@ -259,7 +260,7 @@ describe('Select Module', () => {
     let selector
 
     beforeEach(() => {
-      manager = getSelectorManager()
+      manager = svgCanvas.getSelectorManager()
       selector = manager.requestSelector(rectElement)
     })
 
@@ -342,7 +343,7 @@ describe('Select Module', () => {
 
     describe('updateGripCursors (static)', () => {
       it('should update cursor styles for rotated elements', () => {
-        Selector.updateGripCursors(45)
+        svgCanvas.SelectorClass.updateGripCursors(45)
         const updatedCursor = manager.selectorGrips.nw.getAttribute('style')
         // After 45-degree rotation, cursors should shift
         expect(updatedCursor).toBeTruthy()
@@ -350,16 +351,16 @@ describe('Select Module', () => {
       })
 
       it('should handle negative angles', () => {
-        expect(() => Selector.updateGripCursors(-45)).not.toThrow()
+        expect(() => svgCanvas.SelectorClass.updateGripCursors(-45)).not.toThrow()
       })
 
       it('should handle zero angle', () => {
-        Selector.updateGripCursors(0)
+        svgCanvas.SelectorClass.updateGripCursors(0)
         expect(manager.selectorGrips.nw.getAttribute('style')).toMatch(/nw-resize/)
       })
 
       it('should handle 360-degree rotation', () => {
-        Selector.updateGripCursors(360)
+        svgCanvas.SelectorClass.updateGripCursors(360)
         expect(manager.selectorGrips.nw.getAttribute('style')).toMatch(/nw-resize/)
       })
     })
@@ -369,7 +370,7 @@ describe('Select Module', () => {
     let manager
 
     beforeEach(() => {
-      manager = getSelectorManager()
+      manager = svgCanvas.getSelectorManager()
     })
 
     it('should handle multiple element selection workflow', () => {
@@ -438,7 +439,7 @@ describe('Select Module', () => {
     let manager
 
     beforeEach(() => {
-      manager = getSelectorManager()
+      manager = svgCanvas.getSelectorManager()
     })
 
     it('should handle elements with zero dimensions', () => {
@@ -471,7 +472,7 @@ describe('Select Module', () => {
 
   describe('Private field encapsulation', () => {
     it('should not expose SelectModule private field', () => {
-      const manager = getSelectorManager()
+      const manager = svgCanvas.getSelectorManager()
       expect(manager.selectorManager).toBeUndefined()
       expect(manager['#selectorManager']).toBeUndefined()
     })

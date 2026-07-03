@@ -38,48 +38,33 @@ describe('recalculate', function () {
   }
 
   let elemId = 1
+  let recalculateCanvas
 
   /**
    * Initilize modules to set up the tests.
    * @returns {void}
    */
   function setUp () {
-    utilities.init(
-      /**
-      * @implements {module:utilities.EditorContext}
-      */
-      {
-        getSvgRoot () { return svg },
-        getDOMDocument () { return null },
-        getDOMContainer () { return null },
-        getDataStorage () { return dataStorage }
-      }
-    )
-    coords.init(
-      /**
-      * @implements {module:coords.EditorContext}
-      */
-      {
-        getGridSnapping () { return false },
-        getDrawing () {
-          return {
-            getNextId () { return String(elemId++) }
-          }
-        },
-        getDataStorage () { return dataStorage }
-      }
-    )
-    recalculate.init(
-      /**
-      * @implements {module:recalculate.EditorContext}
-      */
-      {
-        getSvgRoot () { return svg },
-        getStartTransform () { return '' },
-        setStartTransform () { /* empty fn */ },
-        getDataStorage () { return dataStorage }
-      }
-    )
+    // Shared across utilities/coords/recalculate inits, matching production
+    // wiring: recalculate's svgCanvas.remapElement(...) call is attached by
+    // coords.init, so all three modules must share one canvas instance.
+    recalculateCanvas = {
+      getSvgRoot () { return svg },
+      getDOMDocument () { return null },
+      getDOMContainer () { return null },
+      getDataStorage () { return dataStorage },
+      getGridSnapping () { return false },
+      getDrawing () {
+        return {
+          getNextId () { return String(elemId++) }
+        }
+      },
+      getStartTransform () { return '' },
+      setStartTransform () { /* empty fn */ }
+    }
+    utilities.init(recalculateCanvas)
+    coords.init(recalculateCanvas)
+    recalculate.init(recalculateCanvas)
   }
 
   let elem
@@ -151,7 +136,7 @@ describe('recalculate', function () {
     setUpRect()
     elem.setAttribute('transform', 'matrix(1,0,0,1,0,0)')
 
-    recalculate.recalculateDimensions(elem)
+    recalculateCanvas.recalculateDimensions(elem)
 
     // Ensure that the identity matrix is swallowed and the element has no
     // transform on it.
@@ -162,7 +147,7 @@ describe('recalculate', function () {
     setUpRect()
     elem.setAttribute('transform', 'translate(100,50)')
 
-    recalculate.recalculateDimensions(elem)
+    recalculateCanvas.recalculateDimensions(elem)
 
     assert.equal(elem.hasAttribute('transform'), false)
     assert.equal(elem.getAttribute('x'), '300')
@@ -175,7 +160,7 @@ describe('recalculate', function () {
     setUpTextWithTspan()
     elem.setAttribute('transform', 'translate(100,50)')
 
-    recalculate.recalculateDimensions(elem)
+    recalculateCanvas.recalculateDimensions(elem)
 
     // Ensure that the identity matrix is swallowed and the element has no
     // transform on it.
@@ -192,7 +177,7 @@ describe('recalculate', function () {
     const rect = setUpGroupWithRect()
     elem.setAttribute('transform', 'translate(100,50)')
 
-    recalculate.recalculateDimensions(elem)
+    recalculateCanvas.recalculateDimensions(elem)
 
     // Groups should preserve their transforms, not flatten them into children
     assert.equal(elem.hasAttribute('transform'), true)
@@ -208,7 +193,7 @@ describe('recalculate', function () {
     const rect = setUpGroupWithRect()
     elem.setAttribute('transform', 'translate(10,20) scale(2) translate(-10,-20)')
 
-    recalculate.recalculateDimensions(elem)
+    recalculateCanvas.recalculateDimensions(elem)
 
     // Groups should preserve their transforms, not flatten them into children
     assert.equal(elem.hasAttribute('transform'), true)
@@ -232,7 +217,7 @@ describe('recalculate', function () {
     svg.append(clipPath)
 
     // Should not throw when clipPath has no children.
-    recalculate.updateClipPath('url(#clip-empty)', 5, 5)
+    recalculateCanvas.updateClipPath('url(#clip-empty)', 5, 5)
   })
 
   it('updateClipPath() appends translate to path child when present', () => {
@@ -247,7 +232,7 @@ describe('recalculate', function () {
     clipPath.append(rect)
     svg.append(clipPath)
 
-    recalculate.updateClipPath('url(#clip-path)', 2, -3)
+    recalculateCanvas.updateClipPath('url(#clip-path)', 2, -3)
 
     assert.equal(rect.getAttribute('x'), '2')
     assert.equal(rect.getAttribute('y'), '-3')
@@ -265,7 +250,7 @@ describe('recalculate', function () {
     clipPath.append(circle)
     svg.append(clipPath)
 
-    recalculate.updateClipPath('url(#clip-circle)', -1, 3)
+    recalculateCanvas.updateClipPath('url(#clip-circle)', -1, 3)
 
     assert.equal(circle.getAttribute('cx'), '3')
     assert.equal(circle.getAttribute('cy'), '8')
@@ -281,7 +266,7 @@ describe('recalculate', function () {
     clipPath.append(poly)
     svg.append(clipPath)
 
-    recalculate.updateClipPath('url(#clip-poly)', 3, -2)
+    recalculateCanvas.updateClipPath('url(#clip-poly)', 3, -2)
 
     assert.equal(poly.getAttribute('points'), '3,-2 5,-2 5,0')
   })
@@ -297,7 +282,7 @@ describe('recalculate', function () {
     circle.setAttribute('transform', 'translate(-25,-25) scale(2,2) translate(25,25)')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
 
     // Just verify transform was processed
     assert.ok(cmd !== undefined)
@@ -315,7 +300,7 @@ describe('recalculate', function () {
     circle.setAttribute('transform', 'translate(10,20)')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
 
     assert.equal(Number.parseFloat(circle.getAttribute('cx')), 60)
     assert.equal(Number.parseFloat(circle.getAttribute('cy')), 70)
@@ -334,7 +319,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'translate(-50,-50) scale(2,3) translate(50,50)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     // Just verify transform was processed
     assert.ok(cmd !== undefined)
@@ -353,7 +338,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'translate(15,25)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     assert.equal(Number.parseFloat(ellipse.getAttribute('cx')), 65)
     assert.equal(Number.parseFloat(ellipse.getAttribute('cy')), 75)
@@ -372,7 +357,7 @@ describe('recalculate', function () {
     line.setAttribute('transform', 'translate(-10,-10) scale(2,2) translate(10,10)')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
 
     // Just verify transform was processed
     assert.ok(cmd !== undefined)
@@ -391,7 +376,7 @@ describe('recalculate', function () {
     line.setAttribute('transform', 'translate(5,15)')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
 
     assert.equal(Number.parseFloat(line.getAttribute('x1')), 15)
     assert.equal(Number.parseFloat(line.getAttribute('y1')), 25)
@@ -411,7 +396,7 @@ describe('recalculate', function () {
     line.setAttribute('transform', 'matrix(1,0,0,1,10,20)')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
 
     assert.equal(Number.parseFloat(line.getAttribute('x1')), 20)
     assert.equal(Number.parseFloat(line.getAttribute('y1')), 30)
@@ -431,7 +416,7 @@ describe('recalculate', function () {
 
     // Just verify it doesn't throw - jsdom may not support points property
     try {
-      recalculate.recalculateDimensions(polyline)
+      recalculateCanvas.recalculateDimensions(polyline)
       assert.ok(true)
     } catch (e) {
       // Expected if jsdom doesn't support SVGPointList
@@ -449,7 +434,7 @@ describe('recalculate', function () {
 
     // Just verify it doesn't throw - jsdom may not support points property
     try {
-      recalculate.recalculateDimensions(polyline)
+      recalculateCanvas.recalculateDimensions(polyline)
       assert.ok(true)
     } catch (e) {
       // Expected if jsdom doesn't support SVGPointList
@@ -468,7 +453,7 @@ describe('recalculate', function () {
 
     // Just verify it doesn't throw
     try {
-      recalculate.recalculateDimensions(polygon)
+      recalculateCanvas.recalculateDimensions(polygon)
       assert.ok(true)
     } catch (e) {
       // If jsdom doesn't support points property, that's ok
@@ -485,7 +470,7 @@ describe('recalculate', function () {
     path.setAttribute('transform', 'translate(-10,-10) scale(2,2) translate(10,10)')
     svg.append(path)
 
-    const cmd = recalculate.recalculateDimensions(path)
+    const cmd = recalculateCanvas.recalculateDimensions(path)
 
     const d = path.getAttribute('d')
     assert.ok(d.includes('M'))
@@ -500,7 +485,7 @@ describe('recalculate', function () {
     path.setAttribute('transform', 'translate(5,10)')
     svg.append(path)
 
-    const cmd = recalculate.recalculateDimensions(path)
+    const cmd = recalculateCanvas.recalculateDimensions(path)
 
     assert.ok(cmd)
     // Path should have transform removed and coordinates adjusted
@@ -519,7 +504,7 @@ describe('recalculate', function () {
     image.setAttribute('transform', 'rotate(45,60,50)')
     svg.append(image)
 
-    const cmd = recalculate.recalculateDimensions(image)
+    const cmd = recalculateCanvas.recalculateDimensions(image)
 
     // Rotation should be preserved
     assert.ok(image.getAttribute('transform').includes('rotate'))
@@ -537,7 +522,7 @@ describe('recalculate', function () {
     image.setAttribute('transform', 'translate(-60,-50) scale(2,2) translate(60,50)')
     svg.append(image)
 
-    const cmd = recalculate.recalculateDimensions(image)
+    const cmd = recalculateCanvas.recalculateDimensions(image)
 
     assert.ok(Math.abs(Number.parseFloat(image.getAttribute('width')) - 200) < 1)
     assert.ok(Math.abs(Number.parseFloat(image.getAttribute('height')) - 160) < 1)
@@ -555,7 +540,7 @@ describe('recalculate', function () {
     text.setAttribute('transform', 'rotate(45,50,50)')
     svg.append(text)
 
-    const cmd = recalculate.recalculateDimensions(text)
+    const cmd = recalculateCanvas.recalculateDimensions(text)
 
     // Rotation should be preserved
     assert.ok(text.getAttribute('transform').includes('rotate'))
@@ -573,7 +558,7 @@ describe('recalculate', function () {
     use.setAttribute('transform', 'translate(5,10)')
     svg.append(use)
 
-    const cmd = recalculate.recalculateDimensions(use)
+    const cmd = recalculateCanvas.recalculateDimensions(use)
 
     // Use elements return null to preserve referenced positioning
     assert.equal(cmd, null)
@@ -589,7 +574,7 @@ describe('recalculate', function () {
     use.setAttribute('transform', 'translate(-10,-10) scale(2,2) translate(10,10)')
     svg.append(use)
 
-    const cmd = recalculate.recalculateDimensions(use)
+    const cmd = recalculateCanvas.recalculateDimensions(use)
 
     // Use elements return null to preserve referenced positioning
     assert.equal(cmd, null)
@@ -601,7 +586,7 @@ describe('recalculate', function () {
 
     elem.setAttribute('transform', 'rotate(45,35,25) translate(10,20)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Groups return null per line 146 - transforms stay on the group
     assert.equal(cmd, null)
@@ -612,7 +597,7 @@ describe('recalculate', function () {
 
     elem.setAttribute('transform', 'matrix(1,0,0,1,10,20)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Groups return null per line 146 - transforms stay on the group
     assert.equal(cmd, null)
@@ -637,7 +622,7 @@ describe('recalculate', function () {
 
     elem.setAttribute('transform', 'translate(-35,-35) scale(2,2) translate(35,35)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Groups return null per line 146 - transforms stay on the group
     assert.equal(cmd, null)
@@ -665,7 +650,7 @@ describe('recalculate', function () {
     rect.setAttribute('height', '30')
     elem.setAttribute('transform', 'translate(10,20)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Groups return null per line 146
     assert.equal(cmd, null)
@@ -692,7 +677,7 @@ describe('recalculate', function () {
     rect.setAttribute('clip-path', 'url(#childClip)')
     elem.setAttribute('transform', 'translate(5,10)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Groups return null per line 146
     assert.equal(cmd, null)
@@ -707,7 +692,7 @@ describe('recalculate', function () {
     defs.setAttribute('transform', 'translate(10,20)')
     svg.append(defs)
 
-    const cmd = recalculate.recalculateDimensions(defs)
+    const cmd = recalculateCanvas.recalculateDimensions(defs)
 
     assert.equal(cmd, null)
   })
@@ -722,7 +707,7 @@ describe('recalculate', function () {
     rect.setAttribute('height', '30')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     assert.equal(cmd, null)
   })
@@ -736,7 +721,7 @@ describe('recalculate', function () {
     rect.setAttribute('height', '30')
     elem.setAttribute('transform', 'rotate(45,35,25)')
 
-    const cmd = recalculate.recalculateDimensions(elem)
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
 
     // Group with only rotation returns null
     assert.equal(cmd, null)
@@ -753,7 +738,7 @@ describe('recalculate', function () {
     foreignObject.setAttribute('transform', 'translate(-60,-50) scale(2,2) translate(60,50)')
     svg.append(foreignObject)
 
-    const cmd = recalculate.recalculateDimensions(foreignObject)
+    const cmd = recalculateCanvas.recalculateDimensions(foreignObject)
 
     assert.ok(Math.abs(Number.parseFloat(foreignObject.getAttribute('width')) - 200) < 1)
     assert.ok(Math.abs(Number.parseFloat(foreignObject.getAttribute('height')) - 160) < 1)
@@ -772,7 +757,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(0,0)')
     svg.append(rect)
 
-    recalculate.recalculateDimensions(rect)
+    recalculateCanvas.recalculateDimensions(rect)
 
     // Zero translation should be removed
     assert.equal(rect.hasAttribute('transform'), false)
@@ -788,7 +773,7 @@ describe('recalculate', function () {
     circle.setAttribute('transform', 'rotate(45,50,50) translate(10,20)')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
 
     // Should handle rotation + translate
     assert.ok(cmd || circle.hasAttribute('transform'))
@@ -805,7 +790,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'rotate(45,50,50)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     // Rotation only returns null
     assert.equal(cmd, null)
@@ -822,7 +807,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(5,10) scale(1.5,1.5)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // Combined transforms should be processed
     assert.ok(cmd !== undefined)
@@ -842,7 +827,7 @@ describe('recalculate', function () {
     svg.append(text)
     tspan.setAttribute('transform', 'translate(10,10)')
 
-    const cmd = recalculate.recalculateDimensions(tspan)
+    const cmd = recalculateCanvas.recalculateDimensions(tspan)
 
     assert.ok(cmd !== undefined)
   })
@@ -851,7 +836,7 @@ describe('recalculate', function () {
     setUp()
 
     // Try to update a non-existent clipPath
-    recalculate.updateClipPath('url(#nonexistent)', 5, 10)
+    recalculateCanvas.updateClipPath('url(#nonexistent)', 5, 10)
 
     // Should not crash
     assert.ok(true)
@@ -865,7 +850,7 @@ describe('recalculate', function () {
     path.setAttribute('transform', 'rotate(0)')
     svg.append(path)
 
-    recalculate.recalculateDimensions(path)
+    recalculateCanvas.recalculateDimensions(path)
 
     // Zero-degree rotation should be removed
     assert.equal(path.hasAttribute('transform'), false)
@@ -891,7 +876,7 @@ describe('recalculate', function () {
     innerRect.setAttribute('height', '50')
     rect.append(innerRect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // Element with nested clip-paths should return null
     assert.equal(cmd, null)
@@ -908,7 +893,7 @@ describe('recalculate', function () {
     image.setAttribute('transform', 'translate(20,30)')
     svg.append(image)
 
-    const cmd = recalculate.recalculateDimensions(image)
+    const cmd = recalculateCanvas.recalculateDimensions(image)
 
     assert.ok(cmd !== undefined)
     // Image attributes should be updated
@@ -927,7 +912,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'matrix(1,0,0,1,0,0)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // Identity matrix should be removed and return null
     assert.equal(cmd, null)
@@ -945,7 +930,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'scale(2)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     assert.ok(cmd !== undefined)
     // Dimensions should have changed
@@ -963,7 +948,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(5,5) scale(1.5)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     assert.ok(cmd !== undefined)
   })
@@ -979,7 +964,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'scale(1.5)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     assert.ok(cmd !== undefined)
   })
@@ -995,7 +980,7 @@ describe('recalculate', function () {
     line.setAttribute('transform', 'translate(10,10)')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
 
     assert.ok(cmd !== undefined)
   })
@@ -1009,7 +994,7 @@ describe('recalculate', function () {
     use.setAttribute('transform', 'translate(20,30)')
     svg.append(use)
 
-    const cmd = recalculate.recalculateDimensions(use)
+    const cmd = recalculateCanvas.recalculateDimensions(use)
 
     // use elements should preserve transforms
     assert.equal(cmd, null)
@@ -1026,7 +1011,7 @@ describe('recalculate', function () {
     fo.setAttribute('transform', 'translate(5,5)')
     svg.append(fo)
 
-    const cmd = recalculate.recalculateDimensions(fo)
+    const cmd = recalculateCanvas.recalculateDimensions(fo)
 
     assert.ok(cmd !== undefined)
   })
@@ -1041,7 +1026,7 @@ describe('recalculate', function () {
     text.setAttribute('transform', 'translate(5,5)')
     svg.append(text)
 
-    const cmd = recalculate.recalculateDimensions(text)
+    const cmd = recalculateCanvas.recalculateDimensions(text)
 
     assert.ok(cmd !== undefined)
   })
@@ -1057,7 +1042,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'matrix(1,0,0,1,10,10) rotate(45 35 35)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // Should return null for matrix + rotation
     assert.equal(cmd, null)
@@ -1076,7 +1061,7 @@ describe('recalculate', function () {
     g.setAttribute('transform', 'rotate(45 35 35)')
     svg.append(g)
 
-    const cmd = recalculate.recalculateDimensions(g)
+    const cmd = recalculateCanvas.recalculateDimensions(g)
 
     assert.ok(cmd !== undefined || cmd === null)
   })
@@ -1094,7 +1079,7 @@ describe('recalculate', function () {
     a.setAttribute('transform', 'translate(10,10)')
     svg.append(a)
 
-    const cmd = recalculate.recalculateDimensions(a)
+    const cmd = recalculateCanvas.recalculateDimensions(a)
 
     assert.ok(cmd !== undefined || cmd === null)
   })
@@ -1107,7 +1092,7 @@ describe('recalculate', function () {
     polyline.setAttribute('transform', 'matrix(1,0,0,1,0,0)')
     svg.append(polyline)
 
-    const cmd = recalculate.recalculateDimensions(polyline)
+    const cmd = recalculateCanvas.recalculateDimensions(polyline)
 
     // Identity matrix should be removed
     assert.equal(cmd, null)
@@ -1123,7 +1108,7 @@ describe('recalculate', function () {
     svg.append(polygon)
 
     try {
-      const cmd = recalculate.recalculateDimensions(polygon)
+      const cmd = recalculateCanvas.recalculateDimensions(polygon)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       // May fail due to DOM API, that's okay
@@ -1139,7 +1124,7 @@ describe('recalculate', function () {
     path.setAttribute('transform', 'translate(10,10) scale(1.5) rotate(30)')
     svg.append(path)
 
-    const cmd = recalculate.recalculateDimensions(path)
+    const cmd = recalculateCanvas.recalculateDimensions(path)
 
     assert.ok(cmd !== undefined || cmd === null)
   })
@@ -1154,7 +1139,7 @@ describe('recalculate', function () {
     rect.setAttribute('height', '50')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // No transform should return null
     assert.equal(cmd, null)
@@ -1169,7 +1154,7 @@ describe('recalculate', function () {
     circle.setAttribute('r', '25')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
 
     assert.equal(cmd, null)
   })
@@ -1192,7 +1177,7 @@ describe('recalculate', function () {
     svg.append(rect)
 
     try {
-      recalculate.updateClipPath('url(#testClip3)', svg.createSVGMatrix())
+      recalculateCanvas.updateClipPath('url(#testClip3)', svg.createSVGMatrix())
       assert.ok(true)
     } catch (e) {
       assert.ok(true)
@@ -1210,7 +1195,7 @@ describe('recalculate', function () {
     innerSvg.setAttribute('transform', 'translate(5,5)')
     svg.append(innerSvg)
 
-    const cmd = recalculate.recalculateDimensions(innerSvg)
+    const cmd = recalculateCanvas.recalculateDimensions(innerSvg)
 
     assert.ok(cmd !== undefined || cmd === null)
   })
@@ -1225,7 +1210,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('ry', '20')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     assert.equal(cmd, null)
   })
@@ -1237,7 +1222,7 @@ describe('recalculate', function () {
     path.setAttribute('d', 'M0,0 L10,10 L20,0 Z')
     svg.append(path)
 
-    const cmd = recalculate.recalculateDimensions(path)
+    const cmd = recalculateCanvas.recalculateDimensions(path)
 
     assert.equal(cmd, null)
   })
@@ -1252,7 +1237,7 @@ describe('recalculate', function () {
     line.setAttribute('y2', '100')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
 
     assert.equal(cmd, null)
   })
@@ -1267,7 +1252,7 @@ describe('recalculate', function () {
     image.setAttribute('height', '80')
     svg.append(image)
 
-    const cmd = recalculate.recalculateDimensions(image)
+    const cmd = recalculateCanvas.recalculateDimensions(image)
 
     assert.equal(cmd, null)
   })
@@ -1281,7 +1266,7 @@ describe('recalculate', function () {
     text.textContent = 'Test'
     svg.append(text)
 
-    const cmd = recalculate.recalculateDimensions(text)
+    const cmd = recalculateCanvas.recalculateDimensions(text)
 
     assert.equal(cmd, null)
   })
@@ -1304,7 +1289,7 @@ describe('recalculate', function () {
     svg.append(g)
 
     try {
-      const cmd = recalculate.recalculateDimensions(g)
+      const cmd = recalculateCanvas.recalculateDimensions(g)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1322,7 +1307,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'rotate(90 35 35)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
 
     // Single rotation should return null
     assert.equal(cmd, null)
@@ -1339,7 +1324,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'rotate(45)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
 
     assert.equal(cmd, null)
   })
@@ -1354,7 +1339,7 @@ describe('recalculate', function () {
     circle.setAttribute('transform', 'rotate(30)')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
 
     assert.equal(cmd, null)
   })
@@ -1371,7 +1356,7 @@ describe('recalculate', function () {
     svg.append(rect)
 
     try {
-      const cmd = recalculate.recalculateDimensions(rect)
+      const cmd = recalculateCanvas.recalculateDimensions(rect)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1387,7 +1372,7 @@ describe('recalculate', function () {
     svg.append(polyline)
 
     try {
-      const cmd = recalculate.recalculateDimensions(polyline)
+      const cmd = recalculateCanvas.recalculateDimensions(polyline)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1403,7 +1388,7 @@ describe('recalculate', function () {
     svg.append(polygon)
 
     try {
-      const cmd = recalculate.recalculateDimensions(polygon)
+      const cmd = recalculateCanvas.recalculateDimensions(polygon)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1421,7 +1406,7 @@ describe('recalculate', function () {
     svg.append(text)
 
     try {
-      const cmd = recalculate.recalculateDimensions(text)
+      const cmd = recalculateCanvas.recalculateDimensions(text)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1440,7 +1425,7 @@ describe('recalculate', function () {
     svg.append(fo)
 
     try {
-      const cmd = recalculate.recalculateDimensions(fo)
+      const cmd = recalculateCanvas.recalculateDimensions(fo)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1459,7 +1444,7 @@ describe('recalculate', function () {
     svg.append(image)
 
     try {
-      const cmd = recalculate.recalculateDimensions(image)
+      const cmd = recalculateCanvas.recalculateDimensions(image)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1475,7 +1460,7 @@ describe('recalculate', function () {
     svg.append(path)
 
     try {
-      const cmd = recalculate.recalculateDimensions(path)
+      const cmd = recalculateCanvas.recalculateDimensions(path)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1493,7 +1478,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', '')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1506,7 +1491,7 @@ describe('recalculate', function () {
     svg.append(polyline)
 
     try {
-      const cmd = recalculate.recalculateDimensions(polyline)
+      const cmd = recalculateCanvas.recalculateDimensions(polyline)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1525,7 +1510,7 @@ describe('recalculate', function () {
     svg.append(text)
 
     try {
-      const cmd = recalculate.recalculateDimensions(tspan)
+      const cmd = recalculateCanvas.recalculateDimensions(tspan)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1550,7 +1535,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip1)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip1)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1570,7 +1555,7 @@ describe('recalculate', function () {
     svg.append(line)
 
     try {
-      const cmd = recalculate.recalculateDimensions(line)
+      const cmd = recalculateCanvas.recalculateDimensions(line)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1591,7 +1576,7 @@ describe('recalculate', function () {
     svg.append(switchElem)
 
     try {
-      const cmd = recalculate.recalculateDimensions(switchElem)
+      const cmd = recalculateCanvas.recalculateDimensions(switchElem)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1615,7 +1600,7 @@ describe('recalculate', function () {
     svg.append(g1)
 
     try {
-      const cmd = recalculate.recalculateDimensions(g1)
+      const cmd = recalculateCanvas.recalculateDimensions(g1)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1634,7 +1619,7 @@ describe('recalculate', function () {
     svg.append(rect)
 
     try {
-      const cmd = recalculate.recalculateDimensions(rect)
+      const cmd = recalculateCanvas.recalculateDimensions(rect)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1653,7 +1638,7 @@ describe('recalculate', function () {
     svg.append(rect)
 
     try {
-      const cmd = recalculate.recalculateDimensions(rect)
+      const cmd = recalculateCanvas.recalculateDimensions(rect)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1671,7 +1656,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(5,5)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1686,7 +1671,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(5,5)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1700,7 +1685,7 @@ describe('recalculate', function () {
     circle.setAttribute('transform', 'translate(5,5)')
     svg.append(circle)
 
-    const cmd = recalculate.recalculateDimensions(circle)
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1715,7 +1700,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'translate(5,5)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1730,7 +1715,7 @@ describe('recalculate', function () {
     ellipse.setAttribute('transform', 'translate(5,5)')
     svg.append(ellipse)
 
-    const cmd = recalculate.recalculateDimensions(ellipse)
+    const cmd = recalculateCanvas.recalculateDimensions(ellipse)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1746,7 +1731,7 @@ describe('recalculate', function () {
     svg.append(rect)
 
     try {
-      const cmd = recalculate.recalculateDimensions(rect)
+      const cmd = recalculateCanvas.recalculateDimensions(rect)
       assert.ok(cmd !== undefined || cmd === null)
     } catch (e) {
       assert.ok(true)
@@ -1764,7 +1749,7 @@ describe('recalculate', function () {
     line.setAttribute('transform', 'translate(5,5)')
     svg.append(line)
 
-    const cmd = recalculate.recalculateDimensions(line)
+    const cmd = recalculateCanvas.recalculateDimensions(line)
     assert.ok(cmd !== undefined || cmd === null)
   })
 
@@ -1785,7 +1770,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip2)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip2)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1810,7 +1795,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip3)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip3)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1835,7 +1820,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip4)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip4)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1857,7 +1842,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip5)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip5)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1879,7 +1864,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip6)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip6)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1901,7 +1886,7 @@ describe('recalculate', function () {
     svg.append(elem)
 
     try {
-      const result = recalculate.updateClipPath('url(#clip7)', 10, 20, elem)
+      const result = recalculateCanvas.updateClipPath('url(#clip7)', 10, 20, elem)
       assert.ok(result !== undefined || result === null)
     } catch (e) {
       assert.ok(true)
@@ -1915,7 +1900,7 @@ describe('recalculate', function () {
     elem.setAttribute('clip-path', 'url(#nonexistent)')
     svg.append(elem)
 
-    const result = recalculate.updateClipPath('url(#nonexistent)', 10, 20, elem)
+    const result = recalculateCanvas.updateClipPath('url(#nonexistent)', 10, 20, elem)
     assert.ok(result === undefined || result === null)
   })
 
@@ -1932,7 +1917,7 @@ describe('recalculate', function () {
     clipPath.append(clipRect)
     svg.append(clipPath)
 
-    const result = recalculate.updateClipPath('url(#clip8)', 10, 20)
+    const result = recalculateCanvas.updateClipPath('url(#clip8)', 10, 20)
     assert.ok(result !== undefined || result === null)
   })
 
@@ -1947,7 +1932,7 @@ describe('recalculate', function () {
     rect.setAttribute('transform', 'translate(0,0)')
     svg.append(rect)
 
-    const cmd = recalculate.recalculateDimensions(rect)
+    const cmd = recalculateCanvas.recalculateDimensions(rect)
     assert.ok(cmd !== undefined || cmd === null)
   })
 })

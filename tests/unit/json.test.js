@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as utilities from '../../packages/svgcanvas/core/utilities.js'
-import {
-  init as initJson,
-  addSVGElementsFromJson,
-  getJsonFromSvgElements
-} from '../../packages/svgcanvas/core/json.js'
+import { init as initJson } from '../../packages/svgcanvas/core/json.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
@@ -16,6 +12,9 @@ describe('json', () => {
   let svgRoot
   /** @type {SVGGElement} */
   let layer
+  // json.js's init attaches per-instance addSVGElementsFromJson/
+  // getJsonFromSvgElements onto the canvas rather than exporting them.
+  let jsonCanvas
 
   beforeEach(() => {
     root = document.createElement('div')
@@ -34,10 +33,10 @@ describe('json', () => {
       getSvgRoot: () => svgRoot
     })
 
-    initJson({
+    jsonCanvas = {
       getDOMDocument: () => document,
       getSvgRoot: () => svgRoot,
-      getDrawing: () => ({ getCurrentLayer: () => layer }),
+      getDrawing: () => ({ getCurrentLayer: () => layer, getTargetLayerGroup: () => layer }),
       getCurrentGroup: () => null,
       getCurShape: () => ({
         fill: 'none',
@@ -50,7 +49,8 @@ describe('json', () => {
         fill_opacity: 1,
         opacity: 1
       })
-    })
+    }
+    initJson(jsonCanvas)
   })
 
   afterEach(() => {
@@ -64,7 +64,7 @@ describe('json', () => {
     rect.setAttribute('x', '1')
     g.append(comment, rect)
 
-    const json = getJsonFromSvgElements(g)
+    const json = jsonCanvas.getJsonFromSvgElements(g)
     expect(json.element).toBe('g')
     expect(json.children).toHaveLength(1)
     expect(json.children[0].element).toBe('rect')
@@ -75,7 +75,7 @@ describe('json', () => {
     existing.id = 'undefined'
     layer.append(existing)
 
-    const circle = addSVGElementsFromJson({
+    const circle = jsonCanvas.addSVGElementsFromJson({
       element: 'circle',
       attr: {
         cx: 0,
@@ -96,7 +96,7 @@ describe('json', () => {
     group.append(oldChild)
     layer.append(group)
 
-    addSVGElementsFromJson({
+    jsonCanvas.addSVGElementsFromJson({
       element: 'g',
       attr: { id: 'reuse' },
       children: [
@@ -118,7 +118,7 @@ describe('json', () => {
     layer.append(rect)
 
     expect(() => {
-      addSVGElementsFromJson({
+      jsonCanvas.addSVGElementsFromJson({
         element: 'rect',
         attr: {
           id: 'a:b',

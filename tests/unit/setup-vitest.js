@@ -1,5 +1,68 @@
 import { AssertionError, strict as assert } from 'node:assert'
 
+// Node 22+ defines its own (non-functional without --localstorage-file)
+// globalThis.localStorage getter, which shadows jsdom's working Storage
+// implementation since window === globalThis under vitest's jsdom
+// environment. Force a working in-memory Storage so svgcanvas.js (which
+// calls localStorage.setItem on init) doesn't throw.
+class MemoryStorage {
+  #data = new Map()
+  get length () { return this.#data.size }
+  key (i) { return Array.from(this.#data.keys())[i] ?? null }
+  getItem (key) { return this.#data.has(key) ? this.#data.get(key) : null }
+  setItem (key, value) { this.#data.set(key, String(value)) }
+  removeItem (key) { this.#data.delete(key) }
+  clear () { this.#data.clear() }
+}
+for (const key of ['localStorage', 'sessionStorage']) {
+  Object.defineProperty(globalThis, key, { value: new MemoryStorage(), configurable: true, writable: true })
+}
+
+// jsdom does not implement the CSSOM `CSS.escape` static (used for building
+// id selectors, e.g. `#${CSS.escape(id)}`). Spec-accurate polyfill (CSSOM
+// spec algorithm, same as the widely-used css.escape polyfill).
+if (!globalThis.CSS) globalThis.CSS = {}
+if (!globalThis.CSS.escape) {
+  globalThis.CSS.escape = function (value) {
+    const string = String(value)
+    const length = string.length
+    let result = ''
+    let index = -1
+    let codeUnit
+    const firstCodeUnit = string.charCodeAt(0)
+    while (++index < length) {
+      codeUnit = string.charCodeAt(index)
+      if (codeUnit === 0x0000) {
+        result += '�'
+        continue
+      }
+      if (
+        (codeUnit >= 0x0001 && codeUnit <= 0x001F) || codeUnit === 0x007F ||
+        (index === 0 && codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+        (index === 1 && codeUnit >= 0x0030 && codeUnit <= 0x0039 && firstCodeUnit === 0x002D)
+      ) {
+        result += `\\${codeUnit.toString(16)} `
+        continue
+      }
+      if (index === 0 && length === 1 && codeUnit === 0x002D) {
+        result += `\\${string.charAt(index)}`
+        continue
+      }
+      if (
+        codeUnit >= 0x0080 || codeUnit === 0x002D || codeUnit === 0x005F ||
+        (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+        (codeUnit >= 0x0041 && codeUnit <= 0x005A) ||
+        (codeUnit >= 0x0061 && codeUnit <= 0x007A)
+      ) {
+        result += string.charAt(index)
+        continue
+      }
+      result += `\\${string.charAt(index)}`
+    }
+    return result
+  }
+}
+
 // Provide a global assert (some legacy tests expect it).
 globalThis.assert = assert
 
@@ -120,25 +183,45 @@ SVGTransformPolyfill.SVG_TRANSFORM_SKEWY = 6
 class SVGTransformListPolyfill {
   constructor () {
     this._items = []
+    this._owner = null
+  }
+
+  // Real browsers auto-serialize baseVal mutations back onto the owning
+  // element's `transform` attribute; mirror that so code relying on
+  // getAttribute('transform') after list mutation (e.g. flipSelectedElements)
+  // sees the update under jsdom.
+  _sync () {
+    if (!this._owner) return
+    if (!this._items.length) {
+      this._owner.removeAttribute('transform')
+      return
+    }
+    const str = this._items.map(t => {
+      const m = t.matrix
+      return `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`
+    }).join(' ')
+    this._owner.setAttribute('transform', str)
   }
 
   get numberOfItems () { return this._items.length }
   getItem (i) { return this._items[i] }
-  appendItem (item) { this._items.push(item); return item }
+  appendItem (item) { this._items.push(item); this._sync(); return item }
   insertItemBefore (item, index) {
     const idx = Math.max(0, Math.min(index, this._items.length))
     this._items.splice(idx, 0, item)
+    this._sync()
     return item
   }
 
   removeItem (index) {
     if (index < 0 || index >= this._items.length) return undefined
     const [removed] = this._items.splice(index, 1)
+    this._sync()
     return removed
   }
 
-  clear () { this._items = [] }
-  initialize (item) { this._items = [item]; return item }
+  clear () { this._items = []; this._sync() }
+  initialize (item) { this._items = [item]; this._sync(); return item }
   consolidate () {
     if (!this._items.length) return null
     const matrix = this._items.reduce(
@@ -148,6 +231,7 @@ class SVGTransformListPolyfill {
     const consolidated = new SVGTransformPolyfill()
     consolidated.setMatrix(matrix)
     this._items = [consolidated]
+    this._sync()
     return consolidated
   }
 }
@@ -186,6 +270,7 @@ const parseTransformAttr = (attr) => {
 const ensureTransformList = (elem) => {
   if (!elem.__transformList) {
     const parsed = parseTransformAttr(elem.getAttribute?.('transform'))
+    parsed._owner = elem
     elem.__transformList = parsed
   }
   return elem.__transformList
