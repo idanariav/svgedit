@@ -1,5 +1,5 @@
 /* globals svgEditor */
-import { fetchSvgEl } from './svgIconLoader.js'
+import { SeSettingsPopover } from './seSettingsPopover.js'
 
 // Grid shapes offered in the popover. `value` is stored in
 // `curConfig.gridShape`; `label` is shown in the <select>.
@@ -11,8 +11,7 @@ const SHAPES = [
   { value: 'perspective2', label: '2-point perspective' }
 ]
 
-const template = document.createElement('template')
-template.innerHTML = `
+const TEMPLATE_HTML = `
   <style>
   :host {
     display: inline-flex;
@@ -135,19 +134,10 @@ template.innerHTML = `
  * straight to `svgEditor.configObj.curConfig` and mirrored to the persisted
  * `grid_*` preferences; a `change` event is dispatched so `ext-grid` re-renders.
  */
-class SeGridSettings extends HTMLElement {
+class SeGridSettings extends SeSettingsPopover {
   constructor () {
-    super()
-    this.handleClose = this.handleClose.bind(this)
-    this.handleKeyDown = this.handleKeyDown.bind(this)
+    super(TEMPLATE_HTML)
 
-    this._shadowRoot = this.attachShadow({ mode: 'open' })
-    this._shadowRoot.append(template.content.cloneNode(true))
-
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
-    this.$icon = this._shadowRoot.querySelector('#icon')
-    this.$trigger = this._shadowRoot.querySelector('.trigger')
-    this.$popup = this._shadowRoot.querySelector('#options-container')
     this.$show = this._shadowRoot.querySelector('#grid_show')
     this.$shape = this._shadowRoot.querySelector('#grid_shape_sel')
     this.$snap = this._shadowRoot.querySelector('#grid_snap')
@@ -161,10 +151,6 @@ class SeGridSettings extends HTMLElement {
       this.$shape.append(opt)
     })
 
-    this.$trigger.addEventListener('click', e => {
-      e.stopPropagation()
-      this.toggle()
-    })
     this.$show.addEventListener('change', () => this._commit('showGrid', 'grid_show', this.$show.checked))
     this.$snap.addEventListener('change', () => this._commit('gridSnapping', 'grid_snapping', this.$snap.checked))
     this.$shape.addEventListener('change', () => this._commit('gridShape', 'grid_shape', this.$shape.value))
@@ -173,15 +159,6 @@ class SeGridSettings extends HTMLElement {
       const step = parseFloat(this.$step.value)
       if (Number.isFinite(step) && step > 0) this._commit('snappingStep', 'grid_snapping_step', step)
     })
-
-    // Light-dismiss: close on outside click / Esc
-    document.addEventListener('click', this.handleClose)
-    this.addEventListener('keydown', this.handleKeyDown)
-
-    const srcAttr = this.getAttribute('src')
-    if (srcAttr) this._loadIcon(srcAttr)
-    const titleAttr = this.getAttribute('title')
-    if (titleAttr) this.$trigger.setAttribute('title', titleAttr)
   }
 
   connectedCallback () {
@@ -224,67 +201,9 @@ class SeGridSettings extends HTMLElement {
     this.$trigger.setAttribute('data-active', String(!!svgEditor.configObj.curConfig.showGrid))
   }
 
-  async _loadIcon (src) {
-    const url = `${this.imgPath}/${src}`
-    const svgEl = await fetchSvgEl(url)
-    if (svgEl) {
-      svgEl.style.cssText = 'width:18px;height:18px;display:block;'
-      this.$icon.replaceChildren(svgEl)
-    } else {
-      const img = document.createElement('img')
-      img.src = url
-      img.alt = 'icon'
-      img.style.cssText = 'width:18px;height:18px;display:block;'
-      this.$icon.replaceChildren(img)
-    }
-  }
-
-  get isOpen () {
-    return this.$popup.style.display === 'flex'
-  }
-
-  toggle () {
-    if (this.isOpen) { this.close() } else { this.open() }
-  }
-
   open () {
     this._syncFromConfig()
-    this.$popup.style.display = 'flex'
-    this.$trigger.setAttribute('aria-expanded', 'true')
-    this.positionPopup()
-  }
-
-  close () {
-    this.$popup.style.display = 'none'
-    this.$trigger.setAttribute('aria-expanded', 'false')
-  }
-
-  /**
-   * Position the popover just below the trigger, clamped to the viewport.
-   */
-  positionPopup () {
-    const btn = this.$trigger.getBoundingClientRect()
-    const pop = this.$popup.getBoundingClientRect()
-    const gap = 6
-    let left = btn.left
-    if (left + pop.width > window.innerWidth - 8) {
-      left = Math.max(8, window.innerWidth - pop.width - 8)
-    }
-    this.$popup.style.top = `${btn.bottom + gap}px`
-    this.$popup.style.left = `${left}px`
-  }
-
-  handleClose (e) {
-    if (this.isOpen && e.target !== this) {
-      this.close()
-    }
-  }
-
-  handleKeyDown (e) {
-    if (e.key === 'Escape' && this.isOpen) {
-      this.close()
-      this.$trigger.focus()
-    }
+    super.open()
   }
 }
 
