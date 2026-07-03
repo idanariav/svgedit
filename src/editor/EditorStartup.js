@@ -45,7 +45,9 @@ const readySignal = () => {
         cancelable: true
       })
       w.document.documentElement.dispatchEvent(svgEditorReadyEvent)
-    } catch (e) { /* empty fn */ }
+    } catch (e) {
+      console.warn('svgedit: failed to dispatch svgEditorReady on opener/parent (likely cross-origin)', e)
+    }
   }
 }
 

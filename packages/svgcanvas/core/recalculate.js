@@ -25,6 +25,37 @@ import {
 import { mergeDeep } from '../common/util.js'
 
 /**
+ * Attribute list to translate for each simple (non-points, non-path) tag
+ * recalculateDimensions handles.
+ */
+const TAG_RECALC_ATTRS = {
+  line: ['x1', 'y1', 'x2', 'y2'],
+  circle: ['cx', 'cy', 'r'],
+  ellipse: ['cx', 'cy', 'rx', 'ry'],
+  foreignObject: ['width', 'height', 'x', 'y'],
+  rect: ['width', 'height', 'x', 'y'],
+  image: ['width', 'height', 'x', 'y'],
+  text: ['x', 'y'],
+  tspan: ['x', 'y']
+}
+
+/**
+ * Translates a `points` attribute string (polyline/polygon) by tx/ty.
+ * @param {string} pointsStr - The current `points` attribute value
+ * @param {number} tx - The translation's x value
+ * @param {number} ty - The translation's y value
+ * @returns {string} The translated `points` attribute value
+ */
+const translatePoints = (pointsStr, tx, ty) => pointsStr
+  .trim()
+  .split(/\s+/)
+  .map((pair) => {
+    const [x, y] = pair.split(',')
+    return `${Number(x) + tx},${Number(y) + ty}`
+  })
+  .join(' ')
+
+/**
  * Initialize the recalculate module with the SVG canvas.
  * @function module:recalculate.init
  * @param {Object} canvas - The SVG canvas object
@@ -82,13 +113,7 @@ export const init = canvas => {
     } else if (tag === 'polyline' || tag === 'polygon') {
       const points = (path.getAttribute('points') || '').trim()
       if (points) {
-        const updated = points.split(/\s+/).map((pair) => {
-          const [x, y] = pair.split(',')
-          const nx = Number(x) + tx
-          const ny = Number(y) + ty
-          return `${nx},${ny}`
-        })
-        path.setAttribute('points', updated.join(' '))
+        path.setAttribute('points', translatePoints(points, tx, ty))
       }
     } else {
       path.setAttribute('transform', `translate(${tx},${ty})`)
@@ -110,13 +135,7 @@ export const init = canvas => {
   if ((tag === 'polyline' || tag === 'polygon') && !path.points?.numberOfItems) {
     const points = (path.getAttribute('points') || '').trim()
     if (points) {
-      const updated = points.split(/\s+/).map((pair) => {
-        const [x, y] = pair.split(',')
-        const nx = Number(x) + tx
-        const ny = Number(y) + ty
-        return `${nx},${ny}`
-      })
-      path.setAttribute('points', updated.join(' '))
+      path.setAttribute('points', translatePoints(points, tx, ty))
     }
     return
   }
@@ -235,43 +254,22 @@ export const init = canvas => {
   let attrs = []
 
   // Determine which attributes to adjust based on element type
-  switch (selected.tagName) {
-    case 'line':
-      attrs = ['x1', 'y1', 'x2', 'y2']
-      break
-    case 'circle':
-      attrs = ['cx', 'cy', 'r']
-      break
-    case 'ellipse':
-      attrs = ['cx', 'cy', 'rx', 'ry']
-      break
-    case 'foreignObject':
-    case 'rect':
-    case 'image':
-      attrs = ['width', 'height', 'x', 'y']
-      break
-    case 'text':
-    case 'tspan':
-      attrs = ['x', 'y']
-      break
-    case 'polygon':
-    case 'polyline': {
-      initial = {}
-      initial.points = selected.getAttribute('points')
-      const list = selected.points
-      const len = list.numberOfItems
-      changes.points = new Array(len)
-      for (let i = 0; i < len; ++i) {
-        const pt = list.getItem(i)
-        changes.points[i] = { x: pt.x, y: pt.y }
-      }
-      break
+  if (selected.tagName === 'polygon' || selected.tagName === 'polyline') {
+    initial = {}
+    initial.points = selected.getAttribute('points')
+    const list = selected.points
+    const len = list.numberOfItems
+    changes.points = new Array(len)
+    for (let i = 0; i < len; ++i) {
+      const pt = list.getItem(i)
+      changes.points[i] = { x: pt.x, y: pt.y }
     }
-    case 'path':
-      initial = {}
-      initial.d = selected.getAttribute('d')
-      changes.d = selected.getAttribute('d')
-      break
+  } else if (selected.tagName === 'path') {
+    initial = {}
+    initial.d = selected.getAttribute('d')
+    changes.d = selected.getAttribute('d')
+  } else if (TAG_RECALC_ATTRS[selected.tagName]) {
+    attrs = TAG_RECALC_ATTRS[selected.tagName]
   }
 
   // Collect initial attribute values

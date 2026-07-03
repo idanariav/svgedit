@@ -1248,7 +1248,9 @@ const mouseUpEvent = (evt) => {
       try {
         // Fails in FF4 on foreignObject
         cAni.beginElement()
-      } catch (e) { /* empty fn */ }
+      } catch (e) {
+        console.warn('svgedit: opacity animation beginElement() failed (known FF/foreignObject quirk)', e)
+      }
     } else {
       aniDur = 0
     }

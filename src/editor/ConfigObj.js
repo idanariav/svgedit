@@ -80,9 +80,7 @@ export default class ConfigObj {
       *   Note that as of version 2.7, paths containing "/", "\", or ":", are disallowed for security reasons.
       *   Although previous versions of this list would entirely override the default list, as of version 2.7, the defaults will always be added to this explicit list unless the configuration `noDefaultExtensions` is included.
       *   See {@link module:SVGEditor~defaultExtensions}.
-      * @property {string[]} [allowedOrigins=[]] Used by `ext-xdomain-messaging.js` to indicate which origins are permitted for cross-domain messaging (e.g., between the embedded editor and main editor code).
-      *   Besides explicit domains, one might add '*' to allow all domains (not recommended for privacy/data integrity of your user's content!),
-      *   `window.location.origin` for allowing the same origin (should be safe if you trust all apps on your domain), 'null' to allow `file:///` URL usage
+      * @property {string[]} [allowedOrigins=[]] Origins permitted for cross-domain messaging (e.g., between an embedded editor and its parent). Currently inert in this fork — no cross-domain-messaging extension is included — kept for API compatibility with hosts that may still set it.
       * @property {string} [paramurl] This was available via URL only. Allowed an un-encoded URL within the query string (use "url" or "source" with a data: URI instead)
       * @property {Float} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
       * @property {PlainObject} [initFill] Init fill properties
@@ -234,13 +232,8 @@ export default class ConfigObj {
       * a string) to support all `file:///` URLs. Cannot be set by
       * URL for security reasons (not safe, at least for
       * privacy or data integrity of SVG content).
-      * Might have been fairly safe to allow
-      *   `new URL(location.href).origin` by default but
-      *   avoiding it ensures some more security that even third
-      *   party apps on the same domain also cannot communicate
-      *   with this app by default.
-      * For use with `ext-xdomain-messaging.js`
-      * @todo We might instead make as a user-facing preference.
+      * Currently inert in this fork — no cross-domain-messaging extension
+      * is included — kept for API compatibility with hosts that may still set it.
       */
       allowedOrigins: []
     }
