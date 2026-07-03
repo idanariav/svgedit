@@ -167,6 +167,7 @@ code exploration.
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
 | [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
+| [`techdebt.md`](.claude/techdebt.md) | Deferred refactors and follow-ups from past sessions — check before starting non-trivial work in an area it covers |
 
 ### Keeping the docs fresh
 
@@ -178,6 +179,8 @@ the relevant doc(s) to reflect the change. Specifically:
 - Changed which attributes are editable for a shape → update `attributes.md`
 - Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`
 - Created or changed an extension → update `extensions.md`
+- Deferred a proper fix in favor of a quick one, or left a planned refactor
+  undone → add an entry to `techdebt.md`; remove its entry once addressed
 
 ---
 
