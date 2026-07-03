@@ -156,6 +156,7 @@
 | `core/sanitize.js` | SVG security sanitization |
 | `core/text-actions.js` | Text cursor/selection editing |
 | `core/layer.js` | Layer CRUD |
+| `core/paper-utils.js` | Shared paper.js helpers used by boolean-ops/cutter/path-offset/shape-builder/taper-stroke/path-simplify: `getPaperScope()` (one lazy singleton, shared across all six), `getStyleAttrs(elem, extraAttrs)`, `svgToPaper(elem, scope, {asCompoundPath, flatten})` |
 | `core/boolean-ops.js` | Union, intersect, subtract, exclude (XOR), divide (split bottom by top into separate pieces) |
 | `core/path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening) |
 | `core/path-simplify.js` | `simplifyFreehand(polyline, tol)` (pencil-commit curve fitting) + `smoothSelectedPath(tol)` ("Smooth Path" action) via paper.js `simplify()` (flatten→refit for existing paths) |

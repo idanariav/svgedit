@@ -175,13 +175,16 @@ src/editor/index.html
 | `sanitize.js` | SVG sanitization for security |
 | `text-actions.js` | Text element editing (cursor, selection) |
 | `layer.js` | Layer CRUD (add, delete, rename, reorder) |
-| `boolean-ops.js` | Union, intersect, subtract operations |
-| `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `smoothSelectedPath` ("Smooth Path" action) |
+| `paper-utils.js` | Shared paper.js helpers for the six geometry-tool modules below: `getPaperScope()` (one lazy singleton scope shared by all of them), `getStyleAttrs(elem, extraAttrs)`, `svgToPaper(elem, scope, {asCompoundPath, flatten})` (element → paper.Path/CompoundPath with its own transform applied) |
+| `boolean-ops.js` | Union, intersect, subtract, exclude, divide (uses `paper-utils.js`) |
+| `cutter.js` | Cutter/knife tool — half-plane intersection cut (uses `paper-utils.js`) |
+| `path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening via `paper-utils.js`) |
+| `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `smoothSelectedPath` ("Smooth Path" action) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
-| `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting; `remapTaperSource` keeps the centerline in sync from `coords.js` |
+| `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
 | `text-path.js` | Text on path: attach/detach a `<textPath>` (href + xlink:href), rail auto-converted to `<path>`, `textPathOffset(pct)` for startOffset |
-| `shape-builder.js` | Shape-builder region math (`svgCanvas.shapeBuilder`): planar arrangement via iterative paper.js booleans; merge/delete gestures as BatchCommands |
+| `shape-builder.js` | Shape-builder region math (`svgCanvas.shapeBuilder`): planar arrangement via iterative paper.js booleans (uses `paper-utils.js`); merge/delete gestures as BatchCommands |
 | `json.js` | JSON import/export of SVG data |
 | `units.js` | Unit conversion (px, em, cm, mm, in…) |
 | `math.js` | Transform matrix operations |

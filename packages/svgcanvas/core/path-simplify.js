@@ -13,8 +13,8 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
 import { warn } from '../common/logger.js'
+import { getPaperScope } from './paper-utils.js'
 
 // Flattening tolerance (user units) when resampling an existing path's curves.
 const FLATTEN_TOLERANCE = 0.25
@@ -27,16 +27,6 @@ const SMOOTH_ACTION_TOLERANCE = 10
 
 export const init = (canvas) => {
   const svgCanvas = canvas
-
-  // Lazy-initialised paper.js scope — created once per instance on first use
-  let paperScope = null
-  const getPaperScope = () => {
-    if (!paperScope) {
-      paperScope = new paper.PaperScope()
-      paperScope.setup(document.createElement('canvas'))
-    }
-    return paperScope
-  }
 
   /**
    * Fit smooth cubic curves through a freehand polyline's points and swap it

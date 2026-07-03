@@ -23,24 +23,13 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
-import { getPathDFromElement } from './utilities.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getPaperScope, getStyleAttrs as getBaseStyleAttrs, svgToPaper } from './paper-utils.js'
 import { warn } from '../common/logger.js'
 
 // Ignore slivers below this absolute area (user units²).
 const AREA_EPS = 0.5
 // Region decomposition is O(n²) boolean ops — keep sessions sane.
 const MAX_SHAPES = 12
-
-let paperScope = null
-const getPaperScope = () => {
-  if (!paperScope) {
-    paperScope = new paper.PaperScope()
-    paperScope.setup(document.createElement('canvas'))
-  }
-  return paperScope
-}
 
 const areaOf = (item) => {
   if (!item) return 0
@@ -49,26 +38,9 @@ const areaOf = (item) => {
 }
 
 /** Element → paper item in content space (own transform applied). */
-const elemToItem = (elem, scope) => {
-  const d = getPathDFromElement(elem)
-  if (!d) return null
-  const item = new scope.CompoundPath(d)
-  const tlist = getTransformList(elem)
-  if (tlist && tlist.numberOfItems > 0) {
-    const m = transformListToTransform(tlist).matrix
-    item.transform(new scope.Matrix(m.a, m.b, m.c, m.d, m.e, m.f))
-  }
-  return item
-}
+const elemToItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: true })
 
-const getStyleAttrs = (elem) => {
-  const styleAttrs = {}
-  for (const attr of ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-linejoin', 'stroke-linecap', 'opacity']) {
-    const val = elem.getAttribute(attr)
-    if (val !== null) styleAttrs[attr] = val
-  }
-  return styleAttrs
-}
+const getStyleAttrs = (elem) => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
 
 export const init = (canvas) => {
   const svgCanvas = canvas

@@ -7,23 +7,12 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
-import { getPathDFromElement } from './utilities.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
 import { warn } from '../common/logger.js'
 
-// Element types that cannot be converted to a path
+// Element types that cannot be converted to a path (used for the
+// selection-fallback filter below; svgToPaper applies the same check itself).
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
-
-// Shared paper.js scope — lazy-initialised once on first use
-let paperScope = null
-const getPaperScope = () => {
-  if (!paperScope) {
-    paperScope = new paper.PaperScope()
-    paperScope.setup(document.createElement('canvas'))
-  }
-  return paperScope
-}
 
 /**
  * Convert an SVG element to a paper.js Path with its transform applied.
@@ -31,36 +20,7 @@ const getPaperScope = () => {
  * @param {paper.PaperScope} scope
  * @returns {paper.Path|null}
  */
-const getElemAsPath = (elem, scope) => {
-  if (NON_PATH_TAGS.has(elem.tagName)) return null
-  const d = getPathDFromElement(elem)
-  if (!d) return null
-  const path = new scope.Path(d)
-  const tlist = getTransformList(elem)
-  if (tlist && tlist.numberOfItems > 0) {
-    const matrix = transformListToTransform(tlist).matrix
-    path.transform(new scope.Matrix(
-      matrix.a, matrix.b,
-      matrix.c, matrix.d,
-      matrix.e, matrix.f
-    ))
-  }
-  return path
-}
-
-/**
- * Collect inheritable style attributes from an element.
- * @param {Element} elem
- * @returns {Object}
- */
-const getStyleAttrs = (elem) => {
-  const styleAttrs = {}
-  for (const attr of ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'opacity']) {
-    const val = elem.getAttribute(attr)
-    if (val !== null) styleAttrs[attr] = val
-  }
-  return styleAttrs
-}
+const getElemAsPath = (elem, scope) => svgToPaper(elem, scope)
 
 /**
  * Cut all selected elements along the line (x1,y1)→(x2,y2).

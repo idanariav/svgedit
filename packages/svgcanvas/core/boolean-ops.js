@@ -8,25 +8,8 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
-import { getPathDFromElement } from './utilities.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
 import { warn } from '../common/logger.js'
-
-// Element types that cannot be converted to a path for boolean operations
-const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
-
-// Lazy-initialised paper.js scope — created once on first use. This is a
-// stateless reusable compute scope (each op clears it), so it's safe to share
-// across editor instances; only the SvgCanvas reference must be per-instance.
-let paperScope = null
-const getPaperScope = () => {
-  if (!paperScope) {
-    paperScope = new paper.PaperScope()
-    paperScope.setup(document.createElement('canvas'))
-  }
-  return paperScope
-}
 
 /**
  * Convert an SVG element to a paper.js Path with its transform applied.
@@ -35,41 +18,7 @@ const getPaperScope = () => {
  * @param {paper.PaperScope} scope
  * @returns {paper.Path|null}
  */
-const getElemAsPath = (elem, scope) => {
-  if (NON_PATH_TAGS.has(elem.tagName)) return null
-
-  const d = getPathDFromElement(elem)
-  if (!d) return null
-
-  const path = new scope.Path(d)
-
-  // Apply the element's own transform (handles rotation, scale, translation)
-  const tlist = getTransformList(elem)
-  if (tlist && tlist.numberOfItems > 0) {
-    const matrix = transformListToTransform(tlist).matrix
-    path.transform(new scope.Matrix(
-      matrix.a, matrix.b,
-      matrix.c, matrix.d,
-      matrix.e, matrix.f
-    ))
-  }
-
-  return path
-}
-
-/**
- * Collect inheritable style attributes from an element.
- * @param {Element} elem
- * @returns {Object}
- */
-const getStyleAttrs = (elem) => {
-  const styleAttrs = {}
-  for (const attr of ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'opacity']) {
-    const val = elem.getAttribute(attr)
-    if (val !== null) styleAttrs[attr] = val
-  }
-  return styleAttrs
-}
+const getElemAsPath = (elem, scope) => svgToPaper(elem, scope)
 
 /**
  * Create a styled `<path>` element from a paper.js result and place it at the

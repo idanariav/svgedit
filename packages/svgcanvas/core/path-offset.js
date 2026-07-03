@@ -13,35 +13,20 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
 import ClipperLib from 'clipper-lib'
-import { getPathDFromElement } from './utilities.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
 import { warn } from '../common/logger.js'
-
-// Element types that cannot be converted to a path
-const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
 // Clipper works on integers — scale coordinates up, then back down.
 const SCALE = 1000
 // Flattening tolerance (in user units) for converting curves to line segments.
 const FLATTEN_TOLERANCE = 0.25
 
-// Reentrant init: the offset operations and their lazy paper.js scope are
-// created per SvgCanvas instance (closed over `svgCanvas` below) so several
-// editors can coexist in one realm. Stateless helpers above stay shared.
+// Reentrant init: the offset operations are created per SvgCanvas instance
+// (closed over `svgCanvas` below) so several editors can coexist in one
+// realm. Stateless helpers above stay shared.
 export const init = (canvas) => {
   const svgCanvas = canvas
-
-  // Lazy-initialised paper.js scope — created once per instance on first use
-  let paperScope = null
-const getPaperScope = () => {
-  if (!paperScope) {
-    paperScope = new paper.PaperScope()
-    paperScope.setup(document.createElement('canvas'))
-  }
-  return paperScope
-}
 
 /**
  * Build a paper.js CompoundPath for an element, with its transform applied and
@@ -50,27 +35,7 @@ const getPaperScope = () => {
  * @param {paper.PaperScope} scope
  * @returns {paper.CompoundPath|null}
  */
-const getElemAsFlatItem = (elem, scope) => {
-  if (NON_PATH_TAGS.has(elem.tagName)) return null
-
-  const d = getPathDFromElement(elem)
-  if (!d) return null
-
-  const item = new scope.CompoundPath(d)
-
-  const tlist = getTransformList(elem)
-  if (tlist && tlist.numberOfItems > 0) {
-    const matrix = transformListToTransform(tlist).matrix
-    item.transform(new scope.Matrix(
-      matrix.a, matrix.b,
-      matrix.c, matrix.d,
-      matrix.e, matrix.f
-    ))
-  }
-
-  item.flatten(FLATTEN_TOLERANCE)
-  return item
-}
+const getElemAsFlatItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: true, flatten: FLATTEN_TOLERANCE })
 
 /**
  * Convert a flattened paper item to Clipper polygons (scaled-up integer points).
@@ -102,15 +67,6 @@ const solutionToD = (solution) => solution
     return `M${pts.join('L')}Z`
   })
   .join('')
-
-const getStyleAttrs = (elem) => {
-  const styleAttrs = {}
-  for (const attr of ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'opacity']) {
-    const val = elem.getAttribute(attr)
-    if (val !== null) styleAttrs[attr] = val
-  }
-  return styleAttrs
-}
 
 /**
  * Replace `elem` with a freshly created `<path>` (d + style), recording undo/redo.

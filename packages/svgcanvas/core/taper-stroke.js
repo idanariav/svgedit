@@ -28,24 +28,13 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
 import { NS } from './namespaces.js'
 import { warn } from '../common/logger.js'
+import { getPaperScope } from './paper-utils.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
 export const TAPER_STYLE_ATTR = 'se:taper-style'
-
-// Module-level lazy scope: shared by the instance API and the coords.js
-// remap helper (which has no canvas instance at hand).
-let paperScope = null
-const getPaperScope = () => {
-  if (!paperScope) {
-    paperScope = new paper.PaperScope()
-    paperScope.setup(document.createElement('canvas'))
-  }
-  return paperScope
-}
 
 /** Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e). */
 const profile = (t, s, e) => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
