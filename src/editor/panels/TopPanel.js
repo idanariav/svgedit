@@ -6,6 +6,14 @@ import topPanelHTML from './TopPanel.html'
 
 const { $click, isValidUnit, getTypeMap, convertUnit } = SvgCanvas
 
+// Panel classes hidden at the start of every updateContextPanel() pass,
+// before the current selection decides which (if any) to show again.
+const STANDARD_CONTEXT_PANELS = [
+  'selected_panel', 'multiselected_panel', 'g_panel', 'frame_panel',
+  'rect_panel', 'circle_panel', 'ellipse_panel', 'line_panel',
+  'text_panel', 'image_panel', 'container_panel', 'use_panel', 'a_panel'
+]
+
 /*
  * register actions for left panel
  */
@@ -194,19 +202,7 @@ class TopPanel {
 
     const isNode = currentMode === 'pathedit'
     const menuItems = $id('se-cmenu_canvas')
-    this.hideTool('selected_panel')
-    this.hideTool('multiselected_panel')
-    this.hideTool('g_panel')
-    this.hideTool('frame_panel')
-    this.hideTool('rect_panel')
-    this.hideTool('circle_panel')
-    this.hideTool('ellipse_panel')
-    this.hideTool('line_panel')
-    this.hideTool('text_panel')
-    this.hideTool('image_panel')
-    this.hideTool('container_panel')
-    this.hideTool('use_panel')
-    this.hideTool('a_panel')
+    STANDARD_CONTEXT_PANELS.forEach(panel => this.hideTool(panel))
     this.setSidepanelVisible('sidepanel_general', false)
     this.setSidepanelVisible('sidepanel_text', false)
     this.setSidepanelVisible('clipmask_panel', false)
