@@ -11,10 +11,6 @@ vi.mock('@svgedit/svgcanvas', () => ({
   }
 }))
 
-vi.mock('@svgedit/svgcanvas/common/browser.js', () => ({
-  isChrome: () => false
-}))
-
 describe('MainMenu', () => {
   let editor
   let menu
@@ -53,8 +49,7 @@ describe('MainMenu', () => {
       getResolution: vi.fn(() => ({ w: 120, h: 80 })),
       getDocumentTitle: vi.fn(() => 'Doc'),
       setConfig: vi.fn(),
-      rasterExport: vi.fn().mockResolvedValue('data-uri'),
-      exportPDF: vi.fn()
+      rasterExport: vi.fn().mockResolvedValue('data-uri')
     }
 
     editor = {
@@ -66,7 +61,6 @@ describe('MainMenu', () => {
       rulers: { updateRulers: vi.fn() },
       setBackground: vi.fn(),
       updateCanvas: vi.fn(),
-      customExportPDF: false,
       customExportImage: false
     }
     globalThis.seAlert = vi.fn()
@@ -97,10 +91,9 @@ describe('MainMenu', () => {
     expect(document.getElementById('se-img-prop').getAttribute('dialog')).toBe('close')
   })
 
-  it('saves preferences, updates config and alerts when language changes', async () => {
+  it('saves preferences and updates config', async () => {
     editor.configObj.preferences = true
     const detail = {
-      lang: 'fr',
       bgcolor: '#111',
       bgurl: '',
       gridsnappingon: true,
@@ -113,7 +106,6 @@ describe('MainMenu', () => {
     await menu.savePreferences({ detail })
 
     expect(editor.setBackground).toHaveBeenCalledWith('#111', '')
-    expect(prefStore.lang).toBe('fr')
     expect(editor.configObj.curConfig.gridSnapping).toBe(true)
     expect(editor.configObj.curConfig.snappingStep).toBe(2)
     expect(editor.configObj.curConfig.gridColor).toBe('#333')
@@ -172,9 +164,6 @@ describe('MainMenu', () => {
     await menu.clickExport({ detail: { trigger: 'ok', imgType: 'PNG', quality: 50 } })
     expect(editor.svgCanvas.rasterExport).toHaveBeenCalledWith('PNG', 0.5, editor.exportWindowName)
     expect(editor.exportWindowCt).toBe(1)
-
-    await menu.clickExport({ detail: { trigger: 'ok', imgType: 'PDF' } })
-    expect(editor.svgCanvas.exportPDF).toHaveBeenCalled()
   })
 
   it('creates menu entries and wires click handlers in init', () => {

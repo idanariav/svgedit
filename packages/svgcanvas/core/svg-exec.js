@@ -5,8 +5,6 @@
  * @copyright 2011 Jeff Schiller
  */
 
-import { jsPDF as JsPDF } from 'jspdf'
-import 'svg2pdf.js'
 import * as history from './history.js'
 import { error } from '../common/logger.js'
 import {
@@ -28,7 +26,7 @@ import {
   getTransformList
 } from './math.js'
 import { convertUnit, shortFloat, convertToNum } from './units.js'
-import { isGecko, isChrome, isWebkit } from '../common/browser.js'
+import { isGecko, isWebkit } from '../common/browser.js'
 import { NS } from './namespaces.js'
 import * as draw from './draw.js'
 import { getParents, getClosest } from '../common/util.js'
@@ -125,8 +123,8 @@ export const init = canvas => {
  * inserted element (so it can be removed after serialization) or null if nothing
  * was embedded.
  *
- * Works on any root — the live document (SVG export) or a detached clone (raster/
- * PDF export, where text rendered by an <img> has no access to the document's
+ * Works on any root — the live document (SVG export) or a detached clone (raster
+ * export, where text rendered by an <img> has no access to the document's
  * fonts and would otherwise fall back to a default family).
  * @param {SVGSVGElement} [svgContent=svgCanvas.getSvgContent()] - The SVG root to embed into
  * @returns {SVGStyleElement|null}
@@ -1097,88 +1095,6 @@ export const init = canvas => {
   }
 
   /**
- * Exports the SVG content as a PDF.
- * @param {string} [windowName='svg.pdf'] - The window name or file name.
- * @param {string} [outputType='save'|'dataurlstring'] - The output type for jsPDF.
- * @returns {Promise<Object>} Resolves to an object containing PDF export data.
- */
-  const exportPDF = (
-    windowName = 'svg.pdf',
-    outputType = isChrome() ? 'save' : 'dataurlstring',
-    crop = null
-  ) => {
-    return new Promise((resolve, reject) => {
-      const res = svgCanvas.getResolution()
-      const svgElement = svgCanvas.getSvgContent().cloneNode(true)
-
-      // Frames mark export regions and must never appear in an exported image.
-      svgElement.querySelectorAll('[data-frame]').forEach(f => f.remove())
-
-      // Inline used custom fonts so the <img>-rendered clone keeps the chosen font
-      // (see rasterExport for rationale).
-      embedUsedFonts(svgElement)
-
-      // Crop to a frame's bounds when supplied (see rasterExport for rationale).
-      let outW = res.w
-      let outH = res.h
-      if (crop) {
-        svgElement.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.w} ${crop.h}`)
-        svgElement.setAttribute('width', crop.w)
-        svgElement.setAttribute('height', crop.h)
-        outW = crop.w
-        outH = crop.h
-      }
-      const orientation = outW > outH ? 'landscape' : 'portrait'
-      const unit = 'pt'
-
-      convertImagesToBase64(svgElement)
-        .then(() => {
-          const svgData = new XMLSerializer().serializeToString(svgElement)
-          const svgBlob = new Blob([svgData], {
-            type: 'image/svg+xml;charset=utf-8'
-          })
-          const url = URL.createObjectURL(svgBlob)
-
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
-          canvas.width = outW
-          canvas.height = outH
-
-          const img = new Image()
-          img.onload = () => {
-            ctx.drawImage(img, 0, 0, outW, outH)
-            URL.revokeObjectURL(url)
-
-            const imgData = canvas.toDataURL('image/png')
-            const doc = new JsPDF({ orientation, unit, format: [outW, outH] })
-
-            const docTitle = svgCanvas.getDocumentTitle()
-            doc.setProperties({ title: docTitle })
-            doc.addImage(imgData, 'PNG', 0, 0, outW, outH)
-
-            const { issues, issueCodes } = getIssues()
-            const obj = { issues, issueCodes, windowName, outputType }
-
-            obj.output = doc.output(
-              outputType,
-              outputType === 'save' ? windowName : undefined
-            )
-
-            svgCanvas.call('exportedPDF', obj)
-            resolve(obj)
-          }
-
-          img.onerror = err => {
-            error('Failed to load SVG into image element', err, 'svg-exec')
-            reject(err)
-          }
-
-          img.src = url
-        })
-        .catch(reject)
-    })
-  }
-  /**
  * Ensure each element has a unique ID.
  * @function module:svgcanvas.SvgCanvas#uniquifyElems
  * @param {Element} g - The parent element of the tree to give unique IDs
@@ -1561,5 +1477,4 @@ export const init = canvas => {
   svgCanvas.svgToString = svgToString // Sub function ran on each SVG element to convert it to a string as desired.
   svgCanvas.embedImage = embedImage // Converts a given image file to a data URL when possibl
   svgCanvas.rasterExport = rasterExport // Generates a PNG (or JPG, BMP, WEBP) Data URL based on the current image
-  svgCanvas.exportPDF = exportPDF // Generates a PDF based on the current image, then calls "exportedPDF"
 }

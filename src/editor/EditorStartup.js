@@ -271,20 +271,6 @@ class EditorStartup {
     this.svgCanvas.bind('transition', this.elementTransition.bind(this))
     this.svgCanvas.bind('changed', this.elementChanged.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
-    this.svgCanvas.bind('exportedPDF', function (win, data) {
-      if (!data.output) { // Ignore Chrome
-        return
-      }
-      const { exportWindowName } = data
-      if (exportWindowName) {
-        this.exportWindow = window.open('', this.exportWindowName) // A hack to get the window via JSON-able name without opening a new one
-      }
-      if (!this.exportWindow || this.exportWindow.closed) {
-        seAlert(this.i18next.t('notification.popupWindowBlocked'))
-        return
-      }
-      this.exportWindow.location.href = data.output
-    }.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))
     this.svgCanvas.bind('zoomDone', this.zoomDone.bind(this))
     this.svgCanvas.bind(
@@ -1255,10 +1241,7 @@ class EditorStartup {
         (_win, _data) => {
           this.extensionsAdded = true
           this.setAll()
-
-          if (this.storagePromptState === 'ignore') {
-            this.updateCanvas(true)
-          }
+          this.updateCanvas(true)
 
           this.messageQueue.forEach(
             /**

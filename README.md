@@ -121,24 +121,6 @@ Development and Continuous Integration are done with a **Chrome** environment. R
 
 To support old browsers, you may need to use an older version of the package. However, please open an issue if you need support for a specific version of your browser so that the project team can decide if we should support it in the latest version of SVGEdit.
 
-## Sample extension based on React
-
-A sample React component was used to build a SVGEdit extension.
-
-To activate:
-
-- "npm run build" from the extension folder "src/editor/react-extensions/react-test" in order to create the bundle for the extension.
-- modify "index.html" to activate the extension as a `userExtensions`
-
-```javascript
-svgEditor.setConfig({
-          allowInitialUserOverride: true,
-          extensions: [],
-          noDefaultExtensions: false,
-          userExtensions: ['./react-extensions/react-test/dist/react-test.js']
-        })
-```
-
 ## Further reading and more information
 
 - Participate in [discussions](https://github.com/SVG-Edit/svgedit/discussions)

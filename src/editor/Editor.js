@@ -53,11 +53,6 @@ class Editor extends EditorStartup {
      */
     this.showSaveWarning = false
     /**
-     * Will be set to a boolean by `ext-storage.js`
-     * @type {"ignore"|"waiting"|"closed"}
-     */
-    this.storagePromptState = 'ignore'
-    /**
      * document title
      */
     this.title = 'untitled.svg'
@@ -66,7 +61,6 @@ class Editor extends EditorStartup {
     this.$click = $click
     this.isReady = false
     this.customExportImage = false
-    this.customExportPDF = false
     this.configObj = new ConfigObj(this)
     this.configObj.pref = this.configObj.pref.bind(this.configObj)
     this.setConfig = this.configObj.setConfig.bind(this.configObj)
@@ -76,31 +70,7 @@ class Editor extends EditorStartup {
     this.docprops = false
     this.configObj.preferences = false
     this.canvMenu = null
-    this.goodLangs = [
-      'ar',
-      'cs',
-      'de',
-      'en',
-      'es',
-      'fa',
-      'fr',
-      'fy',
-      'hi',
-      'it',
-      'ja',
-      'nl',
-      'pl',
-      'pt-BR',
-      'ro',
-      'ru',
-      'sk',
-      'sl',
-      'sv',
-      'tr',
-      'uk',
-      'zh-CN',
-      'zh-TW'
-    ]
+    this.goodLangs = ['en']
 
     // Editor-level shortcuts (not associated with a toolbar button). Each entry
     // carries `id`/`group`/`label` so the Hotkey Manager (see Hotkeys.js) can
@@ -573,19 +543,12 @@ class Editor extends EditorStartup {
    *  - inform user of any issues supplied via the "issues" property
    *  - convert the "svg" property SVG string into an image for export;
    *    utilize the properties "type" (currently 'PNG', 'JPEG', 'BMP',
-   *    'WEBP', 'PDF'), "mimeType", and "quality" (for 'JPEG' and 'WEBP'
+   *    'WEBP'), "mimeType", and "quality" (for 'JPEG' and 'WEBP'
    *    types) to determine the proper output.
    * @function module:SVGthis.CustomHandler#exportImage
    * @param {external:Window} win
    * @param {module:svgcanvas.SvgCanvas#event:exported} data
    * @listens module:svgcanvas.SvgCanvas#event:exported
-   * @returns {void}
-   */
-  /**
-   * @function module:SVGthis.CustomHandler#exportPDF
-   * @param {external:Window} win
-   * @param {module:svgcanvas.SvgCanvas#event:exportedPDF} data
-   * @listens module:svgcanvas.SvgCanvas#event:exportedPDF
    * @returns {void}
    */
 
@@ -911,12 +874,7 @@ class Editor extends EditorStartup {
     // resolution change must reposition them (set by ext-proportion-markers).
     this.updateProportionMarkers?.()
 
-    if (
-      this.configObj.urldata.storagePrompt !== true &&
-      this.storagePromptState === 'ignore'
-    ) {
-      if ($id('dialog_box') != null) $id('dialog_box').style.display = 'none'
-    }
+    if ($id('dialog_box') != null) $id('dialog_box').style.display = 'none'
   }
 
   /**

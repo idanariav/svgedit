@@ -266,7 +266,7 @@ ext-shadow, ext-outline, and ext-color-shift now inject into `#tab_effects`
 
 | ID | Item | Shortcut |
 |----|------|----------|
-| `tool_export` | Export (PNG / JPG / WebP / PDF) | — |
+| `tool_export` | Export (PNG / JPG / BMP / WebP) | — |
 | `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
 | `tool_hotkeys` | Open the **Hotkey Manager** (`se-hotkey-dialog`) | — |
 | `tool_favorites` | Open the **Favorites** manager (`se-favorites-dialog`) | — |
@@ -338,13 +338,13 @@ boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 `frameId` rides on the dialog's `change` detail. `MainMenu.clickExport` resolves it
 via `resolveFrameCrop(frameId)` to a `{x,y,w,h}` crop box (from the frame's
 `x/y/width/height` attrs, `getBBox()` fallback) and passes `crop` to
-`rasterExport(...,{crop})` / `exportPDF(name, type, crop)`. In `core/svg-exec.js`
-both export paths **always strip `[data-frame]` elements** from the clone (frames
-never appear in an image) and, when a crop is given, narrow the clone's `viewBox`
-and set an explicit `width`/`height` (required for Firefox `<img>` rasterization)
-sized to the frame. Both paths also call `embedUsedFonts(clone)` so custom fonts
-survive rasterization (the `<img>` has no access to the document's fonts — see
-Fonts below). `File → Save` is unaffected — it keeps frames in the document.
+`rasterExport(...,{crop})`. In `core/svg-exec.js` the export path **always strips
+`[data-frame]` elements** from the clone (frames never appear in an image) and,
+when a crop is given, narrows the clone's `viewBox` and sets an explicit
+`width`/`height` (required for Firefox `<img>` rasterization) sized to the frame.
+It also calls `embedUsedFonts(clone)` so custom fonts survive rasterization (the
+`<img>` has no access to the document's fonts — see Fonts below). `File → Save`
+is unaffected — it keeps frames in the document.
 
 ---
 
@@ -423,14 +423,8 @@ Flying button (left panel):
 ### ext-panning — Pan Tool (`extensions/ext-panning/`)
 - Hand/pan tool added to left panel after zoom; activates canvas panning mode
 
-### ext-overview_window — Mini Map (`extensions/ext-overview_window/`)
-- Mini canvas preview (`overviewMiniView`) in side panel; draggable viewport indicator
-
 ### ext-opensave — File I/O (`extensions/ext-opensave/`)
 - Open SVG, Save SVG, Clear canvas, Import image (drag-drop supported), Append SVG
-
-### ext-storage — Auto-save (`extensions/ext-storage/`)
-- Silently persists drawing to `localStorage`; prompts on reload to restore session
 
 ### ext-theme-toggle — Theme Switch (`extensions/ext-theme-toggle/`)
 - Button to toggle light ↔ dark theme (wraps `themeUtil.applyTheme()`)
@@ -470,7 +464,7 @@ Flying button (left panel):
 - Font names preview in their own typeface: as rows scroll into view an `IntersectionObserver` lazily injects a `text=`-subsetted Google Fonts `<link>` (a few KB, just the name's glyphs) into `document.head`. Needs network for the preview; offline, names stay in the UI font until downloaded
 - Picking a font: `fontStore.ensureFont()` fetches the WOFF2 once via the Google Fonts CSS2 API, stores it in IndexedDB (`svgedit-fonts` DB), registers it with `document.fonts` (live canvas render) and the canvas font registry (`svgCanvas.setEncodableFont`). After the one-time download it works fully offline
 - On startup ext-fonts calls `restoreAll()` to re-register every cached font and re-add it to the `tool_font_family` dropdown
-- **Embed-on-export:** `core/svg-exec.js` `embedUsedFonts(svgRoot)` injects a `<style>` with one base64 `@font-face` per *used* font into the root's `<defs>` (finds/creates `<defs>` on the passed root, not the live doc). Family names are emitted **unquoted** with no `format()` so the payload has no XML-special chars and survives serialization. Fonts not referenced by any text are not embedded. Three callers: (1) the SVG-string path (`svgCanvasToString`) embeds into the *live* doc gated on `getSvgOptionApply()`, then removes the `<style>` right after serialization (live doc untouched); (2) `rasterExport` and (3) `exportPDF` embed unconditionally into their *clone* — without this, text rendered through the `<img>` element falls back to a default font since the `<img>` has no access to `document.fonts`
+- **Embed-on-export:** `core/svg-exec.js` `embedUsedFonts(svgRoot)` injects a `<style>` with one base64 `@font-face` per *used* font into the root's `<defs>` (finds/creates `<defs>` on the passed root, not the live doc). Family names are emitted **unquoted** with no `format()` so the payload has no XML-special chars and survives serialization. Fonts not referenced by any text are not embedded. Two callers: (1) the SVG-string path (`svgCanvasToString`) embeds into the *live* doc gated on `getSvgOptionApply()`, then removes the `<style>` right after serialization (live doc untouched); (2) `rasterExport` embeds unconditionally into its *clone* — without this, text rendered through the `<img>` element falls back to a default font since the `<img>` has no access to `document.fonts`
 - `fontStore.js` is imported **only** by `seFontLibrary.js` so it stays a single bundled module instance; `ext-fonts.js` is DOM-only and reaches it via the element's `restoreCachedFonts()` method
 
 ---

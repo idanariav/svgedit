@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { putLocale, t } from '../src/editor/locale.js'
 
-const goodLangs = ['en', 'fr', 'de']
+const goodLangs = ['en']
 const originalNavigator = {
   userLanguage: navigator.userLanguage,
   language: navigator.language
@@ -42,16 +42,25 @@ describe('locale loader', () => {
     expect(t('misc.powered_by')).toBe('Powered by')
   })
 
-  test('uses navigator.userLanguage when available', async () => {
+  test('uses navigator.userLanguage when it is supported', async () => {
+    setNavigatorProp('userLanguage', 'en')
+    setNavigatorProp('language', 'fr')
+
+    const result = await putLocale('', goodLangs)
+    expect(result.langParam).toBe('en')
+    expect(t('common.ok')).toBe('OK')
+  })
+
+  test('falls back to English when navigator.userLanguage is not supported', async () => {
     setNavigatorProp('userLanguage', 'fr')
     setNavigatorProp('language', 'en-US')
 
     const result = await putLocale('', goodLangs)
-    expect(result.langParam).toBe('fr')
+    expect(result.langParam).toBe('en')
     expect(t('common.ok')).toBe('OK')
   })
 
-  test('uses navigator.language and still falls back to English for unsupported locale', async () => {
+  test('uses navigator.language and falls back to English for unsupported locale', async () => {
     Reflect.deleteProperty(navigator, 'userLanguage')
     setNavigatorProp('language', 'pt-BR')
 
@@ -60,17 +69,9 @@ describe('locale loader', () => {
     expect(t('common.ok')).toBe('OK')
   })
 
-  test('uses navigator.language with supported locale', async () => {
-    Reflect.deleteProperty(navigator, 'userLanguage')
-    setNavigatorProp('language', 'de')
-
-    const result = await putLocale('', goodLangs)
-    expect(result.langParam).toBe('de')
-  })
-
   test('uses explicit lang parameter over navigator', async () => {
-    setNavigatorProp('userLanguage', 'de')
-    setNavigatorProp('language', 'de')
+    setNavigatorProp('userLanguage', 'fr')
+    setNavigatorProp('language', 'fr')
 
     const result = await putLocale('en', goodLangs)
     expect(result.langParam).toBe('en')

@@ -204,31 +204,6 @@ npm start -- --port 8001
 > then reload the page (no server restart needed). Editor-side files
 > (`src/editor/**`) are served from source as usual.
 
-### Storage-consent popup
-
-On first load the editor shows `<se-storage-dialog>` — a shadow DOM modal
-that blocks all pointer events until dismissed. **Always dismiss it before
-interacting with the canvas.**
-
-```js
-// Dismiss via shadow DOM (works even without a visible viewport):
-await page.evaluate(() => {
-  document.querySelector('se-storage-dialog')
-    ?.shadowRoot?.querySelector('#storage_ok')?.click()
-})
-await page.waitForTimeout(500)
-```
-
-Appending `?noStorageOnLoad=true` to the URL suppresses the *prompt content*,
-but the `<se-storage-dialog>` element can **still be present and intercept
-pointer events** (real `page.mouse` clicks hit it instead of the canvas). For
-real-input tests, always remove it explicitly after load:
-
-```js
-const URL = 'http://localhost:8001/src/editor/index.html?noStorageOnLoad=true'
-await page.evaluate(() => { document.querySelector('se-storage-dialog')?.remove() })
-```
-
 ### Coordinate mapping for real mouse drags
 
 Do **not** derive the content origin from
@@ -294,7 +269,7 @@ import { chromium } from '/Users/.../svgedit/node_modules/playwright/index.mjs'
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 page.setDefaultTimeout(20000)
-await page.goto('http://localhost:8001/src/editor/index.html?noStorageOnLoad=true')
+await page.goto('http://localhost:8001/src/editor/index.html')
 await page.waitForSelector('#svgcanvas', { timeout: 10000 })
 await page.waitForTimeout(1200)  // let all extensions register
 ```

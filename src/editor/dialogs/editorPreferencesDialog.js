@@ -17,7 +17,6 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$dialog = this._shadowRoot.querySelector('#svg_prefs')
     this.$saveBtn = this._shadowRoot.querySelector('#tool_prefs_save')
     this.$cancelBtn = this._shadowRoot.querySelector('#tool_prefs_cancel')
-    this.$langSelect = this._shadowRoot.querySelector('#lang_select')
     this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
   }
@@ -31,7 +30,6 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('common-ok', i18next.t('common.ok'))
     this.setAttribute('common-cancel', i18next.t('common.cancel'))
     this.setAttribute('config-editor_prefs', i18next.t('config.editor_prefs'))
-    this.setAttribute('config-language', i18next.t('config.language'))
     this.setAttribute('config-units_and_rulers', i18next.t('config.units_and_rulers'))
     this.setAttribute('config-show_rulers', i18next.t('config.show_rulers'))
     this.setAttribute('config-base_unit', i18next.t('config.base_unit'))
@@ -43,7 +41,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'lang', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-language', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
+    return ['dialog', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
   }
 
   /**
@@ -63,9 +61,6 @@ export class SeEditPrefsDialog extends HTMLElement {
         } else {
           this.$dialog.close()
         }
-        break
-      case 'lang':
-        this.$langSelect.value = newValue
         break
       case 'showrulers':
         if (newValue === 'true') {
@@ -87,10 +82,6 @@ export class SeEditPrefsDialog extends HTMLElement {
         node = this._shadowRoot.querySelector('#svginfo_editor_prefs')
         node.textContent = newValue
         break
-      case 'config-language':
-        node = this._shadowRoot.querySelector('#svginfo_lang')
-        node.textContent = newValue
-        break
       case 'config-units_and_rulers':
         node = this._shadowRoot.querySelector('#svginfo_units_rulers')
         node.textContent = newValue
@@ -107,22 +98,6 @@ export class SeEditPrefsDialog extends HTMLElement {
         super.attributeChangedCallback(name, oldValue, newValue)
         break
     }
-  }
-
-  /**
-   * @function get
-   * @returns {any}
-   */
-  get lang () {
-    return this.getAttribute('lang')
-  }
-
-  /**
-   * @function set
-   * @returns {void}
-   */
-  set lang (value) {
-    this.setAttribute('lang', value)
   }
 
   /**
@@ -189,7 +164,6 @@ export class SeEditPrefsDialog extends HTMLElement {
     const onSaveHandler = () => {
       const closeEvent = new CustomEvent('change', {
         detail: {
-          lang: this.$langSelect.value,
           dialog: 'close',
           showrulers: this.$showRulers.checked,
           baseunit: this.$baseUnit.value

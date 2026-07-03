@@ -63,7 +63,6 @@ svgedit/
 │   │   ├── ext-layer_view/        # Layer visualization
 │   │   ├── ext-markers/           # Arrow/marker decorators on lines
 │   │   ├── ext-opensave/          # File open / save / import dialogs
-│   │   ├── ext-overview_window/   # Mini canvas preview window
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
 │   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
@@ -78,7 +77,6 @@ svgedit/
 │   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
 │   │   ├── ext-shape-builder/     # Interactive paint-to-merge region mode
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
-│   │   ├── ext-storage/           # Auto-save to browser localStorage
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │
 │   ├── images/                    # SVG toolbar icons (source of truth; dist/ is generated)

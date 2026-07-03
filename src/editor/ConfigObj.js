@@ -21,7 +21,7 @@ export default class ConfigObj {
     /**
       * Preferences.
       * @interface module:SVGEditor.Prefs
-      * @property {string} [lang="en"] Two-letter language code. The language must exist in the Editor Preferences language list. Defaults to "en" if `locale.js` detection does not detect another language.
+      * @property {string} [lang="en"] Two-letter language code. This fork ships English only (see `src/editor/locale/`); non-English codes fall back to "en" via `locale.js`.
       * @property {string} [bkgd_color="#FFF"] Color hex for canvas background color. Defaults to white.
       * @property {string} [bkgd_url=""] Background raster image URL. This image will fill the background of the document; useful for tracing purposes.
       * @property {"embed"|"ref"} [img_save="embed"] Defines whether included raster images should be saved as Data URIs when possible, or as URL references. Settable in the Document Properties dialog.
@@ -73,10 +73,6 @@ export default class ConfigObj {
       *   Must be set early, i.e., in `svgedit-config-iife.js`; extension loading is too late!
       * @property {boolean} [noDefaultExtensions=false] If set to `true`, prohibits automatic inclusion of default extensions (though "extensions" can still be used to add back any desired default extensions along with any other extensions).
       *   This can only be meaningfully used in `svgedit-config-iife.js` or in the URL
-      * @property {boolean} [noStorageOnLoad=false] Some interaction with `ext-storage.js`; prevent even the loading of previously saved local storage.
-      * @property {boolean} [forceStorage=false] Some interaction with `ext-storage.js`; strongly discouraged from modification as it bypasses user privacy by preventing them
-      *   from choosing whether to keep local storage or not (and may be required by law in some regions)
-      * @property {boolean} [emptyStorageOnDecline=false] Used by `ext-storage.js`; empty any prior storage if the user declines to store
       * @property {boolean} [avoidClientSide=false] DEPRECATED (use `avoidClientSideDownload` instead); Used by `ext-server_opensave.js`; set to `true` if you wish to always save to server and not only as fallback when client support is lacking
       * @property {boolean} [avoidClientSideDownload=false] Used by `ext-server_opensave.js`; set to `true` if you wish to always save to server and not only as fallback when client support is lacking
       * @property {boolean} [avoidClientSideOpen=false] Used by `ext-server_opensave.js`; set to `true` if you wish to always open from the server and not only as fallback when FileReader client support is lacking
@@ -181,10 +177,6 @@ export default class ConfigObj {
       // EXTENSION-RELATED (GRID)
       showGrid: false, // Set by ext-grid.js
       gridShape: 'square', // 'square' | 'isometric' | 'triangle' | 'perspective1' | 'perspective2'. Set via the grid settings popover.
-      // EXTENSION-RELATED (STORAGE)
-      noStorageOnLoad: false, // Some interaction with ext-storage.js; prevent even the loading of previously saved local storage
-      forceStorage: false, // Some interaction with ext-storage.js; strongly discouraged from modification as it bypasses user privacy by preventing them from choosing whether to keep local storage or not
-      emptyStorageOnDecline: false, // Used by ext-storage.js; empty any prior storage if the user declines to store
       // EXTENSION (CLIENT VS. SERVER SAVING/OPENING)
       avoidClientSide: false, // Deprecated in favor of `avoidClientSideDownload`
       avoidClientSideDownload: false,
@@ -216,17 +208,13 @@ export default class ConfigObj {
       'ext-taper',
       'ext-text-path',
       'ext-shape-builder',
-      // 'ext-imagelib',
-      // 'ext-arrows',
       'ext-markers',
-      // 'ext-overview_window', disabled until we fix performance issue
       'ext-panning',
       'ext-brush',
       'ext-shapes',
       'ext-polystar',
       'ext-cutter',
       'ext-curvature',
-      'ext-storage',
       'ext-opensave',
       'ext-layer_view',
       'ext-theme-toggle',
@@ -334,8 +322,7 @@ export default class ConfigObj {
           }
         })
 
-      // Note: `source` and `url` (as with `storagePrompt` later) are not
-      //  set on config but are used below
+      // Note: `source` and `url` are not set on config but are used below
       this.setConfig(this.urldata, { overwrite: false })
       this.setupCurConfig()
 
@@ -360,9 +347,7 @@ export default class ConfigObj {
           return
         }
       }
-      if (!this.urldata.noStorageOnLoad || this.curConfig.forceStorage) {
-        this.loadContentAndPrefs()
-      }
+      this.loadContentAndPrefs()
     } else {
       this.setupCurConfig()
       this.loadContentAndPrefs()
@@ -370,45 +355,24 @@ export default class ConfigObj {
   }
 
   /**
-    * Where permitted, sets canvas and/or `configObj.defaultPrefs` based on previous
-    *  storage. This will override URL settings (for security reasons) but
+    * Sets `configObj.defaultPrefs` based on previously persisted storage.
+    *  This will override URL settings (for security reasons) but
     *  not `svgedit-config-iife.js` configuration (unless initial user
     *  overriding is explicitly permitted there via `allowInitialUserOverride`).
     * @function module:SVGEditor.loadContentAndPrefs
-    * @todo Split `allowInitialUserOverride` into `allowOverrideByURL` and
-    *  `allowOverrideByUserStorage` so `svgedit-config-iife.js` can disallow some
-    *  individual items for URL setting but allow for user storage AND/OR
-    *  change URL setting so that it always uses a different namespace,
-    *  so it won't affect pre-existing user storage (but then if users saves
-    *  that, it will then be subject to tampering
     * @returns {void}
   */
   loadContentAndPrefs () {
-    if (!this.curConfig.forceStorage &&
-      (this.curConfig.noStorageOnLoad ||
-          !(/(?:^|;\s*)svgeditstore=(?:prefsAndContent|prefsOnly)/).test(document.cookie)
-      )
-    ) {
+    if (!this.editor.storage) {
       return
     }
 
     // LOAD PREFS
     Object.keys(this.defaultPrefs).forEach((key) => {
       const storeKey = 'svg-edit-' + key
-      if (this.editor.storage) {
-        const val = this.editor.storage.getItem(storeKey)
-        if (val) {
-          this.defaultPrefs[key] = String(val) // Convert to string for FF (.value fails in Webkit)
-        }
-      } else if (window.widget) {
-        this.defaultPrefs[key] = window.widget.preferenceForKey(storeKey)
-      } else {
-        const result = document.cookie.match(
-          new RegExp('(?:^|;\\s*)' + regexEscape(
-            encodeURIComponent(storeKey)
-          ) + '=([^;]+)')
-        )
-        this.defaultPrefs[key] = result ? decodeURIComponent(result[1]) : ''
+      const val = this.editor.storage.getItem(storeKey)
+      if (val) {
+        this.defaultPrefs[key] = String(val) // Convert to string for FF (.value fails in Webkit)
       }
     })
   }
@@ -523,6 +487,7 @@ export default class ConfigObj {
   pref (key, val, mayBeEmpty) {
     if (mayBeEmpty || val) {
       this.curPrefs[key] = val
+      this.editor.storage?.setItem('svg-edit-' + key, String(val))
       return undefined
     }
     return (key in this.curPrefs) ? this.curPrefs[key] : this.defaultPrefs[key]

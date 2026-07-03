@@ -26,7 +26,6 @@ test.describe('Main menu logic', () => {
         getResolution: () => ({ w: 640, h: 480 }),
         getDocumentTitle: () => 'Existing',
         setConfig: (cfg) => { window.__setConfig = cfg },
-        exportPDF: () => { window.__pdf = true },
         rasterExport: () => { window.__raster = true }
       }
 
@@ -54,7 +53,6 @@ test.describe('Main menu logic', () => {
         i18next: { t: (key) => key },
         docprops: false,
         exportWindowCt: 0,
-        customExportPDF: false,
         customExportImage: false,
         exportWindowName: ''
       }
@@ -77,7 +75,6 @@ test.describe('Main menu logic', () => {
       menu.showPreferences()
       menu.savePreferences({
         detail: {
-          lang: 'en',
           bgcolor: '#000',
           bgurl: 'url',
           gridsnappingon: true,

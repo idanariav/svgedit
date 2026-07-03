@@ -1,6 +1,4 @@
-/* globals seAlert */
 import SvgCanvas from '@svgedit/svgcanvas'
-import { isChrome } from '@svgedit/svgcanvas/common/browser.js'
 import { applyUiMode, isTabletMode } from './uiMode.js'
 
 const { $click } = SvgCanvas
@@ -49,16 +47,9 @@ class MainMenu {
    */
   async savePreferences (e) {
     const {
-      lang,
       showrulers,
       baseunit
     } = e.detail
-
-    // set language
-    if (lang && lang !== this.editor.configObj.pref('lang')) {
-      this.editor.configObj.pref('lang', lang)
-      seAlert('Changing the language needs reload')
-    }
 
     // set ruler / unit settings (grid settings live in the grid-settings popover)
     this.editor.configObj.curConfig.showRulers = showrulers
@@ -88,7 +79,6 @@ class MainMenu {
     const includeBg = e?.detail?.includeBg ?? false
     const crop = this.resolveFrameCrop(e?.detail?.frameId)
     // Open placeholder window (prevents popup)
-    let exportWindowName
 
     /**
      *
@@ -101,24 +91,16 @@ class MainMenu {
       this.editor.exportWindowName =
         this.editor.configObj.curConfig.canvasName + this.editor.exportWindowCt
     }
-    const chrome = isChrome()
-    if (imgType === 'PDF') {
-      if (!this.editor.customExportPDF && !chrome) {
-        openExportWindow()
-      }
-      this.editor.svgCanvas.exportPDF(exportWindowName, undefined, crop)
-    } else {
-      if (!this.editor.customExportImage) {
-        openExportWindow()
-      }
-      const bkgdColor = this.editor.configObj.curPrefs.bkgd_color
-      /* const results = */ await this.editor.svgCanvas.rasterExport(
-        imgType,
-        quality,
-        this.editor.exportWindowName,
-        { includeBg, bgcolor: bkgdColor, crop }
-      )
+    if (!this.editor.customExportImage) {
+      openExportWindow()
     }
+    const bkgdColor = this.editor.configObj.curPrefs.bkgd_color
+    /* const results = */ await this.editor.svgCanvas.rasterExport(
+      imgType,
+      quality,
+      this.editor.exportWindowName,
+      { includeBg, bgcolor: bkgdColor, crop }
+    )
   }
 
   /**

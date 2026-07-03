@@ -71,7 +71,7 @@ export default defineConfig({
     }
   ].filter(Boolean),
   optimizeDeps: {
-    // Restrict dependency scanning to the main editor entry points; archive assets stay untouched.
+    // Restrict dependency scanning to the main editor entry points.
     entries: editorEntries
   },
   build: {

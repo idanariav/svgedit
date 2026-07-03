@@ -84,8 +84,8 @@
 | File | Purpose |
 |------|---------|
 | `imagePropertiesDialog.js` | Modal for image element properties |
-| `editorPreferencesDialog.js` | Editor preferences modal (language, units, rulers; grid settings moved to the grid-settings popover) |
-| `exportDialog.js` | Export dialog (PNG/JPG/WebP/PDF options) |
+| `editorPreferencesDialog.js` | Editor preferences modal (units, rulers; grid settings moved to the grid-settings popover). No language picker — this fork is English-only (see `locale.js`) |
+| `exportDialog.js` | Export dialog (PNG/JPG/BMP/WebP options) |
 | `imageImportDialog.js` | **Insert image** dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
 | `insertImage.js` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a vault drawing as real, editable elements (individual directly-selectable shapes in the layer, defs → canvas `<defs>`, undoable) for the host's "Unlocked" import mode. `fitTo` (a user-space rect) overlays the import on that rect (scale+translate on the wrapping `<g>`) instead of centering — used by the image-trace feature |
 | `traceImage.js` | `traceImageToSvg(imageElem, { preset, numberofcolors })` — vectorizes a selected `<image>` (PNG/raster) into editable `<path>` elements via `imagetracerjs`, positioned over the original (non-destructive). Reads pixels through an offscreen canvas (CORS-guarded), runs the tracer, then calls `insertSvgElements(..., { asPaths: true, fitTo })`. Backs the **Convert to editable SVG** button |
@@ -112,7 +112,6 @@
 | `ext-layer_view/` | Layer visualization |
 | `ext-markers/` | Arrow/marker decorators |
 | `ext-opensave/` | File open/save/import/append |
-| `ext-overview_window/` | Mini canvas preview |
 | `ext-panning/` | Pan/hand tool |
 | `ext-polystar/` | Star and polygon tools |
 | `ext-brush/` | Pressure-sensitive brush tool (`perfect-freehand` filled-outline strokes; pen pressure via passive PointerEvent side-channel) |
@@ -127,7 +126,6 @@
 | `ext-text-path/` | UI glue for text on path (`core/text-path.js`): `tool_text_on_path` in the Combine section (shown when one text + one shape are selected) + `#textpath_panel` in the Text tab (startOffset % spin, detach button) |
 | `ext-shape-builder/` | Interactive shape builder mode (`shapebuilder`): region overlay `#shapeBuilderOverlay`, hover highlight, drag-across-regions to merge (Alt = delete), Escape/tool-switch exits; math + mutations in `core/shape-builder.js` |
 | `ext-shapes/` | Pre-made shape library (incl. the stroke-based **Accents** decoration category — droplets, sparkles, motion arcs, speed lines, puffs — in `shapelib/accents.json`) |
-| `ext-storage/` | localStorage auto-save |
 | `ext-theme-toggle/` | Light/dark theme button |
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — angle/length, blur, opacity, color (delegates to `fx-filter.js`) |
 | `ext-outline/` | Second outline/halo color around a line's stroke via `feMorphology` dilate filter — width, opacity, color; line-family only (delegates to `fx-filter.js`) |

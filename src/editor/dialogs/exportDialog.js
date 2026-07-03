@@ -21,9 +21,7 @@ export class SeExportDialog extends HTMLElement {
     this.$cancelBtn = this._shadowRoot.querySelector('#export_cancel')
     this.$exportOption = this._shadowRoot.querySelector('#se-storage-pref')
     this.$region = this._shadowRoot.querySelector('#se-export-region')
-    this.$qualityCont = this._shadowRoot.querySelector('#se-quality')
     this.$input = this._shadowRoot.querySelector('#se-quality')
-    this.$includeBgLabel = this._shadowRoot.querySelector('#se-include-bg-label')
     this.$includeBg = this._shadowRoot.querySelector('#se-include-bg')
     this.value = 1
   }
@@ -156,14 +154,8 @@ export class SeExportDialog extends HTMLElement {
         this.setAttribute('dialog', 'close')
       }
     }
-    const onChangeHandler = (e) => {
-      const isPDF = e.target.value === 'PDF'
-      this.$qualityCont.style.display = isPDF ? 'none' : 'block'
-      this.$includeBgLabel.style.display = isPDF ? 'none' : 'flex'
-    }
     svgEditor.$click(this.$okBtn, (evt) => onSubmitHandler(evt, 'ok'))
     svgEditor.$click(this.$cancelBtn, (evt) => onSubmitHandler(evt, 'cancel'))
-    this.$exportOption.addEventListener('change', (evt) => onChangeHandler(evt))
   }
 }
 

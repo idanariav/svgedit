@@ -17,14 +17,13 @@
     "node": ">=20"
   },
   "workspaces": [
-    "packages/svgcanvas",
-    "packages/react-test"
+    "packages/svgcanvas"
   ],
   "scripts": {
     "lint": "standard .",
     "pretest": "npm run lint",
     "test": "vitest run --coverage && node scripts/run-e2e.mjs",
-    "build": "vite build packages/svgcanvas && vite build packages/react-test && vite build",
+    "build": "vite build packages/svgcanvas && vite build",
     "postbuild": "node scripts/copy-static.mjs",
     "start": "vite dev --host --port 8000 --strictPort",
     "prestart": "echo svgedit is available at http://localhost:8000/src/editor/index.html",
@@ -73,9 +72,7 @@
     "not OperaMini all"
   ],
   "standard": {
-    "ignore": [
-      "archive/"
-    ],
+    "ignore": [],
     "globals": [
       "assert",
       "expect"
@@ -92,12 +89,10 @@
     "elix": "15.0.1",
     "i18next": "25.7.4",
     "imagetracerjs": "^1.2.6",
-    "jspdf": "4.0.0",
     "paper": "^0.12.18",
     "pathseg": "1.2.1",
     "perfect-freehand": "^1.2.3",
-    "spiro": "^3.0.1",
-    "svg2pdf.js": "2.7.0"
+    "spiro": "^3.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
