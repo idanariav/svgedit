@@ -99,7 +99,7 @@ export class SeImgPropDialog extends HTMLElement {
       case 'dialog':
         if (this.eventlisten) {
           if (newValue === 'open') {
-            this.$dialog.open()
+            this.$dialog.showModal()
           } else {
             this.$dialog.close()
           }

@@ -66,7 +66,7 @@ export class SeTextPromptDialog extends HTMLElement {
       // resolve to the right palette (the dialog lives outside the themed
       // `.svg_editor` scope).
       this.classList.toggle('theme-dark', !!document.querySelector('.svg_editor')?.classList.contains('theme-dark'))
-      this.$dialog.open()
+      this.$dialog.showModal()
       // Focus + select after the dialog paints.
       setTimeout(() => {
         this.$input.focus()

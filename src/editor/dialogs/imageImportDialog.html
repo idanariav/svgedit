@@ -322,8 +322,12 @@
     :host(.theme-dark) #image_import_ok {
         color: #1B1F24;
     }
+
+    #image_import_box::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="image_import_box" aria-label="insert image" closed>
+<dialog id="image_import_box" aria-label="insert image">
     <div id="image_import_container">
         <div id="image_import_header">
             <p id="image_import_title">Insert image</p>
@@ -364,4 +368,4 @@
             <button id="image_import_ok" type="button" disabled>Insert</button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

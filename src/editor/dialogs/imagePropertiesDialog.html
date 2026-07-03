@@ -63,8 +63,12 @@
         display: block;
         margin: .5em;
     }
+
+    #svg_docprops::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="svg_docprops" aria-label="Sample dialog" closed>
+<dialog id="svg_docprops" aria-label="Sample dialog">
     <div id="svg_docprops_container">
         <div id="tool_docprops_back" class="toolbar_button">
             <button id="tool_docprops_save"></button>
@@ -111,4 +115,4 @@
             </fieldset>
         </fieldset>
     </div>
-</elix-dialog>
+</dialog>

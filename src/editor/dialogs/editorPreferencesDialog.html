@@ -150,8 +150,12 @@
         margin-top: 0;
         margin-bottom: 5px;
     }
+
+    #svg_prefs::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="svg_prefs" aria-label="Editor Preferences" closed>
+<dialog id="svg_prefs" aria-label="Editor Preferences">
     <div id="svg_prefs_container">
         <div id="tool_prefs_back" class="toolbar_button">
             <button id="tool_prefs_save"></button>
@@ -181,4 +185,4 @@
             </fieldset>
         </fieldset>
     </div>
-</elix-dialog>
+</dialog>

@@ -73,8 +73,12 @@
         width: 20%;
         background-color: #c8c8c8;
     }
+
+    #svg_source_editor::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="svg_source_editor" aria-label="SVG Source Editor" closed>
+<dialog id="svg_source_editor" aria-label="SVG Source Editor">
     <div id="svg_source_container">
         <div id="tool_source_back" class="toolbar_button">
             <button id="tool_source_save"></button>
@@ -91,4 +95,4 @@
           <input type="checkbox" id="tool_source_dynamic" checked>Toggle dynamic size
         </label>
     </div>
-</elix-dialog>
+</dialog>

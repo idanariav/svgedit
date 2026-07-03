@@ -73,7 +73,7 @@ export class SeFavoritesDialog extends HTMLElement {
     if (name === 'dialog') {
       if (newValue === 'open') {
         this._render()
-        this.$dialog.open()
+        this.$dialog.showModal()
       } else {
         this.$dialog.close()
       }

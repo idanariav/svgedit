@@ -153,8 +153,12 @@
     :host(.theme-dark) #text_prompt_ok {
         color: #1B1F24;
     }
+
+    #text_prompt_box::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="text_prompt_box" aria-label="prompt" closed>
+<dialog id="text_prompt_box" aria-label="prompt">
     <div id="text_prompt_container">
         <div id="text_prompt_header">
             <p id="text_prompt_title">Enter a value</p>
@@ -169,4 +173,4 @@
             <button id="text_prompt_ok" type="button">OK</button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

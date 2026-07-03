@@ -95,7 +95,7 @@ export class SeImageImportDialog extends HTMLElement {
           const hasVault = typeof window.svgEditHost?.pickVaultImage === 'function'
           this.$vaultBtn.style.display = hasVault ? '' : 'none'
           this.$vaultOr.style.display = hasVault ? '' : 'none'
-          this.$dialog.open()
+          this.$dialog.showModal()
         } else {
           this.$dialog.close()
         }

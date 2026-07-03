@@ -59,8 +59,11 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
     switch (name) {
       case 'dialog':
         if (newValue === 'open') {
+          // showModal() auto-focuses the first focusable descendant (the Save
+          // button, here) — explicitly re-focus the textarea after so typing
+          // can start immediately, same intent as before.
+          this.$dialog.showModal()
           this.$sourceTxt.focus()
-          this.$dialog.open()
         } else {
           this.$dialog.close()
           this.$sourceTxt.blur()

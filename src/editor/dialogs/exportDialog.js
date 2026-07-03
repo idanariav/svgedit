@@ -57,7 +57,7 @@ export class SeExportDialog extends HTMLElement {
       case 'dialog':
         if (newValue === 'open') {
           this._populateRegions()
-          this.$dialog.open()
+          this.$dialog.showModal()
         } else {
           this.$dialog.close()
         }

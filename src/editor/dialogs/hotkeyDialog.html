@@ -236,8 +236,12 @@
     #hk_reset_all:hover {
         background: var(--icon-hover-bg, #eef1f5);
     }
+
+    #hotkey_dialog::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="hotkey_dialog" aria-label="Hotkey Manager" closed>
+<dialog id="hotkey_dialog" aria-label="Hotkey Manager">
     <div id="hk_container">
         <div id="hk_header">
             <span id="hk_title">Keyboard shortcuts</span>
@@ -253,4 +257,4 @@
             <button id="hk_done">Done</button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

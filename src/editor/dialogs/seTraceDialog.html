@@ -191,8 +191,12 @@
     :host(.theme-dark) #trace_ok {
         color: #1B1F24;
     }
+
+    #trace_box::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="trace_box" aria-label="trace image" closed>
+<dialog id="trace_box" aria-label="trace image">
     <div id="trace_container">
         <div id="trace_header">
             <p id="trace_title">Convert to editable SVG</p>
@@ -222,4 +226,4 @@
             <button id="trace_ok" type="button">Convert</button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

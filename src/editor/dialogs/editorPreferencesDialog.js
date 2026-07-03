@@ -57,7 +57,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     switch (name) {
       case 'dialog':
         if (newValue === 'open') {
-          this.$dialog.open()
+          this.$dialog.showModal()
         } else {
           this.$dialog.close()
         }

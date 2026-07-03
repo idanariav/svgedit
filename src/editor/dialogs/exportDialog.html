@@ -47,8 +47,12 @@
     .se-select {
         text-align: center;
     }
+
+    #export_box::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="export_box" aria-label="export svg" closed>
+<dialog id="export_box" aria-label="export svg">
     <div class="overlay"></div>
     <div id="dialog_container">
         <div id="dialog_content">
@@ -67,4 +71,4 @@
             <button id="export_cancel"></button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

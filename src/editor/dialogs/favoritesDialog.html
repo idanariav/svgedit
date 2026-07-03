@@ -205,8 +205,12 @@
         font-size: 13px;
         cursor: pointer;
     }
+
+    #favorites_dialog::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
 </style>
-<elix-dialog id="favorites_dialog" aria-label="Favorites" closed>
+<dialog id="favorites_dialog" aria-label="Favorites">
     <div id="fav_container">
         <div id="fav_header">
             <span id="fav_title">Favorites</span>
@@ -223,4 +227,4 @@
             <button id="fav_done">Done</button>
         </div>
     </div>
-</elix-dialog>
+</dialog>

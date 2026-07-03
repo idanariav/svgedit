@@ -1,4 +1,3 @@
-import 'elix/define/Dialog.js'
 import './imagePropertiesDialog.js'
 import './editorPreferencesDialog.js'
 import './svgSourceDialog.js'

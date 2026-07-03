@@ -59,7 +59,7 @@ export class SeTraceDialog extends HTMLElement {
           this.reset()
           // Mirror the editor's active theme so the shadow tokens resolve.
           this.classList.toggle('theme-dark', !!document.querySelector('.svg_editor')?.classList.contains('theme-dark'))
-          this.$dialog.open()
+          this.$dialog.showModal()
         } else {
           this.$dialog.close()
         }
