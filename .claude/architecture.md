@@ -66,6 +66,7 @@ svgedit/
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
 │   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
+│   │   ├── ext-curvature/         # Curvature tool — Catmull-Rom / B-spline / Spiro smooth curves
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
@@ -77,6 +78,11 @@ svgedit/
 │   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
 │   │   ├── ext-shape-builder/     # Interactive paint-to-merge region mode
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
+│   │   ├── ext-fonts/             # Font catalog + Google Fonts loading for the Text tab
+│   │   ├── ext-shadow/            # Drop shadow filter (feDropShadow)
+│   │   ├── ext-outline/           # Second outline/halo color for line strokes (feMorphology)
+│   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
+│   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │
 │   ├── images/                    # SVG toolbar icons (source of truth; dist/ is generated)
