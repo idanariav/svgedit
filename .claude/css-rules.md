@@ -299,13 +299,13 @@ Holds only the color controls (`fill_color`, `stroke_color`, `bg_color`, `palett
 ```
 
 > ⚠️ The `#main_icon`, `#logo`, `#main_button .dropdown` rules above are **dead** —
-> the brand button's label lives inside the `se-menu` → elix-menu-button shadow
-> DOM, which global CSS cannot pierce. The button's actual border/background is
-> injected by `components/sePlainBorderButton.js` (the elix toggle's
-> `[part~="button"]`). It is deliberately `transparent`/`transparent` so the brand
-> button blends into the toolbar; edit *that* file to restyle it, not the rules
-> above. `#main_button` (the light-DOM container) only contributes the
-> bottom + right `--chrome-border` panel separators.
+> the brand button's label lives inside `se-menu`'s own shadow DOM
+> (`components/seMenu.js`, a plain custom element using the native Popover API
+> for its dropdown), which global CSS cannot pierce. Edit the `#popupToggle`
+> style block in that file to restyle the button; it is deliberately
+> `transparent`/`transparent` so the brand button blends into the toolbar.
+> `#main_button` (the light-DOM container) only contributes the bottom + right
+> `--chrome-border` panel separators.
 
 ### `#main_menu` — Dropdown Menu
 ```css

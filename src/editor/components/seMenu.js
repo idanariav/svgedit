@@ -1,6 +1,4 @@
 /* globals svgEditor */
-import 'elix/define/MenuItem.js'
-import './sePlainMenuButton.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
 
@@ -12,24 +10,38 @@ template.innerHTML = `
     display: inline-flex;
     align-items: center;
   }
-  elix-menu-button::part(menu) {
-    background-color: var(--chrome-bg, #fff) !important;
-    border: 1px solid var(--chrome-border, #E6E8EC) !important;
-    border-radius: 10px !important;
-    padding: 6px !important;
-    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12) !important;
-    color: var(--fg, #1B1F24) !important;
+  #popupToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--ui-font, inherit);
+    font-size: 13px;
+    color: var(--fg, #1B1F24);
   }
-  elix-menu-button::part(popup-toggle) {
-    padding: 0 !important;
-    background: transparent !important;
-    border: none !important;
+  #menuPopup {
+    margin: 0;
+    padding: 6px;
+    background-color: var(--chrome-bg, #fff);
+    border: 1px solid var(--chrome-border, #E6E8EC);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
+    color: var(--fg, #1B1F24);
   }
-  :host ::slotted([current]) {
+  /* The popover attribute leaves default UA sizing/positioning off; anchor
+     it below the trigger, matching the previous elix-menu-button popup. */
+  #menuPopup:popover-open {
+    position: fixed;
+    inset: unset;
+  }
+  ::slotted([current]) {
     background: var(--icon-hover-bg, #EEF1F5) !important;
     border-radius: 7px !important;
   }
-  :host ::slotted(*) {
+  ::slotted(*) {
     padding: 7px 10px !important;
     margin: 0 !important;
     border-radius: 7px !important;
@@ -39,12 +51,21 @@ template.innerHTML = `
   }
   </style>
 
-  <elix-menu-button id="MenuButton" aria-label="Main Menu">
+  <button type="button" id="popupToggle" popovertarget="menuPopup" aria-haspopup="menu"></button>
+  <div id="menuPopup" popover role="menu">
     <slot></slot>
-  </elix-menu-button>
+  </div>
 `
 /**
  * @class SeMenu
+ * Toolbar hamburger-menu button + popup, replacing elix's
+ * MenuButton/PlainMenuButton/PlainBorderButton stack. The popup is a native
+ * Popover (light-dismiss on outside click/Escape, no JS needed for that
+ * part); `#popupToggle`'s `popovertarget` attribute wires the open/close
+ * toggle declaratively. A click on any slotted `<se-menu-item>` closes the
+ * popup, mirroring elix Menu's auto-dismiss-on-select behavior (the actual
+ * menu actions are wired directly to each item's own click listener in
+ * MainMenu.js, unaffected by this change).
  */
 export class SeMenu extends HTMLElement {
   /**
@@ -54,30 +75,25 @@ export class SeMenu extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$menu = this._shadowRoot.querySelector('elix-menu-button')
-    this.$label = this.$menu.shadowRoot.querySelector('#popupToggle').shadowRoot
+    this.$toggle = this._shadowRoot.querySelector('#popupToggle')
+    this.$popup = this._shadowRoot.querySelector('#menuPopup')
+    this.$label = this.$toggle
     this.imgPath = svgEditor.configObj.curConfig.imgPath
   }
 
   /**
-   * Guard against a stuck-hidden menu button.
-   *
-   * elix's open/close effect machinery is re-entrant on close (the popup's
-   * close event fires the source's `close()` again), and in that path elix
-   * writes `display: none` onto the whole `elix-menu-button` host. Normally the
-   * close transition completes and elix clears it instantly, but in a host
-   * whose runtime stalls that transition (observed in the Obsidian plugin: the
-   * button vanished and could no longer be opened after using the Favorites
-   * dialog), the inline `display: none` is set and never removed. The source
-   * button must always be visible — only its child `#popup` ever hides — so
-   * clear any inline `display: none` the moment it appears.
+   * @function connectedCallback
    * @returns {void}
    */
   connectedCallback () {
-    this._displayGuard = new MutationObserver(() => {
-      if (this.$menu.style.display === 'none') this.$menu.style.display = ''
+    this._closeOnItemClick = (e) => {
+      if (e.target.closest('se-menu-item')) this.$popup.hidePopover()
+    }
+    this.addEventListener('click', this._closeOnItemClick)
+    this._positionPopup = () => this.positionPopup()
+    this.$popup.addEventListener('toggle', (e) => {
+      if (e.newState === 'open') this.positionPopup()
     })
-    this._displayGuard.observe(this.$menu, { attributes: true, attributeFilter: ['style'] })
   }
 
   /**
@@ -85,8 +101,27 @@ export class SeMenu extends HTMLElement {
    * @returns {void}
    */
   disconnectedCallback () {
-    this._displayGuard?.disconnect()
-    this._displayGuard = null
+    this.removeEventListener('click', this._closeOnItemClick)
+  }
+
+  /**
+   * Position the popup just below the trigger, clamped to the viewport
+   * (same placement elix's menu popup used). Called from the 'toggle'
+   * event, by which point the popover is already in the top layer and its
+   * dimensions can be measured.
+   * @returns {void}
+   */
+  positionPopup () {
+    const btn = this.$toggle.getBoundingClientRect()
+    const pop = this.$popup.getBoundingClientRect()
+    const gap = 4
+    const margin = 8
+    let left = btn.left
+    if (left + pop.width > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - pop.width - margin)
+    }
+    this.$popup.style.top = `${btn.bottom + gap}px`
+    this.$popup.style.left = `${left}px`
   }
 
   /**

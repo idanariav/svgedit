@@ -1,12 +1,10 @@
 /* globals svgEditor */
-import 'elix/define/Menu.js'
-import 'elix/define/MenuItem.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
-  elix-menu-item {
+  :host {
     display: block;
     padding: 7px 10px;
     border-radius: 7px;
@@ -15,7 +13,7 @@ template.innerHTML = `
     font-size: 13px;
     cursor: pointer;
   }
-  elix-menu-item:hover {
+  :host(:hover) {
     background: var(--icon-hover-bg, #EEF1F5);
   }
   .item-row {
@@ -42,15 +40,18 @@ template.innerHTML = `
     flex: 1;
   }
   </style>
-  <elix-menu-item>
-    <div class="item-row">
-      <span class="icon-wrap"></span>
-      <span class="item-label"></span>
-    </div>
-  </elix-menu-item>
+  <div class="item-row">
+    <span class="icon-wrap"></span>
+    <span class="item-label"></span>
+  </div>
 `
 /**
  * @class SeMenuItem
+ * A single row inside a `<se-menu>` popup. Previously wrapped elix's
+ * `<elix-menu-item>` purely for its hover/selection styling and ARIA role;
+ * both are provided directly here (`:host(:hover)` + a `menuitem` role),
+ * since the actual click action was always wired directly to this element
+ * (see MainMenu.js), not through elix's Menu selection machinery.
  */
 export class SeMenuItem extends HTMLElement {
   /**
@@ -63,11 +64,9 @@ export class SeMenuItem extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.querySelector('.item-label')
-    this.$menuitem = this._shadowRoot.querySelector('elix-menu-item')
-    // Hide the elix checkmark if present
-    const checkmark = this.$menuitem.shadowRoot?.querySelector('#checkmark')
-    if (checkmark) checkmark.setAttribute('style', 'display: none;')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'menuitem')
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')
   }
 
   /**
