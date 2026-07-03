@@ -1,5 +1,4 @@
 /* globals svgEditor */
-import '../dialogs/se-elix/define/NumberSpinBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
@@ -59,48 +58,73 @@ template.innerHTML = `
     height: 16px;
     display: block;
   }
-  elix-number-spin-box {
+  .num-input {
     background: transparent;
     border: none;
-    border-radius: 0;
+    outline: none;
     height: 32px;
-    width: auto;
     flex: 1;
     min-width: 0;
-    color: var(--fg, #1B1F24);
-  }
-  elix-number-spin-box::part(spin-button) {
-    padding: 0 2px;
-    color: var(--muted, #6B7280);
-    border-left: 1px solid var(--field-border, #E2E5EA);
-  }
-  elix-number-spin-box::part(spin-button):hover {
-    color: var(--accent, #2962FF);
-    background: var(--icon-hover-bg, #EEF1F5);
-  }
-  elix-number-spin-box::part(input) {
     width: 100%;
     color: inherit;
     font-size: 13px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     font-family: var(--ui-font, inherit);
-    background: transparent;
-    border: none;
     padding: 0 8px;
     box-sizing: border-box;
     text-align: left;
   }
+  .spin-buttons {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    flex-shrink: 0;
+    border-left: 1px solid var(--field-border, #E2E5EA);
+  }
+  .spin-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    padding: 0 2px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #6B7280);
+    cursor: pointer;
+    user-select: none;
+  }
+  .spin-btn:not(:first-child) { border-top: 1px solid var(--field-border, #E2E5EA); }
+  .spin-btn:hover:not(:disabled) {
+    color: var(--accent, #2962FF);
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
+  .spin-btn:disabled { opacity: 0.4; cursor: default; }
+  .spin-btn svg { width: 8px; height: 8px; display: block; }
   </style>
   <label class="top-label"></label>
   <div class="field">
     <span class="icon-wrap" aria-hidden="true"></span>
-    <elix-number-spin-box min="1" step="1"></elix-number-spin-box>
+    <input class="num-input" type="text" inputmode="decimal" />
+    <div class="spin-buttons">
+      <button type="button" class="spin-btn spin-up" tabindex="-1" aria-label="Increase">
+        <svg viewBox="0 0 8 8"><polygon points="0,6 8,6 4,1" fill="currentColor"/></svg>
+      </button>
+      <button type="button" class="spin-btn spin-down" tabindex="-1" aria-label="Decrease">
+        <svg viewBox="0 0 8 8"><polygon points="0,2 8,2 4,7" fill="currentColor"/></svg>
+      </button>
+    </div>
   </div>
 `
 
 /**
  * @class SESpinInput
+ * Plain (non-elix) numeric spin input: a text field plus up/down step
+ * buttons. Mirrors elix's SpinBox/NumberSpinBox behavior this component
+ * used to delegate to: single-click step (no press-and-hold repeat — elix
+ * never implemented that either), ArrowUp/ArrowDown keyboard stepping,
+ * min/max clamping, and step-precision value formatting.
  */
 export class SESpinInput extends HTMLElement {
   /**
@@ -116,8 +140,18 @@ export class SESpinInput extends HTMLElement {
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.querySelector('.top-label')
     this.$event = new CustomEvent('change')
-    this.$input = this._shadowRoot.querySelector('elix-number-spin-box')
+    this.$input = this._shadowRoot.querySelector('.num-input')
+    this.$upBtn = this._shadowRoot.querySelector('.spin-up')
+    this.$downBtn = this._shadowRoot.querySelector('.spin-down')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
+
+    // Matches the previous elix template's hardcoded defaults
+    // (<elix-number-spin-box min="1" step="1">) for consumers that don't
+    // set their own min/max/step attributes.
+    this._min = 1
+    this._max = null
+    this._stepValue = 1
+    this._updateButtonState()
   }
 
   /**
@@ -148,19 +182,20 @@ export class SESpinInput extends HTMLElement {
         this._loadIcon(newValue)
         break
       case 'size':
-      // access to the underlying input box
-        this.$input.shadowRoot.getElementById('input').size = newValue
-        // below seems mandatory to override the default width style that takes precedence on size
-        this.$input.shadowRoot.getElementById('input').style.width = 'unset'
+        this.$input.size = newValue
+        this.$input.style.width = 'unset'
         break
       case 'step':
-        this.$input.setAttribute('step', newValue)
+        this._stepValue = parseFloat(newValue)
+        this._updateButtonState()
         break
       case 'min':
-        this.$input.setAttribute('min', newValue)
+        this._min = newValue === null || newValue === '' ? null : parseFloat(newValue)
+        this._updateButtonState()
         break
       case 'max':
-        this.$input.setAttribute('max', newValue)
+        this._max = newValue === null || newValue === '' ? null : parseFloat(newValue)
+        this._updateButtonState()
         break
       case 'label':
         if (newValue) {
@@ -174,6 +209,7 @@ export class SESpinInput extends HTMLElement {
         break
       case 'value':
         this.$input.value = newValue
+        this._updateButtonState()
         break
       default:
         console.error(`unknown attribute: ${name}`)
@@ -193,6 +229,37 @@ export class SESpinInput extends HTMLElement {
       img.alt = 'icon'
       this.$iconWrap.replaceChildren(img)
     }
+  }
+
+  // Number of digits after the decimal point in the step value, used to
+  // format stepped values the same way elix's NumberSpinBox did.
+  get _precision () {
+    const match = /\.(\d)+$/.exec(String(this._stepValue))
+    return match && match[1] ? match[1].length : 0
+  }
+
+  // Mirrors NumberSpinBox.parseValue: whole steps parse as integers, else float.
+  _parseValue (value, precision) {
+    const parsed = precision === 0 ? parseInt(value) : parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  _updateButtonState () {
+    const parsed = parseFloat(this.$input.value)
+    const canGoUp = isNaN(parsed) || this._max === null || parsed <= this._max
+    const canGoDown = isNaN(parsed) || this._min === null || parsed >= this._min
+    this.$upBtn.disabled = !canGoUp
+    this.$downBtn.disabled = !canGoDown
+  }
+
+  _step (direction) {
+    const precision = this._precision
+    const current = this._parseValue(this.$input.value, precision)
+    let result = current + direction * this._stepValue
+    if (this._max !== null) result = Math.min(result, this._max)
+    if (this._min !== null) result = Math.max(result, this._min)
+    this.value = Number(result).toFixed(precision)
+    this.dispatchEvent(this.$event)
   }
 
   /**
@@ -241,6 +308,7 @@ export class SESpinInput extends HTMLElement {
    */
   set value (value) {
     this.$input.value = value
+    this._updateButtonState()
   }
 
   /**
@@ -280,40 +348,31 @@ export class SESpinInput extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    const shadow = this.$input.shadowRoot
-    if (!shadow) {
-      // Dynamically-created instances (e.g. in the quick-action menu) connect
-      // before the inner elix spin box has upgraded; retry next frame once its
-      // shadow root exists.
-      requestAnimationFrame(() => this.connectedCallback())
-      return
-    }
-    const childNodes = Array.from(shadow.childNodes)
-    childNodes.forEach((childNode) => {
-      if (childNode?.id === 'input') {
-        // Inject color fix directly into the PlainInput shadow DOM so the
-        // native <input> inside inherits the correct foreground color even when
-        // the system appearance would otherwise force black text.
-        if (childNode.shadowRoot) {
-          const s = document.createElement('style')
-          s.textContent = '[part~="inner"],input{color:inherit;-webkit-text-fill-color:inherit}'
-          childNode.shadowRoot.appendChild(s)
-        }
-        childNode.addEventListener('keyup', (e) => {
-          e.preventDefault()
-          if (!isNaN(e.target.value)) {
-            this.value = e.target.value
-            this.dispatchEvent(this.$event)
-          }
-        })
+    this.$upBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault() // keep focus on the input, not the button
+      this._step(1)
+    })
+    this.$downBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault()
+      this._step(-1)
+    })
+    this.$input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        this._step(1)
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        this._step(-1)
+      }
+    })
+    this.$input.addEventListener('keyup', (e) => {
+      e.preventDefault()
+      if (!isNaN(e.target.value)) {
+        this.value = e.target.value
+        this.dispatchEvent(this.$event)
       }
     })
     this.$input.addEventListener('change', (e) => {
-      e.preventDefault()
-      this.value = e.target.value
-      this.dispatchEvent(this.$event)
-    })
-    svgEditor.$click(this.$input, (e) => {
       e.preventDefault()
       this.value = e.target.value
       this.dispatchEvent(this.$event)

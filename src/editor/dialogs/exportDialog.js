@@ -1,6 +1,4 @@
 /* globals svgEditor */
-import './se-elix/define/NumberSpinBox.js'
-
 import exportDialogHTML from './exportDialog.html'
 const template = document.createElement('template')
 template.innerHTML = exportDialogHTML
