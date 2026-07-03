@@ -27,7 +27,6 @@
     "postbuild": "node scripts/copy-static.mjs",
     "start": "vite dev --host --port 8000 --strictPort",
     "prestart": "echo svgedit is available at http://localhost:8000/src/editor/index.html",
-    "start:iife": "npm run build && vite preview --host --port 8000 --strictPort --outDir dist/editor --open /iife-index.html",
     "start:e2e": "vite preview --host --port 8000 --strictPort --outDir dist/editor",
     "open-docs-no-start": "open-cli http://localhost:8000/docs/jsdoc/",
     "open-docs": "run-p start open-docs-no-start",

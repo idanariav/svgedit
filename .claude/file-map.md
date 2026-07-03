@@ -25,9 +25,7 @@
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |
 | `tablet.css` | Tablet-mode touch sizing + shell layout, all scoped under `.svg_editor.ui-tablet` (collapses the desktop grid, hides the four panels, styles the command bar/sheet/popovers). Colors inherit from svgedit.css tokens |
-| `index.html` | Dev + ES-module build entry point |
-| `iife-index.html` | Self-contained IIFE build entry |
-| `xdomain-index.html` | Cross-domain iframe mode entry |
+| `index.html` | Dev + ES-module build entry point (the only build entry — IIFE and cross-domain iframe entries were removed, see `architecture.md` Build Pipeline) |
 
 ---
 

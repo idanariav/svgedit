@@ -13,8 +13,6 @@ await mkdir(outDir, { recursive: true })
 // as loose runtime assets.
 const targets = [
   ['src/editor/index.html', 'index.html'],
-  ['src/editor/xdomain-index.html', 'xdomain-index.html'],
-  ['src/editor/iife-index.html', 'iife-index.html'],
   ['src/editor/browser-not-supported.html', 'browser-not-supported.html'],
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
   // Test harness assets for Playwright (unit-style tests in browser)

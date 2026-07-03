@@ -5,9 +5,7 @@ import string from 'vite-plugin-string'
 import istanbul from 'vite-plugin-istanbul'
 
 const editorEntries = [
-  resolve(__dirname, 'src/editor/index.html'),
-  resolve(__dirname, 'src/editor/iife-index.html'),
-  resolve(__dirname, 'src/editor/xdomain-index.html')
+  resolve(__dirname, 'src/editor/index.html')
 ]
 
 const coverageEnabled = process.env.COVERAGE === 'true' || process.env.NODE_ENV === 'test'
@@ -77,12 +75,12 @@ export default defineConfig({
   build: {
     outDir: 'dist/editor',
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: process.env.SOURCEMAP === 'true',
     lib: {
       entry: resolve(__dirname, 'src/editor/Editor.js'),
       name: 'Editor',
-      formats: ['es', 'iife'],
-      fileName: format => (format === 'iife' ? 'iife-Editor.js' : 'Editor.js')
+      formats: ['es'],
+      fileName: () => 'Editor.js'
     },
     rollupOptions: {
       output: {

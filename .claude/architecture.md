@@ -267,14 +267,18 @@ npm run build
   ├── builds packages/svgcanvas  → dist/svgcanvas.js
   └── builds src/editor          → dist/editor/
         ├── Editor.js            (self-contained ES module — all assets inlined)
-        ├── iife-Editor.js       (self-contained IIFE — for <script> tag)
         └── *.html               (entry pages; copy-static.mjs)
 
 npm start           → Vite dev server on http://localhost:8000
 npm run build-docs  → JSDoc HTML docs
 ```
 
-Entry points: `src/editor/index.html` (dev + ES build) · `iife-index.html` (IIFE build) · `xdomain-index.html` (cross-domain iframe mode)
+Entry point: `src/editor/index.html` (dev + ES build) — this is the only build
+entry; the IIFE (`iife-index.html`/`iife-Editor.js`) and cross-domain iframe
+(`xdomain-index.html`) entries were dropped since the sole consumer (the
+Obsidian plugin) imports the ES module directly. Sourcemaps are opt-in:
+`SOURCEMAP=true npm run build` (default builds skip them — the plugin never
+consumes maps, and they roughly triple `dist/` size).
 
 ### Self-contained bundle (no runtime asset folder)
 
