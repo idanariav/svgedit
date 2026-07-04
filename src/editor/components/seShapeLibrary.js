@@ -905,7 +905,10 @@ export class SeShapeLibrary extends HTMLElement {
   _syncToolPressed () {
     const btn = this._shadow.querySelector('.sl-tool')
     if (!btn) return
-    btn.classList.toggle('pressed', !!this._open)
+    // Pressed while the popover/modal is open, OR while armed for insertion
+    // (ext-shapes.js sets the `pressed` attribute directly on this element
+    // while a shape is armed, independent of the popover being open).
+    btn.classList.toggle('pressed', !!this._open || this.hasAttribute('pressed'))
   }
 
   // ── Open / close ───────────────────────────────────────────────────────────

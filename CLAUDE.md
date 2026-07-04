@@ -67,6 +67,18 @@ When using Plan mode (`/plan`) or spawning agents:
 
 This step is **mandatory** for non-trivial plans. Skip only for purely mechanical tasks (rename, reformat, etc.) where best practices are not a factor.
 
+### Unit tests for new/modified features
+
+**Any new or modified feature must be reflected in the unit test suite** (`tests/unit/`, run via `npx vitest run`).
+
+- New custom element component (`src/editor/components/se*.js`) → add/extend
+  `tests/unit/components/<name>.test.js` covering construction, attribute
+  handling, and any public methods/events it exposes.
+- New/changed behavior in `packages/svgcanvas/**` or `src/editor/**` logic →
+  add/extend the matching test in `tests/unit/`.
+- Don't skip this because the change "looks small" — a one-line behavior
+  change still needs its assertion updated or added.
+
 ## Theming conventions
 
 ### CSS custom properties

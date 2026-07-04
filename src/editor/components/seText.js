@@ -79,7 +79,7 @@ export class SeText extends HTMLElement {
    * @returns {void}
    */
   set text (value) {
-    this.$div.setAttribute('title', t(value))
+    this.$div.textContent = t(value)
   }
 
   /**
@@ -87,7 +87,7 @@ export class SeText extends HTMLElement {
    * @returns {any}
    */
   get value () {
-    return this.value
+    return this.$div.value
   }
 
   /**
@@ -95,7 +95,7 @@ export class SeText extends HTMLElement {
    * @returns {void}
    */
   set value (value) {
-    this.value = value
+    this.$div.value = value
   }
 
   /**

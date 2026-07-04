@@ -64,8 +64,6 @@ export class SeMenuItem extends HTMLElement {
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.querySelector('.item-label')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
-    if (!this.hasAttribute('role')) this.setAttribute('role', 'menuitem')
-    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')
   }
 
   /**
@@ -151,6 +149,8 @@ export class SeMenuItem extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
+    if (!this.hasAttribute('role')) this.setAttribute('role', 'menuitem')
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')
     // Shortcut dispatch is owned by the central HotkeyManager; register this
     // menu item's action so it can be listed, rebound, or removed.
     if (this.id && this.hasAttribute('shortcut')) {

@@ -1,0 +1,216 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
+import { SeSettingsPopover } from '../../../src/editor/components/seSettingsPopover.js'
+
+vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+
+// Minimal throwaway subclass so we can exercise the base class's own logic
+// (open/close/toggle, positioning, light-dismiss, icon loading) without any
+// of the field-specific behavior the real subclasses layer on top.
+const TEMPLATE_HTML = `
+  <button class="trigger" title="Test settings" aria-haspopup="dialog" aria-expanded="false">
+    <span id="icon"></span>
+  </button>
+  <div id="options-container" role="dialog" aria-label="Test settings" style="display:none"></div>
+`
+
+class TestSettingsPopover extends SeSettingsPopover {
+  constructor () {
+    super(TEMPLATE_HTML)
+  }
+}
+customElements.define('se-test-settings-popover', TestSettingsPopover)
+
+describe('SeSettingsPopover (base class)', () => {
+  beforeEach(() => installMockSvgEditor())
+  afterEach(() => {
+    uninstallMockSvgEditor()
+    document.body.innerHTML = ''
+  })
+
+  it('renders a shadow root with trigger and popup', () => {
+    const el = mountElement('se-test-settings-popover')
+    expect(el.shadowRoot).toBeTruthy()
+    expect(el.$trigger).toBeTruthy()
+    expect(el.$popup).toBeTruthy()
+    expect(el.$icon).toBeTruthy()
+  })
+
+  it('reflects a title attribute onto the trigger button when present at construction time', () => {
+    document.body.insertAdjacentHTML('beforeend', '<se-test-settings-popover title="my_tool"></se-test-settings-popover>')
+    const el = document.body.querySelector('se-test-settings-popover')
+    expect(el.$trigger.getAttribute('title')).toBe('my_tool')
+  })
+
+  it('reflects a title attribute set after construction (title is observed)', () => {
+    const el = mountElement('se-test-settings-popover', { title: 'my_tool' })
+    expect(el.$trigger.getAttribute('title')).toBe('my_tool')
+  })
+
+  it('starts closed', () => {
+    const el = mountElement('se-test-settings-popover')
+    expect(el.isOpen).toBe(false)
+    expect(el.$popup.style.display).toBe('none')
+  })
+
+  it('open() sets display:flex and aria-expanded=true', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    expect(el.isOpen).toBe(true)
+    expect(el.$popup.style.display).toBe('flex')
+    expect(el.$trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('close() sets display:none and aria-expanded=false', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    el.close()
+    expect(el.isOpen).toBe(false)
+    expect(el.$popup.style.display).toBe('none')
+    expect(el.$trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('toggle() opens when closed and closes when open', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.toggle()
+    expect(el.isOpen).toBe(true)
+    el.toggle()
+    expect(el.isOpen).toBe(false)
+  })
+
+  it('clicking the trigger toggles the popup open, and again closes it', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.$trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.isOpen).toBe(true)
+    el.$trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.isOpen).toBe(false)
+  })
+
+  it('closes on an outside click when open', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.isOpen).toBe(false)
+  })
+
+  it('does not close on a click whose target is the element itself', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.isOpen).toBe(true)
+  })
+
+  it('closes and refocuses the trigger on Escape when open', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    const focusSpy = vi.spyOn(el.$trigger, 'focus')
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.isOpen).toBe(false)
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('ignores Escape when already closed', () => {
+    const el = mountElement('se-test-settings-popover')
+    const focusSpy = vi.spyOn(el.$trigger, 'focus')
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.isOpen).toBe(false)
+    expect(focusSpy).not.toHaveBeenCalled()
+  })
+
+  it('ignores non-Escape keys', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.isOpen).toBe(true)
+  })
+
+  it('removes the document click listener on disconnect', () => {
+    const el = mountElement('se-test-settings-popover')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+    el.remove()
+    expect(removeSpy).toHaveBeenCalledWith('click', el.handleClose)
+    removeSpy.mockRestore()
+  })
+
+  it('after disconnect, a document click no longer affects the (now detached) popup', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    el.remove()
+    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    // Listener was removed on disconnect, so handleClose never ran again;
+    // popup state is left exactly as it was at removal time (open).
+    expect(el.isOpen).toBe(true)
+  })
+
+  // jsdom performs no real layout, so a stubbed getBoundingClientRect() always
+  // reports the same static rect regardless of inline style — that starves
+  // positionPopup()'s re-measure/converge loop of the feedback it expects,
+  // making it walk off to a runaway value. Make the popup stub read its own
+  // current inline left/top (like a real laid-out element would) so the loop
+  // converges after its first correction, same as it does in the browser.
+  function stubPopupRectFollowingStyle (popup, width, height) {
+    vi.spyOn(popup, 'getBoundingClientRect').mockImplementation(() => ({
+      left: parseFloat(popup.style.left) || 0,
+      top: parseFloat(popup.style.top) || 0,
+      width,
+      height
+    }))
+  }
+
+  it('positions the popup below the trigger by default', () => {
+    const el = mountElement('se-test-settings-popover')
+    vi.spyOn(el.$trigger, 'getBoundingClientRect').mockReturnValue(
+      { left: 100, right: 140, top: 50, bottom: 86, width: 40, height: 36 }
+    )
+    stubPopupRectFollowingStyle(el.$popup, 200, 100)
+    el.open()
+    expect(el.$popup.style.left).toBe('100px')
+    expect(el.$popup.style.top).toBe('92px') // bottom(86) + gap(6)
+  })
+
+  it('flips above the trigger when there is no room below', () => {
+    const el = mountElement('se-test-settings-popover')
+    Object.defineProperty(window, 'innerHeight', { value: 300, configurable: true })
+    vi.spyOn(el.$trigger, 'getBoundingClientRect').mockReturnValue(
+      { left: 10, right: 50, top: 250, bottom: 286, width: 40, height: 36 }
+    )
+    stubPopupRectFollowingStyle(el.$popup, 200, 100)
+    el.open()
+    // aboveTop = 250 - 6 - 100 = 144, which is >= margin(8), so it flips above.
+    expect(el.$popup.style.top).toBe('144px')
+  })
+
+  it('clamps left so the popup does not overflow the right edge', () => {
+    const el = mountElement('se-test-settings-popover')
+    Object.defineProperty(window, 'innerWidth', { value: 400, configurable: true })
+    vi.spyOn(el.$trigger, 'getBoundingClientRect').mockReturnValue(
+      { left: 350, right: 390, top: 50, bottom: 86, width: 40, height: 36 }
+    )
+    stubPopupRectFollowingStyle(el.$popup, 200, 100)
+    el.open()
+    // 350 + 200 > 400 - 8(margin) => left clamped to 400 - 200 - 8 = 192
+    expect(el.$popup.style.left).toBe('192px')
+  })
+
+  it('loads an icon into #icon when the src attribute is set', async () => {
+    const el = mountElement('se-test-settings-popover')
+    el.setAttribute('src', 'some-icon.svg')
+    // Unregistered icon name -> fetchSvgEl falls back to a real fetch() call,
+    // which is actual async I/O rather than a plain microtask; wait it out.
+    await new Promise(resolve => setTimeout(resolve, 50))
+    // Registry has no such icon in tests, so it falls back to an <img>.
+    const img = el.$icon.querySelector('img')
+    expect(img).toBeTruthy()
+    expect(img.src).toContain('images/some-icon.svg')
+  })
+
+  it('does not reload the icon when src is set to the same value', async () => {
+    const el = mountElement('se-test-settings-popover')
+    el.setAttribute('src', 'some-icon.svg')
+    await new Promise(resolve => setTimeout(resolve, 50))
+    el.$icon.replaceChildren() // clear so we can detect a reload
+    el.setAttribute('src', 'some-icon.svg')
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(el.$icon.children.length).toBe(0)
+  })
+})

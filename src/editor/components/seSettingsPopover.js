@@ -21,7 +21,7 @@ import { fetchSvgEl } from './svgIconLoader.js'
  */
 export class SeSettingsPopover extends HTMLElement {
   static get observedAttributes () {
-    return ['src']
+    return ['src', 'title']
   }
 
   /**
@@ -49,9 +49,6 @@ export class SeSettingsPopover extends HTMLElement {
     // Light-dismiss: close on outside click / Esc
     document.addEventListener('click', this.handleClose)
     this.addEventListener('keydown', this.handleKeyDown)
-
-    const titleAttr = this.getAttribute('title')
-    if (titleAttr) this.$trigger.setAttribute('title', titleAttr)
   }
 
   /**
@@ -80,6 +77,8 @@ export class SeSettingsPopover extends HTMLElement {
   attributeChangedCallback (name, oldValue, newValue) {
     if (name === 'src' && newValue && newValue !== oldValue) {
       this._loadIcon(newValue)
+    } else if (name === 'title' && newValue && newValue !== oldValue) {
+      this.$trigger.setAttribute('title', newValue)
     }
   }
 

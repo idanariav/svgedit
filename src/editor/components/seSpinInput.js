@@ -244,8 +244,8 @@ export class SESpinInput extends HTMLElement {
 
   _updateButtonState () {
     const parsed = parseFloat(this.$input.value)
-    const canGoUp = isNaN(parsed) || this._max === null || parsed <= this._max
-    const canGoDown = isNaN(parsed) || this._min === null || parsed >= this._min
+    const canGoUp = isNaN(parsed) || this._max === null || parsed < this._max
+    const canGoDown = isNaN(parsed) || this._min === null || parsed > this._min
     this.$upBtn.disabled = !canGoUp
     this.$downBtn.disabled = !canGoDown
   }
