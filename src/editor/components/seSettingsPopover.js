@@ -20,6 +20,10 @@ import { fetchSvgEl } from './svgIconLoader.js'
  * `super.open()` to perform the shared display/position/aria work.
  */
 export class SeSettingsPopover extends HTMLElement {
+  static get observedAttributes () {
+    return ['src']
+  }
+
   /**
    * @param {string} templateHTML - Full shadow-root markup for this popover.
    */
@@ -46,8 +50,6 @@ export class SeSettingsPopover extends HTMLElement {
     document.addEventListener('click', this.handleClose)
     this.addEventListener('keydown', this.handleKeyDown)
 
-    const srcAttr = this.getAttribute('src')
-    if (srcAttr) this._loadIcon(srcAttr)
     const titleAttr = this.getAttribute('title')
     if (titleAttr) this.$trigger.setAttribute('title', titleAttr)
   }
@@ -61,6 +63,24 @@ export class SeSettingsPopover extends HTMLElement {
    */
   disconnectedCallback () {
     document.removeEventListener('click', this.handleClose)
+  }
+
+  /**
+   * `src` is set via `setAttribute` after `document.createElement` by several
+   * callers (ext-repeat, ext-motion-lines, ext-taper), which happens after
+   * the constructor has already run — reading `getAttribute('src')` there
+   * missed it entirely, leaving the trigger button iconless. Observing the
+   * attribute catches both that case and the markup-attribute case (e.g.
+   * ext-grid, ext-guides), where this fires once right after construction.
+   * @param {string} name
+   * @param {string|null} oldValue
+   * @param {string|null} newValue
+   * @returns {void}
+   */
+  attributeChangedCallback (name, oldValue, newValue) {
+    if (name === 'src' && newValue && newValue !== oldValue) {
+      this._loadIcon(newValue)
+    }
   }
 
   async _loadIcon (src) {
