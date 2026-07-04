@@ -8,19 +8,64 @@
  */
 
 import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
+import { getMatrixToContent, isIdentity } from './math.js'
 import { warn } from '../common/logger.js'
 
 // Element types that cannot be converted to a path (used for the
 // selection-fallback filter below; svgToPaper applies the same check itself).
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
+// Container tags whose children are recursed into instead of being cut
+// directly (groups and, per svgedit convention, hyperlink wrappers).
+const CONTAINER_TAGS = new Set(['g', 'a'])
+
 /**
- * Convert an SVG element to a paper.js Path with its transform applied.
+ * Expand a selection into the leaf shapes that can actually be cut, walking
+ * into `<g>`/`<a>` containers (including nested groups) so a selected group
+ * is cut piece-by-piece rather than skipped outright.
+ * @param {Element[]} elems
+ * @returns {Element[]}
+ */
+const collectCuttableElements = (elems) => {
+  const result = []
+  const visit = (el) => {
+    if (el.tagName === 'title') return
+    if (CONTAINER_TAGS.has(el.tagName)) {
+      Array.from(el.children).forEach(visit)
+      return
+    }
+    if (NON_PATH_TAGS.has(el.tagName)) {
+      warn(`Cutter: cannot convert <${el.tagName}> to path — skipped`, null, 'cutter')
+      return
+    }
+    result.push(el)
+  }
+  elems.forEach(visit)
+  return result
+}
+
+/**
+ * Convert an SVG element to a paper.js Path in content-space coordinates:
+ * its own transform (applied by svgToPaper) plus every ancestor `<g>`/`<a>`
+ * transform up to the content root, so shapes nested in a (possibly
+ * transformed) group land in the same coordinate space as the cut line.
  * @param {Element} elem
  * @param {paper.PaperScope} scope
  * @returns {paper.Path|null}
  */
-const getElemAsPath = (elem, scope) => svgToPaper(elem, scope)
+const getElemAsPath = (elem, scope) => {
+  const item = svgToPaper(elem, scope)
+  if (!item) return null
+  const ancestorMatrix = getMatrixToContent(elem)
+  if (!isIdentity(ancestorMatrix)) {
+    item.transform(new scope.Matrix(
+      ancestorMatrix.a, ancestorMatrix.b,
+      ancestorMatrix.c, ancestorMatrix.d,
+      ancestorMatrix.e, ancestorMatrix.f
+    ))
+  }
+  return item
+}
 
 /**
  * Cut all selected elements along the line (x1,y1)→(x2,y2).
@@ -41,10 +86,9 @@ const cutShapes = (svgCanvas, x1, y1, x2, y2) => {
   let elems = svgCanvas.getSelectedElements().filter(Boolean)
   if (elems.length === 0) {
     const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
-    elems = Array.from(layer.children).filter(
-      el => el.tagName !== 'title' && !NON_PATH_TAGS.has(el.tagName)
-    )
+    elems = Array.from(layer.children)
   }
+  elems = collectCuttableElements(elems)
   if (elems.length === 0) return
 
   const dx = x2 - x1
@@ -119,19 +163,27 @@ const cutShapes = (svgCanvas, x1, y1, x2, y2) => {
     const elemNext = elem.nextSibling
     const elemParent = elem.parentNode
 
+    // Piece path data is in content-space coordinates (see getElemAsPath),
+    // but the new <path> is reinserted as a sibling of elem — inside any
+    // ancestor <g>/<a> transforms it had. Counter those with an inverse
+    // transform so the piece renders in the same place as the original.
+    const ancestorMatrix = getMatrixToContent(elem)
+    const compensation = isIdentity(ancestorMatrix) ? null : ancestorMatrix.inverse()
+
     for (const piece of [piece1, piece2]) {
       if (!hasValidPiece(piece)) {
         piece?.remove()
         continue
       }
-      const newPath = svgCanvas.addSVGElementsFromJson({
-        element: 'path',
-        attr: {
-          id: svgCanvas.getNextId(),
-          d: piece.pathData,
-          ...styleAttrs
-        }
-      })
+      const attr = {
+        id: svgCanvas.getNextId(),
+        d: piece.pathData,
+        ...styleAttrs
+      }
+      if (compensation) {
+        attr.transform = `matrix(${compensation.a} ${compensation.b} ${compensation.c} ${compensation.d} ${compensation.e} ${compensation.f})`
+      }
+      const newPath = svgCanvas.addSVGElementsFromJson({ element: 'path', attr })
       // Preserve z-order by inserting before the original element
       elem.before(newPath)
       batchCmd.addSubCommand(new InsertElementCommand(newPath))
