@@ -14,6 +14,10 @@
  * a source edit re-fires `elementChanged`, which re-syncs the twin to match.
  * Dragging a twin directly breaks the link so the manual edit sticks;
  * dragging source and twin together also unlinks (both then move normally).
+ * Deleting a still-linked source or twin takes its partner with it (wraps
+ * `svgCanvas.deleteSelectedElements`, pre-populating the selection with any
+ * linked partner not already selected), as one undo step — same
+ * mode-independent link as the live sync above.
  *
  * Detection: new hand-drawn elements are committed by core `event.js` as a
  * bare `InsertElementCommand` through `svgCanvas.addCommandToHistory`. This
@@ -146,6 +150,17 @@ export default {
     }
 
     /**
+     * Find the linked partner of a still-linked source or twin: a twin's
+     * source (via its `se:mirror-of` id), or a source's twin (via `findTwin`).
+     * @param {Element} el
+     * @returns {?Element}
+     */
+    const findLinkedPartner = (el) => {
+      const srcId = el.getAttribute(MIRROR_OF_ATTR)
+      return srcId ? $id(srcId) : findTwin(el)
+    }
+
+    /**
      * Rebuild `twin`'s reflected geometry/style from its source. Builds a
      * fresh reflected clone, copies its attributes and subtree onto the
      * existing twin node (keeping the twin's id + link stamps), then drops
@@ -238,6 +253,25 @@ export default {
       } finally {
         busy = false
       }
+    }
+
+    // Mirror deletion: deleting a still-linked source or twin takes its
+    // partner with it, as one undo step (same wrap-the-method precedent as
+    // ext-connector/ext-repeat). Pre-populating the selection before the
+    // original runs is the same sequence core uses itself (text-actions.js
+    // empty-text cleanup): addToSelection, then deleteSelectedElements.
+    const origDeleteSelected = svgCanvas.deleteSelectedElements.bind(svgCanvas)
+    svgCanvas.deleteSelectedElements = () => {
+      const selected = svgCanvas.getSelectedElements().filter(Boolean)
+      const extra = []
+      for (const el of selected) {
+        const partner = findLinkedPartner(el)
+        if (partner && !selected.includes(partner) && !extra.includes(partner)) {
+          extra.push(partner)
+        }
+      }
+      if (extra.length) svgCanvas.addToSelection(extra, false)
+      origDeleteSelected()
     }
 
     const setAxis = (ax) => {
