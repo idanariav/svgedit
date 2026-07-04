@@ -37,7 +37,10 @@ const loadExtensionTranslation = function (svgEditor) {
 }
 
 const serializeParams = (p) => {
-  if (p.mode === 'radial') return `radial;count=${p.count};sweep=${p.sweep};center=${p.center}`
+  if (p.mode === 'radial') {
+    return `radial;count=${p.count};sweep=${p.sweep};center=${p.center}` +
+      (p.center === 'custom' ? `;centerX=${p.centerX};centerY=${p.centerY}` : '')
+  }
   if (p.mode === 'grid') return `grid;rows=${p.rows};cols=${p.cols};gapX=${p.gapX};gapY=${p.gapY}`
   return `path;count=${p.count};offset=${p.offset};span=${p.span};follow=${p.follow ? 1 : 0};rail=${p.rail || ''}`
 }
@@ -51,7 +54,9 @@ const parseParams = (str) => {
       mode,
       count: parseInt(vals.count) || 6,
       sweep: parseFloat(vals.sweep) || 360,
-      center: vals.center === 'selection' ? 'selection' : 'canvas'
+      center: vals.center === 'selection' ? 'selection' : vals.center === 'custom' ? 'custom' : 'canvas',
+      centerX: parseFloat(vals.centerX),
+      centerY: parseFloat(vals.centerY)
     }
   }
   if (mode === 'grid') {
@@ -180,6 +185,9 @@ export default {
           const bb = svgCanvas.getStrokedBBox(sources)
           cx = bb.x + bb.width / 2
           cy = bb.y + bb.height / 2
+        } else if (params.center === 'custom' && Number.isFinite(params.centerX) && Number.isFinite(params.centerY)) {
+          cx = params.centerX
+          cy = params.centerY
         } else {
           const res = svgCanvas.getResolution()
           cx = res.w / 2
@@ -258,6 +266,17 @@ export default {
     svgCanvas.repeatSelection = repeatSelection
     svgCanvas.getRepeatParams = getRepeatParams
 
+    // One-shot canvas interaction for picking a custom radial-repeat center:
+    // arm with a callback, next canvas click fires it with canvas-space
+    // coordinates and returns to the select tool. A stale callback (e.g. the
+    // user hits Escape before clicking) is harmless — the mode guard below
+    // means it simply never fires until re-armed, which overwrites it.
+    let pickCenterCallback = null
+    svgCanvas.armRepeatCenterPick = (onPicked) => {
+      pickCenterCallback = onPicked
+      svgCanvas.setMode('repeat-pick-center')
+    }
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -280,6 +299,33 @@ export default {
           btn.setAttribute('src', 'repeat.svg')
           multi.append(btn)
         }
+      },
+
+      mouseDown (opts) {
+        if (svgCanvas.getMode() !== 'repeat-pick-center') return undefined
+        const x = opts.start_x
+        const y = opts.start_y
+        const cb = pickCenterCallback
+        pickCenterCallback = null
+        svgEditor.leftPanel.clickSelect()
+
+        // This mousedown's browser-generated mouseup->click still hasn't fired
+        // yet. If `cb` reopens a popover synchronously, that trailing click
+        // would otherwise bubble to the popover's own document-level
+        // light-dismiss listener right after, closing it again immediately.
+        // Swallow exactly that one click (capture phase always runs before
+        // any bubble-phase listener, including light-dismiss) so the reopened
+        // popover survives; anything else that click would have done on the
+        // canvas is a no-op here since the click always follows a mousedown
+        // we've already fully handled.
+        const suppressTrailingClick = (e) => {
+          document.removeEventListener('click', suppressTrailingClick, true)
+          e.stopPropagation()
+        }
+        document.addEventListener('click', suppressTrailingClick, true)
+
+        cb?.(x, y)
+        return { keep: false, started: false }
       }
     }
   }

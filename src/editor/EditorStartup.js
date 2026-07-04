@@ -1296,6 +1296,7 @@ class EditorStartup {
         break
       case 'zoom':
       case 'shapelib':
+      case 'repeat-pick-center':
         cs = 'crosshair'
         break
       case 'circle':
@@ -1326,7 +1327,7 @@ class EditorStartup {
   cancelTool () {
     const mode = this.svgCanvas.getMode()
     // list of modes that are currently save to cancel
-    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'shapelib', 'image', 'shapebuilder']
+    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center']
     if (modesToCancel.includes(mode)) {
       this.leftPanel.clickSelect()
     }
