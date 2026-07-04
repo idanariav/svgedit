@@ -301,7 +301,7 @@ export default {
       callback () {
         // Add the grid-settings popover and its handler(s)
         const buttonTemplate = document.createElement('template')
-        const title = `${name}:buttons.0.title`
+        const title = svgEditor.i18next.t(`${name}:buttons.0.title`)
         buttonTemplate.innerHTML = `
           <se-grid-settings id="grid_settings" title="${title}" src="grid.svg"></se-grid-settings>
         `
