@@ -18,5 +18,5 @@ organic lines. Mix in sharp corners wherever you want a crisp change of directio
 4. Finish the curve and switch to Select to style it.
 
 ## Related properties
-- **Curve style** — Catmull-Rom, B-spline, or Spiro (each curves a little differently).
+- Curves are drawn using Spiro (clothoid-based, curvature-continuous smoothing).
 - The result is a path, so **path editing** applies for later tweaks.

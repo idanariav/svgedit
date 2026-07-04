@@ -4,8 +4,5 @@ export default {
     {
       title: 'Curvature Tool — click to place points, draw smooth curves automatically'
     }
-  ],
-  modes: {
-    label: 'Curve'
-  }
+  ]
 }

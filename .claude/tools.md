@@ -324,10 +324,8 @@ align/layer/flip, Object duplicate/delete) that rises on selection. The Shape
 library is the real `<se-shape-library>` component embedded in the bar — ext-shapes
 arms insertion via its element-agnostic document-level `shape-insert` listener (see
 ext-shapes in extensions.md). Every control resolves to an existing
-`svgCanvas.*`/`editor.*` call — no new modes or engine changes. The Curvature
-tool defaults to **Spiro** in tablet (no curve-mode tray there) — `selectTool`
-drives the hidden `#curvature_mode` select so ext-curvature updates + persists the
-choice. The **Pan** tool drives `setMode('ext-panning')` (same flow as the desktop
+`svgCanvas.*`/`editor.*` call — no new modes or engine changes. The **Pan**
+tool drives `setMode('ext-panning')` (same flow as the desktop
 pan button) so touch-drag scrolls the workarea via the ext-panning hooks. Layers,
 boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 
@@ -393,8 +391,7 @@ Flying button (left panel):
 - **Cutter** (`tool_cutter`): Drag a straight line across shapes to split them along that line; affects selected shapes only (or all shapes if nothing selected)
 
 ### ext-curvature — Curvature Tool (`extensions/ext-curvature/`)
-- **Curvature** (`tool_curvature`): Click to place anchor points; smooth curves are auto-computed. Shift+click for a sharp corner anchor. Double-click (or Escape) to finalize open; click near start to close the path.
-- **Curve mode selector** (`curvature_mode`, a `se-select` in the `#curvature_panel` tray): chooses the smoothing math — **Catmull-Rom** (default, interpolating — passes through every click), **B-spline** (approximating cage; clamped to the first/last click; dependency-free), or **Spiro** (clothoid/curvature-continuous via the `spiro` npm package). The tray shows only while the tool is active and the choice persists via the `curvatureMode` pref. Builders live in `ext-curvature.js` (`buildCatmullRom` / `buildBSpline` / `buildSpiro`), dispatched by `buildPathD`.
+- **Curvature** (`tool_curvature`): Click to place anchor points; smooth curves are auto-computed via **Spiro** (clothoid/curvature-continuous, `spiro` npm package) — the tool's only smoothing mode, no mode selector. Shift+click for a sharp corner anchor. Double-click (or Escape) to finalize open; click near start to close the path. `buildPathD` in `ext-curvature.js` dispatches to `buildSpiro`, which falls back to `buildCatmullRom` if the solver fails to converge on a degenerate input.
 
 ### ext-smart-guides — Smart Alignment Guides (`extensions/ext-smart-guides/`)
 - **No mode/tool of its own** — companion to the object-to-object snapping in the `event.js` select-move branch (math in `core/smart-guides.js`: `collectSnapTargets` built once per drag, `snapMovingBBox`, `findEqualSpacing`; all on **stroked/visual** bboxes; tolerance 8 screen px)

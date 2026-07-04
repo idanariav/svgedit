@@ -115,7 +115,7 @@
 | `ext-panning/` | Pan/hand tool |
 | `ext-polystar/` | Star and polygon tools |
 | `ext-brush/` | Pressure-sensitive brush tool (`perfect-freehand` filled-outline strokes; pen pressure via passive PointerEvent side-channel) |
-| `ext-curvature/` | Curvature tool — click-to-place smooth curves with a mode selector (Catmull-Rom / B-spline / Spiro via the `spiro` pkg); Shift+click for corner anchors; double-click/Escape or click-start to finalize |
+| `ext-curvature/` | Curvature tool — click-to-place smooth curves via Spiro (clothoid curves, `spiro` pkg); Shift+click for corner anchors; double-click/Escape or click-start to finalize |
 | `ext-proportion-markers/` | Wireframe-only edge proportion tick markers (companion to proportion snapping in `event.js`) |
 | `ext-smart-guides/` | Smart alignment guides overlay + `tool_smart_snap` toggle (view tray). Renders `svgCanvas.showSmartGuides(payload)` for the object-to-object snapping in `core/smart-guides.js`/`event.js` |
 | `ext-corner-radius/` | "Corners" Design-tab section (`corner_radius_value`) → `svgCanvas.applyCornerRadius(r)`; drops stale rounding attrs when `d` is rewritten outside the pipeline |

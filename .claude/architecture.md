@@ -66,7 +66,7 @@ svgedit/
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
 │   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
-│   │   ├── ext-curvature/         # Curvature tool — Catmull-Rom / B-spline / Spiro smooth curves
+│   │   ├── ext-curvature/         # Curvature tool — Spiro smooth curves
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
