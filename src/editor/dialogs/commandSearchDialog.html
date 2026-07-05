@@ -1,0 +1,111 @@
+<style>
+    :not(:defined) {
+        display: none;
+    }
+
+    #cs_dialog::part(frame) {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    #cs_container {
+        width: 560px;
+        max-width: 90vw;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--chrome-bg, #fff);
+        color: var(--fg, #1B1F24);
+        border: 1px solid var(--chrome-border, #d0d0d0);
+        border-radius: 10px;
+        font-family: var(--ui-font, Verdana, Helvetica, sans-serif);
+        font-size: 13px;
+        overflow: hidden;
+    }
+
+    #cs_toolbar {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--chrome-border, #e0e0e0);
+    }
+
+    #cs_search {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font-size: 14px;
+        color: var(--fg, #1B1F24);
+        background: var(--field-bg, #fff);
+        border: 1px solid var(--field-border, #d1d5db);
+        border-radius: 6px;
+        outline: none;
+    }
+
+    #cs_search:focus {
+        border-color: var(--accent, #2563eb);
+    }
+
+    .cs-empty {
+        color: var(--muted, #9ca3af);
+        font-style: italic;
+        padding: 16px 0;
+        text-align: center;
+    }
+
+    #cs_list {
+        overflow-y: auto;
+        padding: 8px 16px;
+        flex: 1 1 auto;
+    }
+
+    .cs-group-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted, #6b7280);
+        margin: 14px 0 4px;
+    }
+
+    .cs-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .cs-row.selected {
+        background: var(--accent-soft, #E8EFFF);
+    }
+
+    .cs-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #cs_footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 16px;
+        border-top: 1px solid var(--chrome-border, #e0e0e0);
+        color: var(--muted, #6b7280);
+        font-size: 11px;
+    }
+
+    #cs_dialog::backdrop {
+        background: rgba(0, 0, 0, 0.2);
+    }
+</style>
+<dialog id="cs_dialog" aria-label="Command search">
+    <div id="cs_container">
+        <div id="cs_toolbar">
+            <input id="cs_search" type="text" placeholder="Search" autocomplete="off" />
+        </div>
+        <div id="cs_list"></div>
+        <div id="cs_footer">
+            <span id="cs_hint">↑↓ navigate · ↵ select · Esc close</span>
+        </div>
+    </div>
+</dialog>

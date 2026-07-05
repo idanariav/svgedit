@@ -1323,3 +1323,14 @@ ul li.current {
 #opacity {
   color: var(--fg);
 }
+
+/* Command Search "reveal a setting" highlight — briefly flashes a field
+   after it's scrolled into view (see commandSearch.js's revealField). */
+@keyframes cmdSearchFlash {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: 0 0 0 3px var(--accent-ring, rgba(41, 98, 255, 0.16)); }
+}
+
+.cmd-search-flash {
+  animation: cmdSearchFlash 900ms ease-out;
+}

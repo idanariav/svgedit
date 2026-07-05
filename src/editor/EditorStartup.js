@@ -204,6 +204,11 @@ class EditorStartup {
       favoritesDialog.setAttribute('id', 'se-favorites-dialog')
       this.$container.append(favoritesDialog)
       favoritesDialog.init(this.i18next)
+      // Command Search popup added to DOM
+      const commandSearchDialog = document.createElement('se-command-search-dialog')
+      commandSearchDialog.setAttribute('id', 'se-command-search-dialog')
+      this.$container.append(commandSearchDialog)
+      commandSearchDialog.init(this.i18next)
     } catch (err) {
       console.error(err)
     }

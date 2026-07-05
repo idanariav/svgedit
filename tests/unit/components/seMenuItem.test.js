@@ -72,4 +72,12 @@ describe('se-menu-item', () => {
 
     expect(registered).toBeNull()
   })
+
+  it('registers with the hotkey manager when it has an id but no shortcut', () => {
+    let registered = null
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { registered = opts } } })
+    mountMenuItem({ id: 'tool_export', label: 'tools.export_img' })
+
+    expect(registered).toMatchObject({ id: 'tool_export', rawKey: null, label: 'tools.export_img' })
+  })
 })

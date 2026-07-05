@@ -152,8 +152,10 @@ export class SeMenuItem extends HTMLElement {
     if (!this.hasAttribute('role')) this.setAttribute('role', 'menuitem')
     if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')
     // Shortcut dispatch is owned by the central HotkeyManager; register this
-    // menu item's action so it can be listed, rebound, or removed.
-    if (this.id && this.hasAttribute('shortcut')) {
+    // menu item's action so it can be listed, rebound, or removed — even
+    // without a default `shortcut` (mirrors seButton.js's unconditional
+    // registration, so unbound menu items are still searchable/bindable).
+    if (this.id) {
       svgEditor?.hotkeys?.registerEl({
         id: this.id,
         el: this,

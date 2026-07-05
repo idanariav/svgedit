@@ -271,9 +271,32 @@ ext-shadow, ext-outline, and ext-color-shift now inject into `#tab_effects`
 |----|------|----------|
 | `tool_export` | Export (PNG / JPG / BMP / WebP) | — |
 | `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
+| `tool_command_search` | Open **Command Search** (`se-command-search-dialog`) | Ctrl/Cmd+K |
 | `tool_hotkeys` | Open the **Hotkey Manager** (`se-hotkey-dialog`) | — |
 | `tool_favorites` | Open the **Favorites** manager (`se-favorites-dialog`) | — |
 | `tool_editor_prefs` | Editor Preferences | — |
+
+**Command Search** (`tool_command_search` / Ctrl+Cmd+K → opens `se-command-search-dialog`,
+`dialogs/commandSearchDialog.js`): a searchable palette over every action/setting in the
+app, built on the same catalog as the Favorites/Hotkey dialogs (`buildFavoritesCatalog`
+via the new `src/editor/commandSearch.js`). Type to filter (label substring), arrow keys
+move the highlight, Enter/click activates. Two kinds of results:
+- **Trigger actions** (buttons/menu items) — activation calls `runFavoriteTrigger`
+  (`el.click()`/`run()`), same as clicking the real control.
+- **Value controls** (`stroke_width`, `fill_color`, `stroke_color`) — activation
+  *reveals* the setting instead of blindly clicking it: `fill_color`/`stroke_color`
+  call the real `se-colorpicker`'s `openColorDialog()` directly; `stroke_width` is
+  scrolled into view, briefly flash-highlighted (`.cmd-search-flash`, `svgedit.css`),
+  and focused.
+
+Before activating, `commandSearch.js`'s `activateCommandSearchResult` auto-detects
+whether the target element lives inside a Right Panel tab (`closest('.sidepanel_tabpanel')`)
+and switches to that tab first (`rightPanel.activateTab`/`toggleSidePanel`) — this is
+generic (no per-setting tab map), so it also covers any Right-Panel-hosted trigger
+button (e.g. `tool_trace_image`, layer buttons, corner-radius). Opened via `open()`/
+`close()` methods (not the `dialog="open"` attribute gate the older dialogs use, to
+avoid a stale-attribute bug on Escape/backdrop-close). Requires the `se-menu-item`
+registration fix below (searchable Main Menu items).
 
 **Hotkey Manager** (`tool_hotkeys` → opens `se-hotkey-dialog`, `dialogs/hotkeyDialog.js`):
 lists every registered action grouped by category and lets the user add (via a key
@@ -286,11 +309,15 @@ central `HotkeyManager` (`Hotkeys.js`). Three sources feed it:
   dropdowns or the canvas context menu — move-to-front/back, switch z-order, the six
   aligns, add-to-shape-library — which ship unbound and run via direct `svgCanvas`/
   `topPanel` calls).
-- **Every `se-button`** auto-registers in `connectedCallback` via
-  `svgEditor.hotkeys.registerEl(...)` — **whether or not it has a `shortcut`
-  attribute** — so every toolbar/panel/extension action is listable and bindable
-  (its `shortcut="…"`, if any, is the default; otherwise it shows *Unassigned*).
-- **`se-menu-item`** with a `shortcut`.
+- **Every `se-button`** *and* **every `se-menu-item`** auto-register in
+  `connectedCallback` via `svgEditor.hotkeys.registerEl(...)` — **whether or not
+  they have a `shortcut` attribute** — so every toolbar/panel/extension/Main-Menu
+  action is listable, bindable, and searchable (its `shortcut="…"`, if any, is the
+  default; otherwise it shows *Unassigned*). `se-menu-item` used to only register
+  when a `shortcut` was present, which left every Main Menu item (Export, Tablet
+  mode, Command Search, Hotkey Manager, Favorites, Editor Preferences) invisible to
+  the Hotkey Manager/Favorites catalog and the new Command Search — fixed to mirror
+  `se-button`'s unconditional registration.
 
 Overrides persist through the `userDataAdapter` (`getHotkeys`/`setHotkeys`) or,
 standalone, localStorage `svg-edit-hotkeys`. **To give a button a default shortcut,

@@ -153,6 +153,7 @@ class MainMenu {
     <se-menu id="main_button" label="Sketch Editor" src="logo.svg" alt="logo">
         <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
         <se-menu-item id="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
+        <se-menu-item id="tool_command_search" label="tools.command_search" src="search.svg" shortcut="mod+k"></se-menu-item>
         <se-menu-item id="tool_hotkeys" label="tools.hotkey_manager" src="keyboard.svg"></se-menu-item>
         <se-menu-item id="tool_favorites" label="tools.favorites_manager" src="star.svg"></se-menu-item>
         <se-menu-item id="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
@@ -171,6 +172,9 @@ class MainMenu {
       this.clickExport.bind(this)
     )
     $click($id('tool_tablet_mode'), this.clickTabletMode.bind(this))
+    $click($id('tool_command_search'), function () {
+      $id('se-command-search-dialog').open()
+    })
     $click($id('tool_hotkeys'), function () {
       $id('se-hotkey-dialog').setAttribute('dialog', 'open')
     })

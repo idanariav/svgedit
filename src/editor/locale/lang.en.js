@@ -137,6 +137,12 @@ export default {
     label_fill_color: 'Fill color',
     label_stroke_color: 'Stroke color'
   },
+  command_search: {
+    title: 'Command search',
+    search: 'Search actions and settings',
+    hint: '↑↓ navigate · ↵ select · Esc close',
+    no_results: 'No matches'
+  },
   hotkeys: {
     title: 'Keyboard shortcuts',
     add: 'Add',
@@ -202,6 +208,7 @@ export default {
     smallest_object: 'smallest object',
     export_img: 'Export',
     tablet_mode: 'Tablet mode',
+    command_search: 'Command search',
     hotkey_manager: 'Keyboard shortcuts',
     favorites_manager: 'Favorites',
     import_doc: 'Import SVG',
