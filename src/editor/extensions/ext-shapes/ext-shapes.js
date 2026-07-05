@@ -26,7 +26,7 @@ export default {
     const { $id } = canv
     const svgroot = canv.getSvgRoot()
     let lastBBox = {}
-    await loadExtensionTranslation(svgEditor)
+    loadExtensionTranslation(svgEditor)
 
     const modeId = 'shapelib'
     const startClientPos = {}
