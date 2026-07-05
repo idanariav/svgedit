@@ -197,8 +197,8 @@ export default {
           }
           let sx = (newbox.width / bbox.width) || 0
           let sy = (newbox.height / bbox.height) || 0
-          if (!evt.shiftKey) {
-            // Default: uniform scale (preserve aspect). Shift = free resize.
+          if (evt.shiftKey) {
+            // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
             const min = Math.min(sx, sy)
             sx = min
             sy = min
@@ -240,7 +240,8 @@ export default {
         const translateBack = svgroot.createSVGTransform()
 
         translateOrigin.setTranslate(-(left + tx), -(top + ty))
-        if (!evt.shiftKey) {
+        if (evt.shiftKey) {
+          // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
           const max = Math.min(Math.abs(sx), Math.abs(sy))
 
           sx = max * (sx < 0 ? -1 : 1)
