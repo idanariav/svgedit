@@ -36,8 +36,11 @@ locking whichever variant is active). State lives on the canvas
 (`svgCanvas.getToolLocked()` / `setToolLocked()`); `LeftPanel.lockTool` sets it and
 `LeftPanel.updateLeftPanel` clears it on tool switch. The reset is gated in
 `event.js` `mouseUpEvent` (shapes/line/pencil skip `setMode('select')`; path
-re-arms `path` instead of `toEditMode`) and in `text-actions.js` `toSelectMode`
+re-arms `path` instead of switching to select) and in `text-actions.js` `toSelectMode`
 (a freshly-placed text — flagged via `setTextFreshCreate` — re-arms `text`).
+Non-locked path creation switches straight to Select mode (the new path
+selected) rather than auto-entering pathedit — click the selected path again
+to enter pathedit, same as any other existing path.
 
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9

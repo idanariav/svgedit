@@ -1267,7 +1267,8 @@ const mouseUpEvent = (evt) => {
           // Lock mode: re-arm the path tool to draw another path
           svgCanvas.setMode('path')
         } else {
-          svgCanvas.pathActions.toEditMode(element)
+          svgCanvas.setMode('select')
+          svgCanvas.selectOnly([element], true)
         }
       } else if (svgCanvas.getCurConfig().selectNew) {
         const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame']

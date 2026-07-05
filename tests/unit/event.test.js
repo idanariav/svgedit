@@ -195,6 +195,45 @@ describe('event', () => {
     }).not.toThrow()
   })
 
+  it('mouseUpEvent() switches to select mode (not pathedit) after finishing a path', async () => {
+    const pathElement = /** @type {SVGPathElement} */ (createSvgElement('path'))
+    pathElement.setAttribute('d', 'M0,0 L10,10')
+    contentGroup.append(pathElement)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getToolLocked = () => false
+    canvas.getElement = () => null
+    canvas.getId = () => 'test-path'
+    canvas.getCurrentDrawing = () => ({ releaseId () {} })
+    canvas.addCommandToHistory = () => {}
+    canvas.call = () => {}
+    canvas.pathActions.mouseUp = () => ({ element: pathElement, keep: true })
+
+    const modes = []
+    canvas.setMode = (mode) => { modes.push(mode) }
+    let selectedWith = null
+    canvas.selectOnly = (elems, showGrips) => { selectedWith = { elems, showGrips } }
+
+    canvas.setCurrentMode('path')
+    canvas.setStarted(true)
+
+    canvas.mouseUpEvent({
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      preventDefault () {}
+    })
+
+    // The opacity-animation branch defers the mode switch by 0ms via setTimeout.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(modes).toContain('select')
+    expect(modes).not.toContain('pathedit')
+    expect(selectedWith.elems).toEqual([pathElement])
+  })
+
   it('dblClickEvent() enters a group without baking its transform into children', () => {
     // Regression guard: entering a group (even a rotated one) must use
     // setContext and must NOT call pushGroupProperties, which previously baked
