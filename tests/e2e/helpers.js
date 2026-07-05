@@ -27,7 +27,9 @@ export async function openMainMenu (page) {
 }
 
 export async function setSvgSource (page, svgMarkup) {
-  await page.locator('#tool_source').click()
+  // #tool_source was removed in favor of #tool_frame; the source-editor dialog
+  // itself (se-svg-editor-dialog) is still present, just opened programmatically.
+  await page.evaluate(() => window.svgEditor.topPanel.showSourceEditor())
   const textarea = page.locator('#svg_source_textarea')
   await expect(textarea).toBeVisible()
   await textarea.fill(svgMarkup)

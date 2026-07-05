@@ -40,9 +40,12 @@ test.describe('Shapes and images', () => {
         <image id="svg_2" href="./images/logo.svg" x="150" y="150" width="80" height="80" />
       </g>
     </svg>`)
-    await expect(page.locator('#svg_1')).toHaveAttribute('width', /.+/)
-    await expect(page.locator('#svg_2')).toHaveAttribute('href', './images/logo.svg')
-    await page.locator('#svg_2').click()
+    // Scoped to #svgcontent: a bare id locator pierces every shadow root on the
+    // page, and several unrelated icon/marker templates happen to reuse the
+    // same generic ids (svg_1, svg_2, ...), making an unscoped lookup ambiguous.
+    await expect(page.locator('#svgcontent #svg_1')).toHaveAttribute('width', /.+/)
+    await expect(page.locator('#svgcontent #svg_2')).toHaveAttribute('href', './images/logo.svg')
+    await page.locator('#svgcontent #svg_2').click()
   })
 
   test.describe('shape library drag-insert proportion lock', () => {

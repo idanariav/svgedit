@@ -51,11 +51,25 @@ future refactors" — each needs its own planning pass before execution:
 ## Test infrastructure — e2e (Playwright)
 
 `npx vitest run` is clean (fixed 2026-07-03). The Playwright e2e suite
-(`node scripts/run-e2e.mjs`) still has two known breaks, unrelated to vitest:
+(`node scripts/run-e2e.mjs`) has these known breaks, unrelated to vitest:
 
-- The `#tool_source` button was removed by an earlier "Frame tool" commit
+- ~~The `#tool_source` button was removed by an earlier "Frame tool" commit
   (`01301bdd`), breaking several specs that rely on the `setSvgSource` test
-  helper.
+  helper.~~ **Fixed 2026-07-05**: `setSvgSource` (`tests/e2e/helpers.js`) now
+  opens the dialog via `window.svgEditor.topPanel.showSourceEditor()` instead
+  of clicking the removed button — the dialog markup/textarea/save button
+  were never removed, only the toolbar button that opened them.
+- **Newly exposed by the fix above**: with `setSvgSource` no longer hanging,
+  ~19 tests across `clipboard.spec.js`, `control-points.spec.js`,
+  `group-transforms.spec.js`, `issues.spec.js`, `scenarios.spec.js`, and
+  `text-tools.spec.js` now fail on a *different*, previously-masked bug —
+  bare id locators like `page.locator('#svg_1')` are ambiguous because
+  Playwright pierces every open shadow root on the page by default, and
+  several unrelated shadow-DOM templates (toolbar icons, marker previews,
+  font-style previews) happen to reuse generic ids (`svg_1`, `svg_2`, …)
+  from their original source SVGs. Fixed in `shapes-and-image.spec.js` by
+  scoping to `#svgcontent #svg_1`; the other 6 files still need the same
+  treatment (or scope to `#svgcontent` generally) before they'll pass.
 - `tests/e2e/mainmenu.spec.js` references a `showDocProperties` method that
   no longer exists on `MainMenu.js` (the doc-properties dialog was removed).
 
