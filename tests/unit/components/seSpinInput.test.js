@@ -152,6 +152,19 @@ describe('se-spin-input', () => {
     expect(el.value).toBe('1.5')
   })
 
+  it('steps down past the first decimal place with a two-decimal step (regression: was stuck at 0.8)', () => {
+    const el = mountElement('se-spin-input')
+    el.setAttribute('min', '0')
+    el.setAttribute('max', '1')
+    el.setAttribute('step', '0.05')
+    el.value = '1'
+
+    for (let i = 0; i < 5; i++) {
+      el.$downBtn.dispatchEvent(new Event('mousedown'))
+    }
+    expect(el.value).toBe('0.75')
+  })
+
   it('steps via ArrowUp/ArrowDown keydown on the input', () => {
     const el = mountElement('se-spin-input')
     el.setAttribute('min', '')

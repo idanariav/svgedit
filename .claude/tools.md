@@ -503,7 +503,7 @@ Flying button (left panel):
 ### ext-outline — Outline / Halo (`extensions/ext-outline/`)
 - Adds an "Outline" section to `#tab_effects` (`#outline_panel`), inserted right after `#shadow_panel`. Gives a line a second outline color around its own stroke (e.g. a white line with a black halo, like a text outline).
 - **Shown for line-family elements only:** `line`, `polyline`, `path`, `polygon`.
-- Controls: **Width O** (`outline_width`, 0–50 px halo thickness), **Opacity** (`outline_opacity`, 0–1), **Color** (`outline_color`), **Remove** (`outline_remove`). **Width 0 ⟺ no outline** (mirrors shadow's length-0 convention).
+- Controls: **Width** (`outline_width`, 0–50 px halo thickness), **Opacity** (`outline_opacity`, 0–1), **Color** (`outline_color`, with a "Halo color" caption next to the swatch), **Remove** (`outline_remove`). Field labels are full words, matching the shadow panel's convention. **Width 0 ⟺ no outline** (mirrors shadow's length-0 convention).
 - Built from `feMorphology(dilate, radius=width)` → `feFlood(color)` → `feComposite(operator=in)` → `feMerge[outline, SourceGraphic]`. Caveat: dilate gives mildly boxy corners at large widths (negligible on thin lines).
 - **Class-library integration:** exposes `svgEditor.outlineApi = { read, apply }`; the save popover shows an **outline** checklist row, storing `outline: {width,color,opacity}` on the preset.
 - Shares the single per-element filter with shadow via `fx-filter.js`; the two can be on the same line simultaneously.

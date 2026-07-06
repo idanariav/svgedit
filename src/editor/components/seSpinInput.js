@@ -232,7 +232,7 @@ export class SESpinInput extends HTMLElement {
   // Number of digits after the decimal point in the step value, used to
   // format stepped values at matching precision.
   get _precision () {
-    const match = /\.(\d)+$/.exec(String(this._stepValue))
+    const match = /\.(\d+)$/.exec(String(this._stepValue))
     return match && match[1] ? match[1].length : 0
   }
 

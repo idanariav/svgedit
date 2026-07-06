@@ -136,14 +136,15 @@ export default {
           <div id="outline_panel" class="sidepanel_section" style="display:none">
             <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:name`)}</div>
             <div class="sidepanel_section_grid">
-              <se-spin-input id="outline_width" label="O" min="0" max="50" step="1" value="0"
+              <se-spin-input id="outline_width" label="Width" min="0" max="50" step="1" value="0"
                 title="${svgEditor.i18next.t(`${name}:contextTools.width.title`)}"></se-spin-input>
-              <se-spin-input id="outline_opacity" label="%" min="0" max="1" step="0.05" value="1"
+              <se-spin-input id="outline_opacity" label="Opacity" min="0" max="1" step="0.05" value="1"
                 title="${svgEditor.i18next.t(`${name}:contextTools.opacity.title`)}"></se-spin-input>
             </div>
             <div class="shadow_panel_footer">
               <input type="color" id="outline_color" value="#000000"
                 title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}">
+              <span class="shadow_panel_footer_label">${svgEditor.i18next.t(`${name}:contextTools.color.title`)}</span>
               <se-button id="outline_remove" src="delete.svg"
                 title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
             </div>
