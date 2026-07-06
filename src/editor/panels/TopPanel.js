@@ -367,6 +367,11 @@ class TopPanel {
           $id(`${tagName}_${item}`).value = attrVal || 0
         })
 
+        if (tagName === 'image') {
+          $id('tool_image_crop').style.display =
+            this.editor.svgCanvas.isImageCropEligible(elem) ? '' : 'none'
+        }
+
         if (tagName === 'circle') {
           $id('circle_arc').value = 360
         }
@@ -1146,6 +1151,43 @@ class TopPanel {
   }
 
   /**
+   * Enters image-crop mode for the selected `<image>` element.
+   * @returns {void}
+   */
+  clickImageCrop () {
+    const [elem] = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
+    if (!this.editor.svgCanvas.isImageCropEligible(elem)) return
+    this.editor.svgCanvas.startImageCrop(elem)
+  }
+
+  /**
+   * Applies the active image-crop session, surfacing a friendly alert if the
+   * source image can't be resampled (e.g. a cross-origin URL without CORS).
+   * @returns {Promise<void>}
+   */
+  async applyImageCrop () {
+    try {
+      await this.editor.svgCanvas.applyImageCrop()
+    } catch (err) {
+      console.error(err)
+      seAlert(this.editor.i18next.t('tools.image_crop_error'))
+    }
+  }
+
+  /**
+   * Shows/hides the transient Apply/Cancel tray while an image-crop session is active.
+   * @param {boolean} active
+   * @returns {void}
+   */
+  toggleImageCropMode (active) {
+    if (active) {
+      this.displayTool('imagecrop_panel')
+    } else {
+      this.hideTool('imagecrop_panel')
+    }
+  }
+
+  /**
    * @param {boolean} editmode
    * @param {module:svgcanvas.SvgCanvas#event:selected} elems
    * @returns {void}
@@ -1285,6 +1327,9 @@ class TopPanel {
     $id('image_url').addEventListener('change', evt => {
       this.setImageURL(evt.currentTarget.value)
     })
+    $click($id('tool_image_crop'), this.clickImageCrop.bind(this))
+    $click($id('tool_image_crop_apply'), this.applyImageCrop.bind(this))
+    $click($id('tool_image_crop_cancel'), () => this.editor.svgCanvas.cancelImageCrop())
 
     // Controls relocated out of the bottom panel: zoom now lives in the top bar,
     // stroke + opacity in the right "Design" tab. They are bound here (TopPanel

@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import ImageTracer from 'imagetracerjs'
 import { insertSvgElements } from './insertImage.js'
+import { loadImage } from '@svgedit/svgcanvas/core/load-image.js'
 
 /**
  * Map the trace dialog's friendly preset names to an imagetracerjs option-preset
@@ -22,25 +23,19 @@ const PRESET_BASE = {
  * @param {string} href - Data URL or remote image URL.
  * @returns {Promise<ImageData>}
  */
-const loadImageData = (href) =>
-  new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.addEventListener('load', () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth || img.width
-      canvas.height = img.naturalHeight || img.height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0)
-      try {
-        resolve(ctx.getImageData(0, 0, canvas.width, canvas.height))
-      } catch {
-        reject(new Error('This image can\'t be traced — its source is cross-origin (CORS). Re-import it as an embedded file.'))
-      }
-    })
-    img.addEventListener('error', () => reject(new Error('Could not load the image to trace.')))
-    img.src = href
-  })
+const loadImageData = async (href) => {
+  const img = await loadImage(href)
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth || img.width
+  canvas.height = img.naturalHeight || img.height
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(img, 0, 0)
+  try {
+    return ctx.getImageData(0, 0, canvas.width, canvas.height)
+  } catch {
+    throw new Error('This image can\'t be traced — its source is cross-origin (CORS). Re-import it as an embedded file.')
+  }
+}
 
 /**
  * Vectorize a selected `<image>` element into editable `<path>` elements placed

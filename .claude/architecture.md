@@ -189,6 +189,8 @@ src/editor/index.html
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
+| `image-crop.js` | Destructive re-encode crop for `<image>` elements — resamples the source pixels to just the cropped region via canvas `drawImage`, replacing `href`/`x`/`y`/`width`/`height` in one undo step; excludes vault-linked and transformed images. Own hand-rolled overlay/drag mechanics, not `select.js`'s `SelectorManager` |
+| `load-image.js` | Shared `loadImage(href)` — `HTMLImageElement` loader with CORS handling, used by both `image-crop.js` and `dialogs/traceImage.js` |
 | `text-path.js` | Text on path: attach/detach a `<textPath>` (href + xlink:href), rail auto-converted to `<path>`, `textPathOffset(pct)` for startOffset |
 | `shape-builder.js` | Shape-builder region math (`svgCanvas.shapeBuilder`): planar arrangement via iterative paper.js booleans (uses `paper-utils.js`); merge/delete gestures as BatchCommands |
 | `json.js` | JSON import/export of SVG data |

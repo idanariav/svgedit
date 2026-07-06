@@ -1283,6 +1283,7 @@ class EditorStartup {
     // tool is selected, by button/flyout/keyboard or the auto-return to select).
     const frameBtn = $id('tool_frame')
     if (frameBtn) frameBtn.pressed = mode === 'frame'
+    this.topPanel.toggleImageCropMode(mode === 'imagecrop')
   }
 
   /**

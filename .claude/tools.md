@@ -138,6 +138,32 @@ items `l/c/r/t/m/b/dh/dv`; its `change` is handled by `TopPanel.clickAlignMulti`
 |----|------|----------|
 | `tool_ungroup` | Ungroup | — |
 
+### Image actions (`.image_panel` tray, single `<image>` selected)
+
+| ID | Tool | Shortcut |
+|----|------|----------|
+| `tool_image_crop` | Crop Image | — |
+
+`tool_image_crop` is shown only when the selection is eligible: `svgCanvas.isImageCropEligible(elem)`
+(`core/image-crop.js`) requires a plain `<image>` that is **not** vault-linked (`data-vault-link`,
+out of scope for v1 — cropping a vault image is deferred) and **not** transformed/rotated (a
+`transform` attribute, also deferred — the crop overlay is axis-aligned and would misalign).
+Clicking it calls `svgCanvas.startImageCrop(elem)`, which seeds a dashed crop rect + 8 drag
+handles (own hand-rolled mousedown/mousemove/mouseup, not the shared `SelectorManager` grips)
+sized to the image's current `x/y/width/height` and clamped so the crop can only shrink/reposition
+within those original bounds — freeform, no aspect-ratio lock. While active, a transient
+`.imagecrop_panel` tray (mode-driven, not selection-driven — same pattern as `.path_node_panel`)
+shows Apply/Cancel buttons (`tool_image_crop_apply`/`tool_image_crop_cancel`), synced via
+`TopPanel.toggleImageCropMode` from `EditorStartup.modeListener` on `mode === 'imagecrop'`.
+Apply (`svgCanvas.applyImageCrop()`, async) is **destructive**: it resamples just the cropped
+region into a new canvas (mapping display coords → the source bitmap's natural pixel size),
+re-encodes it (preserving the original `data:` MIME type when sniffable, else `image/png`), and
+rewrites `href`/`x`/`y`/`width`/`height` in one undoable `BatchCommand` — this is what lets a
+later **Convert to editable SVG** (`tool_trace_image`) trace far less pixel data. A CORS/tainted-canvas
+failure (non-embedded remote image) rejects and is surfaced via `seAlert` from `TopPanel.applyImageCrop`,
+leaving the crop session open. Image loading (with the `crossOrigin` CORS dance) is shared with
+`traceImage.js` via `core/load-image.js`'s `loadImage(href)`.
+
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 
 Stays in the top bar (it is a transient mode toolbar, not a property).
@@ -216,7 +242,7 @@ container simply hides everything inside it.
 |--------------------|-----------|----------|
 | `#sidepanel_general` | single element | `elem_id`, `elem_class` (**`<se-class-select>`** — style-preset picker: scope-filtered dropdown of saved classes, "+" to save/update a class from the object, trash to delete; applying stamps the preset's captured attributes inline as one undo step, see `seClassSelect.js`/`classLibrary.js`), `angle` (rotation −180…180°), `selected_x`, `selected_y` (x/y hidden for line/circle/ellipse/polygon/arc) |
 | `.rect_panel` | `<rect>` | `rect_width`, `rect_height`, `rect_rx` |
-| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url`; **`tool_trace_image`** (**Convert to editable SVG**) — opens `se-trace-dialog` (style preset + palette slider), then `traceImageToSvg` (`dialogs/traceImage.js`) vectorizes the raster into editable `<path>`s overlaid on the original (non-destructive); wired in `RightPanel.init`. Save traced pieces via the existing `add_to_shape_library` action |
+| `.image_panel` | `<image>` | `image_width`, `image_height`, `image_url`; **`tool_trace_image`** (**Convert to editable SVG**) — opens `se-trace-dialog` (style preset + palette slider), then `traceImageToSvg` (`dialogs/traceImage.js`) vectorizes the raster into editable `<path>`s overlaid on the original (non-destructive); wired in `RightPanel.init`. Save traced pieces via the existing `add_to_shape_library` action. The `.image_panel` class is shared with the Top Panel's `tool_image_crop` button (see "Image actions" above) — both show/hide together via the same `STANDARD_CONTEXT_PANELS` entry |
 | `.circle_panel` | `<circle>` (or circle-arc path) | `circle_cx`, `circle_cy`, `circle_r`, `circle_arc` |
 | `.ellipse_panel` | `<ellipse>` | `ellipse_cx`, `ellipse_cy`, `ellipse_rx`, `ellipse_ry` |
 | `.line_panel` | `<line>` | `line_x1`, `line_y1`, `line_x2`, `line_y2` |

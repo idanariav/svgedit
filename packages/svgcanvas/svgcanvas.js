@@ -78,6 +78,7 @@ import { init as textPathInit } from './core/text-path.js'
 import { init as shapeBuilderInit } from './core/shape-builder.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
 import { init as cutterInit } from './core/cutter.js'
+import { init as imageCropInit } from './core/image-crop.js'
 import {
   getClosest,
   getParents,
@@ -304,6 +305,7 @@ class SvgCanvas {
     shapeBuilderInit(this)
     clipMaskInit(this)
     cutterInit(this)
+    imageCropInit(this)
 
     /**
      * Transfers sessionStorage from one tab to another.
