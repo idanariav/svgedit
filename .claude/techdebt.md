@@ -11,6 +11,20 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## `vite-plugin-string` collapses whitespace around `&amp;` in panel HTML
+
+Panel HTML (`src/editor/panels/*.html`, etc.) is inlined as a JS string via
+`vite-plugin-string` (`vite.config.mjs`). Its default compression strips the
+spaces immediately around an `&amp;` entity, so a literal `"Stroke &amp;
+Opacity"` label renders in the browser as `"Stroke&Opacity"` (confirmed on
+`.sidepanel_section_label` text for "Stroke & Opacity", "Spacing & Shape",
+"Clip & Mask" — all pre-existing, not introduced by any recent change).
+Not fixed now: root cause is the shared build plugin, not any one label, and
+changing its compression behavior touches every templated HTML file in the
+bundle — needs its own regression pass. Workaround for new labels: avoid
+`&` in visible text (e.g. the right-panel Object section uses "Select and
+Link" instead of "Select & Link" for exactly this reason).
+
 ## From the Phase 1-11 cleanup roadmap (`.claude/plans/i-want-to-do-immutable-kettle.md`)
 
 The following were explicitly called out in that plan as "Deferred / optional

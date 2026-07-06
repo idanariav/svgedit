@@ -355,13 +355,13 @@ export default {
             <div id="color_shift_hint">${t('hint')}</div>
             <div id="color_shift_body" style="display:none">
               <div class="color_shift_grid">
-                <se-spin-input id="color_shift_h" label="H" min="-180" max="180" step="1" value="0"
+                <se-spin-input id="color_shift_h" label="Hue" min="-180" max="180" step="1" value="0"
                   title="${t('inputs.hue.title')}"></se-spin-input>
-                <se-spin-input id="color_shift_s" label="S" min="-100" max="100" step="1" value="0"
+                <se-spin-input id="color_shift_s" label="Saturation" min="-100" max="100" step="1" value="0"
                   title="${t('inputs.saturation.title')}"></se-spin-input>
-                <se-spin-input id="color_shift_l" label="L" min="-100" max="100" step="1" value="0"
+                <se-spin-input id="color_shift_l" label="Lightness" min="-100" max="100" step="1" value="0"
                   title="${t('inputs.lightness.title')}"></se-spin-input>
-                <se-spin-input id="color_shift_t" label="T" min="-100" max="100" step="1" value="0"
+                <se-spin-input id="color_shift_t" label="Transparency" min="-100" max="100" step="1" value="0"
                   title="${t('inputs.transparency.title')}"></se-spin-input>
               </div>
               <div class="color_shift_toggles">

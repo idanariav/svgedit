@@ -172,18 +172,19 @@ export default {
           <div id="shadow_panel" class="sidepanel_section" style="display:none">
             <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:name`)}</div>
             <div class="sidepanel_section_grid">
-              <se-spin-input id="shadow_angle"  label="∠" min="0" max="359" step="5" value="150"
+              <se-spin-input id="shadow_angle"  label="Angle" min="0" max="359" step="5" value="150"
                 title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
-              <se-spin-input id="shadow_length" label="L" min="0" max="500" step="1" value="0"
+              <se-spin-input id="shadow_length" label="Distance" min="0" max="500" step="1" value="0"
                 title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
-              <se-spin-input id="shadow_blur" label="B" min="0" max="50" step="1" value="4"
+              <se-spin-input id="shadow_blur" label="Blur" min="0" max="50" step="1" value="4"
                 title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
-              <se-spin-input id="shadow_opacity" label="%" min="0" max="1" step="0.05" value="0.5"
+              <se-spin-input id="shadow_opacity" label="Opacity" min="0" max="1" step="0.05" value="0.5"
                 title="${svgEditor.i18next.t(`${name}:contextTools.opacity.title`)}"></se-spin-input>
             </div>
             <div class="shadow_panel_footer">
               <input type="color" id="shadow_color" value="#000000"
                 title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}">
+              <span class="shadow_panel_footer_label">${svgEditor.i18next.t(`${name}:contextTools.color.title`)}</span>
               <se-button id="shadow_remove" src="delete.svg"
                 title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
             </div>

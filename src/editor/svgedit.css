@@ -551,6 +551,14 @@ hr {
 }
 .sidepanel_subsection { margin-top: 12px; }
 
+/* a labelled cluster of buttons within a section (e.g. Object: Path / Stroke /
+   Select & Link) — hairline divider between clusters, none before the first */
+.sidepanel_btn_group + .sidepanel_btn_group {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--section-rule, #EEF0F3);
+}
+
 /* ── Button rows (object actions, text style, joins/caps) ─────────── */
 .sidepanel_btn_row {
   display: flex;
@@ -575,7 +583,6 @@ hr {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
 }
 .sidepanel_text_font se-font-select { flex: 1; min-width: 0; }
 
@@ -596,6 +603,8 @@ hr {
   background: var(--field-bg);
   cursor: pointer;
 }
+.shadow_panel_footer_label { font-size: 12.5px; color: var(--muted); }
+.shadow_panel_footer #shadow_remove { margin-left: auto; }
 
 /* ── Color-shift toggles / reset ──────────────────────────────────── */
 .color_shift_toggles {

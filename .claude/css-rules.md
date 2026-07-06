@@ -337,9 +337,14 @@ an underline drawn by `::after`. Tab panels are hidden unless `.active`.
   left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--accent); }
 .sidepanel_tabpanel { display: none; padding: 2px 0 10px; }
 .sidepanel_tabpanel.active { display: block; }
-/* horizontal button rows inside sections (Object / Combine / Joins & caps) */
+/* horizontal button rows inside sections (Object / Combine / Join / Cap) */
 .sidepanel_btn_row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.sidepanel_text_font { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.sidepanel_text_font { display: flex; align-items: center; gap: 8px; }
+/* labelled button cluster within a section (Object: Path / Select & Link) —
+   hairline divider before every cluster after the first */
+.sidepanel_btn_group + .sidepanel_btn_group {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--section-rule);
+}
 ```
 
 ### `.sidepanel_section` — Right side-panel sections ("Direction A" layout)

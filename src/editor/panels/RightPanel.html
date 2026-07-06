@@ -106,7 +106,7 @@
             <div class="sidepanel_section">
                 <div class="sidepanel_section_label">Stroke &amp; Opacity</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="stroke_width" min=0 max=99 step=1 label="Stroke"
+                    <se-spin-input id="stroke_width" min=0 max=99 step=1 label="Stroke Width"
                         title="properties.stroke_width" src="stroke-width.svg"></se-spin-input>
                     <se-spin-input id="opacity" min=0 max=100 step=5 label="Opacity"
                         title="properties.opacity" src="opacity.svg"></se-spin-input>
@@ -117,9 +117,9 @@
                         options="&#8212;,...,- -,- .,- .." values="none::2,2::5,5::5,2,2,2::5,2,2,2,2,2">
                     </se-select>
                 </div>
-                <div class="sidepanel_subsection">
-                    <div class="sub_label">Joins &amp; caps</div>
-                    <div class="sidepanel_btn_row">
+                <div class="sidepanel_section_grid sidepanel_subsection">
+                    <div>
+                        <div class="sub_label">Join</div>
                         <se-list id="stroke_linejoin" title="properties.linejoin_miter" label="" width="22px" height="22px">
                             <se-list-item id="linejoin_miter" value="miter" src="linejoin_miter.svg"
                                 title="properties.linejoin_miter" img-height="22px"></se-list-item>
@@ -128,6 +128,9 @@
                             <se-list-item id="linejoin_bevel" value="bevel" src="linejoin_bevel.svg"
                                 title="properties.linejoin_bevel" img-height="22px"></se-list-item>
                         </se-list>
+                    </div>
+                    <div>
+                        <div class="sub_label">Cap</div>
                         <se-list id="stroke_linecap" title="properties.linecap_butt" label="" width="22px" height="22px">
                             <se-list-item id="linecap_butt" value="butt" src="linecap_butt.svg"
                                 title="properties.linecap_butt" img-height="22px"></se-list-item>
@@ -143,18 +146,26 @@
             <!-- Convert / object actions (single element) -->
             <div class="selected_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Object</div>
-                <div class="sidepanel_btn_row">
-                    <se-button id="tool_topath" size="small" title="tools.to_path" src="to_path.svg"></se-button>
-                    <se-button id="tool_smooth_path" size="small" title="tools.smooth_path" src="smooth_path.svg"></se-button>
-                    <se-offset-settings id="tool_path_offset" title="tools.path_offset" src="path_offset.svg"></se-offset-settings>
-                    <se-button id="tool_stroke_to_path" size="small" title="tools.stroke_to_path" src="stroke_to_path.svg"></se-button>
-                    <se-button id="tool_reorient" size="small" title="tools.reorient_path" src="reorient.svg"></se-button>
-                    <se-list id="tool_select_same" src="select_same.svg" title="tools.select_same" label="" width="28px" height="28px">
-                        <se-list-item id="tool_select_same_fill" value="fill" title="tools.select_same_fill" src="fill.svg" img-height="22px"></se-list-item>
-                        <se-list-item id="tool_select_same_stroke" value="stroke" title="tools.select_same_stroke" src="stroke.svg" img-height="22px"></se-list-item>
-                        <se-list-item id="tool_select_same_type" value="type" title="tools.select_same_type" src="select_same.svg" img-height="22px"></se-list-item>
-                    </se-list>
-                    <se-button id="tool_make_link" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
+                <div class="sidepanel_btn_group">
+                    <div class="sub_label">Path</div>
+                    <div class="sidepanel_btn_row">
+                        <se-button id="tool_topath" size="small" title="tools.to_path" src="to_path.svg"></se-button>
+                        <se-button id="tool_smooth_path" size="small" title="tools.smooth_path" src="smooth_path.svg"></se-button>
+                        <se-button id="tool_reorient" size="small" title="tools.reorient_path" src="reorient.svg"></se-button>
+                        <se-offset-settings id="tool_path_offset" title="tools.path_offset" src="path_offset.svg"></se-offset-settings>
+                        <se-button id="tool_stroke_to_path" size="small" title="tools.stroke_to_path" src="stroke_to_path.svg"></se-button>
+                    </div>
+                </div>
+                <div class="sidepanel_btn_group">
+                    <div class="sub_label">Select and Link</div>
+                    <div class="sidepanel_btn_row">
+                        <se-list id="tool_select_same" src="select_same.svg" title="tools.select_same" label="" width="28px" height="28px">
+                            <se-list-item id="tool_select_same_fill" value="fill" title="tools.select_same_fill" src="fill.svg" img-height="22px"></se-list-item>
+                            <se-list-item id="tool_select_same_stroke" value="stroke" title="tools.select_same_stroke" src="stroke.svg" img-height="22px"></se-list-item>
+                            <se-list-item id="tool_select_same_type" value="type" title="tools.select_same_type" src="select_same.svg" img-height="22px"></se-list-item>
+                        </se-list>
+                        <se-button id="tool_make_link" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
+                    </div>
                 </div>
                 <div class="container_panel sidepanel_subsection" style="display:none">
                     <se-input id="g_title" data-attr="title" size="8" label="properties.label"></se-input>
@@ -192,6 +203,7 @@
         <div id="tab_text" class="sidepanel_tabpanel">
             <div class="text_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Font</div>
+                <div class="sub_label">Font Family</div>
                 <div class="sidepanel_text_font">
                     <se-font-select id="tool_font_family" src="font.svg" title="properties.font_family"
                         options="properties.serif,properties.sans_serif,properties.cursive,properties.fantasy,properties.monospace,properties.courier,properties.helvetica,properties.times"
@@ -230,9 +242,9 @@
             <div id="sidepanel_text" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Spacing &amp; Shape</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input size="2" id="tool_letter_spacing" min=0 max=100 step=1 label="Letter"
+                    <se-spin-input size="2" id="tool_letter_spacing" min=0 max=100 step=1 label="Letter Spacing"
                         title="properties.text_letter_spacing" src="letter_spacing.svg"></se-spin-input>
-                    <se-spin-input size="2" id="tool_word_spacing" min=0 max=1000 step=1 label="Word"
+                    <se-spin-input size="2" id="tool_word_spacing" min=0 max=1000 step=1 label="Word Spacing"
                         title="properties.text_word_spacing" src="word_spacing.svg"></se-spin-input>
                     <se-spin-input size="2" id="tool_text_length" min=0 max=1000 step=1 label="Length"
                         title="properties.text_length" src="text_length.svg"></se-spin-input>
@@ -252,7 +264,7 @@
             <div class="selected_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Blur</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="blur" class="span2" size="2" min="0" max="100" step="5" label="Amount"
+                    <se-spin-input id="blur" class="span2" size="2" min="0" max="100" step="5" label="Blur Amount"
                         title="properties.blur" src="blur.svg"></se-spin-input>
                 </div>
             </div>
