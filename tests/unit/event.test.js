@@ -234,6 +234,43 @@ describe('event', () => {
     expect(selectedWith.elems).toEqual([pathElement])
   })
 
+  it('mouseUpEvent() does not select a newly drawn shape when tool-locked', async () => {
+    const rectElement = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    contentGroup.append(rectElement)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getToolLocked = () => true
+    canvas.getElement = () => rectElement
+    canvas.getId = () => 'test-rect'
+    canvas.getCurConfig = () => ({ gridSnapping: false, showRulers: false, selectNew: true })
+    canvas.getCurrentDrawing = () => ({ releaseId () {} })
+    canvas.addCommandToHistory = () => {}
+    canvas.call = () => {}
+
+    const modes = []
+    canvas.setMode = (mode) => { modes.push(mode) }
+    let selectOnlyCalled = false
+    canvas.selectOnly = () => { selectOnlyCalled = true }
+
+    canvas.setCurrentMode('rect')
+    canvas.setStarted(true)
+
+    canvas.mouseUpEvent({
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      preventDefault () {}
+    })
+
+    // The opacity-animation branch defers this by 0ms via setTimeout.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(modes).not.toContain('select')
+    expect(selectOnlyCalled).toBe(false)
+  })
+
   it('dblClickEvent() enters a group without baking its transform into children', () => {
     // Regression guard: entering a group (even a rotated one) must use
     // setContext and must NOT call pushGroupProperties, which previously baked

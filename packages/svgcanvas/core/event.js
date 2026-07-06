@@ -1275,7 +1275,11 @@ const mouseUpEvent = (evt) => {
         if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
           svgCanvas.setMode('select')
         }
-        svgCanvas.selectOnly([element], true)
+        // Lock mode: skip selecting the newly created shape so its selection
+        // bbox/grips don't overlap the area where the next shape is drawn.
+        if (!svgCanvas.getToolLocked()) {
+          svgCanvas.selectOnly([element], true)
+        }
       }
       // we create the insert command that is stored on the stack
       // undo means to call cmd.unapply(), redo means to call cmd.apply()
