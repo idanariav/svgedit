@@ -51,6 +51,23 @@ describe('se-list', () => {
     expect(el.items[0].hasAttribute('selected')).toBe(false)
   })
 
+  it('highlights the first item at construction when track-selection is set on a static-icon list', () => {
+    const el = mountList(basicItems, { src: 'some-icon.svg', 'track-selection': '' })
+    expect(el.items[0].getAttribute('selected')).toBe('true')
+    expect(el.items[1].getAttribute('selected')).toBe('false')
+  })
+
+  it('re-highlights the picked item on selectedindexchange without touching the static trigger face', () => {
+    const el = mountList(basicItems, { src: 'some-icon.svg', 'track-selection': '' })
+    const faceBefore = el.$selection.innerHTML
+
+    el.$dropdown.dispatchEvent(new CustomEvent('selectedindexchange', { detail: { selectedItem: 'b' } }))
+
+    expect(el.items[0].getAttribute('selected')).toBe('false')
+    expect(el.items[1].getAttribute('selected')).toBe('true')
+    expect(el.$selection.innerHTML).toBe(faceBefore)
+  })
+
   it('toggles the dropdown open/closed on trigger click', () => {
     const el = mountList(basicItems)
     expect(el.isDropdownOpen).toBe(false)

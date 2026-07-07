@@ -138,7 +138,12 @@ items `l/c/r/t/m/b/dh/dv`; its `change` is handled by `TopPanel.clickAlignMulti`
 `<se-select>` with a visible "relative to:" text label, which took up much more
 toolbar width for a rarely-used control. `se-list-item` grew a
 `:host([option]:not([src]))` CSS rule so text-only items size to their text
-instead of the default fixed 28×28 icon box.
+instead of the default fixed 28×28 icon box. It also carries `se-list`'s new
+opt-in `track-selection` attribute, so the popup keeps the last-picked item
+highlighted (via `se-list-item`'s existing `.selected` style) even though the
+trigger face stays fixed — `se-list`'s default static-icon behavior (used by
+action menus like `tool_align_multi`/`tool_arrange_multi`) is unaffected since
+it only tracks selection when `track-selection` is present.
 
 Fixed alongside this: `Editor.js`'s `elementChanged` had a stale-`selectedElement`
 recovery fallback (originally for a Firefox text-detach edge case) that fired

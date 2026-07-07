@@ -80,12 +80,25 @@ export class SeList extends HTMLElement {
     // When a `src` is set on the list itself, the trigger shows a fixed icon
     // that never changes to the last-picked action (action-menu behavior).
     this.staticIcon = this.hasAttribute('src')
+    // Opt-in for static-icon lists that hold a persistent setting rather than
+    // firing a one-shot action: keeps the popup's `selected` highlight in
+    // sync with the last-picked item, without touching the fixed trigger face.
+    this.trackSelection = this.hasAttribute('track-selection')
     if (this.staticIcon) {
       this.renderStaticIcon(this.getAttribute('src'))
+      if (this.trackSelection) {
+        this.highlightItem(this.items[0].getAttribute('value'))
+      }
     } else {
       this.updateSelectedValue(this.items[0].getAttribute('value'))
     }
     this.isDropdownOpen = false
+  }
+
+  highlightItem = (newValue) => {
+    for (const element of Array.from(this.items)) {
+      element.setAttribute('selected', element.getAttribute('value') === newValue)
+    }
   }
 
   renderStaticIcon = async (src) => {
@@ -113,8 +126,12 @@ export class SeList extends HTMLElement {
   }
 
   updateSelectedValue = async (newValue) => {
-    // Static-icon lists keep a fixed trigger face and no item highlight.
-    if (this.staticIcon) return
+    // Static-icon lists keep a fixed trigger face; only opted-in "setting"
+    // lists (track-selection) also highlight the last-picked item.
+    if (this.staticIcon) {
+      if (this.trackSelection) this.highlightItem(newValue)
+      return
+    }
     for (const element of Array.from(this.items)) {
       if (element.getAttribute('value') === newValue) {
         element.setAttribute('selected', true)
