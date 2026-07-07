@@ -84,7 +84,7 @@ export default class ConfigObj {
       * @property {string} [paramurl] This was available via URL only. Allowed an un-encoded URL within the query string (use "url" or "source" with a data: URI instead)
       * @property {Float} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
       * @property {PlainObject} [initFill] Init fill properties
-      * @property {string} [initFill.color="FF0000"] The initial fill color. Must be a hex code string. Defaults to solid red.
+      * @property {string} [initFill.color="FFFFFF"] The initial fill color. Must be a hex code string. Defaults to solid white.
       * @property {Float} [initFill.opacity=1] The initial fill opacity. Must be a number between 0 and 1
       * @property {PlainObject} [initStroke] Init stroke properties
       * @property {Float} [initStroke.width=5] The initial stroke width. Must be a positive number.
@@ -127,7 +127,7 @@ export default class ConfigObj {
       canvasName: 'default',
       canvas_expansion: 3,
       initFill: {
-        color: 'FF0000', // solid red
+        color: 'FFFFFF', // solid white
         opacity: 1
       },
       initStroke: {
