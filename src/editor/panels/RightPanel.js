@@ -399,11 +399,41 @@ class RightPanel {
       renderLockIcon(_lock, drawing.getLayerLocked(name))
       layerLock.appendChild(_lock)
 
+      // Small live preview of the layer's contents: an inline <svg> whose only
+      // child is a <use> pointing at the layer's own group element. Since the
+      // group already lives in the same document (the canvas is not an
+      // iframe), the <use> mirrors it continuously with no manual redraws —
+      // it reflects new/edited/moved shapes as they happen, not just the
+      // layer-list-changing events that repopulate this table.
+      const layerPreview = document.createElement('td')
+      layerPreview.className = 'layerpreview'
+      const layerGroup = drawing.getLayerByName(name)
+      if (layerGroup) {
+        // <use> can only target an id, so lazily stamp one the first time a
+        // layer group is previewed; harmless and persists for the group's
+        // lifetime (same convention every other canvas element already uses).
+        if (!layerGroup.getAttribute('id')) {
+          layerGroup.setAttribute('id', this.editor.svgCanvas.getNextId())
+        }
+        const svgNs = 'http://www.w3.org/2000/svg'
+        const thumb = document.createElementNS(svgNs, 'svg')
+        thumb.setAttribute('class', 'layerpreview-thumb')
+        thumb.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+        const res = this.editor.svgCanvas.getResolution()
+        thumb.setAttribute('viewBox', `0 0 ${res.w} ${res.h}`)
+        const use = document.createElementNS(svgNs, 'use')
+        use.setAttribute('href', `#${layerGroup.getAttribute('id')}`)
+        use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${layerGroup.getAttribute('id')}`)
+        thumb.appendChild(use)
+        layerPreview.appendChild(thumb)
+      }
+
       const layerName = document.createElement('td')
       layerName.className = 'layername'
       layerName.textContent = name
       layerTr.appendChild(layerVis)
       layerTr.appendChild(layerLock)
+      layerTr.appendChild(layerPreview)
       layerTr.appendChild(layerName)
       layerlist.appendChild(layerTr)
       values = (values) ? values + '::' + name : name

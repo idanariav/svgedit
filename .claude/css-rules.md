@@ -388,6 +388,19 @@ The icon itself differs by state — `lock_open.svg` when unlocked (muted, signa
 clickable), `lock.svg` when locked (accent). `RightPanel.populateLayers` picks the icon
 and swaps it on click via its `renderLockIcon` helper.
 
+The **preview cell** (`td.layerpreview`) holds a small live thumbnail:
+```css
+#layerlist td.layerpreview { width: 30px; padding-left: 0; padding-right: 0; cursor: default; }
+#layerlist .layerpreview-thumb {
+  display: block; width: 28px; height: 20px; overflow: hidden;
+  border: 1px solid var(--field-border); border-radius: 4px;
+  background: var(--workarea-bg);
+}
+```
+`.layerpreview-thumb` is an inline `<svg>` containing one `<use>` targeting the layer's
+own group by id — see [tools.md](tools.md) "Layers Panel" for how the live-mirroring
+works and why the group gets an id lazily stamped on it.
+
 ### Wireframe Mode
 ```css
 #workarea.wireframe #svgcontent * {

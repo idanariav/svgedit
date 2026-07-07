@@ -699,6 +699,21 @@ hr {
 #layerlist td.layerlock * { display: block; color: var(--muted); }
 #layerlist td.layerlock:hover * { color: var(--icon-hover, var(--fg)); }
 #layerlist td.layerlock.locked * { color: var(--accent); }
+#layerlist td.layerpreview {
+  width: 30px;
+  padding-left: 0;
+  padding-right: 0;
+  cursor: default;
+}
+#layerlist .layerpreview-thumb {
+  display: block;
+  width: 28px;
+  height: 20px;
+  overflow: hidden;
+  border: 1px solid var(--field-border);
+  border-radius: 4px;
+  background: var(--workarea-bg);
+}
 #layerlist td.layername {
   font-size: 13px;
   font-weight: 500;
