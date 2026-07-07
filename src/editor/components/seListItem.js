@@ -26,6 +26,14 @@ template.innerHTML = `
     background: var(--icon-hover-bg, #EEF1F5);
     color: var(--icon-hover, #0F172A);
   }
+  :host([option]:not([src])) [aria-label="option"] {
+    width: auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+  :host([option]:not([src])) .icon-wrap {
+    display: none;
+  }
   .selected {
     background: var(--accent-soft, #E8EFFF) !important;
     color: var(--accent, #2962FF) !important;

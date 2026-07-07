@@ -103,7 +103,7 @@ One consolidated `.quick_tray` pill:
 | `tool_group_elements` | Group | G |
 | `tool_arrange_multi` *(list)* | Arrange / z-order (incl. Switch Layers) | — |
 | `tool_align_multi` *(list)* | Align edges/centers + distribute H/V | — |
-| `tool_align_relative` *(select)* | Alignment reference | selected / largest / smallest / page |
+| `tool_align_relative` *(list)* | Alignment reference | selected / largest / smallest / page |
 
 ### Arrange / z-order dropdown (`tool_arrange` / `tool_arrange_multi`)
 
@@ -131,6 +131,23 @@ Multi-selection align is a single `se-list` dropdown (fixed `align.svg` face) wi
 items `l/c/r/t/m/b/dh/dv`; its `change` is handled by `TopPanel.clickAlignMulti`
 → `clickAlign` → `alignSelectedElements(value, tool_align_relative.value)`.
 (Single-element `tool_position` is the analogous align-to-page dropdown.)
+
+`tool_align_relative` itself is also an `se-list` (fixed `relative_to.svg` face,
+28px, static-icon mode) with plain-text `se-list-item`s (`option="tools.*"`, no
+`src`) for `selected`/`largest`/`smallest`/`page` — it used to be a labeled
+`<se-select>` with a visible "relative to:" text label, which took up much more
+toolbar width for a rarely-used control. `se-list-item` grew a
+`:host([option]:not([src]))` CSS rule so text-only items size to their text
+instead of the default fixed 28×28 icon box.
+
+Fixed alongside this: `Editor.js`'s `elementChanged` had a stale-`selectedElement`
+recovery fallback (originally for a Firefox text-detach edge case) that fired
+whenever `selectedElement` was `null` — which is the normal state during a
+multi-selection. Since `alignSelectedElements` fires a `'changed'` event for the
+whole selection, this was clobbering `selectedElement` after every align/distribute
+action, making `updateContextPanel` take the single-element branch and hide the
+entire `multiselected_panel` even though multiple elements were still selected.
+The fallback is now guarded with `!this.multiselected`.
 
 ### Group / link selected (`.g_panel` tray)
 

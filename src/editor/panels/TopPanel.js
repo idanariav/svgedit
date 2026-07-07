@@ -753,7 +753,7 @@ class TopPanel {
   clickAlign (pos) {
     const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     let value = $id('tool_align_relative').value
-    if (value === '') {
+    if (!value) {
       value = 'selected'
     }
     this.editor.svgCanvas.alignSelectedElements(pos, value)

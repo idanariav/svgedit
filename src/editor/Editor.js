@@ -1008,8 +1008,11 @@ class Editor extends EditorStartup {
           this.updateCanvas()
         }
         // Update selectedElement if element is no longer part of the image.
-        // This occurs for the text elements in Firefox
-      } else if (elem && !this.selectedElement?.parentNode) {
+        // This occurs for the text elements in Firefox. Skip while multiple
+        // elements are selected — selectedElement is legitimately null then,
+        // and promoting one of the changed elements (e.g. after a multi-align)
+        // would make updateContextPanel hide the multiselected_panel.
+      } else if (elem && !this.multiselected && !this.selectedElement?.parentNode) {
         this.selectedElement = elem
       }
     })

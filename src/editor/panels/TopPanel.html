@@ -96,10 +96,12 @@
       <se-list-item value="dv" title="tools.align_distrib_verti" src="align_distrib_verti.svg"
         img-height="22px"></se-list-item>
     </se-list>
-    <se-select id="tool_align_relative" label="tools.relativeTo"
-      options="tools.selected_objects,tools.largest_object,tools.smallest_object,tools.page"
-      values="selected::largest::smallest::page">
-    </se-select>
+    <se-list id="tool_align_relative" src="relative_to.svg" title="tools.relativeTo" width="28px" height="28px">
+      <se-list-item value="selected" option="tools.selected_objects"></se-list-item>
+      <se-list-item value="largest" option="tools.largest_object"></se-list-item>
+      <se-list-item value="smallest" option="tools.smallest_object"></se-list-item>
+      <se-list-item value="page" option="tools.page"></se-list-item>
+    </se-list>
   </div>
   <!-- Ungroup (shown for a selected group / link) -->
   <div class="g_panel quick_tray" style="display:none">
