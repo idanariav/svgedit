@@ -107,6 +107,13 @@ class EditorStartup {
     }
     this.$container.addEventListener('pointerdown', activate, true)
     this.$container.addEventListener('focusin', activate, true)
+    // Exposed so a host that mounts several editors outside a single browser
+    // tab (e.g. one editor per pane in a multi-pane app) can mark this editor
+    // active on its own pane-focus event, without waiting for a pointerdown/
+    // focusin to land inside $container first (switching panes without also
+    // clicking the canvas would otherwise leave the previous editor "active",
+    // so shortcuts/paste keep targeting the drawing the host just left).
+    this.activate = activate
     // Resolve element lookups within this editor's own container so multiple
     // editors mounted in the same document don't collide on the fixed element
     // IDs baked into the template (svgcanvas, workarea, the se-* dialogs, …).
