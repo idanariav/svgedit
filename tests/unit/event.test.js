@@ -211,6 +211,9 @@ describe('event', () => {
     canvas.call = () => {}
     canvas.pathActions.mouseUp = () => ({ element: pathElement, keep: true })
 
+    let gripsHidden = false
+    canvas.getPath_ = () => ({ show: (y) => { gripsHidden = (y === false) } })
+
     const modes = []
     canvas.setMode = (mode) => { modes.push(mode) }
     let selectedWith = null
@@ -232,6 +235,10 @@ describe('event', () => {
     expect(modes).toContain('select')
     expect(modes).not.toContain('pathedit')
     expect(selectedWith.elems).toEqual([pathElement])
+    // Regression guard: the in-progress drawing's point/control grips must be
+    // hidden, otherwise they linger in the shared pathpointgrip_container even
+    // after the path is moved or deleted.
+    expect(gripsHidden).toBe(true)
   })
 
   it('mouseUpEvent() does not select a newly drawn shape when tool-locked', async () => {

@@ -40,7 +40,13 @@ re-arms `path` instead of switching to select) and in `text-actions.js` `toSelec
 (a freshly-placed text — flagged via `setTextFreshCreate` — re-arms `text`).
 Non-locked path creation switches straight to Select mode (the new path
 selected) rather than auto-entering pathedit — click the selected path again
-to enter pathedit, same as any other existing path.
+to enter pathedit, same as any other existing path. Interactive path drawing
+shows a live node grip (`pathpointgrip_<index>`, in the shared
+`pathpointgrip_container`) at each clicked point; since this switch bypasses
+`pathActions.toEditMode()` (whose `Path.init()` normally hides stale grips),
+`event.js` calls `svgCanvas.getPath_(element).show(false)` before switching
+modes so those in-progress grips get hidden instead of lingering (fixed
+position, surviving move/delete) after the path is done.
 
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
