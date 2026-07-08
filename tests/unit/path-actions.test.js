@@ -253,6 +253,7 @@ describe('PathActions', () => {
 
       expect(mockPath.movePts).toHaveBeenCalled()
     })
+
   })
 
   describe('mouseUp', () => {
@@ -279,6 +280,48 @@ describe('PathActions', () => {
 
       expect(mockPath.update).toHaveBeenCalled()
       expect(mockPath.endChanges).toHaveBeenCalledWith('Move path point(s)')
+    })
+
+    it('should discard a curve baked in by mid-click jitter when the pointer settles back near the clicked point', () => {
+      // Regression test: a plain click to place a path point can dispatch a
+      // mousemove mid-gesture (trackpad/mouse jitter, or a bigger flick that
+      // drifts back) that bends the segment into a curve with a spurious
+      // tangent. If the pointer is back near the clicked point by the time
+      // the button is released, that curve must be discarded — otherwise it
+      // stays baked in and renders as a self-intersecting notch at the tip.
+      svgCanvas.getCurrentMode.mockReturnValue('path')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      // Place the first point at (10,10) — arms `#newPoint` and creates drawnPath.
+      pathActionsMethod.mouseDown({ target: svgRoot }, svgRoot, 10, 10)
+      const drawnPath = svgCanvas.setDrawnPath.mock.calls[0][0]
+      svgCanvas.getDrawnPath.mockReturnValue(drawnPath)
+
+      // Simulate a flick mid-click that bent the segment into a curve whose
+      // endpoint is still the clicked point (10,10) — matches what mouseMove
+      // would have produced before the pointer drifted back.
+      drawnPath.pathSegList.appendItem(drawnPath.createSVGPathSegCurvetoCubicAbs(10, 10, 20, 4, 4, 20))
+
+      // Pointer is back within 1px of the clicked point at release.
+      pathActionsMethod.mouseUp({ target: pathElement }, drawnPath, 11, 11)
+
+      expect(svgCanvas.replacePathSeg).toHaveBeenCalledWith(4, 1, [10, 10], drawnPath)
+    })
+
+    it('should leave a deliberately dragged curve handle intact on release far from the anchor', () => {
+      svgCanvas.getCurrentMode.mockReturnValue('path')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.mouseDown({ target: svgRoot }, svgRoot, 10, 10)
+      const drawnPath = svgCanvas.setDrawnPath.mock.calls[0][0]
+      svgCanvas.getDrawnPath.mockReturnValue(drawnPath)
+
+      drawnPath.pathSegList.appendItem(drawnPath.createSVGPathSegCurvetoCubicAbs(10, 10, 20, 4, 4, 20))
+
+      // Release well away from the anchor — a genuine curve-handle drag.
+      pathActionsMethod.mouseUp({ target: pathElement }, drawnPath, 60, 60)
+
+      expect(svgCanvas.replacePathSeg).not.toHaveBeenCalled()
     })
   })
 

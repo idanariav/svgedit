@@ -800,14 +800,48 @@ class PathActions {
   /**
     * @param {Event} evt
     * @param {Element} element
-    * @param {Float} _mouseX
-    * @param {Float} _mouseY
+    * @param {Float} mouseX
+    * @param {Float} mouseY
     * @returns {module:path.keepElement|void}
     */
-  mouseUp (evt, element, _mouseX, _mouseY) {
+  mouseUp (evt, element, mouseX, mouseY) {
     const drawnPath = svgCanvas.getDrawnPath()
     // Create mode
     if (svgCanvas.getCurrentMode() === 'path') {
+      if (this.#newPoint && drawnPath) {
+        // Decide corner vs. curve from the net mousedown->mouseup
+        // displacement, not the raw mousemove stream in between. A quick
+        // click can still dispatch a mousemove mid-gesture (hand tremor /
+        // trackpad jitter) that pulls a curve handle out; if the pointer
+        // settles back near the clicked point before release, that handle
+        // must be discarded here — otherwise it stays permanently baked
+        // into the segment even though the drag "cancelled itself out",
+        // rendering as a spurious self-intersecting notch at the point.
+        const zoom = svgCanvas.getZoom()
+        const ptX = this.#newPoint[0]
+        const ptY = this.#newPoint[1]
+        const curX = mouseX / zoom
+        const curY = mouseY / zoom
+        // Matches the FUZZ tolerance mouseDown uses to detect "clicked on an
+        // existing point" (below) — real click imprecision (mouse/trackpad
+        // hand tremor) commonly runs several CSS px, well past a stricter
+        // 2-3px threshold, which left curves getting committed from plain
+        // imprecise clicks (not just quick flick-and-return gestures).
+        const DRAG_THRESHOLD = 6 / zoom
+        if (Math.hypot(curX - ptX, curY - ptY) < DRAG_THRESHOLD) {
+          const seglist = drawnPath.pathSegList
+          const index = seglist.numberOfItems - 1
+          const last = seglist.getItem(index)
+          if (last && last.pathSegType === 6) {
+            svgCanvas.replacePathSeg(4, index, [last.x, last.y], drawnPath)
+          }
+          this.#firstCtrl = null
+          svgCanvas.getElement('ctrlpointgrip_1c1')?.setAttribute('display', 'none')
+          svgCanvas.getElement('ctrlpointgrip_0c2')?.setAttribute('display', 'none')
+          svgCanvas.getCtrlLine(1)?.setAttribute('display', 'none')
+        }
+      }
+
       this.#newPoint = null
       if (!drawnPath) {
         element = svgCanvas.getElement(svgCanvas.getId())
