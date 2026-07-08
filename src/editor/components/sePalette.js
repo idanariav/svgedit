@@ -152,13 +152,13 @@ const PENCIL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" 
 
 // Where a clicked swatch sends its color. Cycled via the target button; the
 // icon shown on that button reflects the active target so it's clear what the
-// custom palette will change.
-const TARGETS = ['fill', 'stroke', 'background']
-const TARGET_LABELS = { fill: 'fill', stroke: 'stroke', background: 'background' }
+// custom palette will change. Background isn't included here — it changes
+// rarely enough that it has its own dedicated color picker (bg_color) instead.
+const TARGETS = ['fill', 'stroke']
+const TARGET_LABELS = { fill: 'fill', stroke: 'stroke' }
 const TARGET_ICONS = {
   fill: '<svg viewBox="0 0 24 24" width="15" height="15"><rect x="4" y="4" width="16" height="16" rx="3" fill="currentColor"/></svg>',
-  stroke: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>',
-  background: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9.5h17"/><path d="M9.5 3.5v17"/></svg>'
+  stroke: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>'
 }
 
 const template = document.createElement('template')
@@ -533,8 +533,8 @@ export class SEPalette extends HTMLElement {
 
   // ── Color target ─────────────────────────────────────────────────────────
   /**
-   * Advance the destination a clicked swatch paints (fill → stroke →
-   * background → fill) and reflect it on the target button.
+   * Advance the destination a clicked swatch paints (fill → stroke → fill)
+   * and reflect it on the target button.
    * @returns {void}
    */
   _cycleTarget () {

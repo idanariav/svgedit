@@ -83,15 +83,12 @@ describe('se-palette', () => {
     expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: 'none' })
   })
 
-  it('cycles the color target through fill -> stroke -> background -> fill on target button click', () => {
+  it('cycles the color target through fill -> stroke -> fill on target button click', () => {
     const el = mountElement('se-palette')
     expect(el.$targetBtn.dataset.target).toBe('fill')
 
     el.$targetBtn.dispatchEvent(new MouseEvent('click'))
     expect(el.$targetBtn.dataset.target).toBe('stroke')
-
-    el.$targetBtn.dispatchEvent(new MouseEvent('click'))
-    expect(el.$targetBtn.dataset.target).toBe('background')
 
     el.$targetBtn.dispatchEvent(new MouseEvent('click'))
     expect(el.$targetBtn.dataset.target).toBe('fill')
