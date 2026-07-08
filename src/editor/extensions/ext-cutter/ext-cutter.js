@@ -14,6 +14,8 @@
  * @license MIT
  */
 
+import { snapToAngle } from '@svgedit/svgcanvas/core/math.js'
+
 const name = 'cutter'
 
 const loadExtensionTranslation = function (svgEditor) {
@@ -112,8 +114,13 @@ export default {
         if (!started) return undefined
 
         const zoom = svgCanvas.getZoom()
-        previewLine?.setAttribute('x2', opts.mouse_x / zoom)
-        previewLine?.setAttribute('y2', opts.mouse_y / zoom)
+        let x = opts.mouse_x / zoom
+        let y = opts.mouse_y / zoom
+        if (opts.event?.shiftKey) {
+          ({ x, y } = snapToAngle(startX, startY, x, y))
+        }
+        previewLine?.setAttribute('x2', x)
+        previewLine?.setAttribute('y2', y)
         return { started: true }
       },
 
@@ -124,8 +131,11 @@ export default {
         removePreviewLine()
 
         const zoom = svgCanvas.getZoom()
-        const endX = opts.mouse_x / zoom
-        const endY = opts.mouse_y / zoom
+        let endX = opts.mouse_x / zoom
+        let endY = opts.mouse_y / zoom
+        if (opts.event?.shiftKey) {
+          ({ x: endX, y: endY } = snapToAngle(startX, startY, endX, endY))
+        }
 
         // Skip accidental single clicks (drag shorter than 2 SVG units)
         const dx = endX - startX
