@@ -902,6 +902,15 @@ export class SeShapeLibrary extends HTMLElement {
     this._shadow.querySelector('.sl-backdrop').addEventListener('click', () => this.close())
   }
 
+  get pressed () { return this.hasAttribute('pressed') }
+  set pressed (value) {
+    if (value) {
+      this.setAttribute('pressed', 'true')
+    } else {
+      this.removeAttribute('pressed')
+    }
+  }
+
   _syncToolPressed () {
     const btn = this._shadow.querySelector('.sl-tool')
     if (!btn) return

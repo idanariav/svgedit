@@ -74,6 +74,22 @@ describe('se-shape-library', () => {
       el.removeAttribute('pressed')
       expect(btn.classList.contains('pressed')).toBe(false)
     })
+
+    it('exposes a pressed property that reflects to/from the attribute', () => {
+      // LeftPanel.js clears every other tool's highlight via `b.pressed = false`
+      // when a new tool is selected; without a `pressed` accessor this would be
+      // a no-op inert property write and the attribute (and highlight) would stick.
+      const el = mountElement('se-shape-library')
+      const btn = el.shadowRoot.querySelector('.sl-tool')
+
+      el.pressed = true
+      expect(el.hasAttribute('pressed')).toBe(true)
+      expect(btn.classList.contains('pressed')).toBe(true)
+
+      el.pressed = false
+      expect(el.hasAttribute('pressed')).toBe(false)
+      expect(btn.classList.contains('pressed')).toBe(false)
+    })
   })
 
   // ── Index / category loading (bundled data path) ────────────────────────────
