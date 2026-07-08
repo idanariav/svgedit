@@ -180,9 +180,10 @@ Clicking it calls `svgCanvas.startImageCrop(elem)`, which seeds a dashed crop re
 handles (own hand-rolled mousedown/mousemove/mouseup, not the shared `SelectorManager` grips)
 sized to the image's current `x/y/width/height` and clamped so the crop can only shrink/reposition
 within those original bounds — freeform, no aspect-ratio lock. While active, a transient
-`.imagecrop_panel` tray (mode-driven, not selection-driven — same pattern as `.path_node_panel`)
-shows Apply/Cancel buttons (`tool_image_crop_apply`/`tool_image_crop_cancel`), synced via
-`TopPanel.toggleImageCropMode` from `EditorStartup.modeListener` on `mode === 'imagecrop'`.
+Apply/Cancel buttons (`tool_image_crop_apply`/`tool_image_crop_cancel`) live inside the
+`.image_panel` tray next to the crop button itself, but carry the `.imagecrop_panel` class so
+their own visibility stays mode-driven (not selection-driven — same pattern as `.path_node_panel`),
+synced via `TopPanel.toggleImageCropMode` from `EditorStartup.modeListener` on `mode === 'imagecrop'`.
 Apply (`svgCanvas.applyImageCrop()`, async) is **destructive**: it resamples just the cropped
 region into a new canvas (mapping display coords → the source bitmap's natural pixel size),
 re-encodes it (preserving the original `data:` MIME type when sniffable, else `image/png`), and
