@@ -185,7 +185,7 @@ src/editor/index.html
 | `boolean-ops.js` | Union, intersect, subtract, exclude, divide (uses `paper-utils.js`) |
 | `cutter.js` | Cutter/knife tool — half-plane intersection cut (uses `paper-utils.js`) |
 | `path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening via `paper-utils.js`) |
-| `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `smoothSelectedPath` ("Smooth Path" action) (uses `paper-utils.js`'s shared scope) |
+| `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |

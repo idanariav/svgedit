@@ -180,6 +180,10 @@ export default class ConfigObj {
       avoidClientSideDownload: false,
       avoidClientSideOpen: false,
       layerView: false,
+      // PENCIL TOOL
+      // EMA low-pass factor applied to raw pointer coords while drawing with
+      // the freehand pencil (0 = off/raw input, closer to 1 = more lag/smoothing).
+      pencilStabilization: 0.3,
       // USER DATA PERSISTENCE
       userDataAdapter: null // Optional host storage adapter for custom palette + user shapes; see userDataAdapter.js. Falls back to localStorage when null.
     }

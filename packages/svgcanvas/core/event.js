@@ -34,6 +34,11 @@ const {
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   let moveSelectionThresholdReached = false
+  // Real-time jitter stabilization for the freehand pencil tool (EMA low-pass
+  // filter on raw pointer coordinates, applied before the B-spline capture
+  // below). Reset per-stroke in the fhpath mousedown case.
+  let pencilStabX = null
+  let pencilStabY = null
 
 const getBsplinePoint = (t) => {
   const spline = { x: 0, y: 0 }
@@ -619,6 +624,17 @@ const mouseMoveEvent = (evt) => {
     case 'fhpath': {
       // dAttr += + realX + ',' + realY + ' ';
       // shape.setAttribute('points', dAttr);
+      // Low-pass filter raw pointer coords to damp hand tremor before it
+      // reaches the B-spline capture below (fhellipse/fhrect fall through to
+      // this case too, but they track true min/max extent above and must not
+      // be lagged, so this only applies in fhpath mode itself).
+      if (svgCanvas.getMode() === 'fhpath') {
+        const k = svgCanvas.getCurConfig().pencilStabilization ?? 0.3
+        pencilStabX = pencilStabX === null ? realX : pencilStabX * k + realX * (1 - k)
+        pencilStabY = pencilStabY === null ? realY : pencilStabY * k + realY * (1 - k)
+        realX = pencilStabX
+        realY = pencilStabY
+      }
       svgCanvas.setEnd('x', realX)
       svgCanvas.setEnd('y', realY)
       if (svgCanvas.getControllPoint2('x') && svgCanvas.getControllPoint2('y')) {
@@ -1718,6 +1734,8 @@ const mouseDownEvent = (evt) => {
     case 'fhellipse':
     case 'fhrect':
     case 'fhpath':
+      pencilStabX = null
+      pencilStabY = null
       svgCanvas.setStart({ x: realX, y: realY })
       svgCanvas.setControllPoint1('x', 0)
       svgCanvas.setControllPoint1('y', 0)

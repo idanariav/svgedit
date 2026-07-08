@@ -826,16 +826,6 @@ class TopPanel {
   }
 
   /**
-   * Smooth the selected path (refit optimal cubic curves through it).
-   * @returns {void}
-   */
-  smoothPath () {
-    if (this.editor.selectedElement) {
-      this.editor.svgCanvas.smoothSelectedPath()
-    }
-  }
-
-  /**
    * Convert the selected element's stroke into a filled outline path.
    * @returns {void}
    */
@@ -1251,7 +1241,6 @@ class TopPanel {
     $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
     $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
     $click($id('tool_topath'), this.convertToPath.bind(this))
-    $click($id('tool_smooth_path'), this.smoothPath.bind(this))
     $click($id('tool_stroke_to_path'), this.strokeToPath.bind(this))
     $id('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
     $click($id('tool_normalize_strokes'), this.clickNormalizeStrokes.bind(this))

@@ -4,10 +4,14 @@
  *  - `simplifyFreehand(element, tolerance)` — replaces the freehand pencil
  *    polyline with a fitted-cubic `<path>` (used by the fhpath commit in
  *    event.js instead of the legacy every-3-points smoothing).
- *  - `smoothSelectedPath(tolerance)` — one-click smoothing of the selected
- *    `<path>`: flattens curves to dense samples, then refits an optimal set
- *    of cubic segments (paper.js flatten → simplify round-trip, which keeps
- *    the drawn shape while removing jitter and excess nodes).
+ *  - `previewSmoothPath(strength)` / `commitSmoothPath()` / `cancelSmoothPath()`
+ *    — non-destructive smoothing of the selected `<path>` for the
+ *    `se-smooth-path-settings` popover: flattens curves to dense samples,
+ *    then refits an optimal set of cubic segments (paper.js flatten →
+ *    simplify round-trip). `strength` (0-1) always re-fits from the shape as
+ *    it was when the popover opened, not from the live (possibly
+ *    already-smoothed) `d` — repeated adjustments within one session cannot
+ *    compound.
  *
  * @module path-simplify
  * @license MIT
@@ -21,9 +25,16 @@ const FLATTEN_TOLERANCE = 0.25
 // Default curve-fitting tolerance — paper.js' recommended default for
 // mouse/touch freehand input is 2.5.
 const DEFAULT_TOLERANCE = 2.5
-// The explicit "Smooth" action uses a stronger tolerance so each click gives a
-// visible cleanup (paper compares squared distances, so 10 ≈ ~3px max error).
-const SMOOTH_ACTION_TOLERANCE = 10
+// Strength (0-1, from the "Smooth Path" popover) maps linearly onto this
+// tolerance range (paper compares squared distances, so tolerance 10 ≈ ~3px
+// max error).
+const MIN_TOLERANCE = 1
+const MAX_TOLERANCE = 25
+const DEFAULT_STRENGTH = 0.4
+
+// Exported for direct unit testing — pure math, no paper.js dependency.
+export const strengthToTolerance = (strength) =>
+  MIN_TOLERANCE + Math.max(0, Math.min(1, strength)) * (MAX_TOLERANCE - MIN_TOLERANCE)
 
 export const init = (canvas) => {
   const svgCanvas = canvas
@@ -90,37 +101,101 @@ export const init = (canvas) => {
     return parts.length ? parts.join(' ') : null
   }
 
-  /**
-   * Smooth the currently selected `<path>` element, recording one undo step.
-   * @param {number} [tolerance]
-   * @returns {void}
-   */
-  const smoothSelectedPath = (tolerance = SMOOTH_ACTION_TOLERANCE) => {
+  // Non-destructive smoothing session state for the se-smooth-path-settings
+  // popover: `previewBaseline` is the path's `d` as of the moment smoothing
+  // was first previewed for `previewElem`, so repeated strength adjustments
+  // always re-fit from the same untouched shape instead of compounding.
+  // `previewLastD` is the most recent previewed result, needed so
+  // commitSmoothPath can record a single undo step from baseline -> final.
+  let previewElem = null
+  let previewBaseline = null
+  let previewLastD = null
+
+  const getSelectedPath = () => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!elem || elem.tagName !== 'path') {
-      warn('Smooth requires a selected path', null, 'path-simplify')
-      return
-    }
+    return (elem && elem.tagName === 'path') ? elem : null
+  }
 
-    let d
-    try {
-      d = smoothPathD(elem.getAttribute('d'), tolerance)
-    } catch (err) {
-      warn('Smooth path failed', err, 'path-simplify')
-      return
-    }
-    if (!d || d === elem.getAttribute('d')) return
-
-    svgCanvas.undoMgr.beginUndoableChange('d', [elem])
-    elem.setAttribute('d', d)
-    const cmd = svgCanvas.undoMgr.finishUndoableChange()
-    if (!cmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(cmd)
-    }
+  const refreshSelector = (elem) => {
     svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
     svgCanvas.call('changed', [elem])
   }
 
+  /**
+   * Live-preview smoothing the selected path at the given strength, without
+   * recording undo history. Safe to call on every strength-slider tick.
+   * @param {number} [strength] - 0 (barely-there cleanup) to 1 (aggressive).
+   * @returns {void}
+   */
+  const previewSmoothPath = (strength = DEFAULT_STRENGTH) => {
+    const elem = getSelectedPath()
+    if (!elem) {
+      warn('Smooth requires a selected path', null, 'path-simplify')
+      return
+    }
+    if (previewElem !== elem) {
+      previewElem = elem
+      previewBaseline = elem.getAttribute('d')
+    }
+
+    let d
+    try {
+      d = smoothPathD(previewBaseline, strengthToTolerance(strength))
+    } catch (err) {
+      warn('Smooth path preview failed', err, 'path-simplify')
+      return
+    }
+    if (!d) return
+
+    previewLastD = d
+    elem.setAttribute('d', d)
+    refreshSelector(elem)
+  }
+
+  /**
+   * Commit the current preview as one undoable change (baseline -> last
+   * previewed result), then clear the preview session.
+   * @returns {void}
+   */
+  const commitSmoothPath = () => {
+    const elem = previewElem
+    const baseline = previewBaseline
+    const finalD = previewLastD
+    previewElem = null
+    previewBaseline = null
+    previewLastD = null
+    if (!elem || !finalD || finalD === baseline) return
+
+    elem.setAttribute('d', baseline)
+    svgCanvas.undoMgr.beginUndoableChange('d', [elem])
+    elem.setAttribute('d', finalD)
+    const cmd = svgCanvas.undoMgr.finishUndoableChange()
+    if (!cmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(cmd)
+    }
+    refreshSelector(elem)
+  }
+
+  /**
+   * Discard the current preview, restoring the path to its pre-preview `d`
+   * with no undo step recorded (used when the popover is dismissed without
+   * applying).
+   * @returns {void}
+   */
+  const cancelSmoothPath = () => {
+    const elem = previewElem
+    const baseline = previewBaseline
+    previewElem = null
+    previewBaseline = null
+    previewLastD = null
+    if (!elem) return
+
+    elem.setAttribute('d', baseline)
+    refreshSelector(elem)
+  }
+
   svgCanvas.simplifyFreehand = simplifyFreehand
-  svgCanvas.smoothSelectedPath = smoothSelectedPath
+  svgCanvas.previewSmoothPath = previewSmoothPath
+  svgCanvas.commitSmoothPath = commitSmoothPath
+  svgCanvas.cancelSmoothPath = cancelSmoothPath
 }
