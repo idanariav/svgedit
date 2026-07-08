@@ -60,7 +60,7 @@ Grep is still correct for: free-text/comment/string searches, non-symbol pattern
 **Before finalizing any plan or spawning an agent, run a web search.**
 
 When using Plan mode (`/plan`) or spawning agents:
-- Search for current best practices related to the task (e.g. "best practices for X in 2025").
+- Search for current best practices related to the task (e.g. "best practices for X in 2026"). (Current year is 2026).
 - Search for known pitfalls or common mistakes for the approach.
 - Validate that libraries/APIs/patterns used are current and not deprecated.
 - Enrich the plan with findings before presenting it or handing off to an agent.
