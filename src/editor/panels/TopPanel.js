@@ -275,18 +275,30 @@ class TopPanel {
         } else {
           this.hideTool('tool_reorient')
         }
-        if (elname === 'path') {
+        if (elname === 'path' && !isArcPath) {
+          this.displayTool('tool_path_offset')
+        } else {
+          this.hideTool('tool_path_offset')
+        }
+        // Curve-fit smoothing assumes dense freehand point clouds — it
+        // distorts the precise nodes of a hand-authored or converted path.
+        if (elname === 'path' && elem.hasAttribute('data-freehand')) {
           this.displayTool('tool_smooth_path')
         } else {
           this.hideTool('tool_smooth_path')
+        }
+        // Stroke to Path never applies to an already-a-path element (use
+        // node editing directly), and otherwise requires a visible stroke.
+        if (elname === 'path' || !this.editor.svgCanvas.hasVisibleStroke(elem)) {
+          this.hideTool('tool_stroke_to_path')
+        } else {
+          this.displayTool('tool_stroke_to_path')
         }
         $id('tool_reorient').disabled = angle === 0
       } else {
         const point = this.path.getNodePoint()
         $id('tool_add_subpath').pressed = false
-        !this.path.canDeleteNodes
-          ? $id('tool_node_delete').classList.add('disabled')
-          : $id('tool_node_delete').classList.remove('disabled')
+        $id('tool_node_delete').disabled = !this.path.canDeleteNodes
 
         // Show open/close button based on selected point
         // setIcon('#tool_openclose_path', path.closed_subpath ? 'open_path' : 'close_path');
@@ -638,11 +650,7 @@ class TopPanel {
   changeRotationAngle (e) {
     const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.editor.svgCanvas.setRotationAngle(e.target.value)
-    if (Number.parseInt(e.target.value) === 0) {
-      $id('tool_reorient').classList.add('disabled')
-    } else {
-      $id('tool_reorient').classList.remove('disabled')
-    }
+    $id('tool_reorient').disabled = Number.parseInt(e.target.value) === 0
   }
 
   /**

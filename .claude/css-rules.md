@@ -251,6 +251,25 @@ element, `.multiselected_panel` for many) holding all object actions — clone /
 delete / group / arrange / flip / align. Note `.selected_panel` and
 `.multiselected_panel` are **shared** with RightPanel sections, so the same
 `displayTool()` call toggles both the top tray and the matching side-panel section.
+**Gotcha:** `displayTool(name)`/`hideTool(name)` select by CSS **class** (`.${name}`),
+not `id` — a per-button element (e.g. `#tool_topath`) needs a matching
+`class="tool_topath"` on top of its `id`, or the toggle is a silent no-op.
+This bit `tool_topath`/`tool_reorient`/`tool_smooth_path`/`tool_stroke_to_path`/
+`tool_path_offset` in RightPanel.html, which only carried the `id` (fixed 2026-07-09).
+
+**Gotcha:** `se-button`'s `disabled` state (`components/seButton.js`) sets
+`pointer-events: none` on the *inner shadow `div`* only. That does **not**
+block clicks on the host — the browser's hit test just skips the div and
+resolves to the host underneath, so an external `addEventListener('click', ...)`
+bound to the host (e.g. via the `$click` helper) still fires. `seButton.js`'s
+constructor now adds its own capture-phase click guard on the host that calls
+`stopImmediatePropagation()` when `disabled`, so this is safe again — but any
+future rewrite of that component must keep it, and code that wants to
+disable a button **must** set `.disabled = true` (or the `disabled`
+attribute), never `classList.add('disabled')` on the host — that class has
+no effect from outside the shadow root. (`TopPanel.js`'s `changeRotationAngle`/
+pathedit `tool_node_delete` toggle and `Editor.js`'s rotate-drag handler all
+had this exact bug against `tool_reorient`/`tool_node_delete`, fixed 2026-07-09.)
 
 ### `#tools_left` — Left Tool Sidebar
 ```css

@@ -92,6 +92,18 @@ export class ToolButton extends HTMLElement {
     this.$div = this._shadowRoot.querySelector('div')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
+
+    // `.disabled`'s `pointer-events: none` only excludes the inner shadow div
+    // from hit-testing — the click still lands on this host element, so an
+    // external `addEventListener('click', ...)` (e.g. via the `$click`
+    // helper) fires anyway. Block it here, on the host, before it can reach
+    // any other click listener.
+    this.addEventListener('click', (e) => {
+      if (this.disabled) {
+        e.stopImmediatePropagation()
+        e.preventDefault()
+      }
+    }, true)
   }
 
   /**

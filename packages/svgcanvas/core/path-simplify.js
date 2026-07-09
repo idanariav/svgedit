@@ -70,7 +70,8 @@ export const init = (canvas) => {
         attr: {
           id: svgCanvas.getId(),
           d,
-          fill: 'none'
+          fill: 'none',
+          'data-freehand': '1'
         }
       })
     } catch (err) {

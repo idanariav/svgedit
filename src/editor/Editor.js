@@ -970,9 +970,7 @@ class Editor extends EditorStartup {
         case 'rotate': {
           const ang = this.svgCanvas.getRotationAngle(elem)
           $id('angle').value = ang
-          ang === 0
-            ? $id('tool_reorient').classList.add('disabled')
-            : $id('tool_reorient').classList.remove('disabled')
+          $id('tool_reorient').disabled = ang === 0
           break
         }
       }

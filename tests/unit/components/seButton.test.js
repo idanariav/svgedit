@@ -80,6 +80,20 @@ describe('se-button', () => {
     expect(el.src).toBe('foo.svg')
   })
 
+  it('blocks click listeners while disabled (pointer-events:none on the inner div does not stop clicks on the host)', () => {
+    const el = mountElement('se-button')
+    const handler = vi.fn()
+    el.addEventListener('click', handler)
+
+    el.disabled = true
+    el.click()
+    expect(handler).not.toHaveBeenCalled()
+
+    el.disabled = false
+    el.click()
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
   it('registers itself with the hotkey manager on connect when it has an id', () => {
     let registered = null
     installMockSvgEditor({ hotkeys: { registerEl: (opts) => { registered = opts } } })

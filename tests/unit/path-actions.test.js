@@ -561,6 +561,9 @@ describe('PathActions', () => {
 
       expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalled()
       expect(result).toBeDefined()
+      // Marks the path as freehand-drawn so TopPanel can scope "Smooth Path"
+      // to paths this curve-fit algorithm is actually tuned for.
+      expect(result.getAttribute('data-freehand')).toBe('1')
     })
   })
 

@@ -11,6 +11,42 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## `cleanupElement()` stripping `stroke-width="1"` can leave other `getAttribute('stroke-width')` reads seeing `null`/`NaN`
+
+`cleanupElement()` (`packages/svgcanvas/core/utilities.js:1478-1504`, run on every
+element commit via `json.js:137` and `event.js:1280`) removes the
+`stroke-width` attribute entirely whenever its value is exactly `1` — the
+SVG spec's initial value, so this is a reasonable normalization. But it
+means a finished element can have a **real, visible** 1px stroke with no
+`stroke-width` attribute at all. `hasVisibleStroke()`
+(`packages/svgcanvas/core/path-offset.js`, added 2026-07-09) now accounts
+for this — a missing `stroke-width` is treated as `1`, not `0`/`NaN` — but
+that fix is local to that one helper.
+
+Not done now: no full audit of other `elem.getAttribute('stroke-width')`
+call sites in the codebase (panel display fields, other stroke-dependent
+tools like `ext-taper`'s `canTaperStroke`, `normalizeStrokes`, etc.) for the
+same missing-attribute-means-default-1 assumption. Low risk individually per
+call site, but scattered — worth a targeted grep + fix pass rather than a
+speculative blanket change.
+
+## `tool_make_link`, `tool_make_link_multi`, `image_url` still use the broken id-as-class `hideTool`/`displayTool` pattern
+
+Fixed for `tool_topath`/`tool_reorient`/`tool_smooth_path`/`tool_stroke_to_path`
+(2026-07-09, see `css-rules.md`'s `displayTool()`/`hideTool()` gotcha note):
+`hideTool(name)`/`displayTool(name)` in `src/editor/panels/TopPanel.js`
+select by CSS class, but these three targets
+(`TopPanel.js:355-363,1107,1129`) only carry a matching `id` in
+`RightPanel.html`/`TopPanel.html`, not a `class`. Their show/hide calls are
+silent no-ops today — e.g. the "make link" buttons never actually toggle,
+and the image URL field's hide/show around image mode is a no-op.
+
+Not done now: narrower blast radius than the path-tools fix (link/image-url
+UI, not reported broken by a user) and each needs its own template edit +
+manual verification of the surrounding link/image flows before touching it.
+Same one-line-per-button fix pattern (add `class="<id>"` alongside the
+existing `id`) applies.
+
 ## Cutter polyline cuts are scoped to exactly 2 boundary crossings per shape
 
 `packages/svgcanvas/core/cutter.js`'s `cutWithPolyline` (used for multi-point

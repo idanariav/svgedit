@@ -399,7 +399,8 @@ class PathActions {
         attr: {
           id: svgCanvas.getId(),
           d,
-          fill: 'none'
+          fill: 'none',
+          'data-freehand': '1'
         }
       })
       // No need to call "changed", as this is already done under mouseUp

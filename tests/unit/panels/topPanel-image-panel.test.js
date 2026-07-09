@@ -62,6 +62,7 @@ const makeTopPanel = (container, { elem = null, multiselected = false, selectedE
       getMode: () => 'select',
       getSelectedElements: () => selectedElements,
       isImageCropEligible,
+      hasVisibleStroke: () => false,
       undoMgr: { getUndoStackSize: () => 0, getRedoStackSize: () => 0 }
     }
   }

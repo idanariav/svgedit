@@ -22,6 +22,27 @@ const SCALE = 1000
 // Flattening tolerance (in user units) for converting curves to line segments.
 const FLATTEN_TOLERANCE = 0.25
 
+/**
+ * Whether `elem` has a stroke that would produce visible geometry when
+ * converted: a non-'none' color, a positive width (the SVG initial value of
+ * 1 applies when the attribute is absent — `cleanupElement` strips it at
+ * that value), and neither stroke-opacity nor element opacity fully zeroed.
+ * @param {Element} elem
+ * @returns {boolean}
+ */
+export const hasVisibleStroke = (elem) => {
+  const stroke = elem.getAttribute('stroke')
+  if (!stroke || stroke === 'none') return false
+  const strokeWidthAttr = elem.getAttribute('stroke-width')
+  const strokeWidth = strokeWidthAttr === null ? 1 : parseFloat(strokeWidthAttr)
+  if (!(strokeWidth > 0)) return false
+  const strokeOpacity = elem.getAttribute('stroke-opacity')
+  if (strokeOpacity !== null && parseFloat(strokeOpacity) === 0) return false
+  const opacity = elem.getAttribute('opacity')
+  if (opacity !== null && parseFloat(opacity) === 0) return false
+  return true
+}
+
 // Reentrant init: the offset operations are created per SvgCanvas instance
 // (closed over `svgCanvas` below) so several editors can coexist in one
 // realm. Stateless helpers above stay shared.
@@ -168,12 +189,13 @@ const strokeToPath = () => {
     return
   }
 
-  const stroke = elem.getAttribute('stroke')
-  const strokeWidth = parseFloat(elem.getAttribute('stroke-width'))
-  if (!stroke || stroke === 'none' || !(strokeWidth > 0)) {
+  if (!hasVisibleStroke(elem)) {
     warn('Stroke to path requires a visible stroke', null, 'path-offset')
     return
   }
+  const stroke = elem.getAttribute('stroke')
+  const strokeWidthAttr = elem.getAttribute('stroke-width')
+  const strokeWidth = strokeWidthAttr === null ? 1 : parseFloat(strokeWidthAttr)
 
   const scope = getPaperScope()
   const item = getElemAsFlatItem(elem, scope)
@@ -235,4 +257,5 @@ const strokeToPath = () => {
 
   svgCanvas.offsetPath = offsetPath
   svgCanvas.strokeToPath = strokeToPath
+  svgCanvas.hasVisibleStroke = hasVisibleStroke
 }
