@@ -856,8 +856,8 @@ class TopPanel {
    * Uniform stroke-width + round joins/caps across the selection.
    * @returns {void}
    */
-  clickNormalizeStrokes () {
-    this.editor.svgCanvas.normalizeStrokes()
+  clickMatchStrokes () {
+    this.editor.svgCanvas.matchStrokes()
   }
 
   /**
@@ -1251,7 +1251,7 @@ class TopPanel {
     $click($id('tool_topath'), this.convertToPath.bind(this))
     $click($id('tool_stroke_to_path'), this.strokeToPath.bind(this))
     $id('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
-    $click($id('tool_normalize_strokes'), this.clickNormalizeStrokes.bind(this))
+    $click($id('tool_match_strokes'), this.clickMatchStrokes.bind(this))
     $click($id('tool_make_link'), this.makeHyperlink.bind(this))
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
     $click($id('tool_reorient'), this.reorientPath.bind(this))

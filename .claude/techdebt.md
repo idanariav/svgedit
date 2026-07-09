@@ -49,7 +49,7 @@ that fix is local to that one helper.
 
 Not done now: no full audit of other `elem.getAttribute('stroke-width')`
 call sites in the codebase (panel display fields, other stroke-dependent
-tools like `ext-taper`'s `canTaperStroke`, `normalizeStrokes`, etc.) for the
+tools like `ext-taper`'s `canTaperStroke`, `matchStrokes`, etc.) for the
 same missing-attribute-means-default-1 assumption. Low risk individually per
 call site, but scattered — worth a targeted grep + fix pass rather than a
 speculative blanket change.

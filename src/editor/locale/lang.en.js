@@ -268,7 +268,7 @@ export default {
     select_same_fill: 'Select same fill',
     select_same_stroke: 'Select same stroke',
     select_same_type: 'Select same type',
-    normalize_strokes: 'Normalize strokes (uniform width, round joins/caps)',
+    match_strokes: 'Match strokes (uniform width, round joins/caps)',
     reorient_path: 'Reorient path',
     flip_horizontal: 'Flip Horizontally',
     flip_vertical: 'Flip Vertically',

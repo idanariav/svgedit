@@ -411,10 +411,10 @@ const selectSameAs = criterion => {
  * One-click stroke cleanup across the selection (groups included): every
  * stroked element gets the primary element's stroke-width plus round
  * joins/caps — uniform confident linework in one undo step.
- * @function module:selected-elem.SvgCanvas#normalizeStrokes
+ * @function module:selected-elem.SvgCanvas#matchStrokes
  * @returns {void}
  */
-const normalizeStrokes = () => {
+const matchStrokes = () => {
   const selected = svgCanvas.getSelectedElements().filter(Boolean)
   if (!selected.length) return
   const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
@@ -431,7 +431,7 @@ const normalizeStrokes = () => {
   if (!targets.length) return
 
   const width = targets[0].getAttribute('stroke-width') || '1'
-  const batchCmd = new BatchCommand('Normalize strokes')
+  const batchCmd = new BatchCommand('Match strokes')
   const changeAttr = (el, attr, val) => {
     const old = el.getAttribute(attr)
     if (old === val) return
@@ -1586,7 +1586,7 @@ const cycleElement = next => {
   svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
   svgCanvas.transformAgain = transformAgain // Repeat the last duplicate+transform (clone offset by the last committed move delta)
   svgCanvas.selectSameAs = selectSameAs // Select all elements sharing the primary selection's fill/stroke/type
-  svgCanvas.normalizeStrokes = normalizeStrokes // Uniform stroke-width + round joins/caps across the selection
+  svgCanvas.matchStrokes = matchStrokes // Uniform stroke-width + round joins/caps across the selection
   svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
   svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.
   svgCanvas.cycleElement = cycleElement // Select the next/previous element within the current layer.
