@@ -274,6 +274,28 @@ describe('draw.Drawing', function () {
     cleanupSVG(svgN)
   })
 
+  it('Test getNextIdWithPrefix() skips ids used by another live editor in the same document', function () {
+    // Reproduces two editor instances mounted in the same document at once
+    // (e.g. two Obsidian panes each with their own drawing open). Ids must
+    // stay unique across both, not just within the instance minting them,
+    // because SVG paint-server refs (fill="url(#id)") resolve document-wide.
+    const otherSvg = document.createElementNS(NS.SVG, 'svg')
+    document.body.append(otherSvg)
+    const taken = document.createElementNS(NS.SVG, 'line')
+    taken.id = 'svg_foo_1'
+    otherSvg.append(taken)
+
+    document.body.append(svg)
+    try {
+      const doc = new draw.Drawing(svg)
+      assert.equal(doc.getNextIdWithPrefix('svg_foo_'), 'svg_foo_2')
+    } finally {
+      document.body.removeChild(svg)
+      document.body.removeChild(otherSvg)
+      cleanupSVG(svg)
+    }
+  })
+
   it('Test releaseId()', function () {
     const doc = new draw.Drawing(svg)
 

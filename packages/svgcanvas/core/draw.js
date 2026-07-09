@@ -162,13 +162,32 @@ export class Drawing {
   }
 
   /**
+   * Looks up an id within this canvas's own subtree, then falls back to the
+   * whole owner document. Several editor instances can be mounted in the same
+   * document (one per open drawing, e.g. multiple Obsidian panes), and SVG
+   * paint-server references (fill="url(#id)", xlink:href="#id") resolve
+   * against the whole document regardless of which canvas minted the id.
+   * getNextId/getNextIdWithPrefix rely on this for uniqueness — checking only
+   * svgElem_ let a freshly minted id collide with one already used by another
+   * live drawing (e.g. a pasted gradient landing on an id an open source
+   * drawing still uses for an unrelated element), silently breaking its paint
+   * ref. The subtree check runs first so a detached svgElem_ (never inserted
+   * into a document, e.g. in unit tests) still resolves correctly.
    * @param {string} id Element ID to retrieve
    * @returns {Element} SVG element within the root SVGSVGElement
    */
   getElem_ (id) {
     if (this.svgElem_.querySelector) {
-      // querySelector lookup
-      return this.svgElem_.querySelector(`#${id}`)
+      // Check this canvas's own subtree first (also covers a detached
+      // svgElem_ never inserted into a document, e.g. in unit tests), then
+      // fall back to the whole owner document so a fresh id can't collide
+      // with one already used by another live editor instance mounted
+      // elsewhere in the page.
+      return (
+        this.svgElem_.querySelector(`#${id}`) ||
+        (this.svgElem_.ownerDocument && this.svgElem_.ownerDocument.querySelector(`#${id}`)) ||
+        null
+      )
     }
     // jQuery lookup: twice as slow as xpath in FF
     return this.svgElem_.querySelector(`[id=${id}]`)
