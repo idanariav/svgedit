@@ -231,13 +231,15 @@ export const init = canvas => {
     case 'path':
       break
     default:
-      // For elements like 'use', ensure transforms are handled correctly
+      // A matrix combined with a rotation is left as-is (rotation must stay a
+      // separate transform; see the group/non-group rotation handling below).
+      // A lone matrix (e.g. the consolidated drag-move transform mouseUpEvent
+      // builds from the temporary drag translate) falls through to the
+      // matrix-operation branch below so it gets baked into geometry.
       if (
-        (tlist.numberOfItems === 1 &&
-          tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX) ||
-        (tlist.numberOfItems === 2 &&
-          tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX &&
-          tlist.getItem(1).type === SVGTransform.SVG_TRANSFORM_ROTATE)
+        tlist.numberOfItems === 2 &&
+        tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX &&
+        tlist.getItem(1).type === SVGTransform.SVG_TRANSFORM_ROTATE
       ) {
         return null
       }

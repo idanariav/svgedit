@@ -294,3 +294,39 @@ via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
 (`{angle,length,blur,opacity,color}`) captured/re-applied via `svgEditor.shadowApi`
 (from ext-shadow) — a drop shadow can't be stamped as a flat attribute, so it is
 rebuilt per-element into the same undo batch on apply.
+
+### Live position/dimension readout while dragging (move/resize)
+
+While a select-mode move or resize drag is in progress, the geometry only
+exists as a temporary `transform` on the element — real x/y/width/height/etc.
+attributes aren't baked until mouseup (`recalculateDimensions`). To keep the
+General/Dimensions panel fields tracking the drag instead of showing the
+pre-drag values, `packages/svgcanvas/core/event.js`'s `mouseMoveEvent` stashes
+the live delta/scale on the canvas instance right before firing the
+`'transition'` event: `svgCanvas.dragLiveMoveDelta = {dx, dy}` (`'select'`
+case) or `svgCanvas.dragLiveResizeBox = {left, top, width, height, tx, ty, sx,
+sy}` (`'resize'` case, same anchor/scale values used to build the temporary
+translate-scale-translate transform). `Editor.js`'s `elementTransition` reads
+these (mirroring the existing `'rotate'` case) and calls
+`TopPanel.updateLiveMove(elem, dx, dy)` / `TopPanel.updateLiveResize(elem,
+box)`, which write directly into the relevant fields (not a full
+`updateContextPanel()` — those would re-read the still-unbaked attributes and
+show stale values).
+
+`recalculateDimensions` (`packages/svgcanvas/core/recalculate.js`) has a
+`default:`-case guard that bails out (returns `null`, leaving the transform
+in place) when the tlist is a lone matrix+rotation (2 items) — this is
+intentional (rotation must stay a separate transform). It used to *also*
+bail out for a lone plain matrix (1 item, no rotation) — which is exactly
+what a consolidated drag-move's temporary translate turns into — silently
+leaving a `transform="matrix(...)"` on the element forever with `x`/`y`
+never updated. That single-item disjunct was removed; only the 2-item
+matrix+rotation combo still returns early. `event.js`'s `mouseUpEvent` also
+now fires `'changed'` after every committed move (previously only after
+resize), so `updateContextPanel()` refreshes with the newly baked values
+once the drag ends.
+
+Panel values are rounded to 1 decimal (`round1` helper in `TopPanel.js`, same
+convention as `font_size`) since resize/scale math can produce long float
+tails (e.g. `200.00000596046448`) — display only, not the underlying SVG
+attribute precision.

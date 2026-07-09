@@ -973,6 +973,20 @@ class Editor extends EditorStartup {
           $id('tool_reorient').disabled = ang === 0
           break
         }
+        case 'select': {
+          const delta = this.svgCanvas.dragLiveMoveDelta
+          if (delta) {
+            this.topPanel.updateLiveMove(elem, delta.dx, delta.dy)
+          }
+          break
+        }
+        case 'resize': {
+          const box = this.svgCanvas.dragLiveResizeBox
+          if (box) {
+            this.topPanel.updateLiveResize(elem, box)
+          }
+          break
+        }
       }
     }
     this.svgCanvas.runExtensions(

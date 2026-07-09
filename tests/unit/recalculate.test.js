@@ -1048,6 +1048,39 @@ describe('recalculate', function () {
     assert.equal(cmd, null)
   })
 
+  it('recalculateDimensions() bakes a lone non-identity matrix on a rect into x/y', () => {
+    // Regression: a plain drag-move consolidates its temporary translate into
+    // a single matrix transform (see event.js mouseUpEvent). That matrix must
+    // still be baked into geometry here, not left dangling on the element.
+    setUpRect()
+    elem.setAttribute('transform', 'matrix(1,0,0,1,40,30)')
+
+    const cmd = recalculateCanvas.recalculateDimensions(elem)
+
+    assert.ok(cmd)
+    assert.equal(elem.hasAttribute('transform'), false)
+    assert.equal(elem.getAttribute('x'), '240')
+    assert.equal(elem.getAttribute('y'), '180')
+  })
+
+  it('recalculateDimensions() bakes a lone non-identity matrix on a circle into cx/cy', () => {
+    setUp()
+
+    const circle = document.createElementNS(NS.SVG, 'circle')
+    circle.setAttribute('cx', '50')
+    circle.setAttribute('cy', '50')
+    circle.setAttribute('r', '20')
+    circle.setAttribute('transform', 'matrix(1,0,0,1,10,5)')
+    svg.append(circle)
+
+    const cmd = recalculateCanvas.recalculateDimensions(circle)
+
+    assert.ok(cmd)
+    assert.equal(circle.hasAttribute('transform'), false)
+    assert.equal(circle.getAttribute('cx'), '60')
+    assert.equal(circle.getAttribute('cy'), '55')
+  })
+
   it('recalculateDimensions() handles group with rotation', () => {
     setUp()
 

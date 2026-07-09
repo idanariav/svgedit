@@ -369,6 +369,10 @@ const mouseMoveEvent = (evt) => {
               svgCanvas.selectorManager.requestSelector(el).resize()
             }
           })
+          // Live readout for the position panels (attributes stay untouched
+          // until mouseup's recalculateDimensions, so panels need this delta
+          // to show the in-progress position instead of the pre-drag value).
+          svgCanvas.dragLiveMoveDelta = { dx: ldx, dy: ldy }
           svgCanvas.call('transition', selectedElements)
         }
       }
@@ -512,6 +516,11 @@ const mouseMoveEvent = (evt) => {
       }
 
       svgCanvas.selectorManager.requestSelector(selected).resize()
+      // Live readout for the dimension panels — mirrors the anchor-based
+      // scale transform being applied above so panels track the in-progress
+      // resize instead of the pre-drag value (baked into attributes only at
+      // mouseup via recalculateDimensions).
+      svgCanvas.dragLiveResizeBox = { left, top, width, height, tx, ty, sx, sy }
       svgCanvas.call('transition', selectedElements)
 
       break
@@ -969,12 +978,11 @@ const mouseUpEvent = (evt) => {
               svgCanvas.lastMoveDelta = pendingMove
             }
             svgCanvas.addCommandToHistory(batchCmd)
-            // A resize bakes the scale into real attributes (font-size, width, height, …)
-            // via recalculateDimensions. Fire 'changed' so the context panel reflects the
-            // new values instead of the pre-resize ones.
-            if (operationMode === 'resize') {
-              svgCanvas.call('changed', selectedElements.filter(Boolean))
-            }
+            // A move/resize bakes the new position/scale into real attributes
+            // (x/y, width/height, font-size, …) via recalculateDimensions.
+            // Fire 'changed' so the context panel reflects those new values
+            // instead of the pre-drag ones.
+            svgCanvas.call('changed', selectedElements.filter(Boolean))
           }
 
           // Clear the stored transforms AND reset the flag together

@@ -6,6 +6,11 @@ import topPanelHTML from './TopPanel.html'
 
 const { $click, isValidUnit, getTypeMap, convertUnit } = SvgCanvas
 
+// Position/dimension fields read straight off drag math (move/resize) can
+// carry long floating-point tails (e.g. 200.00000596046448) — round for
+// display, same convention already used for font_size.
+const round1 = (n) => Number(Number(n).toFixed(1))
+
 // Panel classes hidden at the start of every updateContextPanel() pass,
 // before the current selection decides which (if any) to show again.
 const STANDARD_CONTEXT_PANELS = [
@@ -252,12 +257,13 @@ class TopPanel {
            * @param {number} newValue - The new numeric value to set in the input field.
            */
           const updateValue = (id, newValue) => {
+            const rounded = round1(newValue)
             const currentValue = $id(id).value // Get current value from the field
             // do nothing if nothing changed...
-            if (parseFloat(currentValue) === newValue) {
+            if (parseFloat(currentValue) === rounded) {
               return
             }
-            $id(id).value = newValue
+            $id(id).value = rounded
           }
 
           updateValue('selected_x', x)
@@ -376,7 +382,7 @@ class TopPanel {
             const bv = elem[item].baseVal.value
             attrVal = convertUnit(bv)
           }
-          $id(`${tagName}_${item}`).value = attrVal || 0
+          $id(`${tagName}_${item}`).value = attrVal ? round1(attrVal) : 0
         })
 
         if (tagName === 'image') {
@@ -532,6 +538,98 @@ class TopPanel {
       )
     } else {
       $id('selLayerNames').setAttribute('disabled', 'disabled')
+    }
+  }
+
+  /**
+   * Live position readout while a single element is being dragged in select
+   * mode. The drag only applies a temporary transform — attributes aren't
+   * baked until mouseup's recalculateDimensions — so this adds the live
+   * delta to the (unchanged) pre-drag attribute/bbox values rather than
+   * re-reading stale attributes via updateContextPanel.
+   * @param {Element} elem
+   * @param {number} dx
+   * @param {number} dy
+   * @returns {void}
+   */
+  updateLiveMove (elem, dx, dy) {
+    const { $id } = this.editor
+    const { tagName } = elem
+    const num = (v) => (parseFloat(v) || 0)
+
+    if (['circle', 'ellipse'].includes(tagName)) {
+      $id(`${tagName}_cx`).value = round1(num(elem.getAttribute('cx')) + dx)
+      $id(`${tagName}_cy`).value = round1(num(elem.getAttribute('cy')) + dy)
+    } else if (tagName === 'line') {
+      $id('line_x1').value = round1(num(elem.getAttribute('x1')) + dx)
+      $id('line_y1').value = round1(num(elem.getAttribute('y1')) + dy)
+      $id('line_x2').value = round1(num(elem.getAttribute('x2')) + dx)
+      $id('line_y2').value = round1(num(elem.getAttribute('y2')) + dy)
+    } else if (['g', 'polyline', 'path'].includes(tagName)) {
+      const bb = this.editor.svgCanvas.getStrokedBBox([elem])
+      if (bb) {
+        $id('selected_x').value = round1(bb.x + dx)
+        $id('selected_y').value = round1(bb.y + dy)
+      }
+    } else if (tagName !== 'polygon') {
+      $id('selected_x').value = round1(num(elem.getAttribute('x')) + dx)
+      $id('selected_y').value = round1(num(elem.getAttribute('y')) + dy)
+    }
+  }
+
+  /**
+   * Live dimension readout while a single element is being resized via a
+   * selection grip. `box` carries the same anchor/scale values event.js just
+   * used to build the temporary translate-scale-translate transform, so this
+   * mirrors that math onto the visible panel fields instead of the (still
+   * unchanged) pre-drag attributes.
+   * @param {Element} elem
+   * @param {{left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number}} box
+   * @returns {void}
+   */
+  updateLiveResize (elem, box) {
+    const { $id } = this.editor
+    const { tagName } = elem
+    const anchorX = box.left + box.tx
+    const anchorY = box.top + box.ty
+    const scalePt = (px, py) => ({
+      x: anchorX + (px - anchorX) * box.sx,
+      y: anchorY + (py - anchorY) * box.sy
+    })
+    const num = (v) => (parseFloat(v) || 0)
+
+    if (tagName === 'line') {
+      const p1 = scalePt(num(elem.getAttribute('x1')), num(elem.getAttribute('y1')))
+      const p2 = scalePt(num(elem.getAttribute('x2')), num(elem.getAttribute('y2')))
+      $id('line_x1').value = round1(p1.x)
+      $id('line_y1').value = round1(p1.y)
+      $id('line_x2').value = round1(p2.x)
+      $id('line_y2').value = round1(p2.y)
+      return
+    }
+
+    const width = box.width * box.sx
+    const height = box.height * box.sy
+    const { x, y } = scalePt(box.left, box.top)
+
+    if (tagName === 'circle') {
+      $id('circle_cx').value = round1(x + width / 2)
+      $id('circle_cy').value = round1(y + height / 2)
+      $id('circle_r').value = round1((width + height) / 4)
+    } else if (tagName === 'ellipse') {
+      $id('ellipse_cx').value = round1(x + width / 2)
+      $id('ellipse_cy').value = round1(y + height / 2)
+      $id('ellipse_rx').value = round1(width / 2)
+      $id('ellipse_ry').value = round1(height / 2)
+    } else {
+      if (['rect', 'image'].includes(tagName)) {
+        $id(`${tagName}_width`).value = round1(width)
+        $id(`${tagName}_height`).value = round1(height)
+      }
+      if (tagName !== 'polygon') {
+        $id('selected_x').value = round1(x)
+        $id('selected_y').value = round1(y)
+      }
     }
   }
 
