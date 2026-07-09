@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs as getBaseStyleAttrs, svgToPaper } from './paper-utils.js'
+import { getPaperScope, getStyleAttrs as getBaseStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { warn } from '../common/logger.js'
 
 // Ignore slivers below this absolute area (user units²).
@@ -164,7 +164,7 @@ export const init = (canvas) => {
       const path = doc.createElementNS(NSSVG, 'path')
       const style = getStyleAttrs(styleSrc)
       for (const [k, v] of Object.entries(style)) path.setAttribute(k, v)
-      path.setAttribute('d', d)
+      path.setAttribute('d', toAbsolutePathData(d, svgCanvas))
       path.id = svgCanvas.getNextId()
       place(path)
       batchCmd.addSubCommand(new InsertElementCommand(path))

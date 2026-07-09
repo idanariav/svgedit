@@ -45,6 +45,28 @@ export const getStyleAttrs = (elem, extraAttrs = []) => {
   return styleAttrs
 }
 
+// Scratch element reused to run path data through pathActions.convertPath
+// (never inserted into the document).
+let normalizeScratch = null
+
+/**
+ * paper.js's `pathData` getter emits relative/shorthand SVG commands, but
+ * svgedit's node-edit machinery (the absolute-only `segData` map in
+ * path.js) can only represent absolute M/L/C/Z segments — opening a path
+ * built straight from `pathData` for node editing throws. Normalize to
+ * absolute commands, via the same `pathSegList`-based conversion the
+ * editor's own path tooling already relies on (`pathActions.convertPath`),
+ * before it reaches the DOM.
+ * @param {string} d
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
+ * @returns {string}
+ */
+export const toAbsolutePathData = (d, svgCanvas) => {
+  if (!normalizeScratch) normalizeScratch = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  normalizeScratch.setAttribute('d', d)
+  return svgCanvas.pathActions.convertPath(normalizeScratch, false)
+}
+
 /**
  * Convert an SVG element to a paper.js item (Path or CompoundPath) with its
  * own transform applied. Returns null if the element cannot be converted.

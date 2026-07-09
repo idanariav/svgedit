@@ -346,6 +346,48 @@
   display: inline-flex;
 }
 
+/* Shape Builder hint bar — instructions, a live picked-region count, and an
+   explicit exit affordance, shown over the workarea while a shapebuilder
+   session is active. Same grid-cell-sibling pattern as #layer_focus_badge so
+   it stays pinned to the top instead of scrolling with the canvas. */
+#shape_builder_hint {
+  grid-area: workarea;
+  align-self: start;
+  justify-self: center;
+  margin-top: 10px;
+  z-index: 6;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+#shape_builder_hint.visible {
+  display: inline-flex;
+}
+#shape_builder_hint .sb-hint-count {
+  color: var(--accent);
+  font-weight: 600;
+}
+#shape_builder_hint .sb-hint-done {
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+#shape_builder_hint .sb-hint-done:hover {
+  background: var(--icon-hover-bg);
+}
+
 /* #svgcanvas is the (over-sized) scroll/pan area, not the document page, so it
    must stay transparent. The "paper" appearance lives on #canvasBackground
    below, which is sized to the document and scales with zoom. */

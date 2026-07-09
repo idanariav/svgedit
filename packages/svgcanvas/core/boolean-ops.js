@@ -10,7 +10,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
+import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.js'
 import { warn } from '../common/logger.js'
 
@@ -142,7 +142,7 @@ const createResultPath = (result, bottomElem, styleAttrs, canvas, newPaths, batc
     element: 'path',
     attr: {
       id: canvas.getNextId(),
-      d: result.pathData,
+      d: toAbsolutePathData(result.pathData, canvas),
       ...styleAttrs
     }
   })

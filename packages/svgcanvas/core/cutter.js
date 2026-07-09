@@ -12,7 +12,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
+import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getMatrixToContent, isIdentity } from './math.js'
 import { warn } from '../common/logger.js'
 
@@ -288,7 +288,7 @@ const replaceWithPieces = (svgCanvas, elem, piece1, piece2, batchCmd, resultElem
   for (const piece of [piece1, piece2]) {
     const attr = {
       id: svgCanvas.getNextId(),
-      d: piece.pathData,
+      d: toAbsolutePathData(piece.pathData, svgCanvas),
       ...styleAttrs
     }
     if (compensation) {

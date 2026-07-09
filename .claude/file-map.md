@@ -160,7 +160,7 @@
 | `core/sanitize.js` | SVG security sanitization |
 | `core/text-actions.js` | Text cursor/selection editing |
 | `core/layer.js` | Layer CRUD |
-| `core/paper-utils.js` | Shared paper.js helpers used by boolean-ops/cutter/path-offset/shape-builder/taper-stroke/path-simplify: `getPaperScope()` (one lazy singleton, shared across all six), `getStyleAttrs(elem, extraAttrs)`, `svgToPaper(elem, scope, {asCompoundPath, flatten})` |
+| `core/paper-utils.js` | Shared paper.js helpers used by boolean-ops/cutter/path-offset/shape-builder/taper-stroke/path-simplify: `getPaperScope()` (one lazy singleton, shared across all six), `getStyleAttrs(elem, extraAttrs)`, `svgToPaper(elem, scope, {asCompoundPath, flatten})`, `toAbsolutePathData(d, svgCanvas)` (paper.js's `pathData` getter emits relative/shorthand commands that svgedit's node-edit machinery can't represent — normalizes via `pathActions.convertPath`; wrap any `d: item.pathData` assignment with it or the result crashes on node-edit entry — currently applied in shape-builder/boolean-ops/cutter, see `techdebt.md` for the other three) |
 | `core/boolean-ops.js` | Union, intersect, subtract, exclude (XOR), divide (split bottom by top into separate pieces) |
 | `core/path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening) |
 | `core/path-simplify.js` | `simplifyFreehand(polyline, tol)` (pencil-commit curve fitting) + `previewSmoothPath(strength)`/`commitSmoothPath()`/`cancelSmoothPath()` ("Smooth Path" popover, non-destructive session baseline) via paper.js `simplify()` (flatten→refit for existing paths) |

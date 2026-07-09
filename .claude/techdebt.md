@@ -11,6 +11,30 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## `path-offset`/`taper-stroke`/`path-simplify` may share the relative-path-data node-edit crash fixed in shape-builder/boolean-ops/cutter
+
+Fixed 2026-07-09: paper.js's `Path#pathData` getter emits relative/shorthand
+SVG commands, but svgedit's node-edit machinery (the absolute-only `segData`
+map in `packages/svgcanvas/core/path.js`) can only represent absolute
+M/L/C/Z segments — opening a path built straight from `pathData` for node
+editing threw `Cannot read properties of undefined (reading 'map')`
+(`path-method.js`'s `ptObjToArrMethod`). Fixed via a new
+`toAbsolutePathData(d, svgCanvas)` helper in `core/paper-utils.js` (delegates
+to the existing `pathActions.convertPath`, which is `pathSegList`-based —
+native `getPathData`/`setPathData` are **not** available in this project's
+target browsers/Playwright Chromium, only the legacy `pathSegList` API via
+the `pathseg` polyfill) — applied at the `d`-assignment site in
+`shape-builder.js`, `boolean-ops.js`, and `cutter.js`.
+
+Not done now: `path-offset.js`, `taper-stroke.js`, and `path-simplify.js`
+also call `.pathData` on paper.js items (`core/path-offset.js`,
+`core/taper-stroke.js:98,131`, `core/path-simplify.js:63,99`) and were not
+audited/tested for the same crash — their outputs may or may not end up
+node-editable depending on whether their result paths get reused elsewhere
+before an SVG-command-based assignment. Apply the same
+`toAbsolutePathData(d, svgCanvas)` wrap at their `d`-assignment call sites if
+a similar node-edit crash is reported for offset/taper/smoothed paths.
+
 ## `cleanupElement()` stripping `stroke-width="1"` can leave other `getAttribute('stroke-width')` reads seeing `null`/`NaN`
 
 `cleanupElement()` (`packages/svgcanvas/core/utilities.js:1478-1504`, run on every

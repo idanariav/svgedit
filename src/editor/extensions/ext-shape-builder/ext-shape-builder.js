@@ -10,9 +10,12 @@
  * region under the cursor; click or drag across regions and release to
  * **merge** them into one shape (carved out of the sources), or hold **Alt**
  * to delete them. Each gesture is one undo step and the session continues
- * with the resulting shapes; press Escape (or switch tool) to leave, and the
- * mode also exits when fewer than 2 shapes remain or an outside change
- * (e.g. undo) invalidates the session.
+ * with the resulting shapes; press Escape, switch tool, or click **Done** on
+ * the `#shape_builder_hint` bar to leave — that same bar shows the usage
+ * instructions and a live picked-region count so the click/drag/Alt
+ * distinctions aren't only discoverable via the toolbar tooltip. The mode
+ * also exits when fewer than 2 shapes remain or an outside change (e.g.
+ * undo) invalidates the session.
  *
  * @license Apache-2.0
  */
@@ -47,6 +50,7 @@ export default {
     let regionPaths = [] // overlay <path> per region index
     let picked = new Set()
     let started = false
+    let hintEl = null
 
     // Overlay: a zoom-scaled group inside an svg aligned with #svgcontent.
     const overlay = svgdoc.createElementNS(NS.SVG, 'svg')
@@ -71,6 +75,28 @@ export default {
       scaleGroup.setAttribute('transform', `scale(${svgCanvas.getZoom()})`)
     }
 
+    // On-canvas hint: usage instructions + a live picked-region count + an
+    // explicit "Done" exit, so the mode's flexibility (single click vs. drag
+    // vs. Alt) and how to leave it aren't only discoverable via a tooltip.
+    const ensureHint = () => {
+      if (hintEl) return hintEl
+      hintEl = document.createElement('div')
+      hintEl.id = 'shape_builder_hint'
+      hintEl.innerHTML = `
+        <span class="sb-hint-text">${svgEditor.i18next.t(`${name}:hint`)}</span>
+        <span class="sb-hint-count"></span>
+        <button type="button" class="sb-hint-done">${svgEditor.i18next.t(`${name}:done`)}</button>
+      `
+      hintEl.querySelector('.sb-hint-done').addEventListener('click', () => svgCanvas.setMode('select'))
+      svgEditor.$svgEditor.append(hintEl)
+      return hintEl
+    }
+
+    const updateHintCount = (n) => {
+      ensureHint().querySelector('.sb-hint-count').textContent =
+        n > 0 ? svgEditor.i18next.t(`${name}:picked`, { count: n }) : ''
+    }
+
     const renderRegions = (descs) => {
       regionPaths = []
       const frag = svgdoc.createDocumentFragment()
@@ -90,6 +116,8 @@ export default {
       scaleGroup.replaceChildren(frag)
       syncOverlay()
       overlay.style.display = 'block'
+      ensureHint().classList.add('visible')
+      updateHintCount(0)
     }
 
     const paintStates = (hoverIndex) => {
@@ -98,6 +126,7 @@ export default {
           ? PICK_FILL
           : i === hoverIndex ? HOVER_FILL : 'transparent')
       })
+      updateHintCount(picked.size)
     }
 
     /** Client coords → content units (CLAUDE.md coordinate contract). */
@@ -125,6 +154,7 @@ export default {
       regionPaths = []
       scaleGroup.replaceChildren()
       overlay.style.display = 'none'
+      hintEl?.classList.remove('visible')
       svgCanvas.shapeBuilder.end()
     }
 
