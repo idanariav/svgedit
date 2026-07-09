@@ -28,7 +28,7 @@ export const getPaperScope = () => {
 
 // Style attributes inherited when a paper.js result is turned back into an
 // SVG element.
-const BASE_STYLE_ATTRS = ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'opacity']
+const BASE_STYLE_ATTRS = ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'opacity', 'paint-order']
 
 /**
  * Collect inheritable style attributes from an element.
