@@ -434,16 +434,7 @@ class TabletShell {
   /* ─────────────────── canvas event wiring ─────────────────── */
 
   bindEvents () {
-    // `svgCanvas.bind` keeps only ONE handler per event, and EditorStartup binds
-    // its own `selected`/`changed`/`zoomed` handlers AFTER this runs — so binding
-    // here would be overwritten. Instead wrap the Editor's handler methods (which
-    // get bound just after init); our logic runs right after the desktop one.
-    const ed = this.editor
-    const wrap = (name, after) => {
-      const orig = ed[name].bind(ed)
-      ed[name] = (...args) => { const r = orig(...args); after(...args); return r }
-    }
-    wrap('selectedChanged', (_win, elems) => {
+    this.svgCanvas.bind('selected', (_win, elems) => {
       this.selectedElems = (elems || []).filter(Boolean)
       if (this.selectedElems.length) {
         this.buildSheet()
@@ -453,8 +444,8 @@ class TabletShell {
       }
       this.syncHistory()
     })
-    wrap('elementChanged', () => { this.syncSheetValues(); this.syncHistory() })
-    wrap('zoomChanged', () => this.syncZoom())
+    this.svgCanvas.bind('changed', () => { this.syncSheetValues(); this.syncHistory() })
+    this.svgCanvas.bind('zoomed', () => this.syncZoom())
     document.addEventListener('modeChange', () => {
       const mode = this.svgCanvas.getMode()
       this.syncTools(mode)

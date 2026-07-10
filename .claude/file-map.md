@@ -41,7 +41,7 @@
 | `BottomPanel.html` | Bottom "Colors" bar markup (fill/stroke/bg pickers + palette) |
 | `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
 | `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
-| `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, wraps the Editor's `selectedChanged`/`elementChanged`/`zoomChanged` handlers (because `svgCanvas.bind` keeps only one handler per event), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
+| `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native `EventTarget`, so multiple handlers per event coexist), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
 | `TabletShell.html` | Tablet shell skeleton (`.tablet-shell` overlay: `.ts-topbar` command bar + `.ts-sheet` bottom sheet) |
 
 ---

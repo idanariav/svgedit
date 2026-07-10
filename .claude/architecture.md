@@ -142,9 +142,10 @@ src/editor/index.html
                     │                          //   physically live elsewhere)
                     ├── mainMenu.init()
                     ├── tabletShell.init()     // builds tablet command bar + sheet;
-                    │                          //   wraps Editor.selectedChanged/
-                    │                          //   elementChanged/zoomChanged BEFORE the
-                    │                          //   svgCanvas event binds below run
+                    │                          //   binds its own selected/changed/zoomed
+                    │                          //   handlers directly (svgCanvas.bind is
+                    │                          //   backed by a native EventTarget, so this
+                    │                          //   coexists with the binds registered below)
                     ├── bind svgCanvas events:
                     │     selected   → selectedChanged()   // update attribute panels
                     │     changed    → elementChanged()    // update coordinates

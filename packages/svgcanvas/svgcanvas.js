@@ -110,12 +110,13 @@ const CLIPBOARD_ID = 'svgedit_clipboard'
  * @memberof module:svgcanvas
  *
  */
-class SvgCanvas {
+class SvgCanvas extends EventTarget {
   /**
    * @param {HTMLElement} container - The container HTML element that should hold the SVG root element
    * @param {module:SVGeditor.configObj.curConfig} config - An object that contains configuration data
    */
   constructor (container, config, scopeRoot = null) {
+    super()
     // imported function made available as methods
     this.initializeSvgCanvasMethods()
     unitsInit(this)
@@ -135,7 +136,6 @@ class SvgCanvas {
     this.rubberBox = null // DOM element for selection rectangle drawn by the user
     this.curBBoxes = [] // Array of current BBoxes, used in getIntersectionList().
     this.lastClickPoint = null // Canvas point for the most recent right click
-    this.events = {} // Object to contain editor event names and callback functions
     this.rootSctm = null // Root Current Transformation Matrix in user units
     this.drawnPath = null
     this.freehand = {
@@ -990,23 +990,23 @@ class SvgCanvas {
   }
 
   call (ev, arg) {
-    if (this.events[ev]) {
-      return this.events[ev](window, arg)
-    }
-    return undefined
+    const evt = new CustomEvent(ev, { detail: { arg } })
+    this.dispatchEvent(evt)
+    return evt.detail.result
   }
 
   /**
-   * Attaches a callback function to an event.
+   * Attaches a callback function to an event. Multiple handlers may be bound
+   * to the same event name — each fires in registration order, backed by the
+   * native `EventTarget` this class extends (previously a single-slot
+   * registry where a later `bind()` silently clobbered an earlier one).
    * @function module:svgcanvas.SvgCanvas#bind
    * @param  {string} ev - String indicating the name of the event
    * @param {module:svgcanvas.EventHandler} f - The callback function to bind to the event
-   * @returns {module:svgcanvas.EventHandler} The previous event
+   * @returns {void}
    */
   bind (ev, f) {
-    const old = this.events[ev]
-    this.events[ev] = f
-    return old
+    this.addEventListener(ev, (e) => { e.detail.result = f(window, e.detail.arg) })
   }
 
   /**
