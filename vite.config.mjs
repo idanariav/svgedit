@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import dynamicImportVars from '@rollup/plugin-dynamic-import-vars'
-import string from 'vite-plugin-string'
+import string, { defaultCompress } from 'vite-plugin-string'
 import istanbul from 'vite-plugin-istanbul'
 
 const editorEntries = [
@@ -9,13 +9,34 @@ const editorEntries = [
 ]
 
 const coverageEnabled = process.env.COVERAGE === 'true' || process.env.NODE_ENV === 'test'
+
+// vite-plugin-string's default compressor treats `&` and `;` as operators
+// (meant for shader source like `a && b;`) and strips whitespace around
+// them, which mangles HTML entities: "Stroke &amp; Opacity" collapses to
+// "Stroke &amp;Opacity", rendering as "Stroke&Opacity". Swap each whole
+// entity for an alphanumeric-only placeholder before compression (so none
+// of its whitespace-adjacent symbols can trigger the stripping) and restore
+// the original entity text after.
+function compressHtmlPreservingEntities (code) {
+  const entities = []
+  const shielded = code.replace(/&[a-zA-Z#][a-zA-Z0-9]*;/g, (entity) => {
+    entities.push(entity)
+    return `ENTITYPLACEHOLDER${entities.length - 1}END`
+  })
+  return defaultCompress(shielded).replace(
+    /ENTITYPLACEHOLDER(\d+)END/g,
+    (_match, index) => entities[Number(index)]
+  )
+}
+
 const htmlStringPlugin = string({
   include: [
     'src/editor/dialogs/**/*.html',
     'src/editor/panels/*.html',
     'src/editor/templates/*.html',
     'src/editor/extensions/*/*.html'
-  ]
+  ],
+  compress: compressHtmlPreservingEntities
 })
 htmlStringPlugin.enforce = 'post'
 
