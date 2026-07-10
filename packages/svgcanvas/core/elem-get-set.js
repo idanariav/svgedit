@@ -1328,16 +1328,13 @@ const setBackgroundMethod = (color, url, gradientElem) => {
     bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
     bg.insertBefore(bgDefs, border)
     const grad = gradientElem.cloneNode(true)
-    // A fresh id per application keeps the `fill` reference string unique. The
-    // drawing's nonce namespaces it across instances: multiple editors can mount
-    // into one host document where SVG `url(#id)` paint refs resolve document-wide,
-    // so a bare `background_gradient_N` from one canvas would bind a second
-    // canvas's background rect to the first's gradient (it renders white once the
-    // first is removed). The per-canvas nonce keeps the ids from colliding.
-    const nonce = svgCanvas.getCurrentDrawing().getNonce()
-    const gradId = nonce
-      ? `background_gradient_${nonce}_${++bgGradientSeq}`
-      : `background_gradient_${++bgGradientSeq}`
+    // A fresh id per application keeps the `fill` reference string unique
+    // (see the <defs>-identity comment above). getNonceId additionally
+    // namespaces it by the drawing's nonce so multiple editors mounted into
+    // one host document — where SVG `url(#id)` paint refs resolve
+    // document-wide — can't have a second canvas's background rect bind to
+    // the first's gradient.
+    const gradId = svgCanvas.getNonceId(`background_gradient_${++bgGradientSeq}`)
     grad.id = gradId
     bgDefs.appendChild(grad)
     border.setAttribute('fill', `url(#${gradId})`)

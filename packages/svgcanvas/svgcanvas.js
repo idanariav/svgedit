@@ -854,6 +854,10 @@ class SvgCanvas {
     return this.getCurrentDrawing().getNextIdWithPrefix(prefix)
   }
 
+  getNonceId (base) {
+    return this.getCurrentDrawing().getNonceId(base)
+  }
+
   getCurCommand () {
     return this.curCommand
   }

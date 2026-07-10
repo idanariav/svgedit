@@ -49,10 +49,16 @@ export default {
     })
     canvBG.appendChild(canvasGrid)
     const gridDefs = svgdoc.createElementNS(NS.SVG, 'defs')
-    // grid-pattern
+    // grid-pattern and grid-clip are referenced below via fill/clip-path
+    // url(#...), which the browser resolves document-wide (not through any
+    // of svgedit's scoped $id lookups) — a bare literal id here would let a
+    // second open drawing's grid rect/lines bind to this canvas's pattern or
+    // clip instead of its own. getNonceId namespaces them per drawing.
+    const gridPatternId = svgCanvas.getNonceId('gridpattern')
+    const gridClipId = svgCanvas.getNonceId('gridclip')
     const gridPattern = svgdoc.createElementNS(NS.SVG, 'pattern')
     assignAttributes(gridPattern, {
-      id: 'gridpattern',
+      id: gridPatternId,
       patternUnits: 'userSpaceOnUse',
       x: 0, // -(value.strokeWidth / 2), // position for strokewidth
       y: 0, // -(value.strokeWidth / 2), // position for strokewidth
@@ -71,7 +77,7 @@ export default {
     gridDefs.append(gridPattern)
     // clip-path keeps the angled / radiating line grids inside the canvas extent
     const gridClip = svgdoc.createElementNS(NS.SVG, 'clipPath')
-    gridClip.setAttribute('id', 'gridclip')
+    gridClip.setAttribute('id', gridClipId)
     const gridClipRect = svgdoc.createElementNS(NS.SVG, 'rect')
     assignAttributes(gridClipRect, { x: 0, y: 0, width: 100, height: 100 })
     gridClip.append(gridClipRect)
@@ -87,7 +93,7 @@ export default {
       y: 0,
       'stroke-width': 0,
       stroke: 'none',
-      fill: 'url(#gridpattern)',
+      fill: `url(#${gridPatternId})`,
       style: 'pointer-events: none; display:visible;'
     })
     $id('canvasGrid').appendChild(gridBox)
@@ -96,7 +102,7 @@ export default {
     const gridLines = svgdoc.createElementNS(NS.SVG, 'g')
     assignAttributes(gridLines, {
       id: 'gridLines',
-      'clip-path': 'url(#gridclip)',
+      'clip-path': `url(#${gridClipId})`,
       style: 'pointer-events: none;'
     })
     $id('canvasGrid').appendChild(gridLines)

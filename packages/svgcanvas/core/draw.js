@@ -208,6 +208,28 @@ export class Drawing {
   }
 
   /**
+   * Namespaces a fixed, hand-rolled id with this drawing's nonce.
+   *
+   * getNextId()/getNextIdWithPrefix() mint fresh sequential ids and check
+   * document-wide uniqueness via getElem_, which covers ordinary content.
+   * But some ids are hardcoded literals by convention — one grid pattern or
+   * clip path per canvas, a canvas-background gradient reused across
+   * re-applications — and referenced via `url(#id)`/`href="#id"`. Those
+   * references are resolved by the browser itself against the whole
+   * document, not through any of this class's scoped lookups, so a bare
+   * literal id from one editor instance can silently bind another
+   * instance's element to it once multiple editors share a document. Use
+   * this to namespace any such literal before assigning it, instead of
+   * hand-rolling `` `${base}_${nonce}` `` at each call site.
+   * @param {string} base - the literal id an extension/core call would
+   *   otherwise hardcode
+   * @returns {string} `${base}_${nonce}` when a nonce is set, else `base`
+   */
+  getNonceId (base) {
+    return this.nonce_ ? `${base}_${this.nonce_}` : base
+  }
+
+  /**
    * @param {!(string|Integer)} n The nonce to set
    * @returns {void}
    */
