@@ -47,8 +47,6 @@ future refactors" — each needs its own planning pass before execution:
 - **Replace the custom `svgCanvas.bind` single-handler event registry with
   native `EventTarget`** — would remove TabletShell's handler-wrapping
   workaround.
-- **`createSVGMatrix` → `DOMMatrix`** (94 occurrences) — opportunistic, do
-  when touching a file that already uses it.
 - **`utilities.js` split** (~1,644 lines) into dom-utils / path-utils /
   bbox-utils / encoding-utils.
 - **`seCanvasSettings.js` adoption of `SettingsPopover`** (784 lines,
@@ -58,10 +56,6 @@ future refactors" — each needs its own planning pass before execution:
   — replace its manual outside-click/positioning logic once CSS anchor
   positioning is Baseline; would match the pattern used for `seMenu.js`'s
   hamburger menu.
-- **i18next → `t()` shim** and **lazy-loaded shape-library JSONs (380 KB)**
-  — only worth it if bundle-size pressure returns; the lazy-load option
-  conflicts with the current self-contained-bundle guarantee (would need a
-  host-provided loader), so treat as last resort.
 - **`pathseg` removal** — blocked until `core/path-actions.js` is rewritten
   off `pathSegList` (used throughout, e.g. lines 39-46, 470-576, 666+) onto
   the modern path API.
