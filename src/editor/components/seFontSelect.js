@@ -1,4 +1,5 @@
 /* globals svgEditor */
+import { closestRoot } from '../domScope.js'
 /**
  * SeFontSelect — <se-font-select> web component.
  *
@@ -243,7 +244,7 @@ export class SeFontSelect extends HTMLElement {
   }
 
   _syncTheme () {
-    const isDark = document.querySelector('.svg_editor')?.classList.contains('theme-dark')
+    const isDark = closestRoot(this).querySelector('.svg_editor')?.classList.contains('theme-dark')
     this.classList.toggle('theme-dark', !!isDark)
     this.classList.toggle('theme-light', !isDark)
   }

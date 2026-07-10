@@ -16,6 +16,7 @@
  */
 
 import { fetchSvgEl } from './svgIconLoader.js'
+import { closestRoot } from '../domScope.js'
 import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
@@ -616,14 +617,14 @@ export class SeShapeLibrary extends HTMLElement {
 
   // ── Theme sync ─────────────────────────────────────────────────────────────
   _syncTheme () {
-    const root = document.querySelector('.svg_editor')
+    const root = closestRoot(this).querySelector('.svg_editor')
     const isDark = root?.classList.contains('theme-dark')
     this.classList.toggle('theme-dark', !!isDark)
     this.classList.toggle('theme-light', !isDark)
   }
 
   _observeTheme () {
-    const root = document.querySelector('.svg_editor')
+    const root = closestRoot(this).querySelector('.svg_editor')
     if (!root) return
     this._themeObserver = new MutationObserver(() => this._syncTheme())
     this._themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })

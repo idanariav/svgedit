@@ -13,6 +13,7 @@ vi.mock('../../src/editor/favoriteActions.js', () => ({
 
 function makeEditor () {
   return {
+    $id: (id) => document.getElementById(id),
     hotkeys: { getAction: vi.fn(() => null) },
     rightPanel: { toggleSidePanel: vi.fn(), activateTab: vi.fn() }
   }

@@ -15,6 +15,7 @@
  */
 
 import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.js'
+import { closestRoot } from '../domScope.js'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.
 import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'
@@ -186,7 +187,7 @@ export class SeFontLibrary extends HTMLElement {
   restoreCachedFonts () { return restoreAll() }
 
   _syncTheme () {
-    const root = document.querySelector('.svg_editor')
+    const root = closestRoot(this).querySelector('.svg_editor')
     const isDark = root?.classList.contains('theme-dark')
     this.classList.toggle('theme-dark', !!isDark)
     this.classList.toggle('theme-light', !isDark)

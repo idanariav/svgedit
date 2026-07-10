@@ -1,5 +1,6 @@
 /* globals svgEditor */
 import traceDialogHTML from './seTraceDialog.html'
+import { closestRoot } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = traceDialogHTML
@@ -58,7 +59,7 @@ export class SeTraceDialog extends HTMLElement {
         if (newValue === 'open') {
           this.reset()
           // Mirror the editor's active theme so the shadow tokens resolve.
-          this.classList.toggle('theme-dark', !!document.querySelector('.svg_editor')?.classList.contains('theme-dark'))
+          this.classList.toggle('theme-dark', !!closestRoot(this).querySelector('.svg_editor')?.classList.contains('theme-dark'))
           this.$dialog.showModal()
         } else {
           this.$dialog.close()

@@ -9,6 +9,7 @@ import { createSolidPanel } from './panels/SolidPanel.js'
 import { createLinearPanel } from './panels/LinearPanel.js'
 import { createRadialPanel } from './panels/RadialPanel.js'
 import { fetchSvgEl } from '../svgIconLoader.js'
+import { closestRoot } from '../../domScope.js'
 
 const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 
@@ -55,14 +56,14 @@ export class SeColorDialog extends HTMLElement {
 
   // ── Theme sync ─────────────────────────────────────────────────────────────
   _syncTheme () {
-    const root = document.querySelector('.svg_editor')
+    const root = closestRoot(this).querySelector('.svg_editor')
     const isDark = root?.classList.contains('theme-dark')
     this.classList.toggle('theme-dark', !!isDark)
     this.classList.toggle('theme-light', !isDark)
   }
 
   _observeTheme () {
-    const root = document.querySelector('.svg_editor')
+    const root = closestRoot(this).querySelector('.svg_editor')
     if (!root) return
     this._themeObserver = new MutationObserver(() => this._syncTheme())
     this._themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })

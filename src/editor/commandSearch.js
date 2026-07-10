@@ -53,7 +53,10 @@ const revealField = (el) => {
  * @returns {void}
  */
 export const activateCommandSearchResult = (editor, id) => {
-  const el = document.getElementById(id) ?? editor.hotkeys.getAction(id)?.el
+  // Scoped to the editor's own container (editor.$id), not a global
+  // getElementById: svgedit's chrome ids repeat across every open editor
+  // instance, so a global lookup could resolve to another pane's element.
+  const el = editor.$id(id) ?? editor.hotkeys.getAction(id)?.el
   const tabPanel = el?.closest?.('.sidepanel_tabpanel')
   if (tabPanel) {
     editor.rightPanel.toggleSidePanel(true)
@@ -62,9 +65,9 @@ export const activateCommandSearchResult = (editor, id) => {
 
   if (isValueControl(id)) {
     if (COLOR_VALUE_CONTROLS.has(id)) {
-      document.getElementById(id)?.openColorDialog()
+      editor.$id(id)?.openColorDialog()
     } else {
-      revealField(document.getElementById(id))
+      revealField(editor.$id(id))
     }
     return
   }
