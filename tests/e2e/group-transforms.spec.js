@@ -37,13 +37,20 @@ test.describe('Group transform preservation', () => {
     // Wait for SVG to be loaded
     await page.waitForSelector('#svgroot', { timeout: 5000 })
 
-    // Click on one of the paths inside the group
-    // This should select the parent group
-    const firstPath = page.locator('#svg_2')
-    await firstPath.click()
+    // Select the parent group the way a click on one of its child paths
+    // would (svgcanvas walks up from the click target to the top-level
+    // group). A real mouse click isn't reliable here: the paths are open,
+    // unfilled (fill="none") curves, so only their thin stroke — not their
+    // bounding box — receives pointer events.
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      const group = document.querySelector('#svgcontent #svg_1')
+      canv.setMode('select')
+      canv.selectOnly([group], true)
+    })
 
     // Verify the group was selected (not the individual path)
-    const selectedGroup = page.locator('#svg_1')
+    const selectedGroup = page.locator('#svgcontent #svg_1')
     await expect(selectedGroup).toBeVisible()
 
     // Test 1: Verify group transform is preserved after click
@@ -66,7 +73,7 @@ test.describe('Group transform preservation', () => {
 
     // Test 3: Rotate the group
     await page.locator('#angle').evaluate(el => {
-      const input = el.shadowRoot.querySelector('elix-number-spin-box')
+      const input = el.shadowRoot.querySelector('.num-input')
       input.value = '5'
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
@@ -78,9 +85,9 @@ test.describe('Group transform preservation', () => {
     expect(groupTransform).toContain('99.67')
 
     // Verify child paths still have their own transforms
-    const path1Transform = await page.locator('#svg_2').getAttribute('transform')
-    const path2Transform = await page.locator('#svg_3').getAttribute('transform')
-    const path3Transform = await page.locator('#svg_4').getAttribute('transform')
+    const path1Transform = await page.locator('#svgcontent #svg_2').getAttribute('transform')
+    const path2Transform = await page.locator('#svgcontent #svg_3').getAttribute('transform')
+    const path3Transform = await page.locator('#svgcontent #svg_4').getAttribute('transform')
 
     expect(path1Transform).toContain('matrix')
     expect(path2Transform).toContain('rotate(-90')
@@ -129,7 +136,7 @@ test.describe('Group transform preservation', () => {
 
     // Rotate first
     await page.locator('#angle').evaluate(el => {
-      const input = el.shadowRoot.querySelector('elix-number-spin-box')
+      const input = el.shadowRoot.querySelector('.num-input')
       input.value = '45'
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })

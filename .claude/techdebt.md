@@ -144,25 +144,48 @@ future refactors" — each needs its own planning pass before execution:
 
 ## Test infrastructure — e2e (Playwright)
 
-`npx vitest run` is clean (fixed 2026-07-03). The Playwright e2e suite
-(`node scripts/run-e2e.mjs`) has these known breaks, unrelated to vitest:
+`npx vitest run` is clean (fixed 2026-07-03). `clipboard.spec.js`,
+`control-points.spec.js`, `group-transforms.spec.js`, `issues.spec.js`,
+`scenarios.spec.js`, `text-tools.spec.js`, and `mainmenu.spec.js` are clean
+too (fixed 2026-07-10 — ambiguous shadow-DOM-piercing id locators,
+`mainmenu.spec.js`'s reference to the removed doc-properties dialog methods,
+and several further bugs each fix uncovered once the tests could actually
+run; see git history for detail).
 
-- ~~The `#tool_source` button was removed by an earlier "Frame tool" commit
-  (`01301bdd`), breaking several specs that rely on the `setSvgSource` test
-  helper.~~ **Fixed 2026-07-05**: `setSvgSource` (`tests/e2e/helpers.js`) now
-  opens the dialog via `window.svgEditor.topPanel.showSourceEditor()` instead
-  of clicking the removed button — the dialog markup/textarea/save button
-  were never removed, only the toolbar button that opened them.
-- **Newly exposed by the fix above**: with `setSvgSource` no longer hanging,
-  ~19 tests across `clipboard.spec.js`, `control-points.spec.js`,
-  `group-transforms.spec.js`, `issues.spec.js`, `scenarios.spec.js`, and
-  `text-tools.spec.js` now fail on a *different*, previously-masked bug —
-  bare id locators like `page.locator('#svg_1')` are ambiguous because
-  Playwright pierces every open shadow root on the page by default, and
-  several unrelated shadow-DOM templates (toolbar icons, marker previews,
-  font-style previews) happen to reuse generic ids (`svg_1`, `svg_2`, …)
-  from their original source SVGs. Fixed in `shapes-and-image.spec.js` by
-  scoping to `#svgcontent #svg_1`; the other 6 files still need the same
-  treatment (or scope to `#svgcontent` generally) before they'll pass.
-- `tests/e2e/mainmenu.spec.js` references a `showDocProperties` method that
-  no longer exists on `MainMenu.js` (the doc-properties dialog was removed).
+Note: verify with `npx playwright test` directly rather than
+`node scripts/run-e2e.mjs` — that wrapper's `rimraf .nyc_output/*` step fails
+with `rimraf: command not found` in a shell whose PATH lacks
+`node_modules/.bin`.
+
+The following were found while getting the above passing; distinct issues,
+not yet fixed:
+
+- `tests/e2e/unit/*.spec.js` (~40 tests, e.g. `svgcore*.spec.js`) all hang on
+  `page.waitForFunction(() => Boolean(window.svgHarness))` in `beforeEach`
+  and time out. `tests/unit-harness.html` loads `packages/svgcanvas/core/*.js`
+  as raw (unbundled) ES modules directly in the browser. `coords.js` imports
+  `taper-stroke.js` (for `remapTaperSource`, a legitimate production
+  dependency — see `coords.js:9`), which imports `paper-utils.js`, which
+  bare-imports `paper/dist/paper-core.js` — unresolvable without a bundler or
+  import map, so the module graph throws (`Failed to resolve module
+  specifier "paper/dist/paper-core.js"`) and `window.svgHarness` never gets
+  set. Pre-existing since the taper-stroke work landed
+  (2026-07-09-ish); the harness was never updated for the new transitive
+  dependency. Needs either an import map entry (plus copying paper's dist
+  build into served test assets) or bundling the harness instead of loading
+  raw modules.
+- `layers-panel.spec.js`'s `beforeEach` opens the side panel via
+  `#sidepanel_handle` but never activates the `layers` tab (`data-tab`
+  defaults to `design` — see `RightPanel.js`'s `activeTab`), so `#layer_new`
+  stays hidden and both tests time out waiting for it. Same root cause
+  category as the `text-tools.spec.js` fix above (right panel is now
+  tabbed); needs a `[data-tab="layers"]` click added to the `beforeEach`.
+- `export.spec.js`: `#export_box select` is a strict-mode-violation
+  ambiguous locator — it now also matches `#se-storage-pref`'s select
+  (`resolved to 2 elements`). Needs scoping, e.g. to
+  `#se-export-region select` (or whatever the export size/format control's
+  actual container id is).
+- `dialogs-extra.spec.js`'s "seAlert creates alert dialog" test asserts
+  `created` is `true` but gets `false` — not investigated; could be a
+  selector/timing issue in the test or a real regression in the alert
+  dialog's creation path.

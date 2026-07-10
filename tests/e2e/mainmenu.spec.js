@@ -21,15 +21,12 @@ test.describe('Main menu logic', () => {
       window.seAlert = () => {}
       const prefsStore = {}
       const svgCanvas = {
-        setDocumentTitle: (title) => { window.__title = title },
-        setResolution: (w, h) => { window.__resolution = [w, h]; return true },
-        getResolution: () => ({ w: 640, h: 480 }),
-        getDocumentTitle: () => 'Existing',
         setConfig: (cfg) => { window.__setConfig = cfg },
         rasterExport: () => { window.__raster = true }
       }
 
       const editor = {
+        $id: (id) => document.getElementById(id),
         configObj: {
           pref: (key, val) => {
             if (val !== undefined) prefsStore[key] = val
@@ -37,21 +34,19 @@ test.describe('Main menu logic', () => {
           },
           curConfig: {
             baseUnit: 'px',
-            gridSnapping: false,
-            snappingStep: 10,
-            gridColor: '#fff',
             showRulers: false,
             canvasName: 'test'
           },
           curPrefs: { bkgd_color: '#fff' },
           preferences: false
         },
-        setBackground: (color, url) => { window.__bg = { color, url } },
-        rulers: { updateRulers: () => { window.__rulers = true } },
+        rulers: {
+          display: () => { window.__rulersDisplayed = true },
+          updateRulers: () => { window.__rulers = true }
+        },
         svgCanvas,
         updateCanvas: () => { window.__updated = true },
         i18next: { t: (key) => key },
-        docprops: false,
         exportWindowCt: 0,
         customExportImage: false,
         exportWindowName: ''
@@ -63,28 +58,16 @@ test.describe('Main menu logic', () => {
         document.body.append(div)
         return div
       })()
-      holder.innerHTML =
-        '<div id="se-img-prop"></div><div id="se-edit-prefs"></div>'
+      holder.innerHTML = '<div id="se-edit-prefs"></div>'
       const menu = new MainMenu(editor)
-      menu.showDocProperties()
-      menu.hideDocProperties()
-      const savedDocProps = menu.saveDocProperties({
-        detail: { title: 'New', w: 100, h: 200, save: 'content' }
-      })
 
       menu.showPreferences()
       menu.savePreferences({
         detail: {
-          bgcolor: '#000',
-          bgurl: 'url',
-          gridsnappingon: true,
-          gridsnappingstep: 5,
-          gridcolor: '#ccc',
           showrulers: true,
           baseunit: 'cm'
         }
       })
-      menu.hidePreferences()
       menu.clickExport({ detail: { trigger: 'ok', imgType: 'PNG', quality: 80 } })
       window.seAlert?.('alert text')
       window.seConfirm?.('question?', ['Yes', 'No'])
@@ -92,26 +75,18 @@ test.describe('Main menu logic', () => {
       window.seSelect?.('pick', ['a', 'b'])
 
       return {
-        docDialogState: document.getElementById('se-img-prop').getAttribute('dialog'),
-        docSavePref: prefsStore.img_save,
-        resolution: window.__resolution,
         updated: window.__updated,
         prefsDialogState: document.getElementById('se-edit-prefs').getAttribute('dialog'),
-        gridColor: editor.configObj.curConfig.gridColor,
+        baseUnit: editor.configObj.curConfig.baseUnit,
         rulersUpdated: window.__rulers === true,
-        rasterCalled: window.__raster === true,
-        savedDocProps
+        rasterCalled: window.__raster === true
       }
     })
 
-    expect(result.docDialogState).toBe('close')
-    expect(result.docSavePref).toBe('content')
-    expect(result.resolution).toEqual([100, 200])
     expect(result.updated).toBe(true)
     expect(result.prefsDialogState).toBe('close')
-    expect(result.gridColor).toBe('#ccc')
+    expect(result.baseUnit).toBe('cm')
     expect(result.rulersUpdated).toBe(true)
     expect(result.rasterCalled).toBe(true)
-    expect(result.savedDocProps).toBe(true)
   })
 })

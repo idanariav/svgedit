@@ -24,14 +24,14 @@ test.describe('Regression issues', () => {
         <ellipse cx="217.5" cy="139.5" id="svg_1" rx="94.5" ry="71.5" stroke="#000000" stroke-width="5" fill="#FF0000"/>
       </g>
     </svg>`)
-    await page.locator('#svg_1').click()
+    await page.locator('#svgcontent #svg_1').click()
     await page.locator('#angle').evaluate(el => {
-      const input = el.shadowRoot.querySelector('elix-number-spin-box')
+      const input = el.shadowRoot.querySelector('.num-input')
       input.value = '15'
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    const cx = await page.locator('#svg_1').getAttribute('cx')
-    const cy = await page.locator('#svg_1').getAttribute('cy')
+    const cx = await page.locator('#svgcontent #svg_1').getAttribute('cx')
+    const cy = await page.locator('#svgcontent #svg_1').getAttribute('cy')
     expect(cx).toBe('217.5')
     expect(cy).toBe('139.5')
   })
@@ -43,13 +43,13 @@ test.describe('Regression issues', () => {
         <rect id="svg_1" width="100" height="100" x="50" y="50" fill="#00ff00" />
       </g>
      </svg>`)
-    await page.locator('#svg_1').click()
+    await page.locator('#svgcontent #svg_1').click()
     await page.locator('#blur').evaluate(el => {
-      const input = el.shadowRoot.querySelector('elix-number-spin-box')
+      const input = el.shadowRoot.querySelector('.num-input')
       input.value = '5'
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    const filter = await page.locator('#svg_1').getAttribute('filter')
+    const filter = await page.locator('#svgcontent #svg_1').getAttribute('filter')
     expect(filter || '').not.toContain('NaN')
   })
 
@@ -61,7 +61,7 @@ test.describe('Regression issues', () => {
       </g>
     </svg>`)
     await page.evaluate(() => document.getElementById('svg_1')?.remove())
-    await expect(page.locator('#svg_1')).toHaveCount(0)
+    await expect(page.locator('#svgcontent #svg_1')).toHaveCount(0)
   })
 
   test('issue 660: polygon rotation stays within canvas', async ({ page }) => {
@@ -70,13 +70,13 @@ test.describe('Regression issues', () => {
         <polygon id="svg_1" points="295.5 211.5 283.09 227.51 284.46 247.19 268.43 234.81 248.83 240.08 255.5 221.5 244.03 205.5 264.5 205.5 276.5 188.19 279.5 208.5 298.5 215.5 295.5 211.5" fill="#FF0000" stroke="#000000" stroke-width="5"/>
       </g>
     </svg>`)
-    await page.locator('#svg_1').click()
+    await page.locator('#svgcontent #svg_1').click()
     await page.locator('#angle').evaluate(el => {
-      const input = el.shadowRoot.querySelector('elix-number-spin-box')
+      const input = el.shadowRoot.querySelector('.num-input')
       input.value = '25'
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    const points = await page.locator('#svg_1').getAttribute('points')
+    const points = await page.locator('#svgcontent #svg_1').getAttribute('points')
     expect(points).toBeTruthy()
   })
 
@@ -107,7 +107,7 @@ test.describe('Regression issues', () => {
       t.textContent = 'hello world'
       t.setAttribute('textLength', '150')
     })
-    const length = await page.locator('#svg_1').getAttribute('textLength')
+    const length = await page.locator('#svgcontent #svg_1').getAttribute('textLength')
     expect(length).toBe('150')
   })
 
@@ -144,7 +144,7 @@ test.describe('Regression issues', () => {
     await page.waitForSelector('#svgroot', { timeout: 5000 })
 
     // Get the circle element and its initial bounding box
-    const circle = page.locator('#svg_3')
+    const circle = page.locator('#svgcontent #svg_3')
     await circle.click()
 
     // Get initial position via getBoundingClientRect
@@ -195,7 +195,7 @@ test.describe('Regression issues', () => {
     await page.waitForSelector('#svgroot', { timeout: 5000 })
 
     // Select the group using force click to bypass svgroot intercept
-    const group = page.locator('#svg_1')
+    const group = page.locator('#svgcontent #svg_1')
     await group.click({ force: true })
 
     // Ungroup using keyboard shortcut Ctrl+Shift+G
@@ -205,7 +205,7 @@ test.describe('Regression issues', () => {
     await page.waitForTimeout(300)
 
     // Select the first path
-    const path = page.locator('#svg_2')
+    const path = page.locator('#svgcontent #svg_2')
     await path.click({ force: true })
 
     // Wait for selection to be processed
@@ -273,7 +273,7 @@ test.describe('Regression issues', () => {
     await page.waitForTimeout(200)
 
     // Select the rectangle
-    const rect = page.locator('#svg_1')
+    const rect = page.locator('#svgcontent #svg_1')
     await rect.click({ force: true })
 
     // Get the initial stroke-width

@@ -14,7 +14,7 @@ test.describe('Control points', () => {
       </g>
     </svg>`)
 
-    const d = await page.locator('#svg_1').getAttribute('d')
+    const d = await page.locator('#svgcontent #svg_1').getAttribute('d')
     expect(d).toBeTruthy()
     expect(d).not.toContain('NaN')
   })

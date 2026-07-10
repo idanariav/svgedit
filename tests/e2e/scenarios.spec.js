@@ -13,8 +13,8 @@ test.describe('Tool scenarios', () => {
         <ellipse id="svg_2" cx="320" cy="200" rx="30" ry="20" fill="#0f0"/>
       </g>
     </svg>`)
-    await expect(page.locator('#svg_1')).toHaveAttribute('r', /.+/)
-    await expect(page.locator('#svg_2')).toHaveAttribute('rx', /.+/)
+    await expect(page.locator('#svgcontent #svg_1')).toHaveAttribute('r', /.+/)
+    await expect(page.locator('#svgcontent #svg_2')).toHaveAttribute('rx', /.+/)
   })
 
   test('rectangle tools and transforms', async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe('Tool scenarios', () => {
         <rect id="svg_1" x="150" y="150" width="80" height="80" fill="#00f"/>
       </g>
     </svg>`)
-    const rect = page.locator('#svg_1')
+    const rect = page.locator('#svgcontent #svg_1')
     await expect(rect).toHaveAttribute('width', /.+/)
     await page.evaluate(() => {
       const el = document.getElementById('svg_1')
@@ -39,7 +39,7 @@ test.describe('Tool scenarios', () => {
         <path id="svg_1" d="M200 200 L240 240 L260 220 z" stroke="#000" fill="none"/>
       </g>
     </svg>`)
-    await expect(page.locator('#svg_1')).toHaveAttribute('d', /.+/)
+    await expect(page.locator('#svgcontent #svg_1')).toHaveAttribute('d', /.+/)
   })
 
   test('line operations', async ({ page }) => {
@@ -48,7 +48,7 @@ test.describe('Tool scenarios', () => {
         <line id="svg_1" x1="100" y1="100" x2="200" y2="140" stroke="#000" stroke-width="1"/>
       </g>
     </svg>`)
-    const line = page.locator('#svg_1')
+    const line = page.locator('#svgcontent #svg_1')
     await expect(line).toHaveAttribute('x2', /.+/)
     await page.evaluate(() => {
       document.getElementById('svg_1').setAttribute('stroke-width', '3')
@@ -63,8 +63,8 @@ test.describe('Tool scenarios', () => {
         <polygon id="svg_2" points="120 250 140 280 180 280 150 300 160 340 120 320 80 340 90 300 60 280 100 280" stroke="#000" fill="#ff0"/>
       </g>
     </svg>`)
-    await expect(page.locator('#svg_1')).toHaveAttribute('points', /.+/)
-    await expect(page.locator('#svg_2')).toHaveAttribute('points', /.+/)
+    await expect(page.locator('#svgcontent #svg_1')).toHaveAttribute('points', /.+/)
+    await expect(page.locator('#svgcontent #svg_2')).toHaveAttribute('points', /.+/)
   })
 
   test('shape library and image insertion', async ({ page }) => {
@@ -74,18 +74,26 @@ test.describe('Tool scenarios', () => {
         <path id="svg_1" d="M300 200c0-27.6 22.4-50 50-50s50 22.4 50 50-22.4 50-50 50-50-22.4-50-50z" fill="#f66"/>
       </g>
     </svg>`)
-    await expect(page.locator('#svg_1')).toBeVisible()
+    await expect(page.locator('#svgcontent #svg_1')).toBeVisible()
 
-    await page.evaluate(() => {
+    // Runtime assets (icons, shape library, etc.) are bundled inline into
+    // Editor.js and no longer served as loose files (see copy-static.mjs),
+    // so a relative "./images/…" href 404s. Use a data URI instead — it
+    // exercises the same <image> insertion path without depending on
+    // static-asset serving.
+    const PIXEL_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+    await page.evaluate((href) => {
       const img = document.createElementNS('http://www.w3.org/2000/svg', 'image')
       img.setAttribute('id', 'svg_2')
-      img.setAttribute('href', './images/logo.svg')
+      img.setAttribute('href', href)
       img.setAttribute('x', '80')
       img.setAttribute('y', '80')
       img.setAttribute('width', '60')
       img.setAttribute('height', '60')
-      document.querySelector('svg g').append(img)
-    })
-    await expect(page.locator('image[href="./images/logo.svg"]')).toBeVisible()
+      // Scoped to #svgcontent: an unscoped "svg g" matches #svgroot's first
+      // <g> (an internal overlay like gridLines), not the content layer.
+      document.querySelector('#svgcontent g').append(img)
+    }, PIXEL_DATA_URI)
+    await expect(page.locator(`image[href="${PIXEL_DATA_URI}"]`)).toBeVisible()
   })
 })
