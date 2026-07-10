@@ -1,12 +1,10 @@
-import * as contextmenu from '../../src/editor/contextmenu.js'
+import { createContextMenu } from '../../src/editor/contextmenu.js'
 
 describe('contextmenu', function () {
-  /**
-   * Tear down tests, resetting custom menus.
-   * @returns {void}
-   */
-  afterEach(() => {
-    contextmenu.resetCustomMenus()
+  let contextmenu
+
+  beforeEach(() => {
+    contextmenu = createContextMenu()
   })
 
   it('Test svgedit.contextmenu package', function () {
@@ -53,6 +51,18 @@ describe('contextmenu', function () {
       () => contextmenu.add(validItem2),
       null, null,
       'duplicate menu item is rejected.'
+    )
+  })
+
+  it('Test svgedit.contextmenu scopes registries per instance', function () {
+    const other = createContextMenu()
+    const validItem = { id: 'valid', label: 'anicelabel', action () { /* empty fn */ } }
+    contextmenu.add(validItem)
+
+    assert.ok(!other.hasCustomHandler('valid'), 'a second registry does not see the first\'s items')
+    assert.doesNotThrow(
+      () => other.add(validItem),
+      'a second registry can register the same id without colliding with the first'
     )
   })
 })

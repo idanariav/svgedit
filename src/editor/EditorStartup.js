@@ -2,9 +2,7 @@
 import {
   putLocale
 } from './locale.js'
-import {
-  hasCustomHandler, getCustomHandler, injectExtendedContextMenuItemsIntoDom
-} from './contextmenu.js'
+import { createContextMenu } from './contextmenu.js'
 import { addUserShape, getUserCategories } from './extensions/ext-shapes/userShapes.js'
 import { setUserDataAdapter } from './userDataAdapter.js'
 import editorTemplate from './templates/editorTemplate.html'
@@ -121,6 +119,10 @@ class EditorStartup {
     this.$id = scopedId(this.$container)
     this.$qa = scopedQa(this.$container)
     this.$qq = scopedQq(this.$container)
+    // Own registry per editor instance (see contextmenu.js) — a shared one
+    // would collide across panes on both the id-uniqueness check and the
+    // #cmenu_canvas DOM injection.
+    this.contextMenu = createContextMenu(this.$id)
   }
 
   /**
@@ -758,8 +760,8 @@ class EditorStartup {
           this._addSelectedToShapeLibrary()
           break
         default:
-          if (hasCustomHandler(action)) {
-            getCustomHandler(action).call()
+          if (this.contextMenu.hasCustomHandler(action)) {
+            this.contextMenu.getCustomHandler(action).call()
           }
           break
       }
@@ -844,7 +846,7 @@ class EditorStartup {
     // Defer injection to wait out initial menu processing. This probably goes
     //    away once all context menu behavior is brought to context menu.
     this.ready(() => {
-      injectExtendedContextMenuItemsIntoDom()
+      this.contextMenu.injectExtendedContextMenuItemsIntoDom()
     })
     // run callbacks stored by this.ready
     await this.runCallbacks()
