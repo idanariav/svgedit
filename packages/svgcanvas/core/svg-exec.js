@@ -7,19 +7,16 @@
 
 import * as history from './history.js'
 import { error } from '../common/logger.js'
+import { text2xml, toXml, hashCode } from './encoding-utils.js'
 import {
-  text2xml,
   cleanupElement,
   findDefs,
   setHref,
   getHref,
   preventClickDefault,
-  toXml,
-  getStrokedBBoxDefaultVisible,
-  walkTree,
-  getBBox as utilsGetBBox,
-  hashCode
-} from './utilities.js'
+  walkTree
+} from './dom-utils.js'
+import { getStrokedBBoxDefaultVisible, getBBox as utilsGetBBox } from './bbox-utils.js'
 import {
   transformPoint,
   transformListToTransform,

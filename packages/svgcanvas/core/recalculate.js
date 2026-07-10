@@ -8,11 +8,11 @@ import { convertToNum } from './units.js'
 import { NS } from './namespaces.js'
 import {
   getRotationAngle,
-  getBBox,
   getHref,
   getRefElem,
   findDefs
-} from './utilities.js'
+} from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
 import {
   isIdentity,

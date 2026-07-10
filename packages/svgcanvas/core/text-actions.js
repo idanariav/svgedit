@@ -9,10 +9,10 @@ import { NS } from './namespaces.js'
 import { transformPoint, matrixMultiply, getTransformList, transformListToTransform } from './math.js'
 import {
   assignAttributes,
-  getBBox as utilsGetBBox,
   getTextWithNewlines,
   TEXT_LINE_HEIGHT
-} from './utilities.js'
+} from './dom-utils.js'
+import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'
 
 /**

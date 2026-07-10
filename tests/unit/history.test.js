@@ -1,5 +1,5 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as utilities from '../../packages/svgcanvas/core/dom-utils.js'
 import * as history from '../../packages/svgcanvas/core/history.js'
 
 describe('history', function () {

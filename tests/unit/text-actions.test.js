@@ -1,7 +1,8 @@
 import 'pathseg'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as textActionsInit } from '../../packages/svgcanvas/core/text-actions.js'
-import { init as utilitiesInit } from '../../packages/svgcanvas/core/utilities.js'
+import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.js'
+import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 
 describe('TextActions', () => {
@@ -84,7 +85,8 @@ describe('TextActions', () => {
     }
 
     // Initialize utilities and text-actions modules
-    utilitiesInit(svgCanvas)
+    domUtilsInit(svgCanvas)
+    bboxUtilsInit(svgCanvas)
     textActionsInit(svgCanvas)
     textActionsMethod = svgCanvas.textActions
     textActionsMethod.setInputElem(inputElement)

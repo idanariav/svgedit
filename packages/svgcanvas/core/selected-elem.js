@@ -10,19 +10,21 @@ import { NS } from './namespaces.js'
 import * as hstry from './history.js'
 import { warn, error } from '../common/logger.js'
 import {
-  getStrokedBBoxDefaultVisible,
   setHref,
   getHref,
-  getVisibleElements,
   findDefs,
   getRotationAngle,
   getRefElem,
   getReferencedDefElements,
-  getBBox as utilsGetBBox,
   walkTreePost,
   assignAttributes,
   getFeGaussianBlur
-} from './utilities.js'
+} from './dom-utils.js'
+import {
+  getStrokedBBoxDefaultVisible,
+  getVisibleElements,
+  getBBox as utilsGetBBox
+} from './bbox-utils.js'
 import {
   transformPoint,
   matrixMultiply,

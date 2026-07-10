@@ -1,10 +1,19 @@
 /* globals SVGPathSeg */
 import 'pathseg'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import * as pathModule from '../../packages/svgcanvas/core/path.js'
 import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
+
+const utilities = {
+  init: (canvas) => {
+    domUtils.init(canvas)
+    bboxUtils.init(canvas)
+  },
+  getBBox: bboxUtils.getBBox
+}
 
 describe('path', function () {
   // path.js/path-actions.js/path-method.js attach per-instance helpers and

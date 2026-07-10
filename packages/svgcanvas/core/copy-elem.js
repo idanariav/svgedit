@@ -1,4 +1,4 @@
-import { preventClickDefault } from './utilities.js'
+import { preventClickDefault } from './dom-utils.js'
 import dataStorage from './dataStorage.js'
 
 /**

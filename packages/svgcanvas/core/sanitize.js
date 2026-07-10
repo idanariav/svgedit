@@ -7,7 +7,7 @@
  */
 
 import { getReverseNS, NS } from './namespaces.js'
-import { getHref, getRefElem, setHref, getUrlFromAttr } from './utilities.js'
+import { getHref, getRefElem, setHref, getUrlFromAttr } from './dom-utils.js'
 import { warn } from '../common/logger.js'
 
 const REVERSE_NS = getReverseNS()

@@ -7,7 +7,8 @@
  */
 
 import { NS } from './namespaces.js'
-import { toXml, walkTree } from './utilities.js'
+import { toXml } from './encoding-utils.js'
+import { walkTree } from './dom-utils.js'
 
 /**
  * This class encapsulates the concept of a layer in the drawing. It can be constructed with

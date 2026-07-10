@@ -14,9 +14,9 @@ import {
   transformListToTransform, getTransformList
 } from './math.js'
 import {
-  assignAttributes, getRotationAngle, snapPointToGrid,
-  getBBox
-} from './utilities.js'
+  assignAttributes, getRotationAngle, snapPointToGrid
+} from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
 
 /**
 * @function module:path-actions.init

@@ -20,7 +20,7 @@
  */
 
 import { NS } from './namespaces.js'
-import { getPathDFromElement } from './utilities.js'
+import { getPathDFromElement } from './path-utils.js'
 import { warn } from '../common/logger.js'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.

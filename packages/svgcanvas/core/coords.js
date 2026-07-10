@@ -12,10 +12,10 @@ import {
   snapToGrid,
   snapPointToGrid,
   assignAttributes,
-  getBBox,
   getRefElem,
   findDefs
-} from './utilities.js'
+} from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
 import {
   transformPoint,
   transformListToTransform,

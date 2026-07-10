@@ -1,5 +1,10 @@
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
+import * as pathUtils from '../../packages/svgcanvas/core/path-utils.js'
+import * as encodingUtils from '../../packages/svgcanvas/core/encoding-utils.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+
+const utilities = { ...domUtils, ...bboxUtils, ...pathUtils, ...encodingUtils }
 
 describe('utilities', function () {
   /**

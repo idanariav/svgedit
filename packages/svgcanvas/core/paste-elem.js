@@ -1,7 +1,5 @@
-import {
-  getStrokedBBoxDefaultVisible,
-  getUrlFromAttr
-} from './utilities.js'
+import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
+import { getUrlFromAttr } from './dom-utils.js'
 import * as hstry from './history.js'
 
 const {

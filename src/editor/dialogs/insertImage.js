@@ -1,5 +1,5 @@
 /* globals svgEditor */
-import { getPathDFromElement } from '@svgedit/svgcanvas/core/utilities.js'
+import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.js'
 
 // Basic shapes that get converted to <path> on import, and the geometry
 // attributes that become meaningless once they are paths.

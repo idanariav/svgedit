@@ -9,7 +9,7 @@ import { NS } from './namespaces.js'
 import {
   getBBox,
   getStrokedBBoxDefaultVisible
-} from './utilities.js'
+} from './bbox-utils.js'
 import {
   transformPoint,
   transformListToTransform,

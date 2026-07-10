@@ -1,7 +1,8 @@
 import 'pathseg'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
-import { init as utilitiesInit } from '../../packages/svgcanvas/core/utilities.js'
+import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.js'
+import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.js'
 import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 
@@ -148,7 +149,8 @@ describe('PathActions', () => {
     svgRoot.append(pathpointgripContainer)
 
     // Initialize modules
-    utilitiesInit(svgCanvas)
+    domUtilsInit(svgCanvas)
+    bboxUtilsInit(svgCanvas)
     unitsInit(svgCanvas)
     pathActionsInit(svgCanvas)
     pathActionsMethod = svgCanvas.pathActions

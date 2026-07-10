@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import { init as initJson } from '../../packages/svgcanvas/core/json.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
@@ -29,7 +30,10 @@ describe('json', () => {
     layer.id = 'layer1'
     svgRoot.append(layer)
 
-    utilities.init({
+    domUtils.init({
+      getSvgRoot: () => svgRoot
+    })
+    bboxUtils.init({
       getSvgRoot: () => svgRoot
     })
 

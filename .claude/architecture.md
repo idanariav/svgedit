@@ -176,7 +176,10 @@ src/editor/index.html
 | `undo.js` | Recording changes into history |
 | `coords.js` | Coordinate transforms + remapping between spaces |
 | `recalculate.js` | Recalculate dimensions/transforms after changes |
-| `utilities.js` | Large shared utilities (~45KB) |
+| `dom-utils.js` | DOM/element manipulation, lookup, ids/refs, snapping, `$id`/`$qq`/`$qa` shortcuts |
+| `bbox-utils.js` | Bounding-box computation (`getBBox`, `getBBoxWithTransform`, `getStrokedBBox`, `getVisibleElements`) |
+| `path-utils.js` | Path `d`-attribute construction and element-to-path conversion |
+| `encoding-utils.js` | String/XML/base64 encoding (`toXml`, `encode64`, `text2xml`, …) |
 | `paint.js` | Fill, stroke, and color management |
 | `sanitize.js` | SVG sanitization for security |
 | `text-actions.js` | Text element editing (cursor, selection) |
@@ -387,7 +390,7 @@ the references dangling when pasted into another drawing (and
 `restoreRefElements` then appended a literal `"undefined"` text node into
 `<defs>`, corrupting it). Both copy paths now collect the transitively
 referenced defs via `getReferencedDefElements(elems)`
-(`packages/svgcanvas/core/utilities.js`):
+(`packages/svgcanvas/core/dom-utils.js`):
 - **Clipboard copy/paste** — `copySelectedElements` tags each referenced def's
   JSON with `_defs:true` and prepends them to the clipboard array; `pasteElements`
   recreates `_defs` entries in `<defs>` **first** (so the shapes' refs resolve),

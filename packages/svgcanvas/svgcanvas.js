@@ -38,15 +38,7 @@ import {
   getReferencedDefElements,
   remapElementIdsAndRefs,
   getRotationAngle,
-  getBBoxOfElementAsPath,
-  convertToPath,
-  encode64,
-  decode64,
-  getVisibleElements,
-  init as utilsInit,
-  getBBox as utilsGetBBox,
-  getStrokedBBoxDefaultVisible,
-  blankPageObjectURL,
+  init as domUtilsInit,
   $id,
   $qa,
   $qq,
@@ -57,7 +49,16 @@ import {
   getFeGaussianBlur,
   stringToHTML,
   insertChildAtIndex
-} from './core/utilities.js'
+} from './core/dom-utils.js'
+import {
+  getBBoxOfElementAsPath,
+  getVisibleElements,
+  init as bboxUtilsInit,
+  getBBox as utilsGetBBox,
+  getStrokedBBoxDefaultVisible
+} from './core/bbox-utils.js'
+import { convertToPath } from './core/path-utils.js'
+import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.js'
 import {
   matrixMultiply,
   hasMatrixTransform,
@@ -245,7 +246,8 @@ class SvgCanvas {
     this.selectedElements = []
 
     jsonInit(this)
-    utilsInit(this)
+    domUtilsInit(this)
+    bboxUtilsInit(this)
     coordsInit(this)
     recalculateInit(this)
     selectInit(this)
@@ -1326,7 +1328,7 @@ class SvgCanvas {
       opacity: this.curShape.opacity,
       visibility: 'hidden'
     }
-    return convertToPath(elem, attrs, this) // call convertToPath from utilities.js
+    return convertToPath(elem, attrs, this) // call convertToPath from path-utils.js
   }
 
   /**
@@ -1367,11 +1369,15 @@ class SvgCanvas {
     // Per-instance element lookup: query THIS canvas's own svgroot, so several
     // editors don't resolve ids against a shared module-level svgroot.
     this.getElement = (id) => this.svgroot?.querySelector(`#${CSS.escape(id)}`)
-    // utilities.js keeps a small amount of module-level state (svgCanvas/svgroot_)
-    // shared by its by-name-imported helpers (findDefs, getVisibleElements, …).
-    // Re-point it at this canvas when this editor becomes the focused one, so
-    // those helpers operate on the active editor (see editor focus handler).
-    this.activateUtilities = () => utilsInit(this)
+    // dom-utils.js/bbox-utils.js keep a small amount of module-level state
+    // (svgCanvas/svgroot_) shared by their by-name-imported helpers (findDefs,
+    // getVisibleElements, …). Re-point it at this canvas when this editor
+    // becomes the focused one, so those helpers operate on the active editor
+    // (see editor focus handler).
+    this.activateUtilities = () => {
+      domUtilsInit(this)
+      bboxUtilsInit(this)
+    }
     this.getRefElem = getRefElem
     this.assignAttributes = assignAttributes
     this.cleanupElement = cleanupElement

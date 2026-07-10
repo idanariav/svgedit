@@ -47,8 +47,6 @@ future refactors" — each needs its own planning pass before execution:
 - **Replace the custom `svgCanvas.bind` single-handler event registry with
   native `EventTarget`** — would remove TabletShell's handler-wrapping
   workaround.
-- **`utilities.js` split** (~1,644 lines) into dom-utils / path-utils /
-  bbox-utils / encoding-utils.
 - **`seCanvasSettings.js` adoption of `SettingsPopover`** (784 lines,
   structurally different from the six popovers migrated in Phase 8 —
   presets, layouts).

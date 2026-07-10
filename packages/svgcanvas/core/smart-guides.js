@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import { getStrokedBBoxDefaultVisible } from './utilities.js'
+import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 
 // Cap the number of snap targets for drag-time performance.
 const MAX_TARGETS = 60

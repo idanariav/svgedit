@@ -1,5 +1,6 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as coords from '../../packages/svgcanvas/core/coords.js'
 import * as recalculate from '../../packages/svgcanvas/core/recalculate.js'
 
@@ -62,7 +63,8 @@ describe('recalculate', function () {
       getStartTransform () { return '' },
       setStartTransform () { /* empty fn */ }
     }
-    utilities.init(recalculateCanvas)
+    domUtils.init(recalculateCanvas)
+    bboxUtils.init(recalculateCanvas)
     coords.init(recalculateCanvas)
     recalculate.init(recalculateCanvas)
   }

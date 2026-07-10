@@ -7,7 +7,8 @@
  */
 
 import { NS } from './namespaces.js'
-import { getHref, setHref, getRotationAngle, getBBox, getTextWithNewlines, setMultilineText } from './utilities.js'
+import { getHref, setHref, getRotationAngle, getTextWithNewlines, setMultilineText } from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.js'
 
 // Attributes that affect an element's bounding box. Only these require

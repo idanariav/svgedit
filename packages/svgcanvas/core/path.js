@@ -8,10 +8,13 @@
 
 import { transformPoint, getTransformList } from './math.js'
 import {
-  getRotationAngle, getBBox,
-  getRefElem, findDefs,
+  getRotationAngle,
+  getRefElem, findDefs
+} from './dom-utils.js'
+import {
+  getBBox,
   getBBox as utilsGetBBox
-} from './utilities.js'
+} from './bbox-utils.js'
 import { init as pathMethodInit } from './path-method.js'
 import { init as pathActionsInit } from './path-actions.js'
 

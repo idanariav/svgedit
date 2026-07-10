@@ -6,8 +6,9 @@
  */
 import {
   assignAttributes, cleanupElement, getRotationAngle, snapToGrid, snapPointToGrid, walkTree,
-  preventClickDefault, setHref, getBBox, getStrokedBBoxDefaultVisible
-} from './utilities.js'
+  preventClickDefault, setHref
+} from './dom-utils.js'
+import { getBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   convertAttrs
 } from './units.js'

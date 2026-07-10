@@ -155,7 +155,10 @@
 | `core/undo.js` | Change recording |
 | `core/coords.js` | Coordinate transform + remapping |
 | `core/recalculate.js` | Post-change dimension/transform recalc |
-| `core/utilities.js` | Large shared utilities (~45KB) |
+| `core/dom-utils.js` | DOM/element manipulation, lookup, ids/refs, snapping, `$id`/`$qq`/`$qa` shortcuts, `mock()` for tests |
+| `core/bbox-utils.js` | Bounding-box computation (`getBBox`, `getBBoxWithTransform`, `getStrokedBBox`, `getVisibleElements`) |
+| `core/path-utils.js` | Path `d`-attribute construction and element-to-path conversion (`getPathDFromElement`, `convertToPath`) |
+| `core/encoding-utils.js` | String/XML/base64 encoding (`toXml`, `encode64`, `text2xml`, …) |
 | `core/paint.js` | Fill, stroke, color management |
 | `core/sanitize.js` | SVG security sanitization |
 | `core/text-actions.js` | Text cursor/selection editing |

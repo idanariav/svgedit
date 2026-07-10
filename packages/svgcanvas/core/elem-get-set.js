@@ -7,9 +7,9 @@
 import Paint from './paint.js'
 import { NS } from './namespaces.js'
 import {
-  getVisibleElements, getStrokedBBoxDefaultVisible, findDefs,
-  walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
-} from './utilities.js'
+  findDefs, walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
+} from './dom-utils.js'
+import { getVisibleElements, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   convertToNum
 } from './units.js'

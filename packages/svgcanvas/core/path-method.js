@@ -13,7 +13,7 @@ import {
 } from './math.js'
 import {
   assignAttributes
-} from './utilities.js'
+} from './dom-utils.js'
 
 const TYPE_TO_CMD = {
   1: 'Z',

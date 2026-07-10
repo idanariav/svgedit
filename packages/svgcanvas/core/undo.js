@@ -7,8 +7,9 @@
 import * as hstry from './history.js'
 import { BBOX_AFFECTING_ATTRS } from './history.js'
 import {
-  getRotationAngle, getBBox as utilsGetBBox, setHref, getStrokedBBoxDefaultVisible
-} from './utilities.js'
+  getRotationAngle, setHref
+} from './dom-utils.js'
+import { getBBox as utilsGetBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   isGecko
 } from '../common/browser.js'

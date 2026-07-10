@@ -2,7 +2,7 @@
 import 'pathseg'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as utilities from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as math from '../../packages/svgcanvas/core/math.js'
 import * as units from '../../packages/svgcanvas/core/units.js'
 

@@ -7,11 +7,9 @@ import {
   assignAttributes,
   snapToGrid,
   getHref,
-  setHref,
-  dropXMLInternalSubset,
-  encodeUTF8,
-  decodeUTF8
-} from '../../packages/svgcanvas/core/utilities.js'
+  setHref
+} from '../../packages/svgcanvas/core/dom-utils.js'
+import { dropXMLInternalSubset, encodeUTF8, decodeUTF8 } from '../../packages/svgcanvas/core/encoding-utils.js'
 
 describe('utilities extra coverage', () => {
   let svg

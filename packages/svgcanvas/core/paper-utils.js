@@ -7,7 +7,7 @@
  */
 
 import paper from 'paper/dist/paper-core.js'
-import { getPathDFromElement } from './utilities.js'
+import { getPathDFromElement } from './path-utils.js'
 import { getTransformList, transformListToTransform } from './math.js'
 
 // Element types that cannot be converted to a path for paper.js operations.

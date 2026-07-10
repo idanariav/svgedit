@@ -1,5 +1,6 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as coords from '../../packages/svgcanvas/core/coords.js'
 
 describe('coords', function () {
@@ -24,7 +25,7 @@ describe('coords', function () {
     svgroot.append(svg)
 
     // Mock out editor context.
-    utilities.init(
+    const mockUtilitiesContext =
       /**
       * @implements {module:utilities.EditorContext}
       */
@@ -34,7 +35,8 @@ describe('coords', function () {
         getDOMDocument () { return null },
         getDOMContainer () { return null }
       }
-    )
+    domUtils.init(mockUtilitiesContext)
+    bboxUtils.init(mockUtilitiesContext)
     const drawing = {
       getNextId () { return String(elemId++) }
     }

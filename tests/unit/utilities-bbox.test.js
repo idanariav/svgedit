@@ -2,10 +2,13 @@ import { strict as assert } from 'node:assert'
 import 'pathseg'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
-import * as utilities from '../../packages/svgcanvas/core/utilities.js'
+import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as math from '../../packages/svgcanvas/core/math.js'
 import * as path from '../../packages/svgcanvas/core/path.js'
 import * as units from '../../packages/svgcanvas/core/units.js'
+
+const utilities = { ...domUtils, ...bboxUtils }
 
 describe('utilities bbox', function () {
   /**
