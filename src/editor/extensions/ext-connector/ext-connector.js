@@ -407,7 +407,9 @@ export default {
     const getOffset = (side, line) => {
       const hasMarker = line.getAttribute('marker-' + side)
       // TODO: This factor should ideally be based on the actual marker size.
-      const size = line.getAttribute('stroke-width') * 5
+      // A missing stroke-width means the SVG initial value of 1, not 0 —
+      // cleanupElement strips the attribute at that value.
+      const size = (line.getAttribute('stroke-width') ?? 1) * 5
       return hasMarker ? size : 0
     }
 
@@ -844,7 +846,10 @@ export default {
               attr: {
                 points: `${x1.value},${y1.value} ${midPt} ${x2.value},${y2.value}`,
                 stroke: elem.getAttribute('stroke'),
-                'stroke-width': elem.getAttribute('stroke-width'),
+                // A missing stroke-width means the SVG initial value of 1 — pass
+                // that through explicitly, since assignAttributes would otherwise
+                // set the attribute to the literal string "null".
+                'stroke-width': elem.getAttribute('stroke-width') ?? 1,
                 'marker-mid': markerMid.value,
                 fill: 'none',
                 opacity: elem.getAttribute('opacity') || 1

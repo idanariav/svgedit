@@ -1446,7 +1446,10 @@ export const init = canvas => {
       const bb = utilsGetBBox(ref)
       if (!bb) { return }
       // Pad for whichever effect reaches furthest (mirrors fx-filter setRegion).
-      const sw = Number(ref.getAttribute('stroke-width')) || 0
+      // A missing stroke-width means the SVG initial value of 1, not 0 — cleanupElement
+      // strips the attribute at that value.
+      const swAttr = ref.getAttribute('stroke-width')
+      const sw = swAttr === null ? 1 : (Number(swAttr) || 0)
       let pad = 0
       if (ds) {
         const dx = Number(ds.getAttribute('dx')) || 0

@@ -346,7 +346,11 @@ export default {
           const orient = newFO.getAttribute('orient')
           const fill = newFO.getAttribute('fill')
           const stroke = newFO.getAttribute('stroke')
-          const strokeWidth = Number(newFO.getAttribute('stroke-width'))
+          // A missing stroke-width means the SVG initial value of 1, not 0 —
+          // cleanupElement strips the attribute at that value (writing 0 back
+          // below would make the shape invisible mid-draw).
+          const strokeWidthAttr = newFO.getAttribute('stroke-width')
+          const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
           const radialshift = Number(newFO.getAttribute('radialshift'))
 
           let x = opts.mouse_x
@@ -407,7 +411,11 @@ export default {
           // const orient = newFO.getAttribute('orient');
           const fill = newFO.getAttribute('fill')
           const stroke = newFO.getAttribute('stroke')
-          const strokeWidth = Number(newFO.getAttribute('stroke-width'))
+          // A missing stroke-width means the SVG initial value of 1, not 0 —
+          // cleanupElement strips the attribute at that value (writing 0 back
+          // below would make the shape invisible mid-draw).
+          const strokeWidthAttr = newFO.getAttribute('stroke-width')
+          const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
 
           let x = opts.mouse_x
           let y = opts.mouse_y

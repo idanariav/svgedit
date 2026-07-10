@@ -884,7 +884,10 @@ const mouseUpEvent = (evt) => {
               svgCanvas.setCurProperties('fill_opacity', selected.getAttribute('fill-opacity'))
               svgCanvas.setCurProperties('stroke', selected.getAttribute('stroke'))
               svgCanvas.setCurProperties('stroke_opacity', selected.getAttribute('stroke-opacity'))
-              svgCanvas.setCurProperties('stroke_width', selected.getAttribute('stroke-width'))
+              // A missing attribute means the SVG initial value of 1 (cleanupElement
+              // strips it at that value) — not null, which downstream consumers of
+              // getStrokeWidth() would otherwise treat as 0.
+              svgCanvas.setCurProperties('stroke_width', selected.getAttribute('stroke-width') ?? 1)
               svgCanvas.setCurProperties('stroke_dasharray', selected.getAttribute('stroke-dasharray'))
               svgCanvas.setCurProperties('stroke_linejoin', selected.getAttribute('stroke-linejoin'))
               svgCanvas.setCurProperties('stroke_linecap', selected.getAttribute('stroke-linecap'))

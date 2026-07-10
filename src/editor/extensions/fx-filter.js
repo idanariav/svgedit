@@ -114,7 +114,10 @@ export const createFxComposer = (svgCanvas) => {
    */
   const setRegion = (filter, elem, spec) => {
     const bbox = elem.getBBox()
-    const sw = Number(elem.getAttribute('stroke-width')) || 0
+    // A missing stroke-width means the SVG initial value of 1, not 0 —
+    // cleanupElement strips the attribute at that value.
+    const swAttr = elem.getAttribute('stroke-width')
+    const sw = swAttr === null ? 1 : (Number(swAttr) || 0)
     const outlinePad = spec.outline ? Math.abs(spec.outline.width) : 0
     const shadowPad = spec.shadow
       ? Math.hypot(spec.shadow.dx, spec.shadow.dy) + spec.shadow.blur * 3

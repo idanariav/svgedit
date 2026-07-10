@@ -278,6 +278,42 @@ describe('event', () => {
     expect(selectOnlyCalled).toBe(false)
   })
 
+  it('mouseUpEvent() defaults curProperties.stroke_width to 1 for a selected element with no stroke-width attribute', () => {
+    // cleanupElement strips stroke-width="1" (the SVG initial value), leaving
+    // a real, visible 1px stroke with no stroke-width attribute at all.
+    // getStrokeWidth() (used to seed the width for the next-drawn shape, e.g.
+    // TabletShell's width slider) reads curProperties.stroke_width directly,
+    // so a null here would previously surface as 0.
+    const rectElement = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    rectElement.setAttribute('stroke', 'black')
+    contentGroup.append(rectElement)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getElement = () => null
+    canvas.getId = () => ''
+    canvas.getSelectedElements = () => [rectElement]
+    canvas.getRStartX = () => 10
+    canvas.getRStartY = () => 10
+    canvas.curProperties = {}
+    canvas.setCurProperties = (key, value) => { canvas.curProperties[key] = value }
+    canvas.selectorManager.requestSelector = () => ({ showGrips () {} })
+
+    canvas.setCurrentMode('select')
+    canvas.setStarted(true)
+
+    canvas.mouseUpEvent({
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      target: rectElement,
+      preventDefault () {}
+    })
+
+    expect(canvas.curProperties.stroke_width).toBe(1)
+  })
+
   it('dblClickEvent() enters a group without baking its transform into children', () => {
     // Regression guard: entering a group (even a rotated one) must use
     // setContext and must NOT call pushGroupProperties, which previously baked

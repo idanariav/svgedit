@@ -516,10 +516,13 @@ export const init = canvas => {
         }
         svgCanvas.setStartTransform(oldStartTransform)
 
-        const sw = child.getAttribute('stroke-width')
-        if (child.getAttribute('stroke') !== 'none' && !Number.isNaN(Number(sw))) {
+        // A missing stroke-width means the SVG initial value of 1, not 0 —
+        // cleanupElement strips the attribute at that value.
+        const swAttr = child.getAttribute('stroke-width')
+        const sw = swAttr === null ? 1 : Number(swAttr)
+        if (child.getAttribute('stroke') !== 'none' && !Number.isNaN(sw)) {
           const avg = (Math.abs(em.a) + Math.abs(em.d)) / 2
-          child.setAttribute('stroke-width', Number(sw) * avg)
+          child.setAttribute('stroke-width', sw * avg)
         }
       }
       tlist.clear()

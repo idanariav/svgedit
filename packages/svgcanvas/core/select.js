@@ -124,7 +124,10 @@ class Selector {
     const selected = this.selectedElement
     const zoom = svgCanvas.getZoom()
     let offset = 1 / zoom
-    const sw = selected.getAttribute('stroke-width')
+    // A missing stroke-width means the SVG initial value of 1, not 0 —
+    // cleanupElement strips the attribute at that value.
+    const swAttr = selected.getAttribute('stroke-width')
+    const sw = swAttr === null ? 1 : swAttr
     if (selected.getAttribute('stroke') !== 'none' && !isNaN(sw)) {
       offset += (sw / 2)
     }

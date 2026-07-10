@@ -496,6 +496,21 @@ describe('utilities bbox', function () {
     g.remove()
   })
 
+  it('Test getStrokedBBox pads for a visible stroke with no stroke-width attribute (default 1)', function () {
+    // cleanupElement strips stroke-width="1" (the SVG initial value), leaving
+    // a real, visible 1px stroke with no stroke-width attribute at all.
+    const { getStrokedBBox } = utilities
+
+    const elem = mockCreateSVGElement({
+      element: 'rect',
+      attr: { id: 'rect', x: '0', y: '1', width: '5', height: '10', stroke: 'black' }
+    })
+    svgroot.append(elem)
+    const bbox = getStrokedBBox([elem], mockaddSVGElementsFromJson, mockPathActions)
+    assert.deepEqual(bbox, { x: -0.5, y: 0.5, width: 6, height: 11 })
+    elem.remove()
+  })
+
   /**
    * Returns radians for degrees.
    * @param {Float} degrees

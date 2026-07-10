@@ -85,7 +85,9 @@ export default {
         currentStyle.fillOpacity = elem.getAttribute('fill-opacity') || 1.0
         currentStyle.strokePaint = elem.getAttribute('stroke')
         currentStyle.strokeOpacity = elem.getAttribute('stroke-opacity') || 1.0
-        currentStyle.strokeWidth = elem.getAttribute('stroke-width')
+        // A missing stroke-width means the SVG initial value of 1, not null —
+        // cleanupElement strips the attribute at that value.
+        currentStyle.strokeWidth = elem.getAttribute('stroke-width') ?? 1
         currentStyle.strokeDashArray = elem.getAttribute('stroke-dasharray')
         currentStyle.strokeLinecap = elem.getAttribute('stroke-linecap')
         currentStyle.strokeLinejoin = elem.getAttribute('stroke-linejoin')

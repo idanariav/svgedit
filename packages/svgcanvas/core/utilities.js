@@ -1116,8 +1116,13 @@ export const getBBoxWithTransform = (
  * horizontal line. The calculated BBox extends way beyond left and right sides.
  */
 const getStrokeOffsetForBBox = elem => {
-  const sw = elem.getAttribute('stroke-width')
-  return !isNaN(sw) && elem.getAttribute('stroke') !== 'none' ? sw / 2 : 0
+  const stroke = elem.getAttribute('stroke')
+  const swAttr = elem.getAttribute('stroke-width')
+  // A missing stroke-width means the SVG initial value of 1 — cleanupElement
+  // strips the attribute at that value — but only matters when there's an
+  // actual visible stroke to draw with it.
+  const sw = (swAttr === null && stroke && stroke !== 'none') ? 1 : swAttr
+  return !isNaN(sw) && stroke !== 'none' ? sw / 2 : 0
 }
 
 /**

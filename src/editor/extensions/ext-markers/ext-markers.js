@@ -192,7 +192,10 @@ export default {
         attr: {
           points: (x1 + ',' + y1 + midPt + x2 + ',' + y2),
           stroke: elem.getAttribute('stroke'),
-          'stroke-width': elem.getAttribute('stroke-width'),
+          // A missing stroke-width means the SVG initial value of 1 — pass
+          // that through explicitly, since assignAttributes would otherwise
+          // set the attribute to the literal string "null".
+          'stroke-width': elem.getAttribute('stroke-width') ?? 1,
           fill: 'none',
           opacity: elem.getAttribute('opacity') || 1
         }

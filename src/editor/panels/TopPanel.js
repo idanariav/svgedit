@@ -134,7 +134,11 @@ class TopPanel {
           const childs = this.selectedElement.getElementsByTagName('*')
           let gWidth = null
           for (i = 0, len = childs.length; i < len; i++) {
-            const swidth = childs[i].getAttribute('stroke-width')
+            // A missing stroke-width means the SVG initial value of 1, not null —
+            // cleanupElement strips the attribute at that value. Without this,
+            // children that consistently lack the attribute (all default to 1)
+            // would be mistaken for "mixed" and display blank.
+            const swidth = childs[i].getAttribute('stroke-width') ?? '1'
 
             if (i === 0) {
               gWidth = swidth
