@@ -18,7 +18,7 @@
  * the normal, closing the tips with round caps, then refitting compact
  * cubics via paper's `simplify()`.
  *
- * `remapTaperSource(elem, remap, scalew, scaleh)` is called from `coords.js`
+ * `remapTaperSource(elem, remap, scalew, scaleh, svgCanvas)` is called from `coords.js`
  * `remapElement` when a transform is baked into a tapered path: it applies
  * the affine map to the stored centerline, scales the stored width, and
  * regenerates the outline — without it the next taper edit would teleport
@@ -30,7 +30,7 @@
 
 import { NS } from './namespaces.js'
 import { warn } from '../common/logger.js'
-import { getPaperScope } from './paper-utils.js'
+import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
@@ -114,9 +114,10 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
  * @param {Function} remap - `(x, y) → {x, y}` from remapElement.
  * @param {Function} scalew
  * @param {Function} scaleh
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
  * @returns {void}
  */
-export const remapTaperSource = (elem, remap, scalew, scaleh) => {
+export const remapTaperSource = (elem, remap, scalew, scaleh, svgCanvas) => {
   const src = elem.getAttribute(TAPER_SOURCE_ATTR)
   const style = elem.getAttribute(TAPER_STYLE_ATTR)
   if (!src || !style) return
@@ -138,10 +139,14 @@ export const remapTaperSource = (elem, remap, scalew, scaleh) => {
   const paint = style.slice(sep + 1)
   const [start = 100, end = 0] = (elem.getAttribute(TAPER_ATTR) || '')
     .split(',').map(Number)
-  elem.setAttribute(TAPER_SOURCE_ATTR, newSrc)
+  // Normalize before storing: this source is also restored verbatim onto
+  // `d` by removeTaperStroke, so it needs to be node-edit-safe too, not
+  // just the outline below (see toAbsolutePathData's doc comment).
+  const absSrc = toAbsolutePathData(newSrc, svgCanvas)
+  elem.setAttribute(TAPER_SOURCE_ATTR, absSrc)
   elem.setAttribute(TAPER_STYLE_ATTR, `${Math.round(width * 1e4) / 1e4}|${paint}`)
-  const outline = buildTaperOutline(newSrc, width, start, end)
-  if (outline) elem.setAttribute('d', outline)
+  const outline = buildTaperOutline(absSrc, width, start, end)
+  if (outline) elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
 }
 
 export const init = (canvas) => {
@@ -243,7 +248,7 @@ export const init = (canvas) => {
       [TAPER_SOURCE_ATTR]: elem.getAttribute(TAPER_SOURCE_ATTR),
       [TAPER_STYLE_ATTR]: elem.getAttribute(TAPER_STYLE_ATTR)
     }
-    elem.setAttribute('d', outline)
+    elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
     elem.setAttribute('fill', paint)
     elem.setAttribute('stroke', 'none')
     elem.setAttribute(TAPER_ATTR, `${start},${end}`)

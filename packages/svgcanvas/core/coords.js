@@ -563,7 +563,7 @@ const pathMap = [
       // sync with the baked transform and regenerate the outline from them
       // (see core/taper-stroke.js).
       if (selected.hasAttribute('se:taper-d')) {
-        remapTaperSource(selected, remap, scalew, scaleh)
+        remapTaperSource(selected, remap, scalew, scaleh, svgCanvas)
       }
       break
     }

@@ -18,7 +18,7 @@
  */
 
 import { warn } from '../common/logger.js'
-import { getPaperScope } from './paper-utils.js'
+import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 
 // Flattening tolerance (user units) when resampling an existing path's curves.
 const FLATTEN_TOLERANCE = 0.25
@@ -69,7 +69,7 @@ export const init = (canvas) => {
         curStyles: true,
         attr: {
           id: svgCanvas.getId(),
-          d,
+          d: toAbsolutePathData(d, svgCanvas),
           fill: 'none',
           'data-freehand': '1'
         }
@@ -99,7 +99,7 @@ export const init = (canvas) => {
       parts.push(child.pathData)
     }
     compound.remove()
-    return parts.length ? parts.join(' ') : null
+    return parts.length ? toAbsolutePathData(parts.join(' '), svgCanvas) : null
   }
 
   // Non-destructive smoothing session state for the se-smooth-path-settings
