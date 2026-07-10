@@ -163,7 +163,15 @@ src/editor/index.html
 | Module | Purpose |
 |--------|---------|
 | `draw.js` | Shape creation primitives (rect, circle, ellipse, text, line, path…) |
-| `event.js` | All mouse/touch event bindings + custom event dispatch (~53KB) |
+| `event.js` | mouseDown/mouseMove/mouseUp orchestrators (shared prelude, hit-testing, dispatch to the `event-*.js` mode-family modules, epilogue) + custom event dispatch, `dblClickEvent`, `mouseOutEvent`, `DOMMouseScrollEvent`/`zoomAtPoint` |
+| `event-group-context.js` | Group-local coordinate helpers shared across `event.js` and the select/shape-draw handlers (`toCurrentGroupLocalDelta`/`Point`, `isCreateInCurrentGroup`) |
+| `event-select.js` | `select`/`multiselect` mode: drag-move w/ snapping, rubber-band multiselect, mouseUp transform-consolidation tail (shared via fallthrough with `resize`) |
+| `event-resize.js` | `resize` mode: single-element + multi-element `resizeGroup` uniform scale |
+| `event-rotate.js` | `rotate` mode: single-element + multi-element `rotateGroup` rigid rotate |
+| `event-shape-draw.js` | Shape-creation modes (rect/circle/ellipse/line/text/image/frame/freehand…) |
+| `event-path-edit.js` | `path`/`pathedit` mode — thin delegates onto `path-actions.js` |
+| `event-text-edit.js` | `textedit` mode — thin delegates onto `text-actions.js` |
+| `event-zoom.js` | `zoom` mode (marquee-zoom rubber band) |
 | `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
 | `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box |
 | `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector(bbox, angle)`/`hideGroupSelector()` draw one union box + 8 resize grips **+ the rotate grip** around a multi-selection (the optional `angle` rotates the box+grips rigidly during a live group rotation) |
@@ -464,8 +472,9 @@ Groups are native `<g>` containers. Selection/editing follows an Excalidraw-styl
 - **Multi-selection rotation.** A 2+ element selection can be rotated, not just resized.
   `showGroupSelector` shows the rotate grip; dragging it enters `rotate` mode with
   `svgCanvas.groupRotateStart` (per-element start matrices) + `groupRotateCenter` (union
-  center) captured in `mouseDownEvent`. `rotateGroup` (`core/event.js`, mirrors `resizeGroup`)
-  applies `R(angle, cx, cy)·startMatrix` to each element so the layout rotates rigidly. Undo
+  center) captured in `mouseDownEvent`. `rotateGroup` (`core/event-rotate.js`, mirrors
+  `resizeGroup` in `core/event-resize.js`) applies `R(angle, cx, cy)·startMatrix` to each
+  element so the layout rotates rigidly. Undo
   is recorded by the existing `beginUndoableChange('transform', selectedElements)` /
   `finishUndoableChange()` pair (already multi-element aware); the group-rotate mouseUp skips
   `recalculateAllSelectedDimensions` (which would decompose the baked matrices) and refreshes

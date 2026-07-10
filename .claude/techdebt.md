@@ -36,11 +36,6 @@ self-intersecting cutting polylines.
 The following were explicitly called out in that plan as "Deferred / optional
 future refactors" — each needs its own planning pass before execution:
 
-- **Split `core/event.js` (~2,065 lines) into per-mode handlers** — extract
-  the mouseDown/Move/Up mode branches (select, resize, rotate, path-edit,
-  text-edit, zoom, shape-draw) behind a dispatcher. High payoff, high
-  regression surface; only attempt with a Playwright regression suite over
-  all drawing modes first.
 - **Reorganize `svgcanvas.js` state bag (80+ flat properties)** into concern
   objects (selection / drawing / style / history / zoom), keeping getters for
   API compat. Very high effort; 100+ call sites.
@@ -57,3 +52,24 @@ future refactors" — each needs its own planning pass before execution:
 - **`pathseg` removal** — blocked until `core/path-actions.js` is rewritten
   off `pathSegList` (used throughout, e.g. lines 39-46, 470-576, 666+) onto
   the modern path API.
+
+## `tests/e2e/unit/svgcore-*.spec.js` (Playwright unit-harness specs) all time out
+
+`src/editor/tests/unit-harness.html` imports
+`./vendor/svgcanvas/core/utilities.js`, which was deleted in commit
+`2328a466` ("split core/utilities.js into dom/bbox/path/encoding-utils")
+without updating the harness or `scripts/copy-static.mjs` (which still lists
+`core/utilities.js` in its copy list, line ~41). The built
+`dist/editor/tests/vendor/svgcanvas/core/utilities.js` 404s, the harness's
+inline `<script type="module">` throws on that import, `window.svgHarness`
+never gets set, and every spec under `tests/e2e/unit/` (clear, draw-extra,
+drawing, geometry, history, namespaces, path-extra, recalculate*, remap-extra,
+smoke, touch, util, utilities*) hangs on its `beforeEach`'s
+`page.waitForFunction(() => window.svgHarness)` until the 60s test timeout —
+pre-existing on `master`, unrelated to any change in this session. Confirmed
+by loading the harness directly in a Playwright page and inspecting
+`requestfailed`/`pageerror` events. Not fixed now (out of scope for the
+session that found it) — needs the harness's import list (and
+`copy-static.mjs`'s copy list) updated to the post-split file names
+(`dom-utils.js`/`bbox-utils.js`/`path-utils.js`/`encoding-utils.js`) in place
+of `utilities.js`.

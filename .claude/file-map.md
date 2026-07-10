@@ -144,7 +144,15 @@
 |------|---------|
 | `svgcanvas.js` | `SvgCanvas` class — aggregates all core modules (~36KB) |
 | `core/draw.js` | Shape creation primitives |
-| `core/event.js` | All mouse/touch event bindings (~53KB); exposes `svgCanvas.zoomAtPoint(zoom, clientX, clientY)` shared by Ctrl+wheel zoom and tablet pinch |
+| `core/event.js` | mouseDown/mouseMove/mouseUp orchestrators (shared prelude/hit-testing/epilogue + per-mode dispatch to the `core/event-*.js` family modules below) + `dblClickEvent`, `mouseOutEvent`, `DOMMouseScrollEvent`; exposes `svgCanvas.zoomAtPoint(zoom, clientX, clientY)` shared by Ctrl+wheel zoom and tablet pinch |
+| `core/event-group-context.js` | Group-local coordinate helpers shared by `event.js`'s preludes and the select/shape-draw handlers: `toCurrentGroupLocalDelta`/`Point`, `isCreateInCurrentGroup`, `CONTENT_SPACE_MODES` |
+| `core/event-select.js` | `select`/`multiselect` mode handlers: drag-move (proportion/smart-guide snapping), rubber-band multiselect, and the mouseUp property-capture/transform-consolidation tail (also entered via the `resize`/`multiselect` fallthrough) |
+| `core/event-resize.js` | `resize` mode handlers: single-element resize + multi-element uniform `resizeGroup` scale |
+| `core/event-rotate.js` | `rotate` mode handlers: single-element rotate + multi-element rigid `rotateGroup` |
+| `core/event-shape-draw.js` | Shape-creation mode handlers: rect/square/frame/foreignObject/image/circle/ellipse/line/text/fhellipse/fhrect/fhpath (incl. freehand pencil B-spline smoothing) |
+| `core/event-path-edit.js` | `path`/`pathedit` mode handlers — thin delegates onto `pathActions.*` plus grid/shift-angle-snap bookkeeping |
+| `core/event-text-edit.js` | `textedit` mode handlers — thin delegates onto `textActions.*` |
+| `core/event-zoom.js` | `zoom` mode handlers (marquee-zoom rubber band + `zoomed` event) |
 | `core/selected-elem.js` | Move, resize, flip selected elements |
 | `core/selection.js` | Selection list management |
 | `core/select.js` | Rubber-band selector + resize handles UI |

@@ -5,26 +5,28 @@
  * @copyright 2011 Jeff Schiller
  */
 import {
-  assignAttributes, cleanupElement, getRotationAngle, snapToGrid, snapPointToGrid, walkTree,
-  preventClickDefault, setHref
+  cleanupElement, snapPointToGrid
 } from './dom-utils.js'
-import { getBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
+import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   convertAttrs
 } from './units.js'
 import {
-  transformPoint, hasMatrixTransform, getMatrix, snapToAngle, getTransformList, transformListToTransform, matrixMultiply, getMatrixToContent
+  transformPoint, getTransformList, transformListToTransform
 } from './math.js'
-import * as pathModule from './path.js'
 import * as hstry from './history.js'
-import { proportionLines } from './proportions.js'
-import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'
 import { findPos } from '../../svgcanvas/common/util.js'
+import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
+import { init as eventZoomInit } from './event-zoom.js'
+import { init as eventTextEditInit } from './event-text-edit.js'
+import { init as eventPathEditInit } from './event-path-edit.js'
+import { init as eventShapeDrawInit } from './event-shape-draw.js'
+import { init as eventResizeInit } from './event-resize.js'
+import { init as eventRotateInit } from './event-rotate.js'
+import { init as eventSelectInit } from './event-select.js'
 
 const {
-  InsertElementCommand,
-  BatchCommand,
-  ChangeElementCommand
+  InsertElementCommand
 } = hstry
 
 /**
@@ -34,175 +36,13 @@ const {
 */
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
-  let moveSelectionThresholdReached = false
-  // Real-time jitter stabilization for the freehand pencil tool (EMA low-pass
-  // filter on raw pointer coordinates, applied before the B-spline capture
-  // below). Reset per-stroke in the fhpath mousedown case.
-  let pencilStabX = null
-  let pencilStabY = null
-
-const getBsplinePoint = (t) => {
-  const spline = { x: 0, y: 0 }
-  const p0 = { x: svgCanvas.getControllPoint2('x'), y: svgCanvas.getControllPoint2('y') }
-  const p1 = { x: svgCanvas.getControllPoint1('x'), y: svgCanvas.getControllPoint1('y') }
-  const p2 = { x: svgCanvas.getStart('x'), y: svgCanvas.getStart('y') }
-  const p3 = { x: svgCanvas.getEnd('x'), y: svgCanvas.getEnd('y') }
-  const S = 1.0 / 6.0
-  const t2 = t * t
-  const t3 = t2 * t
-
-  const m = [
-    [-1, 3, -3, 1],
-    [3, -6, 3, 0],
-    [-3, 0, 3, 0],
-    [1, 4, 1, 0]
-  ]
-
-  spline.x = S * (
-    (p0.x * m[0][0] + p1.x * m[0][1] + p2.x * m[0][2] + p3.x * m[0][3]) * t3 +
-    (p0.x * m[1][0] + p1.x * m[1][1] + p2.x * m[1][2] + p3.x * m[1][3]) * t2 +
-    (p0.x * m[2][0] + p1.x * m[2][1] + p2.x * m[2][2] + p3.x * m[2][3]) * t +
-    (p0.x * m[3][0] + p1.x * m[3][1] + p2.x * m[3][2] + p3.x * m[3][3])
-  )
-  spline.y = S * (
-    (p0.y * m[0][0] + p1.y * m[0][1] + p2.y * m[0][2] + p3.y * m[0][3]) * t3 +
-    (p0.y * m[1][0] + p1.y * m[1][1] + p2.y * m[1][2] + p3.y * m[1][3]) * t2 +
-    (p0.y * m[2][0] + p1.y * m[2][1] + p2.y * m[2][2] + p3.y * m[2][3]) * t +
-    (p0.y * m[3][0] + p1.y * m[3][1] + p2.y * m[3][2] + p3.y * m[3][3])
-  )
-
-  return {
-    x: spline.x,
-    y: spline.y
-  }
-}
-
-// update the dummy transform in our transform list
-// to be a translate. We need to check if there was a transformation
-// to avoid loosing it
-const updateTransformList = (svgRoot, element, dx, dy) => {
-  const xform = svgRoot.createSVGTransform()
-  xform.setTranslate(dx, dy)
-  const tlist = getTransformList(element)
-  if (!tlist) { return }
-  if (tlist.numberOfItems) {
-    const firstItem = tlist.getItem(0)
-    if (firstItem.type === 2) { // SVG_TRANSFORM_TRANSLATE = 2
-      tlist.replaceItem(xform, 0)
-    } else {
-      tlist.insertItemBefore(xform, 0)
-    }
-  } else {
-    tlist.appendItem(xform)
-  }
-}
-
-// When editing inside a group (after double-clicking in), the directly
-// selected children and any newly drawn shapes live in the group's local
-// coordinate space, but pointer math is done in content/user space. These
-// helpers convert between the two using the current group's accumulated
-// matrix. Outside a group context they are no-ops, preserving prior behavior.
-const toCurrentGroupLocalDelta = (dx, dy) => {
-  const g = svgCanvas.getCurrentGroup()
-  if (!g) { return { dx, dy } }
-  const inv = getMatrixToContent(g).inverse()
-  // a delta is a vector: apply only the linear part (ignore translation e,f)
-  return { dx: inv.a * dx + inv.c * dy, dy: inv.b * dx + inv.d * dy }
-}
-const toCurrentGroupLocalPoint = (x, y) => {
-  const g = svgCanvas.getCurrentGroup()
-  if (!g) { return { x, y } }
-  const p = transformPoint(x, y, getMatrixToContent(g).inverse())
-  return { x: p.x, y: p.y }
-}
-// Modes that operate on existing elements / the selection, working in content
-// (user) space. Every other mode is a "create" mode whose new geometry must be
-// placed in the current group's local space while editing inside a group.
-const CONTENT_SPACE_MODES = ['select', 'multiselect', 'resize', 'rotate', 'pathedit', 'textedit', 'zoom']
-const isCreateInCurrentGroup = () =>
-  !CONTENT_SPACE_MODES.includes(svgCanvas.getCurrentMode()) && !!svgCanvas.getCurrentGroup()
-
-// Uniform group scale for a multi-element selection. Scales every selected
-// element by the SAME factor about a common pivot (the corner/edge opposite the
-// dragged grip), so no shape is distorted and the relative layout is preserved.
-// `x`,`y` are the current pointer position in content/user coords.
-const resizeGroup = (x, y) => {
-  const svgRoot = svgCanvas.getSvgRoot()
-  const initb = svgCanvas.getInitBbox()
-  const bx = initb.x; const by = initb.y; const bw = initb.width; const bh = initb.height
-  const mode = svgCanvas.getCurrentResizeMode()
-
-  let dx = x - svgCanvas.getStartX()
-  let dy = y - svgCanvas.getStartY()
-  if (svgCanvas.getCurConfig().gridSnapping) {
-    dx = snapToGrid(dx)
-    dy = snapToGrid(dy)
-  }
-  // ignore movement on an axis we are not stretching
-  if (!mode.includes('n') && !mode.includes('s')) { dy = 0 }
-  if (!mode.includes('e') && !mode.includes('w')) { dx = 0 }
-
-  let sy = bh ? (bh + dy) / bh : 1
-  let sx = bw ? (bw + dx) / bw : 1
-  if (mode.includes('n')) { sy = bh ? (bh - dy) / bh : 1 }
-  if (mode.includes('w')) { sx = bw ? (bw - dx) / bw : 1 }
-
-  // collapse to a single uniform factor (the axis dragged furthest wins)
-  const s = Math.abs(1 - sx) >= Math.abs(1 - sy) ? sx : sy
-
-  // pivot = the fixed corner/edge opposite the dragged grip
-  const ax = bx + (mode.includes('w') ? bw : 0)
-  const ay = by + (mode.includes('n') ? bh : 0)
-
-  // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
-  const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
-
-  svgCanvas.groupResizeStart.forEach((startMatrix, elem) => {
-    const newM = matrixMultiply(gm, startMatrix)
-    const tlist = getTransformList(elem)
-    while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
-    const t = svgRoot.createSVGTransform()
-    t.setMatrix(newM)
-    tlist.appendItem(t)
-    svgCanvas.selectorManager.requestSelector(elem).resize()
-  })
-
-  // redraw the group box scaled about the same pivot
-  svgCanvas.selectorManager.showGroupSelector({
-    x: ax + (bx - ax) * s,
-    y: ay + (by - ay) * s,
-    width: bw * s,
-    height: bh * s
-  })
-  svgCanvas.call('transition', svgCanvas.getSelectedElements())
-}
-
-// Rotate a multi-element selection rigidly about its union center by `angle`
-// degrees (absolute, measured from drag start). Each element gets the group
-// rotation matrix R(angle, cx, cy) pre-multiplied onto the matrix it had when
-// the drag began (svgCanvas.groupRotateStart), so the relative layout is
-// preserved and no shape is individually re-centered. Mirrors resizeGroup.
-const rotateGroup = (angle) => {
-  const svgRoot = svgCanvas.getSvgRoot()
-  const { x: cx, y: cy } = svgCanvas.groupRotateCenter
-  const rot = svgRoot.createSVGTransform()
-  rot.setRotate(angle, cx, cy)
-  const rm = rot.matrix
-
-  svgCanvas.groupRotateStart.forEach((startMatrix, elem) => {
-    const newM = matrixMultiply(rm, startMatrix)
-    const tlist = getTransformList(elem)
-    while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
-    const t = svgRoot.createSVGTransform()
-    t.setMatrix(newM)
-    tlist.appendItem(t)
-    svgCanvas.selectorManager.requestSelector(elem).resize()
-  })
-
-  // rotate the group box + grips rigidly about the union center
-  svgCanvas.selectorManager.showGroupSelector(svgCanvas.groupRotateBBox, angle)
-  svgCanvas.call('transition', svgCanvas.getSelectedElements())
-}
+  const eventZoom = eventZoomInit(svgCanvas)
+  const eventTextEdit = eventTextEditInit(svgCanvas)
+  const eventPathEdit = eventPathEditInit(svgCanvas)
+  const eventShapeDraw = eventShapeDrawInit(svgCanvas)
+  const eventResize = eventResizeInit(svgCanvas)
+  const eventRotate = eventRotateInit(svgCanvas)
+  const eventSelect = eventSelectInit(svgCanvas)
 
 /**
  *
@@ -225,16 +65,6 @@ const mouseMoveEvent = (evt) => {
   const svgRoot = svgCanvas.getSvgRoot()
   const selected = selectedElements[0]
 
-  let i
-  let xya
-  let cx
-  let cy
-  let dx
-  let dy
-  let len
-  let angle
-  let box
-
   const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
   const mouseX = pt.x * zoom
   const mouseY = pt.y * zoom
@@ -247,8 +77,8 @@ const mouseMoveEvent = (evt) => {
 
   // Match the mouseDown remap: while drawing inside a group, size/position the
   // shape in the group's local space (no-op outside a group / in select modes).
-  if (isCreateInCurrentGroup()) {
-    ({ x, y } = toCurrentGroupLocalPoint(x, y))
+  if (isCreateInCurrentGroup(svgCanvas)) {
+    ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
     realX = x
     realY = y
   }
@@ -257,503 +87,49 @@ const mouseMoveEvent = (evt) => {
     ({ x, y } = snapPointToGrid(x, y))
   }
 
-  let tlist
   switch (svgCanvas.getCurrentMode()) {
     case 'select': {
-      // Insert dummy transform on first mouse move (drag start), not on click.
-      // This avoids creating multiple transforms that trigger unwanted flattening.
-      if (!svgCanvas.hasDragStartTransform && selectedElements.length > 0) {
-        // Store original transforms BEFORE adding the drag transform (for undo)
-        svgCanvas.dragStartTransforms = new Map()
-        for (const selectedElement of selectedElements) {
-          if (!selectedElement) { continue }
-          // Capture the transform attribute before we modify it
-          svgCanvas.dragStartTransforms.set(selectedElement, selectedElement.getAttribute('transform') || '')
-          const slist = getTransformList(selectedElement)
-          if (!slist) { continue }
-          if (slist.numberOfItems) {
-            slist.insertItemBefore(svgRoot.createSVGTransform(), 0)
-          } else {
-            slist.appendItem(svgRoot.createSVGTransform())
-          }
-        }
-        svgCanvas.hasDragStartTransform = true
-        // Snapshot the selection bbox at drag start so proportion snapping can
-        // test edge/center positions against the candidate (post-delta) bbox.
-        svgCanvas.dragStartBBox = getStrokedBBoxDefaultVisible(selectedElements)
-      }
-      // we temporarily use a translate on the element(s) being dragged
-      // this transform is removed upon mousing up and the element is
-      // relocated to the new location
-      if (selected) {
-        dx = x - svgCanvas.getStartX()
-        dy = y - svgCanvas.getStartY()
-        if (svgCanvas.getCurConfig().gridSnapping) {
-          ({ x: dx, y: dy } = snapPointToGrid(dx, dy))
-        }
-        // Wireframe proportion snapping: align the moving selection's edges or
-        // center to the canvas proportion lines (x = w·f, y = h·f). On a match,
-        // ask the markers extension to draw a guide line in the marker's color.
-        if (svgCanvas.getCurConfig().wireframeSnapping && svgCanvas.dragStartBBox) {
-          const res = svgCanvas.getResolution()
-          const tol = 8 / zoom // ~8 screen px
-          const bb = svgCanvas.dragStartBBox
-          const snapAxis = (lines, refs) => {
-            let best = null
-            for (const ln of lines) {
-              for (const r of refs) {
-                const d = ln.pos - r
-                if (Math.abs(d) <= tol && (best === null || Math.abs(d) < Math.abs(best.delta))) {
-                  best = { delta: d, pos: ln.pos, color: ln.color }
-                }
-              }
-            }
-            return best
-          }
-          const sx = snapAxis(proportionLines(res.w), [bb.x + dx, bb.x + dx + bb.width / 2, bb.x + dx + bb.width])
-          const sy = snapAxis(proportionLines(res.h), [bb.y + dy, bb.y + dy + bb.height / 2, bb.y + dy + bb.height])
-          if (sx) dx += sx.delta
-          if (sy) dy += sy.delta
-          svgCanvas.showSnapGuides?.({ x: sx, y: sy })
-        }
-        // Smart object-to-object snapping: align the moving selection's
-        // edges/centers to other elements' edges/centers (or the page), and
-        // snap to the midpoint between its two nearest neighbors (equal
-        // spacing). Skipped inside a group context — bboxes of children of a
-        // transformed group are not in content space.
-        if (svgCanvas.getCurConfig().smartSnapping !== false &&
-          svgCanvas.dragStartBBox && !svgCanvas.getCurrentGroup()) {
-          if (!svgCanvas.smartSnapTargets) {
-            svgCanvas.smartSnapTargets = collectSnapTargets(svgCanvas, selectedElements)
-          }
-          const tol = 8 / zoom // ~8 screen px
-          const bb = svgCanvas.dragStartBBox
-          const snap = snapMovingBBox(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
-          const spacing = findEqualSpacing(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
-          // Per-axis precedence: same-kind alignment (edge↔edge/center↔center)
-          // > equal spacing > mixed alignment (edge↔center).
-          const useSpacingX = spacing.x && !(snap.x?.same)
-          const useSpacingY = spacing.y && !(snap.y?.same)
-          if (useSpacingX) { dx += spacing.x.delta } else if (snap.x) { dx += snap.x.delta }
-          if (useSpacingY) { dy += spacing.y.delta } else if (snap.y) { dy += snap.y.delta }
-          svgCanvas.showSmartGuides?.({
-            x: useSpacingX ? null : snap.x,
-            y: useSpacingY ? null : snap.y,
-            spacingX: useSpacingX ? spacing.x : null,
-            spacingY: useSpacingY ? spacing.y : null,
-            moving: { x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height }
-          })
-        }
-        // Shift locks movement to the dominant axis (match Excalidraw)
-        if (evt.shiftKey) {
-          if (Math.abs(dx) > Math.abs(dy)) { dy = 0 } else { dx = 0 }
-        }
-
-        // Enable moving selection only if mouse has been moved at least 4 px in any direction
-        // This prevents objects from being accidentally moved when (initially) selected
-        const deltaThreshold = 4
-        const deltaThresholdReached = Math.abs(dx) > deltaThreshold || Math.abs(dy) > deltaThreshold
-        moveSelectionThresholdReached = moveSelectionThresholdReached || deltaThresholdReached
-
-        if (moveSelectionThresholdReached) {
-          // Inside a transformed group the children's translate lives in the
-          // group's local space, so map the content-space delta accordingly
-          // (no-op at top level). Fixes child dragging too far in a scaled/
-          // rotated group.
-          const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(dx, dy)
-          // Candidate delta for transformAgain — committed in mouseUp.
-          svgCanvas.pendingMoveDelta = { dx, dy }
-          selectedElements.forEach((el) => {
-            if (el) {
-              updateTransformList(svgRoot, el, ldx, ldy)
-              // update our internal bbox that we're tracking while dragging
-              svgCanvas.selectorManager.requestSelector(el).resize()
-            }
-          })
-          // Live readout for the position panels (attributes stay untouched
-          // until mouseup's recalculateDimensions, so panels need this delta
-          // to show the in-progress position instead of the pre-drag value).
-          svgCanvas.dragLiveMoveDelta = { dx: ldx, dy: ldy }
-          svgCanvas.call('transition', selectedElements)
-        }
-      }
+      eventSelect.move(evt, { selectedElements, selected, x, y, zoom, svgRoot })
       break
     }
     case 'multiselect': {
-      realX *= zoom
-      realY *= zoom
-      assignAttributes(svgCanvas.getRubberBox(), {
-        x: Math.min(svgCanvas.getRStartX(), realX),
-        y: Math.min(svgCanvas.getRStartY(), realY),
-        width: Math.abs(realX - svgCanvas.getRStartX()),
-        height: Math.abs(realY - svgCanvas.getRStartY())
-      }, 100)
-
-      // for each selected:
-      // - if newList contains selected, do nothing
-      // - if newList doesn't contain selected, remove it from selected
-      // - for any newList that was not in selectedElements, add it to selected
-      const elemsToRemove = selectedElements.slice(); const elemsToAdd = []
-      const newList = svgCanvas.getIntersectionList()
-
-      // For every element in the intersection, add if not present in selectedElements.
-      len = newList.length
-      for (i = 0; i < len; ++i) {
-        const intElem = newList[i]
-        // Found an element that was not selected before, so we should add it.
-        if (!selectedElements.includes(intElem)) {
-          elemsToAdd.push(intElem)
-        }
-        // Found an element that was already selected, so we shouldn't remove it.
-        const foundInd = elemsToRemove.indexOf(intElem)
-        if (foundInd !== -1) {
-          elemsToRemove.splice(foundInd, 1)
-        }
-      }
-
-      if (elemsToRemove.length > 0) {
-        svgCanvas.removeFromSelection(elemsToRemove)
-      }
-
-      if (elemsToAdd.length > 0) {
-        svgCanvas.addToSelection(elemsToAdd)
-      }
-
+      eventSelect.multiselectMove(evt, { selectedElements, realX, realY, zoom })
       break
     }
     case 'resize': {
-      // multi-selection: uniform group scale (no per-element distortion)
-      if (svgCanvas.groupResizeStart) {
-        resizeGroup(x, y)
-        break
-      }
-      // we track the resize bounding box and translate/scale the selected element
-      // while the mouse is down, when mouse goes up, we use this to recalculate
-      // the shape's coordinates
-      tlist = getTransformList(selected)
-      if (!tlist) { break }
-      const hasMatrix = hasMatrixTransform(tlist)
-      box = hasMatrix ? svgCanvas.getInitBbox() : getBBox(selected)
-      let left = box.x
-      let top = box.y
-      let { width, height } = box
-      dx = (x - svgCanvas.getStartX())
-      dy = (y - svgCanvas.getStartY())
-
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        dx = snapToGrid(dx)
-        dy = snapToGrid(dy)
-        height = snapToGrid(height)
-        width = snapToGrid(width)
-      }
-
-      // if rotated, adjust the dx,dy values
-      angle = getRotationAngle(selected)
-      if (angle) {
-        const r = Math.sqrt(dx * dx + dy * dy)
-        const theta = Math.atan2(dy, dx) - angle * Math.PI / 180.0
-        dx = r * Math.cos(theta)
-        dy = r * Math.sin(theta)
-      }
-
-      // if not stretching in y direction, set dy to 0
-      // if not stretching in x direction, set dx to 0
-      if (!svgCanvas.getCurrentResizeMode().includes('n') && !svgCanvas.getCurrentResizeMode().includes('s')) {
-        dy = 0
-      }
-      if (!svgCanvas.getCurrentResizeMode().includes('e') && !svgCanvas.getCurrentResizeMode().includes('w')) {
-        dx = 0
-      }
-
-      let // ts = null,
-        tx = 0; let ty = 0
-      let sy = height ? (height + dy) / height : 1
-      let sx = width ? (width + dx) / width : 1
-      // if we are dragging on the north side, then adjust the scale factor and ty
-      if (svgCanvas.getCurrentResizeMode().includes('n')) {
-        sy = height ? (height - dy) / height : 1
-        ty = height
-      }
-
-      // if we dragging on the east side, then adjust the scale factor and tx
-      if (svgCanvas.getCurrentResizeMode().includes('w')) {
-        sx = width ? (width - dx) / width : 1
-        tx = width
-      }
-
-      // update the transform list with translate,scale,translate
-      const translateOrigin = svgRoot.createSVGTransform()
-      const scale = svgRoot.createSVGTransform()
-      const translateBack = svgRoot.createSVGTransform()
-
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        left = snapToGrid(left)
-        tx = snapToGrid(tx)
-        top = snapToGrid(top)
-        ty = snapToGrid(ty)
-      }
-
-      translateOrigin.setTranslate(-(left + tx), -(top + ty))
-      // For images, we maintain aspect ratio by default and relax when shift pressed
-      const maintainAspectRatio = (selected.tagName !== 'image' && evt.shiftKey) || (selected.tagName === 'image' && !evt.shiftKey)
-      if (maintainAspectRatio) {
-        if (sx === 1) {
-          sx = sy
-        } else { sy = sx }
-      }
-      scale.setScale(sx, sy)
-
-      translateBack.setTranslate(left + tx, top + ty)
-      if (hasMatrix) {
-        const diff = angle ? 1 : 0
-        tlist.replaceItem(translateOrigin, 2 + diff)
-        tlist.replaceItem(scale, 1 + diff)
-        tlist.replaceItem(translateBack, Number(diff))
-      } else {
-        const N = tlist.numberOfItems
-        tlist.replaceItem(translateBack, N - 3)
-        tlist.replaceItem(scale, N - 2)
-        tlist.replaceItem(translateOrigin, N - 1)
-      }
-
-      svgCanvas.selectorManager.requestSelector(selected).resize()
-      // Live readout for the dimension panels — mirrors the anchor-based
-      // scale transform being applied above so panels track the in-progress
-      // resize instead of the pre-drag value (baked into attributes only at
-      // mouseup via recalculateDimensions).
-      svgCanvas.dragLiveResizeBox = { left, top, width, height, tx, ty, sx, sy }
-      svgCanvas.call('transition', selectedElements)
-
+      eventResize.move(evt, { selected, x, y, svgRoot, selectedElements })
       break
     }
     case 'zoom': {
-      realX *= zoom
-      realY *= zoom
-      assignAttributes(svgCanvas.getRubberBox(), {
-        x: Math.min(svgCanvas.getRStartX() * zoom, realX),
-        y: Math.min(svgCanvas.getRStartY() * zoom, realY),
-        width: Math.abs(realX - svgCanvas.getRStartX() * zoom),
-        height: Math.abs(realY - svgCanvas.getRStartY() * zoom)
-      }, 100)
+      eventZoom.move(evt, { realX, realY, zoom })
       break
     }
-    case 'text': {
-      assignAttributes(shape, {
-        x,
-        y
-      }, 1000)
-      break
-    }
-    case 'line': {
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        ({ x, y } = snapPointToGrid(x, y))
-      }
-
-      let x2 = x
-      let y2 = y
-
-      if (evt.shiftKey) {
-        xya = snapToAngle(svgCanvas.getStartX(), svgCanvas.getStartY(), x2, y2)
-        x2 = xya.x
-        y2 = xya.y
-      }
-
-      shape.setAttribute('x2', x2)
-      shape.setAttribute('y2', y2)
-      break
-    }
-    case 'foreignObject': // fall through
+    case 'text':
+    case 'line':
+    case 'foreignObject':
     case 'frame':
     case 'square':
     case 'rect':
-    case 'image': {
-      // For images, we maintain aspect ratio by default and relax when shift pressed
-      const maintainAspectRatio = (svgCanvas.getCurrentMode() === 'square') ||
-        (svgCanvas.getCurrentMode() === 'image' && !evt.shiftKey) ||
-        (svgCanvas.getCurrentMode() !== 'image' && evt.shiftKey)
-
-      let
-        w = Math.abs(x - svgCanvas.getStartX())
-      let h = Math.abs(y - svgCanvas.getStartY())
-      let newX; let newY
-      if (maintainAspectRatio) {
-        w = h = Math.max(w, h)
-        newX = svgCanvas.getStartX() < x ? svgCanvas.getStartX() : svgCanvas.getStartX() - w
-        newY = svgCanvas.getStartY() < y ? svgCanvas.getStartY() : svgCanvas.getStartY() - h
-      } else {
-        newX = Math.min(svgCanvas.getStartX(), x)
-        newY = Math.min(svgCanvas.getStartY(), y)
-      }
-
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        w = snapToGrid(w)
-        h = snapToGrid(h)
-        newX = snapToGrid(newX)
-        newY = snapToGrid(newY)
-      }
-
-      assignAttributes(shape, {
-        width: w,
-        height: h,
-        x: newX,
-        y: newY
-      }, 1000)
-
-      break
-    }
-    case 'circle': {
-      cx = Number(shape.getAttribute('cx'))
-      cy = Number(shape.getAttribute('cy'))
-      let rad = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy))
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        rad = snapToGrid(rad)
-      }
-      shape.setAttribute('r', rad)
-      break
-    }
-    case 'ellipse': {
-      cx = Number(shape.getAttribute('cx'))
-      cy = Number(shape.getAttribute('cy'))
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        ({ x, y } = snapPointToGrid(x, y))
-        ;({ x: cx, y: cy } = snapPointToGrid(cx, cy))
-      }
-      shape.setAttribute('rx', Math.abs(x - cx))
-      const ry = Math.abs(evt.shiftKey ? (x - cx) : (y - cy))
-      shape.setAttribute('ry', ry)
-      break
-    }
+    case 'image':
+    case 'circle':
+    case 'ellipse':
     case 'fhellipse':
-    case 'fhrect': {
-      svgCanvas.setFreehand('minx', Math.min(realX, svgCanvas.getFreehand('minx')))
-      svgCanvas.setFreehand('maxx', Math.max(realX, svgCanvas.getFreehand('maxx')))
-      svgCanvas.setFreehand('miny', Math.min(realY, svgCanvas.getFreehand('miny')))
-      svgCanvas.setFreehand('maxy', Math.max(realY, svgCanvas.getFreehand('maxy')))
-    }
-    // Fallthrough
+    case 'fhrect':
     case 'fhpath': {
-      // dAttr += + realX + ',' + realY + ' ';
-      // shape.setAttribute('points', dAttr);
-      // Low-pass filter raw pointer coords to damp hand tremor before it
-      // reaches the B-spline capture below (fhellipse/fhrect fall through to
-      // this case too, but they track true min/max extent above and must not
-      // be lagged, so this only applies in fhpath mode itself).
-      if (svgCanvas.getMode() === 'fhpath') {
-        const k = svgCanvas.getCurConfig().pencilStabilization ?? 0.3
-        pencilStabX = pencilStabX === null ? realX : pencilStabX * k + realX * (1 - k)
-        pencilStabY = pencilStabY === null ? realY : pencilStabY * k + realY * (1 - k)
-        realX = pencilStabX
-        realY = pencilStabY
-      }
-      svgCanvas.setEnd('x', realX)
-      svgCanvas.setEnd('y', realY)
-      if (svgCanvas.getControllPoint2('x') && svgCanvas.getControllPoint2('y')) {
-        for (i = 0; i < svgCanvas.getStepCount() - 1; i++) {
-          svgCanvas.setParameter(i / svgCanvas.getStepCount())
-          svgCanvas.setNextParameter((i + 1) / svgCanvas.getStepCount())
-          svgCanvas.setbSpline(getBsplinePoint(svgCanvas.getNextParameter()))
-          svgCanvas.setNextPos({ x: svgCanvas.getbSpline('x'), y: svgCanvas.getbSpline('y') })
-          svgCanvas.setbSpline(getBsplinePoint(svgCanvas.getParameter()))
-          svgCanvas.setSumDistance(
-            svgCanvas.getSumDistance() + Math.sqrt((svgCanvas.getNextPos('x') -
-              svgCanvas.getbSpline('x')) * (svgCanvas.getNextPos('x') -
-                svgCanvas.getbSpline('x')) + (svgCanvas.getNextPos('y') -
-                  svgCanvas.getbSpline('y')) * (svgCanvas.getNextPos('y') - svgCanvas.getbSpline('y')))
-          )
-          if (svgCanvas.getSumDistance() > svgCanvas.getThreSholdDist()) {
-            svgCanvas.setSumDistance(svgCanvas.getSumDistance() - svgCanvas.getThreSholdDist())
-
-            // Faster than completely re-writing the points attribute.
-            const point = svgCanvas.getSvgContent().createSVGPoint()
-            point.x = svgCanvas.getbSpline('x')
-            point.y = svgCanvas.getbSpline('y')
-            shape.points.appendItem(point)
-          }
-        }
-      }
-      svgCanvas.setControllPoint2('x', svgCanvas.getControllPoint1('x'))
-      svgCanvas.setControllPoint2('y', svgCanvas.getControllPoint1('y'))
-      svgCanvas.setControllPoint1('x', svgCanvas.getStart('x'))
-      svgCanvas.setControllPoint1('y', svgCanvas.getStart('y'))
-      svgCanvas.setStart({ x: svgCanvas.getEnd('x'), y: svgCanvas.getEnd('y') })
+      eventShapeDraw.move(evt, { x, y, realX, realY, shape })
       break
-      // update path stretch line coordinates
     }
     case 'path': // fall through
     case 'pathedit': {
-      x *= zoom
-      y *= zoom
-
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        ({ x, y } = snapPointToGrid(x, y))
-        const sp = snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
-        svgCanvas.setStartX(sp.x)
-        svgCanvas.setStartY(sp.y)
-      }
-      if (evt.shiftKey) {
-        const { path } = pathModule
-        let x1; let y1
-        if (path) {
-          x1 = path.dragging ? path.dragging[0] : svgCanvas.getStartX()
-          y1 = path.dragging ? path.dragging[1] : svgCanvas.getStartY()
-        } else {
-          x1 = svgCanvas.getStartX()
-          y1 = svgCanvas.getStartY()
-        }
-        xya = snapToAngle(x1, y1, x, y);
-        ({ x, y } = xya)
-      }
-
-      if (svgCanvas.getRubberBox()?.getAttribute('display') !== 'none') {
-        realX *= zoom
-        realY *= zoom
-        assignAttributes(svgCanvas.getRubberBox(), {
-          x: Math.min(svgCanvas.getRStartX() * zoom, realX),
-          y: Math.min(svgCanvas.getRStartY() * zoom, realY),
-          width: Math.abs(realX - svgCanvas.getRStartX() * zoom),
-          height: Math.abs(realY - svgCanvas.getRStartY() * zoom)
-        }, 100)
-      }
-      svgCanvas.pathActions.mouseMove(x, y)
-
+      eventPathEdit.move(evt, { x, y, zoom, realX, realY })
       break
     }
     case 'textedit': {
-      x *= zoom
-      y *= zoom
-      svgCanvas.textActions.mouseMove(mouseX, mouseY)
-
+      eventTextEdit.move(evt, { mouseX, mouseY })
       break
     }
     case 'rotate': {
-      // multi-selection: rotate the whole group rigidly about the union center
-      if (svgCanvas.groupRotateStart) {
-        cx = svgCanvas.groupRotateCenter.x
-        cy = svgCanvas.groupRotateCenter.y
-        angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
-        if (svgCanvas.getCurConfig().gridSnapping) { angle = snapToGrid(angle) }
-        if (evt.shiftKey) { angle = Math.round(angle / 15) * 15 }
-        rotateGroup(angle < -180 ? (360 + angle) : angle)
-        break
-      }
-      box = getBBox(selected)
-      cx = box.x + box.width / 2
-      cy = box.y + box.height / 2
-      const m = getMatrix(selected)
-      const center = transformPoint(cx, cy, m)
-      cx = center.x
-      cy = center.y
-      angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
-      if (svgCanvas.getCurConfig().gridSnapping) {
-        angle = snapToGrid(angle)
-      }
-      if (evt.shiftKey) { // restrict rotations to nice angles (WRS)
-        const snap = 15
-        angle = Math.round(angle / snap) * snap
-      }
-
-      svgCanvas.setRotationAngle(angle < -180 ? (360 + angle) : angle, true)
-      svgCanvas.call('transition', selectedElements)
+      eventRotate.move(evt, { selected, x, y, selectedElements })
       break
     }
     default:
@@ -816,7 +192,7 @@ const mouseOutEvent = (evt) => {
 */
 const mouseUpEvent = (evt) => {
   evt.preventDefault()
-  moveSelectionThresholdReached = false
+  svgCanvas.moveSelectionThresholdReached = false
   svgCanvas.dragStartBBox = null
   svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
   svgCanvas.smartSnapTargets = null
@@ -855,343 +231,41 @@ const mouseUpEvent = (evt) => {
   // real attributes like width/height/font-size), not consolidated into a matrix.
   const operationMode = svgCanvas.getCurrentMode()
   switch (svgCanvas.getCurrentMode()) {
-    // intentionally fall-through to select here
+    // intentionally fall-through to select here (handled inside eventSelect.up)
     case 'resize':
     case 'multiselect':
-      if (svgCanvas.getRubberBox()) {
-        svgCanvas.getRubberBox().setAttribute('display', 'none')
-        svgCanvas.setCurBBoxes([])
-      }
-      svgCanvas.setCurrentMode('select')
-    // Fallthrough
     case 'select':
-      if (selectedElements[0]) {
-        // if we only have one selected element
-        if (!selectedElements[1]) {
-          // set our current stroke/fill properties to the element's
-          const selected = selectedElements[0]
-          switch (selected.tagName) {
-            case 'g':
-            case 'use':
-            case 'image':
-            case 'foreignObject':
-              break
-            case 'text':
-              svgCanvas.setCurText('font_size', selected.getAttribute('font-size'))
-              svgCanvas.setCurText('font_family', selected.getAttribute('font-family'))
-            // fallthrough
-            default:
-              svgCanvas.setCurProperties('fill', selected.getAttribute('fill'))
-              svgCanvas.setCurProperties('fill_opacity', selected.getAttribute('fill-opacity'))
-              svgCanvas.setCurProperties('stroke', selected.getAttribute('stroke'))
-              svgCanvas.setCurProperties('stroke_opacity', selected.getAttribute('stroke-opacity'))
-              // A missing attribute means the SVG initial value of 1 (cleanupElement
-              // strips it at that value) — not null, which downstream consumers of
-              // getStrokeWidth() would otherwise treat as 0.
-              svgCanvas.setCurProperties('stroke_width', selected.getAttribute('stroke-width') ?? 1)
-              svgCanvas.setCurProperties('stroke_dasharray', selected.getAttribute('stroke-dasharray'))
-              svgCanvas.setCurProperties('stroke_linejoin', selected.getAttribute('stroke-linejoin'))
-              svgCanvas.setCurProperties('stroke_linecap', selected.getAttribute('stroke-linecap'))
-          }
-          svgCanvas.selectorManager.requestSelector(selected).showGrips(true)
-        }
-        // if it was being dragged/resized
-        if (realX !== svgCanvas.getRStartX() || realY !== svgCanvas.getRStartY()) {
-          // Only recalculate dimensions after actual dragging/resizing to avoid
-          // unwanted transform flattening on simple clicks
-
-          // Create a single batch command for all moved elements
-          const batchCmd = new BatchCommand('position')
-
-          selectedElements.forEach((elem) => {
-            if (!elem) return
-
-            const tlist = getTransformList(elem)
-            if (!tlist || tlist.numberOfItems === 0) return
-
-            // Get the transform from BEFORE the drag started
-            const oldTransform = svgCanvas.dragStartTransforms?.get(elem) || ''
-
-            // Check if the first transform is a translate (the drag transform we added)
-            const firstTransform = tlist.getItem(0)
-            const hasDragTranslate = firstTransform.type === 2 // SVG_TRANSFORM_TRANSLATE
-
-            // For groups, we always consolidate the transforms (recalculateDimensions returns null for groups)
-            const isGroup = elem.tagName === 'g' || elem.tagName === 'a'
-
-            // Groups keep the drag baked as a single matrix transform on the
-            // <g> (recalculateDimensions returns null for them).
-            if (isGroup && hasDragTranslate) {
-              const consolidatedMatrix = transformListToTransform(tlist).matrix
-
-              // Clear the transform list
-              while (tlist.numberOfItems > 0) {
-                tlist.removeItem(0)
-              }
-
-              // Add the consolidated matrix
-              const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-              newTransform.setMatrix(consolidatedMatrix)
-              tlist.appendItem(newTransform)
-
-              // Record the transform change for undo
-              batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
-              return
-            }
-
-            // A non-group element whose transform list still holds the existing
-            // transform plus the dummy drag translate (2+ items): consolidate
-            // them into one matrix so recalculateDimensions can bake the move
-            // into the geometry below. Without this the translate is left as a
-            // matrix transform on the element — and path-edit then draws node
-            // grips from the un-translated pathSegList, i.e. at the original
-            // location. Skip for resize: that tlist is [translate, scale,
-            // translate] and must reach recalculateDimensions to scale real
-            // attributes (width/height/font-size/…) rather than bake a matrix.
-            if (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate) {
-              const consolidatedMatrix = transformListToTransform(tlist).matrix
-
-              // Clear the transform list
-              while (tlist.numberOfItems > 0) {
-                tlist.removeItem(0)
-              }
-
-              // Add the consolidated matrix
-              const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-              newTransform.setMatrix(consolidatedMatrix)
-              tlist.appendItem(newTransform)
-            }
-
-            // For non-group elements, bake the transform into geometry via recalculateDimensions
-            const cmd = svgCanvas.recalculateDimensions(elem)
-            if (cmd) {
-              batchCmd.addSubCommand(cmd)
-            } else {
-              // recalculateDimensions returned null
-              // Check if the transform actually changed and record it manually
-              const newTransform = elem.getAttribute('transform') || ''
-              if (newTransform !== oldTransform) {
-                batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
-              }
-            }
-          })
-
-          if (!batchCmd.isEmpty()) {
-            // A committed drag-move is the repeatable delta for transformAgain.
-            if (pendingMove && operationMode !== 'resize') {
-              svgCanvas.lastMoveDelta = pendingMove
-            }
-            svgCanvas.addCommandToHistory(batchCmd)
-            // A move/resize bakes the new position/scale into real attributes
-            // (x/y, width/height, font-size, …) via recalculateDimensions.
-            // Fire 'changed' so the context panel reflects those new values
-            // instead of the pre-drag ones.
-            svgCanvas.call('changed', selectedElements.filter(Boolean))
-          }
-
-          // Clear the stored transforms AND reset the flag together
-          svgCanvas.dragStartTransforms = null
-          svgCanvas.hasDragStartTransform = false
-
-          const len = selectedElements.length
-          for (let i = 0; i < len; ++i) {
-            if (!selectedElements[i]) { break }
-            svgCanvas.selectorManager.requestSelector(selectedElements[i]).resize()
-          }
-          // refresh the group box around the (now consolidated) multi-selection
-          svgCanvas.updateGroupSelector()
-          // no change in position/size, so maybe we should move to pathedit
-        } else {
-          t = evt.target
-          // Shift-click on an already-selected element removes it from the
-          // selection. evt.target may be a child of a selected <g> (or the path
-          // interior), so resolve up to the selected element actually under the
-          // pointer. This takes priority over path-edit entry so a shift-click
-          // always deselects rather than diving into a single selected path.
-          const shiftHit = evt.shiftKey &&
-            selectedElements.find((s) => s && (s === t || s.contains(t)))
-          if (shiftHit && tempJustSelected !== shiftHit) {
-            svgCanvas.removeFromSelection([shiftHit])
-          } else if (!evt.shiftKey && selectedElements[0].nodeName === 'path' && !selectedElements[1]) {
-            // if it was a path
-            svgCanvas.pathActions.select(selectedElements[0])
-          }
-        } // no change in mouse position
-
-        // Remove non-scaling stroke
-        const elem = selectedElements[0]
-        if (elem) {
-          elem.removeAttribute('style')
-
-          // we don't remove the style elements for contents of foreignObjects
-          // because that is a valid way to style them
-          if (elem.localName === 'foreignObject') {
-            walkTree(elem, (el) => {
-              el.style.removeProperty('pointer-events')
-            })
-          } else {
-            walkTree(elem, (el) => {
-              el.removeAttribute('style')
-            })
-          }
-        }
-      }
+      eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected })
       return
     case 'zoom': {
-      svgCanvas.getRubberBox()?.setAttribute('display', 'none')
-      const factor = evt.shiftKey ? 0.5 : 2
-      svgCanvas.call('zoomed', {
-        x: Math.min(svgCanvas.getRStartX(), realX),
-        y: Math.min(svgCanvas.getRStartY(), realY),
-        width: Math.abs(realX - svgCanvas.getRStartX()),
-        height: Math.abs(realY - svgCanvas.getRStartY()),
-        factor
-      })
+      eventZoom.up(evt, { realX, realY })
       return
-    } case 'fhpath': {
-      // Check that the path contains at least 2 points; a degenerate one-point path
-      // causes problems.
-      // Webkit ignores how we set the points attribute with commas and uses space
-      // to separate all coordinates, see https://bugs.webkit.org/show_bug.cgi?id=29870
-      svgCanvas.setSumDistance(0)
-      svgCanvas.setControllPoint2('x', 0)
-      svgCanvas.setControllPoint2('y', 0)
-      svgCanvas.setControllPoint1('x', 0)
-      svgCanvas.setControllPoint1('y', 0)
-      svgCanvas.setStart({ x: 0, y: 0 })
-      svgCanvas.setEnd('x', 0)
-      svgCanvas.setEnd('y', 0)
-      const coords = element.getAttribute('points')
-      const commaIndex = coords.indexOf(',')
-      keep = commaIndex >= 0 ? coords.includes(',', commaIndex + 1) : coords.includes(' ', coords.indexOf(' ') + 1)
-      if (keep) {
-        // Fit smooth cubics through the raw points (paper.js simplify) unless
-        // disabled; falls back to the legacy every-3-points smoothing inside.
-        element = svgCanvas.getCurConfig().pencilSimplify === false
-          ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
-          : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilSimplifyTolerance)
-      }
-      break
-    } case 'line': {
-      const x1 = element.getAttribute('x1')
-      const y1 = element.getAttribute('y1')
-      const x2 = element.getAttribute('x2')
-      const y2 = element.getAttribute('y2')
-      keep = (x1 !== x2 || y1 !== y2)
-    }
-      break
+    } case 'fhpath':
+    case 'line':
     case 'foreignObject':
     case 'frame':
     case 'square':
     case 'rect':
-    case 'image': {
-      const width = element.getAttribute('width')
-      const height = element.getAttribute('height')
-      // Image should be kept regardless of size (use inherit dimensions later)
-      const widthNum = Number(width)
-      const heightNum = Number(height)
-      keep = widthNum >= 1 || heightNum >= 1 || svgCanvas.getCurrentMode() === 'image'
-    }
-      break
+    case 'image':
     case 'circle':
-      keep = (element.getAttribute('r') !== '0')
-      break
-    case 'ellipse': {
-      const rx = Number(element.getAttribute('rx'))
-      const ry = Number(element.getAttribute('ry'))
-      keep = (rx || ry)
-    }
-      break
+    case 'ellipse':
     case 'fhellipse':
-      if ((svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')) > 0 &&
-        (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')) > 0) {
-        element = svgCanvas.addSVGElementsFromJson({
-          element: 'ellipse',
-          curStyles: true,
-          attr: {
-            cx: (svgCanvas.getFreehand('minx') + svgCanvas.getFreehand('maxx')) / 2,
-            cy: (svgCanvas.getFreehand('miny') + svgCanvas.getFreehand('maxy')) / 2,
-            rx: (svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')) / 2,
-            ry: (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')) / 2,
-            id: svgCanvas.getId()
-          }
-        })
-        svgCanvas.call('changed', [element])
-        keep = true
-      }
-      break
     case 'fhrect':
-      if ((svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')) > 0 &&
-        (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')) > 0) {
-        element = svgCanvas.addSVGElementsFromJson({
-          element: 'rect',
-          curStyles: true,
-          attr: {
-            x: svgCanvas.getFreehand('minx'),
-            y: svgCanvas.getFreehand('miny'),
-            width: (svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')),
-            height: (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')),
-            id: svgCanvas.getId()
-          }
-        })
-        svgCanvas.call('changed', [element])
-        keep = true
-      }
+    case 'text': {
+      ({ element, keep } = eventShapeDraw.up(evt, { element, keep }))
       break
-    case 'text':
-      keep = true
-      // Mark this as a freshly-placed text so lock mode can re-arm the text tool
-      svgCanvas.setTextFreshCreate(true)
-      svgCanvas.selectOnly([element])
-      svgCanvas.textActions.start(element)
-      break
+    }
     case 'path': {
-      // set element to null here so that it is not removed nor finalized
-      element = null
-      // continue to be set to true so that mouseMove happens
-      svgCanvas.setStarted(true)
-
-      const res = svgCanvas.pathActions.mouseUp(evt, element, mouseX, mouseY);
-      ({ element } = res);
-      ({ keep } = res)
+      ({ element, keep } = eventPathEdit.upPath(evt, { mouseX, mouseY }))
       break
     } case 'pathedit':
-      keep = true
-      element = null
-      svgCanvas.pathActions.mouseUp(evt)
+      ({ element, keep } = eventPathEdit.upPathEdit(evt))
       break
     case 'textedit':
-      keep = false
-      element = null
-      svgCanvas.textActions.mouseUp(evt, mouseX, mouseY)
+      ({ element, keep } = eventTextEdit.up(evt, { mouseX, mouseY }))
       break
     case 'rotate': {
-      svgCanvas.hasDragStartTransform = false
-      svgCanvas.dragStartTransforms = null
-      keep = true
-      element = null
-      svgCanvas.setCurrentMode('select')
-      const isGroupRotate = !!svgCanvas.groupRotateStart
-      const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
-      if (!batchCmd.isEmpty()) {
-        svgCanvas.addCommandToHistory(batchCmd)
-      }
-      if (isGroupRotate) {
-        // Each element carries a baked R·M matrix transform; finishUndoableChange
-        // already recorded those per-element changes. Skip recalculateDimensions
-        // (it would try to decompose the matrix) and just refresh the boxes.
-        svgCanvas.groupRotateStart = null
-        svgCanvas.groupRotateCenter = null
-        svgCanvas.groupRotateBBox = null
-        selectedElements.filter(Boolean).forEach((elem) => {
-          svgCanvas.selectorManager.requestSelector(elem).resize()
-        })
-        svgCanvas.updateGroupSelector()
-      } else {
-        // perform recalculation to weed out any stray identity transforms that might get stuck
-        svgCanvas.recalculateAllSelectedDimensions()
-      }
-      svgCanvas.call('changed', selectedElements)
+      ({ element, keep } = eventRotate.up(evt, { selectedElements }))
       break
     } default:
       // This could occur in an extension
@@ -1488,8 +562,8 @@ const mouseDownEvent = (evt) => {
   let y = mouseY / zoom
   // When drawing inside a group, work in the group's local coordinate space so
   // new shapes land under the cursor (not offset/scaled by the group transform).
-  if (isCreateInCurrentGroup()) {
-    ({ x, y } = toCurrentGroupLocalPoint(x, y))
+  if (isCreateInCurrentGroup(svgCanvas)) {
+    ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
   }
   let mouseTarget = svgCanvas.getMouseTarget(evt)
 
@@ -1641,309 +715,38 @@ const mouseDownEvent = (evt) => {
   }
   switch (svgCanvas.getCurrentMode()) {
     case 'select':
-      svgCanvas.setStarted(true)
-      svgCanvas.setCurrentResizeMode('none')
-      if (rightClick) { svgCanvas.setStarted(false) }
-
-      if (mouseTarget !== svgRoot) {
-        // On right-click with an existing selection, keep that selection so the
-        // context menu acts on the already-selected element(s) instead of
-        // grabbing whatever unselected element happens to be under the cursor.
-        const keepSelectionForRightClick =
-          rightClick && selectedElements.filter(Boolean).length > 0
-        // if this element is not yet selected, clear selection and select it
-        if (!selectedElements.includes(mouseTarget) && !keepSelectionForRightClick) {
-          // only clear selection if shift is not pressed (otherwise, add
-          // element to selection)
-          if (!evt.shiftKey) {
-            // No need to do the call here as it will be done on addToSelection
-            svgCanvas.clearSelection(true)
-          }
-          svgCanvas.addToSelection([mouseTarget])
-          svgCanvas.setJustSelected(mouseTarget)
-          svgCanvas.pathActions.clear()
-        }
-        // else if it's a path, go into pathedit mode in mouseup
-
-        // Note: Dummy transform insertion moved to mouseMove to avoid triggering
-        // recalculateDimensions on simple clicks. The dummy transform is only needed
-        // when actually starting a drag operation.
-      } else if (!rightClick) {
-        svgCanvas.clearSelection()
-        svgCanvas.setCurrentMode('multiselect')
-        if (!svgCanvas.getRubberBox()) {
-          svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())
-        }
-        svgCanvas.setRStartX(svgCanvas.getRStartX() * zoom)
-        svgCanvas.setRStartY(svgCanvas.getRStartY() * zoom)
-
-        assignAttributes(svgCanvas.getRubberBox(), {
-          x: svgCanvas.getRStartX(),
-          y: svgCanvas.getRStartY(),
-          width: 0,
-          height: 0,
-          display: 'inline'
-        }, 100)
-      }
+      eventSelect.down(evt, { mouseTarget, svgRoot, rightClick, selectedElements, zoom })
       break
     case 'zoom':
-      svgCanvas.setStarted(true)
-      if (!svgCanvas.getRubberBox()) {
-        svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())
-      }
-      assignAttributes(svgCanvas.getRubberBox(), {
-        x: realX * zoom,
-        y: realY * zoom,
-        width: 0,
-        height: 0,
-        display: 'inline'
-      }, 100)
+      eventZoom.down(evt, { realX, realY, zoom })
       break
     case 'resize': {
-      if (!tlist) { break }
-      svgCanvas.setStarted(true)
-      svgCanvas.setStartX(x)
-      svgCanvas.setStartY(y)
-
-      // multi-selection: record per-element start matrices and the union bbox,
-      // then let mouseMove apply a single uniform group-scale matrix to each.
-      const groupElems = selectedElements.filter(Boolean)
-      if (groupElems.length > 1) {
-        svgCanvas.setInitBbox(getStrokedBBoxDefaultVisible(groupElems))
-        svgCanvas.groupResizeStart = new Map()
-        svgCanvas.dragStartTransforms = new Map()
-        groupElems.forEach((elem) => {
-          svgCanvas.groupResizeStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
-          svgCanvas.dragStartTransforms.set(elem, elem.getAttribute('transform') || '')
-        })
-        break
-      }
-
-      // Getting the BBox from the selection box, since we know we
-      // want to orient around it
-      svgCanvas.setInitBbox(getBBox($id('selectedBox0')))
-      const bb = {}
-      for (const [key, val] of Object.entries(svgCanvas.getInitBbox())) {
-        bb[key] = val / zoom
-      }
-      svgCanvas.setInitBbox(bb)
-
-      // append three dummy transforms to the tlist so that
-      // we can translate,scale,translate in mousemove
-      const pos = getRotationAngle(mouseTarget) ? 1 : 0
-
-      if (hasMatrixTransform(tlist)) {
-        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-      } else {
-        tlist.appendItem(svgRoot.createSVGTransform())
-        tlist.appendItem(svgRoot.createSVGTransform())
-        tlist.appendItem(svgRoot.createSVGTransform())
-      }
+      eventResize.down(evt, { x, y, zoom, selectedElements, svgRoot, mouseTarget })
       break
     }
     case 'fhellipse':
     case 'fhrect':
     case 'fhpath':
-      pencilStabX = null
-      pencilStabY = null
-      svgCanvas.setStart({ x: realX, y: realY })
-      svgCanvas.setControllPoint1('x', 0)
-      svgCanvas.setControllPoint1('y', 0)
-      svgCanvas.setControllPoint2('x', 0)
-      svgCanvas.setControllPoint2('y', 0)
-      svgCanvas.setStarted(true)
-      svgCanvas.setDAttr(realX + ',' + realY + ' ')
-      // Commented out as doing nothing now:
-      // strokeW = parseFloat(curShape.stroke_width) === 0 ? 1 : curShape.stroke_width;
-      svgCanvas.addSVGElementsFromJson({
-        element: 'polyline',
-        curStyles: true,
-        attr: {
-          points: svgCanvas.getDAttr(),
-          id: svgCanvas.getNextId('polyline'),
-          fill: 'none',
-          opacity: curShape.opacity / 2,
-          'stroke-linecap': 'round',
-          style: 'pointer-events:none'
-        }
-      })
-      svgCanvas.setFreehand('minx', realX)
-      svgCanvas.setFreehand('maxx', realX)
-      svgCanvas.setFreehand('miny', realY)
-      svgCanvas.setFreehand('maxy', realY)
-      break
-    case 'image': {
-      svgCanvas.setStarted(true)
-      const newImage = svgCanvas.addSVGElementsFromJson({
-        element: 'image',
-        attr: {
-          x,
-          y,
-          width: 0,
-          height: 0,
-          id: svgCanvas.getNextId('image'),
-          opacity: curShape.opacity / 2,
-          style: 'pointer-events:inherit'
-        }
-      })
-      setHref(newImage, svgCanvas.getLastGoodImgUrl())
-      preventClickDefault(newImage)
-      break
-    } case 'frame': {
-      // A frame is a plain rect marked with data-frame, used to define an export
-      // region. It is never part of an exported image (stripped in svg-exec.js).
-      // Drawn with fixed presentation attrs (not curStyles) so it always looks
-      // like a dashed outline regardless of the current shape style.
-      svgCanvas.setStarted(true)
-      svgCanvas.setStartX(x)
-      svgCanvas.setStartY(y)
-      const frameCount = svgCanvas.getSvgContent().querySelectorAll('[data-frame]').length
-      const frameEl = svgCanvas.addSVGElementsFromJson({
-        element: 'rect',
-        curStyles: false,
-        attr: {
-          x,
-          y,
-          width: 0,
-          height: 0,
-          id: svgCanvas.getNextId('rect'),
-          'data-frame': '1',
-          fill: 'transparent',
-          stroke: '#3b82f6',
-          'stroke-dasharray': '6 4',
-          'stroke-width': 1.5
-        }
-      })
-      const title = frameEl.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'title')
-      title.textContent = `Frame ${frameCount + 1}`
-      frameEl.appendChild(title)
-      break
-    } case 'square':
-    // TODO: once we create the rect, we lose information that this was a square
-    // (for resizing purposes this could be important)
-    // Fallthrough
+    case 'image':
+    case 'frame':
+    case 'square':
     case 'rect':
-      svgCanvas.setStarted(true)
-      svgCanvas.setStartX(x)
-      svgCanvas.setStartY(y)
-      svgCanvas.addSVGElementsFromJson({
-        element: 'rect',
-        curStyles: true,
-        attr: {
-          x,
-          y,
-          width: 0,
-          height: 0,
-          id: svgCanvas.getNextId('rect'),
-          opacity: curShape.opacity / 2
-        }
-      })
-      break
-    case 'line': {
-      svgCanvas.setStarted(true)
-      const strokeW = Number(curShape.stroke_width) === 0 ? 1 : curShape.stroke_width
-      svgCanvas.addSVGElementsFromJson({
-        element: 'line',
-        curStyles: true,
-        attr: {
-          x1: x,
-          y1: y,
-          x2: x,
-          y2: y,
-          id: svgCanvas.getNextId('line'),
-          stroke: curShape.stroke,
-          'stroke-width': strokeW,
-          'stroke-dasharray': curShape.stroke_dasharray,
-          'stroke-linejoin': curShape.stroke_linejoin,
-          'stroke-linecap': curShape.stroke_linecap,
-          'stroke-opacity': curShape.stroke_opacity,
-          fill: 'none',
-          opacity: curShape.opacity / 2,
-          style: 'pointer-events:none'
-        }
-      })
-      break
-    } case 'circle':
-      svgCanvas.setStarted(true)
-      svgCanvas.addSVGElementsFromJson({
-        element: 'circle',
-        curStyles: true,
-        attr: {
-          cx: x,
-          cy: y,
-          r: 0,
-          id: svgCanvas.getNextId('circle'),
-          opacity: curShape.opacity / 2
-        }
-      })
-      break
+    case 'line':
+    case 'circle':
     case 'ellipse':
-      svgCanvas.setStarted(true)
-      svgCanvas.addSVGElementsFromJson({
-        element: 'ellipse',
-        curStyles: true,
-        attr: {
-          cx: x,
-          cy: y,
-          rx: 0,
-          ry: 0,
-          id: svgCanvas.getNextId('ellipse'),
-          opacity: curShape.opacity / 2
-        }
-      })
-      break
     case 'text':
-      svgCanvas.setStarted(true)
-      /* const newText = */ svgCanvas.addSVGElementsFromJson({
-        element: 'text',
-        curStyles: true,
-        attr: {
-          x,
-          y,
-          id: svgCanvas.getNextId('text'),
-          fill: svgCanvas.getCurText('fill'),
-          'stroke-width': svgCanvas.getCurText('stroke_width'),
-          'font-size': svgCanvas.getCurText('font_size'),
-          'font-family': svgCanvas.getCurText('font_family'),
-          'text-anchor': 'middle',
-          'xml:space': 'preserve',
-          opacity: curShape.opacity
-        }
-      })
-      // newText.textContent = 'text';
+      eventShapeDraw.down(evt, { x, y, realX, realY, curShape })
       break
     case 'path':
     // Fall through
     case 'pathedit':
-      svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
-      svgCanvas.setStartY(svgCanvas.getStartY() * zoom)
-      svgCanvas.pathActions.mouseDown(evt, mouseTarget, svgCanvas.getStartX(), svgCanvas.getStartY())
-      svgCanvas.setStarted(true)
+      eventPathEdit.down(evt, { mouseTarget, zoom })
       break
     case 'textedit':
-      svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
-      svgCanvas.setStartY(svgCanvas.getStartY() * zoom)
-      svgCanvas.textActions.mouseDown(evt, mouseTarget, svgCanvas.getStartX(), svgCanvas.getStartY())
-      svgCanvas.setStarted(true)
+      eventTextEdit.down(evt, { mouseTarget, zoom })
       break
     case 'rotate': {
-      svgCanvas.setStarted(true)
-      // we are starting an undoable change (a drag-rotation)
-      svgCanvas.undoMgr.beginUndoableChange('transform', selectedElements)
-      // multi-selection: capture each element's start matrix + the union center
-      // so mouseMove can rotate the whole selection rigidly about that center.
-      const rotElems = selectedElements.filter(Boolean)
-      if (rotElems.length > 1) {
-        const ubb = getStrokedBBoxDefaultVisible(rotElems)
-        svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
-        svgCanvas.groupRotateBBox = ubb
-        svgCanvas.groupRotateStart = new Map()
-        rotElems.forEach((elem) => {
-          svgCanvas.groupRotateStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
-        })
-      }
+      eventRotate.down(evt, { selectedElements })
       break
     }
     default:
