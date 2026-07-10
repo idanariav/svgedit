@@ -13,7 +13,11 @@
   <script type="module">
     import './vendor/pathseg/pathseg.js'
     import * as namespaces from './vendor/svgcanvas/core/namespaces.js'
-    import * as utilities from './vendor/svgcanvas/core/utilities.js'
+    import * as domUtils from './vendor/svgcanvas/core/dom-utils.js'
+    import * as bboxUtils from './vendor/svgcanvas/core/bbox-utils.js'
+    import * as pathUtils from './vendor/svgcanvas/core/path-utils.js'
+    import * as encodingUtils from './vendor/svgcanvas/core/encoding-utils.js'
+    import * as paperUtils from './vendor/svgcanvas/core/paper-utils.js'
     import * as math from './vendor/svgcanvas/core/math.js'
     import * as pathModule from './vendor/svgcanvas/core/path.js'
     import * as coords from './vendor/svgcanvas/core/coords.js'
@@ -24,6 +28,22 @@
     import * as util from './vendor/svgcanvas/common/util.js'
     import * as touch from './vendor/svgcanvas/core/touch.js'
     import * as clearModule from './vendor/svgcanvas/core/clear.js'
+
+    // core/utilities.js was split into dom/bbox/path/encoding/paper-utils
+    // (commit 2328a466); merge them back into one `utilities` namespace so
+    // existing specs (which call utilities.init(canvas) and expect the
+    // combined surface) keep working unchanged.
+    const utilities = {
+      ...domUtils,
+      ...bboxUtils,
+      ...pathUtils,
+      ...encodingUtils,
+      ...paperUtils,
+      init (canvas) {
+        domUtils.init(canvas)
+        bboxUtils.init(canvas)
+      }
+    }
 
     // Expose modules for Playwright specs.
     window.svgHarness = {
