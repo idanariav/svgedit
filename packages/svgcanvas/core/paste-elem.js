@@ -23,17 +23,24 @@ export const init = (canvas) => {
 * @param {"in_place"|"point"|void} type
 * @param {Integer|void} x Expected if type is "point"
 * @param {Integer|void} y Expected if type is "point"
+* @param {module:svgcanvas.SVGAsJSON[]|void} data Already-parsed clipboard
+*   contents (e.g. from a native `paste` event's `e.clipboardData`). When
+*   omitted, falls back to the sessionStorage snapshot written by the last
+*   `copySelectedElements()` call — used by paths with no `ClipboardEvent`
+*   in hand (context-menu Paste, favorite-action Paste).
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @fires module:svgcanvas.SvgCanvas#event:ext_IDsUpdated
 * @returns {void}
 */
-  const pasteElementsMethod = (type, x, y) => {
-  const rawClipboard = sessionStorage.getItem(svgCanvas.getClipboardID())
-  let clipb
-  try {
-    clipb = JSON.parse(rawClipboard)
-  } catch {
-    return
+  const pasteElementsMethod = (type, x, y, data) => {
+  let clipb = data
+  if (!Array.isArray(clipb)) {
+    const rawClipboard = sessionStorage.getItem(svgCanvas.getClipboardID())
+    try {
+      clipb = JSON.parse(rawClipboard)
+    } catch {
+      return
+    }
   }
   if (!Array.isArray(clipb) || !clipb.length) return
 

@@ -132,4 +132,23 @@ describe('paste-elem', () => {
     expect(() => svgCanvas.pasteElements('in_place')).not.toThrow()
     expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize)
   })
+
+  it('pastes an explicit data array instead of the stale sessionStorage snapshot', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-stale', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.copySelectedElements() // writes rect-stale into sessionStorage
+
+    const freshData = [{
+      element: 'ellipse',
+      attr: { id: 'ellipse-fresh', cx: 5, cy: 5, rx: 5, ry: 5 }
+    }]
+    svgCanvas.pasteElements('in_place', undefined, undefined, freshData)
+
+    const pasted = svgCanvas.getSelectedElements()[0]
+    expect(pasted.tagName).toBe('ellipse')
+    expect(pasted.id).not.toBe('ellipse-fresh') // still gets a fresh id via checkIDs
+  })
 })

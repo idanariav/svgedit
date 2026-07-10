@@ -1299,10 +1299,12 @@ class Editor extends EditorStartup {
   }
 
   /**
-   *
+   * @param {module:svgcanvas.SVGAsJSON[]|void} data Already-parsed clipboard
+   *   contents to paste, bypassing the sessionStorage snapshot (see
+   *   `pasteElements`'s `data` param).
    * @returns {void}
    */
-  pasteInCenter () {
+  pasteInCenter (data) {
     const { workarea } = this
     const zoom = this.svgCanvas.getZoom()
     const x =
@@ -1317,7 +1319,7 @@ class Editor extends EditorStartup {
           2) /
         zoom -
       this.svgCanvas.contentH
-    this.svgCanvas.pasteElements('point', x, y)
+    this.svgCanvas.pasteElements('point', x, y, data)
   }
 
   /**

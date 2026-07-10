@@ -546,9 +546,10 @@ class EditorStartup {
       if (!text) return
       // (a) svgedit's own internal clipboard → existing internal paste.
       try {
-        if (Array.isArray(JSON.parse(text))) {
+        const parsed = JSON.parse(text)
+        if (Array.isArray(parsed)) {
           e.preventDefault()
-          this.pasteInCenter()
+          this.pasteInCenter(parsed)
           return
         }
       } catch { /* not internal JSON, fall through */ }
