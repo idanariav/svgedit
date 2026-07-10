@@ -42,25 +42,24 @@ test.describe('SVG core recalculate extra cases', () => {
         }
       }
 
+      // Shared across utilities/coords/recalculate inits, matching production
+      // wiring: recalculate's svgCanvas.remapElement(...) call is attached by
+      // coords.init, so all three modules must share one canvas instance.
       const canvasStub = {
         getSvgRoot: () => svg,
+        getSvgContent: () => svg,
+        getDOMDocument: () => document,
+        getDOMContainer: () => svg,
         getStartTransform: () => '',
         setStartTransform: () => {},
         getDataStorage: () => dataStorage,
+        getGridSnapping: () => false,
+        getDrawing: () => ({ getNextId: () => 'id2' }),
         getCurrentDrawing: () => ({ getNextId: () => 'g1' })
       }
 
-      utilities.init({
-        getSvgRoot: () => svg,
-        getDOMDocument: () => document,
-        getDOMContainer: () => svg,
-        getDataStorage: () => dataStorage
-      })
-      coords.init({
-        getGridSnapping: () => false,
-        getDrawing: () => ({ getNextId: () => 'id2' }),
-        getDataStorage: () => dataStorage
-      })
+      utilities.init(canvasStub)
+      coords.init(canvasStub)
       recalculate.init(canvasStub)
 
       // Scale about center via translate/scale/translate sequence
@@ -82,8 +81,8 @@ test.describe('SVG core recalculate extra cases', () => {
       rectFlip.setAttribute('transform', 'matrix(-1 0 0 1 0 0)')
       svg.append(rectFlip)
 
-      recalculate.recalculateDimensions(rect)
-      recalculate.recalculateDimensions(rectFlip)
+      canvasStub.recalculateDimensions(rect)
+      canvasStub.recalculateDimensions(rectFlip)
 
       return {
         rect: {
@@ -135,6 +134,9 @@ test.describe('SVG core recalculate extra cases', () => {
         }
       }
 
+      // Shared across utilities/coords/recalculate inits, matching production
+      // wiring: recalculate's svgCanvas.remapElement(...) call is attached by
+      // coords.init, so all three modules must share one canvas instance.
       const canvasStub = {
         getSvgRoot: () => svg,
         getSvgContent: () => svg,
@@ -143,16 +145,12 @@ test.describe('SVG core recalculate extra cases', () => {
         getDataStorage: () => dataStorage,
         getStartTransform: () => '',
         setStartTransform: () => {},
-        getCurrentDrawing: () => drawing
+        getCurrentDrawing: () => drawing,
+        getGridSnapping: () => false,
+        getDrawing: () => drawing
       }
       utilities.init(canvasStub)
-      coords.init({
-        getGridSnapping: () => false,
-        getDrawing: () => drawing,
-        getDataStorage: () => dataStorage,
-        getCurrentDrawing: () => drawing,
-        getSvgRoot: () => svg
-      })
+      coords.init(canvasStub)
       recalculate.init(canvasStub)
 
       const rect = document.createElementNS(NS, 'rect')
@@ -173,8 +171,8 @@ test.describe('SVG core recalculate extra cases', () => {
       clipPath.append(clipRect)
       defs.append(clipPath)
 
-      const cmd = recalculate.recalculateDimensions(rect)
-      recalculate.updateClipPath('url(#clip1)', 3, -2)
+      const cmd = canvasStub.recalculateDimensions(rect)
+      canvasStub.updateClipPath('url(#clip1)', 3, -2)
 
       return {
         rect: {
@@ -227,6 +225,9 @@ test.describe('SVG core recalculate extra cases', () => {
           return 'p' + this.next
         }
       }
+      // Shared across utilities/coords/recalculate inits, matching production
+      // wiring: recalculate's svgCanvas.remapElement(...) call is attached by
+      // coords.init, so all three modules must share one canvas instance.
       const canvasStub = {
         getSvgRoot: () => svg,
         getSvgContent: () => svg,
@@ -235,16 +236,12 @@ test.describe('SVG core recalculate extra cases', () => {
         getDataStorage: () => dataStorage,
         getStartTransform: () => '',
         setStartTransform: () => {},
-        getCurrentDrawing: () => drawing
+        getCurrentDrawing: () => drawing,
+        getGridSnapping: () => false,
+        getDrawing: () => drawing
       }
       utilities.init(canvasStub)
-      coords.init({
-        getGridSnapping: () => false,
-        getDrawing: () => drawing,
-        getDataStorage: () => dataStorage,
-        getCurrentDrawing: () => drawing,
-        getSvgRoot: () => svg
-      })
+      coords.init(canvasStub)
       recalculate.init(canvasStub)
 
       const poly = document.createElementNS(NS, 'polygon')
@@ -270,10 +267,10 @@ test.describe('SVG core recalculate extra cases', () => {
       useElem.setAttribute('transform', 'translate(3 4)')
       svg.append(useElem)
 
-      const cmdPoly = recalculate.recalculateDimensions(poly)
-      const cmdPath = recalculate.recalculateDimensions(path)
-      recalculate.recalculateDimensions(rect)
-      const cmdUse = recalculate.recalculateDimensions(useElem)
+      const cmdPoly = canvasStub.recalculateDimensions(poly)
+      const cmdPath = canvasStub.recalculateDimensions(path)
+      canvasStub.recalculateDimensions(rect)
+      const cmdUse = canvasStub.recalculateDimensions(useElem)
 
       return {
         poly: {
@@ -300,8 +297,11 @@ test.describe('SVG core recalculate extra cases', () => {
     expect(result.path.d.startsWith('M7,8')).toBe(true)
     expect(result.path.transform).toBe('')
     expect(result.path.hasCommand).toBe(true)
-    expect(result.rect.x).toBe('1')
-    expect(result.rect.transform).toContain('matrix')
+    // A lone matrix() transform (unlike translate()) is baked into the
+    // element's geometry by recalculateDimensions's N===1 matrix branch,
+    // same as the path case above: x (1) + tx (7) = 8, transform cleared.
+    expect(result.rect.x).toBe('8')
+    expect(result.rect.transform).toBeNull()
     expect(result.useResult).toBeNull()
   })
 })

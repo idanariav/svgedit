@@ -56,7 +56,9 @@ test.describe('SVG core math and coords', () => {
     expect(result.consolidated.f).toBe(400)
     expect(result.multiplied.e).toBe(0)
     expect(result.multiplied.f).toBe(0)
-    expect(result.snapped.a).toBeCloseTo(Math.PI / 4)
+    // snapToAngle rounds to the nearest 15° (PI/12) increment; atan2(5, 10)
+    // is ~26.57°, which is closer to 30° (PI/6) than to 45° (PI/4).
+    expect(result.snapped.a).toBeCloseTo(Math.PI / 6)
     expect(result.intersects.overlap).toBe(true)
     expect(result.intersects.apart).toBe(false)
   })
@@ -71,10 +73,11 @@ test.describe('SVG core math and coords', () => {
         getDOMDocument: () => document,
         getDOMContainer: () => svg
       })
-      coords.init({
+      const coordsCanvas = {
         getGridSnapping: () => false,
         getDrawing: () => ({ getNextId: () => '1' })
-      })
+      }
+      coords.init(coordsCanvas)
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       rect.setAttribute('x', '200')
       rect.setAttribute('y', '150')
@@ -84,7 +87,7 @@ test.describe('SVG core math and coords', () => {
       const translateMatrix = svg.createSVGMatrix()
       translateMatrix.e = 100
       translateMatrix.f = -50
-      coords.remapElement(
+      coordsCanvas.remapElement(
         rect,
         { x: '200', y: '150', width: '125', height: '75' },
         translateMatrix
@@ -97,7 +100,7 @@ test.describe('SVG core math and coords', () => {
       const scaleMatrix = svg.createSVGMatrix()
       scaleMatrix.a = 2
       scaleMatrix.d = 0.5
-      coords.remapElement(
+      coordsCanvas.remapElement(
         circle,
         { cx: '200', cy: '150', r: '250' },
         scaleMatrix

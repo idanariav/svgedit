@@ -76,7 +76,7 @@ test.describe('SVG core remap extras', () => {
       textMatrix.a = -2
       textMatrix.d = 1.5
       textMatrix.e = 10
-      coords.remapElement(text, { x: 2, y: 3 }, textMatrix)
+      canvas.remapElement(text, { x: 2, y: 3 }, textMatrix)
 
       const rect = document.createElementNS(NS, 'rect')
       rect.setAttribute('x', '0')
@@ -89,7 +89,7 @@ test.describe('SVG core remap extras', () => {
       const flipMatrix = svg.createSVGMatrix()
       flipMatrix.a = -1
       flipMatrix.d = -1
-      coords.remapElement(rect, { x: 0, y: 0, width: 10, height: 6 }, flipMatrix)
+      canvas.remapElement(rect, { x: 0, y: 0, width: 10, height: 6 }, flipMatrix)
 
       const path = document.createElementNS(NS, 'path')
       path.setAttribute('d', 'M0 0 L5 0 l5 5 a2 3 0 0 1 2 2 z')
@@ -99,7 +99,7 @@ test.describe('SVG core remap extras', () => {
       pathMatrix.d = 2
       pathMatrix.e = 3
       pathMatrix.f = -1
-      coords.remapElement(path, {}, pathMatrix)
+      canvas.remapElement(path, {}, pathMatrix)
 
       return {
         text: {

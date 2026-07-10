@@ -20,7 +20,7 @@ test.describe('clear module', () => {
       }
 
       clearModule.init(canvas)
-      clearModule.clearSvgContentElementInit()
+      canvas.clearSvgContentElement()
       const comment = svgContent.firstChild
 
       return {
@@ -46,13 +46,14 @@ test.describe('clear module', () => {
       const { clearModule } = window.svgHarness
       const svgContent = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
       const svgRoot = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-      clearModule.init({
+      const canvas = {
         getCurConfig: () => ({ dimensions: [10, 20], show_outside_canvas: true }),
         getSvgContent: () => svgContent,
         getSvgRoot: () => svgRoot,
         getDOMDocument: () => document
-      })
-      clearModule.clearSvgContentElementInit()
+      }
+      clearModule.init(canvas)
+      canvas.clearSvgContentElement()
       return svgContent.getAttribute('overflow')
     })
 

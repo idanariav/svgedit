@@ -102,7 +102,7 @@ const seedNycFromVitest = async () => {
 if (await hasPlaywright()) {
   await ensureBrowser()
   await ensureBuild()
-  await run('rimraf', ['.nyc_output/*'], { shell: true })
+  await run('npx', ['rimraf', '.nyc_output/*'])
   await seedNycFromVitest()
   await run('npx', ['playwright', 'test'])
   await run('npx', ['nyc', 'report', '--reporter', 'text-summary', '--reporter', 'json-summary'])

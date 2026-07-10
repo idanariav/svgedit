@@ -27,9 +27,9 @@ test.describe('Dialog helpers', () => {
     await page.waitForFunction(() => typeof window.seAlert === 'function')
 
     const created = await page.evaluate(() => {
-      const before = document.querySelectorAll('se-elix-alert-dialog').length
+      const before = document.querySelectorAll('se-plain-alert-dialog').length
       window.seAlert('Cover alert dialog')
-      const after = document.querySelectorAll('se-elix-alert-dialog').length
+      const after = document.querySelectorAll('se-plain-alert-dialog').length
       return after > before
     })
 

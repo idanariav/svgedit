@@ -31,26 +31,22 @@ test.describe('SVG core recalculate', () => {
           return deleted
         }
       }
-      const initContexts = () => {
-        utilities.init({
-          getSvgRoot: () => svg,
-          getDOMDocument: () => document,
-          getDOMContainer: () => svg,
-          getDataStorage: () => dataStorage
-        })
-        coords.init({
-          getGridSnapping: () => false,
-          getDrawing: () => ({ getNextId: () => '1' }),
-          getDataStorage: () => dataStorage
-        })
-        recalculate.init({
-          getSvgRoot: () => svg,
-          getStartTransform: () => '',
-          setStartTransform: () => {},
-          getDataStorage: () => dataStorage
-        })
+      // Shared across utilities/coords/recalculate inits, matching production
+      // wiring: recalculate's svgCanvas.remapElement(...) call is attached by
+      // coords.init, so all three modules must share one canvas instance.
+      const canvas = {
+        getSvgRoot: () => svg,
+        getDOMDocument: () => document,
+        getDOMContainer: () => svg,
+        getDataStorage: () => dataStorage,
+        getGridSnapping: () => false,
+        getDrawing: () => ({ getNextId: () => '1' }),
+        getStartTransform: () => '',
+        setStartTransform: () => {}
       }
-      initContexts()
+      utilities.init(canvas)
+      coords.init(canvas)
+      recalculate.init(canvas)
 
       const identityRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       identityRect.setAttribute('x', '10')
@@ -79,9 +75,9 @@ test.describe('SVG core recalculate', () => {
       text.append(tspan)
       svg.append(text)
 
-      recalculate.recalculateDimensions(identityRect)
-      recalculate.recalculateDimensions(rect)
-      recalculate.recalculateDimensions(text)
+      canvas.recalculateDimensions(identityRect)
+      canvas.recalculateDimensions(rect)
+      canvas.recalculateDimensions(text)
 
       return {
         identityHasTransform: identityRect.hasAttribute('transform'),

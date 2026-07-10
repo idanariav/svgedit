@@ -39,8 +39,16 @@ test.describe('SVG core history/draw smoke', () => {
   test('draw module exports expected functions', async ({ page }) => {
     const exports = await page.evaluate(() => {
       const { draw } = window.svgHarness
-      return ['init', 'randomizeIds', 'createLayer'].map(fn => typeof draw[fn] === 'function')
+      // createLayer is attached to the canvas instance by draw.init, not a
+      // flat module export (see svgCanvas.createLayer = createLayer).
+      const canvas = {}
+      draw.init(canvas)
+      return {
+        init: typeof draw.init === 'function',
+        randomizeIds: typeof draw.randomizeIds === 'function',
+        createLayer: typeof canvas.createLayer === 'function'
+      }
     })
-    exports.forEach(v => expect(v).toBe(true))
+    Object.values(exports).forEach(v => expect(v).toBe(true))
   })
 })

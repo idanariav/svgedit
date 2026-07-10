@@ -17,7 +17,11 @@ const targets = [
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
   // Test harness assets for Playwright (unit-style tests in browser)
   ['src/editor/tests', 'tests'],
-  ['node_modules/pathseg/pathseg.js', 'tests/vendor/pathseg/pathseg.js']
+  ['node_modules/pathseg/pathseg.js', 'tests/vendor/pathseg/pathseg.js'],
+  // Same stub used by vitest (tests/unit/mocks/paper-core-stub.js) to avoid
+  // loading paper's CJS/UMD dist bundle as a native ES module — no current
+  // harness spec exercises real paper.js geometry ops.
+  ['tests/unit/mocks/paper-core-stub.js', 'tests/vendor/paper/paper-core-stub.js']
 ]
 
 for (const [src, dest] of targets) {

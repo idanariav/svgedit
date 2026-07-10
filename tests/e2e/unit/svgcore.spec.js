@@ -130,8 +130,10 @@ test.describe('SVG core modules in browser', () => {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       path.setAttribute('d', 'M0 0 L10 0 L10 10 Z')
       svg.append(path)
-      pathModule.convertPath(path, true)
-      return path.getAttribute('d')
+      // convertPath is attached to canvas.pathActions by path.js's init.
+      const canvas = {}
+      pathModule.init(canvas)
+      return canvas.pathActions.convertPath(path, true)
     })
     expect(dRel?.length > 0).toBe(true)
     expect(dRel.toLowerCase()).toContain('z')
@@ -148,8 +150,11 @@ test.describe('SVG core modules in browser', () => {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       path.setAttribute('d', 'm40,55h20v20')
       svg.append(path)
-      const abs = pathModule.convertPath(path)
-      const rel = pathModule.convertPath(path, true)
+      // convertPath is attached to canvas.pathActions by path.js's init.
+      const canvas = {}
+      pathModule.init(canvas)
+      const abs = canvas.pathActions.convertPath(path)
+      const rel = canvas.pathActions.convertPath(path, true)
       return { abs, rel }
     })
     expect(result.abs).toBe('M40,55L60,55L60,75')

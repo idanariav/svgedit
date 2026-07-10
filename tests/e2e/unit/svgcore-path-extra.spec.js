@@ -23,8 +23,12 @@ test.describe('SVG core path extras', () => {
         'M0 0 H10 V10 h-5 v-5 a5 5 0 0 1 5 5 S20 20 25 25 Z'
       )
 
-      const rel = pathModule.convertPath(path, true)
-      const abs = pathModule.convertPath(path, false)
+      // convertPath is attached to canvas.pathActions by path.js's init
+      // (which delegates to path-actions.js), not exported as a flat function.
+      const canvas = {}
+      pathModule.init(canvas)
+      const rel = canvas.pathActions.convertPath(path, true)
+      const abs = canvas.pathActions.convertPath(path, false)
 
       return { rel, abs }
     })

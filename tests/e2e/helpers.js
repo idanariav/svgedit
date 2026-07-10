@@ -45,6 +45,20 @@ export async function clickCanvas (page, point) {
   await page.mouse.click(box.x + point.x, box.y + point.y)
 }
 
+/**
+ * Fill and submit the editor's in-DOM text-prompt dialog (se-text-prompt-dialog),
+ * the themed replacement for the native `window.prompt()` used by e.g. layer
+ * create/rename. Native Playwright `page.once('dialog', ...)` handling does not
+ * apply here since this is a custom element, not a browser dialog.
+ */
+export async function answerTextPrompt (page, value) {
+  const dialog = page.locator('se-text-prompt-dialog')
+  const input = dialog.locator('#text_prompt_input')
+  await input.waitFor({ state: 'visible' })
+  await input.fill(value)
+  await dialog.locator('#text_prompt_ok').click()
+}
+
 export async function dragOnCanvas (page, start, end) {
   const canvas = page.locator('#svgroot')
   const box = await canvas.boundingBox()

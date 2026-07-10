@@ -33,7 +33,10 @@ test.describe('SVG core smoke', () => {
 
   test('coords module exposes remapElement', async ({ page }) => {
     const hasRemap = await page.evaluate(() => {
-      return typeof window.svgHarness.coords.remapElement === 'function'
+      const { coords } = window.svgHarness
+      const canvas = { getGridSnapping: () => false, getDrawing: () => ({ getNextId: () => '1' }) }
+      coords.init(canvas)
+      return typeof canvas.remapElement === 'function'
     })
     expect(hasRemap).toBe(true)
   })
@@ -49,7 +52,11 @@ test.describe('SVG core smoke', () => {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       path.setAttribute('d', 'M0 0 L10 0 L10 10 Z')
       svg.append(path)
-      pathModule.convertPath(path, true)
+      // convertPath is attached to canvas.pathActions by path.js's init.
+      const canvas = {}
+      pathModule.init(canvas)
+      const dRel = canvas.pathActions.convertPath(path, true)
+      path.setAttribute('d', dRel)
       return path.getAttribute('d')
     })
     expect(d?.toLowerCase()).toContain('m')

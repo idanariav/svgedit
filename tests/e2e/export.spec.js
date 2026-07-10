@@ -14,7 +14,8 @@ test.describe('Export', () => {
   test('export dialog opens', async ({ page }) => {
     await openMainMenu(page)
     await page.locator('#tool_export').click()
-    // Scope to the export dialog to avoid the storage dialog select (#se-storage-pref) that may also be present.
-    await expect(page.locator('#export_box select')).toBeVisible()
+    // Scope to the region control specifically: '#export_box select' is ambiguous,
+    // it also matches '#se-storage-pref's format select in the same dialog.
+    await expect(page.locator('#se-export-region select')).toBeVisible()
   })
 })

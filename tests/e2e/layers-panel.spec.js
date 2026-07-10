@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures.js'
-import { visitAndApproveStorage } from './helpers.js'
+import { visitAndApproveStorage, answerTextPrompt } from './helpers.js'
 
 const layerNames = async (page) => {
   return page.$$eval('#layerlist tbody tr.layer td.layername', (nodes) =>
@@ -27,6 +27,9 @@ test.describe('Layers panel', () => {
     const panelHandle = page.locator('div#sidepanel_handle').first()
     await panelHandle.waitFor({ state: 'visible' })
     await panelHandle.click()
+    // The right panel is tabbed (design/text/effects/layers); #layer_new
+    // lives in the layers tabpanel, which is hidden until its tab is active.
+    await page.click('[data-tab="layers"]')
     await page.waitForSelector('#layer_new', { state: 'visible' })
   })
 
@@ -34,13 +37,13 @@ test.describe('Layers panel', () => {
     const initialNames = await layerNames(page)
     expect(initialNames.length).toBeGreaterThan(0)
 
-    page.once('dialog', (dialog) => dialog.accept('Layer 2'))
     await page.click('#layer_new')
+    await answerTextPrompt(page, 'Layer 2')
     await expect.poll(() => layerNames(page)).resolves.toContain('Layer 2')
 
     await page.locator('#layerlist td.layername', { hasText: 'Layer 2' }).click()
-    page.once('dialog', (dialog) => dialog.accept('Renamed Layer'))
     await page.click('#layer_rename')
+    await answerTextPrompt(page, 'Renamed Layer')
     await expect.poll(() => layerNames(page)).resolves.toContain('Renamed Layer')
 
     await toggleVisibilityFor(page, 'Renamed Layer')
@@ -61,8 +64,8 @@ test.describe('Layers panel', () => {
 
   test('locks a layer so new objects skip it', async ({ page }) => {
     // Add a second layer; it becomes the top, current layer.
-    page.once('dialog', (dialog) => dialog.accept('Layer 2'))
     await page.click('#layer_new')
+    await answerTextPrompt(page, 'Layer 2')
     await expect.poll(() => layerNames(page)).resolves.toContain('Layer 2')
 
     // Lock the top (current) layer.
