@@ -325,8 +325,11 @@ export const init = (canvas) => {
     assignAttributes(pointGrip, atts)
     pointGripContainer.append(pointGrip)
 
-    const grip = document.getElementById('pathpointgrip_' + index)
-    grip?.addEventListener('dblclick', () => {
+    // Use the grip we just created rather than re-looking it up by id: a
+    // global document.getElementById would return whichever editor instance's
+    // same-index grip comes first in DOM order when multiple drawings are
+    // open, wiring this dblclick handler to the wrong pane's grip.
+    pointGrip.addEventListener('dblclick', () => {
       const path = svgCanvas.getPathObj()
       if (path) {
         path.setSegType()
@@ -594,8 +597,12 @@ export const init = (canvas) => {
    * @returns {void}
    */
   selectCtrls (y) {
-    document.getElementById(`ctrlpointgrip_${this.index}c1`)?.setAttribute('fill', y ? '#0FF' : '#EEE')
-    document.getElementById(`ctrlpointgrip_${this.index}c2`)?.setAttribute('fill', y ? '#0FF' : '#EEE')
+    // Use this.ctrlpts (same refs showCtrlPt uses) instead of a global
+    // document.getElementById by id: with multiple editor instances open,
+    // a same-index grip in another pane could shadow this one and get
+    // recolored instead.
+    this.ctrlpts?.c1?.setAttribute('fill', y ? '#0FF' : '#EEE')
+    this.ctrlpts?.c2?.setAttribute('fill', y ? '#0FF' : '#EEE')
   }
 
   /**
