@@ -11,23 +11,6 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
-## `tool_make_link`, `tool_make_link_multi`, `image_url` still use the broken id-as-class `hideTool`/`displayTool` pattern
-
-Fixed for `tool_topath`/`tool_reorient`/`tool_smooth_path`/`tool_stroke_to_path`
-(2026-07-09, see `css-rules.md`'s `displayTool()`/`hideTool()` gotcha note):
-`hideTool(name)`/`displayTool(name)` in `src/editor/panels/TopPanel.js`
-select by CSS class, but these three targets
-(`TopPanel.js:355-363,1107,1129`) only carry a matching `id` in
-`RightPanel.html`/`TopPanel.html`, not a `class`. Their show/hide calls are
-silent no-ops today — e.g. the "make link" buttons never actually toggle,
-and the image URL field's hide/show around image mode is a no-op.
-
-Not done now: narrower blast radius than the path-tools fix (link/image-url
-UI, not reported broken by a user) and each needs its own template edit +
-manual verification of the surrounding link/image flows before touching it.
-Same one-line-per-button fix pattern (add `class="<id>"` alongside the
-existing `id`) applies.
-
 ## Cutter polyline cuts are scoped to exactly 2 boundary crossings per shape
 
 `packages/svgcanvas/core/cutter.js`'s `cutWithPolyline` (used for multi-point

@@ -255,7 +255,10 @@ delete / group / arrange / flip / align. Note `.selected_panel` and
 not `id` — a per-button element (e.g. `#tool_topath`) needs a matching
 `class="tool_topath"` on top of its `id`, or the toggle is a silent no-op.
 This bit `tool_topath`/`tool_reorient`/`tool_smooth_path`/`tool_stroke_to_path`/
-`tool_path_offset` in RightPanel.html, which only carried the `id` (fixed 2026-07-09).
+`tool_path_offset` in RightPanel.html, which only carried the `id` (fixed 2026-07-09),
+and `tool_make_link`/`tool_make_link_multi`/`image_url` (fixed 2026-07-10; `image_url`
+already had `class="span2"` — the fix appends `image_url` to that list rather than
+replacing it).
 
 **Gotcha:** `se-button`'s `disabled` state (`components/seButton.js`) sets
 `pointer-events: none` on the *inner shadow `div`* only. That does **not**
