@@ -361,7 +361,13 @@ const mouseUpEvent = (evt) => {
     // but that doesn't seem to be supported in Webkit
     setTimeout(() => {
       if (cAni) { cAni.remove() }
-      element.setAttribute('opacity', curShape.opacity)
+      // The brush tool stamps its own per-stroke opacity (from the brush
+      // popover, independent of the general shape-style opacity) at creation
+      // time — don't clobber it with curShape.opacity like every other tool,
+      // which has no opacity concept of its own outside curShape.
+      if (svgCanvas.getCurrentMode() !== 'brush') {
+        element.setAttribute('opacity', curShape.opacity)
+      }
       element.setAttribute('style', 'pointer-events:inherit')
       cleanupElement(element)
       if (svgCanvas.getCurrentMode() === 'path') {
@@ -377,7 +383,7 @@ const mouseUpEvent = (evt) => {
           svgCanvas.selectOnly([element], true)
         }
       } else if (svgCanvas.getCurConfig().selectNew) {
-        const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame']
+        const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame', 'brush']
         if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
           svgCanvas.setMode('select')
         }

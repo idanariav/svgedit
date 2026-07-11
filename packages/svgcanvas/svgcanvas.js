@@ -237,6 +237,23 @@ class SvgCanvas extends EventTarget {
     })
     this.curText = allProperties.text // Current text style properties
 
+    // Active brush-tool settings (session/tool state, not persisted to the
+    // document — mirrors curShape/curText for the freehand brush tool).
+    // `roundness`/`taperStart`/`taperEnd` are 0-100, `angle` is degrees,
+    // `opacity`/`smoothness` are 0-1. Defaults are neutral (no taper, fully
+    // round, full opacity) so a fresh brush draws a plain uniform stroke —
+    // tapering/chiseling are opt-in via the settings popover.
+    allProperties.brush = {
+      thickness: 6,
+      angle: 45,
+      roundness: 100,
+      taperStart: 100,
+      taperEnd: 100,
+      opacity: 1,
+      smoothness: 0.3
+    }
+    this.curBrush = allProperties.brush
+
     // Current shape style properties
     this.curShape = allProperties.shape
     this.curProperties = this.curShape // Current general properties
@@ -387,6 +404,15 @@ class SvgCanvas extends EventTarget {
 
   getCurShape () {
     return this.curShape
+  }
+
+  getBrushParams () {
+    return this.curBrush
+  }
+
+  setBrushParams (params) {
+    Object.assign(this.curBrush, params)
+    return this.curBrush
   }
 
   getCurrentGroup () {

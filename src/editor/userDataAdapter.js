@@ -27,7 +27,9 @@
  *     getCanvasPresets(): Array<{ratio,w,h}>,   // canvas-size presets
  *     setCanvasPresets(presets: Array): void,   // full presets array
  *     getFonts(): Promise<Array<{family,woff2Base64}>>, // persisted custom fonts
- *     saveFont(family: string, woff2Base64: string): Promise<void> // persist one font
+ *     saveFont(family: string, woff2Base64: string): Promise<void>, // persist one font
+ *     getBrushes(): object,                     // saved brush slots, e.g. { 0: {...} }
+ *     setBrushes(slots: object): void            // full brush slots map
  *   }
  *
  * `getHotkeys`/`setHotkeys` back the Hotkey Manager (see `Hotkeys.js`). They are
@@ -42,6 +44,10 @@
  * back the custom-font cache (`ext-fonts/fontStore.js`); the async signatures
  * let a host read/write font binaries from a synced vault folder, falling back
  * to IndexedDB (`svgedit-fonts`) when absent.
+ *
+ * `getBrushes`/`setBrushes` back the 5 saved custom-brush slots
+ * (`customBrushes.js`), falling back to `localStorage` key
+ * `svg-edit-custom-brushes`.
  */
 
 let _adapter = null

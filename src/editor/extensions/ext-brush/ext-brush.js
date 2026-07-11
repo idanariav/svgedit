@@ -1,49 +1,32 @@
 /**
  * @file ext-brush.js
  *
- * Pressure-sensitive freehand "brush" tool. Produces a variable-width stroke
- * rendered as a filled <path> outline via the perfect-freehand library.
+ * Configurable freehand "brush" tool. Produces a variable-width stroke
+ * rendered as a filled <path> outline via `core/brush-stroke.js` — a
+ * nib-based renderer supporting roundness, thickness, calligraphic angle,
+ * taper start/end, opacity and smoothness (see `<se-brush-settings>` for the
+ * live controls and up to 5 saved presets).
  *
  * Pen pressure (Apple Pencil, Wacom, Surface Pen, …) is read from PointerEvents
  * through a passive side-channel: the editor's drawing pipeline is mouse-based,
  * so coordinates still flow through the normal mouseDown/Move/Up hooks while the
  * latest pointer `pressure`/`pointerType` is captured separately. Pointer events
  * fire immediately before their compatibility mouse events, so the recorded
- * pressure is current when each hook runs. For non-pen input (mouse / finger)
- * perfect-freehand simulates pressure from velocity.
+ * pressure is current when each hook runs. Non-pen input (mouse / finger) draws
+ * at full, constant width — there is no velocity-based pressure simulation.
  *
  * @license MIT
  */
 
-import { getStroke } from 'perfect-freehand'
+import '../../components/seBrushSettings.js'
+import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.js'
 
 const name = 'brush'
 
 // Most-recent pointer state. Module scope is sufficient: one canvas is active
 // at a time and the value is only read synchronously inside a draw hook.
-let lastPressure = 0.5
+let lastPressure = 1
 let lastPointerType = 'mouse'
-
-/**
- * Convert a perfect-freehand outline (array of [x, y] points) into an SVG path
- * `d` string using median-point quadratic curves. Straight from the library's
- * documented usage example.
- * @param {Array<number[]>} stroke
- * @returns {string}
- */
-const getSvgPathFromStroke = (stroke) => {
-  if (!stroke.length) return ''
-  const d = stroke.reduce(
-    (acc, [x0, y0], i, arr) => {
-      const [x1, y1] = arr[(i + 1) % arr.length]
-      acc.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2)
-      return acc
-    },
-    ['M', ...stroke[0], 'Q']
-  )
-  d.push('Z')
-  return d.join(' ')
-}
 
 export default {
   name,
@@ -53,25 +36,17 @@ export default {
     const { $id, $click } = svgCanvas
     let element = null
     let points = []
+    let smoother = null
     let started = false
 
     const recordPressure = (e) => {
       lastPressure = e.pressure
       lastPointerType = e.pointerType
     }
-    // Real pressure only for pens; mouse/finger feed a neutral value and let
-    // perfect-freehand's simulatePressure derive a taper from velocity.
-    const pressureNow = () => (lastPointerType === 'pen' ? lastPressure : 0.5)
-    const strokeOptions = () => ({
-      // Map the editor's stroke-width control onto the brush's max width.
-      size: svgCanvas.getStrokeWidth() * 2,
-      thinning: 0.6,
-      smoothing: 0.5,
-      streamline: 0.5,
-      simulatePressure: lastPointerType !== 'pen'
-    })
+    // Real pressure only for pens; mouse/finger always draw at full width.
+    const pressureNow = () => (lastPointerType === 'pen' ? lastPressure : 1)
     const redraw = () => {
-      element.setAttribute('d', getSvgPathFromStroke(getStroke(points, strokeOptions())))
+      element.setAttribute('d', buildBrushOutline(points, svgCanvas.getBrushParams()))
     }
 
     return {
@@ -86,6 +61,22 @@ export default {
             svgCanvas.setMode('brush')
           }
         })
+        // Double-click to lock, matching the other drawing tools (LeftPanel.js's
+        // `lockable` list) — added dynamically here since #tool_brush doesn't
+        // exist yet when LeftPanel.js wires up its own static lockable buttons.
+        $id('tool_brush').addEventListener('dblclick', () => svgEditor.leftPanel.lockTool($id('tool_brush')))
+        // Lives in the Effects tab (not tied to the current selection, unlike
+        // ext-shadow/ext-outline's panels there — it configures the brush
+        // tool itself) until it finds a more permanent home.
+        const panelTemplate = document.createElement('template')
+        panelTemplate.innerHTML = `
+          <div id="brush_settings_panel" class="sidepanel_section">
+            <div class="sidepanel_section_label">Brush</div>
+            <se-brush-settings id="tool_brush_settings" title="Brush settings" src="config.svg"></se-brush-settings>
+          </div>
+        `
+        const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
+        host.appendChild(panelTemplate.content.cloneNode(true))
         // Passive pressure side-channel — never interferes with the mouse pipeline.
         svgCanvas.svgroot.addEventListener('pointerdown', recordPressure, { passive: true })
         svgCanvas.svgroot.addEventListener('pointermove', recordPressure, { passive: true })
@@ -94,18 +85,19 @@ export default {
       mouseDown (opts) {
         if (svgCanvas.getMode() !== 'brush') return undefined
         started = true
-        points = [[opts.start_x, opts.start_y, pressureNow()]]
+        smoother = createSmoother(svgCanvas.getBrushParams().smoothness)
+        points = [smoother.push({ x: opts.start_x, y: opts.start_y, pressure: pressureNow() })]
         element = svgCanvas.addSVGElementsFromJson({
           element: 'path',
           attr: {
             id: svgCanvas.getNextId(),
             d: '',
-            // perfect-freehand returns a closed outline, so the stroke colour is
+            // The outline is a closed filled shape, so the stroke colour is
             // applied as fill and the path has no SVG stroke of its own.
             fill: svgCanvas.getColor('stroke'),
             'fill-rule': 'nonzero',
             stroke: 'none',
-            opacity: svgCanvas.getStyle().opacity,
+            opacity: svgCanvas.getBrushParams().opacity,
             style: 'pointer-events:none'
           }
         })
@@ -115,7 +107,7 @@ export default {
 
       mouseMove (opts) {
         if (!started || svgCanvas.getMode() !== 'brush') return undefined
-        points.push([opts.mouse_x, opts.mouse_y, pressureNow()])
+        points.push(smoother.push({ x: opts.mouse_x, y: opts.mouse_y, pressure: pressureNow() }))
         redraw()
         return { started: true }
       },
@@ -123,10 +115,12 @@ export default {
       mouseUp () {
         if (svgCanvas.getMode() !== 'brush') return undefined
         started = false
-        const keep = points.length > 1
+        const keep = points.length > 0
         const el = element
+        if (el) el.setAttribute('d', finalizeBrushOutline(el.getAttribute('d'), svgCanvas))
         element = null
         points = []
+        smoother = null
         // Core commits the InsertElementCommand and handles selection when keep
         // is true (see core/event.js mouseUp) — do not add to history here.
         return { keep, element: el, started: false }

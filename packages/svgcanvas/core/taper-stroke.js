@@ -36,8 +36,16 @@ export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
 export const TAPER_STYLE_ATTR = 'se:taper-style'
 
-/** Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e). */
-const profile = (t, s, e) => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
+/**
+ * Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e): full width
+ * mid-stroke, the given fractions at the tips. Shared with `brush-stroke.js`,
+ * which applies the same tip-taper shape to its nib-based outline.
+ * @param {Float} t - Position along the stroke, 0–1.
+ * @param {Float} s - Start-tip width fraction, 0–1.
+ * @param {Float} e - End-tip width fraction, 0–1.
+ * @returns {Float}
+ */
+export const profile = (t, s, e) => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
 
 const CAP_ANGLES = [30, 60, 90, 120, 150]
 
