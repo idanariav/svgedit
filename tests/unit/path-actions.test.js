@@ -468,6 +468,36 @@ describe('PathActions', () => {
 
       expect(svgCanvas.setStarted).toHaveBeenCalledWith(false)
     })
+
+    it('should NOT reset started for a plain select-mode click on a non-path shape', () => {
+      // event-select.js calls pathActions.clear() on every mousedown that
+      // selects a new (non-path) element, right after setStarted(true) was
+      // set for that same click. Resetting `started` here would kill the
+      // drag/mouseup handling for every such click (no selection bbox,
+      // element stuck unmovable).
+      svgCanvas.getCurrentMode.mockReturnValue('select')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.clear()
+
+      expect(svgCanvas.setStarted).not.toHaveBeenCalled()
+    })
+
+    it('should NOT reset started on a later plain click after an earlier, unrelated path-edit session', () => {
+      // `path` (the current path-edit session) is set once by toEditMode()
+      // and is never nulled out again — so its mere presence must not be
+      // used as the signal for "this clear() call is path-related". Confirm
+      // that clicking a plain shape after having edited some path earlier in
+      // the session still leaves `started` alone.
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.setStarted.mockClear()
+      svgCanvas.getCurrentMode.mockReturnValue('select')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.clear()
+
+      expect(svgCanvas.setStarted).not.toHaveBeenCalled()
+    })
   })
 
   describe('resetOrientation', () => {

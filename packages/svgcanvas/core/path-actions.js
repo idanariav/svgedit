@@ -1001,6 +1001,14 @@ class PathActions {
     */
   clear () {
     const drawnPath = svgCanvas.getDrawnPath()
+    const mode = svgCanvas.getCurrentMode()
+    // `path` (the current path-edit session, if any) is set once by
+    // toEditMode() and stays set for the rest of the svgCanvas instance's
+    // life — it is NOT cleared on leaving pathedit — so its mere presence
+    // can't be used to decide whether *this* clear() call is path-related.
+    // `path.dragging` is the transient signal: truthy only during/just after
+    // an actual node drag.
+    const wasDragging = Boolean(path?.dragging)
     this.#currentPath = null
     this.#newPoint = null
     this.#firstCtrl = null
@@ -1019,20 +1027,29 @@ class PathActions {
         el.setAttribute('display', 'none')
       }
       svgCanvas.setDrawnPath(null)
-    } else if (svgCanvas.getCurrentMode() === 'pathedit') {
+    } else if (mode === 'pathedit') {
       this.toSelectMode()
     }
-    // A lost mouseup (e.g. the button released outside the canvas mid-drag)
-    // never reaches path-actions' own dragging=false reset, so a node can be
-    // left permanently "stuck" following the pointer. Reset it unconditionally
-    // here so switching tools is always a reliable way out, regardless of
-    // what state the previous interaction left behind.
     if (path) {
+      // A lost mouseup (e.g. the button released outside the canvas
+      // mid-drag) never reaches path-actions' own dragging=false reset, so a
+      // node can be left permanently "stuck" following the pointer. Reset it
+      // unconditionally whenever a path-edit session exists, regardless of
+      // what state the previous interaction left behind.
       path.dragging = false
       path.dragctrl = false
       path.init().show(false)
     }
-    svgCanvas.setStarted(false)
+    // Only reset `started` when this clear() call actually corresponds to
+    // path-drawing/editing cleanup — a path being committed, a stale 'path'
+    // mode left over from addSubPath, or a node stuck mid-drag. clear() is
+    // also called on every plain select-mode mousedown for a non-path shape
+    // (event-select.js), where `started` was just legitimately set true for
+    // the click in progress; resetting it there broke drag/selection for
+    // every such shape.
+    if (drawnPath || mode === 'path' || mode === 'pathedit' || wasDragging) {
+      svgCanvas.setStarted(false)
+    }
   }
 
   /**
