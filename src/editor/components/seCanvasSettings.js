@@ -1,4 +1,5 @@
 /* globals svgEditor */
+import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { loadLayouts, saveLayouts, captureCurrentLayout, applyLayout } from '../canvasLayouts.js'
@@ -90,8 +91,7 @@ const computeRatio = (w, h) => {
   return `${w / d}:${h / d}`
 }
 
-const template = document.createElement('template')
-template.innerHTML = `
+const TEMPLATE_HTML = `
   <style>
   :host {
     display: inline-flex;
@@ -412,19 +412,10 @@ template.innerHTML = `
  * Toolbar button that opens a popover for quickly resizing the canvas
  * (explicit width/height plus aspect-ratio presets).
  */
-class SeCanvasSettings extends HTMLElement {
+class SeCanvasSettings extends SeSettingsPopover {
   constructor () {
-    super()
-    this.handleClose = this.handleClose.bind(this)
-    this.handleKeyDown = this.handleKeyDown.bind(this)
+    super(TEMPLATE_HTML)
 
-    this._shadowRoot = this.attachShadow({ mode: 'open' })
-    this._shadowRoot.append(template.content.cloneNode(true))
-
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
-    this.$icon = this._shadowRoot.querySelector('#icon')
-    this.$trigger = this._shadowRoot.querySelector('.trigger')
-    this.$popup = this._shadowRoot.querySelector('#options-container')
     this.$w = this._shadowRoot.querySelector('#canvas_w')
     this.$h = this._shadowRoot.querySelector('#canvas_h')
     this.$presets = this._shadowRoot.querySelector('.presets')
@@ -446,10 +437,6 @@ class SeCanvasSettings extends HTMLElement {
     // Current saved-layout list; (re)loaded on open.
     this.layouts = []
 
-    this.$trigger.addEventListener('click', e => {
-      e.stopPropagation()
-      this.toggle()
-    })
     this.$apply.addEventListener('click', () => this.apply())
     this.$reset.addEventListener('click', () => this.reset())
     this.$manageToggle.addEventListener('click', () => this.enterManageMode())
@@ -460,14 +447,6 @@ class SeCanvasSettings extends HTMLElement {
     this.$layoutName.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); this.saveCurrentLayout() }
     })
-    // Light-dismiss: close on outside click / Esc
-    document.addEventListener('click', this.handleClose)
-    this.addEventListener('keydown', this.handleKeyDown)
-
-    const srcAttr = this.getAttribute('src')
-    if (srcAttr) this._loadIcon(srcAttr)
-    const titleAttr = this.getAttribute('title')
-    if (titleAttr) this.$trigger.setAttribute('title', titleAttr)
   }
 
   async _loadIcon (src) {
@@ -488,18 +467,6 @@ class SeCanvasSettings extends HTMLElement {
     }
   }
 
-  get isOpen () {
-    return this.$popup.style.display === 'flex'
-  }
-
-  toggle () {
-    if (this.isOpen) {
-      this.close()
-    } else {
-      this.open()
-    }
-  }
-
   open () {
     // Pre-fill inputs with the current canvas resolution and remember it so
     // Reset can restore the size the canvas had when the popover was opened.
@@ -514,14 +481,7 @@ class SeCanvasSettings extends HTMLElement {
     this.layouts = loadLayouts()
     this.renderLayouts()
     this.exitManageMode()
-    this.$popup.style.display = 'flex'
-    this.$trigger.setAttribute('aria-expanded', 'true')
-    this.positionPopup()
-  }
-
-  close () {
-    this.$popup.style.display = 'none'
-    this.$trigger.setAttribute('aria-expanded', 'false')
+    super.open()
   }
 
   /**
@@ -729,21 +689,6 @@ class SeCanvasSettings extends HTMLElement {
     this.positionPopup()
   }
 
-  /**
-   * Position the popover just below the trigger, clamped to the viewport.
-   */
-  positionPopup () {
-    const btn = this.$trigger.getBoundingClientRect()
-    const pop = this.$popup.getBoundingClientRect()
-    const gap = 6
-    let left = btn.left
-    if (left + pop.width > window.innerWidth - 8) {
-      left = Math.max(8, window.innerWidth - pop.width - 8)
-    }
-    this.$popup.style.top = `${btn.bottom + gap}px`
-    this.$popup.style.left = `${left}px`
-  }
-
   apply () {
     const w = parseInt(this.$w.value, 10)
     const h = parseInt(this.$h.value, 10)
@@ -763,20 +708,6 @@ class SeCanvasSettings extends HTMLElement {
     if (!this._original) return
     this.$w.value = this._original.w
     this.$h.value = this._original.h
-  }
-
-  handleClose (e) {
-    // e.target is the <se-canvas-settings> host for clicks anywhere inside it
-    if (this.isOpen && e.target !== this) {
-      this.close()
-    }
-  }
-
-  handleKeyDown (e) {
-    if (e.key === 'Escape' && this.isOpen) {
-      this.close()
-      this.$trigger.focus()
-    }
   }
 }
 

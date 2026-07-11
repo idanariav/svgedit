@@ -418,30 +418,7 @@ describe('se-canvas-settings', () => {
       expect(stored.length).toBe(0)
     })
   })
-
-  describe('positionPopup()', () => {
-    it('positions the popup below the trigger', () => {
-      const el = mountElement('se-canvas-settings')
-      el.$trigger.getBoundingClientRect = () => ({ left: 50, bottom: 100, width: 36, height: 36 })
-      el.$popup.getBoundingClientRect = () => ({ width: 250, height: 300 })
-
-      el.positionPopup()
-
-      expect(el.$popup.style.top).toBe('106px')
-      expect(el.$popup.style.left).toBe('50px')
-    })
-
-    it('clamps left position so the popup does not overflow the viewport', () => {
-      const el = mountElement('se-canvas-settings')
-      const originalInnerWidth = window.innerWidth
-      Object.defineProperty(window, 'innerWidth', { value: 300, configurable: true })
-      el.$trigger.getBoundingClientRect = () => ({ left: 250, bottom: 100, width: 36, height: 36 })
-      el.$popup.getBoundingClientRect = () => ({ width: 250, height: 300 })
-
-      el.positionPopup()
-
-      expect(el.$popup.style.left).toBe('42px') // 300 - 250 - 8
-      Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true })
-    })
-  })
+  // positionPopup() is inherited from SeSettingsPopover and covered by
+  // seSettingsPopover.test.js; not re-tested here (same as the other
+  // migrated *Settings components).
 })

@@ -5,10 +5,11 @@ import { fetchSvgEl } from './svgIconLoader.js'
  * @class SeSettingsPopover
  * Base class for the toolbar-button-plus-popover settings components
  * (se-grid-settings, se-repeat-settings, se-motion-settings,
- * se-offset-settings, se-taper-settings, se-guides-settings). Provides the
- * shared shadow-DOM wiring, icon loading, open/close/toggle lifecycle,
- * viewport-aware positioning, and light-dismiss (outside click / Escape)
- * behavior every one of them reimplemented identically.
+ * se-offset-settings, se-taper-settings, se-guides-settings,
+ * se-canvas-settings). Provides the shared shadow-DOM wiring, icon loading,
+ * open/close/toggle lifecycle, viewport-aware positioning, and light-dismiss
+ * (outside click / Escape) behavior every one of them reimplemented
+ * identically.
  *
  * Subclasses supply their own full shadow-root markup (including their own
  * `<style>` block — CSS is not shared, only behavior) via the constructor,

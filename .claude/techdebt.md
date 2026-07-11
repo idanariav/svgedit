@@ -39,9 +39,6 @@ future refactors" — each needs its own planning pass before execution:
 - **Reorganize `svgcanvas.js` state bag (80+ flat properties)** into concern
   objects (selection / drawing / style / history / zoom), keeping getters for
   API compat. Very high effort; 100+ call sites.
-- **`seCanvasSettings.js` adoption of `SettingsPopover`** (784 lines,
-  structurally different from the six popovers migrated in Phase 8 —
-  presets, layouts).
 - **Popover API for the settings popovers** (`SeSettingsPopover` base class)
   — replace its manual outside-click/positioning logic once CSS anchor
   positioning is Baseline; would match the pattern used for `seMenu.js`'s
