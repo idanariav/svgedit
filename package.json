@@ -88,9 +88,9 @@
     "i18next": "25.7.4",
     "imagetracerjs": "^1.2.6",
     "paper": "^0.12.18",
-    "pathseg": "1.2.1",
     "perfect-freehand": "^1.2.3",
-    "spiro": "^3.0.1"
+    "spiro": "^3.0.1",
+    "svgpath": "2.6.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

@@ -1,4 +1,4 @@
-import 'pathseg'
+import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'

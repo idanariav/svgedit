@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createInstrumenter } from 'istanbul-lib-instrument'
 import { dirname, resolve } from 'node:path'
+import esbuild from 'esbuild'
 
 const root = process.cwd()
 const outDir = resolve(root, 'dist/editor')
@@ -17,7 +18,6 @@ const targets = [
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
   // Test harness assets for Playwright (unit-style tests in browser)
   ['src/editor/tests', 'tests'],
-  ['node_modules/pathseg/pathseg.js', 'tests/vendor/pathseg/pathseg.js'],
   // Same stub used by vitest (tests/unit/mocks/paper-core-stub.js) to avoid
   // loading paper's CJS/UMD dist bundle as a native ES module — no current
   // harness spec exercises real paper.js geometry ops.
@@ -27,6 +27,21 @@ const targets = [
 for (const [src, dest] of targets) {
   await cp(resolve(root, src), resolve(outDir, dest), { recursive: true })
 }
+
+// The Playwright unit harness (src/editor/tests/unit-harness.html) loads
+// svgcanvas core modules as plain unbundled browser ES modules — no import
+// map, no transform pipeline. path-seg-shim.js's `svgpath` dependency is
+// CommonJS, so it can't be loaded that way directly (unlike the old
+// `pathseg` polyfill, which was dependency-free plain JS and could just be
+// copied as-is). Bundle it standalone with esbuild so the harness gets a
+// single browser-ready ES module with `svgpath` inlined.
+await esbuild.build({
+  entryPoints: [resolve(root, 'packages/svgcanvas/core/path-seg-shim.js')],
+  outfile: resolve(outDir, 'tests/vendor/path-seg-shim/path-seg-shim.js'),
+  bundle: true,
+  format: 'esm',
+  platform: 'browser'
+})
 
 // Instrument svgcanvas sources when collecting coverage so Playwright runs hit instrumented code.
 const svgCanvasSrc = resolve(root, 'packages/svgcanvas')

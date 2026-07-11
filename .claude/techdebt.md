@@ -39,6 +39,3 @@ future refactors" — each needs its own planning pass before execution:
 - **Reorganize `svgcanvas.js` state bag (80+ flat properties)** into concern
   objects (selection / drawing / style / history / zoom), keeping getters for
   API compat. Very high effort; 100+ call sites.
-- **`pathseg` removal** — blocked until `core/path-actions.js` is rewritten
-  off `pathSegList` (used throughout, e.g. lines 39-46, 470-576, 666+) onto
-  the modern path API.

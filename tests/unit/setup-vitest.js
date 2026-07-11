@@ -320,7 +320,7 @@ const svgElementProto = win.SVGElement?.prototype
 if (!win.SVGSVGElement) win.SVGSVGElement = win.SVGElement
 if (!win.SVGGraphicsElement) win.SVGGraphicsElement = win.SVGElement
 if (!win.SVGGeometryElement) win.SVGGeometryElement = win.SVGElement
-// Ensure SVGPathElement exists so the pathseg polyfill can patch it.
+// Ensure SVGPathElement exists so the path-seg shim can patch it.
 win.SVGPathElement = win.SVGElement || function SVGPathElement () {}
 
 // Matrix/transform helpers.
@@ -450,8 +450,8 @@ if (svgElementProto) {
   }
 }
 
-// Ensure pathseg polyfill can attach to prototypes.
-await import('pathseg')
+// Ensure the path-seg shim can attach to prototypes.
+await import('../../packages/svgcanvas/core/path-seg-shim.js')
 
 // Add minimal chai-like helpers some legacy tests expect.
 assert.close = (actual, expected, delta, message) =>

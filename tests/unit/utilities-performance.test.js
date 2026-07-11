@@ -1,5 +1,5 @@
 /* eslint-disable max-len, no-console */
-import 'pathseg'
+import '../../packages/svgcanvas/core/path-seg-shim.js'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as utilities from '../../packages/svgcanvas/core/bbox-utils.js'

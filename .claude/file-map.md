@@ -158,6 +158,7 @@
 | `core/select.js` | Rubber-band selector + resize handles UI |
 | `core/path.js` | Path state and node data |
 | `core/path-actions.js` | Add/delete/move path nodes |
+| `core/path-seg-shim.js` | Self-installing replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API (`pathSegList`, `createSVGPathSeg*`, `SVGPathSeg.PATHSEG_*`), backed by the `svgpath` package's `d`-string parser/serializer instead of any native/polyfilled browser API |
 | `core/elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
 | `core/history.js` | Undo/redo stack |
 | `core/undo.js` | Change recording |

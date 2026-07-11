@@ -179,6 +179,7 @@ src/editor/index.html
 | `path.js` | Path element state and node data |
 | `path-actions.js` | Path editing operations (add/delete/move nodes) |
 | `path-method.js` | Path utility methods |
+| `path-seg-shim.js` | Self-installing `pathSegList`/`createSVGPathSeg*`/`SVGPathSeg.PATHSEG_*` replacement, backed by the `svgpath` package (no browser API dependency — replaces the old `pathseg` polyfill) |
 | `svg-exec.js` | Execute high-level SVG operations |
 | `elem-get-set.js` | `changeSelectedAttribute()` and attribute getters/setters |
 | `history.js` | Undo/redo stack data structures |

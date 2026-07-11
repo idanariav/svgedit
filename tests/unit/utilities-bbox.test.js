@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert'
-import 'pathseg'
+import '../../packages/svgcanvas/core/path-seg-shim.js'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
