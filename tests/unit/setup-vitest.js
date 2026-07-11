@@ -63,6 +63,41 @@ if (!globalThis.CSS.escape) {
   }
 }
 
+// jsdom does not implement the Popover API (showPopover/hidePopover/the
+// 'toggle' event/`:popover-open`), used by seSettingsPopover.js and
+// seMenu.js for native light-dismiss. Minimal polyfill: track per-element
+// open state, dispatch a spec-shaped 'toggle' event (jsdom also lacks
+// ToggleEvent, so a plain Event carries oldState/newState instead), and
+// make `.matches(':popover-open')` recognize that one pseudo-class.
+if (!globalThis.HTMLElement.prototype.showPopover) {
+  const popoverOpenState = new WeakSet()
+  const proto = globalThis.HTMLElement.prototype
+  proto.showPopover = function () {
+    if (popoverOpenState.has(this)) {
+      throw new globalThis.DOMException('Invalid on already-showing popover', 'InvalidStateError')
+    }
+    popoverOpenState.add(this)
+    this.dispatchEvent(Object.assign(new globalThis.Event('toggle'), { oldState: 'closed', newState: 'open' }))
+  }
+  proto.hidePopover = function () {
+    if (!popoverOpenState.has(this)) {
+      throw new globalThis.DOMException('Invalid on already-hidden popover', 'NotFoundError')
+    }
+    popoverOpenState.delete(this)
+    this.dispatchEvent(Object.assign(new globalThis.Event('toggle'), { oldState: 'open', newState: 'closed' }))
+  }
+  proto.togglePopover = function (force) {
+    const isOpen = popoverOpenState.has(this)
+    if (force === true || (force === undefined && !isOpen)) this.showPopover()
+    else this.hidePopover()
+  }
+  const nativeMatches = globalThis.Element.prototype.matches
+  globalThis.Element.prototype.matches = function (selector) {
+    if (selector === ':popover-open') return popoverOpenState.has(this)
+    return nativeMatches.call(this, selector)
+  }
+}
+
 // Provide a global assert (some legacy tests expect it).
 globalThis.assert = assert
 

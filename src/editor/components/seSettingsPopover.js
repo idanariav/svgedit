@@ -6,10 +6,19 @@ import { fetchSvgEl } from './svgIconLoader.js'
  * Base class for the toolbar-button-plus-popover settings components
  * (se-grid-settings, se-repeat-settings, se-motion-settings,
  * se-offset-settings, se-taper-settings, se-guides-settings,
- * se-canvas-settings). Provides the shared shadow-DOM wiring, icon loading,
- * open/close/toggle lifecycle, viewport-aware positioning, and light-dismiss
- * (outside click / Escape) behavior every one of them reimplemented
- * identically.
+ * se-canvas-settings, se-smooth-path-settings). Provides the shared
+ * shadow-DOM wiring, icon loading, open/close/toggle lifecycle,
+ * viewport-aware positioning, and light-dismiss (outside click / Escape)
+ * behavior every one of them reimplemented identically.
+ *
+ * Light-dismiss and top-layer stacking are delegated to the native Popover
+ * API (`$popup` carries `popover="auto"`) rather than a hand-rolled
+ * document click/keydown listener pair, matching the pattern `seMenu.js`
+ * already uses for its hamburger menu. Positioning stays manual
+ * (`positionPopup()`) rather than CSS anchor positioning: it already
+ * accounts for embedders (e.g. the Obsidian plugin) placing this component
+ * inside a transformed/scaled ancestor, which anchor positioning doesn't
+ * solve for.
  *
  * Subclasses supply their own full shadow-root markup (including their own
  * `<style>` block — CSS is not shared, only behavior) via the constructor,
@@ -18,7 +27,11 @@ import { fetchSvgEl } from './svgIconLoader.js'
  *  - a `#options-container` element (the popup itself)
  * Subclasses query their own field elements after calling `super()`, and
  * typically override `open()` to seed field values before calling
- * `super.open()` to perform the shared display/position/aria work.
+ * `super.open()` to perform the shared display/position/aria work. A
+ * subclass that needs to run its own logic when the popover closes (e.g.
+ * reverting an un-applied preview) overrides `close()` the same way — this
+ * still runs for browser-driven closes (outside click, Escape, another
+ * popover opening), not just explicit `this.close()` calls.
  */
 export class SeSettingsPopover extends HTMLElement {
   static get observedAttributes () {
@@ -30,8 +43,8 @@ export class SeSettingsPopover extends HTMLElement {
    */
   constructor (templateHTML) {
     super()
-    this.handleClose = this.handleClose.bind(this)
-    this.handleKeyDown = this.handleKeyDown.bind(this)
+    this._skipToggleSync = false
+    this.handleToggle = this.handleToggle.bind(this)
 
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     const template = document.createElement('template')
@@ -43,24 +56,20 @@ export class SeSettingsPopover extends HTMLElement {
     this.$trigger = this._shadowRoot.querySelector('.trigger')
     this.$popup = this._shadowRoot.querySelector('#options-container')
 
+    // Promote to a native "auto" popover for top-layer rendering plus
+    // built-in light-dismiss (outside click / Escape). The UA popover
+    // stylesheet otherwise imposes its own inset/size defaults that fight
+    // positionPopup()'s explicit left/top; neutralize them once here so
+    // every subclass's own #options-container CSS keeps working unchanged.
+    this.$popup.setAttribute('popover', 'auto')
+    this.$popup.style.margin = '0'
+    this.$popup.style.inset = 'auto'
+    this.$popup.addEventListener('toggle', this.handleToggle)
+
     this.$trigger.addEventListener('click', e => {
       e.stopPropagation()
       this.toggle()
     })
-    // Light-dismiss: close on outside click / Esc
-    document.addEventListener('click', this.handleClose)
-    this.addEventListener('keydown', this.handleKeyDown)
-  }
-
-  /**
-   * Every popover previously added its document-level click listener in the
-   * constructor and never removed it, leaking a listener (holding the whole
-   * component alive) for the lifetime of the page each time one was
-   * disconnected. Fixed here once for all subclasses.
-   * @returns {void}
-   */
-  disconnectedCallback () {
-    document.removeEventListener('click', this.handleClose)
   }
 
   /**
@@ -99,7 +108,7 @@ export class SeSettingsPopover extends HTMLElement {
   }
 
   get isOpen () {
-    return this.$popup.style.display === 'flex'
+    return this.$popup.matches(':popover-open')
   }
 
   toggle () {
@@ -117,12 +126,27 @@ export class SeSettingsPopover extends HTMLElement {
    * @returns {void}
    */
   open () {
+    if (!this.isOpen) {
+      // Passing `source` registers $trigger as this popover's invoker, so
+      // the native light-dismiss algorithm doesn't treat clicking it again
+      // (to toggle closed) as an outside click, and Escape returns focus to
+      // it — matching the previous manual handleKeyDown behavior.
+      this.$popup.showPopover({ source: this.$trigger })
+    }
     this.$popup.style.display = 'flex'
     this.$trigger.setAttribute('aria-expanded', 'true')
     this.positionPopup()
   }
 
   close () {
+    // Set before hidePopover() so handleToggle's resulting 'toggle' event
+    // (fired synchronously) doesn't re-enter close() while it's already
+    // running.
+    this._skipToggleSync = true
+    if (this.isOpen) {
+      this.$popup.hidePopover()
+    }
+    this._skipToggleSync = false
     this.$popup.style.display = 'none'
     this.$trigger.setAttribute('aria-expanded', 'false')
   }
@@ -173,16 +197,17 @@ export class SeSettingsPopover extends HTMLElement {
     }
   }
 
-  handleClose (e) {
-    if (this.isOpen && e.target !== this) {
+  /**
+   * Browser-driven closes (outside click, Escape, or another auto popover
+   * opening) call `$popup.hidePopover()` directly, bypassing `close()`
+   * above. Route those back through the (possibly overridden) `close()` so
+   * subclasses with close-time side effects still run.
+   * @param {ToggleEvent} e
+   * @returns {void}
+   */
+  handleToggle (e) {
+    if (e.newState === 'closed' && !this._skipToggleSync) {
       this.close()
-    }
-  }
-
-  handleKeyDown (e) {
-    if (e.key === 'Escape' && this.isOpen) {
-      this.close()
-      this.$trigger.focus()
     }
   }
 }

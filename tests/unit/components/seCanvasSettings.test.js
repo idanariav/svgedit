@@ -104,28 +104,17 @@ describe('se-canvas-settings', () => {
       expect(el.isOpen).toBe(true)
     })
 
-    it('closes on outside click but not on click on the host itself', () => {
+    it('syncs isOpen/aria-expanded when the browser closes the popover directly (outside click / Escape, native light-dismiss)', () => {
       const el = mountElement('se-canvas-settings')
       el.open()
 
-      // Simulate handleClose being invoked with e.target === el (click within host)
-      el.handleClose({ target: el })
-      expect(el.isOpen).toBe(true)
-
-      // Click target other than the host closes it
-      el.handleClose({ target: document.body })
-      expect(el.isOpen).toBe(false)
-    })
-
-    it('closes on Escape key and refocuses the trigger', () => {
-      const el = mountElement('se-canvas-settings')
-      el.open()
-      el.$trigger.focus = vi.fn()
-
-      el.handleKeyDown({ key: 'Escape' })
+      // Native light-dismiss/Escape hide the popover directly, bypassing
+      // close() - the base class's 'toggle' listener routes it back through
+      // close() so aria state stays in sync (see seSettingsPopover.test.js).
+      el.$popup.hidePopover()
 
       expect(el.isOpen).toBe(false)
-      expect(el.$trigger.focus).toHaveBeenCalled()
+      expect(el.$trigger.getAttribute('aria-expanded')).toBe('false')
     })
   })
 

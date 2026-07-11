@@ -77,6 +77,18 @@ describe('se-smooth-path-settings', () => {
     expect(el.isOpen).toBe(false)
   })
 
+  it('a browser-driven close (outside click / Escape, bypassing close()) still cancels the preview', () => {
+    const cancelSmoothPath = vi.fn()
+    installMockSvgEditor({ svgCanvas: { cancelSmoothPath } })
+    const el = mountElement('se-smooth-path-settings')
+    el.open()
+    // Simulate native light-dismiss/Escape: the browser hides the popover
+    // directly, without going through our close() override.
+    el.$popup.hidePopover()
+    expect(cancelSmoothPath).toHaveBeenCalled()
+    expect(el.isOpen).toBe(false)
+  })
+
   it('reopening after a cancelled close previews fresh (does not auto-cancel again)', () => {
     const cancelSmoothPath = vi.fn()
     const previewSmoothPath = vi.fn()

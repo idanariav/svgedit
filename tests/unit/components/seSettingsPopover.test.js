@@ -86,60 +86,27 @@ describe('SeSettingsPopover (base class)', () => {
     expect(el.isOpen).toBe(false)
   })
 
-  it('closes on an outside click when open', () => {
+  it('is a native "auto" popover (light-dismiss/Escape/top-layer delegated to the browser)', () => {
+    const el = mountElement('se-test-settings-popover')
+    expect(el.$popup.getAttribute('popover')).toBe('auto')
+  })
+
+  it('syncs isOpen/aria-expanded/display when the browser closes the popover directly (outside click / Escape / another popover opening)', () => {
     const el = mountElement('se-test-settings-popover')
     el.open()
-    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    // Simulate what light-dismiss or Escape do natively: hide the popover
+    // without going through our own close() method.
+    el.$popup.hidePopover()
     expect(el.isOpen).toBe(false)
+    expect(el.$popup.style.display).toBe('none')
+    expect(el.$trigger.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('does not close on a click whose target is the element itself', () => {
+  it('close() does not throw when the popup was already closed by the browser', () => {
     const el = mountElement('se-test-settings-popover')
     el.open()
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    expect(el.isOpen).toBe(true)
-  })
-
-  it('closes and refocuses the trigger on Escape when open', () => {
-    const el = mountElement('se-test-settings-popover')
-    el.open()
-    const focusSpy = vi.spyOn(el.$trigger, 'focus')
-    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(el.isOpen).toBe(false)
-    expect(focusSpy).toHaveBeenCalled()
-  })
-
-  it('ignores Escape when already closed', () => {
-    const el = mountElement('se-test-settings-popover')
-    const focusSpy = vi.spyOn(el.$trigger, 'focus')
-    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(el.isOpen).toBe(false)
-    expect(focusSpy).not.toHaveBeenCalled()
-  })
-
-  it('ignores non-Escape keys', () => {
-    const el = mountElement('se-test-settings-popover')
-    el.open()
-    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(el.isOpen).toBe(true)
-  })
-
-  it('removes the document click listener on disconnect', () => {
-    const el = mountElement('se-test-settings-popover')
-    const removeSpy = vi.spyOn(document, 'removeEventListener')
-    el.remove()
-    expect(removeSpy).toHaveBeenCalledWith('click', el.handleClose)
-    removeSpy.mockRestore()
-  })
-
-  it('after disconnect, a document click no longer affects the (now detached) popup', () => {
-    const el = mountElement('se-test-settings-popover')
-    el.open()
-    el.remove()
-    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    // Listener was removed on disconnect, so handleClose never ran again;
-    // popup state is left exactly as it was at removal time (open).
-    expect(el.isOpen).toBe(true)
+    el.$popup.hidePopover()
+    expect(() => el.close()).not.toThrow()
   })
 
   // jsdom performs no real layout, so a stubbed getBoundingClientRect() always
