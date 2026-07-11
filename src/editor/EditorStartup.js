@@ -1343,7 +1343,7 @@ class EditorStartup {
   cancelTool () {
     const mode = this.svgCanvas.getMode()
     // list of modes that are currently save to cancel
-    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center', 'cutter']
+    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center', 'cutter', 'path', 'pathedit']
     if (modesToCancel.includes(mode)) {
       this.leftPanel.clickSelect()
     }

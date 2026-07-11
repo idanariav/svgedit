@@ -1002,23 +1002,37 @@ class PathActions {
   clear () {
     const drawnPath = svgCanvas.getDrawnPath()
     this.#currentPath = null
+    this.#newPoint = null
+    this.#firstCtrl = null
+    this.#downOnPath = false
+    this.#hasMoved = false
+    this.#subpath = false
     if (drawnPath) {
-      const elem = svgCanvas.getElement(svgCanvas.getId())
-      const psl = svgCanvas.getElement('path_stretch_line')
-      psl.parentNode.removeChild(psl)
-      elem.parentNode.removeChild(elem)
-      const pathpointgripContainer = svgCanvas.getElement('pathpointgrip_container')
-      const elements = pathpointgripContainer.querySelectorAll('*')
+      // Optional-chained: a missing element here must not throw and abort the
+      // caller (svgCanvas.setMode() calls this before committing the new
+      // mode) — that would leave currentMode stuck on the old (path-drawing)
+      // mode while the toolbar already shows a different tool selected.
+      svgCanvas.getElement(svgCanvas.getId())?.remove()
+      svgCanvas.getElement('path_stretch_line')?.remove()
+      const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
       for (const el of elements) {
         el.setAttribute('display', 'none')
       }
-      this.#firstCtrl = null
       svgCanvas.setDrawnPath(null)
-      svgCanvas.setStarted(false)
     } else if (svgCanvas.getCurrentMode() === 'pathedit') {
       this.toSelectMode()
     }
-    if (path) { path.init().show(false) }
+    // A lost mouseup (e.g. the button released outside the canvas mid-drag)
+    // never reaches path-actions' own dragging=false reset, so a node can be
+    // left permanently "stuck" following the pointer. Reset it unconditionally
+    // here so switching tools is always a reliable way out, regardless of
+    // what state the previous interaction left behind.
+    if (path) {
+      path.dragging = false
+      path.dragctrl = false
+      path.init().show(false)
+    }
+    svgCanvas.setStarted(false)
   }
 
   /**

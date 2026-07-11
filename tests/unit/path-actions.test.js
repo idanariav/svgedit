@@ -427,6 +427,47 @@ describe('PathActions', () => {
 
       expect(svgCanvas.setCurrentMode).toHaveBeenCalledWith('select')
     })
+
+    it('should reset a node stuck mid-drag (e.g. mouseup lost outside the canvas)', () => {
+      // If the mouse button is released outside the canvas, mouseUp's own
+      // `path.dragging = false` never runs, so the node keeps following the
+      // pointer on every later mousemove. Switching tools must always clear
+      // this, even though currentMode may not be 'pathedit' by then.
+      pathActionsMethod.toEditMode(pathElement)
+      mockPath.dragging = [100, 100]
+      mockPath.dragctrl = true
+      svgCanvas.getCurrentMode.mockReturnValue('select')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.clear()
+
+      expect(mockPath.dragging).toBe(false)
+      expect(mockPath.dragctrl).toBe(false)
+    })
+
+    it('should not throw when the drawn-path DOM elements are already missing', () => {
+      // clear() runs on every svgCanvas.setMode() call before the new mode is
+      // committed; if it throws, the mode switch aborts and the toolbar ends
+      // up showing a different tool than the one actually still active.
+      const drawnPath = document.createElementNS(NS.SVG, 'path')
+      drawnPath.id = 'svg_1'
+      svgCanvas.getDrawnPath.mockReturnValue(drawnPath)
+      // Note: no #svg_1 or #path_stretch_line element is appended to svgRoot.
+
+      expect(() => pathActionsMethod.clear()).not.toThrow()
+      expect(svgCanvas.setDrawnPath).toHaveBeenCalledWith(null)
+    })
+
+    it('should reset started even when neither drawnPath nor pathedit mode apply', () => {
+      // Guards against currentMode getting stuck on a stale value (e.g. 'path'
+      // left over from addSubPath) with no drawnPath to signal cleanup is needed.
+      svgCanvas.getCurrentMode.mockReturnValue('path')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.clear()
+
+      expect(svgCanvas.setStarted).toHaveBeenCalledWith(false)
+    })
   })
 
   describe('resetOrientation', () => {
