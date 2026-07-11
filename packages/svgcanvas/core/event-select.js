@@ -9,7 +9,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, snapPointToGrid, walkTree } from './dom-utils.js'
+import { assignAttributes, snapPointToGrid, walkTree, getRotationAngle } from './dom-utils.js'
 import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import { getTransformList, transformListToTransform } from './math.js'
 import { proportionLines } from './proportions.js'
@@ -361,7 +361,18 @@ export const init = (canvas) => {
           // location. Skip for resize: that tlist is [translate, scale,
           // translate] and must reach recalculateDimensions to scale real
           // attributes (width/height/font-size/…) rather than bake a matrix.
-          if (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate) {
+          // Also skip when a rotation is present: collapsing it into a raw
+          // matrix makes getRotationAngle() blind to it, so recalculateDimensions
+          // falls into its matrix-as-scale branch and treats cos(angle)/sin(angle)
+          // as a scale factor — e.g. font-size *= |cos(90°)| ≈ 0. Leaving the
+          // rotate() transform intact lets recalculateDimensions's own
+          // translate+rotate decomposition (which does not scale anything) handle it.
+          if (
+            operationMode !== 'resize' &&
+            tlist.numberOfItems > 1 &&
+            hasDragTranslate &&
+            !getRotationAngle(elem)
+          ) {
             const consolidatedMatrix = transformListToTransform(tlist).matrix
 
             // Clear the transform list
