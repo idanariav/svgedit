@@ -126,6 +126,49 @@ test.describe('Cutter tool', () => {
     expect(Math.abs(totalArea - trueArea) / trueArea).toBeLessThan(0.001)
   })
 
+  test('an S-shaped polyline that dips into the ellipse twice splits it into 3 pieces', async ({ page }) => {
+    // Two vertical slits (x=120 and x=280, each crossing the boundary at
+    // y~102/y~198) joined by a horizontal stretch safely below the ellipse
+    // (y=250) so it doesn't add a 3rd crossing — 4 crossings total (m=2),
+    // producing a left cap, a middle strip, and a right cap.
+    const totalArea = await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly(
+        [document.querySelector('#svgcontent #svg_1')], true
+      )
+      window.svgEditor.svgCanvas.cutShapes([
+        { x: 120, y: 50 },
+        { x: 120, y: 250 },
+        { x: 280, y: 250 },
+        { x: 280, y: 50 }
+      ])
+      const shoelaceArea = (p) => {
+        const len = p.getTotalLength()
+        const N = 2000
+        let area = 0
+        let prev = p.getPointAtLength(0)
+        for (let i = 1; i <= N; i++) {
+          const pt = p.getPointAtLength((i / N) * len)
+          area += (prev.x * pt.y - pt.x * prev.y)
+          prev = pt
+        }
+        return Math.abs(area / 2)
+      }
+      return Array.from(document.querySelectorAll('#svgcontent g.layer > path'))
+        .reduce((sum, p) => sum + shoelaceArea(p), 0)
+    })
+
+    await expect(page.locator('#svgcontent #svg_1')).toHaveCount(0)
+    const paths = page.locator('#svgcontent g.layer > path')
+    await expect(paths).toHaveCount(3)
+    for (const d of await paths.evaluateAll((els) => els.map((el) => el.getAttribute('d')))) {
+      expect(d.length).toBeGreaterThan(4)
+      expect(d).toMatch(/[cCaA]/)
+    }
+
+    const trueArea = Math.PI * 100 * 80
+    expect(Math.abs(totalArea - trueArea) / trueArea).toBeLessThan(0.001)
+  })
+
   test('a plain drag still performs an instant straight cut (legacy behavior)', async ({ page }) => {
     await page.evaluate(() => document.querySelector('#tool_cutter')?.click())
     await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('cutter')

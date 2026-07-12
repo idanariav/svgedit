@@ -143,22 +143,33 @@ const cutWithLine = (scope, shapePath, p1, p2) => {
  * Cut `shapePath` along an open polyline (2+ points, straight segments).
  *
  * Unlike a single line, a polyline has no "half-plane" equivalent, so this
- * uses an exact construction instead: find where the polyline crosses the
- * shape's boundary, then splice the boundary at those two crossings and
- * stitch each resulting arc to the polyline segment between them (the
- * "chord") to form the two piece outlines directly — no intersect() call
- * needed.
+ * uses an exact construction instead: find every crossing of the polyline
+ * with the shape's boundary, then splice the boundary at those crossings
+ * and stitch each resulting arc to the matching polyline segment (a
+ * "chord") to form each piece's outline directly — no intersect() call
+ * needed, and no approximation from a thin stroke-expanded band either
+ * (paper.js's boolean ops have a long history of robustness bugs on
+ * thin/degenerate input — see paperjs/paper.js #835/#968/#1149/#661/#889 —
+ * which this exact-splice approach sidesteps entirely).
  *
- * Scoped to exactly one crossing pair: both ends of the polyline must lie
- * outside the shape, and the polyline must cross the boundary exactly
- * twice. Any other case (0, 1, 3+ crossings, or an endpoint inside the
- * shape) leaves the shape unchanged — see .claude/techdebt.md for the
- * generalization this would need (N crossing pairs, Weiler-Atherton-style
- * stitching).
+ * Handles any even number of crossings ≥ 2 (`m` non-overlapping "bites"),
+ * producing `m + 1` pieces: one per bite, plus the remaining "core" shape.
+ * Both polyline endpoints must still lie outside the shape, and the
+ * cutter itself must be simple (non-self-intersecting) — any other case
+ * (odd crossing count, an endpoint inside the shape) leaves the shape
+ * unchanged, same fallback as before.
+ *
+ * The decomposition is a Weiler-Atherton-style face split specialized to
+ * "one simple open polyline vs. one simple closed boundary": walking the
+ * crossings in shape-boundary order with a stack, a chord's "open" end
+ * pushes a new region and its "close" end pops it — the popped region
+ * (plus any bites nested fully inside it) is that chord's own piece, and a
+ * single chord edge is spliced into the *parent* region in its place. Bites
+ * are guaranteed non-overlapping because the cutter doesn't self-intersect.
  * @param {paper.PaperScope} scope
  * @param {paper.Path} shapePath
  * @param {Array<{x:number,y:number}>} points
- * @returns {[paper.PathItem,paper.PathItem]|null}
+ * @returns {paper.PathItem[]|null}
  */
 const cutWithPolyline = (scope, shapePath, points) => {
   const cutterPath = new scope.Path({
@@ -176,20 +187,11 @@ const cutWithPolyline = (scope, shapePath, points) => {
   }
 
   const crossings = shapePath.getIntersections(cutterPath)
-  if (crossings.length !== 2) {
+  if (crossings.length < 2 || crossings.length % 2 !== 0) {
     cutterPath.remove()
     return null
   }
-
-  // Order the two crossings along the shape boundary (A = smaller offset).
-  const [locA, locB] = crossings.slice().sort((a, b) => a.getOffset() - b.getOffset())
-  // Order their cutter-side counterparts independently along the cutter —
-  // the traversal order along the cutter need not match the shape's order.
-  const cutLocA = locA.getIntersection()
-  const cutLocB = locB.getIntersection()
-  const chordEndsAtB = cutLocA.getOffset() <= cutLocB.getOffset()
-  const cutOffsetStart = chordEndsAtB ? cutLocA.getOffset() : cutLocB.getOffset()
-  const cutOffsetEnd = chordEndsAtB ? cutLocB.getOffset() : cutLocA.getOffset()
+  const m = crossings.length / 2
 
   // Insert a real segment at `offset` and return it — unless the offset
   // already lands exactly on an existing segment (e.g. a crossing that
@@ -201,78 +203,141 @@ const cutWithPolyline = (scope, shapePath, points) => {
     const loc = path.getLocationAt(offset)
     return path.divideAt(loc) || loc.getSegment()
   }
-
-  // The "chord": the sub-polyline of the cutter strictly between the two
-  // crossings, in the cutter's own start-to-end order. Segments are cloned
-  // in full (not just their `.point`) so a curved shape boundary keeps its
-  // bezier handles instead of being faceted into straight edges below.
-  const cutterClone = cutterPath.clone({ insert: false })
-  const segStart = divideOrGetSegment(cutterClone, cutOffsetStart)
-  const segEnd = divideOrGetSegment(cutterClone, cutOffsetEnd)
-  const chordSegs = cutterClone.segments
-    .slice(segStart.index, segEnd.index + 1)
-    .map((s) => s.clone())
-
-  // The two complementary boundary arcs between the crossings.
-  const shapeClone = shapePath.clone({ insert: false })
-  const segA = divideOrGetSegment(shapeClone, locA.getOffset())
-  const segB = divideOrGetSegment(shapeClone, locB.getOffset())
-  const segs = shapeClone.segments
-  const arcAB = segs.slice(segA.index, segB.index + 1).map((s) => s.clone()) // A -> ... -> B
-  const arcBA = segs.slice(segB.index).concat(segs.slice(0, segA.index + 1))
-    .map((s) => s.clone()) // B -> ... (wrap) ... -> A
-  // Reverse an arc while keeping its curvature: flip the segment order AND
-  // swap each segment's handleIn/handleOut (mirrors Path#reverse()).
+  // Reverse a segment chain while keeping its curvature: flip the segment
+  // order AND swap each segment's handleIn/handleOut (mirrors Path#reverse()).
   const reverseArc = (arc) => arc.slice().reverse().map((s) => s.reversed())
 
-  // Build one piece's segments from `arc` (oriented so arc[0] is the same
-  // point as the chord's last point, and arc[last] is the same point as the
-  // chord's first point). The chord's own endpoint segments come from the
-  // straight cutter line, so both their handles start at zero — correct on
-  // the chord-facing side, but the arc-facing side must instead carry the
-  // shape's original curve handle, or the piece gets a flat/kinked seam
-  // right where the cut meets the boundary instead of following its curve.
-  const buildPieceSegs = (arc) => {
-    const chordStart = chordSegs[0].clone()
-    chordStart.handleIn = arc[arc.length - 1].handleIn
-    const chordEnd = chordSegs[chordSegs.length - 1].clone()
-    chordEnd.handleOut = arc[0].handleOut
-    return [chordStart, ...chordSegs.slice(1, -1), chordEnd, ...arc.slice(1, -1)]
+  // Pair crossings into m chords by cutter order: consecutive pairs along
+  // the cutter are exactly its "inside" stretches (the polyline starts and
+  // ends outside the shape, so it alternates outside/inside as it crosses
+  // the boundary — entering on each odd-indexed crossing, exiting on the
+  // next). Each chord's own two crossings can land in either order on the
+  // *shape's* boundary though, independent of this cutter-side order.
+  const byCutter = crossings.slice()
+    .sort((a, b) => a.getIntersection().getOffset() - b.getIntersection().getOffset())
+  const chords = []
+  for (let i = 0; i < m; i++) chords.push({ a: byCutter[2 * i], b: byCutter[2 * i + 1] })
+  // Whether `a` (the cutter-earlier crossing) is also the shape-earlier
+  // ("open") one — the per-chord generalization of the single-pair case's
+  // `chordEndsAtB` comparison.
+  const chordOpenIsA = chords.map(({ a, b }) => a.getOffset() < b.getOffset())
+
+  // Slice each chord's own straight polyline stretch out of the cutter, in
+  // the cutter's natural (a -> b) direction, then precompute both directed
+  // copies: "open -> close" (used when a chord is referenced by the region
+  // *around* it) and "close -> open" (used by the bite region it encloses).
+  const cutterClone = cutterPath.clone({ insert: false })
+  const cutterSegAt = byCutter.map((loc) => divideOrGetSegment(cutterClone, loc.getIntersection().getOffset()))
+  const chordAtoB = chords.map((_, i) => cutterClone.segments
+    .slice(cutterSegAt[2 * i].index, cutterSegAt[2 * i + 1].index + 1).map((s) => s.clone()))
+  const chordOpenToClose = chordAtoB.map((segs, i) => (chordOpenIsA[i] ? segs : reverseArc(segs)))
+  const chordCloseToOpen = chordAtoB.map((segs, i) => (chordOpenIsA[i] ? reverseArc(segs) : segs))
+
+  // Slice the 2m boundary "gaps" between consecutive shape-side crossings,
+  // in ascending shape-offset order (wrapping once back to the start) — the
+  // arcAB/arcBA construction from the single-pair case, generalized from 2
+  // stretches to 2m.
+  const byShape = crossings.slice().sort((a, b) => a.getOffset() - b.getOffset())
+  const chordIdOf = new Map()
+  chords.forEach((c, i) => { chordIdOf.set(c.a, i); chordIdOf.set(c.b, i) })
+  const shapeClone = shapePath.clone({ insert: false })
+  const shapeSegAt = byShape.map((loc) => divideOrGetSegment(shapeClone, loc.getOffset()))
+  const shapeSegs = shapeClone.segments
+  const gapSegs = byShape.map((_, i) => (i < byShape.length - 1
+    ? shapeSegs.slice(shapeSegAt[i].index, shapeSegAt[i + 1].index + 1)
+    : shapeSegs.slice(shapeSegAt[i].index).concat(shapeSegs.slice(0, shapeSegAt[0].index + 1)) // wraps
+  ).map((s) => s.clone()))
+
+  const cleanup = () => { cutterPath.remove(); cutterClone.remove(); shapeClone.remove() }
+
+  // Walk the crossings in shape-boundary order with an explicit stack
+  // (bottom frame = the surviving "core" region) to decompose the boundary
+  // into m+1 regions — see the function doc comment for the algorithm.
+  const stack = [{ chordId: null, items: [] }]
+  const seen = new Set()
+  const biteItems = new Array(m)
+  for (let i = 0; i < byShape.length; i++) {
+    const cid = chordIdOf.get(byShape[i])
+    if (!seen.has(cid)) {
+      seen.add(cid)
+      stack.push({ chordId: cid, items: [] })
+    } else {
+      const frame = stack.pop()
+      // A mismatch here means the crossings didn't form a simple
+      // non-crossing pairing (shouldn't happen for a non-self-intersecting
+      // cutter, but bail rather than emit a wrong cut if it ever does).
+      if (!frame || frame.chordId !== cid || stack.length === 0) {
+        cleanup()
+        return null
+      }
+      biteItems[cid] = frame.items
+      stack[stack.length - 1].items.push({ type: 'chord', chordId: cid })
+    }
+    stack[stack.length - 1].items.push({ type: 'gap', segs: gapSegs[i] })
   }
-
-  const piece1 = new scope.Path({
-    segments: buildPieceSegs(chordEndsAtB ? arcBA : arcAB),
-    closed: true,
-    insert: false
-  })
-  const piece2 = new scope.Path({
-    segments: buildPieceSegs(chordEndsAtB ? reverseArc(arcAB) : reverseArc(arcBA)),
-    closed: true,
-    insert: false
-  })
-
-  cutterPath.remove()
-  cutterClone.remove()
-  shapeClone.remove()
-
-  if (!hasValidPiece(piece1) || !hasValidPiece(piece2)) {
-    piece1?.remove()
-    piece2?.remove()
+  if (stack.length !== 1) {
+    cleanup()
     return null
   }
-  return [piece1, piece2]
+
+  // Resolve a region's item list (gaps + nested-chord markers) into
+  // directed edges: nested chords are always referenced by their *parent*
+  // region here, so always in "open -> close" direction.
+  const resolveItems = (items) => items.map((item) => (item.type === 'gap'
+    ? item
+    : { type: 'chord', segs: chordOpenToClose[item.chordId] }))
+
+  // Stitch an alternating chord/arc edge list into one closed path's
+  // segments. A chord edge contributes all of its points (with its two
+  // endpoints' handles patched from the neighboring arc edges, since the
+  // chord's own straight-line handles are zero on both sides — otherwise
+  // the piece gets a flat/kinked seam right where the cut meets the
+  // boundary instead of following its curve); an arc edge contributes only
+  // its interior points (both its endpoints are already covered by the
+  // neighboring chords).
+  const buildLoopSegments = (edges) => {
+    const n = edges.length
+    const out = []
+    edges.forEach((edge, i) => {
+      if (edge.type === 'gap') {
+        out.push(...edge.segs.slice(1, -1))
+        return
+      }
+      const prevGap = edges[(i - 1 + n) % n].segs
+      const nextGap = edges[(i + 1) % n].segs
+      const start = edge.segs[0].clone()
+      start.handleIn = prevGap[prevGap.length - 1].handleIn
+      const end = edge.segs[edge.segs.length - 1].clone()
+      end.handleOut = nextGap[0].handleOut
+      out.push(start, ...edge.segs.slice(1, -1), end)
+    })
+    return out
+  }
+  const makePiece = (edges) => new scope.Path({ segments: buildLoopSegments(edges), closed: true, insert: false })
+
+  const corePiece = makePiece(resolveItems(stack[0].items))
+  const bitePieces = biteItems.map((items, cid) =>
+    makePiece([{ type: 'chord', segs: chordCloseToOpen[cid] }, ...resolveItems(items)]))
+  const pieces = [corePiece, ...bitePieces]
+
+  cleanup()
+
+  if (pieces.some((p) => !hasValidPiece(p))) {
+    pieces.forEach((p) => p.remove())
+    return null
+  }
+  return pieces
 }
 
 /**
- * Replace `elem` with the two cut pieces, batched into `batchCmd`.
+ * Replace `elem` with the cut pieces (2 or more), batched into `batchCmd`.
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
  * @param {Element} elem
- * @param {paper.PathItem} piece1
- * @param {paper.PathItem} piece2
+ * @param {paper.PathItem[]} pieces
  * @param {*} batchCmd
  * @param {Element[]} resultElems
  */
-const replaceWithPieces = (svgCanvas, elem, piece1, piece2, batchCmd, resultElems) => {
+const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)
   const elemNext = elem.nextSibling
@@ -285,7 +350,7 @@ const replaceWithPieces = (svgCanvas, elem, piece1, piece2, batchCmd, resultElem
   const ancestorMatrix = getMatrixToContent(elem)
   const compensation = isIdentity(ancestorMatrix) ? null : ancestorMatrix.inverse()
 
-  for (const piece of [piece1, piece2]) {
+  for (const piece of pieces) {
     const attr = {
       id: svgCanvas.getNextId(),
       d: toAbsolutePathData(piece.pathData, svgCanvas),
@@ -345,7 +410,7 @@ const cutShapes = (svgCanvas, points) => {
     shapePath.remove()
     if (!pieces) continue
 
-    replaceWithPieces(svgCanvas, elem, pieces[0], pieces[1], batchCmd, resultElems)
+    replaceWithPieces(svgCanvas, elem, pieces, batchCmd, resultElems)
   }
 
   if (batchCmd.isEmpty()) return

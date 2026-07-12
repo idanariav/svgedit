@@ -135,7 +135,7 @@
 | `ext-shadow/` | Drop shadow filter via `<feDropShadow>` — angle/length, blur, opacity, color (delegates to `fx-filter.js`) |
 | `ext-outline/` | Second outline/halo color around a line's stroke via `feMorphology` dilate filter — width, opacity, color; line-family only (delegates to `fx-filter.js`) |
 | `fx-filter.js` | Shared per-element filter composer for ext-shadow + ext-outline: one filter (`{id}_fx`) holding both effect blocks; `userSpaceOnUse` region with `refreshRegion` for move-tracking. Not an extension (not auto-registered) |
-| `ext-cutter/` | Cutter (knife) tool — drag for an instant straight cut, or click multiple points for a zigzag cut (Enter/double-click to finish, Backspace to undo last point, Escape to cancel); splits selected shapes into two pieces |
+| `ext-cutter/` | Cutter (knife) tool — drag for an instant straight cut, or click multiple points for a zigzag cut (Enter/double-click to finish, Backspace to undo last point, Escape to cancel); splits each selected shape into two pieces (straight cut) or `m + 1` pieces for a zigzag crossing the boundary `2m` times |
 | `ext-color-shift/` | Right side-panel section: H/S/L/T relative-delta inputs + Fill/Stroke toggles to shift selection colours |
 | `ext-fonts/` | Custom font support: `ext-fonts.js` (DOM glue), `fontStore.js` (IndexedDB cache + `FontFace` registration + Google Fonts download), `google-fonts-catalog.json` (full ~1,934-family static catalog, regenerable from Google's metadata endpoint). Fonts embed as base64 `@font-face` in `<defs>` on export |
 
@@ -188,7 +188,7 @@
 | `core/text-path.js` | Text on path: `attachTextToPath()`/`detachTextFromPath()`/`canTextOnPath`/`textPathOffset(pct)` — rebuilds the text with a `<textPath>` child (`href` + `xlink:href`), converting a non-path rail to `<path>` in the same batch; Remove+Insert command pairs for structure changes |
 | `core/shape-builder.js` | Shape-builder math: `svgCanvas.shapeBuilder.{begin,hitTest,apply,end}` — planar arrangement of the selection into atomic regions (iterative paper.js intersect/subtract, ≤12 shapes), merge/delete gestures rebuild touched sources as paths (one BatchCommand each) |
 | `core/clip-mask.js` | Set/release/feather clip path & mask — `setClip()`, `setMask()`, `releaseClipMask()`, `setFeather()`/`getFeather()` (bottom of 2 selected is cloned into `<defs>` as the silhouette; top shape gets the `clip-path`/`mask`; both stay visible). Signed feather: +soft edge / −strong rim; auto-converts a clip to a mask |
-| `core/cutter.js` | `cutShapes(points)` — 2 points use the half-plane intersection algorithm; 3+ points (zigzag) use an exact boundary-splice algorithm scoped to exactly 2 shape-boundary crossings (see techdebt.md) |
+| `core/cutter.js` | `cutShapes(points)` — 2 points use the half-plane intersection algorithm; 3+ points (zigzag) use an exact boundary-splice algorithm handling any even number of shape-boundary crossings (Weiler-Atherton-style decomposition into `m + 1` pieces for `m` crossing pairs) |
 | `core/json.js` | JSON import/export |
 | `core/units.js` | Unit conversion (px↔em↔cm…) |
 | `core/math.js` | Transform matrix math |
