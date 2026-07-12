@@ -1,4 +1,4 @@
-/* globals seConfirm seAlert */
+/* globals seAlert */
 import {
   putLocale
 } from './locale.js'
@@ -347,35 +347,16 @@ class EditorStartup {
     })
 
     // fired when user wants to move elements to another layer
-    let promptMoveLayerOnce = false
     $id('selLayerNames').addEventListener('change', (evt) => {
       const destLayer = evt.detail.value
       if (destLayer === NEW_LAYER_OPTION_VALUE) {
         this.rightPanel.moveSelectedToNewLayer()
         return
       }
-      const confirmStr = this.i18next.t('notification.QmoveElemsToLayer').replace('%s', destLayer)
-      /**
-    * @param {boolean} ok
-    * @returns {void}
-    */
-      const moveToLayer = (ok) => {
-        if (!ok) { return }
-        promptMoveLayerOnce = true
+      if (destLayer) {
         this.svgCanvas.moveSelectedToLayer(destLayer)
         this.svgCanvas.clearSelection()
         this.rightPanel.populateLayers()
-      }
-      if (destLayer) {
-        if (promptMoveLayerOnce) {
-          moveToLayer(true)
-        } else {
-          const ok = seConfirm(confirmStr)
-          if (!ok) {
-            return
-          }
-          moveToLayer(true)
-        }
       }
     })
     $id('tool_font_family').addEventListener('change', (evt) => {
