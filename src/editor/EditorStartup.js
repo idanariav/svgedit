@@ -13,6 +13,7 @@ import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
 import { setActiveEditor, isActiveEditor } from './domScope.js'
+import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
@@ -508,20 +509,32 @@ class EditorStartup {
       } else if ((e.key.toLowerCase() === 'shift') && (this.svgCanvas.getMode() === 'zoom')) {
         this.workarea.style.cursor = zoomOutIcon
         e.preventDefault()
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+        // See pasteFallbackArmer.js: arms a fallback paste for hosts that never
+        // deliver a native `paste` DOM event to a non-editable workarea.
+        this.pasteFallbackArmer.arm()
       }
     }, { signal: this.listenerAbort.signal })
 
-    // Native clipboard paste (Ctrl/Cmd+V). This is the single arbiter for paste:
+    // Native clipboard paste (Ctrl/Cmd+V). This is the primary path for paste:
     // the system clipboard tells us whether the content is svgedit's own (an
     // internal copy mirrors its JSON onto the clipboard) or an external SVG
     // document (e.g. "Copy as SVG" from another editor like Excalidraw), which
     // is imported as real, editable elements. Remove any prior listener first so
-    // re-initialising the editor does not stack handlers.
+    // re-initialising the editor does not stack handlers. See
+    // pasteFallbackArmer.js for the fallback used when this event never fires.
     if (this.pasteHandler) {
       document.removeEventListener('paste', this.pasteHandler)
     }
+    if (!this.pasteFallbackArmer) {
+      this.pasteFallbackArmer = createPasteFallbackArmer(() => this.svgCanvas.pasteElements())
+    }
     this.pasteHandler = (e) => {
       if (!isActiveEditor(this)) return // only the focused editor handles paste
+      // A real native paste event arrived, so the keydown fallback above (armed
+      // for Cmd/Ctrl+V) must stand down — otherwise it would fire again ~80ms
+      // later and double-paste.
+      this.pasteFallbackArmer.disarm()
       // Let editable fields (inputs, text areas) keep their native paste.
       const t = e.target
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return

@@ -11,6 +11,28 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## Cmd/Ctrl+V paste fallback only restores internal paste, not external clipboard content, on hosts that swallow the native `paste` event
+
+`src/editor/EditorStartup.js` (keydown listener) + `src/editor/pasteFallbackArmer.js`
+added a timing-raced fallback: on Cmd/Ctrl+V, if the browser's native `paste`
+DOM event doesn't arrive within 80ms (observed in the Obsidian/Electron host,
+where the OS accelerator only reaches non-editable targets via
+`document.execCommand`-style edit commands that some hosts silently no-op
+on), it falls back to `svgCanvas.pasteElements()` — the same
+sessionStorage-backed internal clipboard the right-click "Paste" menu item
+already used. This fixes internal copy → paste via keyboard.
+
+Not done now: it does **not** restore pasting external content (e.g. an SVG
+copied from Excalidraw via "Copy as SVG", handled by case (b) in
+`pasteHandler`) on hosts where the native `paste` event never fires, since
+that path needs the browser's clipboard payload, not the internal snapshot.
+A real fix would need an async `navigator.clipboard.read()`/`readText()`
+call triggered from the keydown itself — which may hit the same
+permission/host restrictions that already silently break the OS-clipboard
+mirror in `copySelectedElements()` (`packages/svgcanvas/core/selected-elem.js`),
+so it needs its own investigation into what clipboard APIs Obsidian's
+Electron renderer actually grants.
+
 ## Cutter polyline cuts are scoped to exactly 2 boundary crossings per shape
 
 `packages/svgcanvas/core/cutter.js`'s `cutWithPolyline` (used for multi-point
