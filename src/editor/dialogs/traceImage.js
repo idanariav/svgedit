@@ -20,14 +20,20 @@ const PRESET_BASE = {
  * 'lineart' preset. imagetracerjs's own defaults (ltres/qtres:1,
  * rightangleenhance:true) are tuned for flat/geometric art; they let
  * hand-drawn or organic strokes get oversimplified into straight segments
- * and forced corners. Lower error thresholds keep the trace closer to the
- * source curve, and disabling rightangleenhance stops real curves from
+ * and forced corners. imagetracerjs tries a straight-line fit within `ltres`
+ * first and only falls back to a quadratic fit (within `qtres`) when that
+ * fails, recursively splitting wherever both fail. Keeping `ltres` at its
+ * default keeps that straight-line fit tolerant of ordinary rasterization/
+ * anti-aliasing noise so straight strokes (limbs, edges) stay a single
+ * segment instead of fragmenting into many tiny jittery ones; only `qtres`
+ * is lowered so real curves still get fit tightly once a segment fails the
+ * straight-line check. Disabling rightangleenhance stops real curves from
  * being snapped into right angles.
  * @type {Record<string, number|boolean>}
  */
 const LINEART_OVERRIDES = {
   numberofcolors: 2,
-  ltres: 0.2,
+  ltres: 1,
   qtres: 0.2,
   pathomit: 2,
   rightangleenhance: false,

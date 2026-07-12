@@ -5,7 +5,9 @@ describe('buildTraceOptions', () => {
   it('lineart preset tunes curve-fitting thresholds for a tighter, corner-free trace', () => {
     const options = buildTraceOptions('lineart')
     expect(options.numberofcolors).toBe(2)
-    expect(options.ltres).toBe(0.2)
+    // ltres stays at the grayscale base's default (1) so ordinary
+    // rasterization noise doesn't fragment straight strokes into jitter.
+    expect(options.ltres).toBe(1)
     expect(options.qtres).toBe(0.2)
     expect(options.pathomit).toBe(2)
     expect(options.rightangleenhance).toBe(false)
@@ -16,7 +18,7 @@ describe('buildTraceOptions', () => {
     const options = buildTraceOptions('lineart', 4)
     expect(options.numberofcolors).toBe(4)
     // Curve-fitting overrides still apply regardless of the color override.
-    expect(options.ltres).toBe(0.2)
+    expect(options.qtres).toBe(0.2)
   })
 
   it('non-lineart presets are unaffected by the lineart curve overrides', () => {
