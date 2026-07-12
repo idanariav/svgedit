@@ -1,7 +1,7 @@
-/* globals svgEditor */
+/* globals svgEditor, sePrompt */
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import './seSpinInput.js'
-import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot } from '../customBrushes.js'
+import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../customBrushes.js'
 
 const TEMPLATE_HTML = `
   <style>
@@ -86,9 +86,13 @@ const TEMPLATE_HTML = `
     border: 1px solid var(--field-border, #E2E5EA);
     background: var(--field-bg, #F7F8FA);
     color: var(--fg, #1B1F24);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 3px;
   }
   .slot-btn.filled {
     border-color: var(--accent-border, #C7D7FF);
@@ -203,6 +207,10 @@ class SeBrushSettings extends SeSettingsPopover {
         </div>
       `
       slot.querySelector('.slot-btn').addEventListener('click', () => this._loadSlot(i))
+      slot.querySelector('.slot-btn').addEventListener('dblclick', (e) => {
+        e.stopPropagation()
+        this._renameSlot(i)
+      })
       slot.querySelector('.slot-save').addEventListener('click', () => this._saveSlot(i))
       slot.querySelector('.slot-del').addEventListener('click', () => this._deleteSlot(i))
       this.$slots.append(slot)
@@ -225,12 +233,19 @@ class SeBrushSettings extends SeSettingsPopover {
       const btn = slot.querySelector('.slot-btn')
       btn.classList.toggle('filled', Boolean(saved))
       btn.classList.toggle('active', this._paramsEqual(saved, active))
+      btn.textContent = saved?.name || String(i + 1)
+      btn.title = saved
+        ? `${saved.name || `Brush ${i + 1}`} — double-click to rename`
+        : `Load brush ${i + 1}`
     })
   }
 
   _loadSlot (i) {
-    const params = getBrushSlot(i)
-    if (!params) return
+    const saved = getBrushSlot(i)
+    if (!saved) return
+    // Strip `name` — it's slot metadata, not a live brush param.
+    const params = {}
+    for (const [key] of FIELDS) if (saved[key] !== undefined) params[key] = saved[key]
     svgEditor.svgCanvas.setBrushParams?.(params)
     this._writeFields(params)
     this._refreshSlots()
@@ -239,12 +254,23 @@ class SeBrushSettings extends SeSettingsPopover {
   _saveSlot (i) {
     const params = {}
     for (const [key, id, scale] of FIELDS) params[key] = this._readField(id, scale)
+    const existingName = getBrushSlot(i)?.name
+    if (existingName) params.name = existingName
     saveBrushSlot(i, params)
     this._refreshSlots()
   }
 
   _deleteSlot (i) {
     deleteBrushSlot(i)
+    this._refreshSlots()
+  }
+
+  async _renameSlot (i) {
+    const existing = getBrushSlot(i)
+    if (!existing) return
+    const newName = await sePrompt(`Name for brush ${i + 1}`, existing.name ?? '')
+    if (newName === null) return
+    renameBrushSlot(i, newName.trim())
     this._refreshSlots()
   }
 

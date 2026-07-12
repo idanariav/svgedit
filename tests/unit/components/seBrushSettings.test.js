@@ -108,6 +108,63 @@ describe('se-brush-settings', () => {
     expect(setBrushParams).not.toHaveBeenCalled()
   })
 
+  it('double-clicking a filled slot prompts for a name and renames it', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 0: DEFAULT_PARAMS }))
+    installMockSvgEditor({ svgCanvas: { getBrushParams: () => DEFAULT_PARAMS, setBrushParams: vi.fn() } })
+    window.sePrompt = vi.fn().mockResolvedValue('Calligraphy')
+    const el = mountElement('se-brush-settings')
+
+    const slot0 = el.shadowRoot.querySelectorAll('.slot')[0]
+    slot0.querySelector('.slot-btn').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(window.sePrompt).toHaveBeenCalledWith('Name for brush 1', '')
+    expect(slot0.querySelector('.slot-btn').textContent).toBe('Calligraphy')
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY))[0].name).toBe('Calligraphy')
+    delete window.sePrompt
+  })
+
+  it('cancelling the rename prompt leaves the slot name unchanged', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 0: { ...DEFAULT_PARAMS, name: 'Old' } }))
+    installMockSvgEditor({ svgCanvas: { getBrushParams: () => DEFAULT_PARAMS, setBrushParams: vi.fn() } })
+    window.sePrompt = vi.fn().mockResolvedValue(null)
+    const el = mountElement('se-brush-settings')
+
+    const slot0 = el.shadowRoot.querySelectorAll('.slot')[0]
+    slot0.querySelector('.slot-btn').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(slot0.querySelector('.slot-btn').textContent).toBe('Old')
+    delete window.sePrompt
+  })
+
+  it('double-clicking an empty slot does not prompt', async () => {
+    installMockSvgEditor({ svgCanvas: { getBrushParams: () => DEFAULT_PARAMS, setBrushParams: vi.fn() } })
+    window.sePrompt = vi.fn().mockResolvedValue('Nope')
+    const el = mountElement('se-brush-settings')
+
+    const slot0 = el.shadowRoot.querySelectorAll('.slot')[0]
+    slot0.querySelector('.slot-btn').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    await Promise.resolve()
+
+    expect(window.sePrompt).not.toHaveBeenCalled()
+    delete window.sePrompt
+  })
+
+  it('loading a named slot does not leak the name into the live brush params', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 1: { ...DEFAULT_PARAMS, name: 'Calligraphy' } }))
+    const setBrushParams = vi.fn()
+    installMockSvgEditor({ svgCanvas: { getBrushParams: () => DEFAULT_PARAMS, setBrushParams } })
+    const el = mountElement('se-brush-settings')
+
+    const slot1 = el.shadowRoot.querySelectorAll('.slot')[1]
+    slot1.querySelector('.slot-btn').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(setBrushParams).toHaveBeenCalledWith(expect.not.objectContaining({ name: expect.anything() }))
+  })
+
   it('only the slot matching the live brush is highlighted active — switching slots moves the highlight instead of accumulating it', () => {
     let liveParams = { ...DEFAULT_PARAMS }
     installMockSvgEditor({

@@ -5,7 +5,8 @@ import {
   loadBrushSlots,
   getBrushSlot,
   saveBrushSlot,
-  deleteBrushSlot
+  deleteBrushSlot,
+  renameBrushSlot
 } from '../../src/editor/customBrushes.js'
 
 const STORAGE_KEY = 'svg-edit-custom-brushes'
@@ -53,6 +54,17 @@ describe('customBrushes (localStorage fallback)', () => {
     saveBrushSlot(0, { thickness: 1 })
     deleteBrushSlot(0)
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('renameBrushSlot sets a name without touching the stored params', () => {
+    saveBrushSlot(0, { thickness: 5, angle: 20 })
+    renameBrushSlot(0, 'Calligraphy')
+    expect(getBrushSlot(0)).toEqual({ thickness: 5, angle: 20, name: 'Calligraphy' })
+  })
+
+  it('renameBrushSlot is a no-op on an empty slot', () => {
+    renameBrushSlot(3, 'Nope')
+    expect(getBrushSlot(3)).toBeNull()
   })
 })
 

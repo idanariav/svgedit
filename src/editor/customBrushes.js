@@ -72,6 +72,19 @@ export const saveBrushSlot = (index, params) => {
 }
 
 /**
+ * Rename a saved slot without touching its brush params. No-op on an empty slot.
+ * @param {number} index - 0-4.
+ * @param {string} name - New display name.
+ * @returns {void}
+ */
+export const renameBrushSlot = (index, name) => {
+  const slots = loadBrushSlots()
+  if (!slots[index]) return
+  slots[index] = { ...slots[index], name }
+  writeBrushSlots(slots)
+}
+
+/**
  * Clear a slot.
  * @param {number} index - 0-4.
  * @returns {void}
