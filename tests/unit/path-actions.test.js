@@ -588,14 +588,11 @@ describe('PathActions', () => {
   })
 
   describe('deletePathNode', () => {
-    it('should delete selected path nodes', () => {
+    it('should drop the selected node and reconnect its neighbors directly, without splitting the path', () => {
       pathActionsMethod.toEditMode(pathElement)
-      // deletePathNode rebuilds `d` by severing the selected node (see
-      // buildSeveredPathData) rather than calling path.deleteSeg. A 4th point
-      // keeps one surviving run with >= 2 points so the path isn't dropped
-      // entirely (the "nothing renderable left" branch, which instead calls
-      // deleteSelectedElements).
-      mockPath.segs.push({ index: 3, item: { x: 130, y: 50 }, type: 4, selected: false, move: vi.fn() })
+      // deletePathNode rebuilds `d` via buildReconnectedPathData, which drops
+      // the deleted point and joins its two surviving neighbors directly —
+      // splitting a shape open is the cutter tool's job now, not this one's.
       mockPath.selected_pts = [1]
 
       // Mock canDeleteNodes property
@@ -607,9 +604,25 @@ describe('PathActions', () => {
       pathActionsMethod.deletePathNode()
 
       expect(mockPath.storeD).toHaveBeenCalled()
-      expect(pathElement.getAttribute('d')).toBe('M 90 10 L 130 50')
+      expect(pathElement.getAttribute('d')).toBe('M 10 10 L 90 10')
       expect(mockPath.init).toHaveBeenCalled()
       expect(mockPath.clearSelection).toHaveBeenCalled()
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Delete path node(s)')
+    })
+
+    it('should do nothing when canDeleteNodes is false', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      mockPath.selected_pts = [1]
+
+      Object.defineProperty(pathActionsMethod, 'canDeleteNodes', {
+        get: () => false,
+        configurable: true
+      })
+
+      pathActionsMethod.deletePathNode()
+
+      expect(mockPath.storeD).not.toHaveBeenCalled()
+      expect(pathElement.getAttribute('d')).toBe('M10,10 L50,50 L90,10 z')
     })
   })
 

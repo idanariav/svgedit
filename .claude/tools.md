@@ -203,7 +203,7 @@ Stays in the top bar (it is a transient mode toolbar, not a property).
 | `path_node_x` / `path_node_y` | Node X / Y coordinate |
 | `seg_type` | Segment type: Straight (4) / Curve (6) |
 | `tool_node_clone` | Clone node |
-| `tool_node_delete` | Delete node — **severs** the path at the node (also bound to `Backspace`/`Delete` while in pathedit mode) |
+| `tool_node_delete` | Delete node — **reconnects** its neighbors, keeping the path closed/continuous (also bound to `Backspace`/`Delete` while in pathedit mode) |
 | `tool_openclose_path` | Toggle open / closed path |
 | `tool_add_subpath` | Add sub-path |
 
@@ -228,13 +228,19 @@ Visibility is driven entirely by selection via `Path#refreshCtrlPtDisplay()`
 lives in [`packages/svgcanvas/core/path-method.js`](../packages/svgcanvas/core/path-method.js)
 (`addPointGrip`, `addCtrlGrip`, `Segment#showCtrlPt`, `Path#refreshCtrlPtDisplay`).
 
-**Delete-node semantics (sever / open):** Deleting a node removes it *and* the
-two segments touching it, splitting the path open at that point — an open line
-becomes two separate lines, a closed shape becomes a single open path. The
-logic lives in `pathActions.deletePathNode()` →
-`buildSeveredPathData(path)` ([`packages/svgcanvas/core/path-actions.js`](../packages/svgcanvas/core/path-actions.js)),
-which rebuilds the `d` attribute from `path.segs`. The `Backspace`/`Delete`
-key is wired to it via the `delete_selected` hotkey in
+**Delete-node semantics (reconnect):** Both the `tool_node_delete` toolbar
+button and the `Backspace`/`Delete` key call `pathActions.deletePathNode()`
+→ `buildReconnectedPathData(path)`
+([`packages/svgcanvas/core/path-actions.js`](../packages/svgcanvas/core/path-actions.js)),
+guarded by `pathActions.canDeleteNodes`. It drops the deleted node and joins
+its surviving neighbors directly, so a closed shape stays closed and an open
+line stays one line — the neighbor keeps its own original draw command
+(straight or curve), so a curve's control points may look different once its
+old neighbor is gone. Deliberately splitting a shape open is the **cutter
+tool**'s job (`ext-cutter`), not delete-node's — the two used to be
+conflated (delete-node briefly severed the path on `Backspace`/`Delete`),
+but that's been removed now that the cutter handles cuts explicitly. The
+`Backspace`/`Delete` key is wired via the `delete_selected` hotkey in
 [`src/editor/Editor.js`](../src/editor/Editor.js) (guarded by
 `getMode() === 'pathedit'` and `pathActions.canDeleteNodes`).
 

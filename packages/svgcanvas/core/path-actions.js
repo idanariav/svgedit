@@ -224,14 +224,16 @@ const pathDSegment = (letter, points, morePoints, lastPoint) => {
 }
 
 /**
- * Build a new `d` attribute for `path` with every selected node *severed* —
- * i.e. the node and the two segments touching it are removed, splitting the
- * path open at that point (an open line becomes two lines; a closed shape is
- * cut into a single open path). Untouched sub-paths are preserved verbatim.
+ * Build a new `d` attribute for `path` with every selected node *reconnected* —
+ * the node is dropped and its two neighbors become adjacent, so the sub-path
+ * stays exactly as continuous/closed as it was. Splitting a path open is the
+ * cutter tool's job, not delete-node's. The surviving neighbor keeps its own
+ * draw command (straight or curve) verbatim, so a curve's control points may
+ * end up describing a different-looking curve now that its old neighbor is gone.
  * @param {module:path.Path} pathObj - the path being edited
  * @returns {string} the rebuilt `d`, or '' if nothing renderable remains
  */
-const buildSeveredPathData = (pathObj) => {
+const buildReconnectedPathData = (pathObj) => {
   const { segs } = pathObj
   const deleted = new Set(pathObj.selected_pts)
 
@@ -250,14 +252,12 @@ const buildSeveredPathData = (pathObj) => {
     }
   })
 
-  // Emit one point with the given role ('M' = start, 'L' = forced straight,
-  // 'orig' = keep its own command).
   const emitPt = (pt, role) => {
     const it = pt.seg.item
     const x = shortFloat(it.x)
     const y = shortFloat(it.y)
     if (role === 'M') { return `M ${x} ${y}` }
-    if (role === 'orig' && pt.seg.type === 6) { // cubic curve
+    if (pt.seg.type === 6) { // cubic curve
       return `C ${shortFloat(it.x1)} ${shortFloat(it.y1)} ` +
         `${shortFloat(it.x2)} ${shortFloat(it.y2)} ${x} ${y}`
     }
@@ -266,51 +266,14 @@ const buildSeveredPathData = (pathObj) => {
 
   const out = []
   subpaths.forEach((sp) => {
-    const m = sp.points.length
-    const delPositions = sp.points
-      .map((p, i) => (deleted.has(p.idx) ? i : -1))
-      .filter((i) => i >= 0)
+    const survivors = sp.points.filter((p) => !deleted.has(p.idx))
 
-    // No node removed here: keep the sub-path exactly as it was.
-    if (!delPositions.length) {
-      const parts = sp.points.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
-      if (sp.closed) { parts.push('Z') }
-      out.push(parts.join(' '))
-      return
-    }
+    // Nothing left to render in this sub-path: drop it.
+    if (survivors.length < 2) { return }
 
-    // A node was removed -> the sub-path opens. For a closed sub-path, rotate so
-    // it begins right after the first cut; the original start point (M) becomes
-    // a straight node when it lands mid-run (the closing edge is straight).
-    const originalStartIdx = sp.points[0].idx
-    let pts = sp.points
-    if (sp.closed) {
-      const rot = (delPositions[0] + 1) % m
-      pts = sp.points.slice(rot).concat(sp.points.slice(0, rot))
-    }
-
-    // Break surviving points into contiguous runs at each deleted node.
-    const runs = []
-    let run = []
-    pts.forEach((p) => {
-      if (deleted.has(p.idx)) {
-        if (run.length) { runs.push(run) }
-        run = []
-      } else {
-        run.push(p)
-      }
-    })
-    if (run.length) { runs.push(run) }
-
-    runs.forEach((r) => {
-      if (r.length < 2) { return } // a lone point renders nothing
-      const parts = r.map((p, i) => {
-        if (i === 0) { return emitPt(p, 'M') }
-        if (p.idx === originalStartIdx) { return emitPt(p, 'L') }
-        return emitPt(p, 'orig')
-      })
-      out.push(parts.join(' '))
-    })
+    const parts = survivors.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
+    if (sp.closed) { parts.push('Z') }
+    out.push(parts.join(' '))
   })
 
   return out.join(' ').trim()
@@ -1272,13 +1235,16 @@ class PathActions {
   }
 
   /**
-    * @returns {void}
-    */
+  * Removes the selected node(s) and reconnects their neighbors directly,
+  * keeping the path exactly as closed/continuous as it was. Splitting a path
+  * open is the cutter tool's job, not delete-node's.
+  * @returns {void}
+  */
   deletePathNode () {
     if (!svgCanvas.pathActions.canDeleteNodes) { return }
     path.storeD()
 
-    const newD = buildSeveredPathData(path)
+    const newD = buildReconnectedPathData(path)
 
     // Nothing renderable left (no sub-path with >= 2 points): drop the element
     if (!newD) {
