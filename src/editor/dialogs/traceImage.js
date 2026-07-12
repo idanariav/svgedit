@@ -16,6 +16,39 @@ const PRESET_BASE = {
 }
 
 /**
+ * Curve-fitting overrides applied on top of the 'grayscale' base for the
+ * 'lineart' preset. imagetracerjs's own defaults (ltres/qtres:1,
+ * rightangleenhance:true) are tuned for flat/geometric art; they let
+ * hand-drawn or organic strokes get oversimplified into straight segments
+ * and forced corners. Lower error thresholds keep the trace closer to the
+ * source curve, and disabling rightangleenhance stops real curves from
+ * being snapped into right angles.
+ * @type {Record<string, number|boolean>}
+ */
+const LINEART_OVERRIDES = {
+  numberofcolors: 2,
+  ltres: 0.2,
+  qtres: 0.2,
+  pathomit: 2,
+  rightangleenhance: false,
+  roundcoords: 2
+}
+
+/**
+ * Build the imagetracerjs options object for a given dialog preset.
+ * @param {string} preset - One of `lineart`/`detailed`/`posterized`/`color`.
+ * @param {number} [numberofcolors] - Overrides the preset's palette size.
+ * @returns {object} imagetracerjs options.
+ */
+export const buildTraceOptions = (preset, numberofcolors) => {
+  const baseName = PRESET_BASE[preset] || 'default'
+  const options = { ...(ImageTracer.optionpresets[baseName] || ImageTracer.optionpresets.default) }
+  if (preset === 'lineart') Object.assign(options, LINEART_OVERRIDES)
+  if (typeof numberofcolors === 'number') options.numberofcolors = numberofcolors
+  return options
+}
+
+/**
  * Load an image href into an ImageData via an offscreen canvas. Reading pixels
  * back taints-checks the canvas: data-URL imports (the common case) read fine;
  * a cross-origin remote URL without CORS headers throws a SecurityError, which
@@ -56,10 +89,7 @@ export const traceImageToSvg = async (imageElem, opts = {}) => {
 
   const imagedata = await loadImageData(href)
 
-  const baseName = PRESET_BASE[preset] || 'default'
-  const options = { ...(ImageTracer.optionpresets[baseName] || ImageTracer.optionpresets.default) }
-  if (preset === 'lineart') options.numberofcolors = 2
-  if (typeof numberofcolors === 'number') options.numberofcolors = numberofcolors
+  const options = buildTraceOptions(preset, numberofcolors)
 
   const svgString = ImageTracer.imagedataToSVG(imagedata, options)
 
