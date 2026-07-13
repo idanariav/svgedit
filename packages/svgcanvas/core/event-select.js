@@ -386,7 +386,16 @@ export const init = (canvas) => {
             tlist.appendItem(newTransform)
           }
 
-          // For non-group elements, bake the transform into geometry via recalculateDimensions
+          // For non-group elements, bake the transform into geometry via recalculateDimensions.
+          // recalculateDimensions() reads svgCanvas.getStartTransform() (a single
+          // shared slot, not keyed per element) to know what "old" transform to
+          // record on the undo command. mousedown only ever set it once, for the
+          // element under the cursor — so without this, every OTHER selected
+          // element in a multi-select drag got that same clicked element's
+          // pre-drag transform baked into its own undo command, snapping it to
+          // the wrong place on undo. Set it to this element's own captured value
+          // right before calling it.
+          svgCanvas.setStartTransform(oldTransform)
           const cmd = svgCanvas.recalculateDimensions(elem)
           if (cmd) {
             batchCmd.addSubCommand(cmd)
