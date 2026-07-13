@@ -11,7 +11,8 @@ import {
   hasMatrixTransform,
   transformListToTransform,
   transformBox,
-  getTransformList
+  getTransformList,
+  isIdentity
 } from './math.js'
 import { getClosest } from '../common/util.js'
 import { getRotationAngleFromTransformList } from './dom-utils.js'
@@ -425,8 +426,15 @@ export const getBBoxWithTransform = (
   const tlist = getTransformList(elem)
   const angle = getRotationAngleFromTransformList(tlist)
   const hasMatrixXForm = hasMatrixTransform(tlist)
+  const { matrix } = transformListToTransform(tlist)
 
-  if (angle || hasMatrixXForm) {
+  // A transform list made up solely of translate()/scale() items has no
+  // rotation and no non-identity matrix() entry, so the two checks above
+  // both miss it — but it still moves/resizes the element and must not be
+  // dropped, or the bbox silently reverts to the untransformed native one
+  // (this is what produced blank shape-library thumbnails for translate-only
+  // imported content, e.g. pasted/vault SVGs that were never dragged).
+  if (angle || hasMatrixXForm || !isIdentity(matrix)) {
     let goodBb = false
     if (bBoxCanBeOptimizedOverNativeGetBBox(angle, hasMatrixXForm)) {
       // Get the BBox from the raw path for these elements
@@ -461,7 +469,6 @@ export const getBBoxWithTransform = (
     }
 
     if (!goodBb) {
-      const { matrix } = transformListToTransform(tlist)
       bb = transformBox(bb.x, bb.y, bb.width, bb.height, matrix).aabox
     }
   }

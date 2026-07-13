@@ -193,6 +193,47 @@ describe('utilities bbox', function () {
     g.remove()
   })
 
+  it('Test getBBoxWithTransform with a translate-only transform (no rotate, no matrix)', function () {
+    // Regression test: a transform list made up solely of translate()/scale()
+    // items has no rotate() and no non-identity matrix() entry, so it used to
+    // be skipped entirely and the untransformed native bbox was returned —
+    // this is what produced blank shape-library thumbnails for translate-only
+    // imported content (e.g. pasted/vault SVGs never dragged inside svgedit).
+    const { getBBoxWithTransform } = utilities
+
+    let elem = mockCreateSVGElement({
+      element: 'rect',
+      attr: { id: 'rect', x: '10', y: '10', width: '5', height: '20', transform: 'translate(100,200)' }
+    })
+    svgroot.append(elem)
+    let bbox = getBBoxWithTransform(elem, mockaddSVGElementsFromJson, mockPathActions)
+    assert.close(bbox.x, 110, EPSILON)
+    assert.close(bbox.y, 210, EPSILON)
+    assert.close(bbox.width, 5, EPSILON)
+    assert.close(bbox.height, 20, EPSILON)
+    elem.remove()
+
+    // Same, but the translate lives on a wrapping <g> (matches the "Add to
+    // Shape Library" flow: the saved element keeps its own transform, and the
+    // bbox must be measured in that same coordinate space).
+    elem = mockCreateSVGElement({
+      element: 'rect',
+      attr: { id: 'rect2', x: '10', y: '10', width: '5', height: '20' }
+    })
+    const g = mockCreateSVGElement({
+      element: 'g',
+      attr: { transform: 'translate(100,200)' }
+    })
+    g.append(elem)
+    svgroot.append(g)
+    bbox = getBBoxWithTransform(g, mockaddSVGElementsFromJson, mockPathActions)
+    assert.close(bbox.x, 110, EPSILON)
+    assert.close(bbox.y, 210, EPSILON)
+    assert.close(bbox.width, 5, EPSILON)
+    assert.close(bbox.height, 20, EPSILON)
+    g.remove()
+  })
+
   it('Test getBBoxWithTransform and a rotation transform', function () {
     const { getBBoxWithTransform } = utilities
 
