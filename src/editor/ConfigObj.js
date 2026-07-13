@@ -10,6 +10,22 @@ export const regexEscape = function (str) {
   // Originally from: http://phpjs.org/functions
   return String(str).replace(/[.\\+*?[^\]$(){}=!<>|:-]/g, '\\$&')
 }
+
+/**
+ * Prefs that describe the CURRENT DOCUMENT's canvas background rather than a
+ * user's standing editor preference. Unlike `lang`, `grid_color`, etc. — where
+ * "remember my last choice across drawings" is the desired behavior — a
+ * background color set on one drawing has no business becoming the starting
+ * point for a different drawing. Consumers that host multiple documents in one
+ * page/process (e.g. several svgedit instances open at once) would otherwise
+ * see one drawing's background leak into another's via shared `storage`. These
+ * keys are therefore excluded from `pref()`'s persistent-storage read/write;
+ * they only ever live in `curPrefs`/`defaultPrefs` for the lifetime of the
+ * editor instance that set them, and hosts that want a per-document background
+ * persist it themselves (see `Editor#setBackground`'s `recordUndo` param).
+ */
+export const SESSION_ONLY_PREFS = new Set(['bkgd_color', 'bkgd_url', 'bkgd_gradient'])
+
 /**
  * @class configObj
  */
@@ -366,6 +382,7 @@ export default class ConfigObj {
 
     // LOAD PREFS
     Object.keys(this.defaultPrefs).forEach((key) => {
+      if (SESSION_ONLY_PREFS.has(key)) { return }
       const storeKey = 'svg-edit-' + key
       const val = this.editor.storage.getItem(storeKey)
       if (val) {
@@ -484,7 +501,9 @@ export default class ConfigObj {
   pref (key, val, mayBeEmpty) {
     if (mayBeEmpty || val) {
       this.curPrefs[key] = val
-      this.editor.storage?.setItem('svg-edit-' + key, String(val))
+      if (!SESSION_ONLY_PREFS.has(key)) {
+        this.editor.storage?.setItem('svg-edit-' + key, String(val))
+      }
       return undefined
     }
     return (key in this.curPrefs) ? this.curPrefs[key] : this.defaultPrefs[key]
