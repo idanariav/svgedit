@@ -18,6 +18,9 @@ every point.
 3. Click back on your first point (or close the path) to finish.
 4. Double-click the path to edit it — drag points, or drag their handles to curve.
 5. Select a point and switch its **segment type** between straight and curve.
+6. Toggle **Link control points** off, then drag one handle of a curve point —
+   only that handle moves, letting you make a sharp corner between two curves.
+   Toggle it back on and the handles snap back to mirroring each other.
 
 ## Related properties
 - **Node X / Node Y** — exact position of the selected point.
@@ -25,4 +28,7 @@ every point.
 - **Add / clone / delete node** — change how many points the path has.
 - **Open or close path** — finish the outline or leave it open.
 - **Add sub-path** — draw a second, separate stroke inside the same shape.
-- **Link control points** — keep curve handles mirrored for smooth bends.
+- **Link control points** — when on (the default), dragging one curve handle
+  moves the opposite handle to match, keeping the bend smooth on both sides
+  of the point. Turn it off to move each handle independently and create a
+  corner instead of a smooth curve.
