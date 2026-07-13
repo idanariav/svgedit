@@ -10,9 +10,12 @@
  *
  * `arm()` on the Cmd/Ctrl+V keydown, `disarm()` from the native `paste`
  * handler when it actually receives an event. If no native `paste` event
- * shows up within `delayMs`, `onFallback` runs the same internal-clipboard
- * paste the context menu uses. Regular browsers dispatch `paste` well within
- * the window, so `disarm()` wins the race there and `onFallback` never fires.
+ * shows up within `delayMs`, `onFallback` runs — the caller (EditorStartup.js)
+ * uses this to try `navigator.clipboard.readText()` so external content
+ * (not just svgedit's own internal clipboard) can still be recovered, falling
+ * back further to the internal-clipboard paste the context menu uses if that
+ * read is blocked. Regular browsers dispatch `paste` well within the window,
+ * so `disarm()` wins the race there and `onFallback` never fires.
  *
  * @module pasteFallbackArmer
  */

@@ -14,6 +14,7 @@ import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
 import { setActiveEditor, isActiveEditor } from './domScope.js'
 import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
+import { classifyClipboardText } from './pasteClipboardText.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
@@ -523,11 +524,50 @@ class EditorStartup {
     // is imported as real, editable elements. Remove any prior listener first so
     // re-initialising the editor does not stack handlers. See
     // pasteFallbackArmer.js for the fallback used when this event never fires.
+    //
+    // applyClipboardText() holds the side-effecting half of paste (classify,
+    // then act); classifyClipboardText() (pasteClipboardText.js) holds the
+    // pure parsing rule so the native handler below and the keydown fallback
+    // (armed above) apply the exact same logic to whatever text they get.
+    this.applyClipboardText = (text) => {
+      const classified = classifyClipboardText(text)
+      if (!classified) return false
+      if (classified.type === 'internal') {
+        this.pasteInCenter(classified.data)
+        return true
+      }
+      // external-svg
+      const el = this.svgCanvas.importSvgString(text)
+      if (!el) return true
+      // importSvgString places the document as a single non-editable <use>
+      // referencing a <symbol> in <defs> — which looks like one opaque image
+      // object on the canvas. Select it, then ungroup so the real shapes
+      // (paths, text, …) become an editable group.
+      this.svgCanvas.selectOnly([el])
+      this.svgCanvas.ungroupSelectedElement()
+      this.svgCanvas.alignSelectedElements('m', 'page')
+      this.svgCanvas.alignSelectedElements('c', 'page')
+      this.topPanel.updateContextPanel()
+      return true
+    }
     if (this.pasteHandler) {
       document.removeEventListener('paste', this.pasteHandler)
     }
     if (!this.pasteFallbackArmer) {
-      this.pasteFallbackArmer = createPasteFallbackArmer(() => this.svgCanvas.pasteElements())
+      // Hosts that swallow the native `paste` DOM event (e.g. Obsidian's
+      // Electron renderer, see pasteFallbackArmer.js) never give us
+      // `e.clipboardData`, so recovering external content there means asking
+      // the async Clipboard API directly. That read can be blocked by
+      // permissions/host restrictions, in which case we fall back to the
+      // old internal-only behavior (the same sessionStorage clipboard the
+      // right-click "Paste" menu item uses).
+      this.pasteFallbackArmer = createPasteFallbackArmer(async () => {
+        try {
+          const text = await navigator.clipboard.readText()
+          if (this.applyClipboardText(text)) return
+        } catch { /* clipboard read blocked by host/permissions */ }
+        this.svgCanvas.pasteElements()
+      })
     }
     this.pasteHandler = (e) => {
       if (!isActiveEditor(this)) return // only the focused editor handles paste
@@ -539,31 +579,7 @@ class EditorStartup {
       const t = e.target
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
       const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain')
-      if (!text) return
-      // (a) svgedit's own internal clipboard → existing internal paste.
-      try {
-        const parsed = JSON.parse(text)
-        if (Array.isArray(parsed)) {
-          e.preventDefault()
-          this.pasteInCenter(parsed)
-          return
-        }
-      } catch { /* not internal JSON, fall through */ }
-      // (b) external SVG document (e.g. Excalidraw "Copy as SVG").
-      if (/<svg[\s\S]*<\/svg>/i.test(text)) {
-        e.preventDefault()
-        const el = this.svgCanvas.importSvgString(text)
-        if (!el) return
-        // importSvgString places the document as a single non-editable <use>
-        // referencing a <symbol> in <defs> — which looks like one opaque image
-        // object on the canvas. Select it, then ungroup so the real shapes
-        // (paths, text, …) become an editable group.
-        this.svgCanvas.selectOnly([el])
-        this.svgCanvas.ungroupSelectedElement()
-        this.svgCanvas.alignSelectedElements('m', 'page')
-        this.svgCanvas.alignSelectedElements('c', 'page')
-        this.topPanel.updateContextPanel()
-      }
+      if (this.applyClipboardText(text)) e.preventDefault()
     }
     document.addEventListener('paste', this.pasteHandler)
 
