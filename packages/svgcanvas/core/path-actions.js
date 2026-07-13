@@ -907,6 +907,21 @@ class PathActions {
       // still appear as if in "pathedit" mode.
       svgCanvas.setCurrentMode('path')
       this.#subpath = true
+      // A sub-path is drawn to punch a hole (e.g. the counter of a letter
+      // "a"/"o"). Under the default nonzero fill-rule that only shows up
+      // if the new loop winds opposite the outer one, and when it doesn't,
+      // paint-order:stroke (set on every new shape) paints the fill on top
+      // of the inner loop's own stroke, hiding it completely. evenodd
+      // renders both the hole and its border correctly regardless of which
+      // way the user clicks around it.
+      if (path.elem.getAttribute('fill-rule') !== 'evenodd') {
+        svgCanvas.undoMgr.beginUndoableChange('fill-rule', [path.elem])
+        path.elem.setAttribute('fill-rule', 'evenodd')
+        const cmd = svgCanvas.undoMgr.finishUndoableChange()
+        if (!cmd.isEmpty()) {
+          svgCanvas.addCommandToHistory(cmd)
+        }
+      }
     } else {
       svgCanvas.pathActions.clear(true)
       svgCanvas.pathActions.toEditMode(path.elem)

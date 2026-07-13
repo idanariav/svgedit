@@ -27,7 +27,10 @@ every point.
 - **Segment type** — straight or curved edge into a point.
 - **Add / clone / delete node** — change how many points the path has.
 - **Open or close path** — finish the outline or leave it open.
-- **Add sub-path** — draw a second, separate stroke inside the same shape.
+- **Add sub-path** — draw a second, separate contour inside the same shape
+  (e.g. the hole of an "O" or the counter of an "a"). Turning it on switches
+  the path's fill-rule to evenodd, so the new contour always shows up as a
+  hole no matter which direction you happen to click around it.
 - **Link control points** — when on (the default), dragging one curve handle
   moves the opposite handle to match, keeping the bend smooth on both sides
   of the point. Turn it off to move each handle independently and create a

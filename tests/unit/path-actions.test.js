@@ -135,7 +135,11 @@ describe('PathActions', () => {
       addCommandToHistory: vi.fn(),
       reorientGrads: vi.fn(),
       setLinkControlPoints: vi.fn(),
-      contentW: 640
+      contentW: 640,
+      undoMgr: {
+        beginUndoableChange: vi.fn(),
+        finishUndoableChange: vi.fn(() => ({ isEmpty: () => false }))
+      }
     }
 
     // Create selector parent group
@@ -359,6 +363,7 @@ describe('PathActions', () => {
 
   describe('addSubPath', () => {
     it('should enable subpath mode', () => {
+      pathActionsMethod.toEditMode(pathElement)
       pathActionsMethod.addSubPath(true)
 
       expect(svgCanvas.setCurrentMode).toHaveBeenCalledWith('path')
@@ -369,6 +374,31 @@ describe('PathActions', () => {
       pathActionsMethod.addSubPath(false)
 
       expect(mockPath.init).toHaveBeenCalled()
+    })
+
+    // A new subpath is normally drawn to punch a hole (e.g. the counter of a
+    // letter "a"/"o"). Under the default nonzero fill-rule, that hole (and
+    // even the new loop's own stroke, given paint-order:stroke on new
+    // shapes) only renders when the loop happens to wind opposite the outer
+    // one -- so this switches the path to evenodd, which works regardless
+    // of winding direction.
+    it('should switch the path to evenodd fill-rule when entering subpath mode', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      pathActionsMethod.addSubPath(true)
+
+      expect(pathElement.getAttribute('fill-rule')).toBe('evenodd')
+      expect(svgCanvas.undoMgr.beginUndoableChange).toHaveBeenCalledWith('fill-rule', [pathElement])
+      expect(svgCanvas.addCommandToHistory).toHaveBeenCalled()
+    })
+
+    it('should not touch fill-rule or history if already evenodd', () => {
+      pathElement.setAttribute('fill-rule', 'evenodd')
+      pathActionsMethod.toEditMode(pathElement)
+
+      pathActionsMethod.addSubPath(true)
+
+      expect(svgCanvas.undoMgr.beginUndoableChange).not.toHaveBeenCalled()
+      expect(svgCanvas.addCommandToHistory).not.toHaveBeenCalled()
     })
   })
 

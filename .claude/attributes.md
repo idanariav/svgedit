@@ -179,6 +179,13 @@ In **pathedit mode** (double-click a path), the `.path_node_panel` appears:
 | `tool_openclose_path` | — | Toggle open/closed subpath |
 | `tool_add_subpath` | — | Add a new sub-path |
 
+`tool_add_subpath` also sets `fill-rule="evenodd"` on the path the first time
+it's turned on (see `PathActions.addSubPath` in
+`packages/svgcanvas/core/path-actions.js`) — under the default `nonzero`
+rule, a subpath drawn with the same winding as the outer contour renders
+with its own boundary invisible (paint-order:stroke lets the fill repaint
+over it) instead of as a hole.
+
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** in select mode.
 
 ---
