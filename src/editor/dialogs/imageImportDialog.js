@@ -45,10 +45,17 @@ export class SeImageImportDialog extends HTMLElement {
     this.vaultLink = ''
     // whether a vault-imported image should be inserted as a "locked" embed
     this.locked = false
+    // whether a vault-imported image should stay an external reference
+    // (never embedded), re-resolved by the host on every load
+    this.external = false
     // full <svg>…</svg> source for an editable (unlocked) whole-drawing import
     this.editableSvg = ''
     // whether an editable SVG import converts its shapes to <path> elements
     this.asPaths = false
+    // guards the dialog's 'close' listener against resetting state while it's
+    // briefly released for the host's vault picker (see the vault button
+    // handler in connectedCallback)
+    this._suppressClose = false
   }
 
   /**
@@ -154,6 +161,7 @@ export class SeImageImportDialog extends HTMLElement {
     this.href = ''
     this.vaultLink = ''
     this.locked = false
+    this.external = false
     this.editableSvg = ''
     this.asPaths = false
     this.$pathsToggle.checked = false
@@ -197,6 +205,7 @@ export class SeImageImportDialog extends HTMLElement {
     // A locally-picked file has no vault provenance; drop any stale link.
     this.vaultLink = ''
     this.locked = false
+    this.external = false
     this.editableSvg = ''
     const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)
     // The "import as paths" toggle only applies to editable SVG imports.
@@ -269,6 +278,7 @@ export class SeImageImportDialog extends HTMLElement {
       // are locked <image> embeds, so the "import as paths" toggle never applies.
       this.vaultLink = ''
       this.locked = false
+      this.external = false
       this.editableSvg = ''
       this.$pathsRow.classList.remove('show')
       // probe the URL; only enable insert once it loads
@@ -293,13 +303,23 @@ export class SeImageImportDialog extends HTMLElement {
     // Vault import — delegates to the embedding host's picker. The host returns
     // a data URL (embedded inline) plus a provenance `link` to record.
     svgEditor.$click(this.$vaultBtn, async () => {
+      // A native <dialog> shown via showModal() renders in the browser's top
+      // layer, which always paints above regular (non-native) content —
+      // including the host's own modal system (e.g. Obsidian's file picker).
+      // Release it for the duration of the host picker so that picker isn't
+      // stuck behind an unusable backdrop, then reclaim it to show the result.
+      this._suppressClose = true
+      this.$dialog.close()
       const r = await window.svgEditHost?.pickVaultImage?.()
+      this.$dialog.showModal()
+      this._suppressClose = false
       if (!r) return
       this.vaultLink = r.link || ''
       // An editable (unlocked) whole-drawing import carries the full <svg>
       // source; `locked` is irrelevant in that case (editable implies unlocked).
       this.editableSvg = r.editableSvg || ''
       this.locked = this.editableSvg ? false : !!r.locked
+      this.external = this.editableSvg ? false : !!r.external
       // Offer the "import as paths" toggle only for editable SVG imports.
       this.$pathsRow.classList.toggle('show', !!this.editableSvg)
       this.showPreview(r.dataUrl)
@@ -313,11 +333,14 @@ export class SeImageImportDialog extends HTMLElement {
     // Footer + close
     svgEditor.$click(this.$cancelBtn, close)
     svgEditor.$click(this.$closeBtn, close)
-    this.$dialog.addEventListener('close', () => this.reset())
+    this.$dialog.addEventListener('close', () => {
+      if (this._suppressClose) return
+      this.reset()
+    })
     svgEditor.$click(this.$okBtn, () => {
       if (!this.href) return
       this.dispatchEvent(new CustomEvent('change', {
-        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, editableSvg: this.editableSvg || undefined, asPaths: this.asPaths || undefined }
+        detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, external: this.external || undefined, editableSvg: this.editableSvg || undefined, asPaths: this.asPaths || undefined }
       }))
       close()
     })

@@ -54,11 +54,14 @@ const convertShapesToPaths = (node, doc, svgCanvas) => {
  * is inserted so the user still gets an editable element.
  *
  * @param {string} href - A data URL or remote image URL to use as the source.
- * @param {{ vaultLink?: string, locked?: boolean }} [opts] - Optional extras.
+ * @param {{ vaultLink?: string, locked?: boolean, external?: boolean }} [opts] - Optional extras.
  *   When `vaultLink` is set, the inserted `<image>` is stamped with
  *   `data-vault-link` so an embedding host can track the image's provenance.
  *   When `locked` is true, it is also stamped with `data-vault-locked` so the
  *   host can re-bake its content from the source rather than treat it as frozen.
+ *   When `external` is true, it is instead stamped with `data-vault-external`,
+ *   marking it as a live reference to the source (never embedded) that the
+ *   host should re-resolve to a fresh href on every load.
  * @returns {void}
  */
 export const insertImageFromHref = (href, opts = {}) => {
@@ -84,6 +87,7 @@ export const insertImageFromHref = (href, opts = {}) => {
     svgCanvas.setHref(newImage, href)
     if (opts.vaultLink) newImage.setAttribute('data-vault-link', opts.vaultLink)
     if (opts.locked) newImage.setAttribute('data-vault-locked', '1')
+    if (opts.external) newImage.setAttribute('data-vault-external', '1')
     svgCanvas.selectOnly([newImage])
     svgCanvas.alignSelectedElements('m', 'page')
     svgCanvas.alignSelectedElements('c', 'page')

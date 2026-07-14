@@ -176,7 +176,7 @@ class LeftPanel {
       insertSvgElements(e.detail.editableSvg, { vaultLink: e.detail.vaultLink, asPaths: e.detail.asPaths })
       return
     }
-    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked })
+    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked, external: e.detail.external })
   }
 
   /**
