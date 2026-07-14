@@ -295,6 +295,14 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     v => v, // clamp is identity; parse already validates length
     v => { const hsv = hexToHsv(v); state.h = hsv.h; state.s = hsv.s; state.v = hsv.v }
   )
+  inputs.hex?.addEventListener('paste', (e) => {
+    const text = e.clipboardData?.getData('text') ?? ''
+    const clean = text.replace(/#/g, '').slice(0, 6)
+    if (!clean) return
+    e.preventDefault()
+    inputs.hex.value = clean
+    inputs.hex.dispatchEvent(new Event('input'))
+  })
 
   // ── Public API ─────────────────────────────────────────────────────────────
   Object.defineProperty(container, 'hex', {
