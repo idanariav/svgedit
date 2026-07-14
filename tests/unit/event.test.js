@@ -241,6 +241,48 @@ describe('event', () => {
     expect(gripsHidden).toBe(true)
   })
 
+  it('mouseUpEvent() switches out of path mode synchronously, before the opacity-fade timer fires', () => {
+    // Regression guard: the mode transition used to be deferred inside the
+    // opacity-fade setTimeout, leaving currentMode === 'path' (with drawnPath
+    // already null) for that whole window. Any click landing there — e.g. the
+    // second click of the double-click that just closed this path — was read
+    // as starting a brand-new path, silently absorbing further clicks until
+    // the deferred setMode('select') finally fired and discarded them. The
+    // switch must happen in the same tick as mouseUpEvent, not after a delay.
+    const pathElement = /** @type {SVGPathElement} */ (createSvgElement('path'))
+    pathElement.setAttribute('d', 'M0,0 L10,10')
+    contentGroup.append(pathElement)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getToolLocked = () => false
+    canvas.getElement = () => null
+    canvas.getId = () => 'test-path'
+    canvas.getCurrentDrawing = () => ({ releaseId () {} })
+    canvas.addCommandToHistory = () => {}
+    canvas.call = () => {}
+    canvas.pathActions.mouseUp = () => ({ element: pathElement, keep: true })
+    canvas.getPath_ = () => ({ show () {} })
+
+    const modes = []
+    canvas.setMode = (mode) => { modes.push(mode) }
+    canvas.selectOnly = () => {}
+
+    canvas.setCurrentMode('path')
+    canvas.setStarted(true)
+
+    canvas.mouseUpEvent({
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      preventDefault () {}
+    })
+
+    // No await here: check state in the same synchronous tick as mouseUpEvent.
+    expect(modes).toContain('select')
+  })
+
   it('mouseUpEvent() does not select a newly drawn shape when tool-locked', async () => {
     const rectElement = /** @type {SVGRectElement} */ (createSvgElement('rect'))
     contentGroup.append(rectElement)

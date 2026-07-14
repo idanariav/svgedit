@@ -865,6 +865,14 @@ class PathActions {
     */
   toEditMode (element) {
     path = svgCanvas.getPath_(element)
+    // getPath_() caches this wrapper by element id for the session's whole
+    // lifetime. If `element`'s `d` changed while some other path was being
+    // tracked (e.g. a node was added/removed here, then undone/redone while
+    // editing a different path), the cached segs/grips never got refreshed
+    // and can silently disagree with the live pathSegList. Rebuilding here,
+    // on every (re-)entry into edit mode, keeps it honest regardless of what
+    // happened while this path wasn't the tracked one.
+    path.init()
     svgCanvas.setCurrentMode('pathedit')
     svgCanvas.clearSelection()
     path.setPathContext()

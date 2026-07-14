@@ -340,6 +340,17 @@ describe('PathActions', () => {
       expect(mockPath.show).toHaveBeenCalledWith(true)
       expect(mockPath.update).toHaveBeenCalled()
     })
+
+    it('rebuilds segs from the live pathSegList on every entry, not just on cache miss', () => {
+      // Regression guard: getPath_() caches its Path wrapper by element id for
+      // the whole session. If this element's `d` changed while some other
+      // path was being tracked (e.g. edited, then reverted via undo/redo
+      // while a different path was active), the cached segs/grips never got
+      // refreshed and could silently disagree with the live pathSegList.
+      // toEditMode() must rebuild via init() on every (re-)entry.
+      pathActionsMethod.toEditMode(pathElement)
+      expect(mockPath.init).toHaveBeenCalled()
+    })
   })
 
   describe('toSelectMode', () => {

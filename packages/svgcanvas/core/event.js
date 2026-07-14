@@ -338,6 +338,31 @@ const mouseUpEvent = (evt) => {
 
     if (useUnit) { convertAttrs(element) }
 
+    // Path-drawing's mode transition must happen synchronously, not deferred
+    // behind the opacity-fade setTimeout below: mode stays 'path' for that
+    // whole window even though drawnPath is already null (committed above by
+    // pathActions), so any click landing in the gap — routinely the second
+    // click of the double-click that just closed this path — gets read as
+    // starting a brand-new path at that point. Every click after that keeps
+    // silently appending to that phantom instead of the shape the user
+    // actually intends, until the deferred setMode('select') finally fires
+    // and pathActions.clear() throws the phantom (and all its points) away
+    // with no feedback. Switching modes here, before any further event can be
+    // dispatched, closes that window.
+    if (svgCanvas.getCurrentMode() === 'path') {
+      if (svgCanvas.getToolLocked()) {
+        // Lock mode: re-arm the path tool to draw another path
+        svgCanvas.setMode('path')
+      } else {
+        // Building the path leaves its in-progress point/control grips visible
+        // in the shared pathpointgrip_container; getPath_().show(false) rebuilds
+        // and hides them so they don't linger after the element is moved/deleted.
+        svgCanvas.getPath_(element).show(false)
+        svgCanvas.setMode('select')
+        svgCanvas.selectOnly([element], true)
+      }
+    }
+
     let aniDur = 0.2
     let cAni
     const curShape = svgCanvas.getStyle()
@@ -370,19 +395,7 @@ const mouseUpEvent = (evt) => {
       }
       element.setAttribute('style', 'pointer-events:inherit')
       cleanupElement(element)
-      if (svgCanvas.getCurrentMode() === 'path') {
-        if (svgCanvas.getToolLocked()) {
-          // Lock mode: re-arm the path tool to draw another path
-          svgCanvas.setMode('path')
-        } else {
-          // Building the path leaves its in-progress point/control grips visible
-          // in the shared pathpointgrip_container; getPath_().show(false) rebuilds
-          // and hides them so they don't linger after the element is moved/deleted.
-          svgCanvas.getPath_(element).show(false)
-          svgCanvas.setMode('select')
-          svgCanvas.selectOnly([element], true)
-        }
-      } else if (svgCanvas.getCurConfig().selectNew) {
+      if (svgCanvas.getCurConfig().selectNew) {
         const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame', 'brush']
         if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
           svgCanvas.setMode('select')

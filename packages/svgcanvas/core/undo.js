@@ -61,7 +61,20 @@ export const init = (canvas) => {
           }
         }
         const elems = cmd.elements()
-        svgCanvas.pathActions.clear()
+        // Undoing/redoing a change to the path currently being node-edited
+        // must not kick the user out of pathedit mode the way a normal tool
+        // switch's clear() does -- refresh the tracked path's segs/grips from
+        // the (now reverted/reapplied) live pathSegList in place instead, so
+        // editing continues seamlessly. Any other undo/redo (a different
+        // element, or no active pathedit session) keeps the old behavior.
+        const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
+        if (editedPath && elems.includes(editedPath.elem)) {
+          editedPath.dragging = false
+          editedPath.dragctrl = false
+          editedPath.init().show(true)
+        } else {
+          svgCanvas.pathActions.clear()
+        }
         svgCanvas.call('changed', elems)
         if (cmdType === 'MoveElementCommand') {
           const parent = isApply ? cmd.newParent : cmd.oldParent

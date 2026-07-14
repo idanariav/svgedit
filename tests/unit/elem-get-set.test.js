@@ -39,6 +39,8 @@ describe('elem-get-set', () => {
       changeSelectedAttribute: vi.fn(),
       getDOMDocument () { return document },
       getSvgContent () { return svgContent },
+      getCurrentMode () { return 'select' },
+      getPathObj () { return null },
       getSelectedElements () { return this.selectedElements || [] },
       getDataStorage () { return dataStorage },
       getZoom () { return this.zoom },
@@ -217,6 +219,8 @@ describe('elem-get-set', () => {
       contentH: 100,
       getSvgContent () { return svg },
       clearSelection () {},
+      getCurrentMode () { return 'select' },
+      getPathObj () { return null },
       pathActions: { clear () {} },
       call () {}
     }

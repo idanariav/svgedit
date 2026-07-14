@@ -11,6 +11,26 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## Path tool: clicking a different path while in pathedit doesn't select it
+
+`PathActions.toSelectMode(elem)` (`packages/svgcanvas/core/path-actions.js`,
+~line 890) only reselects `elem` when it's the path that was actively being
+edited (`selPath = elem === path.elem`). If the user clicks straight onto a
+*different* path while node-editing the current one, the click correctly
+exits pathedit (via the existing non-drag-click fallback in `mouseUp`) but
+drops to `select` mode with nothing selected, instead of selecting the
+clicked path the way a plain select-mode click would. Not fixed now because a
+correct fix needs to distinguish "clicked a real content element" from
+"clicked empty canvas background" (`svgroot`/`svgcontent`) without
+accidentally selecting the SVG root itself — the container-based checks
+already used elsewhere in this file (`getContainer().contains(...)`) are too
+loose for that distinction (they're satisfied by background clicks too) and
+would need a more careful predicate. Also not independently reproduced in a
+live browser session (inferred from reading the code), unlike the other path
+bugs fixed in the same session. Low severity (missing selection, no data
+loss/crash), low-to-moderate effort once the "real element vs. background"
+check is designed properly.
+
 ## From the Phase 1-11 cleanup roadmap (`.claude/plans/i-want-to-do-immutable-kettle.md`)
 
 The following were explicitly called out in that plan as "Deferred / optional

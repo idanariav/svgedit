@@ -152,8 +152,11 @@ export const init = (canvas) => {
       }
     })
   }
-  if (x && y) {
-    // set up the point grip element and display it
+  if (x !== undefined && y !== undefined) {
+    // set up the point grip element and display it. Both callers always pass
+    // real coordinates -- a falsy `x && y` check previously skipped this
+    // (leaving the grip permanently un-positioned and hidden) whenever a
+    // point landed exactly on pixel 0.
     assignAttributes(pointGrip, {
       x: x - NODE_GRIP_SIZE / 2,
       y: y - NODE_GRIP_SIZE / 2,

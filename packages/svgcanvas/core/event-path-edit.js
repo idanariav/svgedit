@@ -9,7 +9,6 @@
  */
 import { assignAttributes, snapPointToGrid } from './dom-utils.js'
 import { snapToAngle } from './math.js'
-import * as pathModule from './path.js'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
@@ -42,7 +41,11 @@ export const init = (canvas) => {
       svgCanvas.setStartY(sp.y)
     }
     if (evt.shiftKey) {
-      const { path } = pathModule
+      // `path.js` never exports a `path` binding (only `init`), so this used
+      // to always take the `else` branch below regardless of drag state --
+      // svgCanvas.getPathObj() is the real accessor for the currently tracked
+      // Path instance.
+      const path = svgCanvas.getPathObj()
       let x1, y1
       if (path) {
         x1 = path.dragging ? path.dragging[0] : svgCanvas.getStartX()
