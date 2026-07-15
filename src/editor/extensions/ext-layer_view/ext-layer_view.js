@@ -1,15 +1,22 @@
 /**
  * @file ext-layer_view.js
  *
- * Layer Focus mode. Toggling the toolbar button isolates the current layer to
- * make working on it easier:
- *   1. every other layer is locked (new/pasted objects can only land on the
- *      focused layer — same lock semantics as the per-layer padlock);
- *   2. the current layer's name is shown as an on-canvas badge;
- *   3. every other layer is dimmed so the focused layer stands out;
- *   4. while the mode is on, layer-navigation hotkeys are enabled:
- *        [ / ]           switch the focused layer down / up the stack
- *        PageUp / PageDown  move the selection to the adjacent layer and follow it
+ * Layer mode. Toggling the toolbar button shows an on-canvas badge with two
+ * sub-modes, switchable from a small control inside the badge:
+ *   - "Layer" (default): Focus mode — isolates the current layer to make
+ *     working on it easier:
+ *       1. every other layer is locked (new/pasted objects can only land on
+ *          the focused layer — same lock semantics as the per-layer padlock);
+ *       2. every other layer is dimmed so the focused layer stands out;
+ *       3. layer-navigation hotkeys are enabled:
+ *            [ / ]              switch the focused layer down / up the stack
+ *            PageUp / PageDown  move the selection to the adjacent layer and follow it
+ *   - "All": All Layers mode — every layer becomes simultaneously selectable
+ *     (via `svgCanvas.setAllLayersMode`), with no dimming/locking, so
+ *     elements that live on different layers can be selected together (e.g.
+ *     to group/save a compound shape) without merging layers. New content
+ *     still lands on the current layer as usual.
+ * The two sub-modes are mutually exclusive.
  *
  * All of this is a transient view state: the mode snapshots each layer's lock
  * state on entry and restores it on exit, and the dim is applied as an inline
@@ -51,6 +58,9 @@ export default {
     let keyHandler = null
     // The on-canvas "current layer" badge (created lazily, reused thereafter).
     let badge = null
+    // Which badge sub-mode is active: 'current' (Focus, default) or 'all'
+    // (All Layers). Reset to 'current' every time the mode is (re-)entered.
+    let subMode = 'current'
 
     const isPressed = () => $id('tool_layerView')?.pressed === true
 
@@ -67,6 +77,30 @@ export default {
       if (badge) return badge
       badge = document.createElement('div')
       badge.id = 'layer_focus_badge'
+
+      const text = document.createElement('span')
+      text.id = 'layer_focus_badge_text'
+
+      const switchEl = document.createElement('span')
+      switchEl.id = 'layer_focus_badge_switch'
+      const makeSegment = (mode, labelKey, titleKey) => {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.dataset.mode = mode
+        btn.textContent = svgEditor.i18next.t(`${name}:all.${labelKey}`)
+        btn.title = svgEditor.i18next.t(`${name}:all.${titleKey}`)
+        return btn
+      }
+      switchEl.append(
+        makeSegment('current', 'switchCurrent', 'switchCurrentTitle'),
+        makeSegment('all', 'switchAll', 'switchAllTitle')
+      )
+      switchEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-mode]')
+        if (btn) setSubMode(btn.dataset.mode)
+      })
+
+      badge.append(text, switchEl)
       svgEditor.$svgEditor.append(badge)
       return badge
     }
@@ -74,15 +108,43 @@ export default {
     const updateBadge = () => {
       const el = ensureBadge()
       const cur = svgCanvas.getCurrentDrawing().getCurrentLayerName()
-      el.textContent = svgEditor.i18next.t(`${name}:focus.badge`, { name: cur })
+      el.querySelector('#layer_focus_badge_text').textContent = subMode === 'all'
+        ? svgEditor.i18next.t(`${name}:all.badge`)
+        : svgEditor.i18next.t(`${name}:focus.badge`, { name: cur })
+      el.querySelectorAll('#layer_focus_badge_switch button').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.mode === subMode)
+      })
       el.classList.toggle('visible', isPressed())
+    }
+
+    // Switch the badge's sub-mode ('current' Focus vs. 'all' All Layers).
+    // applyFocus() below is the single place that reflects whichever
+    // sub-mode is active, so switching just re-runs it.
+    const setSubMode = (mode) => {
+      if (subMode === mode) return
+      subMode = mode
+      applyFocus()
     }
 
     /* ------------------------------------------------------- focus visuals */
 
-    // Reflect the focused (current) layer: dim + lock everything else. Idempotent,
-    // so it can be re-run on every layer switch / layers change.
+    // Reflect the active sub-mode onto every layer. Idempotent, so it can be
+    // re-run on every layer switch / layers change / sub-mode switch.
+    //   'current' (Focus): dim + lock everything but the current layer.
+    //   'all' (All Layers): no dim, real lock state restored (nothing forced),
+    //     and every layer becomes selectable via setAllLayersMode.
     const applyFocus = () => {
+      if (subMode === 'all') {
+        eachLayer((lname, drawing) => {
+          const group = drawing.getLayerByName(lname)
+          if (group) group.style.opacity = ''
+          svgCanvas.setLayerLocked(lname, savedLocks?.[lname] ?? false)
+        })
+        svgCanvas.setAllLayersMode(true)
+        updateBadge()
+        return
+      }
+      svgCanvas.setAllLayersMode(false)
       const cur = svgCanvas.getCurrentDrawing().getCurrentLayerName()
       eachLayer((lname, drawing) => {
         const isCur = lname === cur
@@ -95,6 +157,7 @@ export default {
     }
 
     const enterFocus = () => {
+      subMode = 'current'
       savedLocks = {}
       eachLayer((lname, drawing) => { savedLocks[lname] = drawing.getLayerLocked(lname) })
       applyFocus()
@@ -107,7 +170,9 @@ export default {
         if (group) group.style.opacity = ''
         svgCanvas.setLayerLocked(lname, savedLocks?.[lname] ?? false)
       })
+      svgCanvas.setAllLayersMode(false)
       savedLocks = null
+      subMode = 'current'
       updateBadge()
       removeKeys()
     }
@@ -167,7 +232,9 @@ export default {
     }
 
     const onKey = (e) => {
-      if (!isActiveEditor(svgEditor) || isTyping()) return
+      // Focused-layer navigation doesn't apply in All Layers mode — there's
+      // no single focused layer to switch away from.
+      if (!isActiveEditor(svgEditor) || isTyping() || subMode === 'all') return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       switch (e.key) {
         case ']': switchLayer(1); break

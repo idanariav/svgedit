@@ -60,7 +60,7 @@ svgedit/
 │   │   ├── ext-connector/         # Line-binding engine behind the Line tool (endpoint↔shape binding)
 │   │   ├── ext-eyedropper/        # Pick color/style from canvas element
 │   │   ├── ext-grid/              # Grid overlay + snap-to-grid
-│   │   ├── ext-layer_view/        # Layer visualization
+│   │   ├── ext-layer_view/        # Layer mode: Focus (isolate current layer) + All Layers (cross-layer select)
 │   │   ├── ext-markers/           # Arrow/marker decorators on lines
 │   │   ├── ext-opensave/          # File open / save / import dialogs
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
@@ -163,7 +163,7 @@ src/editor/index.html
 
 | Module | Purpose |
 |--------|---------|
-| `draw.js` | Shape creation primitives (rect, circle, ellipse, text, line, path…) |
+| `draw.js` | Shape creation primitives (rect, circle, ellipse, text, line, path…); also the `Drawing` class (layer CRUD, current-layer tracking). `Drawing.refreshLayerPointerEvents()` is the single place layer `pointer-events` gets set — normally only `current_layer` is `'all'` (rest `'none'`, the base single-layer-selectable isolation), but `setAllLayersMode(bool)`/`getAllLayersMode()` (exported as `svgCanvas.setAllLayersMode`/`getAllLayersMode`) flips every layer to `'all'` so any layer's elements are selectable at once — used by `ext-layer_view`'s All Layers sub-mode |
 | `event.js` | mouseDown/mouseMove/mouseUp orchestrators (shared prelude, hit-testing, dispatch to the `event-*.js` mode-family modules, epilogue) + custom event dispatch, `dblClickEvent`, `mouseOutEvent`, `DOMMouseScrollEvent`/`zoomAtPoint` |
 | `event-group-context.js` | Group-local coordinate helpers shared across `event.js` and the select/shape-draw handlers (`toCurrentGroupLocalDelta`/`Point`, `isCreateInCurrentGroup`) |
 | `event-select.js` | `select`/`multiselect` mode: drag-move w/ snapping, rubber-band multiselect, mouseUp transform-consolidation tail (shared via fallthrough with `resize`) |
@@ -174,7 +174,7 @@ src/editor/index.html
 | `event-text-edit.js` | `textedit` mode — thin delegates onto `text-actions.js` |
 | `event-zoom.js` | `zoom` mode (marquee-zoom rubber band) |
 | `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
-| `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box |
+| `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box. `getMouseTargetFromNode` (click hit-testing) and `getIntersectionListMethod` (rubber-band) both normally resolve/scope to the current layer only, but widen to any layer when `svgCanvas.getAllLayersMode()` is on (and no group-isolation context is active) |
 | `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector(bbox, angle)`/`hideGroupSelector()` draw one union box + 8 resize grips **+ the rotate grip** around a multi-selection (the optional `angle` rotates the box+grips rigidly during a live group rotation) |
 | `path.js` | Path element state and node data |
 | `path-actions.js` | Path editing operations (add/delete/move nodes) |

@@ -827,6 +827,46 @@ describe('draw.Drawing', function () {
     assert.equal(drawing.getCurrentLayer(), drawing.all_layers[1].getGroup())
   })
 
+  it('Test setAllLayersMode() / getAllLayersMode()', function () {
+    const drawing = new draw.Drawing(svg)
+    const layers = setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+
+    // Baseline: only the current (top) layer is selectable.
+    assert.equal(drawing.getAllLayersMode(), false)
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+
+    // Turning on All Layers mode makes every layer selectable.
+    drawing.setAllLayersMode(true)
+    assert.equal(drawing.getAllLayersMode(), true)
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+
+    // A layer created while All Layers mode is on stays selectable too, and
+    // pre-existing layers are unaffected by the switch.
+    const layerG = drawing.createLayer('Layer A')
+    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+
+    // Switching the current layer while on doesn't narrow selectability.
+    drawing.setCurrentLayer(LAYER1)
+    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'all')
+
+    // Turning it off restores single-current-layer isolation.
+    drawing.setAllLayersMode(false)
+    assert.equal(drawing.getAllLayersMode(), false)
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'none')
+
+    cleanupSVG(svg)
+  })
+
   it('Test svgedit.draw.randomizeIds()', function () {
     // Confirm in LET_DOCUMENT_DECIDE mode that the document decides
     // if there is a nonce.

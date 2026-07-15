@@ -147,6 +147,13 @@ export class Drawing {
     this.current_layer = null
 
     /**
+     * When true, every layer accepts pointer events (selectable), not just
+     * the current layer. Drives `refreshLayerPointerEvents`.
+     * @type {boolean}
+     */
+    this.allLayersMode = false
+
+    /**
      * The nonce to use to uniquely identify elements across drawings.
      * @type {!string}
      */
@@ -536,6 +543,45 @@ export class Drawing {
   }
 
   /**
+   * Reflects `current_layer`/`allLayersMode` onto every layer's pointer
+   * events: in all-layers mode every layer accepts pointer events (all are
+   * selectable); otherwise only `current_layer` does (the base isolation
+   * behavior). Centralizing this means any structural change that finalizes
+   * `current_layer` (switch/create/delete/merge/reorder) can just call this
+   * instead of hand-rolling `.activate()`/`.deactivate()` pairs, so it stays
+   * correct under all-layers mode automatically.
+   * @returns {void}
+   */
+  refreshLayerPointerEvents () {
+    this.all_layers.forEach(layer => {
+      if (this.allLayersMode || layer === this.current_layer) {
+        layer.activate()
+      } else {
+        layer.deactivate()
+      }
+    })
+  }
+
+  /**
+   * Sets whether every layer is simultaneously selectable ("All Layers" mode)
+   * instead of just the current layer. Does not change which layer new/pasted
+   * content lands on.
+   * @param {boolean} bAllLayers
+   * @returns {void}
+   */
+  setAllLayersMode (bAllLayers) {
+    this.allLayersMode = Boolean(bAllLayers)
+    this.refreshLayerPointerEvents()
+  }
+
+  /**
+   * @returns {boolean} Whether "All Layers" selection mode is on.
+   */
+  getAllLayersMode () {
+    return this.allLayersMode
+  }
+
+  /**
    * Sets the current layer. If the name is not a valid layer name, then this
    * function returns `false`. Otherwise it returns `true`. This is not an
    * undo-able action.
@@ -545,11 +591,8 @@ export class Drawing {
   setCurrentLayer (name) {
     const layer = this.layer_map[name]
     if (layer) {
-      if (this.current_layer) {
-        this.current_layer.deactivate()
-      }
       this.current_layer = layer
-      this.current_layer.activate()
+      this.refreshLayerPointerEvents()
       return true
     }
     return false
@@ -625,10 +668,9 @@ export class Drawing {
       layer.appendChildren(orphans)
       this.all_layers.push(layer)
       this.layer_map[name] = layer
-    } else {
-      layer.activate()
     }
     this.current_layer = layer
+    this.refreshLayerPointerEvents()
   }
 
   /**
@@ -640,9 +682,6 @@ export class Drawing {
    *     also the current layer of this drawing.
    */
   createLayer (name, hrService) {
-    if (this.current_layer) {
-      this.current_layer.deactivate()
-    }
     // Check for duplicate name.
     if (
       name === undefined ||
@@ -665,6 +704,7 @@ export class Drawing {
     this.all_layers.push(layer)
     this.layer_map[name] = layer
     this.current_layer = layer
+    this.refreshLayerPointerEvents()
     return layer.getGroup()
   }
 
@@ -679,7 +719,6 @@ export class Drawing {
     if (!this.current_layer) {
       return null
     }
-    this.current_layer.deactivate()
     // Check for duplicate name.
     if (
       name === undefined ||
@@ -723,6 +762,7 @@ export class Drawing {
     }
     this.layer_map[name] = layer
     this.current_layer = layer
+    this.refreshLayerPointerEvents()
     return group
   }
 
@@ -1196,6 +1236,27 @@ export const init = canvas => {
 }
 
 /**
+ * Sets whether every layer is simultaneously selectable ("All Layers" mode)
+ * instead of just the current layer. Does not change which layer new/pasted
+ * content lands on. Not undo-able (a transient view/selection state).
+ * @function module:draw.setAllLayersMode
+ * @param {boolean} bAllLayers
+ * @returns {void}
+ */
+  const setAllLayersMode = (bAllLayers) => {
+  svgCanvas.getCurrentDrawing().setAllLayersMode(bAllLayers)
+}
+
+/**
+ * Returns whether "All Layers" selection mode is on.
+ * @function module:draw.getAllLayersMode
+ * @returns {boolean}
+ */
+  const getAllLayersMode = () => {
+  return svgCanvas.getCurrentDrawing().getAllLayersMode()
+}
+
+/**
  * Moves the selected elements to layerName. If the name is not a valid layer name, then `false`
  * is returned. Otherwise it returns `true`. This is an undo-able action.
  * @function module:draw.moveSelectedToLayer
@@ -1372,6 +1433,8 @@ export const init = canvas => {
   svgCanvas.setLayerVisibility = setLayerVisibility
   svgCanvas.setLayerLocked = setLayerLocked
   svgCanvas.getLayerLocked = getLayerLocked
+  svgCanvas.setAllLayersMode = setAllLayersMode
+  svgCanvas.getAllLayersMode = getAllLayersMode
   svgCanvas.moveSelectedToLayer = moveSelectedToLayer
   svgCanvas.mergeLayer = mergeLayer
   svgCanvas.mergeAllLayers = mergeAllLayers

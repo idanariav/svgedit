@@ -17,6 +17,7 @@ import {
 import * as hstry from './history.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
+import Layer from './layer.js'
 import { init as eventZoomInit } from './event-zoom.js'
 import { init as eventTextEditInit } from './event-text-edit.js'
 import { init as eventPathEditInit } from './event-path-edit.js'
@@ -505,8 +506,11 @@ const findStrokeElementNearPoint = (evt, currentTarget) => {
   ) {
     return null
   }
-  const parentContext =
-    svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()
+  const currentGroup = svgCanvas.getCurrentGroup()
+  const parentContext = currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
+  // In All Layers mode (and not isolated inside a group), a stroke-only
+  // element on any layer is a valid pick, not just the current layer's.
+  const anyLayer = svgCanvas.getAllLayersMode() && !currentGroup
   // [radius, angleCount] rings, nearest first; the 0-radius ring is the click.
   const rings = [[0, 1], [HIT_TOLERANCE / 2, 8], [HIT_TOLERANCE, 8]]
   for (const [radius, angleCount] of rings) {
@@ -518,7 +522,8 @@ const findStrokeElementNearPoint = (evt, currentTarget) => {
       for (const node of stack) {
         const target = svgCanvas.getMouseTargetFromNode(node)
         if (
-          target && target.parentNode === parentContext &&
+          target &&
+          (target.parentNode === parentContext || (anyLayer && Layer.isLayer(target.parentNode))) &&
           isStrokeOnlyElement(target)
         ) {
           return target

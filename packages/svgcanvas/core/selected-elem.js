@@ -288,7 +288,6 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
  */
 const cloneSelectedElements = (x, y) => {
   const selectedElements = svgCanvas.getSelectedElements()
-  const currentGroup = svgCanvas.getCurrentGroup()
   let i
   let elem
   const batchCmd = new BatchCommand('Clone Elements')
@@ -330,9 +329,14 @@ const cloneSelectedElements = (x, y) => {
   const drawing = svgCanvas.getDrawing()
   i = copiedElements.length
   while (i--) {
-    // clone each element and replace it within copiedElements
-    elem = copiedElements[i] = drawing.copyElem(copiedElements[i])
-    ;(currentGroup || drawing.getCurrentLayer()).append(elem)
+    // clone each element and replace it within copiedElements, appending the
+    // clone back into its own original parent (layer or group) rather than a
+    // single shared target — required once a selection can span layers (All
+    // Layers mode), and equivalent to the old currentGroup/currentLayer
+    // target in every case where a selection can only live in one place.
+    const original = copiedElements[i]
+    elem = copiedElements[i] = drawing.copyElem(original)
+    original.parentNode.append(elem)
     batchCmd.addSubCommand(new InsertElementCommand(elem))
   }
 

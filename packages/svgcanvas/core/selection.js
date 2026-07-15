@@ -21,6 +21,7 @@ import {
 } from './math.js'
 import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
+import Layer from './layer.js'
 
 const { BatchCommand } = hstry
 
@@ -201,10 +202,17 @@ const getMouseTargetFromNode = (node) => {
   // Get the desired mouseTarget with jQuery selector-fu
   // If it's root-like, select the root
   const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+  const currentGroup = svgCanvas.getCurrentGroup()
   const svgRoot = svgCanvas.getSvgRoot()
   const container = svgCanvas.getDOMContainer()
   const content = svgCanvas.getSvgContent()
-  if ([svgRoot, container, content, currentLayer].includes(mouseTarget)) {
+  // In All Layers mode (and not isolated inside a group), any layer is a
+  // valid selection boundary, not just the current one.
+  const anyLayer = svgCanvas.getAllLayersMode() && !currentGroup
+  if (
+    [svgRoot, container, content, currentLayer].includes(mouseTarget) ||
+    (anyLayer && Layer.isLayer(mouseTarget))
+  ) {
     return svgCanvas.getSvgRoot()
   }
 
@@ -216,9 +224,8 @@ const getMouseTargetFromNode = (node) => {
   }
 
   while (
-    !mouseTarget?.parentNode?.isSameNode(
-      svgCanvas.getCurrentGroup() || currentLayer
-    )
+    !mouseTarget?.parentNode?.isSameNode(currentGroup || currentLayer) &&
+    !(anyLayer && Layer.isLayer(mouseTarget?.parentNode))
   ) {
     mouseTarget = mouseTarget.parentNode
     // The node isn't inside the drawing at all (interactive overlays like
@@ -359,8 +366,21 @@ const getIntersectionListMethod = (rect) => {
 
   const resultList = []
   if (svgCanvas.getCurBBoxes().length === 0) {
-    // Cache all bboxes
-    svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent))
+    // Cache all bboxes. In All Layers mode (and not isolated inside a
+    // group), gather bboxes from every visible layer instead of just
+    // the current one, so the rubber band can pick up elements anywhere.
+    if (svgCanvas.getAllLayersMode() && !svgCanvas.getCurrentGroup()) {
+      const drawing = svgCanvas.getCurrentDrawing()
+      let boxes = []
+      for (let li = 0; li < drawing.getNumLayers(); li++) {
+        const layerName = drawing.getLayerName(li)
+        if (!drawing.getLayerVisibility(layerName)) { continue }
+        boxes = boxes.concat(getVisibleElementsAndBBoxes(drawing.getLayerByName(layerName)))
+      }
+      svgCanvas.setCurBBoxes(boxes)
+    } else {
+      svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent))
+    }
   }
   let i = svgCanvas.getCurBBoxes().length
   while (i--) {
