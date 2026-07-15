@@ -129,10 +129,12 @@ customElements.define('se-text-prompt-dialog', SeTextPromptDialog)
  * @param {string} message
  * @param {string} [value]
  * @param {{title?: string, okText?: string, cancelText?: string}} [opts]
+ * @param {Element} [scopeEl] - element used to find the owning editor's dialog
+ *   when multiple svgedit instances share one document (see domScope.js)
  * @returns {Promise<string|null>}
  */
-const sePrompt = (message, value = '', opts = {}) => {
-  const el = document.querySelector('se-text-prompt-dialog')
+const sePrompt = (message, value = '', opts = {}, scopeEl) => {
+  const el = closestRoot(scopeEl).querySelector('se-text-prompt-dialog') ?? document.querySelector('se-text-prompt-dialog')
   if (!el) return Promise.resolve(null)
   return el.prompt(message, value, opts)
 }

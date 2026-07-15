@@ -177,7 +177,9 @@ class RightPanel {
 
     const newName = await sePrompt(
       this.editor.i18next.t('notification.enterUniqueLayerName'),
-      uniqName
+      uniqName,
+      {},
+      this.editor.$svgEditor
     )
     if (!newName) {
       return null
@@ -254,7 +256,9 @@ class RightPanel {
 
     const newName = await sePrompt(
       this.editor.i18next.t('notification.enterUniqueLayerName'),
-      name
+      name,
+      {},
+      this.editor.$svgEditor
     )
     if (!newName) {
       return
@@ -307,7 +311,7 @@ class RightPanel {
   async layerRename () {
     const ele = this.editor.$qq('#layerlist tr.layersel td.layername')
     const oldName = (ele) ? ele.textContent : ''
-    const newName = await sePrompt(this.editor.i18next.t('notification.enterNewLayerName'), oldName)
+    const newName = await sePrompt(this.editor.i18next.t('notification.enterNewLayerName'), oldName, {}, this.editor.$svgEditor)
     if (!newName) {
       return
     }

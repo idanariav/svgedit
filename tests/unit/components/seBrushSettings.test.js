@@ -119,7 +119,7 @@ describe('se-brush-settings', () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(window.sePrompt).toHaveBeenCalledWith('Name for brush 1', '')
+    expect(window.sePrompt).toHaveBeenCalledWith('Name for brush 1', '', {}, el)
     expect(slot0.querySelector('.slot-btn').textContent).toBe('Calligraphy')
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY))[0].name).toBe('Calligraphy')
     delete window.sePrompt

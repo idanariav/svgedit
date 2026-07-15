@@ -268,7 +268,7 @@ class SeBrushSettings extends SeSettingsPopover {
   async _renameSlot (i) {
     const existing = getBrushSlot(i)
     if (!existing) return
-    const newName = await sePrompt(`Name for brush ${i + 1}`, existing.name ?? '')
+    const newName = await sePrompt(`Name for brush ${i + 1}`, existing.name ?? '', {}, this)
     if (newName === null) return
     renameBrushSlot(i, newName.trim())
     this._refreshSlots()
