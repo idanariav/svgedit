@@ -1473,7 +1473,10 @@ class Editor extends EditorStartup {
   enableOrDisableClipboard () {
     let svgeditClipboard
     try {
-      svgeditClipboard = this.localStorage.getItem('svgedit_clipboard')
+      // sessionStorage is shared directly with other same-window editor
+      // instances (no propagation needed); localStorage is the flash-write
+      // used for the cross-tab `storage` event case.
+      svgeditClipboard = sessionStorage.getItem('svgedit_clipboard') || localStorage.getItem('svgedit_clipboard')
     } catch (err) {
       /* empty fn */
     }

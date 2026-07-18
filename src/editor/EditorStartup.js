@@ -827,6 +827,13 @@ class EditorStartup {
       this.enableOrDisableClipboard()
     }.bind(this), { signal: this.listenerAbort.signal })
 
+    // `storage` only fires in *other* tabs/windows, never the one that wrote
+    // the key — so same-window instances need their own signal to re-check
+    // Paste state after a copy/cut in a sibling instance (see copySelectedElements).
+    document.addEventListener('svgedit:clipboardchange', function () {
+      this.enableOrDisableClipboard()
+    }.bind(this), { signal: this.listenerAbort.signal })
+
     window.addEventListener('beforeunload', function (e) {
     // Suppress warning if page is empty
       if (undoMgr.getUndoStackSize() === 0) {

@@ -75,6 +75,24 @@ describe('selected-elem', () => {
     expect(parsed[0].attr.id).toBe('rect-copy')
   })
 
+  it('dispatches a document-level event so other same-window editor instances can re-check clipboard state', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-copy-event', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.selectOnly([rect], true)
+
+    const listener = vi.fn()
+    document.addEventListener('svgedit:clipboardchange', listener)
+    try {
+      svgCanvas.copySelectedElements()
+    } finally {
+      document.removeEventListener('svgedit:clipboardchange', listener)
+    }
+
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
   it('moves element to bottom even with whitespace/title/defs nodes', () => {
     const rect1 = svgCanvas.addSVGElementsFromJson({
       element: 'rect',

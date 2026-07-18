@@ -33,27 +33,14 @@ check is designed properly.
 
 ## Bug-hunt findings (2026-07-18): copy-paste / multi-instance follow-ups
 
-Findings from a targeted audit. Six of the eight original findings (curvature
-tool cleanup, path node-index sort, zoom-adjusted drag threshold, and three
-multi-instance active-editor/teardown bugs) were fixed in a follow-up session
-with regression tests in `tests/unit/`. The two below are still open — each
-was explicitly called out as needing more than a mechanical fix (a rethink of
-the flash-storage handshake, and a module-singleton-to-per-instance
-refactor), so they were left for a dedicated pass.
-
-### Cross-drawing paste: context-menu "Paste" enable state doesn't propagate in-window
-
-The internal clipboard itself is shared correctly (same-window instances read
-the same `sessionStorage` key, and keyboard paste works cross-drawing). But
-the menu-item enable state does not follow: `copySelectedElements()` enables
-`#paste` only on its own instance's menu, and other same-window instances
-only re-check via a `storage` event (`EditorStartup.js` ~line 823) — which
-never fires in the window that made the change, and reads a localStorage key
-(`Editor.enableOrDisableClipboard`) that `flashStorage()` deletes ~1ms after
-writing. Net effect: after copying in drawing A, drawing B's right-click
-Paste can stay disabled even though pasting would work. Low severity (Ctrl+V
-unaffected); fix belongs with a rethink of the flash-storage handshake for
-the same-document multi-instance case.
+Findings from a targeted audit. Seven of the eight original findings
+(curvature tool cleanup, path node-index sort, zoom-adjusted drag threshold,
+three multi-instance active-editor/teardown bugs, and the cross-drawing
+Paste enable-state propagation) were fixed, with regression tests in
+`tests/unit/` where feasible. The one below is still open — it was
+explicitly called out as needing more than a mechanical fix (a
+module-singleton-to-per-instance refactor), so it was left for a dedicated
+pass.
 
 ### Hazard note: dom-utils/bbox-utils module singletons follow the *active* editor only
 

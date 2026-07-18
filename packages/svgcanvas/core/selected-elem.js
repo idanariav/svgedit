@@ -884,6 +884,11 @@ const copySelectedElements = () => {
   // Context menu might not exist (it is provided by editor.js).
   const canvMenu = svgCanvas.$id('se-cmenu_canvas')
   canvMenu?.setAttribute('enablemenuitems', '#paste,#paste_in_place')
+
+  // Other same-window editor instances share the sessionStorage clipboard
+  // but have their own context menu, so they need telling to re-check it
+  // (see the 'svgedit:clipboardchange' listener in EditorStartup.js).
+  document.dispatchEvent(new CustomEvent('svgedit:clipboardchange'))
 }
 
 /**
