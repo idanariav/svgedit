@@ -255,6 +255,13 @@ class SVGTransformListPolyfill {
     return removed
   }
 
+  replaceItem (item, index) {
+    if (index < 0 || index >= this._items.length) return undefined
+    this._items[index] = item
+    this._sync()
+    return item
+  }
+
   clear () { this._items = []; this._sync() }
   initialize (item) { this._items = [item]; this._sync(); return item }
   consolidate () {

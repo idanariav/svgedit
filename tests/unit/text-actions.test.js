@@ -81,7 +81,9 @@ describe('TextActions', () => {
       getElement: vi.fn((id) => svgRoot.querySelector(`#${id}`)),
       getToolLocked: vi.fn(() => false),
       getTextFreshCreate: vi.fn(() => false),
-      setTextFreshCreate: vi.fn()
+      setTextFreshCreate: vi.fn(),
+      getCurrentGroup: vi.fn(() => null),
+      leaveContext: vi.fn()
     }
 
     // Initialize utilities and text-actions modules
@@ -226,6 +228,44 @@ describe('TextActions', () => {
       textActionsMethod.toSelectMode(false)
 
       expect(svgCanvas.deleteSelectedElements).toHaveBeenCalled()
+    })
+
+    it('should leave the current group context when exiting text edit while one is active', () => {
+      // Regression: text-editing a text element inside a group is entered
+      // implicitly via double-click drill-in, same as pathedit. Without
+      // releasing currentGroup here, it stays stale after exiting - group
+      // siblings remain dimmed/pointer-events:none, and the next new shape
+      // drawn silently lands inside the stale group instead of the current
+      // layer.
+      const group = document.createElementNS(NS.SVG, 'g')
+      svgCanvas.getCurrentGroup = vi.fn(() => group)
+
+      textActionsMethod.start(textElement)
+      textActionsMethod.toSelectMode(false)
+
+      expect(svgCanvas.leaveContext).toHaveBeenCalled()
+    })
+
+    it('should not touch group context when none is active', () => {
+      textActionsMethod.start(textElement)
+      textActionsMethod.toSelectMode(false)
+
+      expect(svgCanvas.leaveContext).not.toHaveBeenCalled()
+    })
+
+    it('should not leave group context when relocking the tool for repeated text placement', () => {
+      // A locked tool keeps re-arming 'text' mode to place several texts in a
+      // row; if the user is deliberately drilled into a group for that
+      // workflow, don't yank them out mid-sequence.
+      const group = document.createElementNS(NS.SVG, 'g')
+      svgCanvas.getCurrentGroup = vi.fn(() => group)
+      svgCanvas.getToolLocked = vi.fn(() => true)
+      svgCanvas.getTextFreshCreate = vi.fn(() => true)
+
+      textActionsMethod.start(textElement)
+      textActionsMethod.toSelectMode(false)
+
+      expect(svgCanvas.leaveContext).not.toHaveBeenCalled()
     })
   })
 

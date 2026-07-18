@@ -72,6 +72,8 @@ describe('PathActions', () => {
       getSelectedElements: vi.fn(() => [pathElement]),
       getDrawnPath: vi.fn(() => null),
       setDrawnPath: vi.fn(),
+      getCurrentGroup: vi.fn(() => null),
+      leaveContext: vi.fn(),
       getPath_: vi.fn(() => mockPath),
       getId: vi.fn(() => 'svg_1'),
       getNextId: vi.fn(() => 'svg_2'),
@@ -396,6 +398,28 @@ describe('PathActions', () => {
 
       expect(svgCanvas.call).not.toHaveBeenCalled()
       expect(svgCanvas.addToSelection).not.toHaveBeenCalled()
+    })
+
+    it('should leave the current group context when exiting pathedit while one is active', () => {
+      // Regression: node-editing a path inside a group is entered implicitly
+      // via double-click drill-in. Without releasing currentGroup here, it
+      // stays stale after exiting pathedit - group siblings remain
+      // dimmed/pointer-events:none, and the next new shape drawn silently
+      // lands inside the stale group instead of the current layer.
+      const group = document.createElementNS(NS.SVG, 'g')
+      svgCanvas.getCurrentGroup = vi.fn(() => group)
+
+      pathActionsMethod.toEditMode(pathElement)
+      pathActionsMethod.toSelectMode(pathElement)
+
+      expect(svgCanvas.leaveContext).toHaveBeenCalled()
+    })
+
+    it('should not touch group context when none is active', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      pathActionsMethod.toSelectMode(pathElement)
+
+      expect(svgCanvas.leaveContext).not.toHaveBeenCalled()
     })
   })
 

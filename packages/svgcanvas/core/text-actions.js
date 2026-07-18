@@ -447,6 +447,19 @@ class TextActions {
     // Use setCurrentMode (not setMode) to avoid re-entering textActions.clear().
     const relock = svgCanvas.getToolLocked() && svgCanvas.getTextFreshCreate()
     svgCanvas.setCurrentMode(relock ? 'text' : 'select')
+
+    // Text-editing a text element inside a group is entered implicitly (the
+    // double-click that reaches the text also drills into the group), and
+    // this fork hides the layer/group breadcrumb, so the user has no
+    // indication they're still "inside" that group once done editing. Left
+    // alone, currentGroup (and the siblings dimmed/disabled by setContext())
+    // stays stuck that way, and the next new shape drawn silently lands
+    // inside that stale group instead of the current layer. Mirrors the
+    // identical fix in path-actions.js's toSelectMode().
+    if (!relock && svgCanvas.getCurrentGroup()) {
+      svgCanvas.leaveContext()
+    }
+
     clearInterval(this.#blinker)
     this.#blinker = null
     if (this.#selblock) {

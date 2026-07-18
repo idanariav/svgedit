@@ -901,6 +901,19 @@ class PathActions {
     this.#currentPath = false
     svgCanvas.clearSelection()
 
+    // Node-editing a path inside a group is entered implicitly (the initial
+    // double-click drills into the group so the path becomes clickable at
+    // all) and this fork hides the layer/group breadcrumb, so the user has no
+    // indication they're still "inside" that group once they're done editing
+    // nodes. Left alone, `currentGroup` (and the siblings dimmed/disabled by
+    // setContext()) stays stuck that way until some unrelated action happens
+    // to call leaveContext() — meanwhile any new shape drawn next silently
+    // lands inside that stale group instead of the current layer. Release it
+    // here, the same way clicking outside the group normally would.
+    if (svgCanvas.getCurrentGroup()) {
+      svgCanvas.leaveContext()
+    }
+
     if (path.matrix) {
       // Rotated, so may need to re-calculate the center
       svgCanvas.recalcRotatedPath()

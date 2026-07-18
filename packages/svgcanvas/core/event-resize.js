@@ -86,12 +86,18 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   const down = (evt, ctx) => {
-    const { x, y, zoom, selectedElements, svgRoot, mouseTarget } = ctx
+    const { x, y, zoom, selectedElements, mouseTarget } = ctx
     const tlist = getTransformList(mouseTarget)
     if (!tlist) { return }
     svgCanvas.setStarted(true)
     svgCanvas.setStartX(x)
     svgCanvas.setStartY(y)
+    // The dummy translate/scale/translate transforms are only needed once a
+    // drag actually starts (see the guard in move() below) — inserting them
+    // here unconditionally left them permanently stuck on the element (as 3
+    // stray identity matrices) whenever a grip was clicked but not dragged,
+    // since mouseUp only consolidates/removes them after real movement.
+    svgCanvas.hasResizeStartTransform = false
 
     // multi-selection: record per-element start matrices and the union bbox,
     // then let mouseMove apply a single uniform group-scale matrix to each.
@@ -115,20 +121,6 @@ export const init = (canvas) => {
       bb[key] = val / zoom
     }
     svgCanvas.setInitBbox(bb)
-
-    // append three dummy transforms to the tlist so that
-    // we can translate,scale,translate in mousemove
-    const pos = getRotationAngle(mouseTarget) ? 1 : 0
-
-    if (hasMatrixTransform(tlist)) {
-      tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-      tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-      tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
-    } else {
-      tlist.appendItem(svgRoot.createSVGTransform())
-      tlist.appendItem(svgRoot.createSVGTransform())
-      tlist.appendItem(svgRoot.createSVGTransform())
-    }
   }
 
   const move = (evt, ctx) => {
@@ -144,6 +136,23 @@ export const init = (canvas) => {
     const tlist = getTransformList(selected)
     if (!tlist) { return }
     const hasMatrix = hasMatrixTransform(tlist)
+
+    // Insert the three dummy transforms (translate/scale/translate) on the
+    // first actual movement of the drag, not on mousedown — a click on a
+    // resize grip without any drag must leave the element untouched.
+    if (!svgCanvas.hasResizeStartTransform) {
+      const pos = getRotationAngle(selected) ? 1 : 0
+      if (hasMatrix) {
+        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
+        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
+        tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
+      } else {
+        tlist.appendItem(svgRoot.createSVGTransform())
+        tlist.appendItem(svgRoot.createSVGTransform())
+        tlist.appendItem(svgRoot.createSVGTransform())
+      }
+      svgCanvas.hasResizeStartTransform = true
+    }
     const box = hasMatrix ? svgCanvas.getInitBbox() : getBBox(selected)
     let left = box.x
     let top = box.y
