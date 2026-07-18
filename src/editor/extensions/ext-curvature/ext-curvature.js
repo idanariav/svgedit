@@ -248,6 +248,16 @@ export default {
     }
     window.addEventListener('dblclick', suppressNativeDblClick, { capture: true, signal: svgEditor.listenerAbort.signal })
 
+    // Switching to another tool mid-session must not leave the dashed
+    // preview / anchor dots behind in the layer (they'd otherwise be real
+    // content, serialized by getSvgString() and persisted by a host
+    // autosave). Mirrors the Escape-key behavior: finalize as an open path.
+    document.addEventListener('modeChange', (evt) => {
+      if (evt.detail.getMode() !== 'curvature' && isDrawing) {
+        finalize(false)
+      }
+    }, { signal: svgEditor.listenerAbort.signal })
+
     // ── Session state ──────────────────────────────────────────────────────
     /** @type {Array<{x:number, y:number, corner:boolean, end:boolean}>} */
     let points = []

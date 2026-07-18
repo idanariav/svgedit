@@ -189,9 +189,12 @@ export const init = (canvas) => {
         if (Math.abs(dx) > Math.abs(dy)) { dy = 0 } else { dx = 0 }
       }
 
-      // Enable moving selection only if mouse has been moved at least 4 px in any direction
-      // This prevents objects from being accidentally moved when (initially) selected
-      const deltaThreshold = 4
+      // Enable moving selection only if mouse has been moved at least 4 screen px in any
+      // direction. This prevents objects from being accidentally moved when (initially)
+      // selected. dx/dy are in content units, so the threshold must scale with zoom to stay
+      // a constant 4 screen px (otherwise drags feel "stuck" when zoomed in, or trigger too
+      // easily when zoomed out).
+      const deltaThreshold = 4 / zoom
       const deltaThresholdReached = Math.abs(dx) > deltaThreshold || Math.abs(dy) > deltaThreshold
       svgCanvas.moveSelectionThresholdReached = svgCanvas.moveSelectionThresholdReached || deltaThresholdReached
 

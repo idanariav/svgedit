@@ -31,6 +31,44 @@ bugs fixed in the same session. Low severity (missing selection, no data
 loss/crash), low-to-moderate effort once the "real element vs. background"
 check is designed properly.
 
+## Bug-hunt findings (2026-07-18): copy-paste / multi-instance follow-ups
+
+Findings from a targeted audit. Six of the eight original findings (curvature
+tool cleanup, path node-index sort, zoom-adjusted drag threshold, and three
+multi-instance active-editor/teardown bugs) were fixed in a follow-up session
+with regression tests in `tests/unit/`. The two below are still open — each
+was explicitly called out as needing more than a mechanical fix (a rethink of
+the flash-storage handshake, and a module-singleton-to-per-instance
+refactor), so they were left for a dedicated pass.
+
+### Cross-drawing paste: context-menu "Paste" enable state doesn't propagate in-window
+
+The internal clipboard itself is shared correctly (same-window instances read
+the same `sessionStorage` key, and keyboard paste works cross-drawing). But
+the menu-item enable state does not follow: `copySelectedElements()` enables
+`#paste` only on its own instance's menu, and other same-window instances
+only re-check via a `storage` event (`EditorStartup.js` ~line 823) — which
+never fires in the window that made the change, and reads a localStorage key
+(`Editor.enableOrDisableClipboard`) that `flashStorage()` deletes ~1ms after
+writing. Net effect: after copying in drawing A, drawing B's right-click
+Paste can stay disabled even though pasting would work. Low severity (Ctrl+V
+unaffected); fix belongs with a rethink of the flash-storage handshake for
+the same-document multi-instance case.
+
+### Hazard note: dom-utils/bbox-utils module singletons follow the *active* editor only
+
+`core/dom-utils.js` and `core/bbox-utils.js` keep module-level
+`svgCanvas`/`svgroot_` state, re-pointed to an instance only by
+`activateUtilities()` on that editor's pointerdown/focusin (or the host
+calling `editor.activate()`). Interactive use is safe, but any programmatic
+call on a **background** instance that goes through the module-level helpers
+(`getElement`, `getRefElem`, `findDefs`, module `getBBox`, …) resolves
+against the *active* instance's svgroot — wrong-document lookups. Hosts that
+drive background instances (batch save/export across panes) must call
+`instance.activate()` first. Not a bug to fix so much as a constraint to
+respect until those two modules are made per-instance like the rest
+(moderate effort; they are the last two module-singleton core files).
+
 ## From the Phase 1-11 cleanup roadmap (`.claude/plans/i-want-to-do-immutable-kettle.md`)
 
 The following were explicitly called out in that plan as "Deferred / optional

@@ -21,7 +21,7 @@ import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { Command } from '@svgedit/svgcanvas/core/history.js'
 import ConfigObj from './ConfigObj.js'
 import EditorStartup from './EditorStartup.js'
-import { setActiveEditor } from './domScope.js'
+import { clearActiveEditor } from './domScope.js'
 import LeftPanel from './panels/LeftPanel.js'
 import TopPanel from './panels/TopPanel.js'
 import BottomPanel from './panels/BottomPanel.js'
@@ -605,7 +605,8 @@ class Editor extends EditorStartup {
     // (modeChange, key handling, resize, …). Without this they leak onto
     // document/window per editor instance and keep firing on a dead editor.
     this.listenerAbort?.abort()
-    setActiveEditor(null)
+    this.svgCanvas?.destroy()
+    clearActiveEditor(this)
   }
 
   // parents() https://stackoverflow.com/a/12981248

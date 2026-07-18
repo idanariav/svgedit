@@ -343,8 +343,12 @@ class SvgCanvas extends EventTarget {
       }
     }
 
-    // Listen for changes to localStorage.
-    window.addEventListener('storage', storageChange, false)
+    // Listen for changes to localStorage. Scoped to destroyAbort so a torn-down
+    // instance (see destroy()) doesn't keep reacting to storage events, and
+    // isn't kept alive for the life of the window by window's reference to
+    // this closure.
+    this.destroyAbort = new AbortController()
+    window.addEventListener('storage', storageChange, { signal: this.destroyAbort.signal })
     // Ask other tabs for sessionStorage (this is ONLY to trigger event).
     localStorage.setItem(`${CLIPBOARD_ID}_startup`, Math.random())
 
@@ -357,6 +361,17 @@ class SvgCanvas extends EventTarget {
     // creates custom modeEvent for editor
     this.modeChangeEvent()
   } // End constructor
+
+  /**
+   * Tear down window-level listeners this instance registered (currently just
+   * the storage listener above), so a closed drawing view doesn't keep its
+   * entire SvgCanvas — and DOM subtree — reachable via a listener closure for
+   * the life of the window. Call before discarding the instance.
+   * @returns {void}
+   */
+  destroy () {
+    this.destroyAbort?.abort()
+  }
 
   getSvgOption () {
     return this.saveOptions

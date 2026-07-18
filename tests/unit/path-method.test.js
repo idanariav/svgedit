@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as pathMethodInit } from '../../packages/svgcanvas/core/path-method.js'
+import { init as pathInit } from '../../packages/svgcanvas/core/path.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
@@ -57,5 +59,39 @@ describe('path-method addPointGrip', () => {
 
     const gripAtOrigin = svgCanvas.addPointGrip(3, 0, 0)
     expect(gripAtOrigin.getAttribute('display')).toBe('inline')
+  })
+})
+
+describe('path-method Path#addPtsToSelection', () => {
+  it('keeps selected_pts in numeric order past index 9', () => {
+    // Regression guard: the default Array#sort comparator is lexicographic,
+    // so selecting indexes [2, 10] on an 11+ node path used to yield
+    // selected_pts === [10, 2] instead of [2, 10] -- every consumer that
+    // reads selected_pts[0] as "the first selected node" (getNodePoint,
+    // subpathIsClosed, moveNode, opencloseSubPath) then acted on the wrong
+    // node.
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) },
+      addPtsToSelection () {} // canvas-level UI hook, irrelevant to sort order
+    }
+    pathInit(svgCanvas)
+
+    const pathEl = createSvgElement('path')
+    // M + 11 line segments => segment indexes 0..11, so index 10 exists and
+    // sorts before index 2 under a lexicographic (string) comparator.
+    const coords = Array.from({ length: 11 }, (_, i) => `${i + 1},${i + 1}`)
+    pathEl.setAttribute('d', `M0,0 L${coords.join(' L')}`)
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.addPtsToSelection([2, 10])
+
+    expect(path.selected_pts).toEqual([2, 10])
   })
 })

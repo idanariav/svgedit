@@ -598,6 +598,7 @@ class EditorStartup {
 
     document.addEventListener('keyup', (e) => {
       if (e.target.nodeName !== 'BODY') return
+      if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       if (e.code.toLowerCase() === 'space') {
         this.svgCanvas.spaceKey = keypan = false
         this.svgCanvas.setMode(previousMode === 'ext-panning' ? 'select' : previousMode ?? 'select')

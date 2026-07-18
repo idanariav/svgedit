@@ -30,6 +30,20 @@ let activeEditor = null
 export const setActiveEditor = (editor) => { activeEditor = editor }
 
 /**
+ * Clear the active editor, but only if `editor` is the one currently active.
+ * Use this on destroy instead of `setActiveEditor(null)`: with 3+ editors
+ * mounted, unconditionally nulling out the active editor on destroy would
+ * make every remaining editor pass `isActiveEditor` (which treats `null` as
+ * "unclaimed, all editors allowed") until the next interaction — a
+ * background editor that was never focused would start handling shortcuts.
+ * @param {object} editor
+ * @returns {void}
+ */
+export const clearActiveEditor = (editor) => {
+  if (activeEditor === editor) activeEditor = null
+}
+
+/**
  * Whether the given editor should handle a document-level shortcut: true if it
  * is the active editor, or if no editor has been activated yet.
  * @param {object} editor

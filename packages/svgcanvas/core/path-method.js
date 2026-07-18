@@ -1017,7 +1017,7 @@ export const init = (canvas) => {
         this.selected_pts.push(index)
       }
     })
-    this.selected_pts.sort()
+    this.selected_pts.sort((a, b) => a - b)
     let i = this.selected_pts.length
     const grips = []
     grips.length = i
