@@ -127,6 +127,7 @@ describe('PathActions', () => {
       getGripPt: vi.fn((seg) => ({ x: seg.item.x, y: seg.item.y })),
       getContainer: vi.fn(() => svgRoot),
       getMouseTarget: vi.fn(() => pathElement),
+      getMouseTargetFromNode: vi.fn((node) => node),
       getElement: vi.fn((id) => svgRoot.querySelector(`#${id}`)),
       smoothControlPoints: vi.fn(),
       removePath_: vi.fn(),
@@ -369,6 +370,32 @@ describe('PathActions', () => {
 
       expect(svgCanvas.call).toHaveBeenCalledWith('selected', [pathElement])
       expect(svgCanvas.addToSelection).toHaveBeenCalled()
+    })
+
+    it('should select a different element when the exiting click resolves to it', () => {
+      // Regression: clicking straight onto a different path while node-editing
+      // used to drop to select mode with nothing selected, instead of
+      // selecting the clicked element like a plain select-mode click would.
+      const otherPath = document.createElementNS(NS.SVG, 'path')
+      otherPath.setAttribute('id', 'path2')
+      svgRoot.append(otherPath)
+      svgCanvas.getMouseTargetFromNode = vi.fn(() => otherPath)
+
+      pathActionsMethod.toEditMode(pathElement)
+      pathActionsMethod.toSelectMode(otherPath)
+
+      expect(svgCanvas.call).toHaveBeenCalledWith('selected', [otherPath])
+      expect(svgCanvas.addToSelection).toHaveBeenCalledWith([otherPath], true)
+    })
+
+    it('should not select anything when the exiting click resolves to the svg root (background)', () => {
+      svgCanvas.getMouseTargetFromNode = vi.fn(() => svgRoot)
+
+      pathActionsMethod.toEditMode(pathElement)
+      pathActionsMethod.toSelectMode(svgRoot)
+
+      expect(svgCanvas.call).not.toHaveBeenCalled()
+      expect(svgCanvas.addToSelection).not.toHaveBeenCalled()
     })
   })
 

@@ -888,6 +888,13 @@ class PathActions {
     */
   toSelectMode (elem) {
     const selPath = (elem === path.elem)
+    // `elem` is often the raw click target (e.g. `evt.target`), which may be
+    // a descendant node rather than the selectable element itself. Resolve it
+    // the same way a plain select-mode click would, so clicking a different
+    // real element while exiting pathedit selects that element instead of
+    // dropping to an empty selection. Returns the svgRoot for background/
+    // layer/content clicks, which we treat the same as "nothing to select".
+    const target = !selPath && svgCanvas.getMouseTargetFromNode(elem)
     svgCanvas.setCurrentMode('select')
     path.setPathContext()
     path.show(false)
@@ -902,6 +909,9 @@ class PathActions {
     if (selPath) {
       svgCanvas.call('selected', [elem])
       svgCanvas.addToSelection([elem], true)
+    } else if (target && target !== svgCanvas.getSvgRoot()) {
+      svgCanvas.call('selected', [target])
+      svgCanvas.addToSelection([target], true)
     }
   }
 
