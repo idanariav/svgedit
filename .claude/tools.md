@@ -53,6 +53,17 @@ position, surviving move/delete) after the path is done.
 - `tool_star` / `tool_polygon` — Polystar flyout (ext-polystar)
 - `tool_cutter` — Cutter/knife tool (ext-cutter) — position 11, after polystar
 - `tool_curvature` — Curvature tool (ext-curvature) — position 12, after cutter
+- `tool_eyedropper` — Eyedropper tool (ext-eyedropper) — click an element on
+  canvas to sample its **fill color** (only the fill — stroke/width/opacity are
+  not sampled), then choose an action from a small menu that appears at the
+  click point: **Set as fill color**, **Set as outline color**, **Set as
+  background color**, or **Generate matching palette** (opens `<se-palette-dialog>`,
+  an 8-color OKLCH palette — one per hue red/orange/yellow/green/cyan/blue/purple/pink
+  — optimized against the sampled color for contrast, colorfulness, and
+  cross-palette harmony; purpose dropdown reweights the optimizer for
+  icons/text/charts/illustrations/buttons/notifications; see `extensions.md`
+  and `file-map.md`'s `src/editor/palette/` entry for the algorithm). Escape
+  returns to the Select tool
 - `ext-panning` — Pan/hand tool (ext-panning) — after zoom tool
 
 ---

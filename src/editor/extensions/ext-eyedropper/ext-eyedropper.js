@@ -1,12 +1,23 @@
 /**
  * @file ext-eyedropper.js
  *
+ * Toolbar eyedropper tool: click an element on canvas to sample its fill
+ * color, then choose what to do with it from a small action menu (set as
+ * fill/outline/background, or generate a matching OKLCH palette). This is
+ * a single-shot pick-then-act flow — it does not stamp a whole style
+ * (stroke/width/dasharray/opacity) the way the tool historically did.
+ *
  * @license MIT
  *
  * @copyright 2010 Jeff Schiller
  * @copyright 2021 OptimistikSAS
  *
  */
+
+import '../../components/eyedropper/EyedropperActionMenu.js'
+import '../../components/palette/PaletteDialog.js'
+import { closestRoot } from '../../domScope.js'
+import { normalizeFillToHex } from '../../palette/oklchColor.js'
 
 const name = 'eyedropper'
 
@@ -26,73 +37,48 @@ export default {
     const svgEditor = this
     const { svgCanvas } = svgEditor
     await loadExtensionTranslation(svgEditor)
-    const { ChangeElementCommand } = svgCanvas.history
-    // svgdoc = S.svgroot.parentNode.ownerDocument,
-    const addToHistory = (cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
-    const currentStyle = {}
     const { $id, $click } = svgCanvas
 
-    // Helper to show what style is currectly picked
-    const helperCursor = document.createElement('div')
-    helperCursor.style.width = '14px'
-    helperCursor.style.height = '14px'
-    helperCursor.style.position = 'absolute'
-    svgEditor.workarea.appendChild(helperCursor)
-
-    const styleHelper = () => {
-      const mode = svgCanvas.getMode()
-
-      if (mode === name) {
-        helperCursor.style.display = 'block'
-
-        const strokeWidthNum = Number(currentStyle.strokeWidth)
-        const borderStyle = currentStyle.strokeDashArray === 'none' || !currentStyle.strokeDashArray ? 'solid' : 'dotted'
-
-        helperCursor.style.background = currentStyle.fillPaint ?? 'transparent'
-        helperCursor.style.opacity = currentStyle.opacity ?? 1
-        helperCursor.style.border = (strokeWidthNum > 0 && currentStyle.strokePaint) ? `2px ${borderStyle} ${currentStyle.strokePaint}` : 'none'
-      }
-    }
-
-    const resetCurrentStyle = () => {
-      const keys = Object.keys(currentStyle)
-
-      keys.forEach(key => delete currentStyle[key])
-    }
-
-    const cancelHandler = () => {
-      if (Object.keys(currentStyle).length > 0) {
-        resetCurrentStyle()
-        styleHelper()
-      } else {
-        svgEditor.leftPanel.clickSelect()
-      }
-    }
-
     /**
-     *
-     * @param {module:svgcanvas.SvgCanvas#event:ext_selectedChanged|module:svgcanvas.SvgCanvas#event:ext_elementChanged} opts
+     * Open the action menu at the click point, sampling the target's fill.
+     * @param {MouseEvent} e
+     * @param {Element} target
      * @returns {void}
      */
-    const getStyle = (opts) => {
-      let elem = null
-      if (!opts.multiselected && opts.elems[0] &&
-        !['svg', 'g', 'use'].includes(opts.elems[0].nodeName)
-      ) {
-        elem = opts.elems[0]
-        // grab the current style
-        currentStyle.fillPaint = elem.getAttribute('fill') || 'black'
-        currentStyle.fillOpacity = elem.getAttribute('fill-opacity') || 1.0
-        currentStyle.strokePaint = elem.getAttribute('stroke')
-        currentStyle.strokeOpacity = elem.getAttribute('stroke-opacity') || 1.0
-        // A missing stroke-width means the SVG initial value of 1, not null —
-        // cleanupElement strips the attribute at that value.
-        currentStyle.strokeWidth = elem.getAttribute('stroke-width') ?? 1
-        currentStyle.strokeDashArray = elem.getAttribute('stroke-dasharray')
-        currentStyle.strokeLinecap = elem.getAttribute('stroke-linecap')
-        currentStyle.strokeLinejoin = elem.getAttribute('stroke-linejoin')
-        currentStyle.opacity = elem.getAttribute('opacity') || 1.0
-      }
+    const openActionMenu = (e, target) => {
+      const hex = normalizeFillToHex(target.getAttribute('fill'))
+      const root = closestRoot(svgEditor.workarea)
+      const host = root.body ?? root
+
+      host.querySelector('se-eyedropper-menu')?.remove()
+      const menu = document.createElement('se-eyedropper-menu')
+      menu.i18next = svgEditor.i18next
+      host.appendChild(menu)
+
+      const backToSelect = () => svgEditor.leftPanel.clickSelect()
+
+      menu.open(e.clientX, e.clientY, {
+        onFill: () => {
+          backToSelect()
+          svgCanvas.setColor('fill', hex)
+        },
+        onStroke: () => {
+          backToSelect()
+          svgCanvas.setColor('stroke', hex)
+        },
+        onBackground: () => {
+          backToSelect()
+          svgEditor.setBackground(hex, '', undefined, true)
+        },
+        onPalette: () => {
+          backToSelect()
+          host.querySelector('se-palette-dialog')?.remove()
+          const dialog = document.createElement('se-palette-dialog')
+          dialog.i18next = svgEditor.i18next
+          dialog.backgroundHex = hex
+          host.appendChild(dialog)
+        }
+      })
     }
 
     return {
@@ -100,7 +86,6 @@ export default {
       callback () {
         // Add the button and its handler(s)
         const title = `${name}:buttons.0.title`
-        // const key = `${name}:buttons.0.key`
         const key = 'ctrl+I'
         const buttonTemplate = `
         <se-button id="tool_eyedropper" title="${title}" src="eye_dropper.svg" shortcut=${key}></se-button>
@@ -112,79 +97,19 @@ export default {
           }
         })
 
-        // enables helper, resets currently picked style if no element selected
-        document.addEventListener('modeChange', e => {
-          if (svgCanvas.getMode() === name) {
-            styleHelper()
-          } else {
-            helperCursor.style.display = 'none'
-          }
-          if (svgCanvas.getSelectedElements().length === 0) {
-            resetCurrentStyle()
-          }
-        }, { signal: svgEditor.listenerAbort.signal })
-
-        // Positions helper
-        svgEditor.workarea.addEventListener('mousemove', (e) => {
-          const x = e.clientX
-          const y = e.clientY
-
-          if (svgCanvas.getMode() === name) {
-            helperCursor.style.top = y + 'px'
-            helperCursor.style.left = x + 12 + 'px'
-            styleHelper()
-          }
-        })
-
-        svgEditor.workarea.addEventListener('mouseleave', e => {
-          helperCursor.style.display = 'none'
-        })
-
-        // Listens to Esc to reset currently picked style / set Select mode
-        document.addEventListener('keydown', e => {
+        // Escape while the tool is active (and no menu is capturing it)
+        // returns to the Select tool.
+        document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape' && svgCanvas.getMode() === name) {
-            cancelHandler()
+            svgEditor.leftPanel.clickSelect()
           }
         }, { signal: svgEditor.listenerAbort.signal })
       },
-      // if we have selected an element, grab its paint and enable the eye dropper button
-      selectedChanged: getStyle,
       mouseDown (opts) {
-        const mode = svgCanvas.getMode()
-        if (mode === name) {
-          const e = opts.event
-          const { target } = e
-          if (!['svg', 'g', 'use'].includes(target.nodeName)) {
-            const changes = {}
-
-            // If some style is picked - applies it to the target, if no style - picks it from the target
-            if (Object.keys(currentStyle).length > 0) {
-              const change = function (elem, attrname, newvalue) {
-                changes[attrname] = elem.getAttribute(attrname)
-                elem.setAttribute(attrname, newvalue)
-              }
-
-              if (currentStyle.fillPaint) { change(target, 'fill', currentStyle.fillPaint) }
-              if (currentStyle.fillOpacity) { change(target, 'fill-opacity', currentStyle.fillOpacity) }
-              if (currentStyle.strokePaint) { change(target, 'stroke', currentStyle.strokePaint) }
-              if (currentStyle.strokeOpacity) { change(target, 'stroke-opacity', currentStyle.strokeOpacity) }
-              if (currentStyle.strokeWidth) { change(target, 'stroke-width', currentStyle.strokeWidth) }
-              if (currentStyle.opacity) { change(target, 'opacity', currentStyle.opacity) }
-              if (currentStyle.strokeLinecap) { change(target, 'stroke-linecap', currentStyle.strokeLinecap) }
-              if (currentStyle.strokeLinejoin) { change(target, 'stroke-linejoin', currentStyle.strokeLinejoin) }
-
-              if (currentStyle.strokeDashArray) {
-                change(target, 'stroke-dasharray', currentStyle.strokeDashArray)
-              } else {
-                target.removeAttribute('stroke-dasharray')
-              }
-
-              addToHistory(new ChangeElementCommand(target, changes))
-            } else {
-              getStyle({ elems: [target] })
-            }
-          }
-        }
+        if (svgCanvas.getMode() !== name) return
+        const { target } = opts.event
+        if (['svg', 'g', 'use'].includes(target.nodeName)) return
+        openActionMenu(opts.event, target)
       }
     }
   }
