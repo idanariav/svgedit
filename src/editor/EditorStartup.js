@@ -89,6 +89,13 @@ class EditorStartup {
     // Mark this container so web components / dialogs nested under it can resolve
     // their owning editor via closestRoot() (see domScope.js).
     this.$container.setAttribute('data-svgedit-root', '')
+    // Make the container itself focusable (script-only, not tab-reachable) so
+    // `activate()` below can move real DOM focus into it. Canvas clicks (e.g.
+    // on an SVG shape) don't focus anything on their own, so without this,
+    // `document.activeElement` would stay wherever it was — leaving
+    // isActiveEditor()'s live-focus check (domScope.js) with nothing to go on
+    // for the most common interaction. Respect a tabindex the host already set.
+    if (!this.$container.hasAttribute('tabindex')) this.$container.setAttribute('tabindex', '-1')
     // Become the "active" editor on any interaction, so document-level keyboard
     // shortcut / paste handlers (registered by every mounted editor) only fire
     // for the focused one (see domScope.js, Editor.setKeyHandlers, pasteHandler).
@@ -104,6 +111,12 @@ class EditorStartup {
       setActiveEditor(this)
       window.svgEditor = this
       this.svgCanvas?.activateUtilities?.()
+      // Move live focus into this container so isActiveEditor()'s live-focus
+      // check (domScope.js) can identify this editor even when the click
+      // landed on a non-focusable canvas child. A focusin caused by clicking
+      // an actual focusable descendant (an input, a dialog control) will
+      // immediately supersede this — both resolve to the same container.
+      this.$container.focus?.({ preventScroll: true })
     }
     this.$container.addEventListener('pointerdown', activate, true)
     this.$container.addEventListener('focusin', activate, true)

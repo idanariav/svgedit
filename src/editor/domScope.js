@@ -19,6 +19,10 @@ export const closestRoot = (el) => el?.closest?.('[data-svgedit-root]') ?? docum
  * document-level keyboard shortcut / paste handlers — which every mounted
  * editor registers — only fire for the focused editor. Until any editor is
  * interacted with, no editor is active and all are allowed (single-editor case).
+ *
+ * This is a fallback signal only — see `isActiveEditor()` below, which prefers
+ * live DOM focus when it's available and only consults this cached pointer
+ * when nothing is currently focused inside any editor.
  */
 let activeEditor = null
 
@@ -46,7 +50,24 @@ export const clearActiveEditor = (editor) => {
 /**
  * Whether the given editor should handle a document-level shortcut: true if it
  * is the active editor, or if no editor has been activated yet.
+ *
+ * Live focus is checked first: if `document.activeElement` currently sits
+ * inside some editor's container, that's authoritative and the answer is
+ * decided right there, regardless of `activeEditor`. The cached pointer above
+ * is only set on pointerdown/focusin *within* a container (see EditorStartup's
+ * `activate()`), so it can go stale — e.g. a host that moves focus into a
+ * different editor by other means (switching panes/leaves without a click
+ * landing inside the target container, a background instance that was never
+ * torn down cleanly and squats the pointer) would otherwise leave document
+ * shortcuts/paste targeting the wrong instance until the intended editor's
+ * container is clicked/focused again. `activeEditor` is only consulted when
+ * nothing is focused inside *any* editor (e.g. focus sits on `document.body`,
+ * the common case right after a plain click on the canvas).
  * @param {object} editor
  * @returns {boolean}
  */
-export const isActiveEditor = (editor) => activeEditor === null || activeEditor === editor
+export const isActiveEditor = (editor) => {
+  const focusedRoot = closestRoot(document.activeElement)
+  if (focusedRoot !== document) return focusedRoot === editor?.$container
+  return activeEditor === null || activeEditor === editor
+}

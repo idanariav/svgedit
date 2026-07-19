@@ -43,4 +43,50 @@ describe('domScope active-editor tracking', () => {
     expect(isActiveEditor(editorB)).toBe(true) // ...correctly reopens "no one is active"
     expect(isActiveEditor(editorC)).toBe(true)
   })
+
+  describe('live focus overrides a stale activeEditor pointer', () => {
+    let containerA
+    let containerB
+
+    afterEach(() => {
+      containerA?.remove()
+      containerB?.remove()
+    })
+
+    const makeContainer = () => {
+      const el = document.createElement('div')
+      el.setAttribute('data-svgedit-root', '')
+      el.setAttribute('tabindex', '-1')
+      document.body.appendChild(el)
+      return el
+    }
+
+    it('an editor whose container holds live focus is active even if a stale pointer names someone else', () => {
+      containerA = makeContainer()
+      containerB = makeContainer()
+      const editorA = { $container: containerA }
+      const editorB = { $container: containerB }
+
+      // Regression guard: a background/leaked editor (or a host that moved
+      // focus without a pointerdown/focusin landing in containerB) squats the
+      // cached pointer on editorA, while the user is actually interacting
+      // with editorB right now.
+      setActiveEditor(editorA)
+      containerB.focus()
+
+      expect(isActiveEditor(editorB)).toBe(true)
+      expect(isActiveEditor(editorA)).toBe(false)
+    })
+
+    it('falls back to the cached pointer when nothing inside any editor has focus', () => {
+      containerA = makeContainer()
+      const editorA = { $container: containerA }
+      const editorB = { $container: makeContainer() }
+      setActiveEditor(editorA)
+      document.body.focus?.()
+
+      expect(isActiveEditor(editorA)).toBe(true)
+      expect(isActiveEditor(editorB)).toBe(false)
+    })
+  })
 })

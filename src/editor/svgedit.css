@@ -283,6 +283,14 @@
   height: 100%;
 }
 
+/* The editor root container is made programmatically focusable (see
+   EditorStartup.js `activate()`) purely so document.activeElement can be used
+   to identify which mounted editor last had focus — it's not a keyboard-nav
+   stop, so it shouldn't show a focus ring. */
+[data-svgedit-root]:focus {
+  outline: none;
+}
+
 /* ── Filename pill ────────────────────────────────────────────────── */
 #title_panel>p {
   display: inline-flex;
