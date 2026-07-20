@@ -113,13 +113,21 @@ class EditorStartup {
       this.svgCanvas?.activateUtilities?.()
       // Move live focus into this container so isActiveEditor()'s live-focus
       // check (domScope.js) can identify this editor even when the click
-      // landed on a non-focusable canvas child. A focusin caused by clicking
-      // an actual focusable descendant (an input, a dialog control) will
-      // immediately supersede this — both resolve to the same container.
+      // landed on a non-focusable canvas child (e.g. an SVG shape).
       this.$container.focus?.({ preventScroll: true })
     }
     this.$container.addEventListener('pointerdown', activate, true)
-    this.$container.addEventListener('focusin', activate, true)
+    // Only track — do NOT call container.focus() here. focusin fires *after*
+    // a descendant (an input, a dialog control) already has real focus; the
+    // live-focus check already resolves that back to this container, so
+    // re-focusing the container would immediately steal focus away from the
+    // element the user just clicked into, making it impossible to type or
+    // double-click-select text in any field.
+    this.$container.addEventListener('focusin', () => {
+      setActiveEditor(this)
+      window.svgEditor = this
+      this.svgCanvas?.activateUtilities?.()
+    }, true)
     // Exposed so a host that mounts several editors outside a single browser
     // tab (e.g. one editor per pane in a multi-pane app) can mark this editor
     // active on its own pane-focus event, without waiting for a pointerdown/
