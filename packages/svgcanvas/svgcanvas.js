@@ -930,8 +930,24 @@ class SvgCanvas extends EventTarget {
    * @returns {void}
    */
   setMode (name) {
-    this.pathActions.clear(true)
-    this.textActions.clear()
+    // Tear down any in-progress path/text edit before switching. These run
+    // FIRST because clear() inspects the *current* (outgoing) mode to know what
+    // to clean up. But a throw in here must never block the mode change below:
+    // every toolbar tool routes through setMode(), so an exception in path/text
+    // teardown would leave currentMode stuck on the old tool and make the whole
+    // toolbar appear frozen (only a reload recovers) — the exact lockup users
+    // hit when a path-edit session held a malformed/degenerate path. Isolate
+    // each teardown so a failure is logged but the tool still switches.
+    try {
+      this.pathActions.clear(true)
+    } catch (e) {
+      console.warn('svgedit: pathActions.clear() failed during setMode; continuing', e)
+    }
+    try {
+      this.textActions.clear()
+    } catch (e) {
+      console.warn('svgedit: textActions.clear() failed during setMode; continuing', e)
+    }
     this.curProperties =
       this.selectedElements[0]?.nodeName === 'text'
         ? this.curText

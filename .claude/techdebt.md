@@ -36,6 +36,38 @@ drive background instances (batch save/export across panes) must call
 respect until those two modules are made per-instance like the rest
 (moderate effort; they are the last two module-singleton core files).
 
+## Bug-hunt findings (2026-07-21): path-tool freeze sweep
+
+Swept the path/pathedit tool for the reported "path tool enters node-editing of
+a different path and freezes the UI" edge cases. Two root issues were fixed with
+regression tests (`tests/unit/path-degenerate.test.js`):
+
+- `Path#show(true)` dereferenced `this.first_seg.index` on a degenerate
+  single-point sub-path (`M x,y` / `M x,y Z`, `first_seg` never assigned by
+  `init()`), throwing mid mode-transition. Called from `toEditMode()`, the
+  undo/redo handler (`undo.js`), and `addSubPath`. Now null-guarded.
+- `setMode()` ran `pathActions.clear()` / `textActions.clear()` **before**
+  committing `currentMode`, so any throw in path/text teardown left the mode
+  stuck and every subsequent toolbar click re-threw — the "can't select any
+  other tool, only a reload fixes it" freeze. Each teardown is now isolated so a
+  failure is logged but the tool still switches.
+
+Still open (documented, not fixed — needs its own semantic pass):
+
+### `opencloseSubPath()` corrupts `d` when re-closing an already-closed sub-path
+
+Calling open/close-subpath (the node-panel toggle) with the first node after a
+sub-path's `M` selected on an **already-closed** sub-path appends a redundant
+`L x,y Z` each time (e.g. `M100,100 L200,100 L150,180 Z` →
+`… Z L100,100 Z`, and repeated presses keep stacking `L100,100 Z`). The result
+is a dangling sub-path segment after a `Z` with no intervening `M`. It renders
+mostly harmlessly and no longer crashes node-editing (the `show()` fix above),
+but the open/closed detection in `opencloseSubPath` mis-classifies the first
+post-`M` node of a closed loop. Fixing it correctly means reworking that
+detection (moderate risk; the function's index bookkeeping is intricate), so it
+was left out of the freeze fix. Reproduce: select node index 1 of a closed
+triangle in pathedit, press the open/close-subpath control repeatedly.
+
 ## From the Phase 1-11 cleanup roadmap (`.claude/plans/i-want-to-do-immutable-kettle.md`)
 
 The following were explicitly called out in that plan as "Deferred / optional

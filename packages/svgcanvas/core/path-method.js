@@ -832,7 +832,16 @@ export const init = (canvas) => {
       // 'this' is the segment here
       this.show(y)
     })
-    if (y) {
+    // `first_seg` is only assigned by init() for sub-paths that have at least
+    // one drawable point after their `M`. A degenerate path (`M x,y`, `M x,y Z`
+    // — a single point, e.g. from an imported/pasted SVG, or a node-delete/undo
+    // that reduced a sub-path to its move) leaves it null, and dereferencing
+    // `.index` here threw. That throw propagated out of whatever called
+    // show(true) — toEditMode(), the undo/redo handler, addSubPath — mid mode
+    // transition, wedging the editor (mode stuck, tool switches then failing
+    // because setMode()'s teardown re-threw). Nothing is selectable on a
+    // degenerate path, so simply skip the auto-select.
+    if (y && this.first_seg) {
       this.selectPt(this.first_seg.index)
     }
     return this
