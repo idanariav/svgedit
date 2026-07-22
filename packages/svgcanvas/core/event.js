@@ -701,8 +701,20 @@ const mouseDownEvent = (evt) => {
 
   // if it is a selector grip, then it must be a single element selected,
   // set the mouseTarget to that and update the mode to rotate/resize
-
-  if (mouseTarget === svgCanvas.selectorManager.selectorParentGroup && selectedElements[0]) {
+  // Scoped to 'select' mode (matching the sibling checks above): outside
+  // select, `selectedElements[0]` is stale leftover selection from before a
+  // drawing tool was chosen (switching to a creation tool like path/rect
+  // doesn't clear selection). Its grips can still be visually/DOM-present and
+  // sitting under the cursor while a new shape is being drawn; without this
+  // guard, a click that lands on one of them hijacks mode into 'resize'/
+  // 'rotate' mid-draw, and the following mouseup — now routed through the
+  // select-mode epilogue — calls pathActions.select() on that stale element,
+  // silently dropping the user into node-edit mode on a completely different
+  // (often previous-layer) path instead of the one just drawn.
+  if (
+    svgCanvas.getCurrentMode() === 'select' &&
+    mouseTarget === svgCanvas.selectorManager.selectorParentGroup && selectedElements[0]
+  ) {
     const grip = evt.target
     const griptype = dataStorage.get(grip, 'type')
     // rotating

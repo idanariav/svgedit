@@ -171,6 +171,48 @@ describe('event', () => {
     expect(rubberBox.getAttribute('y')).toBe('20')
   })
 
+  it('mouseDownEvent() ignores stale selection grips outside select mode', () => {
+    // Regression guard: switching to a creation tool (e.g. the pen tool) never
+    // clears the previous selection, so a previously-selected element's
+    // resize/rotate grips can still be sitting in selectorParentGroup while a
+    // brand-new shape is being drawn elsewhere on the canvas. Without gating
+    // this on select mode (matching the sibling checks earlier in the same
+    // function), a click that happens to land on one of those stale grips
+    // silently flips currentMode to 'resize'/'rotate' mid-draw; the following
+    // mouseup then routes through the select-mode epilogue against the
+    // *stale* selectedElements[0] instead of the shape actually being drawn
+    // — e.g. finishing a new path ends up node-editing an unrelated path left
+    // selected on a previous layer.
+    const staleElement = createSvgElement('path')
+    contentGroup.append(staleElement)
+
+    Object.defineProperty(canvas.selectorManager.selectorParentGroup, 'transform', {
+      value: { baseVal: { numberOfItems: 0 } },
+      configurable: true
+    })
+    const gripEl = createSvgElement('circle')
+    canvas.selectorManager.selectorParentGroup.append(gripEl)
+
+    canvas.getMouseTarget = () => canvas.selectorManager.selectorParentGroup
+    canvas.getSelectedElements = () => [staleElement]
+    canvas.getDataStorage = () => ({ get: () => 'resize' })
+    canvas.pathActions.mouseDown = () => {}
+
+    canvas.setCurrentMode('path')
+
+    canvas.mouseDownEvent({
+      clientX: 10,
+      clientY: 10,
+      button: 0,
+      altKey: false,
+      shiftKey: false,
+      preventDefault () {},
+      target: gripEl
+    })
+
+    expect(canvas.getCurrentMode()).toBe('path')
+  })
+
   it('mouseOutEvent() dispatches mouseup with coordinates', () => {
     canvas.setCurrentMode('rect')
     canvas.setStarted(true)
