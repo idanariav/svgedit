@@ -199,4 +199,8 @@ export const init = (canvas) => {
   svgCanvas.previewSmoothPath = previewSmoothPath
   svgCanvas.commitSmoothPath = commitSmoothPath
   svgCanvas.cancelSmoothPath = cancelSmoothPath
+  // Reusable one-shot refit for any tool holding a raw `d` (e.g. puppet-warp's
+  // dense warped polylines): flatten curves to samples, then fit optimal cubic
+  // béziers. Returns absolute path data, or null when nothing usable.
+  svgCanvas.simplifyPathD = smoothPathD
 }

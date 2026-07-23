@@ -83,4 +83,12 @@ describe('previewSmoothPath / commitSmoothPath / cancelSmoothPath', () => {
     canvas.commitSmoothPath()
     expect(canvas.undoMgr.beginUndoableChange).not.toHaveBeenCalled()
   })
+
+  it('exposes simplifyPathD (the reusable one-shot refit used by ext-puppet-warp)', () => {
+    // Like smoothPathD it is unguarded — callers wrap it in try/catch (the paper
+    // stub can't fit curves under jsdom; real output is verified in-browser).
+    const canvas = makeCanvas(makePath('M0,0 L10,1 L20,0'))
+    pathSimplifyInit(canvas)
+    expect(typeof canvas.simplifyPathD).toBe('function')
+  })
 })

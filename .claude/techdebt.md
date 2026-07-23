@@ -11,6 +11,68 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## Puppet Warp follow-ups (2026-07-23)
+
+From the initial `ext-puppet-warp` build. Each was explicitly scoped out with
+the user; each is an additive enhancement, not a fix. (The bézier-refit item is
+now done — on commit the dense warp polyline is refit to cubic béziers via
+`svgCanvas.simplifyPathD`, so it's no longer listed here.)
+
+- **No persistent / re-editable rig.** By decision, the tool is session-only:
+  the shape's geometry at tool-entry is the rest pose, pins live only for that
+  session, and the pose bakes on exit. There's no canonical rest pose to snap
+  back to and pins don't survive save/reload. A true reusable puppet would store
+  pins + original rest geometry as `se:`-prefixed metadata (precedent:
+  `core/corner-radius.js`'s `se:orig-d`) and re-hydrate on re-entry, with
+  `remapElement` hooks to keep the source geometry synced through baked
+  transforms. Significant effort (metadata schema, save/load, remap plumbing) —
+  deferred until the session-only tool proves useful.
+
+- **Pins are fixed content-space anchors, not mesh-attached.** A pin left as an
+  anchor stays at its content coordinate; after a big warp it can visually
+  detach from the limb it was placed on. Illustrator attaches pins to the mesh
+  so they ride the deformation. Attaching a pin to a path parameter (nearest
+  sample + offset) would fix this but only matters once multi-drag sessions /
+  persistent rigs exist. Minor UX item.
+
+### Deferred code-review findings (2026-07-23 review pass)
+
+A review agent flagged these; the correctness items (own-transform space bug,
+atomic/cancelable conversion, singular-matrix guard, no-op undo, themed pins)
+were **fixed**. These remain as lower-priority follow-ups:
+
+- **Overlay pins live inside `#svgcontent` (serialization risk).** `addPinDot`
+  appends `<circle>`s to the current layer. They're removed on every exit path,
+  so a normal session is clean — but if a host autosave / `getSvgString()` fires
+  *mid-session* the pins get serialized into the saved doc. `ext-curvature` has
+  the same accepted risk; the proper fix (used by smart-guides / shape-builder)
+  is an overlay `<svg>`/`<g>` in `#svgroot` (outside content) synced to the
+  content transform on move + `zoomChanged`. Moderate effort. Low likelihood.
+
+- **Extension logic has no vitest coverage (only `mls.js` does).** The
+  coordinate mapping, `startSession` target resolution, and commit/cancel undo
+  behavior are covered by the Playwright e2e scripts (not part of `vitest run`)
+  rather than unit tests, because meaningful coverage needs heavy `svgCanvas` /
+  paper.js / DOM mocking. If unit coverage is wanted, extract the pure helpers
+  (`buildD`, the warp-mapping loop) and test those against a stub matrix.
+
+- **Group-context coordinate mismatch (niche).** If the user has drilled *into*
+  a group (`isCreateInCurrentGroup`), `mouseDown` receives group-local
+  `start_x/start_y` while `mouseMove` receives raw content `mouse_x/zoom`, so
+  pin placement and dragging use different frames (`hitTestPin` would mis-hit).
+  Normalize both to content space to fix. Rare path.
+
+- **Scale-dependent magic constants.** `REFIT_TOLERANCE = 2` and the `len / 6`
+  sample step are absolute user units; on a tiny icon the refit can over-smooth,
+  on a huge path the 400-sample cap can undersample. Derive both from the
+  target's bbox diagonal for scale-independence. Low priority.
+
+- **Text / image / use in a warped group are left stationary.** `WARPABLE`
+  excludes them, so a mixed group deforms only its shapes. Defensible v1 scope;
+  worth surfacing in the tooltip/docs if it confuses users.
+
+---
+
 ## Bug-hunt findings (2026-07-18): copy-paste / multi-instance follow-ups
 
 Findings from a targeted audit. Seven of the eight original findings

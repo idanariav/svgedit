@@ -1352,6 +1352,7 @@ class EditorStartup {
       case 'zoom':
       case 'shapelib':
       case 'repeat-pick-center':
+      case 'puppetwarp':
         cs = 'crosshair'
         break
       case 'circle':

@@ -233,6 +233,7 @@ export default class ConfigObj {
       'ext-polystar',
       'ext-cutter',
       'ext-curvature',
+      'ext-puppet-warp',
       'ext-opensave',
       'ext-layer_view',
       'ext-theme-toggle',
