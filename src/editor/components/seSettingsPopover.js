@@ -5,7 +5,7 @@ import { fetchSvgEl } from './svgIconLoader.js'
  * @class SeSettingsPopover
  * Base class for the toolbar-button-plus-popover settings components
  * (se-grid-settings, se-repeat-settings, se-motion-settings,
- * se-offset-settings, se-taper-settings, se-guides-settings,
+ * se-offset-settings, se-taper-settings,
  * se-canvas-settings, se-smooth-path-settings). Provides the shared
  * shadow-DOM wiring, icon loading, open/close/toggle lifecycle,
  * viewport-aware positioning, and light-dismiss (outside click / Escape)
@@ -78,7 +78,7 @@ export class SeSettingsPopover extends HTMLElement {
    * the constructor has already run — reading `getAttribute('src')` there
    * missed it entirely, leaving the trigger button iconless. Observing the
    * attribute catches both that case and the markup-attribute case (e.g.
-   * ext-grid, ext-guides), where this fires once right after construction.
+   * ext-grid), where this fires once right after construction.
    * @param {string} name
    * @param {string|null} oldValue
    * @param {string|null} newValue

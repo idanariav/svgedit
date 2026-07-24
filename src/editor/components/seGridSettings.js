@@ -8,7 +8,10 @@ const SHAPES = [
   { value: 'isometric', label: 'Isometric' },
   { value: 'triangle', label: 'Triangle' },
   { value: 'perspective1', label: '1-point perspective' },
-  { value: 'perspective2', label: '2-point perspective' }
+  { value: 'perspective2', label: '2-point perspective' },
+  { value: 'thirds', label: 'Thirds' },
+  { value: 'golden', label: 'Golden ratio' },
+  { value: 'center', label: 'Center cross' }
 ]
 
 const TEMPLATE_HTML = `

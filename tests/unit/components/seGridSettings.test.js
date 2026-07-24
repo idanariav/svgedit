@@ -44,7 +44,7 @@ describe('se-grid-settings', () => {
     installGridMock()
     const el = mountElement('se-grid-settings')
     const values = Array.from(el.$shape.options).map(o => o.value)
-    expect(values).toEqual(['square', 'isometric', 'triangle', 'perspective1', 'perspective2'])
+    expect(values).toEqual(['square', 'isometric', 'triangle', 'perspective1', 'perspective2', 'thirds', 'golden', 'center'])
   })
 
   it('syncs fields from curConfig on connect', () => {

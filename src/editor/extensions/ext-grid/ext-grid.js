@@ -142,6 +142,14 @@ export default {
         for (let y = 0; y <= h; y += d) { pts.push([0, y], [w, y]) }
         return pts
       }
+      // A vertical + horizontal line at each fractional position (composition
+      // guide shapes: thirds/golden/center).
+      const fractionalCross = (fractions) => {
+        for (const f of fractions) {
+          lines.push([w * f, 0, w * f, h])
+          lines.push([0, h * f, w, h * f])
+        }
+      }
       switch (shape) {
         case 'isometric':
           parallel(30)
@@ -170,6 +178,15 @@ export default {
           })
           break
         }
+        case 'thirds':
+          fractionalCross([1 / 3, 2 / 3])
+          break
+        case 'golden':
+          fractionalCross([0.382, 0.618])
+          break
+        case 'center':
+          fractionalCross([0.5])
+          break
       }
       return lines
     }

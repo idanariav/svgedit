@@ -73,7 +73,6 @@ svgedit/
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
 │   │   ├── ext-mirror/            # Mirror drawing mode + live linked symmetry
-│   │   ├── ext-guides/            # Draggable ruler guides + composition overlays
 │   │   ├── ext-motion-lines/      # Parametric motion-line (speed-line) generator
 │   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
 │   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
