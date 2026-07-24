@@ -23,7 +23,9 @@
 | `classLibrary.js` | Global class/style-preset store (localStorage `svg-edit-class-library`): `getClasses`/`getClassesForScope`/`getClass`/`saveClass`/`deleteClass`, `elementScope`, `attrCatalog`. Backs `<se-class-select>` |
 | `customBrushes.js` | 5 saved custom-brush slots (localStorage `svg-edit-custom-brushes`, sparse `{0..4: params}` map like `sePalette.js`'s overrides): `loadBrushSlots`/`getBrushSlot`/`saveBrushSlot`/`deleteBrushSlot`, `BRUSH_SLOT_COUNT`. Via `userDataAdapter` (`getBrushes`/`setBrushes`) or localStorage fallback. Backs `<se-brush-settings>` |
 | `canvasLayouts.js` | Saved canvas "layouts" (templates) store + apply logic: `loadLayouts`/`saveLayouts`/`captureCurrentLayout`/`applyLayout`. Persists via `userDataAdapter` (`getCanvasLayouts`/`setCanvasLayouts`) else localStorage `svg-edit-canvas-layouts`. `applyLayout` overwrites only canvas size + `bkgd_color`, then re-injects the saved objects (with fresh remapped ids, paste-style) onto a `Layout: <name>` layer left inactive (so locked). Backs the Layouts section of `<se-canvas-settings>` |
-| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette, saved shapes, **hotkey overrides** (`getHotkeys`/`setHotkeys`), **quick-action favorites** (`getFavorites`/`setFavorites`), **and custom brush slots** (`getBrushes`/`setBrushes`) in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js`, `userShapes.js`, `Hotkeys.js`, `favorites.js` + `customBrushes.js` |
+| `toolOrder.js` | Left-panel drag-to-reorder + "Additional tools" overflow bucket persistence: `loadToolOrder`/`saveToolOrder` (via `userDataAdapter` `getToolOrder`/`setToolOrder` else localStorage `svg-edit-tool-order`) and the pure `reconcileToolOrder(currentIds, stored)` helper (drops stale ids, defaults new ones into the main row). Consumed by `LeftPanel.js`'s `finalizeToolOrder` |
+| `toolDragReorder.js` | `initToolDragReorder({ container, overflowHost, onChange })` — native HTML5 drag-and-drop wiring for the left panel: makes each direct child of `container`/`overflowHost` draggable, drop-to-reorder (before/after via cursor vs. target midpoint, `.se-drop-before`/`.se-drop-after` indicator classes), drop-on-`overflowHost` to tuck a tool into the bucket. Mouse-only. See [tools.md](tools.md) |
+| `userDataAdapter.js` | Module registry for the optional `userDataAdapter` config: `setUserDataAdapter`/`getUserDataAdapter`. Lets a host persist the custom palette, saved shapes, **hotkey overrides** (`getHotkeys`/`setHotkeys`), **quick-action favorites** (`getFavorites`/`setFavorites`), **custom brush slots** (`getBrushes`/`setBrushes`), **and the left-panel tool order** (`getToolOrder`/`setToolOrder`) in its own store; `null` → localStorage fallback. Set once in `EditorStartup.init()`; read by `sePalette.js`, `userShapes.js`, `Hotkeys.js`, `favorites.js`, `customBrushes.js` + `toolOrder.js` |
 | `locale.js` | i18next setup, language detection, locale file loading |
 | `contextmenu.js` | Right-click context menu setup and handlers |
 | `svgedit.css` | All CSS: variables, grid layout, panel/toolbar rules (~750+ lines); `@import`s `tablet.css` at the top |
@@ -58,6 +60,7 @@
 | `seColorPicker.js` | `<se-color-picker>` | Color selection modal |
 | `seSelect.js` | `<se-select>` | Styled `<select>` dropdown |
 | `seFontSelect.js` | `<se-font-select>` | Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface). Drop-in replacement for the old `<se-select>` font dropdown — same `value`/`addOption`/`change`/`src`/`options`/`values` interface. Powers `tool_font_family` |
+| `seToolOverflow.js` | `<se-tool-overflow>` | Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes the popover, closes on outside click/Escape/after a slotted tool is clicked. Slotted children are real tools dragged in via `toolDragReorder.js` — each keeps its own click handler/hotkey/lock gesture. See [tools.md](tools.md) |
 | `seList.js` | `<se-list>` | Icon-based dropdown list |
 | `seListItem.js` | `<se-list-item>` | Item inside `<se-list>` |
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |
@@ -236,6 +239,9 @@ Key icon naming: `{action}.svg` e.g. `undo.svg`, `align_left.svg`, `bold.svg`, `
 | `iconRegistry.js` | Inlines every `*.svg` + `cursors/*.svg` into the bundle (eager `?raw` glob); `getRawIcon()` / `getIconDataUri()` resolve icons with no runtime fetch |
 | `lock.svg` / `lock_open.svg` | Closed/open padlock icons for the per-row **layer lock** toggle (`td.layerlock`) in the Layers panel. Open = unlocked (clickable hint), closed = locked; `RightPanel.populateLayers` picks/swaps them by state — see [tools.md](tools.md) "Layers Panel" |
 | `move.svg` | Dual-purpose: as the **select-mode move cursor** (used raw via `getIconDataUri`, so it bakes a white-halo + dark-glyph for visibility on any canvas — cursors can't inherit `currentColor`) and, if injected via `svgIconLoader`, both strokes normalize to `currentColor`. See `tool_select` in [tools.md](tools.md) |
+| `pin.svg` | Puppet Warp tool (`tool_puppet_warp`) icon |
+| `shapes.svg` | Combined shapes flyout (`tools_shapes`) fixed trigger icon |
+| `more_tools.svg` | "Additional tools" overflow bucket (`tools_overflow`, `<se-tool-overflow>`) icon |
 
 `extensions/extensionRegistry.js` does the equivalent for extensions (eager glob
 of `ext-*/ext-*.js`, bundled into `Editor.js`).

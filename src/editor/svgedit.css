@@ -1143,6 +1143,25 @@ hr {
 
 /* End scrollbar styling */
 
+/* Drag-to-reorder (toolDragReorder.js) — applies to a tool wherever it
+   currently lives: the main row or the "Additional tools" overflow popover. */
+#tools_left > [draggable]:hover {
+  cursor: grab;
+}
+
+#tools_left .se-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+#tools_left .se-drop-before {
+  box-shadow: 0 -2px 0 0 var(--accent);
+}
+
+#tools_left .se-drop-after {
+  box-shadow: 0 2px 0 0 var(--accent);
+}
+
 /*—————————————————————————————*/
 
 /* No-fill shapes are selectable by their outline only; clicks pass through the

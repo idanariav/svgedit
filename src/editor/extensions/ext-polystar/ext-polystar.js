@@ -165,18 +165,19 @@ export default {
       callback () {
         // Add the button and its handler(s)
         // Note: the star extension needs to be loaded before the polygon extension
-        const fbtitle = `${name}:title`
+        // Star/polygon join the core "shapes" flyout (tools_shapes, built in
+        // LeftPanel.html) as two more sub-tools rather than a separate flyout —
+        // its <slot> picks up light-DOM children added after it has connected.
         const titleStar = `${name}:buttons.0.title`
         const titlePolygon = `${name}:buttons.1.title`
-        const buttonTemplate = `
-            <se-flyingbutton id="tools_polygon" title="${fbtitle}">
-              <se-button id="tool_star" title="${titleStar}" src="star.svg">
-              </se-button>
-              <se-button id="tool_polygon" title="${titlePolygon}" src="polygon.svg">
-              </se-button>
-            </se-flyingbutton>
+        const buttonTemplate = document.createElement('template')
+        buttonTemplate.innerHTML = `
+            <se-button id="tool_star" title="${titleStar}" src="star.svg">
+            </se-button>
+            <se-button id="tool_polygon" title="${titlePolygon}" src="polygon.svg">
+            </se-button>
           `
-        svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 10)
+        $id('tools_shapes').append(buttonTemplate.content.cloneNode(true))
         // handler
         $click($id('tool_star'), () => {
           if (this.leftPanel.updateLeftPanel('tool_star')) {

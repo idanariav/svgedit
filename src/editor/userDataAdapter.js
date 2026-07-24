@@ -29,7 +29,9 @@
  *     getFonts(): Promise<Array<{family,woff2Base64}>>, // persisted custom fonts
  *     saveFont(family: string, woff2Base64: string): Promise<void>, // persist one font
  *     getBrushes(): object,                     // saved brush slots, e.g. { 0: {...} }
- *     setBrushes(slots: object): void            // full brush slots map
+ *     setBrushes(slots: object): void,           // full brush slots map
+ *     getToolOrder(): { main: string[], overflow: string[] }, // left-panel tool order
+ *     setToolOrder(order: object): void          // full { main, overflow } tool order
  *   }
  *
  * `getHotkeys`/`setHotkeys` back the Hotkey Manager (see `Hotkeys.js`). They are
@@ -48,6 +50,10 @@
  * `getBrushes`/`setBrushes` back the 5 saved custom-brush slots
  * (`customBrushes.js`), falling back to `localStorage` key
  * `svg-edit-custom-brushes`.
+ *
+ * `getToolOrder`/`setToolOrder` back the left panel's drag-to-reorder tool
+ * order and "Additional tools" overflow bucket (`toolOrder.js`), falling
+ * back to `localStorage` key `svg-edit-tool-order`.
  */
 
 let _adapter = null

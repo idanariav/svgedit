@@ -287,6 +287,17 @@ had this exact bug against `tool_reorient`/`tool_node_delete`, fixed 2026-07-09.
 }
 ```
 
+Drag-to-reorder indicators (`toolDragReorder.js`) apply to a tool wherever it
+currently lives — the main row or inside the "Additional tools" overflow
+popover (`<se-tool-overflow>`) — since the classes are set on the actual
+light-DOM tool element, unaffected by shadow boundaries:
+```css
+#tools_left > [draggable]:hover { cursor: grab; }
+#tools_left .se-dragging { opacity: 0.4; cursor: grabbing; }
+#tools_left .se-drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
+#tools_left .se-drop-after { box-shadow: 0 2px 0 0 var(--accent); }
+```
+
 ### `#tools_bottom` — Bottom Color Bar
 Holds only the color controls (`fill_color`, `stroke_color`, `bg_color`, `palette`).
 ```css

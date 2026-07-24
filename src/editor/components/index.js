@@ -1,6 +1,7 @@
 import './seButton.js'
 import './seShapeLibrary.js'
 import './seFlyingButton.js'
+import './seToolOverflow.js'
 import './seExplorerButton.js'
 import './seZoom.js'
 import './seCanvasSettings.js'

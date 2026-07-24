@@ -1,6 +1,8 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
 import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'
+import { loadToolOrder, saveToolOrder, reconcileToolOrder } from '../toolOrder.js'
+import { initToolDragReorder } from '../toolDragReorder.js'
 
 const { $click } = SvgCanvas
 
@@ -97,16 +99,6 @@ class LeftPanel {
    *
    * @returns {void}
    */
-  clickSquare () {
-    if (this.updateLeftPanel('tool_square')) {
-      this.editor.svgCanvas.setMode('square')
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
   clickRect () {
     if (this.updateLeftPanel('tool_rect')) {
       this.editor.svgCanvas.setMode('rect')
@@ -117,39 +109,9 @@ class LeftPanel {
    *
    * @returns {void}
    */
-  clickFHRect () {
-    if (this.updateLeftPanel('tool_fhrect')) {
-      this.editor.svgCanvas.setMode('fhrect')
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  clickCircle () {
-    if (this.updateLeftPanel('tool_circle')) {
-      this.editor.svgCanvas.setMode('circle')
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
   clickEllipse () {
     if (this.updateLeftPanel('tool_ellipse')) {
       this.editor.svgCanvas.setMode('ellipse')
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  clickFHEllipse () {
-    if (this.updateLeftPanel('tool_fhellipse')) {
-      this.editor.svgCanvas.setMode('fhellipse')
     }
   }
 
@@ -177,28 +139,6 @@ class LeftPanel {
       return
     }
     insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked, external: e.detail.external })
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  clickZoom () {
-    if (this.updateLeftPanel('tool_zoom')) {
-      this.editor.svgCanvas.setMode('zoom')
-      this.editor.workarea.style.cursor = this.editor.zoomInIcon
-    }
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  dblclickZoom () {
-    if (this.updateLeftPanel('tool_zoom')) {
-      this.editor.zoomImage()
-      this.clickSelect()
-    }
   }
 
   /**
@@ -234,6 +174,40 @@ class LeftPanel {
   }
 
   /**
+   * Build the "Additional tools" overflow bucket, apply the user's saved
+   * left-panel tool order (reconciled against whatever tools/extensions
+   * actually exist right now), and wire up drag-to-reorder. Runs once, after
+   * every built-in/user extension has finished inserting its own button
+   * (bound to the canvas `extensions_added` event in init()) — by then
+   * `#tools_left`'s direct children are the final, complete tool set, so the
+   * bucket can simply be appended as the new last child without needing to
+   * touch any extension's own hardcoded `insertChildAtIndex` position.
+   * @returns {void}
+   */
+  finalizeToolOrder () {
+    const { $id } = this.editor
+    const container = $id('tools_left')
+    const currentIds = Array.from(container.children).map((el) => el.id).filter(Boolean)
+    const { main, overflow } = reconcileToolOrder(currentIds, loadToolOrder())
+
+    const overflowEl = document.createElement('se-tool-overflow')
+    overflowEl.id = 'tools_overflow'
+    overflowEl.setAttribute('title', 'tools.additional_tools')
+    overflowEl.setAttribute('src', 'more_tools.svg')
+    container.appendChild(overflowEl)
+
+    main.forEach((id) => container.insertBefore($id(id), overflowEl))
+    overflow.forEach((id) => overflowEl.appendChild($id(id)))
+    saveToolOrder({ main, overflow })
+
+    initToolDragReorder({
+      container,
+      overflowHost: overflowEl,
+      onChange: saveToolOrder
+    })
+  }
+
+  /**
    * @type {module}
    */
   init () {
@@ -242,30 +216,25 @@ class LeftPanel {
     const template = document.createElement('template')
     template.innerHTML = leftPanelHTML
     this.editor.$svgEditor.append(template.content.cloneNode(true))
+    this.editor.svgCanvas.bind('extensions_added', () => this.finalizeToolOrder())
     // register actions for left panel
     $click($id('tool_select'), this.clickSelect.bind(this))
     $click($id('tool_fhpath'), this.clickFHPath.bind(this))
     $click($id('tool_text'), this.clickText.bind(this))
     $click($id('tool_image'), this.clickImage.bind(this))
     $id('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
-    $click($id('tool_zoom'), this.clickZoom.bind(this))
-    $id('tool_zoom').addEventListener('dblclick', this.dblclickZoom.bind(this))
     $click($id('tool_path'), this.clickPath.bind(this))
     $click($id('tool_line'), this.clickLine.bind(this))
 
     // flyout
     $click($id('tool_rect'), this.clickRect.bind(this))
-    $click($id('tool_square'), this.clickSquare.bind(this))
-    $click($id('tool_fhrect'), this.clickFHRect.bind(this))
     $click($id('tool_ellipse'), this.clickEllipse.bind(this))
-    $click($id('tool_circle'), this.clickCircle.bind(this))
-    $click($id('tool_fhellipse'), this.clickFHEllipse.bind(this))
 
     // double-click a drawing tool to lock it (stays selected after each object).
     // Plain buttons bind on themselves; shape groups bind on the flyout host
     // (the variant buttons live in a menu that's hidden when collapsed), which
     // locks whatever variant is currently active.
-    const lockable = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_rect', 'tools_ellipse']
+    const lockable = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_shapes']
     lockable.forEach((id) => {
       const el = $id(id)
       el.addEventListener('dblclick', () => this.lockTool(el))

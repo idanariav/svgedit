@@ -11,6 +11,28 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## Left panel drag-reorder / overflow bucket follow-ups (2026-07-24)
+
+From the `toolDragReorder.js`/`se-tool-overflow` build. Both are minor,
+accepted-scope UX rough edges, not bugs:
+
+- **No keyboard-accessible reorder.** Mouse/pointer drag only (native HTML5
+  DnD). Consistent with the rest of `#tools_left` being mouse-driven desktop
+  chrome (the panel is hidden entirely in tablet mode), but a screen-reader
+  or keyboard-only user can't reorder tools or use the overflow bucket.
+  Would need explicit ARIA + keyboard handlers (arrow-key move, Enter to
+  drop) — real effort, deferred until requested.
+- **A flyout dragged into "Additional tools" closes the bucket's popover
+  when its own handle is clicked.** `se-tool-overflow` closes itself after
+  any click on a slotted tool that isn't its own trigger (mirrors
+  `se-flyingbutton`'s close-after-pick behavior), which also fires when the
+  slotted tool is itself a flyout (e.g. the shapes flyout) and the click was
+  meant to open *its* submenu, not dismiss the outer popover. Minor —
+  reopening "Additional tools" and clicking again works fine. Fixing it
+  properly means `se-tool-overflow` distinguishing "a sub-tool was picked"
+  from "a nested flyout's own handle was clicked", which needs a bit more
+  signal than the current generic click-delegation gives it.
+
 ## Puppet Warp follow-ups (2026-07-23)
 
 From the initial `ext-puppet-warp` build. Each was explicitly scoped out with

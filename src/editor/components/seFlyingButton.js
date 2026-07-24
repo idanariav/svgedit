@@ -11,6 +11,8 @@ export class FlyingButton extends HTMLElement {
     */
   constructor () {
     super()
+    // Fixed trigger icon opt-in (see the 'src' case in attributeChangedCallback)
+    this.staticIcon = false
     // create the shadowDom and insert the template
     this.imgPath = svgEditor.configObj.curConfig.imgPath
     this.template = this.createTemplate(this.imgPath)
@@ -159,7 +161,7 @@ export class FlyingButton extends HTMLElement {
    * @returns {any} observed
    */
   static get observedAttributes () {
-    return ['title', 'pressed', 'locked', 'disabled', 'opened']
+    return ['title', 'pressed', 'locked', 'disabled', 'opened', 'src']
   }
 
   /**
@@ -205,6 +207,14 @@ export class FlyingButton extends HTMLElement {
         } else {
           this.$overall.classList.remove('disabled')
         }
+        break
+      case 'src':
+        // Opt-in "fixed trigger icon" mode (mirrors se-list's static-icon
+        // lists): the flyout's face icon never swaps to the last-picked
+        // sub-tool's icon — used by flyouts that group unrelated tools
+        // (e.g. the combined shapes flyout) rather than variants of one tool.
+        this.staticIcon = true
+        this._loadIcon(newValue)
         break
       default:
         console.error(`unknown attribute: ${name}`)
@@ -313,8 +323,12 @@ export class FlyingButton extends HTMLElement {
 
   connectedCallback () {
     this.activeSlot = this.shadowRoot.querySelector('slot').assignedElements()[0]
-    const initialSrc = this.activeSlot?.getAttribute('src')
-    if (initialSrc) this._loadIcon(initialSrc)
+    // A static-icon flyout (see the 'src' case above) already has its fixed
+    // face icon loaded — don't let the first sub-tool's icon override it.
+    if (!this.staticIcon) {
+      const initialSrc = this.activeSlot?.getAttribute('src')
+      if (initialSrc) this._loadIcon(initialSrc)
+    }
 
     // capture click event on the button to manage the logic
     const onClickHandler = (ev) => {
@@ -330,7 +344,7 @@ export class FlyingButton extends HTMLElement {
           break
         case 'SE-BUTTON': {
           const newSrc = ev.target.getAttribute('src')
-          if (newSrc) this._loadIcon(newSrc)
+          if (newSrc && !this.staticIcon) this._loadIcon(newSrc)
           this.activeSlot = ev.target
           this.setAttribute('pressed', 'pressed')
           this.$menu.classList.remove('open')

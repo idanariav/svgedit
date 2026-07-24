@@ -43,7 +43,7 @@ export default {
         buttonTemplate.innerHTML = `
         <se-button id="ext-panning" title="${btitle}" src="panning.svg"></se-button>
         `
-        insertAfter($id('tool_zoom'), buttonTemplate.content.cloneNode(true))
+        insertAfter($id('tool_select'), buttonTemplate.content.cloneNode(true))
         $click($id('ext-panning'), () => {
           if (this.leftPanel.updateLeftPanel('ext-panning')) {
             svgCanvas.setMode('ext-panning')

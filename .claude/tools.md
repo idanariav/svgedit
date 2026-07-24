@@ -11,17 +11,11 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | ID | Tool | Shortcut | Notes |
 |----|------|----------|-------|
 | `tool_select` | Select / pointer | S | Select, move, resize existing elements. With 2+ elements selected a single union box + 8 grips appears (rotate grip hidden); dragging any grip applies a **uniform group scale** about the opposite corner/edge — every shape keeps its aspect and relative position. See `select.js` `showGroupSelector` and `event.js` `resizeGroup`. **Shift+drag** locks movement to the dominant axis (H or V); **Shift+drag the rotate grip** snaps rotation to 15° steps (both in `event.js` `mouseMoveEvent`). Clicking stacked/overlapping shapes **prefers an already-selected element** under the cursor over the topmost one (`event.js` `mouseDownEvent`, via `document.elementsFromPoint`). In select mode the **move cursor** (`move.svg`) is shown whenever a left-click would move something — hovering a selectable element, or anywhere inside the current selection's bbox (bbox-drag) — via a hover `mousemove` listener in `EditorStartup.js` that sets `workarea.style.cursor` from `getIconDataUri('move.svg')`. |
-| `tool_zoom` | Zoom | Z | Zoom in/out; double-click to fit content |
 | `tool_fhpath` | Freehand pencil | Q | Draw freehand path (uniform stroke width). While drawing, raw pointer coords pass through an EMA low-pass filter (`event.js` fhpath mousemove case, config `pencilStabilization` 0-1, default 0.3) before feeding the existing B-spline capture — damps hand tremor in real time, Procreate-StreamLine-style. On commit the (already-stabilized) points are fitted to smooth cubics via paper.js `simplify()` (`svgCanvas.simplifyFreehand`, `core/path-simplify.js`; config `pencilSimplify: false` restores the legacy every-3-points smoothing, `pencilSimplifyTolerance` tunes it) |
 | `tool_brush` | Custom brush | — | Configurable variable-width freehand brush: roundness (round ⇄ flat/chiseled nib), thickness, calligraphic angle, taper start/end, opacity, smoothness — plus up to 5 saved presets (double-click a slot to rename it) via the `#tool_brush_settings` (`<se-brush-settings>`) popover, currently in the right panel's **Effects** tab (`#brush_settings_panel`, temporary location). Real pen pressure (Apple Pencil/Wacom) still modulates thickness; mouse/touch draw at constant width. Provided by `ext-brush` (mode `'brush'`); renders a filled `<path>` outline via `core/brush-stroke.js`. See `extensions.md` |
 | `tool_line` | Line / arrow | L | Draw a straight two-point `<line>`. Either endpoint can **bind to a shape**: release an endpoint over (or within ~12px of) a shape and it auto-binds, snapping to the shape's edge and tracking it as the shape moves/resizes. **Hold Alt** while releasing to force a free/floating endpoint. Endpoints not over a shape float in space. Binding + tracking is provided by `ext-connector` (now the line-binding engine — no separate connector tool); turn a line into an arrow via the **markers** start/mid/end panel (`ext-markers`). |
 | `tool_path` | Bezier path | P | Point-by-point path creation |
-| `tool_rect` *(flying)* | Rectangle | R | Also contains Square and Freehand Rect sub-tools |
-| `tool_square` | Square | — | Sub-tool of rect flyout |
-| `tool_fhrect` | Freehand rectangle | — | Sub-tool of rect flyout |
-| `tool_ellipse` *(flying)* | Ellipse | E | Also contains Circle and Freehand Ellipse sub-tools |
-| `tool_circle` | Circle | — | Sub-tool of ellipse flyout |
-| `tool_fhellipse` | Freehand ellipse | — | Sub-tool of ellipse flyout |
+| `tools_shapes` *(flying)* | Shapes (Rect/Ellipse/Star/Polygon) | — | Combined flyout — icon: `shapes.svg`, a **fixed trigger icon** (`se-flyingbutton`'s opt-in `src` static-icon mode — see `seFlyingButton.js`; it never swaps to the last-picked variant's icon, unlike a non-static flyout). Contains only the primary variant of each shape — no Square/Free-hand-rect or Circle/Free-hand-ellipse sub-tools (dropped for simplicity; still reachable programmatically via `svgCanvas.setMode('square'\|'fhrect'\|'circle'\|'fhellipse')`, just not from this UI). `tool_rect` (R) and `tool_ellipse` (E) are built in `LeftPanel.html`; `tool_star`/`tool_polygon` (ext-polystar) are appended into this same host at runtime (`$id('tools_shapes').append(...)`) rather than building their own flyout |
 | `tool_text` | Text | T | Add/edit text elements. **Multiline:** the hidden edit buffer (`#text`) is a `<textarea>`; while editing, **Shift+Enter** inserts a new row and **plain Enter** commits + exits edit mode. SVG has no newline char, so each row is rendered as one absolutely-positioned `<tspan>` (shared `x` so `text-anchor` aligns rows, `y` stepped by `font-size × 1.2`) by `setMultilineText` in [packages/svgcanvas/core/dom-utils.js](../packages/svgcanvas/core/dom-utils.js); `getTextWithNewlines` reconstructs the `\n`-joined value. All `#text` reads/writes route through these two helpers (`elem-get-set.js`, `undo.js`, `history.js`). The caret/selection engine ([core/text-actions.js](../packages/svgcanvas/core/text-actions.js)) indexes `#chardata` by **textarea caret position** (incl. `\n`) and is row-aware (per-row caret y, per-row selection quads, nearest-row click hit-testing) |
 | `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL), URL, or **Import from vault** (only when a host provides `window.svgEditHost.pickVaultImage` — see [architecture.md](architecture.md) "Host bridge"). Inserts a centered image; no draw mode, no native prompt. A vault import carries a provenance `vaultLink` through the dialog `change` event → `handleImageImport`. A locally-picked **SVG file** (browse/drag-drop, detected by `image/svg+xml` type or `.svg` name in `handleFile`) is read as text into `editableSvg` so it imports as editable shapes too — not a frozen `<image>`. If `editableSvg` is set (whole-drawing **unlocked** import — vault or local SVG file), it routes to `insertSvgElements(editableSvg, { vaultLink, asPaths })` — drawable top-level elements into the layer (defs → canvas `<defs>`); a multi-element import is wrapped in one `<g>` so it moves/selects as a unit (double-click to edit members, like Excalidraw's import grouping), a single element is inserted bare. When the dialog's **"Import as editable paths"** checkbox (`#image_paths_toggle`, shown only for editable-SVG imports, **default off**) is checked, `asPaths` is passed and basic shapes (rect/circle/ellipse/line/polyline/polygon), including those nested in groups, are converted to `<path>` (`convertShapesToPaths` in `dialogs/insertImage.js`, a history-free DOM swap that copies each shape's own attrs/style onto the path); off → shapes stay native; `g`/`text`/`image`/`use`/existing `path` always pass through. Otherwise (locked embed / raster / frame crop / SVG-by-URL) `insertImageFromHref(href, { vaultLink, locked })`, which stamps `data-vault-link` (and `data-vault-locked` when locked) on the `<image>`. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertSvgElements` / `insertImageFromHref` (`dialogs/insertImage.js`) |
 
@@ -30,8 +24,8 @@ after one object is created. **Double-clicking** a drawing tool *locks* it so it
 stays active for drawing many objects in a row; switching to any other tool exits
 lock mode. Locked tools show a distinct accent **outline ring** (on top of the
 pressed style — `.locked` class in `seButton.js` / `seFlyingButton.js`). Lockable
-tools: `tool_fhpath`, `tool_line`, `tool_path`, `tool_text`, and the two shape
-flyouts (`tools_rect`, `tools_ellipse` — the dblclick binds on the flyout **host**,
+tools: `tool_fhpath`, `tool_line`, `tool_path`, `tool_text`, and the combined
+shapes flyout (`tools_shapes` — the dblclick binds on the flyout **host**,
 locking whichever variant is active). State lives on the canvas
 (`svgCanvas.getToolLocked()` / `setToolLocked()`); `LeftPanel.lockTool` sets it and
 `LeftPanel.updateLeftPanel` clears it on tool switch. The reset is gated in
@@ -50,10 +44,12 @@ position, surviving move/delete) after the path is done.
 
 **Extensions add (in order):**
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
-- `tool_star` / `tool_polygon` — Polystar flyout (ext-polystar)
+- `tool_star` / `tool_polygon` — appended into the core `tools_shapes` flyout
+  (ext-polystar), not a separate flyout of their own (see above)
 - `tool_cutter` — Cutter/knife tool (ext-cutter) — position 11, after polystar
 - `tool_curvature` — Curvature tool (ext-curvature) — position 12, after cutter
-- `tool_puppet_warp` — Puppet Warp tool (ext-puppet-warp) — position 13, after curvature
+- `tool_puppet_warp` — Puppet Warp tool (ext-puppet-warp) — position 13, after curvature.
+  Icon `pin.svg`
 - `tool_eyedropper` — Eyedropper tool (ext-eyedropper) — click an element on
   canvas to sample its **fill color** (only the fill — stroke/width/opacity are
   not sampled), then choose an action from a small menu that appears at the
@@ -65,7 +61,34 @@ position, surviving move/delete) after the path is done.
   icons/text/charts/illustrations/buttons/notifications; see `extensions.md`
   and `file-map.md`'s `src/editor/palette/` entry for the algorithm). Escape
   returns to the Select tool
-- `ext-panning` — Pan/hand tool (ext-panning) — after zoom tool
+- `ext-panning` — Pan/hand tool (ext-panning) — after the Select tool (the
+  toolbar's Zoom tool this was originally positioned after was removed — see
+  below; the top-panel `<se-zoom>` dropdown and Ctrl+wheel zoom still cover
+  zooming)
+
+**Zoom tool removed from the left panel.** `tool_zoom` (marquee-zoom-drag +
+double-click-to-fit + its `Z` shortcut) no longer has a toolbar entry point.
+The canvas `'zoom'` draw mode and `core/event-zoom.js` are unchanged/still
+reachable programmatically; only the UI button is gone. Use the top-panel
+`<se-zoom>` dropdown (25/50/100/200/400/1000% + Fit variants) or Ctrl+wheel
+instead.
+
+**Drag-to-reorder + "Additional tools" overflow bucket.** Every direct child
+of `#tools_left` (a plain tool button or a flyout, moved as one unit — never
+its individual sub-variants) can be dragged to reorder the panel, or dragged
+onto the **"Additional tools"** bucket (`<se-tool-overflow id="tools_overflow">`,
+icon `more_tools.svg`, always the panel's last item) to tuck away
+rarely-used tools; drag a tool back out onto the main row to restore it. A
+tool tucked into the bucket keeps its own click handler, hotkey registration,
+and lock-dblclick gesture unchanged — only its visual location moves.
+Mouse-only (native HTML5 drag-and-drop; `#tools_left` is hidden entirely in
+tablet mode, so there's no touch requirement). The order + bucket membership
+persists via `toolOrder.js` (`userDataAdapter.getToolOrder`/`setToolOrder`,
+else `localStorage` key `svg-edit-tool-order`), reconciled against whatever
+tools actually exist on each load (`reconcileToolOrder` — stale ids drop,
+new ids default into the main row). Built once, after every extension has
+inserted its own button, via `LeftPanel.finalizeToolOrder()` bound to the
+canvas `extensions_added` event; drag mechanics live in `toolDragReorder.js`.
 
 ---
 

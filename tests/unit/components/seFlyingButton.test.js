@@ -172,4 +172,29 @@ describe('se-flyingbutton', () => {
 
     expect(el.opened).toBe(false)
   })
+
+  describe('static-icon mode (src attribute — fixed trigger icon)', () => {
+    it('sets staticIcon when src is present at parse time', () => {
+      const el = mountFlyingButton('src="shapes.svg"')
+      expect(el.staticIcon).toBe(true)
+    })
+
+    it('does not set staticIcon for a flyout without src (existing icon-follows-selection behavior)', () => {
+      const el = mountFlyingButton()
+      expect(el.staticIcon).toBe(false)
+    })
+
+    it('keeps the face icon fixed when a slotted sub-button is clicked', () => {
+      const el = mountFlyingButton('src="shapes.svg"')
+      const loadIconSpy = vi.spyOn(el, '_loadIcon')
+
+      const secondButton = el.$elements[1]
+      secondButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+      expect(el.activeSlot).toBe(secondButton)
+      // Only the initial static-icon load (from the 'src' attribute) happened —
+      // the sub-button's own icon must never be loaded on top of it.
+      expect(loadIconSpy).not.toHaveBeenCalledWith('square.svg')
+    })
+  })
 })
