@@ -206,13 +206,13 @@ class BottomPanel {
     } else {
       $id('stroke_color').setPaint(paint)
     }
-    this.editor.svgCanvas.setColor(picker, color)
-    if (
+    // A palette swatch has no alpha channel, so applying one also forces full
+    // opacity; bundling both attribute changes into one undo step (via the
+    // `resetOpacity` flag) keeps a single Ctrl+Z fully reverting the click.
+    const resetOpacity =
       color !== 'none' &&
       this.editor.svgCanvas.getPaintOpacity(picker) !== 1
-    ) {
-      this.editor.svgCanvas.setPaintOpacity(picker, 1.0)
-    }
+    this.editor.svgCanvas.setColor(picker, color, false, resetOpacity)
     this.updateToolButtonState()
   }
 

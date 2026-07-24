@@ -302,6 +302,14 @@ via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
 (from ext-shadow) — a drop shadow can't be stamped as a flat attribute, so it is
 rebuilt per-element into the same undo batch on apply.
 
+**Exception — custom palette swatches (`se-palette` / `BottomPanel.handlePalette`):**
+a plain palette swatch has no alpha channel, so clicking one also forces
+`fill-opacity`/`stroke-opacity` back to `1`. `svgCanvas.setColor(type, val, preventUndo,
+resetOpacity)` takes a 4th `resetOpacity` flag for exactly this case — when set, it
+bundles the color attr change and the opacity reset into a single `BatchCommand` (via
+nested `undoMgr.beginUndoableChange`/`finishUndoableChange` calls) so one Ctrl+Z fully
+reverts the swatch click instead of leaving the opacity half-reverted.
+
 ### Live position/dimension readout while dragging (move/resize)
 
 While a select-mode move or resize drag is in progress, the geometry only
