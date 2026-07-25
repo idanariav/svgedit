@@ -32,6 +32,7 @@ import HotkeyManager from './Hotkeys.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { blurActiveField } from './components/fieldAutoBlur.js'
+import { runSteps } from './runSteps.js'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -906,44 +907,51 @@ class Editor extends EditorStartup {
    */
   selectedChanged (win, elems) {
     const mode = this.svgCanvas.getMode()
-    if (mode === 'select') {
-      this.leftPanel.clickSelect()
-    }
     const isNode = mode === 'pathedit'
     // if this.elems[1] is present, then we have more than one element
     this.selectedElement = elems.length === 1 || !elems[1] ? elems[0] : null
     this.multiselected = elems.length >= 2 && !!elems[1]
-    if (this.selectedElement && !isNode) {
-      this.topPanel.update()
-    } // if (elem)
 
-    // Nothing selected anymore: release any panel field still holding focus, so
-    // a field can't outlive its element's selection (and keep swallowing keys).
-    if (!this.selectedElement && !this.multiselected) {
-      blurActiveField()
-    }
-
-    // Deal with pathedit mode
-    this.topPanel.togglePathEditMode(isNode, elems)
-    this.topPanel.updateContextPanel()
-    // Switch the right-panel tab to match the selection (text → Text, else
-    // Design). Done here, on selection change only — not in updateContextPanel,
-    // which also runs on attribute edits and would yank the user off Design
-    // mid-edit (e.g. when changing a text object's stroke width).
-    this.rightPanel.autoSelectTab(this.selectedElement, this.multiselected)
-    this.rightPanel.updateObjectList(this.selectedElement)
-    // Some tools (e.g. curvature/path, text) commit a new element by firing
-    // only 'selected', not 'changed', so refresh the empty-canvas watermark
-    // here too — otherwise it lingers after drawing with those tools.
-    this.updateCanvasWatermark()
-    this.svgCanvas.runExtensions(
-      'selectedChanged',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_selectedChanged} */ {
-        elems,
-        selectedElement: this.selectedElement,
-        multiselected: this.multiselected
-      }
-    )
+    // Each step is isolated: a throw in one (e.g. a stale DOM id after a
+    // panel refactor) is logged and skipped instead of aborting every step
+    // after it, which would leave the rest of the UI silently un-updated.
+    runSteps([
+      ['leftPanel.clickSelect', () => {
+        if (mode === 'select') this.leftPanel.clickSelect()
+      }],
+      ['topPanel.update', () => {
+        if (this.selectedElement && !isNode) this.topPanel.update()
+      }],
+      // Nothing selected anymore: release any panel field still holding
+      // focus, so a field can't outlive its element's selection (and keep
+      // swallowing keys).
+      ['blurActiveField', () => {
+        if (!this.selectedElement && !this.multiselected) blurActiveField()
+      }],
+      // Deal with pathedit mode
+      ['topPanel.togglePathEditMode', () => this.topPanel.togglePathEditMode(isNode, elems)],
+      ['topPanel.updateContextPanel', () => this.topPanel.updateContextPanel()],
+      // Switch the right-panel tab to match the selection (text → Text, else
+      // Design). Done here, on selection change only — not in
+      // updateContextPanel, which also runs on attribute edits and would
+      // yank the user off Design mid-edit (e.g. when changing a text
+      // object's stroke width).
+      ['rightPanel.autoSelectTab', () => this.rightPanel.autoSelectTab(this.selectedElement, this.multiselected)],
+      ['rightPanel.updateObjectList', () => this.rightPanel.updateObjectList(this.selectedElement)],
+      // Some tools (e.g. curvature/path, text) commit a new element by
+      // firing only 'selected', not 'changed', so refresh the empty-canvas
+      // watermark here too — otherwise it lingers after drawing with those
+      // tools.
+      ['updateCanvasWatermark', () => this.updateCanvasWatermark()],
+      ['runExtensions:selectedChanged', () => this.svgCanvas.runExtensions(
+        'selectedChanged',
+        /** @type {module:svgcanvas.SvgCanvas#event:ext_selectedChanged} */ {
+          elems,
+          selectedElement: this.selectedElement,
+          multiselected: this.multiselected
+        }
+      )]
+    ])
   }
 
   // Call when part of element is in process of changing, generally
@@ -965,37 +973,45 @@ class Editor extends EditorStartup {
     }
 
     this.multiselected = elems.length >= 2 && elems[1]
-    // Only updating fields for single elements for now
-    if (!this.multiselected) {
-      switch (mode) {
-        case 'rotate': {
-          const ang = this.svgCanvas.getRotationAngle(elem)
-          $id('angle').value = ang
-          $id('tool_reorient').disabled = ang === 0
-          break
-        }
-        case 'select': {
-          const delta = this.svgCanvas.dragLiveMoveDelta
-          if (delta) {
-            this.topPanel.updateLiveMove(elem, delta.dx, delta.dy)
+
+    // Each step is isolated: a throw in one must not abort the others (see
+    // selectedChanged() above for why) — this fires on every mousemove
+    // during a drag, so a broken live-field update shouldn't also stop
+    // extensions from hearing about the drag.
+    runSteps([
+      // Only updating fields for single elements for now
+      ['liveFieldUpdate', () => {
+        if (this.multiselected) return
+        switch (mode) {
+          case 'rotate': {
+            const ang = this.svgCanvas.getRotationAngle(elem)
+            $id('angle').value = ang
+            $id('tool_reorient').disabled = ang === 0
+            break
           }
-          break
-        }
-        case 'resize': {
-          const box = this.svgCanvas.dragLiveResizeBox
-          if (box) {
-            this.topPanel.updateLiveResize(elem, box)
+          case 'select': {
+            const delta = this.svgCanvas.dragLiveMoveDelta
+            if (delta) {
+              this.topPanel.updateLiveMove(elem, delta.dx, delta.dy)
+            }
+            break
           }
-          break
+          case 'resize': {
+            const box = this.svgCanvas.dragLiveResizeBox
+            if (box) {
+              this.topPanel.updateLiveResize(elem, box)
+            }
+            break
+          }
         }
-      }
-    }
-    this.svgCanvas.runExtensions(
-      'elementTransition',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_elementTransition} */ {
-        elems
-      }
-    )
+      }],
+      ['runExtensions:elementTransition', () => this.svgCanvas.runExtensions(
+        'elementTransition',
+        /** @type {module:svgcanvas.SvgCanvas#event:ext_elementTransition} */ {
+          elems
+        }
+      )]
+    ])
   }
 
   // called when any element has changed
@@ -1008,52 +1024,50 @@ class Editor extends EditorStartup {
    */
   elementChanged (win, elems) {
     const mode = this.svgCanvas.getMode()
-    if (mode === 'select') {
-      this.leftPanel.clickSelect()
-    }
 
-    elems.forEach((elem) => {
-      const isSvgElem = elem?.tagName === 'svg'
-      if (isSvgElem || this.svgCanvas.isLayer(elem)) {
-        this.rightPanel.populateLayers()
-        // if the element changed was the svg, then it could be a resolution change
-        if (isSvgElem) {
-          this.updateCanvas()
+    // Each step is isolated: a throw in one must not abort the others (see
+    // selectedChanged() above for why).
+    runSteps([
+      ['leftPanel.clickSelect', () => {
+        if (mode === 'select') this.leftPanel.clickSelect()
+      }],
+      ['perElementUpdates', () => {
+        elems.forEach((elem) => {
+          const isSvgElem = elem?.tagName === 'svg'
+          if (isSvgElem || this.svgCanvas.isLayer(elem)) {
+            this.rightPanel.populateLayers()
+            // if the element changed was the svg, then it could be a resolution change
+            if (isSvgElem) {
+              this.updateCanvas()
+            }
+            // Update selectedElement if element is no longer part of the image.
+            // This occurs for the text elements in Firefox. Skip while multiple
+            // elements are selected — selectedElement is legitimately null then,
+            // and promoting one of the changed elements (e.g. after a multi-align)
+            // would make updateContextPanel hide the multiselected_panel.
+          } else if (elem && !this.multiselected && !this.selectedElement?.parentNode) {
+            this.selectedElement = elem
+          }
+        })
+      }],
+      ['showSaveWarning', () => { this.showSaveWarning = true }],
+      // we update the contextual panel with potentially new
+      // positional/sizing information (we DON'T want to update the
+      // toolbar here as that creates an infinite loop)
+      // also this updates the history buttons
+      ['topPanel.updateContextPanel', () => this.topPanel.updateContextPanel()],
+      // In the event a gradient was flipped:
+      ['bottomPanel.updateColorpickers', () => {
+        if (this.selectedElement && mode === 'select') this.bottomPanel.updateColorpickers()
+      }],
+      ['updateCanvasWatermark', () => this.updateCanvasWatermark()],
+      ['runExtensions:elementChanged', () => this.svgCanvas.runExtensions(
+        'elementChanged',
+        /** @type {module:svgcanvas.SvgCanvas#event:ext_elementChanged} */ {
+          elems
         }
-        // Update selectedElement if element is no longer part of the image.
-        // This occurs for the text elements in Firefox. Skip while multiple
-        // elements are selected — selectedElement is legitimately null then,
-        // and promoting one of the changed elements (e.g. after a multi-align)
-        // would make updateContextPanel hide the multiselected_panel.
-      } else if (elem && !this.multiselected && !this.selectedElement?.parentNode) {
-        this.selectedElement = elem
-      }
-    })
-
-    this.showSaveWarning = true
-
-    // we update the contextual panel with potentially new
-    // positional/sizing information (we DON'T want to update the
-    // toolbar here as that creates an infinite loop)
-    // also this updates the history buttons
-
-    // we tell it to skip focusing the text control if the
-    // text element was previously in focus
-    this.topPanel.updateContextPanel()
-
-    // In the event a gradient was flipped:
-    if (this.selectedElement && mode === 'select') {
-      this.bottomPanel.updateColorpickers()
-    }
-
-    this.updateCanvasWatermark()
-
-    this.svgCanvas.runExtensions(
-      'elementChanged',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_elementChanged} */ {
-        elems
-      }
-    )
+      )]
+    ])
   }
 
   /**
@@ -1153,28 +1167,32 @@ class Editor extends EditorStartup {
       return
     }
 
-    $id('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
-
-    if (autoCenter) {
-      this.updateCanvas()
-    } else {
-      this.updateCanvas(false, {
-        x: bb.x * zoomlevel + (bb.width * zoomlevel) / 2,
-        y: bb.y * zoomlevel + (bb.height * zoomlevel) / 2
-      })
-    }
-
-    if (this.svgCanvas.getMode() === 'zoom' && bb.width) {
+    // Each step is isolated: a throw in one must not abort the others (see
+    // selectedChanged() above for why).
+    runSteps([
+      ['zoomInput', () => {
+        $id('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
+      }],
+      ['updateCanvas', () => {
+        if (autoCenter) {
+          this.updateCanvas()
+        } else {
+          this.updateCanvas(false, {
+            x: bb.x * zoomlevel + (bb.width * zoomlevel) / 2,
+            y: bb.y * zoomlevel + (bb.height * zoomlevel) / 2
+          })
+        }
+      }],
       // Go to select if a zoom box was drawn
-      this.leftPanel.clickSelect()
-    }
-
-    this.zoomDone()
-
-    this.svgCanvas.runExtensions(
-      'zoomChanged',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_zoomChanged} */ this.svgCanvas.getZoom()
-    )
+      ['leftPanel.clickSelect', () => {
+        if (this.svgCanvas.getMode() === 'zoom' && bb.width) this.leftPanel.clickSelect()
+      }],
+      ['zoomDone', () => this.zoomDone()],
+      ['runExtensions:zoomChanged', () => this.svgCanvas.runExtensions(
+        'zoomChanged',
+        /** @type {module:svgcanvas.SvgCanvas#event:ext_zoomChanged} */ this.svgCanvas.getZoom()
+      )]
+    ])
   }
 
   /**

@@ -11,6 +11,188 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
+## Backend coherence sweep (2026-07-25): the shape-tools-freeze bug is a symptom of a systemic pattern, not a one-off
+
+Triggered by 26b91862 (a left-panel refactor left a stale DOM id in
+`BottomPanel.js`, which threw mid-`selectedChanged()` and silently aborted
+every UI update after it). Git history shows this exact failure *shape*
+recurring repeatedly — not a coincidence, a structural gap: **d38833ad**,
+**3a1dcffd**, **7a32d8f6**, **db28628f**, **0ac7845f**, **26b91862** are all
+"stop X from freezing/getting stuck" fixes for the same root cause (an
+unguarded exception partway through a sequential update chain), and
+**94a2a409, bbabd2ed, 810fc06b, 06ab4dbf, 84834f2f, 70c4cd31, 5f9b2668,
+f83d7381, e5bada12, 264ff2bf** are all "scope X to the owning/active editor
+instance" fixes for a second recurring root cause (module/document-level
+lookups resolving to the wrong instance). Both classes get patched file-by-file
+as each new instance is discovered, never closed structurally. The items below
+are ordered by leverage (cheapest fix / biggest blast-radius reduction first),
+not by where they live in the codebase. None of this has been implemented —
+this is a documented backlog per this file's own convention.
+
+### 1-3. Fixed (2026-07-25): extension broadcast isolation, editor-layer update-chain isolation, panel-init isolation
+
+Items 1-3 as originally logged here (`runExtensions()`'s unguarded broadcast
+loop, the unguarded `selectedChanged`/`elementChanged`/`zoomChanged`/
+`elementTransition`/`TopPanel.update()`/`TopPanel.updateContextPanel()` chains,
+and `EditorStartup.init()`'s unwrapped panel-init sequence) are fixed:
+
+- `packages/svgcanvas/core/selection.js`'s `runExtensionsMethod` now wraps
+  `ext[action](vars)` in try/catch, logs, and continues to the next extension.
+- `EditorStartup.js`'s panel-init sequence (`leftPanel.init()` through
+  `tabletShell.init()`) is now wrapped the same way the extension-loading loop
+  already was — one panel's init failure logs and lets the rest, plus the
+  `svgCanvas.bind(...)` registrations and extension loading after it, proceed.
+- A small shared helper, `src/editor/runSteps.js` (`runSteps([[label, fn], ...])`
+  — try/catch + `console.error(label, err)` + continue per step), now backs
+  `Editor.js`'s `selectedChanged()`, `elementChanged()`, `zoomChanged()`, and
+  `elementTransition()`, and `TopPanel.js`'s `update()` and
+  `updateContextPanel()`. `updateContextPanel()`'s original early-return
+  short-circuit (pathedit-node mode skips the history-buttons/layer-menu tail)
+  is preserved exactly via an explicit `skipTail` flag rather than relying on
+  `return`'s scope, so behavior is unchanged when nothing throws.
+
+**Not fixed — deliberately deferred, narrower than originally scoped:**
+`packages/svgcanvas/core/event.js`'s `mouseUpEvent`/`mouseDownEvent` still have
+the same unguarded-sequential-steps shape (a throw before the mode-dispatch
+`switch` skips `setStarted(true)`/drag-state cleanup for the rest of the
+gesture). This is core canvas mouse/drag state-machine code, not editor-layer
+UI orchestration — decomposing it carries materially higher regression risk
+(shared mutable drag state across steps, no dedicated test harness for the
+gesture lifecycle) than the editor-layer fixes above, so it was left alone
+rather than rushed. `runSteps` (`src/editor/runSteps.js`) is editor-layer only
+today; if this is tackled, either move an equivalent helper into
+`packages/svgcanvas/common/` or write one scoped to `core/event.js`, and add
+gesture-lifecycle test coverage first so the refactor can be verified.
+
+### 4. Cross-file DOM id/class string coupling has no referential-integrity check — this is literally the mechanism of the bug that started this sweep
+
+- `TopPanel.js:16` `STANDARD_CONTEXT_PANELS` (hidden/shown every
+  `updateContextPanel()` pass) plus ~40 more raw `$id('tool_...')` string
+  literals in that file reference ids/classes that are physically defined in
+  `RightPanel.html` (and partly `TopPanel.html`) — nothing ties the two files
+  together.
+- `LeftPanel.js`'s `lockable` array and `BottomPanel.js`'s
+  `buttonsNeedingStroke`/`buttonsNeedingFillAndStroke` (the array 26b91862
+  fixed) are the identical shape — currently correct, equally fragile.
+- `ext-mirror/ext-mirror.js` and `ext-motion-lines/ext-motion-lines.js` already
+  reference `tool_repeat`/`tool_repeat_multi` ids that **don't exist anywhere**
+  in the codebase — silently harmless today only because both files fall back
+  through `||` chains to a different id, and `addBtn` no-ops on a null anchor.
+  It is pure luck that this hasn't already produced a visible bug.
+
+Nothing — no lint rule, no test — verifies that a `$id('...')`/
+`querySelector('.foo')` string literal anywhere in `src/editor` actually
+resolves to something present in the panel it's implicitly targeting. Fix
+direction: **one** vitest test (write once, covers every future refactor) that
+parses each `*Panel.html` template for `id="..."`/`class="..."` and asserts
+every such literal collected from `src/editor/**/*.js` (simple regex pass is
+enough) resolves against that set. This is a structural/referential check, not
+a feature-behavior test — categorically the kind of thing the user asked for:
+prevention instead of one more bug-shaped unit test. Effort: medium, one-time.
+
+### 5. Multi-instance "wrong owning editor" leaks: a shared fix mechanism exists but isn't enforced
+
+A real mechanism exists (`src/editor/domScope.js`'s `closestRoot`/
+`isActiveEditor`, plus `activateUtilities()` scoping — see the existing
+dom-utils/bbox-utils entry below), but it's applied reactively, file-by-file,
+as each instance is found (the 10 commit hashes in this section's intro). Two
+live, currently-unfixed instances found in this sweep:
+
+- `src/editor/extensions/ext-connector/ext-connector.js:684` —
+  `document.querySelector('#workarea') || $id('svgcanvas')`: prefers the
+  unscoped, first-in-document lookup *over* the scoped one (backwards
+  priority). With 2+ editors mounted, the Line tool's idle-hover highlight in
+  the second instance wires up against the first instance's workarea.
+- `src/editor/themeUtil.js:12` and `src/editor/uiMode.js:16` —
+  `rootEl ?? document.querySelector('.svg_editor')`: a host calling
+  `applyTheme(theme)`/`applyUiMode(mode)` without a `rootEl` (easy to forget)
+  always resolves to the first mounted editor, not the caller's.
+
+The project lints with `standard`, not a pluggable ESLint config, so a custom
+"no bare `document.querySelector`/`getElementById`" rule can't be bolted on
+the normal way. Fix direction: (a) fix the two instances above; (b) add a
+small grep-based pretest/CI script that fails on new bare
+`document.querySelector`/`getElementById` calls outside an allowlist
+(`domScope.js` itself, `EditorStartup`'s initial container resolution) — cheap,
+linter-agnostic enforcement so this doesn't need to be rediscovered a 9th time.
+
+### 6. `coords.js`'s `remapElement` hardcodes per-feature geometry sync — a future feature that forgets to wire in here corrupts silently, no crash
+
+`packages/svgcanvas/core/coords.js:543-567` — `remapElement` (the function
+every move/scale/rotate transform-bake runs through) has three hardcoded
+`if (selected.hasAttribute(...))` branches: an inline `data-arc` branch, and
+two that call named imports `remapCornerSource`/`remapTaperSource` for
+`se:orig-d` (corner-radius) / `se:taper-d` (taper-stroke). Any future
+attribute-driven derived-geometry feature — the puppet-warp "persistent rig"
+enhancement already on this backlog is a prime future candidate — must
+remember to add itself to this one shared central function, or its cached
+source geometry silently desyncs on the next move/scale/rotate. No crash, no
+console error — just quiet data corruption on the *next* edit, which is worse
+than the loud failure this whole sweep started from. Fix direction: a small
+`registerGeometryRemap(attrName, remapFn)` API that each feature module calls
+from its own `init` (`corner-radius.js`, `taper-stroke.js`, future ones), with
+`coords.js` iterating a registry instead of importing named functions —
+"I register myself" instead of "remember to hardcode me into shared core
+code," the same fix-shape as items 2-4. Effort: small-medium, touches 2
+existing modules + the registry.
+
+### 7. Test suite is structurally blind to this entire bug class
+
+All 112 `tests/unit/**` files are hand-mocked single-function tests with
+purpose-built DOM fixtures — a fixture can only contain the ids its author
+already knew to include, so this style of test *cannot* catch a wiring
+regression until after the bug ships and someone writes a fixture for it
+(exactly the pattern of `bottomPanel-updateToolButtonState.test.js`: correct
+and useful, but reactive by construction). Playwright e2e is more real than it
+looks — 16+16 committed `.spec.js` files, real browser, real DOM — but (a)
+`scripts/run-e2e.mjs`'s `hasPlaywright()` check *silently skips* the whole
+e2e suite with just a console warning if Playwright can't run, so CI doesn't
+hard-fail if it's ever unavailable, and (b) none of the sampled specs assert
+that selecting an element updates the *right panel's* fields — the actual
+thing that broke. CLAUDE.md's Playwright section also doesn't mention the
+checked-in `tests/e2e` suite exists at all, reading as if Playwright is only
+used ad hoc. Fix direction: (a) make e2e a hard CI gate instead of a soft skip;
+(b) prioritize item 4's referential-integrity test over more hand-written
+per-bug unit tests — one-time investment vs. tests that only ever cover bugs
+already found; (c) update CLAUDE.md to document the existing e2e suite.
+
+### 8. `svgcanvas.js`'s flat state bag has grown past the existing techdebt figure, with zero collision protection
+
+Updates the "Reorganize `svgcanvas.js` state bag (80+ flat properties)" entry
+at the bottom of this doc: current count is ~95 direct `this.xxx=` assignments
+in `svgcanvas.js` itself, plus ~30 more attached externally by the ~39
+per-module `xxxInit(this)` calls (`core/selection.js`, `core/coords.js`, etc.)
+— comfortably past 120 total properties now, not shrinking. There is no
+collision protection: two `core/*.js` modules assigning the same property name
+onto the instance would have the second one silently win, undetected. Cheap
+interim mitigation short of the full reorg: a dev-mode-only guard (e.g. a
+`Object.keys` snapshot diff around each `xxxInit(this)` call) that throws/warns
+if a module defines a property name already present — catches the actual root
+cause immediately, at a fraction of the cost of the full state-bag
+reorganization.
+
+### 9. Extensions have no id/class namespacing convention (minor)
+
+`ext-grid.js` hardcodes `id: 'canvasGrid'`/`'gridLines'`, `ext-markers.js`
+hardcodes `id="marker_panel"`, etc. — `extensionRegistry.js` only namespaces
+extensions by directory name, not by DOM footprint, so nothing prevents two
+extensions colliding on the same id. No known collision today; worth a
+documented `ext-<name>-*` prefix convention before the extension count grows
+further. Low effort, mostly documentation + opportunistic spot-fixes.
+
+### 10. Malformed-extension error clarity (minor)
+
+`EditorStartup.js` (~1257, ~1280) destructures `const { name, init } =
+imported.default` without checking `imported.default` exists, so a malformed
+extension module (missing default export) surfaces as a generic
+`TypeError: Cannot destructure property 'name' of undefined` instead of a
+clear "ext-X has no default export." Already caught by the correct
+per-extension try/catch (item 3's isolation *is* present here — this is the
+positive control that showed items 2-3 what "done right" looks like), so
+severity is low. Worth a one-line existence check for a clearer message.
+
+---
+
 ## Left panel drag-reorder / overflow bucket follow-ups (2026-07-24)
 
 From the `toolDragReorder.js`/`se-tool-overflow` build. Both are minor,

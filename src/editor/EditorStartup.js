@@ -264,12 +264,23 @@ class EditorStartup {
     */
     this.enableToolCancel = true
 
-    this.leftPanel.init()
-    this.bottomPanel.init()
-    this.rightPanel.init()
-    this.topPanel.init()
-    this.mainMenu.init()
-    this.tabletShell.init()
+    // Each panel is initialized in isolation so one panel's init failure
+    // (e.g. a stale DOM id after a template refactor) doesn't abort the
+    // remaining panels, the svgCanvas event bindings, and extension loading
+    // that all follow later in this method.
+    const initPanel = (label, fn) => {
+      try {
+        fn()
+      } catch (err) {
+        console.error(`Panel failed to init: ${label}; `, err)
+      }
+    }
+    initPanel('leftPanel', () => this.leftPanel.init())
+    initPanel('bottomPanel', () => this.bottomPanel.init())
+    initPanel('rightPanel', () => this.rightPanel.init())
+    initPanel('topPanel', () => this.topPanel.init())
+    initPanel('mainMenu', () => this.mainMenu.init())
+    initPanel('tabletShell', () => this.tabletShell.init())
 
     const { undoMgr } = this.svgCanvas
     this.canvMenu = $id('se-cmenu_canvas')

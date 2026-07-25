@@ -280,10 +280,14 @@ const runExtensionsMethod = (
       })
       document.dispatchEvent(event)
     } else if (ext[action]) {
-      if (returnArray) {
-        result.push(ext[action](vars))
-      } else {
-        result = ext[action](vars)
+      try {
+        if (returnArray) {
+          result.push(ext[action](vars))
+        } else {
+          result = ext[action](vars)
+        }
+      } catch (err) {
+        console.error(`Extension "${name}" threw during "${action}":`, err)
       }
     }
   }
