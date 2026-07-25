@@ -134,7 +134,13 @@ customElements.define('se-text-prompt-dialog', SeTextPromptDialog)
  * @returns {Promise<string|null>}
  */
 const sePrompt = (message, value = '', opts = {}, scopeEl) => {
-  const el = closestRoot(scopeEl).querySelector('se-text-prompt-dialog') ?? document.querySelector('se-text-prompt-dialog')
+  // closestRoot() already falls back to `document` for standalone/no-scopeEl
+  // use, so no separate document.querySelector fallback is needed here — one
+  // used to follow this call and, whenever the owning container's own dialog
+  // couldn't be found (e.g. called before EditorStartup finishes mounting
+  // it), silently fell through to whichever editor's dialog the document-wide
+  // query happened to hit first.
+  const el = closestRoot(scopeEl).querySelector('se-text-prompt-dialog')
   if (!el) return Promise.resolve(null)
   return el.prompt(message, value, opts)
 }

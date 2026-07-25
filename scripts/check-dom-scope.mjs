@@ -22,8 +22,7 @@ const editorDir = join(rootDir, 'src', 'editor')
 const ALLOWLIST = new Set([
   'src/editor/domScope.js', // defines closestRoot()/getActiveRoot() themselves
   'src/editor/EditorStartup.js', // initial container resolution + one-time global <style> injection guard
-  'src/editor/contextmenu.js', // documented default-param fallback for standalone/single-editor use (e.g. tests)
-  'src/editor/dialogs/seTextPromptDialog.js' // pre-existing closestRoot() fallback tail, out of scope for this pass
+  'src/editor/contextmenu.js' // documented default-param fallback for standalone/single-editor use (e.g. tests)
 ])
 
 const BARE_LOOKUP = /\bdocument\.(querySelector|querySelectorAll|getElementById)\(/
