@@ -24,6 +24,11 @@ const hasPlaywright = async () => {
     await run('npx', ['playwright', '--version'], { timeout: 30000 })
     return true
   } catch (error) {
+    if (process.env.CI) {
+      // In CI, an unavailable Playwright must fail the build, not silently
+      // skip the entire e2e suite (that would let regressions merge unnoticed).
+      throw new Error(`e2e tests are required in CI but Playwright is unavailable: ${error.message || error}`)
+    }
     console.warn('Skipping e2e tests because Playwright is unavailable or failed to verify.')
     console.warn(error.message || error)
     return false

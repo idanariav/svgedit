@@ -201,6 +201,31 @@ the relevant doc(s) to reflect the change. Specifically:
 The project ships Playwright (`node_modules/playwright`) and the Vite dev
 server doubles as the test host.
 
+### Checked-in e2e suite (`tests/e2e/`)
+
+There is a committed Playwright e2e suite — `tests/e2e/*.spec.js` (browser
+specs) plus `tests/e2e/unit/*.spec.js` (svgcanvas-core specs run inside a
+real browser for coverage) — configured by `playwright.config.mjs`. It is
+**not** ad hoc: `npm test` runs `vitest run --coverage && node
+scripts/run-e2e.mjs`, and `run-e2e.mjs` builds `dist/editor` with coverage
+instrumentation, starts the preview server, and runs the full suite via
+`npx playwright test`. In CI (`CI=true`, set by the GitHub Actions
+workflows) a missing/broken Playwright install now **fails the build**
+rather than silently skipping the suite — only outside CI does it warn and
+skip, for contributors without browsers installed locally.
+
+When adding or changing editor-layer behavior (not just canvas-core logic),
+prefer extending this suite over `tests/unit/` hand-mocked fixtures where
+the behavior spans real DOM wiring (e.g. "does selecting an element update
+the right panel's fields") — that class of regression is what hand-mocked
+unit fixtures structurally can't catch. Run a single spec directly with
+`npx playwright test tests/e2e/<name>.spec.js` (dev server or `dist/editor`
+build must already be up per the sections below).
+
+The sections below cover manual/ad-hoc Playwright usage (e.g. an agent
+driving the browser interactively to verify a change) — a different mode
+from running the checked-in suite above.
+
 ### Starting the dev server
 
 ```bash

@@ -84,27 +84,6 @@ from its own `init` (`corner-radius.js`, `taper-stroke.js`, future ones), with
 code," the same fix-shape as items 2-4. Effort: small-medium, touches 2
 existing modules + the registry.
 
-### 7. Test suite is structurally blind to this entire bug class
-
-All 112 `tests/unit/**` files are hand-mocked single-function tests with
-purpose-built DOM fixtures — a fixture can only contain the ids its author
-already knew to include, so this style of test *cannot* catch a wiring
-regression until after the bug ships and someone writes a fixture for it
-(exactly the pattern of `bottomPanel-updateToolButtonState.test.js`: correct
-and useful, but reactive by construction). Playwright e2e is more real than it
-looks — 16+16 committed `.spec.js` files, real browser, real DOM — but (a)
-`scripts/run-e2e.mjs`'s `hasPlaywright()` check *silently skips* the whole
-e2e suite with just a console warning if Playwright can't run, so CI doesn't
-hard-fail if it's ever unavailable, and (b) none of the sampled specs assert
-that selecting an element updates the *right panel's* fields — the actual
-thing that broke. CLAUDE.md's Playwright section also doesn't mention the
-checked-in `tests/e2e` suite exists at all, reading as if Playwright is only
-used ad hoc. Fix direction: (a) make e2e a hard CI gate instead of a soft skip;
-(b) `tests/unit/dom-reference-integrity.test.js` (added to close the old item
-4) now gives the *cross-file wiring* half of this a one-time, non-reactive
-check; the "does selecting an element update the right panel's fields" behavior
-gap is still open; (c) update CLAUDE.md to document the existing e2e suite.
-
 ### 8. `svgcanvas.js`'s flat state bag has grown past the existing techdebt figure, with zero collision protection
 
 Updates the "Reorganize `svgcanvas.js` state bag (80+ flat properties)" entry
