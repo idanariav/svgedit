@@ -85,6 +85,7 @@ import {
   getParents,
   mergeDeep
 } from './common/util.js'
+import { runGuardedInit } from './common/initGuard.js'
 
 import dataStorage from './core/dataStorage.js'
 
@@ -119,7 +120,11 @@ class SvgCanvas extends EventTarget {
     super()
     // imported function made available as methods
     this.initializeSvgCanvasMethods()
-    unitsInit(this)
+    // Tracks which `core/*.js` init() call last claimed each property name
+    // on this instance, so a later call reusing the same name gets logged
+    // instead of silently overwriting the earlier one (see .claude/techdebt.md #8).
+    const initGuardRegistry = new Map()
+    runGuardedInit(this, 'units', unitsInit, initGuardRegistry)
 
     // initialize class variables
     this.saveOptions = { round_digits: 2 } // Object with save options
@@ -197,8 +202,8 @@ class SvgCanvas extends EventTarget {
     container.append(this.svgroot)
     // The actual element that represents the final output SVG element.
     this.svgContent = this.svgdoc.createElementNS(NS.SVG, 'svg')
-    touchInit(this)
-    clearInit(this)
+    runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
+    runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
     this.clearSvgContentElement()
     // Current `draw.Drawing` object.
     this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix)
@@ -262,20 +267,20 @@ class SvgCanvas extends EventTarget {
     // default size of 1 until it needs to grow bigger
     this.selectedElements = []
 
-    jsonInit(this)
-    domUtilsInit(this)
-    bboxUtilsInit(this)
-    coordsInit(this)
-    recalculateInit(this)
-    selectInit(this)
-    undoInit(this)
-    selectionInit(this)
+    runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
+    runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
+    runGuardedInit(this, 'bboxUtils', bboxUtilsInit, initGuardRegistry)
+    runGuardedInit(this, 'coords', coordsInit, initGuardRegistry)
+    runGuardedInit(this, 'recalculate', recalculateInit, initGuardRegistry)
+    runGuardedInit(this, 'select', selectInit, initGuardRegistry)
+    runGuardedInit(this, 'undo', undoInit, initGuardRegistry)
+    runGuardedInit(this, 'selection', selectionInit, initGuardRegistry)
 
     this.nsMap = getReverseNS()
     // this.selectorManager is attached per-instance by selectInit()
 
     // this.pathActions is attached per-instance by pathActionsInit() (run inside pathModule.init)
-    pathModule.init(this)
+    runGuardedInit(this, 'path', pathModule.init, initGuardRegistry)
     // Interface strings, usually for title elements
     this.uiStrings = {}
 
@@ -287,11 +292,11 @@ class SvgCanvas extends EventTarget {
     this.opacAni.setAttribute('fill', 'freeze')
     this.svgroot.appendChild(this.opacAni)
 
-    eventInit(this)
-    textActionsInit(this)
-    svgInit(this)
-    draw.init(this)
-    elemGetSet.init(this)
+    runGuardedInit(this, 'event', eventInit, initGuardRegistry)
+    runGuardedInit(this, 'textActions', textActionsInit, initGuardRegistry)
+    runGuardedInit(this, 'svg', svgInit, initGuardRegistry)
+    runGuardedInit(this, 'draw', draw.init, initGuardRegistry)
+    runGuardedInit(this, 'elemGetSet', elemGetSet.init, initGuardRegistry)
 
     // prevent links from being followed in the canvas
     const handleLinkInCanvas = e => {
@@ -313,18 +318,18 @@ class SvgCanvas extends EventTarget {
     this.filter = null
     this.filterHidden = false
 
-    blurInit(this)
-    selectedElemInit(this)
-    booleanOpsInit(this)
-    pathOffsetInit(this)
-    pathSimplifyInit(this)
-    cornerRadiusInit(this)
-    taperStrokeInit(this)
-    textPathInit(this)
-    shapeBuilderInit(this)
-    clipMaskInit(this)
-    cutterInit(this)
-    imageCropInit(this)
+    runGuardedInit(this, 'blur', blurInit, initGuardRegistry)
+    runGuardedInit(this, 'selectedElem', selectedElemInit, initGuardRegistry)
+    runGuardedInit(this, 'booleanOps', booleanOpsInit, initGuardRegistry)
+    runGuardedInit(this, 'pathOffset', pathOffsetInit, initGuardRegistry)
+    runGuardedInit(this, 'pathSimplify', pathSimplifyInit, initGuardRegistry)
+    runGuardedInit(this, 'cornerRadius', cornerRadiusInit, initGuardRegistry)
+    runGuardedInit(this, 'taperStroke', taperStrokeInit, initGuardRegistry)
+    runGuardedInit(this, 'textPath', textPathInit, initGuardRegistry)
+    runGuardedInit(this, 'shapeBuilder', shapeBuilderInit, initGuardRegistry)
+    runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)
+    runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
+    runGuardedInit(this, 'imageCrop', imageCropInit, initGuardRegistry)
 
     /**
      * Transfers sessionStorage from one tab to another.
@@ -352,7 +357,7 @@ class SvgCanvas extends EventTarget {
     // Ask other tabs for sessionStorage (this is ONLY to trigger event).
     localStorage.setItem(`${CLIPBOARD_ID}_startup`, Math.random())
 
-    pasteInit(this)
+    runGuardedInit(this, 'paste', pasteInit, initGuardRegistry)
 
     this.contentW = this.getResolution().w
     this.contentH = this.getResolution().h

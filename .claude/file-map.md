@@ -222,6 +222,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `common/browser.js` | Browser detection utilities |
 | `common/util.js` | Common utility functions |
 | `common/logger.js` | Logging helpers |
+| `common/initGuard.js` | `runGuardedInit()` — wraps each `core/*.js` `xxxInit(canvas)` call in `svgcanvas.js`'s constructor with an `Object.keys` diff, warning if two modules claim the same instance property name |
 
 ---
 

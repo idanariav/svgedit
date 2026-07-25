@@ -84,21 +84,6 @@ from its own `init` (`corner-radius.js`, `taper-stroke.js`, future ones), with
 code," the same fix-shape as items 2-4. Effort: small-medium, touches 2
 existing modules + the registry.
 
-### 8. `svgcanvas.js`'s flat state bag has grown past the existing techdebt figure, with zero collision protection
-
-Updates the "Reorganize `svgcanvas.js` state bag (80+ flat properties)" entry
-at the bottom of this doc: current count is ~95 direct `this.xxx=` assignments
-in `svgcanvas.js` itself, plus ~30 more attached externally by the ~39
-per-module `xxxInit(this)` calls (`core/selection.js`, `core/coords.js`, etc.)
-— comfortably past 120 total properties now, not shrinking. There is no
-collision protection: two `core/*.js` modules assigning the same property name
-onto the instance would have the second one silently win, undetected. Cheap
-interim mitigation short of the full reorg: a dev-mode-only guard (e.g. a
-`Object.keys` snapshot diff around each `xxxInit(this)` call) that throws/warns
-if a module defines a property name already present — catches the actual root
-cause immediately, at a fraction of the cost of the full state-bag
-reorganization.
-
 ### 9. Extensions have no id/class namespacing convention (minor)
 
 `ext-grid.js` hardcodes `id: 'canvasGrid'`/`'gridLines'`, `ext-markers.js`
