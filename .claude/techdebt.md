@@ -64,32 +64,6 @@ today; if this is tackled, either move an equivalent helper into
 `packages/svgcanvas/common/` or write one scoped to `core/event.js`, and add
 gesture-lifecycle test coverage first so the refactor can be verified.
 
-### 4. Cross-file DOM id/class string coupling has no referential-integrity check — this is literally the mechanism of the bug that started this sweep
-
-- `TopPanel.js:16` `STANDARD_CONTEXT_PANELS` (hidden/shown every
-  `updateContextPanel()` pass) plus ~40 more raw `$id('tool_...')` string
-  literals in that file reference ids/classes that are physically defined in
-  `RightPanel.html` (and partly `TopPanel.html`) — nothing ties the two files
-  together.
-- `LeftPanel.js`'s `lockable` array and `BottomPanel.js`'s
-  `buttonsNeedingStroke`/`buttonsNeedingFillAndStroke` (the array 26b91862
-  fixed) are the identical shape — currently correct, equally fragile.
-- `ext-mirror/ext-mirror.js` and `ext-motion-lines/ext-motion-lines.js` already
-  reference `tool_repeat`/`tool_repeat_multi` ids that **don't exist anywhere**
-  in the codebase — silently harmless today only because both files fall back
-  through `||` chains to a different id, and `addBtn` no-ops on a null anchor.
-  It is pure luck that this hasn't already produced a visible bug.
-
-Nothing — no lint rule, no test — verifies that a `$id('...')`/
-`querySelector('.foo')` string literal anywhere in `src/editor` actually
-resolves to something present in the panel it's implicitly targeting. Fix
-direction: **one** vitest test (write once, covers every future refactor) that
-parses each `*Panel.html` template for `id="..."`/`class="..."` and asserts
-every such literal collected from `src/editor/**/*.js` (simple regex pass is
-enough) resolves against that set. This is a structural/referential check, not
-a feature-behavior test — categorically the kind of thing the user asked for:
-prevention instead of one more bug-shaped unit test. Effort: medium, one-time.
-
 ### 5. Multi-instance "wrong owning editor" leaks: a shared fix mechanism exists but isn't enforced
 
 A real mechanism exists (`src/editor/domScope.js`'s `closestRoot`/
@@ -152,9 +126,10 @@ that selecting an element updates the *right panel's* fields — the actual
 thing that broke. CLAUDE.md's Playwright section also doesn't mention the
 checked-in `tests/e2e` suite exists at all, reading as if Playwright is only
 used ad hoc. Fix direction: (a) make e2e a hard CI gate instead of a soft skip;
-(b) prioritize item 4's referential-integrity test over more hand-written
-per-bug unit tests — one-time investment vs. tests that only ever cover bugs
-already found; (c) update CLAUDE.md to document the existing e2e suite.
+(b) `tests/unit/dom-reference-integrity.test.js` (added to close the old item
+4) now gives the *cross-file wiring* half of this a one-time, non-reactive
+check; the "does selecting an element update the right panel's fields" behavior
+gap is still open; (c) update CLAUDE.md to document the existing e2e suite.
 
 ### 8. `svgcanvas.js`'s flat state bag has grown past the existing techdebt figure, with zero collision protection
 

@@ -875,8 +875,6 @@ class Editor extends EditorStartup {
     // Proportion markers are anchored to the canvas width/height, so a
     // resolution change must reposition them (set by ext-proportion-markers).
     this.updateProportionMarkers?.()
-
-    if ($id('dialog_box') != null) $id('dialog_box').style.display = 'none'
   }
 
   /**
@@ -1448,7 +1446,6 @@ class Editor extends EditorStartup {
    */
   cancelOverlays (e) {
     const { $id } = this // container-scoped lookup (see EditorStartup constructor)
-    if ($id('dialog_box') != null) $id('dialog_box').style.display = 'none'
     const $editorDialog = $id('se-svg-editor-dialog')
     const editingsource = $editorDialog.getAttribute('dialog') === 'open'
     if (!editingsource && !this.docprops && !this.configObj.preferences) {
