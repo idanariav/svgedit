@@ -91,8 +91,7 @@ class BottomPanel {
     const bNoStroke = this.editor.svgCanvas.getColor('stroke') === 'none'
     const buttonsNeedingStroke = ['tool_fhpath', 'tool_line']
     const buttonsNeedingFillAndStroke = [
-      'tools_rect',
-      'tools_ellipse',
+      'tools_shapes',
       'tool_text',
       'tool_path'
     ]
