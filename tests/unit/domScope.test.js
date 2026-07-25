@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { setActiveEditor, clearActiveEditor, isActiveEditor } from '../../src/editor/domScope.js'
+import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot } from '../../src/editor/domScope.js'
 
 describe('domScope active-editor tracking', () => {
   afterEach(() => {
@@ -87,6 +87,47 @@ describe('domScope active-editor tracking', () => {
 
       expect(isActiveEditor(editorA)).toBe(true)
       expect(isActiveEditor(editorB)).toBe(false)
+    })
+  })
+
+  describe('getActiveRoot', () => {
+    let svgEditorA
+    let svgEditorB
+
+    afterEach(() => {
+      svgEditorA?.remove()
+      svgEditorB?.remove()
+    })
+
+    const makeMountedEditor = () => {
+      const container = document.createElement('div')
+      container.setAttribute('data-svgedit-root', '')
+      const svgEditorEl = document.createElement('div')
+      svgEditorEl.className = 'svg_editor'
+      container.append(svgEditorEl)
+      document.body.append(container)
+      return { container, svgEditorEl }
+    }
+
+    it('prefers the active editor over the first .svg_editor in DOM order', () => {
+      const a = makeMountedEditor()
+      const b = makeMountedEditor()
+      svgEditorA = a.container
+      svgEditorB = b.container
+
+      // Regression guard: themeUtil.applyTheme / uiMode.applyUiMode used to
+      // default to `document.querySelector('.svg_editor')`, which always
+      // resolves to `a` here regardless of which editor a host meant.
+      setActiveEditor({ $container: b.container })
+
+      expect(getActiveRoot()).toBe(b.svgEditorEl)
+    })
+
+    it('falls back to the first .svg_editor when no editor is active yet', () => {
+      const a = makeMountedEditor()
+      svgEditorA = a.container
+
+      expect(getActiveRoot()).toBe(a.svgEditorEl)
     })
   })
 })

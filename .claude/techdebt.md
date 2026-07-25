@@ -64,32 +64,6 @@ today; if this is tackled, either move an equivalent helper into
 `packages/svgcanvas/common/` or write one scoped to `core/event.js`, and add
 gesture-lifecycle test coverage first so the refactor can be verified.
 
-### 5. Multi-instance "wrong owning editor" leaks: a shared fix mechanism exists but isn't enforced
-
-A real mechanism exists (`src/editor/domScope.js`'s `closestRoot`/
-`isActiveEditor`, plus `activateUtilities()` scoping — see the existing
-dom-utils/bbox-utils entry below), but it's applied reactively, file-by-file,
-as each instance is found (the 10 commit hashes in this section's intro). Two
-live, currently-unfixed instances found in this sweep:
-
-- `src/editor/extensions/ext-connector/ext-connector.js:684` —
-  `document.querySelector('#workarea') || $id('svgcanvas')`: prefers the
-  unscoped, first-in-document lookup *over* the scoped one (backwards
-  priority). With 2+ editors mounted, the Line tool's idle-hover highlight in
-  the second instance wires up against the first instance's workarea.
-- `src/editor/themeUtil.js:12` and `src/editor/uiMode.js:16` —
-  `rootEl ?? document.querySelector('.svg_editor')`: a host calling
-  `applyTheme(theme)`/`applyUiMode(mode)` without a `rootEl` (easy to forget)
-  always resolves to the first mounted editor, not the caller's.
-
-The project lints with `standard`, not a pluggable ESLint config, so a custom
-"no bare `document.querySelector`/`getElementById`" rule can't be bolted on
-the normal way. Fix direction: (a) fix the two instances above; (b) add a
-small grep-based pretest/CI script that fails on new bare
-`document.querySelector`/`getElementById` calls outside an allowlist
-(`domScope.js` itself, `EditorStartup`'s initial container resolution) — cheap,
-linter-agnostic enforcement so this doesn't need to be rediscovered a 9th time.
-
 ### 6. `coords.js`'s `remapElement` hardcodes per-feature geometry sync — a future feature that forgets to wire in here corrupts silently, no crash
 
 `packages/svgcanvas/core/coords.js:543-567` — `remapElement` (the function

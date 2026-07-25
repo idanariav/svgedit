@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "lint": "standard .",
-    "pretest": "npm run lint",
+    "check-dom-scope": "node scripts/check-dom-scope.mjs",
+    "pretest": "npm run lint && npm run check-dom-scope",
     "test": "vitest run --coverage && node scripts/run-e2e.mjs",
     "build": "vite build packages/svgcanvas && vite build",
     "postbuild": "node scripts/copy-static.mjs",

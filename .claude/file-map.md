@@ -262,6 +262,7 @@ of `ext-*/ext-*.js`, bundled into `Editor.js`).
 | `vite.config.mjs` | Vite build config (ES + IIFE outputs, plugins, entry points) |
 | `src/vite-env.d.ts` | Ambient TS declarations for Vite imports (`vite/client` + `*.html` as string) so the IDE resolves template/`?inline` imports |
 | `scripts/copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are **not** copied) |
+| `scripts/check-dom-scope.mjs` | `pretest` gate: fails on new bare `document.querySelector`/`getElementById` calls under `src/editor/` outside a small reviewed allowlist — enforces the multi-instance scoping in `src/editor/domScope.js` |
 | `package.json` | Scripts: `build`, `start` (dev server :8000), `build-docs`. Dependencies include `culori` (OKLCH color math, used by `src/editor/palette/`) |
 | `packages/svgcanvas/package.json` | svgcanvas workspace package |
 | `CLAUDE.md` | This repo's coding guidelines for AI agents |

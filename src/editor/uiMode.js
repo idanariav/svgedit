@@ -1,3 +1,5 @@
+import { getActiveRoot } from './domScope.js'
+
 /**
  * Apply the editor UI mode (desktop vs. touch-first tablet shell).
  *
@@ -10,10 +12,11 @@
  * Hosts can also toggle the class directly without going through the menu.
  *
  * @param {boolean} on - `true` for tablet mode, `false` for desktop
- * @param {Element} [rootEl] - optional override; defaults to first `.svg_editor`
+ * @param {Element} [rootEl] - optional override; defaults to the active editor
+ *   (or the first `.svg_editor` in the document if none is active yet)
  */
 export const applyUiMode = (on, rootEl) => {
-  const el = rootEl ?? document.querySelector('.svg_editor')
+  const el = rootEl ?? getActiveRoot()
   if (!el) return
   el.classList.toggle('ui-tablet', isTabletMode(on))
 }

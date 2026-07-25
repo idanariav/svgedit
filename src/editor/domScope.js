@@ -71,3 +71,16 @@ export const isActiveEditor = (editor) => {
   if (focusedRoot !== document) return focusedRoot === editor?.$container
   return activeEditor === null || activeEditor === editor
 }
+
+/**
+ * Resolve the `.svg_editor` root of the currently active editor, for helpers
+ * that operate on "the" editor when no explicit instance is given (see
+ * `themeUtil.applyTheme` / `uiMode.applyUiMode`). With 2+ editors mounted, a
+ * bare `document.querySelector('.svg_editor')` always resolves to the first
+ * one in DOM order regardless of which the caller meant; routing through the
+ * same `activeEditor` pointer the rest of this module uses keeps that default
+ * consistent with which editor last had focus. Falls back to the first
+ * `.svg_editor` in the document for the single-editor/no-interaction-yet case.
+ * @returns {Element|null}
+ */
+export const getActiveRoot = () => activeEditor?.$container?.querySelector('.svg_editor') ?? document.querySelector('.svg_editor')

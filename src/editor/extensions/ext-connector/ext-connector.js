@@ -680,8 +680,13 @@ export default {
 
         // Pre-draw hover highlight: the extension's mouseMove hook only fires
         // while the mouse button is held, so we attach a direct DOM listener
-        // on the workarea for idle hover detection in line mode.
-        const workarea = document.querySelector('#workarea') || $id('svgcanvas')
+        // on the workarea for idle hover detection in line mode. $id is scoped
+        // to this editor's own container (see EditorStartup) and already falls
+        // back to a plain document lookup when unscoped (standalone use), so
+        // no separate document.querySelector fallback is needed here — one
+        // used to precede this call and resolve to the wrong instance's
+        // workarea whenever 2+ editors were mounted.
+        const workarea = $id('workarea')
         workarea?.addEventListener('mousemove', (e) => {
           if (svgCanvas.getMode() !== 'line' || started) return
           const hovered = findConnectableAt(e.clientX, e.clientY)
