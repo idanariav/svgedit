@@ -93,44 +93,26 @@ the user; each is an additive enhancement, not a fix. (The bézier-refit item is
 now done — on commit the dense warp polyline is refit to cubic béziers via
 `svgCanvas.simplifyPathD`, so it's no longer listed here.)
 
-- **No persistent / re-editable rig.** By decision, the tool is session-only:
-  the shape's geometry at tool-entry is the rest pose, pins live only for that
-  session, and the pose bakes on exit. There's no canonical rest pose to snap
-  back to and pins don't survive save/reload. A true reusable puppet would store
-  pins + original rest geometry as `se:`-prefixed metadata (precedent:
-  `core/corner-radius.js`'s `se:orig-d`) and re-hydrate on re-entry, with
-  `remapElement` hooks to keep the source geometry synced through baked
-  transforms. Significant effort (metadata schema, save/load, remap plumbing) —
-  deferred until the session-only tool proves useful.
-
 - **Pins are fixed content-space anchors, not mesh-attached.** A pin left as an
   anchor stays at its content coordinate; after a big warp it can visually
   detach from the limb it was placed on. Illustrator attaches pins to the mesh
   so they ride the deformation. Attaching a pin to a path parameter (nearest
-  sample + offset) would fix this but only matters once multi-drag sessions /
-  persistent rigs exist. Minor UX item.
+  sample + offset) would fix this. Minor UX item — now more relevant than
+  before since persistent single-shape rigs make repeated re-entry (and thus
+  repeated exposure to this drift) more common.
 
 ### Deferred code-review findings (2026-07-23 review pass)
 
 A review agent flagged these; the correctness items (own-transform space bug,
 atomic/cancelable conversion, singular-matrix guard, no-op undo, themed pins)
-were **fixed**, and three more were closed 2026-07-26 (group-context coordinate
+were **fixed**, three more were closed 2026-07-26 (group-context coordinate
 mismatch — `puppetwarp` added to `event-group-context.js`'s
 `CONTENT_SPACE_MODES` so `mouseDown`'s `start_x/start_y` and `mouseMove`'s
 `mouse_x/mouse_y` stay in the same content space; scale-dependent magic
 constants — `REFIT_TOLERANCE`/the `len / 6` sample step replaced with
 `sampleStepFor`/`refitToleranceFor`, derived from each target's content-space
 bbox diagonal, with regression tests in `tests/unit/ext-puppet-warp-scale.test.js`
-and `tests/unit/event-modes.test.js`). This remains as a lower-priority
-follow-up:
-
-- **Overlay pins live inside `#svgcontent` (serialization risk).** `addPinDot`
-  appends `<circle>`s to the current layer. They're removed on every exit path,
-  so a normal session is clean — but if a host autosave / `getSvgString()` fires
-  *mid-session* the pins get serialized into the saved doc. `ext-curvature` has
-  the same accepted risk; the proper fix (used by smart-guides / shape-builder)
-  is an overlay `<svg>`/`<g>` in `#svgroot` (outside content) synced to the
-  content transform on move + `zoomChanged`. Moderate effort. Low likelihood.
+and `tests/unit/event-modes.test.js`). This remains as a lower-priority follow-up:
 
 - **Extension logic has no vitest coverage (only `mls.js` does).** The
   coordinate mapping, `startSession` target resolution, and commit/cancel undo

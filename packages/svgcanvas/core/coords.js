@@ -5,7 +5,7 @@
  */
 
 import { warn } from '../common/logger.js'
-import { runGeometryRemaps } from './geometry-remap-registry.js'
+import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-registry.js'
 
 import {
   assignAttributes
@@ -560,4 +560,10 @@ const pathMap = [
   }
 
   svgCanvas.remapElement = remapElement
+  // Exposed on the instance (not just importable from geometry-remap-registry.js
+  // directly) so consumers outside packages/svgcanvas's own build — editor
+  // extensions, served from source rather than bundled into dist/svgcanvas.js —
+  // register into the *same* registry this module's runGeometryRemaps reads
+  // from, rather than an independent module-graph copy that never gets seen.
+  svgCanvas.registerGeometryRemap = registerGeometryRemap
 }
