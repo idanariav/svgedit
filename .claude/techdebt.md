@@ -246,12 +246,3 @@ post-`M` node of a closed loop. Fixing it correctly means reworking that
 detection (moderate risk; the function's index bookkeeping is intricate), so it
 was left out of the freeze fix. Reproduce: select node index 1 of a closed
 triangle in pathedit, press the open/close-subpath control repeatedly.
-
-## From the Phase 1-11 cleanup roadmap (`.claude/plans/i-want-to-do-immutable-kettle.md`)
-
-The following were explicitly called out in that plan as "Deferred / optional
-future refactors" — each needs its own planning pass before execution:
-
-- **Reorganize `svgcanvas.js` state bag (80+ flat properties)** into concern
-  objects (selection / drawing / style / history / zoom), keeping getters for
-  API compat. Very high effort; 100+ call sites.

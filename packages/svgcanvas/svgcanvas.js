@@ -127,45 +127,13 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'units', unitsInit, initGuardRegistry)
 
     // initialize class variables
-    this.saveOptions = { round_digits: 2 } // Object with save options
     this.importIds = {} // Object with IDs for imported files, to see if one was already added
     this.extensions = {} // Object to contain all included extensions
     this.removedElements = {} // Map of deleted reference elements
-    this.started = false // Boolean indicating whether or not a draw action has been this.started
-    this.startTransform = null // String with an element's initial transform attribute value
-    this.currentMode = 'select' // String indicating the current editor mode
-    this.toolLocked = false // Boolean: keep the active draw tool selected after each object (lock mode)
-    this.textFreshCreate = false // Boolean: the current text was just placed via the text tool (vs editing an existing one)
-    this.currentResizeMode = 'none' // String with the current direction in which an element is being resized
-    this.justSelected = null // The DOM element that was just selected
-    this.rubberBox = null // DOM element for selection rectangle drawn by the user
-    this.curBBoxes = [] // Array of current BBoxes, used in getIntersectionList().
-    this.lastClickPoint = null // Canvas point for the most recent right click
-    this.rootSctm = null // Root Current Transformation Matrix in user units
-    this.drawnPath = null
-    this.freehand = {
-      // Mouse events
-      minx: null,
-      miny: null,
-      maxx: null,
-      maxy: null
-    }
-    this.dAttr = null
-    this.startX = null
-    this.startY = null
-    this.rStartX = null
-    this.rStartY = null
-    this.initBbox = {}
-    this.sumDistance = 0
-    this.controllPoint2 = { x: 0, y: 0 }
-    this.controllPoint1 = { x: 0, y: 0 }
-    this.start = { x: 0, y: 0 }
-    this.end = { x: 0, y: 0 }
-    this.bSpline = { x: 0, y: 0 }
-    this.nextPos = { x: 0, y: 0 }
     this.idprefix = 'svg_' // Prefix string for element IDs
     this.encodableImages = {}
     this.encodableFonts = {} // { fontFamily: base64 woff2 } registry for embed-on-export
+    this.saveOptions = { round_digits: 2 } // Object with save options
 
     this.curConfig = {
       // Default configuration options
@@ -179,39 +147,6 @@ class SvgCanvas extends EventTarget {
     }
     this.lastGoodImgUrl = `${this.curConfig.imgPath}/logo.svg` // String with image URL of last loadable image
     const { dimensions } = this.curConfig // Array with width/height of canvas
-
-    // "document" element associated with the container (same as window.document using default svg-editor.js)
-    // NOTE: This is not actually a SVG document, but an HTML document.
-    this.svgdoc = window.document
-    this.container = container
-    // Resolve element lookups within the owning editor's container rather than
-    // the whole document, so several editors can share the same fixed IDs
-    // (svgcanvas, svgcontent, …) without colliding. Falls back to the global
-    // document lookups when no scope root is supplied (e.g. standalone use).
-    // initializeSvgCanvasMethods() above set the global $id/$qq/$qa; override
-    // them here now that the scope root is known. core/event.js and the editor
-    // extensions read these off the instance, so they inherit the scoping.
-    this.scopeRoot = scopeRoot
-    if (scopeRoot) {
-      this.$id = scopedId(scopeRoot)
-      this.$qq = scopedQq(scopeRoot)
-      this.$qa = scopedQa(scopeRoot)
-    }
-    // This is a container for the document being edited, not the document itself.
-    this.svgroot = svgRootElement(this.svgdoc, dimensions)
-    container.append(this.svgroot)
-    // The actual element that represents the final output SVG element.
-    this.svgContent = this.svgdoc.createElementNS(NS.SVG, 'svg')
-    runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
-    runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
-    this.clearSvgContentElement()
-    // Current `draw.Drawing` object.
-    this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix)
-    // Float displaying the current zoom level (1 = 100%, .5 = 50%, etc.).
-    this.zoom = 1
-
-    // pointer to current group (for in-group editing)
-    this.currentGroup = null
 
     // Object containing data for the currently selected styles
     const allProperties = {
@@ -240,8 +175,6 @@ class SvgCanvas extends EventTarget {
       font_size: this.curConfig.text?.font_size,
       font_family: this.curConfig.text?.font_family
     })
-    this.curText = allProperties.text // Current text style properties
-
     // Active brush-tool settings (session/tool state, not persisted to the
     // document — mirrors curShape/curText for the freehand brush tool).
     // `roundness`/`taperStart`/`taperEnd` are 0-100, `angle` is degrees,
@@ -257,15 +190,94 @@ class SvgCanvas extends EventTarget {
       opacity: 1,
       smoothness: 0.3
     }
-    this.curBrush = allProperties.brush
 
-    // Current shape style properties
-    this.curShape = allProperties.shape
-    this.curProperties = this.curShape // Current general properties
+    // Session/UI state, grouped by concern rather than as flat instance
+    // properties (see .claude/techdebt.md history). curConfig (persisted
+    // config), DOM refs, and already-object-scoped subsystems (undoMgr,
+    // selectorManager, pathActions, ...) are intentionally NOT here — they
+    // stay top-level instance properties.
+    this.state = {
+      zoom: {
+        value: 1, // Float displaying the current zoom level (1 = 100%, .5 = 50%, etc.).
+        rootSctm: null // Root Current Transformation Matrix in user units
+      },
+      selection: {
+        elements: [], // Array with all the currently selected elements
+        currentGroup: null, // pointer to current group (for in-group editing)
+        justSelected: null, // The DOM element that was just selected
+        rubberBox: null, // DOM element for selection rectangle drawn by the user
+        bboxes: [] // Array of current BBoxes, used in getIntersectionList().
+      },
+      style: {
+        shape: allProperties.shape, // Current shape style properties
+        text: allProperties.text, // Current text style properties
+        brush: allProperties.brush,
+        properties: allProperties.shape // Current general properties
+      },
+      history: {
+        curCommand: null
+      },
+      drawing: {
+        started: false, // Boolean indicating whether or not a draw action has been started
+        startTransform: null, // String with an element's initial transform attribute value
+        currentMode: 'select', // String indicating the current editor mode
+        toolLocked: false, // Boolean: keep the active draw tool selected after each object (lock mode)
+        textFreshCreate: false, // Boolean: the current text was just placed via the text tool (vs editing an existing one)
+        currentResizeMode: 'none', // String with the current direction in which an element is being resized
+        lastClickPoint: null, // Canvas point for the most recent right click
+        drawnPath: null,
+        freehand: {
+          // Mouse events
+          minx: null,
+          miny: null,
+          maxx: null,
+          maxy: null
+        },
+        dAttr: null,
+        startX: null,
+        startY: null,
+        rStartX: null,
+        rStartY: null,
+        initBbox: {},
+        sumDistance: 0,
+        controllPoint1: { x: 0, y: 0 },
+        controllPoint2: { x: 0, y: 0 },
+        start: { x: 0, y: 0 },
+        end: { x: 0, y: 0 },
+        bSpline: { x: 0, y: 0 },
+        nextPos: { x: 0, y: 0 },
+        filter: null,
+        filterHidden: false
+      }
+    }
 
-    // Array with all the currently selected elements
-    // default size of 1 until it needs to grow bigger
-    this.selectedElements = []
+    // "document" element associated with the container (same as window.document using default svg-editor.js)
+    // NOTE: This is not actually a SVG document, but an HTML document.
+    this.svgdoc = window.document
+    this.container = container
+    // Resolve element lookups within the owning editor's container rather than
+    // the whole document, so several editors can share the same fixed IDs
+    // (svgcanvas, svgcontent, …) without colliding. Falls back to the global
+    // document lookups when no scope root is supplied (e.g. standalone use).
+    // initializeSvgCanvasMethods() above set the global $id/$qq/$qa; override
+    // them here now that the scope root is known. core/event.js and the editor
+    // extensions read these off the instance, so they inherit the scoping.
+    this.scopeRoot = scopeRoot
+    if (scopeRoot) {
+      this.$id = scopedId(scopeRoot)
+      this.$qq = scopedQq(scopeRoot)
+      this.$qa = scopedQa(scopeRoot)
+    }
+    // This is a container for the document being edited, not the document itself.
+    this.svgroot = svgRootElement(this.svgdoc, dimensions)
+    container.append(this.svgroot)
+    // The actual element that represents the final output SVG element.
+    this.svgContent = this.svgdoc.createElementNS(NS.SVG, 'svg')
+    runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
+    runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
+    this.clearSvgContentElement()
+    // Current `draw.Drawing` object.
+    this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix)
 
     runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
@@ -314,9 +326,6 @@ class SvgCanvas extends EventTarget {
 
     // Alias function
     this.linkControlPoints = this.pathActions.linkControlPoints
-    this.curCommand = null
-    this.filter = null
-    this.filterHidden = false
 
     runGuardedInit(this, 'blur', blurInit, initGuardRegistry)
     runGuardedInit(this, 'selectedElem', selectedElemInit, initGuardRegistry)
@@ -387,15 +396,15 @@ class SvgCanvas extends EventTarget {
   }
 
   getSelectedElements () {
-    return this.selectedElements
+    return this.state.selection.elements
   }
 
   setSelectedElements (key, value) {
-    this.selectedElements[key] = value
+    this.state.selection.elements[key] = value
   }
 
   setEmptySelectedElements () {
-    this.selectedElements = []
+    this.state.selection.elements = []
   }
 
   getSvgRoot () {
@@ -423,20 +432,20 @@ class SvgCanvas extends EventTarget {
   }
 
   getCurShape () {
-    return this.curShape
+    return this.state.style.shape
   }
 
   getBrushParams () {
-    return this.curBrush
+    return this.state.style.brush
   }
 
   setBrushParams (params) {
-    Object.assign(this.curBrush, params)
-    return this.curBrush
+    Object.assign(this.state.style.brush, params)
+    return this.state.style.brush
   }
 
   getCurrentGroup () {
-    return this.currentGroup
+    return this.state.selection.currentGroup
   }
 
   getBaseUnit () {
@@ -444,11 +453,11 @@ class SvgCanvas extends EventTarget {
   }
 
   getHeight () {
-    return this.svgContent.getAttribute('height') / this.zoom
+    return this.svgContent.getAttribute('height') / this.state.zoom.value
   }
 
   getWidth () {
-    return this.svgContent.getAttribute('width') / this.zoom
+    return this.svgContent.getAttribute('width') / this.state.zoom.value
   }
 
   getRoundDigits () {
@@ -468,19 +477,20 @@ class SvgCanvas extends EventTarget {
   }
 
   getStartTransform () {
-    return this.startTransform
+    return this.state.drawing.startTransform
   }
 
   setStartTransform (transform) {
-    this.startTransform = transform
+    this.state.drawing.startTransform = transform
   }
 
   getZoom () {
-    return this.zoom
+    return this.state.zoom.value
   }
 
   round (val) {
-    return Number.parseInt(val * this.zoom) / this.zoom
+    const { value: zoom } = this.state.zoom
+    return Number.parseInt(val * zoom) / zoom
   }
 
   createSVGElement (jsonMap) {
@@ -492,16 +502,16 @@ class SvgCanvas extends EventTarget {
   }
 
   setStarted (s) {
-    this.started = s
+    this.state.drawing.started = s
   }
 
   getRubberBox () {
-    return this.rubberBox
+    return this.state.selection.rubberBox
   }
 
   setRubberBox (rb) {
-    this.rubberBox = rb
-    return this.rubberBox
+    this.state.selection.rubberBox = rb
+    return this.state.selection.rubberBox
   }
 
   addPtsToSelection ({ closedSubpath, grips }) {
@@ -525,43 +535,43 @@ class SvgCanvas extends EventTarget {
   }
 
   getCurrentMode () {
-    return this.currentMode
+    return this.state.drawing.currentMode
   }
 
   setCurrentMode (cm) {
-    this.currentMode = cm
-    return this.currentMode
+    this.state.drawing.currentMode = cm
+    return this.state.drawing.currentMode
   }
 
   getToolLocked () {
-    return this.toolLocked
+    return this.state.drawing.toolLocked
   }
 
   setToolLocked (b) {
-    this.toolLocked = b
-    return this.toolLocked
+    this.state.drawing.toolLocked = b
+    return this.state.drawing.toolLocked
   }
 
   getTextFreshCreate () {
-    return this.textFreshCreate
+    return this.state.drawing.textFreshCreate
   }
 
   setTextFreshCreate (b) {
-    this.textFreshCreate = b
-    return this.textFreshCreate
+    this.state.drawing.textFreshCreate = b
+    return this.state.drawing.textFreshCreate
   }
 
   getDrawnPath () {
-    return this.drawnPath
+    return this.state.drawing.drawnPath
   }
 
   setDrawnPath (dp) {
-    this.drawnPath = dp
-    return this.drawnPath
+    this.state.drawing.drawnPath = dp
+    return this.state.drawing.drawnPath
   }
 
   setCurrentGroup (cg) {
-    this.currentGroup = cg
+    this.state.selection.currentGroup = cg
   }
 
   changeSvgContent () {
@@ -569,7 +579,7 @@ class SvgCanvas extends EventTarget {
   }
 
   getStarted () {
-    return this.started
+    return this.state.drawing.started
   }
 
   getCanvas () {
@@ -577,43 +587,43 @@ class SvgCanvas extends EventTarget {
   }
 
   getrootSctm () {
-    return this.rootSctm
+    return this.state.zoom.rootSctm
   }
 
   getStartX () {
-    return this.startX
+    return this.state.drawing.startX
   }
 
   setStartX (value) {
-    this.startX = value
+    this.state.drawing.startX = value
   }
 
   getStartY () {
-    return this.startY
+    return this.state.drawing.startY
   }
 
   setStartY (value) {
-    this.startY = value
+    this.state.drawing.startY = value
   }
 
   getRStartX () {
-    return this.rStartX
+    return this.state.drawing.rStartX
   }
 
   getRStartY () {
-    return this.rStartY
+    return this.state.drawing.rStartY
   }
 
   getInitBbox () {
-    return this.initBbox
+    return this.state.drawing.initBbox
   }
 
   getCurrentResizeMode () {
-    return this.currentResizeMode
+    return this.state.drawing.currentResizeMode
   }
 
   getJustSelected () {
-    return this.justSelected
+    return this.state.selection.justSelected
   }
 
   getOpacAni () {
@@ -637,35 +647,35 @@ class SvgCanvas extends EventTarget {
   }
 
   getSumDistance () {
-    return this.sumDistance
+    return this.state.drawing.sumDistance
   }
 
   getStart (key) {
-    return this.start[key]
+    return this.state.drawing.start[key]
   }
 
   getEnd (key) {
-    return this.end[key]
+    return this.state.drawing.end[key]
   }
 
   getbSpline (key) {
-    return this.bSpline[key]
+    return this.state.drawing.bSpline[key]
   }
 
   getNextPos (key) {
-    return this.nextPos[key]
+    return this.state.drawing.nextPos[key]
   }
 
   getControllPoint1 (key) {
-    return this.controllPoint1[key]
+    return this.state.drawing.controllPoint1[key]
   }
 
   getControllPoint2 (key) {
-    return this.controllPoint2[key]
+    return this.state.drawing.controllPoint2[key]
   }
 
   getFreehand (key) {
-    return this.freehand[key]
+    return this.state.drawing.freehand[key]
   }
 
   getDrawing () {
@@ -673,7 +683,7 @@ class SvgCanvas extends EventTarget {
   }
 
   getDAttr () {
-    return this.dAttr
+    return this.state.drawing.dAttr
   }
 
   getLastGoodImgUrl () {
@@ -681,27 +691,27 @@ class SvgCanvas extends EventTarget {
   }
 
   getCurText (key) {
-    return this.curText[key]
+    return this.state.style.text[key]
   }
 
   setDAttr (value) {
-    this.dAttr = value
+    this.state.drawing.dAttr = value
   }
 
   setEnd (key, value) {
-    this.end[key] = value
+    this.state.drawing.end[key] = value
   }
 
   setControllPoint1 (key, value) {
-    this.controllPoint1[key] = value
+    this.state.drawing.controllPoint1[key] = value
   }
 
   setControllPoint2 (key, value) {
-    this.controllPoint2[key] = value
+    this.state.drawing.controllPoint2[key] = value
   }
 
   setJustSelected (value) {
-    this.justSelected = value
+    this.state.selection.justSelected = value
   }
 
   setParameter (value) {
@@ -709,27 +719,27 @@ class SvgCanvas extends EventTarget {
   }
 
   setStart (value) {
-    this.start = value
+    this.state.drawing.start = value
   }
 
   setRStartX (value) {
-    this.rStartX = value
+    this.state.drawing.rStartX = value
   }
 
   setRStartY (value) {
-    this.rStartY = value
+    this.state.drawing.rStartY = value
   }
 
   setSumDistance (value) {
-    this.sumDistance = value
+    this.state.drawing.sumDistance = value
   }
 
   setbSpline (value) {
-    this.bSpline = value
+    this.state.drawing.bSpline = value
   }
 
   setNextPos (value) {
-    this.nextPos = value
+    this.state.drawing.nextPos = value
   }
 
   setNextParameter (value) {
@@ -737,39 +747,39 @@ class SvgCanvas extends EventTarget {
   }
 
   setCurText (key, value) {
-    this.curText[key] = value
+    this.state.style.text[key] = value
   }
 
   setFreehand (key, value) {
-    this.freehand[key] = value
+    this.state.drawing.freehand[key] = value
   }
 
   setCurBBoxes (value) {
-    this.curBBoxes = value
+    this.state.selection.bboxes = value
   }
 
   getCurBBoxes () {
-    return this.curBBoxes
+    return this.state.selection.bboxes
   }
 
   setInitBbox (value) {
-    this.initBbox = value
+    this.state.drawing.initBbox = value
   }
 
   setRootSctm (value) {
-    this.rootSctm = value
+    this.state.zoom.rootSctm = value
   }
 
   setCurrentResizeMode (value) {
-    this.currentResizeMode = value
+    this.state.drawing.currentResizeMode = value
   }
 
   getLastClickPoint (key) {
-    return this.lastClickPoint[key]
+    return this.state.drawing.lastClickPoint[key]
   }
 
   setLastClickPoint (value) {
-    this.lastClickPoint = value
+    this.state.drawing.lastClickPoint = value
   }
 
   getId () {
@@ -821,7 +831,7 @@ class SvgCanvas extends EventTarget {
   }
 
   setZoom (value) {
-    this.zoom = value
+    this.state.zoom.value = value
   }
 
   getImportIds (key) {
@@ -849,15 +859,15 @@ class SvgCanvas extends EventTarget {
   }
 
   setCurProperties (key, value) {
-    this.curProperties[key] = value
+    this.state.style.properties[key] = value
   }
 
   getCurProperties (key) {
-    return this.curProperties[key]
+    return this.state.style.properties[key]
   }
 
   setCurShape (key, value) {
-    this.curShape[key] = value
+    this.state.style.shape[key] = value
   }
 
   gettingSelectorManager () {
@@ -889,7 +899,7 @@ class SvgCanvas extends EventTarget {
   }
 
   getMode () {
-    return this.currentMode
+    return this.state.drawing.currentMode
   } // The current editor mode string
 
   getNextId (elemType = null) {
@@ -905,27 +915,27 @@ class SvgCanvas extends EventTarget {
   }
 
   getCurCommand () {
-    return this.curCommand
+    return this.state.history.curCommand
   }
 
   setCurCommand (value) {
-    this.curCommand = value
+    this.state.history.curCommand = value
   }
 
   getFilter () {
-    return this.filter
+    return this.state.drawing.filter
   }
 
   setFilter (value) {
-    this.filter = value
+    this.state.drawing.filter = value
   }
 
   getFilterHidden () {
-    return this.filterHidden
+    return this.state.drawing.filterHidden
   }
 
   setFilterHidden (value) {
-    this.filterHidden = value
+    this.state.drawing.filterHidden = value
   }
 
   /**
@@ -953,11 +963,11 @@ class SvgCanvas extends EventTarget {
     } catch (e) {
       console.warn('svgedit: textActions.clear() failed during setMode; continuing', e)
     }
-    this.curProperties =
-      this.selectedElements[0]?.nodeName === 'text'
-        ? this.curText
-        : this.curShape
-    this.currentMode = name
+    this.state.style.properties =
+      this.state.selection.elements[0]?.nodeName === 'text'
+        ? this.state.style.text
+        : this.state.style.shape
+    this.state.drawing.currentMode = name
 
     // fires modeChange event for the editor
     if (this.modeEvent) {
@@ -986,7 +996,7 @@ class SvgCanvas extends EventTarget {
     // reset the selector manager
     this.selectorManager.initGroup()
     // reset the rubber band box
-    this.rubberBox = this.selectorManager.getRubberBandBox()
+    this.state.selection.rubberBox = this.selectorManager.getRubberBandBox()
     this.call('afterClear')
   }
 
@@ -1102,7 +1112,7 @@ class SvgCanvas extends EventTarget {
    * @returns {void}
    */
   removeFromSelection (elemsToRemove) {
-    if (!this.selectedElements[0]) {
+    if (!this.state.selection.elements[0]) {
       return
     }
     if (!elemsToRemove.length) {
@@ -1111,9 +1121,9 @@ class SvgCanvas extends EventTarget {
 
     // find every element and remove it from our array copy
     const newSelectedItems = []
-    const len = this.selectedElements.length
+    const len = this.state.selection.elements.length
     for (let i = 0; i < len; ++i) {
-      const elem = this.selectedElements[i]
+      const elem = this.state.selection.elements[i]
       if (elem) {
         // keep the item
         if (!elemsToRemove.includes(elem)) {
@@ -1125,7 +1135,7 @@ class SvgCanvas extends EventTarget {
       }
     }
     // the copy becomes the master now
-    this.selectedElements = newSelectedItems
+    this.state.selection.elements = newSelectedItems
     this.updateGroupSelector()
   }
 
@@ -1137,9 +1147,9 @@ class SvgCanvas extends EventTarget {
   selectAllInCurrentLayer () {
     const currentLayer = this.getCurrentDrawing().getCurrentLayer()
     if (currentLayer) {
-      this.currentMode = 'select'
-      if (this.currentGroup) {
-        this.selectOnly(this.currentGroup.children)
+      this.state.drawing.currentMode = 'select'
+      if (this.state.selection.currentGroup) {
+        this.selectOnly(this.state.selection.currentGroup.children)
       } else {
         this.selectOnly(currentLayer.children)
       }
@@ -1147,7 +1157,7 @@ class SvgCanvas extends EventTarget {
   }
 
   getOpacity () {
-    return this.curShape.opacity
+    return this.state.style.shape.opacity
   }
 
   /**
@@ -1203,7 +1213,7 @@ class SvgCanvas extends EventTarget {
   }
 
   getColor (type) {
-    return this.curProperties[type]
+    return this.state.style.properties[type]
   }
 
   setStrokePaint (paint) {
@@ -1224,7 +1234,7 @@ class SvgCanvas extends EventTarget {
    * @returns {Float|string} The current stroke-width value
    */
   getStrokeWidth () {
-    return this.curProperties.stroke_width
+    return this.state.style.properties.stroke_width
   }
 
   /**
@@ -1232,7 +1242,7 @@ class SvgCanvas extends EventTarget {
    * @returns {module:svgcanvas.StyleOptions} current style options
    */
   getStyle () {
-    return this.curShape
+    return this.state.style.shape
   }
 
   /**
@@ -1242,7 +1252,7 @@ class SvgCanvas extends EventTarget {
    * @returns {void}
    */
   setOpacity (val) {
-    this.curShape.opacity = val
+    this.state.style.shape.opacity = val
     this.changeSelectedAttribute('opacity', val)
   }
 
@@ -1251,7 +1261,7 @@ class SvgCanvas extends EventTarget {
    * @returns {Float} the current fill opacity
    */
   getFillOpacity () {
-    return this.curShape.fill_opacity
+    return this.state.style.shape.fill_opacity
   }
 
   /**
@@ -1259,7 +1269,7 @@ class SvgCanvas extends EventTarget {
    * @returns {string} the current stroke opacity
    */
   getStrokeOpacity () {
-    return this.curShape.stroke_opacity
+    return this.state.style.shape.stroke_opacity
   }
 
   /**
@@ -1271,7 +1281,7 @@ class SvgCanvas extends EventTarget {
    * @returns {void}
    */
   setPaintOpacity (type, val, preventUndo) {
-    this.curShape[`${type}_opacity`] = val
+    this.state.style.shape[`${type}_opacity`] = val
     if (!preventUndo) {
       this.changeSelectedAttribute(`${type}-opacity`, val)
     } else {
@@ -1365,7 +1375,7 @@ class SvgCanvas extends EventTarget {
   convertToPath (elem, getBBox) {
     // if elems not given, recursively call convertPath for all selected elements.
     if (!elem) {
-      const elems = this.selectedElements
+      const elems = this.state.selection.elements
       elems.forEach(el => {
         if (el) {
           this.convertToPath(el)
@@ -1380,18 +1390,19 @@ class SvgCanvas extends EventTarget {
         this.pathActions
       )
     }
-    // TODO: Why is this applying attributes from this.curShape, then inside utilities.convertToPath it's pulling addition attributes from elem?
-    // TODO: If convertToPath is called with one elem, this.curShape and elem are probably the same; but calling with multiple is a bug or cool feature.
+    // TODO: Why is this applying attributes from the current shape style, then inside utilities.convertToPath it's pulling addition attributes from elem?
+    // TODO: If convertToPath is called with one elem, curShape and elem are probably the same; but calling with multiple is a bug or cool feature.
+    const curShape = this.state.style.shape
     const attrs = {
-      fill: this.curShape.fill,
-      'fill-opacity': this.curShape.fill_opacity,
-      stroke: this.curShape.stroke,
-      'stroke-width': this.curShape.stroke_width,
-      'stroke-dasharray': this.curShape.stroke_dasharray,
-      'stroke-linejoin': this.curShape.stroke_linejoin,
-      'stroke-linecap': this.curShape.stroke_linecap,
-      'stroke-opacity': this.curShape.stroke_opacity,
-      opacity: this.curShape.opacity,
+      fill: curShape.fill,
+      'fill-opacity': curShape.fill_opacity,
+      stroke: curShape.stroke,
+      'stroke-width': curShape.stroke_width,
+      'stroke-dasharray': curShape.stroke_dasharray,
+      'stroke-linejoin': curShape.stroke_linejoin,
+      'stroke-linecap': curShape.stroke_linecap,
+      'stroke-opacity': curShape.stroke_opacity,
+      opacity: curShape.opacity,
       visibility: 'hidden'
     }
     return convertToPath(elem, attrs, this) // call convertToPath from path-utils.js
