@@ -1204,8 +1204,12 @@ class PathActions {
       return true
     })
 
-    if (!openPt) {
-      // Single path, so close last seg
+    if (openPt === null) {
+      // No M or Z found after the selected point: it's in the last
+      // sub-path and that sub-path isn't closed yet. Close its last seg.
+      // (Must check `=== null`, not falsy — `openPt === false` means
+      // "already closed," and treating it the same as "not found" here
+      // re-enters the close branch below and appends a redundant L/Z.)
       openPt = path.segs.length - 1
     }
 

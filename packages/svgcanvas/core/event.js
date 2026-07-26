@@ -15,6 +15,7 @@ import {
   transformPoint, getTransformList, transformListToTransform
 } from './math.js'
 import * as hstry from './history.js'
+import { error as logError } from '../common/logger.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
@@ -184,7 +185,12 @@ const mouseOutEvent = (evt) => {
 // identified, a ChangeElementCommand is created and stored on the stack for those attrs
 // this is done in when we recalculate the selected dimensions()
 /**
-*
+* A throw anywhere in this pipeline (each step's output feeds the next, so
+* steps can't be isolated/continued independently the way the editor-layer
+* update chains are) must not leave drag state stuck for the rest of the
+* gesture — a thrown error here still bubbles to the DOM listener (which
+* swallows it), but the flags below would otherwise stay in whatever
+* mid-gesture state they were in, wedging future mouseDown/mouseUp handling.
 * @param {MouseEvent} evt
 * @fires module:svgcanvas.SvgCanvas#event:zoomed
 * @fires module:svgcanvas.SvgCanvas#event:changed
@@ -192,6 +198,22 @@ const mouseOutEvent = (evt) => {
 * @returns {void}
 */
 const mouseUpEvent = (evt) => {
+  try {
+    mouseUpEventImpl(evt)
+  } catch (err) {
+    logError('mouseUpEvent failed; resetting drag state', err, 'event')
+    svgCanvas.setStarted(false)
+    svgCanvas.hasDragStartTransform = false
+    svgCanvas.dragStartTransforms = null
+    svgCanvas.groupResizeStart = null
+    svgCanvas.groupRotateStart = null
+    svgCanvas.groupRotateCenter = null
+    svgCanvas.groupRotateBBox = null
+    svgCanvas.setStartTransform(null)
+  }
+}
+
+const mouseUpEventImpl = (evt) => {
   evt.preventDefault()
   svgCanvas.moveSelectionThresholdReached = false
   svgCanvas.dragStartBBox = null
@@ -540,11 +562,27 @@ const findStrokeElementNearPoint = (evt, currentTarget) => {
  *   action is not recorded until mousing up.
  * - When we are in select mode, select the element, remember the position
  *   and do nothing else.
+ *
+ * See the doc comment on `mouseUpEvent` above for why this is wrapped in a
+ * try/catch: it's a single data-flow pipeline (not independent steps), so a
+ * throw partway through must still leave drag state recoverable for the next
+ * gesture rather than silently wedged.
  * @param {MouseEvent} evt
  * @fires module:svgcanvas.SvgCanvas#event:ext_mouseDown
  * @returns {void}
  */
 const mouseDownEvent = (evt) => {
+  try {
+    mouseDownEventImpl(evt)
+  } catch (err) {
+    logError('mouseDownEvent failed; resetting drag state', err, 'event')
+    svgCanvas.setStarted(false)
+    svgCanvas.hasDragStartTransform = false
+    svgCanvas.dragStartTransforms = null
+  }
+}
+
+const mouseDownEventImpl = (evt) => {
   const dataStorage = svgCanvas.getDataStorage()
   const selectedElements = svgCanvas.getSelectedElements()
   const zoom = svgCanvas.getZoom()

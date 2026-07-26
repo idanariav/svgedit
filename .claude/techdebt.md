@@ -51,39 +51,6 @@ and `EditorStartup.init()`'s unwrapped panel-init sequence) are fixed:
   is preserved exactly via an explicit `skipTail` flag rather than relying on
   `return`'s scope, so behavior is unchanged when nothing throws.
 
-**Not fixed — deliberately deferred, narrower than originally scoped:**
-`packages/svgcanvas/core/event.js`'s `mouseUpEvent`/`mouseDownEvent` still have
-the same unguarded-sequential-steps shape (a throw before the mode-dispatch
-`switch` skips `setStarted(true)`/drag-state cleanup for the rest of the
-gesture). This is core canvas mouse/drag state-machine code, not editor-layer
-UI orchestration — decomposing it carries materially higher regression risk
-(shared mutable drag state across steps, no dedicated test harness for the
-gesture lifecycle) than the editor-layer fixes above, so it was left alone
-rather than rushed. `runSteps` (`src/editor/runSteps.js`) is editor-layer only
-today; if this is tackled, either move an equivalent helper into
-`packages/svgcanvas/common/` or write one scoped to `core/event.js`, and add
-gesture-lifecycle test coverage first so the refactor can be verified.
-
-### 6. `coords.js`'s `remapElement` hardcodes per-feature geometry sync — a future feature that forgets to wire in here corrupts silently, no crash
-
-`packages/svgcanvas/core/coords.js:543-567` — `remapElement` (the function
-every move/scale/rotate transform-bake runs through) has three hardcoded
-`if (selected.hasAttribute(...))` branches: an inline `data-arc` branch, and
-two that call named imports `remapCornerSource`/`remapTaperSource` for
-`se:orig-d` (corner-radius) / `se:taper-d` (taper-stroke). Any future
-attribute-driven derived-geometry feature — the puppet-warp "persistent rig"
-enhancement already on this backlog is a prime future candidate — must
-remember to add itself to this one shared central function, or its cached
-source geometry silently desyncs on the next move/scale/rotate. No crash, no
-console error — just quiet data corruption on the *next* edit, which is worse
-than the loud failure this whole sweep started from. Fix direction: a small
-`registerGeometryRemap(attrName, remapFn)` API that each feature module calls
-from its own `init` (`corner-radius.js`, `taper-stroke.js`, future ones), with
-`coords.js` iterating a registry instead of importing named functions —
-"I register myself" instead of "remember to hardcode me into shared core
-code," the same fix-shape as items 2-4. Effort: small-medium, touches 2
-existing modules + the registry.
-
 ### 9. Extensions have no id/class namespacing convention (minor)
 
 `ext-grid.js` hardcodes `id: 'canvasGrid'`/`'gridLines'`, `ext-markers.js`
@@ -230,19 +197,10 @@ regression tests (`tests/unit/path-degenerate.test.js`):
   stuck and every subsequent toolbar click re-threw — the "can't select any
   other tool, only a reload fixes it" freeze. Each teardown is now isolated so a
   failure is logged but the tool still switches.
-
-Still open (documented, not fixed — needs its own semantic pass):
-
-### `opencloseSubPath()` corrupts `d` when re-closing an already-closed sub-path
-
-Calling open/close-subpath (the node-panel toggle) with the first node after a
-sub-path's `M` selected on an **already-closed** sub-path appends a redundant
-`L x,y Z` each time (e.g. `M100,100 L200,100 L150,180 Z` →
-`… Z L100,100 Z`, and repeated presses keep stacking `L100,100 Z`). The result
-is a dangling sub-path segment after a `Z` with no intervening `M`. It renders
-mostly harmlessly and no longer crashes node-editing (the `show()` fix above),
-but the open/closed detection in `opencloseSubPath` mis-classifies the first
-post-`M` node of a closed loop. Fixing it correctly means reworking that
-detection (moderate risk; the function's index bookkeeping is intricate), so it
-was left out of the freeze fix. Reproduce: select node index 1 of a closed
-triangle in pathedit, press the open/close-subpath control repeatedly.
+- `opencloseSubPath()` (the node-panel open/close-subpath toggle) treated
+  `openPt === false` ("already closed") the same as `openPt === null` ("not
+  found") via `if (!openPt)`, so re-closing an already-closed sub-path appended
+  a redundant `L x,y Z` on every press instead of opening it. Fixed by checking
+  `=== null` explicitly; regression tests in `tests/unit/path-actions.test.js`
+  (`describe('opencloseSubPath', ...)`) cover both the generic-split and
+  mate-shortcut opening branches plus a repeated-press round trip.

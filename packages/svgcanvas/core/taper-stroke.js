@@ -18,11 +18,12 @@
  * the normal, closing the tips with round caps, then refitting compact
  * cubics via paper's `simplify()`.
  *
- * `remapTaperSource(elem, remap, scalew, scaleh, svgCanvas)` is called from `coords.js`
- * `remapElement` when a transform is baked into a tapered path: it applies
- * the affine map to the stored centerline, scales the stored width, and
- * regenerates the outline — without it the next taper edit would teleport
- * the shape back to its pre-move geometry.
+ * `remapTaperSource(elem, remap, scalew, scaleh, svgCanvas)` is registered with
+ * `geometry-remap-registry.js` (from this module's own `init`) and run by
+ * `coords.js` `remapElement` when a transform is baked into a tapered path:
+ * it applies the affine map to the stored centerline, scales the stored
+ * width, and regenerates the outline — without it the next taper edit would
+ * teleport the shape back to its pre-move geometry.
  *
  * @module taper-stroke
  * @license MIT
@@ -31,6 +32,7 @@
 import { NS } from './namespaces.js'
 import { warn } from '../common/logger.js'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
+import { registerGeometryRemap } from './geometry-remap-registry.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
@@ -159,6 +161,8 @@ export const remapTaperSource = (elem, remap, scalew, scaleh, svgCanvas) => {
 
 export const init = (canvas) => {
   const svgCanvas = canvas
+
+  registerGeometryRemap(TAPER_SOURCE_ATTR, remapTaperSource)
 
   /**
    * Whether the taper tool applies to this element right now: an already

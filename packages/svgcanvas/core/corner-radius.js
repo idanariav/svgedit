@@ -15,7 +15,8 @@
  * stops arcs overlapping on short edges), with the arc radius re-derived from
  * the clamped trim so short edges get a smaller, still-tangent arc.
  *
- * `remapCornerSource(elem, remap, scalew, scaleh)` is called from
+ * `remapCornerSource(elem, remap, scalew, scaleh)` is registered with
+ * `geometry-remap-registry.js` (from this module's own `init`) and run by
  * `coords.js` `remapElement` when a transform is baked into a rounded path:
  * it remaps the stored source points, scales the radius uniformly, and
  * regenerates `d` — without it the stored original would go stale and the
@@ -26,6 +27,7 @@
  */
 
 import { NS } from './namespaces.js'
+import { registerGeometryRemap } from './geometry-remap-registry.js'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
 export const CORNER_SOURCE_ATTR = 'se:orig-d'
@@ -206,6 +208,8 @@ export const remapCornerSource = (elem, remap, scalew, scaleh) => {
 
 export const init = (canvas) => {
   const svgCanvas = canvas
+
+  registerGeometryRemap(CORNER_SOURCE_ATTR, remapCornerSource)
 
   /**
    * Whether corner rounding can apply to this element right now.

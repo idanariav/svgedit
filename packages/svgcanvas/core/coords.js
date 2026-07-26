@@ -5,8 +5,7 @@
  */
 
 import { warn } from '../common/logger.js'
-import { remapCornerSource } from './corner-radius.js'
-import { remapTaperSource } from './taper-stroke.js'
+import { runGeometryRemaps } from './geometry-remap-registry.js'
 
 import {
   snapToGrid,
@@ -550,21 +549,13 @@ const pathMap = [
         }
       }
 
-      // Corner-rounded paths store their pre-fillet source in `se:orig-d`
-      // (see core/corner-radius.js). Keep it in sync with the baked
-      // transform and regenerate `d` from it (also fixes the fillet arcs,
-      // which the generic seg remap above only approximates under flips) —
-      // otherwise the next radius edit snaps the shape back to its
-      // pre-move/resize geometry.
-      if (selected.hasAttribute('se:orig-d')) {
-        remapCornerSource(selected, remap, scalew, scaleh)
-      }
-      // Same idea for tapered strokes: keep the stored centerline + width in
-      // sync with the baked transform and regenerate the outline from them
-      // (see core/taper-stroke.js).
-      if (selected.hasAttribute('se:taper-d')) {
-        remapTaperSource(selected, remap, scalew, scaleh, svgCanvas)
-      }
+      // Attribute-driven derived-geometry features (corner-radius's
+      // `se:orig-d`, taper-stroke's `se:taper-d`, …) cache their own source
+      // geometry and must keep it in sync with the baked transform or it
+      // silently desyncs on the next edit. Each feature registers its own
+      // remap hook via `registerGeometryRemap` from its own `init` — see
+      // `geometry-remap-registry.js`.
+      runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
       break
     }
     default:

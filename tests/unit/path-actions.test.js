@@ -718,6 +718,131 @@ describe('PathActions', () => {
     })
   })
 
+  describe('opencloseSubPath', () => {
+    /**
+     * Build a path-object stand-in faithful enough to exercise
+     * opencloseSubPath's own open/closed detection: a real `elem.pathSegList`
+     * backs all mutations, `segs` mirrors it 1:1, and `.mate` is set on the
+     * segment right before a closing `Z`, mirroring path-method.js's
+     * `Path#init()` "closed sub-path" wiring.
+     * @param {string} d
+     * @returns {object} path-object stand-in
+     */
+    const buildPathObj = (d) => {
+      const elem = document.createElementNS(NS.SVG, 'path')
+      elem.setAttribute('d', d)
+      svgRoot.append(elem)
+
+      const list = elem.pathSegList
+      const segs = []
+      for (let i = 0; i < list.numberOfItems; i++) {
+        const item = list.getItem(i)
+        segs.push({ index: i, item, type: item.pathSegType })
+      }
+      if (segs.length && segs[segs.length - 1].type === 1 /* Z */) {
+        segs[segs.length - 2].mate = segs[0]
+      }
+
+      // path-actions.test.js's shared `svgCanvas` stubs `replacePathSeg` as a
+      // no-op (its real implementation lives in path-method.js, not under
+      // test here); the generic node-removal branch of opencloseSubPath
+      // needs it to actually turn a segment into the new "M", so give it one
+      // scoped to this path's element.
+      svgCanvas.replacePathSeg.mockImplementation((type, index, pts) => {
+        const seg = type === 2
+          ? elem.createSVGPathSegMovetoAbs(pts[0], pts[1])
+          : elem.createSVGPathSegLinetoAbs(pts[0], pts[1])
+        elem.pathSegList.replaceItem(seg, index)
+      })
+
+      return {
+        elem,
+        segs,
+        selected_pts: [],
+        eachSeg (fn) {
+          for (let i = 0; i < this.segs.length; i++) {
+            if (fn.call(this.segs[i], i) === false) break
+          }
+        },
+        init: vi.fn(function () { return this }),
+        show: vi.fn(function () { return this }),
+        update: vi.fn(function () { return this }),
+        setPathContext: vi.fn(),
+        selectPt: vi.fn(),
+        storeD: vi.fn(),
+        endChanges: vi.fn()
+      }
+    }
+
+    it('opens an already-closed sub-path instead of appending a redundant L/Z (regression)', () => {
+      const closedPath = buildPathObj('M100,100 L200,100 L150,180 Z')
+      svgCanvas.getPath_.mockReturnValue(closedPath)
+      pathActionsMethod.toEditMode(closedPath.elem)
+      closedPath.selected_pts = [1] // middle node: not the mate-shortcut node
+
+      pathActionsMethod.opencloseSubPath()
+
+      // Before the fix, `if (!openPt)` treated "already closed"
+      // (openPt === false) the same as "not found" (openPt === null), so
+      // this always re-entered the close branch and appended a redundant
+      // `L100,100 Z` after the existing `Z` on every call.
+      const d = closedPath.elem.getAttribute('d')
+      expect(d).not.toMatch(/Z\s*L/i)
+      expect((d.match(/Z/gi) || []).length).toBe(0)
+      expect(closedPath.elem.pathSegList.numberOfItems).toBe(2)
+    })
+
+    it('opens via the mate shortcut when the pre-closing node is selected (regression)', () => {
+      const closedPath = buildPathObj('M100,100 L200,100 L150,180 Z')
+      svgCanvas.getPath_.mockReturnValue(closedPath)
+      pathActionsMethod.toEditMode(closedPath.elem)
+      closedPath.selected_pts = [2] // last real seg before Z, carries `.mate`
+
+      pathActionsMethod.opencloseSubPath()
+
+      const d = closedPath.elem.getAttribute('d')
+      expect(d).not.toMatch(/Z\s*L/i)
+      expect((d.match(/Z/gi) || []).length).toBe(0)
+      expect(closedPath.elem.pathSegList.numberOfItems).toBe(2)
+    })
+
+    it('still closes an open sub-path (baseline, unaffected by the fix)', () => {
+      const openPath = buildPathObj('M100,100 L200,100 L150,180')
+      svgCanvas.getPath_.mockReturnValue(openPath)
+      pathActionsMethod.toEditMode(openPath.elem)
+      openPath.selected_pts = [0]
+
+      pathActionsMethod.opencloseSubPath()
+
+      expect(openPath.elem.getAttribute('d')).toMatch(/Z\s*$/i)
+      expect(openPath.elem.pathSegList.numberOfItems).toBe(5)
+    })
+
+    it('re-closing after opening does not accumulate extra Z segments (repeated-press regression)', () => {
+      const closedPath = buildPathObj('M100,100 L200,100 L150,180 Z')
+      svgCanvas.getPath_.mockReturnValue(closedPath)
+      pathActionsMethod.toEditMode(closedPath.elem)
+      closedPath.selected_pts = [1]
+
+      pathActionsMethod.opencloseSubPath() // closed -> open
+      // Rebuild `segs` from the now-open pathSegList, as a real path.init()
+      // would, and select the new first point (index 0) the way
+      // opencloseSubPath's own `path.init().selectPt(0)` call intends.
+      const list = closedPath.elem.pathSegList
+      closedPath.segs = []
+      for (let i = 0; i < list.numberOfItems; i++) {
+        const item = list.getItem(i)
+        closedPath.segs.push({ index: i, item, type: item.pathSegType })
+      }
+      closedPath.selected_pts = [0]
+
+      pathActionsMethod.opencloseSubPath() // open -> closed
+
+      const d = closedPath.elem.getAttribute('d')
+      expect((d.match(/Z/gi) || []).length).toBe(1)
+    })
+  })
+
   describe('smoothPolylineIntoPath', () => {
     it('should convert polyline to smooth path', () => {
       const polyline = document.createElementNS(NS.SVG, 'polyline')

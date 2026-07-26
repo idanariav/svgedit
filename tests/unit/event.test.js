@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as initEvent } from '../../packages/svgcanvas/core/event.js'
 
@@ -211,6 +211,70 @@ describe('event', () => {
     })
 
     expect(canvas.getCurrentMode()).toBe('path')
+  })
+
+  it('mouseDownEvent() resets drag state instead of leaving it stuck when the mode dispatch throws', () => {
+    // event-zoom.js's down() calls svgCanvas.setStarted(true) *before*
+    // reaching getRubberBandBox() — if that throws, `started` would be left
+    // stuck at true (and hasDragStartTransform/dragStartTransforms at
+    // whatever stale value a previous gesture left) with no cleanup ever
+    // running, since mouseDownEvent's steps are one data-flow pipeline, not
+    // independently-continuable steps.
+    canvas.setCurrentMode('zoom')
+    canvas.selectorManager.getRubberBandBox = () => { throw new Error('boom') }
+    canvas.hasDragStartTransform = true
+    canvas.dragStartTransforms = { stale: true }
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => {
+      canvas.mouseDownEvent({
+        clientX: 10,
+        clientY: 20,
+        button: 0,
+        altKey: false,
+        shiftKey: false,
+        preventDefault () {},
+        target: contentGroup
+      })
+    }).not.toThrow()
+
+    expect(canvas.getStarted()).toBe(false)
+    expect(canvas.hasDragStartTransform).toBe(false)
+    expect(canvas.dragStartTransforms).toBe(null)
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it('mouseUpEvent() resets drag state instead of leaving it stuck when the mode dispatch throws', () => {
+    // event-rotate.js's up() reaches svgCanvas.undoMgr.finishUndoableChange(),
+    // which this mock canvas doesn't provide, so it throws mid-dispatch —
+    // before the group-rotate/-resize state below would normally be cleared.
+    canvas.setCurrentMode('rotate')
+    canvas.setStarted(true)
+    canvas.groupResizeStart = { stale: true }
+    canvas.groupRotateStart = { stale: true }
+    canvas.groupRotateCenter = { stale: true }
+    canvas.groupRotateBBox = { stale: true }
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => {
+      canvas.mouseUpEvent({
+        clientX: 10,
+        clientY: 20,
+        button: 0,
+        shiftKey: false,
+        preventDefault () {},
+        target: contentGroup
+      })
+    }).not.toThrow()
+
+    expect(canvas.getStarted()).toBe(false)
+    expect(canvas.groupResizeStart).toBe(null)
+    expect(canvas.groupRotateStart).toBe(null)
+    expect(canvas.groupRotateCenter).toBe(null)
+    expect(canvas.groupRotateBBox).toBe(null)
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
   })
 
   it('mouseOutEvent() dispatches mouseup with coordinates', () => {
