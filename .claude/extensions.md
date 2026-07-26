@@ -71,6 +71,22 @@ single `Editor.js`.
 > add its name to `defaultExtensions` in `ConfigObj.js`. The registry glob picks
 > it up automatically — no manual import needed.
 
+### DOM id/class namespacing convention
+
+`extensionRegistry.js` only namespaces extensions by directory name — nothing
+prevents two extensions from colliding on the same DOM `id`/class. **New
+extensions should prefix every `id`/class they create with `ext-<name>-`**
+(e.g. `ext-taper-settings`, not `taper_settings`) to keep the DOM footprint
+collision-proof as the extension count grows.
+
+A few built-ins predate this convention and keep their original unprefixed
+ids for compatibility (referenced by other extensions, tests, or docs):
+`ext-grid` (`#canvasGrid`, `#gridLines`), `ext-markers` (`#marker_panel`).
+These are not being renamed — do so only as an opportunistic spot-fix if
+you're already touching that code for another reason, and update every
+cross-reference (`ext-proportion-markers.js`, `tests/unit/`, `.claude/tools.md`)
+in the same change.
+
 ### i18n in Extensions
 
 Each extension has a `locale/` subfolder with JS modules per language. These are

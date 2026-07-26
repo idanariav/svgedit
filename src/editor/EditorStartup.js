@@ -1263,6 +1263,7 @@ class EditorStartup {
             // (statically resolved), so no runtime fetch from extPath is needed.
             const imported = getExtension(extname)
             if (!imported) throw new Error(`Unknown extension: ${extname}`)
+            if (!imported.default) throw new Error(`Extension ${extname} has no default export`)
             const { name = extname, init: initfn } = imported.default
             return this.addExtension(name, (initfn && initfn.bind(this)), { langParam: 'en' }) /** @todo  change to current lng */
           } catch (err) {
@@ -1286,6 +1287,7 @@ class EditorStartup {
              * @type {module:SVGthis.ExtensionObject}
              */
             const imported = await import(/* @vite-ignore */ encodeURI(pathName))
+            if (!imported.default) throw new Error(`Extension ${pathName} has no default export`)
             const { name, init: initfn } = imported.default
             return this.addExtension(name, (initfn && initfn.bind(this, config)), {})
           } catch (err) {

@@ -2,7 +2,7 @@ export default {
   name: 'Puppet Warp',
   buttons: [
     {
-      title: 'Puppet Warp — pin an object, then drag a pin to bend it around the fixed pins'
+      title: 'Puppet Warp — pin an object, then drag a pin to bend it around the fixed pins (text, images, and groups only warp their shape children)'
     }
   ]
 }

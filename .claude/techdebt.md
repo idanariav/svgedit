@@ -51,25 +51,18 @@ and `EditorStartup.init()`'s unwrapped panel-init sequence) are fixed:
   is preserved exactly via an explicit `skipTail` flag rather than relying on
   `return`'s scope, so behavior is unchanged when nothing throws.
 
-### 9. Extensions have no id/class namespacing convention (minor)
+### 9-10. Fixed (2026-07-26): extension id/class namespacing convention, malformed-extension error clarity
 
-`ext-grid.js` hardcodes `id: 'canvasGrid'`/`'gridLines'`, `ext-markers.js`
-hardcodes `id="marker_panel"`, etc. — `extensionRegistry.js` only namespaces
-extensions by directory name, not by DOM footprint, so nothing prevents two
-extensions colliding on the same id. No known collision today; worth a
-documented `ext-<name>-*` prefix convention before the extension count grows
-further. Low effort, mostly documentation + opportunistic spot-fixes.
-
-### 10. Malformed-extension error clarity (minor)
-
-`EditorStartup.js` (~1257, ~1280) destructures `const { name, init } =
-imported.default` without checking `imported.default` exists, so a malformed
-extension module (missing default export) surfaces as a generic
-`TypeError: Cannot destructure property 'name' of undefined` instead of a
-clear "ext-X has no default export." Already caught by the correct
-per-extension try/catch (item 3's isolation *is* present here — this is the
-positive control that showed items 2-3 what "done right" looks like), so
-severity is low. Worth a one-line existence check for a clearer message.
+- Documented an `ext-<name>-*` DOM id/class prefix convention for new
+  extensions in `.claude/extensions.md`; the handful of pre-convention
+  built-ins (`ext-grid`'s `#canvasGrid`/`#gridLines`, `ext-markers`'
+  `#marker_panel`) are left unrenamed since other files reference them
+  (`ext-proportion-markers.js`, `tests/unit/`, `.claude/tools.md`) — noted as
+  an opportunistic spot-fix only, not done blind.
+- `EditorStartup.js`'s two extension-loading branches now check
+  `imported.default` exists before destructuring, throwing a clear
+  `Extension <name> has no default export` instead of a generic
+  `TypeError: Cannot destructure property 'name' of undefined`.
 
 ---
 
@@ -150,10 +143,6 @@ were **fixed**. These remain as lower-priority follow-ups:
   sample step are absolute user units; on a tiny icon the refit can over-smooth,
   on a huge path the 400-sample cap can undersample. Derive both from the
   target's bbox diagonal for scale-independence. Low priority.
-
-- **Text / image / use in a warped group are left stationary.** `WARPABLE`
-  excludes them, so a mixed group deforms only its shapes. Defensible v1 scope;
-  worth surfacing in the tooltip/docs if it confuses users.
 
 ---
 
