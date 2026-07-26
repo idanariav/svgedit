@@ -163,6 +163,50 @@ export const warpSubpaths = (rest, pins) =>
   rest.map((sp) => ({ pts: sp.pts.map((p) => deformPoint(p, pins)), closed: sp.closed }))
 
 /**
+ * Resolve where a newly-dropped pin's *rest*-space anchor should be. A click
+ * lands in the shape's CURRENT (already-warped) pose, not its rest pose —
+ * once earlier pins have deformed the shape, treating that click as a rest
+ * coordinate outright (`px,py = x,y`) silently mixes coordinate frames: the
+ * new pin ends up anchored to a point that has no relationship to the actual
+ * rest geometry, so it can visually drift off the limb it was dropped on as
+ * further pins are dragged (see .claude/techdebt.md's former "pins are fixed
+ * content-space anchors, not mesh-attached" entry). Instead, find the
+ * current-pose sample nearest the click, across every target, and re-express
+ * the click as that sample's rest-space point plus the click↔sample offset —
+ * "nearest sample + offset" attachment — so the anchor always refers to real
+ * rest geometry. When `pins` is empty the current pose equals the rest pose,
+ * so this is a no-op and returns `(x,y)` unchanged, matching the old
+ * behavior for the first pin dropped on a fresh rig.
+ * @param {Array<Array<{pts:Array<{x:number,y:number}>, closed:boolean}>>} restByTarget
+ * @param {Array<{px:number,py:number,qx:number,qy:number}>} pins
+ * @param {number} x
+ * @param {number} y
+ * @returns {{x:number, y:number}} rest-space anchor for the new pin.
+ */
+export const attachPinToRest = (restByTarget, pins, x, y) => {
+  let nearest = null
+  let bestD2 = Infinity
+  for (const rest of restByTarget) {
+    const warped = warpSubpaths(rest, pins)
+    for (let s = 0; s < warped.length; s++) {
+      const wPts = warped[s].pts
+      const rPts = rest[s].pts
+      for (let i = 0; i < wPts.length; i++) {
+        const dx = wPts[i].x - x
+        const dy = wPts[i].y - y
+        const d2 = dx * dx + dy * dy
+        if (d2 < bestD2) {
+          bestD2 = d2
+          nearest = { warped: wPts[i], rest: rPts[i] }
+        }
+      }
+    }
+  }
+  if (!nearest) return { x, y }
+  return { x: nearest.rest.x + (x - nearest.warped.x), y: nearest.rest.y + (y - nearest.warped.y) }
+}
+
+/**
  * Build a local-space `d` (M/L polyline) from warped content-space points, by
  * mapping each point back through the target's content→local inverse matrix.
  * @param {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>} subpaths
@@ -608,8 +652,12 @@ export default {
           return { started: true }
         }
 
-        // Empty space → drop a new anchor pin (rest === current).
-        pins.push({ px: x, py: y, qx: x, qy: y })
+        // Empty space → drop a new anchor pin. Anchor its rest position to
+        // the nearest rest-pose sample (see attachPinToRest) rather than the
+        // raw click, so it stays mesh-attached instead of drifting off the
+        // limb it was placed on once other pins warp the shape further.
+        const anchor = attachPinToRest(targets.map((t) => t.rest), pins, x, y)
+        pins.push({ px: anchor.x, py: anchor.y, qx: x, qy: y })
         syncPinOverlay()
         addPinDot(pins.length - 1)
         return { started: true }

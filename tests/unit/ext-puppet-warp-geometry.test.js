@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildD, warpSubpaths } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
+import { attachPinToRest, buildD, warpSubpaths } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
 
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
@@ -48,6 +48,47 @@ describe('ext-puppet-warp warp-mapping helpers', () => {
       const warped = warpSubpaths(rest, [])
       expect(warped[0].pts[0].x).toBeCloseTo(3, 9)
       expect(warped[0].pts[0].y).toBeCloseTo(4, 9)
+    })
+  })
+
+  describe('attachPinToRest', () => {
+    it('returns the click unchanged when there are no pins (rest === current pose)', () => {
+      const rest = [{ pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }], closed: false }]
+      expect(attachPinToRest([rest], [], 4, 1)).toEqual({ x: 4, y: 1 })
+    })
+
+    it('returns the click unchanged when there is no rest geometry to attach to', () => {
+      expect(attachPinToRest([], [{ px: 0, py: 0, qx: 5, qy: 5 }], 4, 1)).toEqual({ x: 4, y: 1 })
+    })
+
+    it('re-expresses a click on the warped pose as the corresponding rest-space point', () => {
+      // rest is a horizontal segment; a single pin translates the whole
+      // pose by (+100, 0), so the current (displayed) pose sits at x=100..110.
+      const rest = [{ pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }], closed: false }]
+      const pins = [{ px: 0, py: 0, qx: 100, qy: 0 }]
+      // Click exactly on the warped sample at rest-index 1 (currently at 110,0).
+      const anchor = attachPinToRest([rest], pins, 110, 0)
+      expect(anchor.x).toBeCloseTo(10, 9)
+      expect(anchor.y).toBeCloseTo(0, 9)
+    })
+
+    it('preserves a small off-curve offset when re-expressing in rest space', () => {
+      const rest = [{ pts: [{ x: 0, y: 0 }, { x: 10, y: 0 }], closed: false }]
+      const pins = [{ px: 0, py: 0, qx: 100, qy: 0 }]
+      // Click 3 units above the nearest warped sample (110,0) → offset (0,3)
+      // should carry over onto that sample's rest-space point (10,0).
+      const anchor = attachPinToRest([rest], pins, 110, 3)
+      expect(anchor.x).toBeCloseTo(10, 9)
+      expect(anchor.y).toBeCloseTo(3, 9)
+    })
+
+    it('picks the nearest sample across multiple targets', () => {
+      const restA = [{ pts: [{ x: 0, y: 0 }], closed: false }]
+      const restB = [{ pts: [{ x: 50, y: 50 }], closed: false }]
+      // Nearest sample is restB's (50,50), 1 unit away; the (1,1) click↔sample
+      // offset carries through even with no pins (rest === current pose).
+      const anchor = attachPinToRest([restA, restB], [], 51, 51)
+      expect(anchor).toEqual({ x: 51, y: 51 })
     })
   })
 

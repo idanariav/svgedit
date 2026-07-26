@@ -23,15 +23,3 @@ UX rough edge, not a bug:
   Would need explicit ARIA + keyboard handlers (arrow-key move, Enter to
   drop) — real effort, deferred until requested.
 
-## Puppet Warp follow-ups (2026-07-23)
-
-From the initial `ext-puppet-warp` build. Each was explicitly scoped out with
-the user; each is an additive enhancement, not a fix.
-
-- **Pins are fixed content-space anchors, not mesh-attached.** A pin left as an
-  anchor stays at its content coordinate; after a big warp it can visually
-  detach from the limb it was placed on. Illustrator attaches pins to the mesh
-  so they ride the deformation. Attaching a pin to a path parameter (nearest
-  sample + offset) would fix this. Minor UX item — now more relevant than
-  before since persistent single-shape rigs make repeated re-entry (and thus
-  repeated exposure to this drift) more common.
