@@ -35,10 +35,3 @@ the user; each is an additive enhancement, not a fix.
   sample + offset) would fix this. Minor UX item — now more relevant than
   before since persistent single-shape rigs make repeated re-entry (and thus
   repeated exposure to this drift) more common.
-
-- **Extension logic has no vitest coverage (only `mls.js` does).** The
-  coordinate mapping, `startSession` target resolution, and commit/cancel undo
-  behavior are covered by the Playwright e2e scripts (not part of `vitest run`)
-  rather than unit tests, because meaningful coverage needs heavy `svgCanvas` /
-  paper.js / DOM mocking. If unit coverage is wanted, extract the pure helpers
-  (`buildD`, the warp-mapping loop) and test those against a stub matrix.

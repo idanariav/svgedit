@@ -146,6 +146,100 @@ export const remapPuppetRestD = (elem, remap) => {
   path.remove()
 }
 
+// ── Warp-mapping helpers ─────────────────────────────────────────────────────
+// Pure functions (no DOM/paper.js/svgCanvas), extracted from applyWarp() below
+// so they're unit-testable against a stub matrix/pin set (see .claude/techdebt.md's
+// former "Extension logic has no vitest coverage" entry): warpSubpaths applies
+// the MLS deformation to a rest pose, buildD converts warped content-space
+// points back to a local-space `d` string.
+
+/**
+ * Re-warp a target's cached rest-pose subpaths from the current pins.
+ * @param {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>} rest
+ * @param {Array<{px:number,py:number,qx:number,qy:number}>} pins
+ * @returns {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>}
+ */
+export const warpSubpaths = (rest, pins) =>
+  rest.map((sp) => ({ pts: sp.pts.map((p) => deformPoint(p, pins)), closed: sp.closed }))
+
+/**
+ * Build a local-space `d` (M/L polyline) from warped content-space points, by
+ * mapping each point back through the target's content→local inverse matrix.
+ * @param {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>} subpaths
+ * @param {{a:number,b:number,c:number,d:number,e:number,f:number}} inv
+ * @returns {string}
+ */
+export const buildD = (subpaths, inv) => {
+  let d = ''
+  for (const sp of subpaths) {
+    sp.pts.forEach((p, i) => {
+      const l = transformPoint(p.x, p.y, inv)
+      d += (i === 0 ? `M${fmt(l.x)},${fmt(l.y)}` : ` L${fmt(l.x)},${fmt(l.y)}`)
+    })
+    if (sp.closed) d += ' Z'
+    d += ' '
+  }
+  return d.trim()
+}
+
+/**
+ * Expand a selection into the elements `startSession` should warp: a `<g>`
+ * expands into its warpable descendants (the group itself is never a
+ * target), other warpable primitives/paths are kept as-is, anything else is
+ * dropped. DOM-only (tagName + querySelectorAll, no matrices/paper.js/
+ * svgCanvas), so it's testable against plain elements without a canvas mock.
+ * @param {Element[]} selected
+ * @returns {Element[]}
+ */
+export const resolveWarpableShapes = (selected) => {
+  const shapes = []
+  for (const el of selected) {
+    if (el.tagName === 'g') {
+      el.querySelectorAll('*').forEach((c) => {
+        if (WARPABLE.has(c.tagName)) shapes.push(c)
+      })
+    } else if (WARPABLE.has(el.tagName)) {
+      shapes.push(el)
+    }
+  }
+  return shapes
+}
+
+/**
+ * Decide what `commit()` should persist for one target: which attributes
+ * changed (for the undo snapshot) and which new attribute values to write.
+ * Pure — takes plain values/flags rather than touching the DOM or
+ * `svgCanvas.history`, so the per-target commit decision (skip-if-unchanged,
+ * persistable-only rest-d/pins handling) is unit-testable on its own.
+ * @param {{currentD:string, origD:string, hasRestD:boolean, oldPinsJson:?string, newPinsJson:string, persistRig:boolean}} args
+ * @returns {{oldValues:Object, newRestD:?string, newPins:?string}} `newRestD`/
+ *   `newPins` are `null` when that attribute shouldn't be written.
+ */
+export const computeCommitPatch = ({ currentD, origD, hasRestD, oldPinsJson, newPinsJson, persistRig }) => {
+  const oldValues = {}
+  let newRestD = null
+  let newPins = null
+
+  // Skip targets that ended up unchanged (dragged then returned to rest).
+  if (currentD !== origD) oldValues.d = origD
+
+  if (persistRig) {
+    // Rest-d is the canonical, never-warped rest pose — written once, at rig
+    // creation, and never overwritten so every future session keeps warping
+    // from the same rest (see file header).
+    if (!hasRestD) {
+      oldValues[REST_D_ATTR] = null
+      newRestD = origD
+    }
+    if (oldPinsJson !== newPinsJson) {
+      oldValues[PINS_ATTR] = oldPinsJson
+      newPins = newPinsJson
+    }
+  }
+
+  return { oldValues, newRestD, newPins }
+}
+
 export default {
   name,
   async init () {
@@ -262,28 +356,10 @@ export default {
       return subpaths
     }
 
-    /** Build a local-space `d` (M/L polyline) from warped content points. */
-    const buildD = (subpaths, inv) => {
-      let d = ''
-      for (const sp of subpaths) {
-        sp.pts.forEach((p, i) => {
-          const l = transformPoint(p.x, p.y, inv)
-          d += (i === 0 ? `M${fmt(l.x)},${fmt(l.y)}` : ` L${fmt(l.x)},${fmt(l.y)}`)
-        })
-        if (sp.closed) d += ' Z'
-        d += ' '
-      }
-      return d.trim()
-    }
-
     /** Re-warp every target from its rest pose using the current pins. */
     const applyWarp = () => {
       for (const t of targets) {
-        const warped = t.rest.map((sp) => ({
-          pts: sp.pts.map((p) => deformPoint(p, pins)),
-          closed: sp.closed
-        }))
-        t.el.setAttribute('d', buildD(warped, t.inv))
+        t.el.setAttribute('d', buildD(warpSubpaths(t.rest, pins), t.inv))
       }
     }
 
@@ -340,17 +416,7 @@ export default {
       const sel = svgCanvas.getSelectedElements().filter(Boolean)
       if (!sel.length) return 0
 
-      // Expand a group into its descendant shapes; keep single shapes as-is.
-      const shapes = []
-      for (const el of sel) {
-        if (el.tagName === 'g') {
-          el.querySelectorAll('*').forEach((c) => {
-            if (WARPABLE.has(c.tagName)) shapes.push(c)
-          })
-        } else if (WARPABLE.has(el.tagName)) {
-          shapes.push(el)
-        }
-      }
+      const shapes = resolveWarpableShapes(sel)
       if (!shapes.length) return 0
 
       // Convert primitives to paths up front. convertToPath pushes its own undo
@@ -429,7 +495,7 @@ export default {
         // Conversions (already applied to the DOM) go first so undo reverses
         // warp→convert and the whole session is one step.
         convertCmds.forEach((cmd) => batch.addSubCommand(cmd))
-        targets.forEach((t) => {
+        targets.forEach((t, i) => {
           // Refit the dense warp polyline into smooth cubic béziers so the baked
           // path is compact (and doesn't grow each re-pose session). Falls back
           // to the raw polyline if the fit fails.
@@ -438,31 +504,23 @@ export default {
             if (refit) t.el.setAttribute('d', refit)
           } catch { /* keep the raw polyline */ }
 
-          // Element now holds the final `d`; snapshot old values for undo, one
-          // ChangeElementCommand per target so `d` and the persistent-rig
-          // metadata (single-target sessions only) land in the same undo step.
-          const oldValues = {}
-          // Skip targets that ended up unchanged (dragged then returned to rest).
-          if (t.el.getAttribute('d') !== t.origD) oldValues.d = t.origD
+          // Element now holds the final `d`; compute the undo snapshot + which
+          // persistent-rig attrs to write (single-target sessions only), then
+          // apply — one ChangeElementCommand per target so `d` and the rig
+          // metadata land in the same undo step.
+          const patch = computeCommitPatch({
+            currentD: t.el.getAttribute('d'),
+            origD: t.origD,
+            hasRestD: t.el.hasAttribute(REST_D_ATTR),
+            oldPinsJson: t.el.getAttribute(PINS_ATTR),
+            newPinsJson: serializePins(pins),
+            persistRig: persistable && i === 0
+          })
+          if (patch.newRestD !== null) t.el.setAttribute(REST_D_ATTR, patch.newRestD)
+          if (patch.newPins !== null) t.el.setAttribute(PINS_ATTR, patch.newPins)
 
-          if (persistable && t === targets[0]) {
-            // Rest-d is the canonical, never-warped rest pose — written once,
-            // at rig creation, and never overwritten so every future session
-            // keeps warping from the same rest (see file header).
-            if (!t.el.hasAttribute(REST_D_ATTR)) {
-              oldValues[REST_D_ATTR] = null
-              t.el.setAttribute(REST_D_ATTR, t.origD)
-            }
-            const oldPins = t.el.getAttribute(PINS_ATTR)
-            const newPins = serializePins(pins)
-            if (oldPins !== newPins) {
-              oldValues[PINS_ATTR] = oldPins
-              t.el.setAttribute(PINS_ATTR, newPins)
-            }
-          }
-
-          if (Object.keys(oldValues).length) {
-            batch.addSubCommand(new ChangeElementCommand(t.el, oldValues, 'Puppet Warp'))
+          if (Object.keys(patch.oldValues).length) {
+            batch.addSubCommand(new ChangeElementCommand(t.el, patch.oldValues, 'Puppet Warp'))
           }
         })
         convertCmds = [] // ownership transferred into the batch
