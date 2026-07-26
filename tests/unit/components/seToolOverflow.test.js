@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 import '../../../src/editor/components/seToolOverflow.js'
 import '../../../src/editor/components/seButton.js'
+import '../../../src/editor/components/seFlyingButton.js'
 
 vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -79,6 +80,24 @@ describe('se-tool-overflow', () => {
     tool.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(el.opened).toBe(false)
+  })
+
+  it('clicking a nested flyout\'s own trigger does not close the drawer (only its own submenu should react)', () => {
+    const el = mountToolOverflow('', `
+      <se-flyingbutton id="tool_shapes">
+        <se-button id="tool_rect" title="tools.mode_rect" src="rect.svg"></se-button>
+        <se-button id="tool_square" title="tools.mode_square" src="square.svg"></se-button>
+      </se-flyingbutton>
+    `)
+    el.opened = true
+    const flyout = el.querySelector('#tool_shapes')
+
+    // Simulates the flyout's own handle click, retargeted by its shadow
+    // boundary to the SE-FLYINGBUTTON host — same retargeting seFlyingButton's
+    // own tests rely on for its host-level click assertions.
+    flyout.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(el.opened).toBe(true)
   })
 
   it('closes the opened drawer on an outside document click', () => {

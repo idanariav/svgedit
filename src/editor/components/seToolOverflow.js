@@ -217,9 +217,13 @@ export class ToolOverflow extends HTMLElement {
             : rect.top
           this.$menu.style.top = top + 'px'
         }
-      } else {
-        // A slotted tool handled its own click — close the drawer after,
-        // mirroring se-flyingbutton's close-after-pick behavior.
+      } else if (ev.target.nodeName !== 'SE-FLYINGBUTTON') {
+        // A slotted leaf tool handled its own click — close the drawer after,
+        // mirroring se-flyingbutton's close-after-pick behavior. A slotted
+        // se-flyingbutton's own trigger click is retargeted to SE-FLYINGBUTTON
+        // (its host) the same way ours is retargeted to SE-TOOL-OVERFLOW above —
+        // that click only opens/toggles the nested flyout's own submenu, so it
+        // must not also dismiss this outer popover.
         this.opened = false
       }
     }

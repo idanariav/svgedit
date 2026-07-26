@@ -18,7 +18,7 @@ import { transformPoint, getMatrixToContent } from './math.js'
  * (user) space. Every other mode is a "create" mode whose new geometry must be
  * placed in the current group's local space while editing inside a group.
  */
-export const CONTENT_SPACE_MODES = ['select', 'multiselect', 'resize', 'rotate', 'pathedit', 'textedit', 'zoom']
+export const CONTENT_SPACE_MODES = ['select', 'multiselect', 'resize', 'rotate', 'pathedit', 'textedit', 'zoom', 'puppetwarp']
 
 /**
  * @param {module:svgcanvas.SvgCanvas} svgCanvas

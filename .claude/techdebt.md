@@ -68,8 +68,8 @@ and `EditorStartup.init()`'s unwrapped panel-init sequence) are fixed:
 
 ## Left panel drag-reorder / overflow bucket follow-ups (2026-07-24)
 
-From the `toolDragReorder.js`/`se-tool-overflow` build. Both are minor,
-accepted-scope UX rough edges, not bugs:
+From the `toolDragReorder.js`/`se-tool-overflow` build. Minor, accepted-scope
+UX rough edge, not a bug:
 
 - **No keyboard-accessible reorder.** Mouse/pointer drag only (native HTML5
   DnD). Consistent with the rest of `#tools_left` being mouse-driven desktop
@@ -77,16 +77,14 @@ accepted-scope UX rough edges, not bugs:
   or keyboard-only user can't reorder tools or use the overflow bucket.
   Would need explicit ARIA + keyboard handlers (arrow-key move, Enter to
   drop) — real effort, deferred until requested.
-- **A flyout dragged into "Additional tools" closes the bucket's popover
-  when its own handle is clicked.** `se-tool-overflow` closes itself after
-  any click on a slotted tool that isn't its own trigger (mirrors
-  `se-flyingbutton`'s close-after-pick behavior), which also fires when the
-  slotted tool is itself a flyout (e.g. the shapes flyout) and the click was
-  meant to open *its* submenu, not dismiss the outer popover. Minor —
-  reopening "Additional tools" and clicking again works fine. Fixing it
-  properly means `se-tool-overflow` distinguishing "a sub-tool was picked"
-  from "a nested flyout's own handle was clicked", which needs a bit more
-  signal than the current generic click-delegation gives it.
+
+Closed 2026-07-26: a flyout dragged into "Additional tools" no longer closes
+the bucket's popover when its own handle is clicked —
+`seToolOverflow.js`'s click handler now leaves the drawer open on a
+`SE-FLYINGBUTTON`-retargeted click (a nested flyout's own trigger), only
+closing on a genuine leaf-tool pick, mirroring how `se-flyingbutton` itself
+distinguishes the two. Regression test in
+`tests/unit/components/seToolOverflow.test.js`.
 
 ## Puppet Warp follow-ups (2026-07-23)
 
@@ -116,7 +114,15 @@ now done — on commit the dense warp polyline is refit to cubic béziers via
 
 A review agent flagged these; the correctness items (own-transform space bug,
 atomic/cancelable conversion, singular-matrix guard, no-op undo, themed pins)
-were **fixed**. These remain as lower-priority follow-ups:
+were **fixed**, and three more were closed 2026-07-26 (group-context coordinate
+mismatch — `puppetwarp` added to `event-group-context.js`'s
+`CONTENT_SPACE_MODES` so `mouseDown`'s `start_x/start_y` and `mouseMove`'s
+`mouse_x/mouse_y` stay in the same content space; scale-dependent magic
+constants — `REFIT_TOLERANCE`/the `len / 6` sample step replaced with
+`sampleStepFor`/`refitToleranceFor`, derived from each target's content-space
+bbox diagonal, with regression tests in `tests/unit/ext-puppet-warp-scale.test.js`
+and `tests/unit/event-modes.test.js`). This remains as a lower-priority
+follow-up:
 
 - **Overlay pins live inside `#svgcontent` (serialization risk).** `addPinDot`
   appends `<circle>`s to the current layer. They're removed on every exit path,
@@ -132,17 +138,6 @@ were **fixed**. These remain as lower-priority follow-ups:
   rather than unit tests, because meaningful coverage needs heavy `svgCanvas` /
   paper.js / DOM mocking. If unit coverage is wanted, extract the pure helpers
   (`buildD`, the warp-mapping loop) and test those against a stub matrix.
-
-- **Group-context coordinate mismatch (niche).** If the user has drilled *into*
-  a group (`isCreateInCurrentGroup`), `mouseDown` receives group-local
-  `start_x/start_y` while `mouseMove` receives raw content `mouse_x/zoom`, so
-  pin placement and dragging use different frames (`hitTestPin` would mis-hit).
-  Normalize both to content space to fix. Rare path.
-
-- **Scale-dependent magic constants.** `REFIT_TOLERANCE = 2` and the `len / 6`
-  sample step are absolute user units; on a tiny icon the refit can over-smooth,
-  on a huge path the 400-sample cap can undersample. Derive both from the
-  target's bbox diagonal for scale-independence. Low priority.
 
 ---
 

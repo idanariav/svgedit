@@ -46,10 +46,15 @@ const fmt = (n) => Math.round(n * 100) / 100
 // Element types that carry warp-able geometry (everything convertToPath handles).
 const WARPABLE = new Set(['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'])
 
-// Curve-fit tolerance (user units) for the on-commit bézier refit. Small enough
-// to stay faithful to the pose, large enough to collapse the dense warp polyline
-// back into a handful of smooth cubics. (paper's freehand default is 2.5.)
-const REFIT_TOLERANCE = 2
+// Both the polyline sample spacing and the on-commit bézier refit tolerance are
+// user-unit distances, so a fixed constant over- or under-samples/-smooths
+// depending on the target's actual size (a tiny icon vs. a huge path). Instead,
+// derive both as a fraction of the target's content-space bbox diagonal — the
+// ratios are chosen so a "typical" mid-size shape (~300 unit diagonal) lands on
+// the previous fixed defaults (6 units/sample, tolerance 2).
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+export const sampleStepFor = (diag) => clamp(diag / 50, 1, 20)
+export const refitToleranceFor = (diag) => clamp(diag / 150, 0.5, 10)
 
 export default {
   name,
@@ -76,6 +81,14 @@ export default {
     const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
     const getLayer = () => svgCanvas.getCurrentDrawing().getCurrentLayer()
 
+    /** Content-space bbox diagonal of `el` (local `getBBox()` mapped through `m`). */
+    const bboxDiagonal = (el, m) => {
+      const b = el.getBBox()
+      const p1 = transformPoint(b.x, b.y, m)
+      const p2 = transformPoint(b.x + b.width, b.y + b.height, m)
+      return dist(p1.x, p1.y, p2.x, p2.y) || 1
+    }
+
     // ── Geometry sampling / rebuild ──────────────────────────────────────────
 
     /**
@@ -86,13 +99,14 @@ export default {
      * curvature, leaving a straight limb as 2 points that can never bend).
      * @returns {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>}
      */
-    const sampleRest = (el, m) => {
+    const sampleRest = (el, m, diag) => {
       const d = getPathDFromElement(el)
       if (!d) return []
       const scope = getPaperScope()
       const compound = new scope.CompoundPath(d)
       const children = compound.children?.length ? compound.children : [compound]
       const subpaths = []
+      const step = sampleStepFor(diag)
       for (const ch of children) {
         const len = ch.length
         if (!len) {
@@ -101,9 +115,10 @@ export default {
           if (p) subpaths.push({ pts: [transformPoint(p.x, p.y, m)], closed: false })
           continue
         }
-        // ~6 local units per sample, clamped so short limbs still bend and long
-        // paths stay bounded.
-        const n = Math.max(8, Math.min(400, Math.ceil(len / 6)))
+        // Sample spacing scales with the target's own size (see step/tolerance
+        // helpers above), clamped so short limbs still bend and long paths stay
+        // bounded.
+        const n = Math.max(8, Math.min(400, Math.ceil(len / step)))
         const last = ch.closed ? n - 1 : n
         const pts = []
         for (let i = 0; i <= last; i++) {
@@ -235,7 +250,8 @@ export default {
           const m = matrixMultiply(getMatrixToContent(el), getMatrix(el))
           let inv
           try { inv = m.inverse() } catch { return null }
-          return { el, inv, rest: sampleRest(el, m), origD: el.getAttribute('d') }
+          const diag = bboxDiagonal(el, m)
+          return { el, inv, diag, rest: sampleRest(el, m, diag), origD: el.getAttribute('d') }
         })
         .filter(Boolean)
       pins = []
@@ -265,7 +281,7 @@ export default {
           // path is compact (and doesn't grow each re-pose session). Falls back
           // to the raw polyline if the fit fails.
           try {
-            const refit = svgCanvas.simplifyPathD?.(t.el.getAttribute('d'), REFIT_TOLERANCE)
+            const refit = svgCanvas.simplifyPathD?.(t.el.getAttribute('d'), refitToleranceFor(t.diag))
             if (refit) t.el.setAttribute('d', refit)
           } catch { /* keep the raw polyline */ }
           // Element now holds the final `d`; snapshot old value for undo. Skip

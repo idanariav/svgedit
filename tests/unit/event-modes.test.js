@@ -75,4 +75,14 @@ describe('event mode-family modules', () => {
     expect(toCurrentGroupLocalPoint(canvas, 5, 7)).toEqual({ x: 5, y: 7 })
     expect(toCurrentGroupLocalDelta(canvas, 3, 4)).toEqual({ dx: 3, dy: 4 })
   })
+
+  it('treats puppetwarp as a content-space mode, matching mouseMove\'s always-content-space coords', () => {
+    // ext-puppet-warp operates on the existing selection (like select/pathedit),
+    // never creating new geometry, so entering a group shouldn't remap its
+    // mouseDown start_x/start_y into group-local space — otherwise they'd
+    // disagree with mouseMove's mouse_x/mouse_y, which are never remapped.
+    const canvas = { getCurrentMode: () => 'puppetwarp', getCurrentGroup: () => ({}) }
+    expect(CONTENT_SPACE_MODES).toContain('puppetwarp')
+    expect(isCreateInCurrentGroup(canvas)).toBe(false)
+  })
 })
