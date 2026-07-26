@@ -121,4 +121,25 @@ describe('blur-event', () => {
     svgCanvas.undoMgr.redo()
     expect(rect.hasAttribute('filter')).toBe(false)
   })
+
+  // addSVGElementsFromJson() can return null (e.g. no live document yet).
+  // Before the guard, setBlur() appended that straight into <defs> --
+  // Element.append() silently coerces a non-Node argument via ToString()
+  // instead of throwing, so this used to inject a literal "undefined" text
+  // node into <defs> rather than fail loudly. A real drawing was found
+  // carrying ~130 of these.
+  it('does not throw or corrupt <defs> when addSVGElementsFromJson returns null for the filter element', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-blur-null-filter', x: 10, y: 20, width: 30, height: 40 }
+    })
+    svgCanvas.selectOnly([rect], true)
+
+    const original = svgCanvas.addSVGElementsFromJson.bind(svgCanvas)
+    svgCanvas.addSVGElementsFromJson = (data) => (data.element === 'filter' ? null : original(data))
+
+    expect(() => svgCanvas.setBlur(1.5, true)).not.toThrow()
+    expect(rect.hasAttribute('filter')).toBe(false)
+    expect(svgCanvas.getSvgString()).not.toMatch(/undefined/)
+  })
 })

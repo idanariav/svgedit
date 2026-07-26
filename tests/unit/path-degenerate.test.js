@@ -149,3 +149,75 @@ describe('setMode is resilient to a throwing path/text teardown', () => {
     warn.mockRestore()
   })
 })
+
+// A legacy bug (now guarded at its call sites -- see blur-event.js,
+// clip-mask.js, fx-filter.js, ext-markers.js, selected-elem.js) let a falsy
+// value reach a `<defs>` element's `.append()`, which silently coerces a
+// non-Node argument into a literal "undefined" text node instead of throwing.
+// A real drawing was found carrying ~130 of these concatenated in its <defs>.
+// svgCanvasToString() now strips any leftover ones on every save so an
+// already-corrupted drawing self-heals instead of carrying the scar forever.
+describe('svgCanvasToString repairs legacy "undefined" text nodes in <defs>', () => {
+  let svgCanvas
+
+  beforeEach(() => {
+    document.body.textContent = ''
+    const svgEditor = document.createElement('div')
+    svgEditor.id = 'svg_editor'
+    const svgcanvas = document.createElement('div')
+    svgcanvas.id = 'svgcanvas'
+    const workarea = document.createElement('div')
+    workarea.id = 'workarea'
+    workarea.append(svgcanvas)
+    const toolsLeft = document.createElement('div')
+    toolsLeft.id = 'tools_left'
+    svgEditor.append(workarea, toolsLeft)
+    document.body.append(svgEditor)
+
+    svgCanvas = new SvgCanvas(svgcanvas, {
+      canvas_expansion: 3,
+      dimensions: [640, 480],
+      initFill: { color: 'FF0000', opacity: 1 },
+      initStroke: { width: 5, color: '000000', opacity: 1 },
+      initOpacity: 1,
+      imgPath: '../editor/images',
+      langPath: 'locale/',
+      extPath: 'extensions/',
+      extensions: [],
+      initTool: 'select',
+      wireframe: false
+    })
+  })
+  afterEach(() => { document.body.textContent = '' })
+
+  it('strips concatenated "undefined" text nodes from <defs> while keeping real content', () => {
+    // The rect references f1 via its filter attribute so removeUnusedDefElems()
+    // -- an unrelated, pre-existing pruning pass that runs earlier in
+    // svgCanvasToString() -- doesn't drop the filter as unreferenced, which
+    // would otherwise be indistinguishable from the sanitizer under test.
+    svgCanvas.setSvgString(
+      '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs>undefinedundefinedundefined<filter id="f1"><feGaussianBlur stdDeviation="1"/></filter></defs>' +
+        '<g class="layer"><title>Layer 1</title><rect id="r1" x="10" y="10" width="20" height="20" filter="url(#f1)"/></g>' +
+      '</svg>'
+    )
+
+    const output = svgCanvas.getSvgString()
+    expect(output).not.toMatch(/undefined/)
+    expect(output).toContain('feGaussianBlur')
+    expect(output).toContain('id="f1"')
+  })
+
+  it('leaves a <defs> with no corruption untouched', () => {
+    svgCanvas.setSvgString(
+      '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs><filter id="f1"><feGaussianBlur stdDeviation="1"/></filter></defs>' +
+        '<g class="layer"><title>Layer 1</title><rect id="r1" x="10" y="10" width="20" height="20" filter="url(#f1)"/></g>' +
+      '</svg>'
+    )
+
+    const output = svgCanvas.getSvgString()
+    expect(output).toContain('feGaussianBlur')
+    expect(output).toContain('id="f1"')
+  })
+})

@@ -150,6 +150,13 @@ export default {
         }
       })
 
+      // addElem (addSVGElementsFromJson) can return null (e.g. no live
+      // document yet). marker.append(mel) below would throw on that, and
+      // even findDefs().append(marker) further down wouldn't fail loudly --
+      // it'd silently insert a literal "undefined" text node into <defs> --
+      // so bail explicitly rather than either.
+      if (!marker) return undefined
+
       const mel = addElem(markerTypes[seType])
       const fillcolor = (seType.substr(-2) === '_o' || strokeOnly.includes(seType))
         ? 'none'

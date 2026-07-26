@@ -233,6 +233,12 @@ export const createFxComposer = (svgCanvas) => {
       existing.remove()
     }
     const filter = buildFilter(elem, spec, filterId)
+    // buildFilter() bottoms out in addSVGElementsFromJson(), which can return
+    // null (e.g. no live document yet). Appending that into <defs> wouldn't
+    // throw -- Element.append() silently coerces it into a literal
+    // "undefined" text node instead -- so bail explicitly rather than corrupt
+    // <defs> with an incomplete effect.
+    if (!filter) return
     svgCanvas.findDefs().append(filter)
     batchCmd.addSubCommand(new InsertElementCommand(filter))
     const newFilterAttr = `url(#${filterId})`

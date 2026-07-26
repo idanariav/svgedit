@@ -1030,6 +1030,17 @@ const pushGroupProperty = (g, undoable) => {
         } else {
           // Clone the group's filter
           gfilter = drawing.copyElem(gfilter)
+          // copyElem() always returns a real Element today, but this call
+          // (Ungroup cloning a shared blur/filter onto each child) is exactly
+          // the historical shape of a legacy bug where a filter clone that
+          // came back falsy got appended into <defs> anyway, silently
+          // inserting a literal "undefined" text node (Element.append()
+          // coerces non-Node args via ToString() instead of throwing). Guard
+          // explicitly so a future change to copyElem's contract can't
+          // reintroduce that silently. `continue`, not `return`: this is the
+          // body of pushGroupProperty's own child loop, and one child failing
+          // to clone a filter shouldn't abort processing the rest.
+          if (!gfilter) continue
           svgCanvas.findDefs().append(gfilter)
 
           // const filterElem = getRefElem(gfilter);

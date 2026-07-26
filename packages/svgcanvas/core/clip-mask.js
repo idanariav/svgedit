@@ -176,6 +176,14 @@ export const init = (canvas) => {
         // across renderers (the region can collapse and hide everything).
         : { element: 'mask', attr: { id } }
     )
+    // addSVGElementsFromJson() can return null (e.g. no live document yet).
+    // Appending that straight into <defs> wouldn't throw — Element.append()
+    // silently coerces it into a literal "undefined" text node instead of
+    // failing loudly — so guard explicitly rather than let it corrupt <defs>.
+    if (!container) {
+      warn('Unable to create clip/mask container', null, 'clip-mask')
+      return
+    }
 
     // Clone the bottom shape as the silhouette; it stays visible on the canvas
     const clone = bottomElem.cloneNode(true)
@@ -268,6 +276,13 @@ export const init = (canvas) => {
 
     const maskId = svgCanvas.getNextId()
     const mask = svgCanvas.addSVGElementsFromJson({ element: 'mask', attr: { id: maskId } })
+    // See performSet()'s matching guard: addSVGElementsFromJson() can return
+    // null, and appending that would silently corrupt <defs> with a literal
+    // "undefined" text node rather than throw.
+    if (!mask) {
+      warn('Unable to create mask', null, 'clip-mask')
+      return
+    }
     svgCanvas.findDefs().append(mask)
     batchCmd.addSubCommand(new InsertElementCommand(mask))
 

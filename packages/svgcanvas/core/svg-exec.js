@@ -63,6 +63,23 @@ export const init = canvas => {
       console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
     }
 
+    // One-time repair for a legacy bug: Element.append(x) silently coerces a
+    // non-Node argument via ToString(), so an `undefined` value slipping into
+    // one of the various `findDefs().append(...)` call sites (now guarded,
+    // see e.g. blur-event.js, clip-mask.js, fx-filter.js) inserted a literal
+    // "undefined" text node into <defs> instead of throwing — invisible in
+    // the rendered drawing but bloating every save. Strips any leftover ones
+    // so a drawing that already carries this scar self-heals on its next
+    // save, without touching legitimate (e.g. whitespace) text content.
+    const defsList = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')
+    Array.prototype.forEach.call(defsList, (defsEl) => {
+      Array.from(defsEl.childNodes).forEach((node) => {
+        if (node.nodeType === 3 && /^(?:undefined)+$/.test(node.nodeValue)) {
+          node.remove()
+        }
+      })
+    })
+
     // Keep SVG-Edit comment on top
     const childNodesElems = svgCanvas.getSvgContent().childNodes
     childNodesElems.forEach((node, i) => {

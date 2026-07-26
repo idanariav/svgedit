@@ -48,6 +48,48 @@ committed to `'pathedit'` via `setMode()` without `toEditMode()` ever running,
 so the module-private path-edit session was never set up) against the real,
 unmocked `clear()`/`getSvgString()`.
 
+### Follow-up: `findDefs().append()` call-site audit
+
+The same investigation turned up an unrelated legacy corruption in the same
+drawing: its `<defs>` carried ~130 concatenated literal `"undefined"` text
+nodes. Root cause: `Element.append(x)` (`ChildNode.append`, not `appendChild`)
+silently coerces a non-`Node` argument via `ToString()`, so `defs.append(x)`
+with `x` falsy inserts a `"undefined"` text node instead of throwing.
+`addSVGElementsFromJson()` (`packages/svgcanvas/core/json.js`) really can
+return `null` (`if (!svgdoc_) { return null }`), so any call site that appends
+its result straight into `<defs>` without a truthiness check was exploitable
+in principle — the corrupted drawing's filter id (`..._blur1`, matching no
+current naming scheme) suggests the actual historical trigger predates a
+since-rewritten blur/filter implementation and can't be reproduced against
+current code.
+
+Audited every `<defs>`-directed `.append()`/`.appendChild()` in the codebase.
+Most trace back to `cloneNode()`, `createElementNS()`, `importNode()`, or
+NodeList iteration — all of which are guaranteed non-falsy — and were left
+alone (adding a truthiness check there would be guarding against something
+that provably can't happen). The ones that trace back to
+`addSVGElementsFromJson()` were genuinely exploitable and are now guarded:
+
+- `packages/svgcanvas/core/blur-event.js` (`setBlurNoUndo`, `setBlur`)
+- `packages/svgcanvas/core/clip-mask.js` (`performSet`, `convertClipToMask`)
+- `src/editor/extensions/fx-filter.js` (`writeEffects`)
+- `src/editor/extensions/ext-markers/ext-markers.js` (`addMarker`)
+- `packages/svgcanvas/core/selected-elem.js` (`pushGroupProperty`'s Ungroup
+  path) — guarded as defense-in-depth even though `drawing.copyElem()`
+  (its actual source value here) is currently proven to always return a real
+  Element; kept because this exact call site's id-naming lineage
+  (`{id}_blur` → `{id}_blur1`) is the closest match to the historical
+  corruption's fingerprint.
+
+Also added a one-time sanitizer in `svgCanvasToString()` that strips any
+leftover `nodeType===3 && nodeValue==='undefined'` children from `<defs>` on
+every save, so a drawing that already carries this scar (like the one that
+surfaced it) self-heals on its next save rather than needing hand-repair.
+
+Regression coverage: `tests/unit/path-degenerate.test.js` (sanitizer, both the
+corrupted and clean cases) and `tests/unit/blur-event.test.js` (the
+`setBlur()` guard, via a mocked `addSVGElementsFromJson` returning `null`).
+
 ---
 
 ## Left panel drag-reorder / overflow bucket follow-ups (2026-07-24)

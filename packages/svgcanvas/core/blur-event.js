@@ -64,6 +64,11 @@ export const init = (canvas) => {
             id: `${elem.id}_blur`
           }
         })
+        // addSVGElementsFromJson() can return null (e.g. no live document
+        // yet). Appending a null/undefined value into <defs> wouldn't throw
+        // -- Element.append() silently coerces it into a literal "undefined"
+        // text node instead -- so bail explicitly rather than corrupt <defs>.
+        if (!filter) return
         filter.append(blurElem)
         svgCanvas.findDefs().append(filter)
       }
@@ -198,6 +203,10 @@ export const init = (canvas) => {
           id: `${elemId}_blur`
         }
       })
+      // See setBlurNoUndo()'s matching guard: addSVGElementsFromJson() can
+      // return null, and appending that would silently corrupt <defs> with a
+      // literal "undefined" text node rather than throw.
+      if (!filter) return
       filter.append(newblur)
       const defs = svgCanvas.findDefs()
       if (defs && defs.ownerDocument === filter.ownerDocument) {
