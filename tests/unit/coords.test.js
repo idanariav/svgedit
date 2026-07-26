@@ -24,19 +24,6 @@ describe('coords', function () {
     svg = document.createElementNS(NS.SVG, 'svg')
     svgroot.append(svg)
 
-    // Mock out editor context.
-    const mockUtilitiesContext =
-      /**
-      * @implements {module:utilities.EditorContext}
-      */
-      {
-        getSvgRoot: () => { return svg },
-        getSvgContent: () => { return svg },
-        getDOMDocument () { return null },
-        getDOMContainer () { return null }
-      }
-    domUtils.init(mockUtilitiesContext)
-    bboxUtils.init(mockUtilitiesContext)
     const drawing = {
       getNextId () { return String(elemId++) }
     }
@@ -44,13 +31,27 @@ describe('coords', function () {
       get (elem, key) { return null },
       has (elem, key) { return false }
     }
-    coordsCanvas = {
-      getGridSnapping () { return false },
-      getDrawing () { return drawing },
-      getCurrentDrawing () { return drawing },
-      getDataStorage () { return mockDataStorage },
-      getSvgRoot () { return svg }
-    }
+    // Mock out editor context. A single shared object plays the role of the
+    // SvgCanvas instance across all three init() calls, matching how
+    // svgcanvas.js's constructor calls each core module's init(this) on the
+    // same instance — domUtils/bboxUtils attach getRefElem/findDefs/getBBox
+    // etc. onto it, and coords.js's remapElement reads them via svgCanvas.*.
+    coordsCanvas =
+      /**
+      * @implements {module:utilities.EditorContext}
+      */
+      {
+        getSvgRoot: () => { return svg },
+        getSvgContent: () => { return svg },
+        getDOMDocument () { return null },
+        getDOMContainer () { return null },
+        getGridSnapping () { return false },
+        getDrawing () { return drawing },
+        getCurrentDrawing () { return drawing },
+        getDataStorage () { return mockDataStorage }
+      }
+    domUtils.init(coordsCanvas)
+    bboxUtils.init(coordsCanvas)
     coords.init(coordsCanvas)
   })
 

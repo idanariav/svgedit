@@ -10,9 +10,6 @@ import { NS } from './namespaces.js'
 import { setUnitAttr, getTypeMap } from './units.js'
 import { getTransformList } from './math.js'
 
-let svgCanvas = null
-let svgroot_ = null
-
 /**
  * Object with the following keys/values.
  * @typedef {PlainObject} module:utilities.SVGElementJSON
@@ -68,13 +65,178 @@ let svgroot_ = null
  */
 
 /**
+ * Attaches the canvas-state-dependent helpers (element/defs lookup, grid
+ * snapping) directly onto the given instance, closed over it — per-instance,
+ * like every other `core/*.js` module's `init(canvas)`. These have no
+ * elem-only equivalent (an id/attr-value lookup or the grid config has
+ * nothing to be "pure" against), unlike `getBBox`/`getRotationAngle` below,
+ * which stay bare+pure and only get an instance-scoped selection-fallback
+ * wrapper here.
  * @function module:dom-utils.init
  * @param {module:utilities.EditorContext} canvas
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
-  svgroot_ = canvas.getSvgRoot()
+  const svgCanvas = canvas // per-instance; functions below are closed over it
+
+  /**
+   * Get a DOM element by ID within the SVG root element.
+   * @function module:dom-utils.EditorContext#getElement
+   * @param {string} id - String with the element's new ID
+   * @returns {?Element}
+   */
+  const getElement = id => svgCanvas.getSvgRoot()?.querySelector(`#${CSS.escape(id)}`)
+
+  /**
+   * @function module:dom-utils.EditorContext#findDefs
+   * @returns {SVGDefsElement} The document's `<defs>` element, creating it first if necessary
+   */
+  const findDefs = () => {
+    const svgElement = svgCanvas.getSvgContent()
+    const existingDefs = svgElement.getElementsByTagNameNS(NS.SVG, 'defs')
+
+    if (existingDefs.length > 0) {
+      return existingDefs[0]
+    }
+
+    const defs = svgElement.ownerDocument.createElementNS(NS.SVG, 'defs')
+    const insertTarget = svgElement.firstChild?.nextSibling
+
+    if (insertTarget) {
+      svgElement.insertBefore(defs, insertTarget)
+    } else {
+      svgElement.append(defs)
+    }
+
+    return defs
+  }
+
+  /**
+   * Get the reference element associated with the given attribute value.
+   * @function module:dom-utils.EditorContext#getRefElem
+   * @param {string} attrVal - The attribute value as a string
+   * @returns {Element} Reference element
+   */
+  const getRefElem = attrVal => {
+    if (!attrVal) return null
+    const url = getUrlFromAttr(attrVal)
+    if (!url) return null
+    const id = url[0] === '#' ? url.slice(1) : url
+    return getElement(id)
+  }
+
+  /**
+   * Collect the `<defs>` elements (gradients, filters, markers, masks,
+   * clip-paths, …) transitively referenced by the given elements, so a
+   * copy/paste or shape-library save can carry its paint servers along instead
+   * of leaving dangling `url(#…)` references when pasted into another document.
+   * @function module:dom-utils.EditorContext#getReferencedDefElements
+   * @param {Element[]} elems - root elements to scan (descendants are scanned too)
+   * @returns {Element[]} de-duplicated referenced def elements, dependencies first
+   */
+  const getReferencedDefElements = (elems) => {
+    const seen = new Set()
+    const ordered = []
+    const idsOf = (el) => {
+      const ids = []
+      REF_ATTRS.forEach((name) => {
+        const url = getUrlFromAttr(el.getAttribute?.(name))
+        if (url) ids.push(url[0] === '#' ? url.slice(1) : url)
+      })
+      const href = getHref(el)
+      if (href?.startsWith('#')) ids.push(href.slice(1))
+      return ids
+    }
+    const visit = (el) => {
+      idsOf(el).forEach((id) => {
+        const ref = getElement(id)
+        // Only collect <defs>-resident elements, not on-canvas references.
+        if (ref && !seen.has(ref) && ref.closest?.('defs')) {
+          seen.add(ref)
+          visit(ref) // nested refs (e.g. gradient href→gradient) collected first
+          ordered.push(ref)
+        }
+      })
+    }
+    elems.forEach((root) => {
+      if (!root) return
+      visit(root)
+      root.querySelectorAll?.('*').forEach(visit)
+    })
+    return ordered
+  }
+
+  /**
+   * Snapping step size in px (snappingStep converted from the current base unit).
+   * @returns {Float}
+   */
+  const getSnapStepSize = () => {
+    const unit = svgCanvas.getBaseUnit()
+    let stepSize = svgCanvas.getSnappingStep()
+    if (unit !== 'px') {
+      stepSize *= getTypeMap()[unit]
+    }
+    return stepSize
+  }
+
+  /**
+   * Round value to for snapping.
+   * @function module:dom-utils.EditorContext#snapToGrid
+   * @param {Float} value
+   * @returns {Integer}
+   */
+  const snapToGrid = value => {
+    value = Math.round(value / getSnapStepSize()) * getSnapStepSize()
+    return value
+  }
+
+  /**
+   * Snap a point to the nearest node of the active grid lattice.
+   * For the `square` grid (and the non-lattice perspective grids) this is just
+   * per-axis rounding, identical to calling {@link module:dom-utils.EditorContext#snapToGrid}
+   * on each coordinate. For the `isometric` and `triangle` grids the point is
+   * snapped to the nearest node of the corresponding skewed lattice by inverting
+   * its basis vectors.
+   * @function module:dom-utils.EditorContext#snapPointToGrid
+   * @param {Float} x
+   * @param {Float} y
+   * @returns {{x: Float, y: Float}}
+   */
+  const snapPointToGrid = (x, y) => {
+    const shape = svgCanvas.getGridShape ? svgCanvas.getGridShape() : 'square'
+    if (shape === 'isometric' || shape === 'triangle') {
+      const s = getSnapStepSize()
+      let ax, ay, bx, by
+      if (shape === 'isometric') {
+        // Two axes at ±30° from horizontal.
+        const c = Math.cos(Math.PI / 6)
+        const sn = Math.sin(Math.PI / 6)
+        ax = s * c; ay = s * sn
+        bx = s * c; by = -s * sn
+      } else {
+        // Triangular lattice: horizontal axis + 60° axis.
+        ax = s; ay = 0
+        bx = s / 2; by = (s * Math.sqrt(3)) / 2
+      }
+      // Solve (x,y) = m·a + n·b for integers m,n, then recompute the node.
+      const det = ax * by - bx * ay
+      const m = Math.round((x * by - bx * y) / det)
+      const n = Math.round((ax * y - x * ay) / det)
+      return { x: m * ax + n * bx, y: m * ay + n * by }
+    }
+    return { x: snapToGrid(x), y: snapToGrid(y) }
+  }
+
+  canvas.getElement = getElement
+  canvas.findDefs = findDefs
+  canvas.getRefElem = getRefElem
+  canvas.getReferencedDefElements = getReferencedDefElements
+  canvas.snapToGrid = snapToGrid
+  canvas.snapPointToGrid = snapPointToGrid
+  // getRotationAngle stays a bare, pure (elem-required) export below — every
+  // call site already passes an elem — but the public per-instance API keeps
+  // the "default to current selection" convenience, correctly scoped now.
+  canvas.getRotationAngle = (elem, toRad) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
 }
 
 /**
@@ -225,30 +387,6 @@ export let setHref = (elem, val) => {
 }
 
 /**
- * @function module:dom-utils.findDefs
- * @returns {SVGDefsElement} The document's `<defs>` element, creating it first if necessary
- */
-export const findDefs = () => {
-  const svgElement = svgCanvas.getSvgContent()
-  const existingDefs = svgElement.getElementsByTagNameNS(NS.SVG, 'defs')
-
-  if (existingDefs.length > 0) {
-    return existingDefs[0]
-  }
-
-  const defs = svgElement.ownerDocument.createElementNS(NS.SVG, 'defs')
-  const insertTarget = svgElement.firstChild?.nextSibling
-
-  if (insertTarget) {
-    svgElement.insertBefore(defs, insertTarget)
-  } else {
-    svgElement.append(defs)
-  }
-
-  return defs
-}
-
-/**
  * Get the rotation angle of the given transform list.
  * @function module:dom-utils.getRotationAngleFromTransformList
  * @param {SVGTransformList} tlist - List of transforms
@@ -269,31 +407,19 @@ export const getRotationAngleFromTransformList = (tlist, toRad) => {
 }
 
 /**
- * Get the rotation angle of the given/selected DOM element.
+ * Get the rotation angle of the given DOM element. Pure — requires an elem
+ * (every call site already passes one); the "default to current selection"
+ * convenience lives on the per-instance `canvas.getRotationAngle` wrapper
+ * attached by {@link module:dom-utils.init} instead, so it resolves against
+ * the right editor instance rather than shared module state.
  * @function module:dom-utils.getRotationAngle
- * @param {Element} [elem] - DOM element to get the angle for. Default to first of selected elements.
+ * @param {Element} elem - DOM element to get the angle for
  * @param {boolean} [toRad=false] - When true returns the value in radians rather than degrees
  * @returns {Float} The angle in degrees or radians
  */
 export let getRotationAngle = (elem, toRad) => {
-  const selected = elem || svgCanvas.getSelectedElements()[0]
-  // find the rotation transform (if any) and set it
-  const tlist = getTransformList(selected)
+  const tlist = getTransformList(elem)
   return getRotationAngleFromTransformList(tlist, toRad)
-}
-
-/**
- * Get the reference element associated with the given attribute value.
- * @function module:dom-utils.getRefElem
- * @param {string} attrVal - The attribute value as a string
- * @returns {Element} Reference element
- */
-export const getRefElem = attrVal => {
-  if (!attrVal) return null
-  const url = getUrlFromAttr(attrVal)
-  if (!url) return null
-  const id = url[0] === '#' ? url.slice(1) : url
-  return getElement(id)
 }
 
 /**
@@ -305,47 +431,6 @@ const REF_ATTRS = [
   'clip-path', 'fill', 'filter', 'marker-end', 'marker-mid',
   'marker-start', 'mask', 'stroke'
 ]
-
-/**
- * Collect the `<defs>` elements (gradients, filters, markers, masks,
- * clip-paths, …) transitively referenced by the given elements, so a
- * copy/paste or shape-library save can carry its paint servers along instead
- * of leaving dangling `url(#…)` references when pasted into another document.
- * @function module:dom-utils.getReferencedDefElements
- * @param {Element[]} elems - root elements to scan (descendants are scanned too)
- * @returns {Element[]} de-duplicated referenced def elements, dependencies first
- */
-export const getReferencedDefElements = (elems) => {
-  const seen = new Set()
-  const ordered = []
-  const idsOf = (el) => {
-    const ids = []
-    REF_ATTRS.forEach((name) => {
-      const url = getUrlFromAttr(el.getAttribute?.(name))
-      if (url) ids.push(url[0] === '#' ? url.slice(1) : url)
-    })
-    const href = getHref(el)
-    if (href?.startsWith('#')) ids.push(href.slice(1))
-    return ids
-  }
-  const visit = (el) => {
-    idsOf(el).forEach((id) => {
-      const ref = getElement(id)
-      // Only collect <defs>-resident elements, not on-canvas references.
-      if (ref && !seen.has(ref) && ref.closest?.('defs')) {
-        seen.add(ref)
-        visit(ref) // nested refs (e.g. gradient href→gradient) collected first
-        ordered.push(ref)
-      }
-    })
-  }
-  elems.forEach((root) => {
-    if (!root) return
-    visit(root)
-    root.querySelectorAll?.('*').forEach(visit)
-  })
-  return ordered
-}
 
 /**
  * Rewrite every `id` on the given root elements (and their descendants) to a
@@ -416,17 +501,6 @@ export const getFeGaussianBlur = ele => {
 }
 
 /**
- * Get a DOM element by ID within the SVG root element.
- * @function module:dom-utils.getElement
- * @param {string} id - String with the element's new ID
- * @returns {?Element}
- */
-export const getElement = id => {
-  // querySelector lookup
-  return svgroot_.querySelector(`#${id}`)
-}
-
-/**
  * Assigns multiple attributes to an element.
  * @function module:dom-utils.assignAttributes
  * @param {Element} elem - DOM element to apply new attribute values to
@@ -493,68 +567,6 @@ export const cleanupElement = element => {
       element.removeAttribute(attr)
     }
   })
-}
-
-/**
- * Round value to for snapping.
- * @function module:dom-utils.snapToGrid
- * @param {Float} value
- * @returns {Integer}
- */
-export const snapToGrid = value => {
-  value = Math.round(value / getSnapStepSize()) * getSnapStepSize()
-  return value
-}
-
-/**
- * Snapping step size in px (snappingStep converted from the current base unit).
- * @function module:dom-utils.getSnapStepSize
- * @returns {Float}
- */
-const getSnapStepSize = () => {
-  const unit = svgCanvas.getBaseUnit()
-  let stepSize = svgCanvas.getSnappingStep()
-  if (unit !== 'px') {
-    stepSize *= getTypeMap()[unit]
-  }
-  return stepSize
-}
-
-/**
- * Snap a point to the nearest node of the active grid lattice.
- * For the `square` grid (and the non-lattice perspective grids) this is just
- * per-axis rounding, identical to calling {@link module:dom-utils.snapToGrid}
- * on each coordinate. For the `isometric` and `triangle` grids the point is
- * snapped to the nearest node of the corresponding skewed lattice by inverting
- * its basis vectors.
- * @function module:dom-utils.snapPointToGrid
- * @param {Float} x
- * @param {Float} y
- * @returns {{x: Float, y: Float}}
- */
-export const snapPointToGrid = (x, y) => {
-  const shape = svgCanvas.getGridShape ? svgCanvas.getGridShape() : 'square'
-  if (shape === 'isometric' || shape === 'triangle') {
-    const s = getSnapStepSize()
-    let ax, ay, bx, by
-    if (shape === 'isometric') {
-      // Two axes at ±30° from horizontal.
-      const c = Math.cos(Math.PI / 6)
-      const sn = Math.sin(Math.PI / 6)
-      ax = s * c; ay = s * sn
-      bx = s * c; by = -s * sn
-    } else {
-      // Triangular lattice: horizontal axis + 60° axis.
-      ax = s; ay = 0
-      bx = s / 2; by = (s * Math.sqrt(3)) / 2
-    }
-    // Solve (x,y) = m·a + n·b for integers m,n, then recompute the node.
-    const det = ax * by - bx * ay
-    const m = Math.round((x * by - bx * y) / det)
-    const n = Math.round((ax * y - x * ay) / det)
-    return { x: m * ax + n * bx, y: m * ay + n * by }
-  }
-  return { x: snapToGrid(x), y: snapToGrid(y) }
 }
 
 /**

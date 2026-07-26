@@ -12,17 +12,12 @@ import { warn, error } from '../common/logger.js'
 import {
   setHref,
   getHref,
-  findDefs,
   getRotationAngle,
-  getRefElem,
-  getReferencedDefElements,
   walkTreePost,
   assignAttributes,
   getFeGaussianBlur
 } from './dom-utils.js'
 import {
-  getStrokedBBoxDefaultVisible,
-  getVisibleElements,
   getBBox as utilsGetBBox
 } from './bbox-utils.js'
 import {
@@ -132,7 +127,7 @@ const moveUpDownSelected = dir => {
   let foundCur
   // jQuery sorts this list
   const list = svgCanvas.getIntersectionList(
-    getStrokedBBoxDefaultVisible([selected])
+    svgCanvas.getStrokedBBoxDefaultVisible([selected])
   )
   if (dir === 'Down') {
     list.reverse()
@@ -481,7 +476,7 @@ const alignSelectedElements = (type, relativeTo) => {
       break
     }
     const elem = selectedElements[i]
-    bboxes[i] = getStrokedBBoxDefaultVisible([elem])
+    bboxes[i] = svgCanvas.getStrokedBBoxDefaultVisible([elem])
   }
 
   // distribute horizontal and vertical align is not support smallest and largest
@@ -862,7 +857,7 @@ const copySelectedElements = () => {
   // Carry the referenced paint servers (gradients, filters, markers, …) on the
   // clipboard, tagged `_defs`, so a paste into another drawing recreates them
   // instead of leaving dangling url(#…) references and a corrupted <defs>.
-  const defsJson = getReferencedDefElements(selectedElements)
+  const defsJson = svgCanvas.getReferencedDefElements(selectedElements)
     .map(d => {
       const json = svgCanvas.getJsonFromSvgElements(d)
       if (json) json._defs = true
@@ -1031,11 +1026,11 @@ const pushGroupProperty = (g, undoable) => {
       if (!origCblur) {
         // Set group's filter to use first child's ID
         if (!gfilter) {
-          gfilter = getRefElem(gattrs.filter)
+          gfilter = svgCanvas.getRefElem(gattrs.filter)
         } else {
           // Clone the group's filter
           gfilter = drawing.copyElem(gfilter)
-          findDefs().append(gfilter)
+          svgCanvas.findDefs().append(gfilter)
 
           // const filterElem = getRefElem(gfilter);
           const blurElem = getFeGaussianBlur(gfilter)
@@ -1050,7 +1045,7 @@ const pushGroupProperty = (g, undoable) => {
           )
         }
       } else {
-        gfilter = getRefElem(elem.getAttribute('filter'))
+        gfilter = svgCanvas.getRefElem(elem.getAttribute('filter'))
       }
       // const filterElem = getRefElem(gfilter);
       const blurElem = getFeGaussianBlur(gfilter)
@@ -1295,7 +1290,7 @@ const convertToGroup = elem => {
 
     // Duplicate the gradients for Gecko, since they weren't included in the <symbol>
     if (isGecko()) {
-      const svgElement = findDefs()
+      const svgElement = svgCanvas.findDefs()
       const gradients = svgElement.querySelectorAll(
         'linearGradient,radialGradient,pattern'
       )
@@ -1314,7 +1309,7 @@ const convertToGroup = elem => {
 
     // Put the dupe gradients back into <defs> (after uniquifying them)
     if (isGecko()) {
-      const svgElement = findDefs()
+      const svgElement = svgCanvas.findDefs()
       const elements = g.querySelectorAll(
         'linearGradient,radialGradient,pattern'
       )
@@ -1345,7 +1340,7 @@ const convertToGroup = elem => {
     svgCanvas.setUseData(g)
 
     if (isGecko()) {
-      svgCanvas.convertGradients(findDefs())
+      svgCanvas.convertGradients(svgCanvas.findDefs())
     } else {
       svgCanvas.convertGradients(g)
     }
@@ -1557,7 +1552,7 @@ const cycleElement = next => {
   let num
   const curElem = selectedElements[0]
   let elem = false
-  const allElems = getVisibleElements(
+  const allElems = svgCanvas.getVisibleElements(
     currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
   )
   if (!allElems.length) {

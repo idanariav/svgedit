@@ -6,8 +6,7 @@
  * @module event-rotate
  * @license MIT
  */
-import { getBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
-import { snapToGrid } from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
 import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.js'
 
 /**
@@ -61,7 +60,7 @@ export const init = (canvas) => {
     // so mouseMove can rotate the whole selection rigidly about that center.
     const rotElems = selectedElements.filter(Boolean)
     if (rotElems.length > 1) {
-      const ubb = getStrokedBBoxDefaultVisible(rotElems)
+      const ubb = svgCanvas.getStrokedBBoxDefaultVisible(rotElems)
       svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
       svgCanvas.groupRotateBBox = ubb
       svgCanvas.groupRotateStart = new Map()
@@ -78,7 +77,7 @@ export const init = (canvas) => {
       const cx = svgCanvas.groupRotateCenter.x
       const cy = svgCanvas.groupRotateCenter.y
       let angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
-      if (svgCanvas.getCurConfig().gridSnapping) { angle = snapToGrid(angle) }
+      if (svgCanvas.getCurConfig().gridSnapping) { angle = svgCanvas.snapToGrid(angle) }
       if (evt.shiftKey) { angle = Math.round(angle / 15) * 15 }
       rotateGroup(svgCanvas, angle < -180 ? (360 + angle) : angle)
       return
@@ -92,7 +91,7 @@ export const init = (canvas) => {
     cy = center.y
     let angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
     if (svgCanvas.getCurConfig().gridSnapping) {
-      angle = snapToGrid(angle)
+      angle = svgCanvas.snapToGrid(angle)
     }
     if (evt.shiftKey) { // restrict rotations to nice angles (WRS)
       const snap = 15

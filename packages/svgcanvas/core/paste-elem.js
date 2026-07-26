@@ -1,4 +1,3 @@
-import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import { getUrlFromAttr } from './dom-utils.js'
 import * as hstry from './history.js'
 
@@ -166,7 +165,7 @@ export const init = (canvas) => {
       ctrY = y
     }
 
-    const bbox = getStrokedBBoxDefaultVisible(pasted)
+    const bbox = svgCanvas.getStrokedBBoxDefaultVisible(pasted)
     if (bbox && Number.isFinite(ctrX) && Number.isFinite(ctrY)) {
       const cx = ctrX - (bbox.x + bbox.width / 2)
       const cy = ctrY - (bbox.y + bbox.height / 2)

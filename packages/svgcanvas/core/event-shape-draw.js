@@ -7,7 +7,7 @@
  * @module event-shape-draw
  * @license MIT
  */
-import { assignAttributes, snapToGrid, snapPointToGrid, preventClickDefault, setHref } from './dom-utils.js'
+import { assignAttributes, preventClickDefault, setHref } from './dom-utils.js'
 import { snapToAngle } from './math.js'
 
 /**
@@ -262,7 +262,7 @@ export const init = (canvas) => {
       }
       case 'line': {
         if (svgCanvas.getCurConfig().gridSnapping) {
-          ({ x, y } = snapPointToGrid(x, y))
+          ({ x, y } = svgCanvas.snapPointToGrid(x, y))
         }
 
         let x2 = x
@@ -302,10 +302,10 @@ export const init = (canvas) => {
         }
 
         if (svgCanvas.getCurConfig().gridSnapping) {
-          w = snapToGrid(w)
-          h = snapToGrid(h)
-          newX = snapToGrid(newX)
-          newY = snapToGrid(newY)
+          w = svgCanvas.snapToGrid(w)
+          h = svgCanvas.snapToGrid(h)
+          newX = svgCanvas.snapToGrid(newX)
+          newY = svgCanvas.snapToGrid(newY)
         }
 
         assignAttributes(shape, {
@@ -322,7 +322,7 @@ export const init = (canvas) => {
         cy = Number(shape.getAttribute('cy'))
         let rad = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy))
         if (svgCanvas.getCurConfig().gridSnapping) {
-          rad = snapToGrid(rad)
+          rad = svgCanvas.snapToGrid(rad)
         }
         shape.setAttribute('r', rad)
         break
@@ -331,8 +331,8 @@ export const init = (canvas) => {
         cx = Number(shape.getAttribute('cx'))
         cy = Number(shape.getAttribute('cy'))
         if (svgCanvas.getCurConfig().gridSnapping) {
-          ({ x, y } = snapPointToGrid(x, y))
-          ;({ x: cx, y: cy } = snapPointToGrid(cx, cy))
+          ({ x, y } = svgCanvas.snapPointToGrid(x, y))
+          ;({ x: cx, y: cy } = svgCanvas.snapPointToGrid(cx, cy))
         }
         shape.setAttribute('rx', Math.abs(x - cx))
         const ry = Math.abs(evt.shiftKey ? (x - cx) : (y - cy))

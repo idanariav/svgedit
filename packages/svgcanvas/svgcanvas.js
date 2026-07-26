@@ -24,20 +24,15 @@ import { init as jsonInit } from './core/json.js'
 import * as elemGetSet from './core/elem-get-set.js'
 import { init as selectedElemInit } from './core/selected-elem.js'
 import { init as blurInit } from './core/blur-event.js'
-import { sanitizeSvg } from './core/sanitize.js'
+import { init as sanitizeInit } from './core/sanitize.js'
 import { getReverseNS, NS } from './core/namespaces.js'
 import {
   assignAttributes,
   cleanupElement,
-  getElement,
   getUrlFromAttr,
-  findDefs,
   getHref,
   setHref,
-  getRefElem,
-  getReferencedDefElements,
   remapElementIdsAndRefs,
-  getRotationAngle,
   init as domUtilsInit,
   $id,
   $qa,
@@ -52,10 +47,7 @@ import {
 } from './core/dom-utils.js'
 import {
   getBBoxOfElementAsPath,
-  getVisibleElements,
-  init as bboxUtilsInit,
-  getBBox as utilsGetBBox,
-  getStrokedBBoxDefaultVisible
+  init as bboxUtilsInit
 } from './core/bbox-utils.js'
 import { convertToPath } from './core/path-utils.js'
 import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.js'
@@ -282,6 +274,8 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
     runGuardedInit(this, 'bboxUtils', bboxUtilsInit, initGuardRegistry)
+    // sanitizeInit needs getRefElem, set above by domUtilsInit
+    runGuardedInit(this, 'sanitize', sanitizeInit, initGuardRegistry)
     runGuardedInit(this, 'coords', coordsInit, initGuardRegistry)
     runGuardedInit(this, 'recalculate', recalculateInit, initGuardRegistry)
     runGuardedInit(this, 'select', selectInit, initGuardRegistry)
@@ -1041,13 +1035,13 @@ class SvgCanvas extends EventTarget {
     Object.values(attrs).forEach(val => {
       if (val?.startsWith('url(')) {
         const id = getUrlFromAttr(val).slice(1)
-        const ref = getElement(id)
+        const ref = this.getElement(id)
         // Only restore a ref we actually tracked when it was removed. Appending
         // a missing (undefined) entry injects a literal "undefined" text node
         // into <defs> and never restores the paint server (e.g. cross-document
         // paste, where the def was never removed from *this* canvas).
         if (!ref && this.removedElements[id]) {
-          findDefs().append(this.removedElements[id])
+          this.findDefs().append(this.removedElements[id])
           delete this.removedElements[id]
         }
       }
@@ -1310,11 +1304,11 @@ class SvgCanvas extends EventTarget {
     if (elem) {
       const filterUrl = elem.getAttribute('filter')
       if (filterUrl) {
-        const blur = getElement(`${elem.id}_blur`)
+        const blur = this.getElement(`${elem.id}_blur`)
         if (blur) {
           val = blur.firstChild.getAttribute('stdDeviation')
         } else {
-          const filterElem = getRefElem(filterUrl)
+          const filterElem = this.getRefElem(filterUrl)
           const blurElem = getFeGaussianBlur(filterElem)
           if (blurElem !== null) {
             val = blurElem.getAttribute('stdDeviation')
@@ -1423,8 +1417,11 @@ class SvgCanvas extends EventTarget {
     // getJsonFromSvgElements / addSVGElementsFromJson are attached per-instance by jsonInit()
     // clearSvgContentElement is attached per-instance by clearInit()
     // textActions is attached per-instance by textActionsInit()
-    this.getStrokedBBox = getStrokedBBoxDefaultVisible
-    this.getVisibleElements = getVisibleElements
+    // getElement / findDefs / getRefElem / getReferencedDefElements /
+    // getRotationAngle / snapToGrid / snapPointToGrid are attached
+    // per-instance by domUtilsInit() (run later in the constructor); getBBox /
+    // getVisibleElements / getStrokedBBoxDefaultVisible / getStrokedBBox by
+    // bboxUtilsInit(); sanitizeSvg by sanitizeInit().
     this.stringToHTML = stringToHTML
     this.insertChildAtIndex = insertChildAtIndex
     this.getClosest = getClosest
@@ -1435,31 +1432,13 @@ class SvgCanvas extends EventTarget {
     this.transformListToTransform = transformListToTransform
     this.convertToNum = convertToNum
     this.convertUnit = convertUnit
-    this.findDefs = findDefs
-    this.getReferencedDefElements = getReferencedDefElements
     this.remapElementIdsAndRefs = remapElementIdsAndRefs
     this.getUrlFromAttr = getUrlFromAttr
     this.getHref = getHref
     this.setHref = setHref
-    this.getBBox = utilsGetBBox
-    this.getRotationAngle = getRotationAngle
-    // Per-instance element lookup: query THIS canvas's own svgroot, so several
-    // editors don't resolve ids against a shared module-level svgroot.
-    this.getElement = (id) => this.svgroot?.querySelector(`#${CSS.escape(id)}`)
-    // dom-utils.js/bbox-utils.js keep a small amount of module-level state
-    // (svgCanvas/svgroot_) shared by their by-name-imported helpers (findDefs,
-    // getVisibleElements, …). Re-point it at this canvas when this editor
-    // becomes the focused one, so those helpers operate on the active editor
-    // (see editor focus handler).
-    this.activateUtilities = () => {
-      domUtilsInit(this)
-      bboxUtilsInit(this)
-    }
-    this.getRefElem = getRefElem
     this.assignAttributes = assignAttributes
     this.cleanupElement = cleanupElement
     // remapElement / recalculateDimensions are attached per-instance by coordsInit() / recalculateInit()
-    this.sanitizeSvg = sanitizeSvg
     // pasteElements is attached per-instance by pasteInit()
     // The layer/context operations (identifyLayers, createLayer, leaveContext, …)
     // are attached per-instance by draw.init().

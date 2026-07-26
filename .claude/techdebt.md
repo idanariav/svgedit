@@ -159,28 +159,12 @@ were **fixed**. These remain as lower-priority follow-ups:
 
 ## Bug-hunt findings (2026-07-18): copy-paste / multi-instance follow-ups
 
-Findings from a targeted audit. Seven of the eight original findings
-(curvature tool cleanup, path node-index sort, zoom-adjusted drag threshold,
-three multi-instance active-editor/teardown bugs, and the cross-drawing
-Paste enable-state propagation) were fixed, with regression tests in
-`tests/unit/` where feasible. The one below is still open — it was
-explicitly called out as needing more than a mechanical fix (a
-module-singleton-to-per-instance refactor), so it was left for a dedicated
-pass.
-
-### Hazard note: dom-utils/bbox-utils module singletons follow the *active* editor only
-
-`core/dom-utils.js` and `core/bbox-utils.js` keep module-level
-`svgCanvas`/`svgroot_` state, re-pointed to an instance only by
-`activateUtilities()` on that editor's pointerdown/focusin (or the host
-calling `editor.activate()`). Interactive use is safe, but any programmatic
-call on a **background** instance that goes through the module-level helpers
-(`getElement`, `getRefElem`, `findDefs`, module `getBBox`, …) resolves
-against the *active* instance's svgroot — wrong-document lookups. Hosts that
-drive background instances (batch save/export across panes) must call
-`instance.activate()` first. Not a bug to fix so much as a constraint to
-respect until those two modules are made per-instance like the rest
-(moderate effort; they are the last two module-singleton core files).
+Findings from a targeted audit. All eight original findings (curvature tool
+cleanup, path node-index sort, zoom-adjusted drag threshold, three
+multi-instance active-editor/teardown bugs, the cross-drawing Paste
+enable-state propagation, and — closed 2026-07-26 in a dedicated pass — the
+`dom-utils.js`/`bbox-utils.js` module-singleton-to-per-instance refactor)
+are now fixed, with regression tests in `tests/unit/` where feasible.
 
 ## Bug-hunt findings (2026-07-21): path-tool freeze sweep
 

@@ -7,8 +7,7 @@
 
 import { NS } from './namespaces.js'
 import {
-  getBBox,
-  getStrokedBBoxDefaultVisible
+  getBBox
 } from './bbox-utils.js'
 import {
   transformPoint,
@@ -44,7 +43,7 @@ export const init = (canvas) => {
 const updateGroupSelectorMethod = () => {
   const elems = svgCanvas.getSelectedElements().filter(Boolean)
   if (elems.length > 1) {
-    svgCanvas.selectorManager.showGroupSelector(getStrokedBBoxDefaultVisible(elems))
+    svgCanvas.selectorManager.showGroupSelector(svgCanvas.getStrokedBBoxDefaultVisible(elems))
   } else {
     svgCanvas.selectorManager.hideGroupSelector()
   }
@@ -321,7 +320,7 @@ const getVisibleElementsAndBBoxes = (parent) => {
   }
   Array.from(elements).forEach((elem) => {
     if (elem.getBBox) {
-      contentElems.push({ elem, bbox: mapBox(getStrokedBBoxDefaultVisible([elem])) })
+      contentElems.push({ elem, bbox: mapBox(svgCanvas.getStrokedBBoxDefaultVisible([elem])) })
     }
   })
   return contentElems.reverse()

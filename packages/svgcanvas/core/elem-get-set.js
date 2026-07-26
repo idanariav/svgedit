@@ -8,9 +8,8 @@ import Paint from './paint.js'
 import { NS } from './namespaces.js'
 import { BatchCommand } from './history.js'
 import {
-  findDefs, walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
+  walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
 } from './dom-utils.js'
-import { getVisibleElements, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   convertToNum
 } from './units.js'
@@ -196,11 +195,11 @@ const setResolutionMethod = (x, y) => {
 
   if (x === 'fit') {
     // Get bounding box
-    const bbox = getStrokedBBoxDefaultVisible()
+    const bbox = svgCanvas.getStrokedBBoxDefaultVisible()
 
     if (bbox) {
       batchCmd = new BatchCommand('Fit Canvas to Content')
-      const visEls = getVisibleElements()
+      const visEls = svgCanvas.getVisibleElements()
       svgCanvas.addToSelection(visEls)
       const dx = []; const dy = []
       visEls.forEach((_item, _i) => {
@@ -313,7 +312,7 @@ const setBBoxZoomMethod = (val, editorW, editorH) => {
     case 'selection': {
       if (!selectedElements[0]) { return undefined }
       const selectedElems = selectedElements.filter(Boolean)
-      bb = getStrokedBBoxDefaultVisible(selectedElems)
+      bb = svgCanvas.getStrokedBBoxDefaultVisible(selectedElems)
       break
     } case 'canvas': {
       const res = svgCanvas.getResolution()
@@ -321,10 +320,10 @@ const setBBoxZoomMethod = (val, editorW, editorH) => {
       bb = { width: res.w, height: res.h, x: 0, y: 0 }
       break
     } case 'content':
-      bb = getStrokedBBoxDefaultVisible()
+      bb = svgCanvas.getStrokedBBoxDefaultVisible()
       break
     case 'layer':
-      bb = getStrokedBBoxDefaultVisible(getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer()))
+      bb = svgCanvas.getStrokedBBoxDefaultVisible(svgCanvas.getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer()))
       break
     default:
       return undefined
@@ -442,7 +441,7 @@ const setGradientMethod = (type) => {
   if (!grad) { return }
   // find out if there is a duplicate gradient already in the defs
   const duplicateGrad = findDuplicateGradient(grad)
-  const defs = findDefs()
+  const defs = svgCanvas.findDefs()
   // no duplicate found, so import gradient into defs
   if (!duplicateGrad) {
     // const origGrad = grad;
@@ -484,7 +483,7 @@ const findDuplicateGradient = (grad) => {
   if (!['linearGradient', 'radialGradient'].includes(grad.tagName)) {
     return null
   }
-  const defs = findDefs()
+  const defs = svgCanvas.findDefs()
   const existingGrads = defs.querySelectorAll('linearGradient, radialGradient')
   let i = existingGrads.length
   const radAttrs = ['r', 'cx', 'cy', 'fx', 'fy']

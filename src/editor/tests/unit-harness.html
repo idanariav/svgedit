@@ -42,6 +42,19 @@
       init (canvas) {
         domUtils.init(canvas)
         bboxUtils.init(canvas)
+        // domUtils/bboxUtils no longer export their canvas-state-dependent
+        // helpers as bare functions (module-singleton-hazard fix) — init()
+        // now attaches them directly onto the given canvas instead. Copy
+        // those back onto the merged `utilities` namespace so existing specs
+        // that call e.g. utilities.findDefs()/getElement() bare keep working.
+        const perInstance = [
+          'getElement', 'findDefs', 'getRefElem', 'getReferencedDefElements',
+          'snapToGrid', 'snapPointToGrid', 'getVisibleElements',
+          'getStrokedBBoxDefaultVisible', 'getStrokedBBox'
+        ]
+        perInstance.forEach((name) => {
+          if (canvas[name]) utilities[name] = canvas[name]
+        })
       }
     }
 

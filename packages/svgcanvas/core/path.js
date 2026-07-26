@@ -8,8 +8,7 @@
 
 import { transformPoint, getTransformList } from './math.js'
 import {
-  getRotationAngle,
-  getRefElem, findDefs
+  getRotationAngle
 } from './dom-utils.js'
 import {
   getBBox,
@@ -538,7 +537,7 @@ const getRotVals = (x, y) => {
     const type = i === 0 ? 'fill' : 'stroke'
     const attrVal = elem.getAttribute(type)
     if (attrVal && attrVal.startsWith('url(')) {
-      const grad = getRefElem(attrVal)
+      const grad = svgCanvas.getRefElem(attrVal)
       if (grad.tagName === 'linearGradient') {
         let x1 = grad.getAttribute('x1') || 0
         let y1 = grad.getAttribute('y1') || 0
@@ -568,7 +567,7 @@ const getRotVals = (x, y) => {
           newgrad.setAttribute(key, value)
         }
         newgrad.id = svgCanvas.getNextId()
-        findDefs().append(newgrad)
+        svgCanvas.findDefs().append(newgrad)
         elem.setAttribute(type, `url(#${newgrad.id})`)
       }
     }

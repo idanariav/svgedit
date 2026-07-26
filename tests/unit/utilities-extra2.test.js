@@ -3,9 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { init as initUnits } from '../../packages/svgcanvas/core/units.js'
 import {
   init as initUtilities,
-  findDefs,
   assignAttributes,
-  snapToGrid,
   getHref,
   setHref
 } from '../../packages/svgcanvas/core/dom-utils.js'
@@ -13,6 +11,7 @@ import { dropXMLInternalSubset, encodeUTF8, decodeUTF8 } from '../../packages/sv
 
 describe('utilities extra coverage', () => {
   let svg
+  let canvas
 
   beforeEach(() => {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -26,18 +25,19 @@ describe('utilities extra coverage', () => {
       getHeight: () => 100,
       getRoundDigits: () => 2
     })
-    initUtilities({
+    canvas = {
       getSvgRoot: () => svg,
       getSvgContent: () => svg,
       getDOMDocument: () => document,
       getDOMContainer: () => svg,
       getBaseUnit: () => 'cm',
       getSnappingStep: () => 0.5
-    })
+    }
+    initUtilities(canvas)
   })
 
   it('creates defs and removes namespaced attributes via assignAttributes', () => {
-    const defs = findDefs()
+    const defs = canvas.findDefs()
     expect(defs.tagName).toBe('defs')
     expect(svg.querySelectorAll('defs').length).toBe(1)
 
@@ -49,7 +49,7 @@ describe('utilities extra coverage', () => {
   })
 
   it('snaps to grid with unit conversion and handles href helpers', () => {
-    const value = snapToGrid(2.3)
+    const value = canvas.snapToGrid(2.3)
     expect(value).toBe(0)
 
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use')

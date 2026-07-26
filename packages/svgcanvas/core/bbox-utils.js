@@ -23,15 +23,85 @@ const visElems =
   'a,circle,ellipse,foreignObject,g,image,line,path,polygon,polyline,rect,svg,text,tspan,use,clipPath'
 const visElemsArr = visElems.split(',')
 
-let svgCanvas = null
-
 /**
+ * Attaches the canvas-state-dependent helpers (`getVisibleElements`'s
+ * document-default branch, `getStrokedBBoxDefaultVisible`) directly onto the
+ * given instance, closed over it — per-instance, like every other
+ * `core/*.js` module's `init(canvas)`. `getBBox` stays a bare, pure
+ * (elem-required) export; the instance also gets a selection-fallback
+ * wrapper for it, matching `dom-utils.js`'s `getRotationAngle` treatment.
  * @function module:bbox-utils.init
  * @param {module:utilities.EditorContext} canvas
  * @returns {void}
  */
 export const init = canvas => {
-  svgCanvas = canvas
+  const svgCanvas = canvas // per-instance; functions below are closed over it
+
+  /**
+   * Get all elements that have a BBox (excludes `<defs>`, `<title>`, etc).
+   * Note that 0-opacity, off-screen etc elements are still considered "visible"
+   * for this function.
+   * @function module:bbox-utils.EditorContext#getVisibleElements
+   * @param {Element} [parentElement] - The parent DOM element to search within; defaults to the first visible top-level content element
+   * @returns {Element[]} All "visible" elements.
+   */
+  const getVisibleElements = parentElement => {
+    if (!parentElement) {
+      const svgContent = svgCanvas.getSvgContent()
+      for (let i = 0; i < svgContent.children.length; i++) {
+        if (svgContent.children[i].getBBox) {
+          const bbox = svgContent.children[i].getBBox()
+          if (
+            bbox.width !== 0 &&
+            bbox.height !== 0 &&
+            bbox.width !== 0 &&
+            bbox.height !== 0
+          ) {
+            parentElement = svgContent.children[i]
+            break
+          }
+        }
+      }
+    }
+
+    const contentElems = []
+    if (parentElement) {
+      const children = parentElement.children
+      // eslint-disable-next-line array-callback-return
+      Array.from(children, elem => {
+        if (elem.getBBox) {
+          contentElems.push(elem)
+        }
+      })
+    }
+    return contentElems.reverse()
+  }
+
+  /**
+   * Get the bounding box for one or more stroked and/or transformed elements.
+   * @function module:bbox-utils.EditorContext#getStrokedBBoxDefaultVisible
+   * @param {Element[]} elems - Array with DOM elements to check
+   * @returns {module:bbox-utils.BBoxObject} A single bounding box object
+   */
+  const getStrokedBBoxDefaultVisible = elems => {
+    if (!elems) {
+      elems = getVisibleElements()
+    }
+    return getStrokedBBox(
+      elems,
+      svgCanvas.addSVGElementsFromJson,
+      svgCanvas.pathActions
+    )
+  }
+
+  canvas.getVisibleElements = getVisibleElements
+  canvas.getStrokedBBoxDefaultVisible = getStrokedBBoxDefaultVisible
+  // Public API alias — external hosts/extensions call svgCanvas.getStrokedBBox()
+  canvas.getStrokedBBox = getStrokedBBoxDefaultVisible
+  // getBBox stays a bare, pure (elem-required) export below — every call site
+  // already passes an elem — but the public per-instance API keeps the
+  // "default to current selection" convenience, correctly scoped now.
+  canvas.getBBox = elem => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
 }
 
 /**
@@ -142,14 +212,18 @@ export const getPathBBox = (path) => {
 }
 
 /**
- * Get the given/selected element's bounding box object, convert it to be more
- * usable when necessary.
+ * Get the given element's bounding box object, convert it to be more usable
+ * when necessary. Pure — requires an elem (every call site already passes
+ * one); the "default to current selection" convenience lives on the
+ * per-instance `canvas.getBBox` wrapper attached by {@link module:bbox-utils.init}
+ * instead, so it resolves against the right editor instance rather than
+ * shared module state.
  * @function module:bbox-utils.getBBox
- * @param {Element} elem - Optional DOM element to get the BBox for
+ * @param {Element} elem - DOM element to get the BBox for
  * @returns {module:bbox-utils.BBoxObject|null} Bounding box object
  */
 export const getBBox = (elem) => {
-  const selected = elem ?? svgCanvas.getSelectedElements()[0]
+  const selected = elem
   if (elem.nodeType !== 1) return null
 
   const elname = selected.nodeName
@@ -568,61 +642,4 @@ export const getStrokedBBox = (elems, addSVGElementsFromJson, pathActions) => {
   fullBb.width = shortFloat(maxX - minX)
   fullBb.height = shortFloat(maxY - minY)
   return fullBb
-}
-
-/**
- * Get all elements that have a BBox (excludes `<defs>`, `<title>`, etc).
- * Note that 0-opacity, off-screen etc elements are still considered "visible"
- * for this function.
- * @function module:bbox-utils.getVisibleElements
- * @param {Element} parentElement - The parent DOM element to search within
- * @returns {Element[]} All "visible" elements.
- */
-export const getVisibleElements = parentElement => {
-  if (!parentElement) {
-    const svgContent = svgCanvas.getSvgContent()
-    for (let i = 0; i < svgContent.children.length; i++) {
-      if (svgContent.children[i].getBBox) {
-        const bbox = svgContent.children[i].getBBox()
-        if (
-          bbox.width !== 0 &&
-          bbox.height !== 0 &&
-          bbox.width !== 0 &&
-          bbox.height !== 0
-        ) {
-          parentElement = svgContent.children[i]
-          break
-        }
-      }
-    }
-  }
-
-  const contentElems = []
-  if (parentElement) {
-    const children = parentElement.children
-    // eslint-disable-next-line array-callback-return
-    Array.from(children, elem => {
-      if (elem.getBBox) {
-        contentElems.push(elem)
-      }
-    })
-  }
-  return contentElems.reverse()
-}
-
-/**
- * Get the bounding box for one or more stroked and/or transformed elements.
- * @function module:bbox-utils.getStrokedBBoxDefaultVisible
- * @param {Element[]} elems - Array with DOM elements to check
- * @returns {module:bbox-utils.BBoxObject} A single bounding box object
- */
-export const getStrokedBBoxDefaultVisible = elems => {
-  if (!elems) {
-    elems = getVisibleElements()
-  }
-  return getStrokedBBox(
-    elems,
-    svgCanvas.addSVGElementsFromJson,
-    svgCanvas.pathActions
-  )
 }

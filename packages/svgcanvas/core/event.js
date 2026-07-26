@@ -5,9 +5,8 @@
  * @copyright 2011 Jeff Schiller
  */
 import {
-  cleanupElement, snapPointToGrid
+  cleanupElement
 } from './dom-utils.js'
-import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
 import {
   convertAttrs
 } from './units.js'
@@ -86,7 +85,7 @@ const mouseMoveEvent = (evt) => {
   }
 
   if (svgCanvas.getCurConfig().gridSnapping) {
-    ({ x, y } = snapPointToGrid(x, y))
+    ({ x, y } = svgCanvas.snapPointToGrid(x, y))
   }
 
   switch (svgCanvas.getCurrentMode()) {
@@ -715,7 +714,7 @@ const mouseDownEventImpl = (evt) => {
   ) {
     const sel = selectedElements.filter(Boolean)
     if (sel.length) {
-      const bb = getStrokedBBoxDefaultVisible(sel)
+      const bb = svgCanvas.getStrokedBBoxDefaultVisible(sel)
       if (bb && x >= bb.x && x <= bb.x + bb.width && y >= bb.y && y <= bb.y + bb.height) {
         mouseTarget = sel[0]
       }
@@ -731,8 +730,8 @@ const mouseDownEventImpl = (evt) => {
   svgCanvas.setRStartY(y)
 
   if (svgCanvas.getCurConfig().gridSnapping) {
-    ({ x, y } = snapPointToGrid(x, y))
-    const sp = snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
+    ({ x, y } = svgCanvas.snapPointToGrid(x, y))
+    const sp = svgCanvas.snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
     svgCanvas.setStartX(sp.x)
     svgCanvas.setStartY(sp.y)
   }

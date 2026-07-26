@@ -16,8 +16,6 @@
  * @license MIT
  */
 
-import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
-
 // Cap the number of snap targets for drag-time performance.
 const MAX_TARGETS = 60
 
@@ -58,7 +56,7 @@ export const collectSnapTargets = (svgCanvas, excludeElems) => {
       if (isExcluded(el) || el.hasAttribute('data-frame')) continue
       let bb
       try {
-        bb = getStrokedBBoxDefaultVisible([el])
+        bb = svgCanvas.getStrokedBBoxDefaultVisible([el])
       } catch {
         continue
       }

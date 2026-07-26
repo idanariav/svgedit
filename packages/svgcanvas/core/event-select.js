@@ -9,8 +9,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, snapPointToGrid, walkTree, getRotationAngle } from './dom-utils.js'
-import { getStrokedBBoxDefaultVisible } from './bbox-utils.js'
+import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.js'
 import { getTransformList, transformListToTransform } from './math.js'
 import { proportionLines } from './proportions.js'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'
@@ -120,7 +119,7 @@ export const init = (canvas) => {
       svgCanvas.hasDragStartTransform = true
       // Snapshot the selection bbox at drag start so proportion snapping can
       // test edge/center positions against the candidate (post-delta) bbox.
-      svgCanvas.dragStartBBox = getStrokedBBoxDefaultVisible(selectedElements)
+      svgCanvas.dragStartBBox = svgCanvas.getStrokedBBoxDefaultVisible(selectedElements)
     }
     // we temporarily use a translate on the element(s) being dragged
     // this transform is removed upon mousing up and the element is
@@ -129,7 +128,7 @@ export const init = (canvas) => {
       let dx = x - svgCanvas.getStartX()
       let dy = y - svgCanvas.getStartY()
       if (svgCanvas.getCurConfig().gridSnapping) {
-        ({ x: dx, y: dy } = snapPointToGrid(dx, dy))
+        ({ x: dx, y: dy } = svgCanvas.snapPointToGrid(dx, dy))
       }
       // Wireframe proportion snapping: align the moving selection's edges or
       // center to the canvas proportion lines (x = w·f, y = h·f). On a match,

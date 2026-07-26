@@ -7,7 +7,7 @@
  * @module event-path-edit
  * @license MIT
  */
-import { assignAttributes, snapPointToGrid } from './dom-utils.js'
+import { assignAttributes } from './dom-utils.js'
 import { snapToAngle } from './math.js'
 
 /**
@@ -35,8 +35,8 @@ export const init = (canvas) => {
     y *= zoom
 
     if (svgCanvas.getCurConfig().gridSnapping) {
-      ({ x, y } = snapPointToGrid(x, y))
-      const sp = snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
+      ({ x, y } = svgCanvas.snapPointToGrid(x, y))
+      const sp = svgCanvas.snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
       svgCanvas.setStartX(sp.x)
       svgCanvas.setStartY(sp.y)
     }

@@ -110,7 +110,6 @@ class EditorStartup {
     const activate = () => {
       setActiveEditor(this)
       window.svgEditor = this
-      this.svgCanvas?.activateUtilities?.()
       // Move live focus into this container so isActiveEditor()'s live-focus
       // check (domScope.js) can identify this editor even when the click
       // landed on a non-focusable canvas child (e.g. an SVG shape).
@@ -126,7 +125,6 @@ class EditorStartup {
     this.$container.addEventListener('focusin', () => {
       setActiveEditor(this)
       window.svgEditor = this
-      this.svgCanvas?.activateUtilities?.()
     }, true)
     // Exposed so a host that mounts several editors outside a single browser
     // tab (e.g. one editor per pane in a multi-pane app) can mark this editor

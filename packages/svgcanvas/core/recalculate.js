@@ -8,9 +8,7 @@ import { convertToNum } from './units.js'
 import { NS } from './namespaces.js'
 import {
   getRotationAngle,
-  getHref,
-  getRefElem,
-  findDefs
+  getHref
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
@@ -74,7 +72,7 @@ export const init = canvas => {
  * @returns {string|undefined} The clip-path attribute used after updates.
  */
   const updateClipPath = (attr, tx, ty, elem) => {
-  const clipPath = getRefElem(attr)
+  const clipPath = svgCanvas.getRefElem(attr)
   if (!clipPath) return undefined
   if (elem && clipPath.id) {
     const svgContent = svgCanvas.getSvgContent?.()
@@ -84,7 +82,7 @@ export const init = canvas => {
       if (users.length > 1) {
         const newClipPath = clipPath.cloneNode(true)
         newClipPath.id = svgCanvas.getNextId()
-        findDefs().append(newClipPath)
+        svgCanvas.findDefs().append(newClipPath)
         elem.setAttribute('clip-path', `url(#${newClipPath.id})`)
         return updateClipPath(`url(#${newClipPath.id})`, tx, ty)
       }

@@ -10,8 +10,8 @@
  * @module event-resize
  * @license MIT
  */
-import { getBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
-import { snapToGrid, getRotationAngle } from './dom-utils.js'
+import { getBBox } from './bbox-utils.js'
+import { getRotationAngle } from './dom-utils.js'
 import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.js'
 
 /**
@@ -33,8 +33,8 @@ const resizeGroup = (svgCanvas, x, y) => {
   let dx = x - svgCanvas.getStartX()
   let dy = y - svgCanvas.getStartY()
   if (svgCanvas.getCurConfig().gridSnapping) {
-    dx = snapToGrid(dx)
-    dy = snapToGrid(dy)
+    dx = svgCanvas.snapToGrid(dx)
+    dy = svgCanvas.snapToGrid(dy)
   }
   // ignore movement on an axis we are not stretching
   if (!mode.includes('n') && !mode.includes('s')) { dy = 0 }
@@ -103,7 +103,7 @@ export const init = (canvas) => {
     // then let mouseMove apply a single uniform group-scale matrix to each.
     const groupElems = selectedElements.filter(Boolean)
     if (groupElems.length > 1) {
-      svgCanvas.setInitBbox(getStrokedBBoxDefaultVisible(groupElems))
+      svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
       svgCanvas.groupResizeStart = new Map()
       svgCanvas.dragStartTransforms = new Map()
       groupElems.forEach((elem) => {
@@ -161,10 +161,10 @@ export const init = (canvas) => {
     let dy = (y - svgCanvas.getStartY())
 
     if (svgCanvas.getCurConfig().gridSnapping) {
-      dx = snapToGrid(dx)
-      dy = snapToGrid(dy)
-      height = snapToGrid(height)
-      width = snapToGrid(width)
+      dx = svgCanvas.snapToGrid(dx)
+      dy = svgCanvas.snapToGrid(dy)
+      height = svgCanvas.snapToGrid(height)
+      width = svgCanvas.snapToGrid(width)
     }
 
     // if rotated, adjust the dx,dy values
@@ -207,10 +207,10 @@ export const init = (canvas) => {
     const translateBack = svgRoot.createSVGTransform()
 
     if (svgCanvas.getCurConfig().gridSnapping) {
-      left = snapToGrid(left)
-      tx = snapToGrid(tx)
-      top = snapToGrid(top)
-      ty = snapToGrid(ty)
+      left = svgCanvas.snapToGrid(left)
+      tx = svgCanvas.snapToGrid(tx)
+      top = svgCanvas.snapToGrid(top)
+      ty = svgCanvas.snapToGrid(ty)
     }
 
     translateOrigin.setTranslate(-(left + tx), -(top + ty))

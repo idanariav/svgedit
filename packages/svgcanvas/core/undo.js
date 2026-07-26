@@ -9,7 +9,7 @@ import { BBOX_AFFECTING_ATTRS } from './history.js'
 import {
   getRotationAngle, setHref
 } from './dom-utils.js'
-import { getBBox as utilsGetBBox, getStrokedBBoxDefaultVisible } from './bbox-utils.js'
+import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import {
   isGecko
 } from '../common/browser.js'
@@ -191,7 +191,7 @@ export const init = (canvas) => {
 
     // Set x,y vals on elements that don't have them
     if ((attr === 'x' || attr === 'y') && noXYElems.includes(elem.tagName)) {
-      const bbox = getStrokedBBoxDefaultVisible([elem])
+      const bbox = svgCanvas.getStrokedBBoxDefaultVisible([elem])
       const diffX = attr === 'x' ? parseFloat(newValue) - bbox.x : 0
       const diffY = attr === 'y' ? parseFloat(newValue) - bbox.y : 0
       svgCanvas.moveSelectedElements(diffX * zoom, diffY * zoom, true)

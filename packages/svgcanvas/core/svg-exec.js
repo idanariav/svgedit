@@ -10,13 +10,12 @@ import { error } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
 import {
   cleanupElement,
-  findDefs,
   setHref,
   getHref,
   preventClickDefault,
   walkTree
 } from './dom-utils.js'
-import { getStrokedBBoxDefaultVisible, getBBox as utilsGetBBox } from './bbox-utils.js'
+import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import {
   transformPoint,
   transformListToTransform,
@@ -550,7 +549,7 @@ export const init = canvas => {
 
       // For Firefox: Put all paint elems in defs
       if (isGecko()) {
-        const svgDefs = findDefs()
+        const svgDefs = svgCanvas.findDefs()
         const findElems = content.querySelectorAll(
           'linearGradient, radialGradient, pattern'
         )
@@ -616,7 +615,7 @@ export const init = canvas => {
 
       // Percentage width/height, so let's base it on visible elements
       if (percs) {
-        const bb = getStrokedBBoxDefaultVisible()
+        const bb = svgCanvas.getStrokedBBoxDefaultVisible()
         if (bb && typeof bb === 'object') {
           attrs.width = bb.width + bb.x
           attrs.height = bb.height + bb.y
@@ -756,7 +755,7 @@ export const init = canvas => {
         ts = `translate(0) ${ts} translate(0)`
 
         symbol = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'symbol')
-        const defs = findDefs()
+        const defs = svgCanvas.findDefs()
 
         if (isGecko()) {
         // Move all gradients into root for Firefox, workaround for this bug:
@@ -787,7 +786,7 @@ export const init = canvas => {
           xform: ts
         })
 
-        findDefs().append(symbol)
+        svgCanvas.findDefs().append(symbol)
         batchCmd.addSubCommand(new InsertElementCommand(symbol))
       }
 

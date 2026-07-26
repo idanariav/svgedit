@@ -8,11 +8,7 @@ import { warn } from '../common/logger.js'
 import { runGeometryRemaps } from './geometry-remap-registry.js'
 
 import {
-  snapToGrid,
-  snapPointToGrid,
-  assignAttributes,
-  getRefElem,
-  findDefs
+  assignAttributes
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import {
@@ -86,7 +82,7 @@ const pathMap = [
       const handled = new Set()
       for (const [xa, ya] of [['x', 'y'], ['cx', 'cy'], ['x1', 'y1'], ['x2', 'y2'], ['fx', 'fy']]) {
         if (xa in changes && ya in changes) {
-          const sp = snapPointToGrid(changes[xa], changes[ya])
+          const sp = svgCanvas.snapPointToGrid(changes[xa], changes[ya])
           changes[xa] = sp.x
           changes[ya] = sp.y
           handled.add(xa)
@@ -95,7 +91,7 @@ const pathMap = [
       }
       for (const [attr, value] of Object.entries(changes)) {
         if (!handled.has(attr) && typeof value === 'number') {
-          changes[attr] = snapToGrid(value)
+          changes[attr] = svgCanvas.snapToGrid(value)
         }
       }
     }
@@ -108,7 +104,7 @@ const pathMap = [
   ;['fill', 'stroke'].forEach(type => {
     const attrVal = selected.getAttribute(type)
     if (attrVal?.startsWith('url(') && (m.a < 0 || m.d < 0)) {
-      const grad = getRefElem(attrVal)
+      const grad = svgCanvas.getRefElem(attrVal)
       if (!grad) return
 
       const tagName = (grad.tagName || '').toLowerCase()
@@ -148,7 +144,7 @@ const pathMap = [
         return
       }
       newgrad.id = generatedId
-      findDefs().append(newgrad)
+      svgCanvas.findDefs().append(newgrad)
       selected.setAttribute(type, `url(#${newgrad.id})`)
     }
   })
