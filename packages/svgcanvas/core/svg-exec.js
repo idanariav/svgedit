@@ -43,6 +43,37 @@ export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
+ * One-time repair for a legacy bug: Element.append(x) silently coerces a
+ * non-Node argument via ToString(), so an `undefined` value slipping into one
+ * of the various `findDefs().append(...)` call sites (now guarded, see e.g.
+ * blur-event.js, clip-mask.js, fx-filter.js) inserted a literal "undefined"
+ * text node into <defs> instead of throwing — invisible in the rendered
+ * drawing but bloating the document. Strips any leftover ones from `root`
+ * (the live svgcontent), without touching legitimate (e.g. whitespace) text
+ * content.
+ *
+ * Called from both setSvgString() (so a legacy-corrupted drawing self-heals
+ * the moment it's opened, not just the next time it happens to be saved) and
+ * svgCanvasToString() (so an in-memory drawing that somehow re-acquires the
+ * corruption during a session — e.g. a future regression at some other call
+ * site — still gets cleaned on save). See techdebt.md: "any fix for
+ * corrupted-data bugs should include a load-time repair for legacy
+ * drawings, not just prevent new corruption going forward."
+ * @param {Element} root
+ * @returns {void}
+ */
+  const sanitizeLegacyUndefinedDefs = (root) => {
+    const defsList = root.getElementsByTagNameNS(NS.SVG, 'defs')
+    Array.prototype.forEach.call(defsList, (defsEl) => {
+      Array.from(defsEl.childNodes).forEach((node) => {
+        if (node.nodeType === 3 && /^(?:undefined)+$/.test(node.nodeValue)) {
+          node.remove()
+        }
+      })
+    })
+  }
+
+  /**
  * Main function to set up the SVG content for output.
  * @function module:svgcanvas.SvgCanvas#svgCanvasToString
  * @returns {string} The SVG image for output
@@ -63,22 +94,7 @@ export const init = canvas => {
       console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
     }
 
-    // One-time repair for a legacy bug: Element.append(x) silently coerces a
-    // non-Node argument via ToString(), so an `undefined` value slipping into
-    // one of the various `findDefs().append(...)` call sites (now guarded,
-    // see e.g. blur-event.js, clip-mask.js, fx-filter.js) inserted a literal
-    // "undefined" text node into <defs> instead of throwing — invisible in
-    // the rendered drawing but bloating every save. Strips any leftover ones
-    // so a drawing that already carries this scar self-heals on its next
-    // save, without touching legitimate (e.g. whitespace) text content.
-    const defsList = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')
-    Array.prototype.forEach.call(defsList, (defsEl) => {
-      Array.from(defsEl.childNodes).forEach((node) => {
-        if (node.nodeType === 3 && /^(?:undefined)+$/.test(node.nodeValue)) {
-          node.remove()
-        }
-      })
-    })
+    sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
 
     // Keep SVG-Edit comment on top
     const childNodesElems = svgCanvas.getSvgContent().childNodes
@@ -493,6 +509,12 @@ export const init = canvas => {
 
       svgCanvas.getSvgRoot().append(svgCanvas.getSvgContent())
       const content = svgCanvas.getSvgContent()
+
+      // Repair legacy corruption up front, on load — not just on the next
+      // save. A drawing opened read-only, or opened and closed without
+      // editing, should still self-heal rather than carry the scar forward
+      // indefinitely. See sanitizeLegacyUndefinedDefs() and techdebt.md.
+      sanitizeLegacyUndefinedDefs(content)
 
       svgCanvas.current_drawing_ = new draw.Drawing(
         svgCanvas.getSvgContent(),

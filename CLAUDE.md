@@ -79,6 +79,33 @@ This step is **mandatory** for non-trivial plans. Skip only for purely mechanica
 - Don't skip this because the change "looks small" — a one-line behavior
   change still needs its assertion updated or added.
 
+### Data-corruption bug fixes must also repair legacy drawings
+
+**Drawings are created continuously, not just at fix time.** By the time any
+bug that corrupts saved SVG data (a bad attribute, stray text nodes, an
+invalid transform, orphaned ids, …) is found and fixed, an unknown number of
+already-saved drawings carry that corruption forward. Every one of them is
+opened again in some future session — patching the bug so it can't happen
+*again* fixes nothing for drawings where it already *did* happen.
+
+So a fix for this class of bug is not complete until it also includes a
+**repair path that runs on load** (`setSvgString()`), not only prevention
+going forward and not only a save-time cleanup. Load-time repair matters
+because a drawing can be opened read-only, or opened and closed without
+triggering a save, and should still self-heal rather than carry the scar
+indefinitely. (Repairing on save too, as a second pass, is fine — a session
+could theoretically re-acquire the corruption in memory — but it must not be
+the *only* place the repair runs.)
+
+Concretely: prevention alone (guarding whatever created the corruption) is
+half the fix. Add a targeted, narrow sanitizer for the *specific* corruption
+pattern found (not a generic "clean up anything weird" pass) alongside it,
+call it from `setSvgString()`, and cover both with a unit test — one proving
+the guard prevents new corruption, one proving the sanitizer repairs a
+drawing that already has it. See `.claude/techdebt.md`'s `<defs>`-append audit
+for a worked example (`sanitizeLegacyUndefinedDefs()` in
+`packages/svgcanvas/core/svg-exec.js`).
+
 ## Theming conventions
 
 ### CSS custom properties

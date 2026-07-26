@@ -81,14 +81,20 @@ that provably can't happen). The ones that trace back to
   (`{id}_blur` → `{id}_blur1`) is the closest match to the historical
   corruption's fingerprint.
 
-Also added a one-time sanitizer in `svgCanvasToString()` that strips any
-leftover `nodeType===3 && nodeValue==='undefined'` children from `<defs>` on
-every save, so a drawing that already carries this scar (like the one that
-surfaced it) self-heals on its next save rather than needing hand-repair.
+Also added a one-time sanitizer, `sanitizeLegacyUndefinedDefs()`
+(`svg-exec.js`), that strips any leftover `nodeType===3 &&
+nodeValue==='undefined'` children from `<defs>`. Per the new CLAUDE.md rule
+("Data-corruption bug fixes must also repair legacy drawings"), it's called
+from **both** `setSvgString()` (so a legacy-corrupted drawing self-heals the
+moment it's opened, even if never re-saved) and `svgCanvasToString()`
+(defense-in-depth for save-time). Guarding the append call sites alone would
+only have stopped *new* corruption — every already-corrupted drawing already
+in the wild needed the load-time repair too.
 
-Regression coverage: `tests/unit/path-degenerate.test.js` (sanitizer, both the
-corrupted and clean cases) and `tests/unit/blur-event.test.js` (the
-`setBlur()` guard, via a mocked `addSVGElementsFromJson` returning `null`).
+Regression coverage: `tests/unit/path-degenerate.test.js` (sanitizer on both
+load and save, corrupted + clean cases) and `tests/unit/blur-event.test.js`
+(the `setBlur()` guard, via a mocked `addSVGElementsFromJson` returning
+`null`).
 
 ---
 

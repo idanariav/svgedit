@@ -220,4 +220,22 @@ describe('svgCanvasToString repairs legacy "undefined" text nodes in <defs>', ()
     expect(output).toContain('feGaussianBlur')
     expect(output).toContain('id="f1"')
   })
+
+  // Repair must happen at load (setSvgString), not just at the next save --
+  // a drawing opened read-only, or opened and closed without editing, should
+  // still self-heal. Checks the live DOM directly (not getSvgString(), which
+  // would also run its own sanitizer pass and mask whether load-time repair
+  // actually ran).
+  it('strips the corruption immediately on setSvgString(), before any save', () => {
+    svgCanvas.setSvgString(
+      '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs>undefinedundefinedundefined<filter id="f1"><feGaussianBlur stdDeviation="1"/></filter></defs>' +
+        '<g class="layer"><title>Layer 1</title><rect id="r1" x="10" y="10" width="20" height="20" filter="url(#f1)"/></g>' +
+      '</svg>'
+    )
+
+    const defs = svgCanvas.getSvgContent().querySelector('defs')
+    expect(defs.textContent).not.toMatch(/undefined/)
+    expect(defs.querySelector('#f1')).toBeTruthy()
+  })
 })
