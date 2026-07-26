@@ -3,7 +3,7 @@ import {
   putLocale
 } from './locale.js'
 import { createContextMenu } from './contextmenu.js'
-import { addUserShape, getUserCategories } from './extensions/ext-shapes/userShapes.js'
+import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory } from './extensions/ext-shapes/userShapes.js'
 import { setUserDataAdapter } from './userDataAdapter.js'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
@@ -1044,7 +1044,7 @@ class EditorStartup {
       const allCats = [
         ...userCats.map(c => ({ value: c, label: capitalize(c) })),
         ...filteredBuiltin.map(b => ({ value: b.id, label: b.label }))
-      ]
+      ].sort((a, b) => a.label.localeCompare(b.label))
       const noExisting = allCats.length === 0
       const catOptions = [
         ...allCats.map(c =>
@@ -1095,8 +1095,15 @@ class EditorStartup {
         </h3>
         <label style="display:block;margin-bottom:12px;font-size:13px;color:var(--fg,#1B1F24)">
           Label
-          <input id="_asl_label" type="text" placeholder="e.g. My Dog" autocomplete="off"
-                 style="${inputStyle}"/>
+          <div style="position:relative">
+            <input id="_asl_label" type="text" placeholder="e.g. My Dog" autocomplete="off"
+                   style="${inputStyle}"/>
+            <ul id="_asl_label_menu" style="position:absolute;top:calc(100% + 2px);
+                left:0;right:0;z-index:10;max-height:180px;overflow-y:auto;margin:0;
+                padding:4px 0;list-style:none;background:var(--chrome-bg,#FFF);
+                border:1px solid var(--field-border,#DDE1E7);border-radius:7px;
+                box-shadow:0 6px 20px rgba(0,0,0,.15);display:none"></ul>
+          </div>
         </label>
         <label style="display:block;margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
           Category
@@ -1138,6 +1145,67 @@ class EditorStartup {
         newInput.style.display = isOther ? 'block' : 'none'
         if (isOther) newInput.focus()
       })
+
+      // Existing-name suggestions: as the user types a label, list already-saved
+      // shape names that contain the typed text so they can reuse a consistent
+      // naming scheme (or notice a near-duplicate before saving).
+      {
+        const labelInput = dlg.querySelector('#_asl_label')
+        const labelMenu = dlg.querySelector('#_asl_label_menu')
+        const allLabels = getAllUserShapeLabels()
+        const escText = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        const optStyle = 'padding:6px 10px;cursor:pointer;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;font-size:13px'
+        let shownLabels = []
+        let labelActiveIdx = -1
+
+        const closeLabelMenu = () => { labelMenu.style.display = 'none'; labelActiveIdx = -1 }
+        const highlightLabel = () => {
+          [...labelMenu.children].forEach((li, i) => {
+            li.style.background = i === labelActiveIdx ? 'var(--accent,#2962FF)' : 'transparent'
+            li.style.color = i === labelActiveIdx ? '#FFF' : 'var(--fg,#1B1F24)'
+          })
+        }
+        const renderLabelMenu = () => {
+          const q = labelInput.value.trim().toLowerCase()
+          shownLabels = q ? allLabels.filter(l => l.toLowerCase().includes(q)) : []
+          if (!shownLabels.length) { closeLabelMenu(); return }
+          labelMenu.innerHTML = shownLabels
+            .map((l, i) => `<li data-idx="${i}" style="${optStyle}">${escText(l)}</li>`)
+            .join('')
+          labelActiveIdx = -1
+          labelMenu.style.display = 'block'
+        }
+        const chooseLabel = (i) => {
+          if (i < 0 || i >= shownLabels.length) return
+          labelInput.value = shownLabels[i]
+          closeLabelMenu()
+        }
+
+        labelInput.addEventListener('input', renderLabelMenu)
+        labelInput.addEventListener('focus', renderLabelMenu)
+        labelInput.addEventListener('keydown', (e) => {
+          if (labelMenu.style.display === 'none') return
+          if (e.key === 'ArrowDown') {
+            e.preventDefault(); labelActiveIdx = Math.min(labelActiveIdx + 1, shownLabels.length - 1); highlightLabel()
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault(); labelActiveIdx = Math.max(labelActiveIdx - 1, 0); highlightLabel()
+          } else if (e.key === 'Enter' && labelActiveIdx >= 0) {
+            e.preventDefault(); chooseLabel(labelActiveIdx)
+          } else if (e.key === 'Escape') {
+            e.preventDefault(); e.stopPropagation(); closeLabelMenu()
+          }
+        })
+        labelMenu.addEventListener('mousedown', (e) => {
+          const li = e.target.closest('li')
+          if (li) { e.preventDefault(); chooseLabel(Number(li.dataset.idx)) }
+        })
+        labelMenu.addEventListener('mousemove', (e) => {
+          const li = e.target.closest('li')
+          if (li) { labelActiveIdx = Number(li.dataset.idx); highlightLabel() }
+        })
+        labelInput.addEventListener('blur', () => setTimeout(closeLabelMenu, 120))
+      }
 
       const getCategory = () =>
         select.value === '__new__' ? newInput.value.trim() : select.value
@@ -1223,7 +1291,12 @@ class EditorStartup {
       dlg.querySelector('#_asl_ok').addEventListener('click', () => {
         const label = dlg.querySelector('#_asl_label').value.trim()
         const category = getCategory()
-        cleanup(label && category ? { label, category, linkedFile: getLinkedFile() } : null)
+        if (!label || !category) return
+        const existing = getUserShapesForCategory(category.trim().toLowerCase())
+        if (label in existing && !window.confirm(`A shape named "${label}" already exists in "${category}". Overwrite it?`)) {
+          return
+        }
+        cleanup({ label, category, linkedFile: getLinkedFile() })
       })
 
       // Escape key

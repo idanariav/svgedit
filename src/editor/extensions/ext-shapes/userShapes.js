@@ -317,3 +317,16 @@ export function getUserCategories () {
 export function getUserShapesForCategory (category) {
   return loadUserShapes().shapes[category] || {}
 }
+
+/**
+ * Return every existing user shape label across all categories, deduplicated.
+ * @returns {string[]}
+ */
+export function getAllUserShapeLabels () {
+  const store = loadUserShapes()
+  const labels = new Set()
+  for (const cat of store.categories) {
+    for (const label of Object.keys(store.shapes[cat] || {})) labels.add(label)
+  }
+  return [...labels]
+}
