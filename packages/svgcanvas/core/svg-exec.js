@@ -51,7 +51,17 @@ export const init = canvas => {
   // keep calling it until there are none to remove
     while (svgCanvas.removeUnusedDefElems() > 0) {} // eslint-disable-line no-empty
 
-    svgCanvas.pathActions.clear(true)
+    // Tear down any in-progress path-edit session before serializing. Every
+    // save/export (getSvgString) funnels through here, so a throw in this
+    // teardown must never abort output the way it's isolated in setMode()
+    // (see the matching try/catch there) — otherwise a path-edit session left
+    // in a bad state makes the drawing permanently unsaveable until reload,
+    // not just stuck on a tool.
+    try {
+      svgCanvas.pathActions.clear(true)
+    } catch (e) {
+      console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
+    }
 
     // Keep SVG-Edit comment on top
     const childNodesElems = svgCanvas.getSvgContent().childNodes

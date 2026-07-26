@@ -112,4 +112,40 @@ describe('setMode is resilient to a throwing path/text teardown', () => {
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  // getSvgString() (every save/export) also tears down a path-edit session via
+  // pathActions.clear(true), but it calls that directly rather than through
+  // setMode() -- so it needs its own isolation. Before this fix, a throwing
+  // clear() here made getSvgString() throw too, and since the Obsidian plugin
+  // (and any other host) serializes on every save, this made the drawing
+  // permanently unsaveable until reload, not just stuck on a tool.
+  it('still returns output when pathActions.clear() throws during serialization', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    svgCanvas.pathActions.clear = () => { throw new Error('boom') }
+
+    expect(() => svgCanvas.getSvgString()).not.toThrow()
+    expect(typeof svgCanvas.getSvgString()).toBe('string')
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  // The three tests above all replace pathActions.clear() with a throwing
+  // stub, proving each *caller* survives a throwing clear(). This test
+  // exercises the real, unmocked clear() in the actual broken state found in
+  // the wild: currentMode committed to 'pathedit' without toEditMode() ever
+  // running, so the module-private path-edit session was never set up.
+  // toSelectMode() then dereferenced that missing session's `.elem` and threw
+  // straight out of clear() -- and because svgCanvasToString() (every save)
+  // calls clear() directly, this made saving fail every single time until
+  // reload. Guards against a regression of the *source* bug, not just the
+  // caller-side isolation.
+  it('getSvgString() does not throw when pathedit mode was committed without an active path session', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    svgCanvas.setMode('pathedit')
+
+    expect(svgCanvas.getMode()).toBe('pathedit')
+    expect(() => svgCanvas.getSvgString()).not.toThrow()
+    expect(typeof svgCanvas.getSvgString()).toBe('string')
+    warn.mockRestore()
+  })
 })

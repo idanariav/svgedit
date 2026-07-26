@@ -1037,7 +1037,23 @@ class PathActions {
       }
       svgCanvas.setDrawnPath(null)
     } else if (mode === 'pathedit') {
-      this.toSelectMode()
+      // toSelectMode() can throw (e.g. it dereferences the tracked path
+      // session's `.elem` when currentMode says 'pathedit' but that session
+      // never got set up — a real mismatch, not just a hypothetical one: it's
+      // exactly what happens if the mode is committed without going through
+      // toEditMode()). clear() has ~7 call sites across the codebase (every
+      // setMode(), svgCanvasToString() i.e. every save, the plain
+      // document-clear(), undo, draw.js, and the select-mode mouseup handler)
+      // and every one of them assumes clear() itself is a safe no-fail
+      // teardown. Guarding here protects all of them — including any future
+      // call site — at the source, instead of relying on each caller to
+      // separately remember to wrap it (which is how most of the existing
+      // call sites ended up unguarded; see techdebt.md).
+      try {
+        this.toSelectMode()
+      } catch (e) {
+        console.warn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e)
+      }
     }
     if (path) {
       // A lost mouseup (e.g. the button released outside the canvas
@@ -1047,7 +1063,11 @@ class PathActions {
       // what state the previous interaction left behind.
       path.dragging = false
       path.dragctrl = false
-      path.init().show(false)
+      try {
+        path.init().show(false)
+      } catch (e) {
+        console.warn('svgedit: path.init().show(false) failed during clear(); continuing', e)
+      }
     }
     // Only reset `started` when this clear() call actually corresponds to
     // path-drawing/editing cleanup — a path being committed, a stale 'path'
