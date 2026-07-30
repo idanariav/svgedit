@@ -239,3 +239,86 @@ describe('svgCanvasToString repairs legacy "undefined" text nodes in <defs>', ()
     expect(defs.querySelector('#f1')).toBeTruthy()
   })
 })
+
+// svgCanvasToString() (every save/export, including a host's periodic
+// autosave) used to tear down an in-progress path draw the same way it tears
+// down a stale path-edit session: pathActions.clear(true) removed the
+// not-yet-committed drawnPath element outright. currentMode stayed 'path'
+// (clear() doesn't change mode), so the user's very next click created a
+// brand-new path from scratch instead of continuing the one already several
+// points in — silently discarding their progress, with no error and no
+// visual feedback, just because a background save happened to land mid-draw.
+describe('svgCanvasToString preserves an in-progress path draw', () => {
+  let svgCanvas
+
+  beforeEach(() => {
+    document.body.textContent = ''
+    const svgEditor = document.createElement('div')
+    svgEditor.id = 'svg_editor'
+    const svgcanvas = document.createElement('div')
+    svgcanvas.id = 'svgcanvas'
+    const workarea = document.createElement('div')
+    workarea.id = 'workarea'
+    workarea.append(svgcanvas)
+    const toolsLeft = document.createElement('div')
+    toolsLeft.id = 'tools_left'
+    svgEditor.append(workarea, toolsLeft)
+    document.body.append(svgEditor)
+
+    svgCanvas = new SvgCanvas(svgcanvas, {
+      canvas_expansion: 3,
+      dimensions: [640, 480],
+      initFill: { color: 'FF0000', opacity: 1 },
+      initStroke: { width: 5, color: '000000', opacity: 1 },
+      initOpacity: 1,
+      imgPath: '../editor/images',
+      langPath: 'locale/',
+      extPath: 'extensions/',
+      extensions: [],
+      initTool: 'select',
+      wireframe: false
+    })
+  })
+  afterEach(() => { document.body.textContent = '' })
+
+  it('leaves the drawn-path session intact across a save mid-draw', () => {
+    svgCanvas.setMode('path')
+    // `target` must resolve inside the canvas container (mouseDown's
+    // "clicked outside canvas" guard checks svgCanvas.getMouseTarget(evt)).
+    const evt = { shiftKey: false, target: svgCanvas.getSvgRoot() }
+    // Three points, far enough apart that none registers as clicking back
+    // onto an existing one (which would finish the path instead of drawing).
+    svgCanvas.pathActions.mouseDown(evt, svgCanvas.getSvgRoot(), 10, 10)
+    svgCanvas.pathActions.mouseUp(evt, null, 10, 10)
+    svgCanvas.pathActions.mouseDown(evt, svgCanvas.getSvgRoot(), 50, 10)
+    svgCanvas.pathActions.mouseUp(evt, null, 50, 10)
+    svgCanvas.pathActions.mouseDown(evt, svgCanvas.getSvgRoot(), 50, 50)
+    svgCanvas.pathActions.mouseUp(evt, null, 50, 50)
+
+    const drawnPath = svgCanvas.getDrawnPath()
+    expect(drawnPath).toBeTruthy()
+    expect(drawnPath.pathSegList.numberOfItems).toBe(3)
+
+    // Simulates a background save (e.g. the Obsidian plugin's autosave)
+    // landing exactly while the user is mid-click on their next point.
+    const output = svgCanvas.getSvgString()
+
+    // The session must survive: same mode, same element, still in the DOM,
+    // so the user's next click continues this path instead of starting a
+    // silent new one.
+    expect(svgCanvas.getMode()).toBe('path')
+    expect(svgCanvas.getDrawnPath()).toBe(drawnPath)
+    expect(svgCanvas.getSvgContent().contains(drawnPath)).toBe(true)
+
+    // The saved output must NOT contain the not-yet-committed path -- it
+    // isn't part of the drawing yet, just excluded rather than destroyed.
+    expect(output).not.toContain('<path')
+
+    // Drawing can continue after the save: a further point extends the SAME
+    // element (proves the live session, not a silent new phantom path).
+    const segCountBefore = drawnPath.pathSegList.numberOfItems
+    svgCanvas.pathActions.mouseDown(evt, svgCanvas.getSvgRoot(), 90, 90)
+    expect(svgCanvas.getDrawnPath()).toBe(drawnPath)
+    expect(drawnPath.pathSegList.numberOfItems).toBeGreaterThan(segCountBefore)
+  })
+})

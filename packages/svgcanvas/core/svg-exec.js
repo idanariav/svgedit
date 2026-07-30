@@ -82,78 +82,102 @@ export const init = canvas => {
   // keep calling it until there are none to remove
     while (svgCanvas.removeUnusedDefElems() > 0) {} // eslint-disable-line no-empty
 
-    // Tear down any in-progress path-edit session before serializing. Every
-    // save/export (getSvgString) funnels through here, so a throw in this
-    // teardown must never abort output the way it's isolated in setMode()
-    // (see the matching try/catch there) — otherwise a path-edit session left
-    // in a bad state makes the drawing permanently unsaveable until reload,
-    // not just stuck on a tool.
+    // An actively in-progress path draw (mode 'path' with a real, not-yet-
+    // committed element already placed) must not be torn down just because
+    // something is serializing the drawing in the background — e.g. a host's
+    // periodic autosave calling getSvgString() while the user is mid-click on
+    // their next point. pathActions.clear() would remove that element but
+    // leave currentMode stuck on 'path' with drawnPath now null, so the very
+    // next click silently starts a brand-new path instead of continuing the
+    // one already in progress — discarding the user's clicks so far with no
+    // warning. Exclude just that element from the output instead: detach it
+    // before serializing and reattach it right after, so the saved file has
+    // no half-finished path but the live drawing session is left untouched.
+    const drawnPath = svgCanvas.getCurrentMode() === 'path' ? svgCanvas.getDrawnPath() : null
+    const drawnPathParent = drawnPath?.parentNode
+    const drawnPathNextSibling = drawnPath?.nextSibling
+    if (drawnPath && drawnPathParent) {
+      drawnPathParent.removeChild(drawnPath)
+    } else {
+      // Tear down any in-progress path-edit session before serializing. Every
+      // save/export (getSvgString) funnels through here, so a throw in this
+      // teardown must never abort output the way it's isolated in setMode()
+      // (see the matching try/catch there) — otherwise a path-edit session left
+      // in a bad state makes the drawing permanently unsaveable until reload,
+      // not just stuck on a tool.
+      try {
+        svgCanvas.pathActions.clear(true)
+      } catch (e) {
+        console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
+      }
+    }
+
     try {
-      svgCanvas.pathActions.clear(true)
-    } catch (e) {
-      console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
-    }
+      sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
 
-    sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
-
-    // Keep SVG-Edit comment on top
-    const childNodesElems = svgCanvas.getSvgContent().childNodes
-    childNodesElems.forEach((node, i) => {
-      if (i && node.nodeType === 8 && node.data.includes('Created with')) {
-        svgCanvas.getSvgContent().firstChild.before(node)
-      }
-    })
-
-    // Move out of in-group editing mode. Capture the group first: leaveContext()
-    // nulls currentGroup, so reading getCurrentGroup() afterwards would pass
-    // [null] to selectOnly — silently emptying the selection without firing
-    // 'selected', desyncing the editor's selectedElement from the canvas.
-    const groupToReselect = svgCanvas.getCurrentGroup()
-    if (groupToReselect) {
-      svgCanvas.leaveContext()
-      svgCanvas.selectOnly([groupToReselect])
-    }
-
-    const nakedSvgs = []
-
-    // Unwrap gsvg if it has no special attributes (only id and style)
-    const gsvgElems = svgCanvas.getSvgContent().querySelectorAll('g[data-gsvg]')
-    Array.prototype.forEach.call(gsvgElems, element => {
-      const attrs = element.attributes
-      let len = attrs.length
-      for (let i = 0; i < len; i++) {
-        if (attrs[i].nodeName === 'id' || attrs[i].nodeName === 'style') {
-          len--
+      // Keep SVG-Edit comment on top
+      const childNodesElems = svgCanvas.getSvgContent().childNodes
+      childNodesElems.forEach((node, i) => {
+        if (i && node.nodeType === 8 && node.data.includes('Created with')) {
+          svgCanvas.getSvgContent().firstChild.before(node)
         }
-      }
-      // No significant attributes, so ungroup
-      if (len <= 0) {
-        const svg = element.firstChild
-        nakedSvgs.push(svg)
-        element.replaceWith(svg)
-      }
-    })
-    // Embed used custom fonts as @font-face in <defs> so the exported SVG is
-    // self-contained. Only fonts actually referenced by text are embedded.
-    const fontStyleElem = svgCanvas.getSvgOptionApply()
-      ? embedUsedFonts()
-      : null
-
-    const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
-
-    // Remove the temporary <style> so the live document is left untouched
-    if (fontStyleElem) {
-      fontStyleElem.remove()
-    }
-
-    // Rewrap gsvg
-    if (nakedSvgs.length) {
-      Array.prototype.forEach.call(nakedSvgs, el => {
-        svgCanvas.groupSvgElem(el)
       })
-    }
 
-    return output
+      // Move out of in-group editing mode. Capture the group first: leaveContext()
+      // nulls currentGroup, so reading getCurrentGroup() afterwards would pass
+      // [null] to selectOnly — silently emptying the selection without firing
+      // 'selected', desyncing the editor's selectedElement from the canvas.
+      const groupToReselect = svgCanvas.getCurrentGroup()
+      if (groupToReselect) {
+        svgCanvas.leaveContext()
+        svgCanvas.selectOnly([groupToReselect])
+      }
+
+      const nakedSvgs = []
+
+      // Unwrap gsvg if it has no special attributes (only id and style)
+      const gsvgElems = svgCanvas.getSvgContent().querySelectorAll('g[data-gsvg]')
+      Array.prototype.forEach.call(gsvgElems, element => {
+        const attrs = element.attributes
+        let len = attrs.length
+        for (let i = 0; i < len; i++) {
+          if (attrs[i].nodeName === 'id' || attrs[i].nodeName === 'style') {
+            len--
+          }
+        }
+        // No significant attributes, so ungroup
+        if (len <= 0) {
+          const svg = element.firstChild
+          nakedSvgs.push(svg)
+          element.replaceWith(svg)
+        }
+      })
+      // Embed used custom fonts as @font-face in <defs> so the exported SVG is
+      // self-contained. Only fonts actually referenced by text are embedded.
+      const fontStyleElem = svgCanvas.getSvgOptionApply()
+        ? embedUsedFonts()
+        : null
+
+      const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
+
+      // Remove the temporary <style> so the live document is left untouched
+      if (fontStyleElem) {
+        fontStyleElem.remove()
+      }
+
+      // Rewrap gsvg
+      if (nakedSvgs.length) {
+        Array.prototype.forEach.call(nakedSvgs, el => {
+          svgCanvas.groupSvgElem(el)
+        })
+      }
+
+      return output
+    } finally {
+      if (drawnPath && drawnPathParent) {
+        drawnPathParent.insertBefore(drawnPath, drawnPathNextSibling)
+      }
+    }
   }
 
   /**
