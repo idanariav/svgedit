@@ -187,4 +187,28 @@ describe('ext-cutter', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
   })
+
+  // Regression guard: mouseUp used to gate only on the local `active` flag,
+  // unlike every other extension's mouseUp hook (ext-brush, ext-shape-builder,
+  // ext-connector, ...), which all check svgCanvas.getMode() too. `active` is
+  // only reset by the setMode() monkey-patch above; if mode ever changes away
+  // from 'cutter' through some other route (core has several direct
+  // setCurrentMode() call sites), `active` is left stale and this hook would
+  // fire for whatever tool's mouseUp comes next -- returning an object with
+  // no `element`, which the core mouseUp epilogue (event.js) uses to
+  // unconditionally overwrite its own `element`, discarding that tool's result.
+  it('does not act on mouseUp once mode has changed away from cutter, even if `active` is still stale', () => {
+    click(100, 100)
+    click(150, 80)
+    expect(previewD()).toBe('M100,100 L150,80')
+
+    // Simulate mode having changed via a route that bypasses the setMode()
+    // monkey-patch, leaving `active` stale (true).
+    svgCanvas.getMode = () => 'path'
+
+    const result = extInstance.mouseUp({ mouse_x: 200, mouse_y: 130, event: {} })
+
+    expect(result).toBeUndefined()
+    expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
+  })
 })

@@ -257,7 +257,20 @@ export default {
       },
 
       mouseUp (opts) {
-        if (!active) return undefined
+        // Every other extension's mouseUp hook gates on svgCanvas.getMode()
+        // (see ext-brush, ext-shape-builder, ext-connector, ...); this one
+        // gated on the local `active` flag alone. `active` is reset whenever
+        // svgCanvas.setMode() leaves 'cutter' (see the monkey-patch above),
+        // but anything that changes mode via setCurrentMode() directly
+        // (several core call sites do, e.g. finishing a path draw's mode
+        // switch) bypasses that patch — if `active` were ever left stale
+        // while a *different* tool's mouseUp is dispatched, this hook would
+        // fire regardless of the current tool and return { keep: true,
+        // started: true } (no `element`), which the core mouseUp epilogue
+        // (event.js) uses to unconditionally overwrite its own `element` —
+        // silently discarding whatever that tool just produced. Checking the
+        // live mode here too closes that gap regardless of how mode changed.
+        if (!active || svgCanvas.getMode() !== 'cutter') return undefined
 
         if (drawing) {
           // Vertices commit on mouseDown; nothing more to do per click.
