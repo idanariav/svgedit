@@ -358,6 +358,11 @@ const mouseUpEventImpl = (evt) => {
 */
     svgCanvas.addedNew = true
 
+    // Tracks which element this deferred (setTimeout below) selection belongs
+    // to, so that callback can tell whether it's still current by the time it
+    // fires — see the guard where it's read for why this matters.
+    svgCanvas.pendingNewElement = element
+
     if (useUnit) { convertAttrs(element) }
 
     // Path-drawing's mode transition must happen synchronously, not deferred
@@ -417,7 +422,16 @@ const mouseUpEventImpl = (evt) => {
       }
       element.setAttribute('style', 'pointer-events:inherit')
       cleanupElement(element)
-      if (svgCanvas.getCurConfig().selectNew) {
+      // This callback is scheduled aniDur (up to 200ms) in the future. A fast
+      // double-click-to-finish workflow routinely starts and finishes the
+      // NEXT shape well inside that window — by the time this fires, `element`
+      // may no longer be what the user is looking at. Forcing setMode('select')
+      // would yank them out of an in-progress draw of a different shape, and
+      // selectOnly(element) would silently swap the current selection back to
+      // this stale one (symptom: finishing a path selects/edits an unrelated
+      // earlier path). Only touch mode/selection if nothing has been created
+      // since — i.e. this is still the most recent element.
+      if (svgCanvas.getCurConfig().selectNew && svgCanvas.pendingNewElement === element) {
         const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame', 'brush']
         if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
           svgCanvas.setMode('select')

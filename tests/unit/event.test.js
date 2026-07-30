@@ -462,6 +462,60 @@ describe('event', () => {
     expect(canvas.curProperties.stroke_width).toBe(1)
   })
 
+  it('mouseUpEvent() does not let a stale opacity-fade callback re-select an earlier path once a newer one has been drawn', async () => {
+    // Regression guard: the deferred (setTimeout) half of the shape-creation
+    // epilogue unconditionally re-ran selectOnly(element) via closure once
+    // getCurConfig().selectNew is true. A fast double-click-to-finish workflow
+    // routinely starts and finishes the NEXT path before that earlier timer
+    // fires, so the stale callback silently swapped the selection back to the
+    // path drawn before it -- symptom: finishing a path selects/edits an
+    // unrelated earlier one.
+    const pathA = /** @type {SVGPathElement} */ (createSvgElement('path'))
+    pathA.setAttribute('d', 'M0,0 L10,10')
+    contentGroup.append(pathA)
+    const pathB = /** @type {SVGPathElement} */ (createSvgElement('path'))
+    pathB.setAttribute('d', 'M20,20 L30,30')
+    contentGroup.append(pathB)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getToolLocked = () => false
+    canvas.getElement = () => null
+    canvas.getCurrentDrawing = () => ({ releaseId () {} })
+    canvas.addCommandToHistory = () => {}
+    canvas.call = () => {}
+    canvas.getCurConfig = () => ({ gridSnapping: false, showRulers: false, selectNew: true })
+    canvas.getPath_ = () => ({ show () {} })
+    canvas.setMode = () => {}
+
+    const selections = []
+    canvas.selectOnly = (elems) => { selections.push(elems[0]) }
+
+    // Finish path A.
+    canvas.getId = () => 'path-a'
+    canvas.pathActions.mouseUp = () => ({ element: pathA, keep: true })
+    canvas.setCurrentMode('path')
+    canvas.setStarted(true)
+    canvas.mouseUpEvent({ button: 0, clientX: 10, clientY: 10, preventDefault () {} })
+
+    // Before path A's deferred setTimeout(0) reselect fires, path B is drawn
+    // and finished too -- the realistic timing for a quick double-click to
+    // finish one path immediately followed by drawing the next.
+    canvas.getId = () => 'path-b'
+    canvas.pathActions.mouseUp = () => ({ element: pathB, keep: true })
+    canvas.setCurrentMode('path')
+    canvas.setStarted(true)
+    canvas.mouseUpEvent({ button: 0, clientX: 20, clientY: 20, preventDefault () {} })
+
+    // Let both deferred setTimeout(0) callbacks run.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const pathASelectCount = selections.filter((e) => e === pathA).length
+    expect(pathASelectCount).toBe(1) // only the synchronous path-mode selection, no stray re-select
+    expect(selections.at(-1)).toBe(pathB)
+  })
+
   it('dblClickEvent() enters a group without baking its transform into children', () => {
     // Regression guard: entering a group (even a rotated one) must use
     // setContext and must NOT call pushGroupProperties, which previously baked
