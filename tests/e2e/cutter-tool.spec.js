@@ -197,4 +197,73 @@ test.describe('Cutter tool', () => {
     await expect(page.locator('#svgcontent #svg_1')).toHaveCount(0)
     await expect(page.locator('#svgcontent g.layer > path')).toHaveCount(2)
   })
+
+  test('a straight cut only affects the compound-path loop it actually crosses', async ({ page }) => {
+    // A single <path> with two disjoint closed loops far apart, mirroring
+    // real multi-part line art (e.g. a body outline whose head/foot loops
+    // sit far from a hand loop, all in one compound `d`). Loop A sits at
+    // y:0-20; loop B sits far below at y:200-220. A straight cut drawn only
+    // through loop B must leave loop A completely untouched, not get swept
+    // into a piece via an unbounded half-plane split (the original bug).
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer">
+        <title>Layer 1</title>
+        <path id="svg_2" d="M0,0 L20,0 L20,20 L0,20 Z M0,200 L20,200 L20,220 L0,220 Z" fill="#3366cc" />
+      </g>
+    </svg>`)
+
+    await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly(
+        [document.querySelector('#svgcontent #svg_2')], true
+      )
+      window.svgEditor.svgCanvas.cutShapes([
+        { x: -10, y: 210 },
+        { x: 30, y: 210 }
+      ])
+    })
+
+    await expect(page.locator('#svgcontent #svg_2')).toHaveCount(0)
+    const paths = page.locator('#svgcontent g.layer > path')
+    await expect(paths).toHaveCount(2)
+
+    const ds = await paths.evaluateAll((els) => els.map((el) => el.getAttribute('d')))
+    // Loop A's subpath must survive byte-for-byte in whichever piece
+    // carries it — it was never crossed by the cutter, so it must come
+    // through untouched, not reshaped by a boolean-op pass.
+    const untouchedLoop = ds.find((d) => d.includes('M0,0L20,0L20,20L0,20z'))
+    expect(untouchedLoop).toBeTruthy()
+    // That piece must still carry loop B's other half too (2 subpaths).
+    expect(untouchedLoop.match(/M/gi).length).toBe(2)
+    // The remaining piece is loop B's other half only (1 subpath).
+    const bitePiece = ds.find((d) => d !== untouchedLoop)
+    expect(bitePiece.match(/M/gi).length).toBe(1)
+
+    // Total area of both pieces must equal the sum of both original loops'
+    // areas (20x20 each = 800) — confirms nothing was lost or duplicated,
+    // parsing each subpath's own polygon directly (all straight M/L/Z
+    // edges here, so no curve-sampling subtleties).
+    const totalArea = await page.evaluate(() => {
+      const polygonArea = (pts) => {
+        let area = 0
+        for (let i = 0; i < pts.length; i++) {
+          const [x1, y1] = pts[i]
+          const [x2, y2] = pts[(i + 1) % pts.length]
+          area += x1 * y2 - x2 * y1
+        }
+        return Math.abs(area / 2)
+      }
+      const parseSubpaths = (d) => d.split(/(?=M)/i).filter(Boolean).map((sub) => {
+        const nums = (sub.match(/-?\d+(?:\.\d+)?/g) || []).map(Number)
+        const pts = []
+        for (let i = 0; i < nums.length; i += 2) pts.push([nums[i], nums[i + 1]])
+        return pts
+      })
+      let total = 0
+      document.querySelectorAll('#svgcontent g.layer > path').forEach((p) => {
+        parseSubpaths(p.getAttribute('d')).forEach((pts) => { total += polygonArea(pts) })
+      })
+      return total
+    })
+    expect(totalArea).toBeCloseTo(800, 0)
+  })
 })

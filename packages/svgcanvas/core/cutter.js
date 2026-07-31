@@ -2,11 +2,24 @@
  * Cutter (knife) tool: splits selected shapes along a cutting line, which may
  * be a single straight segment or an arbitrary open polyline (zigzag).
  *
- * Straight-line cuts use the half-plane intersection method with paper.js
- * for reliable open-path cutting (avoids the divide() open-path bug).
- * Polyline cuts use an exact boundary-splice method instead (see
- * cutWithPolyline below) since half-plane intersection has no equivalent
- * for a multi-segment cutting line.
+ * Both use the same exact boundary-splice construction (see `cutContour`
+ * below): find every crossing of the cutting line/polyline with the shape's
+ * boundary, then splice the boundary at those crossings and stitch each
+ * resulting arc to the matching cutter segment (a "chord") to form each
+ * piece's outline directly — no `intersect()`/`divide()` boolean-op call
+ * needed, and no approximation from a thin stroke-expanded band either
+ * (paper.js's boolean ops have a long history of robustness bugs on
+ * thin/degenerate input — see paperjs/paper.js #835/#968/#1149/#661/#889 —
+ * which this exact-splice approach sidesteps entirely). Crucially, this
+ * makes every cut *local*: a shape is only ever split where the cutter
+ * actually crosses its boundary, never wherever a boolean op's implicit
+ * infinite-plane math happens to reach.
+ *
+ * A target shape may be a compound path (a single element whose `d` holds
+ * several disjoint closed sub-loops — common in multi-part line art). Each
+ * loop is cut independently: a loop the cutter doesn't cross is carried
+ * through completely untouched, and only loops it actually crosses (an even
+ * number of times) get split.
  *
  * @module cutter
  * @license MIT
@@ -50,16 +63,20 @@ const collectCuttableElements = (elems) => {
 }
 
 /**
- * Convert an SVG element to a paper.js Path in content-space coordinates:
- * its own transform (applied by svgToPaper) plus every ancestor `<g>`/`<a>`
- * transform up to the content root, so shapes nested in a (possibly
- * transformed) group land in the same coordinate space as the cut line.
+ * Convert an SVG element to a paper.js CompoundPath in content-space
+ * coordinates: its own transform (applied by svgToPaper) plus every
+ * ancestor `<g>`/`<a>` transform up to the content root, so shapes nested in
+ * a (possibly transformed) group land in the same coordinate space as the
+ * cut line. Always a CompoundPath (even for a single-loop shape, as a
+ * 1-child one) so multi-subpath `d` data — several disjoint closed loops in
+ * one element — is preserved as separate loops instead of being silently
+ * welded together by `Path`'s single-contour parsing.
  * @param {Element} elem
  * @param {paper.PaperScope} scope
- * @returns {paper.Path|null}
+ * @returns {paper.CompoundPath|null}
  */
 const getElemAsPath = (elem, scope) => {
-  const item = svgToPaper(elem, scope)
+  const item = svgToPaper(elem, scope, { asCompoundPath: true })
   if (!item) return null
   const ancestorMatrix = getMatrixToContent(elem)
   if (!isIdentity(ancestorMatrix)) {
@@ -76,88 +93,15 @@ const getElemAsPath = (elem, scope) => {
 const hasValidPiece = (p) => p && p.pathData && p.pathData.length > 4
 
 /**
- * Cut `shapePath` along the straight line (p1)→(p2) using the half-plane
- * intersection method: build two large rectangles on either side of the
- * (line extended far in both directions) and intersect the shape with each.
- * @param {paper.PaperScope} scope
- * @param {paper.Path} shapePath
- * @param {{x:number,y:number}} p1
- * @param {{x:number,y:number}} p2
- * @returns {[paper.PathItem,paper.PathItem]|null}
- */
-const cutWithLine = (scope, shapePath, p1, p2) => {
-  const dx = p2.x - p1.x
-  const dy = p2.y - p1.y
-  const len = Math.sqrt(dx * dx + dy * dy)
-  if (len < 1e-6) return null
-
-  // Unit direction and perpendicular vectors
-  const ux = dx / len
-  const uy = dy / len
-  const px = -uy // perpendicular (rotated 90° CCW)
-  const py = ux
-
-  // Extend the line far beyond any realistic canvas content
-  const FAR = 100000
-  const ax = p1.x - FAR * ux
-  const ay = p1.y - FAR * uy
-  const bx = p2.x + FAR * ux
-  const by = p2.y + FAR * uy
-
-  /**
-   * Build a half-plane rectangle on one side of the cut line.
-   * @param {1|-1} side  +1 = left (perpendicular direction), -1 = right
-   */
-  const makeHalfPlane = (side) => new scope.Path({
-    segments: [
-      new scope.Point(ax, ay),
-      new scope.Point(bx, by),
-      new scope.Point(bx + side * FAR * px, by + side * FAR * py),
-      new scope.Point(ax + side * FAR * px, ay + side * FAR * py)
-    ],
-    closed: true,
-    insert: false
-  })
-
-  const hp1 = makeHalfPlane(1)
-  const hp2 = makeHalfPlane(-1)
-
-  const piece1 = shapePath.intersect(hp1, { insert: false })
-  const piece2 = shapePath.intersect(hp2, { insert: false })
-
-  hp1.remove()
-  hp2.remove()
-
-  // Both pieces must be non-empty for a real cut to have occurred.
-  // If only one piece is valid, the cut line passed entirely to one side
-  // of the shape (not through it), so the shape should be left unchanged.
-  if (!hasValidPiece(piece1) || !hasValidPiece(piece2)) {
-    piece1?.remove()
-    piece2?.remove()
-    return null
-  }
-  return [piece1, piece2]
-}
-
-/**
- * Cut `shapePath` along an open polyline (2+ points, straight segments).
- *
- * Unlike a single line, a polyline has no "half-plane" equivalent, so this
- * uses an exact construction instead: find every crossing of the polyline
- * with the shape's boundary, then splice the boundary at those crossings
- * and stitch each resulting arc to the matching polyline segment (a
- * "chord") to form each piece's outline directly — no intersect() call
- * needed, and no approximation from a thin stroke-expanded band either
- * (paper.js's boolean ops have a long history of robustness bugs on
- * thin/degenerate input — see paperjs/paper.js #835/#968/#1149/#661/#889 —
- * which this exact-splice approach sidesteps entirely).
+ * Cut one simple closed contour along an open cutter polyline (2+ points,
+ * already built as a paper.Path). Returns `null` if the cutter doesn't
+ * cross this contour's boundary an even number of times ≥ 2, or if the
+ * crossings don't form a simple non-crossing pairing — either way meaning
+ * this contour should be left completely untouched.
  *
  * Handles any even number of crossings ≥ 2 (`m` non-overlapping "bites"),
- * producing `m + 1` pieces: one per bite, plus the remaining "core" shape.
- * Both polyline endpoints must still lie outside the shape, and the
- * cutter itself must be simple (non-self-intersecting) — any other case
- * (odd crossing count, an endpoint inside the shape) leaves the shape
- * unchanged, same fallback as before.
+ * producing `m + 1` pieces: one per bite, plus the remaining "core" of this
+ * contour. The cutter itself must be simple (non-self-intersecting).
  *
  * The decomposition is a Weiler-Atherton-style face split specialized to
  * "one simple open polyline vs. one simple closed boundary": walking the
@@ -167,30 +111,15 @@ const cutWithLine = (scope, shapePath, p1, p2) => {
  * single chord edge is spliced into the *parent* region in its place. Bites
  * are guaranteed non-overlapping because the cutter doesn't self-intersect.
  * @param {paper.PaperScope} scope
- * @param {paper.Path} shapePath
- * @param {Array<{x:number,y:number}>} points
- * @returns {paper.PathItem[]|null}
+ * @param {paper.Path} contourPath - One simple closed contour (a
+ *  CompoundPath child, or a whole single-loop shape).
+ * @param {paper.Path} cutterPath - The (already-built, not-yet-removed)
+ *  open cutter polyline — owned by the caller, not removed here.
+ * @returns {{core: paper.Path, bites: paper.Path[]}|null}
  */
-const cutWithPolyline = (scope, shapePath, points) => {
-  const cutterPath = new scope.Path({
-    segments: points.map((p) => new scope.Point(p.x, p.y)),
-    closed: false,
-    insert: false
-  })
-
-  const first = points[0]
-  const last = points[points.length - 1]
-  if (shapePath.contains(new scope.Point(first.x, first.y)) ||
-      shapePath.contains(new scope.Point(last.x, last.y))) {
-    cutterPath.remove()
-    return null
-  }
-
-  const crossings = shapePath.getIntersections(cutterPath)
-  if (crossings.length < 2 || crossings.length % 2 !== 0) {
-    cutterPath.remove()
-    return null
-  }
+const cutContour = (scope, contourPath, cutterPath) => {
+  const crossings = contourPath.getIntersections(cutterPath)
+  if (crossings.length < 2 || crossings.length % 2 !== 0) return null
   const m = crossings.length / 2
 
   // Insert a real segment at `offset` and return it — unless the offset
@@ -240,7 +169,7 @@ const cutWithPolyline = (scope, shapePath, points) => {
   const byShape = crossings.slice().sort((a, b) => a.getOffset() - b.getOffset())
   const chordIdOf = new Map()
   chords.forEach((c, i) => { chordIdOf.set(c.a, i); chordIdOf.set(c.b, i) })
-  const shapeClone = shapePath.clone({ insert: false })
+  const shapeClone = contourPath.clone({ insert: false })
   const shapeSegAt = byShape.map((loc) => divideOrGetSegment(shapeClone, loc.getOffset()))
   const shapeSegs = shapeClone.segments
   const gapSegs = byShape.map((_, i) => (i < byShape.length - 1
@@ -248,7 +177,7 @@ const cutWithPolyline = (scope, shapePath, points) => {
     : shapeSegs.slice(shapeSegAt[i].index).concat(shapeSegs.slice(0, shapeSegAt[0].index + 1)) // wraps
   ).map((s) => s.clone()))
 
-  const cleanup = () => { cutterPath.remove(); cutterClone.remove(); shapeClone.remove() }
+  const cleanup = () => { cutterClone.remove(); shapeClone.remove() }
 
   // Walk the crossings in shape-boundary order with an explicit stack
   // (bottom frame = the surviving "core" region) to decompose the boundary
@@ -315,12 +244,65 @@ const cutWithPolyline = (scope, shapePath, points) => {
   }
   const makePiece = (edges) => new scope.Path({ segments: buildLoopSegments(edges), closed: true, insert: false })
 
-  const corePiece = makePiece(resolveItems(stack[0].items))
-  const bitePieces = biteItems.map((items, cid) =>
+  const core = makePiece(resolveItems(stack[0].items))
+  const bites = biteItems.map((items, cid) =>
     makePiece([{ type: 'chord', segs: chordCloseToOpen[cid] }, ...resolveItems(items)]))
-  const pieces = [corePiece, ...bitePieces]
 
   cleanup()
+  return { core, bites }
+}
+
+/**
+ * Cut `shapePath` (a CompoundPath — one or more disjoint closed loops) along
+ * an open cutter line/polyline (2+ points, straight segments).
+ *
+ * Each loop is cut independently via `cutContour`: a loop the cutter
+ * doesn't cross (an even number of times ≥ 2) is carried through into the
+ * result completely unchanged, alongside whichever loops it does cross.
+ * Both cutter endpoints must lie outside `shapePath` as a whole, checked
+ * once up front.
+ * @param {paper.PaperScope} scope
+ * @param {paper.CompoundPath} shapePath
+ * @param {Array<{x:number,y:number}>} points
+ * @returns {paper.PathItem[]|null}
+ */
+const cutShapePath = (scope, shapePath, points) => {
+  const cutterPath = new scope.Path({
+    segments: points.map((p) => new scope.Point(p.x, p.y)),
+    closed: false,
+    insert: false
+  })
+
+  const first = points[0]
+  const last = points[points.length - 1]
+  if (shapePath.contains(new scope.Point(first.x, first.y)) ||
+      shapePath.contains(new scope.Point(last.x, last.y))) {
+    cutterPath.remove()
+    return null
+  }
+
+  const untouchedChildren = []
+  const coreChildren = []
+  const bitePieces = []
+  for (const child of shapePath.children) {
+    const result = cutContour(scope, child, cutterPath)
+    if (!result) {
+      untouchedChildren.push(child.clone({ insert: false }))
+    } else {
+      coreChildren.push(result.core)
+      bitePieces.push(...result.bites)
+    }
+  }
+  cutterPath.remove()
+
+  // No loop was actually crossed — leave the shape entirely unchanged.
+  if (coreChildren.length === 0) {
+    untouchedChildren.forEach((c) => c.remove())
+    return null
+  }
+
+  const corePiece = new scope.CompoundPath({ children: [...untouchedChildren, ...coreChildren], insert: false })
+  const pieces = [corePiece, ...bitePieces]
 
   if (pieces.some((p) => !hasValidPiece(p))) {
     pieces.forEach((p) => p.remove())
@@ -395,10 +377,6 @@ const cutShapes = (svgCanvas, points) => {
   const batchCmd = new BatchCommand('Cut shapes')
   const resultElems = []
 
-  const cutShapePath = points.length === 2
-    ? (shapePath) => cutWithLine(scope, shapePath, points[0], points[1])
-    : (shapePath) => cutWithPolyline(scope, shapePath, points)
-
   for (const elem of elems) {
     const shapePath = getElemAsPath(elem, scope)
     if (!shapePath) {
@@ -406,7 +384,7 @@ const cutShapes = (svgCanvas, points) => {
       continue
     }
 
-    const pieces = cutShapePath(shapePath)
+    const pieces = cutShapePath(scope, shapePath, points)
     shapePath.remove()
     if (!pieces) continue
 
