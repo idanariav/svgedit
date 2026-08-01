@@ -43,12 +43,24 @@ export function rgbToHsv (r, g, b) {
   }
 }
 
+/** Hex string (without #) → { r, g, b } */
+export function hexToRgb (hex) {
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16)
+  }
+}
+
 /** Hex string (without #) → { h, s, v } */
 export function hexToHsv (hex) {
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
+  const { r, g, b } = hexToRgb(hex)
   return rgbToHsv(r, g, b)
+}
+
+/** { r, g, b } → hex string (without #) */
+export function rgbToHex (r, g, b) {
+  return [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
 }
 
 /** { h, s, v } → hex string (without #) */

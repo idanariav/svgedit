@@ -3,7 +3,7 @@
  * and preset palette. Factory function — not a custom element.
  */
 
-import { hsvToRgb, rgbToHsv, hexToHsv, hsvToHex } from '../../PaintModel.js'
+import { hexToHsv, hexToRgb, rgbToHex, hsvToHex } from '../../PaintModel.js'
 
 // 72 presets in a 12-column grid: 5 rows of saturated colors (one column per hue,
 // one row per lightness level) + 1 row of grays from white to black.
@@ -39,7 +39,10 @@ const PRESETS = [
 export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null) {
   const safeHex = /^[0-9a-fA-F]{6}$/.test(initialHex) ? initialHex : '2962ff'
   const { h: initH, s: initS, v: initV } = hexToHsv(safeHex)
-  const state = { h: initH, s: initS, v: initV, a: initialAlpha }
+  // `hex` is the canonical exact color; h/s/v are rounded integers kept only
+  // for the slider/number-input UI. Deriving hex from h/s/v on every read
+  // (instead of keeping it here) loses precision — see hex round-trip bug.
+  const state = { h: initH, s: initS, v: initV, a: initialAlpha, hex: safeHex }
   const origHex = currentHex || safeHex
 
   // ── DOM structure ──────────────────────────────────────────────────────────
@@ -142,9 +145,8 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
 
   // ── Visuals update ─────────────────────────────────────────────────────────
   function _updateVisuals () {
-    const { h, s, v, a } = state
-    const hex = hsvToHex(h, s, v)
-    const { r, g, b } = hsvToRgb(h, s, v)
+    const { h, s, v, a, hex } = state
+    const { r, g, b } = hexToRgb(hex)
     const rgbaFull = `rgba(${r},${g},${b},${a / 100})`
     const rgbFull = `rgb(${r},${g},${b})`
 
@@ -176,22 +178,27 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
 
     // Selected preset highlight
     presetGrid.querySelectorAll('.cp-preset-swatch').forEach(btn => {
-      btn.classList.toggle('is-selected', btn.title.toLowerCase() === '#' + hex)
+      btn.classList.toggle('is-selected', btn.title.toLowerCase() === '#' + hex.toLowerCase())
     })
   }
 
   function _emit () {
-    const hex = hsvToHex(state.h, state.s, state.v)
     container.dispatchEvent(new CustomEvent('color-change', {
-      detail: { ...state, hex },
+      detail: { ...state },
       bubbles: true
     }))
   }
 
   // ── Internal setters ───────────────────────────────────────────────────────
-  function setHexInternal (hex) {
-    const { h, s, v } = hexToHsv(hex)
+  // Recompute the rounded h/s/v used by the sliders from the canonical hex.
+  function _syncHsvFromHex () {
+    const { h, s, v } = hexToHsv(state.hex)
     state.h = h; state.s = s; state.v = v
+  }
+
+  function setHexInternal (hex) {
+    state.hex = hex
+    _syncHsvFromHex()
     _updateVisuals()
   }
 
@@ -212,6 +219,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     const rect = hsvBox.getBoundingClientRect()
     state.s = Math.round(Math.min(100, Math.max(0, (e.clientX - rect.left) / rect.width * 100)))
     state.v = Math.round(Math.min(100, Math.max(0, (1 - (e.clientY - rect.top) / rect.height) * 100)))
+    state.hex = hsvToHex(state.h, state.s, state.v)
     _updateVisuals()
   })
 
@@ -219,6 +227,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   makeDrag(hueStrip, (e) => {
     const rect = hueStrip.getBoundingClientRect()
     state.h = Math.round(Math.min(360, Math.max(0, (e.clientY - rect.top) / rect.height * 360)))
+    state.hex = hsvToHex(state.h, state.s, state.v)
     _updateVisuals()
   })
 
@@ -238,6 +247,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
       state.v = Math.min(100, Math.max(0, state.v + (e.key === 'ArrowUp' ? step : -step)))
     } else { return }
     e.preventDefault()
+    state.hex = hsvToHex(state.h, state.s, state.v)
     _updateVisuals(); _emit()
   })
 
@@ -245,6 +255,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     const step = e.key.startsWith('Page') ? 36 : 1
     if (e.key === 'ArrowUp') { state.h = Math.max(0, state.h - step) } else if (e.key === 'ArrowDown') { state.h = Math.min(360, state.h + step) } else { return }
     e.preventDefault()
+    state.hex = hsvToHex(state.h, state.s, state.v)
     _updateVisuals(); _emit()
   })
 
@@ -270,21 +281,23 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     })
   }
 
-  wireInput('h', parseFloat, v => Math.min(360, Math.max(0, Math.round(v))), v => { state.h = v })
-  wireInput('s', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.s = v })
-  wireInput('v', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.v = v })
+  wireInput('h', parseFloat, v => Math.min(360, Math.max(0, Math.round(v))), v => { state.h = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('s', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.s = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('v', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.v = v; state.hex = hsvToHex(state.h, state.s, state.v) })
   wireInput('r', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
-    const { g: cg, b: cb } = hsvToRgb(state.h, state.s, state.v)
-    const hsv = rgbToHsv(v, cg, cb)
-    state.h = hsv.h; state.s = hsv.s; state.v = hsv.v
+    const { g: cg, b: cb } = hexToRgb(state.hex)
+    state.hex = rgbToHex(v, cg, cb)
+    _syncHsvFromHex()
   })
   wireInput('g', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
-    const { r: cr, b: cb } = hsvToRgb(state.h, state.s, state.v)
-    const hsv = rgbToHsv(cr, v, cb); state.h = hsv.h; state.s = hsv.s; state.v = hsv.v
+    const { r: cr, b: cb } = hexToRgb(state.hex)
+    state.hex = rgbToHex(cr, v, cb)
+    _syncHsvFromHex()
   })
   wireInput('b', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
-    const { r: cr, g: cg } = hsvToRgb(state.h, state.s, state.v)
-    const hsv = rgbToHsv(cr, cg, v); state.h = hsv.h; state.s = hsv.s; state.v = hsv.v
+    const { r: cr, g: cg } = hexToRgb(state.hex)
+    state.hex = rgbToHex(cr, cg, v)
+    _syncHsvFromHex()
   })
   wireInput('a', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.a = v })
   wireInput('hex',
@@ -293,7 +306,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
       return clean.length === 6 ? clean : null
     },
     v => v, // clamp is identity; parse already validates length
-    v => { const hsv = hexToHsv(v); state.h = hsv.h; state.s = hsv.s; state.v = hsv.v }
+    v => { state.hex = v; _syncHsvFromHex() }
   )
   inputs.hex?.addEventListener('paste', (e) => {
     const text = e.clipboardData?.getData('text') ?? ''
@@ -306,7 +319,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
 
   // ── Public API ─────────────────────────────────────────────────────────────
   Object.defineProperty(container, 'hex', {
-    get: () => hsvToHex(state.h, state.s, state.v)
+    get: () => state.hex
   })
   Object.defineProperty(container, 'alpha', {
     get: () => state.a
