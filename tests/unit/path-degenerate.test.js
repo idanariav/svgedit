@@ -322,3 +322,71 @@ describe('svgCanvasToString preserves an in-progress path draw', () => {
     expect(drawnPath.pathSegList.numberOfItems).toBeGreaterThan(segCountBefore)
   })
 })
+
+// svgCanvasToString() had the same hazard for the *other* path session --
+// editing an existing path's nodes -- but wasn't excluded the way the
+// drawnPath case above was fixed: pathActions.clear() unconditionally calls
+// toSelectMode() when currentMode is 'pathedit', so a background save (e.g.
+// this plugin host's own autosave) landing mid-node-drag silently exited
+// node-edit, hiding the grips and dropping the selection, with no user
+// action. Since the Obsidian plugin defaults to a 15s autosave, this was
+// very reachable in real usage: edit a path's nodes for more than 15
+// uninterrupted seconds and the very next save would kick you out.
+describe('svgCanvasToString preserves an in-progress pathedit session', () => {
+  let svgCanvas
+
+  beforeEach(() => {
+    document.body.textContent = ''
+    const svgEditor = document.createElement('div')
+    svgEditor.id = 'svg_editor'
+    const svgcanvas = document.createElement('div')
+    svgcanvas.id = 'svgcanvas'
+    const workarea = document.createElement('div')
+    workarea.id = 'workarea'
+    workarea.append(svgcanvas)
+    const toolsLeft = document.createElement('div')
+    toolsLeft.id = 'tools_left'
+    svgEditor.append(workarea, toolsLeft)
+    document.body.append(svgEditor)
+
+    svgCanvas = new SvgCanvas(svgcanvas, {
+      canvas_expansion: 3,
+      dimensions: [640, 480],
+      initFill: { color: 'FF0000', opacity: 1 },
+      initStroke: { width: 5, color: '000000', opacity: 1 },
+      initOpacity: 1,
+      imgPath: '../editor/images',
+      langPath: 'locale/',
+      extPath: 'extensions/',
+      extensions: [],
+      initTool: 'select',
+      wireframe: false
+    })
+  })
+  afterEach(() => { document.body.textContent = '' })
+
+  it('leaves a pathedit session (mode + shown grips) intact across a save mid-edit', () => {
+    svgCanvas.setSvgString(
+      '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+        '<g class="layer"><title>Layer 1</title><path id="p1" d="M10,10 L50,10 L50,50"/></g>' +
+      '</svg>'
+    )
+    const pathEl = svgCanvas.getSvgContent().querySelector('#p1')
+    svgCanvas.pathActions.toEditMode(pathEl)
+    expect(svgCanvas.getMode()).toBe('pathedit')
+
+    const grip = svgCanvas.getSvgRoot().querySelector('rect[id^="pathpointgrip_"]')
+    expect(grip.getAttribute('display')).toBe('inline')
+
+    // Simulates a background save (e.g. the Obsidian plugin's autosave)
+    // landing while the user is mid-drag on one of this path's nodes.
+    const output = svgCanvas.getSvgString()
+
+    // The session must survive: still in pathedit, grips still shown -- not
+    // silently dropped back to select mode with everything hidden/deselected
+    // just because a save happened to run.
+    expect(svgCanvas.getMode()).toBe('pathedit')
+    expect(grip.getAttribute('display')).toBe('inline')
+    expect(output).toContain('id="p1"')
+  })
+})

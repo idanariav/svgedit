@@ -82,6 +82,8 @@ export const init = canvas => {
   // keep calling it until there are none to remove
     while (svgCanvas.removeUnusedDefElems() > 0) {} // eslint-disable-line no-empty
 
+    const currentMode = svgCanvas.getCurrentMode()
+
     // An actively in-progress path draw (mode 'path' with a real, not-yet-
     // committed element already placed) must not be torn down just because
     // something is serializing the drawing in the background — e.g. a host's
@@ -93,11 +95,20 @@ export const init = canvas => {
     // warning. Exclude just that element from the output instead: detach it
     // before serializing and reattach it right after, so the saved file has
     // no half-finished path but the live drawing session is left untouched.
-    const drawnPath = svgCanvas.getCurrentMode() === 'path' ? svgCanvas.getDrawnPath() : null
+    const drawnPath = currentMode === 'path' ? svgCanvas.getDrawnPath() : null
     const drawnPathParent = drawnPath?.parentNode
     const drawnPathNextSibling = drawnPath?.nextSibling
     if (drawnPath && drawnPathParent) {
       drawnPathParent.removeChild(drawnPath)
+    } else if (currentMode === 'pathedit') {
+      // Editing an *existing* path's nodes has the same hazard as drawing a
+      // new one above: pathActions.clear() unconditionally calls
+      // toSelectMode() while in this mode, silently exiting node-edit —
+      // hiding the grips and clearing the selection — mid-drag, just because
+      // a background save landed. Unlike a fresh drawnPath there's nothing to
+      // exclude from the output: node moves already write straight into the
+      // path's live `d` attribute, so the saved SVG is correct as-is. Simply
+      // not tearing the session down is enough.
     } else {
       // Tear down any in-progress path-edit session before serializing. Every
       // save/export (getSvgString) funnels through here, so a throw in this
