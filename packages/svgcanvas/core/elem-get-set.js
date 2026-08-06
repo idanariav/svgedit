@@ -6,7 +6,6 @@
 
 import Paint from './paint.js'
 import { NS } from './namespaces.js'
-import { BatchCommand } from './history.js'
 import {
   walkTree, getHref, setHref, getTextWithNewlines, setMultilineText
 } from './dom-utils.js'
@@ -366,13 +365,10 @@ const setZoomMethod = (zoomLevel) => {
 * @param {string} type - String indicating fill or stroke
 * @param {string} val - The value to set the stroke attribute to
 * @param {boolean} preventUndo - Boolean indicating whether or not svgCanvas should be an undoable option
-* @param {boolean} resetOpacity - When true, also force `${type}-opacity` back to 1 as part of the
-*   *same* undo step (used when applying a flat palette color, which has no alpha channel of its own,
-*   so a single Ctrl+Z fully reverts the swatch click instead of only reverting one of the two attrs)
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
-const setColorMethod = (type, val, preventUndo, resetOpacity) => {
+const setColorMethod = (type, val, preventUndo) => {
   const selectedElements = svgCanvas.getSelectedElements()
   svgCanvas.setCurShape(type, val)
   svgCanvas.setCurProperties(`${type}_paint`, { type: 'solidColor' })
@@ -405,26 +401,10 @@ const setColorMethod = (type, val, preventUndo, resetOpacity) => {
   if (elems.length === 0) return
   if (preventUndo) {
     svgCanvas.changeSelectedAttributeNoUndo(type, val, elems)
-    return
-  }
-  if (!resetOpacity) {
+  } else {
     svgCanvas.changeSelectedAttribute(type, val, elems)
     svgCanvas.call('changed', elems)
-    return
   }
-  const opAttr = `${type}-opacity`
-  svgCanvas.setCurShape(opAttr.replace('-', '_'), 1)
-  svgCanvas.undoMgr.beginUndoableChange(type, elems)
-  svgCanvas.undoMgr.beginUndoableChange(opAttr, elems)
-  svgCanvas.changeSelectedAttributeNoUndo(type, val, elems)
-  svgCanvas.changeSelectedAttributeNoUndo(opAttr, 1, elems)
-  const opCmd = svgCanvas.undoMgr.finishUndoableChange()
-  const colorCmd = svgCanvas.undoMgr.finishUndoableChange()
-  const batchCmd = new BatchCommand(`Change ${type}`)
-  if (!colorCmd.isEmpty()) batchCmd.addSubCommand(colorCmd)
-  if (!opCmd.isEmpty()) batchCmd.addSubCommand(opCmd)
-  if (!batchCmd.isEmpty()) svgCanvas.undoMgr.addCommandToHistory(batchCmd)
-  svgCanvas.call('changed', elems)
 }
 
 /**

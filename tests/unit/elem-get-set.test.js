@@ -281,45 +281,7 @@ describe('elem-get-set', () => {
     expect(canvas.call).toHaveBeenCalledWith('changed', [text])
   })
 
-  it('setColor() with resetOpacity bundles the color and opacity change into a single undo step', () => {
-    const rect = createSvgElement('rect')
-    rect.setAttribute('fill', '#0000ff')
-    rect.setAttribute('fill-opacity', '0.5')
-    svgContent.append(rect)
-
-    const localCanvas = {
-      zoom: 1,
-      selectedElements: [rect],
-      getSelectedElements () { return this.selectedElements },
-      getZoom () { return this.zoom },
-      getCurrentMode () { return 'select' },
-      getPathObj () { return null },
-      clearSelection () {},
-      pathActions: { clear () {} },
-      call () {},
-      setCurShape () {},
-      setCurProperties () {},
-      getSvgContent () { return svgContent }
-    }
-    undo.init(localCanvas)
-    initElemGetSet(localCanvas)
-
-    localCanvas.setColor('fill', '#ff0000', false, true)
-
-    expect(rect.getAttribute('fill')).toBe('#ff0000')
-    expect(rect.getAttribute('fill-opacity')).toBe('1')
-    expect(localCanvas.undoMgr.getUndoStackSize()).toBe(1)
-
-    localCanvas.undoMgr.undo()
-    expect(rect.getAttribute('fill')).toBe('#0000ff')
-    expect(rect.getAttribute('fill-opacity')).toBe('0.5')
-
-    localCanvas.undoMgr.redo()
-    expect(rect.getAttribute('fill')).toBe('#ff0000')
-    expect(rect.getAttribute('fill-opacity')).toBe('1')
-  })
-
-  it('setColor() without resetOpacity leaves opacity untouched (existing behavior)', () => {
+  it('setColor() leaves opacity untouched', () => {
     const rect = createSvgElement('rect')
     rect.setAttribute('fill', '#0000ff')
     rect.setAttribute('fill-opacity', '0.5')

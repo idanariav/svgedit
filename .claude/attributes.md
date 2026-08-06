@@ -303,12 +303,9 @@ via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
 rebuilt per-element into the same undo batch on apply.
 
 **Exception — custom palette swatches (`se-palette` / `BottomPanel.handlePalette`):**
-a plain palette swatch has no alpha channel, so clicking one also forces
-`fill-opacity`/`stroke-opacity` back to `1`. `svgCanvas.setColor(type, val, preventUndo,
-resetOpacity)` takes a 4th `resetOpacity` flag for exactly this case — when set, it
-bundles the color attr change and the opacity reset into a single `BatchCommand` (via
-nested `undoMgr.beginUndoableChange`/`finishUndoableChange` calls) so one Ctrl+Z fully
-reverts the swatch click instead of leaving the opacity half-reverted.
+a plain palette swatch has no alpha channel. Clicking one only changes
+`fill`/`stroke` via `svgCanvas.setColor(type, val)` — it deliberately leaves
+`fill-opacity`/`stroke-opacity` untouched rather than forcing them back to `1`.
 
 ### Live position/dimension readout while dragging (move/resize)
 
