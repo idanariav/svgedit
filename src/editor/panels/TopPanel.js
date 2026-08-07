@@ -304,11 +304,6 @@ class TopPanel {
               this.displayTool('tool_topath')
             }
             if (elname === 'path' && !isArcPath) {
-              this.displayTool('tool_reorient')
-            } else {
-              this.hideTool('tool_reorient')
-            }
-            if (elname === 'path' && !isArcPath) {
               this.displayTool('tool_path_offset')
             } else {
               this.hideTool('tool_path_offset')
@@ -327,7 +322,6 @@ class TopPanel {
             } else {
               this.displayTool('tool_stroke_to_path')
             }
-            $id('tool_reorient').disabled = angle === 0
           } else {
             const point = this.path.getNodePoint()
             $id('tool_add_subpath').pressed = false
@@ -338,12 +332,6 @@ class TopPanel {
 
             if (point) {
               const segType = $id('seg_type')
-              if (unit) {
-                point.x = convertUnit(point.x)
-                point.y = convertUnit(point.y)
-              }
-              $id('path_node_x').value = point.x
-              $id('path_node_y').value = point.y
               if (point.type) {
                 segType.value = point.type
                 segType.removeAttribute('disabled')
@@ -782,9 +770,7 @@ class TopPanel {
    * @type {module}
    */
   changeRotationAngle (e) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.editor.svgCanvas.setRotationAngle(e.target.value)
-    $id('tool_reorient').disabled = Number.parseInt(e.target.value) === 0
   }
 
   /**
@@ -992,16 +978,6 @@ class TopPanel {
    */
   clickMatchStrokes () {
     this.editor.svgCanvas.matchStrokes()
-  }
-
-  /**
-   *
-   * @returns {void}
-   */
-  reorientPath () {
-    if (this.editor.selectedElement) {
-      this.path.reorient()
-    }
   }
 
   /**
@@ -1388,7 +1364,6 @@ class TopPanel {
     $click($id('tool_match_strokes'), this.clickMatchStrokes.bind(this))
     $click($id('tool_make_link'), this.makeHyperlink.bind(this))
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
-    $click($id('tool_reorient'), this.reorientPath.bind(this))
     $click($id('tool_flip_h'), this.clickFlipHorizontal.bind(this))
     $click($id('tool_flip_v'), this.clickFlipVertical.bind(this))
     $click($id('tool_group_elements'), this.clickGroup.bind(this))
@@ -1498,9 +1473,7 @@ class TopPanel {
       'line_y1',
       'line_y2',
       'image_width',
-      'image_height',
-      'path_node_x',
-      'path_node_y'
+      'image_height'
     ].forEach(attrId =>
       $id(attrId).addEventListener('change', this.attrChanger.bind(this))
     )

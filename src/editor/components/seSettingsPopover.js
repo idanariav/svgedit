@@ -4,7 +4,7 @@ import { fetchSvgEl } from './svgIconLoader.js'
 /**
  * @class SeSettingsPopover
  * Base class for the toolbar-button-plus-popover settings components
- * (se-grid-settings, se-repeat-settings, se-motion-settings,
+ * (se-grid-settings, se-repeat-settings,
  * se-offset-settings, se-taper-settings,
  * se-canvas-settings, se-smooth-path-settings). Provides the shared
  * shadow-DOM wiring, icon loading, open/close/toggle lifecycle,
@@ -74,7 +74,7 @@ export class SeSettingsPopover extends HTMLElement {
 
   /**
    * `src` is set via `setAttribute` after `document.createElement` by several
-   * callers (ext-repeat, ext-motion-lines, ext-taper), which happens after
+   * callers (ext-repeat, ext-taper), which happens after
    * the constructor has already run — reading `getAttribute('src')` there
    * missed it entirely, leaving the trigger button iconless. Observing the
    * attribute catches both that case and the markup-attribute case (e.g.

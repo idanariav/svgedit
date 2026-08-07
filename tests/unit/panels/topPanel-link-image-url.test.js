@@ -31,7 +31,7 @@ const buildContainer = () => {
   })
 
   const classIds = [
-    'tool_topath', 'tool_reorient', 'tool_smooth_path', 'tool_stroke_to_path',
+    'tool_topath', 'tool_smooth_path', 'tool_stroke_to_path',
     'tool_path_offset', 'g_panel', 'a_panel', 'container_panel', 'tool_make_link',
     'tool_make_link_multi', 'image_url'
   ]

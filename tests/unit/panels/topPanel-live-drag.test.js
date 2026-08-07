@@ -16,7 +16,7 @@ const buildContainer = () => {
   const container = document.createElement('div')
   const ids = [
     'se-cmenu_canvas', 'angle', 'blur', 'selected_x', 'selected_y',
-    'tool_reorient', 'tool_topath', 'tool_smooth_path', 'tool_stroke_to_path',
+    'tool_topath', 'tool_smooth_path', 'tool_stroke_to_path',
     'tool_path_offset', 'clipmask_feather', 'rect_width', 'rect_height',
     'rect_rx', 'circle_cx', 'circle_cy', 'circle_r', 'circle_arc',
     'ellipse_cx', 'ellipse_cy', 'ellipse_rx', 'ellipse_ry', 'ellipse_arc',

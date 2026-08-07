@@ -184,7 +184,6 @@ describe('PathActions', () => {
         'toSelectMode',
         'addSubPath',
         'select',
-        'reorient',
         'clear',
         'resetOrientation',
         'zoomChange',
@@ -470,26 +469,6 @@ describe('PathActions', () => {
       pathActionsMethod.select(pathElement)
 
       expect(svgCanvas.setCurrentMode).toHaveBeenCalledWith('pathedit')
-    })
-  })
-
-  describe('reorient', () => {
-    it('should reorient a rotated path', () => {
-      pathElement.setAttribute('transform', 'rotate(45 50 50)')
-      svgCanvas.getSelectedElements.mockReturnValue([pathElement])
-
-      pathActionsMethod.reorient()
-
-      expect(svgCanvas.addCommandToHistory).toHaveBeenCalled()
-      expect(svgCanvas.call).toHaveBeenCalledWith('changed', [pathElement])
-    })
-
-    it('should do nothing if no element selected', () => {
-      svgCanvas.getSelectedElements.mockReturnValue([])
-
-      pathActionsMethod.reorient()
-
-      expect(svgCanvas.addCommandToHistory).not.toHaveBeenCalled()
     })
   })
 

@@ -28,7 +28,7 @@ const buildContainer = () => {
   const container = document.createElement('div')
   const ids = [
     'se-cmenu_canvas', 'angle', 'blur', 'selected_x', 'selected_y',
-    'tool_reorient', 'image_width', 'image_height', 'tool_image_crop',
+    'image_width', 'image_height', 'tool_image_crop',
     'tool_undo', 'tool_redo', 'selLayerNames', 'arrange_switch'
   ]
   ids.forEach((id) => {

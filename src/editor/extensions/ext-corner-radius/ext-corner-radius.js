@@ -42,7 +42,7 @@ export default {
 
     /**
      * Drop stale rounding attributes when the element's `d` was rewritten
-     * outside the rounding pipeline (pathedit, reorient, …).
+     * outside the rounding pipeline (pathedit, …).
      * @param {Element} elem
      * @returns {boolean} true when the element still carries valid rounding.
      */

@@ -221,7 +221,6 @@ export default class ConfigObj {
       'ext-corner-radius',
       'ext-repeat',
       'ext-mirror',
-      'ext-motion-lines',
       'ext-taper',
       'ext-text-path',
       'ext-shape-builder',

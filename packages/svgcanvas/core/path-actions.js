@@ -8,13 +8,12 @@
 
 import { NS } from './namespaces.js'
 import { shortFloat } from './units.js'
-import { ChangeElementCommand, BatchCommand } from './history.js'
 import {
   transformPoint, snapToAngle, rectsIntersect,
   transformListToTransform, getTransformList
 } from './math.js'
 import {
-  assignAttributes, getRotationAngle
+  assignAttributes
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 
@@ -971,37 +970,6 @@ class PathActions {
     } else {
       this.#currentPath = target
     }
-  }
-
-  /**
-    * @fires module:svgcanvas.SvgCanvas#event:changed
-    * @returns {void}
-    */
-  reorient () {
-    const elem = svgCanvas.getSelectedElements()[0]
-    if (!elem) { return }
-    if (elem.nodeName !== 'path') { return }
-    const angl = getRotationAngle(elem)
-    if (angl === 0) { return }
-
-    const batchCmd = new BatchCommand('Reorient path')
-    const changes = {
-      d: elem.getAttribute('d'),
-      transform: elem.getAttribute('transform')
-    }
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, changes))
-    svgCanvas.clearSelection()
-    this.resetOrientation(elem)
-
-    svgCanvas.addCommandToHistory(batchCmd)
-
-    // Set matrix to null
-    svgCanvas.getPath_(elem).show(false).matrix = null
-
-    this.clear()
-
-    svgCanvas.addToSelection([elem], true)
-    svgCanvas.call('changed', svgCanvas.getSelectedElements())
   }
 
   /**

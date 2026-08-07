@@ -82,7 +82,7 @@ independent radii). Setting arc back to 360 converts the `<path>` back to a
 `<circle>` when `rx === ry`, else to an `<ellipse>`. Legacy arc paths that stored
 a single `data-r` are read with `data-r` as a fallback for both radii.
 
-**No x/y panel** (position expressed via cx/cy). **No "reorient path"** button (arc paths are not freehand paths). Can still be rotated/styled like any other element.
+**No x/y panel** (position expressed via cx/cy). Can still be rotated/styled like any other element.
 
 ---
 
@@ -170,8 +170,6 @@ In **pathedit mode** (double-click a path), the `.path_node_panel` appears:
 
 | Control ID | `data-attr` | Notes |
 |------------|-------------|-------|
-| `path_node_x` | `x` | Selected node X coordinate |
-| `path_node_y` | `y` | Selected node Y coordinate |
 | `seg_type` | — | Segment type: Straight (value=4) / Curve (value=6) |
 | `tool_node_link` | — | Link/unlink bezier control handles |
 | `tool_node_clone` | — | Clone the selected node |

@@ -72,8 +72,7 @@ svgedit/
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
-│   │   ├── ext-mirror/            # Mirror drawing mode + live linked symmetry
-│   │   ├── ext-motion-lines/      # Parametric motion-line (speed-line) generator
+│   │   ├── ext-mirror/            # Mirror drawing mode (API-only) + live linked symmetry
 │   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
 │   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
 │   │   ├── ext-shape-builder/     # Interactive paint-to-merge region mode

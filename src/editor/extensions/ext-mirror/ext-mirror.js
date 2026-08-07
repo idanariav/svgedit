@@ -276,8 +276,6 @@ export default {
 
     const setAxis = (ax) => {
       axis = ax
-      const btn = $id('tool_mirror')
-      if (btn) btn.pressed = !!axis
       drawAxis()
     }
 
@@ -326,16 +324,6 @@ export default {
         handleLinkedElems(opts.elems, true)
       },
       callback () {
-        const buttonTemplate = document.createElement('template')
-        buttonTemplate.innerHTML = `
-          <se-button id="tool_mirror" title="${name}:toggle" src="mirror.svg"></se-button>
-        `
-        $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
-        $id('tool_mirror').addEventListener('click', (e) => {
-          const want = e.shiftKey ? 'h' : 'v'
-          setAxis(axis === want ? null : want)
-        })
-
         // Mirror-copy buttons in the Object (single) + Combine (multi) rows.
         const title = svgEditor.i18next.t(`${name}:mirrorSelection`)
         const addBtn = (id, anchor, after) => {

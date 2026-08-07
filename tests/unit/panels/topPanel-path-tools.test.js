@@ -15,10 +15,9 @@ const { hasVisibleStroke } = await import('../../../packages/svgcanvas/core/path
 
 /**
  * Builds the minimal DOM `TopPanel#updateContextPanel()` touches for a
- * single rect/path selection. `tool_topath`, `tool_reorient`,
- * `tool_smooth_path` and `tool_stroke_to_path` carry both an `id` and a
- * matching class, mirroring RightPanel.html — `hideTool`/`displayTool`
- * select elements by class, not id.
+ * single rect/path selection. `tool_topath`, `tool_smooth_path` and
+ * `tool_stroke_to_path` carry both an `id` and a matching class, mirroring
+ * RightPanel.html — `hideTool`/`displayTool` select elements by class, not id.
  */
 const buildContainer = () => {
   const container = document.createElement('div')
@@ -32,7 +31,7 @@ const buildContainer = () => {
     container.append(el)
   })
 
-  const classIds = ['tool_topath', 'tool_reorient', 'tool_smooth_path', 'tool_stroke_to_path', 'tool_path_offset']
+  const classIds = ['tool_topath', 'tool_smooth_path', 'tool_stroke_to_path', 'tool_path_offset']
   classIds.forEach((id) => {
     const el = document.createElement('div')
     el.setAttribute('id', id)
@@ -87,7 +86,7 @@ const createSvgEl = (tagName, attrs = {}) => {
 }
 
 describe('TopPanel: path/stroke tool visibility', () => {
-  it('shows tool_topath and hides tool_reorient/tool_smooth_path for a rect', () => {
+  it('shows tool_topath and hides tool_smooth_path for a rect', () => {
     const container = buildContainer()
     const rect = createSvgEl('rect', { x: 0, y: 0, width: 50, height: 50 })
     const topPanel = makeTopPanel(container, rect)
@@ -95,12 +94,11 @@ describe('TopPanel: path/stroke tool visibility', () => {
     topPanel.updateContextPanel()
 
     expect(container.querySelector('.tool_topath').style.display).not.toBe('none')
-    expect(container.querySelector('.tool_reorient').style.display).toBe('none')
     expect(container.querySelector('.tool_smooth_path').style.display).toBe('none')
     expect(container.querySelector('.tool_path_offset').style.display).toBe('none')
   })
 
-  it('hides tool_topath and shows tool_reorient/tool_path_offset for a path', () => {
+  it('hides tool_topath and shows tool_path_offset for a path', () => {
     const container = buildContainer()
     const path = createSvgEl('path', { d: 'M0,0 L10,10' })
     const topPanel = makeTopPanel(container, path)
@@ -108,7 +106,6 @@ describe('TopPanel: path/stroke tool visibility', () => {
     topPanel.updateContextPanel()
 
     expect(container.querySelector('.tool_topath').style.display).toBe('none')
-    expect(container.querySelector('.tool_reorient').style.display).not.toBe('none')
     expect(container.querySelector('.tool_path_offset').style.display).not.toBe('none')
   })
 
@@ -202,37 +199,5 @@ describe('TopPanel: path/stroke tool visibility', () => {
     topPanel.updateContextPanel()
 
     expect(container.querySelector('.tool_stroke_to_path').style.display).not.toBe('none')
-  })
-
-  it('disables tool_reorient for a path with no rotation', () => {
-    const container = buildContainer()
-    const path = createSvgEl('path', { d: 'M0,0 L10,10' })
-    const topPanel = makeTopPanel(container, path, { angle: 0 })
-
-    topPanel.updateContextPanel()
-
-    expect(container.querySelector('[id="tool_reorient"]').disabled).toBe(true)
-  })
-
-  it('enables tool_reorient for a rotated path', () => {
-    const container = buildContainer()
-    const path = createSvgEl('path', { d: 'M0,0 L10,10', transform: 'rotate(30)' })
-    const topPanel = makeTopPanel(container, path, { angle: 30 })
-
-    topPanel.updateContextPanel()
-
-    expect(container.querySelector('[id="tool_reorient"]').disabled).toBe(false)
-  })
-
-  it('changeRotationAngle sets tool_reorient.disabled via the property, not classList', () => {
-    const container = buildContainer()
-    const path = createSvgEl('path', { d: 'M0,0 L10,10' })
-    const topPanel = makeTopPanel(container, path)
-
-    topPanel.changeRotationAngle({ target: { value: '0' } })
-    expect(container.querySelector('[id="tool_reorient"]').disabled).toBe(true)
-
-    topPanel.changeRotationAngle({ target: { value: '45' } })
-    expect(container.querySelector('[id="tool_reorient"]').disabled).toBe(false)
   })
 })
