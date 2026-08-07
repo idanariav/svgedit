@@ -79,6 +79,13 @@ export const init = (canvas) => {
       // when actually starting a drag operation.
     } else if (!rightClick) {
       svgCanvas.clearSelection()
+      // Clicking empty canvas deselects, same as clicking a different element
+      // above (which does call this). Without it, pathActions' double-click
+      // arming state (#currentPath) keeps pointing at whatever path was
+      // selected before this click — a later click on an unrelated path can
+      // then match it by stale identity and jump straight into that unrelated
+      // path's node-edit mode instead of arming for a real double-click.
+      svgCanvas.pathActions.clear()
       svgCanvas.setCurrentMode('multiselect')
       if (!svgCanvas.getRubberBox()) {
         svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())

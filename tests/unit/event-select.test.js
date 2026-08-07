@@ -24,6 +24,43 @@ const makeCtx = (overrides) => ({
   ...overrides
 })
 
+describe('event-select down() background click', () => {
+  // Regression guard: clicking a *different element* clears pathActions'
+  // double-click arming state (svgCanvas.pathActions.clear()), but clicking
+  // empty canvas didn't — leaving that state pointing at whatever path was
+  // selected before, so a later click on an unrelated path could jump
+  // straight into that stale path's node-edit mode. See path-actions.js
+  // select()/#currentPath and the "select-mode epilogue" comment in event.js.
+  const makeBgCanvas = () => {
+    const calls = []
+    const rubberBox = { setAttribute: () => {} }
+    return {
+      calls,
+      setStarted: () => {},
+      setCurrentResizeMode: () => {},
+      clearSelection: () => calls.push('clearSelection'),
+      pathActions: { clear: () => calls.push('pathActions.clear') },
+      setCurrentMode: () => calls.push('setCurrentMode'),
+      getRubberBox: () => rubberBox,
+      selectorManager: { getRubberBandBox: () => rubberBox },
+      getRStartX: () => 0,
+      getRStartY: () => 0,
+      setRStartX: () => {},
+      setRStartY: () => {}
+    }
+  }
+
+  it('clears pathActions arming state, same as clicking a different element', () => {
+    const svgCanvas = makeBgCanvas()
+    const { down } = eventSelectInit(svgCanvas)
+    const svgRoot = {}
+
+    down({ shiftKey: false }, makeCtx({ mouseTarget: svgRoot, svgRoot, selectedElements: [] }))
+
+    expect(svgCanvas.calls).toContain('pathActions.clear')
+  })
+})
+
 describe('event-select move() drag threshold', () => {
   // Regression guard: the accidental-move threshold used to be a flat 4
   // *content* units, but dx/dy are unzoomed content-space deltas, so the
