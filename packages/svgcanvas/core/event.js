@@ -521,6 +521,20 @@ const isStrokeOnlyElement = (el) => {
   return cs.stroke !== 'none' && parseFloat(cs.strokeWidth) > 0
 }
 
+// <line>/<polyline> never enclose an area, and a <path> only does if closed
+// (ends in Z/z) — used by the bbox-as-move-handle block below to tell an
+// open line/curve (whose bbox is mostly empty space with nothing conceptually
+// "inside" it) apart from a closed shape (a hollow rect/circle, or a filled
+// shape's rotated-corner gaps) whose whole bbox is a reasonable grab target.
+const OPEN_LINE_TAGS = new Set(['line', 'polyline'])
+const isOpenPathElement = (el) => {
+  if (!el) { return false }
+  if (OPEN_LINE_TAGS.has(el.tagName)) { return true }
+  if (el.tagName !== 'path') { return false }
+  const d = (el.getAttribute('d') || '').trim()
+  return d !== '' && !/[Zz]\s*$/.test(d)
+}
+
 /**
  * Proximity hit-testing for fill-less elements. When a plain native hit-test
  * lands on a filled shape (or empty canvas), look in a small screen-space radius
@@ -722,12 +736,18 @@ const mouseDownEventImpl = (evt) => {
   // This makes fill-less shapes (whose interior is empty canvas) and the gaps
   // between a shape and its bbox edges grab-able. A click on a real element is
   // left alone so you can still select something inside the bbox.
+  // Skipped for a single open line/path: it has no enclosed interior, so its
+  // bbox is mostly empty space with nothing conceptually "inside" it —
+  // treating the whole rectangle as the shape meant a click clearly away from
+  // a diagonal line's actual stroke (but still inside its bbox corner-to-corner)
+  // silently kept it selected instead of deselecting. A near-miss on the
+  // stroke itself is still caught above by findStrokeElementNearPoint.
   if (
     svgCanvas.getCurrentMode() === 'select' && !rightClick && !evt.shiftKey &&
     mouseTarget === svgRoot
   ) {
     const sel = selectedElements.filter(Boolean)
-    if (sel.length) {
+    if (sel.length && !(sel.length === 1 && isOpenPathElement(sel[0]))) {
       const bb = svgCanvas.getStrokedBBoxDefaultVisible(sel)
       if (bb && x >= bb.x && x <= bb.x + bb.width && y >= bb.y && y <= bb.y + bb.height) {
         mouseTarget = sel[0]

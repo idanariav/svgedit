@@ -301,6 +301,130 @@ describe('event', () => {
     }).not.toThrow()
   })
 
+  describe('mouseDownEvent() bbox-as-move-handle on background click', () => {
+    // A selected shape with a sparse bounding box (e.g. a diagonal line) has
+    // lots of empty space inside its own bbox. event.js's "treat the whole
+    // selection bbox as a move handle" block (added in 7847992d, to make
+    // fill-less shapes grabbable in that empty space) used to redirect a
+    // background click landing anywhere in that rectangle back onto the
+    // selected shape -- even far from its visible stroke. That was
+    // indistinguishable, from the user's point of view, from "I clicked away
+    // and the shape stayed selected". Fixed by excluding open paths/lines
+    // (isOpenPathElement) from the redirect, since they have no enclosed
+    // interior for "click inside the bbox" to plausibly mean "click the
+    // shape" -- unlike a closed/hollow shape, which keeps the original
+    // behavior below.
+    /** @type {ReturnType<typeof document.elementsFromPoint>|undefined} */
+    let origElementsFromPoint
+
+    beforeEach(() => {
+      canvas.getStrokedBBoxDefaultVisible = () => ({ x: 0, y: 0, width: 100, height: 100 })
+      // Native hit-test result for a click that lands on genuinely empty
+      // canvas (nothing painted there) -- same as clicking well away from
+      // the shape's own stroke/fill.
+      canvas.getMouseTarget = () => svgcontent
+      canvas.addToSelection = () => {}
+      canvas.getCurrentDrawing = () => ({ getCurrentLayer: () => contentGroup })
+      canvas.getAllLayersMode = () => false
+
+      // jsdom doesn't implement elementsFromPoint at all; real Chromium
+      // (Obsidian's renderer) does. Stub it to "nothing else is under the
+      // cursor either", isolating this block from the separate
+      // already-selected-under-cursor / stroke-proximity upgrades (both of
+      // which also call elementsFromPoint) so only the bbox check is here.
+      origElementsFromPoint = document.elementsFromPoint
+      document.elementsFromPoint = () => []
+
+      canvas.setCurrentMode('select')
+      canvas.setStarted(false)
+      canvas.getRStartX = () => 0
+      canvas.getRStartY = () => 0
+    })
+
+    afterEach(() => {
+      document.elementsFromPoint = origElementsFromPoint
+    })
+
+    it('deselects an open path/line when the click lands inside its bbox but away from its stroke', () => {
+      const diagonalLine = /** @type {SVGPathElement} */ (createSvgElement('path'))
+      diagonalLine.setAttribute('d', 'M0,0 L100,100')
+      contentGroup.append(diagonalLine)
+      canvas.getSelectedElements = () => [diagonalLine]
+
+      const clearCalls = []
+      canvas.clearSelection = () => clearCalls.push('clearSelection')
+
+      // (90, 10): inside the line's 100x100 bbox, ~127 content units from the
+      // nearest point on the diagonal -- nowhere near the visible stroke.
+      canvas.mouseDownEvent({
+        clientX: 90,
+        clientY: 10,
+        button: 0,
+        altKey: false,
+        shiftKey: false,
+        preventDefault () {},
+        target: svgcontent
+      })
+
+      expect(clearCalls).toEqual(['clearSelection'])
+      expect(canvas.getCurrentMode()).toBe('multiselect')
+    })
+
+    it('keeps a closed shape (hollow rect) selected when the click lands inside its bbox', () => {
+      const hollowRect = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+      hollowRect.setAttribute('width', '100')
+      hollowRect.setAttribute('height', '100')
+      hollowRect.setAttribute('fill', 'none')
+      contentGroup.append(hollowRect)
+      canvas.getSelectedElements = () => [hollowRect]
+
+      const clearCalls = []
+      canvas.clearSelection = () => clearCalls.push('clearSelection')
+      const modes = []
+      const originalSetCurrentMode = canvas.setCurrentMode
+      canvas.setCurrentMode = (mode) => { modes.push(mode); originalSetCurrentMode.call(canvas, mode) }
+
+      // (50, 50): dead center of the hollow rect -- unpainted (fill:none) but
+      // still conceptually "inside the shape the user drew".
+      canvas.mouseDownEvent({
+        clientX: 50,
+        clientY: 50,
+        button: 0,
+        altKey: false,
+        shiftKey: false,
+        preventDefault () {},
+        target: svgcontent
+      })
+
+      expect(clearCalls).toEqual([])
+      expect(modes).not.toContain('multiselect')
+    })
+
+    it('deselects normally when the click lands outside the bbox entirely', () => {
+      const diagonalLine = /** @type {SVGPathElement} */ (createSvgElement('path'))
+      diagonalLine.setAttribute('d', 'M0,0 L100,100')
+      contentGroup.append(diagonalLine)
+      canvas.getSelectedElements = () => [diagonalLine]
+
+      const clearCalls = []
+      canvas.clearSelection = () => clearCalls.push('clearSelection')
+
+      // (200, 200): outside the line's 100x100 bbox.
+      canvas.mouseDownEvent({
+        clientX: 200,
+        clientY: 200,
+        button: 0,
+        altKey: false,
+        shiftKey: false,
+        preventDefault () {},
+        target: svgcontent
+      })
+
+      expect(clearCalls).toEqual(['clearSelection'])
+      expect(canvas.getCurrentMode()).toBe('multiselect')
+    })
+  })
+
   it('mouseUpEvent() switches to select mode (not pathedit) after finishing a path', async () => {
     const pathElement = /** @type {SVGPathElement} */ (createSvgElement('path'))
     pathElement.setAttribute('d', 'M0,0 L10,10')
