@@ -12,10 +12,13 @@ describe('draw context', () => {
   let editGroup
   let sibling
 
+  let clearSelectionCalls
   const canvas = {
     getDataStorage: () => dataStorage,
     getSvgContent: () => svgContent,
-    clearSelection: () => {},
+    clearSelection: () => {
+      clearSelectionCalls.push(true)
+    },
     call: (event, arg) => {
       calls.push({ event, arg })
     },
@@ -31,6 +34,7 @@ describe('draw context', () => {
 
     currentGroup = null
     calls.length = 0
+    clearSelectionCalls = []
     document.body.innerHTML = ''
 
     svgContent = document.createElementNS(NS_SVG, 'svg')
@@ -71,5 +75,27 @@ describe('draw context', () => {
     expect(sibling.getAttribute('opacity')).toBe('inherit')
     expect(sibling.getAttribute('style')).toBe('pointer-events: inherit')
     expect(dataStorage.has(sibling, 'orig_opac')).toBe(false)
+  })
+
+  it('still clears the selection on leaveContext when the group has no siblings to re-enable', () => {
+    // A group that is the only element on its layer has nothing to dim on
+    // entry (setContext only disables siblings *outside* the group), so
+    // disabledElems stays empty. leaveContext() must not use that as a proxy
+    // for "was a context active" -- the selection made inside the group
+    // still needs clearing, or its selector box is left stuck on-screen
+    // after clicking away.
+    sibling.remove()
+
+    canvas.setContext(editGroup)
+
+    expect(currentGroup).toBe(editGroup)
+    expect(calls[0]).toStrictEqual({ event: 'contextset', arg: editGroup })
+
+    clearSelectionCalls.length = 0
+    canvas.leaveContext()
+
+    expect(currentGroup).toBe(null)
+    expect(clearSelectionCalls).toStrictEqual([true])
+    expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })
   })
 })

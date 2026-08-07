@@ -1348,6 +1348,15 @@ export const init = canvas => {
       dataStorage.remove(elem, 'orig_opac')
     }
     disabledElems = []
+  }
+  // Gate on whether we were actually in a context, not on whether there
+  // happened to be any siblings to re-enable above: a group that is the only
+  // element on its layer (nothing else to dim on entry) leaves disabledElems
+  // empty, but the selection made inside it still needs clearing here. Tying
+  // this to `len` instead left the previously-selected child's selector box
+  // (and its stale entry in selectedElements) stuck on-screen after clicking
+  // away, since it was never released.
+  if (svgCanvas.getCurrentGroup()) {
     svgCanvas.clearSelection(true)
     svgCanvas.call('contextset', null)
   }
