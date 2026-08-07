@@ -34,6 +34,13 @@ template.innerHTML = `
   :host([option]:not([src])) .icon-wrap {
     display: none;
   }
+  :host([option][src]) [aria-label="option"] {
+    width: auto;
+    justify-content: flex-start;
+    padding: 0 10px 0 6px;
+    gap: 8px;
+    white-space: nowrap;
+  }
   .selected {
     background: var(--accent-soft, #E8EFFF) !important;
     color: var(--accent, #2962FF) !important;
@@ -53,9 +60,13 @@ template.innerHTML = `
     height: 22px;
     display: block;
   }
+  .label-text {
+    pointer-events: none;
+  }
   </style>
   <div aria-label="option">
     <span class="icon-wrap"></span>
+    <span class="label-text"></span>
     <slot></slot>
   </div>
 `
@@ -69,6 +80,7 @@ export class SeListItem extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$menuitem = this._shadowRoot.querySelector('[aria-label=option]')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
+    this.$labelText = this._shadowRoot.querySelector('.label-text')
     this.imgPath = svgEditor.configObj.curConfig.imgPath
     this.$menuitem.addEventListener('mousedown', e => {
       this.$menuitem.dispatchEvent(new CustomEvent('selectedindexchange', {
@@ -88,7 +100,7 @@ export class SeListItem extends HTMLElement {
     switch (name) {
       case 'option':
         this.$menuitem.setAttribute('option', newValue)
-        this.$menuitem.textContent = t(newValue)
+        this.$labelText.textContent = t(newValue)
         break
       case 'src':
         this._loadIcon(newValue)

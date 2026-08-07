@@ -198,12 +198,6 @@ const GROUP_BY_ID = {
   tool_add_subpath: 'Path',
   tool_topath: 'Path',
   tool_stroke_to_path: 'Path',
-  // Boolean ops
-  tool_bool_union: 'Boolean',
-  tool_bool_intersect: 'Boolean',
-  tool_bool_subtract: 'Boolean',
-  tool_bool_exclude: 'Boolean',
-  tool_bool_divide: 'Boolean',
   // Clip / mask
   tool_clip_set: 'Mask',
   tool_mask_set: 'Mask',

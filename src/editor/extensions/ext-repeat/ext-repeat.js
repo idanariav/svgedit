@@ -291,7 +291,7 @@ export default {
           $id('tool_path_offset').after(btn)
         }
         // Multi-selection Combine section.
-        const multi = $id('tool_bool_union')?.parentElement
+        const multi = $id('tool_clip_set')?.parentElement
         if (multi) {
           const btn = document.createElement('se-repeat-settings')
           btn.id = 'tool_repeat_multi'

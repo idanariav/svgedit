@@ -338,7 +338,7 @@ export default {
           btn.addEventListener('click', mirrorSelection)
         }
         addBtn('tool_mirror_copy', $id('tool_repeat') || $id('tool_path_offset'), true)
-        addBtn('tool_mirror_copy_multi', $id('tool_repeat_multi')?.parentElement || $id('tool_bool_union')?.parentElement, false)
+        addBtn('tool_mirror_copy_multi', $id('tool_repeat_multi')?.parentElement || $id('tool_clip_set')?.parentElement, false)
       }
     }
   }

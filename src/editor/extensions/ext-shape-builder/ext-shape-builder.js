@@ -259,7 +259,7 @@ export default {
         return { keep: true, element: null, started: false }
       },
       callback () {
-        const combine = $id('tool_bool_union')?.parentElement
+        const combine = $id('tool_clip_set')?.parentElement
         if (!combine) return
         const btn = document.createElement('se-button')
         btn.id = 'tool_shape_builder'

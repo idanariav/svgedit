@@ -796,6 +796,32 @@ class TopPanel {
   }
 
   /**
+   * Dispatches the `tool_bool_ops` dropdown's `change` event to the matching
+   * boolean-op handler, mirroring `clickArrange`'s value-switch pattern.
+   * @param {CustomEvent} evt
+   * @returns {void}
+   */
+  clickBoolOps (evt) {
+    switch (evt.detail.value) {
+      case 'union':
+        this.clickBoolUnion()
+        break
+      case 'intersect':
+        this.clickBoolIntersect()
+        break
+      case 'subtract':
+        this.clickBoolSubtract()
+        break
+      case 'exclude':
+        this.clickBoolExclude()
+        break
+      case 'divide':
+        this.clickBoolDivide()
+        break
+    }
+  }
+
+  /**
    * @returns {void}
    */
   clickBoolUnion () {
@@ -1367,11 +1393,7 @@ class TopPanel {
     $click($id('tool_flip_h'), this.clickFlipHorizontal.bind(this))
     $click($id('tool_flip_v'), this.clickFlipVertical.bind(this))
     $click($id('tool_group_elements'), this.clickGroup.bind(this))
-    $click($id('tool_bool_union'), this.clickBoolUnion.bind(this))
-    $click($id('tool_bool_intersect'), this.clickBoolIntersect.bind(this))
-    $click($id('tool_bool_subtract'), this.clickBoolSubtract.bind(this))
-    $click($id('tool_bool_exclude'), this.clickBoolExclude.bind(this))
-    $click($id('tool_bool_divide'), this.clickBoolDivide.bind(this))
+    $id('tool_bool_ops').addEventListener('change', this.clickBoolOps.bind(this))
     $click($id('tool_clip_set'), this.clickClipSet.bind(this))
     $click($id('tool_mask_set'), this.clickMaskSet.bind(this))
     $click($id('clipmask_release'), this.clickClipRelease.bind(this))

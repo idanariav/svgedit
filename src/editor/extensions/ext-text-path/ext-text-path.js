@@ -60,7 +60,7 @@ export default {
       },
       callback () {
         // Attach button — Combine section (multi-selection tray).
-        const combine = $id('tool_bool_union')?.parentElement
+        const combine = $id('tool_clip_set')?.parentElement
         if (combine) {
           const btn = document.createElement('se-button')
           btn.id = 'tool_text_on_path'

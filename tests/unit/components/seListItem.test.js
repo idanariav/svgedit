@@ -22,7 +22,17 @@ describe('se-list-item', () => {
     const el = mountElement('se-list-item')
     el.setAttribute('option', 'my_option')
     expect(el.$menuitem.getAttribute('option')).toBe('my_option')
-    expect(el.$menuitem.textContent).toBe('my_option')
+    expect(el.$menuitem.textContent.trim()).toBe('my_option')
+  })
+
+  it('keeps the icon when both src and option are set (icon + text label row)', async () => {
+    const el = mountElement('se-list-item')
+    el.setAttribute('src', 'icon.svg')
+    el.setAttribute('option', 'my_option')
+    await Promise.resolve()
+    expect(el.$iconWrap).toBeTruthy()
+    expect(el._shadowRoot.contains(el.$iconWrap)).toBe(true)
+    expect(el.$menuitem.querySelector('.label-text').textContent).toBe('my_option')
   })
 
   it('reflects the title attribute translated onto the inner element', () => {

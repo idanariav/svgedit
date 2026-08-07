@@ -469,6 +469,46 @@ class Editor extends EditorStartup {
         }
       },
       {
+        id: 'bool_union',
+        group: 'Boolean',
+        label: 'tools.bool_union_label',
+        fn: () => {
+          this.topPanel.clickBoolUnion()
+        }
+      },
+      {
+        id: 'bool_intersect',
+        group: 'Boolean',
+        label: 'tools.bool_intersect_label',
+        fn: () => {
+          this.topPanel.clickBoolIntersect()
+        }
+      },
+      {
+        id: 'bool_subtract',
+        group: 'Boolean',
+        label: 'tools.bool_subtract_label',
+        fn: () => {
+          this.topPanel.clickBoolSubtract()
+        }
+      },
+      {
+        id: 'bool_exclude',
+        group: 'Boolean',
+        label: 'tools.bool_exclude_label',
+        fn: () => {
+          this.topPanel.clickBoolExclude()
+        }
+      },
+      {
+        id: 'bool_divide',
+        group: 'Boolean',
+        label: 'tools.bool_divide_label',
+        fn: () => {
+          this.topPanel.clickBoolDivide()
+        }
+      },
+      {
         id: 'add_to_shape_library',
         group: 'Edit',
         label: 'hotkeys.add_to_shape_library',
