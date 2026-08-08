@@ -8,7 +8,7 @@
 
 import paper from 'paper/dist/paper-core.js'
 import { getPathDFromElement } from './path-utils.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getMatrix, getTransformList, transformListToTransform } from './math.js'
 
 // Element types that cannot be converted to a path for paper.js operations.
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
@@ -43,6 +43,44 @@ export const getStyleAttrs = (elem, extraAttrs = []) => {
     if (val !== null) styleAttrs[attr] = val
   }
   return styleAttrs
+}
+
+/**
+ * Uniform-equivalent scale factor of an SVGMatrix, via its determinant
+ * (`sqrt(|det|)`) — for a non-uniform scale this is a geometric-mean
+ * approximation, matching the convention already used for radii elsewhere
+ * (see `corner-radius.js`/`taper-stroke.js`).
+ *
+ * Every consumer of `svgToPaper` (boolean ops, cutter, path-offset,
+ * shape-builder) bakes a source element's own `transform` into the rebuilt
+ * paper.js geometry, but a style value like stroke-width isn't a coordinate
+ * — it isn't affected by that bake, and each of those tools places its
+ * result with no compensating transform for the source's own scale. Left
+ * uncorrected, a source with e.g. `transform="scale(0.3)"` (a shrunk
+ * arrowhead-tip, say) comes back full-size with its original, now hugely
+ * disproportionate stroke-width. This helper (plus `getOwnTransformScale`/
+ * `scaleStrokeWidth` below) is how each tool corrects for it.
+ * @param {SVGMatrix} m
+ * @returns {number}
+ */
+export const getMatrixScale = (m) => Math.sqrt(Math.abs((m.a * m.d) - (m.b * m.c)))
+
+/**
+ * `getMatrixScale` of `elem`'s own transform (excludes ancestors).
+ * @param {Element} elem
+ * @returns {number}
+ */
+export const getOwnTransformScale = (elem) => getMatrixScale(getMatrix(elem))
+
+/**
+ * Scale `styleAttrs['stroke-width']` in place by `scale`, if present.
+ * No-op when there's no stroke-width or the scale is ~1 (the common case).
+ * @param {Object} styleAttrs
+ * @param {number} scale
+ */
+export const scaleStrokeWidth = (styleAttrs, scale) => {
+  if (!styleAttrs['stroke-width'] || !(scale > 0) || scale === 1) return
+  styleAttrs['stroke-width'] = String(parseFloat(styleAttrs['stroke-width']) * scale)
 }
 
 // Scratch element reused to run path data through pathActions.convertPath

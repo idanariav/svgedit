@@ -14,7 +14,7 @@
  */
 
 import ClipperLib from 'clipper-lib'
-import { getPaperScope, getStyleAttrs, svgToPaper } from './paper-utils.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper } from './paper-utils.js'
 import { warn } from '../common/logger.js'
 
 // Clipper works on integers — scale coordinates up, then back down.
@@ -154,7 +154,12 @@ const offsetPath = (delta) => {
   const d = solutionToD(solution)
   if (!d) return
 
-  replaceWithPath(elem, d, getStyleAttrs(elem))
+  // elem's own transform is baked into `item`'s geometry above with no
+  // compensating transform on the result, so stroke-width needs the same
+  // correction (see getMatrixScale's doc comment in paper-utils.js).
+  const styleAttrs = getStyleAttrs(elem)
+  scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem))
+  replaceWithPath(elem, d, styleAttrs)
 }
 
 /**
@@ -207,7 +212,11 @@ const strokeToPath = () => {
   const polys = itemToPolys(item)
   if (!polys.length) return
 
-  const halfWidth = (strokeWidth / 2) * SCALE
+  // elem's own transform is baked into `item`'s (flattened) geometry above,
+  // so the offset band width has to scale with it too, or the outline comes
+  // out disproportionately thick/thin relative to the already-scaled polys
+  // (see getMatrixScale's doc comment in paper-utils.js).
+  const halfWidth = (strokeWidth * getOwnTransformScale(elem) / 2) * SCALE
   const joinType = joinTypeFor(elem)
   const openEnd = openEndTypeFor(elem)
 

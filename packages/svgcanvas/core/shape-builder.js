@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs as getBaseStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs as getBaseStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { warn } from '../common/logger.js'
 
 // Ignore slivers below this absolute area (user units²).
@@ -163,6 +163,11 @@ export const init = (canvas) => {
     const makePath = (d, styleSrc, place) => {
       const path = doc.createElementNS(NSSVG, 'path')
       const style = getStyleAttrs(styleSrc)
+      // styleSrc's own transform is baked into the source item's geometry
+      // (elemToItem/svgToPaper) with no compensating transform on the
+      // result, so stroke-width needs the same correction (see
+      // getMatrixScale's doc comment in paper-utils.js).
+      scaleStrokeWidth(style, getOwnTransformScale(styleSrc))
       for (const [k, v] of Object.entries(style)) path.setAttribute(k, v)
       path.setAttribute('d', toAbsolutePathData(d, svgCanvas))
       path.id = svgCanvas.getNextId()

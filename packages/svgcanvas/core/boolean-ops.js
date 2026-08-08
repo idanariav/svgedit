@@ -10,7 +10,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.js'
 import { warn } from '../common/logger.js'
 
@@ -77,6 +77,26 @@ export const getStyleSourceElem = elem => {
   if (!CONTAINER_TAGS.has(elem.tagName)) return elem
   const leaves = collectLeaves(elem)
   return leaves[0] || elem
+}
+
+/**
+ * Scale factor to correct `styleElem`'s stroke-width by, matching every
+ * transform `getElemAsPath` bakes into the result geometry with no
+ * compensating transform on the output (see `getMatrixScale`'s doc comment):
+ * `styleElem`'s own transform, plus — when `elem` is a group, so `styleElem`
+ * is one of its leaves — every transform between the two: the intermediate
+ * ancestors and `elem`'s own transform.
+ * @param {Element} styleElem - Element `getStyleAttrs` read stroke-width from.
+ * @param {Element} elem - The (possibly a group) element passed to `getElemAsPath`.
+ * @returns {number}
+ */
+export const getBakedStyleScale = (styleElem, elem) => {
+  let scale = getOwnTransformScale(styleElem)
+  if (CONTAINER_TAGS.has(elem.tagName)) {
+    scale *= getMatrixScale(getAncestorMatrix(styleElem, elem))
+    scale *= getOwnTransformScale(elem)
+  }
+  return scale
 }
 
 /**
@@ -186,7 +206,9 @@ const performBooleanOp = (type, canvas) => {
   }
 
   // Inherit style from the bottom element (its bottom-most leaf, if a group)
-  const styleAttrs = getStyleAttrs(getStyleSourceElem(bottomElem))
+  const styleSourceElem = getStyleSourceElem(bottomElem)
+  const styleAttrs = getStyleAttrs(styleSourceElem)
+  scaleStrokeWidth(styleAttrs, getBakedStyleScale(styleSourceElem, bottomElem))
 
   // Build undo/redo batch command
   const { BatchCommand, RemoveElementCommand } = canvas.history

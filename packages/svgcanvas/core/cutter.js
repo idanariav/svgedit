@@ -25,7 +25,7 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getMatrixToContent, isIdentity } from './math.js'
 import { warn } from '../common/logger.js'
 
@@ -322,6 +322,10 @@ const cutShapePath = (scope, shapePath, points) => {
 const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)
+  // Only elem's own transform needs correcting (see getOwnTransformScale):
+  // ancestor <g> transforms are cancelled below by `compensation`, so they
+  // keep applying — and scaling the stroke — through the DOM as usual.
+  scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem))
   const elemNext = elem.nextSibling
   const elemParent = elem.parentNode
 
