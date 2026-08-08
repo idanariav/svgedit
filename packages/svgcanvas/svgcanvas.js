@@ -71,6 +71,7 @@ import { init as textPathInit } from './core/text-path.js'
 import { init as shapeBuilderInit } from './core/shape-builder.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
 import { init as cutterInit } from './core/cutter.js'
+import { init as segmentInit } from './core/segment.js'
 import { init as imageCropInit } from './core/image-crop.js'
 import {
   getClosest,
@@ -332,6 +333,7 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'shapeBuilder', shapeBuilderInit, initGuardRegistry)
     runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)
     runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
+    runGuardedInit(this, 'segment', segmentInit, initGuardRegistry)
     runGuardedInit(this, 'imageCrop', imageCropInit, initGuardRegistry)
 
     /**

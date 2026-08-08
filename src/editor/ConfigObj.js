@@ -222,6 +222,7 @@ export default class ConfigObj {
       'ext-repeat',
       'ext-mirror',
       'ext-taper',
+      'ext-segment',
       'ext-text-path',
       'ext-shape-builder',
       'ext-markers',
