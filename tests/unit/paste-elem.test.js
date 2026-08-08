@@ -133,6 +133,50 @@ describe('paste-elem', () => {
     expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize)
   })
 
+  it('cascades repeated pastes at the same point like the Duplicate button', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-cascade', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.copySelectedElements()
+
+    svgCanvas.pasteElements('point', 100, 100)
+    const first = svgCanvas.getSelectedElements()[0].getBBox()
+
+    svgCanvas.pasteElements('point', 100, 100)
+    const second = svgCanvas.getSelectedElements()[0].getBBox()
+
+    svgCanvas.pasteElements('point', 100, 100)
+    const third = svgCanvas.getSelectedElements()[0].getBBox()
+
+    expect(second.x).toBeCloseTo(first.x + 20)
+    expect(second.y).toBeCloseTo(first.y + 20)
+    expect(third.x).toBeCloseTo(first.x + 40)
+    expect(third.y).toBeCloseTo(first.y + 40)
+  })
+
+  it('resets the paste cascade after a fresh copy or a paste-in-place', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-reset', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.copySelectedElements()
+
+    svgCanvas.pasteElements('point', 100, 100)
+    const first = svgCanvas.getSelectedElements()[0].getBBox()
+
+    svgCanvas.pasteElements('in_place')
+    svgCanvas.copySelectedElements()
+
+    svgCanvas.pasteElements('point', 100, 100)
+    const afterReset = svgCanvas.getSelectedElements()[0].getBBox()
+
+    expect(afterReset.x).toBeCloseTo(first.x)
+    expect(afterReset.y).toBeCloseTo(first.y)
+  })
+
   it('pastes an explicit data array instead of the stale sessionStorage snapshot', () => {
     const rect = svgCanvas.addSVGElementsFromJson({
       element: 'rect',

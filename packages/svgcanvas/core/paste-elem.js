@@ -15,6 +15,14 @@ const {
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  // Tracks consecutive pastes of the same clipboard content so repeated
+  // Ctrl/Cmd+V presses cascade down-right like the Duplicate button instead
+  // of stacking every copy on the exact same point. Reset whenever the
+  // clipboard content changes (a fresh copy) or a "paste in place" occurs.
+  let lastPasteSignature = null
+  let pasteStreak = 0
+  const PASTE_STREAK_STEP = 20
+
 /**
 * @function module:svgcanvas.SvgCanvas#pasteElements
 * @param {"in_place"|"point"|void} type
@@ -40,6 +48,16 @@ export const init = (canvas) => {
     }
   }
   if (!Array.isArray(clipb) || !clipb.length) return
+
+  const signature = JSON.stringify(clipb)
+  if (type === 'in_place') {
+    pasteStreak = 0
+  } else if (signature === lastPasteSignature) {
+    pasteStreak++
+  } else {
+    pasteStreak = 0
+  }
+  lastPasteSignature = signature
 
   const pasted = []
   const batchCmd = new BatchCommand('Paste elements')
@@ -167,8 +185,9 @@ export const init = (canvas) => {
 
     const bbox = svgCanvas.getStrokedBBoxDefaultVisible(pasted)
     if (bbox && Number.isFinite(ctrX) && Number.isFinite(ctrY)) {
-      const cx = ctrX - (bbox.x + bbox.width / 2)
-      const cy = ctrY - (bbox.y + bbox.height / 2)
+      const streakOffset = pasteStreak * PASTE_STREAK_STEP
+      const cx = ctrX - (bbox.x + bbox.width / 2) + streakOffset
+      const cy = ctrY - (bbox.y + bbox.height / 2) + streakOffset
       const dx = []
       const dy = []
 
