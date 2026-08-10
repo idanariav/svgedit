@@ -444,6 +444,77 @@ class SvgCanvas extends EventTarget {
     return this.state.selection.currentGroup
   }
 
+  /**
+   * Read-only snapshot of internal visibility state that can desync from the
+   * live model (selection box shown for a deselected element, path-node
+   * grips left visible from a previously-edited path, group-context sibling
+   * dimming not cleared on leaveContext()). Each subsection marks `stale`
+   * entries — state that is currently rendered but no longer backed by the
+   * model — for a debug-mode UI to surface. No side effects.
+   * @returns {object}
+   */
+  getDebugSnapshot () {
+    const selectedIds = new Set(this.getSelectedElements().filter(Boolean).map((el) => el.id))
+
+    const selectors = (this.selectorManager?.selectors ?? []).map((sel) => {
+      const elemId = sel.selectedElement?.id ?? null
+      const display = sel.selectorGroup?.getAttribute('display') ?? null
+      return {
+        id: sel.id,
+        elemId,
+        locked: sel.locked,
+        display,
+        stale: display === 'inline' && (!elemId || !selectedIds.has(elemId))
+      }
+    })
+
+    const currentGroup = this.getCurrentGroup()
+    const disabledElems = (this.getDisabledElems?.() ?? []).map((el) => ({
+      id: el.id,
+      opacity: el.getAttribute('opacity')
+    }))
+
+    // getPathObj() is only (re)pointed at a path by toEditMode() — a path
+    // still being freehand-drawn (mode 'path', not yet committed) never goes
+    // through toEditMode, so it wouldn't otherwise be recognized as "current"
+    // here and every grip placed for it so far would misreport as orphaned.
+    // getDrawnPath() covers exactly that gap; prefer it while a draw is live.
+    const drawnPath = this.getDrawnPath?.()
+    const path = this.getPathObj?.()
+    const pathElemId = drawnPath?.id ?? path?.elem?.id ?? null
+    const segCount = drawnPath
+      ? drawnPath.pathSegList.numberOfItems
+      : (path?.segs?.length ?? 0)
+    const gripContainer = this.getElement('pathpointgrip_container')
+    const GRIP_ID_RE = /^(pathpointgrip|ctrlpointgrip|ctrlLine|segline)_(\d+)(?:c[12])?$/
+    const grips = []
+    if (gripContainer) {
+      for (const el of gripContainer.children) {
+        const m = el.id.match(GRIP_ID_RE)
+        if (!m) continue
+        const index = Number(m[2])
+        const display = el.getAttribute('display')
+        grips.push({
+          id: el.id,
+          kind: m[1],
+          index,
+          display,
+          stale: display === 'inline' && (!pathElemId || index >= segCount)
+        })
+      }
+    }
+
+    return {
+      selection: { selectedIds: [...selectedIds], selectors },
+      groupContext: {
+        currentGroupId: currentGroup?.id ?? null,
+        disabledElems,
+        stale: !currentGroup && disabledElems.length > 0
+      },
+      pathEditing: { pathElemId, segCount, grips }
+    }
+  }
+
   getBaseUnit () {
     return this.curConfig.baseUnit
   }

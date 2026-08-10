@@ -1449,4 +1449,8 @@ export const init = canvas => {
   svgCanvas.mergeAllLayers = mergeAllLayers
   svgCanvas.leaveContext = leaveContext
   svgCanvas.setContext = setContext
+  // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
+  // exposes the per-instance `disabledElems` closure var without letting
+  // callers mutate it directly.
+  svgCanvas.getDisabledElems = () => disabledElems.slice()
 }

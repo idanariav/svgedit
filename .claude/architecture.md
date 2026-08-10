@@ -133,6 +133,8 @@ src/editor/index.html
                     ├── import all components + dialogs  // register custom elements
                     ├── render editorTemplate        // insert full DOM structure
                     ├── new SvgCanvas(svgcanvasEl)   // create drawing engine
+                    ├── create <se-debug-overlay>    // dev-mode inspector, off by
+                    │                                //   default — see file-map.md
                     ├── leftPanel.init()
                     ├── bottomPanel.init()
                     ├── rightPanel.init()      // builds the tabbed side panel

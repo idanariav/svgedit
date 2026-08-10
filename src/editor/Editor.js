@@ -646,8 +646,24 @@ class Editor extends EditorStartup {
     // (modeChange, key handling, resize, …). Without this they leak onto
     // document/window per editor instance and keep firing on a dead editor.
     this.listenerAbort?.abort()
+    if (this.debugOverlay) this.debugOverlay.active = false
     this.svgCanvas?.destroy()
     clearActiveEditor(this)
+  }
+
+  /**
+   * Show/hide the dev-mode "visibility" inspector (see
+   * `components/seDebugOverlay.js`): a panel that polls
+   * `svgCanvas.getDebugSnapshot()` and flags selection boxes, path-node
+   * grips, or group-context dimming that are still rendered but no longer
+   * backed by the model. Off by default; a host (e.g. the Obsidian plugin's
+   * "Debug logging" setting) calls this to enable it, mirroring the
+   * `applyTheme(theme, rootEl)` host-toggle pattern in `themeUtil.js`.
+   * @param {boolean} enabled
+   * @returns {void}
+   */
+  setDebugOverlay (enabled) {
+    if (this.debugOverlay) this.debugOverlay.active = Boolean(enabled)
   }
 
   // parents() https://stackoverflow.com/a/12981248
