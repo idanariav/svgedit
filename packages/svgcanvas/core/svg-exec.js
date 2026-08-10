@@ -686,9 +686,14 @@ export const init = canvas => {
       // identify layers
       svgCanvas.identifyLayers()
 
-      // Give ID for any visible layer children missing one
+      // Give ID for any visible layer children missing one. Skip <defs> —
+      // it holds silhouette clones (e.g. a clipPath/mask's clone made by
+      // clip-mask.js's setClip()/setMask()) that are deliberately left
+      // id-less since nothing is meant to reference them; this pass isn't
+      // meant to reach into <defs> at all.
       const chiElems = content.children
       Array.prototype.forEach.call(chiElems, chiElem => {
+        if (chiElem.tagName === 'defs') return
         const visElems = chiElem.querySelectorAll(svgCanvas.getVisElems())
         Array.prototype.forEach.call(visElems, elem => {
           if (!elem.id) {

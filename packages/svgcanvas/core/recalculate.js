@@ -5,11 +5,7 @@
  */
 
 import { convertToNum } from './units.js'
-import { NS } from './namespaces.js'
-import {
-  getRotationAngle,
-  getHref
-} from './dom-utils.js'
+import { getRotationAngle } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
 import {
@@ -161,10 +157,18 @@ export const init = canvas => {
   }
 
   if (
-    (selected.getAttribute?.('clip-path')) &&
-    selected.querySelector?.('[clip-path]')
+    selected.getAttribute?.('clip-path') ||
+    selected.getAttribute?.('mask') ||
+    selected.querySelector?.('[clip-path], [mask]')
   ) {
-    // Keep transforms when clip-paths are present to avoid mutating defs.
+    // Keep transforms when a clip-path/mask is present rather than baking the
+    // move/resize into x/y/width/height. The clip/mask silhouette in <defs>
+    // is static (drawn in the parent's coordinate system); a `transform` on
+    // the referencing element carries the clip along with it rigidly, but
+    // baking into geometry leaves the silhouette behind — the element then
+    // renders entirely outside its own (now stale) clip window and
+    // disappears, while still being selectable since selection uses the
+    // element's own geometry, not the clipped paint region.
     return null
   }
   const svgroot = svgCanvas.getSvgRoot()
@@ -297,531 +301,220 @@ export const init = canvas => {
 
   let oldcenter, newcenter
 
-  // Handle group elements ('g' or 'a')
-  if ((selected.tagName === 'g' && !gsvg) || selected.tagName === 'a') {
-    const box = getBBox(selected)
+  // Non-group elements
 
-    oldcenter = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    newcenter = transformPoint(
-      box.x + box.width / 2,
-      box.y + box.height / 2,
-      transformListToTransform(tlist).matrix
-    )
+  // Get the bounding box of the element
+  const box = getBBox(selected)
 
-    const gangle = getRotationAngle(selected)
-    if (gangle) {
-      const a = gangle * Math.PI / 180
-      const s = Math.abs(a) > (1.0e-10) ? Math.sin(a) / (1 - Math.cos(a)) : 2 / a
-      for (let i = 0; i < tlist.numberOfItems; ++i) {
-        const xform = tlist.getItem(i)
-        if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-          const rm = xform.matrix
-          oldcenter.y = (s * rm.e + rm.f) / 2
-          oldcenter.x = (rm.e - s * rm.f) / 2
-          tlist.removeItem(i)
-          break
-        }
-      }
-    }
+  // Handle elements without a bounding box (e.g., <defs>, <metadata>)
+  if (!box && selected.tagName !== 'path') return null
 
-    const N = tlist.numberOfItems
-    let tx = 0
-    let ty = 0
-    let operation = 0
+  let m // Transformation matrix
 
-    let firstM
-    if (N) {
-      firstM = tlist.getItem(0).matrix
-    }
+  // Adjust for elements with x and y attributes
+  let x = 0
+  let y = 0
+  if (['use', 'image', 'text', 'tspan'].includes(selected.tagName)) {
+    x = convertToNum('x', selected.getAttribute('x') || '0')
+    y = convertToNum('y', selected.getAttribute('y') || '0')
+  }
 
-    let oldStartTransform
-    if (
-      N >= 3 &&
-      tlist.getItem(N - 2).type === SVGTransform.SVG_TRANSFORM_SCALE &&
-      tlist.getItem(N - 3).type === SVGTransform.SVG_TRANSFORM_TRANSLATE &&
-      tlist.getItem(N - 1).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
-    ) {
-      operation = 3 // scale
-
-      const tm = tlist.getItem(N - 3).matrix
-      const sm = tlist.getItem(N - 2).matrix
-      const tmn = tlist.getItem(N - 1).matrix
-
-      const children = selected.childNodes
-      let c = children.length
-      while (c--) {
-        const child = children.item(c)
-        if (child.nodeType !== 1) continue
-
-        const childTlist = getTransformList(child)
-        if (!childTlist) continue
-
-        const m = transformListToTransform(childTlist).matrix
-
-        const angle = getRotationAngle(child)
-        oldStartTransform = svgCanvas.getStartTransform()
-        svgCanvas.setStartTransform(child.getAttribute('transform'))
-
-        if (angle || hasMatrixTransform(childTlist)) {
-          const e2t = svgroot.createSVGTransform()
-          e2t.setMatrix(matrixMultiply(tm, sm, tmn, m))
-          childTlist.clear()
-          childTlist.appendItem(e2t)
-        } else {
-          const t2n = matrixMultiply(m.inverse(), tmn, m)
-          const t2 = svgroot.createSVGMatrix()
-          t2.e = -t2n.e
-          t2.f = -t2n.f
-
-          const s2 = matrixMultiply(
-            t2.inverse(),
-            m.inverse(),
-            tm,
-            sm,
-            tmn,
-            m,
-            t2n.inverse()
-          )
-
-          const translateOrigin = svgroot.createSVGTransform()
-          const scale = svgroot.createSVGTransform()
-          const translateBack = svgroot.createSVGTransform()
-          translateOrigin.setTranslate(t2n.e, t2n.f)
-          scale.setScale(s2.a, s2.d)
-          translateBack.setTranslate(t2.e, t2.f)
-          childTlist.appendItem(translateBack)
-          childTlist.appendItem(scale)
-          childTlist.appendItem(translateOrigin)
-        }
-
-        const recalculatedDimensions = recalculateDimensions(child)
-        if (recalculatedDimensions) {
-          batchCmd.addSubCommand(recalculatedDimensions)
-        }
-        svgCanvas.setStartTransform(oldStartTransform)
-      }
-
-      tlist.removeItem(N - 1)
-      tlist.removeItem(N - 2)
-      tlist.removeItem(N - 3)
-    } else if (N >= 3 && tlist.getItem(N - 1).type === SVGTransform.SVG_TRANSFORM_MATRIX) {
-      operation = 3 // scale (matrix imposition)
-      const m = transformListToTransform(tlist).matrix
-      const e2t = svgroot.createSVGTransform()
-      e2t.setMatrix(m)
-      tlist.clear()
-      tlist.appendItem(e2t)
-    } else if (
-      (N === 1 ||
-        (N > 1 && tlist.getItem(1).type !== SVGTransform.SVG_TRANSFORM_SCALE)) &&
-      tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
-    ) {
-      operation = 2 // translate
-      const tM = transformListToTransform(tlist).matrix
-      tlist.removeItem(0)
-      const mInv = transformListToTransform(tlist).matrix.inverse()
-      const m2 = matrixMultiply(mInv, tM)
-
-      tx = m2.e
-      ty = m2.f
-
-      if (tx !== 0 || ty !== 0) {
-        const selectedClipPath = selected.getAttribute?.('clip-path')
-        if (selectedClipPath) {
-          updateClipPath(selectedClipPath, tx, ty, selected)
-        }
-
-        const children = selected.childNodes
-        let c = children.length
-
-        const clipPathsDone = []
-        while (c--) {
-          const child = children.item(c)
-          if (child.nodeType !== 1) continue
-
-          const clipPathAttr = child.getAttribute('clip-path')
-          if (clipPathAttr && !clipPathsDone.includes(clipPathAttr)) {
-            const updatedAttr = updateClipPath(clipPathAttr, tx, ty, child)
-            clipPathsDone.push(updatedAttr || clipPathAttr)
-          }
-
-          const childTlist = getTransformList(child)
-          if (!childTlist) continue
-
-          oldStartTransform = svgCanvas.getStartTransform()
-          svgCanvas.setStartTransform(child.getAttribute('transform'))
-
-          const newxlate = svgroot.createSVGTransform()
-          newxlate.setTranslate(tx, ty)
-          if (childTlist.numberOfItems) {
-            childTlist.insertItemBefore(newxlate, 0)
-          } else {
-            childTlist.appendItem(newxlate)
-          }
-          const recalculatedDimensions = recalculateDimensions(child)
-          if (recalculatedDimensions) {
-            batchCmd.addSubCommand(recalculatedDimensions)
-          }
-
-          const uses = selected.getElementsByTagNameNS(NS.SVG, 'use')
-          const href = `#${child.id}`
-          let u = uses.length
-          while (u--) {
-            const useElem = uses.item(u)
-            if (href === getHref(useElem)) {
-              const usexlate = svgroot.createSVGTransform()
-              usexlate.setTranslate(-tx, -ty)
-              const useTlist = getTransformList(useElem)
-              useTlist?.insertItemBefore(usexlate, 0)
-              const useRecalc = recalculateDimensions(useElem)
-              if (useRecalc) {
-                batchCmd.addSubCommand(useRecalc)
-              }
-            }
-          }
-
-          svgCanvas.setStartTransform(oldStartTransform)
-        }
-      }
-    } else if (
-      N === 1 &&
-      tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX &&
-      !gangle
-    ) {
-      operation = 1
-      const m = tlist.getItem(0).matrix
-      const children = selected.childNodes
-      let c = children.length
-      while (c--) {
-        const child = children.item(c)
-        if (child.nodeType !== 1) continue
-
-        const childTlist = getTransformList(child)
-        if (!childTlist) continue
-
-        oldStartTransform = svgCanvas.getStartTransform()
-        svgCanvas.setStartTransform(child.getAttribute('transform'))
-
-        const em = matrixMultiply(m, transformListToTransform(childTlist).matrix)
-        const e2m = svgroot.createSVGTransform()
-        e2m.setMatrix(em)
-        childTlist.clear()
-        childTlist.appendItem(e2m)
-
-        const recalculatedDimensions = recalculateDimensions(child)
-        if (recalculatedDimensions) {
-          batchCmd.addSubCommand(recalculatedDimensions)
-        }
-        svgCanvas.setStartTransform(oldStartTransform)
-
-        // A missing stroke-width means the SVG initial value of 1, not 0 —
-        // cleanupElement strips the attribute at that value.
-        const swAttr = child.getAttribute('stroke-width')
-        const sw = swAttr === null ? 1 : Number(swAttr)
-        if (child.getAttribute('stroke') !== 'none' && !Number.isNaN(sw)) {
-          const avg = (Math.abs(em.a) + Math.abs(em.d)) / 2
-          child.setAttribute('stroke-width', sw * avg)
-        }
-      }
-      tlist.clear()
+  // Handle rotation transformations
+  const angle = getRotationAngle(selected)
+  if (angle) {
+    if (selected.localName === 'image') {
+      // Use the center of the image as the rotation center
+      const xAttr = convertToNum('x', selected.getAttribute('x') || '0')
+      const yAttr = convertToNum('y', selected.getAttribute('y') || '0')
+      const width = convertToNum('width', selected.getAttribute('width') || '0')
+      const height = convertToNum('height', selected.getAttribute('height') || '0')
+      const cx = xAttr + width / 2
+      const cy = yAttr + height / 2
+      oldcenter = { x: cx, y: cy }
+      const transform = transformListToTransform(tlist).matrix
+      newcenter = transformPoint(cx, cy, transform)
+    } else if (selected.localName === 'text') {
+      // Use the center of the bounding box as the rotation center for text
+      const cx = box.x + box.width / 2
+      const cy = box.y + box.height / 2
+      oldcenter = { x: cx, y: cy }
+      newcenter = transformPoint(cx, cy, transformListToTransform(tlist).matrix)
     } else {
-      if (gangle) {
-        const newRot = svgroot.createSVGTransform()
-        newRot.setRotate(gangle, newcenter.x, newcenter.y)
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(newRot, 0)
-        } else {
-          tlist.appendItem(newRot)
-        }
+      // Include x and y in the rotation center calculation for other elements
+      oldcenter = {
+        x: box.x + box.width / 2 + x,
+        y: box.y + box.height / 2 + y
       }
-      if (tlist.numberOfItems === 0) {
-        selected.removeAttribute('transform')
-      }
-      return null
+      newcenter = transformPoint(
+        box.x + box.width / 2 + x,
+        box.y + box.height / 2 + y,
+        transformListToTransform(tlist).matrix
+      )
     }
 
-    if (operation === 2) {
-      if (gangle) {
+    // Remove the rotation transform from the list
+    for (let i = 0; i < tlist.numberOfItems; ++i) {
+      const xform = tlist.getItem(i)
+      if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
+        tlist.removeItem(i)
+        break
+      }
+    }
+  }
+
+  const N = tlist.numberOfItems
+
+  // Handle specific transformation cases
+  if (
+    N >= 3 &&
+    tlist.getItem(N - 3).type === SVGTransform.SVG_TRANSFORM_TRANSLATE &&
+    tlist.getItem(N - 2).type === SVGTransform.SVG_TRANSFORM_SCALE &&
+    tlist.getItem(N - 1).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
+  ) {
+    // Scaling operation
+    m = transformListToTransform(tlist, N - 3, N - 1).matrix
+    tlist.removeItem(N - 1)
+    tlist.removeItem(N - 2)
+    tlist.removeItem(N - 3)
+
+    // Handle remapping for scaling
+    if (selected.tagName === 'use') {
+      // For '<use>' elements, adjust the transform attribute directly
+      const mExisting = transformListToTransform(
+        getTransformList(selected)
+      ).matrix
+      const mNew = matrixMultiply(mExisting, m)
+
+      // Clear the transform list and set the new transform
+      tlist.clear()
+      const newTransform = svgroot.createSVGTransform()
+      newTransform.setMatrix(mNew)
+      tlist.appendItem(newTransform)
+    } else {
+      // Remap other elements normally
+      svgCanvas.remapElement(selected, changes, m)
+    }
+
+    // Restore rotation if needed
+    if (angle) {
+      const matrix = transformListToTransform(tlist).matrix
+      const oldRotation = svgroot.createSVGTransform()
+      oldRotation.setRotate(angle, oldcenter.x, oldcenter.y)
+      const oldRotMatrix = oldRotation.matrix
+      const newRotation = svgroot.createSVGTransform()
+      newRotation.setRotate(angle, newcenter.x, newcenter.y)
+      const newRotInvMatrix = newRotation.matrix.inverse()
+      const matrixInv = matrix.inverse()
+      const extraTransform = matrixMultiply(
+        matrixInv,
+        newRotInvMatrix,
+        oldRotMatrix,
+        matrix
+      )
+
+      // Remap the element with the extra transformation
+      svgCanvas.remapElement(selected, changes, extraTransform)
+
+      if (tlist.numberOfItems) {
+        tlist.insertItemBefore(newRotation, 0)
+      } else {
+        tlist.appendItem(newRotation)
+      }
+    }
+  } else if (
+    (N === 1 ||
+      (N > 1 &&
+        tlist.getItem(1).type !== SVGTransform.SVG_TRANSFORM_SCALE)) &&
+    tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
+  ) {
+    // Translation operation
+    const oldTranslate = tlist.getItem(0).matrix
+    const remainingTransforms = transformListToTransform(tlist, 1).matrix
+    const remainingTransformsInv = remainingTransforms.inverse()
+    m = matrixMultiply(
+      remainingTransformsInv,
+      oldTranslate,
+      remainingTransforms
+    )
+    tlist.removeItem(0)
+
+    // Handle remapping for translation
+    if (selected.tagName === 'use') {
+      // For '<use>' elements, adjust the transform attribute directly
+      const mExisting = transformListToTransform(
+        getTransformList(selected)
+      ).matrix
+      const mNew = matrixMultiply(mExisting, m)
+
+      // Clear the transform list and set the new transform
+      tlist.clear()
+      const newTransform = svgroot.createSVGTransform()
+      newTransform.setMatrix(mNew)
+      tlist.appendItem(newTransform)
+    } else {
+      // Remap other elements normally
+      svgCanvas.remapElement(selected, changes, m)
+    }
+
+    // Restore rotation if needed
+    if (angle) {
+      if (!hasMatrixTransform(tlist)) {
         newcenter = {
-          x: oldcenter.x + firstM.e,
-          y: oldcenter.y + firstM.f
-        }
-
-        const newRot = svgroot.createSVGTransform()
-        newRot.setRotate(gangle, newcenter.x, newcenter.y)
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(newRot, 0)
-        } else {
-          tlist.appendItem(newRot)
+          x: oldcenter.x + m.e,
+          y: oldcenter.y + m.f
         }
       }
-    } else if (operation === 3) {
-      const m = transformListToTransform(tlist).matrix
-      const roldt = svgroot.createSVGTransform()
-      roldt.setRotate(gangle, oldcenter.x, oldcenter.y)
-      const rold = roldt.matrix
-      const rnew = svgroot.createSVGTransform()
-      rnew.setRotate(gangle, newcenter.x, newcenter.y)
-      const rnewInv = rnew.matrix.inverse()
-      const mInv = m.inverse()
-      const extrat = matrixMultiply(mInv, rnewInv, rold, m)
-
-      tx = extrat.e
-      ty = extrat.f
-
-      if (tx !== 0 || ty !== 0) {
-        const children = selected.childNodes
-        let c = children.length
-        while (c--) {
-          const child = children.item(c)
-          if (child.nodeType !== 1) continue
-
-          const childTlist = getTransformList(child)
-          if (!childTlist) continue
-
-          oldStartTransform = svgCanvas.getStartTransform()
-          svgCanvas.setStartTransform(child.getAttribute('transform'))
-
-          const newxlate = svgroot.createSVGTransform()
-          newxlate.setTranslate(tx, ty)
-          if (childTlist.numberOfItems) {
-            childTlist.insertItemBefore(newxlate, 0)
-          } else {
-            childTlist.appendItem(newxlate)
-          }
-
-          const recalculatedDimensions = recalculateDimensions(child)
-          if (recalculatedDimensions) {
-            batchCmd.addSubCommand(recalculatedDimensions)
-          }
-          svgCanvas.setStartTransform(oldStartTransform)
-        }
+      const newRot = svgroot.createSVGTransform()
+      newRot.setRotate(angle, newcenter.x, newcenter.y)
+      if (tlist.numberOfItems) {
+        tlist.insertItemBefore(newRot, 0)
+      } else {
+        tlist.appendItem(newRot)
       }
+    }
+  } else if (
+    N === 1 &&
+    tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX &&
+    !angle
+  ) {
+    // Matrix operation
+    m = transformListToTransform(tlist).matrix
+    tlist.clear()
 
-      if (gangle) {
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(rnew, 0)
-        } else {
-          tlist.appendItem(rnew)
-        }
-      }
+    // Handle remapping for matrix operation
+    if (selected.tagName === 'use') {
+      // For '<use>' elements, adjust the transform attribute directly
+      const mExisting = transformListToTransform(
+        getTransformList(selected)
+      ).matrix
+      const mNew = matrixMultiply(mExisting, m)
+
+      // Clear the transform list and set the new transform
+      tlist.clear()
+      const newTransform = svgroot.createSVGTransform()
+      newTransform.setMatrix(mNew)
+      tlist.appendItem(newTransform)
+    } else {
+      // Remap other elements normally
+      svgCanvas.remapElement(selected, changes, m)
     }
   } else {
-    // Non-group elements
-
-    // Get the bounding box of the element
-    const box = getBBox(selected)
-
-    // Handle elements without a bounding box (e.g., <defs>, <metadata>)
-    if (!box && selected.tagName !== 'path') return null
-
-    let m // Transformation matrix
-
-    // Adjust for elements with x and y attributes
-    let x = 0
-    let y = 0
-    if (['use', 'image', 'text', 'tspan'].includes(selected.tagName)) {
-      x = convertToNum('x', selected.getAttribute('x') || '0')
-      y = convertToNum('y', selected.getAttribute('y') || '0')
-    }
-
-    // Handle rotation transformations
-    const angle = getRotationAngle(selected)
+    // Rotation or other transformations
     if (angle) {
-      if (selected.localName === 'image') {
-        // Use the center of the image as the rotation center
-        const xAttr = convertToNum('x', selected.getAttribute('x') || '0')
-        const yAttr = convertToNum('y', selected.getAttribute('y') || '0')
-        const width = convertToNum('width', selected.getAttribute('width') || '0')
-        const height = convertToNum('height', selected.getAttribute('height') || '0')
-        const cx = xAttr + width / 2
-        const cy = yAttr + height / 2
-        oldcenter = { x: cx, y: cy }
-        const transform = transformListToTransform(tlist).matrix
-        newcenter = transformPoint(cx, cy, transform)
-      } else if (selected.localName === 'text') {
-        // Use the center of the bounding box as the rotation center for text
-        const cx = box.x + box.width / 2
-        const cy = box.y + box.height / 2
-        oldcenter = { x: cx, y: cy }
-        newcenter = transformPoint(cx, cy, transformListToTransform(tlist).matrix)
-      } else {
-        // Include x and y in the rotation center calculation for other elements
-        oldcenter = {
-          x: box.x + box.width / 2 + x,
-          y: box.y + box.height / 2 + y
-        }
-        newcenter = transformPoint(
-          box.x + box.width / 2 + x,
-          box.y + box.height / 2 + y,
-          transformListToTransform(tlist).matrix
-        )
-      }
+      const newRot = svgroot.createSVGTransform()
+      newRot.setRotate(angle, newcenter.x, newcenter.y)
 
-      // Remove the rotation transform from the list
-      for (let i = 0; i < tlist.numberOfItems; ++i) {
-        const xform = tlist.getItem(i)
-        if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-          tlist.removeItem(i)
-          break
-        }
+      if (tlist.numberOfItems) {
+        tlist.insertItemBefore(newRot, 0)
+      } else {
+        tlist.appendItem(newRot)
       }
     }
-
-    const N = tlist.numberOfItems
-
-    // Handle specific transformation cases
-    if (
-      N >= 3 &&
-      tlist.getItem(N - 3).type === SVGTransform.SVG_TRANSFORM_TRANSLATE &&
-      tlist.getItem(N - 2).type === SVGTransform.SVG_TRANSFORM_SCALE &&
-      tlist.getItem(N - 1).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
-    ) {
-      // Scaling operation
-      m = transformListToTransform(tlist, N - 3, N - 1).matrix
-      tlist.removeItem(N - 1)
-      tlist.removeItem(N - 2)
-      tlist.removeItem(N - 3)
-
-      // Handle remapping for scaling
-      if (selected.tagName === 'use') {
-        // For '<use>' elements, adjust the transform attribute directly
-        const mExisting = transformListToTransform(
-          getTransformList(selected)
-        ).matrix
-        const mNew = matrixMultiply(mExisting, m)
-
-        // Clear the transform list and set the new transform
-        tlist.clear()
-        const newTransform = svgroot.createSVGTransform()
-        newTransform.setMatrix(mNew)
-        tlist.appendItem(newTransform)
-      } else {
-        // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
-      }
-
-      // Restore rotation if needed
-      if (angle) {
-        const matrix = transformListToTransform(tlist).matrix
-        const oldRotation = svgroot.createSVGTransform()
-        oldRotation.setRotate(angle, oldcenter.x, oldcenter.y)
-        const oldRotMatrix = oldRotation.matrix
-        const newRotation = svgroot.createSVGTransform()
-        newRotation.setRotate(angle, newcenter.x, newcenter.y)
-        const newRotInvMatrix = newRotation.matrix.inverse()
-        const matrixInv = matrix.inverse()
-        const extraTransform = matrixMultiply(
-          matrixInv,
-          newRotInvMatrix,
-          oldRotMatrix,
-          matrix
-        )
-
-        // Remap the element with the extra transformation
-        svgCanvas.remapElement(selected, changes, extraTransform)
-
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(newRotation, 0)
-        } else {
-          tlist.appendItem(newRotation)
-        }
-      }
-    } else if (
-      (N === 1 ||
-        (N > 1 &&
-          tlist.getItem(1).type !== SVGTransform.SVG_TRANSFORM_SCALE)) &&
-      tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_TRANSLATE
-    ) {
-      // Translation operation
-      const oldTranslate = tlist.getItem(0).matrix
-      const remainingTransforms = transformListToTransform(tlist, 1).matrix
-      const remainingTransformsInv = remainingTransforms.inverse()
-      m = matrixMultiply(
-        remainingTransformsInv,
-        oldTranslate,
-        remainingTransforms
-      )
-      tlist.removeItem(0)
-
-      // Handle remapping for translation
-      if (selected.tagName === 'use') {
-        // For '<use>' elements, adjust the transform attribute directly
-        const mExisting = transformListToTransform(
-          getTransformList(selected)
-        ).matrix
-        const mNew = matrixMultiply(mExisting, m)
-
-        // Clear the transform list and set the new transform
-        tlist.clear()
-        const newTransform = svgroot.createSVGTransform()
-        newTransform.setMatrix(mNew)
-        tlist.appendItem(newTransform)
-      } else {
-        // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
-      }
-
-      // Restore rotation if needed
-      if (angle) {
-        if (!hasMatrixTransform(tlist)) {
-          newcenter = {
-            x: oldcenter.x + m.e,
-            y: oldcenter.y + m.f
-          }
-        }
-        const newRot = svgroot.createSVGTransform()
-        newRot.setRotate(angle, newcenter.x, newcenter.y)
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(newRot, 0)
-        } else {
-          tlist.appendItem(newRot)
-        }
-      }
-    } else if (
-      N === 1 &&
-      tlist.getItem(0).type === SVGTransform.SVG_TRANSFORM_MATRIX &&
-      !angle
-    ) {
-      // Matrix operation
-      m = transformListToTransform(tlist).matrix
-      tlist.clear()
-
-      // Handle remapping for matrix operation
-      if (selected.tagName === 'use') {
-        // For '<use>' elements, adjust the transform attribute directly
-        const mExisting = transformListToTransform(
-          getTransformList(selected)
-        ).matrix
-        const mNew = matrixMultiply(mExisting, m)
-
-        // Clear the transform list and set the new transform
-        tlist.clear()
-        const newTransform = svgroot.createSVGTransform()
-        newTransform.setMatrix(mNew)
-        tlist.appendItem(newTransform)
-      } else {
-        // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
-      }
-    } else {
-      // Rotation or other transformations
-      if (angle) {
-        const newRot = svgroot.createSVGTransform()
-        newRot.setRotate(angle, newcenter.x, newcenter.y)
-
-        if (tlist.numberOfItems) {
-          tlist.insertItemBefore(newRot, 0)
-        } else {
-          tlist.appendItem(newRot)
-        }
-      }
-      if (tlist.numberOfItems === 0) {
-        selected.removeAttribute('transform')
-      }
-      return null
+    if (tlist.numberOfItems === 0) {
+      selected.removeAttribute('transform')
     }
-  } // End of non-group elements handling
+    return null
+  }
 
   // Remove the 'transform' attribute if no transforms remain
   if (tlist.numberOfItems === 0) {
