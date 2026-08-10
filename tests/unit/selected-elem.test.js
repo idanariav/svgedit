@@ -140,6 +140,116 @@ describe('selected-elem', () => {
     expect(order).toEqual(['title', 'defs', 'rect-bottom-2', 'rect-bottom-1'])
   })
 
+  const layerOrder = () => {
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    return Array.from(layer.children)
+      .filter((n) => n.tagName !== 'title')
+      .map((n) => n.id)
+  }
+
+  it('moves every selected element to the front, preserving their relative order, in one undo step', () => {
+    const rect1 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'front-1', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'front-2', x: 20, y: 0, width: 10, height: 10 }
+    })
+    const rect3 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'front-3', x: 40, y: 0, width: 10, height: 10 }
+    })
+
+    svgCanvas.selectOnly([rect1, rect3], true)
+    const undoSize = svgCanvas.undoMgr.getUndoStackSize()
+
+    svgCanvas.moveToTopSelectedElement()
+
+    expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize + 1)
+    expect(layerOrder()).toEqual(['front-2', 'front-1', 'front-3'])
+
+    svgCanvas.undoMgr.undo()
+    expect(layerOrder()).toEqual(['front-1', 'front-2', 'front-3'])
+  })
+
+  it('moves every selected element to the back, preserving their relative order, in one undo step', () => {
+    const rect1 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'back-1', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'back-2', x: 20, y: 0, width: 10, height: 10 }
+    })
+    const rect3 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'back-3', x: 40, y: 0, width: 10, height: 10 }
+    })
+
+    svgCanvas.selectOnly([rect1, rect3], true)
+    const undoSize = svgCanvas.undoMgr.getUndoStackSize()
+
+    svgCanvas.moveToBottomSelectedElement()
+
+    expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize + 1)
+    expect(layerOrder()).toEqual(['back-1', 'back-3', 'back-2'])
+
+    svgCanvas.undoMgr.undo()
+    expect(layerOrder()).toEqual(['back-1', 'back-2', 'back-3'])
+  })
+
+  it('moves an entire selected group (not just the group wrapper) to the front as one unit', () => {
+    svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'group-front-outside', x: 0, y: 0, width: 10, height: 10 }
+    })
+    const group = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: 'group-front-group' }
+    })
+    const memberRect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'group-front-member', x: 0, y: 0, width: 5, height: 5 }
+    })
+    group.append(memberRect)
+
+    svgCanvas.selectOnly([group], true)
+    svgCanvas.moveToTopSelectedElement()
+
+    expect(layerOrder()).toEqual(['group-front-outside', 'group-front-group'])
+    expect(group.contains(memberRect)).toBe(true)
+  })
+
+  it('steps every selected element forward/backward, not just the first one selected', () => {
+    // Three mutually overlapping rects stacked bottom-to-top: rect1, rect2, rect3.
+    const rect1 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'step-1', x: 0, y: 0, width: 10, height: 10 }
+    })
+    svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'step-2', x: 0, y: 0, width: 10, height: 10 }
+    })
+    const rect3 = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'step-3', x: 0, y: 0, width: 10, height: 10 }
+    })
+
+    // Select the bottom (rect1) and top (rect3) elements, skipping rect2.
+    svgCanvas.selectOnly([rect1, rect3], true)
+    const undoSize = svgCanvas.undoMgr.getUndoStackSize()
+
+    // Send Backward: rect1 is already at the bottom of its overlap set (no-op),
+    // but rect3 must step down past rect2 - which the old single-element
+    // implementation (acting only on the bottommost selected element) missed
+    // entirely.
+    svgCanvas.moveUpDownSelected('Down')
+
+    expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize + 1)
+    expect(layerOrder()).toEqual(['step-1', 'step-3', 'step-2'])
+  })
+
   it('ungroups a <use> when it is the first element child', () => {
     const defs = svgCanvas.getSvgContent().querySelector('defs') ||
       svgCanvas.getSvgContent().appendChild(document.createElementNS(NS.SVG, 'defs'))

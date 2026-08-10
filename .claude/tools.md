@@ -169,8 +169,15 @@ event handled by `TopPanel.clickArrange`:
 | `switch` *(`arrange_switch`, multi list only)* | Switch Layers (reverse z-order of 2) | `switchSelectedZorder()` | — |
 
 The single-element list omits the switch item; in the multi list `arrange_switch`
-is shown only when **exactly two** elements are selected. The move actions operate
-on the primary selected element.
+is shown only when **exactly two** elements are selected. `front`/`back`/`forward`/
+`backward` operate on **every** selected element (not just the primary one),
+preserving their relative stacking order — e.g. Bring to Front moves the whole
+multi-selection to the top as a block, in the same order they were already
+stacked. A selected `<g>` group moves as a single unit, same as any other
+element (its children move with it since they live inside it in the DOM).
+Implementation: `moveToTopSelectedElem`/`moveToBottomSelectedElem`/
+`moveUpDownSelected` in `packages/svgcanvas/core/selected-elem.js` group
+selected elements by parent and process them in one batched undo command.
 
 ### Align dropdown (`tool_align_multi`)
 

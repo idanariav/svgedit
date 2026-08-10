@@ -1399,7 +1399,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   moveUpDownSelected (dir) {
-    if (this.selectedElement) {
+    if (this.selectedElement || this.multiselected) {
       this.svgCanvas.moveUpDownSelected(dir)
     }
   }
