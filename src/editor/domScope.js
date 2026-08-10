@@ -73,6 +73,58 @@ export const isActiveEditor = (editor) => {
 }
 
 /**
+ * The deepest focused element, piercing shadow roots. A keydown inside a
+ * shadow-DOM field (e.g. an `se-spin-input`) retargets `e.target` to the host
+ * custom element, so the only reliable way to tell whether the user is typing
+ * is to follow `activeElement` down through each open shadow root.
+ * @returns {?Element}
+ */
+export const deepActiveElement = () => {
+  let el = document.activeElement
+  while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement
+  return el
+}
+
+/**
+ * Whether focus is currently in a text-entry field (native input/textarea/select
+ * or a contenteditable). Keystrokes there belong to the field, not to editor
+ * shortcuts, so a document-level key dispatcher must stand down.
+ * @returns {boolean}
+ */
+export const isTypingTarget = () => {
+  const el = deepActiveElement()
+  if (!el) return false
+  const tag = el.nodeName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true
+}
+
+/**
+ * Whether a document-level key event whose native target is `target` belongs
+ * to the editor whose container is `container`: the target is `<body>` (no
+ * live focus, e.g. right after a plain click on a non-focusable canvas
+ * child), the container itself, or a descendant of it — and the user isn't
+ * currently typing in a field.
+ *
+ * This used to be a bare `target.nodeName === 'BODY'` check in EditorStartup,
+ * which held only as long as nothing inside svgedit ever took real DOM focus.
+ * `activate()` (EditorStartup's constructor) now focuses the container on
+ * every pointerdown/focusin so `isActiveEditor()`'s live-focus check has
+ * something to resolve — which means `target` is the container (or a
+ * descendant) on essentially every keystroke after the first click, not
+ * `<body>`. A bare BODY check silently kills any handler gated on it the
+ * moment focus leaves `<body>` (e.g. the Cmd/Ctrl+V paste-fallback armer —
+ * see pasteFallbackArmer.js — on hosts that never dispatch a native `paste`
+ * DOM event, such as Obsidian/Electron).
+ * @param {Element} container
+ * @param {EventTarget} target
+ * @returns {boolean}
+ */
+export const ownsKeyEvent = (container, target) => {
+  const owned = target === document.body || target === container || !!container?.contains(target)
+  return owned && !isTypingTarget()
+}
+
+/**
  * Resolve the `.svg_editor` root of the currently active editor, for helpers
  * that operate on "the" editor when no explicit instance is given (see
  * `themeUtil.applyTheme` / `uiMode.applyUiMode`). With 2+ editors mounted, a

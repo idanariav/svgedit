@@ -12,7 +12,7 @@ import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
-import { setActiveEditor, isActiveEditor } from './domScope.js'
+import { setActiveEditor, isActiveEditor, ownsKeyEvent } from './domScope.js'
 import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
 import { classifyClipboardText } from './pasteClipboardText.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
@@ -542,8 +542,14 @@ class EditorStartup {
       }
     })
 
+    // ownsKeyEvent (domScope.js) replaces a bare `e.target.nodeName === 'BODY'`
+    // check: once activate() (constructor) started focusing $container on every
+    // pointerdown, e.target stopped being <body> after the first click, which
+    // silently killed the Cmd/Ctrl+V paste-fallback armer below on hosts that
+    // never dispatch a native `paste` event (e.g. Obsidian/Electron) — see
+    // domScope.js's ownsKeyEvent doc for the full history.
     document.addEventListener('keydown', (e) => {
-      if (e.target.nodeName !== 'BODY') return
+      if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       if (e.code.toLowerCase() === 'space') {
         this.svgCanvas.spaceKey = keypan = true
@@ -638,7 +644,7 @@ class EditorStartup {
     }, { passive: false })
 
     document.addEventListener('keyup', (e) => {
-      if (e.target.nodeName !== 'BODY') return
+      if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       if (e.code.toLowerCase() === 'space') {
         this.svgCanvas.spaceKey = keypan = false
