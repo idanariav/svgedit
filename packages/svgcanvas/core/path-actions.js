@@ -414,6 +414,24 @@ class PathActions {
       // if pts array is empty, create path element with M at current point
       const drawnPath = svgCanvas.getDrawnPath()
       if (!drawnPath) {
+        if (!this.#subpath) {
+          // Starting a brand-new path (not extending the currently-tracked
+          // one via addSubPath(true)) claims grip indices from 0 again —
+          // the same indices path-node grips are cached/reused under
+          // elsewhere (see `pathpointgrip_${index}` in path-method.js).
+          // Any grip still `display:inline` here is left over from
+          // whatever was previously drawn/edited and would otherwise sit
+          // orphaned on screen at its old position for the whole time this
+          // path is drawn (see .claude/techdebt.md). Hide everything first,
+          // mirroring Path#init()'s hide-all-then-reveal-mine guard for
+          // entering pathedit mode, which this freehand-draw path lacks.
+          const pointGripContainer = svgCanvas.getElement('pathpointgrip_container')
+          if (pointGripContainer) {
+            Array.prototype.forEach.call(pointGripContainer.querySelectorAll('*'), (el) => {
+              el.setAttribute('display', 'none')
+            })
+          }
+        }
         const dAttr = `M${x},${y} `
         /* drawnPath = */ svgCanvas.setDrawnPath(svgCanvas.addSVGElementsFromJson({
           element: 'path',
