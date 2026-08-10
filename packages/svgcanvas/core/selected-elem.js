@@ -30,6 +30,7 @@ import { isGecko } from '../common/browser.js'
 import { getParents } from '../common/util.js'
 
 const {
+  Command,
   MoveElementCommand,
   BatchCommand,
   InsertElementCommand,
@@ -1238,16 +1239,49 @@ const convertToGroup = elem => {
     // $(elem.firstChild.firstChild).unwrap();
     const firstChild = elem.firstChild.firstChild
     if (firstChild) {
+      const container = svg
+      // Snapshot before/after as detached clones (rather than innerHTML
+      // strings) so apply/unapply only ever use plain DOM node ops — some
+      // DOM implementations mishandle innerHTML/outerHTML round-trips for
+      // foreign-namespace (SVG-in-SVG) content.
+      const beforeNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
       firstChild.outerHTML = firstChild.innerHTML
+      const afterNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
+      const replaceChildren = nodes => {
+        while (container.firstChild) { container.removeChild(container.firstChild) }
+        nodes.forEach(n => container.appendChild(n.cloneNode(true)))
+      }
+      const unwrapCmd = new Command()
+      unwrapCmd.text = 'Unwrap SVG'
+      unwrapCmd.elements = () => [elem]
+      unwrapCmd.apply = handler => {
+        Command.prototype.apply.call(unwrapCmd, handler, () => {
+          replaceChildren(afterNodes)
+        })
+      }
+      unwrapCmd.unapply = handler => {
+        Command.prototype.unapply.call(unwrapCmd, handler, () => {
+          replaceChildren(beforeNodes)
+        })
+      }
+      batchCmd.addSubCommand(unwrapCmd)
     }
     dataStorage.remove(elem, 'gsvg')
 
+    const oldTransform = elem.getAttribute('transform') || ''
     const tlist = getTransformList(elem)
     const xform = svgCanvas.getSvgRoot().createSVGTransform()
     xform.setTranslate(pt.x, pt.y)
     tlist.appendItem(xform)
+    const newTransform = elem.getAttribute('transform') || ''
+    if (newTransform !== oldTransform) {
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
+    }
     svgCanvas.recalculateDimensions(elem)
     svgCanvas.call('selected', [elem])
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+    }
   } else if (dataStorage.has($elem, 'symbol')) {
     elem = dataStorage.get($elem, 'symbol')
     if (!elem) {

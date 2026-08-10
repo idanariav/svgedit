@@ -107,7 +107,7 @@ export const applyLayout = (layout) => {
   // 1. Proportions + background (the only canvas-wide state a layout overwrites).
   svgCanvas.setResolution(layout.w, layout.h)
   svgEditor.updateCanvas()
-  svgEditor.setBackground(layout.bg)
+  svgEditor.setBackground(layout.bg, undefined, undefined, true)
 
   // 2. Parse the saved canvas and collect its drawable objects + defs.
   const doc = new DOMParser().parseFromString(layout.svg, 'image/svg+xml')

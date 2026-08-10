@@ -191,4 +191,45 @@ describe('selected-elem', () => {
     }
     expect(svgCanvas.getSvgContent().querySelector('#use-no-href')).toBeTruthy()
   })
+
+  it('records an undoable step when ungrouping an embedded <svg> (gsvg)', () => {
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const nestedSvg = document.createElementNS(NS.SVG, 'svg')
+    nestedSvg.setAttribute('x', '10')
+    nestedSvg.setAttribute('y', '20')
+    const wrapperG = document.createElementNS(NS.SVG, 'g')
+    const rect = document.createElementNS(NS.SVG, 'rect')
+    rect.setAttribute('id', 'gsvg-rect')
+    rect.setAttribute('width', '5')
+    rect.setAttribute('height', '5')
+    wrapperG.append(rect)
+    nestedSvg.append(wrapperG)
+    layer.append(nestedSvg)
+
+    svgCanvas.groupSvgElem(nestedSvg)
+    const group = nestedSvg.parentNode
+    expect(svgCanvas.getDataStorage().has(group, 'gsvg')).toBe(true)
+
+    svgCanvas.selectOnly([group], true)
+    const undoSize = svgCanvas.undoMgr.getUndoStackSize()
+
+    svgCanvas.ungroupSelectedElement()
+
+    // The unwrap actually happened: the wrapper <g> inside the nested <svg>
+    // is gone, so the <rect> is now a direct child of it...
+    expect(svgCanvas.getDataStorage().has(group, 'gsvg')).toBe(false)
+    expect(group.getAttribute('transform')).toBe('matrix(1 0 0 1 10 20)')
+    expect(nestedSvg.firstElementChild.tagName).toBe('rect')
+    // ...and it was recorded so it can be undone.
+    expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undoSize + 1)
+
+    svgCanvas.undoMgr.undo()
+
+    // The DOM structure and transform revert (the in-memory 'gsvg' data-storage
+    // flag is not part of the undo stack, same as every other data-storage tag
+    // in this codebase, e.g. 'symbol').
+    expect(group.getAttribute('transform')).toBeFalsy()
+    expect(nestedSvg.firstElementChild.tagName).toBe('g')
+    expect(nestedSvg.firstElementChild.firstElementChild.id).toBe('gsvg-rect')
+  })
 })
