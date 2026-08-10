@@ -237,6 +237,35 @@ describe('image-crop: apply/cancel', () => {
     expect(image.getAttribute('height')).toBe('30')
   })
 
+  it('applyImageCrop discards the result if the crop was cancelled while the image was loading', async () => {
+    // Regression guard: applyImageCrop() is async and awaits loadImage()
+    // before baking the crop in. If the user hits Escape (cancelImageCrop)
+    // while that load is still pending, the session is cleared and the
+    // overlay/selector already handed back to the original image -- the
+    // in-flight apply must not resurrect it by mutating the image and
+    // pushing an undo command for a crop the user already backed out of.
+    const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
+    canvas.startImageCrop(image)
+
+    const overlay = svgContent.querySelector('#se-imagecrop-overlay')
+    const identityCTM = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse () { return identityCTM } }
+    overlay.getScreenCTM = () => identityCTM
+    const seHandle = overlay.children[5]
+    seHandle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 60, clientY: 30 }))
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 60, clientY: 30 }))
+
+    const applyPromise = canvas.applyImageCrop() // starts, suspends on the (pending) image load
+    canvas.cancelImageCrop() // Escape, while the image is still "loading"
+    await applyPromise
+
+    expect(historyStack).toHaveLength(0)
+    expect(image.getAttribute('href')).toBe('data:image/png;base64,AAA')
+    expect(image.getAttribute('width')).toBe('100')
+    expect(canvas.getMode()).toBe('select')
+    expect(svgContent.querySelector('#se-imagecrop-overlay')).toBeNull()
+  })
+
   it('applyImageCrop rejects and leaves the element untouched when the source cannot be loaded', async () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
     canvas.startImageCrop(image)

@@ -253,7 +253,8 @@ export const init = (canvas) => {
    */
   const applyImageCrop = async () => {
     if (!session) return
-    const { imageElem, origBounds, cropRect } = session
+    const activeSession = session
+    const { imageElem, origBounds, cropRect } = activeSession
     const unchanged = cropRect.x === origBounds.x && cropRect.y === origBounds.y &&
       cropRect.width === origBounds.width && cropRect.height === origBounds.height
     if (unchanged) {
@@ -263,6 +264,13 @@ export const init = (canvas) => {
 
     const href = getHref(imageElem)
     const img = await loadImage(href)
+
+    // The crop may have been cancelled (Escape) or superseded by a new
+    // startImageCrop() call while that load was pending -- baking the crop
+    // in now would silently apply a change the user already backed out of,
+    // and resurrect the overlay/selector for a session that's no longer
+    // current. Bail out without touching the DOM or undo history.
+    if (session !== activeSession || !imageElem.parentNode) return
 
     const { sx, sy, sw, sh } = computeSourceRect(
       origBounds, cropRect, img.naturalWidth || img.width, img.naturalHeight || img.height
