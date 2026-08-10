@@ -342,4 +342,69 @@ describe('selected-elem', () => {
     expect(nestedSvg.firstElementChild.tagName).toBe('g')
     expect(nestedSvg.firstElementChild.firstElementChild.id).toBe('gsvg-rect')
   })
+
+  it('duplicating an element inside a group produces an independent, ungrouped copy in the same visual spot', () => {
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const group = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: 'group-dup', transform: 'translate(50,60)' }
+    })
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-in-group', x: 10, y: 20, width: 30, height: 40 }
+    })
+    group.append(rect)
+
+    svgCanvas.selectOnly([rect], true)
+    const originalBox = svgCanvas.getStrokedBBoxDefaultVisible([rect])
+
+    svgCanvas.cloneSelectedElements(0, 0)
+
+    const clone = svgCanvas.getSelectedElements()[0]
+    expect(clone).toBeTruthy()
+    expect(clone.id).not.toBe('rect-in-group')
+    // The clone is independent — a direct child of the layer, not the group —
+    // and the original group is untouched.
+    expect(clone.parentNode).toBe(layer)
+    expect(group.children).toHaveLength(1)
+    expect(group.firstElementChild).toBe(rect)
+
+    // Detaching from the group's transform must not move the clone visually.
+    const cloneBox = svgCanvas.getStrokedBBoxDefaultVisible([clone])
+    expect(cloneBox.x).toBeCloseTo(originalBox.x)
+    expect(cloneBox.y).toBeCloseTo(originalBox.y)
+    expect(cloneBox.width).toBeCloseTo(originalBox.width)
+    expect(cloneBox.height).toBeCloseTo(originalBox.height)
+  })
+
+  it('duplicating an element inside nested groups fully detaches it to the layer', () => {
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const outer = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: 'group-outer', transform: 'translate(20,0)' }
+    })
+    const inner = document.createElementNS(NS.SVG, 'g')
+    inner.setAttribute('id', 'group-inner')
+    inner.setAttribute('transform', 'translate(0,30)')
+    outer.append(inner)
+    const rect = document.createElementNS(NS.SVG, 'rect')
+    rect.setAttribute('id', 'rect-in-nested-group')
+    rect.setAttribute('x', '5')
+    rect.setAttribute('y', '5')
+    rect.setAttribute('width', '10')
+    rect.setAttribute('height', '10')
+    inner.append(rect)
+
+    svgCanvas.selectOnly([rect], true)
+    const originalBox = svgCanvas.getStrokedBBoxDefaultVisible([rect])
+
+    svgCanvas.cloneSelectedElements(0, 0)
+
+    const clone = svgCanvas.getSelectedElements()[0]
+    expect(clone.parentNode).toBe(layer)
+
+    const cloneBox = svgCanvas.getStrokedBBoxDefaultVisible([clone])
+    expect(cloneBox.x).toBeCloseTo(originalBox.x)
+    expect(cloneBox.y).toBeCloseTo(originalBox.y)
+  })
 })

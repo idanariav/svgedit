@@ -504,3 +504,14 @@ Groups are native `<g>` containers. Selection/editing follows an Excalidraw-styl
   this the editor stayed trapped in drill-in mode after moving a child, so every later click
   selected an individual child instead of the whole group — making the group *feel*
   destroyed even though the `<g>` was intact. Double-clicking outside also exits.
+- **Duplicate/paste of a group member always detaches.** Unlike a drag (which
+  never re-parents a child), `cloneSelectedElements` (Duplicate) and
+  `pasteElements` while drilled into a group both produce an **independent,
+  top-level** copy in the current layer rather than a new group member —
+  copies are new content, not edits to the group's membership. Both call
+  `getGroupDetachTarget` (`core/group-detach.js`), which walks up through
+  however many nested `<g>`/`<a>` ancestors the source sits inside (the
+  original's parent for duplicate, `currentGroup` for paste) up to the layer,
+  and `applyGroupDetachTransform`, which bakes the accumulated ancestor
+  matrix into the copy's own `transform` so it lands in the same visual spot
+  it was copied from.

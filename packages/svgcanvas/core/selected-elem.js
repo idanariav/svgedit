@@ -28,6 +28,7 @@ import {
 } from './math.js'
 import { isGecko } from '../common/browser.js'
 import { getParents } from '../common/util.js'
+import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'
 
 const {
   Command,
@@ -420,14 +421,25 @@ const cloneSelectedElements = (x, y) => {
   const drawing = svgCanvas.getDrawing()
   i = copiedElements.length
   while (i--) {
-    // clone each element and replace it within copiedElements, appending the
+    // Clone each element and replace it within copiedElements, appending the
     // clone back into its own original parent (layer or group) rather than a
     // single shared target — required once a selection can span layers (All
     // Layers mode), and equivalent to the old currentGroup/currentLayer
     // target in every case where a selection can only live in one place.
+    //
+    // Unlike the original, a duplicate should never inherit group
+    // membership: if the original sits inside one or more nested groups,
+    // detach the clone all the way out to the layer, baking in the groups'
+    // combined transform so it stays in the same visual spot.
     const original = copiedElements[i]
     elem = copiedElements[i] = drawing.copyElem(original)
-    original.parentNode.append(elem)
+    const { targetParent, matrix } = getGroupDetachTarget(original.parentNode)
+    if (targetParent !== original.parentNode) {
+      applyGroupDetachTransform(elem, matrix)
+      targetParent.append(elem)
+    } else {
+      original.parentNode.append(elem)
+    }
     batchCmd.addSubCommand(new InsertElementCommand(elem))
   }
 

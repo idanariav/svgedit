@@ -1,5 +1,6 @@
 import { getUrlFromAttr } from './dom-utils.js'
 import * as hstry from './history.js'
+import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'
 
 const {
   InsertElementCommand, BatchCommand
@@ -155,6 +156,14 @@ export const init = (canvas) => {
     }
   })
 
+  // If pasting while isolated inside a group, addSVGElementsFromJson drops the
+  // new content straight into that group (matching draw-a-new-shape
+  // behavior). A paste — unlike drawing — should always produce independent
+  // top-level content, so detach it from the group nesting here, baking in
+  // the group's combined transform so it lands in the same visual spot.
+  const currentGroup = svgCanvas.getCurrentGroup()
+  const detachTarget = currentGroup ? getGroupDetachTarget(currentGroup) : null
+
   // Move elements to lastClickPoint
   let len = elemEntries.length
   if (!len) return
@@ -163,6 +172,10 @@ export const init = (canvas) => {
     if (!elem) { continue }
 
     const copy = svgCanvas.addSVGElementsFromJson(elem)
+    if (detachTarget) {
+      applyGroupDetachTransform(copy, detachTarget.matrix)
+      detachTarget.targetParent.append(copy)
+    }
     pasted.push(copy)
     batchCmd.addSubCommand(new InsertElementCommand(copy))
 

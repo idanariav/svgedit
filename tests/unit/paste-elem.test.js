@@ -195,4 +195,35 @@ describe('paste-elem', () => {
     expect(pasted.tagName).toBe('ellipse')
     expect(pasted.id).not.toBe('ellipse-fresh') // still gets a fresh id via checkIDs
   })
+
+  it('pastes an independent, ungrouped copy even while isolated inside a group', () => {
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-to-copy', x: 10, y: 20, width: 30, height: 40 }
+    })
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.copySelectedElements()
+    const originalBox = svgCanvas.getStrokedBBoxDefaultVisible([rect])
+
+    const group = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: 'group-isolated', transform: 'translate(100,150)' }
+    })
+    svgCanvas.setContext(group) // enter isolation mode, as a double-click would
+
+    svgCanvas.pasteElements('in_place')
+
+    expect(svgCanvas.getCurrentGroup()).toBe(group)
+    const pasted = svgCanvas.getSelectedElements()[0]
+    expect(pasted).toBeTruthy()
+    // Independent of the isolated group — a direct child of the layer.
+    expect(pasted.parentNode).toBe(layer)
+    expect(group.children).toHaveLength(0)
+
+    // Baking in the group's transform keeps it in the same visual spot.
+    const pastedBox = svgCanvas.getStrokedBBoxDefaultVisible([pasted])
+    expect(pastedBox.x).toBeCloseTo(originalBox.x)
+    expect(pastedBox.y).toBeCloseTo(originalBox.y)
+  })
 })
