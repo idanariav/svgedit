@@ -87,3 +87,59 @@ describe('undo', () => {
     expect(canvas.clearCalls).toHaveLength(1)
   })
 })
+
+describe('changeSelectedAttributeNoUndo', () => {
+  const makeAttrCanvas = (initialSelection) => {
+    let selected = initialSelection
+    const resizeCalls = []
+    const canvas = {
+      getSelectedElements () { return selected },
+      setSelected (elems) { selected = elems },
+      getCurrentMode () { return 'select' },
+      getZoom () { return 1 },
+      selectorManager: {
+        requestSelector (elem) {
+          resizeCalls.push(elem)
+          return { resize () {} }
+        }
+      }
+    }
+    initUndo(canvas)
+    canvas.resizeCalls = resizeCalls
+    return canvas
+  }
+
+  it('does not resurrect a selector for an element deselected before the deferred resize runs', async () => {
+    // Regression guard: changing fill/stroke on a selected element schedules
+    // a setTimeout(0) to resize its selector (needed for Opera/Firefox).
+    // If the user clicks away (deselecting) before that timeout fires,
+    // requestSelector() must not be called -- it locks and re-shows
+    // whatever selector it returns, which would leave a stale selection
+    // bbox stuck on screen for an element that is no longer selected.
+    const rectElem = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    document.body.append(rectElem)
+
+    const canvas = makeAttrCanvas([rectElem])
+    canvas.changeSelectedAttributeNoUndo('fill', '#00ff00', [rectElem])
+    // Simulate clicking away synchronously, before the deferred resize fires.
+    canvas.setSelected([])
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(canvas.resizeCalls).toHaveLength(0)
+    rectElem.remove()
+  })
+
+  it('still resizes the selector when the element remains selected', async () => {
+    const rectElem = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    document.body.append(rectElem)
+
+    const canvas = makeAttrCanvas([rectElem])
+    canvas.changeSelectedAttributeNoUndo('fill', '#00ff00', [rectElem])
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(canvas.resizeCalls).toEqual([rectElem])
+    rectElem.remove()
+  })
+})

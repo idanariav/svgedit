@@ -247,6 +247,13 @@ export const init = (canvas) => {
           // Due to element replacement, this element may no longer
           // be part of the DOM
           if (!elem.parentNode) { return }
+          // The user may have already changed the selection (e.g. clicked
+          // away) before this deferred resize runs. requestSelector() locks
+          // and re-shows whatever selector it returns, so calling it here
+          // unconditionally would resurrect a selection box for an element
+          // that isn't selected anymore, leaving it stuck on screen with
+          // nothing left to release it.
+          if (!svgCanvas.getSelectedElements().includes(elem)) { return }
           svgCanvas.selectorManager.requestSelector(elem).resize()
         }, 0)
       }
