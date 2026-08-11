@@ -407,4 +407,36 @@ describe('selected-elem', () => {
     expect(cloneBox.x).toBeCloseTo(originalBox.x)
     expect(cloneBox.y).toBeCloseTo(originalBox.y)
   })
+
+  it('duplicating an element with a filter clones the filter instead of sharing it with the original', () => {
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'rect-shadow', x: 10, y: 10, width: 20, height: 20, filter: 'url(#rect-shadow_fx)' }
+    })
+    const filter = svgCanvas.addSVGElementsFromJson({
+      element: 'filter',
+      attr: { id: 'rect-shadow_fx', 'data-fx': '1' },
+      children: [
+        { element: 'feDropShadow', attr: { dx: 4, dy: 4, stdDeviation: 2 } }
+      ]
+    })
+    svgCanvas.findDefs().append(filter)
+
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.cloneSelectedElements(0, 0)
+
+    const clone = svgCanvas.getSelectedElements()[0]
+    const cloneFilterId = /url\(#([^)]+)\)/.exec(clone.getAttribute('filter'))[1]
+
+    // The clone must reference its own filter, not the original's.
+    expect(cloneFilterId).not.toBe('rect-shadow_fx')
+    const clonedFilter = svgCanvas.getElement(cloneFilterId)
+    expect(clonedFilter).toBeTruthy()
+    expect(clonedFilter).not.toBe(filter)
+    expect(clonedFilter.querySelector('feDropShadow')).toBeTruthy()
+
+    // The original is untouched and still owns its original filter.
+    expect(rect.getAttribute('filter')).toBe('url(#rect-shadow_fx)')
+    expect(svgCanvas.findDefs().querySelectorAll('filter')).toHaveLength(2)
+  })
 })

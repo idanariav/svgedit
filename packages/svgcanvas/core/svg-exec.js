@@ -1551,6 +1551,11 @@ export const init = canvas => {
       filter.setAttribute('y', String(bb.y - pad))
       filter.setAttribute('width', String(bb.width + pad * 2))
       filter.setAttribute('height', String(bb.height + pad * 2))
+      // Stamp the ownership marker fx-filter's isOurFilter() looks for, so a
+      // legacy filter saved before that marker existed is still recognized as
+      // "ours" (and gets its region live-refreshed on move) without relying on
+      // its id suffix, which a duplicate/paste may not preserve.
+      filter.setAttribute('data-fx', '1')
     })
   }
 

@@ -15,7 +15,8 @@ import {
   getRotationAngle,
   walkTreePost,
   assignAttributes,
-  getFeGaussianBlur
+  getFeGaussianBlur,
+  getUrlFromAttr
 } from './dom-utils.js'
 import {
   getBBox as utilsGetBBox
@@ -419,6 +420,47 @@ const cloneSelectedElements = (x, y) => {
   // note that we loop in the reverse way because of the way elements are added
   // to the selectedElements array (top-first)
   const drawing = svgCanvas.getDrawing()
+
+  // Referenced <defs> elements (filters, gradients, markers, …) must not be
+  // shared between the original and its duplicate — copyElem() below clones
+  // only the selected element's own subtree, so a shape's filter="url(#…)"
+  // would otherwise still point at the original's <filter>. That's most
+  // visible with the shadow effect: since its filter region is a snapshot of
+  // the referencing element's bbox (fx-filter's setRegion), a duplicate that
+  // shares the original's filter renders clipped to the ORIGINAL's position
+  // until something touches the original again. Clone the referenced defs
+  // once up front and remap each duplicate's references onto its own copy,
+  // mirroring what copySelectedElements/pasteElements already do for the
+  // clipboard path.
+  const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
+  let defIdMap = {}
+  if (originalDefs.length) {
+    const clonedDefs = originalDefs.map((def) => def.cloneNode(true))
+    defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
+    const defs = svgCanvas.findDefs()
+    clonedDefs.forEach((def) => {
+      defs.append(def)
+      batchCmd.addSubCommand(new InsertElementCommand(def))
+    })
+  }
+  // Rewrite an element's (and its descendants') url(#…)/href references from
+  // the originals' def ids to the freshly cloned ones above.
+  const remapToClonedDefs = (el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#')) {
+        const refId = attr.value.slice(1)
+        if (refId in defIdMap) el.setAttribute(attr.name, `#${defIdMap[refId]}`)
+        return
+      }
+      const url = getUrlFromAttr(attr.value)
+      if (url) {
+        const refId = url[0] === '#' ? url.slice(1) : url
+        if (refId in defIdMap) el.setAttribute(attr.name, attr.value.replace(url, `#${defIdMap[refId]}`))
+      }
+    })
+    Array.from(el.children).forEach(remapToClonedDefs)
+  }
+
   i = copiedElements.length
   while (i--) {
     // Clone each element and replace it within copiedElements, appending the
@@ -433,6 +475,7 @@ const cloneSelectedElements = (x, y) => {
     // combined transform so it stays in the same visual spot.
     const original = copiedElements[i]
     elem = copiedElements[i] = drawing.copyElem(original)
+    if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
     const { targetParent, matrix } = getGroupDetachTarget(original.parentNode)
     if (targetParent !== original.parentNode) {
       applyGroupDetachTransform(elem, matrix)

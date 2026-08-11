@@ -412,10 +412,30 @@ referenced defs via `getReferencedDefElements(elems)`
   self-contained; on insert, `ext-shapes.js` splits the defs off, imports both,
   and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)` so repeated
   insertions get independent, collision-free ids.
+- **Duplicate** — `cloneSelectedElements` (`core/selected-elem.js`) clones the
+  referenced defs (`def.cloneNode(true)`) and remaps each duplicate's own
+  `url(#…)`/`href` references onto the clones via `remapElementIdsAndRefs`,
+  before `copyElem` builds the shape clones. Without this the duplicate shared
+  the *same* `<filter>`/gradient/marker node as the original — most visibly
+  with the drop-shadow effect, whose filter region is a bbox snapshot
+  (`fx-filter.js`'s `setRegion`): a duplicate sharing the original's filter
+  rendered clipped to the original's position/size until the original was
+  touched again.
 
 `restoreRefElements` (`svgcanvas.js`) only restores a missing ref when it was
 actually tracked in `this.removedElements` (guards against the `append(undefined)`
 corruption above).
+
+**A cloned/pasted effect filter's ownership no longer depends on its id.**
+`fx-filter.js`'s `isOurFilter` used to check `filter.id === \`${elem.id}_fx\`` —
+true for a freshly-built filter, but broken the moment the filter gets a new id
+that doesn't follow that convention (which duplicate's `remapElementIdsAndRefs`
+and paste's `checkIDs` id-remap scheme both produce). `buildFilter` now stamps
+a `data-fx="1"` marker on every filter it creates, and `isOurFilter` checks that
+attribute first (falling back to the old id-suffix check for filters saved
+before the marker existed). `svg-exec.js`'s `convertDropShadowFilters` — the
+load-time region-repair pass — retrofits the marker onto legacy filters so a
+loaded drawing self-heals without needing the id fallback going forward.
 
 **Copy/paste & duplicate keep the source id prefix.** A copy preserves the
 copied element's own id prefix instead of forcing the default `svg_` — e.g.

@@ -66,9 +66,18 @@ export const createFxComposer = (svgCanvas) => {
     return svgCanvas.getElement(m[1])
   }
 
-  /** True when the referenced filter is one we manage for this element. */
+  /**
+   * True when the referenced filter is one we manage for this element.
+   * Ownership is marked by the `data-fx` attribute stamped in {@link buildFilter}
+   * so it survives a duplicate/paste that gives the filter a fresh id (an
+   * id-suffix check alone breaks the moment the filter's id no longer matches
+   * `${elem.id}_fx`, e.g. after cloning) — the `${elem.id}_...` suffix check is
+   * kept only as a fallback for filters saved before this attribute existed,
+   * until the next load-time pass (svg-exec's convertDropShadowFilters) stamps
+   * them too.
+   */
   const isOurFilter = (elem, filter) =>
-    !!filter && (filter.id === `${elem.id}_fx` || filter.id === `${elem.id}_shadow`)
+    !!filter && (filter.hasAttribute('data-fx') || filter.id === `${elem.id}_fx` || filter.id === `${elem.id}_shadow`)
 
   /**
    * Read the combined effect spec off an element's referenced filter.
@@ -180,7 +189,7 @@ export const createFxComposer = (svgCanvas) => {
     }
     const filter = svgCanvas.addSVGElementsFromJson({
       element: 'filter',
-      attr: { id: filterId },
+      attr: { id: filterId, 'data-fx': '1' },
       children
     })
     setRegion(filter, elem, spec)
