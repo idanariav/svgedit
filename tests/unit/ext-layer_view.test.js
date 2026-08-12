@@ -27,8 +27,8 @@ describe('ext-layer_view', () => {
     document.body.append(svgEditorRoot)
 
     layers = [
-      { name: 'Layer 1', locked: false },
-      { name: 'Layer 2', locked: false }
+      { name: 'Layer 1', locked: false, comment: false },
+      { name: 'Layer 2', locked: false, comment: false }
     ]
     currentIndex = 1 // "Layer 2" is current, matching real identifyLayers (top-most)
 
@@ -42,7 +42,8 @@ describe('ext-layer_view', () => {
         if (!l.el) l.el = document.createElement('g')
         return l.el
       },
-      getLayerLocked: (lname) => layers.find((x) => x.name === lname)?.locked ?? false
+      getLayerLocked: (lname) => layers.find((x) => x.name === lname)?.locked ?? false,
+      getLayerComment: (lname) => layers.find((x) => x.name === lname)?.comment ?? false
     }
 
     svgCanvas = {
@@ -96,6 +97,20 @@ describe('ext-layer_view', () => {
     expect(layers[1].el.style.opacity).toBe('')
     expect(layers[0].locked).toBe(true)
     expect(layers[1].locked).toBe(false)
+  })
+
+  it('excludes comment layers from Focus dim/lock and All Layers reset', () => {
+    layers[0].comment = true
+
+    document.getElementById('tool_layerView').click()
+    // Focus mode dims/locks every non-current layer except comment layers —
+    // Layer 1 is never touched, so its group element is never even created.
+    expect(layers[0].el).toBeUndefined()
+    expect(layers[0].locked).toBe(false)
+
+    clickSegment('all')
+    // All-Layers mode's lock reset also skips comment layers.
+    expect(svgCanvas.setLayerLocked).not.toHaveBeenCalledWith('Layer 1', expect.anything())
   })
 
   it('switches to All Layers mode from the badge and clears dim/lock', () => {

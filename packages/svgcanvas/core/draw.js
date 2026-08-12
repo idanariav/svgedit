@@ -546,15 +546,21 @@ export class Drawing {
    * Reflects `current_layer`/`allLayersMode` onto every layer's pointer
    * events: in all-layers mode every layer accepts pointer events (all are
    * selectable); otherwise only `current_layer` does (the base isolation
-   * behavior). Centralizing this means any structural change that finalizes
-   * `current_layer` (switch/create/delete/merge/reorder) can just call this
-   * instead of hand-rolling `.activate()`/`.deactivate()` pairs, so it stays
-   * correct under all-layers mode automatically.
+   * behavior). Comment layers are excluded from the all-layers-mode blanket
+   * activation — their selectability is governed only by whether they're the
+   * current layer, same as outside all-layers mode, so toggling "All Layers"
+   * never sweeps comment content into a multi-layer selection. Centralizing
+   * this means any structural change that finalizes `current_layer`
+   * (switch/create/delete/merge/reorder) can just call this instead of
+   * hand-rolling `.activate()`/`.deactivate()` pairs, so it stays correct
+   * under all-layers mode automatically.
    * @returns {void}
    */
   refreshLayerPointerEvents () {
     this.all_layers.forEach(layer => {
-      if (this.allLayersMode || layer === this.current_layer) {
+      if (layer === this.current_layer) {
+        layer.activate()
+      } else if (this.allLayersMode && !layer.isCommentLayer()) {
         layer.activate()
       } else {
         layer.deactivate()
@@ -827,6 +833,40 @@ export class Drawing {
       return null
     }
     layer.setLocked(bLocked)
+    return layer.getGroup()
+  }
+
+  /**
+   * Returns whether the layer is a comment layer. If the layer name is not
+   * valid, then this function returns `false`.
+   * @param {string} layerName - The name of the layer which you want to query.
+   * @returns {boolean} The comment-layer state of the layer, or `false` if the layer name was invalid.
+   */
+  getLayerComment (layerName) {
+    const layer = this.layer_map[layerName]
+    return layer ? layer.isCommentLayer() : false
+  }
+
+  /**
+   * Sets the comment-layer state of the layer. A comment layer is meant for
+   * work-in-progress notes/annotations, not drawing content, and is expected
+   * to always be excluded from export regardless of visibility. If the layer
+   * name is not valid, this returns `null`; otherwise it returns the layer's
+   * `SVGGElement`. Not an undo-able action (a meta-action on the layer, like
+   * locking).
+   * @param {string} layerName - The name of the layer to mark/unmark.
+   * @param {boolean} bComment - Whether the layer should be a comment layer.
+   * @returns {?SVGGElement} The layer group if `layerName` was valid, otherwise `null`.
+   */
+  setLayerComment (layerName, bComment) {
+    if (typeof bComment !== 'boolean') {
+      return null
+    }
+    const layer = this.layer_map[layerName]
+    if (!layer) {
+      return null
+    }
+    layer.setCommentLayer(bComment)
     return layer.getGroup()
   }
 
@@ -1236,6 +1276,34 @@ export const init = canvas => {
 }
 
 /**
+ * Sets the comment-layer state of the layer. Returns `true` if applied. Not
+ * undo-able.
+ * @function module:draw.setLayerComment
+ * @param {string} layerName - The name of the layer to mark/unmark
+ * @param {boolean} bComment - Whether the layer should be a comment layer
+ * @returns {boolean} true if the layer's comment-layer state was set, false otherwise
+ */
+  const setLayerComment = (layerName, bComment) => {
+  const drawing = svgCanvas.getCurrentDrawing()
+  const layer = drawing.setLayerComment(layerName, bComment)
+  if (!layer) {
+    warn('setLayerComment: layer not found', layerName, 'draw')
+    return false
+  }
+  return true
+}
+
+/**
+ * Returns whether the named layer is a comment layer.
+ * @function module:draw.getLayerComment
+ * @param {string} layerName - The name of the layer to query
+ * @returns {boolean} true if the layer is a comment layer
+ */
+  const getLayerComment = (layerName) => {
+  return svgCanvas.getCurrentDrawing().getLayerComment(layerName)
+}
+
+/**
  * Sets whether every layer is simultaneously selectable ("All Layers" mode)
  * instead of just the current layer. Does not change which layer new/pasted
  * content lands on. Not undo-able (a transient view/selection state).
@@ -1442,6 +1510,8 @@ export const init = canvas => {
   svgCanvas.setLayerVisibility = setLayerVisibility
   svgCanvas.setLayerLocked = setLayerLocked
   svgCanvas.getLayerLocked = getLayerLocked
+  svgCanvas.setLayerComment = setLayerComment
+  svgCanvas.getLayerComment = getLayerComment
   svgCanvas.setAllLayersMode = setAllLayersMode
   svgCanvas.getAllLayersMode = getAllLayersMode
   svgCanvas.moveSelectedToLayer = moveSelectedToLayer

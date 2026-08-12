@@ -44,6 +44,7 @@ const buildEditor = (layerGroups) => {
     getLayerName: (i) => names[i],
     getLayerVisibility: () => true,
     getLayerLocked: () => false,
+    getLayerComment: () => false,
     getLayerByName: (name) => layerGroups[name]
   }
 

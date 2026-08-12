@@ -73,6 +73,14 @@ describe('Layer', function () {
     assert.equal(layer.isLocked(), false)
     assert.equal(group.getAttributeNS(NS.SE, 'locked'), null)
 
+    assert.equal(layer.isCommentLayer(), false)
+    layer.setCommentLayer(true)
+    assert.equal(layer.isCommentLayer(), true)
+    assert.equal(group.getAttributeNS(NS.SE, 'comment'), 'true')
+    layer.setCommentLayer(false)
+    assert.equal(layer.isCommentLayer(), false)
+    assert.equal(group.getAttributeNS(NS.SE, 'comment'), null)
+
     const rect = document.createElementNS(NS.SVG, 'rect')
     const circle = document.createElementNS(NS.SVG, 'circle')
     layer.appendChildren([rect, circle])

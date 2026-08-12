@@ -776,6 +776,14 @@ hr {
 #layerlist td.layerlock * { display: block; color: var(--muted); }
 #layerlist td.layerlock:hover * { color: var(--icon-hover, var(--fg)); }
 #layerlist td.layerlock.locked * { color: var(--accent); }
+#layerlist td.layercomment {
+  width: 22px;
+  padding-left: 4px;
+  text-align: center;
+}
+#layerlist td.layercomment * { display: block; color: var(--muted); }
+#layerlist td.layercomment:hover * { color: var(--icon-hover, var(--fg)); }
+#layerlist td.layercomment.commented * { color: var(--accent); }
 #layerlist td.layerpreview {
   width: 30px;
   padding-left: 0;

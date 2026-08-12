@@ -64,11 +64,18 @@ export default {
 
     const isPressed = () => $id('tool_layerView')?.pressed === true
 
-    // Run fn(layerName, drawing) for every layer in the drawing.
+    // Run fn(layerName, drawing) for every non-comment layer in the drawing.
+    // Comment layers sit outside Focus/All-Layers mode entirely — their
+    // lock/dim/selectability state is managed solely via the layers panel,
+    // not swept up by this extension's bulk operations.
     const eachLayer = (fn) => {
       const drawing = svgCanvas.getCurrentDrawing()
       let i = drawing.getNumLayers()
-      while (i--) fn(drawing.getLayerName(i), drawing)
+      while (i--) {
+        const lname = drawing.getLayerName(i)
+        if (drawing.getLayerComment(lname)) continue
+        fn(lname, drawing)
+      }
     }
 
     /* --------------------------------------------------------- name badge */

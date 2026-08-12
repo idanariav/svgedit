@@ -867,6 +867,46 @@ describe('draw.Drawing', function () {
     cleanupSVG(svg)
   })
 
+  it('Test setAllLayersMode() excludes comment layers', function () {
+    const drawing = new draw.Drawing(svg)
+    const layers = setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+    drawing.setLayerComment(LAYER1, true)
+
+    // All Layers mode makes ordinary layers selectable, but a comment layer
+    // stays excluded unless it's the current layer — its selectability is
+    // managed separately from the bulk "all layers" behavior.
+    drawing.setAllLayersMode(true)
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+
+    // Making it the current layer still activates it like any current layer.
+    drawing.setCurrentLayer(LAYER1)
+    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+
+    cleanupSVG(svg)
+  })
+
+  it('Test getLayerComment() / setLayerComment()', function () {
+    const drawing = new draw.Drawing(svg)
+    setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+
+    assert.equal(drawing.getLayerComment(LAYER1), false)
+    drawing.setLayerComment(LAYER1, true)
+    assert.equal(drawing.getLayerComment(LAYER1), true)
+    assert.equal(drawing.getLayerComment(LAYER2), false)
+
+    drawing.setLayerComment(LAYER1, false)
+    assert.equal(drawing.getLayerComment(LAYER1), false)
+
+    drawing.setLayerComment(LAYER1, 'test-string')
+    assert.equal(drawing.getLayerComment(LAYER1), false)
+
+    cleanupSVG(svg)
+  })
+
   it('Test svgedit.draw.randomizeIds()', function () {
     // Confirm in LET_DOCUMENT_DECIDE mode that the document decides
     // if there is a nonce.

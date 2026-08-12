@@ -403,6 +403,15 @@ class RightPanel {
       renderLockIcon(_lock, drawing.getLayerLocked(name))
       layerLock.appendChild(_lock)
 
+      const layerComment = document.createElement('td')
+      layerComment.className = drawing.getLayerComment(name) ? 'layercomment commented' : 'layercomment'
+      const _comment = document.createElement('span')
+      _comment.style.width = '14px'
+      _comment.style.height = '14px'
+      _comment.style.display = 'inline-block'
+      fetchSvgEl('comment.svg').then(svg => { if (svg) _comment.appendChild(svg) })
+      layerComment.appendChild(_comment)
+
       // Small live preview of the layer's contents: an inline <svg> whose only
       // child is a <use> pointing at the layer's own group element. Since the
       // group already lives in the same document (the canvas is not an
@@ -437,6 +446,7 @@ class RightPanel {
       layerName.textContent = name
       layerTr.appendChild(layerVis)
       layerTr.appendChild(layerLock)
+      layerTr.appendChild(layerComment)
       layerTr.appendChild(layerPreview)
       layerTr.appendChild(layerName)
       layerlist.appendChild(layerTr)
@@ -500,6 +510,27 @@ class RightPanel {
         const span = evt.currentTarget.querySelector('span')
         if (span) { renderLockIcon(span, !locked) }
         // run extension when layer lock state is changed from listener
+        self.editor.svgCanvas.runExtensions(
+          'layersChanged'
+        )
+      })
+    })
+    const commentElements = $id('layerlist').querySelectorAll('td.layercomment')
+    Array.from(commentElements).forEach(function (element) {
+      $click(element, function (evt) {
+        const row = evt.currentTarget.parentNode
+        const ele = row.querySelector('td.layername')
+        const name = (ele) ? ele.textContent : ''
+        const wasComment = evt.currentTarget.classList.contains('commented')
+        self.editor.svgCanvas.setLayerComment(name, !wasComment)
+        evt.currentTarget.classList.toggle('commented')
+        // Marking a layer as comments hides it immediately, so it doesn't
+        // clutter the canvas until deliberately shown again via the eye icon.
+        if (!wasComment) {
+          self.editor.svgCanvas.setLayerVisibility(name, false)
+          const visCell = row.querySelector('td.layervis')
+          visCell?.classList.add('layerinvis')
+        }
         self.editor.svgCanvas.runExtensions(
           'layersChanged'
         )

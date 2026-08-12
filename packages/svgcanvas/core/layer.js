@@ -131,6 +131,32 @@ class Layer {
   }
 
   /**
+   * Mark or unmark this layer as a "comment" layer: a layer for
+   * work-in-progress notes/annotations rather than drawing content. Callers
+   * (e.g. export tooling) are expected to always exclude comment layers from
+   * their output, regardless of the layer's own visibility state. Persisted
+   * as the namespaced `se:comment` attribute so it survives save/load, and —
+   * like locking — is a meta-action on the layer, not an undo-able edit.
+   * @param {boolean} isComment - If true, mark as a comment layer; otherwise unmark.
+   * @returns {void}
+   */
+  setCommentLayer (isComment) {
+    if (isComment) {
+      this.group_.setAttributeNS(NS.SE, 'se:comment', 'true')
+    } else {
+      this.group_.removeAttributeNS(NS.SE, 'comment')
+    }
+  }
+
+  /**
+   * Is this layer a comment layer?
+   * @returns {boolean} True if this is a comment layer.
+   */
+  isCommentLayer () {
+    return this.group_.getAttributeNS(NS.SE, 'comment') === 'true'
+  }
+
+  /**
    * Get layer opacity.
    * @returns {Float} Opacity value.
    */
