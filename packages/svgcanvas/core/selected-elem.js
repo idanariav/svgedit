@@ -347,12 +347,34 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
       const cmd = svgCanvas.recalculateDimensions(selected)
       if (cmd) {
         batchCmd.addSubCommand(cmd)
-      } else if ((selected.getAttribute('transform') || '') !== existingTransform) {
-        // For groups and other elements where recalculateDimensions returns null,
-        // record the transform change directly
-        batchCmd.addSubCommand(
-          new ChangeElementCommand(selected, { transform: existingTransform })
-        )
+      } else {
+        // recalculateDimensions() declines to bake a group's transform (it
+        // would push it down onto the children) or a clip-path/mask-carrying
+        // element's transform (the silhouette in <defs> is static, so baking
+        // would desync it — see recalculateDimensions()'s own comments) —
+        // it just returns null and leaves the transform list untouched. The
+        // `xform` inserted above is therefore never merged back in: every
+        // nudge on such an element (e.g. holding an arrow key) permanently
+        // appends one more raw translate item, forever, with nothing else to
+        // ever consolidate them. event-select.js's mouseUp handler already
+        // guards the equivalent mouse-drag path this way; do the same here
+        // so a long nudging session doesn't leave a huge transform-list
+        // chain that both svgedit's own per-frame transform math and the
+        // renderer have to multiply through on every later interaction.
+        if (tlist.numberOfItems > 1) {
+          const consolidatedMatrix = transformListToTransform(tlist).matrix
+          while (tlist.numberOfItems > 0) {
+            tlist.removeItem(0)
+          }
+          const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
+          newTransform.setMatrix(consolidatedMatrix)
+          tlist.appendItem(newTransform)
+        }
+        if ((selected.getAttribute('transform') || '') !== existingTransform) {
+          batchCmd.addSubCommand(
+            new ChangeElementCommand(selected, { transform: existingTransform })
+          )
+        }
       }
 
       svgCanvas

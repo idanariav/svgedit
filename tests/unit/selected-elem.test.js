@@ -408,6 +408,57 @@ describe('selected-elem', () => {
     expect(cloneBox.y).toBeCloseTo(originalBox.y)
   })
 
+  it('repeated nudges on a group do not accumulate one transform-list item per nudge', () => {
+    // Regression: recalculateDimensions() intentionally returns null for
+    // groups (it would push the transform down onto children) instead of
+    // baking the move into geometry. moveSelectedElements() used to leave
+    // the freshly-inserted translate exactly where it landed in that case —
+    // with nothing else to ever merge it back in, every nudge (e.g. an
+    // arrow-key press) permanently grew the transform list by one item, and
+    // that bloat gets serialized straight into the saved SVG. A dozen
+    // nudges left a dozen-item transform list on real drawings, slowing
+    // down every subsequent per-frame transform computation on that element
+    // (hit-testing, selector resize, rendering).
+    const group = svgCanvas.addSVGElementsFromJson({
+      element: 'g',
+      attr: { id: 'nudge-group' }
+    })
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'nudge-group-member', x: 0, y: 0, width: 10, height: 10 }
+    })
+    group.append(rect)
+    svgCanvas.selectOnly([group], true)
+
+    for (let i = 0; i < 5; i++) {
+      svgCanvas.moveSelectedElements(1, 0)
+    }
+
+    const tlist = group.transform.baseVal
+    expect(tlist.numberOfItems).toBe(1)
+    expect(group.getAttribute('transform')).toBe('matrix(1 0 0 1 5 0)')
+  })
+
+  it('repeated nudges on a masked element do not accumulate one transform-list item per nudge', () => {
+    // Same leak as the group case above, but reached via recalculateDimensions()'s
+    // other early-return branch: any element carrying clip-path/mask also
+    // skips baking (the silhouette in <defs> is static, so baking would
+    // desync it) and hit the same unconsolidated-transform-list bug.
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'nudge-masked', x: 0, y: 0, width: 10, height: 10, mask: 'url(#nudge-mask)' }
+    })
+    svgCanvas.selectOnly([rect], true)
+
+    for (let i = 0; i < 4; i++) {
+      svgCanvas.moveSelectedElements(2, 0)
+    }
+
+    const tlist = rect.transform.baseVal
+    expect(tlist.numberOfItems).toBe(1)
+    expect(rect.getAttribute('transform')).toBe('matrix(1 0 0 1 8 0)')
+  })
+
   it('duplicating an element with a filter clones the filter instead of sharing it with the original', () => {
     const rect = svgCanvas.addSVGElementsFromJson({
       element: 'rect',

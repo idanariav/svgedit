@@ -212,3 +212,79 @@ describe('setSvgString() id-assignment does not reach into <defs>', () => {
     expect(silhouette.hasAttribute('id')).toBe(false)
   })
 })
+
+// Regression test for a third bug found alongside the two above: before
+// moveSelectedElements() consolidated its inserted translate for groups and
+// clip-path/mask-carrying elements (recalculateDimensions() declines to bake
+// those), every arrow-key nudge left one more raw translate() item in the
+// transform list with nothing to ever merge them back down. A drawing saved
+// while carrying that bloat (e.g. from before the prevention fix, or an
+// external editor) must self-heal on load rather than keep multiplying
+// through a growing transform chain on every later interaction.
+describe('setSvgString() repairs a legacy stacked-translate transform', () => {
+  let svgCanvas
+
+  beforeEach(() => {
+    document.body.textContent = ''
+    const svgEditor = document.createElement('div')
+    svgEditor.id = 'svg_editor'
+    const svgcanvas = document.createElement('div')
+    svgcanvas.style.visibility = 'hidden'
+    svgcanvas.id = 'svgcanvas'
+    const workarea = document.createElement('div')
+    workarea.id = 'workarea'
+    workarea.append(svgcanvas)
+    const toolsLeft = document.createElement('div')
+    toolsLeft.id = 'tools_left'
+    svgEditor.append(workarea, toolsLeft)
+    document.body.append(svgEditor)
+
+    svgCanvas = new SvgCanvas(document.getElementById('svgcanvas'), {
+      canvas_expansion: 3,
+      dimensions: [640, 480],
+      initFill: { color: 'FF0000', opacity: 1 },
+      initStroke: { width: 5, color: '000000', opacity: 1 },
+      initOpacity: 1,
+      imgPath: '../editor/images',
+      langPath: 'locale/',
+      extPath: 'extensions/',
+      extensions: [],
+      initTool: 'select',
+      wireframe: false
+    })
+  })
+
+  afterEach(() => {
+    document.body.textContent = ''
+  })
+
+  it('collapses a run of stacked translate() items on a group into one, on load', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480">
+      <g class="layer"><title>Layer 1</title>
+        <g id="nudged" transform="translate(1 0) translate(1 0) translate(1 0) translate(1 0) translate(1 0)">
+          <rect x="0" y="0" width="10" height="10"/>
+        </g>
+      </g>
+    </svg>`
+
+    svgCanvas.setSvgString(svg)
+
+    const g = document.getElementById('nudged')
+    expect(g.transform.baseVal.numberOfItems).toBe(1)
+    expect(g.getAttribute('transform')).toBe('matrix(1 0 0 1 5 0)')
+  })
+
+  it('leaves a translate adjacent to a rotate/matrix alone (not the corruption pattern)', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480">
+      <g class="layer"><title>Layer 1</title>
+        <rect id="rotated" x="0" y="0" width="10" height="10"
+          transform="translate(5 0) rotate(45) translate(3 0)"/>
+      </g>
+    </svg>`
+
+    svgCanvas.setSvgString(svg)
+
+    const rect = document.getElementById('rotated')
+    expect(rect.transform.baseVal.numberOfItems).toBe(3)
+  })
+})
