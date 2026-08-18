@@ -540,6 +540,33 @@ describe('PathActions', () => {
       expect(svgCanvas.setStarted).toHaveBeenCalledWith(false)
     })
 
+    it('should hide leftover point grips when a locked path tool re-arms after committing a path', () => {
+      // Regression: with the path tool locked (double-click to keep it
+      // armed), finishing a path skips getPath_(element).show(false) and
+      // re-arms mode 'path' directly (see event.js's toolLocked branch), so
+      // drawnPath is already null while mode is still 'path'. If the user
+      // never entered node-edit mode this session (`path` stays unset),
+      // neither the drawnPath branch nor the pathedit branch below fired,
+      // so the just-committed path's point grips were never hidden and sat
+      // display:inline indefinitely.
+      const container = svgRoot.querySelector('#pathpointgrip_container')
+      const grip0 = document.createElementNS(NS.SVG, 'circle')
+      grip0.id = 'pathpointgrip_0'
+      grip0.setAttribute('display', 'inline')
+      const grip1 = document.createElementNS(NS.SVG, 'circle')
+      grip1.id = 'pathpointgrip_1'
+      grip1.setAttribute('display', 'inline')
+      container.append(grip0, grip1)
+
+      svgCanvas.getCurrentMode.mockReturnValue('path')
+      svgCanvas.getDrawnPath.mockReturnValue(null)
+
+      pathActionsMethod.clear()
+
+      expect(grip0.getAttribute('display')).toBe('none')
+      expect(grip1.getAttribute('display')).toBe('none')
+    })
+
     it('should NOT reset started for a plain select-mode click on a non-path shape', () => {
       // event-select.js calls pathActions.clear() on every mousedown that
       // selects a new (non-path) element, right after setStarted(true) was

@@ -1040,6 +1040,24 @@ class PathActions {
       } catch (e) {
         console.warn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e)
       }
+    } else if (mode === 'path') {
+      // A locked path tool (double-click to keep it armed — see
+      // LeftPanel.js's lockTool/setToolLocked) re-arms mode 'path' right
+      // after committing a path (event.js's toolLocked branch skips
+      // getPath_(element).show(false) so the re-arm stays synchronous), so
+      // drawnPath is already null here even though mode is still 'path'.
+      // If `path` below was never set this session — the common case for a
+      // "draw several paths in a row with the pen tool" workflow that never
+      // enters node-edit mode — nothing else in this function hides that
+      // committed path's point/control grips, and they stay display:inline
+      // at their old canvas position indefinitely (every later setMode()/
+      // getSvgString() call reaches this same branch and still does nothing).
+      // Hide whatever the shared grip container still shows; the next path
+      // drawn/edited re-adds only the grips it actually owns.
+      const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
+      for (const el of elements) {
+        el.setAttribute('display', 'none')
+      }
     }
     if (path) {
       // A lost mouseup (e.g. the button released outside the canvas
