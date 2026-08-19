@@ -253,17 +253,6 @@ class EditorStartup {
       this.$container // scope canvas element lookups to this editor's container
     )
 
-    // Dev-mode "visibility" inspector (selection boxes, path-node grips,
-    // group-context dimming) — off by default, toggled per instance via
-    // setDebugOverlay() (see Editor.js). Bound explicitly to this editor's
-    // own svgCanvas rather than a global so multiple mounted editors each
-    // inspect their own canvas.
-    const debugOverlay = document.createElement('se-debug-overlay')
-    debugOverlay.setAttribute('id', 'se-debug-overlay')
-    debugOverlay.svgCanvas = this.svgCanvas
-    this.$container.append(debugOverlay)
-    this.debugOverlay = debugOverlay
-
     // once svgCanvas is init - adding listener to the changes of the current mode
     this.modeEvent = this.svgCanvas.modeEvent
     document.addEventListener('modeChange', (evt) => this.modeListener(evt), { signal: this.listenerAbort.signal })

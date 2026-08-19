@@ -20,6 +20,7 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { Command } from '@svgedit/svgcanvas/core/history.js'
 import ConfigObj from './ConfigObj.js'
+import DebugSnapshotLogger from './DebugSnapshotLogger.js'
 import EditorStartup from './EditorStartup.js'
 import { clearActiveEditor } from './domScope.js'
 import LeftPanel from './panels/LeftPanel.js'
@@ -646,24 +647,29 @@ class Editor extends EditorStartup {
     // (modeChange, key handling, resize, …). Without this they leak onto
     // document/window per editor instance and keep firing on a dead editor.
     this.listenerAbort?.abort()
-    if (this.debugOverlay) this.debugOverlay.active = false
+    this._debugSnapshotLogger?.stop()
     this.svgCanvas?.destroy()
     clearActiveEditor(this)
   }
 
   /**
-   * Show/hide the dev-mode "visibility" inspector (see
-   * `components/seDebugOverlay.js`): a panel that polls
-   * `svgCanvas.getDebugSnapshot()` and flags selection boxes, path-node
-   * grips, or group-context dimming that are still rendered but no longer
-   * backed by the model. Off by default; a host (e.g. the Obsidian plugin's
-   * "Debug logging" setting) calls this to enable it, mirroring the
-   * `applyTheme(theme, rootEl)` host-toggle pattern in `themeUtil.js`.
-   * @param {boolean} enabled
+   * Route the dev-mode "visibility" snapshot (see
+   * `svgCanvas.getDebugSnapshot()`) to a host-provided log sink instead of
+   * rendering it in a UI panel. The snapshot surfaces selection boxes,
+   * path-node grips, or group-context dimming that are still rendered but no
+   * longer backed by the model — state with a history of desyncing silently.
+   * Off by default. A host (e.g. the Obsidian plugin's "Debug logging"
+   * setting) passes a sink function to receive `(event, detail)` calls
+   * whenever the snapshot changes, mirroring the shape of its own action log
+   * (`plugin.debugLog.log(event, detail)`); pass `null`/omit to stop.
+   * @param {((event: string, detail?: object) => void)|null} [sink]
    * @returns {void}
    */
-  setDebugOverlay (enabled) {
-    if (this.debugOverlay) this.debugOverlay.active = Boolean(enabled)
+  setDebugLogger (sink) {
+    if (!this._debugSnapshotLogger) {
+      this._debugSnapshotLogger = new DebugSnapshotLogger(() => this.svgCanvas.getDebugSnapshot())
+    }
+    this._debugSnapshotLogger.start(sink)
   }
 
   // parents() https://stackoverflow.com/a/12981248
