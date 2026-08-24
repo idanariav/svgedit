@@ -66,9 +66,22 @@ export class SeSettingsPopover extends HTMLElement {
     this.$popup.style.inset = 'auto'
     this.$popup.addEventListener('toggle', this.handleToggle)
 
+    // The native light-dismiss algorithm evaluates on `pointerdown`, before
+    // this `click` handler runs — clicking the trigger while the popover is
+    // open lets the browser auto-close it first, so by the time `click`
+    // fires `this.isOpen` already reads false and `toggle()` reopens it
+    // instead of leaving it closed. Capture the pre-dismiss open state on
+    // pointerdown and act on that instead of re-reading `isOpen` at click time.
+    this.$trigger.addEventListener('pointerdown', () => {
+      this._wasOpenOnPointerDown = this.isOpen
+    })
     this.$trigger.addEventListener('click', e => {
       e.stopPropagation()
-      this.toggle()
+      if (this._wasOpenOnPointerDown) {
+        this.close()
+      } else {
+        this.open()
+      }
     })
   }
 

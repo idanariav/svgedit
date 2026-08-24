@@ -78,10 +78,31 @@ describe('SeSettingsPopover (base class)', () => {
     expect(el.isOpen).toBe(false)
   })
 
+  // A real click always fires pointerdown before click; the component reads
+  // isOpen at pointerdown time (see comment on the listener) since the
+  // browser's own light-dismiss can otherwise auto-close the popover between
+  // the two events, on the second click, before our click handler runs.
+  const clickTrigger = (el) => {
+    el.$trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    el.$trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  }
+
   it('clicking the trigger toggles the popup open, and again closes it', () => {
     const el = mountElement('se-test-settings-popover')
-    el.$trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    clickTrigger(el)
     expect(el.isOpen).toBe(true)
+    clickTrigger(el)
+    expect(el.isOpen).toBe(false)
+  })
+
+  it('clicking the trigger while open still closes it even if the browser already auto-closed the popover via light-dismiss before the click fires', () => {
+    const el = mountElement('se-test-settings-popover')
+    el.open()
+    // Simulate the native light-dismiss race: pointerdown on the trigger
+    // reads isOpen while still true, then the browser auto-closes the
+    // popover (as it does for an outside click) before click fires.
+    el.$trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    el.$popup.hidePopover()
     el.$trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(el.isOpen).toBe(false)
   })
