@@ -550,6 +550,53 @@ describe('event', () => {
     expect(selectOnlyCalled).toBe(false)
   })
 
+  it('mouseUpEvent() fires elementInserted with the new element before InsertElementCommand/changed', async () => {
+    // The editor layer (Editor.js#elementInserted) uses this event to stamp a
+    // per-object-type default class onto brand-new elements — see
+    // classLibrary.js#getDefaultClassForTag. It must fire once, with the
+    // freshly created element, before the InsertElementCommand is recorded.
+    const rectElement = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    rectElement.setAttribute('width', '10')
+    rectElement.setAttribute('height', '10')
+    contentGroup.append(rectElement)
+
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getOpacAni = () => ({})
+    canvas.getToolLocked = () => false
+    canvas.getElement = () => rectElement
+    canvas.getId = () => 'test-rect'
+    canvas.getCurConfig = () => ({ gridSnapping: false, showRulers: false, selectNew: true })
+    canvas.getCurrentDrawing = () => ({ releaseId () {} })
+    canvas.selectOnly = () => {}
+    canvas.setMode = () => {}
+
+    const calls = []
+    canvas.call = (name, args) => { calls.push([name, args]) }
+    let insertCommandCreated = false
+    canvas.addCommandToHistory = () => { insertCommandCreated = true }
+
+    canvas.setCurrentMode('rect')
+    canvas.setStarted(true)
+
+    canvas.mouseUpEvent({
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      preventDefault () {}
+    })
+
+    // The opacity-animation branch defers this by 0ms via setTimeout.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(insertCommandCreated).toBe(true)
+    const eventNames = calls.map(([name]) => name)
+    expect(eventNames.filter(n => n === 'elementInserted')).toHaveLength(1)
+    const insertedCall = calls.find(([name]) => name === 'elementInserted')
+    expect(insertedCall[1]).toEqual([rectElement])
+    expect(eventNames.indexOf('elementInserted')).toBeLessThan(eventNames.indexOf('changed'))
+  })
+
   it('mouseUpEvent() defaults curProperties.stroke_width to 1 for a selected element with no stroke-width attribute', () => {
     // cleanupElement strips stroke-width="1" (the SVG initial value), leaving
     // a real, visible 1px stroke with no stroke-width attribute at all.

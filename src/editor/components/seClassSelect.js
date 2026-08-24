@@ -7,7 +7,10 @@ import {
   saveClass,
   deleteClass,
   elementScope,
-  attrCatalog
+  attrCatalog,
+  nextClassString,
+  getDefaultClassForTag,
+  setDefaultClassForTag
 } from '../classLibrary.js'
 
 /**
@@ -219,6 +222,10 @@ select {
   </label>
   <div class="lbl">Attributes</div>
   <div class="checklist"></div>
+  <label class="checkrow default-row">
+    <input class="cl-default" type="checkbox">
+    <span class="default-text"></span>
+  </label>
   <div class="actions">
     <button class="cancel" type="button">Cancel</button>
     <button class="save" type="button">Save</button>
@@ -245,22 +252,12 @@ const setAttrIfChanged = (elem, attr, value, oldAttrs) => {
   else elem.setAttribute(attr, next)
 }
 
-/** Class tokens not under editor control (e.g. layer/internal `se_*`). */
-const internalTokens = elem =>
-  (elem.getAttribute('class') || '').split(/\s+/).filter(tk => tk.startsWith('se_'))
-
 /** The user-facing (library) class token currently on an element. */
 const currentUserClass = elem =>
   (elem.getAttribute('class') || '')
     .split(/\s+/)
     .filter(tk => tk && !tk.startsWith('se_'))
     .join(' ')
-
-/** Build the next `class` string preserving internal tokens; null if empty. */
-const nextClassString = (elem, name) => {
-  const next = [...internalTokens(elem), name].filter(Boolean).join(' ')
-  return next || null
-}
 
 class SeClassSelect extends HTMLElement {
   constructor () {
@@ -280,9 +277,12 @@ class SeClassSelect extends HTMLElement {
     this.$name = this._shadowRoot.querySelector('.cl-name')
     this.$scope = this._shadowRoot.querySelector('.cl-scope')
     this.$checklist = this._shadowRoot.querySelector('.checklist')
+    this.$default = this._shadowRoot.querySelector('.cl-default')
+    this.$defaultText = this._shadowRoot.querySelector('.default-text')
 
     this._elem = null
     this._editingPreset = null
+    this._defaultTag = null
 
     this.$select.addEventListener('change', () => this.applyClass(this.$select.value))
     this.$add.addEventListener('click', e => {
@@ -423,6 +423,9 @@ class SeClassSelect extends HTMLElement {
     this.$name.value = editing?.name ?? currentUserClass(this._elem)
     this.$scope.value = scope
     this._renderChecklist(scope, editing)
+    this._defaultTag = this._elem.tagName.toLowerCase()
+    this.$defaultText.textContent = `Default for new ${this._defaultTag} objects`
+    this.$default.checked = !!editing && getDefaultClassForTag(this._defaultTag) === editing.name
     this.$popover.style.display = 'flex'
     this.positionPopup()
     this.$name.focus()
@@ -532,6 +535,16 @@ class SeClassSelect extends HTMLElement {
     if (shadow) preset.shadow = shadow
     if (outline) preset.outline = outline
     saveClass(preset)
+    // Persist the "default for new <tag> objects" toggle. Only clear the
+    // existing default when it pointed at *this* preset (by its old name) —
+    // otherwise leave an unrelated tag's default alone.
+    const wasDefault = this._editingPreset &&
+      getDefaultClassForTag(this._defaultTag) === this._editingPreset.name
+    if (this.$default.checked) {
+      setDefaultClassForTag(this._defaultTag, name)
+    } else if (wasDefault) {
+      setDefaultClassForTag(this._defaultTag, null)
+    }
     this.closeSave()
     // Tag the source object with the new class (a no-op on its attributes) so
     // the dropdown reflects it and panels refresh.

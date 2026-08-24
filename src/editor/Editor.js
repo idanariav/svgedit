@@ -34,6 +34,7 @@ import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { blurActiveField } from './components/fieldAutoBlur.js'
 import { runSteps } from './runSteps.js'
+import { getDefaultClassForTag, getClass, applyDefaultClassAttrs } from './classLibrary.js'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -1127,6 +1128,32 @@ class Editor extends EditorStartup {
         }
       )]
     ])
+  }
+
+  /**
+   * A brand-new element (rect/ellipse/line/text/path/image/... or an
+   * extension-drawn shape) was just committed via the canvas's mouseUp
+   * insertion path — see `event.js`'s `elementInserted` emission, right
+   * before its `InsertElementCommand` is created. Stamp that object type's
+   * configured default class (see `classLibrary.js#getDefaultClassForTag`),
+   * if one is set. Not undo-tracked on its own: the element isn't in history
+   * yet, so the insert command captures it already classed, and undoing the
+   * insertion removes it whole.
+   * @param {external:Window} win
+   * @param {Element[]} elems
+   * @returns {void}
+   */
+  elementInserted (win, elems) {
+    const elem = elems?.[0]
+    // A frame is a plain data-frame rect, not a user-facing "rect" object —
+    // it always keeps its own fixed dashed-outline style (see
+    // event-shape-draw.js's 'frame' case), so it's excluded from defaults.
+    if (!elem || elem.hasAttribute('data-frame')) return
+    const name = getDefaultClassForTag(elem.tagName.toLowerCase())
+    if (!name) return
+    const preset = getClass(name)
+    if (!preset) return
+    applyDefaultClassAttrs(elem, preset)
   }
 
   /**

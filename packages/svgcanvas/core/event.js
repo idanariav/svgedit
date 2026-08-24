@@ -192,6 +192,7 @@ const mouseOutEvent = (evt) => {
 * mid-gesture state they were in, wedging future mouseDown/mouseUp handling.
 * @param {MouseEvent} evt
 * @fires module:svgcanvas.SvgCanvas#event:zoomed
+* @fires module:svgcanvas.SvgCanvas#event:elementInserted
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @fires module:svgcanvas.SvgCanvas#event:ext_mouseUp
 * @returns {void}
@@ -442,6 +443,13 @@ const mouseUpEventImpl = (evt) => {
           svgCanvas.selectOnly([element], true)
         }
       }
+      // A precise "this element was just created" signal, distinct from the
+      // general-purpose 'changed' event fired below (which also fires for
+      // moves/resizes/attribute edits on existing elements). The editor layer
+      // uses it to stamp an object type's configured default class — see
+      // Editor.js#elementInserted / classLibrary.js#getDefaultClassForTag.
+      svgCanvas.call('elementInserted', [element])
+
       // we create the insert command that is stored on the stack
       // undo means to call cmd.unapply(), redo means to call cmd.apply()
       svgCanvas.addCommandToHistory(new InsertElementCommand(element))

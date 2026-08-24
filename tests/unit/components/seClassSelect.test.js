@@ -4,7 +4,9 @@ import {
   getClass,
   getClassesForScope,
   saveClass,
-  deleteClass
+  deleteClass,
+  getDefaultClassForTag,
+  setDefaultClassForTag
 } from '../../../src/editor/classLibrary.js'
 import '../../../src/editor/components/seClassSelect.js'
 
@@ -15,7 +17,14 @@ vi.mock('../../../src/editor/classLibrary.js', () => ({
   saveClass: vi.fn(),
   deleteClass: vi.fn(),
   elementScope: vi.fn(elem => (elem?.tagName?.toLowerCase() === 'text' ? 'text' : 'shape')),
-  attrCatalog: vi.fn(() => ['fill', 'stroke'])
+  attrCatalog: vi.fn(() => ['fill', 'stroke']),
+  nextClassString: vi.fn((elem, name) => {
+    const internal = (elem.getAttribute('class') || '').split(/\s+/).filter(tk => tk.startsWith('se_'))
+    const next = [...internal, name].filter(Boolean).join(' ')
+    return next || null
+  }),
+  getDefaultClassForTag: vi.fn(),
+  setDefaultClassForTag: vi.fn()
 }))
 
 /** Build a minimal SVG rect element with a class attribute for use as selection. */
@@ -50,6 +59,8 @@ describe('se-class-select', () => {
     getClassesForScope.mockReset().mockReturnValue([])
     saveClass.mockReset()
     deleteClass.mockReset()
+    getDefaultClassForTag.mockReset()
+    setDefaultClassForTag.mockReset()
 
     svgCanvas = {
       getSelectedElements: vi.fn(() => []),
@@ -326,6 +337,78 @@ describe('se-class-select', () => {
       const row = el.$checklist.querySelector('input[data-outline]')
       expect(row).toBeTruthy()
       expect(row.checked).toBe(true)
+    })
+
+    it('openSave checks the default checkbox when this preset is the tag\'s current default', () => {
+      getClassesForScope.mockReturnValue([{ name: 'myClass', scope: 'shape', attrs: {} }])
+      getClass.mockReturnValue({ name: 'myClass', scope: 'shape', attrs: {} })
+      getDefaultClassForTag.mockReturnValue('myClass')
+      const el = mountElement('se-class-select')
+      const rect = makeRect('myClass')
+      el.refresh(rect)
+
+      el.openSave()
+
+      expect(getDefaultClassForTag).toHaveBeenCalledWith('rect')
+      expect(el.$default.checked).toBe(true)
+      expect(el.$defaultText.textContent).toContain('rect')
+    })
+
+    it('openSave leaves the default checkbox unchecked when this preset is not the tag default', () => {
+      getClassesForScope.mockReturnValue([{ name: 'myClass', scope: 'shape', attrs: {} }])
+      getClass.mockReturnValue({ name: 'myClass', scope: 'shape', attrs: {} })
+      getDefaultClassForTag.mockReturnValue('someOtherClass')
+      const el = mountElement('se-class-select')
+      const rect = makeRect('myClass')
+      el.refresh(rect)
+
+      el.openSave()
+
+      expect(el.$default.checked).toBe(false)
+    })
+
+    it('save() sets the tag default when the checkbox is checked', () => {
+      getClassesForScope.mockReturnValue([])
+      getClass.mockReturnValue(undefined)
+      const el = mountElement('se-class-select')
+      el.refresh(makeRect())
+      el.openSave()
+      el.$name.value = 'brandNew'
+      el.$default.checked = true
+
+      el.save()
+
+      expect(setDefaultClassForTag).toHaveBeenCalledWith('rect', 'brandNew')
+    })
+
+    it('save() clears the tag default when unchecked after previously being the default', () => {
+      getClassesForScope.mockReturnValue([{ name: 'myClass', scope: 'shape', attrs: {} }])
+      getClass.mockReturnValue({ name: 'myClass', scope: 'shape', attrs: {} })
+      getDefaultClassForTag.mockReturnValue('myClass')
+      const el = mountElement('se-class-select')
+      const rect = makeRect('myClass')
+      el.refresh(rect)
+      el.openSave()
+      expect(el.$default.checked).toBe(true)
+      el.$default.checked = false
+
+      el.save()
+
+      expect(setDefaultClassForTag).toHaveBeenCalledWith('rect', null)
+    })
+
+    it('save() leaves other tags\' defaults untouched when unchecked and never was the default', () => {
+      getClassesForScope.mockReturnValue([])
+      getClass.mockReturnValue(undefined)
+      getDefaultClassForTag.mockReturnValue(undefined)
+      const el = mountElement('se-class-select')
+      el.refresh(makeRect())
+      el.openSave()
+      el.$name.value = 'brandNew'
+
+      el.save()
+
+      expect(setDefaultClassForTag).not.toHaveBeenCalled()
     })
   })
 

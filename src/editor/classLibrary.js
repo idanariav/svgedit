@@ -27,6 +27,7 @@
 import { getUserDataAdapter } from './userDataAdapter.js'
 
 const STORAGE_KEY = 'svg-edit-class-library'
+const DEFAULTS_STORAGE_KEY = 'svg-edit-default-classes'
 
 /**
  * Common attributes offered for every element scope.
@@ -148,10 +149,122 @@ export const saveClass = preset => {
 }
 
 /**
- * Remove a preset by name.
+ * Per-object-type ("tag") default class assignments — e.g. `{ text: 'title' }`
+ * means every newly created `<text>` element gets the "title" preset stamped
+ * on automatically. Storage mirrors {@link getClasses}: adapter-first
+ * (`getDefaultClasses`/`setDefaultClasses`), else `localStorage`.
+ * @returns {Object<string,string>} Map of lowercase tag name -> class name.
+ */
+export const getDefaultClasses = () => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    const parsed = adapter.getDefaultClasses?.()
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  }
+  try {
+    const raw = window.localStorage.getItem(DEFAULTS_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const writeDefaultClasses = defaults => {
+  const adapter = getUserDataAdapter()
+  if (adapter) {
+    adapter.setDefaultClasses?.(defaults)
+    return
+  }
+  try {
+    window.localStorage.setItem(DEFAULTS_STORAGE_KEY, JSON.stringify(defaults))
+  } catch {
+    /* storage may be unavailable (private mode); fail silently */
+  }
+}
+
+/**
+ * The default class name for a given element tag, if one is set.
+ * @param {string} tag Lowercase tag name (e.g. `'text'`, `'rect'`).
+ * @returns {string|undefined}
+ */
+export const getDefaultClassForTag = tag => getDefaultClasses()[tag]
+
+/**
+ * Set (or clear, when `name` is falsy) the default class for an element tag.
+ * @param {string} tag Lowercase tag name (e.g. `'text'`, `'rect'`).
+ * @param {string|null} name
+ * @returns {void}
+ */
+export const setDefaultClassForTag = (tag, name) => {
+  const defaults = getDefaultClasses()
+  if (name) {
+    defaults[tag] = name
+  } else {
+    delete defaults[tag]
+  }
+  writeDefaultClasses(defaults)
+}
+
+/**
+ * Remove a preset by name. Also clears it from any object type's default
+ * (see {@link getDefaultClassForTag}) so a deleted class can't be silently
+ * re-applied to newly created elements under a stale name.
  * @param {string} name
  * @returns {void}
  */
 export const deleteClass = name => {
   writeClasses(getClasses().filter(c => c.name !== name))
+  const defaults = getDefaultClasses()
+  const tags = Object.keys(defaults).filter(tag => defaults[tag] === name)
+  if (tags.length) {
+    tags.forEach(tag => delete defaults[tag])
+    writeDefaultClasses(defaults)
+  }
+}
+
+/**
+ * Class tokens not under editor control (e.g. layer/internal `se_*`),
+ * preserved whenever the library's `class` token is stamped onto an element.
+ * @param {Element} elem
+ * @returns {string[]}
+ */
+export const internalClassTokens = elem =>
+  (elem.getAttribute('class') || '').split(/\s+/).filter(tk => tk.startsWith('se_'))
+
+/**
+ * Build the next `class` attribute string for an element, preserving its
+ * internal tokens and appending/replacing the library class name.
+ * @param {Element} elem
+ * @param {string} name Library class name, or `''`/falsy to remove it.
+ * @returns {string|null} The new `class` value, or `null` when it would be empty.
+ */
+export const nextClassString = (elem, name) => {
+  const next = [...internalClassTokens(elem), name].filter(Boolean).join(' ')
+  return next || null
+}
+
+/**
+ * Stamp a preset's flat attributes (and library `class` token) onto an
+ * element with plain `setAttribute` calls — no undo tracking. Used to apply
+ * an object type's default class to a brand-new element that isn't in the
+ * undo history yet (see `Editor.js#elementInserted`); unlike
+ * `<se-class-select>`'s `applyClass`, which stamps onto an already-inserted,
+ * possibly-selected element and must record each change for undo.
+ *
+ * Shadow/outline (structured, filter-based) presets are not applied here —
+ * defaults only cover the flat attribute set.
+ * @param {Element} elem
+ * @param {{name:string,attrs:Object}} preset
+ * @returns {void}
+ */
+export const applyDefaultClassAttrs = (elem, preset) => {
+  const cls = nextClassString(elem, preset.name)
+  if (cls) elem.setAttribute('class', cls)
+  else elem.removeAttribute('class')
+  const attrs = preset.attrs || {}
+  Object.entries(attrs).forEach(([k, v]) => elem.setAttribute(k, v))
+  if ('stroke-width' in attrs) {
+    elem.setAttribute('paint-order', 'stroke')
+  }
 }

@@ -24,6 +24,8 @@
  *     setHotkeys(overrides: object): void,      // full overrides map
  *     getClasses(): Array,                      // style-preset "class" library
  *     setClasses(classes: Array): void,         // full class array
+ *     getDefaultClasses(): object,               // per-tag default class names, e.g. { text: 'title' }
+ *     setDefaultClasses(defaults: object): void, // full per-tag default map
  *     getCanvasPresets(): Array<{ratio,w,h}>,   // canvas-size presets
  *     setCanvasPresets(presets: Array): void,   // full presets array
  *     getFonts(): Promise<Array<{family,woff2Base64}>>, // persisted custom fonts
@@ -39,7 +41,11 @@
  * fall back to `localStorage` key `svg-edit-hotkeys`.
  *
  * `getClasses`/`setClasses` back the class library (`classLibrary.js`), falling
- * back to `localStorage` key `svg-edit-class-library`.
+ * back to `localStorage` key `svg-edit-class-library`. `getDefaultClasses`/
+ * `setDefaultClasses` back its per-object-type default class assignments,
+ * falling back to `localStorage` key `svg-edit-default-classes`; both are
+ * optional (called via `?.()`) so an adapter written before this feature
+ * existed still works, just without default-class persistence.
  * `getCanvasPresets`/`setCanvasPresets` back the canvas-settings preset list
  * (`seCanvasSettings.js`), falling back to `localStorage` key
  * `svg-edit-canvas-presets`. `getFonts`/`saveFont`

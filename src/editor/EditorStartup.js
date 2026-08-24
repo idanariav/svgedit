@@ -318,6 +318,7 @@ class EditorStartup {
     this.svgCanvas.bind('selected', this.selectedChanged.bind(this))
     this.svgCanvas.bind('transition', this.elementTransition.bind(this))
     this.svgCanvas.bind('changed', this.elementChanged.bind(this))
+    this.svgCanvas.bind('elementInserted', this.elementInserted.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))
     this.svgCanvas.bind('zoomDone', this.zoomDone.bind(this))
