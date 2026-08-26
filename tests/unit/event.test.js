@@ -145,6 +145,10 @@ describe('event', () => {
       },
       runExtensions () {
         return []
+      },
+      cloneSelectedElements (dx, dy) {
+        this.cloneSelectedElementsCalls = this.cloneSelectedElementsCalls || []
+        this.cloneSelectedElementsCalls.push({ dx, dy })
       }
     }
 
@@ -169,6 +173,67 @@ describe('event', () => {
 
     expect(rubberBox.getAttribute('x')).toBe('10')
     expect(rubberBox.getAttribute('y')).toBe('20')
+  })
+
+  it('mouseDownEvent() arms alt-clone intent instead of cloning immediately', () => {
+    // Regression guard: cloneSelectedElements() used to be called right here,
+    // unconditionally, on any mousedown with altKey held -- even a plain
+    // alt+click that never drags, or a stray altKey:true the browser/OS
+    // occasionally reports with nothing actually held. That silently stamped
+    // an invisible duplicate (offset 0,0) on top of whatever was selected.
+    // The clone now only happens in event-select.js's move(), once a real
+    // drag is confirmed -- mousedown just records that alt was held. Uses
+    // zoom mode (like the sibling test above) since arming happens before
+    // any mode-specific dispatch, and this mock canvas isn't fleshed out
+    // enough for select mode's own down() handler to run without throwing.
+    canvas.setCurrentMode('zoom')
+    canvas.mouseDownEvent({
+      clientX: 10,
+      clientY: 20,
+      button: 0,
+      altKey: true,
+      shiftKey: false,
+      preventDefault () {},
+      target: contentGroup
+    })
+
+    expect(canvas.cloneSelectedElementsCalls).toBeUndefined()
+    expect(canvas.altCloneArmed).toBe(true)
+  })
+
+  it('mouseDownEvent() disarms alt-clone intent on a plain click', () => {
+    canvas.altCloneArmed = true // leftover from a previous alt+drag gesture
+    canvas.setCurrentMode('zoom') // see zoom-mode note in the sibling test above
+    canvas.mouseDownEvent({
+      clientX: 10,
+      clientY: 20,
+      button: 0,
+      altKey: false,
+      shiftKey: false,
+      preventDefault () {},
+      target: contentGroup
+    })
+
+    expect(canvas.altCloneArmed).toBe(false)
+  })
+
+  it('mouseUpEvent() clears a still-armed alt-clone intent (e.g. an alt+click with no drag)', () => {
+    canvas.setCurrentMode('select')
+    canvas.setStarted(true) // mouseUpEventImpl no-ops entirely if !getStarted()
+    canvas.altCloneArmed = true
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    canvas.mouseUpEvent({
+      clientX: 10,
+      clientY: 20,
+      button: 0,
+      shiftKey: false,
+      preventDefault () {},
+      target: contentGroup
+    })
+
+    expect(canvas.altCloneArmed).toBe(false)
+    errSpy.mockRestore()
   })
 
   it('mouseDownEvent() ignores stale selection grips outside select mode', () => {

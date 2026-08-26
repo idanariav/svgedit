@@ -87,3 +87,57 @@ describe('event-select move() drag threshold', () => {
     expect(svgCanvas.moveSelectionThresholdReached).toBeFalsy()
   })
 })
+
+describe('event-select move() alt-drag-to-duplicate', () => {
+  // Regression guard: cloneSelectedElements() used to fire unconditionally
+  // at mousedown on any altKey:true click (see event.js), stamping an
+  // invisible duplicate (offset 0,0, on top of the original) on a plain
+  // alt+click that never actually dragged, or on any mousedown where the
+  // browser/OS misreports a stale altKey:true. event.js now only arms the
+  // intent (svgCanvas.altCloneArmed); the actual clone happens here, gated
+  // on the same real-drag distance threshold used for an ordinary move.
+  const makeCloneCanvas = () => {
+    const calls = []
+    return { ...makeCanvas(), calls, cloneSelectedElements: (dx, dy) => calls.push({ dx, dy }) }
+  }
+
+  it('does not clone while still under the real-drag threshold, and touches nothing else', () => {
+    const svgCanvas = makeCloneCanvas()
+    svgCanvas.altCloneArmed = true
+    const { move } = eventSelectInit(svgCanvas)
+
+    // 1 content unit at zoom 1, well under the 4-screen-px threshold.
+    move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 1, zoom: 1 }))
+
+    expect(svgCanvas.calls).toEqual([])
+    expect(svgCanvas.altCloneArmed).toBe(true) // still armed -- next tick gets another chance
+    expect(svgCanvas.hasDragStartTransform).toBeUndefined() // no dummy transform inserted on the original
+  })
+
+  it('clones exactly once the drag crosses the threshold, deferring the drag-start bookkeeping to the next tick', () => {
+    const svgCanvas = makeCloneCanvas()
+    svgCanvas.altCloneArmed = true
+    const { move } = eventSelectInit(svgCanvas)
+
+    // 5 content units at zoom 1, over the 4-screen-px threshold.
+    move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 5, zoom: 1 }))
+
+    expect(svgCanvas.calls).toEqual([{ dx: 0, dy: 0 }])
+    expect(svgCanvas.altCloneArmed).toBe(false) // consumed, so a second move tick won't clone again
+    // cloneSelectedElements() re-selects the clones itself; this tick
+    // deliberately doesn't touch hasDragStartTransform so the *next* move
+    // tick inserts the dummy transform for the clones, same as any other
+    // fresh drag start.
+    expect(svgCanvas.hasDragStartTransform).toBeUndefined()
+  })
+
+  it('never clones when not armed, regardless of drag distance', () => {
+    const svgCanvas = makeCloneCanvas()
+    // altCloneArmed left unset (falsy) -- an ordinary, non-alt drag.
+    const { move } = eventSelectInit(svgCanvas)
+
+    move({ shiftKey: false }, makeCtx({ selectedElements: [], x: 100, zoom: 1 }))
+
+    expect(svgCanvas.calls).toEqual([])
+  })
+})

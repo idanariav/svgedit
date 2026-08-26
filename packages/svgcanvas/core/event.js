@@ -205,6 +205,7 @@ const mouseUpEvent = (evt) => {
     svgCanvas.setStarted(false)
     svgCanvas.hasDragStartTransform = false
     svgCanvas.dragStartTransforms = null
+    svgCanvas.altCloneArmed = false
     svgCanvas.groupResizeStart = null
     svgCanvas.groupRotateStart = null
     svgCanvas.groupRotateCenter = null
@@ -248,6 +249,14 @@ const mouseUpEventImpl = (evt) => {
   // TODO: Make true when in multi-unit mode
   const useUnit = false // (svgCanvas.getCurConfig().baseUnit !== 'px');
   svgCanvas.setStarted(false)
+  // Reset here, unconditionally, rather than in the "reset drag flag after
+  // any mouseUp" block further down: the 'select'/'resize'/'multiselect'
+  // cases below `return` directly out of eventSelect.up() and never reach
+  // that block, and an armed-but-never-consumed intent (e.g. a mousedown
+  // with altKey held while some other mode was active, which move() in
+  // event-select.js never got a chance to see) must not leak into a later,
+  // unrelated select-mode drag.
+  svgCanvas.altCloneArmed = false
   let t
   // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
   // Resize must be flattened via recalculateDimensions (which bakes the scale into
@@ -614,6 +623,7 @@ const mouseDownEvent = (evt) => {
     svgCanvas.setStarted(false)
     svgCanvas.hasDragStartTransform = false
     svgCanvas.dragStartTransforms = null
+    svgCanvas.altCloneArmed = false
   }
 }
 
@@ -629,9 +639,16 @@ const mouseDownEventImpl = (evt) => {
 
   const rightClick = (evt.button === 2)
 
-  if (evt.altKey) { // duplicate when dragging
-    svgCanvas.cloneSelectedElements(0, 0)
-  }
+  // Alt-drag-to-duplicate: only arm the intent here. Cloning unconditionally
+  // on every alt+mousedown — regardless of whether a drag ever actually
+  // followed, or whether the click even landed on the current selection —
+  // silently stamped an invisible duplicate (same position, offset 0,0)
+  // under the cursor on a plain alt+click, and on any mousedown where the
+  // browser/OS momentarily misreports a stale altKey:true. The clone itself
+  // now happens in event-select.js's move(), once the mouse actually crosses
+  // the same real-drag distance threshold used to gate an ordinary move,
+  // after the mousedown's own selection change has taken effect.
+  svgCanvas.altCloneArmed = evt.altKey
 
   // Get screenCTM from the first child group of svgcontent
   // Note: svgcontent itself has x/y offset attributes, so we use its first child

@@ -106,6 +106,31 @@ export const init = (canvas) => {
   const move = (evt, ctx) => {
     const { selectedElements, selected, zoom, svgRoot } = ctx
     let { x, y } = ctx
+    // Alt-drag-to-duplicate: only clone once the drag crosses the same "was
+    // this a real drag or just a click" 4-screen-px threshold used below
+    // (deltaThresholdReached) to gate an ordinary drag actually moving the
+    // selection -- not on the mere first mousemove tick after an alt+
+    // mousedown, and not at mousedown itself. event.js's mouseDownEventImpl
+    // only arms the intent (svgCanvas.altCloneArmed); cloning unconditionally
+    // right there used to stamp an invisible duplicate (offset 0,0, sitting
+    // exactly on top of the original) on a plain alt+click that never
+    // actually dragged, or on any mousedown where the browser/OS misreports
+    // a stale altKey:true. Checked before the dummy-transform insertion below
+    // so a clone that never happens doesn't leave a stray no-op transform
+    // stacked on the original; while armed and still under threshold this
+    // returns early every tick, touching nothing.
+    if (svgCanvas.altCloneArmed && selectedElements.length > 0) {
+      const armDeltaThreshold = 4 / zoom
+      const dx0 = x - svgCanvas.getStartX()
+      const dy0 = y - svgCanvas.getStartY()
+      if (Math.abs(dx0) <= armDeltaThreshold && Math.abs(dy0) <= armDeltaThreshold) {
+        return
+      }
+      svgCanvas.altCloneArmed = false
+      svgCanvas.cloneSelectedElements(0, 0)
+      return
+    }
+
     // Insert dummy transform on first mouse move (drag start), not on click.
     // This avoids creating multiple transforms that trigger unwanted flattening.
     if (!svgCanvas.hasDragStartTransform && selectedElements.length > 0) {
