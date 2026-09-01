@@ -476,14 +476,27 @@ class SelectorManager {
   releaseSelector (elem) {
     if (!elem) { return }
     const N = this.selectors.length
-    const sel = this.selectorMap[elem.id]
+    let sel = this.selectorMap[elem.id]
+    // selectorMap is keyed by the element's id, but an id can be reassigned
+    // after the selector was requested for it (e.g. paste/import de-duplicating
+    // colliding ids, or undo restoring a cloned node) -- the id-keyed lookup
+    // then misses even though a selector is still locked onto this exact
+    // element, and the release below would silently no-op: the selector stays
+    // locked with its box stuck visible at its last position forever, since
+    // nothing will ever look it up under its new id either. Fall back to the
+    // live element reference, which doesn't change.
+    if (sel?.selectedElement !== elem) {
+      sel = this.selectors.find((s) => s?.selectedElement === elem) ?? sel
+    }
     if (!sel?.locked) {
       // TODO(codedread): Ensure this exists in this module.
       warn('WARNING! selector was released but was already unlocked', null, 'select')
     }
     for (let i = 0; i < N; ++i) {
       if (this.selectors[i] && this.selectors[i] === sel) {
-        delete this.selectorMap[elem.id]
+        for (const key of Object.keys(this.selectorMap)) {
+          if (this.selectorMap[key] === sel) delete this.selectorMap[key]
+        }
         sel.locked = false
         sel.selectedElement = null
         sel.showGrips(false)

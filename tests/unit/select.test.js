@@ -48,7 +48,8 @@ describe('select', function () {
     getSvgRoot () { return svgroot },
     getSvgContent () { return svgContent },
     getDataStorage () { return dataStorage },
-    $id (id) { return svgroot.querySelector(`#${id}`) }
+    $id (id) { return svgroot.querySelector(`#${id}`) },
+    getZoom () { return 1 }
   }
 
   /**
@@ -156,5 +157,31 @@ describe('select', function () {
     assert.ok(spg.querySelector('#selectorGrip_resize_w'))
     assert.ok(spg.querySelector('#selectorGrip_rotateconnector'))
     assert.ok(spg.querySelector('#selectorGrip_rotate'))
+  })
+
+  it('releaseSelector still finds and hides the selector after the element\'s id changes', function () {
+    // requestSelector()/releaseSelector() key selectorMap by elem.id. If the
+    // id changes after the selector is requested (paste/import de-duplicating
+    // a colliding id, undo restoring a cloned node, an id-sync pass, etc.),
+    // the id-keyed lookup in releaseSelector() misses even though a selector
+    // is still locked onto this exact element -- leaving it permanently
+    // locked and its box stuck display:inline at its last position, since
+    // nothing will ever look it up under its new id either. See getDebugSnapshot()
+    // in svgcanvas.js, which is what first surfaced this as a `stale` selector
+    // (elemId no longer in the live selection, but display still "inline").
+    select.init(mockSvgCanvas)
+    const rect = svgContent.querySelector('#rect')
+
+    const sel = mockSvgCanvas.getSelectorManager().requestSelector(rect)
+    assert.ok(sel.locked)
+    assert.equal(sel.selectorGroup.getAttribute('display'), 'inline')
+
+    rect.id = 'rect-renamed'
+
+    mockSvgCanvas.getSelectorManager().releaseSelector(rect)
+
+    assert.equal(sel.locked, false)
+    assert.equal(sel.selectedElement, null)
+    assert.equal(sel.selectorGroup.getAttribute('display'), 'none')
   })
 })
