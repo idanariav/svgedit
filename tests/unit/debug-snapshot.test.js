@@ -3,13 +3,14 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 
 // getDebugSnapshot() aggregates internal visibility state (selection boxes,
-// group-context sibling dimming, path-node grips) that is driven by
-// display/opacity attributes rather than the live selection/document model,
-// and has a documented history of desyncing from that model (see the
-// leaveContext() comment in draw.js and the toEditMode() comment in
-// path-actions.js). These tests cover both the normal-path aggregation and
-// that the `stale` flags actually fire when state is forced out of sync,
-// since that's the whole point of exposing this to a debug-mode UI.
+// group-context sibling dimming, path-node grips, clip-path/mask references)
+// that is driven by display/opacity attributes or url(#id) references rather
+// than the live selection/document model, and has a documented history of
+// desyncing from that model (see the leaveContext() comment in draw.js and
+// the toEditMode() comment in path-actions.js). These tests cover both the
+// normal-path aggregation and that the `stale` flags actually fire when
+// state is forced out of sync, since that's the whole point of exposing
+// this to a debug-mode UI.
 describe('SvgCanvas#getDebugSnapshot', () => {
   let svgCanvas
 
@@ -168,6 +169,63 @@ describe('SvgCanvas#getDebugSnapshot', () => {
       expect(orphan).toBeTruthy()
       expect(orphan.display).toBe('inline')
       expect(orphan.stale).toBe(true)
+    })
+  })
+
+  describe('masking', () => {
+    it('reports a clip-path/mask reference that resolves to its target', () => {
+      svgCanvas.setSvgString(
+        '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+          '<defs><clipPath id="clip1"><rect x="0" y="0" width="10" height="10"/></clipPath></defs>' +
+          '<g class="layer"><title>Layer 1</title>' +
+            '<rect id="clipped1" x="0" y="0" width="20" height="20" clip-path="url(#clip1)"/>' +
+          '</g>' +
+        '</svg>'
+      )
+
+      const snapshot = svgCanvas.getDebugSnapshot()
+
+      const ref = snapshot.masking.refs.find((r) => r.id === 'clipped1')
+      expect(ref).toStrictEqual({ id: 'clipped1', attr: 'clip-path', ref: 'clip1', refExists: true, refTag: 'clipPath' })
+      expect(snapshot.masking.stale).toBe(false)
+    })
+
+    it('flags a mask reference whose target no longer exists', () => {
+      svgCanvas.setSvgString(
+        '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+          '<defs><mask id="mask1"><rect x="0" y="0" width="10" height="10" fill="#fff"/></mask></defs>' +
+          '<g class="layer"><title>Layer 1</title>' +
+            '<rect id="masked1" x="0" y="0" width="20" height="20" mask="url(#mask1)"/>' +
+          '</g>' +
+        '</svg>'
+      )
+
+      // Simulate the bug class this section targets: something removed the
+      // <mask> definition (or renamed its id) without also clearing/updating
+      // every element's `mask` attribute referencing it -- the masked
+      // element silently renders as if unmasked, with no error anywhere.
+      svgCanvas.getSvgContent().querySelector('#mask1').remove()
+
+      const snapshot = svgCanvas.getDebugSnapshot()
+
+      const ref = snapshot.masking.refs.find((r) => r.id === 'masked1')
+      expect(ref).toStrictEqual({ id: 'masked1', attr: 'mask', ref: 'mask1', refExists: false, refTag: null })
+      expect(snapshot.masking.stale).toBe(true)
+    })
+
+    it('ignores non-url() clip-path/mask values (CSS keywords, hand-edited files)', () => {
+      svgCanvas.setSvgString(
+        '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+          '<g class="layer"><title>Layer 1</title>' +
+            '<rect id="rect-none" x="0" y="0" width="10" height="10" clip-path="none"/>' +
+          '</g>' +
+        '</svg>'
+      )
+
+      const snapshot = svgCanvas.getDebugSnapshot()
+
+      expect(snapshot.masking.refs).toEqual([])
+      expect(snapshot.masking.stale).toBe(false)
     })
   })
 })

@@ -448,9 +448,10 @@ class SvgCanvas extends EventTarget {
    * Read-only snapshot of internal visibility state that can desync from the
    * live model (selection box shown for a deselected element, path-node
    * grips left visible from a previously-edited path, group-context sibling
-   * dimming not cleared on leaveContext()). Each subsection marks `stale`
-   * entries — state that is currently rendered but no longer backed by the
-   * model — for a debug-mode UI to surface. No side effects.
+   * dimming not cleared on leaveContext(), a clip-path/mask reference whose
+   * target no longer exists). Each subsection marks `stale` entries — state
+   * that is currently rendered but no longer backed by the model — for a
+   * debug-mode UI to surface. No side effects.
    * @returns {object}
    */
   getDebugSnapshot () {
@@ -504,6 +505,34 @@ class SvgCanvas extends EventTarget {
       }
     }
 
+    // Masking/clipping: an element referencing a <mask>/<clipPath> by
+    // url(#id) whose target no longer exists renders as if the attribute
+    // weren't there at all -- no visual error, no console warning, just the
+    // effect silently vanishing. Scoped to the whole document rather than
+    // just the current selection, since a masking bug is just as likely to
+    // be noticed on an element that isn't selected when this snapshot is
+    // read. clip-mask.js always writes `url(#id)` (see performSet()), but a
+    // hand-edited or externally loaded file could have a quoted id or some
+    // other value (e.g. a CSS mask keyword) -- match defensively and skip
+    // anything that isn't a url() reference.
+    const REF_ATTR_RE = /^url\(["']?#([^"')]+)["']?\)$/
+    const maskRefs = []
+    this.svgContent?.querySelectorAll('[clip-path], [mask]').forEach((el) => {
+      ;['clip-path', 'mask'].forEach((attr) => {
+        const val = el.getAttribute(attr)
+        const m = val && val.match(REF_ATTR_RE)
+        if (!m) return
+        const refElem = this.getElement(m[1])
+        maskRefs.push({
+          id: el.id,
+          attr,
+          ref: m[1],
+          refExists: Boolean(refElem),
+          refTag: refElem?.tagName ?? null
+        })
+      })
+    })
+
     return {
       selection: { selectedIds: [...selectedIds], selectors },
       groupContext: {
@@ -511,7 +540,8 @@ class SvgCanvas extends EventTarget {
         disabledElems,
         stale: !currentGroup && disabledElems.length > 0
       },
-      pathEditing: { pathElemId, segCount, grips }
+      pathEditing: { pathElemId, segCount, grips },
+      masking: { refs: maskRefs, stale: maskRefs.some((r) => !r.refExists) }
     }
   }
 
