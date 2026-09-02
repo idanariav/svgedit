@@ -11,18 +11,6 @@ how big/risky it is. When an item is finally addressed, delete its entry
 
 ---
 
-## Left panel drag-reorder / overflow bucket follow-ups (2026-07-24)
-
-From the `toolDragReorder.js`/`se-tool-overflow` build. Minor, accepted-scope
-UX rough edge, not a bug:
-
-- **No keyboard-accessible reorder.** Mouse/pointer drag only (native HTML5
-  DnD). Consistent with the rest of `#tools_left` being mouse-driven desktop
-  chrome (the panel is hidden entirely in tablet mode), but a screen-reader
-  or keyboard-only user can't reorder tools or use the overflow bucket.
-  Would need explicit ARIA + keyboard handlers (arrow-key move, Enter to
-  drop) — real effort, deferred until requested.
-
 ## No legacy-repair for stray alt-drag-duplicate path nodes (2026-08-25)
 
 Root-caused the long-standing "unrelated path node appears" symptom (seen
@@ -56,3 +44,16 @@ destructive detector** (flag same-parent, identical-geometry/style siblings
 differing only by id, for the user to review and delete by hand) — not
 auto-delete.
 
+## No keyboard equivalent for the lock-tool double-click gesture (2026-09-02)
+
+Added while implementing keyboard-accessible reorder for `#tools_left`
+(`toolDragReorder.js` — see `tools.md`): every direct child of the left panel
+is now a real roving-tabindex stop, with Enter forwarding to the tool's own
+`click()` so keyboard users can select tools, not just reorder them. But
+"double-click a drawing tool to lock it" (`LeftPanel.js`'s `lockTool`,
+bound via a plain `dblclick` listener on `tool_fhpath`/`tool_line`/
+`tool_path`/`tool_text`/`tools_shapes`) has no keyboard trigger — a
+keyboard-only user can select these tools but can't lock them for
+multi-object drawing. Small, self-contained fix (e.g. a second Enter within
+some window, or a distinct key) if ever requested; left out here since it's
+a separate gesture from reordering and wasn't part of the ask.

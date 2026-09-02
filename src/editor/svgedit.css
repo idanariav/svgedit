@@ -1170,6 +1170,17 @@ hr {
   box-shadow: 0 2px 0 0 var(--accent);
 }
 
+/* Keyboard reorder (toolDragReorder.js) — Space "grabs" the focused tool;
+   arrow keys then move it, matching the mouse drag above. */
+#tools_left .se-grabbed {
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+
+#tools_left [tabindex]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-border, rgba(41, 98, 255, .18));
+}
+
 /*—————————————————————————————*/
 
 /* No-fill shapes are selectable by their outline only; clicks pass through the

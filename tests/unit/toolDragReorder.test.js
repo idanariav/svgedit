@@ -29,6 +29,10 @@ function makeTool (id) {
   return el
 }
 
+function keyEvent (type, key, opts = {}) {
+  return new KeyboardEvent(type, { key, bubbles: true, cancelable: true, ...opts })
+}
+
 describe('initToolDragReorder', () => {
   let container, overflowHost, a, b, c, changes
 
@@ -114,5 +118,118 @@ describe('initToolDragReorder', () => {
     a.dispatchEvent(dragEvent('drop', { clientY: -1 }))
 
     expect(Array.from(overflowHost.children).map((el) => el.id)).toEqual(['b', 'a'])
+  })
+
+  describe('keyboard reorder', () => {
+    it('sets up a roving tabindex starting at the first tool', () => {
+      expect(a.tabIndex).toBe(0)
+      expect(b.tabIndex).toBe(-1)
+      expect(c.tabIndex).toBe(-1)
+      expect(overflowHost.tabIndex).toBe(-1)
+      expect(container.getAttribute('role')).toBe('toolbar')
+    })
+
+    it('ArrowDown moves the roving tabindex/focus to the next tool', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', 'ArrowDown'))
+      expect(document.activeElement).toBe(b)
+      expect(a.tabIndex).toBe(-1)
+      expect(b.tabIndex).toBe(0)
+    })
+
+    it('ArrowUp at the first tool does nothing', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', 'ArrowUp'))
+      expect(document.activeElement).toBe(a)
+    })
+
+    it('Enter forwards to the focused tool\'s own click handler', () => {
+      const clicked = []
+      a.addEventListener('click', () => clicked.push('a'))
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', 'Enter'))
+      expect(clicked).toEqual(['a'])
+    })
+
+    it('Space grabs the focused tool, marking it for a11y', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      expect(a.classList.contains('se-grabbed')).toBe(true)
+      expect(a.getAttribute('aria-grabbed')).toBe('true')
+    })
+
+    it('ArrowDown while grabbed swaps with the next tool and keeps it grabbed+focused', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      a.dispatchEvent(keyEvent('keydown', 'ArrowDown'))
+
+      expect(Array.from(container.children).filter((el) => el !== overflowHost).map((el) => el.id))
+        .toEqual(['b', 'a', 'c'])
+      expect(document.activeElement).toBe(a)
+      expect(a.classList.contains('se-grabbed')).toBe(true)
+      expect(changes.at(-1)).toEqual({ main: ['b', 'a', 'c'], overflow: [] })
+    })
+
+    it('Space drops a grabbed tool in place', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      expect(a.classList.contains('se-grabbed')).toBe(false)
+      expect(a.hasAttribute('aria-grabbed')).toBe(false)
+    })
+
+    it('Escape cancels a grabbed move and restores the original order', () => {
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      a.dispatchEvent(keyEvent('keydown', 'ArrowDown'))
+      a.dispatchEvent(keyEvent('keydown', 'Escape'))
+
+      expect(Array.from(container.children).filter((el) => el !== overflowHost).map((el) => el.id))
+        .toEqual(['a', 'b', 'c'])
+      expect(a.classList.contains('se-grabbed')).toBe(false)
+      expect(document.activeElement).toBe(a)
+    })
+
+    it('grabbing the last main tool and pressing ArrowDown crosses it into the overflow bucket', () => {
+      c.focus()
+      c.dispatchEvent(keyEvent('keydown', ' '))
+      c.dispatchEvent(keyEvent('keydown', 'ArrowDown'))
+
+      expect(Array.from(container.children).filter((el) => el !== overflowHost).map((el) => el.id))
+        .toEqual(['a', 'b'])
+      expect(Array.from(overflowHost.children).map((el) => el.id)).toEqual(['c'])
+      expect(c.classList.contains('se-grabbed')).toBe(false)
+      expect(document.activeElement).toBe(overflowHost)
+      expect(changes.at(-1)).toEqual({ main: ['a', 'b'], overflow: ['c'] })
+    })
+
+    it('grabbing the first overflow tool (popover open) and pressing ArrowUp crosses it back out', () => {
+      overflowHost.appendChild(a)
+      overflowHost.setAttribute('opened', 'opened')
+
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      a.dispatchEvent(keyEvent('keydown', 'ArrowUp'))
+
+      expect(Array.from(container.children).filter((el) => el !== overflowHost).map((el) => el.id))
+        .toEqual(['b', 'c', 'a'])
+      expect(overflowHost.children.length).toBe(0)
+      expect(document.activeElement).toBe(a)
+    })
+
+    it('losing focus off the toolbar while grabbed auto-cancels the move', async () => {
+      const outside = document.createElement('button')
+      document.body.append(outside)
+
+      a.focus()
+      a.dispatchEvent(keyEvent('keydown', ' '))
+      a.dispatchEvent(keyEvent('keydown', 'ArrowDown'))
+      outside.focus() // simulates e.g. Tab moving focus out of the toolbar entirely
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(a.classList.contains('se-grabbed')).toBe(false)
+      expect(Array.from(container.children).filter((el) => el !== overflowHost).map((el) => el.id))
+        .toEqual(['a', 'b', 'c'])
+    })
   })
 })

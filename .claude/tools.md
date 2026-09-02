@@ -81,14 +81,26 @@ icon `more_tools.svg`, always the panel's last item) to tuck away
 rarely-used tools; drag a tool back out onto the main row to restore it. A
 tool tucked into the bucket keeps its own click handler, hotkey registration,
 and lock-dblclick gesture unchanged — only its visual location moves.
-Mouse-only (native HTML5 drag-and-drop; `#tools_left` is hidden entirely in
-tablet mode, so there's no touch requirement). The order + bucket membership
-persists via `toolOrder.js` (`userDataAdapter.getToolOrder`/`setToolOrder`,
-else `localStorage` key `svg-edit-tool-order`), reconciled against whatever
-tools actually exist on each load (`reconcileToolOrder` — stale ids drop,
-new ids default into the main row). Built once, after every extension has
-inserted its own button, via `LeftPanel.finalizeToolOrder()` bound to the
-canvas `extensions_added` event; drag mechanics live in `toolDragReorder.js`.
+Mouse-driven via native HTML5 drag-and-drop, but also fully keyboard-operable:
+`#tools_left` is an ARIA `toolbar` with a roving tabindex over its direct
+children (ArrowUp/ArrowDown moves focus, extending into the overflow
+popover's own slotted tools while it's open). **Space** grabs the focused
+tool (`.se-grabbed` + `aria-grabbed`); ArrowUp/ArrowDown then swaps it with a
+neighbor or, at the edge of the main row/overflow bucket, crosses it into
+the other one — the same drop zones the mouse path supports. Space again
+drops it in place; **Escape** cancels, restoring the exact order from when
+it was grabbed. **Enter** forwards to the focused tool's own `click()` (these
+are plain custom elements with no native keyboard activation), so a keyboard
+user can select a tool, not just reorder it — though the double-click-to-lock
+gesture below has no keyboard equivalent yet, see `techdebt.md`. A
+visually-hidden live region announces grabs/moves/drops. The order + bucket
+membership persists via `toolOrder.js` (`userDataAdapter.getToolOrder`/
+`setToolOrder`, else `localStorage` key `svg-edit-tool-order`), reconciled
+against whatever tools actually exist on each load (`reconcileToolOrder` —
+stale ids drop, new ids default into the main row). Built once, after every
+extension has inserted its own button, via `LeftPanel.finalizeToolOrder()`
+bound to the canvas `extensions_added` event; both the drag and keyboard
+mechanics live in `toolDragReorder.js`.
 
 ---
 
