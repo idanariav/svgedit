@@ -1,4 +1,3 @@
-/* globals seAlert */
 import {
   putLocale
 } from './locale.js'

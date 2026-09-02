@@ -261,7 +261,6 @@ describe('PathActions', () => {
 
       expect(mockPath.movePts).toHaveBeenCalled()
     })
-
   })
 
   describe('mouseUp', () => {

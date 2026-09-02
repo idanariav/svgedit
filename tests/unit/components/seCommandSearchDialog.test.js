@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 
+import '../../../src/editor/dialogs/commandSearchDialog.js'
+
 const activateCommandSearchResult = vi.fn()
 let mockCatalog = () => [
   { group: 'Tools', actions: [{ id: 'undo', label: 'Undo' }, { id: 'redo', label: 'Redo' }] },
@@ -26,8 +28,6 @@ if (!HTMLDialogElement.prototype.close) {
     this.dispatchEvent(new Event('close'))
   }
 }
-
-import '../../../src/editor/dialogs/commandSearchDialog.js'
 
 function mountDialog () {
   const el = document.createElement('se-command-search-dialog')

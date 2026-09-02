@@ -472,7 +472,7 @@ const dblClickEvent = (evt) => {
   const evtTarget = evt.target
   const parent = evtTarget.parentNode
 
-  let mouseTarget = svgCanvas.getMouseTarget(evt)
+  const mouseTarget = svgCanvas.getMouseTarget(evt)
   const { tagName } = mouseTarget
 
   if (tagName === 'text' && svgCanvas.getCurrentMode() !== 'textedit') {

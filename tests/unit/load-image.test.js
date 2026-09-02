@@ -1,3 +1,6 @@
+/* eslint-disable accessor-pairs -- these FakeImage test doubles use
+   write-only setters (src/crossOrigin) to observe assignment order/timing;
+   they deliberately have no matching getter. */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { loadImage } from '../../packages/svgcanvas/core/load-image.js'
 

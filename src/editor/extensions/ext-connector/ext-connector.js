@@ -45,14 +45,14 @@ export default {
 
     let startX
     let startY
-    let startElem            // shape under the cursor when a line draw began (pending start binding)
+    let startElem // shape under the cursor when a line draw began (pending start binding)
 
     let started = false
     let connections = []
 
     // ── Hover-highlight state ────────────────────────────────────────────────
     let highlightRect = null
-    const snapDots = {}       // { n, s, e, w } → SVGCircleElement
+    const snapDots = {} // { n, s, e, w } → SVGCircleElement
     let currentHoverElem = null
 
     // ── Proximity snap constants ─────────────────────────────────────────────
@@ -271,8 +271,8 @@ export default {
       const pts = {
         n: { x: rx + rw / 2, y: ry },
         s: { x: rx + rw / 2, y: ry + rh },
-        e: { x: rx + rw,     y: ry + rh / 2 },
-        w: { x: rx,          y: ry + rh / 2 }
+        e: { x: rx + rw, y: ry + rh / 2 },
+        w: { x: rx, y: ry + rh / 2 }
       }
 
       // Find the dot nearest to the cursor (cursor converted to svgroot space).
@@ -313,8 +313,8 @@ export default {
       const pts = {
         n: { x: rx + rw / 2, y: ry },
         s: { x: rx + rw / 2, y: ry + rh },
-        e: { x: rx + rw,     y: ry + rh / 2 },
-        w: { x: rx,          y: ry + rh / 2 }
+        e: { x: rx + rw, y: ry + rh / 2 },
+        w: { x: rx, y: ry + rh / 2 }
       }
       const cur = clientToSvgRoot(clientX, clientY)
       let nearKey = null; let nearDist = Infinity

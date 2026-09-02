@@ -55,7 +55,7 @@ describe('se-tool-overflow', () => {
 
   it('loads an icon (falls back to an <img> when the registry/fetch has nothing)', async () => {
     const el = mountToolOverflow('src="more_tools.svg"')
-    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(el.$iconWrap.children.length).toBeGreaterThan(0)
   })
 

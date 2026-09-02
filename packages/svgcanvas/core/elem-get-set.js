@@ -1548,11 +1548,18 @@ const setCircleArcAttrMethod = (attr, val) => {
     return o
   }, {})
 
-  if (attr === 'cx') geom.cx = val
-  else if (attr === 'cy') geom.cy = val
-  else if (attr === 'r') { geom.rx = val; geom.ry = val }
-  else if (attr === 'rx') geom.rx = val
-  else if (attr === 'ry') geom.ry = val
+  if (attr === 'cx') {
+    geom.cx = val
+  } else if (attr === 'cy') {
+    geom.cy = val
+  } else if (attr === 'r') {
+    geom.rx = val
+    geom.ry = val
+  } else if (attr === 'rx') {
+    geom.rx = val
+  } else if (attr === 'ry') {
+    geom.ry = val
+  }
 
   const arc = Number(selected.getAttribute('data-arc')) || 360
   const newD = computeArcPathD(geom.cx, geom.cy, geom.rx, geom.ry, arc)

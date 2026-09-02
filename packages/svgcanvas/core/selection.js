@@ -222,8 +222,12 @@ const getMouseTargetFromNode = (node) => {
     return svgCanvas.selectorManager.selectorParentGroup
   }
 
+  // anyLayer is a deliberately loop-invariant guard; mouseTarget (the other
+  // operand) is what actually advances the loop each iteration.
+  /* eslint-disable-next-line no-unmodified-loop-condition */
   while (
     !mouseTarget?.parentNode?.isSameNode(currentGroup || currentLayer) &&
+    /* eslint-disable-next-line no-unmodified-loop-condition */
     !(anyLayer && Layer.isLayer(mouseTarget?.parentNode))
   ) {
     mouseTarget = mouseTarget.parentNode

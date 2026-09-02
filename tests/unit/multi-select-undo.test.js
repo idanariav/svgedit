@@ -70,7 +70,12 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
     const rect2 = svgCanvas.addSVGElementsFromJson({
       element: 'rect',
       attr: {
-        id: 'rect2', x: 300, y: 300, width: 40, height: 40, fill: '#0f0',
+        id: 'rect2',
+        x: 300,
+        y: 300,
+        width: 40,
+        height: 40,
+        fill: '#0f0',
         transform: 'rotate(30 320 320)'
       }
     })

@@ -105,7 +105,7 @@ export const init = (canvas) => {
 
   const move = (evt, ctx) => {
     const { selectedElements, selected, zoom, svgRoot } = ctx
-    let { x, y } = ctx
+    const { x, y } = ctx
     // Alt-drag-to-duplicate: only clone once the drag crosses the same "was
     // this a real drag or just a click" 4-screen-px threshold used below
     // (deltaThresholdReached) to gate an ordinary drag actually moving the
