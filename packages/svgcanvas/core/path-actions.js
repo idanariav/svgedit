@@ -522,6 +522,22 @@ class PathActions {
             path.selectPt()
             return false
           }
+
+          // Committing a top-level path here only clears `drawnPath` — the
+          // grips this draw left `display:inline` in the shared
+          // pathpointgrip_container aren't hidden until later, in the
+          // mouseup handler (event.js), which calls `getPath_(element).show
+          // (false)` *only* when the tool isn't locked; in "draw multiple"
+          // (lock) mode it just re-arms the path tool and skips that call
+          // entirely, so this path's nodes stay lit until the *next* path's
+          // first click hides them via the guard above — or, if the user
+          // does anything else first (switch tools, save, select), they
+          // never get hidden at all. Even outside lock mode, mouseup fires
+          // as a separate event after this mousedown, so any snapshot/redraw
+          // in that gap sees this path's nodes with no path considered
+          // "current" to own them. Hiding them here, synchronously, closes
+          // both gaps regardless of tool-lock state or mouseup timing.
+          svgCanvas.getPath_(newpath).show(false)
           // else, create a new point, update path element
         } else {
           // Checks if current target or parents are #svgcontent

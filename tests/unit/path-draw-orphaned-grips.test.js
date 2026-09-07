@@ -49,13 +49,20 @@ describe('freehand path drawing does not leak grips from a previous path', () =>
 
   it('hides a shorter new path\'s leftover higher-index grip from a longer previous one', () => {
     svgCanvas.setMode('path')
-    // Path B: 2 points, closed by clicking back on the start point -> grips
-    // pathpointgrip_0 and pathpointgrip_1 both end up display:inline.
+    // Path B: 2 points, closed by clicking back on the start point.
     svgCanvas.pathActions.mouseDown(fakeEvt, null, 300, 200)
     svgCanvas.pathActions.mouseDown(fakeEvt, null, 340, 200)
     svgCanvas.pathActions.mouseDown(fakeEvt, null, 300, 200)
 
+    // Path B's own commit now hides its grips synchronously (see the "hides
+    // a path's own grips immediately on commit" test below) -- force one
+    // back to display:inline here to stand in for any *other* leak source
+    // (a leftover grip from a still-earlier path, an extension, hand-edited
+    // state) and verify the start-of-a-new-path guard hides it regardless
+    // of why it was left visible, not just for the one path this bug was
+    // originally found on.
     const grip1BeforeA = svgCanvas.getElement('pathpointgrip_1')
+    grip1BeforeA.setAttribute('display', 'inline')
     expect(grip1BeforeA.getAttribute('display')).toBe('inline')
 
     // Path A: starts fresh, elsewhere on the canvas.
@@ -65,6 +72,23 @@ describe('freehand path drawing does not leak grips from a previous path', () =>
     const snapshot = svgCanvas.getDebugSnapshot()
     const grip1 = snapshot.pathEditing.grips.find((g) => g.id === 'pathpointgrip_1')
     expect(grip1.display).toBe('none')
+    expect(snapshot.pathEditing.grips.every((g) => !g.stale)).toBe(true)
+  })
+
+  it('hides a path\'s own grips immediately on commit, before the next path starts', () => {
+    svgCanvas.setMode('path')
+    // 3 points, closed by clicking back on the start point.
+    svgCanvas.pathActions.mouseDown(fakeEvt, null, 300, 200)
+    svgCanvas.pathActions.mouseDown(fakeEvt, null, 340, 200)
+    svgCanvas.pathActions.mouseDown(fakeEvt, null, 320, 240)
+    svgCanvas.pathActions.mouseDown(fakeEvt, null, 300, 200)
+
+    // Commit happens synchronously inside mouseDown -- assert right after it
+    // returns, without waiting for the mouseup-driven cleanup in event.js
+    // (which never runs at all in tool-locked "draw multiple" mode, and
+    // otherwise fires as a separate, later event).
+    const snapshot = svgCanvas.getDebugSnapshot()
+    expect(snapshot.pathEditing.grips.every((g) => g.display === 'none')).toBe(true)
     expect(snapshot.pathEditing.grips.every((g) => !g.stale)).toBe(true)
   })
 
