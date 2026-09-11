@@ -1051,11 +1051,26 @@ export const init = (canvas) => {
   }
 
   /**
+  * Single choke point for every node/handle/segment-type edit that commits
+  * (move, clone, delete, toggle segment type, smooth) — logs the action
+  * name plus the full before/after `d` so a hard-to-reproduce path-node bug
+  * can be reconstructed from the log instead of guessed at.
   * @param {string} text
+  * @param {object} [detail] Extra fields merged into the 'path-commit' debug
+  *   event (e.g. which node index was involved) — see call sites in
+  *   path-actions.js.
   * @returns {void}
   */
-  endChanges (text) {
-    const cmd = new ChangeElementCommand(this.elem, { d: this.last_d }, text)
+  endChanges (text, detail) {
+    const before = this.last_d
+    const cmd = new ChangeElementCommand(this.elem, { d: before }, text)
+    svgCanvas.logDebugEvent?.('path-commit', {
+      elemId: this.elem.id,
+      action: cmd.getText(),
+      before,
+      after: this.elem.getAttribute('d'),
+      ...detail
+    })
     svgCanvas.endChanges({ cmd, elem: this.elem })
   }
 

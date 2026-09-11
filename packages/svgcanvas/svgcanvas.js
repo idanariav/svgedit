@@ -445,6 +445,35 @@ class SvgCanvas extends EventTarget {
   }
 
   /**
+   * Host-provided sink for discrete debug-log events — a complement to
+   * getDebugSnapshot()'s polled state diff. The snapshot only ever sees
+   * *state* (a grip left visible, a stale selector); it can't tell you what
+   * input sequence produced it. This channel carries the sequence itself:
+   * which node was grabbed, what a drag committed, an undo/redo firing —
+   * see logDebugEvent()'s call sites (path-method.js's endChanges(),
+   * path-actions.js's mouseDown/opencloseSubPath, undo.js's
+   * handleHistoryEvent). Wired by Editor.js's setDebugLogger() alongside the
+   * snapshot poller so both land in the same host log under one toggle.
+   * @param {((event: string, detail?: object) => void)|null} [sink]
+   * @returns {void}
+   */
+  setDebugEventSink (sink) {
+    this._debugEventSink = typeof sink === 'function' ? sink : null
+  }
+
+  /**
+   * Forward one discrete debug event to the sink set via
+   * setDebugEventSink(), or no-op if none is set (logging is off by
+   * default, so every call site pays only this one property check).
+   * @param {string} event
+   * @param {object} [detail]
+   * @returns {void}
+   */
+  logDebugEvent (event, detail) {
+    this._debugEventSink?.(event, detail)
+  }
+
+  /**
    * Read-only snapshot of internal visibility state that can desync from the
    * live model (selection box shown for a deselected element, path-node
    * grips left visible from a previously-edited path, group-context sibling

@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import { init as initUndo } from '../../packages/svgcanvas/core/undo.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
-const makeCanvas = ({ mode, trackedPath }) => {
+const makeCanvas = ({ mode, trackedPath, logDebugEvent }) => {
   const clearCalls = []
   const canvas = {
     getCurrentMode () { return mode },
@@ -16,6 +16,7 @@ const makeCanvas = ({ mode, trackedPath }) => {
     restoreRefElements () {},
     setUseData () {},
     call () {},
+    logDebugEvent,
     pathActions: {
       clear () { clearCalls.push(true) }
     }
@@ -85,6 +86,45 @@ describe('undo', () => {
     canvas.undoMgr.undo()
 
     expect(canvas.clearCalls).toHaveLength(1)
+  })
+
+  it('logs a history-apply debug event for undo and redo, including whether the tracked path was refreshed in place', () => {
+    // Several past "path node grip" bugs traced back to exactly this
+    // undo/redo boundary -- this is the one place a hard-to-reproduce
+    // sequence (undo landing mid pathedit, or not) becomes visible in the log.
+    const pathElem = /** @type {SVGPathElement} */ (createSvgElement('path'))
+    pathElem.id = 'path1'
+    pathElem.setAttribute('d', 'M0,0 L10,10')
+    const trackedPath = { elem: pathElem, init () { return this }, show () {} }
+
+    const logDebugEvent = vi.fn()
+    const canvas = makeCanvas({ mode: 'pathedit', trackedPath, logDebugEvent })
+    const cmd = new history.ChangeElementCommand(pathElem, { d: 'M0,0 L5,5' }, 'Move path point(s)')
+    canvas.undoMgr.addCommandToHistory(cmd)
+
+    canvas.undoMgr.undo()
+    expect(logDebugEvent).toHaveBeenCalledWith('history-apply', {
+      direction: 'undo',
+      cmdType: 'ChangeElementCommand',
+      text: 'Change path Move path point(s)',
+      elemIds: ['path1'],
+      mode: 'pathedit',
+      refreshedInPlace: true
+    })
+
+    canvas.undoMgr.redo()
+    expect(logDebugEvent).toHaveBeenCalledWith('history-apply', expect.objectContaining({
+      direction: 'redo', refreshedInPlace: true
+    }))
+  })
+
+  it('does not throw when the host has not set up a debug event sink', () => {
+    const rectElem = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    const canvas = makeCanvas({ mode: 'select', trackedPath: null })
+    const cmd = new history.ChangeElementCommand(rectElem, { width: '5' })
+    canvas.undoMgr.addCommandToHistory(cmd)
+
+    expect(() => canvas.undoMgr.undo()).not.toThrow()
   })
 })
 

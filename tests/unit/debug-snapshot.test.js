@@ -229,3 +229,65 @@ describe('SvgCanvas#getDebugSnapshot', () => {
     })
   })
 })
+
+// setDebugEventSink()/logDebugEvent() are the discrete-event complement to
+// getDebugSnapshot() above -- see svgcanvas.js's doc comment on
+// setDebugEventSink() for why a polled state diff alone can't reconstruct a
+// hard-to-reproduce path-node bug.
+describe('SvgCanvas#logDebugEvent', () => {
+  let svgCanvas
+
+  beforeEach(() => {
+    document.body.textContent = ''
+    const svgEditor = document.createElement('div')
+    svgEditor.id = 'svg_editor'
+    const svgcanvas = document.createElement('div')
+    svgcanvas.style.visibility = 'hidden'
+    svgcanvas.id = 'svgcanvas'
+    const workarea = document.createElement('div')
+    workarea.id = 'workarea'
+    workarea.append(svgcanvas)
+    const toolsLeft = document.createElement('div')
+    toolsLeft.id = 'tools_left'
+    svgEditor.append(workarea, toolsLeft)
+    document.body.append(svgEditor)
+
+    svgCanvas = new SvgCanvas(document.getElementById('svgcanvas'), {
+      canvas_expansion: 3,
+      dimensions: [640, 480],
+      initFill: { color: 'FF0000', opacity: 1 },
+      initStroke: { width: 5, color: '000000', opacity: 1 },
+      initOpacity: 1,
+      imgPath: '../editor/images',
+      langPath: 'locale/',
+      extPath: 'extensions/',
+      extensions: [],
+      initTool: 'select',
+      wireframe: false
+    })
+  })
+  afterEach(() => { document.body.textContent = '' })
+
+  it('is a no-op when no sink has been set', () => {
+    expect(() => svgCanvas.logDebugEvent('path-commit', { elemId: 'p1' })).not.toThrow()
+  })
+
+  it('forwards events to the sink set via setDebugEventSink', () => {
+    const sink = vi.fn()
+    svgCanvas.setDebugEventSink(sink)
+
+    svgCanvas.logDebugEvent('path-commit', { elemId: 'p1' })
+
+    expect(sink).toHaveBeenCalledWith('path-commit', { elemId: 'p1' })
+  })
+
+  it('stops forwarding once the sink is cleared with null', () => {
+    const sink = vi.fn()
+    svgCanvas.setDebugEventSink(sink)
+    svgCanvas.setDebugEventSink(null)
+
+    svgCanvas.logDebugEvent('path-commit', { elemId: 'p1' })
+
+    expect(sink).not.toHaveBeenCalled()
+  })
+})

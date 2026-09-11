@@ -70,6 +70,7 @@ describe('PathActions', () => {
       addToSelection: vi.fn(),
       deleteSelectedElements: vi.fn(),
       call: vi.fn(),
+      logDebugEvent: vi.fn(),
       getSelectedElements: vi.fn(() => [pathElement]),
       getDrawnPath: vi.fn(() => null),
       setDrawnPath: vi.fn(),
@@ -233,6 +234,24 @@ describe('PathActions', () => {
 
       expect(mockPath.clearSelection).toHaveBeenCalled()
       expect(mockPath.addPtsToSelection).toHaveBeenCalled()
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-node-select', {
+        elemId: 'path1', index: 0, kind: 'point', shiftKey: false
+      })
+    })
+
+    it('logs which control-point handle was grabbed, distinct from a plain node grip', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.getCurrentMode.mockReturnValue('pathedit')
+
+      const ctrlGrip = document.createElementNS(NS.SVG, 'circle')
+      ctrlGrip.id = 'ctrlpointgrip_1c2'
+      const mockEvent = { target: ctrlGrip, shiftKey: true }
+
+      pathActionsMethod.mouseDown(mockEvent, ctrlGrip, 100, 100)
+
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-node-select', {
+        elemId: 'path1', index: 1, kind: 'ctrl', ctrlNum: 2, shiftKey: true
+      })
     })
   })
 
@@ -323,7 +342,39 @@ describe('PathActions', () => {
       pathActionsMethod.mouseUp(mockEvent, pathElement, 105, 105)
 
       expect(mockPath.update).toHaveBeenCalled()
-      expect(mockPath.endChanges).toHaveBeenCalledWith('Move path point(s)')
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Move path point(s)', expect.objectContaining({ index: 1 }))
+    })
+
+    it('marks the commit as snapped when the drag aligned to a sibling node', () => {
+      // Full down->move->up gesture (not just mouseMove in isolation, as the
+      // earlier smart-snapping tests do) so the snap that happens mid-drag is
+      // actually reflected in what gets logged at commit time.
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.getCurrentMode.mockReturnValue('pathedit')
+
+      const grip = { id: 'pathpointgrip_2' }
+      pathActionsMethod.mouseDown({ target: grip, shiftKey: false }, grip, 100, 100)
+      pathActionsMethod.mouseMove(62, 100) // snaps, per the mouseMove suite above
+      pathActionsMethod.mouseUp({ target: grip, shiftKey: false }, grip, 62, 100)
+
+      expect(mockPath.endChanges).toHaveBeenCalledWith(
+        'Move path point(s)', expect.objectContaining({ index: 2, snapped: true })
+      )
+    })
+
+    it('marks the commit as not snapped for a plain unaligned drag', () => {
+      svgCanvas.getCurConfig.mockReturnValue({ smartSnapping: false })
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.getCurrentMode.mockReturnValue('pathedit')
+
+      const grip = { id: 'pathpointgrip_2' }
+      pathActionsMethod.mouseDown({ target: grip, shiftKey: false }, grip, 100, 100)
+      pathActionsMethod.mouseMove(62, 100)
+      pathActionsMethod.mouseUp({ target: grip, shiftKey: false }, grip, 62, 100)
+
+      expect(mockPath.endChanges).toHaveBeenCalledWith(
+        'Move path point(s)', expect.objectContaining({ snapped: false })
+      )
     })
 
     it('should discard a curve baked in by mid-click jitter when the pointer settles back near the clicked point', () => {
@@ -389,6 +440,14 @@ describe('PathActions', () => {
       pathActionsMethod.toEditMode(pathElement)
       expect(mockPath.init).toHaveBeenCalled()
     })
+
+    it('logs a pathedit-enter debug event with the element, seg count, and starting d', () => {
+      pathActionsMethod.toEditMode(pathElement)
+
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('pathedit-enter', {
+        elemId: 'path1', segCount: 3, d: 'M10,10 L50,50 L90,10 z'
+      })
+    })
   })
 
   describe('toSelectMode', () => {
@@ -399,6 +458,18 @@ describe('PathActions', () => {
       expect(svgCanvas.setCurrentMode).toHaveBeenCalledWith('select')
       expect(mockPath.show).toHaveBeenCalledWith(false)
       expect(svgCanvas.clearSelection).toHaveBeenCalled()
+    })
+
+    it('logs a pathedit-exit debug event with the element, seg count, and ending d', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.logDebugEvent.mockClear()
+      pathElement.setAttribute('d', 'M10,10 L60,60 L90,10 z')
+
+      pathActionsMethod.toSelectMode(pathElement)
+
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('pathedit-exit', {
+        elemId: 'path1', segCount: 3, d: 'M10,10 L60,60 L90,10 z'
+      })
     })
 
     it('should select element if it was the path element', () => {
@@ -717,7 +788,7 @@ describe('PathActions', () => {
       expect(mockPath.storeD).toHaveBeenCalled()
       expect(mockPath.addSeg).toHaveBeenCalled()
       expect(mockPath.init).toHaveBeenCalled()
-      expect(mockPath.endChanges).toHaveBeenCalledWith('Clone path node(s)')
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Clone path node(s)', expect.objectContaining({ sourceIndexes: [1] }))
     })
   })
 
@@ -741,7 +812,27 @@ describe('PathActions', () => {
       expect(pathElement.getAttribute('d')).toBe('M 10 10 L 90 10')
       expect(mockPath.init).toHaveBeenCalled()
       expect(mockPath.clearSelection).toHaveBeenCalled()
-      expect(mockPath.endChanges).toHaveBeenCalledWith('Delete path node(s)')
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Delete path node(s)', { deletedIndexes: [1] })
+    })
+
+    it('logs path-node-delete with elementDropped when nothing renderable survives', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      mockPath.selected_pts = [0, 1, 2] // deletes every node in the only sub-path
+
+      Object.defineProperty(pathActionsMethod, 'canDeleteNodes', {
+        get: () => true,
+        configurable: true
+      })
+
+      pathActionsMethod.deletePathNode()
+
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-node-delete', {
+        elemId: 'path1', deletedIndexes: [0, 1, 2], elementDropped: true
+      })
+      expect(svgCanvas.deleteSelectedElements).toHaveBeenCalled()
+      // The falsy-newD branch returns before endChanges -- deletion here is
+      // recorded only by the debug event above, same as opencloseSubPath.
+      expect(mockPath.endChanges).not.toHaveBeenCalled()
     })
 
     it('should do nothing when canDeleteNodes is false', () => {
@@ -832,6 +923,12 @@ describe('PathActions', () => {
       expect(d).not.toMatch(/Z\s*L/i)
       expect((d.match(/Z/gi) || []).length).toBe(0)
       expect(closedPath.elem.pathSegList.numberOfItems).toBe(2)
+      // opencloseSubPath mutates pathSegList directly with no storeD()/
+      // endChanges() around it -- no undo-history entry is ever created for
+      // this action, so this debug event is the *only* record of it.
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
+        elemId: '', index: 1, action: 'open', before: 'M100,100 L200,100 L150,180 Z', after: d
+      })
     })
 
     it('opens via the mate shortcut when the pre-closing node is selected (regression)', () => {
@@ -846,6 +943,9 @@ describe('PathActions', () => {
       expect(d).not.toMatch(/Z\s*L/i)
       expect((d.match(/Z/gi) || []).length).toBe(0)
       expect(closedPath.elem.pathSegList.numberOfItems).toBe(2)
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
+        elemId: '', index: 2, action: 'open', before: 'M100,100 L200,100 L150,180 Z', after: d
+      })
     })
 
     it('still closes an open sub-path (baseline, unaffected by the fix)', () => {
@@ -856,8 +956,12 @@ describe('PathActions', () => {
 
       pathActionsMethod.opencloseSubPath()
 
-      expect(openPath.elem.getAttribute('d')).toMatch(/Z\s*$/i)
+      const d = openPath.elem.getAttribute('d')
+      expect(d).toMatch(/Z\s*$/i)
       expect(openPath.elem.pathSegList.numberOfItems).toBe(5)
+      expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
+        elemId: '', index: 0, action: 'close', before: 'M100,100 L200,100 L150,180', after: d
+      })
     })
 
     it('re-closing after opening does not accumulate extra Z segments (repeated-press regression)', () => {
@@ -940,7 +1044,7 @@ describe('PathActions', () => {
       pathActionsMethod.moveNode('x', 60)
 
       expect(mockPath.segs[1].move).toHaveBeenCalled()
-      expect(mockPath.endChanges).toHaveBeenCalledWith('Move path point')
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Move path point', { index: 1, attr: 'x', newValue: 60 })
     })
 
     it('should do nothing if no points selected', () => {

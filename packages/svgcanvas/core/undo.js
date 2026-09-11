@@ -68,13 +68,26 @@ export const init = (canvas) => {
         // editing continues seamlessly. Any other undo/redo (a different
         // element, or no active pathedit session) keeps the old behavior.
         const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
-        if (editedPath && elems.includes(editedPath.elem)) {
+        const refreshedInPlace = Boolean(editedPath && elems.includes(editedPath.elem))
+        if (refreshedInPlace) {
           editedPath.dragging = false
           editedPath.dragctrl = false
           editedPath.init().show(true)
         } else {
           svgCanvas.pathActions.clear()
         }
+        // Several past "path node grip" bugs traced back to exactly this
+        // undo/redo boundary (see .claude/techdebt.md history) -- logging it
+        // unconditionally, not just for path commands, since a bug can also
+        // stem from an unrelated undo landing while pathedit mode is active.
+        svgCanvas.logDebugEvent?.('history-apply', {
+          direction: isApply ? 'redo' : 'undo',
+          cmdType,
+          text: cmd.getText?.(),
+          elemIds: elems.map((el) => el?.id ?? null),
+          mode: svgCanvas.getCurrentMode(),
+          refreshedInPlace
+        })
         svgCanvas.call('changed', elems)
         if (cmdType === 'MoveElementCommand') {
           const parent = isApply ? cmd.newParent : cmd.oldParent

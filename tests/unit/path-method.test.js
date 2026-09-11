@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as pathMethodInit } from '../../packages/svgcanvas/core/path-method.js'
@@ -174,5 +174,70 @@ describe('path-method Path#smoothSelectedNodes', () => {
     path.smoothSelectedNodes()
 
     expect(pathEl.getAttribute('d')).toBe(d)
+  })
+})
+
+describe('path-method Path#endChanges', () => {
+  // endChanges() is the single choke point every path-node commit (move,
+  // clone, delete, toggle segment type, smooth) funnels through -- this is
+  // what lets the debug log reconstruct a hard-to-reproduce path-node bug
+  // from the before/after geometry instead of guessing at it.
+  it('logs a path-commit debug event with the action, elemId, and before/after d', () => {
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+
+    const logDebugEvent = vi.fn()
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) },
+      addPtsToSelection () {},
+      endChanges () {},
+      logDebugEvent
+    }
+    pathInit(svgCanvas)
+
+    const pathEl = createSvgElement('path')
+    pathEl.setAttribute('id', 'path1')
+    pathEl.setAttribute('d', 'M0,0 L10,10')
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.storeD()
+    pathEl.setAttribute('d', 'M0,0 L20,20')
+    path.endChanges('Move path point(s)', { index: 1 })
+
+    expect(logDebugEvent).toHaveBeenCalledWith('path-commit', {
+      elemId: 'path1',
+      action: 'Change path Move path point(s)',
+      before: 'M0,0 L10,10',
+      after: 'M0,0 L20,20',
+      index: 1
+    })
+  })
+
+  it('does not throw when the host has not set up a debug event sink', () => {
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) },
+      addPtsToSelection () {},
+      endChanges () {}
+      // no logDebugEvent -- mirrors an older bundle or a bare test fixture
+    }
+    pathInit(svgCanvas)
+
+    const pathEl = createSvgElement('path')
+    pathEl.setAttribute('d', 'M0,0 L10,10')
+    const path = new svgCanvas.PathClass(pathEl)
+    path.storeD()
+
+    expect(() => path.endChanges('Move path point(s)')).not.toThrow()
   })
 })

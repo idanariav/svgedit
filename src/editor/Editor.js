@@ -654,15 +654,23 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * Route the dev-mode "visibility" snapshot (see
-   * `svgCanvas.getDebugSnapshot()`) to a host-provided log sink instead of
-   * rendering it in a UI panel. The snapshot surfaces selection boxes,
-   * path-node grips, or group-context dimming that are still rendered but no
-   * longer backed by the model — state with a history of desyncing silently.
-   * Off by default. A host (e.g. the Obsidian plugin's "Debug logging"
-   * setting) passes a sink function to receive `(event, detail)` calls
-   * whenever the snapshot changes, mirroring the shape of its own action log
-   * (`plugin.debugLog.log(event, detail)`); pass `null`/omit to stop.
+   * Route two complementary debug-log channels to a single host-provided
+   * sink instead of rendering either in a UI panel. Off by default. A host
+   * (e.g. the Obsidian plugin's "Debug logging" setting) passes a sink
+   * function to receive `(event, detail)` calls, mirroring the shape of its
+   * own action log (`plugin.debugLog.log(event, detail)`); pass `null`/omit
+   * to stop both channels.
+   *
+   * 1. The dev-mode "visibility" snapshot (`svgCanvas.getDebugSnapshot()`),
+   *    polled and diffed by DebugSnapshotLogger — selection boxes, path-node
+   *    grips, or group-context dimming that are still rendered but no longer
+   *    backed by the model (state with a history of desyncing silently).
+   * 2. Discrete debug events (`svgCanvas.logDebugEvent()`) fired at the
+   *    moment they happen — node selection, a path-edit commit, an
+   *    open/close-subpath mutation, an undo/redo. The snapshot above only
+   *    ever sees the *result* of a gesture; this is the gesture itself, and
+   *    is what actually lets a hard-to-reproduce path-node bug be
+   *    reconstructed from the log instead of guessed at.
    * @param {((event: string, detail?: object) => void)|null} [sink]
    * @returns {void}
    */
@@ -671,6 +679,7 @@ class Editor extends EditorStartup {
       this._debugSnapshotLogger = new DebugSnapshotLogger(() => this.svgCanvas.getDebugSnapshot())
     }
     this._debugSnapshotLogger.start(sink)
+    this.svgCanvas.setDebugEventSink(sink)
   }
 
   // parents() https://stackoverflow.com/a/12981248

@@ -292,6 +292,11 @@ class PathActions {
   #currentPath = null
   #hasMoved = false
   #downOnPath = false
+  // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
+  // applied at any point during the drag currently in progress — reset at
+  // drag-start, read (and logged) once at drag-end, since the per-mousemove
+  // snap decision itself is too high-frequency to log.
+  #snappedDuringDrag = false
 
   /**
   * This function converts a polyline (created by the fh_path tool) into
@@ -600,6 +605,7 @@ class PathActions {
       // Select this point
       curPt = path.cur_pt = Number.parseInt(id.slice(14))
       path.dragging = [startX, startY]
+      this.#snappedDuringDrag = false
       const seg = path.segs[curPt]
 
       // only clear selection if shift is not pressed (otherwise, add
@@ -614,13 +620,20 @@ class PathActions {
       } else {
         path.addPtsToSelection(curPt)
       }
+      svgCanvas.logDebugEvent?.('path-node-select', {
+        elemId: path.elem.id, index: curPt, kind: 'point', shiftKey: evt.shiftKey
+      })
     } else if (id.startsWith('ctrlpointgrip_')) {
       path.dragging = [startX, startY]
+      this.#snappedDuringDrag = false
 
       const parts = id.split('_')[1].split('c')
       curPt = Number(parts[0])
       const ctrlNum = Number(parts[1])
       path.selectPt(curPt, ctrlNum)
+      svgCanvas.logDebugEvent?.('path-node-select', {
+        elemId: path.elem.id, index: curPt, kind: 'ctrl', ctrlNum, shiftKey: evt.shiftKey
+      })
     } else if (mouseTarget === path.elem || evt.target === path.elem) {
       // Clicked the path's own stroke (between grips), not a grip. The stroke
       // runs right under the control handles, so a near-miss here must NOT
@@ -771,6 +784,7 @@ class PathActions {
           const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
           if (snap.x) diffX += snap.x.delta
           if (snap.y) diffY += snap.y.delta
+          if (snap.x || snap.y) this.#snappedDuringDrag = true
           svgCanvas.showPathNodeGuides?.({
             x: snap.x,
             y: snap.y,
@@ -892,8 +906,13 @@ class PathActions {
       svgCanvas.showPathNodeGuides?.(null)
 
       if (this.#hasMoved) {
-        path.endChanges('Move path point(s)')
+        path.endChanges('Move path point(s)', {
+          index: lastPt,
+          selectedPts: [...path.selected_pts],
+          snapped: this.#snappedDuringDrag
+        })
       }
+      this.#snappedDuringDrag = false
 
       if (!evt.shiftKey && !this.#hasMoved) {
         path.selectPt(lastPt)
@@ -934,6 +953,9 @@ class PathActions {
     path.show(true).update()
     path.oldbbox = getBBox(path.elem)
     this.#subpath = false
+    svgCanvas.logDebugEvent?.('pathedit-enter', {
+      elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
+    })
   }
 
   /**
@@ -942,6 +964,9 @@ class PathActions {
     * @returns {void}
     */
   toSelectMode (elem) {
+    svgCanvas.logDebugEvent?.('pathedit-exit', {
+      elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
+    })
     const selPath = (elem === path.elem)
     // `elem` is often the raw click target (e.g. `evt.target`), which may be
     // a descendant node rather than the selectable element itself. Resolve it
@@ -1226,7 +1251,7 @@ class PathActions {
     }
     path.init().addPtsToSelection(nums)
 
-    path.endChanges('Clone path node(s)')
+    path.endChanges('Clone path node(s)', { sourceIndexes: [...selPts], newIndexes: nums })
   }
 
   /**
@@ -1239,6 +1264,12 @@ class PathActions {
 
     const { elem } = path
     const list = elem.pathSegList
+    // NOTE: this whole method mutates pathSegList directly with no
+    // storeD()/endChanges() around it -- unlike every other pathedit action,
+    // an open/close-subpath toggle currently has NO undo-history entry at
+    // all. Logged here (before/after `d`) since it's otherwise completely
+    // invisible to both the debug log and Ctrl+Z.
+    const beforeD = elem.getAttribute('d')
 
     // const len = list.numberOfItems;
 
@@ -1290,6 +1321,9 @@ class PathActions {
         list.insertItemBefore(newseg, openPt)
       }
 
+      svgCanvas.logDebugEvent?.('path-open-close', {
+        elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
+      })
       path.init().selectPt(openPt + 1)
       return
     }
@@ -1305,6 +1339,9 @@ class PathActions {
     if (seg.mate) {
       list.removeItem(index) // Removes last "L"
       list.removeItem(index) // Removes the "Z"
+      svgCanvas.logDebugEvent?.('path-open-close', {
+        elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
+      })
       path.init().selectPt(index - 1)
       return
     }
@@ -1343,6 +1380,9 @@ class PathActions {
 
     // i = index; // i is local here, so has no effect; what was the intent for this?
 
+    svgCanvas.logDebugEvent?.('path-open-close', {
+      elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
+    })
     path.init().selectPt(0)
   }
 
@@ -1355,11 +1395,15 @@ class PathActions {
   deletePathNode () {
     if (!svgCanvas.pathActions.canDeleteNodes) { return }
     path.storeD()
+    const deletedIndexes = [...path.selected_pts]
 
     const newD = buildReconnectedPathData(path)
 
     // Nothing renderable left (no sub-path with >= 2 points): drop the element
     if (!newD) {
+      svgCanvas.logDebugEvent?.('path-node-delete', {
+        elemId: path.elem.id, deletedIndexes, elementDropped: true
+      })
       svgCanvas.pathActions.toSelectMode(path.elem)
       svgCanvas.deleteSelectedElements()
       return
@@ -1373,7 +1417,7 @@ class PathActions {
     if (window.opera) { // Opera repaints incorrectly
       path.elem.setAttribute('d', path.elem.getAttribute('d'))
     }
-    path.endChanges('Delete path node(s)')
+    path.endChanges('Delete path node(s)', { deletedIndexes })
   }
 
   // Can't seem to use `@borrows` here, so using `@see`
@@ -1421,7 +1465,7 @@ class PathActions {
     diff[attr] = newValue - seg.item[attr]
 
     seg.move(diff.x, diff.y)
-    path.endChanges('Move path point')
+    path.endChanges('Move path point', { index: selPts[0], attr, newValue })
   }
 
   /**
