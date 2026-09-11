@@ -48,6 +48,7 @@ describe('PathActions', () => {
       removePtFromSelection: vi.fn(),
       clearSelection: vi.fn(),
       setSegType: vi.fn(),
+      smoothSelectedNodes: vi.fn(),
       movePts: vi.fn(),
       moveCtrl: vi.fn(),
       addSeg: vi.fn(),
@@ -918,6 +919,16 @@ describe('PathActions', () => {
       pathActionsMethod.setSegType(6)
 
       expect(mockPath.setSegType).toHaveBeenCalledWith(6)
+    })
+  })
+
+  describe('smoothSelectedNodes', () => {
+    it('should delegate to the path object', () => {
+      pathActionsMethod.toEditMode(pathElement)
+
+      pathActionsMethod.smoothSelectedNodes()
+
+      expect(mockPath.smoothSelectedNodes).toHaveBeenCalled()
     })
   })
 

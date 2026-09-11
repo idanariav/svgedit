@@ -261,6 +261,7 @@ Stays in the top bar (it is a transient mode toolbar, not a property).
 |----|---------|
 | `tool_node_link` | Link/unlink control points |
 | `seg_type` | Segment type: Straight (4) / Curve (6) |
+| `tool_node_smooth` | Smooth node — one-shot action (`svgCanvas.pathActions.smoothSelectedNodes()` → `Path#smoothSelectedNodes()` in `core/path-method.js`) that recomputes each selected node's in/out bezier handles so they're collinear through the node (tangent/G1 continuity) via the neighbor-anchor tangent construction, **without moving any anchor**. Unlike `tool_smooth_path` (a lossy paper.js re-fit, freehand-only), this preserves exact node-tool-authored geometry — it only repositions handles on sides that are already curve (type 6) segments; a side bordering a straight (`L`) segment, or a path endpoint with no neighbor on one side, is left untouched. One undo step per click |
 | `tool_node_clone` | Clone node |
 | `tool_node_delete` | Delete node — **reconnects** its neighbors, keeping the path closed/continuous (also bound to `Backspace`/`Delete` while in pathedit mode) |
 | `tool_openclose_path` | Toggle open / closed path |

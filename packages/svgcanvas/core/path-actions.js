@@ -1396,6 +1396,15 @@ class PathActions {
   }
 
   /**
+  * Recompute the selected node(s)' bezier handles so they're smooth again,
+  * without moving any anchor. See {@link module:path.Path#smoothSelectedNodes}.
+  * @returns {void}
+  */
+  smoothSelectedNodes () {
+    path?.smoothSelectedNodes()
+  }
+
+  /**
   * @param {string} attr
   * @param {Float} newValue
   * @returns {void}

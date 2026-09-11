@@ -946,6 +946,51 @@ export const init = (canvas) => {
   }
 
   /**
+   * Recompute the in/out bezier handles of each selected node so they're
+   * collinear through the node again (tangent/G1 continuity) — anchor
+   * positions are never moved. Only repositions a handle whose own segment
+   * is already a curve (type 6); a side bordering a straight (`L`) segment,
+   * or a path endpoint with no neighbor on one side, is left untouched.
+   * @returns {void}
+   */
+  smoothSelectedNodes () {
+    if (!this.selected_pts.length) return
+    this.storeD()
+    let i = this.selected_pts.length
+    while (i--) {
+      const cur = this.segs[this.selected_pts[i]]
+      const { prev, next } = cur
+      if (!prev || !next) continue
+
+      const curPt = cur.item
+      const prevPt = prev.item
+      const nextPt = next.item
+      const dx = nextPt.x - prevPt.x
+      const dy = nextPt.y - prevPt.y
+      if (dx === 0 && dy === 0) continue
+
+      const angle = Math.atan2(dy, dx)
+      const cos = Math.cos(angle)
+      const sin = Math.sin(angle)
+
+      if (cur.type === 6) {
+        const distIn = Math.hypot(curPt.x - prevPt.x, curPt.y - prevPt.y) / 3
+        const targetX = curPt.x - cos * distIn
+        const targetY = curPt.y - sin * distIn
+        cur.moveCtrl(2, targetX - curPt.x2, targetY - curPt.y2)
+      }
+
+      if (next.type === 6) {
+        const distOut = Math.hypot(nextPt.x - curPt.x, nextPt.y - curPt.y) / 3
+        const targetX = curPt.x + cos * distOut
+        const targetY = curPt.y + sin * distOut
+        next.moveCtrl(1, targetX - next.item.x1, targetY - next.item.y1)
+      }
+    }
+    this.endChanges('Smooth path node(s)')
+  }
+
+  /**
   * @param {Integer} pt
   * @param {Integer} ctrlNum
   * @returns {void}

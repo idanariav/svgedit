@@ -1057,6 +1057,14 @@ class TopPanel {
    *
    * @returns {void}
    */
+  smoothPathNode () {
+    this.path.smoothSelectedNodes()
+  }
+
+  /**
+   *
+   * @returns {void}
+   */
   clonePathNode () {
     if (this.path.getNodePoint()) {
       this.path.clonePathNode()
@@ -1402,6 +1410,7 @@ class TopPanel {
       this.clickAlignEle.bind(this)(evt)
     )
     $id('tool_align_multi').addEventListener('change', this.clickAlignMulti.bind(this))
+    $click($id('tool_node_smooth'), this.smoothPathNode.bind(this))
     $click($id('tool_node_clone'), this.clonePathNode.bind(this))
     $click($id('tool_node_delete'), this.deletePathNode.bind(this))
     $click($id('tool_openclose_path'), this.opencloseSubPath.bind(this))

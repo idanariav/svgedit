@@ -282,6 +282,7 @@ export default {
     node_clone: 'Clone Node',
     node_delete: 'Delete Node',
     node_link: 'Link Control Points',
+    node_smooth: 'Smooth Node',
     add_subpath: 'Add sub-path',
     openclose_path: 'Open/close sub-path',
     source_save: 'Apply Changes',

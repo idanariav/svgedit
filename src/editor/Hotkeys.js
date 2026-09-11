@@ -166,6 +166,7 @@ const GROUP_BY_ID = {
   tool_flip_v: 'Transform',
   // Path / node editing
   tool_node_link: 'Path',
+  tool_node_smooth: 'Path',
   tool_node_clone: 'Path',
   tool_node_delete: 'Path',
   tool_openclose_path: 'Path',

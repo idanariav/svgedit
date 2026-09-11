@@ -95,3 +95,84 @@ describe('path-method Path#addPtsToSelection', () => {
     expect(path.selected_pts).toEqual([2, 10])
   })
 })
+
+describe('path-method Path#smoothSelectedNodes', () => {
+  const makePathSvgCanvas = () => {
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) },
+      addPtsToSelection () {},
+      endChanges () {}
+    }
+    pathInit(svgCanvas)
+    return svgCanvas
+  }
+
+  it('recomputes both handles of a selected node so they are collinear through it, without moving the anchor or touching a non-selected neighbor', () => {
+    const svgCanvas = makePathSvgCanvas()
+    const pathEl = createSvgElement('path')
+    // Nodes at (0,0) (20,0) (60,0) (90,0), all curve segments; node 2's
+    // handles are deliberately mis-aimed so smoothing has visible work to do.
+    pathEl.setAttribute('d', 'M0,0 C5,-5 10,-15 20,0 C30,20 40,-20 60,0 C70,10 80,15 90,0')
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.selected_pts = [2]
+    path.smoothSelectedNodes()
+
+    const node1 = path.segs[1].item // not selected -- must be untouched
+    expect(node1.x1).toBeCloseTo(5)
+    expect(node1.y1).toBeCloseTo(-5)
+
+    const node2 = path.segs[2].item
+    expect(node2.x).toBeCloseTo(60) // anchor unchanged
+    expect(node2.y).toBeCloseTo(0)
+    // Neighbor anchors (20,0) and (90,0) are collinear on y=0, so both
+    // recomputed handles should land on that same line.
+    expect(node2.x2).toBeCloseTo(60 - (40 / 3))
+    expect(node2.y2).toBeCloseTo(0)
+
+    const node3 = path.segs[3].item
+    expect(node3.x1).toBeCloseTo(60 + (30 / 3))
+    expect(node3.y1).toBeCloseTo(0)
+  })
+
+  it('leaves a side bordering a straight segment untouched and no-ops on a path endpoint', () => {
+    const svgCanvas = makePathSvgCanvas()
+    const pathEl = createSvgElement('path')
+    // Node 2 sits between a straight-in segment and a curved-out one.
+    pathEl.setAttribute('d', 'M0,0 C5,-5 10,-15 20,0 L50,0 C60,10 70,-15 90,0')
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.selected_pts = [0, 2] // 0 is the path start -- no `prev`, must no-op
+    path.smoothSelectedNodes()
+
+    expect(path.segs[0].item.x).toBeCloseTo(0)
+    expect(path.segs[0].item.y).toBeCloseTo(0)
+
+    expect(path.segs[2].type).toBe(4) // still a straight line, not converted
+    expect(path.segs[2].item.x).toBeCloseTo(50)
+    expect(path.segs[2].item.y).toBeCloseTo(0)
+
+    const node3 = path.segs[3].item
+    expect(node3.x1).toBeCloseTo(50 + (40 / 3))
+    expect(node3.y1).toBeCloseTo(0)
+  })
+
+  it('does nothing when no node is selected', () => {
+    const svgCanvas = makePathSvgCanvas()
+    const pathEl = createSvgElement('path')
+    const d = 'M0,0 C5,-5 10,-15 20,0 C30,20 40,-20 60,0'
+    pathEl.setAttribute('d', d)
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.smoothSelectedNodes()
+
+    expect(pathEl.getAttribute('d')).toBe(d)
+  })
+})
