@@ -127,6 +127,44 @@ export default {
       overlay.replaceChildren(frag)
     }
 
+    /**
+     * Draw the current path-node alignment snap state (pathedit node drag).
+     * Same overlay/mechanism as `showSmartGuides`, but for a single dragged
+     * anchor node snapping to another node's x/y rather than bbox edges —
+     * see `@svgedit/svgcanvas/core/path-node-guides.js`. Called from core
+     * `path-actions.js` on every pathedit drag move; `null` (or a payload
+     * with no matches) clears the overlay.
+     * @param {?{x: ?Object, y: ?Object, from: {x: Float, y: Float}}} payload
+     * @returns {void}
+     */
+    svgCanvas.showPathNodeGuides = (payload) => {
+      if (!payload || (!payload.x && !payload.y)) {
+        overlay.replaceChildren()
+        return
+      }
+      const content = svgCanvas.getSvgContent()
+      for (const attr of ['x', 'y', 'width', 'height']) {
+        overlay.setAttribute(attr, content.getAttribute(attr))
+      }
+
+      const zoom = svgCanvas.getZoom()
+      const frag = svgdoc.createDocumentFragment()
+      const { from } = payload
+
+      // A shared coordinate makes the line between the two points already
+      // perfectly vertical (x match) or horizontal (y match).
+      if (payload.x) {
+        const t = payload.x.target
+        addLine(frag, t.x * zoom, t.y * zoom, from.x * zoom, from.y * zoom)
+      }
+      if (payload.y) {
+        const t = payload.y.target
+        addLine(frag, t.x * zoom, t.y * zoom, from.x * zoom, from.y * zoom)
+      }
+
+      overlay.replaceChildren(frag)
+    }
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {

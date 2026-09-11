@@ -127,6 +127,8 @@ describe('PathActions', () => {
       setRubberBox: vi.fn((box) => box),
       getPointFromGrip: vi.fn((point) => point),
       getGripPt: vi.fn((seg) => ({ x: seg.item.x, y: seg.item.y })),
+      getCurConfig: vi.fn(() => ({ smartSnapping: true })),
+      showPathNodeGuides: vi.fn(),
       getContainer: vi.fn(() => svgRoot),
       getMouseTarget: vi.fn(() => pathElement),
       getMouseTargetFromNode: vi.fn((node) => node),
@@ -260,6 +262,40 @@ describe('PathActions', () => {
       pathActionsMethod.mouseMove(110, 110)
 
       expect(mockPath.movePts).toHaveBeenCalled()
+    })
+
+    it('snaps a dragged node into alignment with another node in the same path', () => {
+      // segs: 0=(10,10), 1=(50,50), 2=(90,10). Drag node 2 so its candidate
+      // x (52) lands within tolerance of node 1's x (50) and its candidate y
+      // (10) already matches node 0's y (10) exactly.
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.getCurrentMode.mockReturnValue('pathedit')
+      mockPath.dragging = [100, 100]
+      mockPath.cur_pt = 2
+
+      pathActionsMethod.mouseMove(62, 100) // raw diff: dx=-38, dy=0
+
+      // Snapped: dx corrected from -38 to -40 (candidate x 52 -> 50), dy stays 0.
+      expect(mockPath.movePts).toHaveBeenCalledWith(-40, 0)
+      expect(svgCanvas.showPathNodeGuides).toHaveBeenCalledWith(
+        expect.objectContaining({
+          x: expect.objectContaining({ pos: 50 }),
+          y: expect.objectContaining({ pos: 10 })
+        })
+      )
+    })
+
+    it('does not snap node drags when smart snapping is off', () => {
+      svgCanvas.getCurConfig.mockReturnValue({ smartSnapping: false })
+      pathActionsMethod.toEditMode(pathElement)
+      svgCanvas.getCurrentMode.mockReturnValue('pathedit')
+      mockPath.dragging = [100, 100]
+      mockPath.cur_pt = 2
+
+      pathActionsMethod.mouseMove(62, 100)
+
+      expect(mockPath.movePts).toHaveBeenCalledWith(-38, 0)
+      expect(svgCanvas.showPathNodeGuides).toHaveBeenCalledWith(null)
     })
   })
 

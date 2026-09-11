@@ -16,6 +16,7 @@ import {
   assignAttributes
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
+import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.js'
 
 /**
 * @function module:path-actions.init
@@ -751,13 +752,33 @@ class PathActions {
         x: mouseX,
         y: mouseY
       }, path)
-      const diffX = mpt.x - pt.x
-      const diffY = mpt.y - pt.y
+      let diffX = mpt.x - pt.x
+      let diffY = mpt.y - pt.y
       path.dragging = [mouseX, mouseY]
 
       if (path.dragctrl) {
         path.moveCtrl(diffX, diffY)
       } else {
+        // Node-alignment guides: snap the dragged anchor's x/y to line up
+        // with another anchor node of the same path (control-point handles
+        // aren't dragged here, so this only runs for plain node moves).
+        // Gated on the same `smartSnapping` flag as object-to-object guides.
+        const curSeg = path.segs[path.cur_pt]
+        if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
+          const exclude = [path.cur_pt, ...path.selected_pts]
+          const targets = collectPathNodeTargets(path, exclude)
+          const tol = 8 / zoom // ~8 screen px
+          const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
+          if (snap.x) diffX += snap.x.delta
+          if (snap.y) diffY += snap.y.delta
+          svgCanvas.showPathNodeGuides?.({
+            x: snap.x,
+            y: snap.y,
+            from: { x: curSeg.item.x + diffX, y: curSeg.item.y + diffY }
+          })
+        } else {
+          svgCanvas.showPathNodeGuides?.(null)
+        }
         path.movePts(diffX, diffY)
       }
     } else {
@@ -868,6 +889,7 @@ class PathActions {
       path.dragging = false
       path.dragctrl = false
       path.update()
+      svgCanvas.showPathNodeGuides?.(null)
 
       if (this.#hasMoved) {
         path.endChanges('Move path point(s)')
