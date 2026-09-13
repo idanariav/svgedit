@@ -64,6 +64,19 @@ export default {
       frag.append(ln)
     }
 
+    // Ring drawn around the specific node a path-node drag is snapping to, so
+    // the alignment guide line's far end reads as "this exact node" rather
+    // than just "somewhere along this line" (relevant on curvy paths, where
+    // several nodes can sit near the same line).
+    const NODE_TARGET_RING_RADIUS = 7
+    const addNodeTargetRing = (frag, x, y) => {
+      const ring = svgdoc.createElementNS(NS.SVG, 'circle')
+      assignAttributes(ring, {
+        cx: x, cy: y, r: NODE_TARGET_RING_RADIUS, fill: 'none', stroke: GUIDE_COLOR, 'stroke-width': 1.5
+      })
+      frag.append(ring)
+    }
+
     /**
      * Draw the current snap state. Called from core `event.js` on every
      * drag move; `null` (or a payload with no matches) clears the overlay.
@@ -153,13 +166,21 @@ export default {
 
       // A shared coordinate makes the line between the two points already
       // perfectly vertical (x match) or horizontal (y match).
+      const ringedIndices = new Set()
+      const ringTarget = (t) => {
+        if (ringedIndices.has(t.index)) return
+        ringedIndices.add(t.index)
+        addNodeTargetRing(frag, t.x * zoom, t.y * zoom)
+      }
       if (payload.x) {
         const t = payload.x.target
         addLine(frag, t.x * zoom, t.y * zoom, from.x * zoom, from.y * zoom)
+        ringTarget(t)
       }
       if (payload.y) {
         const t = payload.y.target
         addLine(frag, t.x * zoom, t.y * zoom, from.x * zoom, from.y * zoom)
+        ringTarget(t)
       }
 
       overlay.replaceChildren(frag)
