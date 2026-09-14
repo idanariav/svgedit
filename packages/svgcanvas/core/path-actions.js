@@ -772,18 +772,19 @@ class PathActions {
       if (path.dragctrl) {
         path.moveCtrl(diffX, diffY)
       } else {
-        // Node-alignment guides: snap the dragged anchor's x/y to line up
-        // with another anchor node of the same path (control-point handles
-        // aren't dragged here, so this only runs for plain node moves).
-        // Gated on the same `smartSnapping` flag as object-to-object guides.
+        // Node-alignment guides: when the dragged anchor's x/y lines up with
+        // another anchor node of the same path, show a guide line (and ring
+        // the matched node) but leave the cursor free -- path nodes are too
+        // small a target to fight a hard snap free of once alignment is
+        // found. Informational only; the node always tracks the raw drag
+        // delta. Gated on the same `smartSnapping` flag as object-to-object
+        // guides.
         const curSeg = path.segs[path.cur_pt]
         if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
           const exclude = [path.cur_pt, ...path.selected_pts]
           const targets = collectPathNodeTargets(path, exclude)
           const tol = 8 / zoom // ~8 screen px
           const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
-          if (snap.x) diffX += snap.x.delta
-          if (snap.y) diffY += snap.y.delta
           if (snap.x || snap.y) this.#snappedDuringDrag = true
           svgCanvas.showPathNodeGuides?.({
             x: snap.x,

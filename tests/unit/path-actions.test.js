@@ -284,10 +284,13 @@ describe('PathActions', () => {
       expect(mockPath.movePts).toHaveBeenCalled()
     })
 
-    it('snaps a dragged node into alignment with another node in the same path', () => {
+    it('shows an alignment guide without moving the node off the raw drag delta', () => {
       // segs: 0=(10,10), 1=(50,50), 2=(90,10). Drag node 2 so its candidate
       // x (52) lands within tolerance of node 1's x (50) and its candidate y
-      // (10) already matches node 0's y (10) exactly.
+      // (10) already matches node 0's y (10) exactly. Alignment is
+      // informational only -- path nodes are too small a target to fight a
+      // hard snap free of, so the node keeps tracking the raw cursor delta
+      // and only the guide line/ring reflect the match.
       pathActionsMethod.toEditMode(pathElement)
       svgCanvas.getCurrentMode.mockReturnValue('pathedit')
       mockPath.dragging = [100, 100]
@@ -295,8 +298,7 @@ describe('PathActions', () => {
 
       pathActionsMethod.mouseMove(62, 100) // raw diff: dx=-38, dy=0
 
-      // Snapped: dx corrected from -38 to -40 (candidate x 52 -> 50), dy stays 0.
-      expect(mockPath.movePts).toHaveBeenCalledWith(-40, 0)
+      expect(mockPath.movePts).toHaveBeenCalledWith(-38, 0)
       expect(svgCanvas.showPathNodeGuides).toHaveBeenCalledWith(
         expect.objectContaining({
           x: expect.objectContaining({ pos: 50 }),
@@ -305,7 +307,7 @@ describe('PathActions', () => {
       )
     })
 
-    it('does not snap node drags when smart snapping is off', () => {
+    it('does not show alignment guides for node drags when smart snapping is off', () => {
       svgCanvas.getCurConfig.mockReturnValue({ smartSnapping: false })
       pathActionsMethod.toEditMode(pathElement)
       svgCanvas.getCurrentMode.mockReturnValue('pathedit')

@@ -289,13 +289,16 @@ lives in [`packages/svgcanvas/core/path-method.js`](../packages/svgcanvas/core/p
 (`addPointGrip`, `addCtrlGrip`, `Segment#showCtrlPt`, `Path#refreshCtrlPtDisplay`).
 
 **Node alignment while dragging:** Dragging an existing node grip (not a
-bezier control handle) snaps its x/y into alignment with any other anchor
-node of the *same* path when within ~8 screen px, with a guide line rendered
-via the same overlay as object smart guides — see ext-smart-guides in
-[extensions.md](extensions.md) and `core/path-node-guides.js`. Governed by
-the same `tool_smart_snap` toggle as object-to-object snapping (no separate
-control). Scope: anchor nodes only, same path only, drag-only (no live guide
-while placing new points during path creation).
+bezier control handle) detects x/y alignment with any other anchor node of
+the *same* path when within ~8 screen px, with a guide line + ring on the
+matched node rendered via the same overlay as object smart guides — see
+ext-smart-guides in [extensions.md](extensions.md) and
+`core/path-node-guides.js`. Informational only: the node keeps tracking the
+raw cursor delta, it is not pulled onto the aligned position — path nodes
+are too small a target to fight a hard snap free of once alignment is
+found. Governed by the same `tool_smart_snap` toggle as object-to-object
+snapping (no separate control). Scope: anchor nodes only, same path only,
+drag-only (no live guide while placing new points during path creation).
 
 **Delete-node semantics (reconnect):** Both the `tool_node_delete` toolbar
 button and the `Backspace`/`Delete` key call `pathActions.deletePathNode()`

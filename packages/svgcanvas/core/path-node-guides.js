@@ -1,13 +1,16 @@
 /**
- * Path-node alignment guides — node-to-node snapping math for pathedit mode.
+ * Path-node alignment guides — node-to-node alignment math for pathedit mode.
  *
  * Pure geometry helpers, mirroring `smart-guides.js`'s object-to-object model
  * but for a single dragged anchor node against the other anchor nodes of the
  * *same* path: while dragging a node grip, its candidate position is compared
- * against every other node's x/y and snapped when within tolerance, so
+ * against every other node's x/y to find an in-tolerance match, so
  * horizontal/vertical alignment (e.g. a path-tool-drawn rectangle's corners)
- * no longer has to be eyeballed. Bezier control-point handles are not
- * included as targets or draggable subjects.
+ * no longer has to be eyeballed. This is informational only -- the match is
+ * used to draw a guide line, not to alter the dragged node's position, since
+ * path nodes are too small a target to fight a hard snap free of once
+ * alignment is found. Bezier control-point handles are not included as
+ * targets or draggable subjects.
  *
  * Consumed by the pathedit-drag branch in `path-actions.js`'s `mouseMove`;
  * rendering of the guide line is delegated to `svgCanvas.showPathNodeGuides`
