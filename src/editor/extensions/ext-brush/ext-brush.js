@@ -107,7 +107,15 @@ export default {
 
       mouseMove (opts) {
         if (!started || svgCanvas.getMode() !== 'brush') return undefined
-        points.push(smoother.push({ x: opts.mouse_x, y: opts.mouse_y, pressure: pressureNow() }))
+        // mouseDown opts use start_x/start_y (already in canvas coords).
+        // mouseMove/mouseUp use mouse_x/mouse_y (screen-pixel coords, need /zoom)
+        // — see ext-cutter for the same convention. Without the division the
+        // stroke tracked the cursor 1:1 only at 100% zoom; at any other zoom
+        // level every point after the first landed far off from where it was
+        // drawn, stretching a straight line from the start point out to the
+        // wrong location.
+        const zoom = svgCanvas.getZoom()
+        points.push(smoother.push({ x: opts.mouse_x / zoom, y: opts.mouse_y / zoom, pressure: pressureNow() }))
         redraw()
         return { started: true }
       },
