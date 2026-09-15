@@ -482,6 +482,18 @@ const dblClickEvent = (evt) => {
     svgCanvas.textActions.select(mouseTarget, pt.x, pt.y)
   }
 
+  // getMouseTarget() falls back to the svg root as its "this click isn't
+  // actually inside the drawing" sentinel (e.g. the double-click landed on
+  // editor chrome or an extension overlay outside the current layer's
+  // subtree). The `parent.tagName` check just below looks at the *raw* DOM
+  // node's immediate parent instead, which can independently read as a
+  // 'g'/'a' wrapper (SVG icon markup is full of grouping <g>s) even when
+  // mouseTarget degraded to that sentinel. Left unguarded, that mismatch
+  // called setContext(svgRoot) below — and setContext's ancestor walk (bounded
+  // by '#svgcontent', never an ancestor of the root) climbed straight out of
+  // the drawing and dimmed arbitrary editor UI (toolbars, dialogs, rulers).
+  if (mouseTarget === svgCanvas.getSvgRoot()) { return }
+
   // Do nothing if already in current group
   if (parent === svgCanvas.getCurrentGroup()) { return }
 

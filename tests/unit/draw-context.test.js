@@ -59,6 +59,32 @@ describe('draw context', () => {
     expect(calls.length).toBe(0)
   })
 
+  it('refuses to enter context on an element outside #svgcontent', () => {
+    // Regression guard: a mis-resolved double-click (or any other caller)
+    // handing setContext() something outside the drawing -- e.g. the svg
+    // root itself, or any editor-chrome element -- must not enter a group
+    // context. getParentsUntil(elem, '#svgcontent') only terminates when
+    // '#svgcontent' is an actual ancestor of elem; for anything outside the
+    // drawing it climbs out into the editor's own DOM and would dim
+    // arbitrary UI (toolbars, dialogs, rulers) instead of drawing siblings.
+    const chrome = document.createElement('div')
+    chrome.id = 'tools_left'
+    document.body.append(chrome)
+
+    canvas.setContext(chrome)
+
+    expect(currentGroup).toBe(null)
+    expect(calls.length).toBe(0)
+    expect(sibling.getAttribute('opacity')).toBe('inherit')
+  })
+
+  it('refuses to enter context on svgcontent itself', () => {
+    canvas.setContext(svgContent)
+
+    expect(currentGroup).toBe(null)
+    expect(calls.length).toBe(0)
+  })
+
   it('handles non-numeric opacity and restores it', () => {
     canvas.setContext(editGroup)
 

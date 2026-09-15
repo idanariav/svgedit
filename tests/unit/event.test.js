@@ -783,4 +783,33 @@ describe('event', () => {
     expect(pushed).toBe(false)
     expect(contextEntered).toBe(group)
   })
+
+  it('dblClickEvent() does not enter context when the mouse target resolved outside the drawing', () => {
+    // Regression guard: getMouseTarget() falls back to the svg root when the
+    // raw click target isn't actually inside the current layer's subtree
+    // (e.g. editor chrome or an extension overlay, not real drawing
+    // content). The unrelated <g> wrapper below stands in for that case --
+    // its immediate parent tag is 'g' (satisfying the old, now-insufficient
+    // guard) even though the resolved mouseTarget is the sentinel svg root.
+    // Without the fix, this called setContext(svgRoot), whose ancestor walk
+    // (bounded by '#svgcontent', never an ancestor of the root) climbs out
+    // of the drawing entirely.
+    const chromeGroup = /** @type {SVGGElement} */ (createSvgElement('g'))
+    const chromeChild = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    chromeGroup.append(chromeChild)
+    root.append(chromeGroup)
+
+    let setContextCalls = 0
+    canvas.getMouseTarget = () => svgcontent // the "not part of the drawing" sentinel
+    canvas.setContext = () => { setContextCalls++ }
+
+    canvas.dblClickEvent({
+      clientX: 50,
+      clientY: 50,
+      target: chromeChild,
+      preventDefault () {}
+    })
+
+    expect(setContextCalls).toBe(0)
+  })
 })

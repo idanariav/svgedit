@@ -1460,6 +1460,19 @@ export const init = canvas => {
     return
   }
 
+  // `elem` must actually live inside the drawing content: the ancestor walk
+  // below is bounded by '#svgcontent', so entering context on anything
+  // outside it (most notably the svg root itself, which sits *above*
+  // '#svgcontent' in the DOM, never below it) means that boundary is never
+  // found — the walk climbs straight out of the drawing into the editor's
+  // own DOM, dimming arbitrary UI chrome (toolbars, dialogs, rulers) instead
+  // of drawing siblings. See a real repro from a mis-resolved double-click
+  // in event.js's dblClickEvent.
+  const svgContent = svgCanvas.getSvgContent?.()
+  if (!svgContent || svgContent === elem || !svgContent.contains(elem)) {
+    return
+  }
+
   // Edit inside this group
   svgCanvas.setCurrentGroup(elem)
 
