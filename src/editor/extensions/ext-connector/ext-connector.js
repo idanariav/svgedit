@@ -822,9 +822,20 @@ export default {
         if (elems.length) updateConnectors(elems)
       },
       elementChanged (opts) {
+        // 'changed' can carry several elements at once (a multi-element
+        // drag commit's `svgCanvas.call('changed', selectedElements)`, a
+        // multi-delete's `svgCanvas.call('changed', selectedCopy)`, …), not
+        // just the single-element case this hook was originally shaped for.
+        // Previously only opts.elems[0] was ever processed, so any *other*
+        // shape's bound connector silently never got re-routed after such a
+        // bulk operation -- e.g. drag two connected boxes together and
+        // release: only the first box's line ends up back where it should.
+        for (const elem of opts.elems?.filter(Boolean) || []) {
+          this.handleOneChangedElement(elem)
+        }
+      },
+      handleOneChangedElement (elem) {
         const dataStorage = svgCanvas.getDataStorage()
-        let [elem] = opts.elems
-        if (!elem) return
 
         // Reinitialize on document (re)load.
         if (elem.tagName === 'svg' && elem.id === 'svgcontent') {
