@@ -6,6 +6,12 @@ import { initToolDragReorder } from '../toolDragReorder.js'
 
 const { $click } = SvgCanvas
 
+// Tools that support the lock gesture (double-click, or Shift+Enter from the
+// keyboard — see the `keydown` listener wired in finalizeToolOrder()).
+// Plain buttons lock themselves; shape groups lock via the flyout host, which
+// locks whatever variant is currently active.
+const LOCKABLE_TOOL_IDS = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_shapes']
+
 /*
  * register actions for left panel
  */
@@ -47,9 +53,11 @@ class LeftPanel {
   }
 
   /**
-   * Lock the currently-selected drawing tool (double-click gesture). A locked
-   * tool stays active after each object is created instead of reverting to
-   * select; switching to another tool clears the lock (see updateLeftPanel).
+   * Lock the currently-selected drawing tool (double-click, or Shift+Enter
+   * from the keyboard — see the `keydown` listener wired in
+   * finalizeToolOrder()). A locked tool stays active after each object is
+   * created instead of reverting to select; switching to another tool clears
+   * the lock (see updateLeftPanel).
    * @function this.lockTool
    * @param {Element} visibleEl The toolbar element to mark locked (an se-button,
    *   or the se-flyingbutton host for a shape variant)
@@ -205,6 +213,22 @@ class LeftPanel {
       overflowHost: overflowEl,
       onChange: saveToolOrder
     })
+
+    // Keyboard equivalent of the double-click lock gesture (see lockTool):
+    // Shift+Enter on a focused lockable tool locks it. Registered after
+    // initToolDragReorder's own `keydown` listener above (both bubble from the
+    // same target to this shared `container`, and same-element listeners run
+    // in registration order) so its unconditional `el.click()` on plain Enter
+    // — which selects the tool and, via updateLeftPanel, clears any existing
+    // lock — has already run by the time this locks it, mirroring how a mouse
+    // double-click's two `click` events fire before the trailing `dblclick`.
+    container.addEventListener('keydown', (evt) => {
+      if (evt.key !== 'Enter' || !evt.shiftKey) return
+      const el = evt.target
+      if (!(el instanceof Element) || !LOCKABLE_TOOL_IDS.includes(el.id)) return
+      evt.preventDefault()
+      this.lockTool(el)
+    })
   }
 
   /**
@@ -234,8 +258,7 @@ class LeftPanel {
     // Plain buttons bind on themselves; shape groups bind on the flyout host
     // (the variant buttons live in a menu that's hidden when collapsed), which
     // locks whatever variant is currently active.
-    const lockable = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_shapes']
-    lockable.forEach((id) => {
+    LOCKABLE_TOOL_IDS.forEach((id) => {
       const el = $id(id)
       el.addEventListener('dblclick', () => this.lockTool(el))
     })

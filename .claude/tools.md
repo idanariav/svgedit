@@ -20,8 +20,9 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 | `tool_image` | Image | — | Opens the **Insert image** dialog (`se-image-import-dialog`) — file upload (drag-drop/browse, embedded as data URL), URL, or **Import from vault** (only when a host provides `window.svgEditHost.pickVaultImage` — see [architecture.md](architecture.md) "Host bridge"). Inserts a centered image; no draw mode, no native prompt. A vault import carries a provenance `vaultLink` through the dialog `change` event → `handleImageImport`. A locally-picked **SVG file** (browse/drag-drop, detected by `image/svg+xml` type or `.svg` name in `handleFile`) is read as text into `editableSvg` so it imports as editable shapes too — not a frozen `<image>`. If `editableSvg` is set (whole-drawing **unlocked** import — vault or local SVG file), it routes to `insertSvgElements(editableSvg, { vaultLink, asPaths })` — drawable top-level elements into the layer (defs → canvas `<defs>`); a multi-element import is wrapped in one `<g>` so it moves/selects as a unit (double-click to edit members, like Excalidraw's import grouping), a single element is inserted bare. When the dialog's **"Import as editable paths"** checkbox (`#image_paths_toggle`, shown only for editable-SVG imports, **default off**) is checked, `asPaths` is passed and basic shapes (rect/circle/ellipse/line/polyline/polygon), including those nested in groups, are converted to `<path>` (`convertShapesToPaths` in `dialogs/insertImage.js`, a history-free DOM swap that copies each shape's own attrs/style onto the path); off → shapes stay native; `g`/`text`/`image`/`use`/existing `path` always pass through. Otherwise (locked embed / raster / frame crop / SVG-by-URL) `insertImageFromHref(href, { vaultLink, locked })`, which stamps `data-vault-link` (and `data-vault-locked` when locked) on the `<image>`. Handler `LeftPanel.clickImage` → dialog → `LeftPanel.handleImageImport` → `insertSvgElements` / `insertImageFromHref` (`dialogs/insertImage.js`) |
 
 **Lock mode (double-click a drawing tool):** normally a tool reverts to Select
-after one object is created. **Double-clicking** a drawing tool *locks* it so it
-stays active for drawing many objects in a row; switching to any other tool exits
+after one object is created. **Double-clicking** a drawing tool (or, from the
+keyboard, **Shift+Enter** while it's focused — see the reorder section below)
+*locks* it so it stays active for drawing many objects in a row; switching to any other tool exits
 lock mode. Locked tools show a distinct accent **outline ring** (on top of the
 pressed style — `.locked` class in `seButton.js` / `seFlyingButton.js`). Lockable
 tools: `tool_fhpath`, `tool_line`, `tool_path`, `tool_text`, and the combined
@@ -91,9 +92,13 @@ the other one — the same drop zones the mouse path supports. Space again
 drops it in place; **Escape** cancels, restoring the exact order from when
 it was grabbed. **Enter** forwards to the focused tool's own `click()` (these
 are plain custom elements with no native keyboard activation), so a keyboard
-user can select a tool, not just reorder it — though the double-click-to-lock
-gesture below has no keyboard equivalent yet, see `techdebt.md`. A
-visually-hidden live region announces grabs/moves/drops. The order + bucket
+user can select a tool, not just reorder it. **Shift+Enter** is the keyboard
+equivalent of the double-click-to-lock gesture below — wired in
+`LeftPanel.js`'s `finalizeToolOrder()`, registered after `toolDragReorder.js`'s
+own `keydown` listener on the same element so the plain-Enter `click()` above
+(which also unlocks any existing lock, via `updateLeftPanel`) runs first,
+mirroring how a mouse double-click's two `click` events fire before the
+trailing `dblclick`. A visually-hidden live region announces grabs/moves/drops. The order + bucket
 membership persists via `toolOrder.js` (`userDataAdapter.getToolOrder`/
 `setToolOrder`, else `localStorage` key `svg-edit-tool-order`), reconciled
 against whatever tools actually exist on each load (`reconcileToolOrder` —

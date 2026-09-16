@@ -27,6 +27,9 @@
  *     the order from when it was grabbed.
  *   - Enter forwards to the focused tool's own `click()`, since these are
  *     plain custom elements with no native keyboard activation of their own.
+ *     Shift+Enter additionally locks a lockable tool (mirroring double-click)
+ *     — wired separately in LeftPanel.js's finalizeToolOrder(), after this
+ *     module's own listener, so the plain-Enter `click()` above runs first.
  * A visually-hidden live region announces grabs/moves/drops for screen
  * readers, since the moves themselves are plain DOM reordering with no
  * visible focus change to narrate otherwise.
