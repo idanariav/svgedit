@@ -1265,12 +1265,12 @@ class PathActions {
 
     const { elem } = path
     const list = elem.pathSegList
-    // NOTE: this whole method mutates pathSegList directly with no
-    // storeD()/endChanges() around it -- unlike every other pathedit action,
-    // an open/close-subpath toggle currently has NO undo-history entry at
-    // all. Logged here (before/after `d`) since it's otherwise completely
-    // invisible to both the debug log and Ctrl+Z.
-    const beforeD = elem.getAttribute('d')
+    // Like every other pathedit action (move/clone/delete/toggle-seg-type/
+    // smooth), bracket the direct pathSegList mutation below with
+    // storeD()/endChanges() so an open/close toggle gets a real undo-history
+    // entry instead of Ctrl+Z silently undoing whatever came before it.
+    path.storeD()
+    const beforeD = path.last_d
 
     // const len = list.numberOfItems;
 
@@ -1326,6 +1326,7 @@ class PathActions {
         elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
       })
       path.init().selectPt(openPt + 1)
+      path.endChanges('Close subpath', { index })
       return
     }
 
@@ -1344,6 +1345,7 @@ class PathActions {
         elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
       })
       path.init().selectPt(index - 1)
+      path.endChanges('Open subpath', { index })
       return
     }
 
@@ -1385,6 +1387,7 @@ class PathActions {
       elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
     })
     path.init().selectPt(0)
+    path.endChanges('Open subpath', { index })
   }
 
   /**

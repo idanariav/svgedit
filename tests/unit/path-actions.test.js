@@ -904,7 +904,10 @@ describe('PathActions', () => {
         update: vi.fn(function () { return this }),
         setPathContext: vi.fn(),
         selectPt: vi.fn(),
-        storeD: vi.fn(),
+        // Real implementation (path-method.js's Path#storeD), not a bare
+        // stub: opencloseSubPath now reads `path.last_d` back out as its
+        // before-mutation `d`, same as every other pathedit action.
+        storeD: vi.fn(function () { this.last_d = this.elem.getAttribute('d') }),
         endChanges: vi.fn()
       }
     }
@@ -925,12 +928,13 @@ describe('PathActions', () => {
       expect(d).not.toMatch(/Z\s*L/i)
       expect((d.match(/Z/gi) || []).length).toBe(0)
       expect(closedPath.elem.pathSegList.numberOfItems).toBe(2)
-      // opencloseSubPath mutates pathSegList directly with no storeD()/
-      // endChanges() around it -- no undo-history entry is ever created for
-      // this action, so this debug event is the *only* record of it.
       expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
         elemId: '', index: 1, action: 'open', before: 'M100,100 L200,100 L150,180 Z', after: d
       })
+      // Bracketed with storeD()/endChanges() like every other pathedit
+      // action, so this is a real undo-history entry, not just a debug log.
+      expect(closedPath.storeD).toHaveBeenCalled()
+      expect(closedPath.endChanges).toHaveBeenCalledWith('Open subpath', { index: 1 })
     })
 
     it('opens via the mate shortcut when the pre-closing node is selected (regression)', () => {
@@ -948,6 +952,7 @@ describe('PathActions', () => {
       expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
         elemId: '', index: 2, action: 'open', before: 'M100,100 L200,100 L150,180 Z', after: d
       })
+      expect(closedPath.endChanges).toHaveBeenCalledWith('Open subpath', { index: 2 })
     })
 
     it('still closes an open sub-path (baseline, unaffected by the fix)', () => {
@@ -964,6 +969,7 @@ describe('PathActions', () => {
       expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-open-close', {
         elemId: '', index: 0, action: 'close', before: 'M100,100 L200,100 L150,180', after: d
       })
+      expect(openPath.endChanges).toHaveBeenCalledWith('Close subpath', { index: 0 })
     })
 
     it('re-closing after opening does not accumulate extra Z segments (repeated-press regression)', () => {
