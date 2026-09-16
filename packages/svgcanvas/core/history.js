@@ -459,32 +459,43 @@ export class BatchCommand extends Command {
   }
 
   /**
-  * Runs "apply" on all subcommands.
+  * Runs "apply" on all subcommands. A BatchCommand is just a container: its
+  * own `type()` ('BatchCommand') never matches any of the type-specific
+  * branches in undo.js's `handleHistoryEvent` (ChangeElementCommand,
+  * MoveElementCommand, InsertElementCommand, RemoveElementCommand), so
+  * routing it through `Command.apply`'s handler notification (like a real
+  * leaf command) fires `handleHistoryEvent` an extra, redundant time for
+  * every batch on top of the once-per-subcommand notifications the leaf
+  * commands already fire. That extra firing does nothing useful — it only
+  * re-clears the selection, re-dispatches `changed`, and re-evaluates
+  * undo.js's pathedit refresh/clear check against whatever mode the
+  * subcommands just left the canvas in, which can spuriously kick the user
+  * out of path-edit mode a second time after the subcommands already
+  * settled it correctly. So subcommands are still applied *with* the real
+  * handler (each needs its own notification for its own side effects) —
+  * only the wrapping batch's own notification is skipped.
   * @param {module:history.HistoryEventHandler} handler
   * @fires module:history~Command#event:history
   * @returns {void}
   */
   apply (handler) {
-    super.apply(handler, () => {
-      this.stack.forEach((stackItem) => {
-        console.assert(stackItem, 'stack item should not be null')
-        stackItem && stackItem.apply(handler)
-      })
+    this.stack.forEach((stackItem) => {
+      console.assert(stackItem, 'stack item should not be null')
+      stackItem && stackItem.apply(handler)
     })
   }
 
   /**
-  * Runs "unapply" on all subcommands.
+  * Runs "unapply" on all subcommands. See `apply()` above for why this
+  * does not also notify the handler for the batch itself.
   * @param {module:history.HistoryEventHandler} handler
   * @fires module:history~Command#event:history
   * @returns {void}
   */
   unapply (handler) {
-    super.unapply(handler, () => {
-      [...this.stack].reverse().forEach((stackItem) => {
-        console.assert(stackItem, 'stack item should not be null')
-        stackItem && stackItem.unapply(handler)
-      })
+    [...this.stack].reverse().forEach((stackItem) => {
+      console.assert(stackItem, 'stack item should not be null')
+      stackItem && stackItem.unapply(handler)
     })
   }
 

@@ -118,6 +118,41 @@ describe('undo', () => {
     }))
   })
 
+  it('notifies the history handler once per subcommand, not again for the wrapping BatchCommand', () => {
+    // Regression guard: BatchCommand.apply/unapply used to route itself
+    // through Command.apply/unapply too, so every subcommand's real
+    // notification (cmdType 'ChangeElementCommand', etc.) was followed by a
+    // second, redundant notification for the batch itself (cmdType
+    // 'BatchCommand'). That extra firing re-dispatched 'changed' and
+    // re-ran the pathedit refresh/clear check against whatever mode the
+    // subcommands had already settled -- observable in the wild as two
+    // history-apply log entries for a single Ctrl+Z on one delete/move.
+    const rectElem = /** @type {SVGRectElement} */ (createSvgElement('rect'))
+    rectElem.id = 'rect1'
+    rectElem.setAttribute('width', '10')
+
+    const logDebugEvent = vi.fn()
+    const canvas = makeCanvas({ mode: 'select', trackedPath: null, logDebugEvent })
+    const batch = new history.BatchCommand('Delete Elements')
+    batch.addSubCommand(new history.ChangeElementCommand(rectElem, { width: '5' }))
+    canvas.undoMgr.addCommandToHistory(batch)
+
+    canvas.undoMgr.undo()
+    expect(logDebugEvent).toHaveBeenCalledTimes(1)
+    expect(logDebugEvent).toHaveBeenCalledWith('history-apply', expect.objectContaining({
+      cmdType: 'ChangeElementCommand',
+      elemIds: ['rect1']
+    }))
+
+    logDebugEvent.mockClear()
+    canvas.undoMgr.redo()
+    expect(logDebugEvent).toHaveBeenCalledTimes(1)
+    expect(logDebugEvent).toHaveBeenCalledWith('history-apply', expect.objectContaining({
+      cmdType: 'ChangeElementCommand',
+      elemIds: ['rect1']
+    }))
+  })
+
   it('does not throw when the host has not set up a debug event sink', () => {
     const rectElem = /** @type {SVGRectElement} */ (createSvgElement('rect'))
     const canvas = makeCanvas({ mode: 'select', trackedPath: null })
