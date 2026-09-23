@@ -134,6 +134,58 @@ export const init = canvas => {
   }
 
   /**
+ * One-time repair for a legacy bug: closing a freehand-drawn path by
+ * clicking back on its own start point (see the path-drawing mousedown
+ * handler in path-actions.js) used to append an explicit absolute lineto
+ * back to the start point *in addition to* the closepath (`Z`) command —
+ * even though `Z` alone already draws a straight closing edge back to the
+ * subpath's start. That extra lineto is a fully-formed, independently
+ * selectable/draggable path node stacked exactly on top of the real start
+ * node, with no visual seam to tell the two apart — the user sees what
+ * looks like one node but the path editor lets them grab either one (see
+ * the matching prevention fix in path-actions.js, which now only emits
+ * that closing segment when it carries real curvature).
+ *
+ * Removes any absolute LinetoAbs segment that both immediately precedes a
+ * ClosePath and lands exactly on its subpath's MovetoAbs start point —
+ * `Z` alone reproduces the identical closing edge, so this is lossless.
+ * Deliberately narrow: only the absolute-lineto shape the old drawing code
+ * actually produced (never relative commands, and never a curve, which
+ * carries shape `Z` can't express and must be kept).
+ * @param {Element} root
+ * @returns {void}
+ */
+  const sanitizeLegacyRedundantClosingPathNode = (root) => {
+    const pathList = root.getElementsByTagNameNS(NS.SVG, 'path')
+    Array.prototype.forEach.call(pathList, (pathEl) => {
+      const segList = pathEl.pathSegList
+      const numItems = segList.numberOfItems
+      let mx = null; let my = null
+      const toRemove = []
+      for (let i = 0; i < numItems; i++) {
+        const seg = segList.getItem(i)
+        if (seg.pathSegType === 2) { // MovetoAbs starts a new subpath
+          mx = seg.x
+          my = seg.y
+          continue
+        }
+        if (seg.pathSegType !== 1) continue // only ClosePath matters below
+        const prev = i > 0 ? segList.getItem(i - 1) : null
+        if (
+          prev && prev.pathSegType === 4 && // absolute LinetoAbs only
+          mx !== null && prev.x === mx && prev.y === my
+        ) {
+          toRemove.push(i - 1)
+        }
+      }
+      // Remove highest index first so earlier indices already queued stay valid.
+      for (let k = toRemove.length - 1; k >= 0; k--) {
+        segList.removeItem(toRemove[k])
+      }
+    })
+  }
+
+  /**
  * Main function to set up the SVG content for output.
  * @function module:svgcanvas.SvgCanvas#svgCanvasToString
  * @returns {string} The SVG image for output
@@ -186,6 +238,7 @@ export const init = canvas => {
     try {
       sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
       sanitizeStackedTranslateTransforms(svgCanvas.getSvgContent())
+      sanitizeLegacyRedundantClosingPathNode(svgCanvas.getSvgContent())
 
       // Keep SVG-Edit comment on top
       const childNodesElems = svgCanvas.getSvgContent().childNodes
@@ -610,9 +663,11 @@ export const init = canvas => {
       // save. A drawing opened read-only, or opened and closed without
       // editing, should still self-heal rather than carry the scar forward
       // indefinitely. See sanitizeLegacyUndefinedDefs(),
-      // sanitizeStackedTranslateTransforms() and techdebt.md.
+      // sanitizeStackedTranslateTransforms(),
+      // sanitizeLegacyRedundantClosingPathNode() and techdebt.md.
       sanitizeLegacyUndefinedDefs(content)
       sanitizeStackedTranslateTransforms(content)
+      sanitizeLegacyRedundantClosingPathNode(content)
 
       svgCanvas.current_drawing_ = new draw.Drawing(
         svgCanvas.getSvgContent(),
