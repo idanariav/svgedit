@@ -87,25 +87,19 @@ describe('Basic Module', function () {
 
       assert.equal(p1.nodeName, 'path', "Expected 'path', got")
 
-      // The fixture's original 'L100,100Z' duplicated the M point before the
-      // ClosePath -- exactly the redundant-closing-node corruption
-      // setSvgString() now repairs on load (see
-      // sanitizeLegacyRedundantClosingPathNode() in svg-exec.js and
-      // .claude/techdebt.md), since 'Z' alone already draws that same
-      // closing edge. So this is 3 segments (M, L, Z), not 4.
-      assert.equal(seglist.numberOfItems, 3, 'Number of segments before conversion')
+      assert.equal(seglist.numberOfItems, 4, 'Number of segments before conversion')
 
       // verify segments before conversion
       let curseg = seglist.getItem(0)
       assert.equal(curseg.pathSegTypeAsLetter.toUpperCase(), 'M', 'Before conversion, segment #1 type')
       curseg = seglist.getItem(1)
       assert.equal(curseg.pathSegTypeAsLetter.toUpperCase(), 'L', 'Before conversion, segment #2 type')
-      curseg = seglist.getItem(2)
+      curseg = seglist.getItem(3)
       assert.equal(curseg.pathSegTypeAsLetter.toUpperCase(), 'Z', 'Before conversion, segment #3 type' + dAbs)
 
       // convert and verify segments
       let d = convert(p1, true)
-      assert.equal(d, 'm100,100l100,0z', 'Converted path to relative string')
+      assert.equal(d, 'm100,100l100,0l-100,0z', 'Converted path to relative string')
 
       // TODO: see why this isn't working in SVG-edit
       d = convert(p2, true)

@@ -494,24 +494,25 @@ class PathActions {
             const absY = seglist.getItem(0).y
 
             sSeg = stretchy.pathSegList.getItem(1)
-            // A straight closing edge is already implied by ClosePath, so
-            // appending an explicit LinetoAbs back to the start point here
-            // would create a second path node stacked exactly on node 0 —
-            // editable/draggable independently of it, with no visual seam
-            // to tell the two apart. Only append an explicit closing
-            // segment when it's a curve, since curvature can't be
-            // expressed by ClosePath alone.
-            if (sSeg.pathSegType !== 4) {
-              newseg = drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
-              seglist.appendItem(newseg)
-            }
+            newseg = sSeg.pathSegType === 4
+              ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
+              : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
 
             const endseg = drawnPath.createSVGPathSegClosePath()
+            seglist.appendItem(newseg)
             seglist.appendItem(endseg)
           } else if (len < 3) {
             keep = false
             return keep
           }
+          svgCanvas.logDebugEvent?.('path-draw-commit', {
+            elemId: drawnPath.id,
+            closed: i <= 1 && len >= 2,
+            clickedIndex: i,
+            segCount: seglist.numberOfItems,
+            locked: svgCanvas.getToolLocked(),
+            d: drawnPath.getAttribute('d')
+          })
           stretchy.remove()
 
           // This will signal to commit the path

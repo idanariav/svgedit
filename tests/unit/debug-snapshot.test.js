@@ -172,6 +172,34 @@ describe('SvgCanvas#getDebugSnapshot', () => {
     })
   })
 
+  describe('pathEditing outside path modes', () => {
+    it('reports the mode and flags any visible grip when not in path/pathedit', () => {
+      svgCanvas.setSvgString(
+        '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">' +
+          '<g class="layer"><title>Layer 1</title><path id="p3" d="M10,10 L50,10 L50,50 L10,50 L10,10 Z"/></g>' +
+        '</svg>'
+      )
+      const pathEl = svgCanvas.getSvgContent().querySelector('#p3')
+      svgCanvas.pathActions.toEditMode(pathEl)
+
+      // In pathedit, the path's own grips (index < segCount) are legitimate.
+      let snapshot = svgCanvas.getDebugSnapshot()
+      expect(snapshot.pathEditing.mode).toBe('pathedit')
+      expect(snapshot.pathEditing.grips.filter((g) => g.display === 'inline').every((g) => !g.stale)).toBe(true)
+
+      // Same grips, same in-range indices, but the canvas is back in select
+      // mode: a leftover grip from a previously-edited path is now flagged
+      // even though its index is still below segCount.
+      svgCanvas.setMode('select')
+      svgCanvas.addPointGrip(1, 5, 5)
+      snapshot = svgCanvas.getDebugSnapshot()
+      expect(snapshot.pathEditing.mode).toBe('select')
+      const ghost = snapshot.pathEditing.grips.find((g) => g.id === 'pathpointgrip_1')
+      expect(ghost.display).toBe('inline')
+      expect(ghost.stale).toBe(true)
+    })
+  })
+
   describe('masking', () => {
     it('reports a clip-path/mask reference that resolves to its target', () => {
       svgCanvas.setSvgString(

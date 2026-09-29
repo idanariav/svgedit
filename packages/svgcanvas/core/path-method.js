@@ -599,6 +599,43 @@ export const init = (canvas) => {
 }
 
 /**
+ * The node editor models a closed subpath as `M start … L(back to start) Z`:
+ * the last real segment before `Z` lands on the start point and is that
+ * vertex's *only* grip (`M` itself gets none — see `Path#init`, which links
+ * the two as `seg.mate`). A `Z`-only subpath (`M A L B L C L D Z`, which is
+ * perfectly valid SVG and what most other tools/importers emit) has no such
+ * segment, so `D` would be mistaken for the start vertex: `A` would have no
+ * grip and dragging `D` would drag `A` with it. Insert the missing explicit
+ * closing lineto (geometry-identical, since `Z` draws that same edge) so the
+ * editor's model holds. Only absolute end-point segments are considered.
+ * @param {SVGPathElement} elem
+ * @returns {void}
+ */
+  const ensureExplicitClosingSegments = (elem) => {
+    const segList = elem.pathSegList
+    let mx = null
+    let my = null
+    for (let i = 0; i < segList.numberOfItems; i++) {
+      const seg = segList.getItem(i)
+      if (seg.pathSegType === 2) { // MovetoAbs starts a subpath
+        mx = seg.x
+        my = seg.y
+        continue
+      }
+      if (seg.pathSegType !== 1 || mx === null || i === 0) continue
+      const prev = segList.getItem(i - 1)
+      if (
+        prev.pathSegType === 2 || prev.pathSegType === 1 || // nothing to close
+        prev.pathSegType % 2 !== 0 || // relative: leave alone
+        typeof prev.x !== 'number' || typeof prev.y !== 'number'
+      ) continue
+      if (Math.abs(prev.x - mx) < 1e-6 && Math.abs(prev.y - my) < 1e-6) continue
+      segList.insertItemBefore(elem.createSVGPathSegLinetoAbs(mx, my), i)
+      i++ // step past the inserted lineto onto the Z again
+    }
+  }
+
+/**
 *
 */
   class Path {
@@ -638,6 +675,7 @@ export const init = (canvas) => {
       el.setAttribute('display', 'none')
     })
 
+    ensureExplicitClosingSegments(this.elem)
     const segList = this.elem.pathSegList
     const len = segList.numberOfItems
     this.segs = []

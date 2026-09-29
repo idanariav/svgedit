@@ -515,6 +515,7 @@ class SvgCanvas extends EventTarget {
     const segCount = drawnPath
       ? drawnPath.pathSegList.numberOfItems
       : (path?.segs?.length ?? 0)
+    const mode = this.getMode?.() ?? null
     const gripContainer = this.getElement('pathpointgrip_container')
     const GRIP_ID_RE = /^(pathpointgrip|ctrlpointgrip|ctrlLine|segline)_(\d+)(?:c[12])?$/
     const grips = []
@@ -524,13 +525,23 @@ class SvgCanvas extends EventTarget {
         if (!m) continue
         const index = Number(m[2])
         const display = el.getAttribute('display')
-        grips.push({
+        // Grips are shared by index across every path, so `index < segCount`
+        // can't tell the current path's own grip from one left over from a
+        // previously edited path. Outside path/pathedit no grip should be
+        // visible at all, whatever its index.
+        const gripMode = mode === 'path' || mode === 'pathedit'
+        const entry = {
           id: el.id,
           kind: m[1],
           index,
           display,
-          stale: display === 'inline' && (!pathElemId || index >= segCount)
-        })
+          stale: display === 'inline' && (!pathElemId || index >= segCount || !gripMode)
+        }
+        if (m[1] === 'pathpointgrip' && display === 'inline') {
+          entry.x = Math.round(Number(el.getAttribute('x')))
+          entry.y = Math.round(Number(el.getAttribute('y')))
+        }
+        grips.push(entry)
       }
     }
 
@@ -569,7 +580,7 @@ class SvgCanvas extends EventTarget {
         disabledElems,
         stale: !currentGroup && disabledElems.length > 0
       },
-      pathEditing: { pathElemId, segCount, grips },
+      pathEditing: { mode, pathElemId, segCount, grips },
       masking: { refs: maskRefs, stale: maskRefs.some((r) => !r.refExists) }
     }
   }
