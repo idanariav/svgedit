@@ -470,7 +470,7 @@ input:focus { outline: none; }
 
 /* ── Shape removal dropdown ──────────────────────────────────────────────── */
 .sl-shape-dropdown {
-  position: absolute; z-index: 200; top: 100%; right: 0;
+  position: absolute; z-index: 200; top: 0; left: 0;
   background: var(--sl-modal-bg, #FFF);
   border: 1px solid var(--chrome-border, #E6E8EC);
   border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12);
@@ -1564,7 +1564,15 @@ export class SeShapeLibrary extends HTMLElement {
     const dropdown = document.createElement('div')
     dropdown.className = 'sl-shape-dropdown'
     this._fillDropdown(dropdown, items)
-    wrap.appendChild(dropdown)
+    // Host the dropdown on the modal, not inside `wrap`: the tile grid / sidebar
+    // scroll containers (and the modal's own overflow) would otherwise clip it.
+    // Anchor rect is captured now — the ⋮ button is only visible while `wrap` is
+    // hovered, and the dropdown no longer lives inside `wrap`.
+    const modal = this._shadow.querySelector('.sl-modal')
+    const anchor = (wrap.querySelector('.sl-shape-menu, .sl-cat-menu') || wrap).getBoundingClientRect()
+    modal.appendChild(dropdown)
+    this._positionDropdown(dropdown, modal, anchor)
+    dropdown._reposition = () => this._positionDropdown(dropdown, modal, anchor)
 
     // Use composedPath() so clicks *inside* the dropdown are recognised — at the
     // document level a shadow-DOM event target is retargeted to the host, which
@@ -1579,6 +1587,25 @@ export class SeShapeLibrary extends HTMLElement {
     return dropdown
   }
 
+  /**
+   * Place `dropdown` (absolutely positioned inside `modal`) just below `anchor`,
+   * right-aligned to it, flipping above / clamping so it stays inside the modal.
+   * The modal is transformed, so coordinates are made relative to its rect.
+   */
+  _positionDropdown (dropdown, modal, anchor) {
+    const m = modal.getBoundingClientRect()
+    const w = dropdown.offsetWidth
+    const h = dropdown.offsetHeight
+    const gap = 4
+    let left = anchor.right - m.left - w
+    let top = anchor.bottom - m.top + gap
+    if (top + h > m.height - gap) top = anchor.top - m.top - gap - h
+    left = Math.min(Math.max(gap, left), m.width - w - gap)
+    top = Math.min(Math.max(gap, top), m.height - h - gap)
+    dropdown.style.left = `${left}px`
+    dropdown.style.top = `${top}px`
+  }
+
   /** Populate (or repopulate) a dropdown element with item buttons. */
   _fillDropdown (dropdown, items) {
     dropdown.replaceChildren()
@@ -1588,7 +1615,7 @@ export class SeShapeLibrary extends HTMLElement {
       b.textContent = it.label
       b.addEventListener('click', ev => {
         ev.stopPropagation()
-        if (it.keepOpen) { it.onClick(dropdown); return }
+        if (it.keepOpen) { it.onClick(dropdown); dropdown._reposition?.(); return }
         dropdown.remove()
         it.onClick()
       })

@@ -504,6 +504,23 @@ describe('se-shape-library', () => {
       expect(userShapes.removeUserShape).toHaveBeenCalledWith({ category: 'my_stuff', label: 'blob' })
     })
 
+    it('hosts the shape menu dropdown on the modal so tile/scroll containers cannot clip it', async () => {
+      withUserShape()
+      const el = mountElement('se-shape-library')
+      el.setAttribute('lib', 'shapelib/')
+      await flush()
+      await el._openModal()
+      await flush()
+      el.shadowRoot.querySelector('.sl-cat[data-cat="user:my_stuff"]').click()
+      await flush()
+
+      el.shadowRoot.querySelector('.sl-shape-menu[data-id="blob"]').click()
+      const dropdown = el.shadowRoot.querySelector('.sl-shape-dropdown')
+      expect(dropdown).toBeTruthy()
+      expect(dropdown.parentElement).toBe(el.shadowRoot.querySelector('.sl-modal'))
+      expect(dropdown.closest('.sl-tile-wrap')).toBeNull()
+    })
+
     it('re-reads user shapes and re-renders when a user-shapes-updated event is dispatched', async () => {
       const el = mountElement('se-shape-library')
       el.setAttribute('lib', 'shapelib/')
