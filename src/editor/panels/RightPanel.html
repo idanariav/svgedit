@@ -69,8 +69,15 @@
                     <se-spin-input id="circle_cx" data-attr="cx" size="4" label="properties.cx_label"></se-spin-input>
                     <se-spin-input id="circle_cy" data-attr="cy" size="4" label="properties.cy_label"></se-spin-input>
                     <se-spin-input id="circle_r" data-attr="r" size="4" label="properties.r_label"></se-spin-input>
-                    <se-spin-input id="circle_arc" min="1" max="360" step="1" size="4"
-                        label="properties.arc_label"></se-spin-input>
+                    <div class="arc_field">
+                        <se-spin-input id="circle_arc" min="1" max="360" step="1" size="4"
+                            label="properties.arc_label"></se-spin-input>
+                        <div class="arc_presets" role="group" aria-label="Arc presets">
+                            <button type="button" class="arc_preset" data-target="circle_arc" data-arc="90">90°</button>
+                            <button type="button" class="arc_preset" data-target="circle_arc" data-arc="180">180°</button>
+                            <button type="button" class="arc_preset" data-target="circle_arc" data-arc="270">270°</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="ellipse_panel sidepanel_section" style="display:none">
@@ -84,8 +91,15 @@
                         label="properties.rx_label"></se-spin-input>
                     <se-spin-input id="ellipse_ry" data-attr="ry" size="4" title="properties.ellipse_ry"
                         label="properties.ry_label"></se-spin-input>
-                    <se-spin-input id="ellipse_arc" min="1" max="360" step="1" size="4"
-                        label="properties.arc_label"></se-spin-input>
+                    <div class="arc_field">
+                        <se-spin-input id="ellipse_arc" min="1" max="360" step="1" size="4"
+                            label="properties.arc_label"></se-spin-input>
+                        <div class="arc_presets" role="group" aria-label="Arc presets">
+                            <button type="button" class="arc_preset" data-target="ellipse_arc" data-arc="90">90°</button>
+                            <button type="button" class="arc_preset" data-target="ellipse_arc" data-arc="180">180°</button>
+                            <button type="button" class="arc_preset" data-target="ellipse_arc" data-arc="270">270°</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="line_panel sidepanel_section" style="display:none">

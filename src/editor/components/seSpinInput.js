@@ -3,6 +3,11 @@ import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 
+// Press-and-hold auto-repeat: first repeat after HOLD_DELAY_MS, then every
+// HOLD_INTERVAL_MS until the mouse is released or the limit is reached.
+const HOLD_DELAY_MS = 400
+const HOLD_INTERVAL_MS = 60
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -121,7 +126,7 @@ template.innerHTML = `
 /**
  * @class SESpinInput
  * Plain numeric spin input: a text field plus up/down step buttons —
- * single-click step (no press-and-hold repeat), ArrowUp/ArrowDown keyboard
+ * one step per click, press-and-hold auto-repeat, ArrowUp/ArrowDown keyboard
  * stepping, min/max clamping, and step-precision value formatting.
  */
 export class SESpinInput extends HTMLElement {
@@ -149,6 +154,8 @@ export class SESpinInput extends HTMLElement {
     this._min = 1
     this._max = null
     this._stepValue = 1
+    this._holdTimer = null
+    this._stopHold = this._stopHold.bind(this)
     this._updateButtonState()
   }
 
@@ -260,6 +267,27 @@ export class SESpinInput extends HTMLElement {
     this.dispatchEvent(this.$event)
   }
 
+  // One step now, then keep stepping while the button stays pressed. Stops on
+  // mouseup anywhere (the pointer may have left the button) or once the
+  // button's limit disables it.
+  _startHold (direction, btn) {
+    this._stopHold()
+    this._step(direction)
+    const repeat = () => {
+      if (btn.disabled) return this._stopHold()
+      this._step(direction)
+      this._holdTimer = setTimeout(repeat, HOLD_INTERVAL_MS)
+    }
+    this._holdTimer = setTimeout(repeat, HOLD_DELAY_MS)
+    window.addEventListener('mouseup', this._stopHold)
+  }
+
+  _stopHold () {
+    clearTimeout(this._holdTimer)
+    this._holdTimer = null
+    window.removeEventListener('mouseup', this._stopHold)
+  }
+
   /**
    * @function get
    * @returns {any}
@@ -348,11 +376,11 @@ export class SESpinInput extends HTMLElement {
   connectedCallback () {
     this.$upBtn.addEventListener('mousedown', (e) => {
       e.preventDefault() // keep focus on the input, not the button
-      this._step(1)
+      this._startHold(1, this.$upBtn)
     })
     this.$downBtn.addEventListener('mousedown', (e) => {
       e.preventDefault()
-      this._step(-1)
+      this._startHold(-1, this.$downBtn)
     })
     this.$input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp') {
@@ -378,6 +406,14 @@ export class SESpinInput extends HTMLElement {
     // Release focus after a short idle period so tool shortcuts / Delete reach
     // the canvas instead of being swallowed by this field.
     attachIdleBlur(this)
+  }
+
+  /**
+   * @function disconnectedCallback
+   * @returns {void}
+   */
+  disconnectedCallback () {
+    this._stopHold()
   }
 }
 

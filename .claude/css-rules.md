@@ -508,6 +508,16 @@ se-button[pressed] { color: var(--accent); }
 
 ### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js)) — "Direction A"
 
+Behavior note: the ▲/▼ buttons step on `mousedown`, then **auto-repeat while held**
+(400ms delay, then every 60ms; stops on any `mouseup`, on reaching min/max, or on
+disconnect). Every tick fires `change`, so a long hold on an undoable field
+(e.g. stroke width) records one undo step per tick. Touch has no hold-repeat
+(mouse events are only synthesized on tap).
+
+Arc quick-pick chips (`svgedit.css`): `.arc_field` (flex column) wraps the arc
+`se-spin-input` + `.arc_presets` row of `.arc_preset` buttons (22px tall, 10px/600,
+`--field-bg`/`--field-border`, hover → `--accent`/`--icon-hover-bg`/`--accent-border`).
+
 The host is `display: flex; flex-direction: column; align-items: stretch` so the
 component **fills its grid cell**. A small uppercase `.top-label` (shown only when the
 `label` attribute is set) stacks above a single bordered `.field`. The `src` icon is now

@@ -756,7 +756,15 @@ class TopPanel {
    * @type {module}
    */
   changeCircleArc (e) {
+    // Crossing 360° swaps <circle>/<ellipse> for an arc <path> (or back), which
+    // clears + re-adds the selection; the panel briefly collapses and the
+    // browser clamps its scroll to 0, jumping the arc field out from under the
+    // pointer. Put the scroll position back once the panel is rebuilt.
+    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const scroller = $id('sidepanel_content')
+    const { scrollTop } = scroller
     this.editor.svgCanvas.setCircleArc(Number(e.target.value))
+    scroller.scrollTop = scrollTop
   }
 
   /**
@@ -1361,7 +1369,7 @@ class TopPanel {
    * @type {module}
    */
   init () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Top panel
     const template = document.createElement('template')
     const { i18next } = this.editor
@@ -1421,6 +1429,13 @@ class TopPanel {
     $id('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
     $id('circle_arc').addEventListener('change', this.changeCircleArc.bind(this))
     $id('ellipse_arc').addEventListener('change', this.changeCircleArc.bind(this))
+    // Quick-pick buttons: set the field and fire its own change so the normal
+    // changeCircleArc path (incl. circle <-> arc path swap) does the work.
+    $qa('.arc_preset').forEach(btn => btn.addEventListener('click', () => {
+      const field = $id(btn.dataset.target)
+      field.value = btn.dataset.arc
+      field.dispatchEvent(new CustomEvent('change'))
+    }))
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
     $click($id('tool_ungroup'), this.clickGroup.bind(this))
     $click($id('tool_bold'), this.clickBold.bind(this))

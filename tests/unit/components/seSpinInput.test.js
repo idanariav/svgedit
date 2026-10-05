@@ -165,6 +165,53 @@ describe('se-spin-input', () => {
     expect(el.value).toBe('0.75')
   })
 
+  describe('press-and-hold auto-repeat', () => {
+    const setup = () => {
+      vi.useFakeTimers()
+      const el = mountElement('se-spin-input')
+      el.setAttribute('min', '0')
+      el.setAttribute('max', '10')
+      el.setAttribute('step', '1')
+      el.value = '5'
+      return el
+    }
+
+    it('steps once immediately, then repeats while held, and stops on mouseup', () => {
+      const el = setup()
+      const handler = vi.fn()
+      el.addEventListener('change', handler)
+
+      el.$upBtn.dispatchEvent(new Event('mousedown'))
+      expect(el.value).toBe('6') // immediate step
+      vi.advanceTimersByTime(300)
+      expect(el.value).toBe('6') // still inside the initial hold delay
+
+      vi.advanceTimersByTime(100 + 60 * 2) // delay elapsed + two repeat ticks
+      expect(el.value).toBe('9')
+      expect(handler).toHaveBeenCalledTimes(4)
+
+      window.dispatchEvent(new Event('mouseup'))
+      vi.advanceTimersByTime(1000)
+      expect(el.value).toBe('9') // no further stepping after release
+    })
+
+    it('repeats downward and stops by itself at the min limit', () => {
+      const el = setup()
+      el.$downBtn.dispatchEvent(new Event('mousedown'))
+      vi.advanceTimersByTime(5000)
+      expect(el.value).toBe('0')
+      expect(el.$downBtn.disabled).toBe(true)
+      expect(vi.getTimerCount()).toBe(0) // repeat loop ended on its own
+    })
+
+    it('stops repeating when removed from the DOM', () => {
+      const el = setup()
+      el.$upBtn.dispatchEvent(new Event('mousedown'))
+      el.remove()
+      expect(vi.getTimerCount()).toBe(0)
+    })
+  })
+
   it('steps via ArrowUp/ArrowDown keydown on the input', () => {
     const el = mountElement('se-spin-input')
     el.setAttribute('min', '')

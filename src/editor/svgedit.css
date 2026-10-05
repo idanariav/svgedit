@@ -618,6 +618,28 @@ hr {
 .sidepanel_section_grid se-input[size="15"],
 .sidepanel_section_grid .image_url_field { grid-column: 1 / -1; }
 
+/* Arc field + 90/180/270 quick-pick chips stacked in one grid cell */
+.arc_field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.arc_presets { display: flex; gap: 4px; }
+.arc_preset {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0;
+  font: 600 10px var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.arc_preset:hover {
+  color: var(--accent);
+  background: var(--icon-hover-bg);
+  border-color: var(--accent-border);
+}
+
 /* a labelled sub-block (header above a button row / segmented control) */
 .sub_label {
   font: 600 10px var(--ui-font);
