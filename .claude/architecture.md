@@ -69,6 +69,7 @@ svgedit/
 │   │   ├── ext-curvature/         # Curvature tool — Spiro smooth curves
 │   │   ├── ext-puppet-warp/       # Puppet warp — MLS rigid mesh deformation (mls.js)
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
+│   │   ├── ext-frame-labels/      # Name label above each frame; double-click to rename
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
 │   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool

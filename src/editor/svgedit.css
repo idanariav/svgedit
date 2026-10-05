@@ -1494,3 +1494,46 @@ ul li.current {
 .cmd-search-flash {
   animation: cmdSearchFlash 900ms ease-out;
 }
+
+/* Frame name labels (ext-frame-labels): HTML overlay inside #svgcanvas, one
+   small tag above each frame. Only interactive in select mode. */
+#frameLabels {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+#frameLabels .frame-label {
+  position: absolute;
+  transform: translateY(-100%);
+  padding: 1px 6px;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted, #6b7280);
+  background: var(--chrome-bg, #fff);
+  border: 1px solid var(--chrome-border, #d1d5db);
+  border-radius: 4px 4px 0 0;
+  user-select: none;
+}
+#frameLabels.interactive .frame-label {
+  pointer-events: auto;
+  cursor: default;
+}
+#frameLabels .frame-label.selected {
+  color: var(--accent, #2563eb);
+  background: var(--accent-soft, #eff6ff);
+  border-color: var(--accent-border, #93c5fd);
+}
+#frameLabels .frame-label-input {
+  width: 9em;
+  padding: 0;
+  font: inherit;
+  color: var(--fg, #111);
+  background: var(--field-bg, #fff);
+  border: 0;
+  outline: 1px solid var(--accent, #2563eb);
+}
