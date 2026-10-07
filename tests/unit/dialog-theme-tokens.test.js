@@ -11,7 +11,8 @@ const DIALOGS = {
   'se-palette-dialog': 'components/palette/PaletteDialog.css.js',
   'se-text-prompt-dialog': 'dialogs/seTextPromptDialog.html',
   'se-image-import-dialog': 'dialogs/imageImportDialog.html',
-  'se-trace-dialog': 'dialogs/seTraceDialog.html'
+  'se-trace-dialog': 'dialogs/seTraceDialog.html',
+  'se-edit-prefs-dialog': 'dialogs/editorPreferencesDialog.html'
 }
 
 const selectorOf = (css, marker) => {

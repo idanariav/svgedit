@@ -121,8 +121,8 @@ silent; `console.log/info/debug` calls are untouched. Small.
 
 ## Hard-coded colours and legacy aliases in component/dialog styles
 
-The five dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
-`imageImportDialog`, `seTraceDialog`) no longer carry private copies of the
+The six dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
+`imageImportDialog`, `seTraceDialog`, `editorPreferencesDialog`) no longer carry private copies of the
 shared design tokens: `svgedit.css` lists their tags in its light and dark
 token blocks, because the dialogs are mounted beside `.svg_editor`, not inside
 it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
@@ -135,9 +135,6 @@ it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
 - `--workarea-bg` (alias of `--canvas-bg`) and the other aliases left in
   `svgedit.css`'s "Legacy aliases" blocks remain; `CLAUDE.md` still lists
   `--workarea-bg` as a primary token, so decide which name wins first.
-- `se-edit-prefs-dialog` is mounted outside `.svg_editor` and never toggles
-  `theme-dark`, so it falls back to its light hex defaults in dark mode. Add it
-  to the token blocks and have it toggle the class like the other dialogs.
 - Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
   plugin) still don't reach these dialogs, since they sit outside it. Fixing
   that means mounting them inside `.svg_editor` (check `position: fixed`

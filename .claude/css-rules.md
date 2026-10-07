@@ -12,7 +12,7 @@
 Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and overridden by `.svg_editor.theme-dark`.
 
 The modal dialogs (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`,
-`se-image-import-dialog`, `se-trace-dialog`) are mounted next to `.svg_editor`, not inside
+`se-image-import-dialog`, `se-trace-dialog`, `se-edit-prefs-dialog`) are mounted next to `.svg_editor`, not inside
 it, so they are listed in the same two token blocks (`se-x-dialog` for light,
 `se-x-dialog.theme-dark` for dark; the dialog toggles `theme-dark` on its host). They
 must **not** redefine the shared tokens locally; only dialog-specific `--cp-*` / `--pd-*`

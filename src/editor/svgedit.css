@@ -15,7 +15,8 @@ se-color-dialog,
 se-palette-dialog,
 se-text-prompt-dialog,
 se-image-import-dialog,
-se-trace-dialog {
+se-trace-dialog,
+se-edit-prefs-dialog {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */
@@ -136,7 +137,8 @@ se-color-dialog.theme-dark,
 se-palette-dialog.theme-dark,
 se-text-prompt-dialog.theme-dark,
 se-image-import-dialog.theme-dark,
-se-trace-dialog.theme-dark {
+se-trace-dialog.theme-dark,
+se-edit-prefs-dialog.theme-dark {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */
