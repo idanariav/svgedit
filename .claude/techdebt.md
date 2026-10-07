@@ -66,18 +66,14 @@ per-instance like the other core modules, and add a unit test that
 constructs two canvases, destroys one, and converts units on the other.
 Small.
 
-## Document/window listeners that survive `Editor.destroy()`
+## Document/window listeners: remaining audit
 
-`destroy()` aborts `listenerAbort`, but some global listeners never pass
-its signal: `ext-cutter.js:196` (keydown), `seZoom.js:201`,
-`seFlyingButton.js:32`, `seToolOverflow.js:33-36`, and `seList.js:329`.
-Only 7 of 32 components implement `disconnectedCallback`. Every closed
-Obsidian tab leaves handlers behind that keep the dead editor's DOM in
-memory. Fix: components add listeners in `connectedCallback` and remove
-them in `disconnectedCallback` (or use a per-element AbortController);
-extensions get a `signal` in their `init` context. Add a test that mounts
-and destroys N editors and checks that the document listener count stays
-flat. Small to medium, spread across many files.
+`seZoom`, `seFlyingButton`, `seToolOverflow`, `seList` and `ext-cutter` now
+release their document/window listeners (per-element AbortController aborted in
+`disconnectedCallback`; `ext-cutter` uses `listenerAbort`). Not yet done: audit
+the other components and extensions for global listeners that skip a signal,
+and add an N-editors mount/destroy test asserting the document listener count
+stays flat. Small.
 
 ## Implicit `window.svgEditor` global (multi-instance)
 

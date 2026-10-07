@@ -28,14 +28,6 @@ export class ToolOverflow extends HTMLElement {
     this.$overall = this._shadowRoot.querySelector('.overall')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$menu = this._shadowRoot.querySelector('.menu')
-
-    // Close on an outside click (mirrors se-flyingbutton) or Escape.
-    document.addEventListener('click', () => {
-      if (this.opened) this.opened = false
-    })
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.opened) this.opened = false
-    })
   }
 
   /**
@@ -197,7 +189,20 @@ export class ToolOverflow extends HTMLElement {
     }
   }
 
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
   connectedCallback () {
+    // Close on an outside click (mirrors se-flyingbutton) or Escape.
+    this._globalAbort = new AbortController()
+    const { signal } = this._globalAbort
+    document.addEventListener('click', () => {
+      if (this.opened) this.opened = false
+    }, { signal })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.opened) this.opened = false
+    }, { signal })
     // Slotted tools (real se-button/se-flyingbutton elements the user dragged
     // in) are genuine light-DOM children of this host, so a single listener
     // here catches both the drawer's own button (retargeted to

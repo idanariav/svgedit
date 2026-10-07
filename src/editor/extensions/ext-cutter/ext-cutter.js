@@ -202,7 +202,7 @@ export default {
             evt.preventDefault()
             removeLastPoint()
           }
-        })
+        }, { signal: svgEditor.listenerAbort?.signal })
       },
 
       mouseDown (opts) {

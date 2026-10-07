@@ -196,10 +196,21 @@ class SeZoom extends HTMLElement {
     this.optionsContainer = this._shadowRoot.querySelector(
       '#options-container'
     )
-
-    // add an event listener to close the popup
-    document.addEventListener('click', e => this.handleClose(e))
     this.changedTimeout = null
+  }
+
+  /**
+   * @function connectedCallback
+   * @returns {void}
+   */
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
+  connectedCallback () {
+    // add an event listener to close the popup
+    this._globalAbort = new AbortController()
+    document.addEventListener('click', e => this.handleClose(e), { signal: this._globalAbort.signal })
   }
 
   async _loadIcon (src, container, size = 18) {

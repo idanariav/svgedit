@@ -310,8 +310,13 @@ export class SeList extends HTMLElement {
    * @function connectedCallback
    * @returns {void}
    */
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
   connectedCallback () {
     const currentObj = this
+    this._globalAbort = new AbortController()
     this.$dropdown.addEventListener('selectedindexchange', (e) => {
       if (e?.detail?.selectedItem !== undefined) {
         const value = e.detail.selectedItem
@@ -334,7 +339,7 @@ export class SeList extends HTMLElement {
           this.closeDropdown()
         }
       }
-    }, { capture: true })
+    }, { capture: true, signal: this._globalAbort.signal })
   }
 }
 

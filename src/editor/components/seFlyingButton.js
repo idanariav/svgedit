@@ -27,13 +27,6 @@ export class FlyingButton extends HTMLElement {
     // the last element of the div is the slot
     // we retrieve all elements added in the slot (i.e. se-buttons)
     this.$elements = this.$menu.lastElementChild.assignedElements()
-
-    // Closes opened menu on click
-    document.addEventListener('click', e => {
-      if (this.opened) {
-        this.opened = false
-      }
-    })
   }
 
   /**
@@ -321,7 +314,18 @@ export class FlyingButton extends HTMLElement {
     }
   }
 
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
   connectedCallback () {
+    // Closes opened menu on click
+    this._globalAbort = new AbortController()
+    document.addEventListener('click', e => {
+      if (this.opened) {
+        this.opened = false
+      }
+    }, { signal: this._globalAbort.signal })
     this.activeSlot = this.shadowRoot.querySelector('slot').assignedElements()[0]
     // A static-icon flyout (see the 'src' case above) already has its fixed
     // face icon loaded — don't let the first sub-tool's icon override it.
