@@ -102,26 +102,20 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 ~1,300-line class: store/view/menu not separated), `Drawing` in `draw.js`
 (~880 lines), and `TopPanel.init()`. Split those only with a concrete reason.
 
-## Hard-coded colours in component/dialog styles
+## Host theme overrides don't reach dialogs
 
-All dialogs now follow the editor theme: `svgedit.css` lists every dialog tag in its light
-and dark token blocks (they are mounted beside `.svg_editor`, not inside it), each calls
-`syncDialogTheme()` on open, and the form-style ones share `dialogs/dialogSkin.css.js`
-(`tests/unit/dialog-theme-tokens.test.js` guards all of it). What's left:
+Every dialog follows the editor's light/dark theme: `svgedit.css` lists each dialog tag in
+its light and dark token blocks, each calls `syncDialogTheme()` on open, and the
+form-style ones share `dialogs/dialogSkin.css.js` (`tests/unit/dialog-theme-tokens.test.js`
+guards it). The remaining hard-coded hex in components/dialogs (~50 lines, re-counted
+2026-10-07) is deliberate: text colour on accent buttons, colour-picker maths, danger red,
+grid default. The `--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
 
-- Hard-coded hex outside token definitions and `var(--x, #fallback)` (counted
-  2026-10-07, before the dialog work): ~200 lines, of which ~115 are colour *data* that
-  should stay (`HsvBox.js` hue maths, `sePalette.js` swatches, picker/TabletShell preset
-  lists, `#fff` on accent buttons). The remaining legacy skin is `seExplorerButton`
-  (`#E8E8E8`, `#5a6162`), which is a component, not a dialog, and needs the same treatment.
-  Re-count before starting. The `--cp-*` / `--pd-*` modal tokens are intentional named
-  component tokens.
-- Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
-  plugin) still don't reach these dialogs, since they sit outside it. Fixing
-  that means mounting them inside `.svg_editor` (check `position: fixed`
-  against any transformed ancestor) or defining tokens at the container level.
-
-Medium, mostly visual QA.
+What doesn't work: a host that overrides tokens on `.svg_editor` (e.g. a theme tweak in the
+Obsidian plugin) doesn't reach the dialogs, because they sit outside it. Fixing that means
+mounting them inside `.svg_editor` (check `position: fixed` against any transformed ancestor)
+or defining the tokens at the container level (`[data-svgedit-root]`). Medium; no host needs
+it today.
 
 ## Repo hygiene leftovers
 

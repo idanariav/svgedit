@@ -105,7 +105,7 @@ export class ExplorerButton extends HTMLElement {
       position: fixed;
       left: 34px;
       top: 30%;
-      background: #E8E8E8;
+      background: var(--chrome-bg, #E8E8E8);
       display: none;
       flex-wrap: wrap;
       flex-direction: row;
@@ -114,8 +114,9 @@ export class ExplorerButton extends HTMLElement {
     .menu-item {
       line-height: 1em;
       padding: 0.5em;
-      border: 1px solid #5a6162;
-      background: #E8E8E8;
+      border: 1px solid var(--chrome-border, #5a6162);
+      background: var(--chrome-bg, #E8E8E8);
+      color: var(--fg, inherit);
       margin-bottom: -1px;
       white-space: nowrap;
     }
