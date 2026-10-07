@@ -1,8 +1,8 @@
 /**
  * PaletteDialog.css.js — styles for the <se-palette-dialog> shadow DOM.
- * Token values mirror ColorDialog.css.js so the two dialogs read as one
- * system; self-contained (fallback values under :host) so it works
- * regardless of where in the light DOM it's appended.
+ * The --pd-* modal tokens mirror ColorDialog.css.js's --cp-* so the two dialogs
+ * read as one system. The shared design tokens (--fg, --accent, …) come from
+ * svgedit.css, which lists <se-palette-dialog> in its token blocks.
  */
 
 export const css = /* css */`
@@ -22,20 +22,6 @@ export const css = /* css */`
     --pd-head-bg:    #FAFBFC;
     --pd-backdrop:   rgba(20, 24, 35, 0.06);
     --pd-checker:    rgba(0, 0, 0, 0.07);
-    --fg:            #1B1F24;
-    --muted:         #6B7280;
-    --icon:          #4B5563;
-    --icon-hover:    #0F172A;
-    --icon-hover-bg: #EEF1F5;
-    --accent:        #2962FF;
-    --accent-soft:   #E8EFFF;
-    --accent-border: #C7D7FF;
-    --chrome-border: #E6E8EC;
-    --group-bg:      #F6F7F9;
-    --group-border:  #E6E8EC;
-    --field-bg:      #FFFFFF;
-    --field-border:  #DDE1E7;
-    --swatch-border: #C3C8D1;
   }
 
   :host(.theme-dark) {
@@ -43,20 +29,6 @@ export const css = /* css */`
     --pd-head-bg:    #1E2026;
     --pd-backdrop:   rgba(0, 0, 0, 0.5);
     --pd-checker:    rgba(255, 255, 255, 0.06);
-    --fg:            #ECEEF2;
-    --muted:         #9098A5;
-    --icon:          #B7BDC8;
-    --icon-hover:    #FFFFFF;
-    --icon-hover-bg: #2A2D35;
-    --accent:        #F6B23A;
-    --accent-soft:   #3A2E18;
-    --accent-border: #5A4422;
-    --chrome-border: #2C2F37;
-    --group-bg:      #181A20;
-    --group-border:  #2C2F37;
-    --field-bg:      #14161A;
-    --field-border:  #2C2F37;
-    --swatch-border: #6A7180;
   }
 
   .pd-backdrop {

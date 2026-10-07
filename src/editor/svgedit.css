@@ -1,9 +1,21 @@
 @import './tablet.css';
 
 /* ── Light Studio theme (default) ───────────────────────────────────── */
+/* The modal dialogs are mounted as siblings of `.svg_editor` (under the
+   `[data-svgedit-root]` container), so they don't inherit its tokens. They
+   are listed here (light) and in the dark block below instead of carrying
+   private copies of the palette. Keep this list in sync with the dialogs that
+   toggle `theme-dark` on their host (see tests/unit/dialog-theme-tokens.test.js).
+   Keep `:root,` directly before `.svg_editor`: the Obsidian plugin strips it
+   with a regex (`/:root,\s*(\.svg_editor)/`) to scope these variables. */
 :root,
 .svg_editor,
-.svg_editor.theme-light {
+.svg_editor.theme-light,
+se-color-dialog,
+se-palette-dialog,
+se-text-prompt-dialog,
+se-image-import-dialog,
+se-trace-dialog {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */
@@ -132,7 +144,12 @@
 }
 
 /* ── Dark Studio theme ──────────────────────────────────────────────── */
-.svg_editor.theme-dark {
+.svg_editor.theme-dark,
+se-color-dialog.theme-dark,
+se-palette-dialog.theme-dark,
+se-text-prompt-dialog.theme-dark,
+se-image-import-dialog.theme-dark,
+se-trace-dialog.theme-dark {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */

@@ -3,35 +3,9 @@
         display: none;
     }
 
-    /* The dialog is rendered outside the themed .svg_editor scope, so it can
-       not inherit the editor's design tokens. Mirror the relevant tokens here
-       and reflect the active theme onto the host (see seTextPromptDialog.js).
-       Values must stay in sync with svgedit.css. */
-    :host {
-        --chrome-bg: #FFFFFF;
-        --chrome-border: #E6E8EC;
-        --fg: #1B1F24;
-        --muted: #6B7280;
-        --icon-hover-bg: #EEF1F5;
-        --field-bg: #FFFFFF;
-        --field-border: #DDE1E7;
-        --field-border-h: #C8CDD6;
-        --accent: #2962FF;
-        --accent-ring: rgba(41, 98, 255, 0.16);
-    }
-
-    :host(.theme-dark) {
-        --chrome-bg: #1E2026;
-        --chrome-border: #2C2F37;
-        --fg: #ECEEF2;
-        --muted: #9098A5;
-        --icon-hover-bg: #2A2D35;
-        --field-bg: #14161A;
-        --field-border: #2C2F37;
-        --field-border-h: #3C4150;
-        --accent: #F6B23A;
-        --accent-ring: rgba(246, 178, 58, 0.20);
-    }
+    /* Design tokens come from svgedit.css, which lists this element in its
+       light/dark token blocks (the dialog is mounted outside .svg_editor).
+       The host only needs the `theme-dark` class (see seTextPromptDialog.js). */
 
     #text_prompt_container {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;

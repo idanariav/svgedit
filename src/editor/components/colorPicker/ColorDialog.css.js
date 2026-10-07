@@ -1,6 +1,7 @@
 /**
  * ColorDialog.css.js — all styles for the <se-color-dialog> shadow DOM.
- * CSS variables are self-contained here so the dialog works wherever it's appended.
+ * The shared design tokens (--fg, --accent, …) come from svgedit.css, which lists
+ * <se-color-dialog> in its token blocks; only the --cp-* modal tokens live here.
  */
 
 export const css = /* css */`
@@ -16,7 +17,7 @@ export const css = /* css */`
     color: var(--fg, #1B1F24);
   }
 
-  /* ── Light tokens (default) ─────────────────────────────────────────────── */
+  /* ── Dialog-specific light tokens (default) ─────────────────────────────────────────────── */
   :host {
     --cp-modal-bg:           #FFFFFF;
     --cp-head-bg:            #FAFBFC;
@@ -37,23 +38,6 @@ export const css = /* css */`
     --cp-swatch-border:      #C3C8D1;
     --cp-swatch-inset:       rgba(0, 0, 0, 0.18);
     --cp-checker:            rgba(0, 0, 0, 0.07);
-    /* Light theme base tokens (mirrored from .theme-light) */
-    --fg:            #1B1F24;
-    --muted:         #6B7280;
-    --icon:          #4B5563;
-    --icon-hover:    #0F172A;
-    --icon-hover-bg: #EEF1F5;
-    --accent:        #2962FF;
-    --accent-soft:   #E8EFFF;
-    --accent-border: #C7D7FF;
-    --chrome-border: #E6E8EC;
-    --group-bg:      #F6F7F9;
-    --group-border:  #E6E8EC;
-    --field-bg:      #FFFFFF;
-    --field-border:  #DDE1E7;
-    --swatch-bg:     #FFFFFF;
-    --swatch-border: #C3C8D1;
-    --checker:       rgba(0,0,0,0.07);
   }
 
   /* ── Dark token overrides ───────────────────────────────────────────────── */
@@ -77,23 +61,6 @@ export const css = /* css */`
     --cp-swatch-border:      #6A7180;
     --cp-swatch-inset:       rgba(255, 255, 255, 0.22);
     --cp-checker:            rgba(255, 255, 255, 0.06);
-    /* Dark theme base tokens */
-    --fg:            #ECEEF2;
-    --muted:         #9098A5;
-    --icon:          #B7BDC8;
-    --icon-hover:    #FFFFFF;
-    --icon-hover-bg: #2A2D35;
-    --accent:        #F6B23A;
-    --accent-soft:   #3A2E18;
-    --accent-border: #5A4422;
-    --chrome-border: #2C2F37;
-    --group-bg:      #181A20;
-    --group-border:  #2C2F37;
-    --field-bg:      #14161A;
-    --field-border:  #2C2F37;
-    --swatch-bg:     #2F333C;
-    --swatch-border: #6A7180;
-    --checker:       rgba(255,255,255,0.06);
   }
 
   /* ── Backdrop ───────────────────────────────────────────────────────────── */

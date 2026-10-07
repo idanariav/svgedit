@@ -94,11 +94,7 @@ add `// @ts-check` to them one at a time, declaring what they attach in
 
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
-`dist/editor/hostApi.d.ts`. Still open: the plugin
-(`../obsidian-svgedit-plugin/src/view/SvgView.ts`) still declares its own
-`SvgEditorInstance` — switch it to `EditorHostApi` (the file is self-contained, so its sync
-script only needs to fetch `hostApi.d.ts` from the same release as `Editor.js`); the plugin's `activate`/`destroy`/`setDebugLogger`/
-`setLogSink` are optional there for old bundles but required in the host API.
+`dist/editor/hostApi.d.ts`; the plugin consumes it.
 Also open: generate the `svgcanvas.d.ts` from JSDoc instead of hand-writing it,
 and the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
 
@@ -121,25 +117,32 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 (a unit test enforces it) and reach a host via `Editor.setLogSink(sink, level)`.
 Not done: the `catch` blocks that only hold a comment (`bbox-utils.js`,
 `coords.js`, `json.js`, `ColorDialog.js`) are intentional fallbacks and stay
-silent; `console.log/info/debug` calls are untouched. The plugin still needs to
-call `setLogSink` (that half lives in `../obsidian-svgedit-plugin`). Small.
+silent; `console.log/info/debug` calls are untouched. Small.
 
-## Dialogs with private colour variables / hard-coded colours
+## Hard-coded colours and legacy aliases in component/dialog styles
 
-Five files define their own light/dark design tokens instead of inheriting
-from `svgedit.css`: `ColorDialog.css.js`, `PaletteDialog.css.js`,
-`seTextPromptDialog.html`, `imageImportDialog.html`, and `seTraceDialog.html`.
-Component and dialog styles also contain about 76 hard-coded hex colours,
-and the legacy alias variables are still used 25 times. Theme overrides
-from the host don't reach these dialogs. Fix: delete the local palettes
-(custom properties already pass into shadow DOM), replace the hex values
-with tokens, then migrate off the aliases and drop them. Medium, mostly
-visual QA.
+The five dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
+`imageImportDialog`, `seTraceDialog`) no longer carry private copies of the
+shared design tokens: `svgedit.css` lists their tags in its light and dark
+token blocks, because the dialogs are mounted beside `.svg_editor`, not inside
+it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
+
+- Dialog-specific modal tokens (`--cp-*`, `--pd-*`) still hold raw hex values
+  in both themes, and component/dialog styles contain other hard-coded colours
+  (the earlier estimate was ~76; not re-counted after this change). Replace
+  with tokens where an equivalent exists; the rest can stay as named
+  component tokens.
+- Legacy alias variables (`--main-bg-color`, `--text-color`, …) are still used
+  in about 30 places; migrate to the canonical tokens and drop them.
+- Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
+  plugin) still don't reach these dialogs, since they sit outside it. Fixing
+  that means mounting them inside `.svg_editor` (check `position: fixed`
+  against any transformed ancestor) or defining tokens at the container level.
+
+Medium, mostly visual QA.
 
 ## Repo hygiene leftovers
 
 - Two coverage systems remain: nyc (`nyc.config.js`, used by
   `scripts/run-e2e.mjs` to merge e2e + vitest coverage), `vite-plugin-istanbul`
   for e2e, and v8 for unit tests. Consolidating means reworking the merge step.
-- `npmpublish*.yml` workflows still target upstream's `svgedit` package; they
-  go away with the "Fork identity" entry above.
