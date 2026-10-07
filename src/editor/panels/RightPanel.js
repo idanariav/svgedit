@@ -1,6 +1,7 @@
 /* globals seAlert, sePrompt */
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
+import { localizePanelFragment } from '../panelI18n.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { traceImageToSvg } from '../dialogs/traceImage.js'
 
@@ -91,6 +92,7 @@ class RightPanel {
     const { i18next } = this.editor
 
     template.innerHTML = RightPanelHtml
+    localizePanelFragment(template.content, i18next)
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     // layer menu added to DOM
     const menuMore = document.createElement('se-cmenu-layers')

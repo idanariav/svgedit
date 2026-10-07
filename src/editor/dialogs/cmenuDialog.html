@@ -64,6 +64,16 @@
         white-space: nowrap;
     }
 
+    .contextMenu a .qa-shortcut {
+        margin-left: 24px;
+        font-size: 11.5px;
+        color: var(--muted, #6B7280);
+    }
+
+    .contextMenu li:not(.disabled) a:hover .qa-shortcut {
+        color: rgba(255, 255, 255, .8);
+    }
+
     .contextMenu li:not(.disabled) a:hover {
         background-color: var(--accent, #2e5dea);
         color: #fff;
@@ -75,6 +85,7 @@
 
     .contextMenu li.disabled a {
         color: var(--muted, #999);
+        opacity: .45;
         pointer-events: none;
     }
 

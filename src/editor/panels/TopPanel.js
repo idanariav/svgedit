@@ -3,6 +3,7 @@
 
 import SvgCanvas from '@svgedit/svgcanvas'
 import topPanelHTML from './TopPanel.html'
+import { localizePanelFragment } from '../panelI18n.js'
 import { runSteps } from '../runSteps.js'
 import { updateContextPanel, round1 } from './topPanelContext.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -1006,6 +1007,7 @@ class TopPanel {
     const template = document.createElement('template')
     const { i18next } = this.editor
     template.innerHTML = topPanelHTML
+    localizePanelFragment(template.content, i18next)
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     // Optionally hide the drawing-name panel (host UI may already show the filename)
     if (this.editor.configObj.curConfig.hideTitle) {

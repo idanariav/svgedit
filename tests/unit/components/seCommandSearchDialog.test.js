@@ -9,7 +9,8 @@ let mockCatalog = () => [
   { group: 'Style', actions: [{ id: 'fill_color', label: 'Fill color' }] }
 ]
 
-vi.mock('../../../src/editor/commandSearch.js', () => ({
+vi.mock('../../../src/editor/commandSearch.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   buildCommandSearchCatalog: (...args) => mockCatalog(...args),
   activateCommandSearchResult: (...args) => activateCommandSearchResult(...args)
 }))

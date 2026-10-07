@@ -352,8 +352,10 @@ export default class HotkeyManager {
    */
   labelFor (a) {
     const key = a.el ? (a.el.getAttribute('title') || a.labelKey) : a.labelKey
-    const translated = t(key)
-    return translated || key
+    const translated = t(key) || key
+    // Some tooltips carry an explanation ("Shape builder (click a region…)",
+    // "Puppet Warp — pin an object…"); lists and search want just the name.
+    return translated.split(/ — | \(/)[0].trim() || translated
   }
 
   /**

@@ -32,6 +32,44 @@ const FLASH_DURATION_MS = 900
 export const buildCommandSearchCatalog = (editor) => buildFavoritesCatalog(editor)
 
 /**
+ * Match rank of a label for a query: 0 = label starts with it, 1 = a word in
+ * the label starts with it, 2 = substring anywhere, null = no match.
+ * @param {string} label
+ * @param {string} q lower-cased, trimmed query
+ * @returns {?number}
+ */
+const rankLabel = (label, q) => {
+  const l = label.toLowerCase()
+  if (l.startsWith(q)) return 0
+  if (l.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) return 1
+  return l.includes(q) ? 2 : null
+}
+
+/**
+ * Filter + rank a catalog for a query. Within a group, exact-prefix matches
+ * come first, then word-start, then substring; groups are ordered by their
+ * best match. An empty query returns the catalog unchanged.
+ * @param {Array<{group:string, actions:Array<{id:string, label:string}>}>} catalog
+ * @param {string} query
+ * @returns {Array<{group:string, actions:Array<{id:string, label:string}>}>}
+ */
+export const filterCommandCatalog = (catalog, query) => {
+  const q = query.trim().toLowerCase()
+  if (!q) return catalog
+  return catalog
+    .map((g, order) => {
+      const ranked = g.actions
+        .map((a, i) => ({ a, r: rankLabel(a.label, q), i }))
+        .filter((x) => x.r !== null)
+        .sort((x, y) => x.r - y.r || x.i - y.i)
+      return { group: g.group, actions: ranked.map((x) => x.a), best: ranked[0]?.r ?? 3, order }
+    })
+    .filter((g) => g.actions.length)
+    .sort((x, y) => x.best - y.best || x.order - y.order)
+    .map(({ group, actions }) => ({ group, actions }))
+}
+
+/**
  * Scroll a field into view, briefly flash-highlight it, and focus it.
  * @param {?Element} el
  * @returns {void}

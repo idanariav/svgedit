@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { buildCommandSearchCatalog, activateCommandSearchResult } from '../../src/editor/commandSearch.js'
+import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../../src/editor/commandSearch.js'
 
 const runFavoriteTrigger = vi.fn()
 let mockIsValueControl = () => false
@@ -98,5 +98,22 @@ describe('commandSearch', () => {
     expect(editor.rightPanel.activateTab).not.toHaveBeenCalled()
     expect(swatch.openColorDialog).toHaveBeenCalledTimes(1)
     expect(runFavoriteTrigger).not.toHaveBeenCalled()
+  })
+})
+
+describe('filterCommandCatalog', () => {
+  const catalog = [
+    { group: 'View', actions: [{ id: 'a', label: 'Smart snapping' }, { id: 'b', label: 'Align grid' }] },
+    { group: 'Arrange', actions: [{ id: 'c', label: 'Align left' }, { id: 'd', label: 'Realign' }] }
+  ]
+  it('returns the catalog unchanged for an empty query', () => {
+    expect(filterCommandCatalog(catalog, '  ')).toBe(catalog)
+  })
+  it('ranks prefix matches above substring matches, within and across groups', () => {
+    const out = filterCommandCatalog(catalog, 'al')
+    expect(out.map((g) => g.group)).toEqual(['View', 'Arrange'])
+    expect(out[1].actions.map((a) => a.id)).toEqual(['c', 'd'])
+    const out2 = filterCommandCatalog(catalog, 'sna')
+    expect(out2).toEqual([{ group: 'View', actions: [{ id: 'a', label: 'Smart snapping' }] }])
   })
 })

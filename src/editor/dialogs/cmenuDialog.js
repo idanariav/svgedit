@@ -4,6 +4,7 @@ import { closestRoot, ownerEditor } from '../domScope.js'
 import { syncDialogTheme } from '../themeUtil.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { loadFavorites } from '../favorites.js'
+import { formatHotkey } from '../Hotkeys.js'
 import {
   getFavoriteMeta,
   isValueControl,
@@ -135,6 +136,13 @@ export class SeCMenuDialog extends HTMLElement {
     label.className = 'qa-label'
     label.textContent = meta.label
     a.append(label)
+    const key = editor.hotkeys.effectiveKeys(id)[0]
+    if (key) {
+      const sc = document.createElement('span')
+      sc.className = 'qa-shortcut'
+      sc.textContent = formatHotkey(key)
+      a.append(sc)
+    }
     if (meta.src) this._loadIcon(icon, meta.src)
     li.append(a)
     $click(a, (e) => {

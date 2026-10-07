@@ -150,34 +150,31 @@ Medium.
 
 When an entry is missing, i18next returns the key, so `t('key') || 'Fallback'`
 never falls back (23 uses of `t(`, 5 of `_t(`). `tests/unit/locale-keys.test.js`
-now fails if a literal `t('ns.key')` isn't in `lang.en.js` (`properties.class_none`
-and two wrong keys in `Editor.js` fixed). Remaining: dynamic keys
-(`'config.jgraduate_' + val`) aren't covered, and some labels bypass i18n
-entirely: the side-panel tab and section names, "Rotate", "Radius", "Brush",
-"Canvas settings", "Change zoom level", "Background Color", the new zoom
-"Zoom in/out" titles. A `parseMissingKeyHandler` isn't an option as long as
-components pass literal English as a `title` (it relies on the key coming back).
-Small.
-
+fails if a literal `t('ns.key')` isn't in `lang.en.js`. The static panel
+templates' English labels are now localisable via `panelI18n.js`
+(`panel.<slug>` keys in `lang.en.js`, guarded by `panelI18n.test.js`). Remaining:
+dynamic keys (`'config.jgraduate_' + val`) aren't covered; labels injected by
+extensions (Brush, Markers, …) and a few component-internal strings (zoom
+"Zoom in/out" titles) are still English. A `parseMissingKeyHandler` isn't an
+option while components pass literal English as `title` (they rely on the key
+coming back). Small.
 ## Keyboard shortcuts break common conventions
 
 Done: Tab = next / Shift+Tab = previous, `V` selects, `A` alone no longer selects
 all, Duplicate is `D` for one or many, tooltips and the main menu show
 platform-formatted shortcuts (⌘Z / Ctrl+Z; menu shortcuts right-aligned) with no
-trailing space. Release-note these default changes. Remaining:
+trailing space. Release-note these default changes. Command search now shows shortcuts and ranks prefix matches first; explanatory
+tooltip text is stripped from action names in lists. Remaining:
 - Tab still isn't free for focus navigation (it cycles elements).
 - Image, Shapes, Brush, Shape library, Cutter, Curvature and Puppet warp have no
   default shortcut.
-- Command search results don't show shortcuts, and a fuzzy match ranks above
-  exact prefix matches.
 Small.
 
-## Context menu: no icons or shortcuts, weak disabled state
+## Context menu: no icons
 
-Done: Escape closes it; the defaults are now Paste / Select all / Zoom to fit
-(users with stored favorites keep theirs). Remaining: items have no icons or
-shortcuts, and disabled items are only slightly lighter than enabled ones. Small.
-
+Done: rows show their shortcut (right-aligned) and disabled rows are clearly
+dimmed. Remaining: items without a toolbar button (Paste, Select all, Fit to
+canvas) have no icon, and the icon set has no paste glyph. Small.
 ## Side panel: remaining polish
 
 Done: tab renamed "Properties"; ID/Class moved into a collapsed "Advanced"

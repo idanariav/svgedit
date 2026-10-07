@@ -1,4 +1,5 @@
-import { buildCommandSearchCatalog, activateCommandSearchResult } from '../commandSearch.js'
+import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../commandSearch.js'
+import { formatHotkey } from '../Hotkeys.js'
 import commandSearchDialogHTML from './commandSearchDialog.html'
 import { ownerEditor } from '../domScope.js'
 import { syncDialogTheme } from '../themeUtil.js'
@@ -109,13 +110,7 @@ export class SeCommandSearchDialog extends HTMLElement {
   /** Build the grouped, filtered result list and keep `_flatIds` in sync. */
   _render () {
     if (!ownerEditor(this)) return
-    const q = this._query.trim().toLowerCase()
-    const groups = buildCommandSearchCatalog(ownerEditor(this))
-      .map((g) => ({
-        group: g.group,
-        actions: g.actions.filter((a) => !q || a.label.toLowerCase().includes(q))
-      }))
-      .filter((g) => g.actions.length)
+    const groups = filterCommandCatalog(buildCommandSearchCatalog(ownerEditor(this)), this._query)
 
     this._flatIds = groups.flatMap((g) => g.actions.map((a) => a.id))
     if (this._selectedIndex >= this._flatIds.length) this._selectedIndex = 0
@@ -144,8 +139,10 @@ export class SeCommandSearchDialog extends HTMLElement {
    * @returns {string}
    */
   _rowHtml (a, selected) {
+    const key = ownerEditor(this).hotkeys?.effectiveKeys(a.id)?.[0]
     return `<div class="cs-row${selected ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">` +
       `<span class="cs-label">${escapeHtml(a.label)}</span>` +
+      (key ? `<span class="cs-shortcut">${escapeHtml(formatHotkey(key))}</span>` : '') +
       '</div>'
   }
 }
