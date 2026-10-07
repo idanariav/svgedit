@@ -1,5 +1,11 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.3
+- Host API: `hostApi.d.ts` (`EditorHostApi`, `HostCanvas`) declares what embedders may rely on; it is self-contained, checked against `Editor` by `npm run typecheck`, and attached to the release next to `Editor.js`.
+- Types: `svgcanvas.d.ts` is typechecked and now declares ~170 more canvas members (runtime-attached ones live in `svgcanvas-members.d.ts`); a drift test fails on new undeclared public members. `svgcanvas.js` is `@ts-check`ed.
+- Fix: `EditorStartup.init()` is documented as returning a Promise; `getStrokeOpacity` JSDoc corrected.
+- Internal: a few explicit number/string coercions in `svgcanvas.js` (`getHeight`, `getWidth`, `round`, `bind`) with no intended behaviour change.
+
 ## 7.4.1-fork.2
 - Fix: drawings using corner radius or taper were saved with an undeclared `se:` XML prefix and could not be reopened; the serializer now declares `xmlns:se` and files already saved that way are repaired on load.
 - Fix: layers, text and group operations, units, and the "randomize ids" mode no longer share state between editors on one page; components resolve their own editor instead of the `window.svgEditor` global.

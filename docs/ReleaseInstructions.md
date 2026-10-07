@@ -10,7 +10,8 @@ release whose asset is the self-contained editor bundle `Editor.js`;
    lines at the top of `package-lock.json`) and add a `CHANGES.md` entry.
 1. Commit, then tag and push: `git tag v7.4.1-fork.N && git push origin master v7.4.1-fork.N`.
    `.github/workflows/release.yml` verifies the tag matches `package.json`,
-   builds, and attaches `dist/editor/Editor.js` to a new GitHub release.
+   builds, and attaches `dist/editor/Editor.js` and `dist/editor/hostApi.d.ts`
+   (the host API types) to a new GitHub release.
 1. In the plugin repo, bump `SVGEDIT_RELEASE` in `scripts/fetch-svgedit-dist.mjs`
    to the new tag and run `npm run sync-svgedit`.
 

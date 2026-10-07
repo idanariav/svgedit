@@ -1,6 +1,7 @@
 name: release
 
-# Publishes the editor bundle (dist/editor/Editor.js) as a GitHub release asset.
+# Publishes the editor bundle (dist/editor/Editor.js) and the host API types
+# (dist/editor/hostApi.d.ts) as GitHub release assets.
 # obsidian-svgedit-plugin downloads it from here; this fork is never published
 # to npm. Cut a release by bumping `version` in package.json (X.Y.Z-fork.N),
 # then pushing a matching tag `vX.Y.Z-fork.N`.
@@ -34,6 +35,6 @@ jobs:
           npx vitest run
           npm run build
       - name: Create release with the bundle attached
-        run: gh release create "${GITHUB_REF_NAME}" dist/editor/Editor.js --title "${GITHUB_REF_NAME}" --generate-notes
+        run: gh release create "${GITHUB_REF_NAME}" dist/editor/Editor.js dist/editor/hostApi.d.ts --title "${GITHUB_REF_NAME}" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
