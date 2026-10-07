@@ -121,4 +121,35 @@ describe('touch adapter', () => {
     expect(preventDefault).toHaveBeenCalled()
     expect(mouseCount).toBe(0)
   })
+
+  it('keeps pinch state per canvas', () => {
+    const tabletRoot = createSvgRoot()
+    tabletRoot.closest = () => ({ classList: { contains: () => true } })
+    initTouch({ svgroot: tabletRoot, getZoom: () => 1, zoomAtPoint: vi.fn() })
+    const otherRoot = createSvgRoot()
+    initTouch({ svgroot: otherRoot })
+
+    const target = document.createElement('div')
+    target.addEventListener('mouseup', () => {})
+    const pt = { target, clientX: 0, clientY: 0, screenX: 0, screenY: 0 }
+
+    // Canvas A starts a two-finger pinch and is left mid-gesture.
+    tabletRoot.dispatch('touchstart', {
+      type: 'touchstart',
+      touches: [pt, { ...pt, clientX: 10 }],
+      changedTouches: [pt],
+      preventDefault: vi.fn()
+    })
+
+    // Canvas B must still translate an ordinary single touch.
+    let mouseMove = 0
+    target.addEventListener('mousemove', () => { mouseMove++ })
+    otherRoot.dispatch('touchmove', {
+      type: 'touchmove',
+      touches: [pt],
+      changedTouches: [pt],
+      preventDefault: vi.fn()
+    })
+    expect(mouseMove).toBe(1)
+  })
 })

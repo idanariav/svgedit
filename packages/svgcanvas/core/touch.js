@@ -1,12 +1,5 @@
 // http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 
-// Pinch-to-zoom (tablet mode) state. One canvas is active at a time, so
-// module-level state is sufficient.
-let pinching = false
-let pinchStartDist = 0
-let pinchStartZoom = 1
-let pinchRaf = 0
-
 /**
  * Distance between two Touch points in screen pixels.
  * @param {Touch} a
@@ -23,6 +16,12 @@ const isTabletMode = (svgCanvas) =>
   Boolean(svgCanvas.svgroot.closest('.svg_editor')?.classList.contains('ui-tablet'))
 
 export const init = (svgCanvas) => {
+  // Pinch-to-zoom (tablet mode) state, per canvas.
+  let pinching = false
+  let pinchStartDist = 0
+  let pinchStartZoom = 1
+  let pinchRaf = 0
+
   /**
    * @param {Event} ev
    * @returns {void}
