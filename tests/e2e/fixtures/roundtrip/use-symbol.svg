@@ -1,0 +1,17 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <defs>
+  <symbol id="sym_star" viewBox="0 0 100 100">
+   <polygon fill="#f1c40f" points="50,5 61,38 96,38 68,58 79,92 50,71 21,92 32,58 4,38 39,38" stroke="#7f6000" stroke-width="3"/>
+  </symbol>
+  <g id="grp_dot">
+   <circle cx="0" cy="0" fill="#8e44ad" r="12"/>
+  </g>
+ </defs>
+ <g class="layer">
+  <title>Layer 1</title>
+  <use height="100" href="#sym_star" id="svg_1" width="100" x="40" y="40"/>
+  <use height="60" href="#sym_star" id="svg_2" transform="rotate(20 230 70)" width="60" x="200" y="40"/>
+  <use href="#grp_dot" id="svg_3" x="120" y="260"/>
+  <use href="#grp_dot" id="svg_4" x="200" y="260"/>
+ </g>
+</svg>

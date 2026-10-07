@@ -1,0 +1,11 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g class="layer">
+  <title>Layer 1</title>
+  <image height="120" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" id="svg_1" preserveAspectRatio="none" width="120" x="40" y="40"/>
+  <image height="80" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" id="svg_2" opacity="0.6" transform="rotate(15 260 100)" width="80" x="220" y="60"/>
+ </g>
+ <g class="layer">
+  <title>Layer 2</title>
+  <rect fill="#3498db" height="60" id="svg_3" rx="12" width="200" x="40" y="220"/>
+ </g>
+</svg>

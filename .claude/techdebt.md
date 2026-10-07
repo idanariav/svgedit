@@ -51,16 +51,18 @@ standalone dialogs and don't touch an editor. Constructor-time reads such as
 when the element isn't attached yet; they're harmless as long as `imgPath` is
 the same for every editor on the page. Small.
 
-## Round-trip corpus is small
+## Round-trip corpus is incomplete
 
-`tests/e2e/roundtrip.spec.js` loads/saves/loads six generated drawings
-(`tests/e2e/fixtures/roundtrip/`: frames, corner radius, taper, shadow/outline,
-text-on-path, groups/layers) and asserts the output stabilises after one pass.
-Two of them (corner-radius, taper) were saved before the `xmlns:se` fix and
-double as legacy-file coverage. Missing: real drawings from the plugin (images,
-markers/connectors, clip/mask, `<use>`/symbols, puppet-warp, mirror/repeat
-stamps). Add fixtures as such drawings turn up; each new corruption bug should
-add the file that exhibited it. Small per fixture.
+`tests/e2e/roundtrip.spec.js` loads/saves/loads every drawing in
+`tests/e2e/fixtures/roundtrip/` and asserts the output stabilises after one
+pass. Covered: frames, corner radius, taper, shadow/outline, text-on-path,
+groups/layers/gradients, markers, clip-path/mask, `<use>`/symbols, embedded
+images (the last four are hand-written drawings normalised by the editor's own
+serializer; the first six were saved by driving the real tools). Corner-radius
+and taper predate the `xmlns:se` fix and double as legacy-file coverage.
+Missing: puppet-warp and mirror/repeat stamps (need the tools driven, or real
+drawings from the plugin). Add fixtures as such drawings turn up; each new
+corruption bug should add the file that exhibited it. Small per fixture.
 
 ## `svgcanvas.d.ts` is hand-written and incomplete; no explicit host API
 

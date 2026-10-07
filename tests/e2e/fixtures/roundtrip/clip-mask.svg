@@ -1,0 +1,20 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <defs>
+  <clipPath id="clip_a">
+   <circle cx="150" cy="150" r="70"/>
+  </clipPath>
+  <mask id="mask_a">
+   <rect fill="#ffffff" height="180" width="200" x="300" y="60"/>
+   <circle cx="400" cy="150" fill="#000000" r="50"/>
+  </mask>
+  <linearGradient id="grad_a" x1="0" x2="1" y1="0" y2="0">
+   <stop offset="0" stop-color="#ff0000"/>
+   <stop offset="1" stop-color="#0000ff"/>
+  </linearGradient>
+ </defs>
+ <g class="layer">
+  <title>Layer 1</title>
+  <rect clip-path="url(#clip_a)" fill="url(#grad_a)" height="180" id="svg_1" width="180" x="60" y="60"/>
+  <rect fill="#2ecc71" height="180" id="svg_2" mask="url(#mask_a)" width="200" x="300" y="60"/>
+ </g>
+</svg>
