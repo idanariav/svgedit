@@ -1,3 +1,4 @@
+import { tooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -123,7 +124,7 @@ export class ToolButton extends HTMLElement {
     switch (name) {
       case 'title': {
         const shortcut = this.getAttribute('shortcut')
-        this.$div.setAttribute('title', `${t(newValue)} ${shortcut ? `[${t(shortcut)}]` : ''}`)
+        this.$div.setAttribute('title', tooltipText(t(newValue), shortcut))
         break
       }
       case 'style':

@@ -2,6 +2,7 @@ import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import { ownerEditor } from '../domScope.js'
+import { formatShortcutAttr } from '../Hotkeys.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -40,10 +41,17 @@ template.innerHTML = `
   .item-label {
     flex: 1;
   }
+  .item-shortcut {
+    margin-left: 16px;
+    color: var(--muted, #6B7280);
+    font-size: 12px;
+    text-align: right;
+  }
   </style>
   <div class="item-row">
     <span class="icon-wrap"></span>
     <span class="item-label"></span>
+    <span class="item-shortcut"></span>
   </div>
 `
 /**
@@ -64,6 +72,7 @@ export class SeMenuItem extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.querySelector('.item-label')
+    this.$shortcut = this._shadowRoot.querySelector('.item-shortcut')
     this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
   }
 
@@ -91,7 +100,8 @@ export class SeMenuItem extends HTMLElement {
         break
       case 'label':
         shortcut = this.getAttribute('shortcut')
-        this.$label.textContent = `${t(newValue)} ${shortcut ? `(${shortcut})` : ''}`
+        this.$label.textContent = t(newValue)
+        this.$shortcut.textContent = formatShortcutAttr(shortcut)
         break
       default:
         logError(`unknown attribute: ${name}`, undefined, 'seMenuItem')

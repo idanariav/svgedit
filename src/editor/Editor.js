@@ -323,7 +323,7 @@ class Editor extends EditorStartup {
         const pre = '\n \u2022 '
         note +=
           '\n\n' +
-          this.i18next.t('notification..noteTheseIssues') +
+          this.i18next.t('notification.noteTheseIssues') +
           pre +
           issues.join(pre)
       }
@@ -1245,13 +1245,13 @@ class Editor extends EditorStartup {
       ? $id('#layerlist').querySelector('tr.layersel td.layername').textContent
       : ''
     const renameLayer =
-      oldLayerName === this.i18next.t('notification.common.layer') + ' 1'
+      oldLayerName === this.i18next.t('layers.layer') + ' 1'
 
     this.setTitles()
 
     if (renameLayer) {
       this.svgCanvas.renameCurrentLayer(
-        this.i18next.t('notification.common.layer') + ' 1'
+        this.i18next.t('layers.layer') + ' 1'
       )
       this.rightPanel.populateLayers()
     }

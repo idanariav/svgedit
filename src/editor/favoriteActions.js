@@ -27,6 +27,11 @@ const EXTRA_TRIGGERS = {
     labelKey: 'tools.paste',
     exec: (editor) => editor.svgCanvas.pasteElements()
   },
+  zoom_fit: {
+    group: 'View',
+    labelKey: 'tools.fit_to_canvas',
+    exec: (editor) => editor.bottomPanel.changeZoom('canvas')
+  },
   paste_in_place: {
     group: 'Edit',
     labelKey: 'tools.paste_in_place',

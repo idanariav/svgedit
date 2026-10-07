@@ -37,13 +37,14 @@ describe('se-menu-item', () => {
   it('sets the label text via t() without a shortcut', () => {
     const el = mountMenuItem()
     el.setAttribute('label', 'undo')
-    expect(el.$label.textContent).toBe('undo ')
+    expect(el.$label.textContent).toBe('undo')
   })
 
-  it('appends the shortcut in parentheses when present', () => {
+  it('shows the platform-formatted shortcut in its own element', () => {
     const el = mountMenuItem({ shortcut: 'ctrl+z' })
     el.setAttribute('label', 'undo')
-    expect(el.$label.textContent).toBe('undo (ctrl+z)')
+    expect(el.$label.textContent).toBe('undo')
+    expect(el.$shortcut.textContent).toBe('Ctrl+Z')
   })
 
   it('reads/writes label and src properties via attributes', () => {

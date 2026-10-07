@@ -19,7 +19,7 @@ template.innerHTML = cMenuDialogHTML
 // Actions that stay available with no selection; everything else is disabled
 // when nothing is selected (mirrors the original context menu's behaviour).
 const ALWAYS_ENABLED = new Set([
-  'paste', 'paste_in_place', 'select_all', 'zoom_in', 'zoom_out'
+  'paste', 'paste_in_place', 'select_all', 'zoom_in', 'zoom_out', 'zoom_fit'
 ])
 
 /**
@@ -75,6 +75,19 @@ export class SeCMenuDialog extends HTMLElement {
     }
     this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
     this._workarea.addEventListener('mousedown', onMenuCloseHandler)
+    // Escape dismisses an open menu (capture, so it wins over other Escape handlers).
+    this._onKeydown = (e) => {
+      if (e.key === 'Escape' && current.$dialog.style.display === 'block') {
+        current._hide()
+        e.stopPropagation()
+      }
+    }
+    document.addEventListener('keydown', this._onKeydown, true)
+  }
+
+  /** @returns {void} */
+  disconnectedCallback () {
+    if (this._onKeydown) document.removeEventListener('keydown', this._onKeydown, true)
   }
 
   /** @returns {void} */

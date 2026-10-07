@@ -61,7 +61,7 @@ describe('se-flyingbutton', () => {
   it('reflects the title attribute without a shortcut', () => {
     const el = mountFlyingButton()
     el.setAttribute('title', 'tools.square_rect_tool')
-    expect(el.$button.getAttribute('title')).toBe('tools.square_rect_tool ')
+    expect(el.$button.getAttribute('title')).toBe('tools.square_rect_tool')
   })
 
   it('gets/sets the title property via the attribute', () => {

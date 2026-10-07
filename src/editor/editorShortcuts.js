@@ -49,7 +49,7 @@ export const buildEditorShortcuts = (editor) => [
     id: 'cycle_prev',
     group: 'Navigate',
     label: 'hotkeys.cycle_prev',
-    key: 'shift+o/tab',
+    key: 'shift+o/shift+tab',
     fn: () => {
       editor.svgCanvas.cycleElement(0)
     }
@@ -58,7 +58,7 @@ export const buildEditorShortcuts = (editor) => [
     id: 'cycle_next',
     group: 'Navigate',
     label: 'hotkeys.cycle_next',
-    key: 'shift+p/shift+tab',
+    key: 'shift+p/tab',
     fn: () => {
       editor.svgCanvas.cycleElement(1)
     }
@@ -280,7 +280,7 @@ export const buildEditorShortcuts = (editor) => [
     id: 'select_all',
     group: 'Selection',
     label: 'hotkeys.select_all',
-    key: ['a/mod+a', true],
+    key: ['mod+a', true],
     fn: () => {
       editor.svgCanvas.selectAllInCurrentLayer()
     }

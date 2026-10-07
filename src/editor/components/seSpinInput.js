@@ -1,3 +1,4 @@
+import { tooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
@@ -181,7 +182,7 @@ export class SESpinInput extends HTMLElement {
       case 'title':
         {
           const shortcut = this.getAttribute('shortcut')
-          this.$div.setAttribute('title', `${t(newValue)} ${shortcut ? `[${t(shortcut)}]` : ''}`)
+          this.$div.setAttribute('title', tooltipText(t(newValue), shortcut))
         }
         break
       case 'src':

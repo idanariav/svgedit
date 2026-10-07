@@ -17,7 +17,7 @@ const STORAGE_KEY = 'svg-edit-favorites'
 
 // Seeded when the user has not curated a list yet, so the right-click menu is
 // never empty (mirrors the original context-menu essentials).
-export const DEFAULT_FAVORITES = ['cut', 'copy', 'paste', 'delete_selected']
+export const DEFAULT_FAVORITES = ['paste', 'select_all', 'zoom_fit']
 
 /**
  * Read the raw stored list (no default seeding).

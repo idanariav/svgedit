@@ -1,3 +1,4 @@
+import { tooltipText } from '../Hotkeys.js'
 import { getIconDataUri } from '../images/iconRegistry.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -167,7 +168,7 @@ export class ExplorerButton extends HTMLElement {
       case 'title':
         {
           const shortcut = this.getAttribute('shortcut')
-          this.$button.setAttribute('title', `${newValue} [${shortcut}]`)
+          this.$button.setAttribute('title', tooltipText(newValue, shortcut))
         }
         break
       case 'pressed':

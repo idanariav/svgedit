@@ -1,3 +1,4 @@
+import { tooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -172,7 +173,7 @@ export class FlyingButton extends HTMLElement {
       case 'title':
         {
           const shortcut = this.getAttribute('shortcut')
-          this.$button.setAttribute('title', `${t(newValue)} ${shortcut ? `[${t(shortcut)}]` : ''}`)
+          this.$button.setAttribute('title', tooltipText(t(newValue), shortcut))
         }
         break
       case 'pressed':

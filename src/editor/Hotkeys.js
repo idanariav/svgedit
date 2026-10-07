@@ -142,6 +142,32 @@ export const formatHotkey = (canonical) => {
   }).join(' + ')
 }
 
+/**
+ * Format a component's raw `shortcut` attribute for tooltips/menus, per
+ * platform: `ctrl+Z` → `⌘Z` (Mac) / `Ctrl+Z`. Decorative multi-token strings
+ * ("Delete/Backspace") are shown as authored.
+ * @param {?string} raw
+ * @returns {string} '' when there is no shortcut
+ */
+export const formatShortcutAttr = (raw) => {
+  if (!raw) return ''
+  const canonical = normalizeComponentSpec(raw)
+  if (!canonical) return raw
+  return formatHotkey(canonical).replace(/ \+ /g, isMac() ? '' : '+')
+}
+
+/**
+ * Tooltip text: the name, plus the formatted shortcut in brackets if any
+ * (no trailing space when there is none).
+ * @param {string} name already-translated name
+ * @param {?string} rawShortcut
+ * @returns {string}
+ */
+export const tooltipText = (name, rawShortcut) => {
+  const sc = formatShortcutAttr(rawShortcut)
+  return sc ? `${name} [${sc}]` : name
+}
+
 // Bucket a component (button/menu) action into a manager group by its id.
 // Anything not listed falls back to 'Tools'.
 const GROUP_BY_ID = {

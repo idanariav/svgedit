@@ -27,7 +27,7 @@ describe('se-button', () => {
     const el = mountElement('se-button')
     el.setAttribute('shortcut', 'ctrl+z')
     el.setAttribute('title', 'undo')
-    expect(el.$div.getAttribute('title')).toBe('undo [ctrl+z]')
+    expect(el.$div.getAttribute('title')).toBe('undo [Ctrl+Z]')
   })
 
   it('toggles the pressed class via attribute and property', () => {

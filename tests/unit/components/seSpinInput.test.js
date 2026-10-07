@@ -57,7 +57,7 @@ describe('se-spin-input', () => {
   it('reflects the title attribute (with translated shortcut) onto the field div', () => {
     const el = mountElement('se-spin-input', { shortcut: 'ctrl+w' })
     el.setAttribute('title', 'width_title')
-    expect(el.$div.getAttribute('title')).toBe('width_title [ctrl+w]')
+    expect(el.$div.getAttribute('title')).toBe('width_title [Ctrl+W]')
   })
 
   it('forwards the size attribute to the inner input', () => {
