@@ -119,26 +119,13 @@ se-trace-dialog {
   --ruler-text: #8A8F99;
 
   /* ── Legacy aliases (consumed by remaining code + components) ─────── */
-  --main-bg-color:       var(--chrome-bg);
-  --text-color:          var(--fg);
-  --border-color:        var(--chrome-border);
-  --canvas-bg-color:     var(--paper-bg);
   --workarea-bg:         var(--canvas-bg);
-  --layer-bg:            var(--chrome-bg);
-  --layer-selected-bg:   var(--accent-soft);
-  --link-color:          var(--accent);
   --ruler-color:         var(--ruler-bg);
   --icon-bg-color:       transparent;
-  --icon-bg-color-hover: var(--icon-hover-bg);
-  --input-color:         var(--field-bg);
-  --dropdown-bg:         var(--chrome-bg);
-  --dropdown-pressed-bg: var(--icon-hover-bg);
-  --hover-highlight:     var(--icon-hover-bg);
   --main-menu-bg:        var(--chrome-bg);
   --main-menu-shadow:    rgba(0,0,0,0.12);
   --bevel-light:         var(--chrome-border);
   --scrollbar-thumb:     rgba(80,80,80,0.3);
-  --orange-color:        var(--accent);
   --global-se-spin-input-width: 82px;
   --top-toolbar-min-height: 56px;
 }
@@ -256,26 +243,13 @@ se-trace-dialog.theme-dark {
   --ruler-text: #7A8190;
 
   /* ── Legacy aliases ───────────────────────────────────────────────── */
-  --main-bg-color:       var(--chrome-bg);
-  --text-color:          var(--fg);
-  --border-color:        var(--chrome-border);
-  --canvas-bg-color:     var(--paper-bg);
   --workarea-bg:         var(--canvas-bg);
-  --layer-bg:            var(--chrome-bg);
-  --layer-selected-bg:   var(--accent-soft);
-  --link-color:          var(--accent);
   --ruler-color:         var(--ruler-bg);
   --icon-bg-color:       transparent;
-  --icon-bg-color-hover: var(--icon-hover-bg);
-  --input-color:         var(--field-bg);
-  --dropdown-bg:         var(--chrome-bg);
-  --dropdown-pressed-bg: var(--icon-hover-bg);
-  --hover-highlight:     var(--icon-hover-bg);
   --main-menu-bg:        var(--chrome-bg);
   --main-menu-shadow:    rgba(0,0,0,0.5);
   --bevel-light:         var(--chrome-border);
   --scrollbar-thumb:     rgba(180,180,180,0.25);
-  --orange-color:        var(--accent);
 }
 
 .svg_editor * {
@@ -548,12 +522,12 @@ se-trace-dialog.theme-dark {
 }
 
 a {
-  color: var(--link-color);
+  color: var(--accent);
 }
 
 hr {
   border: none;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--chrome-border);
 }
 
 #linkLabel>svg {
@@ -1283,17 +1257,17 @@ input[type=text] {
   padding: 0;
   border-left: 1px solid var(--bevel-light);
   border-top: 1px solid var(--bevel-light);
-  border-right: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--dropdown-bg);
+  border-right: 1px solid var(--chrome-border);
+  border-bottom: 1px solid var(--chrome-border);
+  background-color: var(--chrome-bg);
 }
 
 .dropdown button.down {
-  border-left: 1px solid var(--border-color);
-  border-top: 1px solid var(--border-color);
+  border-left: 1px solid var(--chrome-border);
+  border-top: 1px solid var(--chrome-border);
   border-right: 1px solid var(--bevel-light);
   border-bottom: 1px solid var(--bevel-light);
-  background-color: var(--dropdown-pressed-bg);
+  background-color: var(--icon-hover-bg);
 }
 
 .dropdown ul {
@@ -1316,14 +1290,14 @@ input[type=text] {
   display: block;
   width: 120px;
   padding: 4px;
-  background: var(--dropdown-bg);
-  border: 1px solid var(--dropdown-pressed-bg);
+  background: var(--chrome-bg);
+  border: 1px solid var(--icon-hover-bg);
   margin: 0 0 -1px 0;
   line-height: 16px;
 }
 
 .dropdown li:hover {
-  background-color: var(--hover-highlight);
+  background-color: var(--icon-hover-bg);
 }
 
 .dropdown li.special {
@@ -1331,7 +1305,7 @@ input[type=text] {
 }
 
 .dropdown li.special:hover {
-  background: var(--hover-highlight);
+  background: var(--icon-hover-bg);
 }
 
 #font_family_dropdown-list li {
@@ -1418,7 +1392,7 @@ input[type=text] {
   content: '>>';
   letter-spacing: -3px;
   font-weight: bold;
-  color: var(--text-color);
+  color: var(--fg);
 }
 
 .expanded #toggle_stroke_tools:before {
@@ -1426,7 +1400,7 @@ input[type=text] {
 }
 
 #toggle_stroke_tools:hover {
-  background: var(--icon-bg-color-hover);
+  background: var(--icon-hover-bg);
 }
 
 #tool_opacity {
@@ -1438,7 +1412,7 @@ input[type=text] {
 }
 
 ul li.current {
-  background-color: var(--hover-highlight);
+  background-color: var(--icon-hover-bg);
 }
 
 #copyright {

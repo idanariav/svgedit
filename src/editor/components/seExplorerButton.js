@@ -52,7 +52,7 @@ export class ExplorerButton extends HTMLElement {
     }
     .menu-button:hover, se-button:hover, .menu-item:hover
     {
-      background-color: var(--icon-bg-color-hover);
+      background-color: var(--icon-hover-bg);
     }
     img {
       border: none;
@@ -63,10 +63,10 @@ export class ExplorerButton extends HTMLElement {
     .overall.pressed .button-icon,
     .overall.pressed,
     .menu-item.pressed {
-      background-color: var(--icon-bg-color-hover) !important;
+      background-color: var(--icon-hover-bg) !important;
     }
     .overall.pressed .menu-button {
-      background-color: var(--icon-bg-color-hover) !important;
+      background-color: var(--icon-hover-bg) !important;
     }
     .disabled {
       opacity: 0.3;

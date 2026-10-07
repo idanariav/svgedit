@@ -132,8 +132,12 @@ it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
   (the earlier estimate was ~76; not re-counted after this change). Replace
   with tokens where an equivalent exists; the rest can stay as named
   component tokens.
-- Legacy alias variables (`--main-bg-color`, `--text-color`, …) are still used
-  in about 30 places; migrate to the canonical tokens and drop them.
+- `--workarea-bg` (alias of `--canvas-bg`) and the other aliases left in
+  `svgedit.css`'s "Legacy aliases" blocks remain; `CLAUDE.md` still lists
+  `--workarea-bg` as a primary token, so decide which name wins first.
+- `se-edit-prefs-dialog` is mounted outside `.svg_editor` and never toggles
+  `theme-dark`, so it falls back to its light hex defaults in dark mode. Add it
+  to the token blocks and have it toggle the class like the other dialogs.
 - Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
   plugin) still don't reach these dialogs, since they sit outside it. Fixing
   that means mounting them inside `.svg_editor` (check `position: fixed`

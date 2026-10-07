@@ -93,24 +93,11 @@ both blocks (`tests/unit/dialog-theme-tokens.test.js`). Keep `:root,` directly b
 
 ## Legacy Aliases
 
-These are defined in both themes and map to the canonical tokens. Existing components may still use them.
-
-| Legacy variable | Maps to |
-|-----------------|---------|
-| `--main-bg-color` | `--chrome-bg` |
-| `--text-color` | `--fg` |
-| `--border-color` | `--chrome-border` |
-| `--canvas-bg-color` | `--paper-bg` *(the SVG artboard, not the workarea)* |
-| `--workarea-bg` | `--canvas-bg` |
-| `--input-color` | `--field-bg` |
-| `--dropdown-bg` | `--chrome-bg` |
-| `--dropdown-pressed-bg` | `--icon-hover-bg` |
-| `--hover-highlight` | `--icon-hover-bg` |
-| `--icon-bg-color-hover` | `--icon-hover-bg` |
-| `--layer-bg` | `--chrome-bg` |
-| `--layer-selected-bg` | `--accent-soft` |
-| `--link-color` | `--accent` |
-| `--orange-color` | `--accent` |
+Most legacy aliases (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`,
+`--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, …) were removed
+after every use was migrated to the canonical tokens above. What remains in the "Legacy aliases"
+blocks of `svgedit.css` (`--workarea-bg` → `--canvas-bg`, `--ruler-color`, `--main-menu-*`,
+`--bevel-light`, …) is still consumed in a few places.
 
 **Rule:** For new code, always use the canonical token. Legacy aliases exist only for backward compatibility.
 
