@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Guards against the "wrong owning editor" bug class (.claude/techdebt.md,
-// "Multi-instance wrong owning editor leaks"): svgedit mounts one editor per
+// Guards against the "wrong owning editor" bug class: svgedit mounts one editor per
 // pane/drawing in the same document, but its chrome uses fixed element ids
 // (workarea, fill_color, the se-* dialogs, ...), so a bare
 // document.querySelector/getElementById silently resolves to the *first*

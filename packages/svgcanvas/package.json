@@ -53,7 +53,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "prebuild": "standard . && npm i",
+    "prebuild": "standard .",
     "prepublishOnly": "npm run build"
   }
 }

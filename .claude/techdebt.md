@@ -161,22 +161,10 @@ from the host don't reach these dialogs. Fix: delete the local palettes
 with tokens, then migrate off the aliases and drop them. Medium, mostly
 visual QA.
 
-## Repo hygiene (upstream leftovers, stale config)
+## Repo hygiene leftovers
 
-- `test-results/.last-run.json` is committed, and `test-results/` isn't
-  gitignored.
-- vitest `coverage.include` is a hand-picked list of 14 files, one of
-  which (`core/utilities.js`) doesn't exist. Use globs.
-- Two coverage systems: nyc (`nyc.config.js`) and `vite-plugin-istanbul`
-  for e2e, plus v8 for unit tests.
-- Dead config: `babel.config.json` (Babel isn't installed), `lgtm.yml`
-  (that service shut down in 2022), `composer.json`, `netlify.toml`,
-  `FUNDING.yml`, and the cypress entries in `.gitignore`.
-- CI uses `actions/checkout@v3`/`setup-node@v3` on Node 20 (end of life
-  April 2026). Move to v4 and Node 22/24.
-- `packages/svgcanvas` has `"prebuild": "standard . && npm i"`, so building
-  runs `npm install` as a side effect.
-- `scripts/check-dom-scope.mjs`'s header comment points to a techdebt entry
-  ("Multi-instance wrong owning editor leaks") that no longer exists.
-
-Each is small. Batch them into one cleanup commit.
+- Two coverage systems remain: nyc (`nyc.config.js`, used by
+  `scripts/run-e2e.mjs` to merge e2e + vitest coverage), `vite-plugin-istanbul`
+  for e2e, and v8 for unit tests. Consolidating means reworking the merge step.
+- `npmpublish*.yml` workflows still target upstream's `svgedit` package; they
+  go away with the "Fork identity" entry above.
