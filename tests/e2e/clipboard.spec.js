@@ -19,6 +19,12 @@ const contentIds = (page) => page.evaluate(() =>
 test.describe('Clipboard', () => {
   test.beforeEach(async ({ page }) => {
     await visitAndApproveStorage(page)
+    // The default context menu is now Paste / Select all / Zoom to fit; this spec
+    // drives the cut/copy/paste/delete rows, so favourite those explicitly.
+    await page.evaluate(() => localStorage.setItem(
+      'svg-edit-favorites',
+      JSON.stringify(['cut', 'copy', 'paste', 'delete_selected'])
+    ))
     await setSvgSource(page, SAMPLE_SVG)
     await expect(page.locator('#testCircle')).toBeVisible()
   })

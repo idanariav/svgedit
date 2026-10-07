@@ -142,7 +142,7 @@ resize and when a tray is shown/hidden. Remaining:
 - Tablet mode at 1024 wide: the command bar's undo/redo are still cut off.
 - Palette swatches shrink to slivers at 800px.
 - Tools in the left column scroll rather than moving into `…` automatically.
-- No automated test covers `fitBar` (jsdom has no layout) — only manual/e2e.
+- `fitBar` is covered by `tests/e2e/top-bar-layout.spec.js` (jsdom has no layout).
 Small.
 
 ## Missing translations show raw keys

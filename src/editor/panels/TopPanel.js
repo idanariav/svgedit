@@ -1160,7 +1160,7 @@ class TopPanel {
     })
     document.addEventListener('click', (e) => {
       if (bar.classList.contains('tt-more-open') && !e.composedPath().some(n => n === bar)) setMoreOpen(false)
-    })
+    }, { signal: this.editor.listenerAbort.signal })
     bar.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMoreOpen(false) })
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(fitBar)
