@@ -672,6 +672,75 @@ export default {
 
     reset()
 
+    const handleOneChangedElement = (elem) => {
+      const dataStorage = svgCanvas.getDataStorage()
+
+      // Reinitialize on document (re)load.
+      if (elem.tagName === 'svg' && elem.id === 'svgcontent') {
+        reset()
+      }
+
+      // Track marker presence for endpoint offsets; convert a line to a
+      // polyline when a mid-marker is applied (SVG <line> has no mid vertex).
+      const { markerStart, markerMid, markerEnd } = elem.attributes
+      if (markerStart || markerMid || markerEnd) {
+        dataStorage.put(elem, 'start_off', Boolean(markerStart))
+        dataStorage.put(elem, 'end_off', Boolean(markerEnd))
+
+        if (elem.tagName === 'line' && markerMid) {
+          const { x1, x2, y1, y2, id } = elem.attributes
+          const bindStart = elem.getAttributeNS(seNs, 'bind-start')
+          const bindEnd = elem.getAttributeNS(seNs, 'bind-end')
+
+          const midPt = `${(Number(x1.value) + Number(x2.value)) / 2},${
+            (Number(y1.value) + Number(y2.value)) / 2
+          }`
+          const pline = addSVGElementsFromJson({
+            element: 'polyline',
+            attr: {
+              points: `${x1.value},${y1.value} ${midPt} ${x2.value},${y2.value}`,
+              stroke: elem.getAttribute('stroke'),
+              // A missing stroke-width means the SVG initial value of 1 — pass
+              // that through explicitly, since assignAttributes would otherwise
+              // set the attribute to the literal string "null".
+              'stroke-width': elem.getAttribute('stroke-width') ?? 1,
+              'marker-mid': markerMid.value,
+              fill: 'none',
+              opacity: elem.getAttribute('opacity') || 1
+            }
+          })
+          // Preserve per-endpoint bindings across the conversion.
+          if (bindStart) pline.setAttributeNS(seNs, 'se:bind-start', bindStart)
+          if (bindEnd) pline.setAttributeNS(seNs, 'se:bind-end', bindEnd)
+
+          elem.insertAdjacentElement('afterend', pline)
+          elem.remove()
+          svgCanvas.clearSelection()
+          pline.id = id.value
+          svgCanvas.addToSelection([pline])
+          elem = pline
+        }
+      }
+
+      // If the changed element is itself a connector, re-route it (e.g. a new
+      // marker changed its endpoint offset). Otherwise re-route lines bound to it.
+      const ids = getBindIds(elem)
+      if (ids.start || ids.end) {
+        // Ensure bboxes are cached, then route.
+        if (ids.start && !dataStorage.get(elem, 'start_bb')) {
+          const el = getElement(ids.start)
+          if (el) dataStorage.put(elem, 'start_bb', svgCanvas.getStrokedBBox([el]))
+        }
+        if (ids.end && !dataStorage.get(elem, 'end_bb')) {
+          const el = getElement(ids.end)
+          if (el) dataStorage.put(elem, 'end_bb', svgCanvas.getStrokedBBox([el]))
+        }
+        routeAny(elem)
+      } else {
+        updateConnectors([elem])
+      }
+    }
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -831,75 +900,7 @@ export default {
         // bulk operation -- e.g. drag two connected boxes together and
         // release: only the first box's line ends up back where it should.
         for (const elem of opts.elems?.filter(Boolean) || []) {
-          this.handleOneChangedElement(elem)
-        }
-      },
-      handleOneChangedElement (elem) {
-        const dataStorage = svgCanvas.getDataStorage()
-
-        // Reinitialize on document (re)load.
-        if (elem.tagName === 'svg' && elem.id === 'svgcontent') {
-          reset()
-        }
-
-        // Track marker presence for endpoint offsets; convert a line to a
-        // polyline when a mid-marker is applied (SVG <line> has no mid vertex).
-        const { markerStart, markerMid, markerEnd } = elem.attributes
-        if (markerStart || markerMid || markerEnd) {
-          dataStorage.put(elem, 'start_off', Boolean(markerStart))
-          dataStorage.put(elem, 'end_off', Boolean(markerEnd))
-
-          if (elem.tagName === 'line' && markerMid) {
-            const { x1, x2, y1, y2, id } = elem.attributes
-            const bindStart = elem.getAttributeNS(seNs, 'bind-start')
-            const bindEnd = elem.getAttributeNS(seNs, 'bind-end')
-
-            const midPt = `${(Number(x1.value) + Number(x2.value)) / 2},${
-              (Number(y1.value) + Number(y2.value)) / 2
-            }`
-            const pline = addSVGElementsFromJson({
-              element: 'polyline',
-              attr: {
-                points: `${x1.value},${y1.value} ${midPt} ${x2.value},${y2.value}`,
-                stroke: elem.getAttribute('stroke'),
-                // A missing stroke-width means the SVG initial value of 1 — pass
-                // that through explicitly, since assignAttributes would otherwise
-                // set the attribute to the literal string "null".
-                'stroke-width': elem.getAttribute('stroke-width') ?? 1,
-                'marker-mid': markerMid.value,
-                fill: 'none',
-                opacity: elem.getAttribute('opacity') || 1
-              }
-            })
-            // Preserve per-endpoint bindings across the conversion.
-            if (bindStart) pline.setAttributeNS(seNs, 'se:bind-start', bindStart)
-            if (bindEnd) pline.setAttributeNS(seNs, 'se:bind-end', bindEnd)
-
-            elem.insertAdjacentElement('afterend', pline)
-            elem.remove()
-            svgCanvas.clearSelection()
-            pline.id = id.value
-            svgCanvas.addToSelection([pline])
-            elem = pline
-          }
-        }
-
-        // If the changed element is itself a connector, re-route it (e.g. a new
-        // marker changed its endpoint offset). Otherwise re-route lines bound to it.
-        const ids = getBindIds(elem)
-        if (ids.start || ids.end) {
-          // Ensure bboxes are cached, then route.
-          if (ids.start && !dataStorage.get(elem, 'start_bb')) {
-            const el = getElement(ids.start)
-            if (el) dataStorage.put(elem, 'start_bb', svgCanvas.getStrokedBBox([el]))
-          }
-          if (ids.end && !dataStorage.get(elem, 'end_bb')) {
-            const el = getElement(ids.end)
-            if (el) dataStorage.put(elem, 'end_bb', svgCanvas.getStrokedBBox([el]))
-          }
-          routeAny(elem)
-        } else {
-          updateConnectors([elem])
+          handleOneChangedElement(elem)
         }
       },
       IDsUpdated (input) {

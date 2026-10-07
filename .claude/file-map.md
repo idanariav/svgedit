@@ -182,6 +182,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/event-zoom.js` | `zoom` mode handlers (marquee-zoom rubber band + `zoomed` event) |
 | `core/selected-elem.js` | Move, resize, flip selected elements |
 | `core/selection.js` | Selection list management |
+| `core/extension-hooks.js` | Registry of valid extension hook names (`EXTENSION_HOOKS`) |
 | `core/select.js` | Rubber-band selector + resize handles UI |
 | `core/path.js` | Path state and node data |
 | `core/path-actions.js` | Add/delete/move path nodes |

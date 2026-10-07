@@ -115,16 +115,12 @@ first, generate `.d.ts` from the JSDoc
 (`tsc --declaration --emitDeclarationOnly`), and ship it in `dist/`.
 Medium.
 
-## Extension hooks are untyped strings; `keyDown` is never dispatched
+## Extension hook payloads are still untyped
 
-Hooks are plain string names dispatched through `runExtensions`, and
-nothing checks that a hook an extension implements actually exists.
-`keyDown` is implemented but never dispatched (`ext-puppet-warp.js:604`
-says so in a comment), so extensions work around it with raw
-`window`/`document` key listeners. Fix: keep a typed list of hook names
-with payload typedefs, warn when an extension registers an unknown hook,
-and either dispatch `keyDown` through `HotkeyManager` or remove it.
-Small to medium.
+Hook names are now registered in `core/extension-hooks.js` (typos warn, and
+`keyDown` is dispatched from `EditorStartup.js`'s keydown listener). Still
+open: typedefs for each hook's payload, and migrating `ext-puppet-warp`'s raw
+window `keydown` listener to the `keyDown` hook. Small.
 
 ## Oversized modules
 

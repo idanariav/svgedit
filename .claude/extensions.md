@@ -32,6 +32,10 @@ export default {
       // Called when selection changes
       selectedChanged ({ elems }) { },
 
+      // Called on Editor-owned keydown (focused editor only); return
+      // { preventDefault: true } to swallow the key
+      keyDown ({ event }) { },
+
       // Add items to a panel (via innerHTML or DOM manipulation)
       // Use S.editor or document.querySelector() to find containers
 
@@ -65,7 +69,7 @@ single `Editor.js`.
    svgCanvas.addExtension(imported.default.name, imported.default.init)
    ```
 3. `svgCanvas.addExtension()` calls `ext.init(S)` and stores returned hooks
-4. Canvas events then dispatch to all registered extension hooks
+4. Canvas events then dispatch to all registered extension hooks. Valid hook names live in `packages/svgcanvas/core/extension-hooks.js` (`EXTENSION_HOOKS`); `addExtension` warns about unknown function members and `runExtensions` about unknown dispatches. Add a new hook there first.
 
 > **Adding a new built-in extension:** drop it in `extensions/ext-<name>/` and
 > add its name to `defaultExtensions` in `ConfigObj.js`. The registry glob picks

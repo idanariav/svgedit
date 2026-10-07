@@ -56,6 +56,8 @@ import {
   hasMatrixTransform,
   transformListToTransform
 } from './core/math.js'
+import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.js'
+import { warn } from './common/logger.js'
 import { convertToNum, init as unitsInit, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
 import { init as svgInit } from './core/svg-exec.js'
 import { init as coordsInit } from './core/coords.js'
@@ -1160,6 +1162,11 @@ class SvgCanvas extends EventTarget {
     const extObj = await extInitFunc(argObj)
     if (extObj) {
       extObj.name = name
+      for (const [key, val] of Object.entries(extObj)) {
+        if (typeof val === 'function' && !isExtensionHook(key) && !EXTENSION_LIFECYCLE_METHODS.includes(key)) {
+          warn(`Extension "${name}" defines "${key}()", which is not a known hook`, undefined, 'extensions')
+        }
+      }
     }
     this.extensions[name] = extObj
     return this.call('extension_added', extObj)

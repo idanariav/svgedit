@@ -540,6 +540,10 @@ class EditorStartup {
     document.addEventListener('keydown', (e) => {
       if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
+      if (this.svgCanvas.runExtensions('keyDown', { event: e })?.preventDefault) {
+        e.preventDefault()
+        return
+      }
       if (e.code.toLowerCase() === 'space') {
         this.svgCanvas.spaceKey = keypan = true
         e.preventDefault()
