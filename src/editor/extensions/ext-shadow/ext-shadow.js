@@ -89,7 +89,8 @@ export default {
       angle: Number($id('shadow_angle').value),
       length: Number($id('shadow_length').value),
       blur: Number($id('shadow_blur').value),
-      opacity: Number($id('shadow_opacity').value),
+      // Panel shows opacity as 0–100 (same scale as the Design tab); the filter stores 0–1.
+      opacity: Number($id('shadow_opacity').value) / 100,
       color: $id('shadow_color').value
     })
 
@@ -157,7 +158,9 @@ export default {
         // reflects "no shadow" rather than showing phantom active values.
         $id('shadow_length').value = p?.length ?? 0
         $id('shadow_blur').value = p?.blur ?? 4
-        $id('shadow_opacity').value = p?.opacity ?? 0.5
+        $id('shadow_opacity').value = Math.round((p?.opacity ?? 0.5) * 100)
+        $id('shadow_enabled').checked = !!p
+        panel.toggleAttribute('data-off', !p)
         $id('shadow_color').value = p?.color ?? '#000000'
       }
     }
@@ -170,7 +173,13 @@ export default {
         const panelTemplate = document.createElement('template')
         panelTemplate.innerHTML = `
           <div id="shadow_panel" class="sidepanel_section" style="display:none">
-            <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:name`)}</div>
+            <div class="shadow_panel_header">
+              <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:name`)}</div>
+              <label class="shadow_toggle" title="${svgEditor.i18next.t(`${name}:contextTools.enable.title`)}">
+                <input type="checkbox" id="shadow_enabled">
+                <span>${svgEditor.i18next.t(`${name}:contextTools.enable.title`)}</span>
+              </label>
+            </div>
             <div class="sidepanel_section_grid">
               <se-spin-input id="shadow_angle"  label="Angle" min="0" max="359" step="5" value="150"
                 title="${svgEditor.i18next.t(`${name}:contextTools.angle.title`)}"></se-spin-input>
@@ -178,15 +187,13 @@ export default {
                 title="${svgEditor.i18next.t(`${name}:contextTools.length.title`)}"></se-spin-input>
               <se-spin-input id="shadow_blur" label="Blur" min="0" max="50" step="1" value="4"
                 title="${svgEditor.i18next.t(`${name}:contextTools.blur.title`)}"></se-spin-input>
-              <se-spin-input id="shadow_opacity" label="Opacity" min="0" max="1" step="0.05" value="0.5"
+              <se-spin-input id="shadow_opacity" label="Opacity" min="0" max="100" step="5" value="50"
                 title="${svgEditor.i18next.t(`${name}:contextTools.opacity.title`)}"></se-spin-input>
             </div>
             <div class="shadow_panel_footer">
               <input type="color" id="shadow_color" value="#000000"
                 title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}">
               <span class="shadow_panel_footer_label">${svgEditor.i18next.t(`${name}:contextTools.color.title`)}</span>
-              <se-button id="shadow_remove" src="delete.svg"
-                title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
             </div>
           </div>
         `
@@ -194,11 +201,31 @@ export default {
         host.appendChild(panelTemplate.content.cloneNode(true))
 
         // Wire event listeners
-        ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity'].forEach((id) => {
-          $id(id).addEventListener('change', () => setShadow(getShadowPanelValues()))
+        const DEFAULT_LENGTH = 8
+        const setEnabledUi = (on) => {
+          $id('shadow_enabled').checked = on
+          $id('shadow_panel').toggleAttribute('data-off', !on)
+        }
+        // Editing any field while the shadow is off switches it on (a zero
+        // distance would mean "no shadow", so give it a visible default).
+        const applyFromPanel = () => {
+          if (!$id('shadow_enabled').checked || Number($id('shadow_length').value) === 0) {
+            if (Number($id('shadow_length').value) === 0) $id('shadow_length').value = DEFAULT_LENGTH
+            setEnabledUi(true)
+          }
+          setShadow(getShadowPanelValues())
+        }
+        ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity', 'shadow_color'].forEach((id) => {
+          $id(id).addEventListener('change', applyFromPanel)
         })
-        $id('shadow_color').addEventListener('change', () => setShadow(getShadowPanelValues()))
-        $id('shadow_remove').addEventListener('click', () => setShadow({ remove: true }))
+        $id('shadow_enabled').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            applyFromPanel()
+          } else {
+            setEnabledUi(false)
+            setShadow({ remove: true })
+          }
+        })
       },
 
       selectedChanged (opts) {

@@ -54,6 +54,7 @@ export const updateContextPanel = (topPanel) => {
     ['resetPanels', () => {
       STANDARD_CONTEXT_PANELS.forEach(panel => topPanel.hideTool(panel))
       topPanel.setSidepanelVisible('sidepanel_general', false)
+      topPanel.setSidepanelVisible('sidepanel_advanced', false)
       topPanel.setSidepanelVisible('sidepanel_text', false)
       topPanel.setSidepanelVisible('clipmask_panel', false)
     }],
@@ -71,6 +72,7 @@ export const updateContextPanel = (topPanel) => {
         if (!isNode && currentMode !== 'pathedit') {
           topPanel.displayTool('selected_panel')
           topPanel.setSidepanelVisible('sidepanel_general', true)
+          topPanel.setSidepanelVisible('sidepanel_advanced', true)
           if (elem.getAttribute('clip-path') || elem.getAttribute('mask')) {
             topPanel.setSidepanelVisible('clipmask_panel', true)
             $id('clipmask_feather').value = topPanel.editor.svgCanvas.getFeather(elem)

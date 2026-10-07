@@ -594,6 +594,14 @@ hr {
   color: var(--fg);
   user-select: none;
 }
+/* Advanced (ID / Class): collapsed disclosure */
+.sidepanel_advanced > summary { cursor: pointer; margin: 0; }
+.sidepanel_advanced[open] > summary { margin-bottom: 12px; }
+
+/* Empty-state hint, shown only while no Text section is visible */
+.sidepanel_hint { display: none; margin: 0; padding: 14px 16px; font-size: 12.5px; color: var(--muted); }
+.text_panel[style*="none"] ~ #sidepanel_text[style*="none"] ~ .sidepanel_hint { display: block; }
+
 /* first visible section in a tab shouldn't carry a top rule */
 .sidepanel_tabpanel > .sidepanel_section:first-child { border-top: none; }
 
@@ -706,7 +714,12 @@ hr {
   cursor: pointer;
 }
 .shadow_panel_footer_label { font-size: 12.5px; color: var(--muted); }
-.shadow_panel_footer #shadow_remove { margin-left: auto; }
+.shadow_panel_header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.shadow_panel_header .sidepanel_section_label { margin: 0; }
+.shadow_toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+/* Shadow off: fields stay editable (editing one switches it on) but read as inactive */
+#shadow_panel[data-off] .sidepanel_section_grid,
+#shadow_panel[data-off] .shadow_panel_footer { opacity: 0.45; }
 
 /* ── Color-shift toggles / reset ──────────────────────────────────── */
 .color_shift_toggles {

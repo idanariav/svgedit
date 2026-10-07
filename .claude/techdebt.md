@@ -177,23 +177,18 @@ Done: Escape closes it; the defaults are now Paste / Select all / Zoom to fit
 (users with stored favorites keep theirs). Remaining: items have no icons or
 shortcuts, and disabled items are only slightly lighter than enabled ones. Small.
 
-## Side panel: hidden by default, vague handle, technical fields first
+## Side panel: remaining polish
 
-- The panel is closed by default. The tab now reads "Properties"; opening the
-  panel on first selection is still undecided.
-- The Design tab starts with ID and Class, before Dimensions and Stroke. Most
-  illustrators never use those two fields. Move them into a collapsed
-  "Advanced" group at the bottom, and keep X/Y/W/H/Rotate together at the top.
-- The Text tab is empty unless text is selected. Show a hint such as "Select
-  text or press T".
-- The drop shadow in the Effects tab shows real-looking values (angle 150,
-  blur 4, opacity 0.5) but has no on/off switch, so it isn't clear whether a
-  shadow is applied. Its opacity runs 0–1, while the Design tab's runs 0–100.
-  Use one scale and add an enable toggle.
+Done: tab renamed "Properties"; ID/Class moved into a collapsed "Advanced"
+section at the bottom of the Design tab (`#sidepanel_advanced`); the Text tab
+shows a hint when no text is selected; the drop shadow has an On switch
+(`#shadow_enabled`, editing a field switches it on) and its opacity runs 0–100
+like the Design tab. Remaining:
+- The panel is still closed by default (open on first selection?).
 - Join/Cap and the Object › Path actions are unlabelled 16px icons, and Brush is
   a lone gear. Use segmented controls with labels or tooltips.
-
-Medium, mostly `RightPanel.html` plus the section JS.
+- Side-panel tab/section names are hard-coded English (see translations entry).
+Small.
 
 ## Inconsistent icons, selection handles and palette
 

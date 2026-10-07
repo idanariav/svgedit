@@ -6,6 +6,6 @@ export default {
     blur: { title: 'Shadow blur radius' },
     opacity: { title: 'Shadow opacity (0–1)' },
     color: { title: 'Shadow color' },
-    remove: { title: 'Remove shadow' }
+    enable: { title: 'On' }
   }
 }

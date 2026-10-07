@@ -10,7 +10,7 @@
 
         <!-- ───────────────── DESIGN TAB ───────────────── -->
         <div id="tab_design" class="sidepanel_tabpanel active">
-            <!-- General: position first, then identity -->
+            <!-- General: position + rotation (identity fields live in Advanced, below) -->
             <div id="sidepanel_general" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">General</div>
                 <div class="sidepanel_section_grid">
@@ -20,10 +20,6 @@
                         title="properties.pos_y"></se-spin-input>
                     <se-spin-input id="angle" size="3" min="-180" max="180" step="5" label="Rotate"
                         title="properties.angle"></se-spin-input>
-                    <se-input id="elem_id" class="span2" data-attr="id" size="10" label="properties.id_label"
-                        title="properties.id"></se-input>
-                    <se-class-select id="elem_class" class="span2" label="properties.class_label"
-                        title="properties.class"></se-class-select>
                 </div>
             </div>
 
@@ -219,6 +215,19 @@
                     <se-button id="tool_make_link_multi" class="tool_make_link_multi" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
                 </div>
             </div>
+
+            <!-- Advanced: identity fields most illustrators never touch; collapsed by default -->
+            <div id="sidepanel_advanced" class="sidepanel_section" style="display:none">
+                <details class="sidepanel_advanced">
+                    <summary class="sidepanel_section_label">Advanced</summary>
+                    <div class="sidepanel_section_grid">
+                        <se-input id="elem_id" class="span2" data-attr="id" size="10" label="properties.id_label"
+                            title="properties.id"></se-input>
+                        <se-class-select id="elem_class" class="span2" label="properties.class_label"
+                            title="properties.class"></se-class-select>
+                    </div>
+                </details>
+            </div>
         </div>
 
         <!-- ───────────────── TEXT TAB ───────────────── -->
@@ -279,6 +288,7 @@
                         title="properties.text_perspective_y" src="perspective_y.svg"></se-spin-input>
                 </div>
             </div>
+            <p class="sidepanel_hint">Select a text object, or press T and click the canvas, to edit text.</p>
         </div>
 
         <!-- ───────────────── EFFECTS TAB ───────────────── -->
