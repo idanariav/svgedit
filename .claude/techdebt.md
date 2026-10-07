@@ -118,11 +118,17 @@ shared design tokens: `svgedit.css` lists their tags in its light and dark
 token blocks, because the dialogs are mounted beside `.svg_editor`, not inside
 it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
 
-- Dialog-specific modal tokens (`--cp-*`, `--pd-*`) still hold raw hex values
-  in both themes, and component/dialog styles contain other hard-coded colours
-  (the earlier estimate was ~76; not re-counted after this change). Replace
-  with tokens where an equivalent exists; the rest can stay as named
-  component tokens.
+- Hard-coded hex outside token definitions and `var(--x, #fallback)` (counted
+  2026-10-07): ~200 lines, of which ~115 are colour *data* and should stay
+  (`HsvBox.js` hue maths, `sePalette.js` swatches, picker/TabletShell preset
+  lists, `#fff` on accent buttons). The rest is the legacy grey-bevel skin of
+  `exportDialog`, `svgSourceDialog`, `imagePropertiesDialog`,
+  `SePlainAlertDialog`, `cmenuDialog`/`cmenuLayersDialog`, `hotkeyDialog`,
+  `favoritesDialog` and `seExplorerButton` (`#5a6162`, `#c8c8c8`, `#E8E8E8`, …).
+  Moving those onto the tokens is a restyle, not a find/replace: they have no
+  dark theme today (add them to the token blocks first, like the other dialogs)
+  and need visual QA in both themes. The `--cp-*` / `--pd-*` modal tokens in
+  `ColorDialog`/`PaletteDialog` are intentional named component tokens.
 - Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
   plugin) still don't reach these dialogs, since they sit outside it. Fixing
   that means mounting them inside `.svg_editor` (check `position: fixed`
