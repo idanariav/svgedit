@@ -10,12 +10,15 @@ import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 // SvgCanvas instance with the members declared on the d.ts class and on
 // AttachedMembers (svgcanvas-members.d.ts).
 //
-// KNOWN_UNDECLARED (svgcanvas-dts-known-gap.json) is a ratchet: it is today's gap. A new public member that is
-// neither declared nor listed fails the test (declare it in the .d.ts), and a
-// listed member that has since been declared fails too (delete it from the
-// list), so the gap can only shrink.
-const KNOWN_UNDECLARED = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), 'tests/unit/svgcanvas-dts-known-gap.json'), 'utf8')
+// INTERNAL_MEMBERS (svgcanvas-internal-members.json) lists the canvas members
+// that are deliberately NOT part of the typed public API: internal state
+// accessors and module plumbing that core/* modules attach to the instance
+// (nothing in the editor or extensions calls them). A new public member must
+// either be declared in the .d.ts or, if it is internal, be added to that list;
+// a listed member that has since been declared fails too (delete it from the
+// list), so the two sets never overlap.
+const INTERNAL_MEMBERS = JSON.parse(
+  fs.readFileSync(path.resolve(process.cwd(), 'tests/unit/svgcanvas-internal-members.json'), 'utf8')
 )
 
 const declaredMembers = () => {
@@ -72,11 +75,11 @@ describe('svgcanvas.d.ts drift', () => {
     expect(declared.size).toBeGreaterThan(50)
   })
 
-  it('has no undeclared public members beyond the known gap', () => {
-    expect(missing.filter((n) => !KNOWN_UNDECLARED.includes(n))).toEqual([])
+  it('has no undeclared public members that are not marked internal', () => {
+    expect(missing.filter((n) => !INTERNAL_MEMBERS.includes(n))).toEqual([])
   })
 
-  it('has no stale entries in the known gap', () => {
-    expect(KNOWN_UNDECLARED.filter((n) => !missing.includes(n))).toEqual([])
+  it('has no internal-member entries that are declared or gone', () => {
+    expect(INTERNAL_MEMBERS.filter((n) => !missing.includes(n))).toEqual([])
   })
 })

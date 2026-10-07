@@ -79,10 +79,12 @@ add the file that exhibited it. Small per fixture.
 `npm run typecheck` (part of `pretest`) compiles `packages/svgcanvas/svgcanvas.d.ts`
 via `packages/svgcanvas/tsconfig.json`, which catches broken re-exports (it found a
 stale `sanitizeSvg` export). `tests/unit/svgcanvas-dts-drift.test.js` compares a live
-`SvgCanvas` instance with the d.ts class and fails on any new undeclared public
-member; today's gap (~215 members, none called from the editor/extensions) is the ratchet list
-`tests/unit/svgcanvas-dts-known-gap.json` — declare members in the d.ts and delete
-them from the list. Runtime-attached members now live in `packages/svgcanvas/svgcanvas-members.d.ts`
+`SvgCanvas` instance with the d.ts class and fails on any public member that is
+neither declared nor listed in `tests/unit/svgcanvas-internal-members.json`.
+That list (~217 names: internal state accessors and module plumbing nothing in
+the editor or extensions calls) is the explicit "internal, deliberately untyped"
+registry; promote a member to the public API by declaring it in the d.ts and
+deleting it from the list. Runtime-attached members now live in `packages/svgcanvas/svgcanvas-members.d.ts`
 (`AttachedMembers`): `svgcanvas.d.ts` merges it into the class, and `svgcanvas.js`
 extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
