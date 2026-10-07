@@ -90,18 +90,20 @@ of real Milani-style drawings (frames, taper, corner radius, shadows,
 text-on-path): load → save → load should stop changing after one pass. Today
 round-trip assertions exist only per feature. Medium.
 
-## No type checking; `svgcanvas.d.ts` has drifted; no explicit host API
+## No type checking; `svgcanvas.d.ts` is hand-written; no explicit host API
 
 `tsconfig.json` exists but no script runs it, and it's set to
-`module: commonjs`. The hand-written `packages/svgcanvas/svgcanvas.d.ts`
-(last touched 2026-07-10) is missing `setAllLayersMode`, `zoomAtPoint`,
-`getDebugSnapshot`, `setDebugEventSink`, `offsetPath`, `shapeBuilder`, and
-more. The plugin types `Editor` as `unknown` and reaches into internals
-(`svgCanvas`, `configObj`, `$svgEditor`, `svgCanvas.modeEvent`). Fix:
-define an explicit host API on `Editor`, enable `checkJs` for that surface
-first, generate `.d.ts` from the JSDoc
-(`tsc --declaration --emitDeclarationOnly`), and ship it in `dist/`.
-Medium.
+`module: commonjs`. `packages/svgcanvas/svgcanvas.d.ts` is still hand-written:
+the members known to be missing (`setAllLayersMode`, `zoomAtPoint`,
+`insertSvgFragment`, `offsetPath`, `shapeBuilder`, `setDebugEventSink`,
+`getDebugSnapshot`, `runExtensions`, …) were added and a dead re-export of a
+non-existent `core/utilities.js` removed, but nothing stops it drifting again,
+and it still lacks `setLogSink`-style newer APIs and most of the canvas surface.
+The plugin types `Editor` as `unknown`-ish and reaches into internals
+(`svgCanvas`, `configObj`, `$svgEditor`, `svgCanvas.modeEvent`). Fix: define an
+explicit host API on `Editor`, enable `checkJs` for that surface first, generate
+`.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), and ship it
+in `dist/`. Medium.
 
 ## Extension hook payloads are still untyped
 

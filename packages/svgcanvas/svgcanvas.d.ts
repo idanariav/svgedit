@@ -213,6 +213,41 @@ export default class SvgCanvas {
   
   // Other utilities
   getPrivateMethods(): any
+
+  // Layers
+  /** Show/dim layers other than the current one (all-layers editing mode). */
+  setAllLayersMode(bAllLayers: boolean): void
+
+  // View
+  /** Zoom to `zoomlevel`, keeping the point under (clientX, clientY) fixed. */
+  zoomAtPoint(zoomlevel: number, clientX: number, clientY: number): void
+
+  // Content
+  /** Insert raw SVG child markup into the current layer/group as one undoable
+   *  step (selects it, fires `changed`). Returns the new elements, or null if
+   *  the markup couldn't be parsed. */
+  insertSvgFragment(xmlFragment: string): Element[] | null
+  /** Grow (delta > 0) or shrink (delta < 0) the selected shape's outline. */
+  offsetPath(delta: number): void
+  /** Interactive region-merge session over the given (or selected) elements. */
+  shapeBuilder: {
+    begin(elems?: Element[]): any
+    /** Index of the region under (x, y), or -1. */
+    hitTest(x: number, y: number): number
+    apply(indices: number[], mode?: 'merge' | string): Element[] | null
+    end(): void
+  }
+
+  // Extensions
+  getExtensions(): Record<string, any>
+  runExtensions(action: string, vars?: any, returnArray?: boolean): any
+
+  // Debugging
+  /** Forward discrete debug events `(event, detail)` to a host; null stops. */
+  setDebugEventSink(sink: ((event: string, detail?: object) => void) | null): void
+  logDebugEvent(event: string, detail?: object): void
+  /** Read-only snapshot of visibility state that can desync from the model. */
+  getDebugSnapshot(): object
 }
 
 // Export additional utilities
@@ -220,6 +255,5 @@ export * from './common/logger.js'
 export { NS } from './core/namespaces.js'
 export * from './core/math.js'
 export * from './core/units.js'
-export * from './core/utilities.js'
 export { sanitizeSvg } from './core/sanitize.js'
 export { default as dataStorage } from './core/dataStorage.js'
