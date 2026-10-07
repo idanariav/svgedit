@@ -270,7 +270,7 @@ se-command-search-dialog.theme-dark {
 
 .svg_editor {
   display: grid;
-  grid-template-rows: minmax(var(--top-toolbar-min-height), auto) 15px 1fr 40px;
+  grid-template-rows: minmax(var(--top-toolbar-min-height), auto) 15px 1fr 56px;
   grid-template-columns: 56px 15px 50px 1fr 15px;
   grid-template-areas:
     "main main   main top top"
@@ -313,7 +313,7 @@ se-command-search-dialog.theme-dark {
 
 /* class to open the right panel */
 .svg_editor.open {
-  grid-template-columns: 34px 15px 50px 1fr 280px;
+  grid-template-columns: 56px 15px 50px 1fr 280px;
 }
 
 #svgroot {
@@ -1103,9 +1103,16 @@ hr {
   width: 58px;
 }
 
-/* History group: push it (and everything after) to the right edge */
-#history_panel {
+/* Right-hand cluster (Undo/Redo + zoom): pushed to the right edge and pinned
+   there (sticky), so it neither moves when contextual trays appear nor scrolls
+   out of reach in narrow panes. */
+#top_end {
   margin-left: auto;
+  position: sticky;
+  right: 0;
+  padding-left: 6px;
+  background: var(--chrome-bg);
+  z-index: 1;
 }
 
 /* Title panel */
@@ -1126,6 +1133,7 @@ hr {
   background: var(--chrome-bg);
   border-top: 1px solid var(--chrome-border);
   height: 56px;
+  box-sizing: border-box;
   scrollbar-width: thin;
   /* Firefox */
 }
@@ -1157,6 +1165,16 @@ hr {
   align-items: center;
   padding: 10px 0;
   gap: 4px;
+}
+
+/* Keep the "Additional tools" button reachable when the pane is too short to
+   show every tool: pinned to the bottom of the scrolling column. */
+#tools_left > #tools_overflow {
+  position: sticky;
+  bottom: -10px;
+  margin-top: auto;
+  background: var(--chrome-bg);
+  z-index: 1;
 }
 
 #tools_left::-webkit-scrollbar {
@@ -1539,4 +1557,23 @@ ul li.current {
   background: var(--field-bg, #fff);
   border: 0;
   outline: 1px solid var(--accent, #2563eb);
+}
+
+/* ── Selection chrome follows the theme accent ────────────────────────
+   select.js hard-codes #22C (and a lime rotate grip) as presentation
+   attributes; CSS rules override those, so recolour from here instead. */
+#selectorParentGroup [id^="selectedBox"],
+#selectorParentGroup #groupSelectedBox,
+#selectorParentGroup #selectorGrip_rotateconnector {
+  stroke: var(--accent);
+}
+#selectorParentGroup [id^="selectorGrip_resize_"],
+#selectorParentGroup #selectorGrip_rotate {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+#selectorParentGroup #selectorRubberBand {
+  fill: var(--accent);
+  stroke: var(--accent);
 }

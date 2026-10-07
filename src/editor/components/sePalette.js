@@ -200,7 +200,7 @@ template.innerHTML = `
     height: 22px;
     border-radius: 5px;
     border: 1px solid rgba(0,0,0,0.12);
-    cursor: pointer;
+    border: 1px solid var(--swatch-inset, rgba(0,0,0,0.12));
     transition: transform 0.1s, box-shadow 0.1s, outline-color 0.12s;
     flex-shrink: 0;
     position: relative;

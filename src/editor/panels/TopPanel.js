@@ -1120,6 +1120,13 @@ class TopPanel {
     // initialises last) and delegate to the BottomPanel handlers.
     const bp = this.editor.bottomPanel
     $id('zoom').addEventListener('change', e => bp.changeZoom(e.detail.value))
+    // In narrow panes the bar scrolls horizontally; let the plain mouse wheel do it.
+    $id('tools_top').addEventListener('wheel', e => {
+      const bar = e.currentTarget
+      if (bar.scrollWidth <= bar.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+      bar.scrollLeft += e.deltaY
+      e.preventDefault()
+    }, { passive: false })
     $id('stroke_width').addEventListener('change', e => bp.changeStrokeWidth(e))
     $id('stroke_style').addEventListener('change', evt =>
       bp.handleStrokeAttr('stroke-dasharray', evt)

@@ -50,23 +50,33 @@ template.innerHTML = `
   }
   #spinner {
     display: flex;
-    flex-direction: column;
-    gap: 1px;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 2px;
   }
   #spinner > div {
-    height: 10px;
-    width: 10px;
+    height: 20px;
+    width: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 6px;
+    font-size: 15px;
+    line-height: 1;
     color: var(--muted, #6B7280);
     cursor: pointer;
     user-select: none;
-    border-radius: 2px;
+    border-radius: 5px;
   }
   #spinner > div:hover {
     color: var(--accent, #2962FF);
+    background: var(--icon-hover-bg, #EEF1F5);
+  }
+  #pct {
+    margin-left: -4px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted, #6B7280);
+    user-select: none;
   }
   #down {
     width: 18px;
@@ -120,10 +130,11 @@ template.innerHTML = `
   </style>
   <div id="tool-wrapper">
     <span id="icon"></span>
-    <input/>
     <div id="spinner">
-      <div id="arrow-up">▲</div>
-      <div id="arrow-down">▼</div>
+      <div id="arrow-up" title="Zoom in" aria-label="Zoom in">+</div>
+      <span id="pct">%</span>
+      <input/>
+      <div id="arrow-down" title="Zoom out" aria-label="Zoom out">−</div>
     </div>
     <div id="down">
       <span id="down-icon">▾</span>

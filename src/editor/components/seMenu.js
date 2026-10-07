@@ -23,6 +23,20 @@ template.innerHTML = `
     font-size: 13px;
     color: var(--fg, #1B1F24);
   }
+  /* Chevron: signals the logo is a menu trigger */
+  #popupToggle::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    margin: -3px 2px 0 0;
+    border-right: 1.5px solid var(--muted, #6B7280);
+    border-bottom: 1.5px solid var(--muted, #6B7280);
+    transform: rotate(45deg);
+  }
+  #popupToggle:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
+    border-radius: 7px;
+  }
   #menuPopup {
     margin: 0;
     padding: 6px;
@@ -42,6 +56,13 @@ template.innerHTML = `
     background: var(--icon-hover-bg, #EEF1F5) !important;
     border-radius: 7px !important;
   }
+  ::slotted([role="separator"]) {
+    height: 1px;
+    padding: 0 !important;
+    margin: 4px 6px !important;
+    background: var(--chrome-border, #E6E8EC);
+    pointer-events: none;
+  }
   ::slotted(*) {
     padding: 7px 10px !important;
     margin: 0 !important;
@@ -52,7 +73,7 @@ template.innerHTML = `
   }
   </style>
 
-  <button type="button" id="popupToggle" popovertarget="menuPopup" aria-haspopup="menu"></button>
+  <button type="button" id="popupToggle" popovertarget="menuPopup" aria-haspopup="menu" title="Menu"></button>
   <div id="menuPopup" popover role="menu">
     <slot></slot>
   </div>
