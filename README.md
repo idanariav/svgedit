@@ -2,10 +2,14 @@
 
 # SVGEdit
 
-[![npm](https://img.shields.io/npm/v/svgedit.svg)](https://www.npmjs.com/package/svgedit)
-[![Actions Status](https://github.com/SVG-Edit/svgedit/workflows/Node%20CI/badge.svg)](https://github.com/SVG-Edit/svgedit/actions)
-[![Known Vulnerabilities](https://snyk.io/test/github/SVG-Edit/svgedit/badge.svg)](https://snyk.io/test/github/SVG-Edit/svgedit)
-[![CodeQL](https://github.com/SVG-Edit/svgedit/actions/workflows/codeql.yml/badge.svg)](https://github.com/SVG-Edit/svgedit/actions/workflows/codeql.yml)
+[![Actions Status](https://github.com/idanariav/svgedit/actions/workflows/onpush.yml/badge.svg)](https://github.com/idanariav/svgedit/actions)
+[![CodeQL](https://github.com/idanariav/svgedit/actions/workflows/codeql.yml/badge.svg)](https://github.com/idanariav/svgedit/actions/workflows/codeql.yml)
+
+> **This is a fork** of [SVG-Edit/svgedit](https://github.com/SVG-Edit/svgedit) used as the editor
+> engine of [obsidian-svgedit-plugin](https://github.com/idanariav/obsidian-svgedit-plugin).
+> It is **not published to npm**: each tagged release (`vX.Y.Z-milani.N`) attaches the bundled
+> `Editor.js` as a GitHub release asset. See `docs/ReleaseInstructions.md`. The text and links
+> below come from upstream.
 
 
 
@@ -26,7 +30,7 @@ Please let us know by creating an issue or a discussion if you wish to contribut
 Thanks to **Netlify**, you can access the following builds from your favorite browser:
 
 - [Try SVGEdit V7 (master branch on github)](https://svgedit.netlify.app/index.html)
-- [Try SVGEdit V7 (latest published version on npm)](https://unpkg.com/svgedit@latest/dist/editor/index.html)
+- [Try SVGEdit V7 (upstream, latest published version on npm)](https://unpkg.com/svgedit@latest/dist/editor/index.html)
 
 ### Prior to V7:
 

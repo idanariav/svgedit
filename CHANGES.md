@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-milani.1
+- Fork identity: renamed `svgedit-milani`, private (not published to npm); releases are GitHub releases carrying `Editor.js`. Entries below this one are upstream's history.
+
 ## 7.4.1
 - Fix: parent transform iteration and undo/redo for grouped elements
 - Fix: gradient inheritance, clipPath translation, blur filters, layer operations

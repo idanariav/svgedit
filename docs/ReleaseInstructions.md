@@ -1,3 +1,23 @@
+# Creating a new release (this fork)
+
+This fork (`svgedit-milani`) is **not published to npm**. A release is a GitHub
+release whose asset is the self-contained editor bundle `Editor.js`;
+`obsidian-svgedit-plugin` downloads that asset (see its
+`scripts/fetch-svgedit-dist.mjs`).
+
+1. Land your changes; `npm run lint` and `npx vitest run` must pass.
+1. Bump `version` in `package.json` to `7.4.1-milani.N` (and the two matching
+   lines at the top of `package-lock.json`) and add a `CHANGES.md` entry.
+1. Commit, then tag and push: `git tag v7.4.1-milani.N && git push origin master v7.4.1-milani.N`.
+   `.github/workflows/release.yml` verifies the tag matches `package.json`,
+   builds, and attaches `dist/editor/Editor.js` to a new GitHub release.
+1. In the plugin repo, bump `SVGEDIT_RELEASE` in `scripts/fetch-svgedit-dist.mjs`
+   to the new tag and run `npm run sync-svgedit`.
+
+The upstream npm-based instructions below are kept for reference only.
+
+---
+
 # Creating a new svg-edit release
 
 ## Prepare

@@ -1,6 +1,7 @@
 {
-  "name": "svgedit",
-  "version": "7.4.1",
+  "name": "svgedit-milani",
+  "version": "7.4.1-milani.1",
+  "private": true,
   "description": "Powerful SVG-Editor for your browser ",
   "main": "dist/editor/Editor.js",
   "module": "dist/editor/Editor.js",
@@ -43,7 +44,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SVG-Edit/svgedit.git"
+    "url": "git+https://github.com/idanariav/svgedit.git"
   },
   "keywords": [
     "svg-editor",
@@ -63,9 +64,9 @@
   ],
   "license": "(MIT AND Apache-2.0 AND ISC AND LGPL-3.0-or-later AND X11)",
   "bugs": {
-    "url": "https://github.com/SVG-Edit/svgedit/issues"
+    "url": "https://github.com/idanariav/svgedit/issues"
   },
-  "homepage": "https://github.com/SVG-Edit/svgedit#readme",
+  "homepage": "https://github.com/idanariav/svgedit#readme",
   "browserslist": [
     "defaults",
     "not IE 11",

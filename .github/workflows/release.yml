@@ -1,0 +1,39 @@
+name: release
+
+# Publishes the editor bundle (dist/editor/Editor.js) as a GitHub release asset.
+# obsidian-svgedit-plugin downloads it from here; this fork is never published
+# to npm. Cut a release by bumping `version` in package.json (X.Y.Z-milani.N),
+# then pushing a matching tag `vX.Y.Z-milani.N`.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Tag must match package.json version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "v${VERSION}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json version v${VERSION}"
+            exit 1
+          fi
+      - run: |
+          npm ci
+          npm run build --workspace=packages/svgcanvas
+          npm run lint
+          npx vitest run
+          npm run build
+      - name: Create release with the bundle attached
+        run: gh release create "${GITHUB_REF_NAME}" dist/editor/Editor.js --title "${GITHUB_REF_NAME}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
