@@ -61,7 +61,7 @@ module-level, and `init()` overwrites them per canvas. With two drawings
 open, unit conversion (`convertToNum` for `%`, `getRoundDigits`,
 `getElement(id)`) uses the most recently constructed canvas, including one
 already destroyed after its pane closed. Smaller shared state of the same
-kind: `touch.js` `pinching`, `draw.js` `randIds`. Fix: make them
+kind: `draw.js` `randIds`. (`touch.js` pinch state is already per-canvas.) Fix: make them
 per-instance like the other core modules, and add a unit test that
 constructs two canvases, destroys one, and converts units on the other.
 Small.
