@@ -115,8 +115,8 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | File | Purpose |
 |------|---------|
 | `imagePropertiesDialog.js` | Modal for image element properties |
-| `editorPreferencesDialog.js` | Editor preferences modal (units, rulers; grid settings moved to the grid-settings popover). No language picker — this fork is English-only (see `locale.js`) |
-| `exportDialog.js` | Export dialog (PNG/JPG/BMP/WebP options) |
+| `editorPreferencesDialog.js` | Editor preferences modal (units, rulers, theme; grid settings moved to the grid-settings popover). No language picker — this fork is English-only (see `locale.js`) |
+| `exportDialog.js` | Export dialog (region, format, scale 1–4×, quality for JPEG/WebP, output-size preview) |
 | `imageImportDialog.js` | **Insert image** dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
 | `insertImage.js` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a vault drawing as real, editable elements (individual directly-selectable shapes in the layer, defs → canvas `<defs>`, undoable) for the host's "Unlocked" import mode. `fitTo` (a user-space rect) overlays the import on that rect (scale+translate on the wrapping `<g>`) instead of centering — used by the image-trace feature |
 | `traceImage.js` | `traceImageToSvg(imageElem, { preset, numberofcolors })` — vectorizes a selected `<image>` (PNG/raster) into editable `<path>` elements via `imagetracerjs`, positioned over the original (non-destructive). Reads pixels through an offscreen canvas (CORS-guarded via `core/load-image.js`'s shared `loadImage()`), runs the tracer, then calls `insertSvgElements(..., { asPaths: true, fitTo })`. Backs the **Convert to editable SVG** button |

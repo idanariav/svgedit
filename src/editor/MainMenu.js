@@ -1,5 +1,6 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import { applyUiMode, isTabletMode } from './uiMode.js'
+import { applyTheme } from './themeUtil.js'
 
 const { $click } = SvgCanvas
 
@@ -48,8 +49,15 @@ class MainMenu {
   async savePreferences (e) {
     const {
       showrulers,
-      baseunit
+      baseunit,
+      theme
     } = e.detail
+
+    if (theme && theme !== (this.editor.configObj.pref('theme') || 'light')) {
+      this.editor.configObj.pref('theme', theme)
+      applyTheme(theme, this.editor.$svgEditor)
+      this.editor.$svgEditor.dispatchEvent(new CustomEvent('svgedit-themechange', { detail: { theme } }))
+    }
 
     // set ruler / unit settings (grid settings live in the grid-settings popover)
     this.editor.configObj.curConfig.showRulers = showrulers
@@ -78,6 +86,7 @@ class MainMenu {
     const quality = e?.detail?.quality ? e?.detail?.quality / 100 : 1
     const includeBg = e?.detail?.includeBg ?? false
     const crop = this.resolveFrameCrop(e?.detail?.frameId)
+    const scale = Number(e?.detail?.scale) || 1
     // Open placeholder window (prevents popup)
 
     /**
@@ -99,7 +108,7 @@ class MainMenu {
       imgType,
       quality,
       this.editor.exportWindowName,
-      { includeBg, bgcolor: bkgdColor, crop }
+      { includeBg, bgcolor: bkgdColor, crop, ...(scale !== 1 && { scale }) }
     )
   }
 
@@ -138,6 +147,7 @@ class MainMenu {
       return
     }
     this.editor.configObj.preferences = true
+    $id('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     const $editDialog = $id('se-edit-prefs')
     $editDialog.setAttribute('dialog', 'open')
   }

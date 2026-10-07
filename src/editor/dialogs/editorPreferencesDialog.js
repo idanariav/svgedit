@@ -21,6 +21,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$cancelBtn = this._shadowRoot.querySelector('#tool_prefs_cancel')
     this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
+    this.$theme = this._shadowRoot.querySelector('#theme_select')
   }
 
   /**
@@ -32,7 +33,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('common-ok', i18next.t('common.ok'))
     this.setAttribute('common-cancel', i18next.t('common.cancel'))
     this.setAttribute('config-editor_prefs', i18next.t('config.editor_prefs'))
-    this.setAttribute('config-units_and_rulers', i18next.t('config.units_and_rulers'))
+    this.setAttribute('config-theme', i18next.t('config.theme'))
     this.setAttribute('config-show_rulers', i18next.t('config.show_rulers'))
     this.setAttribute('config-base_unit', i18next.t('config.base_unit'))
   }
@@ -43,7 +44,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'showrulers', 'baseunit', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-units_and_rulers', 'config-show_rulers', 'config-base_unit']
+    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit']
   }
 
   /**
@@ -87,8 +88,11 @@ export class SeEditPrefsDialog extends HTMLElement {
         node = this._shadowRoot.querySelector('#svginfo_editor_prefs')
         node.textContent = newValue
         break
-      case 'config-units_and_rulers':
-        node = this._shadowRoot.querySelector('#svginfo_units_rulers')
+      case 'theme':
+        this.$theme.value = newValue
+        break
+      case 'config-theme':
+        node = this._shadowRoot.querySelector('#svginfo_theme')
         node.textContent = newValue
         break
       case 'config-show_rulers':
@@ -171,7 +175,8 @@ export class SeEditPrefsDialog extends HTMLElement {
         detail: {
           dialog: 'close',
           showrulers: this.$showRulers.checked,
-          baseunit: this.$baseUnit.value
+          baseunit: this.$baseUnit.value,
+          theme: this.$theme.value
         }
       })
       this.dispatchEvent(closeEvent)

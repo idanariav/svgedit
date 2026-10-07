@@ -1,46 +1,80 @@
 <style>
     /* Colours, buttons and fields come from dialogSkin.css.js (token-driven). */
     #dialog_container {
-        text-align: center;
-        max-width: 400px;
-        width: max-content;
-        min-width: 280px;
+        width: 340px;
+        max-width: calc(100vw - 32px);
     }
 
-    #dialog_content p,
-    #dialog_content select,
-    #dialog_content label {
-        margin: 10px;
+    #export_title {
+        margin: 0 0 14px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .exp-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 10px;
+    }
+
+    .exp-row > .exp-label {
+        flex: 0 0 96px;
+        color: var(--muted, #6B7280);
+    }
+
+    .exp-row > se-select,
+    .exp-row > se-spin-input {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .exp-row[hidden] { display: none; }
+
+    #export_summary {
+        margin: 4px 0 0;
+        color: var(--muted, #6B7280);
+        font-size: 12px;
     }
 
     #dialog_buttons {
         display: flex;
-        justify-content: center;
+        justify-content: flex-end;
         gap: 8px;
-        margin-top: 12px;
-    }
-
-    .se-select {
-        text-align: center;
+        margin-top: 16px;
     }
 </style>
 <dialog id="export_box" aria-label="export svg">
     <div class="overlay"></div>
     <div id="dialog_container">
+        <h2 id="export_title">Export image</h2>
         <div id="dialog_content">
-            <p id="export_region_label">Region</p>
-            <se-select id="se-export-region" label=""></se-select>
-            <p id="export_select"></p>
-            <se-select id="se-storage-pref" label="" options="PNG,JPEG,BMP,WEBP" values="PNG::JPEG::BMP::WEBP"></se-select>
-            <se-spin-input id="se-quality" label="ui.quality" size="3" min="0" max="100" value="100" step="5" />
-            <label id="se-include-bg-label" style="display:flex;align-items:center;gap:6px;margin:10px;">
+            <div class="exp-row">
+                <span class="exp-label" id="export_region_label">Region</span>
+                <se-select id="se-export-region" label=""></se-select>
+            </div>
+            <div class="exp-row">
+                <span class="exp-label" id="export_select">Format</span>
+                <se-select id="se-storage-pref" label="" options="PNG,JPEG,BMP,WEBP" values="PNG::JPEG::BMP::WEBP"></se-select>
+            </div>
+            <div class="exp-row">
+                <span class="exp-label" id="export_scale_label">Scale</span>
+                <se-select id="se-scale" label="" options="1×,2×,3×,4×" values="1::2::3::4"></se-select>
+            </div>
+            <div class="exp-row" id="se-quality-row" hidden>
+                <span class="exp-label" id="export_quality_label">Quality</span>
+                <se-spin-input id="se-quality" label="" size="3" min="0" max="100" value="100" step="5" />
+            </div>
+            <label id="se-include-bg-label" class="exp-row" style="justify-content:flex-start;">
               <input type="checkbox" id="se-include-bg" />
               <span id="export_include_bg_label">Include background color</span>
             </label>
+            <p id="export_summary"></p>
         </div>
         <div id="dialog_buttons">
-            <button id="export_ok" class="dlg-primary"></button>
             <button id="export_cancel"></button>
+            <button id="export_ok" class="dlg-primary"></button>
         </div>
     </div>
 </dialog>

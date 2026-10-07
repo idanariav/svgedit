@@ -52,6 +52,8 @@ export default {
           <se-button id="tool_theme_toggle" title="${titleFor(theme)}" src="${iconFor(theme)}"></se-button>`
         $id('theme_panel').append(buttonTemplate.content.cloneNode(true))
         $click($id('tool_theme_toggle'), clickThemeToggle)
+        // The Preferences dialog can change the theme too; keep the icon in sync.
+        svgEditor.$svgEditor.addEventListener('svgedit-themechange', updateButton)
       }
     }
   }

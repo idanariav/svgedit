@@ -108,6 +108,12 @@ describe('MainMenu', () => {
       { includeBg: false, bgcolor: editor.configObj.curPrefs.bkgd_color, crop: null }
     )
     expect(editor.exportWindowCt).toBe(1)
+
+    await menu.clickExport({ detail: { trigger: 'ok', imgType: 'PNG', quality: 100, scale: 2 } })
+    expect(editor.svgCanvas.rasterExport).toHaveBeenLastCalledWith(
+      'PNG', 1, editor.exportWindowName,
+      { includeBg: false, bgcolor: editor.configObj.curPrefs.bkgd_color, crop: null, scale: 2 }
+    )
   })
 
   it('creates menu entries and wires click handlers in init', () => {

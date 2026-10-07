@@ -4,130 +4,66 @@
     }
 
     /* Colours, buttons and fields come from dialogSkin.css.js (token-driven). */
-    #svg_prefs #svg_prefs_container {
+    #svg_prefs_container {
+        width: 340px;
+        max-width: calc(100vw - 32px);
         z-index: 20001;
-        display: flow-root; /* contain the floated fieldsets */
     }
 
-    .toolbar_button button .svg_icon {
-        margin: 0 3px -3px 0 !important;
-        padding: 0;
-        border: none;
-        width: 16px;
-        height: 16px;
+    #svginfo_editor_prefs {
+        margin: 0 0 14px;
+        font-size: 15px;
+        font-weight: 600;
     }
 
-    .color_block {
-        top: 0;
-        left: 0;
+    .pref-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 12px;
     }
 
-    .color_block svg {
-        display: block;
-    }
-
-    #bg_blocks {
-        overflow: auto;
-        margin-left: 30px;
-    }
-
-    #bg_blocks .color_block {
-        position: static;
-    }
-
-    #svginfo_bg_note {
-        font-size: .9em;
-        font-style: italic;
-        color: var(--muted, #6B7280);
-    }
+    .pref-row > span { flex: 1 1 auto; }
+    .pref-row > select { flex: 0 0 150px; }
 
     #tool_prefs_back {
         display: flex;
+        justify-content: flex-end;
         gap: 8px;
-        margin-bottom: 10px;
-        overflow: auto;
-    }
-
-    #svg_prefs #svg_docprops_prefs {
-        float: left;
-        width: 221px;
-        margin: 5px .7em;
-        overflow: hidden;
-    }
-
-    #svg_prefs_container fieldset+fieldset {
-        float: right;
-    }
-
-    #svg_prefs legend {
-        max-width: 195px;
-    }
-
-    #svg_prefs_container>fieldset>legend {
-        font-weight: bold;
-        font-size: 1.1em;
-    }
-
-    #svg_prefs fieldset {
-        padding: 5px;
-        margin: 5px;
-    }
-
-    #svg_prefs_container label {
-        display: block;
-        margin: .5em;
-    }
-
-    #svg_prefs_container div.color_block {
-        float: left;
-        margin: 2px;
-        padding: 20px;
-        border: 1px solid var(--field-border, #6f6f6f);
-    }
-
-    #change_background div.cur_background {
-        border: 2px solid var(--accent, blue);
-        padding: 19px;
-    }
-
-    #canvas_bg_url {
-        display: block;
-        width: 96%;
-    }
-
-    #svg_prefs button {
-        margin-top: 0;
-        margin-bottom: 5px;
+        margin-top: 16px;
     }
 </style>
 <dialog id="svg_prefs" aria-label="Editor Preferences">
     <div id="svg_prefs_container">
+        <h2 id="svginfo_editor_prefs"></h2>
+        <label class="pref-row">
+            <span id="svginfo_rulers_onoff"></span>
+            <input id="show_rulers" type="checkbox" value="show_rulers" checked="checked" />
+        </label>
+        <label class="pref-row">
+            <span id="svginfo_unit"></span>
+            <select id="base_unit">
+                <option value="px">Pixels</option>
+                <option value="cm">Centimeters</option>
+                <option value="mm">Millimeters</option>
+                <option value="in">Inches</option>
+                <option value="pt">Points</option>
+                <option value="pc">Picas</option>
+                <option value="em">Ems</option>
+                <option value="ex">Exs</option>
+            </select>
+        </label>
+        <label class="pref-row">
+            <span id="svginfo_theme"></span>
+            <select id="theme_select">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </label>
         <div id="tool_prefs_back" class="toolbar_button">
-            <button id="tool_prefs_save" class="dlg-primary"></button>
             <button id="tool_prefs_cancel"></button>
+            <button id="tool_prefs_save" class="dlg-primary"></button>
         </div>
-        <fieldset>
-            <legend id="svginfo_editor_prefs"></legend>
-            <fieldset id="units_rulers">
-                <legend id="svginfo_units_rulers"></legend>
-                <label>
-                    <span id="svginfo_rulers_onoff"></span>
-                    <input id="show_rulers" type="checkbox" value="show_rulers" checked="checked" />
-                </label>
-                <label>
-                    <span id="svginfo_unit"></span>
-                    <select id="base_unit">
-                        <option value="px">Pixels</option>
-                        <option value="cm">Centimeters</option>
-                        <option value="mm">Millimeters</option>
-                        <option value="in">Inches</option>
-                        <option value="pt">Points</option>
-                        <option value="pc">Picas</option>
-                        <option value="em">Ems</option>
-                        <option value="ex">Exs</option>
-                    </select>
-                </label>
-            </fieldset>
-        </fieldset>
     </div>
 </dialog>

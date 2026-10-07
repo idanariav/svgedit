@@ -34,3 +34,18 @@ describe('se-edit-prefs-dialog theme', () => {
     expect(dialog.classList.contains('theme-dark')).toBe(false)
   })
 })
+
+describe('se-edit-prefs-dialog theme preference', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('reflects the theme attribute and reports the chosen theme on save', () => {
+    const dialog = mount(false)
+    dialog.setAttribute('theme', 'dark')
+    expect(dialog.$theme.value).toBe('dark')
+    let detail
+    dialog.addEventListener('change', (e) => { detail = e.detail })
+    dialog.$theme.value = 'light'
+    dialog.$saveBtn.click()
+    expect(detail.theme).toBe('light')
+  })
+})

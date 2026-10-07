@@ -1106,7 +1106,7 @@ export const init = canvas => {
  * @param {string} [imgType='PNG'] - The image type to generate.
  * @param {number} [quality=1.0] - The image quality (for JPEG).
  * @param {string} [windowName='Exported Image'] - The window name.
- * @param {Object} [opts={}] - Additional options.
+ * @param {Object} [opts={}] - Additional options (`includeBg`, `bgcolor`, `crop`, `scale` — pixel multiplier, default 1).
  * @returns {Promise<Object>} Resolves to an object containing export data.
  */
   const rasterExport = (
@@ -1187,16 +1187,19 @@ export const init = canvas => {
             return
           }
 
-          canvas.width = width
-          canvas.height = height
+          const scale = Number(opts.scale) > 0 ? Number(opts.scale) : 1
+          const outW = Math.max(1, Math.round(width * scale))
+          const outH = Math.max(1, Math.round(height * scale))
+          canvas.width = outW
+          canvas.height = outH
 
           const img = new Image()
           img.onload = () => {
             if (opts.includeBg && opts.bgcolor && opts.bgcolor !== 'chessboard' && opts.bgcolor !== 'gradient') {
               ctx.fillStyle = opts.bgcolor
-              ctx.fillRect(0, 0, width, height)
+              ctx.fillRect(0, 0, outW, outH)
             }
-            ctx.drawImage(img, 0, 0, width, height)
+            ctx.drawImage(img, 0, 0, outW, outH)
             URL.revokeObjectURL(url)
 
             const datauri = canvas.toDataURL(mimeType, quality)

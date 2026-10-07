@@ -224,16 +224,13 @@ Medium, mostly icon and CSS work.
 
 Small.
 
-## Preferences, Export and colour-picker dialogs look and work like older UI
+## Colour picker is a modal, not a live popover
 
-- Editor Preferences has OK/Cancel at the top, a fieldset legend, the checkbox
-  after its label, a native `<select>`, and only two settings. Move it to
-  `dialogSkin` with the actions at the bottom right.
-- Export has no title and centred labels. It shows "Quality" for PNG, although
-  only JPEG/WebP use it. It has no scale option and no size preview.
-- The colour picker is a modal with Cancel/Apply, so trying a colour takes
-  three clicks, and the drawing doesn't change until you apply. Figma, Affinity
-  and Inkscape instead use a popover that updates the drawing live, where
-  Escape reverts.
-
-Medium.
+Preferences and Export were reskinned (title, aligned rows, actions bottom-right;
+Export gained Scale 1–4× via `rasterExport`'s `opts.scale`, Quality only for
+JPEG/WEBP, and an output-size preview; Preferences gained a Theme select, which
+is also the way to switch theme when the top-bar toggle is hidden at narrow
+widths). Remaining: the colour picker is still a modal with Cancel/Apply, so
+trying a colour takes three clicks and the drawing doesn't change until you
+apply. Figma, Affinity and Inkscape use a popover that updates the drawing live,
+where Escape reverts. Medium.
