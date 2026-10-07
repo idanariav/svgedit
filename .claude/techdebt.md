@@ -90,16 +90,18 @@ explicit host API on `Editor`, enable `checkJs` for that surface first, generate
 `.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), and ship it
 in `dist/`. Medium.
 
-## Oversized modules
+## Oversized modules (remaining)
 
-Files over ~1,500 lines: `Editor.js` (1,874), `seShapeLibrary.js` (1,870),
-`selected-elem.js` (1,818), `svg-exec.js` (1,690), `elem-get-set.js`
-(1,623), `draw.js` (1,576: the `Drawing` class plus the shape-creation
-functions), `TopPanel.js` (1,529), and `EditorStartup.js` (1,483). Split
-them where `architecture.md` already describes the boundaries, e.g.
-EditorStartup's paste/clipboard handling into its own module, and
-seShapeLibrary into store/view/menu. Do this only after the lint re-indent
-entry above lands. Large; do it opportunistically, one file at a time.
+All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
+seShapeLibrary.js 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
+1,172, TopPanel.js 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
+moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
+`seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`, `core/legacy-repairs.js`,
+`core/layer-ops.js`, `core/text-attrs.js`, `core/group-ops.js` and
+`panels/topPanelContext.js`. What's left is still big in one place each:
+`EditorStartup.init()` (~770 lines of listener wiring), `SeShapeLibrary` (one
+~1,300-line class: store/view/menu not separated), `Drawing` in `draw.js`
+(~880 lines), and `TopPanel.init()`. Split those only with a concrete reason.
 
 ## Remaining logging gaps
 
