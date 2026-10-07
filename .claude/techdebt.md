@@ -102,14 +102,6 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 ~1,300-line class: store/view/menu not separated), `Drawing` in `draw.js`
 (~880 lines), and `TopPanel.init()`. Split those only with a concrete reason.
 
-## Remaining logging gaps
-
-`console.error`/`console.warn` now go through `common/logger.js` everywhere
-(a unit test enforces it) and reach a host via `Editor.setLogSink(sink, level)`.
-Not done: the `catch` blocks that only hold a comment (`bbox-utils.js`,
-`coords.js`, `json.js`, `ColorDialog.js`) are intentional fallbacks and stay
-silent; `console.log/info/debug` calls are untouched. Small.
-
 ## Hard-coded colours in component/dialog styles
 
 The six dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
