@@ -553,6 +553,26 @@ export const init = canvas => {
   } // end svgToString()
 
   /**
+   * Undo the document swap done by setSvgString() after it failed part-way:
+   * drop the half-processed content and put the old one back.
+   * @param {{content: Element, nextSibling: ?Node, drawing: any, contentW: number, contentH: number}} previous
+   * @returns {void}
+   */
+  const restorePreviousDocument = (previous) => {
+    try {
+      const failed = svgCanvas.getSvgContent()
+      if (failed !== previous.content) failed.remove()
+      svgCanvas.setSvgContent(previous.content)
+      svgCanvas.getSvgRoot().insertBefore(previous.content, previous.nextSibling)
+      svgCanvas.current_drawing_ = previous.drawing
+      svgCanvas.contentW = previous.contentW
+      svgCanvas.contentH = previous.contentH
+    } catch (restoreErr) {
+      error('Could not restore the previous drawing after a failed load', restoreErr, 'svg-exec')
+    }
+  }
+
+  /**
  * This function sets the current drawing as the input SVG XML.
  * @function module:svgcanvas.SvgCanvas#setSvgString
  * @param {string} xmlString - The SVG as XML text.
@@ -568,6 +588,10 @@ export const init = canvas => {
   const setSvgString = (xmlString, preventUndo) => {
     const curConfig = svgCanvas.getCurConfig()
     const dataStorage = svgCanvas.getDataStorage()
+    // The old document is swapped out before the repair/fixup passes below
+    // run, so keep what's needed to put it back if any of them throws —
+    // otherwise a failed load would leave a half-processed drawing on the canvas.
+    let previous = null
     try {
     // convert string into XML document
       const newDoc = text2xml(xmlString)
@@ -587,6 +611,13 @@ export const init = canvas => {
 
       svgCanvas.getSvgContent().remove()
       const oldzoom = svgCanvas.getSvgContent()
+      previous = {
+        content: oldzoom,
+        nextSibling,
+        drawing: svgCanvas.current_drawing_,
+        contentW: svgCanvas.contentW,
+        contentH: svgCanvas.contentH
+      }
       batchCmd.addSubCommand(
         new RemoveElementCommand(oldzoom, nextSibling, svgCanvas.getSvgRoot())
       )
@@ -816,6 +847,7 @@ export const init = canvas => {
       svgCanvas.call('sourcechanged', [svgCanvas.getSvgContent()])
     } catch (e) {
       error('Error setting SVG string', e, 'svg-exec')
+      if (previous) restorePreviousDocument(previous)
       return false
     }
 

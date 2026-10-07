@@ -80,18 +80,15 @@ context in extensions. Migrate gradually, with a `check-dom-scope.mjs`-style
 guard that rejects new bare `svgEditor.` references. Large: touches ~74
 files, so do it incrementally.
 
-## `setSvgString` is not transactional
+## `setSvgString` has no round-trip corpus test
 
-`svg-exec.js` removes the old `#svgcontent` and swaps in the new document
-(~line 588) *before* running the repair passes, `identifyLayers`, and
-the id/size fixups. An exception after that point returns `false` but
-leaves a half-processed document on the canvas. Not observed in practice.
-Truncated files are rejected safely: Chromium's DOMParser returns an
-`<html>` root, which fails the namespace check. Fix: fully process the
-parsed document off-canvas, then swap it in. Pair this with a round-trip
-test over a corpus of real Milani-style drawings (frames, taper, corner
-radius, shadows, text-on-path): load → save → load should stop changing
-after one pass. Today round-trip assertions exist only per feature. Medium.
+A failure after the document swap now rolls back to the previous drawing
+(`restorePreviousDocument()` in `svg-exec.js`), rather than processing the
+parsed document fully off-canvas — that would mean reworking every pass that
+reads `svgCanvas.getSvgContent()`. Still open: a round-trip test over a corpus
+of real Milani-style drawings (frames, taper, corner radius, shadows,
+text-on-path): load → save → load should stop changing after one pass. Today
+round-trip assertions exist only per feature. Medium.
 
 ## No type checking; `svgcanvas.d.ts` has drifted; no explicit host API
 
