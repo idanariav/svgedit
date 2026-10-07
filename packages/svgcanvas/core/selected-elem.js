@@ -48,7 +48,7 @@ const {
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
-/**
+  /**
  * Ascending document-order comparator (a before b in the DOM sorts first).
  * getSelectedElements() does not guarantee this order (it's kept sorted for
  * grip-drawing purposes, topmost-first), so callers that care about relative
@@ -57,18 +57,18 @@ export const init = canvas => {
  * @param {Element} b
  * @returns {number}
  */
-const _byDocumentOrder = (a, b) => {
-  const position = a.compareDocumentPosition(b)
-  if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
-    return -1
+  const _byDocumentOrder = (a, b) => {
+    const position = a.compareDocumentPosition(b)
+    if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+      return -1
+    }
+    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+      return 1
+    }
+    return 0
   }
-  if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-    return 1
-  }
-  return 0
-}
 
-/**
+  /**
  * Groups selected elements by their parent node, with each group sorted in
  * ascending document order (bottom-most stacking first). Elements normally
  * share one parent (a layer or a group being edited), but grouping keeps
@@ -76,19 +76,19 @@ const _byDocumentOrder = (a, b) => {
  * @param {Element[]} selected
  * @returns {Map<Element, Element[]>}
  */
-const _groupSelectedByParent = selected => {
-  const byParent = new Map()
-  selected.forEach(el => {
-    if (!byParent.has(el.parentNode)) {
-      byParent.set(el.parentNode, [])
-    }
-    byParent.get(el.parentNode).push(el)
-  })
-  byParent.forEach(els => els.sort(_byDocumentOrder))
-  return byParent
-}
+  const _groupSelectedByParent = selected => {
+    const byParent = new Map()
+    selected.forEach(el => {
+      if (!byParent.has(el.parentNode)) {
+        byParent.set(el.parentNode, [])
+      }
+      byParent.get(el.parentNode).push(el)
+    })
+    byParent.forEach(els => els.sort(_byDocumentOrder))
+    return byParent
+  }
 
-/**
+  /**
  * Repositions all selected elements to the bottom in the DOM to appear on
  * top of other elements, preserving their relative stacking order (works
  * for a single element, a multi-selection, or a selected group).
@@ -96,35 +96,35 @@ const _groupSelectedByParent = selected => {
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const moveToTopSelectedElem = () => {
-  const selected = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!selected.length) {
-    return
-  }
-  const batchCmd = new BatchCommand('Move to Top')
-  const changedEls = []
-  _groupSelectedByParent(selected).forEach(els => {
-    els.forEach(t => {
-      const oldParent = t.parentNode
-      const oldNextSibling = t.nextSibling
-      oldParent.append(t)
-      // If the element actually moved position, add the command and fire the changed
-      // event handler.
-      if (oldNextSibling !== t.nextSibling) {
-        batchCmd.addSubCommand(
-          new MoveElementCommand(t, oldNextSibling, oldParent, 'top')
-        )
-        changedEls.push(t)
-      }
+  const moveToTopSelectedElem = () => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!selected.length) {
+      return
+    }
+    const batchCmd = new BatchCommand('Move to Top')
+    const changedEls = []
+    _groupSelectedByParent(selected).forEach(els => {
+      els.forEach(t => {
+        const oldParent = t.parentNode
+        const oldNextSibling = t.nextSibling
+        oldParent.append(t)
+        // If the element actually moved position, add the command and fire the changed
+        // event handler.
+        if (oldNextSibling !== t.nextSibling) {
+          batchCmd.addSubCommand(
+            new MoveElementCommand(t, oldNextSibling, oldParent, 'top')
+          )
+          changedEls.push(t)
+        }
+      })
     })
-  })
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', changedEls)
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', changedEls)
+    }
   }
-}
 
-/**
+  /**
  * Repositions all selected elements to the top in the DOM to appear under
  * other elements, preserving their relative stacking order (works for a
  * single element, a multi-selection, or a selected group).
@@ -132,103 +132,103 @@ const moveToTopSelectedElem = () => {
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const moveToBottomSelectedElem = () => {
-  const selected = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!selected.length) {
-    return
-  }
-  const batchCmd = new BatchCommand('Move to Bottom')
-  const changedEls = []
-  _groupSelectedByParent(selected).forEach((els, parent) => {
-    let firstChild = parent.firstElementChild
-    if (firstChild?.tagName === 'title') {
-      firstChild = firstChild.nextElementSibling
-    }
-    // This can probably be removed, as the defs should not ever apppear
-    // inside a layer group
-    if (firstChild?.tagName === 'defs') {
-      firstChild = firstChild.nextElementSibling
-    }
-    if (!firstChild) {
+  const moveToBottomSelectedElem = () => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!selected.length) {
       return
     }
-    // Insert in reverse document order, each one right before the previous
-    // insertion point, so the group ends up at the bottom with its
-    // original relative order preserved.
-    let ref = firstChild
-    ;[...els].reverse().forEach(t => {
-      const oldParent = t.parentNode
-      const oldNextSibling = t.nextSibling
-      parent.insertBefore(t, ref)
-      ref = t
-      // If the element actually moved position, add the command and fire the changed
-      // event handler.
-      if (oldNextSibling !== t.nextSibling) {
-        batchCmd.addSubCommand(
-          new MoveElementCommand(t, oldNextSibling, oldParent, 'bottom')
-        )
-        changedEls.push(t)
+    const batchCmd = new BatchCommand('Move to Bottom')
+    const changedEls = []
+    _groupSelectedByParent(selected).forEach((els, parent) => {
+      let firstChild = parent.firstElementChild
+      if (firstChild?.tagName === 'title') {
+        firstChild = firstChild.nextElementSibling
       }
+      // This can probably be removed, as the defs should not ever apppear
+      // inside a layer group
+      if (firstChild?.tagName === 'defs') {
+        firstChild = firstChild.nextElementSibling
+      }
+      if (!firstChild) {
+        return
+      }
+      // Insert in reverse document order, each one right before the previous
+      // insertion point, so the group ends up at the bottom with its
+      // original relative order preserved.
+      let ref = firstChild
+    ;[...els].reverse().forEach(t => {
+        const oldParent = t.parentNode
+        const oldNextSibling = t.nextSibling
+        parent.insertBefore(t, ref)
+        ref = t
+        // If the element actually moved position, add the command and fire the changed
+        // event handler.
+        if (oldNextSibling !== t.nextSibling) {
+          batchCmd.addSubCommand(
+            new MoveElementCommand(t, oldNextSibling, oldParent, 'bottom')
+          )
+          changedEls.push(t)
+        }
+      })
     })
-  })
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', changedEls)
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', changedEls)
+    }
   }
-}
 
-/**
+  /**
  * Moves one selected element up or down the stack by a single step, based
  * on the visibly intersecting elements.
  * @param {Element} selected
  * @param {"Up"|"Down"} dir - String that's either 'Up' or 'Down'
  * @returns {MoveElementCommand|void}
  */
-const _moveUpDownOne = (selected, dir) => {
-  svgCanvas.setCurBBoxes([])
-  let closest
-  let foundCur
-  // jQuery sorts this list
-  const list = svgCanvas.getIntersectionList(
-    svgCanvas.getStrokedBBoxDefaultVisible([selected])
-  )
-  if (dir === 'Down') {
-    list.reverse()
-  }
+  const _moveUpDownOne = (selected, dir) => {
+    svgCanvas.setCurBBoxes([])
+    let closest
+    let foundCur
+    // jQuery sorts this list
+    const list = svgCanvas.getIntersectionList(
+      svgCanvas.getStrokedBBoxDefaultVisible([selected])
+    )
+    if (dir === 'Down') {
+      list.reverse()
+    }
 
-  Array.prototype.forEach.call(list, el => {
-    if (!foundCur) {
-      if (el === selected) {
-        foundCur = true
+    Array.prototype.forEach.call(list, el => {
+      if (!foundCur) {
+        if (el === selected) {
+          foundCur = true
+        }
+        return true
       }
-      return true
+      if (closest === undefined) {
+        closest = el
+      }
+      return false
+    })
+    if (!closest) {
+      return undefined
     }
-    if (closest === undefined) {
-      closest = el
+
+    const t = selected
+    const oldParent = t.parentNode
+    const oldNextSibling = t.nextSibling
+    if (dir === 'Down') {
+      closest.insertAdjacentElement('beforebegin', t)
+    } else {
+      closest.insertAdjacentElement('afterend', t)
     }
-    return false
-  })
-  if (!closest) {
+    // If the element actually moved position, return the command so the caller
+    // can add it to history and report it as changed.
+    if (oldNextSibling !== t.nextSibling) {
+      return new MoveElementCommand(t, oldNextSibling, oldParent, `Move ${dir}`)
+    }
     return undefined
   }
 
-  const t = selected
-  const oldParent = t.parentNode
-  const oldNextSibling = t.nextSibling
-  if (dir === 'Down') {
-    closest.insertAdjacentElement('beforebegin', t)
-  } else {
-    closest.insertAdjacentElement('afterend', t)
-  }
-  // If the element actually moved position, return the command so the caller
-  // can add it to history and report it as changed.
-  if (oldNextSibling !== t.nextSibling) {
-    return new MoveElementCommand(t, oldNextSibling, oldParent, `Move ${dir}`)
-  }
-  return undefined
-}
-
-/**
+  /**
  * Moves all selected elements up or down the stack by a single step each,
  * based on the visibly intersecting elements (works for a single element or
  * a multi-selection).
@@ -237,70 +237,70 @@ const _moveUpDownOne = (selected, dir) => {
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const moveUpDownSelected = dir => {
-  const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!selectedElements.length) {
-    return
-  }
-
-  // Process the bottommost selected element first when moving down, and the
-  // topmost first when moving up, so multiply-selected elements step past
-  // non-selected elements rather than blocking each other. getSelectedElements
-  // does not guarantee document order, so sort explicitly.
-  const ascending = [...selectedElements].sort(_byDocumentOrder)
-  const ordered = dir === 'Down' ? ascending : ascending.reverse()
-
-  const batchCmd = new BatchCommand(`Move ${dir}`)
-  const changedEls = []
-  ordered.forEach(selected => {
-    const cmd = _moveUpDownOne(selected, dir)
-    if (cmd) {
-      batchCmd.addSubCommand(cmd)
-      changedEls.push(selected)
+  const moveUpDownSelected = dir => {
+    const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!selectedElements.length) {
+      return
     }
-  })
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', changedEls)
-  }
-}
 
-/**
+    // Process the bottommost selected element first when moving down, and the
+    // topmost first when moving up, so multiply-selected elements step past
+    // non-selected elements rather than blocking each other. getSelectedElements
+    // does not guarantee document order, so sort explicitly.
+    const ascending = [...selectedElements].sort(_byDocumentOrder)
+    const ordered = dir === 'Down' ? ascending : ascending.reverse()
+
+    const batchCmd = new BatchCommand(`Move ${dir}`)
+    const changedEls = []
+    ordered.forEach(selected => {
+      const cmd = _moveUpDownOne(selected, dir)
+      if (cmd) {
+        batchCmd.addSubCommand(cmd)
+        changedEls.push(selected)
+      }
+    })
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', changedEls)
+    }
+  }
+
+  /**
  * Reverses the z-order (DOM stacking) of exactly two selected elements that
  * share the same parent layer. If one was behind the other, they swap.
  * @function module:selected-elem.SvgCanvas#switchSelectedZorder
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const switchSelectedZorder = () => {
-  const selected = svgCanvas.getSelectedElements().filter(Boolean)
-  if (selected.length !== 2) {
-    return
+  const switchSelectedZorder = () => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (selected.length !== 2) {
+      return
+    }
+    const [a, b] = selected
+    const parent = a.parentNode
+    if (parent !== b.parentNode) {
+      return
+    }
+    const aOldNext = a.nextSibling
+    const bOldNext = b.nextSibling
+    // Swap the two siblings' DOM positions via a placeholder
+    const tmp = document.createComment('swap')
+    parent.replaceChild(tmp, a)
+    parent.replaceChild(a, b)
+    parent.replaceChild(b, tmp)
+    const batchCmd = new BatchCommand('Switch Layers')
+    batchCmd.addSubCommand(
+      new MoveElementCommand(a, aOldNext, parent, 'Switch Layers')
+    )
+    batchCmd.addSubCommand(
+      new MoveElementCommand(b, bOldNext, parent, 'Switch Layers')
+    )
+    svgCanvas.addCommandToHistory(batchCmd)
+    svgCanvas.call('changed', [a, b])
   }
-  const [a, b] = selected
-  const parent = a.parentNode
-  if (parent !== b.parentNode) {
-    return
-  }
-  const aOldNext = a.nextSibling
-  const bOldNext = b.nextSibling
-  // Swap the two siblings' DOM positions via a placeholder
-  const tmp = document.createComment('swap')
-  parent.replaceChild(tmp, a)
-  parent.replaceChild(a, b)
-  parent.replaceChild(b, tmp)
-  const batchCmd = new BatchCommand('Switch Layers')
-  batchCmd.addSubCommand(
-    new MoveElementCommand(a, aOldNext, parent, 'Switch Layers')
-  )
-  batchCmd.addSubCommand(
-    new MoveElementCommand(b, bOldNext, parent, 'Switch Layers')
-  )
-  svgCanvas.addCommandToHistory(batchCmd)
-  svgCanvas.call('changed', [a, b])
-}
 
-/**
+  /**
  * Moves selected elements on the X/Y axis.
  * @function module:selected-elem.SvgCanvas#moveSelectedElements
  * @param {Float} dx - Float with the distance to move on the x-axis
@@ -310,44 +310,44 @@ const switchSelectedZorder = () => {
  * @returns {BatchCommand|void} Batch command for the move
  */
 
-const moveSelectedElements = (dx, dy, undoable = true) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const zoom = svgCanvas.getZoom()
-  // if undoable is not sent, default to true
-  // if single values, scale them to the zoom
-  if (!Array.isArray(dx)) {
-    dx /= zoom
-    dy /= zoom
-    // Remember the delta (content units) so transformAgain can repeat it.
-    if (undoable && (dx || dy)) svgCanvas.lastMoveDelta = { dx, dy }
-  }
+  const moveSelectedElements = (dx, dy, undoable = true) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const zoom = svgCanvas.getZoom()
+    // if undoable is not sent, default to true
+    // if single values, scale them to the zoom
+    if (!Array.isArray(dx)) {
+      dx /= zoom
+      dy /= zoom
+      // Remember the delta (content units) so transformAgain can repeat it.
+      if (undoable && (dx || dy)) svgCanvas.lastMoveDelta = { dx, dy }
+    }
 
-  const batchCmd = new BatchCommand('position')
-  selectedElements.forEach((selected, i) => {
-    if (selected) {
+    const batchCmd = new BatchCommand('position')
+    selectedElements.forEach((selected, i) => {
+      if (selected) {
       // Store the existing transform before modifying
-      const existingTransform = selected.getAttribute('transform') || ''
+        const existingTransform = selected.getAttribute('transform') || ''
 
-      const xform = svgCanvas.getSvgRoot().createSVGTransform()
-      const tlist = getTransformList(selected)
+        const xform = svgCanvas.getSvgRoot().createSVGTransform()
+        const tlist = getTransformList(selected)
 
-      // dx and dy could be arrays
-      if (Array.isArray(dx)) {
-        xform.setTranslate(dx[i], dy[i])
-      } else {
-        xform.setTranslate(dx, dy)
-      }
+        // dx and dy could be arrays
+        if (Array.isArray(dx)) {
+          xform.setTranslate(dx[i], dy[i])
+        } else {
+          xform.setTranslate(dx, dy)
+        }
 
-      if (tlist.numberOfItems) {
-        tlist.insertItemBefore(xform, 0)
-      } else {
-        tlist.appendItem(xform)
-      }
+        if (tlist.numberOfItems) {
+          tlist.insertItemBefore(xform, 0)
+        } else {
+          tlist.appendItem(xform)
+        }
 
-      const cmd = svgCanvas.recalculateDimensions(selected)
-      if (cmd) {
-        batchCmd.addSubCommand(cmd)
-      } else {
+        const cmd = svgCanvas.recalculateDimensions(selected)
+        if (cmd) {
+          batchCmd.addSubCommand(cmd)
+        } else {
         // recalculateDimensions() declines to bake a group's transform (it
         // would push it down onto the children) or a clip-path/mask-carrying
         // element's transform (the silhouette in <defs> is static, so baking
@@ -361,39 +361,39 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
         // so a long nudging session doesn't leave a huge transform-list
         // chain that both svgedit's own per-frame transform math and the
         // renderer have to multiply through on every later interaction.
-        if (tlist.numberOfItems > 1) {
-          const consolidatedMatrix = transformListToTransform(tlist).matrix
-          while (tlist.numberOfItems > 0) {
-            tlist.removeItem(0)
+          if (tlist.numberOfItems > 1) {
+            const consolidatedMatrix = transformListToTransform(tlist).matrix
+            while (tlist.numberOfItems > 0) {
+              tlist.removeItem(0)
+            }
+            const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
+            newTransform.setMatrix(consolidatedMatrix)
+            tlist.appendItem(newTransform)
           }
-          const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-          newTransform.setMatrix(consolidatedMatrix)
-          tlist.appendItem(newTransform)
+          if ((selected.getAttribute('transform') || '') !== existingTransform) {
+            batchCmd.addSubCommand(
+              new ChangeElementCommand(selected, { transform: existingTransform })
+            )
+          }
         }
-        if ((selected.getAttribute('transform') || '') !== existingTransform) {
-          batchCmd.addSubCommand(
-            new ChangeElementCommand(selected, { transform: existingTransform })
-          )
-        }
+
+        svgCanvas
+          .gettingSelectorManager()
+          .requestSelector(selected)
+          .resize()
       }
-
-      svgCanvas
-        .gettingSelectorManager()
-        .requestSelector(selected)
-        .resize()
+    })
+    if (!batchCmd.isEmpty()) {
+      if (undoable) {
+        svgCanvas.addCommandToHistory(batchCmd)
+      }
+      svgCanvas.call('changed', selectedElements)
+      return batchCmd
     }
-  })
-  if (!batchCmd.isEmpty()) {
-    if (undoable) {
-      svgCanvas.addCommandToHistory(batchCmd)
-    }
-    svgCanvas.call('changed', selectedElements)
-    return batchCmd
+    return undefined
   }
-  return undefined
-}
 
-/**
+  /**
  * Create deep DOM copies (clones) of all selected elements and move them slightly
  * from their originals.
  * @function module:selected-elem.SvgCanvas#cloneSelectedElements
@@ -401,90 +401,90 @@ const moveSelectedElements = (dx, dy, undoable = true) => {
  * @param {Float} y Float with the distance to move on the y-axis
  * @returns {void}
  */
-const cloneSelectedElements = (x, y) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  let i
-  let elem
-  const batchCmd = new BatchCommand('Clone Elements')
-  // find all the elements selected (stop at first null)
-  const len = selectedElements.length
+  const cloneSelectedElements = (x, y) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    let i
+    let elem
+    const batchCmd = new BatchCommand('Clone Elements')
+    // find all the elements selected (stop at first null)
+    const len = selectedElements.length
 
-  const index = el => {
-    if (!el) return -1
-    let i = 0
-    let current = el
-    do {
-      i++
-      current = current.previousElementSibling
-    } while (current)
-    return i
-  }
+    const index = el => {
+      if (!el) return -1
+      let i = 0
+      let current = el
+      do {
+        i++
+        current = current.previousElementSibling
+      } while (current)
+      return i
+    }
 
-  /**
+    /**
    * Sorts an array numerically and ascending.
    * @param {Element} a
    * @param {Element} b
    * @returns {Integer}
    */
-  const sortfunction = (a, b) => {
-    return index(b) - index(a)
-  }
-  selectedElements.sort(sortfunction)
-  for (i = 0; i < len; ++i) {
-    elem = selectedElements[i]
-    if (!elem) {
-      break
+    const sortfunction = (a, b) => {
+      return index(b) - index(a)
     }
-  }
-  // use slice to quickly get the subset of elements we need
-  const copiedElements = selectedElements.slice(0, i)
-  svgCanvas.clearSelection(true)
-  // note that we loop in the reverse way because of the way elements are added
-  // to the selectedElements array (top-first)
-  const drawing = svgCanvas.getDrawing()
-
-  // Referenced <defs> elements (filters, gradients, markers, …) must not be
-  // shared between the original and its duplicate — copyElem() below clones
-  // only the selected element's own subtree, so a shape's filter="url(#…)"
-  // would otherwise still point at the original's <filter>. That's most
-  // visible with the shadow effect: since its filter region is a snapshot of
-  // the referencing element's bbox (fx-filter's setRegion), a duplicate that
-  // shares the original's filter renders clipped to the ORIGINAL's position
-  // until something touches the original again. Clone the referenced defs
-  // once up front and remap each duplicate's references onto its own copy,
-  // mirroring what copySelectedElements/pasteElements already do for the
-  // clipboard path.
-  const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
-  let defIdMap = {}
-  if (originalDefs.length) {
-    const clonedDefs = originalDefs.map((def) => def.cloneNode(true))
-    defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
-    const defs = svgCanvas.findDefs()
-    clonedDefs.forEach((def) => {
-      defs.append(def)
-      batchCmd.addSubCommand(new InsertElementCommand(def))
-    })
-  }
-  // Rewrite an element's (and its descendants') url(#…)/href references from
-  // the originals' def ids to the freshly cloned ones above.
-  const remapToClonedDefs = (el) => {
-    Array.from(el.attributes).forEach((attr) => {
-      if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#')) {
-        const refId = attr.value.slice(1)
-        if (refId in defIdMap) el.setAttribute(attr.name, `#${defIdMap[refId]}`)
-        return
+    selectedElements.sort(sortfunction)
+    for (i = 0; i < len; ++i) {
+      elem = selectedElements[i]
+      if (!elem) {
+        break
       }
-      const url = getUrlFromAttr(attr.value)
-      if (url) {
-        const refId = url[0] === '#' ? url.slice(1) : url
-        if (refId in defIdMap) el.setAttribute(attr.name, attr.value.replace(url, `#${defIdMap[refId]}`))
-      }
-    })
-    Array.from(el.children).forEach(remapToClonedDefs)
-  }
+    }
+    // use slice to quickly get the subset of elements we need
+    const copiedElements = selectedElements.slice(0, i)
+    svgCanvas.clearSelection(true)
+    // note that we loop in the reverse way because of the way elements are added
+    // to the selectedElements array (top-first)
+    const drawing = svgCanvas.getDrawing()
 
-  i = copiedElements.length
-  while (i--) {
+    // Referenced <defs> elements (filters, gradients, markers, …) must not be
+    // shared between the original and its duplicate — copyElem() below clones
+    // only the selected element's own subtree, so a shape's filter="url(#…)"
+    // would otherwise still point at the original's <filter>. That's most
+    // visible with the shadow effect: since its filter region is a snapshot of
+    // the referencing element's bbox (fx-filter's setRegion), a duplicate that
+    // shares the original's filter renders clipped to the ORIGINAL's position
+    // until something touches the original again. Clone the referenced defs
+    // once up front and remap each duplicate's references onto its own copy,
+    // mirroring what copySelectedElements/pasteElements already do for the
+    // clipboard path.
+    const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
+    let defIdMap = {}
+    if (originalDefs.length) {
+      const clonedDefs = originalDefs.map((def) => def.cloneNode(true))
+      defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
+      const defs = svgCanvas.findDefs()
+      clonedDefs.forEach((def) => {
+        defs.append(def)
+        batchCmd.addSubCommand(new InsertElementCommand(def))
+      })
+    }
+    // Rewrite an element's (and its descendants') url(#…)/href references from
+    // the originals' def ids to the freshly cloned ones above.
+    const remapToClonedDefs = (el) => {
+      Array.from(el.attributes).forEach((attr) => {
+        if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#')) {
+          const refId = attr.value.slice(1)
+          if (refId in defIdMap) el.setAttribute(attr.name, `#${defIdMap[refId]}`)
+          return
+        }
+        const url = getUrlFromAttr(attr.value)
+        if (url) {
+          const refId = url[0] === '#' ? url.slice(1) : url
+          if (refId in defIdMap) el.setAttribute(attr.name, attr.value.replace(url, `#${defIdMap[refId]}`))
+        }
+      })
+      Array.from(el.children).forEach(remapToClonedDefs)
+    }
+
+    i = copiedElements.length
+    while (i--) {
     // Clone each element and replace it within copiedElements, appending the
     // clone back into its own original parent (layer or group) rather than a
     // single shared target — required once a selection can span layers (All
@@ -495,27 +495,27 @@ const cloneSelectedElements = (x, y) => {
     // membership: if the original sits inside one or more nested groups,
     // detach the clone all the way out to the layer, baking in the groups'
     // combined transform so it stays in the same visual spot.
-    const original = copiedElements[i]
-    elem = copiedElements[i] = drawing.copyElem(original)
-    if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
-    const { targetParent, matrix } = getGroupDetachTarget(original.parentNode)
-    if (targetParent !== original.parentNode) {
-      applyGroupDetachTransform(elem, matrix)
-      targetParent.append(elem)
-    } else {
-      original.parentNode.append(elem)
+      const original = copiedElements[i]
+      elem = copiedElements[i] = drawing.copyElem(original)
+      if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
+      const { targetParent, matrix } = getGroupDetachTarget(original.parentNode)
+      if (targetParent !== original.parentNode) {
+        applyGroupDetachTransform(elem, matrix)
+        targetParent.append(elem)
+      } else {
+        original.parentNode.append(elem)
+      }
+      batchCmd.addSubCommand(new InsertElementCommand(elem))
     }
-    batchCmd.addSubCommand(new InsertElementCommand(elem))
+
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addToSelection(copiedElements.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
+      moveSelectedElements(x, y, false)
+      svgCanvas.addCommandToHistory(batchCmd)
+    }
   }
 
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addToSelection(copiedElements.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
-    moveSelectedElements(x, y, false)
-    svgCanvas.addCommandToHistory(batchCmd)
-  }
-}
-
-/**
+  /**
  * Repeat the last duplicate+transform (Illustrator's "Transform Again"):
  * clone the selection and offset it by the most recently committed move
  * delta (drag or nudge, recorded in `svgCanvas.lastMoveDelta` in content
@@ -524,190 +524,190 @@ const cloneSelectedElements = (x, y) => {
  * @function module:selected-elem.SvgCanvas#transformAgain
  * @returns {void}
  */
-const transformAgain = () => {
-  const selected = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!selected.length) return
-  const d = svgCanvas.lastMoveDelta || { dx: 10, dy: 10 }
-  // cloneSelectedElements feeds moveSelectedElements, which divides by zoom —
-  // pre-multiply so the recorded content-unit delta is applied exactly.
-  const zoom = svgCanvas.getZoom()
-  cloneSelectedElements(d.dx * zoom, d.dy * zoom)
-}
+  const transformAgain = () => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!selected.length) return
+    const d = svgCanvas.lastMoveDelta || { dx: 10, dy: 10 }
+    // cloneSelectedElements feeds moveSelectedElements, which divides by zoom —
+    // pre-multiply so the recorded content-unit delta is applied exactly.
+    const zoom = svgCanvas.getZoom()
+    cloneSelectedElements(d.dx * zoom, d.dy * zoom)
+  }
 
-/**
+  /**
  * Extend the selection to every element (in the current group context, or on
  * any visible layer) that shares a property with the primary selected element.
  * @function module:selected-elem.SvgCanvas#selectSameAs
  * @param {"fill"|"stroke"|"type"} criterion
  * @returns {void}
  */
-const selectSameAs = criterion => {
-  const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!ref) return
-  const norm = (el, attr, def) => {
-    const v = el.getAttribute(attr)
-    return v === null || v === '' ? def : v.toLowerCase()
-  }
-  const matches = el => {
-    switch (criterion) {
-      case 'fill':
-        return norm(el, 'fill', '#000000') === norm(ref, 'fill', '#000000')
-      case 'stroke':
-        return norm(el, 'stroke', 'none') === norm(ref, 'stroke', 'none')
-      case 'type':
-      default:
-        return el.tagName === ref.tagName
+  const selectSameAs = criterion => {
+    const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!ref) return
+    const norm = (el, attr, def) => {
+      const v = el.getAttribute(attr)
+      return v === null || v === '' ? def : v.toLowerCase()
+    }
+    const matches = el => {
+      switch (criterion) {
+        case 'fill':
+          return norm(el, 'fill', '#000000') === norm(ref, 'fill', '#000000')
+        case 'stroke':
+          return norm(el, 'stroke', 'none') === norm(ref, 'stroke', 'none')
+        case 'type':
+        default:
+          return el.tagName === ref.tagName
+      }
+    }
+    const found = []
+    const scan = parent => {
+      for (const el of parent.children) {
+        if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
+        if (matches(el)) found.push(el)
+      }
+    }
+    const group = svgCanvas.getCurrentGroup()
+    if (group) {
+      scan(group)
+    } else {
+      for (const layer of svgCanvas.getSvgContent().children) {
+        if (layer.tagName !== 'g') continue
+        if (layer.getAttribute('display') === 'none' || layer.style.display === 'none') continue
+        scan(layer)
+      }
+    }
+    if (found.length) {
+      svgCanvas.selectOnly(found, true)
     }
   }
-  const found = []
-  const scan = parent => {
-    for (const el of parent.children) {
-      if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
-      if (matches(el)) found.push(el)
-    }
-  }
-  const group = svgCanvas.getCurrentGroup()
-  if (group) {
-    scan(group)
-  } else {
-    for (const layer of svgCanvas.getSvgContent().children) {
-      if (layer.tagName !== 'g') continue
-      if (layer.getAttribute('display') === 'none' || layer.style.display === 'none') continue
-      scan(layer)
-    }
-  }
-  if (found.length) {
-    svgCanvas.selectOnly(found, true)
-  }
-}
 
-/**
+  /**
  * One-click stroke cleanup across the selection (groups included): every
  * stroked element gets the primary element's stroke-width plus round
  * joins/caps — uniform confident linework in one undo step.
  * @function module:selected-elem.SvgCanvas#matchStrokes
  * @returns {void}
  */
-const matchStrokes = () => {
-  const selected = svgCanvas.getSelectedElements().filter(Boolean)
-  if (!selected.length) return
-  const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
-  const targets = []
-  const collect = el => {
-    if (skip.has(el.tagName)) return
-    if (el.tagName === 'g' || el.tagName === 'a') {
-      for (const c of el.children) collect(c)
+  const matchStrokes = () => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!selected.length) return
+    const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
+    const targets = []
+    const collect = el => {
+      if (skip.has(el.tagName)) return
+      if (el.tagName === 'g' || el.tagName === 'a') {
+        for (const c of el.children) collect(c)
+        return
+      }
+      if ((el.getAttribute('stroke') || 'none') !== 'none') targets.push(el)
+    }
+    selected.forEach(collect)
+    if (!targets.length) return
+
+    const width = targets[0].getAttribute('stroke-width') || '1'
+    const batchCmd = new BatchCommand('Match strokes')
+    const changeAttr = (el, attr, val) => {
+      const old = el.getAttribute(attr)
+      if (old === val) return
+      el.setAttribute(attr, val)
+      batchCmd.addSubCommand(new ChangeElementCommand(el, { [attr]: old }))
+    }
+    for (const el of targets) {
+      changeAttr(el, 'stroke-width', width)
+      changeAttr(el, 'stroke-linejoin', 'round')
+      changeAttr(el, 'stroke-linecap', 'round')
+    }
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', targets)
+    }
+  }
+  /**
+ * Aligns selected elements.
+ * @function module:selected-elem.SvgCanvas#alignSelectedElements
+ * @param {string} type - String with single character indicating the alignment type
+ * @param {"selected"|"largest"|"smallest"|"page"} relativeTo
+ * @returns {void}
+ */
+  const alignSelectedElements = (type, relativeTo) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const bboxes = [] // angles = [];
+    const len = selectedElements.length
+    if (!len) {
       return
     }
-    if ((el.getAttribute('stroke') || 'none') !== 'none') targets.push(el)
-  }
-  selected.forEach(collect)
-  if (!targets.length) return
+    let minx = Number.MAX_VALUE
+    let maxx = Number.MIN_VALUE
+    let miny = Number.MAX_VALUE
+    let maxy = Number.MIN_VALUE
 
-  const width = targets[0].getAttribute('stroke-width') || '1'
-  const batchCmd = new BatchCommand('Match strokes')
-  const changeAttr = (el, attr, val) => {
-    const old = el.getAttribute(attr)
-    if (old === val) return
-    el.setAttribute(attr, val)
-    batchCmd.addSubCommand(new ChangeElementCommand(el, { [attr]: old }))
-  }
-  for (const el of targets) {
-    changeAttr(el, 'stroke-width', width)
-    changeAttr(el, 'stroke-linejoin', 'round')
-    changeAttr(el, 'stroke-linecap', 'round')
-  }
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', targets)
-  }
-}
-/**
- * Aligns selected elements.
- * @function module:selected-elem.SvgCanvas#alignSelectedElements
- * @param {string} type - String with single character indicating the alignment type
- * @param {"selected"|"largest"|"smallest"|"page"} relativeTo
- * @returns {void}
- */
-const alignSelectedElements = (type, relativeTo) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const bboxes = [] // angles = [];
-  const len = selectedElements.length
-  if (!len) {
-    return
-  }
-  let minx = Number.MAX_VALUE
-  let maxx = Number.MIN_VALUE
-  let miny = Number.MAX_VALUE
-  let maxy = Number.MIN_VALUE
+    const isHorizontalAlign = (type) => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
+    const isVerticalAlign = (type) => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
 
-  const isHorizontalAlign = (type) => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
-  const isVerticalAlign = (type) => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
-
-  for (let i = 0; i < len; ++i) {
-    if (!selectedElements[i]) {
-      break
+    for (let i = 0; i < len; ++i) {
+      if (!selectedElements[i]) {
+        break
+      }
+      const elem = selectedElements[i]
+      bboxes[i] = svgCanvas.getStrokedBBoxDefaultVisible([elem])
     }
-    const elem = selectedElements[i]
-    bboxes[i] = svgCanvas.getStrokedBBoxDefaultVisible([elem])
-  }
 
-  // distribute horizontal and vertical align is not support smallest and largest
-  if (['smallest', 'largest'].includes(relativeTo) && ['dh', 'distrib_horiz', 'dv', 'distrib_verti'].includes(type)) {
-    relativeTo = 'selected'
-  }
+    // distribute horizontal and vertical align is not support smallest and largest
+    if (['smallest', 'largest'].includes(relativeTo) && ['dh', 'distrib_horiz', 'dv', 'distrib_verti'].includes(type)) {
+      relativeTo = 'selected'
+    }
 
-  switch (relativeTo) {
-    case 'smallest':
-      if (isHorizontalAlign(type) || isVerticalAlign(type)) {
-        const sortedBboxes = bboxes.slice().sort((a, b) => a.width - b.width)
-        const minBbox = sortedBboxes[0]
-        minx = minBbox.x
-        miny = minBbox.y
-        maxx = minBbox.x + minBbox.width
-        maxy = minBbox.y + minBbox.height
-      }
-      break
-    case 'largest':
-      if (isHorizontalAlign(type) || isVerticalAlign(type)) {
-        const sortedBboxes = bboxes.slice().sort((a, b) => a.width - b.width)
-        const maxBbox = sortedBboxes[bboxes.length - 1]
-        minx = maxBbox.x
-        miny = maxBbox.y
-        maxx = maxBbox.x + maxBbox.width
-        maxy = maxBbox.y + maxBbox.height
-      }
-      break
-    case 'page':
-      minx = 0
-      miny = 0
-      maxx = svgCanvas.getContentW()
-      maxy = svgCanvas.getContentH()
-      break
-    default:
+    switch (relativeTo) {
+      case 'smallest':
+        if (isHorizontalAlign(type) || isVerticalAlign(type)) {
+          const sortedBboxes = bboxes.slice().sort((a, b) => a.width - b.width)
+          const minBbox = sortedBboxes[0]
+          minx = minBbox.x
+          miny = minBbox.y
+          maxx = minBbox.x + minBbox.width
+          maxy = minBbox.y + minBbox.height
+        }
+        break
+      case 'largest':
+        if (isHorizontalAlign(type) || isVerticalAlign(type)) {
+          const sortedBboxes = bboxes.slice().sort((a, b) => a.width - b.width)
+          const maxBbox = sortedBboxes[bboxes.length - 1]
+          minx = maxBbox.x
+          miny = maxBbox.y
+          maxx = maxBbox.x + maxBbox.width
+          maxy = maxBbox.y + maxBbox.height
+        }
+        break
+      case 'page':
+        minx = 0
+        miny = 0
+        maxx = svgCanvas.getContentW()
+        maxy = svgCanvas.getContentH()
+        break
+      default:
       // 'selected'
-      minx = Math.min(...bboxes.map(box => box.x))
-      miny = Math.min(...bboxes.map(box => box.y))
-      maxx = Math.max(...bboxes.map(box => box.x + box.width))
-      maxy = Math.max(...bboxes.map(box => box.y + box.height))
-      break
-  } // adjust min/max
+        minx = Math.min(...bboxes.map(box => box.x))
+        miny = Math.min(...bboxes.map(box => box.y))
+        maxx = Math.max(...bboxes.map(box => box.x + box.width))
+        maxy = Math.max(...bboxes.map(box => box.y + box.height))
+        break
+    } // adjust min/max
 
-  let dx = []
-  let dy = []
+    let dx = []
+    let dy = []
 
-  if (['dh', 'distrib_horiz'].includes(type)) { // distribute horizontal align
-    [dx, dy] = _getDistributeHorizontalDistances(relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy)
-  } else if (['dv', 'distrib_verti'].includes(type)) { // distribute vertical align
-    [dx, dy] = _getDistributeVerticalDistances(relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy)
-  } else { // normal align (top, left, right, ...)
-    [dx, dy] = _getNormalDistances(type, selectedElements, bboxes, minx, maxx, miny, maxy)
+    if (['dh', 'distrib_horiz'].includes(type)) { // distribute horizontal align
+      [dx, dy] = _getDistributeHorizontalDistances(relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy)
+    } else if (['dv', 'distrib_verti'].includes(type)) { // distribute vertical align
+      [dx, dy] = _getDistributeVerticalDistances(relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy)
+    } else { // normal align (top, left, right, ...)
+      [dx, dy] = _getNormalDistances(type, selectedElements, bboxes, minx, maxx, miny, maxy)
+    }
+
+    moveSelectedElements(dx, dy)
   }
 
-  moveSelectedElements(dx, dy)
-}
-
-/**
+  /**
  * Aligns selected elements.
  * @function module:selected-elem.SvgCanvas#alignSelectedElements
  * @param {string} type - String with single character indicating the alignment type
@@ -715,7 +715,7 @@ const alignSelectedElements = (type, relativeTo) => {
  * @returns {void}
  */
 
-/**
+  /**
  * get distribution horizontal distances.
  * (internal call only)
  *
@@ -729,54 +729,54 @@ const alignSelectedElements = (type, relativeTo) => {
  * @returns {Array.Float[]} x and y distances array
  * @private
  */
-const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
-  const dx = []
-  const dy = []
+  const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+    const dx = []
+    const dy = []
 
-  for (let i = 0; i < selectedElements.length; i++) {
-    dy[i] = 0
-  }
+    for (let i = 0; i < selectedElements.length; i++) {
+      dy[i] = 0
+    }
 
-  const bboxesSortedClone = bboxes
-    .slice()
-    .sort((firstBox, secondBox) => {
-      const firstMaxX = firstBox.x + firstBox.width
-      const secondMaxX = secondBox.x + secondBox.width
+    const bboxesSortedClone = bboxes
+      .slice()
+      .sort((firstBox, secondBox) => {
+        const firstMaxX = firstBox.x + firstBox.width
+        const secondMaxX = secondBox.x + secondBox.width
 
-      if (firstMaxX === secondMaxX) { return 0 } else if (firstMaxX > secondMaxX) { return 1 } else { return -1 }
+        if (firstMaxX === secondMaxX) { return 0 } else if (firstMaxX > secondMaxX) { return 1 } else { return -1 }
+      })
+
+    if (relativeTo === 'page') {
+      bboxesSortedClone.unshift({ x: 0, y: 0, width: 0, height: maxy }) // virtual left box
+      bboxesSortedClone.push({ x: maxx, y: 0, width: 0, height: maxy }) // virtual right box
+    }
+
+    const totalWidth = maxx - minx
+    const totalBoxWidth = bboxesSortedClone.map(b => b.width).reduce((w1, w2) => w1 + w2, 0)
+    const space = (totalWidth - totalBoxWidth) / (bboxesSortedClone.length - 1)
+    const _dx = []
+
+    for (let i = 0; i < bboxesSortedClone.length; ++i) {
+      _dx[i] = 0
+
+      if (i === 0) { continue }
+
+      const orgX = bboxesSortedClone[i].x
+      bboxesSortedClone[i].x = bboxesSortedClone[i - 1].x + bboxesSortedClone[i - 1].width + space
+      _dx[i] = bboxesSortedClone[i].x - orgX
+    }
+
+    bboxesSortedClone.forEach((boxClone, idx) => {
+      const orgIdx = bboxes.findIndex(box => box === boxClone)
+      if (orgIdx !== -1) {
+        dx[orgIdx] = _dx[idx]
+      }
     })
 
-  if (relativeTo === 'page') {
-    bboxesSortedClone.unshift({ x: 0, y: 0, width: 0, height: maxy }) // virtual left box
-    bboxesSortedClone.push({ x: maxx, y: 0, width: 0, height: maxy }) // virtual right box
+    return [dx, dy]
   }
 
-  const totalWidth = maxx - minx
-  const totalBoxWidth = bboxesSortedClone.map(b => b.width).reduce((w1, w2) => w1 + w2, 0)
-  const space = (totalWidth - totalBoxWidth) / (bboxesSortedClone.length - 1)
-  const _dx = []
-
-  for (let i = 0; i < bboxesSortedClone.length; ++i) {
-    _dx[i] = 0
-
-    if (i === 0) { continue }
-
-    const orgX = bboxesSortedClone[i].x
-    bboxesSortedClone[i].x = bboxesSortedClone[i - 1].x + bboxesSortedClone[i - 1].width + space
-    _dx[i] = bboxesSortedClone[i].x - orgX
-  }
-
-  bboxesSortedClone.forEach((boxClone, idx) => {
-    const orgIdx = bboxes.findIndex(box => box === boxClone)
-    if (orgIdx !== -1) {
-      dx[orgIdx] = _dx[idx]
-    }
-  })
-
-  return [dx, dy]
-}
-
-/**
+  /**
  * get distribution vertical distances.
  * (internal call only)
  *
@@ -790,54 +790,54 @@ const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes,
  * @returns {Array.Float[]}} x and y distances array
  * @private
  */
-const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
-  const dx = []
-  const dy = []
+  const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+    const dx = []
+    const dy = []
 
-  for (let i = 0; i < selectedElements.length; i++) {
-    dx[i] = 0
-  }
+    for (let i = 0; i < selectedElements.length; i++) {
+      dx[i] = 0
+    }
 
-  const bboxesSortedClone = bboxes
-    .slice()
-    .sort((firstBox, secondBox) => {
-      const firstMaxY = firstBox.y + firstBox.height
-      const secondMaxY = secondBox.y + secondBox.height
+    const bboxesSortedClone = bboxes
+      .slice()
+      .sort((firstBox, secondBox) => {
+        const firstMaxY = firstBox.y + firstBox.height
+        const secondMaxY = secondBox.y + secondBox.height
 
-      if (firstMaxY === secondMaxY) { return 0 } else if (firstMaxY > secondMaxY) { return 1 } else { return -1 }
+        if (firstMaxY === secondMaxY) { return 0 } else if (firstMaxY > secondMaxY) { return 1 } else { return -1 }
+      })
+
+    if (relativeTo === 'page') {
+      bboxesSortedClone.unshift({ x: 0, y: 0, width: maxx, height: 0 }) // virtual top box
+      bboxesSortedClone.push({ x: 0, y: maxy, width: maxx, height: 0 }) // virtual bottom box
+    }
+
+    const totalHeight = maxy - miny
+    const totalBoxHeight = bboxesSortedClone.map(b => b.height).reduce((h1, h2) => h1 + h2, 0)
+    const space = (totalHeight - totalBoxHeight) / (bboxesSortedClone.length - 1)
+    const _dy = []
+
+    for (let i = 0; i < bboxesSortedClone.length; ++i) {
+      _dy[i] = 0
+
+      if (i === 0) { continue }
+
+      const orgY = bboxesSortedClone[i].y
+      bboxesSortedClone[i].y = bboxesSortedClone[i - 1].y + bboxesSortedClone[i - 1].height + space
+      _dy[i] = bboxesSortedClone[i].y - orgY
+    }
+
+    bboxesSortedClone.forEach((boxClone, idx) => {
+      const orgIdx = bboxes.findIndex(box => box === boxClone)
+      if (orgIdx !== -1) {
+        dy[orgIdx] = _dy[idx]
+      }
     })
 
-  if (relativeTo === 'page') {
-    bboxesSortedClone.unshift({ x: 0, y: 0, width: maxx, height: 0 }) // virtual top box
-    bboxesSortedClone.push({ x: 0, y: maxy, width: maxx, height: 0 }) // virtual bottom box
+    return [dx, dy]
   }
 
-  const totalHeight = maxy - miny
-  const totalBoxHeight = bboxesSortedClone.map(b => b.height).reduce((h1, h2) => h1 + h2, 0)
-  const space = (totalHeight - totalBoxHeight) / (bboxesSortedClone.length - 1)
-  const _dy = []
-
-  for (let i = 0; i < bboxesSortedClone.length; ++i) {
-    _dy[i] = 0
-
-    if (i === 0) { continue }
-
-    const orgY = bboxesSortedClone[i].y
-    bboxesSortedClone[i].y = bboxesSortedClone[i - 1].y + bboxesSortedClone[i - 1].height + space
-    _dy[i] = bboxesSortedClone[i].y - orgY
-  }
-
-  bboxesSortedClone.forEach((boxClone, idx) => {
-    const orgIdx = bboxes.findIndex(box => box === boxClone)
-    if (orgIdx !== -1) {
-      dy[orgIdx] = _dy[idx]
-    }
-  })
-
-  return [dx, dy]
-}
-
-/**
+  /**
  * get normal align distances.
  * (internal call only)
  *
@@ -851,93 +851,93 @@ const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, m
  * @returns {Array.Float[]} x and y distances array
  * @private
  */
-const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {
-  const len = selectedElements.length
-  const dx = new Array(len)
-  const dy = new Array(len)
+  const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+    const len = selectedElements.length
+    const dx = new Array(len)
+    const dy = new Array(len)
 
-  for (let i = 0; i < len; ++i) {
-    if (!selectedElements[i]) {
-      break
-    }
-    // const elem = selectedElements[i];
-    const bbox = bboxes[i]
-    dx[i] = 0
-    dy[i] = 0
+    for (let i = 0; i < len; ++i) {
+      if (!selectedElements[i]) {
+        break
+      }
+      // const elem = selectedElements[i];
+      const bbox = bboxes[i]
+      dx[i] = 0
+      dy[i] = 0
 
-    switch (type) {
-      case 'l': // left (horizontal)
-      case 'left': // left (horizontal)
-        dx[i] = minx - bbox.x
-        break
-      case 'c': // center (horizontal)
-      case 'center': // center (horizontal)
-        dx[i] = (minx + maxx) / 2 - (bbox.x + bbox.width / 2)
-        break
-      case 'r': // right (horizontal)
-      case 'right': // right (horizontal)
-        dx[i] = maxx - (bbox.x + bbox.width)
-        break
-      case 't': // top (vertical)
-      case 'top': // top (vertical)
-        dy[i] = miny - bbox.y
-        break
-      case 'm': // middle (vertical)
-      case 'middle': // middle (vertical)
-        dy[i] = (miny + maxy) / 2 - (bbox.y + bbox.height / 2)
-        break
-      case 'b': // bottom (vertical)
-      case 'bottom': // bottom (vertical)
-        dy[i] = maxy - (bbox.y + bbox.height)
-        break
+      switch (type) {
+        case 'l': // left (horizontal)
+        case 'left': // left (horizontal)
+          dx[i] = minx - bbox.x
+          break
+        case 'c': // center (horizontal)
+        case 'center': // center (horizontal)
+          dx[i] = (minx + maxx) / 2 - (bbox.x + bbox.width / 2)
+          break
+        case 'r': // right (horizontal)
+        case 'right': // right (horizontal)
+          dx[i] = maxx - (bbox.x + bbox.width)
+          break
+        case 't': // top (vertical)
+        case 'top': // top (vertical)
+          dy[i] = miny - bbox.y
+          break
+        case 'm': // middle (vertical)
+        case 'middle': // middle (vertical)
+          dy[i] = (miny + maxy) / 2 - (bbox.y + bbox.height / 2)
+          break
+        case 'b': // bottom (vertical)
+        case 'bottom': // bottom (vertical)
+          dy[i] = maxy - (bbox.y + bbox.height)
+          break
+      }
     }
+
+    return [dx, dy]
   }
 
-  return [dx, dy]
-}
-
-/**
+  /**
  * Removes all selected elements from the DOM and adds the change to the
  * history stack.
  * @function module:selected-elem.SvgCanvas#deleteSelectedElements
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const deleteSelectedElements = () => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const batchCmd = new BatchCommand('Delete Elements')
-  const selectedCopy = [] // selectedElements is being deleted
+  const deleteSelectedElements = () => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const batchCmd = new BatchCommand('Delete Elements')
+    const selectedCopy = [] // selectedElements is being deleted
 
-  selectedElements.forEach(selected => {
-    if (selected) {
-      let parent = selected.parentNode
-      let t = selected
-      // this will unselect the element and remove the selectedOutline
-      svgCanvas.gettingSelectorManager().releaseSelector(t)
-      // Remove the path if present.
-      svgCanvas.removePath_(t.id)
-      // Get the parent if it's a single-child anchor
-      if (parent.tagName === 'a' && parent.childNodes.length === 1) {
-        t = parent
-        parent = parent.parentNode
+    selectedElements.forEach(selected => {
+      if (selected) {
+        let parent = selected.parentNode
+        let t = selected
+        // this will unselect the element and remove the selectedOutline
+        svgCanvas.gettingSelectorManager().releaseSelector(t)
+        // Remove the path if present.
+        svgCanvas.removePath_(t.id)
+        // Get the parent if it's a single-child anchor
+        if (parent.tagName === 'a' && parent.childNodes.length === 1) {
+          t = parent
+          parent = parent.parentNode
+        }
+        const { nextSibling } = t
+        t.remove()
+        const elem = t
+        selectedCopy.push(selected) // for the copy
+        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, parent))
       }
-      const { nextSibling } = t
-      t.remove()
-      const elem = t
-      selectedCopy.push(selected) // for the copy
-      batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, parent))
+    })
+    svgCanvas.setEmptySelectedElements()
+
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
     }
-  })
-  svgCanvas.setEmptySelectedElements()
-
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
+    svgCanvas.call('changed', selectedCopy)
+    svgCanvas.clearSelection()
   }
-  svgCanvas.call('changed', selectedCopy)
-  svgCanvas.clearSelection()
-}
 
-/**
+  /**
  * Flips selected elements horizontally or vertically by transforming actual coordinates.
  * @function module:selected-elem.SvgCanvas#flipSelectedElements
  * @param {number} scaleX - Scale factor for X axis (-1 for horizontal flip, 1 for no flip)
@@ -945,193 +945,193 @@ const deleteSelectedElements = () => {
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {void}
  */
-const flipSelectedElements = (scaleX, scaleY) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const batchCmd = new BatchCommand('Flip Elements')
-  const svgRoot = svgCanvas.getSvgRoot()
+  const flipSelectedElements = (scaleX, scaleY) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const batchCmd = new BatchCommand('Flip Elements')
+    const svgRoot = svgCanvas.getSvgRoot()
 
-  selectedElements.forEach(selected => {
-    if (!selected) return
+    selectedElements.forEach(selected => {
+      if (!selected) return
 
-    const localBBox = selected.getBBox()
-    if (!localBBox) return
+      const localBBox = selected.getBBox()
+      if (!localBBox) return
 
-    const existingTransform = selected.getAttribute('transform') || ''
-    const tlist = getTransformList(selected)
-    const elemMatrix = transformListToTransform(tlist).matrix
+      const existingTransform = selected.getAttribute('transform') || ''
+      const tlist = getTransformList(selected)
+      const elemMatrix = transformListToTransform(tlist).matrix
 
-    // Pivot the flip around the element's *true* axis-aligned bbox centre in
-    // parent space. getStrokedBBoxDefaultVisible reports the bbox in the
-    // element's un-rotated frame, so using it as the pivot would shift rotated
-    // or skewed elements. Transform the geometry corners by the element's own
-    // matrix and take the axis-aligned centre instead.
-    const corners = [
-      [localBBox.x, localBBox.y],
-      [localBBox.x + localBBox.width, localBBox.y],
-      [localBBox.x, localBBox.y + localBBox.height],
-      [localBBox.x + localBBox.width, localBBox.y + localBBox.height]
-    ].map(([x, y]) => {
-      const pt = svgRoot.createSVGPoint()
-      pt.x = x
-      pt.y = y
-      return pt.matrixTransform(elemMatrix)
+      // Pivot the flip around the element's *true* axis-aligned bbox centre in
+      // parent space. getStrokedBBoxDefaultVisible reports the bbox in the
+      // element's un-rotated frame, so using it as the pivot would shift rotated
+      // or skewed elements. Transform the geometry corners by the element's own
+      // matrix and take the axis-aligned centre instead.
+      const corners = [
+        [localBBox.x, localBBox.y],
+        [localBBox.x + localBBox.width, localBBox.y],
+        [localBBox.x, localBBox.y + localBBox.height],
+        [localBBox.x + localBBox.width, localBBox.y + localBBox.height]
+      ].map(([x, y]) => {
+        const pt = svgRoot.createSVGPoint()
+        pt.x = x
+        pt.y = y
+        return pt.matrixTransform(elemMatrix)
+      })
+      const xs = corners.map(p => p.x)
+      const ys = corners.map(p => p.y)
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+      const cy = (Math.min(...ys) + Math.max(...ys)) / 2
+
+      const flipMatrix = svgRoot
+        .createSVGMatrix()
+        .translate(cx, cy)
+        .scaleNonUniform(scaleX, scaleY)
+        .translate(-cx, -cy)
+
+      // Apply the flip *after* (on top of) the existing transform so the mirror
+      // happens in the element's visible coordinate space — flipMatrix · existing.
+      // This keeps the element's bbox centre exactly where it was. We collapse the
+      // whole list into a single matrix rather than going through
+      // recalculateDimensions, which decomposes rotation/scale and would relocate
+      // rotated or non-uniformly scaled elements.
+      const combinedMatrix = matrixMultiply(flipMatrix, elemMatrix)
+
+      const flipTransform = svgRoot.createSVGTransform()
+      flipTransform.setMatrix(combinedMatrix)
+
+      tlist.clear()
+      tlist.appendItem(flipTransform)
+
+      if ((selected.getAttribute('transform') || '') !== existingTransform) {
+        batchCmd.addSubCommand(
+          new ChangeElementCommand(selected, { transform: existingTransform })
+        )
+      }
+
+      svgCanvas
+        .gettingSelectorManager()
+        .requestSelector(selected)
+        .resize()
     })
-    const xs = corners.map(p => p.x)
-    const ys = corners.map(p => p.y)
-    const cx = (Math.min(...xs) + Math.max(...xs)) / 2
-    const cy = (Math.min(...ys) + Math.max(...ys)) / 2
 
-    const flipMatrix = svgRoot
-      .createSVGMatrix()
-      .translate(cx, cy)
-      .scaleNonUniform(scaleX, scaleY)
-      .translate(-cx, -cy)
-
-    // Apply the flip *after* (on top of) the existing transform so the mirror
-    // happens in the element's visible coordinate space — flipMatrix · existing.
-    // This keeps the element's bbox centre exactly where it was. We collapse the
-    // whole list into a single matrix rather than going through
-    // recalculateDimensions, which decomposes rotation/scale and would relocate
-    // rotated or non-uniformly scaled elements.
-    const combinedMatrix = matrixMultiply(flipMatrix, elemMatrix)
-
-    const flipTransform = svgRoot.createSVGTransform()
-    flipTransform.setMatrix(combinedMatrix)
-
-    tlist.clear()
-    tlist.appendItem(flipTransform)
-
-    if ((selected.getAttribute('transform') || '') !== existingTransform) {
-      batchCmd.addSubCommand(
-        new ChangeElementCommand(selected, { transform: existingTransform })
-      )
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
-
-    svgCanvas
-      .gettingSelectorManager()
-      .requestSelector(selected)
-      .resize()
-  })
-
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', selectedElements.filter(Boolean))
   }
-}
 
-/**
+  /**
  * Remembers the current selected elements on the clipboard.
  * @function module:selected-elem.SvgCanvas#copySelectedElements
  * @returns {void}
  */
-const copySelectedElements = () => {
-  const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-  const elemsJson = selectedElements.map(x => svgCanvas.getJsonFromSvgElements(x))
-  // Carry the referenced paint servers (gradients, filters, markers, …) on the
-  // clipboard, tagged `_defs`, so a paste into another drawing recreates them
-  // instead of leaving dangling url(#…) references and a corrupted <defs>.
-  const defsJson = svgCanvas.getReferencedDefElements(selectedElements)
-    .map(d => {
-      const json = svgCanvas.getJsonFromSvgElements(d)
-      if (json) json._defs = true
-      return json
-    })
-    .filter(Boolean)
-  const data = JSON.stringify([...defsJson, ...elemsJson])
-  // Use sessionStorage for the clipboard data.
-  sessionStorage.setItem(svgCanvas.getClipboardID(), data)
-  svgCanvas.flashStorage()
+  const copySelectedElements = () => {
+    const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
+    const elemsJson = selectedElements.map(x => svgCanvas.getJsonFromSvgElements(x))
+    // Carry the referenced paint servers (gradients, filters, markers, …) on the
+    // clipboard, tagged `_defs`, so a paste into another drawing recreates them
+    // instead of leaving dangling url(#…) references and a corrupted <defs>.
+    const defsJson = svgCanvas.getReferencedDefElements(selectedElements)
+      .map(d => {
+        const json = svgCanvas.getJsonFromSvgElements(d)
+        if (json) json._defs = true
+        return json
+      })
+      .filter(Boolean)
+    const data = JSON.stringify([...defsJson, ...elemsJson])
+    // Use sessionStorage for the clipboard data.
+    sessionStorage.setItem(svgCanvas.getClipboardID(), data)
+    svgCanvas.flashStorage()
 
-  // Also mirror onto the system clipboard so the native paste handler can tell
-  // an internal copy apart from external content (e.g. an SVG copied from
-  // another app). Write may reject (permissions / no user gesture) — ignore.
-  try {
-    navigator.clipboard?.writeText(data)?.catch(() => {})
-  } catch { /* clipboard unavailable */ }
+    // Also mirror onto the system clipboard so the native paste handler can tell
+    // an internal copy apart from external content (e.g. an SVG copied from
+    // another app). Write may reject (permissions / no user gesture) — ignore.
+    try {
+      navigator.clipboard?.writeText(data)?.catch(() => {})
+    } catch { /* clipboard unavailable */ }
 
-  // Context menu might not exist (it is provided by editor.js).
-  const canvMenu = svgCanvas.$id('se-cmenu_canvas')
-  canvMenu?.setAttribute('enablemenuitems', '#paste,#paste_in_place')
+    // Context menu might not exist (it is provided by editor.js).
+    const canvMenu = svgCanvas.$id('se-cmenu_canvas')
+    canvMenu?.setAttribute('enablemenuitems', '#paste,#paste_in_place')
 
-  // Other same-window editor instances share the sessionStorage clipboard
-  // but have their own context menu, so they need telling to re-check it
-  // (see the 'svgedit:clipboardchange' listener in EditorStartup.js).
-  document.dispatchEvent(new CustomEvent('svgedit:clipboardchange'))
-}
+    // Other same-window editor instances share the sessionStorage clipboard
+    // but have their own context menu, so they need telling to re-check it
+    // (see the 'svgedit:clipboardchange' listener in EditorStartup.js).
+    document.dispatchEvent(new CustomEvent('svgedit:clipboardchange'))
+  }
 
-/**
+  /**
  * Wraps all the selected elements in a group (`g`) element.
  * @function module:selected-elem.SvgCanvas#groupSelectedElements
  * @param {"a"|"g"} [type="g"] - type of element to group into, defaults to `<g>`
  * @param {string} [urlArg]
  * @returns {void}
  */
-const groupSelectedElements = (type, urlArg) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  if (!type) {
-    type = 'g'
-  }
-  let cmdStr = ''
-  let url
-
-  switch (type) {
-    case 'a': {
-      cmdStr = 'Make hyperlink'
-      url = urlArg || ''
-      break
-    }
-    default: {
+  const groupSelectedElements = (type, urlArg) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    if (!type) {
       type = 'g'
-      cmdStr = 'Group Elements'
-      break
     }
-  }
+    let cmdStr = ''
+    let url
 
-  const batchCmd = new BatchCommand(cmdStr)
-
-  // create and insert the group element
-  const g = svgCanvas.addSVGElementsFromJson({
-    element: type,
-    attr: {
-      id: svgCanvas.getNextId(type)
-    }
-  })
-  if (type === 'a') {
-    setHref(g, url)
-  }
-  batchCmd.addSubCommand(new InsertElementCommand(g))
-
-  // now move all children into the group
-  let i = selectedElements.length
-  while (i--) {
-    let elem = selectedElements[i]
-    if (!elem) {
-      continue
+    switch (type) {
+      case 'a': {
+        cmdStr = 'Make hyperlink'
+        url = urlArg || ''
+        break
+      }
+      default: {
+        type = 'g'
+        cmdStr = 'Group Elements'
+        break
+      }
     }
 
-    if (
-      elem.parentNode.tagName === 'a' &&
+    const batchCmd = new BatchCommand(cmdStr)
+
+    // create and insert the group element
+    const g = svgCanvas.addSVGElementsFromJson({
+      element: type,
+      attr: {
+        id: svgCanvas.getNextId(type)
+      }
+    })
+    if (type === 'a') {
+      setHref(g, url)
+    }
+    batchCmd.addSubCommand(new InsertElementCommand(g))
+
+    // now move all children into the group
+    let i = selectedElements.length
+    while (i--) {
+      let elem = selectedElements[i]
+      if (!elem) {
+        continue
+      }
+
+      if (
+        elem.parentNode.tagName === 'a' &&
       elem.parentNode.childNodes.length === 1
-    ) {
-      elem = elem.parentNode
+      ) {
+        elem = elem.parentNode
+      }
+
+      const oldNextSibling = elem.nextSibling
+      const oldParent = elem.parentNode
+      g.append(elem)
+      batchCmd.addSubCommand(
+        new MoveElementCommand(elem, oldNextSibling, oldParent)
+      )
+    }
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
     }
 
-    const oldNextSibling = elem.nextSibling
-    const oldParent = elem.parentNode
-    g.append(elem)
-    batchCmd.addSubCommand(
-      new MoveElementCommand(elem, oldNextSibling, oldParent)
-    )
-  }
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
+    // update selection
+    svgCanvas.selectOnly([g], true)
   }
 
-  // update selection
-  svgCanvas.selectOnly([g], true)
-}
-
-/**
+  /**
  * Pushes all appropriate parent group properties down to its children, then
  * removes them from the group.
  * @function module:selected-elem.SvgCanvas#pushGroupProperty
@@ -1139,130 +1139,130 @@ const groupSelectedElements = (type, urlArg) => {
  * @param {boolean} undoable
  * @returns {BatchCommand|void}
  */
-const pushGroupProperty = (g, undoable) => {
-  const children = g.childNodes
-  const len = children.length
-  const xform = g.getAttribute('transform')
+  const pushGroupProperty = (g, undoable) => {
+    const children = g.childNodes
+    const len = children.length
+    const xform = g.getAttribute('transform')
 
-  const glist = getTransformList(g)
-  const m = transformListToTransform(glist).matrix
+    const glist = getTransformList(g)
+    const m = transformListToTransform(glist).matrix
 
-  const batchCmd = new BatchCommand('Push group properties')
+    const batchCmd = new BatchCommand('Push group properties')
 
-  // TODO: get all fill/stroke properties from the group that we are about to destroy
-  // "fill", "fill-opacity", "fill-rule", "stroke", "stroke-dasharray", "stroke-dashoffset",
-  // "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity",
-  // "stroke-width"
-  // and then for each child, if they do not have the attribute (or the value is 'inherit')
-  // then set the child's attribute
+    // TODO: get all fill/stroke properties from the group that we are about to destroy
+    // "fill", "fill-opacity", "fill-rule", "stroke", "stroke-dasharray", "stroke-dashoffset",
+    // "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity",
+    // "stroke-width"
+    // and then for each child, if they do not have the attribute (or the value is 'inherit')
+    // then set the child's attribute
 
-  const gangle = getRotationAngle(g)
+    const gangle = getRotationAngle(g)
 
-  const gattrs = {
-    filter: g.getAttribute('filter'),
-    opacity: g.getAttribute('opacity')
-  }
-  let gfilter
-  let gblur
-  let changes
-  const drawing = svgCanvas.getDrawing()
-
-  for (let i = 0; i < len; i++) {
-    const elem = children[i]
-
-    if (elem.nodeType !== 1) {
-      continue
+    const gattrs = {
+      filter: g.getAttribute('filter'),
+      opacity: g.getAttribute('opacity')
     }
+    let gfilter
+    let gblur
+    let changes
+    const drawing = svgCanvas.getDrawing()
 
-    if (gattrs.opacity !== null && gattrs.opacity !== 1) {
+    for (let i = 0; i < len; i++) {
+      const elem = children[i]
+
+      if (elem.nodeType !== 1) {
+        continue
+      }
+
+      if (gattrs.opacity !== null && gattrs.opacity !== 1) {
       // const c_opac = elem.getAttribute('opacity') || 1;
-      const newOpac =
+        const newOpac =
         Math.round((elem.getAttribute('opacity') || 1) * gattrs.opacity * 100) /
         100
-      svgCanvas.changeSelectedAttribute('opacity', newOpac, [elem])
-    }
-
-    if (gattrs.filter) {
-      let cblur = svgCanvas.getBlur(elem)
-      const origCblur = cblur
-      if (!gblur) {
-        gblur = svgCanvas.getBlur(g)
+        svgCanvas.changeSelectedAttribute('opacity', newOpac, [elem])
       }
-      if (cblur) {
+
+      if (gattrs.filter) {
+        let cblur = svgCanvas.getBlur(elem)
+        const origCblur = cblur
+        if (!gblur) {
+          gblur = svgCanvas.getBlur(g)
+        }
+        if (cblur) {
         // Is this formula correct?
-        cblur = Number(gblur) + Number(cblur)
-      } else if (cblur === 0) {
-        cblur = gblur
-      }
+          cblur = Number(gblur) + Number(cblur)
+        } else if (cblur === 0) {
+          cblur = gblur
+        }
 
-      // If child has no current filter, get group's filter or clone it.
-      if (!origCblur) {
+        // If child has no current filter, get group's filter or clone it.
+        if (!origCblur) {
         // Set group's filter to use first child's ID
-        if (!gfilter) {
-          gfilter = svgCanvas.getRefElem(gattrs.filter)
-        } else {
+          if (!gfilter) {
+            gfilter = svgCanvas.getRefElem(gattrs.filter)
+          } else {
           // Clone the group's filter
-          gfilter = drawing.copyElem(gfilter)
-          // copyElem() always returns a real Element today, but this call
-          // (Ungroup cloning a shared blur/filter onto each child) is exactly
-          // the historical shape of a legacy bug where a filter clone that
-          // came back falsy got appended into <defs> anyway, silently
-          // inserting a literal "undefined" text node (Element.append()
-          // coerces non-Node args via ToString() instead of throwing). Guard
-          // explicitly so a future change to copyElem's contract can't
-          // reintroduce that silently. `continue`, not `return`: this is the
-          // body of pushGroupProperty's own child loop, and one child failing
-          // to clone a filter shouldn't abort processing the rest.
-          if (!gfilter) continue
-          svgCanvas.findDefs().append(gfilter)
+            gfilter = drawing.copyElem(gfilter)
+            // copyElem() always returns a real Element today, but this call
+            // (Ungroup cloning a shared blur/filter onto each child) is exactly
+            // the historical shape of a legacy bug where a filter clone that
+            // came back falsy got appended into <defs> anyway, silently
+            // inserting a literal "undefined" text node (Element.append()
+            // coerces non-Node args via ToString() instead of throwing). Guard
+            // explicitly so a future change to copyElem's contract can't
+            // reintroduce that silently. `continue`, not `return`: this is the
+            // body of pushGroupProperty's own child loop, and one child failing
+            // to clone a filter shouldn't abort processing the rest.
+            if (!gfilter) continue
+            svgCanvas.findDefs().append(gfilter)
 
-          // const filterElem = getRefElem(gfilter);
-          const blurElem = getFeGaussianBlur(gfilter)
-          // Change this in future for different filters
-          const suffix =
+            // const filterElem = getRefElem(gfilter);
+            const blurElem = getFeGaussianBlur(gfilter)
+            // Change this in future for different filters
+            const suffix =
             blurElem?.tagName === 'feGaussianBlur' ? 'blur' : 'filter'
-          gfilter.id = `${elem.id}_${suffix}`
-          svgCanvas.changeSelectedAttribute(
-            'filter',
+            gfilter.id = `${elem.id}_${suffix}`
+            svgCanvas.changeSelectedAttribute(
+              'filter',
             `url(#${gfilter.id})`,
             [elem]
-          )
+            )
+          }
+        } else {
+          gfilter = svgCanvas.getRefElem(elem.getAttribute('filter'))
         }
-      } else {
-        gfilter = svgCanvas.getRefElem(elem.getAttribute('filter'))
+        // const filterElem = getRefElem(gfilter);
+        const blurElem = getFeGaussianBlur(gfilter)
+
+        // Update blur value
+        if (cblur) {
+          svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [blurElem])
+          svgCanvas.setBlurOffsets(gfilter, cblur)
+        }
       }
-      // const filterElem = getRefElem(gfilter);
-      const blurElem = getFeGaussianBlur(gfilter)
 
-      // Update blur value
-      if (cblur) {
-        svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [blurElem])
-        svgCanvas.setBlurOffsets(gfilter, cblur)
+      let chtlist = getTransformList(elem)
+
+      // Don't process gradient transforms
+      if (elem.tagName.includes('Gradient')) {
+        chtlist = null
       }
-    }
 
-    let chtlist = getTransformList(elem)
+      // Hopefully not a problem to add this. Necessary for elements like <desc/>
+      if (!chtlist) {
+        continue
+      }
 
-    // Don't process gradient transforms
-    if (elem.tagName.includes('Gradient')) {
-      chtlist = null
-    }
+      // Apparently <defs> can get get a transformlist, but we don't want it to have one!
+      if (elem.tagName === 'defs') {
+        continue
+      }
 
-    // Hopefully not a problem to add this. Necessary for elements like <desc/>
-    if (!chtlist) {
-      continue
-    }
-
-    // Apparently <defs> can get get a transformlist, but we don't want it to have one!
-    if (elem.tagName === 'defs') {
-      continue
-    }
-
-    if (glist.numberOfItems) {
+      if (glist.numberOfItems) {
       // TODO: if the group's transform is just a rotate, we can always transfer the
       // rotate() down to the children (collapsing consecutive rotates and factoring
       // out any translates)
-      if (gangle && glist.numberOfItems === 1) {
+        if (gangle && glist.numberOfItems === 1) {
         // [Rg] [Rc] [Mc]
         // we want [Tr] [Rc2] [Mc] where:
         //  - [Rc2] is at the child's current center but has the
@@ -1270,420 +1270,420 @@ const pushGroupProperty = (g, undoable) => {
         //  - [Tr] is the equivalent translation that this child
         // undergoes if the group wasn't there
 
-        // [Tr] = [Rg] [Rc] [Rc2_inv]
+          // [Tr] = [Rg] [Rc] [Rc2_inv]
 
-        // Capture the child's pre-bake transform so the change is undoable.
-        // Without this, undo restores the group's rotation but leaves the
-        // baked rotation on the children, producing a double transform.
-        const oldChildXform = elem.getAttribute('transform') || ''
+          // Capture the child's pre-bake transform so the change is undoable.
+          // Without this, undo restores the group's rotation but leaves the
+          // baked rotation on the children, producing a double transform.
+          const oldChildXform = elem.getAttribute('transform') || ''
 
-        // get group's rotation matrix (Rg)
-        const rgm = glist.getItem(0).matrix
+          // get group's rotation matrix (Rg)
+          const rgm = glist.getItem(0).matrix
 
-        // get child's rotation matrix (Rc)
-        let rcm = svgCanvas.getSvgRoot().createSVGMatrix()
-        const cangle = getRotationAngle(elem)
-        if (cangle) {
-          rcm = chtlist.getItem(0).matrix
-        }
-
-        // get child's old center of rotation
-        const cbox = utilsGetBBox(elem)
-        const ceqm = transformListToTransform(chtlist).matrix
-        const coldc = transformPoint(
-          cbox.x + cbox.width / 2,
-          cbox.y + cbox.height / 2,
-          ceqm
-        )
-
-        // sum group and child's angles
-        const sangle = gangle + cangle
-
-        // get child's rotation at the old center (Rc2_inv)
-        const r2 = svgCanvas.getSvgRoot().createSVGTransform()
-        r2.setRotate(sangle, coldc.x, coldc.y)
-
-        // calculate equivalent translate
-        const trm = matrixMultiply(rgm, rcm, r2.matrix.inverse())
-
-        // set up tlist
-        if (cangle) {
-          chtlist.removeItem(0)
-        }
-
-        if (sangle) {
-          if (chtlist.numberOfItems) {
-            chtlist.insertItemBefore(r2, 0)
-          } else {
-            chtlist.appendItem(r2)
+          // get child's rotation matrix (Rc)
+          let rcm = svgCanvas.getSvgRoot().createSVGMatrix()
+          const cangle = getRotationAngle(elem)
+          if (cangle) {
+            rcm = chtlist.getItem(0).matrix
           }
-        }
 
-        if (trm.e || trm.f) {
-          const tr = svgCanvas.getSvgRoot().createSVGTransform()
-          tr.setTranslate(trm.e, trm.f)
-          if (chtlist.numberOfItems) {
-            chtlist.insertItemBefore(tr, 0)
-          } else {
-            chtlist.appendItem(tr)
-          }
-        }
-
-        // Record the child's transform change for undo/redo
-        if (undoable) {
-          batchCmd.addSubCommand(
-            new ChangeElementCommand(elem, { transform: oldChildXform })
+          // get child's old center of rotation
+          const cbox = utilsGetBBox(elem)
+          const ceqm = transformListToTransform(chtlist).matrix
+          const coldc = transformPoint(
+            cbox.x + cbox.width / 2,
+            cbox.y + cbox.height / 2,
+            ceqm
           )
-        }
-      } else {
+
+          // sum group and child's angles
+          const sangle = gangle + cangle
+
+          // get child's rotation at the old center (Rc2_inv)
+          const r2 = svgCanvas.getSvgRoot().createSVGTransform()
+          r2.setRotate(sangle, coldc.x, coldc.y)
+
+          // calculate equivalent translate
+          const trm = matrixMultiply(rgm, rcm, r2.matrix.inverse())
+
+          // set up tlist
+          if (cangle) {
+            chtlist.removeItem(0)
+          }
+
+          if (sangle) {
+            if (chtlist.numberOfItems) {
+              chtlist.insertItemBefore(r2, 0)
+            } else {
+              chtlist.appendItem(r2)
+            }
+          }
+
+          if (trm.e || trm.f) {
+            const tr = svgCanvas.getSvgRoot().createSVGTransform()
+            tr.setTranslate(trm.e, trm.f)
+            if (chtlist.numberOfItems) {
+              chtlist.insertItemBefore(tr, 0)
+            } else {
+              chtlist.appendItem(tr)
+            }
+          }
+
+          // Record the child's transform change for undo/redo
+          if (undoable) {
+            batchCmd.addSubCommand(
+              new ChangeElementCommand(elem, { transform: oldChildXform })
+            )
+          }
+        } else {
         // more complicated than just a rotate
         // transfer the group's transform down to each child and then
         // call recalculateDimensions()
-        const oldxform = elem.getAttribute('transform')
-        changes = {}
-        changes.transform = oldxform || ''
+          const oldxform = elem.getAttribute('transform')
+          changes = {}
+          changes.transform = oldxform || ''
 
-        // Simply prepend the group's transform to the child's transform list
-        // New transform = [group transform] [child transform]
-        // This preserves the correct application order
-        const newxform = svgCanvas.getSvgRoot().createSVGTransform()
-        newxform.setMatrix(m)
+          // Simply prepend the group's transform to the child's transform list
+          // New transform = [group transform] [child transform]
+          // This preserves the correct application order
+          const newxform = svgCanvas.getSvgRoot().createSVGTransform()
+          newxform.setMatrix(m)
 
-        // Insert group's transform at the beginning of child's transform list
-        if (chtlist.numberOfItems) {
-          chtlist.insertItemBefore(newxform, 0)
-        } else {
-          chtlist.appendItem(newxform)
+          // Insert group's transform at the beginning of child's transform list
+          if (chtlist.numberOfItems) {
+            chtlist.insertItemBefore(newxform, 0)
+          } else {
+            chtlist.appendItem(newxform)
+          }
+
+          // Record the transform change for undo/redo
+          if (undoable) {
+            batchCmd.addSubCommand(new ChangeElementCommand(elem, changes))
+          }
         }
-
-        // Record the transform change for undo/redo
-        if (undoable) {
-          batchCmd.addSubCommand(new ChangeElementCommand(elem, changes))
-        }
-      }
       // NOTE: We intentionally do NOT call recalculateDimensions here because:
       // 1. It reorders transforms (moves rotate before translate), changing the visual result
       // 2. It recalculates rotation centers, causing elements to jump
       // 3. The prepended group transform is already in the correct position
       // Just leave the transforms as-is after prepending the group's transform
+      }
     }
+
+    // remove transform and make it undo-able
+    if (xform) {
+      changes = {}
+      changes.transform = xform
+      g.setAttribute('transform', '')
+      g.removeAttribute('transform')
+      batchCmd.addSubCommand(new ChangeElementCommand(g, changes))
+    }
+
+    if (undoable && !batchCmd.isEmpty()) {
+      return batchCmd
+    }
+    return undefined
   }
 
-  // remove transform and make it undo-able
-  if (xform) {
-    changes = {}
-    changes.transform = xform
-    g.setAttribute('transform', '')
-    g.removeAttribute('transform')
-    batchCmd.addSubCommand(new ChangeElementCommand(g, changes))
-  }
-
-  if (undoable && !batchCmd.isEmpty()) {
-    return batchCmd
-  }
-  return undefined
-}
-
-/**
+  /**
  * Converts selected/given `<use>` or child SVG element to a group.
  * @function module:selected-elem.SvgCanvas#convertToGroup
  * @param {Element} elem
  * @fires module:selected-elem.SvgCanvas#event:selected
  * @returns {void}
  */
-const convertToGroup = elem => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  if (!elem) {
-    elem = selectedElements[0]
-  }
-  const $elem = elem
-  const batchCmd = new BatchCommand()
-  let ts
-  const dataStorage = svgCanvas.getDataStorage()
-  if (dataStorage.has($elem, 'gsvg')) {
-    // Use the gsvg as the new group
-    const svg = elem.firstChild
-    const pt = {
-      x: Number(svg.getAttribute('x')),
-      y: Number(svg.getAttribute('y'))
-    }
-
-    // $(elem.firstChild.firstChild).unwrap();
-    const firstChild = elem.firstChild.firstChild
-    if (firstChild) {
-      const container = svg
-      // Snapshot before/after as detached clones (rather than innerHTML
-      // strings) so apply/unapply only ever use plain DOM node ops — some
-      // DOM implementations mishandle innerHTML/outerHTML round-trips for
-      // foreign-namespace (SVG-in-SVG) content.
-      const beforeNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
-      firstChild.outerHTML = firstChild.innerHTML
-      const afterNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
-      const replaceChildren = nodes => {
-        while (container.firstChild) { container.removeChild(container.firstChild) }
-        nodes.forEach(n => container.appendChild(n.cloneNode(true)))
-      }
-      const unwrapCmd = new Command()
-      unwrapCmd.text = 'Unwrap SVG'
-      unwrapCmd.elements = () => [elem]
-      unwrapCmd.apply = handler => {
-        Command.prototype.apply.call(unwrapCmd, handler, () => {
-          replaceChildren(afterNodes)
-        })
-      }
-      unwrapCmd.unapply = handler => {
-        Command.prototype.unapply.call(unwrapCmd, handler, () => {
-          replaceChildren(beforeNodes)
-        })
-      }
-      batchCmd.addSubCommand(unwrapCmd)
-    }
-    dataStorage.remove(elem, 'gsvg')
-
-    const oldTransform = elem.getAttribute('transform') || ''
-    const tlist = getTransformList(elem)
-    const xform = svgCanvas.getSvgRoot().createSVGTransform()
-    xform.setTranslate(pt.x, pt.y)
-    tlist.appendItem(xform)
-    const newTransform = elem.getAttribute('transform') || ''
-    if (newTransform !== oldTransform) {
-      batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
-    }
-    svgCanvas.recalculateDimensions(elem)
-    svgCanvas.call('selected', [elem])
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-    }
-  } else if (dataStorage.has($elem, 'symbol')) {
-    elem = dataStorage.get($elem, 'symbol')
+  const convertToGroup = elem => {
+    const selectedElements = svgCanvas.getSelectedElements()
     if (!elem) {
-      warn('Unable to convert <use>: missing symbol reference', null, 'selected-elem')
-      return
+      elem = selectedElements[0]
     }
-
-    ts = $elem.getAttribute('transform') || ''
-    const pos = {
-      x: Number($elem.getAttribute('x')),
-      y: Number($elem.getAttribute('y'))
-    }
-
-    const vb = elem.getAttribute('viewBox')
-
-    if (vb) {
-      const nums = vb.split(/[ ,]+/)
-      pos.x -= Number(nums[0])
-      pos.y -= Number(nums[1])
-    }
-
-    // Not ideal, but works
-    ts += ' translate(' + (pos.x || 0) + ',' + (pos.y || 0) + ')'
-
-    const useParent = $elem.parentNode
-    const useNextSibling = $elem.nextSibling
-
-    // Remove <use> element
-    batchCmd.addSubCommand(
-      new RemoveElementCommand(
-        $elem,
-        useNextSibling,
-        useParent
-      )
-    )
-    $elem.remove()
-
-    // See if other elements reference this symbol
-    const svgContent = svgCanvas.getSvgContent()
-    // const hasMore = svgContent.querySelectorAll('use:data(symbol)').length;
-    // @todo review this logic
-    const hasMore = svgContent.querySelectorAll('use').length
-
-    const g = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'g')
-    const childs = elem.childNodes
-
-    let i
-    for (i = 0; i < childs.length; i++) {
-      g.append(childs[i].cloneNode(true))
-    }
-
-    // Duplicate the gradients for Gecko, since they weren't included in the <symbol>
-    if (isGecko()) {
-      const svgElement = svgCanvas.findDefs()
-      const gradients = svgElement.querySelectorAll(
-        'linearGradient,radialGradient,pattern'
-      )
-      for (let i = 0, im = gradients.length; im > i; i++) {
-        g.appendChild(gradients[i].cloneNode(true))
+    const $elem = elem
+    const batchCmd = new BatchCommand()
+    let ts
+    const dataStorage = svgCanvas.getDataStorage()
+    if (dataStorage.has($elem, 'gsvg')) {
+    // Use the gsvg as the new group
+      const svg = elem.firstChild
+      const pt = {
+        x: Number(svg.getAttribute('x')),
+        y: Number(svg.getAttribute('y'))
       }
-    }
 
-    if (ts) {
-      g.setAttribute('transform', ts)
-    }
-
-    const parent = elem.parentNode
-
-    svgCanvas.uniquifyElems(g)
-
-    // Put the dupe gradients back into <defs> (after uniquifying them)
-    if (isGecko()) {
-      const svgElement = svgCanvas.findDefs()
-      const elements = g.querySelectorAll(
-        'linearGradient,radialGradient,pattern'
-      )
-      for (let i = 0, im = elements.length; im > i; i++) {
-        svgElement.appendChild(elements[i])
+      // $(elem.firstChild.firstChild).unwrap();
+      const firstChild = elem.firstChild.firstChild
+      if (firstChild) {
+        const container = svg
+        // Snapshot before/after as detached clones (rather than innerHTML
+        // strings) so apply/unapply only ever use plain DOM node ops — some
+        // DOM implementations mishandle innerHTML/outerHTML round-trips for
+        // foreign-namespace (SVG-in-SVG) content.
+        const beforeNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
+        firstChild.outerHTML = firstChild.innerHTML
+        const afterNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
+        const replaceChildren = nodes => {
+          while (container.firstChild) { container.removeChild(container.firstChild) }
+          nodes.forEach(n => container.appendChild(n.cloneNode(true)))
+        }
+        const unwrapCmd = new Command()
+        unwrapCmd.text = 'Unwrap SVG'
+        unwrapCmd.elements = () => [elem]
+        unwrapCmd.apply = handler => {
+          Command.prototype.apply.call(unwrapCmd, handler, () => {
+            replaceChildren(afterNodes)
+          })
+        }
+        unwrapCmd.unapply = handler => {
+          Command.prototype.unapply.call(unwrapCmd, handler, () => {
+            replaceChildren(beforeNodes)
+          })
+        }
+        batchCmd.addSubCommand(unwrapCmd)
       }
-    }
+      dataStorage.remove(elem, 'gsvg')
 
-    // now give the g itself a new id
-    g.id = svgCanvas.getNextId()
+      const oldTransform = elem.getAttribute('transform') || ''
+      const tlist = getTransformList(elem)
+      const xform = svgCanvas.getSvgRoot().createSVGTransform()
+      xform.setTranslate(pt.x, pt.y)
+      tlist.appendItem(xform)
+      const newTransform = elem.getAttribute('transform') || ''
+      if (newTransform !== oldTransform) {
+        batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
+      }
+      svgCanvas.recalculateDimensions(elem)
+      svgCanvas.call('selected', [elem])
+      if (!batchCmd.isEmpty()) {
+        svgCanvas.addCommandToHistory(batchCmd)
+      }
+    } else if (dataStorage.has($elem, 'symbol')) {
+      elem = dataStorage.get($elem, 'symbol')
+      if (!elem) {
+        warn('Unable to convert <use>: missing symbol reference', null, 'selected-elem')
+        return
+      }
 
-    if (useParent) {
-      useParent.insertBefore(g, useNextSibling)
-    }
+      ts = $elem.getAttribute('transform') || ''
+      const pos = {
+        x: Number($elem.getAttribute('x')),
+        y: Number($elem.getAttribute('y'))
+      }
 
-    if (parent) {
-      if (!hasMore) {
-        // remove symbol/svg element
-        const { nextSibling } = elem
-        elem.remove()
-        batchCmd.addSubCommand(
-          new RemoveElementCommand(elem, nextSibling, parent)
+      const vb = elem.getAttribute('viewBox')
+
+      if (vb) {
+        const nums = vb.split(/[ ,]+/)
+        pos.x -= Number(nums[0])
+        pos.y -= Number(nums[1])
+      }
+
+      // Not ideal, but works
+      ts += ' translate(' + (pos.x || 0) + ',' + (pos.y || 0) + ')'
+
+      const useParent = $elem.parentNode
+      const useNextSibling = $elem.nextSibling
+
+      // Remove <use> element
+      batchCmd.addSubCommand(
+        new RemoveElementCommand(
+          $elem,
+          useNextSibling,
+          useParent
         )
+      )
+      $elem.remove()
+
+      // See if other elements reference this symbol
+      const svgContent = svgCanvas.getSvgContent()
+      // const hasMore = svgContent.querySelectorAll('use:data(symbol)').length;
+      // @todo review this logic
+      const hasMore = svgContent.querySelectorAll('use').length
+
+      const g = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'g')
+      const childs = elem.childNodes
+
+      let i
+      for (i = 0; i < childs.length; i++) {
+        g.append(childs[i].cloneNode(true))
       }
-      batchCmd.addSubCommand(new InsertElementCommand(g))
-    }
 
-    svgCanvas.setUseData(g)
+      // Duplicate the gradients for Gecko, since they weren't included in the <symbol>
+      if (isGecko()) {
+        const svgElement = svgCanvas.findDefs()
+        const gradients = svgElement.querySelectorAll(
+          'linearGradient,radialGradient,pattern'
+        )
+        for (let i = 0, im = gradients.length; im > i; i++) {
+          g.appendChild(gradients[i].cloneNode(true))
+        }
+      }
 
-    if (isGecko()) {
-      svgCanvas.convertGradients(svgCanvas.findDefs())
+      if (ts) {
+        g.setAttribute('transform', ts)
+      }
+
+      const parent = elem.parentNode
+
+      svgCanvas.uniquifyElems(g)
+
+      // Put the dupe gradients back into <defs> (after uniquifying them)
+      if (isGecko()) {
+        const svgElement = svgCanvas.findDefs()
+        const elements = g.querySelectorAll(
+          'linearGradient,radialGradient,pattern'
+        )
+        for (let i = 0, im = elements.length; im > i; i++) {
+          svgElement.appendChild(elements[i])
+        }
+      }
+
+      // now give the g itself a new id
+      g.id = svgCanvas.getNextId()
+
+      if (useParent) {
+        useParent.insertBefore(g, useNextSibling)
+      }
+
+      if (parent) {
+        if (!hasMore) {
+        // remove symbol/svg element
+          const { nextSibling } = elem
+          elem.remove()
+          batchCmd.addSubCommand(
+            new RemoveElementCommand(elem, nextSibling, parent)
+          )
+        }
+        batchCmd.addSubCommand(new InsertElementCommand(g))
+      }
+
+      svgCanvas.setUseData(g)
+
+      if (isGecko()) {
+        svgCanvas.convertGradients(svgCanvas.findDefs())
+      } else {
+        svgCanvas.convertGradients(g)
+      }
+
+      // recalculate dimensions on the top-level children so that unnecessary transforms
+      // are removed
+      walkTreePost(g, n => {
+        try {
+          svgCanvas.recalculateDimensions(n)
+        } catch (e) {
+          error('Error recalculating dimensions', e, 'selected-elem')
+        }
+      })
+
+      // Give ID for any visible element missing one
+      const visElems = g.querySelectorAll(svgCanvas.getVisElems())
+      Array.prototype.forEach.call(visElems, el => {
+        if (!el.id) {
+          el.id = svgCanvas.getNextId()
+        }
+      })
+
+      svgCanvas.selectOnly([g])
+
+      const cm = pushGroupProperty(g, true)
+      if (cm) {
+        batchCmd.addSubCommand(cm)
+      }
+
+      svgCanvas.addCommandToHistory(batchCmd)
     } else {
-      svgCanvas.convertGradients(g)
+      warn('Unexpected element to ungroup:', elem, 'selected-elem')
     }
-
-    // recalculate dimensions on the top-level children so that unnecessary transforms
-    // are removed
-    walkTreePost(g, n => {
-      try {
-        svgCanvas.recalculateDimensions(n)
-      } catch (e) {
-        error('Error recalculating dimensions', e, 'selected-elem')
-      }
-    })
-
-    // Give ID for any visible element missing one
-    const visElems = g.querySelectorAll(svgCanvas.getVisElems())
-    Array.prototype.forEach.call(visElems, el => {
-      if (!el.id) {
-        el.id = svgCanvas.getNextId()
-      }
-    })
-
-    svgCanvas.selectOnly([g])
-
-    const cm = pushGroupProperty(g, true)
-    if (cm) {
-      batchCmd.addSubCommand(cm)
-    }
-
-    svgCanvas.addCommandToHistory(batchCmd)
-  } else {
-    warn('Unexpected element to ungroup:', elem, 'selected-elem')
   }
-}
 
-/**
+  /**
  * Unwraps all the elements in a selected group (`g`) element. This requires
  * significant recalculations to apply group's transforms, etc. to its children.
  * @function module:selected-elem.SvgCanvas#ungroupSelectedElement
  * @returns {void}
  */
-const ungroupSelectedElement = () => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const dataStorage = svgCanvas.getDataStorage()
-  let g = selectedElements[0]
-  if (!g) {
-    return
-  }
-  if (dataStorage.has(g, 'gsvg') || dataStorage.has(g, 'symbol')) {
+  const ungroupSelectedElement = () => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const dataStorage = svgCanvas.getDataStorage()
+    let g = selectedElements[0]
+    if (!g) {
+      return
+    }
+    if (dataStorage.has(g, 'gsvg') || dataStorage.has(g, 'symbol')) {
     // Is svg, so actually convert to group
-    convertToGroup(g)
-    return
-  }
-  if (g.tagName === 'use') {
+      convertToGroup(g)
+      return
+    }
+    if (g.tagName === 'use') {
     // Somehow doesn't have data set, so retrieve
-    const href = getHref(g)
-    if (!href || !href.startsWith('#')) {
-      warn('Unexpected <use> without local reference:', g, 'selected-elem')
+      const href = getHref(g)
+      if (!href || !href.startsWith('#')) {
+        warn('Unexpected <use> without local reference:', g, 'selected-elem')
+        return
+      }
+      const symbol = svgCanvas.getElement(href.slice(1))
+      if (!symbol) {
+        warn('Unexpected <use> without resolved reference:', g, 'selected-elem')
+        return
+      }
+      dataStorage.put(g, 'symbol', symbol)
+      dataStorage.put(g, 'ref', symbol)
+      convertToGroup(g)
       return
     }
-    const symbol = svgCanvas.getElement(href.slice(1))
-    if (!symbol) {
-      warn('Unexpected <use> without resolved reference:', g, 'selected-elem')
-      return
-    }
-    dataStorage.put(g, 'symbol', symbol)
-    dataStorage.put(g, 'ref', symbol)
-    convertToGroup(g)
-    return
-  }
-  const parentsA = getParents(g.parentNode, 'a')
-  if (parentsA?.length) {
-    g = parentsA[0]
-  }
-
-  // Look for parent "a"
-  if (g.tagName === 'g' || g.tagName === 'a') {
-    const batchCmd = new BatchCommand('Ungroup Elements')
-    const cmd = pushGroupProperty(g, true)
-    if (cmd) {
-      batchCmd.addSubCommand(cmd)
+    const parentsA = getParents(g.parentNode, 'a')
+    if (parentsA?.length) {
+      g = parentsA[0]
     }
 
-    const parent = g.parentNode
-    const anchor = g.nextSibling
-    const children = new Array(g.childNodes.length)
-
-    let i = 0
-    while (g.firstChild) {
-      const elem = g.firstChild
-      const oldNextSibling = elem.nextSibling
-      const oldParent = elem.parentNode
-
-      // Remove child title elements
-      if (elem.tagName === 'title') {
-        const { nextSibling } = elem
-        batchCmd.addSubCommand(
-          new RemoveElementCommand(elem, nextSibling, oldParent)
-        )
-        elem.remove()
-        continue
+    // Look for parent "a"
+    if (g.tagName === 'g' || g.tagName === 'a') {
+      const batchCmd = new BatchCommand('Ungroup Elements')
+      const cmd = pushGroupProperty(g, true)
+      if (cmd) {
+        batchCmd.addSubCommand(cmd)
       }
 
-      children[i++] = parent.insertBefore(elem, anchor)
-      batchCmd.addSubCommand(
-        new MoveElementCommand(elem, oldNextSibling, oldParent)
-      )
+      const parent = g.parentNode
+      const anchor = g.nextSibling
+      const children = new Array(g.childNodes.length)
+
+      let i = 0
+      while (g.firstChild) {
+        const elem = g.firstChild
+        const oldNextSibling = elem.nextSibling
+        const oldParent = elem.parentNode
+
+        // Remove child title elements
+        if (elem.tagName === 'title') {
+          const { nextSibling } = elem
+          batchCmd.addSubCommand(
+            new RemoveElementCommand(elem, nextSibling, oldParent)
+          )
+          elem.remove()
+          continue
+        }
+
+        children[i++] = parent.insertBefore(elem, anchor)
+        batchCmd.addSubCommand(
+          new MoveElementCommand(elem, oldNextSibling, oldParent)
+        )
+      }
+
+      // remove the group from the selection
+      svgCanvas.clearSelection()
+
+      // delete the group element (but make undo-able)
+      const gNextSibling = g.nextSibling
+      g.remove()
+      batchCmd.addSubCommand(new RemoveElementCommand(g, gNextSibling, parent))
+
+      if (!batchCmd.isEmpty()) {
+        svgCanvas.addCommandToHistory(batchCmd)
+      }
+
+      // update selection
+      svgCanvas.addToSelection(children)
     }
-
-    // remove the group from the selection
-    svgCanvas.clearSelection()
-
-    // delete the group element (but make undo-able)
-    const gNextSibling = g.nextSibling
-    g.remove()
-    batchCmd.addSubCommand(new RemoveElementCommand(g, gNextSibling, parent))
-
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-    }
-
-    // update selection
-    svgCanvas.addToSelection(children)
   }
-}
-/**
+  /**
  * Updates the editor canvas width/height/position after a zoom has occurred.
  * @function module:svgcanvas.SvgCanvas#updateCanvas
  * @param {Float} w - Float with the new width
@@ -1691,45 +1691,45 @@ const ungroupSelectedElement = () => {
  * @fires module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
  * @returns {module:svgcanvas.CanvasInfo}
  */
-const updateCanvas = (w, h) => {
-  svgCanvas.getSvgRoot().setAttribute('width', w)
-  svgCanvas.getSvgRoot().setAttribute('height', h)
-  const zoom = svgCanvas.getZoom()
-  const bg = svgCanvas.$id('canvasBackground')
-  const oldX = Number(svgCanvas.getSvgContent().getAttribute('x'))
-  const oldY = Number(svgCanvas.getSvgContent().getAttribute('y'))
-  const x = (w - svgCanvas.contentW * zoom) / 2
-  const y = (h - svgCanvas.contentH * zoom) / 2
+  const updateCanvas = (w, h) => {
+    svgCanvas.getSvgRoot().setAttribute('width', w)
+    svgCanvas.getSvgRoot().setAttribute('height', h)
+    const zoom = svgCanvas.getZoom()
+    const bg = svgCanvas.$id('canvasBackground')
+    const oldX = Number(svgCanvas.getSvgContent().getAttribute('x'))
+    const oldY = Number(svgCanvas.getSvgContent().getAttribute('y'))
+    const x = (w - svgCanvas.contentW * zoom) / 2
+    const y = (h - svgCanvas.contentH * zoom) / 2
 
-  assignAttributes(svgCanvas.getSvgContent(), {
-    width: svgCanvas.contentW * zoom,
-    height: svgCanvas.contentH * zoom,
-    x,
-    y,
-    viewBox: `0 0 ${svgCanvas.contentW} ${svgCanvas.contentH}`
-  })
-
-  assignAttributes(bg, {
-    width: svgCanvas.getSvgContent().getAttribute('width'),
-    height: svgCanvas.getSvgContent().getAttribute('height'),
-    x,
-    y
-  })
-
-  const bgImg = svgCanvas.getElement('background_image')
-  if (bgImg) {
-    assignAttributes(bgImg, {
-      width: '100%',
-      height: '100%'
+    assignAttributes(svgCanvas.getSvgContent(), {
+      width: svgCanvas.contentW * zoom,
+      height: svgCanvas.contentH * zoom,
+      x,
+      y,
+      viewBox: `0 0 ${svgCanvas.contentW} ${svgCanvas.contentH}`
     })
-  }
 
-  svgCanvas.selectorManager.selectorParentGroup.setAttribute(
-    'transform',
+    assignAttributes(bg, {
+      width: svgCanvas.getSvgContent().getAttribute('width'),
+      height: svgCanvas.getSvgContent().getAttribute('height'),
+      x,
+      y
+    })
+
+    const bgImg = svgCanvas.getElement('background_image')
+    if (bgImg) {
+      assignAttributes(bgImg, {
+        width: '100%',
+        height: '100%'
+      })
+    }
+
+    svgCanvas.selectorManager.selectorParentGroup.setAttribute(
+      'transform',
     `translate(${x},${y})`
-  )
+    )
 
-  /**
+    /**
    * Invoked upon updates to the canvas.
    * @event module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
    * @type {PlainObject}
@@ -1740,61 +1740,61 @@ const updateCanvas = (w, h) => {
    * @property {Integer} d_x
    * @property {Integer} d_y
    */
-  svgCanvas.runExtensions(
-    'canvasUpdated',
-    /**
+    svgCanvas.runExtensions(
+      'canvasUpdated',
+      /**
      * @type {module:svgcanvas.SvgCanvas#event:ext_canvasUpdated}
      */
-    {
-      new_x: x,
-      new_y: y,
-      old_x: oldX,
-      old_y: oldY,
-      d_x: x - oldX,
-      d_y: y - oldY
-    }
-  )
-  return { x, y, old_x: oldX, old_y: oldY, d_x: x - oldX, d_y: y - oldY }
-}
-/**
+      {
+        new_x: x,
+        new_y: y,
+        old_x: oldX,
+        old_y: oldY,
+        d_x: x - oldX,
+        d_y: y - oldY
+      }
+    )
+    return { x, y, old_x: oldX, old_y: oldY, d_x: x - oldX, d_y: y - oldY }
+  }
+  /**
  * Select the next/previous element within the current layer.
  * @function module:svgcanvas.SvgCanvas#cycleElement
  * @param {boolean} next - true = next and false = previous element
  * @fires module:svgcanvas.SvgCanvas#event:selected
  * @returns {void}
  */
-const cycleElement = next => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const currentGroup = svgCanvas.getCurrentGroup()
-  let num
-  const curElem = selectedElements[0]
-  let elem = false
-  const allElems = svgCanvas.getVisibleElements(
-    currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
-  )
-  if (!allElems.length) {
-    return
-  }
-  if (!curElem) {
-    num = next ? allElems.length - 1 : 0
-    elem = allElems[num]
-  } else {
-    let i = allElems.length
-    while (i--) {
-      if (allElems[i] === curElem) {
-        num = next ? i - 1 : i + 1
-        if (num >= allElems.length) {
-          num = 0
-        } else if (num < 0) {
-          num = allElems.length - 1
+  const cycleElement = next => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const currentGroup = svgCanvas.getCurrentGroup()
+    let num
+    const curElem = selectedElements[0]
+    let elem = false
+    const allElems = svgCanvas.getVisibleElements(
+      currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
+    )
+    if (!allElems.length) {
+      return
+    }
+    if (!curElem) {
+      num = next ? allElems.length - 1 : 0
+      elem = allElems[num]
+    } else {
+      let i = allElems.length
+      while (i--) {
+        if (allElems[i] === curElem) {
+          num = next ? i - 1 : i + 1
+          if (num >= allElems.length) {
+            num = 0
+          } else if (num < 0) {
+            num = allElems.length - 1
+          }
+          elem = allElems[num]
+          break
         }
-        elem = allElems[num]
-        break
       }
     }
-  }
-  svgCanvas.selectOnly([elem], true)
-  svgCanvas.call('selected', selectedElements)
+    svgCanvas.selectOnly([elem], true)
+    svgCanvas.call('selected', selectedElements)
   }
 
   svgCanvas.copySelectedElements = copySelectedElements

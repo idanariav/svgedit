@@ -29,154 +29,154 @@ export const init = (canvas) => {
   // paint server to re-resolve.
   let bgGradientSeq = 0
 
-/**
+  /**
 * @function module:elem-get-set.SvgCanvas#getResolution
 * @returns {DimensionsAndZoom} The current dimensions and zoom level in an object
 */
-const getResolutionMethod = () => {
-  const zoom = svgCanvas.getZoom()
-  const w = svgCanvas.getSvgContent().getAttribute('width') / zoom
-  const h = svgCanvas.getSvgContent().getAttribute('height') / zoom
+  const getResolutionMethod = () => {
+    const zoom = svgCanvas.getZoom()
+    const w = svgCanvas.getSvgContent().getAttribute('width') / zoom
+    const h = svgCanvas.getSvgContent().getAttribute('height') / zoom
 
-  return {
-    w,
-    h,
-    zoom
+    return {
+      w,
+      h,
+      zoom
+    }
   }
-}
 
-/**
+  /**
 * @function module:elem-get-set.SvgCanvas#getTitle
 * @param {Element} [elem]
 * @returns {string|void} the current group/SVG's title contents or
 * `undefined` if no element is passed nd there are no selected elements.
 */
-const getTitleMethod = (elem) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const dataStorage = svgCanvas.getDataStorage()
-  elem = elem || selectedElements[0]
-  if (!elem) { return undefined }
-  if (dataStorage.has(elem, 'gsvg')) {
-    elem = dataStorage.get(elem, 'gsvg')
-  } else if (dataStorage.has(elem, 'symbol')) {
-    elem = dataStorage.get(elem, 'symbol')
-  }
-  const childs = elem.childNodes
-  for (const child of childs) {
-    if (child.nodeName === 'title') {
-      return child.textContent
+  const getTitleMethod = (elem) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const dataStorage = svgCanvas.getDataStorage()
+    elem = elem || selectedElements[0]
+    if (!elem) { return undefined }
+    if (dataStorage.has(elem, 'gsvg')) {
+      elem = dataStorage.get(elem, 'gsvg')
+    } else if (dataStorage.has(elem, 'symbol')) {
+      elem = dataStorage.get(elem, 'symbol')
     }
+    const childs = elem.childNodes
+    for (const child of childs) {
+      if (child.nodeName === 'title') {
+        return child.textContent
+      }
+    }
+    return ''
   }
-  return ''
-}
 
-/**
+  /**
 * Sets the group/SVG's title content.
 * @function module:elem-get-set.SvgCanvas#setGroupTitle
 * @param {string} val
 * @todo Combine this with `setDocumentTitle`
 * @returns {void}
 */
-const setGroupTitleMethod = (val) => {
-  const {
-    InsertElementCommand, RemoveElementCommand,
-    ChangeElementCommand, BatchCommand
-  } = svgCanvas.history
-  const selectedElements = svgCanvas.getSelectedElements()
-  const dataStorage = svgCanvas.getDataStorage()
-  let elem = selectedElements[0]
-  if (!elem) { return }
-  if (dataStorage.has(elem, 'gsvg')) {
-    elem = dataStorage.get(elem, 'gsvg')
-  } else if (dataStorage.has(elem, 'symbol')) {
-    elem = dataStorage.get(elem, 'symbol')
-  }
-  if (!elem) { return }
+  const setGroupTitleMethod = (val) => {
+    const {
+      InsertElementCommand, RemoveElementCommand,
+      ChangeElementCommand, BatchCommand
+    } = svgCanvas.history
+    const selectedElements = svgCanvas.getSelectedElements()
+    const dataStorage = svgCanvas.getDataStorage()
+    let elem = selectedElements[0]
+    if (!elem) { return }
+    if (dataStorage.has(elem, 'gsvg')) {
+      elem = dataStorage.get(elem, 'gsvg')
+    } else if (dataStorage.has(elem, 'symbol')) {
+      elem = dataStorage.get(elem, 'symbol')
+    }
+    if (!elem) { return }
 
-  const batchCmd = new BatchCommand('Set Label')
+    const batchCmd = new BatchCommand('Set Label')
 
-  let title = null
-  for (const child of elem.childNodes) {
-    if (child.nodeName === 'title') {
-      title = child
-      break
+    let title = null
+    for (const child of elem.childNodes) {
+      if (child.nodeName === 'title') {
+        title = child
+        break
+      }
+    }
+
+    if (val.length === 0) {
+      if (!title) { return }
+      // Remove title element
+      const { nextSibling } = title
+      title.remove()
+      batchCmd.addSubCommand(new RemoveElementCommand(title, nextSibling, elem))
+    } else if (title) {
+    // Change title contents
+      const oldText = title.textContent
+      if (oldText === val) { return }
+      title.textContent = val
+      batchCmd.addSubCommand(new ChangeElementCommand(title, { '#text': oldText }))
+    } else {
+    // Add title element
+      title = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title')
+      title.textContent = val
+      elem.insertBefore(title, elem.firstChild)
+      batchCmd.addSubCommand(new InsertElementCommand(title))
+    }
+
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
     }
   }
 
-  if (val.length === 0) {
-    if (!title) { return }
-    // Remove title element
-    const { nextSibling } = title
-    title.remove()
-    batchCmd.addSubCommand(new RemoveElementCommand(title, nextSibling, elem))
-  } else if (title) {
-    // Change title contents
-    const oldText = title.textContent
-    if (oldText === val) { return }
-    title.textContent = val
-    batchCmd.addSubCommand(new ChangeElementCommand(title, { '#text': oldText }))
-  } else {
-    // Add title element
-    title = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title')
-    title.textContent = val
-    elem.insertBefore(title, elem.firstChild)
-    batchCmd.addSubCommand(new InsertElementCommand(title))
-  }
-
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-  }
-}
-
-/**
+  /**
 * Adds/updates a title element for the document with the given name.
 * This is an undoable action.
 * @function module:elem-get-set.SvgCanvas#setDocumentTitle
 * @param {string} newTitle - String with the new title
 * @returns {void}
 */
-const setDocumentTitleMethod = (newTitle) => {
-  const {
-    InsertElementCommand, RemoveElementCommand,
-    ChangeElementCommand, BatchCommand
-  } = svgCanvas.history
-  const svgContent = svgCanvas.getSvgContent()
+  const setDocumentTitleMethod = (newTitle) => {
+    const {
+      InsertElementCommand, RemoveElementCommand,
+      ChangeElementCommand, BatchCommand
+    } = svgCanvas.history
+    const svgContent = svgCanvas.getSvgContent()
 
-  const batchCmd = new BatchCommand('Change Image Title')
+    const batchCmd = new BatchCommand('Change Image Title')
 
-  /** @type {Element|null} */
-  let docTitle = null
-  for (const child of svgContent.childNodes) {
-    if (child.nodeName === 'title') {
-      docTitle = child
-      break
+    /** @type {Element|null} */
+    let docTitle = null
+    for (const child of svgContent.childNodes) {
+      if (child.nodeName === 'title') {
+        docTitle = child
+        break
+      }
+    }
+
+    if (!docTitle) {
+      if (!newTitle.length) { return }
+      docTitle = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title')
+      docTitle.textContent = newTitle
+      svgContent.insertBefore(docTitle, svgContent.firstChild)
+      batchCmd.addSubCommand(new InsertElementCommand(docTitle))
+    } else if (newTitle.length) {
+      const oldTitle = docTitle.textContent
+      if (oldTitle === newTitle) { return }
+      docTitle.textContent = newTitle
+      batchCmd.addSubCommand(new ChangeElementCommand(docTitle, { '#text': oldTitle }))
+    } else {
+    // No title given, so element is not necessary
+      const { nextSibling } = docTitle
+      docTitle.remove()
+      batchCmd.addSubCommand(new RemoveElementCommand(docTitle, nextSibling, svgContent))
+    }
+
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
     }
   }
 
-  if (!docTitle) {
-    if (!newTitle.length) { return }
-    docTitle = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title')
-    docTitle.textContent = newTitle
-    svgContent.insertBefore(docTitle, svgContent.firstChild)
-    batchCmd.addSubCommand(new InsertElementCommand(docTitle))
-  } else if (newTitle.length) {
-    const oldTitle = docTitle.textContent
-    if (oldTitle === newTitle) { return }
-    docTitle.textContent = newTitle
-    batchCmd.addSubCommand(new ChangeElementCommand(docTitle, { '#text': oldTitle }))
-  } else {
-    // No title given, so element is not necessary
-    const { nextSibling } = docTitle
-    docTitle.remove()
-    batchCmd.addSubCommand(new RemoveElementCommand(docTitle, nextSibling, svgContent))
-  }
-
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-  }
-}
-
-/**
+  /**
 * Changes the document's dimensions to the given size.
 * @function module:elem-get-set.SvgCanvas#setResolution
 * @param {Float|"fit"} x - Number with the width of the new dimensions in user units.
@@ -186,80 +186,80 @@ const setDocumentTitleMethod = (newTitle) => {
 * @returns {boolean} Indicates if resolution change was successful.
 * It will fail on "fit to content" option with no content to fit to.
 */
-const setResolutionMethod = (x, y) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const res = svgCanvas.getResolution()
-  const { w, h } = res
-  let batchCmd
+  const setResolutionMethod = (x, y) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const res = svgCanvas.getResolution()
+    const { w, h } = res
+    let batchCmd
 
-  if (x === 'fit') {
+    if (x === 'fit') {
     // Get bounding box
-    const bbox = svgCanvas.getStrokedBBoxDefaultVisible()
+      const bbox = svgCanvas.getStrokedBBoxDefaultVisible()
 
-    if (bbox) {
-      batchCmd = new BatchCommand('Fit Canvas to Content')
-      const visEls = svgCanvas.getVisibleElements()
-      svgCanvas.addToSelection(visEls)
-      const dx = []; const dy = []
-      visEls.forEach((_item, _i) => {
-        dx.push(bbox.x * -1)
-        dy.push(bbox.y * -1)
-      })
+      if (bbox) {
+        batchCmd = new BatchCommand('Fit Canvas to Content')
+        const visEls = svgCanvas.getVisibleElements()
+        svgCanvas.addToSelection(visEls)
+        const dx = []; const dy = []
+        visEls.forEach((_item, _i) => {
+          dx.push(bbox.x * -1)
+          dy.push(bbox.y * -1)
+        })
 
-      const cmd = svgCanvas.moveSelectedElements(dx, dy, false)
-      if (cmd) {
-        batchCmd.addSubCommand(cmd)
+        const cmd = svgCanvas.moveSelectedElements(dx, dy, false)
+        if (cmd) {
+          batchCmd.addSubCommand(cmd)
+        }
+        svgCanvas.clearSelection()
+
+        x = Math.round(bbox.width)
+        y = Math.round(bbox.height)
+      } else {
+        return false
       }
-      svgCanvas.clearSelection()
-
-      x = Math.round(bbox.width)
-      y = Math.round(bbox.height)
-    } else {
-      return false
     }
-  }
-  const newW = convertToNum('width', x)
-  const newH = convertToNum('height', y)
-  if (newW !== w || newH !== h) {
-    if (!batchCmd) {
-      batchCmd = new BatchCommand('Change Image Dimensions')
+    const newW = convertToNum('width', x)
+    const newH = convertToNum('height', y)
+    if (newW !== w || newH !== h) {
+      if (!batchCmd) {
+        batchCmd = new BatchCommand('Change Image Dimensions')
+      }
+      const svgContent = svgCanvas.getSvgContent()
+      const oldViewBox = svgContent.getAttribute('viewBox')
+
+      svgContent.setAttribute('width', newW)
+      svgContent.setAttribute('height', newH)
+
+      svgCanvas.contentW = newW
+      svgCanvas.contentH = newH
+      svgContent.setAttribute('viewBox', [0, 0, newW, newH].join(' '))
+      batchCmd.addSubCommand(new ChangeElementCommand(svgContent, { width: w, height: h, viewBox: oldViewBox }))
+
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', [svgContent])
     }
-    const svgContent = svgCanvas.getSvgContent()
-    const oldViewBox = svgContent.getAttribute('viewBox')
-
-    svgContent.setAttribute('width', newW)
-    svgContent.setAttribute('height', newH)
-
-    svgCanvas.contentW = newW
-    svgCanvas.contentH = newH
-    svgContent.setAttribute('viewBox', [0, 0, newW, newH].join(' '))
-    batchCmd.addSubCommand(new ChangeElementCommand(svgContent, { width: w, height: h, viewBox: oldViewBox }))
-
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', [svgContent])
+    return true
   }
-  return true
-}
 
-/**
+  /**
 * Returns the editor's namespace URL, optionally adding it to the root element.
 * @function module:elem-get-set.SvgCanvas#getEditorNS
 * @param {boolean} [add] - Indicates whether or not to add the namespace value
 * @returns {string} The editor's namespace URL
 */
-const getEditorNSMethod = (add) => {
-  if (add) {
-    svgCanvas.getSvgContent().setAttribute('xmlns:se', NS.SE)
+  const getEditorNSMethod = (add) => {
+    if (add) {
+      svgCanvas.getSvgContent().setAttribute('xmlns:se', NS.SE)
+    }
+    return NS.SE
   }
-  return NS.SE
-}
 
-/**
+  /**
  * @typedef {PlainObject} module:elem-get-set.ZoomAndBBox
  * @property {Float} zoom
  * @property {module:utilities.BBoxObject} bbox
  */
-/**
+  /**
 * Sets the zoom level on the canvas-side based on the given value.
 * @function module:elem-get-set.SvgCanvas#setBBoxZoom
 * @param {"selection"|"canvas"|"content"|"layer"|module:SVGEditor.BBoxObjectWithFactor} val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
@@ -267,99 +267,99 @@ const getEditorNSMethod = (add) => {
 * @param {Integer} editorH - The editor's workarea box's height
 * @returns {module:elem-get-set.ZoomAndBBox|void}
 */
-const setBBoxZoomMethod = (val, editorW, editorH) => {
-  const zoom = svgCanvas.getZoom()
-  const selectedElements = svgCanvas.getSelectedElements()
-  let spacer = 0.85
-  let bb
-  const calcZoom = (bb) => {
-    if (!bb) { return undefined }
-    if (!Number.isFinite(editorW) || !Number.isFinite(editorH) || editorW <= 0 || editorH <= 0) {
-      return undefined
+  const setBBoxZoomMethod = (val, editorW, editorH) => {
+    const zoom = svgCanvas.getZoom()
+    const selectedElements = svgCanvas.getSelectedElements()
+    let spacer = 0.85
+    let bb
+    const calcZoom = (bb) => {
+      if (!bb) { return undefined }
+      if (!Number.isFinite(editorW) || !Number.isFinite(editorH) || editorW <= 0 || editorH <= 0) {
+        return undefined
+      }
+      if (!Number.isFinite(bb.width) || !Number.isFinite(bb.height) || bb.width <= 0 || bb.height <= 0) {
+        return undefined
+      }
+      const wZoom = Math.round((editorW / bb.width) * 100 * spacer) / 100
+      const hZoom = Math.round((editorH / bb.height) * 100 * spacer) / 100
+      const zoom = Math.min(wZoom, hZoom)
+      if (!Number.isFinite(zoom) || zoom <= 0) {
+        return undefined
+      }
+      svgCanvas.setZoom(zoom)
+      return { zoom, bbox: bb }
     }
-    if (!Number.isFinite(bb.width) || !Number.isFinite(bb.height) || bb.width <= 0 || bb.height <= 0) {
-      return undefined
-    }
-    const wZoom = Math.round((editorW / bb.width) * 100 * spacer) / 100
-    const hZoom = Math.round((editorH / bb.height) * 100 * spacer) / 100
-    const zoom = Math.min(wZoom, hZoom)
-    if (!Number.isFinite(zoom) || zoom <= 0) {
-      return undefined
-    }
-    svgCanvas.setZoom(zoom)
-    return { zoom, bbox: bb }
-  }
 
-  if (val && typeof val === 'object') {
-    bb = val
-    if (bb.width === 0 || bb.height === 0) {
-      let newzoom = zoom
-      if (Number.isFinite(bb.zoom) && bb.zoom > 0) {
-        newzoom = bb.zoom
-      } else if (Number.isFinite(bb.factor) && bb.factor > 0) {
-        newzoom = zoom * bb.factor
+    if (val && typeof val === 'object') {
+      bb = val
+      if (bb.width === 0 || bb.height === 0) {
+        let newzoom = zoom
+        if (Number.isFinite(bb.zoom) && bb.zoom > 0) {
+          newzoom = bb.zoom
+        } else if (Number.isFinite(bb.factor) && bb.factor > 0) {
+          newzoom = zoom * bb.factor
+        }
+        if (Number.isFinite(newzoom) && newzoom > 0) {
+          svgCanvas.setZoom(newzoom)
+        }
+        return { zoom: newzoom, bbox: bb }
       }
-      if (Number.isFinite(newzoom) && newzoom > 0) {
-        svgCanvas.setZoom(newzoom)
-      }
-      return { zoom: newzoom, bbox: bb }
+      return calcZoom(bb)
+    }
+
+    switch (val) {
+      case 'selection': {
+        if (!selectedElements[0]) { return undefined }
+        const selectedElems = selectedElements.filter(Boolean)
+        bb = svgCanvas.getStrokedBBoxDefaultVisible(selectedElems)
+        break
+      } case 'canvas': {
+        const res = svgCanvas.getResolution()
+        spacer = 0.95
+        bb = { width: res.w, height: res.h, x: 0, y: 0 }
+        break
+      } case 'content':
+        bb = svgCanvas.getStrokedBBoxDefaultVisible()
+        break
+      case 'layer':
+        bb = svgCanvas.getStrokedBBoxDefaultVisible(svgCanvas.getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer()))
+        break
+      default:
+        return undefined
     }
     return calcZoom(bb)
   }
 
-  switch (val) {
-    case 'selection': {
-      if (!selectedElements[0]) { return undefined }
-      const selectedElems = selectedElements.filter(Boolean)
-      bb = svgCanvas.getStrokedBBoxDefaultVisible(selectedElems)
-      break
-    } case 'canvas': {
-      const res = svgCanvas.getResolution()
-      spacer = 0.95
-      bb = { width: res.w, height: res.h, x: 0, y: 0 }
-      break
-    } case 'content':
-      bb = svgCanvas.getStrokedBBoxDefaultVisible()
-      break
-    case 'layer':
-      bb = svgCanvas.getStrokedBBoxDefaultVisible(svgCanvas.getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer()))
-      break
-    default:
-      return undefined
-  }
-  return calcZoom(bb)
-}
-
-/**
+  /**
 * Sets the zoom to the given level.
 * @function module:elem-get-set.SvgCanvas#setZoom
 * @param {Float} zoomLevel - Float indicating the zoom level to change to
 * @fires module:elem-get-set.SvgCanvas#event:ext_zoomChanged
 * @returns {void}
 */
-const setZoomMethod = (zoomLevel) => {
-  if (!Number.isFinite(zoomLevel) || zoomLevel <= 0) {
-    return
+  const setZoomMethod = (zoomLevel) => {
+    if (!Number.isFinite(zoomLevel) || zoomLevel <= 0) {
+      return
+    }
+    const selectedElements = svgCanvas.getSelectedElements()
+    const res = svgCanvas.getResolution()
+    const w = res.w / zoomLevel
+    const h = res.h / zoomLevel
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+      return
+    }
+    svgCanvas.getSvgContent().setAttribute('viewBox', `0 0 ${w} ${h}`)
+    svgCanvas.setZoom(zoomLevel)
+    selectedElements.forEach((elem) => {
+      if (!elem) { return }
+      const selector = svgCanvas.selectorManager.requestSelector(elem)
+      selector && selector.resize()
+    })
+    svgCanvas.pathActions.zoomChange()
+    svgCanvas.runExtensions('zoomChanged', zoomLevel)
   }
-  const selectedElements = svgCanvas.getSelectedElements()
-  const res = svgCanvas.getResolution()
-  const w = res.w / zoomLevel
-  const h = res.h / zoomLevel
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
-    return
-  }
-  svgCanvas.getSvgContent().setAttribute('viewBox', `0 0 ${w} ${h}`)
-  svgCanvas.setZoom(zoomLevel)
-  selectedElements.forEach((elem) => {
-    if (!elem) { return }
-    const selector = svgCanvas.selectorManager.requestSelector(elem)
-    selector && selector.resize()
-  })
-  svgCanvas.pathActions.zoomChange()
-  svgCanvas.runExtensions('zoomChanged', zoomLevel)
-}
 
-/**
+  /**
 * Change the current stroke/fill color/gradient value.
 * @function module:elem-get-set.SvgCanvas#setColor
 * @param {string} type - String indicating fill or stroke
@@ -368,199 +368,199 @@ const setZoomMethod = (zoomLevel) => {
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
-const setColorMethod = (type, val, preventUndo) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  svgCanvas.setCurShape(type, val)
-  svgCanvas.setCurProperties(`${type}_paint`, { type: 'solidColor' })
-  const elems = []
-  /**
+  const setColorMethod = (type, val, preventUndo) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    svgCanvas.setCurShape(type, val)
+    svgCanvas.setCurProperties(`${type}_paint`, { type: 'solidColor' })
+    const elems = []
+    /**
 *
 * @param {Element} e
 * @returns {void}
 */
-  const addNonG = (e) => {
-    if (e.nodeName !== 'g') {
-      elems.push(e)
-    }
-  }
-  let i = selectedElements.length
-  while (i--) {
-    const elem = selectedElements[i]
-    if (elem) {
-      if (elem.tagName === 'g') {
-        walkTree(elem, addNonG)
-      } else if (type === 'fill') {
-        if (elem.tagName !== 'polyline' && elem.tagName !== 'line') {
-          elems.push(elem)
-        }
-      } else {
-        elems.push(elem)
+    const addNonG = (e) => {
+      if (e.nodeName !== 'g') {
+        elems.push(e)
       }
     }
+    let i = selectedElements.length
+    while (i--) {
+      const elem = selectedElements[i]
+      if (elem) {
+        if (elem.tagName === 'g') {
+          walkTree(elem, addNonG)
+        } else if (type === 'fill') {
+          if (elem.tagName !== 'polyline' && elem.tagName !== 'line') {
+            elems.push(elem)
+          }
+        } else {
+          elems.push(elem)
+        }
+      }
+    }
+    if (elems.length === 0) return
+    if (preventUndo) {
+      svgCanvas.changeSelectedAttributeNoUndo(type, val, elems)
+    } else {
+      svgCanvas.changeSelectedAttribute(type, val, elems)
+      svgCanvas.call('changed', elems)
+    }
   }
-  if (elems.length === 0) return
-  if (preventUndo) {
-    svgCanvas.changeSelectedAttributeNoUndo(type, val, elems)
-  } else {
-    svgCanvas.changeSelectedAttribute(type, val, elems)
-    svgCanvas.call('changed', elems)
-  }
-}
 
-/**
+  /**
 * Apply the current gradient to selected element's fill or stroke.
 * @function module:elem-get-set.SvgCanvas#setGradient
 * @param {"fill"|"stroke"} type - String indicating "fill" or "stroke" to apply to an element
 * @returns {void}
 */
-const setGradientMethod = (type) => {
-  if (!svgCanvas.getCurProperties(`${type}_paint`) ||
+  const setGradientMethod = (type) => {
+    if (!svgCanvas.getCurProperties(`${type}_paint`) ||
     svgCanvas.getCurProperties(`${type}_paint`).type === 'solidColor') { return }
-  const canvas = svgCanvas
-  let grad = canvas[type + 'Grad']
-  if (!grad) { return }
-  // find out if there is a duplicate gradient already in the defs
-  const duplicateGrad = findDuplicateGradient(grad)
-  const defs = svgCanvas.findDefs()
-  // no duplicate found, so import gradient into defs
-  if (!duplicateGrad) {
+    const canvas = svgCanvas
+    let grad = canvas[type + 'Grad']
+    if (!grad) { return }
+    // find out if there is a duplicate gradient already in the defs
+    const duplicateGrad = findDuplicateGradient(grad)
+    const defs = svgCanvas.findDefs()
+    // no duplicate found, so import gradient into defs
+    if (!duplicateGrad) {
     // const origGrad = grad;
-    grad = svgCanvas.getDOMDocument().importNode(grad, true)
-    defs.append(grad)
-    // get next id and set it on the grad
-    grad.id = svgCanvas.getNextId()
-  } else { // use existing gradient
-    grad = duplicateGrad
+      grad = svgCanvas.getDOMDocument().importNode(grad, true)
+      defs.append(grad)
+      // get next id and set it on the grad
+      grad.id = svgCanvas.getNextId()
+    } else { // use existing gradient
+      grad = duplicateGrad
+    }
+    svgCanvas.setColor(type, `url(#${grad.id})`)
   }
-  svgCanvas.setColor(type, `url(#${grad.id})`)
-}
 
-/**
+  /**
 * Read a stop's effective color/opacity, whether stored as presentation
 * attributes (`stop-color`/`stop-opacity`) or inline in the `style` attribute.
 * @param {SVGStopElement} stop
 * @returns {{color: string|null, opacity: string|null}}
 */
-const readStop = (stop) => {
-  const style = stop.getAttribute('style') || ''
-  const colorMatch = style.match(/stop-color\s*:\s*([^;]+)/i)
-  const opacityMatch = style.match(/stop-opacity\s*:\s*([^;]+)/i)
-  const color = (colorMatch ? colorMatch[1] : stop.getAttribute('stop-color'))?.trim().toLowerCase() ?? null
-  const opacity = (opacityMatch ? opacityMatch[1] : stop.getAttribute('stop-opacity'))?.trim() ?? null
-  return { color, opacity }
-}
+  const readStop = (stop) => {
+    const style = stop.getAttribute('style') || ''
+    const colorMatch = style.match(/stop-color\s*:\s*([^;]+)/i)
+    const opacityMatch = style.match(/stop-opacity\s*:\s*([^;]+)/i)
+    const color = (colorMatch ? colorMatch[1] : stop.getAttribute('stop-color'))?.trim().toLowerCase() ?? null
+    const opacity = (opacityMatch ? opacityMatch[1] : stop.getAttribute('stop-opacity'))?.trim() ?? null
+    return { color, opacity }
+  }
 
-/**
+  /**
 * Check if exact gradient already exists.
 * @function module:svgcanvas~findDuplicateGradient
 * @param {SVGGradientElement} grad - The gradient DOM element to compare to others
 * @returns {SVGGradientElement} The existing gradient if found, `null` if not
 */
-const findDuplicateGradient = (grad) => {
-  if (!grad) {
-    return null
-  }
-  if (!['linearGradient', 'radialGradient'].includes(grad.tagName)) {
-    return null
-  }
-  const defs = svgCanvas.findDefs()
-  const existingGrads = defs.querySelectorAll('linearGradient, radialGradient')
-  let i = existingGrads.length
-  const radAttrs = ['r', 'cx', 'cy', 'fx', 'fy']
-  while (i--) {
-    const og = existingGrads[i]
-    if (og.tagName !== grad.tagName) {
-      continue
+  const findDuplicateGradient = (grad) => {
+    if (!grad) {
+      return null
     }
-    if (grad.tagName === 'linearGradient') {
-      if (grad.getAttribute('x1') !== og.getAttribute('x1') ||
+    if (!['linearGradient', 'radialGradient'].includes(grad.tagName)) {
+      return null
+    }
+    const defs = svgCanvas.findDefs()
+    const existingGrads = defs.querySelectorAll('linearGradient, radialGradient')
+    let i = existingGrads.length
+    const radAttrs = ['r', 'cx', 'cy', 'fx', 'fy']
+    while (i--) {
+      const og = existingGrads[i]
+      if (og.tagName !== grad.tagName) {
+        continue
+      }
+      if (grad.tagName === 'linearGradient') {
+        if (grad.getAttribute('x1') !== og.getAttribute('x1') ||
         grad.getAttribute('y1') !== og.getAttribute('y1') ||
         grad.getAttribute('x2') !== og.getAttribute('x2') ||
         grad.getAttribute('y2') !== og.getAttribute('y2')
-      ) {
+        ) {
+          continue
+        }
+      } else {
+        const gradAttrs = {
+          r: Number(grad.getAttribute('r')),
+          cx: Number(grad.getAttribute('cx')),
+          cy: Number(grad.getAttribute('cy')),
+          fx: Number(grad.getAttribute('fx')),
+          fy: Number(grad.getAttribute('fy'))
+        }
+        const ogAttrs = {
+          r: Number(og.getAttribute('r')),
+          cx: Number(og.getAttribute('cx')),
+          cy: Number(og.getAttribute('cy')),
+          fx: Number(og.getAttribute('fx')),
+          fy: Number(og.getAttribute('fy'))
+        }
+
+        let diff = false
+        radAttrs.forEach((attr) => {
+          if (gradAttrs[attr] !== ogAttrs[attr]) { diff = true }
+        })
+
+        if (diff) { continue }
+      }
+
+      // else could be a duplicate, iterate through stops
+      const stops = grad.getElementsByTagNameNS(NS.SVG, 'stop')
+      const ostops = og.getElementsByTagNameNS(NS.SVG, 'stop')
+
+      if (stops.length !== ostops.length) {
         continue
       }
-    } else {
-      const gradAttrs = {
-        r: Number(grad.getAttribute('r')),
-        cx: Number(grad.getAttribute('cx')),
-        cy: Number(grad.getAttribute('cy')),
-        fx: Number(grad.getAttribute('fx')),
-        fy: Number(grad.getAttribute('fy'))
-      }
-      const ogAttrs = {
-        r: Number(og.getAttribute('r')),
-        cx: Number(og.getAttribute('cx')),
-        cy: Number(og.getAttribute('cy')),
-        fx: Number(og.getAttribute('fx')),
-        fy: Number(og.getAttribute('fy'))
-      }
 
-      let diff = false
-      radAttrs.forEach((attr) => {
-        if (gradAttrs[attr] !== ogAttrs[attr]) { diff = true }
-      })
+      let j = stops.length
+      while (j--) {
+        const stop = stops[j]
+        const ostop = ostops[j]
+        const sVals = readStop(stop)
+        const oVals = readStop(ostop)
 
-      if (diff) { continue }
-    }
-
-    // else could be a duplicate, iterate through stops
-    const stops = grad.getElementsByTagNameNS(NS.SVG, 'stop')
-    const ostops = og.getElementsByTagNameNS(NS.SVG, 'stop')
-
-    if (stops.length !== ostops.length) {
-      continue
-    }
-
-    let j = stops.length
-    while (j--) {
-      const stop = stops[j]
-      const ostop = ostops[j]
-      const sVals = readStop(stop)
-      const oVals = readStop(ostop)
-
-      if (stop.getAttribute('offset') !== ostop.getAttribute('offset') ||
+        if (stop.getAttribute('offset') !== ostop.getAttribute('offset') ||
         sVals.opacity !== oVals.opacity ||
         sVals.color !== oVals.color) {
-        break
+          break
+        }
       }
-    }
 
-    if (j === -1) {
-      return og
-    }
-  } // for each gradient in defs
+      if (j === -1) {
+        return og
+      }
+    } // for each gradient in defs
 
-  return null
-}
+    return null
+  }
 
-/**
+  /**
 * Set a color/gradient to a fill/stroke.
 * @function module:elem-get-set.SvgCanvas#setPaint
 * @param {"fill"|"stroke"} type - String with "fill" or "stroke"
 * @param {} paint - The paint object to apply
 * @returns {void}
 */
-const setPaintMethod = (type, paint) => {
+  const setPaintMethod = (type, paint) => {
   // make a copy
-  const p = new Paint(paint)
-  svgCanvas.setPaintOpacity(type, p.alpha / 100, true)
+    const p = new Paint(paint)
+    svgCanvas.setPaintOpacity(type, p.alpha / 100, true)
 
-  // now set the current paint object
-  svgCanvas.setCurProperties(`${type}_paint`, p)
-  switch (p.type) {
-    case 'solidColor':
-      svgCanvas.setColor(type, p.solidColor !== 'none' ? `#${p.solidColor}` : 'none')
-      break
-    case 'linearGradient':
-    case 'radialGradient':
-      svgCanvas.setCanvas(type + 'Grad', p[p.type])
-      svgCanvas.setGradient(type)
-      break
+    // now set the current paint object
+    svgCanvas.setCurProperties(`${type}_paint`, p)
+    switch (p.type) {
+      case 'solidColor':
+        svgCanvas.setColor(type, p.solidColor !== 'none' ? `#${p.solidColor}` : 'none')
+        break
+      case 'linearGradient':
+      case 'radialGradient':
+        svgCanvas.setCanvas(type + 'Grad', p[p.type])
+        svgCanvas.setGradient(type)
+        break
+    }
   }
-}
 
-/**
+  /**
 * Sets the stroke width for the current selected elements.
 * When attempting to set a line's width to 0, this changes it to 1 instead.
 * @function module:elem-get-set.SvgCanvas#setStrokeWidth
@@ -568,46 +568,46 @@ const setPaintMethod = (type, paint) => {
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
-const setStrokeWidthMethod = (val) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  if (val === 0 && ['line', 'path'].includes(svgCanvas.getMode())) {
-    svgCanvas.setStrokeWidth(1)
-    return
-  }
-  svgCanvas.setCurProperties('stroke_width', val)
+  const setStrokeWidthMethod = (val) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    if (val === 0 && ['line', 'path'].includes(svgCanvas.getMode())) {
+      svgCanvas.setStrokeWidth(1)
+      return
+    }
+    svgCanvas.setCurProperties('stroke_width', val)
 
-  const elems = []
-  /**
+    const elems = []
+    /**
 *
 * @param {Element} e
 * @returns {void}
 */
-  const addNonG = (e) => {
-    if (e.nodeName !== 'g') {
-      elems.push(e)
-    }
-  }
-  let i = selectedElements.length
-  while (i--) {
-    const elem = selectedElements[i]
-    if (elem) {
-      if (elem.tagName === 'g') {
-        walkTree(elem, addNonG)
-      } else {
-        elems.push(elem)
+    const addNonG = (e) => {
+      if (e.nodeName !== 'g') {
+        elems.push(e)
       }
     }
+    let i = selectedElements.length
+    while (i--) {
+      const elem = selectedElements[i]
+      if (elem) {
+        if (elem.tagName === 'g') {
+          walkTree(elem, addNonG)
+        } else {
+          elems.push(elem)
+        }
+      }
+    }
+    if (elems.length > 0) {
+      svgCanvas.changeSelectedAttribute('stroke-width', val, elems)
+      // Paint the stroke beneath the fill so it grows outward rather than
+      // shrinking the visible fill (matters most for outlined text).
+      svgCanvas.changeSelectedAttribute('paint-order', 'stroke', elems)
+      svgCanvas.call('changed', selectedElements)
+    }
   }
-  if (elems.length > 0) {
-    svgCanvas.changeSelectedAttribute('stroke-width', val, elems)
-    // Paint the stroke beneath the fill so it grows outward rather than
-    // shrinking the visible fill (matters most for outlined text).
-    svgCanvas.changeSelectedAttribute('paint-order', 'stroke', elems)
-    svgCanvas.call('changed', selectedElements)
-  }
-}
 
-/**
+  /**
 * Set the given stroke-related attribute the given value for selected elements.
 * @function module:elem-get-set.SvgCanvas#setStrokeAttr
 * @param {string} attr - String with the attribute name
@@ -615,254 +615,254 @@ const setStrokeWidthMethod = (val) => {
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
-const setStrokeAttrMethod = (attr, val) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  svgCanvas.setCurShape(attr.replace('-', '_'), val)
-  const elems = []
+  const setStrokeAttrMethod = (attr, val) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    svgCanvas.setCurShape(attr.replace('-', '_'), val)
+    const elems = []
 
-  let i = selectedElements.length
-  while (i--) {
-    const elem = selectedElements[i]
-    if (elem) {
-      if (elem.tagName === 'g') {
-        walkTree(elem, (e) => { if (e.nodeName !== 'g') { elems.push(e) } })
-      } else {
-        elems.push(elem)
+    let i = selectedElements.length
+    while (i--) {
+      const elem = selectedElements[i]
+      if (elem) {
+        if (elem.tagName === 'g') {
+          walkTree(elem, (e) => { if (e.nodeName !== 'g') { elems.push(e) } })
+        } else {
+          elems.push(elem)
+        }
       }
     }
+    if (elems.length > 0) {
+      svgCanvas.changeSelectedAttribute(attr, val, elems)
+      svgCanvas.call('changed', selectedElements)
+    }
   }
-  if (elems.length > 0) {
-    svgCanvas.changeSelectedAttribute(attr, val, elems)
-    svgCanvas.call('changed', selectedElements)
+
+  const getSelectedTextElements = () => {
+    return svgCanvas.getSelectedElements().filter(el => el?.tagName === 'text')
   }
-}
 
-const getSelectedTextElements = () => {
-  return svgCanvas.getSelectedElements().filter(el => el?.tagName === 'text')
-}
-
-const getChangedTextElements = (textElements, attr, newValue) => {
-  const normalizedValue = String(newValue)
-  return textElements.filter((elem) => {
-    const oldValue = attr === '#text' ? elem.textContent : elem.getAttribute(attr)
-    return (oldValue || '') !== normalizedValue
-  })
-}
-
-const notifyTextChange = (textElements) => {
-  if (textElements.length > 0) {
-    svgCanvas.call('changed', textElements)
+  const getChangedTextElements = (textElements, attr, newValue) => {
+    const normalizedValue = String(newValue)
+    return textElements.filter((elem) => {
+      const oldValue = attr === '#text' ? elem.textContent : elem.getAttribute(attr)
+      return (oldValue || '') !== normalizedValue
+    })
   }
-}
 
-/**
+  const notifyTextChange = (textElements) => {
+    if (textElements.length > 0) {
+      svgCanvas.call('changed', textElements)
+    }
+  }
+
+  /**
  * Check if all selected text elements are in bold.
  * @function module:svgcanvas.SvgCanvas#getBold
  * @returns {boolean} `true` if all selected elements are bold, `false` otherwise.
  */
-const getBoldMethod = () => {
-  const textElements = getSelectedTextElements()
-  return textElements.every(el => el.getAttribute('font-weight') === 'bold')
-}
+  const getBoldMethod = () => {
+    const textElements = getSelectedTextElements()
+    return textElements.every(el => el.getAttribute('font-weight') === 'bold')
+  }
 
-/**
+  /**
  * Make the selected element(s) bold or normal.
  * @function module:svgcanvas.SvgCanvas#setBold
  * @param {boolean} b - Indicates bold (`true`) or normal (`false`)
  * @returns {void}
  */
-const setBoldMethod = (b) => {
-  const textElements = getSelectedTextElements()
-  const value = b ? 'bold' : 'normal'
-  const changedTextElements = getChangedTextElements(textElements, 'font-weight', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('font-weight', value, changedTextElements)
+  const setBoldMethod = (b) => {
+    const textElements = getSelectedTextElements()
+    const value = b ? 'bold' : 'normal'
+    const changedTextElements = getChangedTextElements(textElements, 'font-weight', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('font-weight', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * Check if all selected text elements have the given text decoration value or not.
  * @returns {boolean} Indicates whether or not elements have the text decoration value
  */
-const hasTextDecorationMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  return textElements.every(el => (el.getAttribute('text-decoration') || '').includes(value))
-}
+  const hasTextDecorationMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    return textElements.every(el => (el.getAttribute('text-decoration') || '').includes(value))
+  }
 
-/**
+  /**
  * Adds the given text decoration value
  * @param value The text decoration value
  * @returns {void}
  */
-const addTextDecorationMethod = (value) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const textElements = getSelectedTextElements()
+  const addTextDecorationMethod = (value) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const textElements = getSelectedTextElements()
 
-  const batchCmd = new BatchCommand()
-  textElements.forEach(elem => {
-    const oldValue = elem.getAttribute('text-decoration') || ''
-    // Add the new text decoration value if it did not exist
-    if (!oldValue.includes(value)) {
-      batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': oldValue }))
-      svgCanvas.changeSelectedAttributeNoUndo('text-decoration', `${oldValue} ${value}`.trim(), [elem])
+    const batchCmd = new BatchCommand()
+    textElements.forEach(elem => {
+      const oldValue = elem.getAttribute('text-decoration') || ''
+      // Add the new text decoration value if it did not exist
+      if (!oldValue.includes(value)) {
+        batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': oldValue }))
+        svgCanvas.changeSelectedAttributeNoUndo('text-decoration', `${oldValue} ${value}`.trim(), [elem])
+      }
+    })
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.undoMgr.addCommandToHistory(batchCmd)
     }
-  })
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.undoMgr.addCommandToHistory(batchCmd)
+
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
   }
 
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-}
-
-/**
+  /**
  * Removes the given text decoration value
  * @param value The text decoration value
  * @returns {void}
  */
-const removeTextDecorationMethod = (value) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const textElements = getSelectedTextElements()
+  const removeTextDecorationMethod = (value) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const textElements = getSelectedTextElements()
 
-  const batchCmd = new BatchCommand()
-  textElements.forEach(elem => {
-    const actualValues = elem.getAttribute('text-decoration') || ''
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': actualValues }))
-    svgCanvas.changeSelectedAttributeNoUndo('text-decoration', actualValues.replace(value, '').trim(), [elem])
-  })
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.undoMgr.addCommandToHistory(batchCmd)
+    const batchCmd = new BatchCommand()
+    textElements.forEach(elem => {
+      const actualValues = elem.getAttribute('text-decoration') || ''
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': actualValues }))
+      svgCanvas.changeSelectedAttributeNoUndo('text-decoration', actualValues.replace(value, '').trim(), [elem])
+    })
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.undoMgr.addCommandToHistory(batchCmd)
+    }
+
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
   }
 
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-}
-
-/**
+  /**
  * Check if all selected elements have an italic font style.
  * @function module:svgcanvas.SvgCanvas#getItalic
  * @returns {boolean} `true` if all selected elements are in italics, `false` otherwise.
  */
-const getItalicMethod = () => {
-  const textElements = getSelectedTextElements()
-  return textElements.every(el => el.getAttribute('font-style') === 'italic')
-}
+  const getItalicMethod = () => {
+    const textElements = getSelectedTextElements()
+    return textElements.every(el => el.getAttribute('font-style') === 'italic')
+  }
 
-/**
+  /**
  * Make the selected element(s) italic or normal.
  * @function module:svgcanvas.SvgCanvas#setItalic
  * @param {boolean} i - Indicates italic (`true`) or normal (`false`)
  * @returns {void}
  */
-const setItalicMethod = (i) => {
-  const textElements = getSelectedTextElements()
-  const value = i ? 'italic' : 'normal'
-  const changedTextElements = getChangedTextElements(textElements, 'font-style', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('font-style', value, changedTextElements)
+  const setItalicMethod = (i) => {
+    const textElements = getSelectedTextElements()
+    const value = i ? 'italic' : 'normal'
+    const changedTextElements = getChangedTextElements(textElements, 'font-style', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('font-style', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * @function module:svgcanvas.SvgCanvas#setTextAnchorMethod Set the new text anchor
  * @param {string} value - The text anchor value (start, middle or end)
  * @returns {void}
  */
-const setTextAnchorMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'text-anchor', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
+  const setTextAnchorMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'text-anchor', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
+    }
+    // Alignment shifts every glyph's x, so re-measure the caret while editing.
+    if (svgCanvas.getCurrentMode() === 'textedit') {
+      svgCanvas.textActions.init()
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  // Alignment shifts every glyph's x, so re-measure the caret while editing.
-  if (svgCanvas.getCurrentMode() === 'textedit') {
-    svgCanvas.textActions.init()
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * @function module:svgcanvas.SvgCanvas#setLetterSpacingMethod Set the new letter spacing
  * @param {string} value - The letter spacing value
  * @returns {void}
  */
-const setLetterSpacingMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'letter-spacing', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('letter-spacing', value, changedTextElements)
+  const setLetterSpacingMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'letter-spacing', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('letter-spacing', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * @function module:svgcanvas.SvgCanvas#setWordSpacingMethod Set the new word spacing
  * @param {string} value - The word spacing value
  * @returns {void}
  */
-const setWordSpacingMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'word-spacing', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('word-spacing', value, changedTextElements)
+  const setWordSpacingMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'word-spacing', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('word-spacing', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * @function module:svgcanvas.SvgCanvas#setTextLengthMethod Set the new text length
  * @param {string} value - The text length value
  * @returns {void}
  */
-const setTextLengthMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'textLength', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('textLength', value, changedTextElements)
+  const setTextLengthMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'textLength', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('textLength', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
  * @function module:svgcanvas.SvgCanvas#setLengthAdjustMethod Set the new length adjust
  * @param {string} value - The length adjust value
  * @returns {void}
  */
-const setLengthAdjustMethod = (value) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'lengthAdjust', value)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('lengthAdjust', value, changedTextElements)
+  const setLengthAdjustMethod = (value) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'lengthAdjust', value)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('lengthAdjust', value, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-// ─── Text Perspective ────────────────────────────────────────────────────────
+  // ─── Text Perspective ────────────────────────────────────────────────────────
 
-/**
+  /**
  * Build the CSS 3D transform string from both perspective angles (in degrees).
  *
  * Naming convention:
@@ -873,211 +873,211 @@ const setLengthAdjustMethod = (value) => {
  *
  * The rotation axis is always perpendicular to the perspective direction.
  */
-const buildPerspectiveTransform = (degX, degY, bbox) => {
-  const x = Number(degX) || 0
-  const y = Number(degY) || 0
-  if (x === 0 && y === 0) return ''
+  const buildPerspectiveTransform = (degX, degY, bbox) => {
+    const x = Number(degX) || 0
+    const y = Number(degY) || 0
+    if (x === 0 && y === 0) return ''
 
-  // Scale the perspective distance to the element's own dimensions so the
-  // visual effect at any slider value is consistent regardless of text size.
-  // Using 1.5× the relevant dimension gives ≈2:1 height ratio (close vs far
-  // side) at the maximum ±80° slider value, and the formula never approaches
-  // singularity within that range.
-  //
-  //   For X perspective: d relative to width  (rotateY spans the width)
-  //   For Y perspective: d relative to height (rotateX spans the height)
-  //   For both active:   arithmetic mean of the two
-  const dX = Math.max(bbox.width * 1.5, 50)
-  const dY = Math.max(bbox.height * 1.5, 50)
-  const d = (x !== 0 && y !== 0)
-    ? Math.round((dX + dY) / 2)
-    : Math.round(x !== 0 ? dX : dY)
+    // Scale the perspective distance to the element's own dimensions so the
+    // visual effect at any slider value is consistent regardless of text size.
+    // Using 1.5× the relevant dimension gives ≈2:1 height ratio (close vs far
+    // side) at the maximum ±80° slider value, and the formula never approaches
+    // singularity within that range.
+    //
+    //   For X perspective: d relative to width  (rotateY spans the width)
+    //   For Y perspective: d relative to height (rotateX spans the height)
+    //   For both active:   arithmetic mean of the two
+    const dX = Math.max(bbox.width * 1.5, 50)
+    const dY = Math.max(bbox.height * 1.5, 50)
+    const d = (x !== 0 && y !== 0)
+      ? Math.round((dX + dY) / 2)
+      : Math.round(x !== 0 ? dX : dY)
 
-  const parts = [`perspective(${d}px)`]
-  if (x !== 0) parts.push(`rotateY(${x}deg)`) // X perspective → rotate around Y axis
-  if (y !== 0) parts.push(`rotateX(${y}deg)`) // Y perspective → rotate around X axis
-  return parts.join(' ')
-}
+    const parts = [`perspective(${d}px)`]
+    if (x !== 0) parts.push(`rotateY(${x}deg)`) // X perspective → rotate around Y axis
+    if (y !== 0) parts.push(`rotateX(${y}deg)`) // Y perspective → rotate around X axis
+    return parts.join(' ')
+  }
 
-/**
+  /**
  * Set or remove the perspective CSS declarations within a style string.
  * cx/cy are the element's centre in SVG user-space coordinates; using them as
  * an explicit `transform-origin` keeps the element anchored to its current
  * position regardless of browser handling of `transform-box`.
  */
-const setTransformInStyle = (styleStr, transformValue, cx, cy) => {
-  const parts = (styleStr || '').split(';')
-    .map(s => s.trim())
-    .filter(s => s &&
+  const setTransformInStyle = (styleStr, transformValue, cx, cy) => {
+    const parts = (styleStr || '').split(';')
+      .map(s => s.trim())
+      .filter(s => s &&
       !s.startsWith('transform:') &&
       !s.startsWith('transform-box:') &&
       !s.startsWith('transform-origin:') &&
       !s.startsWith('backface-visibility:'))
-  if (transformValue) {
-    parts.push(`transform:${transformValue}`)
-    parts.push(`transform-origin:${cx}px ${cy}px`)
-    parts.push('backface-visibility:hidden') // prevent back-face at extreme angles
+    if (transformValue) {
+      parts.push(`transform:${transformValue}`)
+      parts.push(`transform-origin:${cx}px ${cy}px`)
+      parts.push('backface-visibility:hidden') // prevent back-face at extreme angles
+    }
+    return parts.join(';')
   }
-  return parts.join(';')
-}
 
-/**
+  /**
  * Apply one axis of CSS perspective to all selected text elements, with undo.
  * @param {'x'|'y'} axis
  * @param {number|string} val - Degrees (-80…80)
  */
-const applyTextPerspective = (axis, val) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const textElements = getSelectedTextElements()
-  if (!textElements.length) return
+  const applyTextPerspective = (axis, val) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const textElements = getSelectedTextElements()
+    if (!textElements.length) return
 
-  const batchCmd = new BatchCommand('Change text perspective')
-  textElements.forEach(elem => {
-    const attrKey = axis === 'x' ? 'data-perspective-x' : 'data-perspective-y'
-    const otherKey = axis === 'x' ? 'data-perspective-y' : 'data-perspective-x'
+    const batchCmd = new BatchCommand('Change text perspective')
+    textElements.forEach(elem => {
+      const attrKey = axis === 'x' ? 'data-perspective-x' : 'data-perspective-y'
+      const otherKey = axis === 'x' ? 'data-perspective-y' : 'data-perspective-x'
 
-    const oldAttr = elem.getAttribute(attrKey) || '0'
-    const oldStyle = elem.getAttribute('style') || ''
-    const otherVal = Number(elem.getAttribute(otherKey) || 0)
+      const oldAttr = elem.getAttribute(attrKey) || '0'
+      const oldStyle = elem.getAttribute('style') || ''
+      const otherVal = Number(elem.getAttribute(otherKey) || 0)
 
-    const degX = axis === 'x' ? Number(val) : otherVal
-    const degY = axis === 'y' ? Number(val) : otherVal
+      const degX = axis === 'x' ? Number(val) : otherVal
+      const degY = axis === 'y' ? Number(val) : otherVal
 
-    // getBBox() returns the element's geometry in SVG user-space, unaffected by
-    // CSS transforms. Using the resulting centre as an explicit transform-origin
-    // keeps the element anchored regardless of browser transform-box behaviour.
-    const bbox = elem.getBBox()
-    const cx = bbox.x + bbox.width / 2
-    const cy = bbox.y + bbox.height / 2
+      // getBBox() returns the element's geometry in SVG user-space, unaffected by
+      // CSS transforms. Using the resulting centre as an explicit transform-origin
+      // keeps the element anchored regardless of browser transform-box behaviour.
+      const bbox = elem.getBBox()
+      const cx = bbox.x + bbox.width / 2
+      const cy = bbox.y + bbox.height / 2
 
-    elem.setAttribute(attrKey, val)
-    const newTransform = buildPerspectiveTransform(degX, degY, bbox)
-    elem.setAttribute('style', setTransformInStyle(oldStyle, newTransform, cx, cy))
+      elem.setAttribute(attrKey, val)
+      const newTransform = buildPerspectiveTransform(degX, degY, bbox)
+      elem.setAttribute('style', setTransformInStyle(oldStyle, newTransform, cx, cy))
 
-    // ChangeElementCommand stores OLD values so undo can restore them
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, { [attrKey]: oldAttr, style: oldStyle }))
-  })
+      // ChangeElementCommand stores OLD values so undo can restore them
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, { [attrKey]: oldAttr, style: oldStyle }))
+    })
 
-  if (!batchCmd.isEmpty()) svgCanvas.addCommandToHistory(batchCmd)
-}
+    if (!batchCmd.isEmpty()) svgCanvas.addCommandToHistory(batchCmd)
+  }
 
-/**
+  /**
  * Set horizontal perspective (rotateY) on selected text elements.
  * @function module:svgcanvas.SvgCanvas#setTextPerspectiveX
  * @param {number} val - Degrees; positive = right side closer
  */
-const setTextPerspectiveXMethod = (val) => applyTextPerspective('x', val)
+  const setTextPerspectiveXMethod = (val) => applyTextPerspective('x', val)
 
-/**
+  /**
  * Set vertical perspective (rotateX) on selected text elements.
  * @function module:svgcanvas.SvgCanvas#setTextPerspectiveY
  * @param {number} val - Degrees; positive = bottom closer
  */
-const setTextPerspectiveYMethod = (val) => applyTextPerspective('y', val)
+  const setTextPerspectiveYMethod = (val) => applyTextPerspective('y', val)
 
-/**
+  /**
  * Get current horizontal perspective value from element.
  * @function module:svgcanvas.SvgCanvas#getTextPerspectiveX
  * @param {Element} elem
  * @returns {number}
  */
-const getTextPerspectiveXMethod = (elem) => Number(elem?.getAttribute('data-perspective-x') || 0)
+  const getTextPerspectiveXMethod = (elem) => Number(elem?.getAttribute('data-perspective-x') || 0)
 
-/**
+  /**
  * Get current vertical perspective value from element.
  * @function module:svgcanvas.SvgCanvas#getTextPerspectiveY
  * @param {Element} elem
  * @returns {number}
  */
-const getTextPerspectiveYMethod = (elem) => Number(elem?.getAttribute('data-perspective-y') || 0)
+  const getTextPerspectiveYMethod = (elem) => Number(elem?.getAttribute('data-perspective-y') || 0)
 
-// ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
 
-/**
+  /**
 * @function module:svgcanvas.SvgCanvas#getFontFamily
 * @returns {string} The current font family
 */
-const getFontFamilyMethod = () => {
-  return svgCanvas.getCurText('font_family')
-}
+  const getFontFamilyMethod = () => {
+    return svgCanvas.getCurText('font_family')
+  }
 
-/**
+  /**
 * Set the new font family.
 * @function module:svgcanvas.SvgCanvas#setFontFamily
 * @param {string} val - String with the new font family
 * @returns {void}
 */
-const setFontFamilyMethod = (val) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'font-family', val)
-  svgCanvas.setCurText('font_family', val)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('font-family', val, changedTextElements)
+  const setFontFamilyMethod = (val) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'font-family', val)
+    svgCanvas.setCurText('font_family', val)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('font-family', val, changedTextElements)
+    }
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
-  }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
 * Set the new font color.
 * @function module:svgcanvas.SvgCanvas#setFontColor
 * @param {string} val - String with the new font color
 * @returns {void}
 */
-const setFontColorMethod = (val) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'fill', val)
-  svgCanvas.setCurText('fill', val)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('fill', val, changedTextElements)
+  const setFontColorMethod = (val) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'fill', val)
+    svgCanvas.setCurText('fill', val)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('fill', val, changedTextElements)
+    }
+    notifyTextChange(changedTextElements)
   }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
 * @function module:svgcanvas.SvgCanvas#getFontColor
 * @returns {string} The current font color
 */
-const getFontColorMethod = () => {
-  return svgCanvas.getCurText('fill')
-}
+  const getFontColorMethod = () => {
+    return svgCanvas.getCurText('fill')
+  }
 
-/**
+  /**
 * @function module:svgcanvas.SvgCanvas#getFontSize
 * @returns {Float} The current font size
 */
-const getFontSizeMethod = () => {
-  return svgCanvas.getCurText('font_size')
-}
+  const getFontSizeMethod = () => {
+    return svgCanvas.getCurText('font_size')
+  }
 
-/**
+  /**
 * Applies the given font size to the selected element.
 * @function module:svgcanvas.SvgCanvas#setFontSize
 * @param {Float} val - Float with the new font size
 * @returns {void}
 */
-const setFontSizeMethod = (val) => {
-  const textElements = getSelectedTextElements()
-  const changedTextElements = getChangedTextElements(textElements, 'font-size', val)
-  svgCanvas.setCurText('font_size', val)
-  if (changedTextElements.length > 0) {
-    svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
-  }
-  // Re-flow multiline rows so line spacing tracks the new font size.
-  changedTextElements.forEach((el) => {
-    if (Array.from(el.children).some((c) => c.tagName === 'tspan')) {
-      setMultilineTextMethod(el, getTextWithNewlinesMethod(el))
+  const setFontSizeMethod = (val) => {
+    const textElements = getSelectedTextElements()
+    const changedTextElements = getChangedTextElements(textElements, 'font-size', val)
+    svgCanvas.setCurText('font_size', val)
+    if (changedTextElements.length > 0) {
+      svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
     }
-  })
-  if (!textElements.some(el => el.textContent)) {
-    svgCanvas.textActions.setCursor()
+    // Re-flow multiline rows so line spacing tracks the new font size.
+    changedTextElements.forEach((el) => {
+      if (Array.from(el.children).some((c) => c.tagName === 'tspan')) {
+        setMultilineTextMethod(el, getTextWithNewlinesMethod(el))
+      }
+    })
+    if (!textElements.some(el => el.textContent)) {
+      svgCanvas.textActions.setCursor()
+    }
+    notifyTextChange(changedTextElements)
   }
-  notifyTextChange(changedTextElements)
-}
 
-/**
+  /**
 * Read a `<text>` element's content as a newline-joined string. Multiline text
 * is stored as one `<tspan>` per row (SVG has no newline character), so this
 * rebuilds the `\n`-separated value the edit buffer and undo history use. A
@@ -1086,9 +1086,9 @@ const setFontSizeMethod = (val) => {
 * @param {Element} elem - The `<text>` element
 * @returns {string}
 */
-const getTextWithNewlinesMethod = (elem) => getTextWithNewlines(elem)
+  const getTextWithNewlinesMethod = (elem) => getTextWithNewlines(elem)
 
-/**
+  /**
 * Render a `\n`-separated string onto a `<text>` element. A single line is set
 * as plain `textContent` (no tspans, keeping simple text clean); multiple lines
 * become one absolutely-positioned `<tspan>` per row sharing the text's `x` (so
@@ -1100,33 +1100,33 @@ const getTextWithNewlinesMethod = (elem) => getTextWithNewlines(elem)
 * @param {string} value - The new content, rows separated by `\n`
 * @returns {void}
 */
-const setMultilineTextMethod = (elem, value) => {
-  setMultilineText(elem, value, parseFloat(svgCanvas.getCurText('font_size')) || 16)
-}
+  const setMultilineTextMethod = (elem, value) => {
+    setMultilineText(elem, value, parseFloat(svgCanvas.getCurText('font_size')) || 16)
+  }
 
-/**
+  /**
 * @function module:svgcanvas.SvgCanvas#getText
 * @returns {string} The current text of the selected element (newline-joined for multiline)
 */
-const getTextMethod = () => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  const selected = selectedElements[0]
-  return (selected) ? getTextWithNewlinesMethod(selected) : ''
-}
+  const getTextMethod = () => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const selected = selectedElements[0]
+    return (selected) ? getTextWithNewlinesMethod(selected) : ''
+  }
 
-/**
+  /**
 * Updates the text element with the given string.
 * @function module:svgcanvas.SvgCanvas#setTextContent
 * @param {string} val - String with the new text
 * @returns {void}
 */
-const setTextContentMethod = (val) => {
-  svgCanvas.changeSelectedAttribute('#text', val)
-  svgCanvas.textActions.init(val)
-  svgCanvas.textActions.setCursor()
-}
+  const setTextContentMethod = (val) => {
+    svgCanvas.changeSelectedAttribute('#text', val)
+    svgCanvas.textActions.init(val)
+    svgCanvas.textActions.setCursor()
+  }
 
-/**
+  /**
 * Sets the new image URL for the selected image element. Updates its size if
 * a new URL is given.
 * @function module:svgcanvas.SvgCanvas#setImageURL
@@ -1134,101 +1134,101 @@ const setTextContentMethod = (val) => {
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @returns {void}
 */
-const setImageURLMethod = (val) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const selectedElements = svgCanvas.getSelectedElements()
-  const elem = selectedElements[0]
-  if (!elem) { return }
+  const setImageURLMethod = (val) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const selectedElements = svgCanvas.getSelectedElements()
+    const elem = selectedElements[0]
+    if (!elem) { return }
 
-  const attrs = {
-    width: elem.getAttribute('width'),
-    height: elem.getAttribute('height')
-  }
-  const setsize = (!attrs.width || !attrs.height)
-
-  const curHref = getHref(elem)
-  const hrefChanged = curHref !== val
-
-  // Do nothing if no URL change or size change
-  if (!hrefChanged && !setsize) {
-    return
-  }
-
-  const batchCmd = new BatchCommand('Change Image URL')
-
-  if (hrefChanged) {
-    setHref(elem, val)
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, {
-      '#href': curHref
-    }))
-  }
-
-  let finalized = false
-  const finalize = () => {
-    if (finalized) { return }
-    finalized = true
-    if (batchCmd.isEmpty()) { return }
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', [elem])
-  }
-
-  const img = new Image()
-  img.onload = () => {
-    const changes = {
+    const attrs = {
       width: elem.getAttribute('width'),
       height: elem.getAttribute('height')
     }
-    elem.setAttribute('width', img.width)
-    elem.setAttribute('height', img.height)
+    const setsize = (!attrs.width || !attrs.height)
 
-    const selector = svgCanvas.selectorManager.requestSelector(elem)
-    selector && selector.resize()
+    const curHref = getHref(elem)
+    const hrefChanged = curHref !== val
 
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, changes))
-    finalize()
+    // Do nothing if no URL change or size change
+    if (!hrefChanged && !setsize) {
+      return
+    }
+
+    const batchCmd = new BatchCommand('Change Image URL')
+
+    if (hrefChanged) {
+      setHref(elem, val)
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, {
+        '#href': curHref
+      }))
+    }
+
+    let finalized = false
+    const finalize = () => {
+      if (finalized) { return }
+      finalized = true
+      if (batchCmd.isEmpty()) { return }
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', [elem])
+    }
+
+    const img = new Image()
+    img.onload = () => {
+      const changes = {
+        width: elem.getAttribute('width'),
+        height: elem.getAttribute('height')
+      }
+      elem.setAttribute('width', img.width)
+      elem.setAttribute('height', img.height)
+
+      const selector = svgCanvas.selectorManager.requestSelector(elem)
+      selector && selector.resize()
+
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, changes))
+      finalize()
+    }
+    img.onerror = () => {
+      finalize()
+    }
+    img.src = val
   }
-  img.onerror = () => {
-    finalize()
-  }
-  img.src = val
-}
 
-/**
+  /**
 * Sets the new link URL for the selected anchor element.
 * @function module:svgcanvas.SvgCanvas#setLinkURL
 * @param {string} val - String with the link URL/path
 * @returns {void}
 */
-const setLinkURLMethod = (val) => {
-  const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-  const selectedElements = svgCanvas.getSelectedElements()
-  let elem = selectedElements[0]
-  if (!elem) { return }
-  if (elem.tagName !== 'a') {
+  const setLinkURLMethod = (val) => {
+    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+    const selectedElements = svgCanvas.getSelectedElements()
+    let elem = selectedElements[0]
+    if (!elem) { return }
+    if (elem.tagName !== 'a') {
     // See if parent is an anchor
-    const parentsA = getParents(elem.parentNode, 'a')
-    if (parentsA?.length) {
-      elem = parentsA[0]
-    } else {
-      return
+      const parentsA = getParents(elem.parentNode, 'a')
+      if (parentsA?.length) {
+        elem = parentsA[0]
+      } else {
+        return
+      }
     }
+
+    const curHref = getHref(elem)
+
+    if (curHref === val) { return }
+
+    const batchCmd = new BatchCommand('Change Link URL')
+
+    setHref(elem, val)
+    batchCmd.addSubCommand(new ChangeElementCommand(elem, {
+      '#href': curHref
+    }))
+
+    svgCanvas.addCommandToHistory(batchCmd)
   }
 
-  const curHref = getHref(elem)
-
-  if (curHref === val) { return }
-
-  const batchCmd = new BatchCommand('Change Link URL')
-
-  setHref(elem, val)
-  batchCmd.addSubCommand(new ChangeElementCommand(elem, {
-    '#href': curHref
-  }))
-
-  svgCanvas.addCommandToHistory(batchCmd)
-}
-
-/**
+  /**
 * Sets the `rx` and `ry` values to the selected `rect` element
 * to change its corner radius.
 * @function module:svgcanvas.SvgCanvas#setRectRadius
@@ -1236,83 +1236,83 @@ const setLinkURLMethod = (val) => {
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @returns {void}
 */
-const setRectRadiusMethod = (val) => {
-  const { ChangeElementCommand } = svgCanvas.history
-  const selectedElements = svgCanvas.getSelectedElements()
-  const selected = selectedElements[0]
-  if (selected?.tagName !== 'rect') { return }
+  const setRectRadiusMethod = (val) => {
+    const { ChangeElementCommand } = svgCanvas.history
+    const selectedElements = svgCanvas.getSelectedElements()
+    const selected = selectedElements[0]
+    if (selected?.tagName !== 'rect') { return }
 
-  const radius = Number(val)
-  if (!Number.isFinite(radius) || radius < 0) {
-    return
+    const radius = Number(val)
+    if (!Number.isFinite(radius) || radius < 0) {
+      return
+    }
+
+    const oldRx = selected.getAttribute('rx')
+    const oldRy = selected.getAttribute('ry')
+    const currentRx = Number(oldRx)
+    const currentRy = Number(oldRy)
+    const hasCurrentRx = oldRx !== null && Number.isFinite(currentRx)
+    const hasCurrentRy = oldRy !== null && Number.isFinite(currentRy)
+    const already = (radius === 0 && oldRx === null && oldRy === null) ||
+    (hasCurrentRx && hasCurrentRy && currentRx === radius && currentRy === radius)
+    if (already) { return }
+
+    selected.setAttribute('rx', radius)
+    selected.setAttribute('ry', radius)
+    svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
+    svgCanvas.call('changed', [selected])
   }
 
-  const oldRx = selected.getAttribute('rx')
-  const oldRy = selected.getAttribute('ry')
-  const currentRx = Number(oldRx)
-  const currentRy = Number(oldRy)
-  const hasCurrentRx = oldRx !== null && Number.isFinite(currentRx)
-  const hasCurrentRy = oldRy !== null && Number.isFinite(currentRy)
-  const already = (radius === 0 && oldRx === null && oldRy === null) ||
-    (hasCurrentRx && hasCurrentRy && currentRx === radius && currentRy === radius)
-  if (already) { return }
-
-  selected.setAttribute('rx', radius)
-  selected.setAttribute('ry', radius)
-  svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
-  svgCanvas.call('changed', [selected])
-}
-
-/**
+  /**
 * Wraps the selected element(s) in an anchor element or converts group to one.
 * @function module:svgcanvas.SvgCanvas#makeHyperlink
 * @param {string} url
 * @returns {void}
 */
-const makeHyperlinkMethod = (url) => {
-  svgCanvas.groupSelectedElements('a', url)
-}
+  const makeHyperlinkMethod = (url) => {
+    svgCanvas.groupSelectedElements('a', url)
+  }
 
-/**
+  /**
 * @function module:svgcanvas.SvgCanvas#removeHyperlink
 * @returns {void}
 */
-const removeHyperlinkMethod = () => {
-  svgCanvas.ungroupSelectedElement()
-}
+  const removeHyperlinkMethod = () => {
+    svgCanvas.ungroupSelectedElement()
+  }
 
-/**
+  /**
 * Group: Element manipulation.
 */
 
-/**
+  /**
 * Sets the new segment type to the selected segment(s).
 * @function module:svgcanvas.SvgCanvas#setSegType
 * @param {Integer} newType - New segment type. See {@link https://www.w3.org/TR/SVG/paths.html#InterfaceSVGPathSeg} for list
 * @returns {void}
 */
-const setSegTypeMethod = (newType) => {
-  svgCanvas.pathActions.setSegType(newType)
-}
+  const setSegTypeMethod = (newType) => {
+    svgCanvas.pathActions.setSegType(newType)
+  }
 
-/**
+  /**
 * Set the background of the editor (NOT the actual document).
 * @function module:svgcanvas.SvgCanvas#setBackground
 * @param {string} color - String with fill color to apply
 * @param {string} url - URL or path to image to use
 * @returns {void}
 */
-const setBackgroundMethod = (color, url, gradientElem) => {
-  const bg = svgCanvas.getElement('canvasBackground')
-  if (!bg) { return }
-  const border = bg.querySelector('rect')
-  if (!border) { return }
-  let bgImg = svgCanvas.getElement('background_image')
-  let bgPattern = svgCanvas.getElement('background_pattern')
+  const setBackgroundMethod = (color, url, gradientElem) => {
+    const bg = svgCanvas.getElement('canvasBackground')
+    if (!bg) { return }
+    const border = bg.querySelector('rect')
+    if (!border) { return }
+    let bgImg = svgCanvas.getElement('background_image')
+    let bgPattern = svgCanvas.getElement('background_pattern')
 
-  // Handle gradient fill
-  let bgDefs = bg.querySelector('defs')
-  if (gradientElem) {
+    // Handle gradient fill
+    let bgDefs = bg.querySelector('defs')
+    if (gradientElem) {
     // Replace the <defs> NODE on every application rather than swapping its
     // children. Some engines (Electron/Obsidian) cache a rect's paint-server
     // resolution against the <defs> node identity: if the gradient reference is
@@ -1322,82 +1322,82 @@ const setBackgroundMethod = (color, url, gradientElem) => {
     // stays white. This is exactly why a solid→gradient toggle recovers (the
     // solid branch removes the <defs> node) but gradient→gradient does not.
     // Recreating the node forces the re-resolution.
-    if (bgDefs) { bgDefs.remove() }
-    bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
-    bg.insertBefore(bgDefs, border)
-    const grad = gradientElem.cloneNode(true)
-    // A fresh id per application keeps the `fill` reference string unique
-    // (see the <defs>-identity comment above). getNonceId additionally
-    // namespaces it by the drawing's nonce so multiple editors mounted into
-    // one host document — where SVG `url(#id)` paint refs resolve
-    // document-wide — can't have a second canvas's background rect bind to
-    // the first's gradient.
-    const gradId = svgCanvas.getNonceId(`background_gradient_${++bgGradientSeq}`)
-    grad.id = gradId
-    bgDefs.appendChild(grad)
-    border.setAttribute('fill', `url(#${gradId})`)
-  } else {
-    if (bgDefs) { bgDefs.remove() }
-    // 'gradient' without a gradientElem (e.g. missing saved data) → fall back to white
-    const fillColor = (color === 'chessboard' || color === 'gradient') ? '#fff' : color
-    border.setAttribute('fill', fillColor)
-  }
+      if (bgDefs) { bgDefs.remove() }
+      bgDefs = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'defs')
+      bg.insertBefore(bgDefs, border)
+      const grad = gradientElem.cloneNode(true)
+      // A fresh id per application keeps the `fill` reference string unique
+      // (see the <defs>-identity comment above). getNonceId additionally
+      // namespaces it by the drawing's nonce so multiple editors mounted into
+      // one host document — where SVG `url(#id)` paint refs resolve
+      // document-wide — can't have a second canvas's background rect bind to
+      // the first's gradient.
+      const gradId = svgCanvas.getNonceId(`background_gradient_${++bgGradientSeq}`)
+      grad.id = gradId
+      bgDefs.appendChild(grad)
+      border.setAttribute('fill', `url(#${gradId})`)
+    } else {
+      if (bgDefs) { bgDefs.remove() }
+      // 'gradient' without a gradientElem (e.g. missing saved data) → fall back to white
+      const fillColor = (color === 'chessboard' || color === 'gradient') ? '#fff' : color
+      border.setAttribute('fill', fillColor)
+    }
 
-  if (color === 'chessboard') {
-    if (!bgPattern) {
-      bgPattern = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'foreignObject')
-      svgCanvas.assignAttributes(bgPattern, {
-        id: 'background_pattern',
-        width: '100%',
-        height: '100%',
-        preserveAspectRatio: 'xMinYMin',
-        style: 'pointer-events:none'
-      })
-      const div = document.createElement('div')
-      svgCanvas.assignAttributes(div, {
-        style: 'pointer-events:none;width:100%;height:100%;' +
+    if (color === 'chessboard') {
+      if (!bgPattern) {
+        bgPattern = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'foreignObject')
+        svgCanvas.assignAttributes(bgPattern, {
+          id: 'background_pattern',
+          width: '100%',
+          height: '100%',
+          preserveAspectRatio: 'xMinYMin',
+          style: 'pointer-events:none'
+        })
+        const div = document.createElement('div')
+        svgCanvas.assignAttributes(div, {
+          style: 'pointer-events:none;width:100%;height:100%;' +
           'background-image:url(data:image/gif;base64,' +
           'R0lGODlhEAAQAIAAAP///9bW1iH5BAAAAAAALAAAAAAQABAAAAIfjG+' +
           'gq4jM3IFLJgpswNly/XkcBpIiVaInlLJr9FZWAQA7);'
-      })
-      bgPattern.append(div)
-      bg.append(bgPattern)
+        })
+        bgPattern.append(div)
+        bg.append(bgPattern)
+      }
+    } else if (bgPattern) {
+      bgPattern.remove()
     }
-  } else if (bgPattern) {
-    bgPattern.remove()
-  }
-  if (url) {
-    if (!bgImg) {
-      bgImg = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'image')
-      svgCanvas.assignAttributes(bgImg, {
-        id: 'background_image',
-        width: '100%',
-        height: '100%',
-        preserveAspectRatio: 'xMinYMin',
-        style: 'pointer-events:none'
-      })
+    if (url) {
+      if (!bgImg) {
+        bgImg = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'image')
+        svgCanvas.assignAttributes(bgImg, {
+          id: 'background_image',
+          width: '100%',
+          height: '100%',
+          preserveAspectRatio: 'xMinYMin',
+          style: 'pointer-events:none'
+        })
+      }
+      setHref(bgImg, url)
+      bg.append(bgImg)
+    } else if (bgImg) {
+      bgImg.remove()
     }
-    setHref(bgImg, url)
-    bg.append(bgImg)
-  } else if (bgImg) {
-    bgImg.remove()
   }
-}
 
-// ---------------------------------------------------------------------------
-// Circle arc (pie-sector) support
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Circle arc (pie-sector) support
+  // ---------------------------------------------------------------------------
 
-/**
+  /**
  * Presentational SVG attributes copied when converting circle/ellipse ↔ arc path.
  */
-const ARC_PRES_ATTRS = [
-  'fill', 'fill-opacity', 'stroke', 'stroke-width',
-  'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap',
-  'stroke-opacity', 'opacity', 'style'
-]
+  const ARC_PRES_ATTRS = [
+    'fill', 'fill-opacity', 'stroke', 'stroke-width',
+    'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap',
+    'stroke-opacity', 'opacity', 'style'
+  ]
 
-/**
+  /**
  * Compute the SVG path `d` string for a symmetric pie-sector (pacman) arc.
  * Works for both circles (rx === ry) and ellipses (rx !== ry) — SVG's
  * elliptical-arc command takes independent radii.
@@ -1411,43 +1411,43 @@ const ARC_PRES_ATTRS = [
  * @param {number} arcDeg - arc span in degrees (1–359)
  * @returns {string}
  */
-const computeArcPathD = (cx, cy, rx, ry, arcDeg) => {
-  const halfGap = ((360 - arcDeg) / 2) * (Math.PI / 180)
-  const startX = cx + rx * Math.cos(halfGap)
-  const startY = cy + ry * Math.sin(halfGap)
-  const endX = cx + rx * Math.cos(-halfGap)
-  const endY = cy + ry * Math.sin(-halfGap)
-  const large = arcDeg > 180 ? 1 : 0
-  return `M ${cx} ${cy} L ${startX} ${startY} A ${rx} ${ry} 0 ${large} 1 ${endX} ${endY} Z`
-}
+  const computeArcPathD = (cx, cy, rx, ry, arcDeg) => {
+    const halfGap = ((360 - arcDeg) / 2) * (Math.PI / 180)
+    const startX = cx + rx * Math.cos(halfGap)
+    const startY = cy + ry * Math.sin(halfGap)
+    const endX = cx + rx * Math.cos(-halfGap)
+    const endY = cy + ry * Math.sin(-halfGap)
+    const large = arcDeg > 180 ? 1 : 0
+    return `M ${cx} ${cy} L ${startX} ${startY} A ${rx} ${ry} 0 ${large} 1 ${endX} ${endY} Z`
+  }
 
-/**
+  /**
  * Read the centre and radii of a circle, ellipse, or arc path as
  * `{ cx, cy, rx, ry }`. Arc paths store geometry in `data-*` attributes;
  * legacy arc paths used a single `data-r`, read as a fallback for both radii.
  * @param {Element} elem
  * @returns {{cx:number, cy:number, rx:number, ry:number}}
  */
-const readArcGeom = (elem) => {
-  const num = (a) => Number(elem.getAttribute(a)) || 0
-  if (elem.tagName === 'circle') {
-    const r = num('r')
-    return { cx: num('cx'), cy: num('cy'), rx: r, ry: r }
+  const readArcGeom = (elem) => {
+    const num = (a) => Number(elem.getAttribute(a)) || 0
+    if (elem.tagName === 'circle') {
+      const r = num('r')
+      return { cx: num('cx'), cy: num('cy'), rx: r, ry: r }
+    }
+    if (elem.tagName === 'ellipse') {
+      return { cx: num('cx'), cy: num('cy'), rx: num('rx'), ry: num('ry') }
+    }
+    // arc path
+    const rFallback = num('data-r')
+    return {
+      cx: num('data-cx'),
+      cy: num('data-cy'),
+      rx: elem.hasAttribute('data-rx') ? Number(elem.getAttribute('data-rx')) : rFallback,
+      ry: elem.hasAttribute('data-ry') ? Number(elem.getAttribute('data-ry')) : rFallback
+    }
   }
-  if (elem.tagName === 'ellipse') {
-    return { cx: num('cx'), cy: num('cy'), rx: num('rx'), ry: num('ry') }
-  }
-  // arc path
-  const rFallback = num('data-r')
-  return {
-    cx: num('data-cx'),
-    cy: num('data-cy'),
-    rx: elem.hasAttribute('data-rx') ? Number(elem.getAttribute('data-rx')) : rFallback,
-    ry: elem.hasAttribute('data-ry') ? Number(elem.getAttribute('data-ry')) : rFallback
-  }
-}
 
-/**
+  /**
  * Convert the selected circle/ellipse to a pie-sector arc path (or vice-versa)
  * based on the given arc angle in degrees.
  * - arcDegrees === 360 converts an arc path back to a <circle> (when rx === ry)
@@ -1457,77 +1457,77 @@ const readArcGeom = (elem) => {
  * Supports full undo/redo via BatchCommand / ChangeElementCommand.
  * @param {number} arcDegrees
  */
-const setCircleArcMethod = (arcDegrees) => {
-  const selected = svgCanvas.getSelectedElements()[0]
-  if (!selected) return
-  const { tagName } = selected
-  const isArcPath = tagName === 'path' && selected.hasAttribute('data-arc')
-  if (tagName !== 'circle' && tagName !== 'ellipse' && !isArcPath) return
+  const setCircleArcMethod = (arcDegrees) => {
+    const selected = svgCanvas.getSelectedElements()[0]
+    if (!selected) return
+    const { tagName } = selected
+    const isArcPath = tagName === 'path' && selected.hasAttribute('data-arc')
+    if (tagName !== 'circle' && tagName !== 'ellipse' && !isArcPath) return
 
-  const arc = Math.max(1, Math.min(360, Math.round(Number(arcDegrees))))
-  if (!Number.isFinite(arc)) return
+    const arc = Math.max(1, Math.min(360, Math.round(Number(arcDegrees))))
+    if (!Number.isFinite(arc)) return
 
-  const { cx, cy, rx, ry } = readArcGeom(selected)
-  const currentArc = isArcPath ? Number(selected.getAttribute('data-arc')) : 360
-  if (arc === currentArc) return
+    const { cx, cy, rx, ry } = readArcGeom(selected)
+    const currentArc = isArcPath ? Number(selected.getAttribute('data-arc')) : 360
+    if (arc === currentArc) return
 
-  const { BatchCommand, RemoveElementCommand, InsertElementCommand, ChangeElementCommand } = svgCanvas.history
+    const { BatchCommand, RemoveElementCommand, InsertElementCommand, ChangeElementCommand } = svgCanvas.history
 
-  // Collect presentational attributes from elem
-  const collectPresAttrs = (elem) => ARC_PRES_ATTRS.reduce((o, a) => {
-    const v = elem.getAttribute(a)
-    if (v !== null) o[a] = v
-    return o
-  }, {})
+    // Collect presentational attributes from elem
+    const collectPresAttrs = (elem) => ARC_PRES_ATTRS.reduce((o, a) => {
+      const v = elem.getAttribute(a)
+      if (v !== null) o[a] = v
+      return o
+    }, {})
 
-  // Swap `selected` out for `replacement`, preserving id/transform, as one undo step.
-  const replaceSelected = (replacement, label) => {
-    const batchCmd = new BatchCommand(label)
-    const eltrans = selected.getAttribute('transform')
-    if (eltrans) replacement.setAttribute('transform', eltrans)
-    const { id, parentNode, nextSibling } = selected
-    batchCmd.addSubCommand(new RemoveElementCommand(selected, nextSibling, parentNode))
-    svgCanvas.clearSelection()
-    selected.remove()
-    batchCmd.addSubCommand(new InsertElementCommand(replacement))
-    replacement.setAttribute('id', id)
-    svgCanvas.addToSelection([replacement], true)
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', [replacement])
-  }
+    // Swap `selected` out for `replacement`, preserving id/transform, as one undo step.
+    const replaceSelected = (replacement, label) => {
+      const batchCmd = new BatchCommand(label)
+      const eltrans = selected.getAttribute('transform')
+      if (eltrans) replacement.setAttribute('transform', eltrans)
+      const { id, parentNode, nextSibling } = selected
+      batchCmd.addSubCommand(new RemoveElementCommand(selected, nextSibling, parentNode))
+      svgCanvas.clearSelection()
+      selected.remove()
+      batchCmd.addSubCommand(new InsertElementCommand(replacement))
+      replacement.setAttribute('id', id)
+      svgCanvas.addToSelection([replacement], true)
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', [replacement])
+    }
 
-  if (arc === 360) {
+    if (arc === 360) {
     // arc path → full circle (rx === ry) or ellipse
-    const isCircle = rx === ry
-    const shape = svgCanvas.addSVGElementsFromJson(
-      isCircle
-        ? { element: 'circle', attr: { cx, cy, r: rx, ...collectPresAttrs(selected) } }
-        : { element: 'ellipse', attr: { cx, cy, rx, ry, ...collectPresAttrs(selected) } }
-    )
-    replaceSelected(shape, isCircle ? 'Restore Circle' : 'Restore Ellipse')
-  } else if (tagName === 'circle' || tagName === 'ellipse') {
+      const isCircle = rx === ry
+      const shape = svgCanvas.addSVGElementsFromJson(
+        isCircle
+          ? { element: 'circle', attr: { cx, cy, r: rx, ...collectPresAttrs(selected) } }
+          : { element: 'ellipse', attr: { cx, cy, rx, ry, ...collectPresAttrs(selected) } }
+      )
+      replaceSelected(shape, isCircle ? 'Restore Circle' : 'Restore Ellipse')
+    } else if (tagName === 'circle' || tagName === 'ellipse') {
     // full circle/ellipse → arc path
-    const d = computeArcPathD(cx, cy, rx, ry, arc)
-    const path = svgCanvas.addSVGElementsFromJson({
-      element: 'path',
-      attr: { d, 'data-cx': cx, 'data-cy': cy, 'data-rx': rx, 'data-ry': ry, 'data-arc': arc, ...collectPresAttrs(selected) }
-    })
-    replaceSelected(path, 'Create Arc')
-  } else {
+      const d = computeArcPathD(cx, cy, rx, ry, arc)
+      const path = svgCanvas.addSVGElementsFromJson({
+        element: 'path',
+        attr: { d, 'data-cx': cx, 'data-cy': cy, 'data-rx': rx, 'data-ry': ry, 'data-arc': arc, ...collectPresAttrs(selected) }
+      })
+      replaceSelected(path, 'Create Arc')
+    } else {
     // arc path → update arc in place
-    const oldArc = selected.getAttribute('data-arc')
-    const oldD = selected.getAttribute('d')
-    const newD = computeArcPathD(cx, cy, rx, ry, arc)
-    selected.setAttribute('data-arc', arc)
-    selected.setAttribute('d', newD)
-    svgCanvas.addCommandToHistory(
-      new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
-    )
-    svgCanvas.call('changed', [selected])
+      const oldArc = selected.getAttribute('data-arc')
+      const oldD = selected.getAttribute('d')
+      const newD = computeArcPathD(cx, cy, rx, ry, arc)
+      selected.setAttribute('data-arc', arc)
+      selected.setAttribute('d', newD)
+      svgCanvas.addCommandToHistory(
+        new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
+      )
+      svgCanvas.call('changed', [selected])
+    }
   }
-}
 
-/**
+  /**
  * Update the geometry (cx, cy, r, rx, or ry) of an arc path element, recomputing
  * the path `d` attribute accordingly. Used when the user edits the cx/cy/r
  * (circular arc) or cx/cy/rx/ry (elliptical arc) fields in the panel while an
@@ -1535,42 +1535,42 @@ const setCircleArcMethod = (arcDegrees) => {
  * @param {'cx'|'cy'|'r'|'rx'|'ry'} attr
  * @param {number} val
  */
-const setCircleArcAttrMethod = (attr, val) => {
-  const selected = svgCanvas.getSelectedElements()[0]
-  if (!selected || selected.tagName !== 'path' || !selected.hasAttribute('data-arc')) return
+  const setCircleArcAttrMethod = (attr, val) => {
+    const selected = svgCanvas.getSelectedElements()[0]
+    if (!selected || selected.tagName !== 'path' || !selected.hasAttribute('data-arc')) return
 
-  const oldD = selected.getAttribute('d')
-  const geom = readArcGeom(selected)
-  // The data-* attributes this edit will write (snapshotted for undo).
-  const changedAttrs = attr === 'r' ? ['data-rx', 'data-ry'] : [`data-${attr}`]
-  const oldVals = changedAttrs.reduce((o, a) => {
-    o[a] = selected.getAttribute(a)
-    return o
-  }, {})
+    const oldD = selected.getAttribute('d')
+    const geom = readArcGeom(selected)
+    // The data-* attributes this edit will write (snapshotted for undo).
+    const changedAttrs = attr === 'r' ? ['data-rx', 'data-ry'] : [`data-${attr}`]
+    const oldVals = changedAttrs.reduce((o, a) => {
+      o[a] = selected.getAttribute(a)
+      return o
+    }, {})
 
-  if (attr === 'cx') {
-    geom.cx = val
-  } else if (attr === 'cy') {
-    geom.cy = val
-  } else if (attr === 'r') {
-    geom.rx = val
-    geom.ry = val
-  } else if (attr === 'rx') {
-    geom.rx = val
-  } else if (attr === 'ry') {
-    geom.ry = val
+    if (attr === 'cx') {
+      geom.cx = val
+    } else if (attr === 'cy') {
+      geom.cy = val
+    } else if (attr === 'r') {
+      geom.rx = val
+      geom.ry = val
+    } else if (attr === 'rx') {
+      geom.rx = val
+    } else if (attr === 'ry') {
+      geom.ry = val
+    }
+
+    const arc = Number(selected.getAttribute('data-arc')) || 360
+    const newD = computeArcPathD(geom.cx, geom.cy, geom.rx, geom.ry, arc)
+    changedAttrs.forEach(a => selected.setAttribute(a, attr === 'r' ? val : geom[attr]))
+    selected.setAttribute('d', newD)
+    const { ChangeElementCommand } = svgCanvas.history
+    svgCanvas.addCommandToHistory(
+      new ChangeElementCommand(selected, { ...oldVals, d: oldD }, attr)
+    )
+    svgCanvas.call('changed', [selected])
   }
-
-  const arc = Number(selected.getAttribute('data-arc')) || 360
-  const newD = computeArcPathD(geom.cx, geom.cy, geom.rx, geom.ry, arc)
-  changedAttrs.forEach(a => selected.setAttribute(a, attr === 'r' ? val : geom[attr]))
-  selected.setAttribute('d', newD)
-  const { ChangeElementCommand } = svgCanvas.history
-  svgCanvas.addCommandToHistory(
-    new ChangeElementCommand(selected, { ...oldVals, d: oldD }, attr)
-  )
-  svgCanvas.call('changed', [selected])
-}
 
   svgCanvas.getBold = getBoldMethod // Check whether selected element is bold or not.
   svgCanvas.setBold = setBoldMethod // Make the selected element bold or normal.

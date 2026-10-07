@@ -32,7 +32,7 @@ const { BatchCommand } = hstry
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
-/**
+  /**
  * Shows or hides the multi-selection group box + resize grips depending on how
  * many elements are currently selected. With 2+ elements selected it draws one
  * union bounding box (uniform group-scale); otherwise it hides it so the normal
@@ -40,130 +40,130 @@ export const init = (canvas) => {
  * @name module:selection.SvgCanvas#updateGroupSelector
  * @returns {void}
  */
-const updateGroupSelectorMethod = () => {
-  const elems = svgCanvas.getSelectedElements().filter(Boolean)
-  if (elems.length > 1) {
-    svgCanvas.selectorManager.showGroupSelector(svgCanvas.getStrokedBBoxDefaultVisible(elems))
-  } else {
-    svgCanvas.selectorManager.hideGroupSelector()
+  const updateGroupSelectorMethod = () => {
+    const elems = svgCanvas.getSelectedElements().filter(Boolean)
+    if (elems.length > 1) {
+      svgCanvas.selectorManager.showGroupSelector(svgCanvas.getStrokedBBoxDefaultVisible(elems))
+    } else {
+      svgCanvas.selectorManager.hideGroupSelector()
+    }
   }
-}
 
-/**
+  /**
  * Clears the selection. The 'selected' handler is then optionally called.
  * This should really be an intersection applying to all types rather than a union.
  * @name module:selection.SvgCanvas#clearSelection
  * @type {module:draw.DrawCanvasInit#clearSelection|module:path.EditorContext#clearSelection}
  * @fires module:selection.SvgCanvas#event:selected
  */
-const clearSelectionMethod = (noCall) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  selectedElements.forEach((elem) => {
-    if (!elem) {
-      return
+  const clearSelectionMethod = (noCall) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    selectedElements.forEach((elem) => {
+      if (!elem) {
+        return
+      }
+
+      svgCanvas.selectorManager.releaseSelector(elem)
+    })
+    svgCanvas?.setEmptySelectedElements()
+    svgCanvas.updateGroupSelector()
+
+    if (!noCall) {
+      svgCanvas.call('selected', svgCanvas.getSelectedElements())
     }
-
-    svgCanvas.selectorManager.releaseSelector(elem)
-  })
-  svgCanvas?.setEmptySelectedElements()
-  svgCanvas.updateGroupSelector()
-
-  if (!noCall) {
-    svgCanvas.call('selected', svgCanvas.getSelectedElements())
   }
-}
 
-/**
+  /**
  * Adds a list of elements to the selection. The 'selected' handler is then called.
  * @name module:selection.SvgCanvas#addToSelection
  * @type {module:path.EditorContext#addToSelection}
  * @fires module:selection.SvgCanvas#event:selected
  */
-const addToSelectionMethod = (elemsToAdd, showGrips) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  if (!elemsToAdd.length) {
-    return
-  }
-  // find the first null in our selectedElements array
-
-  let firstNull = 0
-  while (firstNull < selectedElements.length) {
-    if (selectedElements[firstNull] === null) {
-      break
+  const addToSelectionMethod = (elemsToAdd, showGrips) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    if (!elemsToAdd.length) {
+      return
     }
-    ++firstNull
-  }
+    // find the first null in our selectedElements array
 
-  // now add each element consecutively
-  let i = elemsToAdd.length
-  while (i--) {
-    let elem = elemsToAdd[i]
-    if (!elem || !elem.getBBox) {
-      continue
+    let firstNull = 0
+    while (firstNull < selectedElements.length) {
+      if (selectedElements[firstNull] === null) {
+        break
+      }
+      ++firstNull
     }
 
-    if (elem.tagName === 'a' && elem.childNodes.length === 1) {
+    // now add each element consecutively
+    let i = elemsToAdd.length
+    while (i--) {
+      let elem = elemsToAdd[i]
+      if (!elem || !elem.getBBox) {
+        continue
+      }
+
+      if (elem.tagName === 'a' && elem.childNodes.length === 1) {
       // Make "a" element's child be the selected element
-      elem = elem.firstChild
-    }
+        elem = elem.firstChild
+      }
 
-    // if it's not already there, add it
-    if (!selectedElements.includes(elem)) {
-      selectedElements[firstNull] = elem
+      // if it's not already there, add it
+      if (!selectedElements.includes(elem)) {
+        selectedElements[firstNull] = elem
 
-      // only the first selectedBBoxes element is ever used in the codebase these days
-      // if (j === 0) selectedBBoxes[0] = utilsGetBBox(elem);
-      firstNull++
-      const sel = svgCanvas.selectorManager.requestSelector(elem)
+        // only the first selectedBBoxes element is ever used in the codebase these days
+        // if (j === 0) selectedBBoxes[0] = utilsGetBBox(elem);
+        firstNull++
+        const sel = svgCanvas.selectorManager.requestSelector(elem)
 
-      if (selectedElements.length > 1) {
-        sel.showGrips(false)
+        if (selectedElements.length > 1) {
+          sel.showGrips(false)
+        }
       }
     }
-  }
-  if (!selectedElements.length) {
-    return
-  }
-  svgCanvas.call('selected', selectedElements)
-
-  if (selectedElements.length === 1) {
-    svgCanvas.selectorManager
-      .requestSelector(selectedElements[0])
-      .showGrips(showGrips)
-  }
-
-  // make sure the elements are in the correct order
-  // See: https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-compareDocumentPosition
-
-  selectedElements.sort((a, b) => {
-    if (a && b && a.compareDocumentPosition) {
-      return 3 - (b.compareDocumentPosition(a) & 6)
+    if (!selectedElements.length) {
+      return
     }
-    if (!a) {
-      return 1
+    svgCanvas.call('selected', selectedElements)
+
+    if (selectedElements.length === 1) {
+      svgCanvas.selectorManager
+        .requestSelector(selectedElements[0])
+        .showGrips(showGrips)
     }
-    return 0
-  })
 
-  // Make sure first elements are not null
-  while (!selectedElements[0]) {
-    selectedElements.shift(0)
+    // make sure the elements are in the correct order
+    // See: https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-compareDocumentPosition
+
+    selectedElements.sort((a, b) => {
+      if (a && b && a.compareDocumentPosition) {
+        return 3 - (b.compareDocumentPosition(a) & 6)
+      }
+      if (!a) {
+        return 1
+      }
+      return 0
+    })
+
+    // Make sure first elements are not null
+    while (!selectedElements[0]) {
+      selectedElements.shift(0)
+    }
+
+    // draw/refresh the group box when 2+ elements are selected
+    svgCanvas.updateGroupSelector()
   }
-
-  // draw/refresh the group box when 2+ elements are selected
-  svgCanvas.updateGroupSelector()
-}
-/**
+  /**
  * @name module:svgcanvas.SvgCanvas#getMouseTarget
  * @type {module:path.EditorContext#getMouseTarget}
  */
-const getMouseTargetMethod = (evt) => {
-  if (!evt) {
-    return null
+  const getMouseTargetMethod = (evt) => {
+    if (!evt) {
+      return null
+    }
+    return getMouseTargetFromNode(evt.target)
   }
-  return getMouseTargetFromNode(evt.target)
-}
-/**
+  /**
  * Resolve a raw DOM node (e.g. the literal element under the cursor) to the
  * selectable element it represents, honoring the current group-isolation
  * context. Shared by `getMouseTarget` (which passes `evt.target`) and the
@@ -173,88 +173,88 @@ const getMouseTargetMethod = (evt) => {
  * @param {Element} node
  * @returns {Element|null}
  */
-const getMouseTargetFromNode = (node) => {
-  if (!node) {
-    return null
-  }
-  let mouseTarget = node
+  const getMouseTargetFromNode = (node) => {
+    if (!node) {
+      return null
+    }
+    let mouseTarget = node
 
-  // if it was a <use>, Opera and WebKit return the SVGElementInstance
-  if (mouseTarget.correspondingUseElement) {
-    mouseTarget = mouseTarget.correspondingUseElement
-  }
+    // if it was a <use>, Opera and WebKit return the SVGElementInstance
+    if (mouseTarget.correspondingUseElement) {
+      mouseTarget = mouseTarget.correspondingUseElement
+    }
 
-  // for foreign content, go up until we find the foreignObject
-  // WebKit browsers set the mouse target to the svgcanvas div
-  if (
-    [NS.MATH, NS.HTML].includes(mouseTarget.namespaceURI) &&
+    // for foreign content, go up until we find the foreignObject
+    // WebKit browsers set the mouse target to the svgcanvas div
+    if (
+      [NS.MATH, NS.HTML].includes(mouseTarget.namespaceURI) &&
     mouseTarget.id !== 'svgcanvas'
-  ) {
-    while (mouseTarget.nodeName !== 'foreignObject') {
-      mouseTarget = mouseTarget.parentNode
-      if (!mouseTarget) {
-        return svgCanvas.getSvgRoot()
+    ) {
+      while (mouseTarget.nodeName !== 'foreignObject') {
+        mouseTarget = mouseTarget.parentNode
+        if (!mouseTarget) {
+          return svgCanvas.getSvgRoot()
+        }
       }
     }
-  }
 
-  // Get the desired mouseTarget with jQuery selector-fu
-  // If it's root-like, select the root
-  const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
-  const currentGroup = svgCanvas.getCurrentGroup()
-  const svgRoot = svgCanvas.getSvgRoot()
-  const container = svgCanvas.getDOMContainer()
-  const content = svgCanvas.getSvgContent()
-  // In All Layers mode (and not isolated inside a group), any layer is a
-  // valid selection boundary, not just the current one.
-  const anyLayer = svgCanvas.getAllLayersMode() && !currentGroup
-  if (
-    [svgRoot, container, content, currentLayer].includes(mouseTarget) ||
+    // Get the desired mouseTarget with jQuery selector-fu
+    // If it's root-like, select the root
+    const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const currentGroup = svgCanvas.getCurrentGroup()
+    const svgRoot = svgCanvas.getSvgRoot()
+    const container = svgCanvas.getDOMContainer()
+    const content = svgCanvas.getSvgContent()
+    // In All Layers mode (and not isolated inside a group), any layer is a
+    // valid selection boundary, not just the current one.
+    const anyLayer = svgCanvas.getAllLayersMode() && !currentGroup
+    if (
+      [svgRoot, container, content, currentLayer].includes(mouseTarget) ||
     (anyLayer && Layer.isLayer(mouseTarget))
-  ) {
-    return svgCanvas.getSvgRoot()
-  }
+    ) {
+      return svgCanvas.getSvgRoot()
+    }
 
-  // If it's a selection grip, return the grip parent
-  if (getClosest(mouseTarget.parentNode, '#selectorParentGroup')) {
+    // If it's a selection grip, return the grip parent
+    if (getClosest(mouseTarget.parentNode, '#selectorParentGroup')) {
     // While we could instead have just returned mouseTarget,
     // this makes it easier to indentify as being a selector grip
-    return svgCanvas.selectorManager.selectorParentGroup
-  }
+      return svgCanvas.selectorManager.selectorParentGroup
+    }
 
-  // anyLayer is a deliberately loop-invariant guard; mouseTarget (the other
-  // operand) is what actually advances the loop each iteration.
-  /* eslint-disable-next-line no-unmodified-loop-condition */
-  while (
-    !mouseTarget?.parentNode?.isSameNode(currentGroup || currentLayer) &&
+    // anyLayer is a deliberately loop-invariant guard; mouseTarget (the other
+    // operand) is what actually advances the loop each iteration.
+    /* eslint-disable-next-line no-unmodified-loop-condition */
+    while (
+      !mouseTarget?.parentNode?.isSameNode(currentGroup || currentLayer) &&
     /* eslint-disable-next-line no-unmodified-loop-condition */
     !(anyLayer && Layer.isLayer(mouseTarget?.parentNode))
-  ) {
-    mouseTarget = mouseTarget.parentNode
-    // The node isn't inside the drawing at all (interactive overlays like
-    // the ruler guides, editor chrome) — treat it like empty canvas instead
-    // of walking off the top of the document.
-    if (!mouseTarget) return svgCanvas.getSvgRoot()
-  }
+    ) {
+      mouseTarget = mouseTarget.parentNode
+      // The node isn't inside the drawing at all (interactive overlays like
+      // the ruler guides, editor chrome) — treat it like empty canvas instead
+      // of walking off the top of the document.
+      if (!mouseTarget) return svgCanvas.getSvgRoot()
+    }
 
-  return mouseTarget
-}
-/**
+    return mouseTarget
+  }
+  /**
  * @typedef {module:svgcanvas.ExtensionMouseDownStatus|module:svgcanvas.ExtensionMouseUpStatus|module:svgcanvas.ExtensionIDsUpdatedStatus|module:locale.ExtensionLocaleData[]|void} module:svgcanvas.ExtensionStatus
  * @tutorial ExtensionDocs
  */
-/**
+  /**
  * @callback module:svgcanvas.ExtensionVarBuilder
  * @param {string} name The name of the extension
  * @returns {module:svgcanvas.SvgCanvas#event:ext_addLangData}
  */
-/**
+  /**
  * @callback module:svgcanvas.ExtensionNameFilter
  * @param {string} name
  * @returns {boolean}
  */
-/* eslint-disable max-len */
-/**
+  /* eslint-disable max-len */
+  /**
  * @todo Consider: Should this return an array by default, so extension results aren't overwritten?
  * @todo Would be easier to document if passing in object with key of action and vars as value; could then define an interface which tied both together
  * @function module:svgcanvas.SvgCanvas#runExtensions
@@ -263,41 +263,41 @@ const getMouseTargetFromNode = (node) => {
  * @param {boolean} [returnArray]
  * @returns {GenericArray<module:svgcanvas.ExtensionStatus>|module:svgcanvas.ExtensionStatus|false} See {@tutorial ExtensionDocs} on the ExtensionStatus.
  */
-/* eslint-enable max-len */
-const runExtensionsMethod = (
-  action,
-  vars,
-  returnArray
-) => {
-  let result = returnArray ? [] : false
-  for (const [name, ext] of Object.entries(svgCanvas.getExtensions())) {
-    if (typeof vars === 'function') {
-      vars = vars(name) // ext, action
-    }
-    if (ext.eventBased) {
-      const event = new CustomEvent('svgedit', {
-        detail: {
-          action,
-          vars
+  /* eslint-enable max-len */
+  const runExtensionsMethod = (
+    action,
+    vars,
+    returnArray
+  ) => {
+    let result = returnArray ? [] : false
+    for (const [name, ext] of Object.entries(svgCanvas.getExtensions())) {
+      if (typeof vars === 'function') {
+        vars = vars(name) // ext, action
+      }
+      if (ext.eventBased) {
+        const event = new CustomEvent('svgedit', {
+          detail: {
+            action,
+            vars
+          }
+        })
+        document.dispatchEvent(event)
+      } else if (ext[action]) {
+        try {
+          if (returnArray) {
+            result.push(ext[action](vars))
+          } else {
+            result = ext[action](vars)
+          }
+        } catch (err) {
+          console.error(`Extension "${name}" threw during "${action}":`, err)
         }
-      })
-      document.dispatchEvent(event)
-    } else if (ext[action]) {
-      try {
-        if (returnArray) {
-          result.push(ext[action](vars))
-        } else {
-          result = ext[action](vars)
-        }
-      } catch (err) {
-        console.error(`Extension "${name}" threw during "${action}":`, err)
       }
     }
+    return result
   }
-  return result
-}
 
-/**
+  /**
  * Get all elements that have a BBox (excludes `<defs>`, `<title>`, etc).
  * Note that 0-opacity, off-screen etc elements are still considered "visible"
  * for this function.
@@ -305,32 +305,32 @@ const runExtensionsMethod = (
  * @param {Element} parent - The parent DOM element to search within
  * @returns {ElementAndBBox[]} An array with objects that include:
  */
-const getVisibleElementsAndBBoxes = (parent) => {
-  if (!parent) {
-    const svgContent = svgCanvas.getSvgContent()
-    parent = svgContent.children // Prevent layers from being included
-  }
-  const contentElems = []
-  const elements = parent.children
-  // When the parent is a transformed container (e.g. rubber-band selecting
-  // while editing inside a group), child bboxes are returned in the parent's
-  // local space. Map them to content space so intersection testing matches the
-  // rubber band, which is tracked in content coords. No-op for an untransformed
-  // parent such as a layer.
-  const toContent = parent.nodeType === 1 ? getMatrixToContent(parent) : null
-  const mapBox = (bb) => {
-    if (!bb || !toContent || isIdentity(toContent)) { return bb }
-    return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
-  }
-  Array.from(elements).forEach((elem) => {
-    if (elem.getBBox) {
-      contentElems.push({ elem, bbox: mapBox(svgCanvas.getStrokedBBoxDefaultVisible([elem])) })
+  const getVisibleElementsAndBBoxes = (parent) => {
+    if (!parent) {
+      const svgContent = svgCanvas.getSvgContent()
+      parent = svgContent.children // Prevent layers from being included
     }
-  })
-  return contentElems.reverse()
-}
+    const contentElems = []
+    const elements = parent.children
+    // When the parent is a transformed container (e.g. rubber-band selecting
+    // while editing inside a group), child bboxes are returned in the parent's
+    // local space. Map them to content space so intersection testing matches the
+    // rubber band, which is tracked in content coords. No-op for an untransformed
+    // parent such as a layer.
+    const toContent = parent.nodeType === 1 ? getMatrixToContent(parent) : null
+    const mapBox = (bb) => {
+      if (!bb || !toContent || isIdentity(toContent)) { return bb }
+      return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
+    }
+    Array.from(elements).forEach((elem) => {
+      if (elem.getBBox) {
+        contentElems.push({ elem, bbox: mapBox(svgCanvas.getStrokedBBoxDefaultVisible([elem])) })
+      }
+    })
+    return contentElems.reverse()
+  }
 
-/**
+  /**
  * This method sends back an array or a NodeList full of elements that
  * intersect the multi-select rubber-band-box on the currentLayer only.
  *
@@ -342,110 +342,110 @@ const getVisibleElementsAndBBoxes = (parent) => {
  * @param {SVGRect} rect
  * @returns {Element[]|NodeList} Bbox elements
  */
-const getIntersectionListMethod = (rect) => {
-  const zoom = svgCanvas.getZoom()
-  if (!svgCanvas.getRubberBox()) {
-    return null
-  }
+  const getIntersectionListMethod = (rect) => {
+    const zoom = svgCanvas.getZoom()
+    if (!svgCanvas.getRubberBox()) {
+      return null
+    }
 
-  const parent =
+    const parent =
     svgCanvas.getCurrentGroup() ||
     svgCanvas.getCurrentDrawing().getCurrentLayer()
 
-  let rubberBBox
-  if (!rect) {
-    rubberBBox = getBBox(svgCanvas.getRubberBox())
-    const bb = svgCanvas.getSvgContent().createSVGRect();
+    let rubberBBox
+    if (!rect) {
+      rubberBBox = getBBox(svgCanvas.getRubberBox())
+      const bb = svgCanvas.getSvgContent().createSVGRect();
 
-    ['x', 'y', 'width', 'height', 'top', 'right', 'bottom', 'left'].forEach(
-      (o) => {
-        bb[o] = rubberBBox[o] / zoom
-      }
-    )
-    rubberBBox = bb
-  } else {
-    rubberBBox = svgCanvas.getSvgContent().createSVGRect()
-    rubberBBox.x = rect.x
-    rubberBBox.y = rect.y
-    rubberBBox.width = rect.width
-    rubberBBox.height = rect.height
-  }
+      ['x', 'y', 'width', 'height', 'top', 'right', 'bottom', 'left'].forEach(
+        (o) => {
+          bb[o] = rubberBBox[o] / zoom
+        }
+      )
+      rubberBBox = bb
+    } else {
+      rubberBBox = svgCanvas.getSvgContent().createSVGRect()
+      rubberBBox.x = rect.x
+      rubberBBox.y = rect.y
+      rubberBBox.width = rect.width
+      rubberBBox.height = rect.height
+    }
 
-  const resultList = []
-  if (svgCanvas.getCurBBoxes().length === 0) {
+    const resultList = []
+    if (svgCanvas.getCurBBoxes().length === 0) {
     // Cache all bboxes. In All Layers mode (and not isolated inside a
     // group), gather bboxes from every visible layer instead of just
     // the current one, so the rubber band can pick up elements anywhere.
-    if (svgCanvas.getAllLayersMode() && !svgCanvas.getCurrentGroup()) {
-      const drawing = svgCanvas.getCurrentDrawing()
-      let boxes = []
-      for (let li = 0; li < drawing.getNumLayers(); li++) {
-        const layerName = drawing.getLayerName(li)
-        if (!drawing.getLayerVisibility(layerName)) { continue }
-        boxes = boxes.concat(getVisibleElementsAndBBoxes(drawing.getLayerByName(layerName)))
+      if (svgCanvas.getAllLayersMode() && !svgCanvas.getCurrentGroup()) {
+        const drawing = svgCanvas.getCurrentDrawing()
+        let boxes = []
+        for (let li = 0; li < drawing.getNumLayers(); li++) {
+          const layerName = drawing.getLayerName(li)
+          if (!drawing.getLayerVisibility(layerName)) { continue }
+          boxes = boxes.concat(getVisibleElementsAndBBoxes(drawing.getLayerByName(layerName)))
+        }
+        svgCanvas.setCurBBoxes(boxes)
+      } else {
+        svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent))
       }
-      svgCanvas.setCurBBoxes(boxes)
-    } else {
-      svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent))
     }
-  }
-  let i = svgCanvas.getCurBBoxes().length
-  while (i--) {
-    const curBBoxes = svgCanvas.getCurBBoxes()
-    if (!rubberBBox.width) {
-      continue
+    let i = svgCanvas.getCurBBoxes().length
+    while (i--) {
+      const curBBoxes = svgCanvas.getCurBBoxes()
+      if (!rubberBBox.width) {
+        continue
+      }
+      if (curBBoxes[i].bbox && rectsIntersect(rubberBBox, curBBoxes[i].bbox)) {
+        resultList.push(curBBoxes[i].elem)
+      }
     }
-    if (curBBoxes[i].bbox && rectsIntersect(rubberBBox, curBBoxes[i].bbox)) {
-      resultList.push(curBBoxes[i].elem)
-    }
+
+    // addToSelection expects an array, but it's ok to pass a NodeList
+    // because using square-bracket notation is allowed:
+    // https://www.w3.org/TR/DOM-Level-2-Core/ecma-script-binding.html
+    return resultList
   }
 
-  // addToSelection expects an array, but it's ok to pass a NodeList
-  // because using square-bracket notation is allowed:
-  // https://www.w3.org/TR/DOM-Level-2-Core/ecma-script-binding.html
-  return resultList
-}
-
-/**
+  /**
  * @typedef {PlainObject} ElementAndBBox
  * @property {Element} elem - The element
  * @property {module:utilities.BBoxObject} bbox - The element's BBox as retrieved from `getStrokedBBoxDefaultVisible`
  */
 
-/**
+  /**
  * Wrap an SVG element into a group element, mark the group as 'gsvg'.
  * @function module:svgcanvas.SvgCanvas#groupSvgElem
  * @param {Element} elem - SVG element to wrap
  * @returns {void}
  */
-const groupSvgElem = (elem) => {
-  const dataStorage = svgCanvas.getDataStorage()
-  const g = document.createElementNS(NS.SVG, 'g')
-  elem.replaceWith(g)
-  g.appendChild(elem)
-  dataStorage.put(g, 'gsvg', elem)
-  g.id = svgCanvas.getNextId('g')
-}
+  const groupSvgElem = (elem) => {
+    const dataStorage = svgCanvas.getDataStorage()
+    const g = document.createElementNS(NS.SVG, 'g')
+    elem.replaceWith(g)
+    g.appendChild(elem)
+    dataStorage.put(g, 'gsvg', elem)
+    g.id = svgCanvas.getNextId('g')
+  }
 
-/**
+  /**
  * Runs the SVG Document through the sanitizer and then updates its paths.
  * @function module:svgcanvas.SvgCanvas#prepareSvg
  * @param {XMLDocument} newDoc - The SVG DOM document
  * @returns {void}
  */
-const prepareSvg = (newDoc) => {
-  svgCanvas.sanitizeSvg(newDoc.documentElement)
+  const prepareSvg = (newDoc) => {
+    svgCanvas.sanitizeSvg(newDoc.documentElement)
 
-  // convert paths into absolute commands
-  const paths = [...newDoc.getElementsByTagNameNS(NS.SVG, 'path')]
-  paths.forEach((path) => {
-    const convertedPath = svgCanvas.pathActions.convertPath(path)
-    path.setAttribute('d', convertedPath)
-    svgCanvas.pathActions.fixEnd(path)
-  })
-}
+    // convert paths into absolute commands
+    const paths = [...newDoc.getElementsByTagNameNS(NS.SVG, 'path')]
+    paths.forEach((path) => {
+      const convertedPath = svgCanvas.pathActions.convertPath(path)
+      path.setAttribute('d', convertedPath)
+      svgCanvas.pathActions.fixEnd(path)
+    })
+  }
 
-/**
+  /**
  * Removes any old rotations if present, prepends a new rotation at the
  * transformed center.
  * @function module:svgcanvas.SvgCanvas#setRotationAngle
@@ -454,112 +454,112 @@ const prepareSvg = (newDoc) => {
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {void}
  */
-const setRotationAngle = (val, preventUndo) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  // ensure val is the proper type
-  val = Number.parseFloat(val)
-  const elem = selectedElements[0]
-  const oldTransform = elem.getAttribute('transform')
-  const bbox = getBBox(elem)
-  const cx = bbox.x + bbox.width / 2
-  const cy = bbox.y + bbox.height / 2
-  const tlist = getTransformList(elem)
+  const setRotationAngle = (val, preventUndo) => {
+    const selectedElements = svgCanvas.getSelectedElements()
+    // ensure val is the proper type
+    val = Number.parseFloat(val)
+    const elem = selectedElements[0]
+    const oldTransform = elem.getAttribute('transform')
+    const bbox = getBBox(elem)
+    const cx = bbox.x + bbox.width / 2
+    const cy = bbox.y + bbox.height / 2
+    const tlist = getTransformList(elem)
 
-  // only remove the real rotational transform if present (i.e. at index=0)
-  if (tlist.numberOfItems > 0) {
-    const xform = tlist.getItem(0)
-    if (xform.type === 4) {
-      tlist.removeItem(0)
-    }
-  }
-  // find Rnc and insert it
-  if (val !== 0) {
-    const center = transformPoint(
-      cx,
-      cy,
-      transformListToTransform(tlist).matrix
-    )
-    // Safety check: if center coordinates are invalid (NaN), fall back to untransformed bbox center
-    const centerX = Number.isFinite(center.x) ? center.x : cx
-    const centerY = Number.isFinite(center.y) ? center.y : cy
-    const Rnc = svgCanvas.getSvgRoot().createSVGTransform()
-    Rnc.setRotate(val, centerX, centerY)
-    if (tlist.numberOfItems) {
-      tlist.insertItemBefore(Rnc, 0)
-    } else {
-      tlist.appendItem(Rnc)
-    }
-  } else if (tlist.numberOfItems === 0) {
-    elem.removeAttribute('transform')
-  }
-
-  if (!preventUndo) {
-    // we need to undo it, then redo it so it can be undo-able! :)
-    // TODO: figure out how to make changes to transform list undo-able cross-browser?
-    let newTransform = elem.getAttribute('transform')
-
-    // new transform is something like: 'rotate(5 1.39625e-8 -11)'
-    // we round the x so it becomes 'rotate(5 0 -11)'
-    // Only do this manipulation if the first transform is actually a rotation
-    if (newTransform && newTransform.startsWith('rotate(')) {
-      const match = newTransform.match(/^rotate\(([\d.\-e]+)\s+([\d.\-e]+)\s+([\d.\-e]+)\)(.*)/)
-      if (match) {
-        const angle = Number.parseFloat(match[1])
-        const round = (num) => Math.round(Number(num) + Number.EPSILON)
-        const x = round(match[2])
-        const y = round(match[3])
-        const restOfTransform = match[4] || '' // Preserve any transforms after the rotate
-        newTransform = `rotate(${angle} ${x} ${y})${restOfTransform}`
+    // only remove the real rotational transform if present (i.e. at index=0)
+    if (tlist.numberOfItems > 0) {
+      const xform = tlist.getItem(0)
+      if (xform.type === 4) {
+        tlist.removeItem(0)
       }
     }
-
-    if (oldTransform) {
-      elem.setAttribute('transform', oldTransform)
-    } else {
+    // find Rnc and insert it
+    if (val !== 0) {
+      const center = transformPoint(
+        cx,
+        cy,
+        transformListToTransform(tlist).matrix
+      )
+      // Safety check: if center coordinates are invalid (NaN), fall back to untransformed bbox center
+      const centerX = Number.isFinite(center.x) ? center.x : cx
+      const centerY = Number.isFinite(center.y) ? center.y : cy
+      const Rnc = svgCanvas.getSvgRoot().createSVGTransform()
+      Rnc.setRotate(val, centerX, centerY)
+      if (tlist.numberOfItems) {
+        tlist.insertItemBefore(Rnc, 0)
+      } else {
+        tlist.appendItem(Rnc)
+      }
+    } else if (tlist.numberOfItems === 0) {
       elem.removeAttribute('transform')
     }
-    svgCanvas.changeSelectedAttribute(
-      'transform',
-      newTransform,
-      selectedElements
-    )
-    svgCanvas.call('changed', selectedElements)
-  }
-  // const pointGripContainer = svgCanvas.getElement('pathpointgrip_container');
-  // if (elem.nodeName === 'path' && pointGripContainer) {
-  //   pathActions.setPointContainerTransform(elem.getAttribute('transform'));
-  // }
-  const selector = svgCanvas.selectorManager.requestSelector(
-    selectedElements[0]
-  )
-  selector.resize()
-  svgCanvas.getSelector().updateGripCursors(val)
-}
 
-/**
+    if (!preventUndo) {
+    // we need to undo it, then redo it so it can be undo-able! :)
+    // TODO: figure out how to make changes to transform list undo-able cross-browser?
+      let newTransform = elem.getAttribute('transform')
+
+      // new transform is something like: 'rotate(5 1.39625e-8 -11)'
+      // we round the x so it becomes 'rotate(5 0 -11)'
+      // Only do this manipulation if the first transform is actually a rotation
+      if (newTransform && newTransform.startsWith('rotate(')) {
+        const match = newTransform.match(/^rotate\(([\d.\-e]+)\s+([\d.\-e]+)\s+([\d.\-e]+)\)(.*)/)
+        if (match) {
+          const angle = Number.parseFloat(match[1])
+          const round = (num) => Math.round(Number(num) + Number.EPSILON)
+          const x = round(match[2])
+          const y = round(match[3])
+          const restOfTransform = match[4] || '' // Preserve any transforms after the rotate
+          newTransform = `rotate(${angle} ${x} ${y})${restOfTransform}`
+        }
+      }
+
+      if (oldTransform) {
+        elem.setAttribute('transform', oldTransform)
+      } else {
+        elem.removeAttribute('transform')
+      }
+      svgCanvas.changeSelectedAttribute(
+        'transform',
+        newTransform,
+        selectedElements
+      )
+      svgCanvas.call('changed', selectedElements)
+    }
+    // const pointGripContainer = svgCanvas.getElement('pathpointgrip_container');
+    // if (elem.nodeName === 'path' && pointGripContainer) {
+    //   pathActions.setPointContainerTransform(elem.getAttribute('transform'));
+    // }
+    const selector = svgCanvas.selectorManager.requestSelector(
+      selectedElements[0]
+    )
+    selector.resize()
+    svgCanvas.getSelector().updateGripCursors(val)
+  }
+
+  /**
  * Runs `recalculateDimensions` on the selected elements,
  * adding the changes to a single batch command.
  * @function module:svgcanvas.SvgCanvas#recalculateAllSelectedDimensions
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {void}
  */
-const recalculateAllSelectedDimensions = () => {
-  const text =
+  const recalculateAllSelectedDimensions = () => {
+    const text =
     svgCanvas.getCurrentResizeMode() === 'none' ? 'position' : 'size'
-  const batchCmd = new BatchCommand(text)
-  const selectedElements = svgCanvas.getSelectedElements()
+    const batchCmd = new BatchCommand(text)
+    const selectedElements = svgCanvas.getSelectedElements()
 
-  selectedElements.forEach((elem) => {
-    const cmd = svgCanvas.recalculateDimensions(elem)
-    if (cmd) {
-      batchCmd.addSubCommand(cmd)
+    selectedElements.forEach((elem) => {
+      const cmd = svgCanvas.recalculateDimensions(elem)
+      if (cmd) {
+        batchCmd.addSubCommand(cmd)
+      }
+    })
+
+    if (!batchCmd.isEmpty()) {
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', selectedElements)
     }
-  })
-
-  if (!batchCmd.isEmpty()) {
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', selectedElements)
-  }
   }
 
   svgCanvas.getMouseTarget = getMouseTargetMethod

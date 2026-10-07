@@ -30,121 +30,121 @@ export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   const getUndoManager = () => {
-  return new UndoManager({
+    return new UndoManager({
     /**
      * @param {string} eventType One of the HistoryEvent types
      * @param {module:history.HistoryCommand} cmd Fulfills the HistoryCommand interface
      * @fires module:undo.SvgCanvas#event:changed
      * @returns {void}
      */
-    handleHistoryEvent (eventType, cmd) {
-      const EventTypes = HistoryEventTypes
-      // TODO: handle setBlurOffsets.
-      if (eventType === EventTypes.BEFORE_UNAPPLY || eventType === EventTypes.BEFORE_APPLY) {
-        svgCanvas.clearSelection()
-      } else if (eventType === EventTypes.AFTER_APPLY || eventType === EventTypes.AFTER_UNAPPLY) {
-        const cmdType = cmd.type()
-        const isApply = (eventType === EventTypes.AFTER_APPLY)
-        if (cmdType === 'ChangeElementCommand' && cmd.elem === svgCanvas.getSvgContent()) {
-          const values = isApply ? cmd.newValues : cmd.oldValues
-          if (values.width !== null && values.width !== undefined && values.width !== '') {
-            const newContentW = Number(values.width)
-            if (Number.isFinite(newContentW) && newContentW > 0) {
-              svgCanvas.contentW = newContentW
+      handleHistoryEvent (eventType, cmd) {
+        const EventTypes = HistoryEventTypes
+        // TODO: handle setBlurOffsets.
+        if (eventType === EventTypes.BEFORE_UNAPPLY || eventType === EventTypes.BEFORE_APPLY) {
+          svgCanvas.clearSelection()
+        } else if (eventType === EventTypes.AFTER_APPLY || eventType === EventTypes.AFTER_UNAPPLY) {
+          const cmdType = cmd.type()
+          const isApply = (eventType === EventTypes.AFTER_APPLY)
+          if (cmdType === 'ChangeElementCommand' && cmd.elem === svgCanvas.getSvgContent()) {
+            const values = isApply ? cmd.newValues : cmd.oldValues
+            if (values.width !== null && values.width !== undefined && values.width !== '') {
+              const newContentW = Number(values.width)
+              if (Number.isFinite(newContentW) && newContentW > 0) {
+                svgCanvas.contentW = newContentW
+              }
+            }
+            if (values.height !== null && values.height !== undefined && values.height !== '') {
+              const newContentH = Number(values.height)
+              if (Number.isFinite(newContentH) && newContentH > 0) {
+                svgCanvas.contentH = newContentH
+              }
             }
           }
-          if (values.height !== null && values.height !== undefined && values.height !== '') {
-            const newContentH = Number(values.height)
-            if (Number.isFinite(newContentH) && newContentH > 0) {
-              svgCanvas.contentH = newContentH
+          const elems = cmd.elements()
+          // Undoing/redoing a change to the path currently being node-edited
+          // must not kick the user out of pathedit mode the way a normal tool
+          // switch's clear() does -- refresh the tracked path's segs/grips from
+          // the (now reverted/reapplied) live pathSegList in place instead, so
+          // editing continues seamlessly. Any other undo/redo (a different
+          // element, or no active pathedit session) keeps the old behavior.
+          const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
+          const refreshedInPlace = Boolean(editedPath && elems.includes(editedPath.elem))
+          if (refreshedInPlace) {
+            editedPath.dragging = false
+            editedPath.dragctrl = false
+            editedPath.init().show(true)
+          } else {
+            svgCanvas.pathActions.clear()
+          }
+          // Several past "path node grip" bugs traced back to exactly this
+          // undo/redo boundary (see .claude/techdebt.md history) -- logging it
+          // unconditionally, not just for path commands, since a bug can also
+          // stem from an unrelated undo landing while pathedit mode is active.
+          svgCanvas.logDebugEvent?.('history-apply', {
+            direction: isApply ? 'redo' : 'undo',
+            cmdType,
+            text: cmd.getText?.(),
+            elemIds: elems.map((el) => el?.id ?? null),
+            mode: svgCanvas.getCurrentMode(),
+            refreshedInPlace
+          })
+          svgCanvas.call('changed', elems)
+          if (cmdType === 'MoveElementCommand') {
+            const parent = isApply ? cmd.newParent : cmd.oldParent
+            if (parent === svgCanvas.getSvgContent()) {
+              svgCanvas.identifyLayers()
             }
-          }
-        }
-        const elems = cmd.elements()
-        // Undoing/redoing a change to the path currently being node-edited
-        // must not kick the user out of pathedit mode the way a normal tool
-        // switch's clear() does -- refresh the tracked path's segs/grips from
-        // the (now reverted/reapplied) live pathSegList in place instead, so
-        // editing continues seamlessly. Any other undo/redo (a different
-        // element, or no active pathedit session) keeps the old behavior.
-        const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
-        const refreshedInPlace = Boolean(editedPath && elems.includes(editedPath.elem))
-        if (refreshedInPlace) {
-          editedPath.dragging = false
-          editedPath.dragctrl = false
-          editedPath.init().show(true)
-        } else {
-          svgCanvas.pathActions.clear()
-        }
-        // Several past "path node grip" bugs traced back to exactly this
-        // undo/redo boundary (see .claude/techdebt.md history) -- logging it
-        // unconditionally, not just for path commands, since a bug can also
-        // stem from an unrelated undo landing while pathedit mode is active.
-        svgCanvas.logDebugEvent?.('history-apply', {
-          direction: isApply ? 'redo' : 'undo',
-          cmdType,
-          text: cmd.getText?.(),
-          elemIds: elems.map((el) => el?.id ?? null),
-          mode: svgCanvas.getCurrentMode(),
-          refreshedInPlace
-        })
-        svgCanvas.call('changed', elems)
-        if (cmdType === 'MoveElementCommand') {
-          const parent = isApply ? cmd.newParent : cmd.oldParent
-          if (parent === svgCanvas.getSvgContent()) {
-            svgCanvas.identifyLayers()
-          }
-        } else if (cmdType === 'InsertElementCommand' || cmdType === 'RemoveElementCommand') {
-          if (cmd.parent === svgCanvas.getSvgContent()) {
-            svgCanvas.identifyLayers()
-          }
-          if (cmdType === 'InsertElementCommand') {
-            if (isApply) {
+          } else if (cmdType === 'InsertElementCommand' || cmdType === 'RemoveElementCommand') {
+            if (cmd.parent === svgCanvas.getSvgContent()) {
+              svgCanvas.identifyLayers()
+            }
+            if (cmdType === 'InsertElementCommand') {
+              if (isApply) {
+                svgCanvas.restoreRefElements(cmd.elem)
+              }
+            } else if (!isApply) {
               svgCanvas.restoreRefElements(cmd.elem)
             }
-          } else if (!isApply) {
-            svgCanvas.restoreRefElements(cmd.elem)
-          }
-          if (cmd.elem?.tagName === 'use') {
-            svgCanvas.setUseData(cmd.elem)
-          }
-        } else if (cmdType === 'ChangeElementCommand') {
+            if (cmd.elem?.tagName === 'use') {
+              svgCanvas.setUseData(cmd.elem)
+            }
+          } else if (cmdType === 'ChangeElementCommand') {
           // if we are changing layer names, re-identify all layers
-          if (cmd.elem.tagName === 'title' &&
+            if (cmd.elem.tagName === 'title' &&
             cmd.elem.parentNode.parentNode === svgCanvas.getSvgContent()
-          ) {
-            svgCanvas.identifyLayers()
-          }
-          const values = isApply ? cmd.newValues : cmd.oldValues
-          // If stdDeviation was changed, update the blur.
-          if (values.stdDeviation) {
-            svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)
-          }
-          if (cmd.elem.tagName === 'text') {
-            const [dx, dy] = [cmd.newValues.x - cmd.oldValues.x,
-              cmd.newValues.y - cmd.oldValues.y]
+            ) {
+              svgCanvas.identifyLayers()
+            }
+            const values = isApply ? cmd.newValues : cmd.oldValues
+            // If stdDeviation was changed, update the blur.
+            if (values.stdDeviation) {
+              svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)
+            }
+            if (cmd.elem.tagName === 'text') {
+              const [dx, dy] = [cmd.newValues.x - cmd.oldValues.x,
+                cmd.newValues.y - cmd.oldValues.y]
 
-            const tspans = cmd.elem.children
+              const tspans = cmd.elem.children
 
-            for (let i = 0; i < tspans.length; i++) {
-              let x = Number(tspans[i].getAttribute('x'))
-              let y = Number(tspans[i].getAttribute('y'))
+              for (let i = 0; i < tspans.length; i++) {
+                let x = Number(tspans[i].getAttribute('x'))
+                let y = Number(tspans[i].getAttribute('y'))
 
-              const unapply = (eventType === EventTypes.AFTER_UNAPPLY)
-              x = unapply ? x - dx : x + dx
-              y = unapply ? y - dy : y + dy
+                const unapply = (eventType === EventTypes.AFTER_UNAPPLY)
+                x = unapply ? x - dx : x + dx
+                y = unapply ? y - dy : y + dy
 
-              tspans[i].setAttribute('x', x)
-              tspans[i].setAttribute('y', y)
+                tspans[i].setAttribute('x', x)
+                tspans[i].setAttribute('y', y)
+              }
             }
           }
         }
       }
-    }
-  })
-}
+    })
+  }
 
-/**
+  /**
 * Hack for Firefox bugs where text element features aren't updated or get
 * messed up. See issue 136 and issue 137.
 * This function clones the element and re-selects it.
@@ -155,17 +155,17 @@ export const init = (canvas) => {
 * @returns {Element} Cloned element
 */
   const ffClone = (elem) => {
-  if (!isGecko()) { return elem }
-  const clone = elem.cloneNode(true)
-  elem.before(clone)
-  elem.remove()
-  svgCanvas.selectorManager.releaseSelector(elem)
-  svgCanvas.setSelectedElements(0, clone)
-  svgCanvas.selectorManager.requestSelector(clone).showGrips(true)
-  return clone
-}
+    if (!isGecko()) { return elem }
+    const clone = elem.cloneNode(true)
+    elem.before(clone)
+    elem.remove()
+    svgCanvas.selectorManager.releaseSelector(elem)
+    svgCanvas.setSelectedElements(0, clone)
+    svgCanvas.selectorManager.requestSelector(clone).showGrips(true)
+    return clone
+  }
 
-/**
+  /**
 * This function makes the changes to the elements. It does not add the change
 * to the history stack.
 * @param {string} attr - Attribute name
@@ -174,145 +174,145 @@ export const init = (canvas) => {
 * @returns {void}
 */
   const changeSelectedAttributeNoUndoMethod = (attr, newValue, elems) => {
-  if (attr === 'id') {
+    if (attr === 'id') {
     // if the user is changing the id, then de-select the element first
     // change the ID, then re-select it with the new ID
     // as this change can impact other extensions, a 'renamedElement' event is thrown
-    const elem = elems[0]
-    const oldId = elem.id
-    if (oldId !== newValue) {
-      svgCanvas.clearSelection()
-      elem.id = newValue
-      svgCanvas.addToSelection([elem], true)
-      svgCanvas.call('elementRenamed', { elem, oldId, newId: newValue })
+      const elem = elems[0]
+      const oldId = elem.id
+      if (oldId !== newValue) {
+        svgCanvas.clearSelection()
+        elem.id = newValue
+        svgCanvas.addToSelection([elem], true)
+        svgCanvas.call('elementRenamed', { elem, oldId, newId: newValue })
+      }
+      return
     }
-    return
-  }
-  const selectedElements = svgCanvas.getSelectedElements()
-  const zoom = svgCanvas.getZoom()
-  if (svgCanvas.getCurrentMode() === 'pathedit') {
+    const selectedElements = svgCanvas.getSelectedElements()
+    const zoom = svgCanvas.getZoom()
+    if (svgCanvas.getCurrentMode() === 'pathedit') {
     // Editing node
-    svgCanvas.pathActions.moveNode(attr, newValue)
-  }
-  elems = elems ?? selectedElements
-  let i = elems.length
-  const noXYElems = ['g', 'polyline', 'path']
-
-  while (i--) {
-    let elem = elems[i]
-    if (!elem) { continue }
-
-    // Set x,y vals on elements that don't have them
-    if ((attr === 'x' || attr === 'y') && noXYElems.includes(elem.tagName)) {
-      const bbox = svgCanvas.getStrokedBBoxDefaultVisible([elem])
-      const diffX = attr === 'x' ? parseFloat(newValue) - bbox.x : 0
-      const diffY = attr === 'y' ? parseFloat(newValue) - bbox.y : 0
-      svgCanvas.moveSelectedElements(diffX * zoom, diffY * zoom, true)
-      continue
+      svgCanvas.pathActions.moveNode(attr, newValue)
     }
+    elems = elems ?? selectedElements
+    let i = elems.length
+    const noXYElems = ['g', 'polyline', 'path']
 
-    let oldval = attr === '#text' ? svgCanvas.getTextWithNewlines(elem) : elem.getAttribute(attr)
-    if (!oldval) { oldval = '' }
-    if (oldval !== String(newValue)) {
-      if (attr === '#text') {
+    while (i--) {
+      let elem = elems[i]
+      if (!elem) { continue }
+
+      // Set x,y vals on elements that don't have them
+      if ((attr === 'x' || attr === 'y') && noXYElems.includes(elem.tagName)) {
+        const bbox = svgCanvas.getStrokedBBoxDefaultVisible([elem])
+        const diffX = attr === 'x' ? parseFloat(newValue) - bbox.x : 0
+        const diffY = attr === 'y' ? parseFloat(newValue) - bbox.y : 0
+        svgCanvas.moveSelectedElements(diffX * zoom, diffY * zoom, true)
+        continue
+      }
+
+      let oldval = attr === '#text' ? svgCanvas.getTextWithNewlines(elem) : elem.getAttribute(attr)
+      if (!oldval) { oldval = '' }
+      if (oldval !== String(newValue)) {
+        if (attr === '#text') {
         // const oldW = utilsGetBBox(elem).width;
         // Multiline values (with `\n`) become tspans; single-line stays plain text.
-        svgCanvas.setMultilineText(elem, newValue)
+          svgCanvas.setMultilineText(elem, newValue)
 
-        // FF bug occurs on on rotated elements
-        if ((/rotate/).test(elem.getAttribute('transform'))) {
-          elem = ffClone(elem)
-        }
+          // FF bug occurs on on rotated elements
+          if ((/rotate/).test(elem.getAttribute('transform'))) {
+            elem = ffClone(elem)
+          }
         // Hoped to solve the issue of moving text with text-anchor="start",
         // but this doesn't actually fix it. Hopefully on the right track, though. -Fyrd
-      } else if (attr === '#href') {
-        setHref(elem, newValue)
-      } else if (newValue) {
-        elem.setAttribute(attr, isNaN(parseFloat(newValue)) ? newValue : parseFloat(newValue))
-      } else if (typeof newValue === 'number') {
-        elem.setAttribute(attr, newValue)
-      } else {
-        elem.removeAttribute(attr)
-      }
+        } else if (attr === '#href') {
+          setHref(elem, newValue)
+        } else if (newValue) {
+          elem.setAttribute(attr, isNaN(parseFloat(newValue)) ? newValue : parseFloat(newValue))
+        } else if (typeof newValue === 'number') {
+          elem.setAttribute(attr, newValue)
+        } else {
+          elem.removeAttribute(attr)
+        }
 
-      // Go into "select" mode for text changes
-      // NOTE: Important that this happens AFTER elem.setAttribute() or else attributes like
-      // font-size can get reset to their old value, ultimately by svgEditor.updateContextPanel(),
-      // after calling textActions.toSelectMode() below
-      if (svgCanvas.getCurrentMode() === 'textedit' && attr !== '#text' && elem.textContent.length) {
-        svgCanvas.textActions.toSelectMode(elem)
-      }
+        // Go into "select" mode for text changes
+        // NOTE: Important that this happens AFTER elem.setAttribute() or else attributes like
+        // font-size can get reset to their old value, ultimately by svgEditor.updateContextPanel(),
+        // after calling textActions.toSelectMode() below
+        if (svgCanvas.getCurrentMode() === 'textedit' && attr !== '#text' && elem.textContent.length) {
+          svgCanvas.textActions.toSelectMode(elem)
+        }
 
-      // Use the Firefox ffClone hack for text elements with gradients or
-      // where other text attributes are changed.
-      if (isGecko() &&
+        // Use the Firefox ffClone hack for text elements with gradients or
+        // where other text attributes are changed.
+        if (isGecko() &&
         elem.nodeName === 'text' &&
         (/rotate/).test(elem.getAttribute('transform')) &&
         (String(newValue).startsWith('url') || (['font-size', 'font-family', 'x', 'y'].includes(attr) && elem.textContent))) {
-        elem = ffClone(elem)
-      }
-      // Timeout needed for Opera & Firefox
-      // codedread: it is now possible for this to be called with elements
-      // that are not in the selectedElements array, we need to only request a
-      // selector if the element is in that array
-      if (selectedElements.includes(elem)) {
-        setTimeout(function () {
+          elem = ffClone(elem)
+        }
+        // Timeout needed for Opera & Firefox
+        // codedread: it is now possible for this to be called with elements
+        // that are not in the selectedElements array, we need to only request a
+        // selector if the element is in that array
+        if (selectedElements.includes(elem)) {
+          setTimeout(function () {
           // Due to element replacement, this element may no longer
           // be part of the DOM
-          if (!elem.parentNode) { return }
-          // The user may have already changed the selection (e.g. clicked
-          // away) before this deferred resize runs. requestSelector() locks
-          // and re-shows whatever selector it returns, so calling it here
-          // unconditionally would resurrect a selection box for an element
-          // that isn't selected anymore, leaving it stuck on screen with
-          // nothing left to release it.
-          if (!svgCanvas.getSelectedElements().includes(elem)) { return }
-          svgCanvas.selectorManager.requestSelector(elem).resize()
-        }, 0)
-      }
-      // Only recalculate rotation center for attributes that change element geometry.
-      // Non-geometric attributes (stroke-width, fill, opacity, etc.) don't affect
-      // the bbox center, so the rotation is already correct and must not be touched.
-      // BBOX_AFFECTING_ATTRS is imported from history.js to keep the list in one place.
-      const angle = getRotationAngle(elem)
-      if (angle !== 0 && attr !== 'transform' && BBOX_AFFECTING_ATTRS.has(attr)) {
-        const tlist = getTransformList(elem)
-        let n = tlist.numberOfItems
-        while (n--) {
-          const xform = tlist.getItem(n)
-          if (xform.type === 4) {
+            if (!elem.parentNode) { return }
+            // The user may have already changed the selection (e.g. clicked
+            // away) before this deferred resize runs. requestSelector() locks
+            // and re-shows whatever selector it returns, so calling it here
+            // unconditionally would resurrect a selection box for an element
+            // that isn't selected anymore, leaving it stuck on screen with
+            // nothing left to release it.
+            if (!svgCanvas.getSelectedElements().includes(elem)) { return }
+            svgCanvas.selectorManager.requestSelector(elem).resize()
+          }, 0)
+        }
+        // Only recalculate rotation center for attributes that change element geometry.
+        // Non-geometric attributes (stroke-width, fill, opacity, etc.) don't affect
+        // the bbox center, so the rotation is already correct and must not be touched.
+        // BBOX_AFFECTING_ATTRS is imported from history.js to keep the list in one place.
+        const angle = getRotationAngle(elem)
+        if (angle !== 0 && attr !== 'transform' && BBOX_AFFECTING_ATTRS.has(attr)) {
+          const tlist = getTransformList(elem)
+          let n = tlist.numberOfItems
+          while (n--) {
+            const xform = tlist.getItem(n)
+            if (xform.type === 4) {
             // Compute bbox BEFORE removing the rotation so we can bail out
             // safely if getBBox returns nothing (avoids losing the rotation).
-            const box = utilsGetBBox(elem)
-            if (!box) break
+              const box = utilsGetBBox(elem)
+              if (!box) break
 
-            tlist.removeItem(n)
+              tlist.removeItem(n)
 
-            // Transform bbox center through only the transforms that come
-            // AFTER the rotation in the list (not the pre-rotation transforms).
-            // After removeItem(n), what was at n+1 is now at n.
-            let centerMatrix
-            if (n < tlist.numberOfItems) {
-              centerMatrix = transformListToTransform(tlist, n, tlist.numberOfItems - 1).matrix
-            } else {
-              centerMatrix = svgCanvas.getSvgRoot().createSVGMatrix() // identity
+              // Transform bbox center through only the transforms that come
+              // AFTER the rotation in the list (not the pre-rotation transforms).
+              // After removeItem(n), what was at n+1 is now at n.
+              let centerMatrix
+              if (n < tlist.numberOfItems) {
+                centerMatrix = transformListToTransform(tlist, n, tlist.numberOfItems - 1).matrix
+              } else {
+                centerMatrix = svgCanvas.getSvgRoot().createSVGMatrix() // identity
+              }
+              const center = transformPoint(
+                box.x + box.width / 2, box.y + box.height / 2, centerMatrix
+              )
+
+              const newrot = svgCanvas.getSvgRoot().createSVGTransform()
+              newrot.setRotate(angle, center.x, center.y)
+              tlist.insertItemBefore(newrot, n)
+              break
             }
-            const center = transformPoint(
-              box.x + box.width / 2, box.y + box.height / 2, centerMatrix
-            )
-
-            const newrot = svgCanvas.getSvgRoot().createSVGTransform()
-            newrot.setRotate(angle, center.x, center.y)
-            tlist.insertItemBefore(newrot, n)
-            break
           }
         }
-      }
-    } // if oldValue != newValue
-  } // for each elem
-}
+      } // if oldValue != newValue
+    } // for each elem
+  }
 
-/**
+  /**
 * Change the given/selected element and add the original value to the history stack.
 * If you want to change all `selectedElements`, ignore the `elems` argument.
 * If you want to change only a subset of `selectedElements`, then send the
@@ -324,17 +324,17 @@ export const init = (canvas) => {
 * @returns {void}
 */
   const changeSelectedAttributeMethod = (attr, val, elems) => {
-  const selectedElements = svgCanvas.getSelectedElements()
-  elems = elems || selectedElements
-  svgCanvas.undoMgr.beginUndoableChange(attr, elems)
+    const selectedElements = svgCanvas.getSelectedElements()
+    elems = elems || selectedElements
+    svgCanvas.undoMgr.beginUndoableChange(attr, elems)
 
-  changeSelectedAttributeNoUndoMethod(attr, val, elems)
+    changeSelectedAttributeNoUndoMethod(attr, val, elems)
 
-  const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
-  if (!batchCmd.isEmpty()) {
+    const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
+    if (!batchCmd.isEmpty()) {
     // svgCanvas.addCommandToHistory(batchCmd);
-    svgCanvas.undoMgr.addCommandToHistory(batchCmd)
-  }
+      svgCanvas.undoMgr.addCommandToHistory(batchCmd)
+    }
   }
 
   svgCanvas.undoMgr = getUndoManager()

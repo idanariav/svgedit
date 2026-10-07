@@ -1055,26 +1055,26 @@ export const init = canvas => {
   // Disabled elements during in-group editing (per instance).
   let disabledElems = []
 
-/**
+  /**
  * Updates layer system.
  * @function module:draw.identifyLayers
  * @returns {void}
  */
   const identifyLayers = () => {
-  leaveContext()
-  svgCanvas.getCurrentDrawing().identifyLayers()
-}
+    leaveContext()
+    svgCanvas.getCurrentDrawing().identifyLayers()
+  }
 
-/**
+  /**
  * get current index
  * @function module:draw.identifyLayers
  * @returns {void}
  */
   const indexCurrentLayer = () => {
-  return svgCanvas.getCurrentDrawing().indexCurrentLayer()
-}
+    return svgCanvas.getCurrentDrawing().indexCurrentLayer()
+  }
 
-/**
+  /**
  * Creates a new top-level layer in the drawing with the given name, sets the current layer
  * to it, and then clears the selection. This function then calls the 'changed' handler.
  * This is an undoable action.
@@ -1085,14 +1085,14 @@ export const init = canvas => {
  * @returns {void}
  */
   const createLayer = (name, hrService) => {
-  const newLayer = svgCanvas
-    .getCurrentDrawing()
-    .createLayer(name, historyRecordingService(svgCanvas, hrService))
-  svgCanvas.clearSelection()
-  svgCanvas.call('changed', [newLayer])
-}
+    const newLayer = svgCanvas
+      .getCurrentDrawing()
+      .createLayer(name, historyRecordingService(svgCanvas, hrService))
+    svgCanvas.clearSelection()
+    svgCanvas.call('changed', [newLayer])
+  }
 
-/**
+  /**
  * Creates a new top-level layer in the drawing with the given name, copies all the current layer's contents
  * to it, and then clears the selection. This function then calls the 'changed' handler.
  * This is an undoable action.
@@ -1104,20 +1104,20 @@ export const init = canvas => {
  */
   const cloneLayer = (name, hrService) => {
   // Clone the current layer and make the cloned layer the new current layer
-  const newLayer = svgCanvas
-    .getCurrentDrawing()
-    .cloneLayer(name, historyRecordingService(svgCanvas, hrService))
-  if (!newLayer) {
-    warn('cloneLayer: no layer returned', null, 'draw')
-    return
+    const newLayer = svgCanvas
+      .getCurrentDrawing()
+      .cloneLayer(name, historyRecordingService(svgCanvas, hrService))
+    if (!newLayer) {
+      warn('cloneLayer: no layer returned', null, 'draw')
+      return
+    }
+
+    svgCanvas.clearSelection()
+    leaveContext()
+    svgCanvas.call('changed', [newLayer])
   }
 
-  svgCanvas.clearSelection()
-  leaveContext()
-  svgCanvas.call('changed', [newLayer])
-}
-
-/**
+  /**
  * Deletes the current layer from the drawing and then clears the selection. This function
  * then calls the 'changed' handler. This is an undoable action.
  * @function module:draw.deleteCurrentLayer
@@ -1125,30 +1125,30 @@ export const init = canvas => {
  * @returns {boolean} `true` if an old layer group was found to delete
  */
   const deleteCurrentLayer = () => {
-  const { BatchCommand, RemoveElementCommand } = svgCanvas.history
-  const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
-  if (!currentLayer) {
-    warn('deleteCurrentLayer: no current layer', null, 'draw')
+    const { BatchCommand, RemoveElementCommand } = svgCanvas.history
+    const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    if (!currentLayer) {
+      warn('deleteCurrentLayer: no current layer', null, 'draw')
+      return false
+    }
+    const { nextSibling } = currentLayer
+    const parent = currentLayer.parentNode
+    const removedLayer = svgCanvas.getCurrentDrawing().deleteCurrentLayer()
+    if (removedLayer && parent) {
+      const batchCmd = new BatchCommand('Delete Layer')
+      // store in our Undo History
+      batchCmd.addSubCommand(
+        new RemoveElementCommand(removedLayer, nextSibling, parent)
+      )
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.clearSelection()
+      svgCanvas.call('changed', [parent])
+      return true
+    }
     return false
   }
-  const { nextSibling } = currentLayer
-  const parent = currentLayer.parentNode
-  const removedLayer = svgCanvas.getCurrentDrawing().deleteCurrentLayer()
-  if (removedLayer && parent) {
-    const batchCmd = new BatchCommand('Delete Layer')
-    // store in our Undo History
-    batchCmd.addSubCommand(
-      new RemoveElementCommand(removedLayer, nextSibling, parent)
-    )
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.clearSelection()
-    svgCanvas.call('changed', [parent])
-    return true
-  }
-  return false
-}
 
-/**
+  /**
  * Sets the current layer. If the name is not a valid layer name, then this function returns
  * false. Otherwise it returns true. This is not an undo-able action.
  * @function module:draw.setCurrentLayer
@@ -1156,14 +1156,14 @@ export const init = canvas => {
  * @returns {boolean} true if the current layer was switched, otherwise false
  */
   const setCurrentLayer = name => {
-  const result = svgCanvas.getCurrentDrawing().setCurrentLayer(toXml(name))
-  if (result) {
-    svgCanvas.clearSelection()
+    const result = svgCanvas.getCurrentDrawing().setCurrentLayer(toXml(name))
+    if (result) {
+      svgCanvas.clearSelection()
+    }
+    return result
   }
-  return result
-}
 
-/**
+  /**
  * Renames the current layer. If the layer name is not valid (i.e. unique), then this function
  * does nothing and returns `false`, otherwise it returns `true`. This is an undo-able action.
  * @function module:draw.renameCurrentLayer
@@ -1173,22 +1173,22 @@ export const init = canvas => {
  * @returns {boolean} Whether the rename succeeded
  */
   const renameCurrentLayer = newName => {
-  const drawing = svgCanvas.getCurrentDrawing()
-  const layer = drawing.getCurrentLayer()
-  if (layer) {
-    const result = drawing.setCurrentLayerName(
-      newName,
-      historyRecordingService(svgCanvas)
-    )
-    if (result) {
-      svgCanvas.call('changed', [layer])
-      return true
+    const drawing = svgCanvas.getCurrentDrawing()
+    const layer = drawing.getCurrentLayer()
+    if (layer) {
+      const result = drawing.setCurrentLayerName(
+        newName,
+        historyRecordingService(svgCanvas)
+      )
+      if (result) {
+        svgCanvas.call('changed', [layer])
+        return true
+      }
     }
+    return false
   }
-  return false
-}
 
-/**
+  /**
  * Changes the position of the current layer to the new value. If the new index is not valid,
  * this function does nothing and returns false, otherwise it returns true. This is an
  * undo-able action.
@@ -1198,23 +1198,23 @@ export const init = canvas => {
  * @returns {boolean} `true` if the current layer position was changed, `false` otherwise.
  */
   const setCurrentLayerPosition = newPos => {
-  const { MoveElementCommand } = svgCanvas.history
-  const drawing = svgCanvas.getCurrentDrawing()
-  const result = drawing.setCurrentLayerPosition(newPos)
-  if (result) {
-    svgCanvas.addCommandToHistory(
-      new MoveElementCommand(
-        result.currentGroup,
-        result.oldNextSibling,
-        svgCanvas.getSvgContent()
+    const { MoveElementCommand } = svgCanvas.history
+    const drawing = svgCanvas.getCurrentDrawing()
+    const result = drawing.setCurrentLayerPosition(newPos)
+    if (result) {
+      svgCanvas.addCommandToHistory(
+        new MoveElementCommand(
+          result.currentGroup,
+          result.oldNextSibling,
+          svgCanvas.getSvgContent()
+        )
       )
-    )
-    return true
+      return true
+    }
+    return false
   }
-  return false
-}
 
-/**
+  /**
  * Sets the visibility of the layer. If the layer name is not valid, this function return
  * `false`, otherwise it returns `true`. This is an undo-able action.
  * @function module:draw.setLayerVisibility
@@ -1223,31 +1223,31 @@ export const init = canvas => {
  * @returns {boolean} true if the layer's visibility was set, false otherwise
  */
   const setLayerVisibility = (layerName, bVisible) => {
-  const { ChangeElementCommand } = svgCanvas.history
-  const drawing = svgCanvas.getCurrentDrawing()
-  const layerGroup = drawing.getLayerByName(layerName)
-  if (!layerGroup) {
-    warn('setLayerVisibility: layer not found', layerName, 'draw')
-    return false
-  }
-  const oldDisplay = layerGroup.getAttribute('display')
-  const layer = drawing.setLayerVisibility(layerName, bVisible)
-  if (!layer) {
-    return false
-  }
-  svgCanvas.addCommandToHistory(
-    new ChangeElementCommand(layer, { display: oldDisplay }, 'Layer Visibility')
-  )
+    const { ChangeElementCommand } = svgCanvas.history
+    const drawing = svgCanvas.getCurrentDrawing()
+    const layerGroup = drawing.getLayerByName(layerName)
+    if (!layerGroup) {
+      warn('setLayerVisibility: layer not found', layerName, 'draw')
+      return false
+    }
+    const oldDisplay = layerGroup.getAttribute('display')
+    const layer = drawing.setLayerVisibility(layerName, bVisible)
+    if (!layer) {
+      return false
+    }
+    svgCanvas.addCommandToHistory(
+      new ChangeElementCommand(layer, { display: oldDisplay }, 'Layer Visibility')
+    )
 
-  if (layer === drawing.getCurrentLayer()) {
-    svgCanvas.clearSelection()
-    svgCanvas.pathActions.clear()
+    if (layer === drawing.getCurrentLayer()) {
+      svgCanvas.clearSelection()
+      svgCanvas.pathActions.clear()
+    }
+    // call('changed', [selected]);
+    return true
   }
-  // call('changed', [selected]);
-  return true
-}
 
-/**
+  /**
  * Sets the locked state of the layer. A locked layer keeps its contents but does
  * not receive newly drawn/pasted objects. Returns `true` if applied. Not undo-able.
  * @function module:draw.setLayerLocked
@@ -1256,26 +1256,26 @@ export const init = canvas => {
  * @returns {boolean} true if the layer's locked state was set, false otherwise
  */
   const setLayerLocked = (layerName, bLocked) => {
-  const drawing = svgCanvas.getCurrentDrawing()
-  const layer = drawing.setLayerLocked(layerName, bLocked)
-  if (!layer) {
-    warn('setLayerLocked: layer not found', layerName, 'draw')
-    return false
+    const drawing = svgCanvas.getCurrentDrawing()
+    const layer = drawing.setLayerLocked(layerName, bLocked)
+    if (!layer) {
+      warn('setLayerLocked: layer not found', layerName, 'draw')
+      return false
+    }
+    return true
   }
-  return true
-}
 
-/**
+  /**
  * Returns whether the named layer is locked.
  * @function module:draw.getLayerLocked
  * @param {string} layerName - The name of the layer to query
  * @returns {boolean} true if the layer is locked
  */
   const getLayerLocked = (layerName) => {
-  return svgCanvas.getCurrentDrawing().getLayerLocked(layerName)
-}
+    return svgCanvas.getCurrentDrawing().getLayerLocked(layerName)
+  }
 
-/**
+  /**
  * Sets the comment-layer state of the layer. Returns `true` if applied. Not
  * undo-able.
  * @function module:draw.setLayerComment
@@ -1284,26 +1284,26 @@ export const init = canvas => {
  * @returns {boolean} true if the layer's comment-layer state was set, false otherwise
  */
   const setLayerComment = (layerName, bComment) => {
-  const drawing = svgCanvas.getCurrentDrawing()
-  const layer = drawing.setLayerComment(layerName, bComment)
-  if (!layer) {
-    warn('setLayerComment: layer not found', layerName, 'draw')
-    return false
+    const drawing = svgCanvas.getCurrentDrawing()
+    const layer = drawing.setLayerComment(layerName, bComment)
+    if (!layer) {
+      warn('setLayerComment: layer not found', layerName, 'draw')
+      return false
+    }
+    return true
   }
-  return true
-}
 
-/**
+  /**
  * Returns whether the named layer is a comment layer.
  * @function module:draw.getLayerComment
  * @param {string} layerName - The name of the layer to query
  * @returns {boolean} true if the layer is a comment layer
  */
   const getLayerComment = (layerName) => {
-  return svgCanvas.getCurrentDrawing().getLayerComment(layerName)
-}
+    return svgCanvas.getCurrentDrawing().getLayerComment(layerName)
+  }
 
-/**
+  /**
  * Sets whether every layer is simultaneously selectable ("All Layers" mode)
  * instead of just the current layer. Does not change which layer new/pasted
  * content lands on. Not undo-able (a transient view/selection state).
@@ -1312,19 +1312,19 @@ export const init = canvas => {
  * @returns {void}
  */
   const setAllLayersMode = (bAllLayers) => {
-  svgCanvas.getCurrentDrawing().setAllLayersMode(bAllLayers)
-}
+    svgCanvas.getCurrentDrawing().setAllLayersMode(bAllLayers)
+  }
 
-/**
+  /**
  * Returns whether "All Layers" selection mode is on.
  * @function module:draw.getAllLayersMode
  * @returns {boolean}
  */
   const getAllLayersMode = () => {
-  return svgCanvas.getCurrentDrawing().getAllLayersMode()
-}
+    return svgCanvas.getCurrentDrawing().getAllLayersMode()
+  }
 
-/**
+  /**
  * Moves the selected elements to layerName. If the name is not a valid layer name, then `false`
  * is returned. Otherwise it returns `true`. This is an undo-able action.
  * @function module:draw.moveSelectedToLayer
@@ -1332,68 +1332,68 @@ export const init = canvas => {
  * @returns {boolean} Whether the selected elements were moved to the layer.
  */
   const moveSelectedToLayer = layerName => {
-  const { BatchCommand, MoveElementCommand } = svgCanvas.history
-  // find the layer
-  const drawing = svgCanvas.getCurrentDrawing()
-  const layer = drawing.getLayerByName(layerName)
-  if (!layer) {
-    return false
-  }
-
-  const batchCmd = new BatchCommand('Move Elements to Layer')
-
-  // loop for each selected element and move it
-  const selElems = svgCanvas.getSelectedElements()
-  let i = selElems.length
-  while (i--) {
-    const elem = selElems[i]
-    const oldLayer = elem?.parentNode
-    if (!elem || !oldLayer || oldLayer === layer) {
-      continue
+    const { BatchCommand, MoveElementCommand } = svgCanvas.history
+    // find the layer
+    const drawing = svgCanvas.getCurrentDrawing()
+    const layer = drawing.getLayerByName(layerName)
+    if (!layer) {
+      return false
     }
-    const oldNextSibling = elem.nextSibling
-    layer.append(elem)
-    batchCmd.addSubCommand(
-      new MoveElementCommand(elem, oldNextSibling, oldLayer)
-    )
+
+    const batchCmd = new BatchCommand('Move Elements to Layer')
+
+    // loop for each selected element and move it
+    const selElems = svgCanvas.getSelectedElements()
+    let i = selElems.length
+    while (i--) {
+      const elem = selElems[i]
+      const oldLayer = elem?.parentNode
+      if (!elem || !oldLayer || oldLayer === layer) {
+        continue
+      }
+      const oldNextSibling = elem.nextSibling
+      layer.append(elem)
+      batchCmd.addSubCommand(
+        new MoveElementCommand(elem, oldNextSibling, oldLayer)
+      )
+    }
+
+    if (batchCmd.isEmpty()) {
+      warn('moveSelectedToLayer: no elements moved', null, 'draw')
+      return false
+    }
+    svgCanvas.addCommandToHistory(batchCmd)
+
+    return true
   }
 
-  if (batchCmd.isEmpty()) {
-    warn('moveSelectedToLayer: no elements moved', null, 'draw')
-    return false
-  }
-  svgCanvas.addCommandToHistory(batchCmd)
-
-  return true
-}
-
-/**
+  /**
  * @function module:draw.mergeLayer
  * @param {module:history.HistoryRecordingService} hrService
  * @returns {void}
  */
   const mergeLayer = hrService => {
-  svgCanvas.getCurrentDrawing().mergeLayer(historyRecordingService(svgCanvas, hrService))
-  svgCanvas.clearSelection()
-  leaveContext()
-  svgCanvas.changeSvgContent()
-}
+    svgCanvas.getCurrentDrawing().mergeLayer(historyRecordingService(svgCanvas, hrService))
+    svgCanvas.clearSelection()
+    leaveContext()
+    svgCanvas.changeSvgContent()
+  }
 
-/**
+  /**
  * @function module:draw.mergeAllLayers
  * @param {module:history.HistoryRecordingService} hrService
  * @returns {void}
  */
   const mergeAllLayers = hrService => {
-  svgCanvas
-    .getCurrentDrawing()
-    .mergeAllLayers(historyRecordingService(svgCanvas, hrService))
-  svgCanvas.clearSelection()
-  leaveContext()
-  svgCanvas.changeSvgContent()
-}
+    svgCanvas
+      .getCurrentDrawing()
+      .mergeAllLayers(historyRecordingService(svgCanvas, hrService))
+    svgCanvas.clearSelection()
+    leaveContext()
+    svgCanvas.changeSvgContent()
+  }
 
-/**
+  /**
  * Return from a group context to the regular kind, make any previously
  * disabled elements enabled again.
  * @function module:draw.leaveContext
@@ -1401,37 +1401,37 @@ export const init = canvas => {
  * @returns {void}
  */
   const leaveContext = () => {
-  const len = disabledElems.length
-  const dataStorage = svgCanvas.getDataStorage()
-  if (len) {
-    for (let i = 0; i < len; i++) {
-      const elem = disabledElems[i]
-      const orig = dataStorage.get(elem, 'orig_opac')
-      if (orig === null || orig === undefined) {
-        elem.removeAttribute('opacity')
-      } else {
-        elem.setAttribute('opacity', orig)
+    const len = disabledElems.length
+    const dataStorage = svgCanvas.getDataStorage()
+    if (len) {
+      for (let i = 0; i < len; i++) {
+        const elem = disabledElems[i]
+        const orig = dataStorage.get(elem, 'orig_opac')
+        if (orig === null || orig === undefined) {
+          elem.removeAttribute('opacity')
+        } else {
+          elem.setAttribute('opacity', orig)
+        }
+        elem.setAttribute('style', 'pointer-events: inherit')
+        dataStorage.remove(elem, 'orig_opac')
       }
-      elem.setAttribute('style', 'pointer-events: inherit')
-      dataStorage.remove(elem, 'orig_opac')
+      disabledElems = []
     }
-    disabledElems = []
+    // Gate on whether we were actually in a context, not on whether there
+    // happened to be any siblings to re-enable above: a group that is the only
+    // element on its layer (nothing else to dim on entry) leaves disabledElems
+    // empty, but the selection made inside it still needs clearing here. Tying
+    // this to `len` instead left the previously-selected child's selector box
+    // (and its stale entry in selectedElements) stuck on-screen after clicking
+    // away, since it was never released.
+    if (svgCanvas.getCurrentGroup()) {
+      svgCanvas.clearSelection(true)
+      svgCanvas.call('contextset', null)
+    }
+    svgCanvas.setCurrentGroup(null)
   }
-  // Gate on whether we were actually in a context, not on whether there
-  // happened to be any siblings to re-enable above: a group that is the only
-  // element on its layer (nothing else to dim on entry) leaves disabledElems
-  // empty, but the selection made inside it still needs clearing here. Tying
-  // this to `len` instead left the previously-selected child's selector box
-  // (and its stale entry in selectedElements) stuck on-screen after clicking
-  // away, since it was never released.
-  if (svgCanvas.getCurrentGroup()) {
-    svgCanvas.clearSelection(true)
-    svgCanvas.call('contextset', null)
-  }
-  svgCanvas.setCurrentGroup(null)
-}
 
-/**
+  /**
  * Run `fn` with the in-group dimming (see setContext) temporarily undone, then
  * re-apply it, leaving the current group, selection and `disabledElems`
  * untouched. For serialization while the user must stay inside the group
@@ -1443,31 +1443,31 @@ export const init = canvas => {
  * @returns {*} Whatever `fn` returns
  */
   const withContextUndimmed = (fn) => {
-  if (!disabledElems.length) { return fn() }
-  const dataStorage = svgCanvas.getDataStorage()
-  const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
-  for (const { elem } of dimmed) {
-    const orig = dataStorage.get(elem, 'orig_opac')
-    if (orig === null || orig === undefined) {
-      elem.removeAttribute('opacity')
-    } else {
-      elem.setAttribute('opacity', orig)
-    }
-  }
-  try {
-    return fn()
-  } finally {
-    for (const { elem, opacity } of dimmed) {
-      if (opacity === null) {
+    if (!disabledElems.length) { return fn() }
+    const dataStorage = svgCanvas.getDataStorage()
+    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
+    for (const { elem } of dimmed) {
+      const orig = dataStorage.get(elem, 'orig_opac')
+      if (orig === null || orig === undefined) {
         elem.removeAttribute('opacity')
       } else {
-        elem.setAttribute('opacity', opacity)
+        elem.setAttribute('opacity', orig)
+      }
+    }
+    try {
+      return fn()
+    } finally {
+      for (const { elem, opacity } of dimmed) {
+        if (opacity === null) {
+          elem.removeAttribute('opacity')
+        } else {
+          elem.setAttribute('opacity', opacity)
+        }
       }
     }
   }
-}
 
-/**
+  /**
  * Set the current context (for in-group editing).
  * @function module:draw.setContext
  * @param {Element} elem
@@ -1475,76 +1475,76 @@ export const init = canvas => {
  * @returns {void}
  */
   const setContext = elem => {
-  const dataStorage = svgCanvas.getDataStorage()
-  leaveContext()
-  if (typeof elem === 'string') {
-    const id = elem
-    try {
-      elem = svgCanvas.getElement(id)
-    } catch (e) {
-      elem = null
+    const dataStorage = svgCanvas.getDataStorage()
+    leaveContext()
+    if (typeof elem === 'string') {
+      const id = elem
+      try {
+        elem = svgCanvas.getElement(id)
+      } catch (e) {
+        elem = null
+      }
+      if (!elem && typeof document !== 'undefined') {
+        const candidate = document.getElementById(id)
+        const svgContent = svgCanvas.getSvgContent?.()
+        elem = candidate && (svgContent ? svgContent.contains(candidate) : true)
+          ? candidate
+          : null
+      }
     }
-    if (!elem && typeof document !== 'undefined') {
-      const candidate = document.getElementById(id)
-      const svgContent = svgCanvas.getSvgContent?.()
-      elem = candidate && (svgContent ? svgContent.contains(candidate) : true)
-        ? candidate
-        : null
-    }
-  }
-  if (!elem) {
-    return
-  }
-
-  // `elem` must actually live inside the drawing content: the ancestor walk
-  // below is bounded by '#svgcontent', so entering context on anything
-  // outside it (most notably the svg root itself, which sits *above*
-  // '#svgcontent' in the DOM, never below it) means that boundary is never
-  // found — the walk climbs straight out of the drawing into the editor's
-  // own DOM, dimming arbitrary UI chrome (toolbars, dialogs, rulers) instead
-  // of drawing siblings. See a real repro from a mis-resolved double-click
-  // in event.js's dblClickEvent.
-  const svgContent = svgCanvas.getSvgContent?.()
-  if (!svgContent || svgContent === elem || !svgContent.contains(elem)) {
-    return
-  }
-
-  // Edit inside this group
-  svgCanvas.setCurrentGroup(elem)
-
-  // Disable other elements
-  const parentsUntil = getParentsUntil(elem, '#svgcontent')
-  if (!parentsUntil) {
-    return
-  }
-  const siblings = []
-  parentsUntil.forEach(function (parent) {
-    if (!parent?.parentNode) {
+    if (!elem) {
       return
     }
-    const elements = Array.prototype.filter.call(
-      parent.parentNode.children,
-      function (child) {
-        return child !== parent
-      }
-    )
-    elements.forEach(function (element) {
-      siblings.push(element)
-    })
-  })
 
-  siblings.forEach(function (curthis) {
+    // `elem` must actually live inside the drawing content: the ancestor walk
+    // below is bounded by '#svgcontent', so entering context on anything
+    // outside it (most notably the svg root itself, which sits *above*
+    // '#svgcontent' in the DOM, never below it) means that boundary is never
+    // found — the walk climbs straight out of the drawing into the editor's
+    // own DOM, dimming arbitrary UI chrome (toolbars, dialogs, rulers) instead
+    // of drawing siblings. See a real repro from a mis-resolved double-click
+    // in event.js's dblClickEvent.
+    const svgContent = svgCanvas.getSvgContent?.()
+    if (!svgContent || svgContent === elem || !svgContent.contains(elem)) {
+      return
+    }
+
+    // Edit inside this group
+    svgCanvas.setCurrentGroup(elem)
+
+    // Disable other elements
+    const parentsUntil = getParentsUntil(elem, '#svgcontent')
+    if (!parentsUntil) {
+      return
+    }
+    const siblings = []
+    parentsUntil.forEach(function (parent) {
+      if (!parent?.parentNode) {
+        return
+      }
+      const elements = Array.prototype.filter.call(
+        parent.parentNode.children,
+        function (child) {
+          return child !== parent
+        }
+      )
+      elements.forEach(function (element) {
+        siblings.push(element)
+      })
+    })
+
+    siblings.forEach(function (curthis) {
     // Store the original's opacity
-    const origOpacity = curthis.getAttribute('opacity')
-    dataStorage.put(curthis, 'orig_opac', origOpacity)
-    const parsedOpacity = Number.parseFloat(origOpacity)
-    const opac = Number.isFinite(parsedOpacity) ? parsedOpacity : 1
-    curthis.setAttribute('opacity', opac * 0.33)
-    curthis.setAttribute('style', 'pointer-events: none')
-    disabledElems.push(curthis)
-  })
-  svgCanvas.clearSelection()
-  svgCanvas.call('contextset', svgCanvas.getCurrentGroup())
+      const origOpacity = curthis.getAttribute('opacity')
+      dataStorage.put(curthis, 'orig_opac', origOpacity)
+      const parsedOpacity = Number.parseFloat(origOpacity)
+      const opac = Number.isFinite(parsedOpacity) ? parsedOpacity : 1
+      curthis.setAttribute('opacity', opac * 0.33)
+      curthis.setAttribute('style', 'pointer-events: none')
+      disabledElems.push(curthis)
+    })
+    svgCanvas.clearSelection()
+    svgCanvas.call('contextset', svgCanvas.getCurrentGroup())
   }
 
   // Attach the per-instance layer/context operations to the canvas.

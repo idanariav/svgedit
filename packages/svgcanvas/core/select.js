@@ -28,357 +28,357 @@ const gripRadius = window.ontouchstart ? 10 : 4
 export const init = (canvas) => {
   const svgCanvas = canvas
 
-/**
+  /**
 * Private class for DOM element selection boxes.
 */
-class Selector {
+  class Selector {
   /**
   * @param {Integer} id - Internally identify the selector
   * @param {Element} elem - DOM element associated with this selector
   * @param {module:utilities.BBoxObject} [bbox] - Optional bbox to use for initialization (prevents duplicate `getBBox` call).
   */
-  constructor (id, elem, bbox) {
+    constructor (id, elem, bbox) {
     // this is the selector's unique number
-    this.id = id
+      this.id = id
 
-    // this holds a reference to the element for which this selector is being used
-    this.selectedElement = elem
+      // this holds a reference to the element for which this selector is being used
+      this.selectedElement = elem
 
-    // this is a flag used internally to track whether the selector is being used or not
-    this.locked = true
+      // this is a flag used internally to track whether the selector is being used or not
+      this.locked = true
 
-    // this holds a reference to the <g> element that holds all visual elements of the selector
-    this.selectorGroup = svgCanvas.createSVGElement({
-      element: 'g',
-      attr: { id: `selectorGroup${this.id}` }
-    })
+      // this holds a reference to the <g> element that holds all visual elements of the selector
+      this.selectorGroup = svgCanvas.createSVGElement({
+        element: 'g',
+        attr: { id: `selectorGroup${this.id}` }
+      })
 
-    // this holds a reference to the path rect
-    this.selectorRect = svgCanvas.createSVGElement({
-      element: 'path',
-      attr: {
-        id: `selectedBox${this.id}`,
-        fill: 'none',
-        stroke: '#22C',
-        'stroke-width': '1',
-        'stroke-dasharray': '5,5',
-        // need to specify this so that the rect is not selectable
-        style: 'pointer-events:none'
+      // this holds a reference to the path rect
+      this.selectorRect = svgCanvas.createSVGElement({
+        element: 'path',
+        attr: {
+          id: `selectedBox${this.id}`,
+          fill: 'none',
+          stroke: '#22C',
+          'stroke-width': '1',
+          'stroke-dasharray': '5,5',
+          // need to specify this so that the rect is not selectable
+          style: 'pointer-events:none'
+        }
+      })
+      this.selectorGroup.append(this.selectorRect)
+
+      // this holds a reference to the grip coordinates for this selector
+      this.gripCoords = {
+        nw: null,
+        n: null,
+        ne: null,
+        e: null,
+        se: null,
+        s: null,
+        sw: null,
+        w: null
       }
-    })
-    this.selectorGroup.append(this.selectorRect)
 
-    // this holds a reference to the grip coordinates for this selector
-    this.gripCoords = {
-      nw: null,
-      n: null,
-      ne: null,
-      e: null,
-      se: null,
-      s: null,
-      sw: null,
-      w: null
+      this.reset(this.selectedElement, bbox)
     }
 
-    this.reset(this.selectedElement, bbox)
-  }
-
-  /**
+    /**
   * Used to reset the id and element that the selector is attached to.
   * @param {Element} e - DOM element associated with this selector
   * @param {module:utilities.BBoxObject} bbox - Optional bbox to use for reset (prevents duplicate getBBox call).
   * @returns {void}
   */
-  reset (e, bbox) {
-    this.locked = true
-    this.selectedElement = e
-    this.resize(bbox)
-    this.selectorGroup.setAttribute('display', 'inline')
-  }
+    reset (e, bbox) {
+      this.locked = true
+      this.selectedElement = e
+      this.resize(bbox)
+      this.selectorGroup.setAttribute('display', 'inline')
+    }
 
-  /**
+    /**
   * Show the resize grips of this selector.
   * @param {boolean} show - Indicates whether grips should be shown or not
   * @returns {void}
   */
-  showGrips (show) {
-    const bShow = show ? 'inline' : 'none'
-    selectorManager.selectorGripsGroup.setAttribute('display', bShow)
-    const elem = this.selectedElement
-    this.hasGrips = show
-    if (elem && show) {
-      this.selectorGroup.append(selectorManager.selectorGripsGroup)
-      Selector.updateGripCursors(getRotationAngle(elem))
+    showGrips (show) {
+      const bShow = show ? 'inline' : 'none'
+      selectorManager.selectorGripsGroup.setAttribute('display', bShow)
+      const elem = this.selectedElement
+      this.hasGrips = show
+      if (elem && show) {
+        this.selectorGroup.append(selectorManager.selectorGripsGroup)
+        Selector.updateGripCursors(getRotationAngle(elem))
+      }
     }
-  }
 
-  /**
+    /**
   * Updates the selector to match the element's size.
   * @param {module:utilities.BBoxObject} [bbox] - BBox to use for resize (prevents duplicate getBBox call).
   * @returns {void}
   */
-  resize (bbox) {
-    const dataStorage = svgCanvas.getDataStorage()
-    const selectedBox = this.selectorRect
-    const mgr = selectorManager
-    const selectedGrips = mgr.selectorGrips
-    const selected = this.selectedElement
-    const zoom = svgCanvas.getZoom()
-    let offset = 1 / zoom
-    // A missing stroke-width means the SVG initial value of 1, not 0 —
-    // cleanupElement strips the attribute at that value.
-    const swAttr = selected.getAttribute('stroke-width')
-    const sw = swAttr === null ? 1 : swAttr
-    if (selected.getAttribute('stroke') !== 'none' && !isNaN(sw)) {
-      offset += (sw / 2)
-    }
-
-    const { tagName } = selected
-    if (tagName === 'text') {
-      offset += 2 / zoom
-    }
-
-    // find the transformations applied to the parent of the selected element
-    const svg = document.createElementNS(NS.SVG, 'svg')
-    let parentTransformationMatrix = svg.createSVGMatrix()
-    let currentElt = selected
-    while (currentElt.parentNode) {
-      if (currentElt.parentNode && currentElt.parentNode.tagName === 'g' && currentElt.parentNode.transform) {
-        if (currentElt.parentNode.transform.baseVal.numberOfItems) {
-          parentTransformationMatrix = matrixMultiply(transformListToTransform(getTransformList(currentElt.parentNode)).matrix, parentTransformationMatrix)
-        }
+    resize (bbox) {
+      const dataStorage = svgCanvas.getDataStorage()
+      const selectedBox = this.selectorRect
+      const mgr = selectorManager
+      const selectedGrips = mgr.selectorGrips
+      const selected = this.selectedElement
+      const zoom = svgCanvas.getZoom()
+      let offset = 1 / zoom
+      // A missing stroke-width means the SVG initial value of 1, not 0 —
+      // cleanupElement strips the attribute at that value.
+      const swAttr = selected.getAttribute('stroke-width')
+      const sw = swAttr === null ? 1 : swAttr
+      if (selected.getAttribute('stroke') !== 'none' && !isNaN(sw)) {
+        offset += (sw / 2)
       }
-      currentElt = currentElt.parentNode
-    }
 
-    // loop and transform our bounding box until we reach our first rotation
-    const tlist = getTransformList(selected)
+      const { tagName } = selected
+      if (tagName === 'text') {
+        offset += 2 / zoom
+      }
 
-    // combines the parent transformation with that of the selected element if necessary
-    const m = parentTransformationMatrix ? matrixMultiply(parentTransformationMatrix, transformListToTransform(tlist).matrix) : transformListToTransform(tlist).matrix
+      // find the transformations applied to the parent of the selected element
+      const svg = document.createElementNS(NS.SVG, 'svg')
+      let parentTransformationMatrix = svg.createSVGMatrix()
+      let currentElt = selected
+      while (currentElt.parentNode) {
+        if (currentElt.parentNode && currentElt.parentNode.tagName === 'g' && currentElt.parentNode.transform) {
+          if (currentElt.parentNode.transform.baseVal.numberOfItems) {
+            parentTransformationMatrix = matrixMultiply(transformListToTransform(getTransformList(currentElt.parentNode)).matrix, parentTransformationMatrix)
+          }
+        }
+        currentElt = currentElt.parentNode
+      }
 
-    // This should probably be handled somewhere else, but for now
-    // it keeps the selection box correctly positioned when zoomed
-    m.e *= zoom
-    m.f *= zoom
+      // loop and transform our bounding box until we reach our first rotation
+      const tlist = getTransformList(selected)
 
-    if (!bbox) {
-      bbox = getBBox(selected)
-    }
-    // TODO: getBBox (previous line) already knows to call getStrokedBBox when tagName === 'g'. Remove this?
-    // TODO: getBBox doesn't exclude 'gsvg' and calls getStrokedBBox for any 'g'. Should getBBox be updated?
-    if (tagName === 'g' && !dataStorage.has(selected, 'gsvg')) {
+      // combines the parent transformation with that of the selected element if necessary
+      const m = parentTransformationMatrix ? matrixMultiply(parentTransformationMatrix, transformListToTransform(tlist).matrix) : transformListToTransform(tlist).matrix
+
+      // This should probably be handled somewhere else, but for now
+      // it keeps the selection box correctly positioned when zoomed
+      m.e *= zoom
+      m.f *= zoom
+
+      if (!bbox) {
+        bbox = getBBox(selected)
+      }
+      // TODO: getBBox (previous line) already knows to call getStrokedBBox when tagName === 'g'. Remove this?
+      // TODO: getBBox doesn't exclude 'gsvg' and calls getStrokedBBox for any 'g'. Should getBBox be updated?
+      if (tagName === 'g' && !dataStorage.has(selected, 'gsvg')) {
       // The bbox for a group does not include stroke vals, so we
       // get the bbox based on its children.
-      const strokedBbox = getStrokedBBox([selected.childNodes])
-      if (strokedBbox) {
-        bbox = strokedBbox
+        const strokedBbox = getStrokedBBox([selected.childNodes])
+        if (strokedBbox) {
+          bbox = strokedBbox
+        }
       }
-    }
 
-    if (bbox) {
+      if (bbox) {
       // apply the transforms
-      const l = bbox.x; const t = bbox.y; const w = bbox.width; const h = bbox.height
-      // bbox = {x: l, y: t, width: w, height: h}; // Not in use
+        const l = bbox.x; const t = bbox.y; const w = bbox.width; const h = bbox.height
+        // bbox = {x: l, y: t, width: w, height: h}; // Not in use
 
-      // we need to handle temporary transforms too
-      // if skewed, get its transformed box, then find its axis-aligned bbox
+        // we need to handle temporary transforms too
+        // if skewed, get its transformed box, then find its axis-aligned bbox
 
-      // *
-      offset *= zoom
+        // *
+        offset *= zoom
 
-      const nbox = transformBox(l * zoom, t * zoom, w * zoom, h * zoom, m)
-      const { aabox } = nbox
-      let nbax = aabox.x - offset
-      let nbay = aabox.y - offset
-      let nbaw = aabox.width + (offset * 2)
-      let nbah = aabox.height + (offset * 2)
+        const nbox = transformBox(l * zoom, t * zoom, w * zoom, h * zoom, m)
+        const { aabox } = nbox
+        let nbax = aabox.x - offset
+        let nbay = aabox.y - offset
+        let nbaw = aabox.width + (offset * 2)
+        let nbah = aabox.height + (offset * 2)
 
-      // now if the shape is rotated, un-rotate it
-      const cx = nbax + nbaw / 2
-      const cy = nbay + nbah / 2
+        // now if the shape is rotated, un-rotate it
+        const cx = nbax + nbaw / 2
+        const cy = nbay + nbah / 2
 
-      const angle = getRotationAngle(selected)
-      if (angle) {
-        const rot = svgCanvas.getSvgRoot().createSVGTransform()
-        rot.setRotate(-angle, cx, cy)
-        const rotm = rot.matrix
-        nbox.tl = transformPoint(nbox.tl.x, nbox.tl.y, rotm)
-        nbox.tr = transformPoint(nbox.tr.x, nbox.tr.y, rotm)
-        nbox.bl = transformPoint(nbox.bl.x, nbox.bl.y, rotm)
-        nbox.br = transformPoint(nbox.br.x, nbox.br.y, rotm)
+        const angle = getRotationAngle(selected)
+        if (angle) {
+          const rot = svgCanvas.getSvgRoot().createSVGTransform()
+          rot.setRotate(-angle, cx, cy)
+          const rotm = rot.matrix
+          nbox.tl = transformPoint(nbox.tl.x, nbox.tl.y, rotm)
+          nbox.tr = transformPoint(nbox.tr.x, nbox.tr.y, rotm)
+          nbox.bl = transformPoint(nbox.bl.x, nbox.bl.y, rotm)
+          nbox.br = transformPoint(nbox.br.x, nbox.br.y, rotm)
 
-        // calculate the axis-aligned bbox
-        const { tl } = nbox
-        let minx = tl.x
-        let miny = tl.y
-        let maxx = tl.x
-        let maxy = tl.y
+          // calculate the axis-aligned bbox
+          const { tl } = nbox
+          let minx = tl.x
+          let miny = tl.y
+          let maxx = tl.x
+          let maxy = tl.y
 
-        const { min, max } = Math
+          const { min, max } = Math
 
-        minx = min(minx, min(nbox.tr.x, min(nbox.bl.x, nbox.br.x))) - offset
-        miny = min(miny, min(nbox.tr.y, min(nbox.bl.y, nbox.br.y))) - offset
-        maxx = max(maxx, max(nbox.tr.x, max(nbox.bl.x, nbox.br.x))) + offset
-        maxy = max(maxy, max(nbox.tr.y, max(nbox.bl.y, nbox.br.y))) + offset
+          minx = min(minx, min(nbox.tr.x, min(nbox.bl.x, nbox.br.x))) - offset
+          miny = min(miny, min(nbox.tr.y, min(nbox.bl.y, nbox.br.y))) - offset
+          maxx = max(maxx, max(nbox.tr.x, max(nbox.bl.x, nbox.br.x))) + offset
+          maxy = max(maxy, max(nbox.tr.y, max(nbox.bl.y, nbox.br.y))) + offset
 
-        nbax = minx
-        nbay = miny
-        nbaw = (maxx - minx)
-        nbah = (maxy - miny)
+          nbax = minx
+          nbay = miny
+          nbaw = (maxx - minx)
+          nbah = (maxy - miny)
+        }
+
+        const dstr = `M${nbax},${nbay} L${nbax + nbaw},${nbay} ${nbax + nbaw},${nbay + nbah} ${nbax},${nbay + nbah}z`
+
+        const xform = angle ? 'rotate(' + [angle, cx, cy].join(',') + ')' : ''
+
+        // TODO(codedread): Is this needed?
+        //  if (selected === selectedElements[0]) {
+        this.gripCoords = {
+          nw: [nbax, nbay],
+          ne: [nbax + nbaw, nbay],
+          sw: [nbax, nbay + nbah],
+          se: [nbax + nbaw, nbay + nbah],
+          n: [nbax + (nbaw) / 2, nbay],
+          w: [nbax, nbay + (nbah) / 2],
+          e: [nbax + nbaw, nbay + (nbah) / 2],
+          s: [nbax + (nbaw) / 2, nbay + nbah]
+        }
+        selectedBox.setAttribute('d', dstr)
+        this.selectorGroup.setAttribute('transform', xform)
+        Object.entries(this.gripCoords).forEach(([dir, coords]) => {
+          selectedGrips[dir].setAttribute('cx', coords[0])
+          selectedGrips[dir].setAttribute('cy', coords[1])
+        })
+
+        // we want to go 20 pixels in the negative transformed y direction, ignoring scale
+        mgr.rotateGripConnector.setAttribute('x1', nbax + (nbaw) / 2)
+        mgr.rotateGripConnector.setAttribute('y1', nbay)
+        mgr.rotateGripConnector.setAttribute('x2', nbax + (nbaw) / 2)
+        mgr.rotateGripConnector.setAttribute('y2', nbay - (gripRadius * 5))
+
+        mgr.rotateGrip.setAttribute('cx', nbax + (nbaw) / 2)
+        mgr.rotateGrip.setAttribute('cy', nbay - (gripRadius * 5))
       }
-
-      const dstr = `M${nbax},${nbay} L${nbax + nbaw},${nbay} ${nbax + nbaw},${nbay + nbah} ${nbax},${nbay + nbah}z`
-
-      const xform = angle ? 'rotate(' + [angle, cx, cy].join(',') + ')' : ''
-
-      // TODO(codedread): Is this needed?
-      //  if (selected === selectedElements[0]) {
-      this.gripCoords = {
-        nw: [nbax, nbay],
-        ne: [nbax + nbaw, nbay],
-        sw: [nbax, nbay + nbah],
-        se: [nbax + nbaw, nbay + nbah],
-        n: [nbax + (nbaw) / 2, nbay],
-        w: [nbax, nbay + (nbah) / 2],
-        e: [nbax + nbaw, nbay + (nbah) / 2],
-        s: [nbax + (nbaw) / 2, nbay + nbah]
-      }
-      selectedBox.setAttribute('d', dstr)
-      this.selectorGroup.setAttribute('transform', xform)
-      Object.entries(this.gripCoords).forEach(([dir, coords]) => {
-        selectedGrips[dir].setAttribute('cx', coords[0])
-        selectedGrips[dir].setAttribute('cy', coords[1])
-      })
-
-      // we want to go 20 pixels in the negative transformed y direction, ignoring scale
-      mgr.rotateGripConnector.setAttribute('x1', nbax + (nbaw) / 2)
-      mgr.rotateGripConnector.setAttribute('y1', nbay)
-      mgr.rotateGripConnector.setAttribute('x2', nbax + (nbaw) / 2)
-      mgr.rotateGripConnector.setAttribute('y2', nbay - (gripRadius * 5))
-
-      mgr.rotateGrip.setAttribute('cx', nbax + (nbaw) / 2)
-      mgr.rotateGrip.setAttribute('cy', nbay - (gripRadius * 5))
     }
-  }
 
-  // STATIC methods
-  /**
+    // STATIC methods
+    /**
   * Updates cursors for corner grips on rotation so arrows point the right way.
   * @param {Float} angle - Current rotation angle in degrees
   * @returns {void}
   */
-  static updateGripCursors (angle) {
-    const dirArr = Object.keys(selectorManager.selectorGrips)
-    let steps = Math.round(angle / 45)
-    if (steps < 0) { steps += 8 }
-    while (steps > 0) {
-      dirArr.push(dirArr.shift())
-      steps--
+    static updateGripCursors (angle) {
+      const dirArr = Object.keys(selectorManager.selectorGrips)
+      let steps = Math.round(angle / 45)
+      if (steps < 0) { steps += 8 }
+      while (steps > 0) {
+        dirArr.push(dirArr.shift())
+        steps--
+      }
+      Object.values(selectorManager.selectorGrips).forEach((gripElement, i) => {
+        gripElement.setAttribute('style', `cursor:${dirArr[i]}-resize`)
+      })
     }
-    Object.values(selectorManager.selectorGrips).forEach((gripElement, i) => {
-      gripElement.setAttribute('style', `cursor:${dirArr[i]}-resize`)
-    })
   }
-}
 
-/**
+  /**
 * Manage all selector objects (selection boxes).
 */
-class SelectorManager {
+  class SelectorManager {
   /**
    * Sets up properties and calls `initGroup`.
    */
-  constructor () {
+    constructor () {
     // this will hold the <g> element that contains all selector rects/grips
-    this.selectorParentGroup = null
+      this.selectorParentGroup = null
 
-    // this is a special rect that is used for multi-select
-    this.rubberBandBox = null
+      // this is a special rect that is used for multi-select
+      this.rubberBandBox = null
 
-    // this will hold objects of type Selector (see above)
-    this.selectors = []
+      // this will hold objects of type Selector (see above)
+      this.selectors = []
 
-    // this holds a map of SVG elements to their Selector object
-    this.selectorMap = {}
+      // this holds a map of SVG elements to their Selector object
+      this.selectorMap = {}
 
-    // this holds a reference to the grip elements
-    this.selectorGrips = {
-      nw: null,
-      n: null,
-      ne: null,
-      e: null,
-      se: null,
-      s: null,
-      sw: null,
-      w: null
+      // this holds a reference to the grip elements
+      this.selectorGrips = {
+        nw: null,
+        n: null,
+        ne: null,
+        e: null,
+        se: null,
+        s: null,
+        sw: null,
+        w: null
+      }
+
+      this.selectorGripsGroup = null
+      this.rotateGripConnector = null
+      this.rotateGrip = null
+
+      // dashed box drawn around a multi-element selection (uniform group scale)
+      this.groupSelectorRect = null
+
+      this.initGroup()
     }
 
-    this.selectorGripsGroup = null
-    this.rotateGripConnector = null
-    this.rotateGrip = null
-
-    // dashed box drawn around a multi-element selection (uniform group scale)
-    this.groupSelectorRect = null
-
-    this.initGroup()
-  }
-
-  /**
+    /**
   * Resets the parent selector group element.
   * @returns {void}
   */
-  initGroup () {
-    const dataStorage = svgCanvas.getDataStorage()
-    // remove old selector parent group if it existed
-    if (this.selectorParentGroup?.parentNode) {
-      this.selectorParentGroup.remove()
-    }
+    initGroup () {
+      const dataStorage = svgCanvas.getDataStorage()
+      // remove old selector parent group if it existed
+      if (this.selectorParentGroup?.parentNode) {
+        this.selectorParentGroup.remove()
+      }
 
-    // create parent selector group and add it to svgroot
-    this.selectorParentGroup = svgCanvas.createSVGElement({
-      element: 'g',
-      attr: { id: 'selectorParentGroup' }
-    })
-    this.selectorGripsGroup = svgCanvas.createSVGElement({
-      element: 'g',
-      attr: { display: 'none' }
-    })
-    this.selectorParentGroup.append(this.selectorGripsGroup)
-    svgCanvas.getSvgRoot().append(this.selectorParentGroup)
+      // create parent selector group and add it to svgroot
+      this.selectorParentGroup = svgCanvas.createSVGElement({
+        element: 'g',
+        attr: { id: 'selectorParentGroup' }
+      })
+      this.selectorGripsGroup = svgCanvas.createSVGElement({
+        element: 'g',
+        attr: { display: 'none' }
+      })
+      this.selectorParentGroup.append(this.selectorGripsGroup)
+      svgCanvas.getSvgRoot().append(this.selectorParentGroup)
 
-    this.selectorMap = {}
-    this.selectors = []
-    this.rubberBandBox = null
-    // the old group box was a child of the parent group we just removed
-    this.groupSelectorRect = null
+      this.selectorMap = {}
+      this.selectors = []
+      this.rubberBandBox = null
+      // the old group box was a child of the parent group we just removed
+      this.groupSelectorRect = null
 
-    // add the corner grips
-    Object.keys(this.selectorGrips).forEach((dir) => {
-      const grip = svgCanvas.createSVGElement({
-        element: 'circle',
-        attr: {
-          id: `selectorGrip_resize_${dir}`,
-          fill: '#22C',
-          r: gripRadius,
-          style: `cursor:${dir}-resize`,
-          // This expands the mouse-able area of the grips making them
-          // easier to grab with the mouse.
-          // This works in Opera and WebKit, but does not work in Firefox
-          // see https://bugzilla.mozilla.org/show_bug.cgi?id=500174
-          'stroke-width': 2,
-          'pointer-events': 'all'
-        }
+      // add the corner grips
+      Object.keys(this.selectorGrips).forEach((dir) => {
+        const grip = svgCanvas.createSVGElement({
+          element: 'circle',
+          attr: {
+            id: `selectorGrip_resize_${dir}`,
+            fill: '#22C',
+            r: gripRadius,
+            style: `cursor:${dir}-resize`,
+            // This expands the mouse-able area of the grips making them
+            // easier to grab with the mouse.
+            // This works in Opera and WebKit, but does not work in Firefox
+            // see https://bugzilla.mozilla.org/show_bug.cgi?id=500174
+            'stroke-width': 2,
+            'pointer-events': 'all'
+          }
+        })
+
+        dataStorage.put(grip, 'dir', dir)
+        dataStorage.put(grip, 'type', 'resize')
+        this.selectorGrips[dir] = grip
+        this.selectorGripsGroup.append(grip)
       })
 
-      dataStorage.put(grip, 'dir', dir)
-      dataStorage.put(grip, 'type', 'resize')
-      this.selectorGrips[dir] = grip
-      this.selectorGripsGroup.append(grip)
-    })
-
-    // add rotator elems
-    this.rotateGripConnector =
+      // add rotator elems
+      this.rotateGripConnector =
       svgCanvas.createSVGElement({
         element: 'line',
         attr: {
@@ -387,9 +387,9 @@ class SelectorManager {
           'stroke-width': '1'
         }
       })
-    this.selectorGripsGroup.append(this.rotateGripConnector)
+      this.selectorGripsGroup.append(this.rotateGripConnector)
 
-    this.rotateGrip =
+      this.rotateGrip =
       svgCanvas.createSVGElement({
         element: 'circle',
         attr: {
@@ -401,123 +401,123 @@ class SelectorManager {
           style: `cursor:url(${svgCanvas.curConfig.imgPath}/rotate.svg) 12 12, auto;`
         }
       })
-    this.selectorGripsGroup.append(this.rotateGrip)
-    dataStorage.put(this.rotateGrip, 'type', 'rotate')
+      this.selectorGripsGroup.append(this.rotateGrip)
+      dataStorage.put(this.rotateGrip, 'type', 'rotate')
 
-    if (svgCanvas.$id('canvasBackground')) { return } // scoped: each editor gets its own
+      if (svgCanvas.$id('canvasBackground')) { return } // scoped: each editor gets its own
 
-    const [width, height] = svgCanvas.curConfig.dimensions
-    const canvasbg = svgCanvas.createSVGElement({
-      element: 'svg',
-      attr: {
-        id: 'canvasBackground',
-        width,
-        height,
-        x: 0,
-        y: 0,
-        overflow: (isWebkit() ? 'none' : 'visible'), // Chrome 7 has a problem with this when zooming out
-        style: 'pointer-events:none'
-      }
-    })
+      const [width, height] = svgCanvas.curConfig.dimensions
+      const canvasbg = svgCanvas.createSVGElement({
+        element: 'svg',
+        attr: {
+          id: 'canvasBackground',
+          width,
+          height,
+          x: 0,
+          y: 0,
+          overflow: (isWebkit() ? 'none' : 'visible'), // Chrome 7 has a problem with this when zooming out
+          style: 'pointer-events:none'
+        }
+      })
 
-    const rect = svgCanvas.createSVGElement({
-      element: 'rect',
-      attr: {
-        width: '100%',
-        height: '100%',
-        x: 0,
-        y: 0,
-        'stroke-width': 0,
-        stroke: 'none',
-        fill: '#FFF',
-        style: 'pointer-events:none'
-      }
-    })
-    canvasbg.append(rect)
-    svgCanvas.getSvgRoot().insertBefore(canvasbg, svgCanvas.getSvgContent())
-  }
+      const rect = svgCanvas.createSVGElement({
+        element: 'rect',
+        attr: {
+          width: '100%',
+          height: '100%',
+          x: 0,
+          y: 0,
+          'stroke-width': 0,
+          stroke: 'none',
+          fill: '#FFF',
+          style: 'pointer-events:none'
+        }
+      })
+      canvasbg.append(rect)
+      svgCanvas.getSvgRoot().insertBefore(canvasbg, svgCanvas.getSvgContent())
+    }
 
-  /**
+    /**
   *
   * @param {Element} elem - DOM element to get the selector for
   * @param {module:utilities.BBoxObject} [bbox] - Optional bbox to use for reset (prevents duplicate getBBox call).
   * @returns {Selector} The selector based on the given element
   */
-  requestSelector (elem, bbox) {
-    if (!elem) { return null }
+    requestSelector (elem, bbox) {
+      if (!elem) { return null }
 
-    const N = this.selectors.length
-    // If we've already acquired one for this element, return it.
-    if (typeof this.selectorMap[elem.id] === 'object') {
-      this.selectorMap[elem.id].locked = true
-      return this.selectorMap[elem.id]
-    }
-    for (let i = 0; i < N; ++i) {
-      if (!this.selectors[i]?.locked) {
-        this.selectors[i].locked = true
-        this.selectors[i].reset(elem, bbox)
-        this.selectorMap[elem.id] = this.selectors[i]
-        return this.selectors[i]
+      const N = this.selectors.length
+      // If we've already acquired one for this element, return it.
+      if (typeof this.selectorMap[elem.id] === 'object') {
+        this.selectorMap[elem.id].locked = true
+        return this.selectorMap[elem.id]
       }
+      for (let i = 0; i < N; ++i) {
+        if (!this.selectors[i]?.locked) {
+          this.selectors[i].locked = true
+          this.selectors[i].reset(elem, bbox)
+          this.selectorMap[elem.id] = this.selectors[i]
+          return this.selectors[i]
+        }
+      }
+      // if we reached here, no available selectors were found, we create one
+      this.selectors[N] = new Selector(N, elem, bbox)
+      this.selectorParentGroup.append(this.selectors[N].selectorGroup)
+      this.selectorMap[elem.id] = this.selectors[N]
+      return this.selectors[N]
     }
-    // if we reached here, no available selectors were found, we create one
-    this.selectors[N] = new Selector(N, elem, bbox)
-    this.selectorParentGroup.append(this.selectors[N].selectorGroup)
-    this.selectorMap[elem.id] = this.selectors[N]
-    return this.selectors[N]
-  }
 
-  /**
+    /**
   * Removes the selector of the given element (hides selection box).
   *
   * @param {Element} elem - DOM element to remove the selector for
   * @returns {void}
   */
-  releaseSelector (elem) {
-    if (!elem) { return }
-    const N = this.selectors.length
-    let sel = this.selectorMap[elem.id]
-    // selectorMap is keyed by the element's id, but an id can be reassigned
-    // after the selector was requested for it (e.g. paste/import de-duplicating
-    // colliding ids, or undo restoring a cloned node) -- the id-keyed lookup
-    // then misses even though a selector is still locked onto this exact
-    // element, and the release below would silently no-op: the selector stays
-    // locked with its box stuck visible at its last position forever, since
-    // nothing will ever look it up under its new id either. Fall back to the
-    // live element reference, which doesn't change.
-    if (sel?.selectedElement !== elem) {
-      sel = this.selectors.find((s) => s?.selectedElement === elem) ?? sel
-    }
-    if (!sel?.locked) {
+    releaseSelector (elem) {
+      if (!elem) { return }
+      const N = this.selectors.length
+      let sel = this.selectorMap[elem.id]
+      // selectorMap is keyed by the element's id, but an id can be reassigned
+      // after the selector was requested for it (e.g. paste/import de-duplicating
+      // colliding ids, or undo restoring a cloned node) -- the id-keyed lookup
+      // then misses even though a selector is still locked onto this exact
+      // element, and the release below would silently no-op: the selector stays
+      // locked with its box stuck visible at its last position forever, since
+      // nothing will ever look it up under its new id either. Fall back to the
+      // live element reference, which doesn't change.
+      if (sel?.selectedElement !== elem) {
+        sel = this.selectors.find((s) => s?.selectedElement === elem) ?? sel
+      }
+      if (!sel?.locked) {
       // TODO(codedread): Ensure this exists in this module.
-      warn('WARNING! selector was released but was already unlocked', null, 'select')
-    }
-    for (let i = 0; i < N; ++i) {
-      if (this.selectors[i] && this.selectors[i] === sel) {
-        for (const key of Object.keys(this.selectorMap)) {
-          if (this.selectorMap[key] === sel) delete this.selectorMap[key]
+        warn('WARNING! selector was released but was already unlocked', null, 'select')
+      }
+      for (let i = 0; i < N; ++i) {
+        if (this.selectors[i] && this.selectors[i] === sel) {
+          for (const key of Object.keys(this.selectorMap)) {
+            if (this.selectorMap[key] === sel) delete this.selectorMap[key]
+          }
+          sel.locked = false
+          sel.selectedElement = null
+          sel.showGrips(false)
+
+          // remove from DOM and store reference in JS but only if it exists in the DOM
+          try {
+            sel.selectorGroup.setAttribute('display', 'none')
+          } catch (e) { /* empty fn */ }
+
+          break
         }
-        sel.locked = false
-        sel.selectedElement = null
-        sel.showGrips(false)
-
-        // remove from DOM and store reference in JS but only if it exists in the DOM
-        try {
-          sel.selectorGroup.setAttribute('display', 'none')
-        } catch (e) { /* empty fn */ }
-
-        break
       }
     }
-  }
 
-  /**
+    /**
   * @returns {SVGRectElement} The rubberBandBox DOM element. This is the rectangle drawn by
   * the user for selecting/zooming
   */
-  getRubberBandBox () {
-    if (!this.rubberBandBox) {
-      this.rubberBandBox =
+    getRubberBandBox () {
+      if (!this.rubberBandBox) {
+        this.rubberBandBox =
         svgCanvas.createSVGElement({
           element: 'rect',
           attr: {
@@ -530,133 +530,133 @@ class SelectorManager {
             style: 'pointer-events:none'
           }
         })
-      this.selectorParentGroup.append(this.rubberBandBox)
+        this.selectorParentGroup.append(this.rubberBandBox)
+      }
+      return this.rubberBandBox
     }
-    return this.rubberBandBox
-  }
 
-  /**
+    /**
   * Shows a single dashed box, the 8 resize grips and the rotate grip around a
   * multi-element selection (uniform group-scale + group-rotate mode).
   * @param {module:utilities.BBoxObject} contentBBox - Union bbox of the selection in content/user coords
   * @param {Float} [angle] - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
   * @returns {void}
   */
-  showGroupSelector (contentBBox, angle = 0) {
-    if (!contentBBox) { return }
-    const zoom = svgCanvas.getZoom()
-    const x = contentBBox.x * zoom
-    const y = contentBBox.y * zoom
-    const w = contentBBox.width * zoom
-    const h = contentBBox.height * zoom
+    showGroupSelector (contentBBox, angle = 0) {
+      if (!contentBBox) { return }
+      const zoom = svgCanvas.getZoom()
+      const x = contentBBox.x * zoom
+      const y = contentBBox.y * zoom
+      const w = contentBBox.width * zoom
+      const h = contentBBox.height * zoom
 
-    // lazily create the dashed group box (same style as a normal selectorRect)
-    if (!this.groupSelectorRect) {
-      this.groupSelectorRect = svgCanvas.createSVGElement({
-        element: 'path',
-        attr: {
-          id: 'groupSelectedBox',
-          fill: 'none',
-          stroke: '#22C',
-          'stroke-width': '1',
-          'stroke-dasharray': '5,5',
-          style: 'pointer-events:none'
-        }
-      })
-      this.selectorParentGroup.append(this.groupSelectorRect)
-    }
-    this.groupSelectorRect.setAttribute('d',
+      // lazily create the dashed group box (same style as a normal selectorRect)
+      if (!this.groupSelectorRect) {
+        this.groupSelectorRect = svgCanvas.createSVGElement({
+          element: 'path',
+          attr: {
+            id: 'groupSelectedBox',
+            fill: 'none',
+            stroke: '#22C',
+            'stroke-width': '1',
+            'stroke-dasharray': '5,5',
+            style: 'pointer-events:none'
+          }
+        })
+        this.selectorParentGroup.append(this.groupSelectorRect)
+      }
+      this.groupSelectorRect.setAttribute('d',
       `M${x},${y} L${x + w},${y} ${x + w},${y + h} ${x},${y + h}z`)
-    this.groupSelectorRect.setAttribute('display', 'inline')
+      this.groupSelectorRect.setAttribute('display', 'inline')
 
-    // position the shared grips at the union corners / edge midpoints
-    const gripCoords = {
-      nw: [x, y],
-      ne: [x + w, y],
-      sw: [x, y + h],
-      se: [x + w, y + h],
-      n: [x + w / 2, y],
-      w: [x, y + h / 2],
-      e: [x + w, y + h / 2],
-      s: [x + w / 2, y + h]
+      // position the shared grips at the union corners / edge midpoints
+      const gripCoords = {
+        nw: [x, y],
+        ne: [x + w, y],
+        sw: [x, y + h],
+        se: [x + w, y + h],
+        n: [x + w / 2, y],
+        w: [x, y + h / 2],
+        e: [x + w, y + h / 2],
+        s: [x + w / 2, y + h]
+      }
+      Object.entries(gripCoords).forEach(([dir, coords]) => {
+        this.selectorGrips[dir].setAttribute('cx', coords[0])
+        this.selectorGrips[dir].setAttribute('cy', coords[1])
+      })
+
+      // position the rotate grip + its connector at the top-center of the box
+      // (mirrors the single-element selector in resize())
+      this.rotateGripConnector.setAttribute('x1', x + w / 2)
+      this.rotateGripConnector.setAttribute('y1', y)
+      this.rotateGripConnector.setAttribute('x2', x + w / 2)
+      this.rotateGripConnector.setAttribute('y2', y - gripRadius * 5)
+      this.rotateGrip.setAttribute('cx', x + w / 2)
+      this.rotateGrip.setAttribute('cy', y - gripRadius * 5)
+      this.rotateGrip.setAttribute('display', 'inline')
+      this.rotateGripConnector.setAttribute('display', 'inline')
+
+      // re-parent the grips into the parent group and show them. During a live
+      // group rotation, rotate the box + all grips rigidly about the union center
+      // (in zoomed coords) so they track the rotating selection.
+      const xform = angle
+        ? `rotate(${angle},${x + w / 2},${y + h / 2})`
+        : ''
+      this.groupSelectorRect.setAttribute('transform', xform)
+      this.selectorGripsGroup.setAttribute('transform', xform)
+      this.selectorParentGroup.append(this.selectorGripsGroup)
+      this.selectorGripsGroup.setAttribute('display', 'inline')
+      Selector.updateGripCursors(angle)
     }
-    Object.entries(gripCoords).forEach(([dir, coords]) => {
-      this.selectorGrips[dir].setAttribute('cx', coords[0])
-      this.selectorGrips[dir].setAttribute('cy', coords[1])
-    })
 
-    // position the rotate grip + its connector at the top-center of the box
-    // (mirrors the single-element selector in resize())
-    this.rotateGripConnector.setAttribute('x1', x + w / 2)
-    this.rotateGripConnector.setAttribute('y1', y)
-    this.rotateGripConnector.setAttribute('x2', x + w / 2)
-    this.rotateGripConnector.setAttribute('y2', y - gripRadius * 5)
-    this.rotateGrip.setAttribute('cx', x + w / 2)
-    this.rotateGrip.setAttribute('cy', y - gripRadius * 5)
-    this.rotateGrip.setAttribute('display', 'inline')
-    this.rotateGripConnector.setAttribute('display', 'inline')
-
-    // re-parent the grips into the parent group and show them. During a live
-    // group rotation, rotate the box + all grips rigidly about the union center
-    // (in zoomed coords) so they track the rotating selection.
-    const xform = angle
-      ? `rotate(${angle},${x + w / 2},${y + h / 2})`
-      : ''
-    this.groupSelectorRect.setAttribute('transform', xform)
-    this.selectorGripsGroup.setAttribute('transform', xform)
-    this.selectorParentGroup.append(this.selectorGripsGroup)
-    this.selectorGripsGroup.setAttribute('display', 'inline')
-    Selector.updateGripCursors(angle)
-  }
-
-  /**
+    /**
   * Hides the multi-selection group box and restores the rotate grip so that
   * single-selection mode draws normally again.
   * @returns {void}
   */
-  hideGroupSelector () {
-    if (this.groupSelectorRect) {
-      this.groupSelectorRect.setAttribute('display', 'none')
-      this.groupSelectorRect.setAttribute('transform', '')
+    hideGroupSelector () {
+      if (this.groupSelectorRect) {
+        this.groupSelectorRect.setAttribute('display', 'none')
+        this.groupSelectorRect.setAttribute('transform', '')
+      }
+      // clear any group-rotation transform so it doesn't leak into the
+      // single-element selector that shares the grips group
+      this.selectorGripsGroup.setAttribute('transform', '')
+      this.rotateGrip.setAttribute('display', 'inline')
+      this.rotateGripConnector.setAttribute('display', 'inline')
     }
-    // clear any group-rotation transform so it doesn't leak into the
-    // single-element selector that shares the grips group
-    this.selectorGripsGroup.setAttribute('transform', '')
-    this.rotateGrip.setAttribute('display', 'inline')
-    this.rotateGripConnector.setAttribute('display', 'inline')
   }
-}
 
-/**
+  /**
  * An object that creates SVG elements for the canvas.
  *
  * @interface module:select.SVGFactory
  */
-/**
+  /**
  * @function module:select.SVGFactory#createSVGElement
  * @param {module:utilities.EditorContext#addSVGElementsFromJson} jsonMap
  * @returns {SVGElement}
  */
-/**
+  /**
  * @function module:select.SVGFactory#svgRoot
  * @returns {SVGSVGElement}
  */
-/**
+  /**
  * @function module:select.SVGFactory#svgContent
  * @returns {SVGSVGElement}
  */
-/**
+  /**
  * @function module:select.SVGFactory#getZoom
  * @returns {Float} The current zoom level
  */
 
-/**
+  /**
  * @typedef {GenericArray} module:select.Dimensions
  * @property {Integer} length 2
  * @property {Float} 0 Width
  * @property {Float} 1 Height
  */
-/**
+  /**
  * @typedef {PlainObject} module:select.Config
  * @property {string} imgPath
  * @property {module:select.Dimensions} dimensions

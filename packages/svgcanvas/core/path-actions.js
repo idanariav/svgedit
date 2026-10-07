@@ -27,7 +27,7 @@ export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
   let path = null // current path being edited (per instance)
 
-/**
+  /**
  * Convert a path to one with only absolute or relative values.
  * @todo move to pathActions.js
  * @function module:path.convertPath
@@ -36,176 +36,176 @@ export const init = (canvas) => {
  * @returns {string}
  */
   const convertPath = (pth, toRel) => {
-  const { pathSegList } = pth
-  const len = pathSegList.numberOfItems
-  let curx = 0; let cury = 0
-  let d = ''
-  let lastM = null
+    const { pathSegList } = pth
+    const len = pathSegList.numberOfItems
+    let curx = 0; let cury = 0
+    let d = ''
+    let lastM = null
 
-  for (let i = 0; i < len; ++i) {
-    const seg = pathSegList.getItem(i)
-    // if these properties are not in the segment, set them to zero
-    let x = seg.x || 0
-    let y = seg.y || 0
-    let x1 = seg.x1 || 0
-    let y1 = seg.y1 || 0
-    let x2 = seg.x2 || 0
-    let y2 = seg.y2 || 0
+    for (let i = 0; i < len; ++i) {
+      const seg = pathSegList.getItem(i)
+      // if these properties are not in the segment, set them to zero
+      let x = seg.x || 0
+      let y = seg.y || 0
+      let x1 = seg.x1 || 0
+      let y1 = seg.y1 || 0
+      let x2 = seg.x2 || 0
+      let y2 = seg.y2 || 0
 
-    // const type = seg.pathSegType;
-    // const pathMap = svgCanvas.getPathMap();
-    // let letter = pathMap[type][toRel ? 'toLowerCase' : 'toUpperCase']();
-    let letter = seg.pathSegTypeAsLetter
+      // const type = seg.pathSegType;
+      // const pathMap = svgCanvas.getPathMap();
+      // let letter = pathMap[type][toRel ? 'toLowerCase' : 'toUpperCase']();
+      let letter = seg.pathSegTypeAsLetter
 
-    switch (letter) {
-      case 'z': // z,Z closepath (Z/z)
-      case 'Z':
-        d += 'z'
-        if (lastM) {
-          curx = lastM[0]
-          cury = lastM[1]
-        }
-        break
-      case 'H': // absolute horizontal line (H)
-        x -= curx
-      // Fallthrough
-      case 'h': // relative horizontal line (h)
-        if (toRel) {
-          y = 0
-          curx += x
-          letter = 'l'
-        } else {
-          y = cury
-          x += curx
-          curx = x
-          letter = 'L'
-        }
-        // Convert to "line" for easier editing
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 'V': // absolute vertical line (V)
-        y -= cury
-      // Fallthrough
-      case 'v': // relative vertical line (v)
-        if (toRel) {
-          x = 0
-          cury += y
-          letter = 'l'
-        } else {
-          x = curx
-          y += cury
-          cury = y
-          letter = 'L'
-        }
-        // Convert to "line" for easier editing
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 'M': // absolute move (M)
-      case 'L': // absolute line (L)
-      case 'T': // absolute smooth quad (T)
-        x -= curx
-        y -= cury
-      // Fallthrough
-      case 'l': // relative line (l)
-      case 'm': // relative move (m)
-      case 't': // relative smooth quad (t)
-        if (toRel) {
-          curx += x
-          cury += y
-          letter = letter.toLowerCase()
-        } else {
-          x += curx
-          y += cury
-          curx = x
-          cury = y
-          letter = letter.toUpperCase()
-        }
-        if (letter === 'm' || letter === 'M') { lastM = [curx, cury] }
+      switch (letter) {
+        case 'z': // z,Z closepath (Z/z)
+        case 'Z':
+          d += 'z'
+          if (lastM) {
+            curx = lastM[0]
+            cury = lastM[1]
+          }
+          break
+        case 'H': // absolute horizontal line (H)
+          x -= curx
+          // Fallthrough
+        case 'h': // relative horizontal line (h)
+          if (toRel) {
+            y = 0
+            curx += x
+            letter = 'l'
+          } else {
+            y = cury
+            x += curx
+            curx = x
+            letter = 'L'
+          }
+          // Convert to "line" for easier editing
+          d += pathDSegment(letter, [[x, y]])
+          break
+        case 'V': // absolute vertical line (V)
+          y -= cury
+          // Fallthrough
+        case 'v': // relative vertical line (v)
+          if (toRel) {
+            x = 0
+            cury += y
+            letter = 'l'
+          } else {
+            x = curx
+            y += cury
+            cury = y
+            letter = 'L'
+          }
+          // Convert to "line" for easier editing
+          d += pathDSegment(letter, [[x, y]])
+          break
+        case 'M': // absolute move (M)
+        case 'L': // absolute line (L)
+        case 'T': // absolute smooth quad (T)
+          x -= curx
+          y -= cury
+          // Fallthrough
+        case 'l': // relative line (l)
+        case 'm': // relative move (m)
+        case 't': // relative smooth quad (t)
+          if (toRel) {
+            curx += x
+            cury += y
+            letter = letter.toLowerCase()
+          } else {
+            x += curx
+            y += cury
+            curx = x
+            cury = y
+            letter = letter.toUpperCase()
+          }
+          if (letter === 'm' || letter === 'M') { lastM = [curx, cury] }
 
-        d += pathDSegment(letter, [[x, y]])
-        break
-      case 'C': // absolute cubic (C)
-        x -= curx; x1 -= curx; x2 -= curx
-        y -= cury; y1 -= cury; y2 -= cury
-      // Fallthrough
-      case 'c': // relative cubic (c)
-        if (toRel) {
-          curx += x
-          cury += y
-          letter = 'c'
-        } else {
-          x += curx; x1 += curx; x2 += curx
-          y += cury; y1 += cury; y2 += cury
-          curx = x
-          cury = y
-          letter = 'C'
-        }
-        d += pathDSegment(letter, [[x1, y1], [x2, y2], [x, y]])
-        break
-      case 'Q': // absolute quad (Q)
-        x -= curx; x1 -= curx
-        y -= cury; y1 -= cury
-      // Fallthrough
-      case 'q': // relative quad (q)
-        if (toRel) {
-          curx += x
-          cury += y
-          letter = 'q'
-        } else {
-          x += curx; x1 += curx
-          y += cury; y1 += cury
-          curx = x
-          cury = y
-          letter = 'Q'
-        }
-        d += pathDSegment(letter, [[x1, y1], [x, y]])
-        break
-      case 'A':
-        x -= curx
-        y -= cury
-      // fallthrough
-      case 'a': // relative elliptical arc (a)
-        if (toRel) {
-          curx += x
-          cury += y
-          letter = 'a'
-        } else {
-          x += curx
-          y += cury
-          curx = x
-          cury = y
-          letter = 'A'
-        }
-        d += pathDSegment(letter, [[seg.r1, seg.r2]], [
-          seg.angle,
-          (seg.largeArcFlag ? 1 : 0),
-          (seg.sweepFlag ? 1 : 0)
-        ], [x, y])
-        break
-      case 'S': // absolute smooth cubic (S)
-        x -= curx; x2 -= curx
-        y -= cury; y2 -= cury
-      // Fallthrough
-      case 's': // relative smooth cubic (s)
-        if (toRel) {
-          curx += x
-          cury += y
-          letter = 's'
-        } else {
-          x += curx; x2 += curx
-          y += cury; y2 += cury
-          curx = x
-          cury = y
-          letter = 'S'
-        }
-        d += pathDSegment(letter, [[x2, y2], [x, y]])
-        break
-    } // switch on path segment type
-  } // for each segment
-  return d
-}
+          d += pathDSegment(letter, [[x, y]])
+          break
+        case 'C': // absolute cubic (C)
+          x -= curx; x1 -= curx; x2 -= curx
+          y -= cury; y1 -= cury; y2 -= cury
+          // Fallthrough
+        case 'c': // relative cubic (c)
+          if (toRel) {
+            curx += x
+            cury += y
+            letter = 'c'
+          } else {
+            x += curx; x1 += curx; x2 += curx
+            y += cury; y1 += cury; y2 += cury
+            curx = x
+            cury = y
+            letter = 'C'
+          }
+          d += pathDSegment(letter, [[x1, y1], [x2, y2], [x, y]])
+          break
+        case 'Q': // absolute quad (Q)
+          x -= curx; x1 -= curx
+          y -= cury; y1 -= cury
+          // Fallthrough
+        case 'q': // relative quad (q)
+          if (toRel) {
+            curx += x
+            cury += y
+            letter = 'q'
+          } else {
+            x += curx; x1 += curx
+            y += cury; y1 += cury
+            curx = x
+            cury = y
+            letter = 'Q'
+          }
+          d += pathDSegment(letter, [[x1, y1], [x, y]])
+          break
+        case 'A':
+          x -= curx
+          y -= cury
+          // fallthrough
+        case 'a': // relative elliptical arc (a)
+          if (toRel) {
+            curx += x
+            cury += y
+            letter = 'a'
+          } else {
+            x += curx
+            y += cury
+            curx = x
+            cury = y
+            letter = 'A'
+          }
+          d += pathDSegment(letter, [[seg.r1, seg.r2]], [
+            seg.angle,
+            (seg.largeArcFlag ? 1 : 0),
+            (seg.sweepFlag ? 1 : 0)
+          ], [x, y])
+          break
+        case 'S': // absolute smooth cubic (S)
+          x -= curx; x2 -= curx
+          y -= cury; y2 -= cury
+          // Fallthrough
+        case 's': // relative smooth cubic (s)
+          if (toRel) {
+            curx += x
+            cury += y
+            letter = 's'
+          } else {
+            x += curx; x2 += curx
+            y += cury; y2 += cury
+            curx = x
+            cury = y
+            letter = 'S'
+          }
+          d += pathDSegment(letter, [[x2, y2], [x, y]])
+          break
+      } // switch on path segment type
+    } // for each segment
+    return d
+  }
 
-/**
+  /**
  * TODO: refactor callers in `convertPath` to use `getPathDFromSegments` instead of this function.
  * Legacy code refactored from `svgcanvas.pathActions.convertPath`.
  * @param {string} letter - path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
@@ -214,16 +214,16 @@ export const init = (canvas) => {
  * @param {Integer[]} [lastPoint] - x,y point
  * @returns {string}
  */
-const pathDSegment = (letter, points, morePoints, lastPoint) => {
-  const parts = [
-    letter + points.map(pnt => shortFloat(pnt)).join(' '),
-    morePoints ? morePoints.join(' ') : null,
-    lastPoint ? shortFloat(lastPoint) : null
-  ].filter(Boolean)
-  return parts.join(' ')
-}
+  const pathDSegment = (letter, points, morePoints, lastPoint) => {
+    const parts = [
+      letter + points.map(pnt => shortFloat(pnt)).join(' '),
+      morePoints ? morePoints.join(' ') : null,
+      lastPoint ? shortFloat(lastPoint) : null
+    ].filter(Boolean)
+    return parts.join(' ')
+  }
 
-/**
+  /**
  * Build a new `d` attribute for `path` with every selected node *reconnected* —
  * the node is dropped and its two neighbors become adjacent, so the sub-path
  * stays exactly as continuous/closed as it was. Splitting a path open is the
@@ -233,72 +233,72 @@ const pathDSegment = (letter, points, morePoints, lastPoint) => {
  * @param {module:path.Path} pathObj - the path being edited
  * @returns {string} the rebuilt `d`, or '' if nothing renderable remains
  */
-const buildReconnectedPathData = (pathObj) => {
-  const { segs } = pathObj
-  const deleted = new Set(pathObj.selected_pts)
+  const buildReconnectedPathData = (pathObj) => {
+    const { segs } = pathObj
+    const deleted = new Set(pathObj.selected_pts)
 
-  // Split segs into sub-paths of drawable points (M starts one, Z closes it).
-  const subpaths = []
-  let cur = null
-  segs.forEach((seg, i) => {
-    if (seg.type === 2) { // M
-      cur = { points: [], closed: false }
-      subpaths.push(cur)
-      cur.points.push({ idx: i, seg })
-    } else if (seg.type === 1) { // Z
-      if (cur) { cur.closed = true }
-    } else if (cur) { // L / C / ... drawable point
-      cur.points.push({ idx: i, seg })
-    }
-  })
+    // Split segs into sub-paths of drawable points (M starts one, Z closes it).
+    const subpaths = []
+    let cur = null
+    segs.forEach((seg, i) => {
+      if (seg.type === 2) { // M
+        cur = { points: [], closed: false }
+        subpaths.push(cur)
+        cur.points.push({ idx: i, seg })
+      } else if (seg.type === 1) { // Z
+        if (cur) { cur.closed = true }
+      } else if (cur) { // L / C / ... drawable point
+        cur.points.push({ idx: i, seg })
+      }
+    })
 
-  const emitPt = (pt, role) => {
-    const it = pt.seg.item
-    const x = shortFloat(it.x)
-    const y = shortFloat(it.y)
-    if (role === 'M') { return `M ${x} ${y}` }
-    if (pt.seg.type === 6) { // cubic curve
-      return `C ${shortFloat(it.x1)} ${shortFloat(it.y1)} ` +
+    const emitPt = (pt, role) => {
+      const it = pt.seg.item
+      const x = shortFloat(it.x)
+      const y = shortFloat(it.y)
+      if (role === 'M') { return `M ${x} ${y}` }
+      if (pt.seg.type === 6) { // cubic curve
+        return `C ${shortFloat(it.x1)} ${shortFloat(it.y1)} ` +
         `${shortFloat(it.x2)} ${shortFloat(it.y2)} ${x} ${y}`
+      }
+      return `L ${x} ${y}`
     }
-    return `L ${x} ${y}`
+
+    const out = []
+    subpaths.forEach((sp) => {
+      const survivors = sp.points.filter((p) => !deleted.has(p.idx))
+
+      // Nothing left to render in this sub-path: drop it.
+      if (survivors.length < 2) { return }
+
+      const parts = survivors.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
+      if (sp.closed) { parts.push('Z') }
+      out.push(parts.join(' '))
+    })
+
+    return out.join(' ').trim()
   }
 
-  const out = []
-  subpaths.forEach((sp) => {
-    const survivors = sp.points.filter((p) => !deleted.has(p.idx))
-
-    // Nothing left to render in this sub-path: drop it.
-    if (survivors.length < 2) { return }
-
-    const parts = survivors.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
-    if (sp.closed) { parts.push('Z') }
-    out.push(parts.join(' '))
-  })
-
-  return out.join(' ').trim()
-}
-
-/**
+  /**
 * Group: Path edit functions.
 * Functions relating to editing path elements.
 * @class PathActions
 * @memberof module:path
 */
-class PathActions {
-  #subpath = false
-  #newPoint = null
-  #firstCtrl = null
-  #currentPath = null
-  #hasMoved = false
-  #downOnPath = false
-  // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
-  // applied at any point during the drag currently in progress — reset at
-  // drag-start, read (and logged) once at drag-end, since the per-mousemove
-  // snap decision itself is too high-frequency to log.
-  #snappedDuringDrag = false
+  class PathActions {
+    #subpath = false
+    #newPoint = null
+    #firstCtrl = null
+    #currentPath = null
+    #hasMoved = false
+    #downOnPath = false
+    // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
+    // applied at any point during the drag currently in progress — reset at
+    // drag-start, read (and logged) once at drag-end, since the per-mousemove
+    // snap decision itself is too high-frequency to log.
+    #snappedDuringDrag = false
 
-  /**
+    /**
   * This function converts a polyline (created by the fh_path tool) into
   * a path element and coverts every three line segments into a single bezier
   * curve in an attempt to smooth out the free-hand.
@@ -307,10 +307,10 @@ class PathActions {
   * @returns {Element}
   * @private
   */
-  #smoothPolylineIntoPath = (element) => {
-    const { points } = element
-    const N = points.numberOfItems
-    if (N >= 4) {
+    #smoothPolylineIntoPath = (element) => {
+      const { points } = element
+      const N = points.numberOfItems
+      if (N >= 4) {
       // loop through every 3 points and convert to a cubic bezier curve segment
       //
       // NOTE: this is cheating, it means that every 3 points has the potential to
@@ -324,103 +324,103 @@ class PathActions {
       // - https://www.codeproject.com/KB/graphics/BezierSpline.aspx?msg=2956963
       // - https://www.ian-ko.com/ET_GeoWizards/UserGuide/smooth.htm
       // - https://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/Bezier/bezier-der.html
-      let curpos = points.getItem(0)
-      let prevCtlPt = null
-      let d = []
-      d.push(`M${curpos.x},${curpos.y} C`)
-      let i
-      for (i = 1; i <= (N - 4); i += 3) {
-        let ct1 = points.getItem(i)
-        const ct2 = points.getItem(i + 1)
-        const end = points.getItem(i + 2)
+        let curpos = points.getItem(0)
+        let prevCtlPt = null
+        let d = []
+        d.push(`M${curpos.x},${curpos.y} C`)
+        let i
+        for (i = 1; i <= (N - 4); i += 3) {
+          let ct1 = points.getItem(i)
+          const ct2 = points.getItem(i + 1)
+          const end = points.getItem(i + 2)
 
-        // if the previous segment had a control point, we want to smooth out
-        // the control points on both sides
-        if (prevCtlPt) {
-          const newpts = svgCanvas.smoothControlPoints(prevCtlPt, ct1, curpos)
-          if (newpts?.length === 2) {
-            const prevArr = d[d.length - 1].split(',')
-            prevArr[2] = newpts[0].x
-            prevArr[3] = newpts[0].y
-            d[d.length - 1] = prevArr.join(',')
-            ct1 = newpts[1]
+          // if the previous segment had a control point, we want to smooth out
+          // the control points on both sides
+          if (prevCtlPt) {
+            const newpts = svgCanvas.smoothControlPoints(prevCtlPt, ct1, curpos)
+            if (newpts?.length === 2) {
+              const prevArr = d[d.length - 1].split(',')
+              prevArr[2] = newpts[0].x
+              prevArr[3] = newpts[0].y
+              d[d.length - 1] = prevArr.join(',')
+              ct1 = newpts[1]
+            }
           }
+
+          d.push([ct1.x, ct1.y, ct2.x, ct2.y, end.x, end.y].join(','))
+
+          curpos = end
+          prevCtlPt = ct2
         }
-
-        d.push([ct1.x, ct1.y, ct2.x, ct2.y, end.x, end.y].join(','))
-
-        curpos = end
-        prevCtlPt = ct2
-      }
-      // handle remaining line segments
-      d.push('L')
-      while (i < N) {
-        const pt = points.getItem(i)
-        d.push([pt.x, pt.y].join(','))
-        i++
-      }
-      d = d.join(' ')
-
-      element = svgCanvas.addSVGElementsFromJson({
-        element: 'path',
-        curStyles: true,
-        attr: {
-          id: svgCanvas.getId(),
-          d,
-          fill: 'none',
-          'data-freehand': '1'
+        // handle remaining line segments
+        d.push('L')
+        while (i < N) {
+          const pt = points.getItem(i)
+          d.push([pt.x, pt.y].join(','))
+          i++
         }
-      })
+        d = d.join(' ')
+
+        element = svgCanvas.addSVGElementsFromJson({
+          element: 'path',
+          curStyles: true,
+          attr: {
+            id: svgCanvas.getId(),
+            d,
+            fill: 'none',
+            'data-freehand': '1'
+          }
+        })
       // No need to call "changed", as this is already done under mouseUp
+      }
+      return element
     }
-    return element
-  }
 
-  /**
+    /**
   * @param {MouseEvent} evt
   * @param {Element} mouseTarget
   * @param {Float} startX
   * @param {Float} startY
   * @returns {boolean|void}
   */
-  mouseDown (evt, mouseTarget, startX, startY) {
-    let id
-    if (svgCanvas.getCurrentMode() === 'path') {
-      let mouseX = startX // Was this meant to work with the other `mouseX`? (was defined globally so adding `let` to at least avoid a global)
-      let mouseY = startY // Was this meant to work with the other `mouseY`? (was defined globally so adding `let` to at least avoid a global)
+    mouseDown (evt, mouseTarget, startX, startY) {
+      let id
+      if (svgCanvas.getCurrentMode() === 'path') {
+        let mouseX = startX // Was this meant to work with the other `mouseX`? (was defined globally so adding `let` to at least avoid a global)
+        let mouseY = startY // Was this meant to work with the other `mouseY`? (was defined globally so adding `let` to at least avoid a global)
 
-      const zoom = svgCanvas.getZoom()
-      let x = mouseX / zoom
-      let y = mouseY / zoom
-      let stretchy = svgCanvas.getElement('path_stretch_line')
-      this.#newPoint = [x, y]
+        const zoom = svgCanvas.getZoom()
+        let x = mouseX / zoom
+        let y = mouseY / zoom
+        let stretchy = svgCanvas.getElement('path_stretch_line')
+        this.#newPoint = [x, y]
 
-      if (svgCanvas.getGridSnapping()) {
-        const sp = svgCanvas.snapPointToGrid(x, y)
-        x = sp.x
-        y = sp.y
-        mouseX = x * zoom
-        mouseY = y * zoom
-      }
+        if (svgCanvas.getGridSnapping()) {
+          const sp = svgCanvas.snapPointToGrid(x, y)
+          x = sp.x
+          y = sp.y
+          mouseX = x * zoom
+          mouseY = y * zoom
+        }
 
-      if (!stretchy) {
-        stretchy = document.createElementNS(NS.SVG, 'path')
-        assignAttributes(stretchy, {
-          id: 'path_stretch_line',
-          stroke: '#22C',
-          'stroke-width': '0.5',
-          fill: 'none'
-        })
-        svgCanvas.getElement('selectorParentGroup').append(stretchy)
-      }
-      stretchy.setAttribute('display', 'inline')
+        if (!stretchy) {
+          stretchy = document.createElementNS(NS.SVG, 'path')
+          assignAttributes(stretchy, {
+            id: 'path_stretch_line',
+            stroke: '#22C',
+            'stroke-width': '0.5',
+            fill: 'none'
+          })
+          svgCanvas.getElement('selectorParentGroup').append(stretchy)
+        }
+        stretchy.setAttribute('display', 'inline')
 
-      let keep = null
-      let index
-      // if pts array is empty, create path element with M at current point
-      const drawnPath = svgCanvas.getDrawnPath()
-      if (!drawnPath) {
-        if (!this.#subpath) {
+        let keep = null
+        let index
+        // if pts array is empty, create path element with M at current point
+        const drawnPath = svgCanvas.getDrawnPath()
+        if (!drawnPath) {
+          if (!this.#subpath) {
           // Starting a brand-new path (not extending the currently-tracked
           // one via addSubPath(true)) claims grip indices from 0 again —
           // the same indices path-node grips are cached/reused under
@@ -431,355 +431,355 @@ class PathActions {
           // path is drawn (see .claude/techdebt.md). Hide everything first,
           // mirroring Path#init()'s hide-all-then-reveal-mine guard for
           // entering pathedit mode, which this freehand-draw path lacks.
-          const pointGripContainer = svgCanvas.getElement('pathpointgrip_container')
-          if (pointGripContainer) {
-            Array.prototype.forEach.call(pointGripContainer.querySelectorAll('*'), (el) => {
-              el.setAttribute('display', 'none')
-            })
+            const pointGripContainer = svgCanvas.getElement('pathpointgrip_container')
+            if (pointGripContainer) {
+              Array.prototype.forEach.call(pointGripContainer.querySelectorAll('*'), (el) => {
+                el.setAttribute('display', 'none')
+              })
+            }
           }
-        }
-        const dAttr = `M${x},${y} `
-        /* drawnPath = */ svgCanvas.setDrawnPath(svgCanvas.addSVGElementsFromJson({
-          element: 'path',
-          curStyles: true,
-          attr: {
-            d: dAttr,
-            id: svgCanvas.getNextId('path'),
-            opacity: svgCanvas.getOpacity() / 2
-          }
-        }))
-        // set stretchy line to first point
-        stretchy.setAttribute('d', `M${mouseX} ${mouseY} ${mouseX} ${mouseY}`)
-        index = this.#subpath ? path.segs.length : 0
-        svgCanvas.addPointGrip(index, mouseX, mouseY)
-      } else {
+          const dAttr = `M${x},${y} `
+          /* drawnPath = */ svgCanvas.setDrawnPath(svgCanvas.addSVGElementsFromJson({
+            element: 'path',
+            curStyles: true,
+            attr: {
+              d: dAttr,
+              id: svgCanvas.getNextId('path'),
+              opacity: svgCanvas.getOpacity() / 2
+            }
+          }))
+          // set stretchy line to first point
+          stretchy.setAttribute('d', `M${mouseX} ${mouseY} ${mouseX} ${mouseY}`)
+          index = this.#subpath ? path.segs.length : 0
+          svgCanvas.addPointGrip(index, mouseX, mouseY)
+        } else {
         // determine if we clicked on an existing point
-        const seglist = drawnPath.pathSegList
-        let i = seglist.numberOfItems
-        const FUZZ = 6 / zoom
-        let clickOnPoint = false
-        while (i) {
-          i--
-          const item = seglist.getItem(i)
-          const px = item.x; const py = item.y
-          // found a matching point
-          if (x >= (px - FUZZ) && x <= (px + FUZZ) &&
+          const seglist = drawnPath.pathSegList
+          let i = seglist.numberOfItems
+          const FUZZ = 6 / zoom
+          let clickOnPoint = false
+          while (i) {
+            i--
+            const item = seglist.getItem(i)
+            const px = item.x; const py = item.y
+            // found a matching point
+            if (x >= (px - FUZZ) && x <= (px + FUZZ) &&
               y >= (py - FUZZ) && y <= (py + FUZZ)
-          ) {
-            clickOnPoint = true
-            break
+            ) {
+              clickOnPoint = true
+              break
+            }
           }
-        }
 
-        // get path element that we are in the process of creating
-        id = svgCanvas.getId()
+          // get path element that we are in the process of creating
+          id = svgCanvas.getId()
 
-        // Remove previous path object if previously created
-        svgCanvas.removePath_(id)
+          // Remove previous path object if previously created
+          svgCanvas.removePath_(id)
 
-        const newpath = svgCanvas.getElement(id)
-        let newseg
-        let sSeg
-        const len = seglist.numberOfItems
-        // if we clicked on an existing point, then we are done this path, commit it
-        // (i, i+1) are the x,y that were clicked on
-        if (clickOnPoint) {
+          const newpath = svgCanvas.getElement(id)
+          let newseg
+          let sSeg
+          const len = seglist.numberOfItems
+          // if we clicked on an existing point, then we are done this path, commit it
+          // (i, i+1) are the x,y that were clicked on
+          if (clickOnPoint) {
           // if clicked on any other point but the first OR
           // the first point was clicked on and there are less than 3 points
           // then leave the path open
           // otherwise, close the path
-          if (i <= 1 && len >= 2) {
+            if (i <= 1 && len >= 2) {
             // Create end segment
-            const absX = seglist.getItem(0).x
-            const absY = seglist.getItem(0).y
+              const absX = seglist.getItem(0).x
+              const absY = seglist.getItem(0).y
 
+              sSeg = stretchy.pathSegList.getItem(1)
+              newseg = sSeg.pathSegType === 4
+                ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
+                : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
+
+              const endseg = drawnPath.createSVGPathSegClosePath()
+              seglist.appendItem(newseg)
+              seglist.appendItem(endseg)
+            } else if (len < 3) {
+              keep = false
+              return keep
+            }
+            svgCanvas.logDebugEvent?.('path-draw-commit', {
+              elemId: drawnPath.id,
+              closed: i <= 1 && len >= 2,
+              clickedIndex: i,
+              segCount: seglist.numberOfItems,
+              locked: svgCanvas.getToolLocked(),
+              d: drawnPath.getAttribute('d')
+            })
+            stretchy.remove()
+
+            // This will signal to commit the path
+            // const element = newpath; // Other event handlers define own `element`, so this was probably not meant to interact with them or one which shares state (as there were none); I therefore adding a missing `var` to avoid a global
+            /* drawnPath = */ svgCanvas.setDrawnPath(null)
+            svgCanvas.setStarted(false)
+
+            if (this.#subpath) {
+              if (path.matrix) {
+                svgCanvas.remapElement(newpath, {}, path.matrix.inverse())
+              }
+
+              const newD = newpath.getAttribute('d')
+              const origD = path.elem.getAttribute('d')
+              path.elem.setAttribute('d', origD + newD)
+              newpath.parentNode.removeChild(newpath)
+              if (path.matrix) {
+                svgCanvas.recalcRotatedPath()
+              }
+              svgCanvas.pathActions.toEditMode(path.elem)
+              path.selectPt()
+              return false
+            }
+
+            // Committing a top-level path here only clears `drawnPath` — the
+            // grips this draw left `display:inline` in the shared
+            // pathpointgrip_container aren't hidden until later, in the
+            // mouseup handler (event.js), which calls `getPath_(element).show
+            // (false)` *only* when the tool isn't locked; in "draw multiple"
+            // (lock) mode it just re-arms the path tool and skips that call
+            // entirely, so this path's nodes stay lit until the *next* path's
+            // first click hides them via the guard above — or, if the user
+            // does anything else first (switch tools, save, select), they
+            // never get hidden at all. Even outside lock mode, mouseup fires
+            // as a separate event after this mousedown, so any snapshot/redraw
+            // in that gap sees this path's nodes with no path considered
+            // "current" to own them. Hiding them here, synchronously, closes
+            // both gaps regardless of tool-lock state or mouseup timing.
+            svgCanvas.getPath_(newpath).show(false)
+          // else, create a new point, update path element
+          } else {
+          // Checks if current target or parents are #svgcontent
+            if (!(svgCanvas.getContainer() !== svgCanvas.getMouseTarget(evt) && svgCanvas.getContainer().contains(
+              svgCanvas.getMouseTarget(evt)
+            ))) {
+            // Clicked outside canvas, so don't make point
+              return false
+            }
+
+            const num = drawnPath.pathSegList.numberOfItems
+            const last = drawnPath.pathSegList.getItem(num - 1)
+            const lastx = last.x; const lasty = last.y
+
+            if (evt.shiftKey) {
+              const xya = snapToAngle(lastx, lasty, x, y);
+              ({ x, y } = xya)
+            }
+
+            // Use the segment defined by stretchy
             sSeg = stretchy.pathSegList.getItem(1)
             newseg = sSeg.pathSegType === 4
-              ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
-              : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
+              ? drawnPath.createSVGPathSegLinetoAbs(svgCanvas.round(x), svgCanvas.round(y))
+              : drawnPath.createSVGPathSegCurvetoCubicAbs(
+                svgCanvas.round(x),
+                svgCanvas.round(y),
+                sSeg.x1 / zoom,
+                sSeg.y1 / zoom,
+                sSeg.x2 / zoom,
+                sSeg.y2 / zoom
+              )
 
-            const endseg = drawnPath.createSVGPathSegClosePath()
-            seglist.appendItem(newseg)
-            seglist.appendItem(endseg)
-          } else if (len < 3) {
-            keep = false
-            return keep
+            drawnPath.pathSegList.appendItem(newseg)
+
+            x *= zoom
+            y *= zoom
+
+            // set stretchy line to latest point
+            stretchy.setAttribute('d', ['M', x, y, x, y].join(' '))
+            index = num
+            if (this.#subpath) { index += path.segs.length }
+            svgCanvas.addPointGrip(index, x, y)
           }
-          svgCanvas.logDebugEvent?.('path-draw-commit', {
-            elemId: drawnPath.id,
-            closed: i <= 1 && len >= 2,
-            clickedIndex: i,
-            segCount: seglist.numberOfItems,
-            locked: svgCanvas.getToolLocked(),
-            d: drawnPath.getAttribute('d')
-          })
-          stretchy.remove()
-
-          // This will signal to commit the path
-          // const element = newpath; // Other event handlers define own `element`, so this was probably not meant to interact with them or one which shares state (as there were none); I therefore adding a missing `var` to avoid a global
-          /* drawnPath = */ svgCanvas.setDrawnPath(null)
-          svgCanvas.setStarted(false)
-
-          if (this.#subpath) {
-            if (path.matrix) {
-              svgCanvas.remapElement(newpath, {}, path.matrix.inverse())
-            }
-
-            const newD = newpath.getAttribute('d')
-            const origD = path.elem.getAttribute('d')
-            path.elem.setAttribute('d', origD + newD)
-            newpath.parentNode.removeChild(newpath)
-            if (path.matrix) {
-              svgCanvas.recalcRotatedPath()
-            }
-            svgCanvas.pathActions.toEditMode(path.elem)
-            path.selectPt()
-            return false
-          }
-
-          // Committing a top-level path here only clears `drawnPath` — the
-          // grips this draw left `display:inline` in the shared
-          // pathpointgrip_container aren't hidden until later, in the
-          // mouseup handler (event.js), which calls `getPath_(element).show
-          // (false)` *only* when the tool isn't locked; in "draw multiple"
-          // (lock) mode it just re-arms the path tool and skips that call
-          // entirely, so this path's nodes stay lit until the *next* path's
-          // first click hides them via the guard above — or, if the user
-          // does anything else first (switch tools, save, select), they
-          // never get hidden at all. Even outside lock mode, mouseup fires
-          // as a separate event after this mousedown, so any snapshot/redraw
-          // in that gap sees this path's nodes with no path considered
-          // "current" to own them. Hiding them here, synchronously, closes
-          // both gaps regardless of tool-lock state or mouseup timing.
-          svgCanvas.getPath_(newpath).show(false)
-          // else, create a new point, update path element
-        } else {
-          // Checks if current target or parents are #svgcontent
-          if (!(svgCanvas.getContainer() !== svgCanvas.getMouseTarget(evt) && svgCanvas.getContainer().contains(
-            svgCanvas.getMouseTarget(evt)
-          ))) {
-            // Clicked outside canvas, so don't make point
-            return false
-          }
-
-          const num = drawnPath.pathSegList.numberOfItems
-          const last = drawnPath.pathSegList.getItem(num - 1)
-          const lastx = last.x; const lasty = last.y
-
-          if (evt.shiftKey) {
-            const xya = snapToAngle(lastx, lasty, x, y);
-            ({ x, y } = xya)
-          }
-
-          // Use the segment defined by stretchy
-          sSeg = stretchy.pathSegList.getItem(1)
-          newseg = sSeg.pathSegType === 4
-            ? drawnPath.createSVGPathSegLinetoAbs(svgCanvas.round(x), svgCanvas.round(y))
-            : drawnPath.createSVGPathSegCurvetoCubicAbs(
-              svgCanvas.round(x),
-              svgCanvas.round(y),
-              sSeg.x1 / zoom,
-              sSeg.y1 / zoom,
-              sSeg.x2 / zoom,
-              sSeg.y2 / zoom
-            )
-
-          drawnPath.pathSegList.appendItem(newseg)
-
-          x *= zoom
-          y *= zoom
-
-          // set stretchy line to latest point
-          stretchy.setAttribute('d', ['M', x, y, x, y].join(' '))
-          index = num
-          if (this.#subpath) { index += path.segs.length }
-          svgCanvas.addPointGrip(index, x, y)
-        }
         // keep = true;
-      }
-
-      return undefined
-    }
-
-    // TODO: Make sure currentPath isn't null at this point
-    if (!path) { return undefined }
-
-    path.storeD();
-
-    ({ id } = evt.target)
-    this.#downOnPath = false
-    let curPt
-    if (id.startsWith('pathpointgrip_')) {
-      // Select this point
-      curPt = path.cur_pt = Number.parseInt(id.slice(14))
-      path.dragging = [startX, startY]
-      this.#snappedDuringDrag = false
-      const seg = path.segs[curPt]
-
-      // only clear selection if shift is not pressed (otherwise, add
-      // node to selection)
-      if (!evt.shiftKey) {
-        if (path.selected_pts.length <= 1 || !seg.selected) {
-          path.clearSelection()
         }
-        path.addPtsToSelection(curPt)
-      } else if (seg.selected) {
-        path.removePtFromSelection(curPt)
-      } else {
-        path.addPtsToSelection(curPt)
-      }
-      svgCanvas.logDebugEvent?.('path-node-select', {
-        elemId: path.elem.id, index: curPt, kind: 'point', shiftKey: evt.shiftKey
-      })
-    } else if (id.startsWith('ctrlpointgrip_')) {
-      path.dragging = [startX, startY]
-      this.#snappedDuringDrag = false
 
-      const parts = id.split('_')[1].split('c')
-      curPt = Number(parts[0])
-      const ctrlNum = Number(parts[1])
-      path.selectPt(curPt, ctrlNum)
-      svgCanvas.logDebugEvent?.('path-node-select', {
-        elemId: path.elem.id, index: curPt, kind: 'ctrl', ctrlNum, shiftKey: evt.shiftKey
-      })
-    } else if (mouseTarget === path.elem || evt.target === path.elem) {
+        return undefined
+      }
+
+      // TODO: Make sure currentPath isn't null at this point
+      if (!path) { return undefined }
+
+      path.storeD();
+
+      ({ id } = evt.target)
+      this.#downOnPath = false
+      let curPt
+      if (id.startsWith('pathpointgrip_')) {
+      // Select this point
+        curPt = path.cur_pt = Number.parseInt(id.slice(14))
+        path.dragging = [startX, startY]
+        this.#snappedDuringDrag = false
+        const seg = path.segs[curPt]
+
+        // only clear selection if shift is not pressed (otherwise, add
+        // node to selection)
+        if (!evt.shiftKey) {
+          if (path.selected_pts.length <= 1 || !seg.selected) {
+            path.clearSelection()
+          }
+          path.addPtsToSelection(curPt)
+        } else if (seg.selected) {
+          path.removePtFromSelection(curPt)
+        } else {
+          path.addPtsToSelection(curPt)
+        }
+        svgCanvas.logDebugEvent?.('path-node-select', {
+          elemId: path.elem.id, index: curPt, kind: 'point', shiftKey: evt.shiftKey
+        })
+      } else if (id.startsWith('ctrlpointgrip_')) {
+        path.dragging = [startX, startY]
+        this.#snappedDuringDrag = false
+
+        const parts = id.split('_')[1].split('c')
+        curPt = Number(parts[0])
+        const ctrlNum = Number(parts[1])
+        path.selectPt(curPt, ctrlNum)
+        svgCanvas.logDebugEvent?.('path-node-select', {
+          elemId: path.elem.id, index: curPt, kind: 'ctrl', ctrlNum, shiftKey: evt.shiftKey
+        })
+      } else if (mouseTarget === path.elem || evt.target === path.elem) {
       // Clicked the path's own stroke (between grips), not a grip. The stroke
       // runs right under the control handles, so a near-miss here must NOT
       // marquee-select, reselect a neighbouring node, or exit edit mode —
       // only the node/handle grips themselves change the selection.
-      this.#downOnPath = true
+        this.#downOnPath = true
+        return undefined
+      }
+
+      // Start selection box
+      if (!path.dragging) {
+        let rubberBox = svgCanvas.getRubberBox()
+        if (!rubberBox) {
+          rubberBox = svgCanvas.setRubberBox(
+            svgCanvas.selectorManager.getRubberBandBox()
+          )
+        }
+        const zoom = svgCanvas.getZoom()
+        assignAttributes(rubberBox, {
+          x: startX * zoom,
+          y: startY * zoom,
+          width: 0,
+          height: 0,
+          display: 'inline'
+        }, 100)
+      }
       return undefined
     }
 
-    // Start selection box
-    if (!path.dragging) {
-      let rubberBox = svgCanvas.getRubberBox()
-      if (!rubberBox) {
-        rubberBox = svgCanvas.setRubberBox(
-          svgCanvas.selectorManager.getRubberBandBox()
-        )
-      }
-      const zoom = svgCanvas.getZoom()
-      assignAttributes(rubberBox, {
-        x: startX * zoom,
-        y: startY * zoom,
-        width: 0,
-        height: 0,
-        display: 'inline'
-      }, 100)
-    }
-    return undefined
-  }
-
-  /**
+    /**
     * @param {Float} mouseX
     * @param {Float} mouseY
     * @returns {void}
     */
-  mouseMove (mouseX, mouseY) {
-    const zoom = svgCanvas.getZoom()
-    this.#hasMoved = true
-    const drawnPath = svgCanvas.getDrawnPath()
-    if (svgCanvas.getCurrentMode() === 'path') {
-      if (!drawnPath) { return }
-      const seglist = drawnPath.pathSegList
-      const index = seglist.numberOfItems - 1
+    mouseMove (mouseX, mouseY) {
+      const zoom = svgCanvas.getZoom()
+      this.#hasMoved = true
+      const drawnPath = svgCanvas.getDrawnPath()
+      if (svgCanvas.getCurrentMode() === 'path') {
+        if (!drawnPath) { return }
+        const seglist = drawnPath.pathSegList
+        const index = seglist.numberOfItems - 1
 
-      if (this.#newPoint) {
+        if (this.#newPoint) {
         // First point
         // if (!index) { return; }
 
-        // Set control points
-        const pointGrip1 = svgCanvas.addCtrlGrip('1c1')
-        const pointGrip2 = svgCanvas.addCtrlGrip('0c2')
+          // Set control points
+          const pointGrip1 = svgCanvas.addCtrlGrip('1c1')
+          const pointGrip2 = svgCanvas.addCtrlGrip('0c2')
 
-        // dragging pointGrip1
-        pointGrip1.setAttribute('cx', mouseX)
-        pointGrip1.setAttribute('cy', mouseY)
-        pointGrip1.setAttribute('display', 'inline')
+          // dragging pointGrip1
+          pointGrip1.setAttribute('cx', mouseX)
+          pointGrip1.setAttribute('cy', mouseY)
+          pointGrip1.setAttribute('display', 'inline')
 
-        const ptX = this.#newPoint[0]
-        const ptY = this.#newPoint[1]
+          const ptX = this.#newPoint[0]
+          const ptY = this.#newPoint[1]
 
-        // set curve
-        // const seg = seglist.getItem(index);
-        const curX = mouseX / zoom
-        const curY = mouseY / zoom
-        const altX = (ptX + (ptX - curX))
-        const altY = (ptY + (ptY - curY))
+          // set curve
+          // const seg = seglist.getItem(index);
+          const curX = mouseX / zoom
+          const curY = mouseY / zoom
+          const altX = (ptX + (ptX - curX))
+          const altY = (ptY + (ptY - curY))
 
-        pointGrip2.setAttribute('cx', altX * zoom)
-        pointGrip2.setAttribute('cy', altY * zoom)
-        pointGrip2.setAttribute('display', 'inline')
+          pointGrip2.setAttribute('cx', altX * zoom)
+          pointGrip2.setAttribute('cy', altY * zoom)
+          pointGrip2.setAttribute('display', 'inline')
 
-        const ctrlLine = svgCanvas.getCtrlLine(1)
-        assignAttributes(ctrlLine, {
-          x1: mouseX,
-          y1: mouseY,
-          x2: altX * zoom,
-          y2: altY * zoom,
-          display: 'inline'
-        })
+          const ctrlLine = svgCanvas.getCtrlLine(1)
+          assignAttributes(ctrlLine, {
+            x1: mouseX,
+            y1: mouseY,
+            x2: altX * zoom,
+            y2: altY * zoom,
+            display: 'inline'
+          })
 
-        if (index === 0) {
-          this.#firstCtrl = [mouseX, mouseY]
-        } else {
-          const last = seglist.getItem(index - 1)
-          let lastX = last.x
-          let lastY = last.y
-
-          if (last.pathSegType === 6) {
-            lastX += (lastX - last.x2)
-            lastY += (lastY - last.y2)
-          } else if (this.#firstCtrl) {
-            lastX = this.#firstCtrl[0] / zoom
-            lastY = this.#firstCtrl[1] / zoom
-          }
-          svgCanvas.replacePathSeg(6, index, [ptX, ptY, lastX, lastY, altX, altY], drawnPath)
-        }
-      } else {
-        const stretchy = svgCanvas.getElement('path_stretch_line')
-        if (stretchy) {
-          const prev = seglist.getItem(index)
-          if (prev.pathSegType === 6) {
-            const prevX = prev.x + (prev.x - prev.x2)
-            const prevY = prev.y + (prev.y - prev.y2)
-            svgCanvas.replacePathSeg(
-              6,
-              1,
-              [mouseX, mouseY, prevX * zoom, prevY * zoom, mouseX, mouseY],
-              stretchy
-            )
-          } else if (this.#firstCtrl) {
-            svgCanvas.replacePathSeg(6, 1, [mouseX, mouseY, this.#firstCtrl[0], this.#firstCtrl[1], mouseX, mouseY], stretchy)
+          if (index === 0) {
+            this.#firstCtrl = [mouseX, mouseY]
           } else {
-            svgCanvas.replacePathSeg(4, 1, [mouseX, mouseY], stretchy)
+            const last = seglist.getItem(index - 1)
+            let lastX = last.x
+            let lastY = last.y
+
+            if (last.pathSegType === 6) {
+              lastX += (lastX - last.x2)
+              lastY += (lastY - last.y2)
+            } else if (this.#firstCtrl) {
+              lastX = this.#firstCtrl[0] / zoom
+              lastY = this.#firstCtrl[1] / zoom
+            }
+            svgCanvas.replacePathSeg(6, index, [ptX, ptY, lastX, lastY, altX, altY], drawnPath)
+          }
+        } else {
+          const stretchy = svgCanvas.getElement('path_stretch_line')
+          if (stretchy) {
+            const prev = seglist.getItem(index)
+            if (prev.pathSegType === 6) {
+              const prevX = prev.x + (prev.x - prev.x2)
+              const prevY = prev.y + (prev.y - prev.y2)
+              svgCanvas.replacePathSeg(
+                6,
+                1,
+                [mouseX, mouseY, prevX * zoom, prevY * zoom, mouseX, mouseY],
+                stretchy
+              )
+            } else if (this.#firstCtrl) {
+              svgCanvas.replacePathSeg(6, 1, [mouseX, mouseY, this.#firstCtrl[0], this.#firstCtrl[1], mouseX, mouseY], stretchy)
+            } else {
+              svgCanvas.replacePathSeg(4, 1, [mouseX, mouseY], stretchy)
+            }
           }
         }
+        return
       }
-      return
-    }
-    // Mousedown landed on the path's own stroke (not a grip): ignore any
-    // drag so it can't marquee-select or reselect a neighbouring node.
-    if (this.#downOnPath) { return }
+      // Mousedown landed on the path's own stroke (not a grip): ignore any
+      // drag so it can't marquee-select or reselect a neighbouring node.
+      if (this.#downOnPath) { return }
 
-    // if we are dragging a point, let's move it
-    if (path.dragging) {
-      const pt = svgCanvas.getPointFromGrip({
-        x: path.dragging[0],
-        y: path.dragging[1]
-      }, path)
-      const mpt = svgCanvas.getPointFromGrip({
-        x: mouseX,
-        y: mouseY
-      }, path)
-      let diffX = mpt.x - pt.x
-      let diffY = mpt.y - pt.y
-      path.dragging = [mouseX, mouseY]
+      // if we are dragging a point, let's move it
+      if (path.dragging) {
+        const pt = svgCanvas.getPointFromGrip({
+          x: path.dragging[0],
+          y: path.dragging[1]
+        }, path)
+        const mpt = svgCanvas.getPointFromGrip({
+          x: mouseX,
+          y: mouseY
+        }, path)
+        const diffX = mpt.x - pt.x
+        const diffY = mpt.y - pt.y
+        path.dragging = [mouseX, mouseY]
 
-      if (path.dragctrl) {
-        path.moveCtrl(diffX, diffY)
-      } else {
+        if (path.dragctrl) {
+          path.moveCtrl(diffX, diffY)
+        } else {
         // Node-alignment guides: when the dragged anchor's x/y lines up with
         // another anchor node of the same path, show a guide line (and ring
         // the matched node) but leave the cursor free -- path nodes are too
@@ -787,69 +787,69 @@ class PathActions {
         // found. Informational only; the node always tracks the raw drag
         // delta. Gated on the same `smartSnapping` flag as object-to-object
         // guides.
-        const curSeg = path.segs[path.cur_pt]
-        if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
-          const exclude = [path.cur_pt, ...path.selected_pts]
-          const targets = collectPathNodeTargets(path, exclude)
-          const tol = 8 / zoom // ~8 screen px
-          const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
-          if (snap.x || snap.y) this.#snappedDuringDrag = true
-          svgCanvas.showPathNodeGuides?.({
-            x: snap.x,
-            y: snap.y,
-            from: { x: curSeg.item.x + diffX, y: curSeg.item.y + diffY }
-          })
-        } else {
-          svgCanvas.showPathNodeGuides?.(null)
+          const curSeg = path.segs[path.cur_pt]
+          if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
+            const exclude = [path.cur_pt, ...path.selected_pts]
+            const targets = collectPathNodeTargets(path, exclude)
+            const tol = 8 / zoom // ~8 screen px
+            const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
+            if (snap.x || snap.y) this.#snappedDuringDrag = true
+            svgCanvas.showPathNodeGuides?.({
+              x: snap.x,
+              y: snap.y,
+              from: { x: curSeg.item.x + diffX, y: curSeg.item.y + diffY }
+            })
+          } else {
+            svgCanvas.showPathNodeGuides?.(null)
+          }
+          path.movePts(diffX, diffY)
         }
-        path.movePts(diffX, diffY)
+      } else {
+        path.selected_pts = []
+        path.eachSeg(function (_i) {
+          const seg = this
+          if (!seg.next && !seg.prev) return
+
+          // const {item} = seg;
+          const rubberBox = svgCanvas.getRubberBox()
+          const rbb = getBBox(rubberBox)
+
+          const pt = svgCanvas.getGripPt(seg)
+          const ptBb = {
+            x: pt.x,
+            y: pt.y,
+            width: 0,
+            height: 0
+          }
+
+          const sel = rectsIntersect(rbb, ptBb)
+
+          this.select(sel)
+          // Note that addPtsToSelection is not being run
+          if (sel) { path.selected_pts.push(seg.index) }
+        })
+        path.refreshCtrlPtDisplay()
       }
-    } else {
-      path.selected_pts = []
-      path.eachSeg(function (_i) {
-        const seg = this
-        if (!seg.next && !seg.prev) return
-
-        // const {item} = seg;
-        const rubberBox = svgCanvas.getRubberBox()
-        const rbb = getBBox(rubberBox)
-
-        const pt = svgCanvas.getGripPt(seg)
-        const ptBb = {
-          x: pt.x,
-          y: pt.y,
-          width: 0,
-          height: 0
-        }
-
-        const sel = rectsIntersect(rbb, ptBb)
-
-        this.select(sel)
-        // Note that addPtsToSelection is not being run
-        if (sel) { path.selected_pts.push(seg.index) }
-      })
-      path.refreshCtrlPtDisplay()
     }
-  }
 
-  /**
+    /**
      * @typedef module:path.keepElement
      * @type {PlainObject}
      * @property {boolean} keep
      * @property {Element} element
      */
-  /**
+    /**
     * @param {Event} evt
     * @param {Element} element
     * @param {Float} mouseX
     * @param {Float} mouseY
     * @returns {module:path.keepElement|void}
     */
-  mouseUp (evt, element, mouseX, mouseY) {
-    const drawnPath = svgCanvas.getDrawnPath()
-    // Create mode
-    if (svgCanvas.getCurrentMode() === 'path') {
-      if (this.#newPoint && drawnPath) {
+    mouseUp (evt, element, mouseX, mouseY) {
+      const drawnPath = svgCanvas.getDrawnPath()
+      // Create mode
+      if (svgCanvas.getCurrentMode() === 'path') {
+        if (this.#newPoint && drawnPath) {
         // Decide corner vs. curve from the net mousedown->mouseup
         // displacement, not the raw mousemove stream in between. A quick
         // click can still dispatch a mousemove mid-gesture (hand tremor /
@@ -858,243 +858,243 @@ class PathActions {
         // must be discarded here — otherwise it stays permanently baked
         // into the segment even though the drag "cancelled itself out",
         // rendering as a spurious self-intersecting notch at the point.
-        const zoom = svgCanvas.getZoom()
-        const ptX = this.#newPoint[0]
-        const ptY = this.#newPoint[1]
-        const curX = mouseX / zoom
-        const curY = mouseY / zoom
-        // Matches the FUZZ tolerance mouseDown uses to detect "clicked on an
-        // existing point" (below) — real click imprecision (mouse/trackpad
-        // hand tremor) commonly runs several CSS px, well past a stricter
-        // 2-3px threshold, which left curves getting committed from plain
-        // imprecise clicks (not just quick flick-and-return gestures).
-        const DRAG_THRESHOLD = 6 / zoom
-        if (Math.hypot(curX - ptX, curY - ptY) < DRAG_THRESHOLD) {
-          const seglist = drawnPath.pathSegList
-          const index = seglist.numberOfItems - 1
-          const last = seglist.getItem(index)
-          if (last && last.pathSegType === 6) {
-            svgCanvas.replacePathSeg(4, index, [last.x, last.y], drawnPath)
+          const zoom = svgCanvas.getZoom()
+          const ptX = this.#newPoint[0]
+          const ptY = this.#newPoint[1]
+          const curX = mouseX / zoom
+          const curY = mouseY / zoom
+          // Matches the FUZZ tolerance mouseDown uses to detect "clicked on an
+          // existing point" (below) — real click imprecision (mouse/trackpad
+          // hand tremor) commonly runs several CSS px, well past a stricter
+          // 2-3px threshold, which left curves getting committed from plain
+          // imprecise clicks (not just quick flick-and-return gestures).
+          const DRAG_THRESHOLD = 6 / zoom
+          if (Math.hypot(curX - ptX, curY - ptY) < DRAG_THRESHOLD) {
+            const seglist = drawnPath.pathSegList
+            const index = seglist.numberOfItems - 1
+            const last = seglist.getItem(index)
+            if (last && last.pathSegType === 6) {
+              svgCanvas.replacePathSeg(4, index, [last.x, last.y], drawnPath)
+            }
+            this.#firstCtrl = null
+            svgCanvas.getElement('ctrlpointgrip_1c1')?.setAttribute('display', 'none')
+            svgCanvas.getElement('ctrlpointgrip_0c2')?.setAttribute('display', 'none')
+            svgCanvas.getCtrlLine(1)?.setAttribute('display', 'none')
           }
+        }
+
+        this.#newPoint = null
+        if (!drawnPath) {
+          element = svgCanvas.getElement(svgCanvas.getId())
+          svgCanvas.setStarted(false)
           this.#firstCtrl = null
-          svgCanvas.getElement('ctrlpointgrip_1c1')?.setAttribute('display', 'none')
-          svgCanvas.getElement('ctrlpointgrip_0c2')?.setAttribute('display', 'none')
-          svgCanvas.getCtrlLine(1)?.setAttribute('display', 'none')
+        }
+
+        return {
+          keep: true,
+          element
         }
       }
 
-      this.#newPoint = null
-      if (!drawnPath) {
-        element = svgCanvas.getElement(svgCanvas.getId())
-        svgCanvas.setStarted(false)
-        this.#firstCtrl = null
+      // Edit mode
+      // Mousedown was on the path's own stroke (not a grip): leave the current
+      // node selection untouched and stay in edit mode.
+      if (this.#downOnPath) {
+        this.#downOnPath = false
+        this.#hasMoved = false
+        return undefined
       }
 
-      return {
-        keep: true,
-        element
-      }
-    }
+      const rubberBox = svgCanvas.getRubberBox()
+      if (path.dragging) {
+        const lastPt = path.cur_pt
 
-    // Edit mode
-    // Mousedown was on the path's own stroke (not a grip): leave the current
-    // node selection untouched and stay in edit mode.
-    if (this.#downOnPath) {
-      this.#downOnPath = false
+        path.dragging = false
+        path.dragctrl = false
+        path.update()
+        svgCanvas.showPathNodeGuides?.(null)
+
+        if (this.#hasMoved) {
+          path.endChanges('Move path point(s)', {
+            index: lastPt,
+            selectedPts: [...path.selected_pts],
+            snapped: this.#snappedDuringDrag
+          })
+        }
+        this.#snappedDuringDrag = false
+
+        if (!evt.shiftKey && !this.#hasMoved) {
+          path.selectPt(lastPt)
+        }
+      } else if (rubberBox?.getAttribute('display') !== 'none') {
+      // Done with multi-node-select
+        rubberBox.setAttribute('display', 'none')
+
+        if (rubberBox.getAttribute('width') <= 2 && rubberBox.getAttribute('height') <= 2) {
+          svgCanvas.pathActions.toSelectMode(evt.target)
+        }
+
+      // else, move back to select mode
+      } else {
+        svgCanvas.pathActions.toSelectMode(evt.target)
+      }
       this.#hasMoved = false
       return undefined
     }
 
-    const rubberBox = svgCanvas.getRubberBox()
-    if (path.dragging) {
-      const lastPt = path.cur_pt
-
-      path.dragging = false
-      path.dragctrl = false
-      path.update()
-      svgCanvas.showPathNodeGuides?.(null)
-
-      if (this.#hasMoved) {
-        path.endChanges('Move path point(s)', {
-          index: lastPt,
-          selectedPts: [...path.selected_pts],
-          snapped: this.#snappedDuringDrag
-        })
-      }
-      this.#snappedDuringDrag = false
-
-      if (!evt.shiftKey && !this.#hasMoved) {
-        path.selectPt(lastPt)
-      }
-    } else if (rubberBox?.getAttribute('display') !== 'none') {
-      // Done with multi-node-select
-      rubberBox.setAttribute('display', 'none')
-
-      if (rubberBox.getAttribute('width') <= 2 && rubberBox.getAttribute('height') <= 2) {
-        svgCanvas.pathActions.toSelectMode(evt.target)
-      }
-
-      // else, move back to select mode
-    } else {
-      svgCanvas.pathActions.toSelectMode(evt.target)
-    }
-    this.#hasMoved = false
-    return undefined
-  }
-
-  /**
+    /**
     * @param {Element} element
     * @returns {void}
     */
-  toEditMode (element) {
-    path = svgCanvas.getPath_(element)
-    // getPath_() caches this wrapper by element id for the session's whole
-    // lifetime. If `element`'s `d` changed while some other path was being
-    // tracked (e.g. a node was added/removed here, then undone/redone while
-    // editing a different path), the cached segs/grips never got refreshed
-    // and can silently disagree with the live pathSegList. Rebuilding here,
-    // on every (re-)entry into edit mode, keeps it honest regardless of what
-    // happened while this path wasn't the tracked one.
-    path.init()
-    svgCanvas.setCurrentMode('pathedit')
-    svgCanvas.clearSelection()
-    path.setPathContext()
-    path.show(true).update()
-    path.oldbbox = getBBox(path.elem)
-    this.#subpath = false
-    svgCanvas.logDebugEvent?.('pathedit-enter', {
-      elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
-    })
-  }
+    toEditMode (element) {
+      path = svgCanvas.getPath_(element)
+      // getPath_() caches this wrapper by element id for the session's whole
+      // lifetime. If `element`'s `d` changed while some other path was being
+      // tracked (e.g. a node was added/removed here, then undone/redone while
+      // editing a different path), the cached segs/grips never got refreshed
+      // and can silently disagree with the live pathSegList. Rebuilding here,
+      // on every (re-)entry into edit mode, keeps it honest regardless of what
+      // happened while this path wasn't the tracked one.
+      path.init()
+      svgCanvas.setCurrentMode('pathedit')
+      svgCanvas.clearSelection()
+      path.setPathContext()
+      path.show(true).update()
+      path.oldbbox = getBBox(path.elem)
+      this.#subpath = false
+      svgCanvas.logDebugEvent?.('pathedit-enter', {
+        elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
+      })
+    }
 
-  /**
+    /**
     * @param {Element} elem
     * @fires module:svgcanvas.SvgCanvas#event:selected
     * @returns {void}
     */
-  toSelectMode (elem) {
-    svgCanvas.logDebugEvent?.('pathedit-exit', {
-      elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
-    })
-    const selPath = (elem === path.elem)
-    // `elem` is often the raw click target (e.g. `evt.target`), which may be
-    // a descendant node rather than the selectable element itself. Resolve it
-    // the same way a plain select-mode click would, so clicking a different
-    // real element while exiting pathedit selects that element instead of
-    // dropping to an empty selection. Returns the svgRoot for background/
-    // layer/content clicks, which we treat the same as "nothing to select".
-    const target = !selPath && svgCanvas.getMouseTargetFromNode(elem)
-    svgCanvas.setCurrentMode('select')
-    path.setPathContext()
-    path.show(false)
-    this.#currentPath = false
-    svgCanvas.clearSelection()
+    toSelectMode (elem) {
+      svgCanvas.logDebugEvent?.('pathedit-exit', {
+        elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
+      })
+      const selPath = (elem === path.elem)
+      // `elem` is often the raw click target (e.g. `evt.target`), which may be
+      // a descendant node rather than the selectable element itself. Resolve it
+      // the same way a plain select-mode click would, so clicking a different
+      // real element while exiting pathedit selects that element instead of
+      // dropping to an empty selection. Returns the svgRoot for background/
+      // layer/content clicks, which we treat the same as "nothing to select".
+      const target = !selPath && svgCanvas.getMouseTargetFromNode(elem)
+      svgCanvas.setCurrentMode('select')
+      path.setPathContext()
+      path.show(false)
+      this.#currentPath = false
+      svgCanvas.clearSelection()
 
-    // Node-editing a path inside a group is entered implicitly (the initial
-    // double-click drills into the group so the path becomes clickable at
-    // all) and this fork hides the layer/group breadcrumb, so the user has no
-    // indication they're still "inside" that group once they're done editing
-    // nodes. Left alone, `currentGroup` (and the siblings dimmed/disabled by
-    // setContext()) stays stuck that way until some unrelated action happens
-    // to call leaveContext() — meanwhile any new shape drawn next silently
-    // lands inside that stale group instead of the current layer. Release it
-    // here, the same way clicking outside the group normally would.
-    if (svgCanvas.getCurrentGroup()) {
-      svgCanvas.leaveContext()
-    }
+      // Node-editing a path inside a group is entered implicitly (the initial
+      // double-click drills into the group so the path becomes clickable at
+      // all) and this fork hides the layer/group breadcrumb, so the user has no
+      // indication they're still "inside" that group once they're done editing
+      // nodes. Left alone, `currentGroup` (and the siblings dimmed/disabled by
+      // setContext()) stays stuck that way until some unrelated action happens
+      // to call leaveContext() — meanwhile any new shape drawn next silently
+      // lands inside that stale group instead of the current layer. Release it
+      // here, the same way clicking outside the group normally would.
+      if (svgCanvas.getCurrentGroup()) {
+        svgCanvas.leaveContext()
+      }
 
-    if (path.matrix) {
+      if (path.matrix) {
       // Rotated, so may need to re-calculate the center
-      svgCanvas.recalcRotatedPath()
+        svgCanvas.recalcRotatedPath()
+      }
+
+      if (selPath) {
+        svgCanvas.call('selected', [elem])
+        svgCanvas.addToSelection([elem], true)
+      } else if (target && target !== svgCanvas.getSvgRoot()) {
+        svgCanvas.call('selected', [target])
+        svgCanvas.addToSelection([target], true)
+      }
     }
 
-    if (selPath) {
-      svgCanvas.call('selected', [elem])
-      svgCanvas.addToSelection([elem], true)
-    } else if (target && target !== svgCanvas.getSvgRoot()) {
-      svgCanvas.call('selected', [target])
-      svgCanvas.addToSelection([target], true)
-    }
-  }
-
-  /**
+    /**
     * @param {boolean} on
     * @returns {void}
     */
-  addSubPath (on) {
-    if (on) {
+    addSubPath (on) {
+      if (on) {
       // Internally we go into "path" mode, but in the UI it will
       // still appear as if in "pathedit" mode.
-      svgCanvas.setCurrentMode('path')
-      this.#subpath = true
-      // A sub-path is drawn to punch a hole (e.g. the counter of a letter
-      // "a"/"o"). Under the default nonzero fill-rule that only shows up
-      // if the new loop winds opposite the outer one, and when it doesn't,
-      // paint-order:stroke (set on every new shape) paints the fill on top
-      // of the inner loop's own stroke, hiding it completely. evenodd
-      // renders both the hole and its border correctly regardless of which
-      // way the user clicks around it.
-      if (path.elem.getAttribute('fill-rule') !== 'evenodd') {
-        svgCanvas.undoMgr.beginUndoableChange('fill-rule', [path.elem])
-        path.elem.setAttribute('fill-rule', 'evenodd')
-        const cmd = svgCanvas.undoMgr.finishUndoableChange()
-        if (!cmd.isEmpty()) {
-          svgCanvas.addCommandToHistory(cmd)
+        svgCanvas.setCurrentMode('path')
+        this.#subpath = true
+        // A sub-path is drawn to punch a hole (e.g. the counter of a letter
+        // "a"/"o"). Under the default nonzero fill-rule that only shows up
+        // if the new loop winds opposite the outer one, and when it doesn't,
+        // paint-order:stroke (set on every new shape) paints the fill on top
+        // of the inner loop's own stroke, hiding it completely. evenodd
+        // renders both the hole and its border correctly regardless of which
+        // way the user clicks around it.
+        if (path.elem.getAttribute('fill-rule') !== 'evenodd') {
+          svgCanvas.undoMgr.beginUndoableChange('fill-rule', [path.elem])
+          path.elem.setAttribute('fill-rule', 'evenodd')
+          const cmd = svgCanvas.undoMgr.finishUndoableChange()
+          if (!cmd.isEmpty()) {
+            svgCanvas.addCommandToHistory(cmd)
+          }
         }
+      } else {
+        svgCanvas.pathActions.clear(true)
+        svgCanvas.pathActions.toEditMode(path.elem)
       }
-    } else {
-      svgCanvas.pathActions.clear(true)
-      svgCanvas.pathActions.toEditMode(path.elem)
     }
-  }
 
-  /**
+    /**
     * @param {Element} target
     * @returns {void}
     */
-  select (target) {
-    if (this.#currentPath === target) {
-      svgCanvas.pathActions.toEditMode(target)
-      svgCanvas.setCurrentMode('pathedit')
+    select (target) {
+      if (this.#currentPath === target) {
+        svgCanvas.pathActions.toEditMode(target)
+        svgCanvas.setCurrentMode('pathedit')
       // going into pathedit mode
-    } else {
-      this.#currentPath = target
+      } else {
+        this.#currentPath = target
+      }
     }
-  }
 
-  /**
+    /**
     * @param {boolean} remove Not in use
     * @returns {void}
     */
-  clear () {
-    const drawnPath = svgCanvas.getDrawnPath()
-    const mode = svgCanvas.getCurrentMode()
-    // `path` (the current path-edit session, if any) is set once by
-    // toEditMode() and stays set for the rest of the svgCanvas instance's
-    // life — it is NOT cleared on leaving pathedit — so its mere presence
-    // can't be used to decide whether *this* clear() call is path-related.
-    // `path.dragging` is the transient signal: truthy only during/just after
-    // an actual node drag.
-    const wasDragging = Boolean(path?.dragging)
-    this.#currentPath = null
-    this.#newPoint = null
-    this.#firstCtrl = null
-    this.#downOnPath = false
-    this.#hasMoved = false
-    this.#subpath = false
-    if (drawnPath) {
+    clear () {
+      const drawnPath = svgCanvas.getDrawnPath()
+      const mode = svgCanvas.getCurrentMode()
+      // `path` (the current path-edit session, if any) is set once by
+      // toEditMode() and stays set for the rest of the svgCanvas instance's
+      // life — it is NOT cleared on leaving pathedit — so its mere presence
+      // can't be used to decide whether *this* clear() call is path-related.
+      // `path.dragging` is the transient signal: truthy only during/just after
+      // an actual node drag.
+      const wasDragging = Boolean(path?.dragging)
+      this.#currentPath = null
+      this.#newPoint = null
+      this.#firstCtrl = null
+      this.#downOnPath = false
+      this.#hasMoved = false
+      this.#subpath = false
+      if (drawnPath) {
       // Optional-chained: a missing element here must not throw and abort the
       // caller (svgCanvas.setMode() calls this before committing the new
       // mode) — that would leave currentMode stuck on the old (path-drawing)
       // mode while the toolbar already shows a different tool selected.
-      svgCanvas.getElement(svgCanvas.getId())?.remove()
-      svgCanvas.getElement('path_stretch_line')?.remove()
-      const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
-      for (const el of elements) {
-        el.setAttribute('display', 'none')
-      }
-      svgCanvas.setDrawnPath(null)
-    } else if (mode === 'pathedit') {
+        svgCanvas.getElement(svgCanvas.getId())?.remove()
+        svgCanvas.getElement('path_stretch_line')?.remove()
+        const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
+        for (const el of elements) {
+          el.setAttribute('display', 'none')
+        }
+        svgCanvas.setDrawnPath(null)
+      } else if (mode === 'pathedit') {
       // toSelectMode() can throw (e.g. it dereferences the tracked path
       // session's `.elem` when currentMode says 'pathedit' but that session
       // never got set up — a real mismatch, not just a hypothetical one: it's
@@ -1107,12 +1107,12 @@ class PathActions {
       // call site — at the source, instead of relying on each caller to
       // separately remember to wrap it (which is how most of the existing
       // call sites ended up unguarded; see techdebt.md).
-      try {
-        this.toSelectMode()
-      } catch (e) {
-        console.warn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e)
-      }
-    } else if (mode === 'path') {
+        try {
+          this.toSelectMode()
+        } catch (e) {
+          console.warn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e)
+        }
+      } else if (mode === 'path') {
       // A locked path tool (double-click to keep it armed — see
       // LeftPanel.js's lockTool/setToolLocked) re-arms mode 'path' right
       // after committing a path (event.js's toolLocked branch skips
@@ -1126,401 +1126,401 @@ class PathActions {
       // getSvgString() call reaches this same branch and still does nothing).
       // Hide whatever the shared grip container still shows; the next path
       // drawn/edited re-adds only the grips it actually owns.
-      const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
-      for (const el of elements) {
-        el.setAttribute('display', 'none')
+        const elements = svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []
+        for (const el of elements) {
+          el.setAttribute('display', 'none')
+        }
       }
-    }
-    if (path) {
+      if (path) {
       // A lost mouseup (e.g. the button released outside the canvas
       // mid-drag) never reaches path-actions' own dragging=false reset, so a
       // node can be left permanently "stuck" following the pointer. Reset it
       // unconditionally whenever a path-edit session exists, regardless of
       // what state the previous interaction left behind.
-      path.dragging = false
-      path.dragctrl = false
-      try {
-        path.init().show(false)
-      } catch (e) {
-        console.warn('svgedit: path.init().show(false) failed during clear(); continuing', e)
+        path.dragging = false
+        path.dragctrl = false
+        try {
+          path.init().show(false)
+        } catch (e) {
+          console.warn('svgedit: path.init().show(false) failed during clear(); continuing', e)
+        }
+      }
+      // Only reset `started` when this clear() call actually corresponds to
+      // path-drawing/editing cleanup — a path being committed, a stale 'path'
+      // mode left over from addSubPath, or a node stuck mid-drag. clear() is
+      // also called on every plain select-mode mousedown for a non-path shape
+      // (event-select.js), where `started` was just legitimately set true for
+      // the click in progress; resetting it there broke drag/selection for
+      // every such shape.
+      if (drawnPath || mode === 'path' || mode === 'pathedit' || wasDragging) {
+        svgCanvas.setStarted(false)
       }
     }
-    // Only reset `started` when this clear() call actually corresponds to
-    // path-drawing/editing cleanup — a path being committed, a stale 'path'
-    // mode left over from addSubPath, or a node stuck mid-drag. clear() is
-    // also called on every plain select-mode mousedown for a non-path shape
-    // (event-select.js), where `started` was just legitimately set true for
-    // the click in progress; resetting it there broke drag/selection for
-    // every such shape.
-    if (drawnPath || mode === 'path' || mode === 'pathedit' || wasDragging) {
-      svgCanvas.setStarted(false)
-    }
-  }
 
-  /**
+    /**
     * @param {?(Element|SVGPathElement)} pth
     * @returns {false|void}
     */
-  resetOrientation (pth) {
-    if (pth?.nodeName !== 'path') { return false }
-    const tlist = getTransformList(pth)
-    const m = transformListToTransform(tlist).matrix
-    tlist.clear()
-    pth.removeAttribute('transform')
-    const segList = pth.pathSegList
+    resetOrientation (pth) {
+      if (pth?.nodeName !== 'path') { return false }
+      const tlist = getTransformList(pth)
+      const m = transformListToTransform(tlist).matrix
+      tlist.clear()
+      pth.removeAttribute('transform')
+      const segList = pth.pathSegList
 
-    // Opera/win/non-EN throws an error here.
-    // TODO: Find out why!
-    // Presumed fixed in Opera 10.5, so commented out for now
+      // Opera/win/non-EN throws an error here.
+      // TODO: Find out why!
+      // Presumed fixed in Opera 10.5, so commented out for now
 
-    // try {
-    const len = segList.numberOfItems
-    // } catch(err) {
-    //   const fixed_d = pathActions.convertPath(pth);
-    //   pth.setAttribute('d', fixed_d);
-    //   segList = pth.pathSegList;
-    //   const len = segList.numberOfItems;
-    // }
-    // let lastX, lastY;
-    for (let i = 0; i < len; ++i) {
-      const seg = segList.getItem(i)
-      const type = seg.pathSegType
-      if (type === 1) { continue }
-      const pts = []
-      for (const n of ['', 1, 2]) {
-        const x = seg['x' + n]
-        const y = seg['y' + n]
-        if (x !== undefined && y !== undefined) {
-          const pt = transformPoint(x, y, m)
-          pts.push(pt.x, pt.y)
+      // try {
+      const len = segList.numberOfItems
+      // } catch(err) {
+      //   const fixed_d = pathActions.convertPath(pth);
+      //   pth.setAttribute('d', fixed_d);
+      //   segList = pth.pathSegList;
+      //   const len = segList.numberOfItems;
+      // }
+      // let lastX, lastY;
+      for (let i = 0; i < len; ++i) {
+        const seg = segList.getItem(i)
+        const type = seg.pathSegType
+        if (type === 1) { continue }
+        const pts = []
+        for (const n of ['', 1, 2]) {
+          const x = seg['x' + n]
+          const y = seg['y' + n]
+          if (x !== undefined && y !== undefined) {
+            const pt = transformPoint(x, y, m)
+            pts.push(pt.x, pt.y)
+          }
         }
+        svgCanvas.replacePathSeg(type, i, pts, pth)
       }
-      svgCanvas.replacePathSeg(type, i, pts, pth)
+
+      svgCanvas.reorientGrads(pth, m)
+      return undefined
     }
 
-    svgCanvas.reorientGrads(pth, m)
-    return undefined
-  }
-
-  /**
+    /**
     * @returns {void}
     */
-  zoomChange () {
-    if (svgCanvas.getCurrentMode() === 'pathedit') {
-      path.update()
+    zoomChange () {
+      if (svgCanvas.getCurrentMode() === 'pathedit') {
+        path.update()
+      }
     }
-  }
 
-  /**
+    /**
     * @typedef {PlainObject} module:path.NodePoint
     * @property {Float} x
     * @property {Float} y
     * @property {Integer} type
     */
-  /**
+    /**
     * @returns {module:path.NodePoint}
     */
-  getNodePoint () {
-    const selPt = path.selected_pts.length ? path.selected_pts[0] : 1
+    getNodePoint () {
+      const selPt = path.selected_pts.length ? path.selected_pts[0] : 1
 
-    const seg = path.segs[selPt]
-    return {
-      x: seg.item.x,
-      y: seg.item.y,
-      type: seg.type
+      const seg = path.segs[selPt]
+      return {
+        x: seg.item.x,
+        y: seg.item.y,
+        type: seg.type
+      }
     }
-  }
 
-  /**
+    /**
     * @param {boolean} linkPoints
     * @returns {void}
     */
-  linkControlPoints (linkPoints) {
-    svgCanvas.setLinkControlPoints(linkPoints)
-  }
-
-  /**
-    * @returns {void}
-    */
-  clonePathNode () {
-    path.storeD()
-
-    const selPts = path.selected_pts
-    // const {segs} = path;
-
-    let i = selPts.length
-    const nums = []
-
-    while (i--) {
-      const pt = selPts[i]
-      path.addSeg(pt)
-
-      nums.push(pt + i)
-      nums.push(pt + i + 1)
+    linkControlPoints (linkPoints) {
+      svgCanvas.setLinkControlPoints(linkPoints)
     }
-    path.init().addPtsToSelection(nums)
 
-    path.endChanges('Clone path node(s)', { sourceIndexes: [...selPts], newIndexes: nums })
-  }
-
-  /**
+    /**
     * @returns {void}
     */
-  opencloseSubPath () {
-    const selPts = path.selected_pts
-    // Only allow one selected node for now
-    if (selPts.length !== 1) { return }
+    clonePathNode () {
+      path.storeD()
 
-    const { elem } = path
-    const list = elem.pathSegList
-    // Like every other pathedit action (move/clone/delete/toggle-seg-type/
-    // smooth), bracket the direct pathSegList mutation below with
-    // storeD()/endChanges() so an open/close toggle gets a real undo-history
-    // entry instead of Ctrl+Z silently undoing whatever came before it.
-    path.storeD()
-    const beforeD = path.last_d
+      const selPts = path.selected_pts
+      // const {segs} = path;
 
-    // const len = list.numberOfItems;
+      let i = selPts.length
+      const nums = []
 
-    const index = selPts[0]
+      while (i--) {
+        const pt = selPts[i]
+        path.addSeg(pt)
 
-    let openPt = null
-    let startItem = null
-
-    // Check if subpath is already open
-    path.eachSeg(function (i) {
-      if (this.type === 2 && i <= index) {
-        startItem = this.item
+        nums.push(pt + i)
+        nums.push(pt + i + 1)
       }
-      if (i <= index) return true
-      if (this.type === 2) {
+      path.init().addPtsToSelection(nums)
+
+      path.endChanges('Clone path node(s)', { sourceIndexes: [...selPts], newIndexes: nums })
+    }
+
+    /**
+    * @returns {void}
+    */
+    opencloseSubPath () {
+      const selPts = path.selected_pts
+      // Only allow one selected node for now
+      if (selPts.length !== 1) { return }
+
+      const { elem } = path
+      const list = elem.pathSegList
+      // Like every other pathedit action (move/clone/delete/toggle-seg-type/
+      // smooth), bracket the direct pathSegList mutation below with
+      // storeD()/endChanges() so an open/close toggle gets a real undo-history
+      // entry instead of Ctrl+Z silently undoing whatever came before it.
+      path.storeD()
+      const beforeD = path.last_d
+
+      // const len = list.numberOfItems;
+
+      const index = selPts[0]
+
+      let openPt = null
+      let startItem = null
+
+      // Check if subpath is already open
+      path.eachSeg(function (i) {
+        if (this.type === 2 && i <= index) {
+          startItem = this.item
+        }
+        if (i <= index) return true
+        if (this.type === 2) {
         // Found M first, so open
-        openPt = i
-        return false
-      }
-      if (this.type === 1) {
+          openPt = i
+          return false
+        }
+        if (this.type === 1) {
         // Found Z first, so closed
-        openPt = false
-        return false
-      }
-      return true
-    })
+          openPt = false
+          return false
+        }
+        return true
+      })
 
-    if (openPt === null) {
+      if (openPt === null) {
       // No M or Z found after the selected point: it's in the last
       // sub-path and that sub-path isn't closed yet. Close its last seg.
       // (Must check `=== null`, not falsy — `openPt === false` means
       // "already closed," and treating it the same as "not found" here
       // re-enters the close branch below and appends a redundant L/Z.)
-      openPt = path.segs.length - 1
-    }
-
-    if (openPt !== false) {
-      // Close this path
-
-      // Create a line going to the previous "M"
-      const newseg = elem.createSVGPathSegLinetoAbs(startItem.x, startItem.y)
-
-      const closer = elem.createSVGPathSegClosePath()
-      if (openPt === path.segs.length - 1) {
-        list.appendItem(newseg)
-        list.appendItem(closer)
-      } else {
-        list.insertItemBefore(closer, openPt)
-        list.insertItemBefore(newseg, openPt)
+        openPt = path.segs.length - 1
       }
 
-      svgCanvas.logDebugEvent?.('path-open-close', {
-        elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
-      })
-      path.init().selectPt(openPt + 1)
-      path.endChanges('Close subpath', { index })
-      return
-    }
+      if (openPt !== false) {
+      // Close this path
 
-    // M 1,1 L 2,2 L 3,3 L 1,1 z // open at 2,2
-    // M 2,2 L 3,3 L 1,1
+        // Create a line going to the previous "M"
+        const newseg = elem.createSVGPathSegLinetoAbs(startItem.x, startItem.y)
 
-    // M 1,1 L 2,2 L 1,1 z M 4,4 L 5,5 L6,6 L 5,5 z
-    // M 1,1 L 2,2 L 1,1 z [M 4,4] L 5,5 L(M)6,6 L 5,5 z
+        const closer = elem.createSVGPathSegClosePath()
+        if (openPt === path.segs.length - 1) {
+          list.appendItem(newseg)
+          list.appendItem(closer)
+        } else {
+          list.insertItemBefore(closer, openPt)
+          list.insertItemBefore(newseg, openPt)
+        }
 
-    const seg = path.segs[index]
+        svgCanvas.logDebugEvent?.('path-open-close', {
+          elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
+        })
+        path.init().selectPt(openPt + 1)
+        path.endChanges('Close subpath', { index })
+        return
+      }
 
-    if (seg.mate) {
-      list.removeItem(index) // Removes last "L"
-      list.removeItem(index) // Removes the "Z"
+      // M 1,1 L 2,2 L 3,3 L 1,1 z // open at 2,2
+      // M 2,2 L 3,3 L 1,1
+
+      // M 1,1 L 2,2 L 1,1 z M 4,4 L 5,5 L6,6 L 5,5 z
+      // M 1,1 L 2,2 L 1,1 z [M 4,4] L 5,5 L(M)6,6 L 5,5 z
+
+      const seg = path.segs[index]
+
+      if (seg.mate) {
+        list.removeItem(index) // Removes last "L"
+        list.removeItem(index) // Removes the "Z"
+        svgCanvas.logDebugEvent?.('path-open-close', {
+          elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
+        })
+        path.init().selectPt(index - 1)
+        path.endChanges('Open subpath', { index })
+        return
+      }
+
+      let lastM; let zSeg
+
+      // Find this sub-path's closing point and remove
+      for (let i = 0; i < list.numberOfItems; i++) {
+        const item = list.getItem(i)
+
+        if (item.pathSegType === 2) {
+        // Find the preceding M
+          lastM = i
+        } else if (i === index) {
+        // Remove it
+          list.removeItem(lastM)
+        // index--;
+        } else if (item.pathSegType === 1 && index < i) {
+        // Remove the closing seg of this subpath
+          zSeg = i - 1
+          list.removeItem(i)
+          break
+        }
+      }
+
+      let num = (index - lastM) - 1
+
+      while (num--) {
+        list.insertItemBefore(list.getItem(lastM), zSeg)
+      }
+
+      const pt = list.getItem(lastM)
+
+      // Make this point the new "M"
+      svgCanvas.replacePathSeg(2, lastM, [pt.x, pt.y])
+
+      // i = index; // i is local here, so has no effect; what was the intent for this?
+
       svgCanvas.logDebugEvent?.('path-open-close', {
         elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
       })
-      path.init().selectPt(index - 1)
+      path.init().selectPt(0)
       path.endChanges('Open subpath', { index })
-      return
     }
 
-    let lastM; let zSeg
-
-    // Find this sub-path's closing point and remove
-    for (let i = 0; i < list.numberOfItems; i++) {
-      const item = list.getItem(i)
-
-      if (item.pathSegType === 2) {
-        // Find the preceding M
-        lastM = i
-      } else if (i === index) {
-        // Remove it
-        list.removeItem(lastM)
-        // index--;
-      } else if (item.pathSegType === 1 && index < i) {
-        // Remove the closing seg of this subpath
-        zSeg = i - 1
-        list.removeItem(i)
-        break
-      }
-    }
-
-    let num = (index - lastM) - 1
-
-    while (num--) {
-      list.insertItemBefore(list.getItem(lastM), zSeg)
-    }
-
-    const pt = list.getItem(lastM)
-
-    // Make this point the new "M"
-    svgCanvas.replacePathSeg(2, lastM, [pt.x, pt.y])
-
-    // i = index; // i is local here, so has no effect; what was the intent for this?
-
-    svgCanvas.logDebugEvent?.('path-open-close', {
-      elemId: elem.id, index, action: 'open', before: beforeD, after: elem.getAttribute('d')
-    })
-    path.init().selectPt(0)
-    path.endChanges('Open subpath', { index })
-  }
-
-  /**
+    /**
   * Removes the selected node(s) and reconnects their neighbors directly,
   * keeping the path exactly as closed/continuous as it was. Splitting a path
   * open is the cutter tool's job, not delete-node's.
   * @returns {void}
   */
-  deletePathNode () {
-    if (!svgCanvas.pathActions.canDeleteNodes) { return }
-    path.storeD()
-    const deletedIndexes = [...path.selected_pts]
+    deletePathNode () {
+      if (!svgCanvas.pathActions.canDeleteNodes) { return }
+      path.storeD()
+      const deletedIndexes = [...path.selected_pts]
 
-    const newD = buildReconnectedPathData(path)
+      const newD = buildReconnectedPathData(path)
 
-    // Nothing renderable left (no sub-path with >= 2 points): drop the element
-    if (!newD) {
-      svgCanvas.logDebugEvent?.('path-node-delete', {
-        elemId: path.elem.id, deletedIndexes, elementDropped: true
-      })
-      svgCanvas.pathActions.toSelectMode(path.elem)
-      svgCanvas.deleteSelectedElements()
-      return
+      // Nothing renderable left (no sub-path with >= 2 points): drop the element
+      if (!newD) {
+        svgCanvas.logDebugEvent?.('path-node-delete', {
+          elemId: path.elem.id, deletedIndexes, elementDropped: true
+        })
+        svgCanvas.pathActions.toSelectMode(path.elem)
+        svgCanvas.deleteSelectedElements()
+        return
+      }
+
+      path.elem.setAttribute('d', newD)
+
+      path.init()
+      path.clearSelection()
+
+      if (window.opera) { // Opera repaints incorrectly
+        path.elem.setAttribute('d', path.elem.getAttribute('d'))
+      }
+      path.endChanges('Delete path node(s)', { deletedIndexes })
     }
 
-    path.elem.setAttribute('d', newD)
-
-    path.init()
-    path.clearSelection()
-
-    if (window.opera) { // Opera repaints incorrectly
-      path.elem.setAttribute('d', path.elem.getAttribute('d'))
-    }
-    path.endChanges('Delete path node(s)', { deletedIndexes })
-  }
-
-  // Can't seem to use `@borrows` here, so using `@see`
-  /**
+    // Can't seem to use `@borrows` here, so using `@see`
+    /**
   * Smooth polyline into path.
   * @function module:path.pathActions.smoothPolylineIntoPath
   * @see module:path~smoothPolylineIntoPath
   */
-  smoothPolylineIntoPath (element) {
-    return this.#smoothPolylineIntoPath(element)
-  }
+    smoothPolylineIntoPath (element) {
+      return this.#smoothPolylineIntoPath(element)
+    }
 
-  /* eslint-enable  */
-  /**
+    /* eslint-enable  */
+    /**
   * @param {?Integer} v See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
   * @returns {void}
   */
-  setSegType (v) {
-    path?.setSegType(v)
-  }
+    setSegType (v) {
+      path?.setSegType(v)
+    }
 
-  /**
+    /**
   * Recompute the selected node(s)' bezier handles so they're smooth again,
   * without moving any anchor. See {@link module:path.Path#smoothSelectedNodes}.
   * @returns {void}
   */
-  smoothSelectedNodes () {
-    path?.smoothSelectedNodes()
-  }
+    smoothSelectedNodes () {
+      path?.smoothSelectedNodes()
+    }
 
-  /**
+    /**
   * @param {string} attr
   * @param {Float} newValue
   * @returns {void}
   */
-  moveNode (attr, newValue) {
-    const selPts = path.selected_pts
-    if (!selPts.length) { return }
+    moveNode (attr, newValue) {
+      const selPts = path.selected_pts
+      if (!selPts.length) { return }
 
-    path.storeD()
+      path.storeD()
 
-    // Get first selected point
-    const seg = path.segs[selPts[0]]
-    const diff = { x: 0, y: 0 }
-    diff[attr] = newValue - seg.item[attr]
+      // Get first selected point
+      const seg = path.segs[selPts[0]]
+      const diff = { x: 0, y: 0 }
+      diff[attr] = newValue - seg.item[attr]
 
-    seg.move(diff.x, diff.y)
-    path.endChanges('Move path point', { index: selPts[0], attr, newValue })
-  }
+      seg.move(diff.x, diff.y)
+      path.endChanges('Move path point', { index: selPts[0], attr, newValue })
+    }
 
-  /**
+    /**
   * @param {Element} elem
   * @returns {void}
   */
-  fixEnd (elem) {
+    fixEnd (elem) {
     // Adds an extra segment if the last seg before a Z doesn't end
     // at its M point
     // M0,0 L0,100 L100,100 z
-    const segList = elem.pathSegList
-    const len = segList.numberOfItems
-    let lastM
-    for (let i = 0; i < len; ++i) {
-      const item = segList.getItem(i)
-      if (item.pathSegType === 2) { // 2 => M segment type (move to)
-        lastM = item
-      }
+      const segList = elem.pathSegList
+      const len = segList.numberOfItems
+      let lastM
+      for (let i = 0; i < len; ++i) {
+        const item = segList.getItem(i)
+        if (item.pathSegType === 2) { // 2 => M segment type (move to)
+          lastM = item
+        }
 
-      if (item.pathSegType === 1) { // 1 => Z segment type (close path)
-        const prev = segList.getItem(i - 1)
-        if (prev.x !== lastM.x || prev.y !== lastM.y) {
+        if (item.pathSegType === 1) { // 1 => Z segment type (close path)
+          const prev = segList.getItem(i - 1)
+          if (prev.x !== lastM.x || prev.y !== lastM.y) {
           // Add an L segment here
-          const newseg = elem.createSVGPathSegLinetoAbs(lastM.x, lastM.y)
-          segList.insertItemBefore(newseg, i)
-          // Can this be done better?
-          svgCanvas.pathActions.fixEnd(elem)
-          break
+            const newseg = elem.createSVGPathSegLinetoAbs(lastM.x, lastM.y)
+            segList.insertItemBefore(newseg, i)
+            // Can this be done better?
+            svgCanvas.pathActions.fixEnd(elem)
+            break
+          }
         }
       }
     }
-  }
 
-  // Can't seem to use `@borrows` here, so using `@see`
-  /**
+    // Can't seem to use `@borrows` here, so using `@see`
+    /**
   * Convert a path to one with only absolute or relative values.
   * @function module:path.pathActions.convertPath
   * @see module:path.convertPath
   */
-  convertPath (pth, toRel) {
-    return convertPath(pth, toRel)
+    convertPath (pth, toRel) {
+      return convertPath(pth, toRel)
+    }
   }
-}
 
   // Per-instance PathActions, attached to this canvas.
   svgCanvas.pathActions = new PathActions()
