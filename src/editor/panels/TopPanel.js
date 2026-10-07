@@ -1120,6 +1120,20 @@ class TopPanel {
     // initialises last) and delegate to the BottomPanel handlers.
     const bp = this.editor.bottomPanel
     $id('zoom').addEventListener('change', e => bp.changeZoom(e.detail.value))
+    // Narrow panes: when the bar overflows, drop the low-priority items (file
+    // name chip, theme toggle — theme also lives in Preferences) so the
+    // contextual trays get the room. Re-measured whenever the bar or any of its
+    // children changes size (trays show/hide on selection).
+    const bar = $id('tools_top')
+    const fitBar = () => {
+      bar.classList.remove('tt-compact')
+      if (bar.scrollWidth > bar.clientWidth + 1) bar.classList.add('tt-compact')
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(fitBar)
+      ro.observe(bar)
+      Array.from(bar.children).forEach(c => ro.observe(c))
+    }
     // In narrow panes the bar scrolls horizontally; let the plain mouse wheel do it.
     $id('tools_top').addEventListener('wheel', e => {
       const bar = e.currentTarget

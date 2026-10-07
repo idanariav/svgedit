@@ -136,9 +136,10 @@ Done: the left column stays 56px when the panel opens, `#tools_overflow` is
 sticky at the bottom of the left toolbar, and Undo/Redo + zoom (`#top_end`) are
 sticky at the right of the top bar, which also scrolls with the plain mouse
 wheel. Remaining:
-- At 800px wide the contextual trays (align/arrange/flip…) still sit behind the
-  pinned right cluster and are only reachable by scrolling. Collapse low-priority
-  trays into a "more" menu with a ResizeObserver.
+- When the top bar overflows, `TopPanel.js` adds `.tt-compact` to `#tools_top`
+  (hides the file-name chip and theme toggle). That makes 1024px fit; at 800px
+  the object trays still overflow by ~120px and are reached by scrolling. A
+  second tier ("more" menu for arrange/flip/align) would fix it.
 - Move tools into `…` automatically when the left column is too short (today it
   scrolls).
 - Tablet mode at 1024 wide: the command bar's undo/redo are still cut off.

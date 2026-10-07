@@ -1116,6 +1116,10 @@ hr {
   width: 58px;
 }
 
+/* Narrow panes (class set by TopPanel.js when the bar overflows) */
+#tools_top.tt-compact #title_panel,
+#tools_top.tt-compact #theme_panel { display: none; }
+
 /* Right-hand cluster (Undo/Redo + zoom): pushed to the right edge and pinned
    there (sticky), so it neither moves when contextual trays appear nor scrolls
    out of reach in narrow panes. */
