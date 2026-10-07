@@ -1,7 +1,10 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
 import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'
-import { loadToolOrder, saveToolOrder, reconcileToolOrder } from '../toolOrder.js'
+import {
+  loadToolOrder, saveToolOrder, reconcileToolOrder,
+  markToolGroups, defaultToolOrder, isUncustomisedOrder
+} from '../toolOrder.js'
 import { initToolDragReorder } from '../toolDragReorder.js'
 
 const { $click } = SvgCanvas
@@ -196,7 +199,13 @@ class LeftPanel {
     const { $id } = this.editor
     const container = $id('tools_left')
     const currentIds = Array.from(container.children).map((el) => el.id).filter(Boolean)
-    const { main, overflow } = reconcileToolOrder(currentIds, loadToolOrder())
+    const stored = loadToolOrder()
+    // Never-customised order (null, or a snapshot of the natural DOM order saved
+    // by an earlier version) adopts the grouped default; custom orders are kept.
+    const { main, overflow } = reconcileToolOrder(
+      isUncustomisedOrder(currentIds, stored) ? defaultToolOrder(currentIds) : currentIds,
+      isUncustomisedOrder(currentIds, stored) ? null : stored
+    )
 
     const overflowEl = document.createElement('se-tool-overflow')
     overflowEl.id = 'tools_overflow'
@@ -207,11 +216,15 @@ class LeftPanel {
     main.forEach((id) => container.insertBefore($id(id), overflowEl))
     overflow.forEach((id) => overflowEl.appendChild($id(id)))
     saveToolOrder({ main, overflow })
+    markToolGroups(container)
 
     initToolDragReorder({
       container,
       overflowHost: overflowEl,
-      onChange: saveToolOrder
+      onChange: (order) => {
+        saveToolOrder(order)
+        markToolGroups(container)
+      }
     })
 
     // Keyboard equivalent of the double-click lock gesture (see lockTool):

@@ -1184,6 +1184,22 @@ hr {
   gap: 4px;
 }
 
+/* Divider above the first tool of each group (class set by markToolGroups) */
+#tools_left > .tool-group-start {
+  position: relative;
+  margin-top: 8px;
+}
+#tools_left > .tool-group-start::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 22px;
+  margin-left: -11px;
+  height: 1px;
+  background: var(--chrome-border);
+}
+
 /* Keep the "Additional tools" button reachable when the pane is too short to
    show every tool: pinned to the bottom of the scrolling column. */
 #tools_left > #tools_overflow {

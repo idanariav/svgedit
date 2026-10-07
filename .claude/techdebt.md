@@ -195,10 +195,10 @@ Small.
   the rest are outlines. The layers toolbar mixes filled arrows with outline
   icons. Redraw them in one outline style. The Cutter icon (a marker over a
   dotted line) doesn't suggest cutting.
-- The left toolbar is one ungrouped column of 14 tools, and the drawing tools
-  (pencil, brush, pen, curvature) are scattered. Group them with separators:
-  select/hand · pencil/brush/pen/curvature/line · shapes/library · text/image ·
-  cutter/warp/eyedropper.
+- (Done: the left toolbar is grouped — `TOOL_GROUPS` in `toolOrder.js` — with a
+  divider where the group changes; the default order puts the drawing tools
+  together. Users with a customised order keep it; a tool id not listed in
+  `TOOL_GROUPS` lands in a trailing "other" group, so register new tools there.)
 - Selection handles now follow `--accent` with white fills (CSS overrides at the
   end of `svgedit.css`; `select.js` still hard-codes `#22C`/lime as the
   fallback). Still to do: a larger hit area on touch.

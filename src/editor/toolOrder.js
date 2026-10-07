@@ -73,3 +73,69 @@ export const reconcileToolOrder = (currentIds, stored) => {
   const fresh = currentIds.filter((id) => !placed.has(id))
   return { main: [...storedMain, ...fresh], overflow: storedOverflow }
 }
+
+/**
+ * Default grouping of the left toolbar, in display order. Tools in the same
+ * group sit together; a divider is drawn wherever the group changes (see
+ * `groupOf`). Within a group the listed order is the default order. Ids not
+ * listed (third-party extensions) fall into the trailing "other" group.
+ */
+export const TOOL_GROUPS = [
+  ['tool_select', 'ext-panning'],
+  ['tool_fhpath', 'tool_brush', 'tool_path', 'tool_curvature', 'tool_line'],
+  ['tools_shapes', 'tool_shapelib'],
+  ['tool_text', 'tool_image'],
+  ['tool_cutter', 'tool_puppet_warp', 'tool_eyedropper']
+]
+
+/**
+ * @param {string} id
+ * @returns {number} index into TOOL_GROUPS, or TOOL_GROUPS.length for "other"
+ */
+export const groupOf = (id) => {
+  const i = TOOL_GROUPS.findIndex((g) => g.includes(id))
+  return i === -1 ? TOOL_GROUPS.length : i
+}
+
+/**
+ * Canonical default order: grouped, then the listed order within each group;
+ * unlisted ids keep their relative (DOM) order at the end.
+ * @param {string[]} currentIds ids in natural DOM order
+ * @returns {string[]}
+ */
+export const defaultToolOrder = (currentIds) => {
+  const listed = TOOL_GROUPS.flat()
+  const known = listed.filter((id) => currentIds.includes(id))
+  return [...known, ...currentIds.filter((id) => !listed.includes(id))]
+}
+
+/**
+ * True when a stored order is just a snapshot of the natural DOM order saved
+ * by an earlier version (nothing moved to overflow, nothing reordered), i.e.
+ * the user never customised it and may adopt the new grouped default.
+ * @param {string[]} currentIds
+ * @param {{main: string[], overflow: string[]}|null} stored
+ * @returns {boolean}
+ */
+export const isUncustomisedOrder = (currentIds, stored) =>
+  !stored || (
+    (stored.overflow ?? []).length === 0 &&
+    stored.main.length === currentIds.length &&
+    stored.main.every((id, i) => id === currentIds[i])
+  )
+
+/**
+ * Flag the first tool of each group so CSS can draw a divider above it. Derived
+ * from the current order (not stored), so it stays right after any reorder.
+ * @param {Element} container `#tools_left`
+ * @returns {void}
+ */
+export const markToolGroups = (container) => {
+  let prev = null
+  Array.from(container.children).forEach((el) => {
+    if (!el.id || el.id === 'tools_overflow') return
+    const g = groupOf(el.id)
+    el.classList.toggle('tool-group-start', prev !== null && g !== prev)
+    prev = g
+  })
+}
