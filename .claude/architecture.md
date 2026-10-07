@@ -9,6 +9,7 @@
 ```
 svgedit/
 ├── src/editor/                    # Main editor application (UI layer)
+│   ├── hostApi.d.ts               # Host API types (EditorHostApi) — typechecked against Editor; shipped to dist/editor
 │   ├── Editor.js                  # Main class (extends EditorStartup) — menus, events, top-level handlers
 │   ├── EditorStartup.js           # Async init sequence — panels, canvas, extensions, i18n
 │   ├── ConfigObj.js               # Configuration + localStorage preferences

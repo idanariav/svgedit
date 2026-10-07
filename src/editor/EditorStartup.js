@@ -150,7 +150,7 @@ class EditorStartup {
   /**
   * Auto-run after a Promise microtask.
   * @function module:SVGthis.init
-  * @returns {void}
+  * @returns {Promise<void>}
   */
   async init () {
     const { $id } = this // container-scoped lookup (see constructor)

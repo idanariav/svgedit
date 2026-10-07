@@ -90,12 +90,18 @@ doesn't work — TS ignores `declare module` merges into a JS-declared class).
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
 there; tighten per file). The other `core/*.js` modules are not checked yet:
 add `// @ts-check` to them one at a time, declaring what they attach in
-`AttachedMembers` as you go. Still open: the root `tsconfig.json` is `module: commonjs` and
-unused by any script; the plugin types `Editor` as `unknown`-ish and reaches into
-internals (`svgCanvas`, `configObj`, `$svgEditor`, `svgCanvas.modeEvent`). Fix:
-define an explicit host API on `Editor`, enable `checkJs` for that surface first,
-generate `.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), ship it
-in `dist/`. Medium.
+`AttachedMembers` as you go.
+
+The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
+typechecked against `Editor` by `npm run typecheck` and copied to
+`dist/editor/hostApi.d.ts`. Still open: the plugin
+(`../obsidian-svgedit-plugin/src/view/SvgView.ts`) still declares its own
+`SvgEditorInstance` — switch it to import `EditorHostApi` (its sync script
+copies only `Editor.js`, so it needs to fetch `hostApi.d.ts` too and resolve
+`@svgedit/svgcanvas` types); the plugin's `activate`/`destroy`/`setDebugLogger`/
+`setLogSink` are optional there for old bundles but required in the host API.
+Also open: generate the `svgcanvas.d.ts` from JSDoc instead of hand-writing it,
+and the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
 
 ## Oversized modules (remaining)
 

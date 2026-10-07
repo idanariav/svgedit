@@ -16,6 +16,8 @@ const targets = [
   ['src/editor/index.html', 'index.html'],
   ['src/editor/browser-not-supported.html', 'browser-not-supported.html'],
   ['src/editor/browser-not-supported.js', 'browser-not-supported.js'],
+  // Host API types for embedders (see src/editor/hostApi.d.ts)
+  ['src/editor/hostApi.d.ts', 'hostApi.d.ts'],
   // Test harness assets for Playwright (unit-style tests in browser)
   ['src/editor/tests', 'tests'],
   // Same stub used by vitest (tests/unit/mocks/paper-core-stub.js) to avoid

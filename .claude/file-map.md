@@ -8,6 +8,7 @@
 
 | File | Purpose |
 |------|---------|
+| `hostApi.d.ts` | **Host API** — the `EditorHostApi` / `HostCanvas` types embedders may rely on; `hostApi.check.ts` + `tsconfig.hostapi.json` make `npm run typecheck` fail if `Editor` stops satisfying it; copied to `dist/editor/hostApi.d.ts` |
 | `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports, `setDebugLogger(sink)`, `setLogSink(sink, level)` (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `addToShapeLibrary.js` | "Add to Shape Library" action (serialize selection, label/category dialog, save to userShapes); `EditorStartup._addSelectedToShapeLibrary()` delegates here |

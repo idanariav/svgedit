@@ -23,7 +23,7 @@
   "scripts": {
     "lint": "standard .",
     "check-dom-scope": "node scripts/check-dom-scope.mjs",
-    "typecheck": "tsc -p packages/svgcanvas/tsconfig.json",
+    "typecheck": "tsc -p packages/svgcanvas/tsconfig.json && tsc -p src/editor/tsconfig.hostapi.json",
     "pretest": "npm run lint && npm run check-dom-scope && npm run typecheck",
     "test": "vitest run --coverage && node scripts/run-e2e.mjs",
     "build": "vite build packages/svgcanvas && vite build",

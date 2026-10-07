@@ -1,0 +1,5 @@
+{
+  "extends": "../../packages/svgcanvas/tsconfig.json",
+  "compilerOptions": { "checkJs": false, "skipLibCheck": true, "paths": { "@svgedit/svgcanvas": ["../../packages/svgcanvas/svgcanvas.d.ts"] } },
+  "files": ["hostApi.d.ts", "hostApi.check.ts"]
+}
