@@ -7,7 +7,7 @@ import { runSteps } from '../runSteps.js'
 import { updateContextPanel, round1 } from './topPanelContext.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
-const { $click, isValidUnit, getTypeMap } = SvgCanvas
+const { $click, getTypeMap } = SvgCanvas
 
 /*
  * register actions for left panel
@@ -578,7 +578,7 @@ class TopPanel {
       return true
     }
 
-    const valid = isValidUnit(attr, val, this.selectedElement)
+    const valid = this.editor.svgCanvas.isValidUnit(attr, val, this.selectedElement)
 
     if (!valid) {
       e.target.value = this.selectedElement.getAttribute(attr)

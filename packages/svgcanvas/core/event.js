@@ -7,9 +7,7 @@
 import {
   cleanupElement
 } from './dom-utils.js'
-import {
-  convertAttrs
-} from './units.js'
+import { getUnits } from './units.js'
 import {
   transformPoint, getTransformList, transformListToTransform
 } from './math.js'
@@ -37,6 +35,7 @@ const {
 */
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
+  const { convertAttrs } = getUnits(canvas)
   const eventZoom = eventZoomInit(svgCanvas)
   const eventTextEdit = eventTextEditInit(svgCanvas)
   const eventPathEdit = eventPathEditInit(svgCanvas)

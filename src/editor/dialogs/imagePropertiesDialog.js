@@ -1,8 +1,6 @@
-import SvgCanvas from '@svgedit/svgcanvas'
+import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
-
-const { isValidUnit } = SvgCanvas
 
 const template = document.createElement('template')
 template.innerHTML = imagePropertiesDialogHTML
@@ -302,12 +300,12 @@ export class SeImgPropDialog extends HTMLElement {
       let saveOpt = ''
       const w = this.$canvasWidth.value
       const h = this.$canvasHeight.value
-      if (w !== 'fit' && !isValidUnit('width', w)) {
+      if (w !== 'fit' && !ownerEditor(this).svgCanvas.isValidUnit('width', w)) {
         this.$canvasWidth.parentElement.classList.add('error')
       } else {
         this.$canvasWidth.parentElement.classList.remove('error')
       }
-      if (h !== 'fit' && !isValidUnit('height', w)) {
+      if (h !== 'fit' && !ownerEditor(this).svgCanvas.isValidUnit('height', h)) {
         this.$canvasHeight.parentElement.classList.add('error')
       } else {
         this.$canvasHeight.parentElement.classList.remove('error')

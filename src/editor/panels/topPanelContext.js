@@ -4,10 +4,7 @@
  * selection), split out of TopPanel.js, whose `updateContextPanel()` delegates here.
  */
 
-import SvgCanvas from '@svgedit/svgcanvas'
 import { runSteps } from '../runSteps.js'
-
-const { convertUnit } = SvgCanvas
 
 // Position/dimension fields read straight off drag math (move/resize) can
 // carry long floating-point tails (e.g. 200.00000596046448) — round for
@@ -98,8 +95,8 @@ export const updateContextPanel = (topPanel) => {
             }
 
             if (unit) {
-              x = convertUnit(x)
-              y = convertUnit(y)
+              x = topPanel.editor.svgCanvas.convertUnit(x)
+              y = topPanel.editor.svgCanvas.convertUnit(y)
             }
             /**
              * Updates the value of an input field if needed
@@ -219,7 +216,7 @@ export const updateContextPanel = (topPanel) => {
             let attrVal = elem.getAttribute(item)
             if (topPanel.editor.configObj.curConfig.baseUnit !== 'px' && elem[item]) {
               const bv = elem[item].baseVal.value
-              attrVal = convertUnit(bv)
+              attrVal = topPanel.editor.svgCanvas.convertUnit(bv)
             }
             $id(`${tagName}_${item}`).value = attrVal ? round1(attrVal) : 0
           })

@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-import { convertToNum } from './units.js'
+import { getUnits } from './units.js'
 import { getRotationAngle } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
@@ -57,6 +57,7 @@ const translatePoints = (pointsStr, tx, ty) => pointsStr
  */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
+  const { convertToNum } = getUnits(canvas)
 
   /**
  * Updates a `<clipPath>` element's values based on the given translation.

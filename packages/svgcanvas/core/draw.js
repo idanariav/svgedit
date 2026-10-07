@@ -17,13 +17,11 @@ const visElems =
     ','
   )
 
-const RandomizeModes = {
+export const RandomizeModes = {
   LET_DOCUMENT_DECIDE: 0,
   ALWAYS_RANDOMIZE: 1,
   NEVER_RANDOMIZE: 2
 }
-// randomization mode is a global setting (not per-drawing), so it stays shared.
-let randIds = RandomizeModes.LET_DOCUMENT_DECIDE
 
 // Re-export the imported Layer class (the layer/context functions below become
 // per-instance, but the class itself is stateless and stays module-level).
@@ -71,9 +69,11 @@ export class Drawing {
    *     encapsulates.  If the svgElem has a se:nonce attribute on it, then
    *     IDs will use the nonce as they are generated.
    * @param {string} [optIdPrefix=svg_] - The ID prefix to use.
+   * @param {number} [randIds] - A `RandomizeModes` value; the owning canvas passes its
+   *   own (see `SvgCanvas#randomizeIds`), so the setting is per canvas, not shared.
    * @throws {Error} If not initialized with an SVG element
    */
-  constructor (svgElem, optIdPrefix) {
+  constructor (svgElem, optIdPrefix, randIds = RandomizeModes.LET_DOCUMENT_DECIDE) {
     if (
       !svgElem ||
       !svgElem.tagName ||
@@ -947,10 +947,11 @@ export class Drawing {
  * @function module:draw.randomizeIds
  * @param {boolean} enableRandomization - flag indicating if documents should have randomized ids
  * @param {draw.Drawing} currentDrawing
- * @returns {void}
+ * @returns {number} The resulting `RandomizeModes` value; the canvas stores it and hands it to every
+ *   `Drawing` it creates afterwards (the mode is per canvas, not shared).
  */
 export const randomizeIds = (enableRandomization, currentDrawing) => {
-  randIds =
+  const randIds =
     enableRandomization === false
       ? RandomizeModes.NEVER_RANDOMIZE
       : RandomizeModes.ALWAYS_RANDOMIZE
@@ -966,6 +967,7 @@ export const randomizeIds = (enableRandomization, currentDrawing) => {
   ) {
     currentDrawing.clearNonce()
   }
+  return randIds
 }
 
 // Layer API Functions

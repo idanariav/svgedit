@@ -7,7 +7,7 @@
  */
 
 import { NS } from './namespaces.js'
-import { shortFloat } from './units.js'
+import { getUnits } from './units.js'
 import {
   transformPoint, snapToAngle, rectsIntersect,
   transformListToTransform, getTransformList
@@ -26,6 +26,7 @@ import { warn as logWarn } from '../common/logger.js'
 */
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
+  const { shortFloat } = getUnits(canvas)
   let path = null // current path being edited (per instance)
 
   /**

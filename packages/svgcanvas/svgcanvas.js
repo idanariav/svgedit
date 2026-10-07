@@ -58,7 +58,7 @@ import {
 } from './core/math.js'
 import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.js'
 import { warn } from './common/logger.js'
-import { convertToNum, init as unitsInit, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
+import { convertToNum, init as unitsInit, createUnits, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
 import { init as svgInit } from './core/svg-exec.js'
 import { init as svgDefsInit } from './core/svg-defs.js'
 import { init as coordsInit } from './core/coords.js'
@@ -114,12 +114,16 @@ class SvgCanvas extends EventTarget {
    */
   constructor (container, config, scopeRoot = null) {
     super()
+    // Per-canvas unit conversion (rounding digits, base unit, `%` size, id lookup
+    // all come from this canvas). Must exist before the core inits below read it.
+    this.units = createUnits(this)
     // imported function made available as methods
     this.initializeSvgCanvasMethods()
     // Tracks which `core/*.js` init() call last claimed each property name
     // on this instance, so a later call reusing the same name gets logged
     // instead of silently overwriting the earlier one (see .claude/techdebt.md #8).
     const initGuardRegistry = new Map()
+    // Legacy single-instance state behind the static SvgCanvas.convertToNum & co.
     runGuardedInit(this, 'units', unitsInit, initGuardRegistry)
 
     // initialize class variables
@@ -273,7 +277,8 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
     this.clearSvgContentElement()
     // Current `draw.Drawing` object.
-    this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix)
+    this.randIdsMode = draw.RandomizeModes.LET_DOCUMENT_DECIDE // set by randomizeIds()
+    this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix, this.randIdsMode)
 
     runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
@@ -1130,7 +1135,7 @@ class SvgCanvas extends EventTarget {
     // clear the svgcontent node
     this.clearSvgContentElement()
     // create new document
-    this.current_drawing_ = new draw.Drawing(this.svgContent)
+    this.current_drawing_ = new draw.Drawing(this.svgContent, undefined, this.randIdsMode)
     // create empty first layer
     this.createLayer()
     // clear the undo stack
@@ -1504,9 +1509,9 @@ class SvgCanvas extends EventTarget {
    */
   randomizeIds (enableRandomization) {
     if (arguments.length > 0 && enableRandomization === false) {
-      draw.randomizeIds(false, this.getCurrentDrawing())
+      this.randIdsMode = draw.randomizeIds(false, this.getCurrentDrawing())
     } else {
-      draw.randomizeIds(true, this.getCurrentDrawing())
+      this.randIdsMode = draw.randomizeIds(true, this.getCurrentDrawing())
     }
   }
 
@@ -1583,8 +1588,9 @@ class SvgCanvas extends EventTarget {
     this.matrixMultiply = matrixMultiply
     this.hasMatrixTransform = hasMatrixTransform
     this.transformListToTransform = transformListToTransform
-    this.convertToNum = convertToNum
-    this.convertUnit = convertUnit
+    this.convertToNum = this.units.convertToNum
+    this.convertUnit = this.units.convertUnit
+    this.isValidUnit = this.units.isValidUnit
     this.remapElementIdsAndRefs = remapElementIdsAndRefs
     this.getUrlFromAttr = getUrlFromAttr
     this.getHref = getHref
@@ -1598,7 +1604,7 @@ class SvgCanvas extends EventTarget {
     // changeSelectedAttributeNoUndo / changeSelectedAttribute are attached per-instance by undoInit()
     // setBlurNoUndo / setBlurOffsets / setBlur are attached per-instance by blurInit().
     // smoothControlPoints is attached per-instance by pathModule.init()
-    this.getTypeMap = getTypeMap
+    this.getTypeMap = this.units.getTypeMap
     this.history = history // object with all histor methods
     this.NS = NS
     this.$id = $id

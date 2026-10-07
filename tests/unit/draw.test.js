@@ -917,26 +917,30 @@ describe('draw.Drawing', function () {
     assert.ok(!drawing.getNonce())
 
     // Confirm that a nonce is set once we're in ALWAYS_RANDOMIZE mode.
-    draw.randomizeIds(true, drawing)
+    let mode = draw.randomizeIds(true, drawing)
+    assert.strictEqual(mode, draw.RandomizeModes.ALWAYS_RANDOMIZE)
     assert.ok(drawing.getNonce())
 
-    // Confirm new drawings in ALWAYS_RANDOMIZE mode have a nonce.
-    drawing = new draw.Drawing(svg.cloneNode(true))
+    // Confirm new drawings in ALWAYS_RANDOMIZE mode have a nonce. The mode is
+    // handed to each Drawing by its owner (the canvas), not kept as shared state.
+    drawing = new draw.Drawing(svg.cloneNode(true), undefined, mode)
     assert.ok(drawing.getNonce())
+    assert.ok(!new draw.Drawing(svg.cloneNode(true)).getNonce(), 'another owner is unaffected')
 
     drawing.clearNonce()
     assert.ok(!drawing.getNonce())
 
     // Confirm new drawings in NEVER_RANDOMIZE mode do not have a nonce
     // but that their se:nonce attribute is left alone.
-    draw.randomizeIds(false, drawing)
+    mode = draw.randomizeIds(false, drawing)
+    assert.strictEqual(mode, draw.RandomizeModes.NEVER_RANDOMIZE)
     assert.ok(!drawing.getNonce())
     assert.ok(drawing.getSvgElem().getAttributeNS(NS.SE, 'nonce'))
 
-    drawing = new draw.Drawing(svg.cloneNode(true))
+    drawing = new draw.Drawing(svg.cloneNode(true), undefined, mode)
     assert.ok(!drawing.getNonce())
 
-    drawing = new draw.Drawing(svgN.cloneNode(true))
+    drawing = new draw.Drawing(svgN.cloneNode(true), undefined, mode)
     assert.ok(!drawing.getNonce())
   })
 })

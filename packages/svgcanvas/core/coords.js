@@ -18,7 +18,7 @@ import {
   transformBox,
   getTransformList
 } from './math.js'
-import { convertToNum } from './units.js'
+import { getUnits } from './units.js'
 
 const flipBoxCoordinate = (value) => {
   if (value === null || value === undefined) return null
@@ -52,6 +52,7 @@ const flipAttributeInBoxUnits = (elem, attr) => {
  */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; remapElement below is closed over it
+  const { convertToNum } = getUnits(canvas)
 
   // Map path segment types to their corresponding commands
   const pathMap = [

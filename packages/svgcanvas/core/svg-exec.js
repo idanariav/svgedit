@@ -15,7 +15,7 @@ import {
   setHref,
   preventClickDefault
 } from './dom-utils.js'
-import { convertUnit, shortFloat, convertToNum } from './units.js'
+import { getUnits } from './units.js'
 import { isGecko } from '../common/browser.js'
 import { NS } from './namespaces.js'
 import * as draw from './draw.js'
@@ -35,6 +35,7 @@ const {
  */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
+  const { convertUnit, shortFloat, convertToNum } = getUnits(canvas)
 
   /**
  * Main function to set up the SVG content for output.
@@ -559,7 +560,8 @@ export const init = canvas => {
 
       svgCanvas.current_drawing_ = new draw.Drawing(
         svgCanvas.getSvgContent(),
-        svgCanvas.getIdPrefix()
+        svgCanvas.getIdPrefix(),
+        svgCanvas.randIdsMode
       )
 
       // retrieve or set the nonce

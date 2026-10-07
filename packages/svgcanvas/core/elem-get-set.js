@@ -10,9 +10,7 @@ import { init as textAttrsInit } from './text-attrs.js'
 import {
   walkTree, getHref, setHref
 } from './dom-utils.js'
-import {
-  convertToNum
-} from './units.js'
+import { getUnits } from './units.js'
 import { getParents } from '../common/util.js'
 
 /**
@@ -22,6 +20,7 @@ import { getParents } from '../common/util.js'
 */
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
+  const { convertToNum } = getUnits(canvas)
   textAttrsInit(canvas)
   // The method attachments are at the end of init (after the function
   // declarations) so each instance binds its own closures.

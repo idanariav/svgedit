@@ -65,7 +65,7 @@ const injectSvgeditStyles = () => {
   document.head.append(styleEl)
 }
 
-const { $click, convertUnit, scopedId, scopedQa, scopedQq } = SvgCanvas
+const { $click, scopedId, scopedQa, scopedQq } = SvgCanvas
 
 /**
  *
@@ -363,8 +363,8 @@ class EditorStartup {
     // update resolution option with actual resolution
     const res = this.svgCanvas.getResolution()
     if (this.configObj.curConfig.baseUnit !== 'px') {
-      res.w = convertUnit(res.w) + this.configObj.curConfig.baseUnit
-      res.h = convertUnit(res.h) + this.configObj.curConfig.baseUnit
+      res.w = this.svgCanvas.convertUnit(res.w) + this.configObj.curConfig.baseUnit
+      res.h = this.svgCanvas.convertUnit(res.h) + this.configObj.curConfig.baseUnit
     }
     $id('se-img-prop').setAttribute('dialog', 'close')
     $id('se-img-prop').setAttribute('title', this.svgCanvas.getDocumentTitle())
