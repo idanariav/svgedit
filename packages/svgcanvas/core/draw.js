@@ -1432,6 +1432,42 @@ export const init = canvas => {
 }
 
 /**
+ * Run `fn` with the in-group dimming (see setContext) temporarily undone, then
+ * re-apply it, leaving the current group, selection and `disabledElems`
+ * untouched. For serialization while the user must stay inside the group
+ * (e.g. node-editing a path): dimmed siblings carry a synthetic
+ * `opacity="0.33"` that must never reach the output, but leaveContext() would
+ * also exit the group and clear the selection.
+ * @function module:draw.withContextUndimmed
+ * @param {Function} fn
+ * @returns {*} Whatever `fn` returns
+ */
+  const withContextUndimmed = (fn) => {
+  if (!disabledElems.length) { return fn() }
+  const dataStorage = svgCanvas.getDataStorage()
+  const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
+  for (const { elem } of dimmed) {
+    const orig = dataStorage.get(elem, 'orig_opac')
+    if (orig === null || orig === undefined) {
+      elem.removeAttribute('opacity')
+    } else {
+      elem.setAttribute('opacity', orig)
+    }
+  }
+  try {
+    return fn()
+  } finally {
+    for (const { elem, opacity } of dimmed) {
+      if (opacity === null) {
+        elem.removeAttribute('opacity')
+      } else {
+        elem.setAttribute('opacity', opacity)
+      }
+    }
+  }
+}
+
+/**
  * Set the current context (for in-group editing).
  * @function module:draw.setContext
  * @param {Element} elem
@@ -1532,6 +1568,7 @@ export const init = canvas => {
   svgCanvas.mergeAllLayers = mergeAllLayers
   svgCanvas.leaveContext = leaveContext
   svgCanvas.setContext = setContext
+  svgCanvas.withContextUndimmed = withContextUndimmed
   // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
   // exposes the per-instance `disabledElems` closure var without letting
   // callers mutate it directly.

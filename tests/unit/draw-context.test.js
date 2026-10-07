@@ -124,4 +124,54 @@ describe('draw context', () => {
     expect(clearSelectionCalls).toStrictEqual([true])
     expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })
   })
+  describe('withContextUndimmed', () => {
+    it('un-dims siblings only for the duration of fn, staying inside the group', () => {
+      canvas.setContext(editGroup)
+      clearSelectionCalls.length = 0
+      calls.length = 0
+      let seenInside = 'unset'
+
+      const result = canvas.withContextUndimmed(() => {
+        seenInside = sibling.getAttribute('opacity')
+        return 'out'
+      })
+
+      expect(result).toBe('out')
+      expect(seenInside).toBe('inherit')
+      // Back to dimmed, still inside the group, nothing cleared/announced.
+      expect(sibling.getAttribute('opacity')).toBe('0.33')
+      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
+      expect(currentGroup).toBe(editGroup)
+      expect(clearSelectionCalls).toStrictEqual([])
+      expect(calls).toStrictEqual([])
+      // ...and a later real leaveContext() still restores the true original.
+      canvas.leaveContext()
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+    })
+
+    it('removes the synthetic opacity for siblings that had none, then re-dims', () => {
+      sibling.removeAttribute('opacity')
+      canvas.setContext(editGroup)
+      let seenInside = 'unset'
+
+      canvas.withContextUndimmed(() => { seenInside = sibling.getAttribute('opacity') })
+
+      expect(seenInside).toBe(null)
+      expect(sibling.getAttribute('opacity')).toBe('0.33')
+    })
+
+    it('re-dims even when fn throws', () => {
+      canvas.setContext(editGroup)
+
+      expect(() => canvas.withContextUndimmed(() => { throw new Error('boom') })).toThrow('boom')
+
+      expect(sibling.getAttribute('opacity')).toBe('0.33')
+      expect(currentGroup).toBe(editGroup)
+    })
+
+    it('just runs fn when no context is active', () => {
+      expect(canvas.withContextUndimmed(() => 42)).toBe(42)
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+    })
+  })
 })

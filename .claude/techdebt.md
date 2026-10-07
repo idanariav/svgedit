@@ -29,3 +29,9 @@ node grip). `ensureExplicitClosingSegments()` in `path-method.js` repairs
 `Z`-only subpaths (external SVGs, or saved by the reverted change) whenever a
 path enters the editor; other absolute-path shapes it doesn't cover
 (relative segments, `H`/`V`) are left as-is.
+
+## `tests/e2e/group-transforms.spec.js`: 4 tests fail on a clean checkout
+
+Seen 2026-10-07 on unmodified master (`preserve group translate transform…`,
+`multiple arrow key movements…`, `rotation followed by movement…`,
+`multiple movements preserve group structure…`). Not investigated.

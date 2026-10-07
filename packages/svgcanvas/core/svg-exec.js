@@ -195,15 +195,14 @@ export const init = canvas => {
         }
       })
 
-      // Move out of in-group editing mode. Capture the group first: leaveContext()
-      // nulls currentGroup, so reading getCurrentGroup() afterwards would pass
-      // [null] to selectOnly — silently emptying the selection without firing
-      // 'selected', desyncing the editor's selectedElement from the canvas.
-      const groupToReselect = svgCanvas.getCurrentGroup()
-      if (groupToReselect) {
-        svgCanvas.leaveContext()
-        svgCanvas.selectOnly([groupToReselect])
-      }
+      // Serializing must not disturb in-group editing: a host that saves on
+      // every change (or an autosave timer) would otherwise drop the user out
+      // of the group, clear the dimming and swap the selection to the group
+      // mid-edit, so the *next* edit/nudge/undo targets the wrong level. The
+      // dimmed siblings' synthetic `opacity="0.33"` is the only part of the
+      // context that must not reach the output; it is un-dimmed just for the
+      // svgToString() call below (see withContextUndimmed()).
+      const keepContext = !!svgCanvas.getCurrentGroup()
 
       const nakedSvgs = []
 
@@ -230,7 +229,8 @@ export const init = canvas => {
         ? embedUsedFonts()
         : null
 
-      const output = svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
+      const serialize = () => svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
+      const output = keepContext ? svgCanvas.withContextUndimmed(serialize) : serialize()
 
       // Remove the temporary <style> so the live document is left untouched
       if (fontStyleElem) {
@@ -975,6 +975,59 @@ export const init = canvas => {
     return useEl
   }
   /**
+ * Insert raw SVG child markup (e.g. `<image .../>`, `<text>...</text>`) into
+ * the current group/layer as a single undoable step, and select it. Unlike
+ * `setSvgString` this is an incremental edit (selection, group context, zoom
+ * and the rest of the history are left alone), and unlike `importSvgString` the
+ * markup is inserted as-is, not wrapped in a `<symbol>` + `<use>` or rescaled.
+ * The markup goes through the same sanitizer as any loaded document.
+ * @function module:svgcanvas.SvgCanvas#insertSvgFragment
+ * @param {string} xmlFragment - One or more SVG elements, no `<svg>` wrapper.
+ * @fires module:svgcanvas.SvgCanvas#event:changed
+ * @returns {null|Element[]} The inserted elements, or null if the markup could
+ *   not be parsed or insertion failed (nothing is changed in that case).
+ */
+  const insertSvgFragment = (xmlFragment) => {
+    try {
+      const newDoc = text2xml(
+        `<svg xmlns="${NS.SVG}" xmlns:xlink="${NS.XLINK}">${xmlFragment}</svg>`
+      )
+      if (newDoc.getElementsByTagName('parsererror').length) {
+        return null
+      }
+      svgCanvas.prepareSvg(newDoc)
+      const wrapper = svgCanvas.getDOMDocument().adoptNode
+        ? svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
+        : svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
+      svgCanvas.uniquifyElems(wrapper)
+
+      const parent =
+        svgCanvas.getCurrentGroup() ||
+        svgCanvas.getCurrentDrawing().getCurrentLayer()
+      const batchCmd = new BatchCommand('Insert Elements')
+      const inserted = []
+      for (const child of [...wrapper.children]) {
+        child.id = child.id || svgCanvas.getNextId()
+        parent.append(child)
+        batchCmd.addSubCommand(new InsertElementCommand(child))
+        inserted.push(child)
+      }
+      if (!inserted.length) {
+        return inserted
+      }
+
+      svgCanvas.clearSelection()
+      svgCanvas.addToSelection(inserted)
+      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.call('changed', inserted)
+      return inserted
+    } catch (e) {
+      error('Error inserting SVG fragment', e, 'svg-exec')
+      return null
+    }
+  }
+
+  /**
  * Function to run when image data is found.
  * @callback module:svgcanvas.ImageEmbeddedCallback
  * @param {string|false} result Data URL
@@ -1625,6 +1678,7 @@ export const init = canvas => {
   svgCanvas.setSvgString = setSvgString
   svgCanvas.importSvgString = importSvgString
   svgCanvas.uniquifyElems = uniquifyElemsMethod
+  svgCanvas.insertSvgFragment = insertSvgFragment
   svgCanvas.setUseData = setUseDataMethod
   svgCanvas.convertGradients = convertGradientsMethod
   svgCanvas.convertDropShadowFilters = convertDropShadowFiltersMethod

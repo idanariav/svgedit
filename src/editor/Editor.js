@@ -540,8 +540,13 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   loadSvgString (str, { noAlert } = {}) {
-    const success = this.svgCanvas.setSvgString(str) !== false
+    // Loading a document is the undo baseline, not an undoable edit: left
+    // on the stack it makes "undo" past the first real edit delete the whole
+    // drawing (redo restores it), and keeps openPrep() treating a freshly
+    // loaded, untouched document as having unsaved changes.
+    const success = this.svgCanvas.setSvgString(str, true) !== false
     if (success) {
+      this.svgCanvas.undoMgr.resetUndoStack()
       this.updateCanvas()
       // Loading replaces the whole drawing without firing elementChanged, so
       // refresh the layers panel to match the loaded drawing's layers
@@ -550,6 +555,9 @@ class Editor extends EditorStartup {
       // ...and refresh the empty-canvas brand watermark to match the new content
       // (otherwise it lingers when a non-empty drawing is loaded).
       this.updateCanvasWatermark()
+      // The stack was just reset: refresh the undo/redo buttons to match.
+      this.topPanel.updateContextPanel()
+      this.tabletShell?.syncHistory?.()
       return
     }
     if (!noAlert) seAlert(this.i18next.t('notification.errorLoadingSVG'))
