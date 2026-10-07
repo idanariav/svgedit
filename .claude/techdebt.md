@@ -89,13 +89,6 @@ explicit host API on `Editor`, enable `checkJs` for that surface first, generate
 `.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), and ship it
 in `dist/`. Medium.
 
-## Extension hook payloads are still untyped
-
-Hook names are now registered in `core/extension-hooks.js` (typos warn, and
-`keyDown` is dispatched from `EditorStartup.js`'s keydown listener). Still
-open: typedefs for each hook's payload, and migrating `ext-puppet-warp`'s raw
-window `keydown` listener to the `keyDown` hook. Small.
-
 ## Oversized modules
 
 Files over ~1,500 lines: `Editor.js` (1,874), `seShapeLibrary.js` (1,870),

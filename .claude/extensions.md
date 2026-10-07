@@ -69,7 +69,7 @@ single `Editor.js`.
    svgCanvas.addExtension(imported.default.name, imported.default.init)
    ```
 3. `svgCanvas.addExtension()` calls `ext.init(S)` and stores returned hooks
-4. Canvas events then dispatch to all registered extension hooks. Valid hook names live in `packages/svgcanvas/core/extension-hooks.js` (`EXTENSION_HOOKS`); `addExtension` warns about unknown function members and `runExtensions` about unknown dispatches. Add a new hook there first.
+4. Canvas events then dispatch to all registered extension hooks. Valid hook names live in `packages/svgcanvas/core/extension-hooks.js` (`EXTENSION_HOOKS`); `addExtension` warns about unknown function members and `runExtensions` about unknown dispatches. Add a new hook there first, with a payload typedef (`ExtensionHookPayloads`); a test fails if a dispatched hook is unregistered or a registered one is never dispatched. `ext-puppet-warp` deliberately keeps its own window-capture Escape listener instead of `keyDown` (ordering vs. the hotkey dispatcher).
 
 > **Adding a new built-in extension:** drop it in `extensions/ext-<name>/` and
 > add its name to `defaultExtensions` in `ConfigObj.js`. The registry glob picks

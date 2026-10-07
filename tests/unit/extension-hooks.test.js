@@ -9,6 +9,9 @@ const walk = (dir) => readdirSync(dir).flatMap((f) => {
   return statSync(p).isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : []
 })
 
+const sources = () => [...walk('src'), ...walk('packages/svgcanvas/core')]
+  .map(f => readFileSync(f, 'utf8'))
+
 describe('extension hook registry', () => {
   it('knows keyDown and rejects typos', () => {
     expect(isExtensionHook('keyDown')).toBe(true)
@@ -23,5 +26,13 @@ describe('extension hook registry', () => {
     }
     expect(dispatched.size).toBeGreaterThan(10)
     for (const name of dispatched) expect(EXTENSION_HOOKS).toContain(name)
+  })
+
+  it('only registers hooks that something actually dispatches', () => {
+    const all = sources().join('\n')
+    for (const name of EXTENSION_HOOKS) {
+      expect(all, `hook "${name}" is registered but never dispatched`)
+        .toMatch(new RegExp(`runExtensions\\(\\s*'${name}'`))
+    }
   })
 })

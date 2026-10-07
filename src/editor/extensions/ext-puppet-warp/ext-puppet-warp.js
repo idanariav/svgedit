@@ -600,10 +600,11 @@ export default {
       }
     }, { signal: svgEditor.listenerAbort.signal })
 
-    // Escape cancels the session (restore geometry, no undo entry). The
-    // extension `keyDown` hook is dead code in this build (`runExtensions
-    // ('keyDown', …)` is never dispatched), so — like ext-curvature's dblclick
-    // handler — we bind a real window listener guarded on our mode.
+    // Escape cancels the session (restore geometry, no undo entry). This is a
+    // window *capture* listener rather than the extension `keyDown` hook on
+    // purpose: the hook runs from a bubbling document listener, after the
+    // hotkey dispatcher may already have switched tools on Escape — which would
+    // commit the pose instead of cancelling it. Capture runs first.
     window.addEventListener('keydown', (evt) => {
       if (svgCanvas.getMode() !== name) return
       if (evt.key === 'Escape') {
