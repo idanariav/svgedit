@@ -1,5 +1,12 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.4
+- Theme: every dialog (export, SVG source, document properties, preferences, alert/confirm/prompt, hotkeys, favorites, command search, context menus, colour/palette/text/image/trace dialogs) now follows the editor's light/dark theme. Dialogs are mounted beside `.svg_editor`, so they are listed in `svgedit.css`'s token blocks and mirror the theme with `syncDialogTheme()` when they open; a shared `dialogSkin.css.js` replaces the old grey skin.
+- Theme: the legacy colour alias variables (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`, `--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, `--workarea-bg`, `--ruler-color`, `--bevel-light`, …) are removed; use the canonical tokens (`--chrome-bg`, `--fg`, `--chrome-border`, `--canvas-bg`, …). Hosts that styled with the old names must switch.
+- BREAKING (canvas): the legacy default units instance is gone — `units.init()`, the free `shortFloat`/`convertToNum`/`convertUnit`/`convertAttrs`/`isValidUnit` functions in `core/units.js`, and the static `SvgCanvas.convertToNum`/`isValidUnit`/`convertUnit`. Use the per-canvas `svgCanvas.units` (`createUnits(canvas)`) or the instance methods; `SvgCanvas.getTypeMap` stays. `getStrokedBBox` now requires its rounding function.
+- Types: the 217 runtime-only canvas members are declared as `@internal` on `InternalMembers` (`svgcanvas-internal.d.ts`); the drift test requires every member to be public or internal.
+- Tests: round-trip fixtures for markers, clip/mask, `<use>`/symbols and images; guard tests for dialog theming and retired aliases.
+
 ## 7.4.1-fork.3
 - Host API: `hostApi.d.ts` (`EditorHostApi`, `HostCanvas`) declares what embedders may rely on; it is self-contained, checked against `Editor` by `npm run typecheck`, and attached to the release next to `Editor.js`.
 - Types: `svgcanvas.d.ts` is typechecked and now declares ~170 more canvas members (runtime-attached ones live in `svgcanvas-members.d.ts`); a drift test fails on new undeclared public members. `svgcanvas.js` is `@ts-check`ed.
