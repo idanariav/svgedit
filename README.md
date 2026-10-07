@@ -7,7 +7,7 @@
 
 > **This is a fork** of [SVG-Edit/svgedit](https://github.com/SVG-Edit/svgedit) used as the editor
 > engine of [obsidian-svgedit-plugin](https://github.com/idanariav/obsidian-svgedit-plugin).
-> It is **not published to npm**: each tagged release (`vX.Y.Z-milani.N`) attaches the bundled
+> It is **not published to npm**: each tagged release (`vX.Y.Z-fork.N`) attaches the bundled
 > `Editor.js` as a GitHub release asset. See `docs/ReleaseInstructions.md`. The text and links
 > below come from upstream.
 

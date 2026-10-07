@@ -69,7 +69,7 @@ A failure after the document swap now rolls back to the previous drawing
 (`restorePreviousDocument()` in `svg-exec.js`), rather than processing the
 parsed document fully off-canvas — that would mean reworking every pass that
 reads `svgCanvas.getSvgContent()`. Still open: a round-trip test over a corpus
-of real Milani-style drawings (frames, taper, corner radius, shadows,
+of real-world drawings (frames, taper, corner radius, shadows,
 text-on-path): load → save → load should stop changing after one pass. Today
 round-trip assertions exist only per feature. Medium.
 
