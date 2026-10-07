@@ -73,7 +73,7 @@ test.describe('Top bar layout', () => {
     await desktop(page, 800, 600)
     await addAndSelect(page, 1)
     await expect(page.locator('#top_more')).toBeVisible()
-    let s = await barState(page)
+    const s = await barState(page)
     expect(s.compact).toBe(true)
     expect(s.tight).toBe(true)
     expect(s.trayInBar).toBe(0)

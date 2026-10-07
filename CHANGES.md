@@ -1,5 +1,16 @@
 # SVG-Edit CHANGES
 
+## Unreleased
+- UI: grouped left toolbar (select/pan · draw · shapes · text/image · modify) with dividers; drawing tools sit together. Customised tool orders are kept.
+- UI: top bar keeps Undo/Redo and zoom in a fixed, sticky slot; in narrow panes it drops the file chip and theme toggle, then folds the object trays behind a "⋯" button. The bottom colour bar is no longer clipped (row is 56px — hosts that copy `grid-template-rows` must update it, and the open-panel left column is 56px, not 34px).
+- UI: main menu has a chevron and separators; zoom has −/+ buttons and shows "100" instead of "100.0".
+- UI: side panel — ID/Class moved into a collapsed "Advanced" section; Text tab hint; drop shadow has an On switch and a 0–100 opacity; tab renamed "Properties".
+- UI: selection handles follow `--accent`; palette swatches get a themed border; command search shows shortcuts and ranks prefix matches first; context menu closes on Escape and shows shortcuts.
+- Dialogs: Export gains Scale (1–4×, `rasterExport` option `scale`), Quality only for JPEG/WebP and an output-size preview; Preferences gains a Theme select; the colour picker previews solid colours live and reverts on Cancel.
+- BREAKING (shortcuts): `Tab` now selects the next element and `Shift+Tab` the previous (was reversed); bare `A` no longer selects all (use Ctrl/Cmd+A); Duplicate is `D` for one or many objects (was `C` for several); `V` selects. Tooltips and menus show per-platform shortcuts (⌘Z / Ctrl+Z).
+- Defaults: the right-click menu now defaults to Paste / Select all / Zoom to fit (saved favourites are unchanged).
+- i18n: missing locale keys fixed (`properties.class_none`, layer name); a unit test fails on any literal `t()` key absent from `lang.en.js`; the static panel labels are translatable through `panel.*` keys.
+
 ## 7.4.1-fork.4
 - Theme: every dialog (export, SVG source, document properties, preferences, alert/confirm/prompt, hotkeys, favorites, command search, context menus, colour/palette/text/image/trace dialogs) now follows the editor's light/dark theme. Dialogs are mounted beside `.svg_editor`, so they are listed in `svgedit.css`'s token blocks and mirror the theme with `syncDialogTheme()` when they open; a shared `dialogSkin.css.js` replaces the old grey skin.
 - Theme: the legacy colour alias variables (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`, `--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, `--workarea-bg`, `--ruler-color`, `--bevel-light`, …) are removed; use the canonical tokens (`--chrome-bg`, `--fg`, `--chrome-border`, `--canvas-bg`, …). Hosts that styled with the old names must switch.
