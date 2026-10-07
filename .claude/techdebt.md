@@ -96,9 +96,8 @@ The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
 `dist/editor/hostApi.d.ts`. Still open: the plugin
 (`../obsidian-svgedit-plugin/src/view/SvgView.ts`) still declares its own
-`SvgEditorInstance` — switch it to import `EditorHostApi` (its sync script
-copies only `Editor.js`, so it needs to fetch `hostApi.d.ts` too and resolve
-`@svgedit/svgcanvas` types); the plugin's `activate`/`destroy`/`setDebugLogger`/
+`SvgEditorInstance` — switch it to `EditorHostApi` (the file is self-contained, so its sync
+script only needs to fetch `hostApi.d.ts` from the same release as `Editor.js`); the plugin's `activate`/`destroy`/`setDebugLogger`/
 `setLogSink` are optional there for old bundles but required in the host API.
 Also open: generate the `svgcanvas.d.ts` from JSDoc instead of hand-writing it,
 and the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
