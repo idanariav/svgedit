@@ -1,6 +1,6 @@
 # SVG-Edit CHANGES
 
-## Unreleased
+## 7.4.1-fork.5
 - UI: grouped left toolbar (select/pan · draw · shapes · text/image · modify) with dividers; drawing tools sit together. Customised tool orders are kept.
 - UI: top bar keeps Undo/Redo and zoom in a fixed, sticky slot; in narrow panes it drops the file chip and theme toggle, then folds the object trays behind a "⋯" button. The bottom colour bar is no longer clipped (row is 56px — hosts that copy `grid-template-rows` must update it, and the open-panel left column is 56px, not 34px).
 - UI: main menu has a chevron and separators; zoom has −/+ buttons and shows "100" instead of "100.0".
