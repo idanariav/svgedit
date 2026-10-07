@@ -108,7 +108,7 @@ const CLIPBOARD_ID = 'svgedit_clipboard'
  * @memberof module:svgcanvas
  *
  */
-class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-members.js").AttachedMembers} */ (EventTarget) {
+class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-members.js").AttachedMembers & import("./svgcanvas-internal.js").InternalMembers} */ (EventTarget) {
   /**
    * @param {HTMLElement} container - The container HTML element that should hold the SVG root element
    * @param {module:SVGeditor.configObj.curConfig} config - An object that contains configuration data

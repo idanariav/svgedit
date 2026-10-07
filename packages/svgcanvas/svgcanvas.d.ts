@@ -4,6 +4,7 @@
  */
 
 import type { AttachedMembers } from './svgcanvas-members.js'
+import type { InternalMembers } from './svgcanvas-internal.js'
 
 // Core types
 export interface SVGElementJSON {
@@ -200,7 +201,7 @@ declare class SvgCanvas {
   getDebugSnapshot(): object
 }
 
-interface SvgCanvas extends AttachedMembers {}
+interface SvgCanvas extends AttachedMembers, InternalMembers {}
 export default SvgCanvas
 
 // Export additional utilities

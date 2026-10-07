@@ -10,32 +10,28 @@ import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 // SvgCanvas instance with the members declared on the d.ts class and on
 // AttachedMembers (svgcanvas-members.d.ts).
 //
-// INTERNAL_MEMBERS (svgcanvas-internal-members.json) lists the canvas members
-// that are deliberately NOT part of the typed public API: internal state
-// accessors and module plumbing that core/* modules attach to the instance
-// (nothing in the editor or extensions calls them). A new public member must
-// either be declared in the .d.ts or, if it is internal, be added to that list;
-// a listed member that has since been declared fails too (delete it from the
-// list), so the two sets never overlap.
-const INTERNAL_MEMBERS = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), 'tests/unit/svgcanvas-internal-members.json'), 'utf8')
-)
+// Every runtime member must be declared either as part of the public API (the
+// d.ts class + AttachedMembers) or, if deliberately untyped plumbing, on
+// InternalMembers (svgcanvas-internal.d.ts, tagged @internal). The two sets must
+// not overlap, and InternalMembers must not list names that no longer exist.
 
 const declaredMembers = () => {
   const names = new Set()
-  const read = (file, match) => {
+  const internal = new Set()
+  const read = (file, match, into = names) => {
     const text = fs.readFileSync(path.resolve(process.cwd(), 'packages/svgcanvas', file), 'utf8')
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2020, true)
     sf.forEachChild((node) => {
       if (!match(node)) return
-      for (const m of node.members) if (m.name) names.add(m.name.getText(sf))
+      for (const m of node.members) if (m.name) into.add(m.name.getText(sf).replace(/^['"]|['"]$/g, ''))
     })
   }
   // The class (methods defined in svgcanvas.js) plus AttachedMembers (members
   // core modules attach at runtime), which the class merges in.
   read('svgcanvas.d.ts', (n) => ts.isClassDeclaration(n) && n.name?.text === 'SvgCanvas')
   read('svgcanvas-members.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'AttachedMembers')
-  return names
+  read('svgcanvas-internal.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'InternalMembers', internal)
+  return { names, internal }
 }
 
 const liveMembers = () => {
@@ -67,19 +63,22 @@ const liveMembers = () => {
 }
 
 describe('svgcanvas.d.ts drift', () => {
-  const declared = declaredMembers()
+  const { names: declared, internal } = declaredMembers()
   const live = liveMembers()
-  const missing = [...live].filter((n) => !declared.has(n)).sort()
 
   it('declares the SvgCanvas class', () => {
     expect(declared.size).toBeGreaterThan(50)
   })
 
-  it('has no undeclared public members that are not marked internal', () => {
-    expect(missing.filter((n) => !INTERNAL_MEMBERS.includes(n))).toEqual([])
+  it('declares every runtime member as public or internal', () => {
+    expect([...live].filter((n) => !declared.has(n) && !internal.has(n)).sort()).toEqual([])
   })
 
-  it('has no internal-member entries that are declared or gone', () => {
-    expect(INTERNAL_MEMBERS.filter((n) => !missing.includes(n))).toEqual([])
+  it('does not list a member as both public and internal', () => {
+    expect([...internal].filter((n) => declared.has(n))).toEqual([])
+  })
+
+  it('lists no internal member that no longer exists', () => {
+    expect([...internal].filter((n) => !live.has(n))).toEqual([])
   })
 })
