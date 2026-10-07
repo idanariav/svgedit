@@ -118,7 +118,7 @@ The editor root is a **CSS Grid** with 4 rows × 5 columns.
 ```css
 .svg_editor {
   display: grid;
-  grid-template-rows: minmax(56px, auto) 15px 1fr 40px;
+  grid-template-rows: minmax(56px, auto) 15px 1fr 56px;
   grid-template-columns: 56px 15px 50px 1fr 15px;
   grid-template-areas:
     "main  main    main    top    top"
@@ -238,7 +238,9 @@ top-left-weighted shape reads as centred in the active blue circle.
   border: 1px solid var(--group-border);
   border-radius: 10px;
 }
-#history_panel { margin-left: auto; } /* pushes it + everything after to the right */
+/* #top_end wraps #history_panel + #zoom_panel: margin-left:auto + position:sticky;
+   right:0 pins Undo/Redo + zoom to the right edge (stable position, always reachable) */
+#top_end { margin-left: auto; position: sticky; right: 0; background: var(--chrome-bg); }
 
 /* Polystar context fields: the spin-box defaults to ~184px, so the star
    panel's three fields would wrap the toolbar to a second row. Cap them. */

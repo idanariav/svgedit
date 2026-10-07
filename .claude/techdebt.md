@@ -122,3 +122,125 @@ it today.
 - Two coverage systems remain: nyc (`nyc.config.js`, used by
   `scripts/run-e2e.mjs` to merge e2e + vitest coverage), `vite-plugin-istanbul`
   for e2e, and v8 for unit tests. Consolidating means reworking the merge step.
+
+---
+
+The entries below came out of a UI/UX review (2026-10-07). It used screenshots
+of the dev server at 1440×900, 1024×700 and 800×600, in light, dark and tablet
+modes, plus the live hotkey registry. They are listed most severe first.
+Obsidian-only findings are in `../obsidian-svgedit-plugin/.claude/techdebt.md`.
+
+## Toolbars get cut off in narrow or short panes
+
+Done: the left column stays 56px when the panel opens, `#tools_overflow` is
+sticky at the bottom of the left toolbar, and Undo/Redo + zoom (`#top_end`) are
+sticky at the right of the top bar, which also scrolls with the plain mouse
+wheel. Remaining:
+- At 800px wide the contextual trays (align/arrange/flip…) still sit behind the
+  pinned right cluster and are only reachable by scrolling. Collapse low-priority
+  trays into a "more" menu with a ResizeObserver.
+- Move tools into `…` automatically when the left column is too short (today it
+  scrolls).
+- Tablet mode at 1024 wide: the command bar's undo/redo are still cut off.
+- Palette swatches shrink to slivers at 800px.
+Medium.
+
+## Missing translations show raw keys
+
+When an entry is missing, i18next returns the key, so `t('key') || 'Fallback'`
+never falls back (23 uses of `t(`, 5 of `_t(`). `tests/unit/locale-keys.test.js`
+now fails if a literal `t('ns.key')` isn't in `lang.en.js` (`properties.class_none`
+and two wrong keys in `Editor.js` fixed). Remaining: dynamic keys
+(`'config.jgraduate_' + val`) aren't covered, and some labels bypass i18n
+entirely: the side-panel tab and section names, "Rotate", "Radius", "Brush",
+"Canvas settings", "Change zoom level", "Background Color", the new zoom
+"Zoom in/out" titles. A `parseMissingKeyHandler` isn't an option as long as
+components pass literal English as a `title` (it relies on the key coming back).
+Small.
+
+## Keyboard shortcuts break common conventions
+
+Done: Tab = next / Shift+Tab = previous, `V` selects, `A` alone no longer selects
+all, Duplicate is `D` for one or many, tooltips and the main menu show
+platform-formatted shortcuts (⌘Z / Ctrl+Z; menu shortcuts right-aligned) with no
+trailing space. Release-note these default changes. Remaining:
+- Tab still isn't free for focus navigation (it cycles elements).
+- Image, Shapes, Brush, Shape library, Cutter, Curvature and Puppet warp have no
+  default shortcut.
+- Command search results don't show shortcuts, and a fuzzy match ranks above
+  exact prefix matches.
+Small.
+
+## Context menu: no icons or shortcuts, weak disabled state
+
+Done: Escape closes it; the defaults are now Paste / Select all / Zoom to fit
+(users with stored favorites keep theirs). Remaining: items have no icons or
+shortcuts, and disabled items are only slightly lighter than enabled ones. Small.
+
+## Side panel: hidden by default, vague handle, technical fields first
+
+- The panel is closed by default. The tab now reads "Properties"; opening the
+  panel on first selection is still undecided.
+- The Design tab starts with ID and Class, before Dimensions and Stroke. Most
+  illustrators never use those two fields. Move them into a collapsed
+  "Advanced" group at the bottom, and keep X/Y/W/H/Rotate together at the top.
+- The Text tab is empty unless text is selected. Show a hint such as "Select
+  text or press T".
+- The drop shadow in the Effects tab shows real-looking values (angle 150,
+  blur 4, opacity 0.5) but has no on/off switch, so it isn't clear whether a
+  shadow is applied. Its opacity runs 0–1, while the Design tab's runs 0–100.
+  Use one scale and add an enable toggle.
+- Join/Cap and the Object › Path actions are unlabelled 16px icons, and Brush is
+  a lone gear. Use segmented controls with labels or tooltips.
+
+Medium, mostly `RightPanel.html` plus the section JS.
+
+## Inconsistent icons, selection handles and palette
+
+- Icon styles are mixed in the left toolbar. Panning, Shapes, Brush, Shape
+  library, Cutter, Curvature, Puppet warp and the overflow icon are filled;
+  the rest are outlines. The layers toolbar mixes filled arrows with outline
+  icons. Redraw them in one outline style. The Cutter icon (a marker over a
+  dotted line) doesn't suggest cutting.
+- The left toolbar is one ungrouped column of 14 tools, and the drawing tools
+  (pencil, brush, pen, curvature) are scattered. Group them with separators:
+  select/hand · pencil/brush/pen/curvature/line · shapes/library · text/image ·
+  cutter/warp/eyedropper.
+- Selection handles now follow `--accent` with white fills (CSS overrides at the
+  end of `svgedit.css`; `select.js` still hard-codes `#22C`/lime as the
+  fallback). Still to do: a larger hit area on touch.
+- The default palette is 40 saturated rainbow swatches, which doesn't fit the
+  limited-palette illustration goal. Ship a curated default palette plus a
+  "colours in this drawing" row. In the dark theme the palette swatch
+  border now uses `--swatch-inset`; the "none" swatch is still faint.
+- Tooltips no longer end with a stray space. Some tooltips are full sentences ("Puppet Warp — pin an object, then drag…"),
+  and those sentences also appear as action names in the hotkey manager. Keep
+  tooltips to the name plus the shortcut, and put the explanation somewhere
+  else.
+
+Medium, mostly icon and CSS work.
+
+## Main menu and top-bar toggles are hard to discover
+
+- (Done: the main menu has a chevron and separators between groups.)
+- The six toggles at the top (frame, wireframe, canvas settings, grid, smart
+  snap, layer view) are icons with no labels. The theme toggle takes a prime
+  toolbar spot for a rarely used setting; move it to Preferences or the menu.
+- Zoom now has −/+ buttons and a "%" suffix; the value still shows one decimal
+  ("100.0").
+
+Small.
+
+## Preferences, Export and colour-picker dialogs look and work like older UI
+
+- Editor Preferences has OK/Cancel at the top, a fieldset legend, the checkbox
+  after its label, a native `<select>`, and only two settings. Move it to
+  `dialogSkin` with the actions at the bottom right.
+- Export has no title and centred labels. It shows "Quality" for PNG, although
+  only JPEG/WebP use it. It has no scale option and no size preview.
+- The colour picker is a modal with Cancel/Apply, so trying a colour takes
+  three clicks, and the drawing doesn't change until you apply. Figma, Affinity
+  and Inkscape instead use a popover that updates the drawing live, where
+  Escape reverts.
+
+Medium.
