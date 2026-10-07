@@ -1,7 +1,8 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 /**
  * `<se-tool-overflow>` — the left panel's "Additional tools" drawer.
@@ -21,7 +22,7 @@ export class ToolOverflow extends HTMLElement {
     */
   constructor () {
     super()
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
@@ -233,7 +234,7 @@ export class ToolOverflow extends HTMLElement {
         this.opened = false
       }
     }
-    svgEditor.$click(this, onClickHandler)
+    $click(this, onClickHandler)
   }
 }
 

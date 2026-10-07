@@ -1,5 +1,5 @@
 import SvgCanvas from '@svgedit/svgcanvas'
-/* globals svgEditor */
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
 
 const { isValidUnit } = SvgCanvas
@@ -344,8 +344,8 @@ export class SeImgPropDialog extends HTMLElement {
       this.dispatchEvent(closeEvent)
     }
     this.$resolution.addEventListener('change', onChangeHandler)
-    svgEditor.$click(this.$saveBtn, onSaveHandler)
-    svgEditor.$click(this.$cancelBtn, onCancelHandler)
+    $click(this.$saveBtn, onSaveHandler)
+    $click(this.$cancelBtn, onCancelHandler)
     this.$dialog.addEventListener('close', onCancelHandler)
     this.eventlisten = true
   }

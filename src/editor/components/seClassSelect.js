@@ -1,4 +1,3 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import {
@@ -12,6 +11,7 @@ import {
   getDefaultClassForTag,
   setDefaultClassForTag
 } from '../classLibrary.js'
+import { ownerEditor } from '../domScope.js'
 
 /**
  * Replacement for the old free-text class input. Presents the saved class
@@ -317,7 +317,7 @@ class SeClassSelect extends HTMLElement {
   }
 
   async _loadIcons () {
-    const imgPath = svgEditor?.configObj?.curConfig?.imgPath
+    const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (!imgPath) return
     const set = async (host, src) => {
       const svgEl = await fetchSvgEl(`${imgPath}/${src}`)
@@ -373,7 +373,7 @@ class SeClassSelect extends HTMLElement {
    * @returns {void}
    */
   applyClass (name) {
-    const svgCanvas = svgEditor.svgCanvas
+    const svgCanvas = ownerEditor(this).svgCanvas
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elems.length) return
     const preset = name ? getClass(name) : null
@@ -399,18 +399,18 @@ class SeClassSelect extends HTMLElement {
       // rebuild the per-element effect filter via the extension APIs, adding the
       // undo subcommands to this same batch. Both share one filter (fx-filter),
       // so order doesn't matter; each preserves the other's slice.
-      if (preset?.shadow && svgEditor.shadowApi) {
-        svgEditor.shadowApi.apply(elem, preset.shadow, batch)
+      if (preset?.shadow && ownerEditor(this).shadowApi) {
+        ownerEditor(this).shadowApi.apply(elem, preset.shadow, batch)
       }
-      if (preset?.outline && svgEditor.outlineApi) {
-        svgEditor.outlineApi.apply(elem, preset.outline, batch)
+      if (preset?.outline && ownerEditor(this).outlineApi) {
+        ownerEditor(this).outlineApi.apply(elem, preset.outline, batch)
       }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
     // Refresh the panels so the stamped fill/size/etc. are reflected. These
     // also re-run refresh() on this control, keeping the dropdown in sync.
-    svgEditor.topPanel.update()
-    svgEditor.topPanel.updateContextPanel()
+    ownerEditor(this).topPanel.update()
+    ownerEditor(this).topPanel.updateContextPanel()
   }
 
   /* ── Save / update popover ─────────────────────────────────────── */
@@ -465,7 +465,7 @@ class SeClassSelect extends HTMLElement {
     // Drop shadow is captured as structured params, not a flat attribute, so it
     // gets a dedicated row — shown only when there is a shadow to capture (on
     // the element or already on the preset being edited).
-    const shadowApi = svgEditor.shadowApi
+    const shadowApi = ownerEditor(this).shadowApi
     const elemShadow = shadowApi?.read(elem)
     const presetShadow = editing?.shadow
     const shadow = elemShadow || presetShadow
@@ -486,7 +486,7 @@ class SeClassSelect extends HTMLElement {
     }
 
     // Outline is likewise captured as structured params, not a flat attribute.
-    const outline = svgEditor.outlineApi?.read(elem) || editing?.outline
+    const outline = ownerEditor(this).outlineApi?.read(elem) || editing?.outline
     if (outline) {
       const row = document.createElement('label')
       row.className = 'checkrow'
@@ -523,12 +523,12 @@ class SeClassSelect extends HTMLElement {
     // reading live values off the element or falling back to the edited preset.
     const shadowCb = this.$checklist.querySelector('input[data-shadow]')
     const shadow = shadowCb?.checked
-      ? (svgEditor.shadowApi?.read(elem) || this._editingPreset?.shadow)
+      ? (ownerEditor(this).shadowApi?.read(elem) || this._editingPreset?.shadow)
       : undefined
     // Capture the outline (structured params) when its row is checked.
     const outlineCb = this.$checklist.querySelector('input[data-outline]')
     const outline = outlineCb?.checked
-      ? (svgEditor.outlineApi?.read(elem) || this._editingPreset?.outline)
+      ? (ownerEditor(this).outlineApi?.read(elem) || this._editingPreset?.outline)
       : undefined
     const existing = getClass(name)
     if (existing && this._editingPreset?.name !== name) {

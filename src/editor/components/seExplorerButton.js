@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { getIconDataUri } from '../images/iconRegistry.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 /**
  * @class ExplorerButton
@@ -14,7 +14,7 @@ export class ExplorerButton extends HTMLElement {
     super()
     // create the shadowDom and insert the template
     // create the shadowDom and insert the template
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate(this.imgPath)
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
@@ -27,7 +27,7 @@ export class ExplorerButton extends HTMLElement {
     this.$lib = this._shadowRoot.querySelector('.image-lib')
     this.files = []
     this.request = new XMLHttpRequest()
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
 
     // Closes opened (pressed) lib menu on click on the canvas
     const workarea = closestRoot(this).querySelector('[id="workarea"]')
@@ -303,10 +303,10 @@ export class ExplorerButton extends HTMLElement {
       }
     }
     // capture event from slots
-    svgEditor.$click(this, onClickHandler)
-    svgEditor.$click(this.$menu, onClickHandler)
-    svgEditor.$click(this.$lib, onClickHandler)
-    svgEditor.$click(this.$handle, onClickHandler)
+    $click(this, onClickHandler)
+    $click(this.$menu, onClickHandler)
+    $click(this.$lib, onClickHandler)
+    $click(this.$handle, onClickHandler)
   }
 
   /**

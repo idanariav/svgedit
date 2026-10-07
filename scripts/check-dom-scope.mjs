@@ -26,6 +26,17 @@ const ALLOWLIST = new Set([
 
 const BARE_LOOKUP = /\bdocument\.(querySelector|querySelectorAll|getElementById)\(/
 
+// The `window.svgEditor` global points at one editor only, so reading it (or
+// re-declaring it with a `/* globals svgEditor */` header) acts on the wrong
+// drawing after a pane switch. Resolve the owner with domScope.ownerEditor(el)
+// instead. Only the files that publish/repoint the global may touch it.
+const GLOBAL_EDITOR = /\bwindow\.svgEditor\b|\/\*\s*globals[^*]*\bsvgEditor\b/
+const GLOBAL_ALLOWLIST = new Set([
+  'src/editor/domScope.js', // ownerEditor()'s documented last-resort fallback
+  'src/editor/Editor.js', // publishes the global for hosts/e2e
+  'src/editor/EditorStartup.js' // repoints it on interaction (compat for hosts)
+])
+
 function walk (dir, files = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
@@ -42,13 +53,22 @@ function findViolations () {
   const violations = []
   for (const file of walk(editorDir)) {
     const relPath = relative(rootDir, file).split('\\').join('/')
-    if (ALLOWLIST.has(relPath)) continue
+    const lookupAllowed = ALLOWLIST.has(relPath)
+    const globalAllowed = GLOBAL_ALLOWLIST.has(relPath)
 
     const lines = readFileSync(file, 'utf8').split('\n')
     lines.forEach((line, i) => {
       const trimmed = line.trim()
+      // `/* globals svgEditor */` headers are block comments: check them before skipping comments.
+      if (!globalAllowed && /^\/\*\s*globals/.test(trimmed) && GLOBAL_EDITOR.test(line)) {
+        violations.push(`${relPath}:${i + 1}: ${trimmed}`)
+        return
+      }
       if (trimmed.startsWith('//') || trimmed.startsWith('*')) return // comments/JSDoc
-      if (BARE_LOOKUP.test(line)) {
+      if (!lookupAllowed && BARE_LOOKUP.test(line)) {
+        violations.push(`${relPath}:${i + 1}: ${trimmed}`)
+      }
+      if (!globalAllowed && GLOBAL_EDITOR.test(line)) {
         violations.push(`${relPath}:${i + 1}: ${trimmed}`)
       }
     })
@@ -59,9 +79,9 @@ function findViolations () {
 const violations = findViolations()
 
 if (violations.length > 0) {
-  console.error('check-dom-scope: found bare document.querySelector/getElementById calls in src/editor.')
-  console.error('These resolve to the first mounted editor when 2+ instances share a document.')
-  console.error('Resolve through src/editor/domScope.js instead, or add a reviewed allowlist entry with a reason:\n')
+  console.error('check-dom-scope: found bare document lookups or window.svgEditor reads in src/editor.')
+  console.error('These resolve to the first mounted / last-focused editor when 2+ instances share a document.')
+  console.error('Resolve through src/editor/domScope.js (closestRoot / ownerEditor) instead, or add a reviewed allowlist entry with a reason:\n')
   for (const v of violations) console.error(`  ${v}`)
   process.exit(1)
 }

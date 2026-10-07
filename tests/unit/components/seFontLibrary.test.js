@@ -151,7 +151,7 @@ describe('se-font-library', () => {
     const item = el.shadowRoot.querySelector('.fl-item[data-family="Caveat"]')
     await el._pick(item)
 
-    expect(ensureFont).toHaveBeenCalledWith('Caveat')
+    expect(ensureFont).toHaveBeenCalledWith('Caveat', null)
     expect(handler).toHaveBeenCalledTimes(1)
     expect(handler.mock.calls[0][0].detail).toEqual({ family: 'Caveat' })
     expect(el._open).toBe(false)

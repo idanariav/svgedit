@@ -1,4 +1,3 @@
-/* globals svgEditor */
 import ImageTracer from 'imagetracerjs'
 import { insertSvgElements } from './insertImage.js'
 import { loadImage } from '@svgedit/svgcanvas/core/load-image.js'
@@ -87,9 +86,9 @@ const loadImageData = async (href) => {
  *   `numberofcolors` overrides the palette size.
  * @returns {Promise<void>}
  */
-export const traceImageToSvg = async (imageElem, opts = {}) => {
+export const traceImageToSvg = async (editor, imageElem, opts = {}) => {
   const { preset = 'color', numberofcolors } = opts
-  const svgCanvas = svgEditor.svgCanvas
+  const svgCanvas = editor.svgCanvas
   const href = svgCanvas.getHref(imageElem)
   if (!href) throw new Error('No image source to trace.')
 
@@ -103,5 +102,5 @@ export const traceImageToSvg = async (imageElem, opts = {}) => {
   // transform-aware). insertSvgElements maps the trace's intrinsic pixel size
   // onto this rect instead of centering it on the page.
   const bbox = svgCanvas.getStrokedBBox([imageElem])
-  insertSvgElements(svgString, { asPaths: true, fitTo: bbox })
+  insertSvgElements(editor, svgString, { asPaths: true, fitTo: bbox })
 }

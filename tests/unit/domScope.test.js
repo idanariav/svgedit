@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot } from '../../src/editor/domScope.js'
+import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot, registerEditorRoot, ownerEditor } from '../../src/editor/domScope.js'
 
 describe('domScope active-editor tracking', () => {
   afterEach(() => {
@@ -129,5 +129,61 @@ describe('domScope active-editor tracking', () => {
 
       expect(getActiveRoot()).toBe(a.svgEditorEl)
     })
+  })
+})
+
+describe('ownerEditor', () => {
+  const mount = (editor) => {
+    const root = document.createElement('div')
+    root.setAttribute('data-svgedit-root', '')
+    registerEditorRoot(root, editor)
+    document.body.append(root)
+    return root
+  }
+  afterEach(() => {
+    setActiveEditor(null)
+    delete window.svgEditor
+    document.body.innerHTML = ''
+  })
+
+  it('resolves each element to its own container, not the active/global editor', () => {
+    const a = { name: 'a' }
+    const b = { name: 'b' }
+    const rootA = mount(a)
+    const rootB = mount(b)
+    const inA = rootA.appendChild(document.createElement('span'))
+    const inB = rootB.appendChild(document.createElement('span'))
+    window.svgEditor = b
+    setActiveEditor(b)
+    expect(ownerEditor(inA)).toBe(a)
+    expect(ownerEditor(inB)).toBe(b)
+  })
+
+  it('crosses shadow-DOM boundaries', () => {
+    const a = { name: 'a' }
+    window.svgEditor = { name: 'other' }
+    const host = mount(a).appendChild(document.createElement('div'))
+    const inner = host.attachShadow({ mode: 'open' }).appendChild(document.createElement('button'))
+    expect(ownerEditor(inner)).toBe(a)
+  })
+
+  it('falls back to the active editor, then the global, for unattached elements', () => {
+    const el = document.createElement('div')
+    const g = { name: 'global' }
+    const act = { name: 'active' }
+    window.svgEditor = g
+    expect(ownerEditor(el)).toBe(g)
+    setActiveEditor(act)
+    expect(ownerEditor(el)).toBe(act)
+    expect(ownerEditor(null)).toBe(act)
+  })
+
+  it('falls back to the global for a tagged container that has no registered editor', () => {
+    const root = document.createElement('div')
+    root.setAttribute('data-svgedit-root', '')
+    document.body.append(root)
+    expect(ownerEditor(root)).toBeNull()
+    window.svgEditor = { name: 'global' }
+    expect(ownerEditor(root)).toBe(window.svgEditor)
   })
 })

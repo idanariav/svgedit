@@ -128,7 +128,7 @@ class RightPanel {
       if (!img) return
       traceDialog.setBusy(true)
       try {
-        await traceImageToSvg(img, {
+        await traceImageToSvg(this.editor, img, {
           preset: e.detail.preset,
           numberofcolors: e.detail.numberofcolors
         })

@@ -11,7 +11,7 @@ import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
 import { getExtension } from './extensions/extensionRegistry.js'
-import { setActiveEditor, isActiveEditor, ownsKeyEvent } from './domScope.js'
+import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.js'
 import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
 import { classifyClipboardText } from './pasteClipboardText.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
@@ -89,6 +89,7 @@ class EditorStartup {
     // Mark this container so web components / dialogs nested under it can resolve
     // their owning editor via closestRoot() (see domScope.js).
     this.$container.setAttribute('data-svgedit-root', '')
+    registerEditorRoot(this.$container, this)
     // Make the container itself focusable (script-only, not tab-reachable) so
     // `activate()` below can move real DOM focus into it. Canvas clicks (e.g.
     // on an SVG shape) don't focus anything on their own, so without this,

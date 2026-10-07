@@ -1,5 +1,4 @@
-/* globals svgEditor */
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 /**
  * SeFontSelect — <se-font-select> web component.
  *
@@ -358,7 +357,7 @@ export class SeFontSelect extends HTMLElement {
 
   async _loadIcon (src) {
     if (!src || !this._iconWrap) return
-    this.imgPath = this.imgPath || svgEditor?.configObj?.curConfig?.imgPath
+    this.imgPath = this.imgPath || ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (!this.imgPath) return
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)

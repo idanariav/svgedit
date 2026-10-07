@@ -15,7 +15,7 @@
  */
 
 import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.
 import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'
@@ -185,7 +185,7 @@ export class SeFontLibrary extends HTMLElement {
    * all font-cache state lives in a single bundled module instance.
    * @returns {Promise<string[]>} restored font families
    */
-  restoreCachedFonts () { return restoreAll() }
+  restoreCachedFonts () { return restoreAll(ownerEditor(this)) }
 
   _syncTheme () {
     const root = closestRoot(this).querySelector('.svg_editor')
@@ -360,7 +360,7 @@ export class SeFontLibrary extends HTMLElement {
     const family = btn.dataset.family
     btn.classList.add('is-loading')
     try {
-      await ensureFont(family)
+      await ensureFont(family, ownerEditor(this))
     } catch (e) {
       logError(`SeFontLibrary: failed to load "${family}"`, e, 'seFontLibrary')
       btn.classList.remove('is-loading')

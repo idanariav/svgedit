@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
@@ -282,7 +282,7 @@ export class SeSelect extends HTMLElement {
 
   async _loadIcon (src) {
     if (!src) return
-    this.imgPath = this.imgPath || svgEditor?.configObj?.curConfig?.imgPath
+    this.imgPath = this.imgPath || ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (!this.imgPath) return
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)

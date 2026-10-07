@@ -1,4 +1,3 @@
-/* globals svgEditor */
 /**
  * canvasLayouts.js — saved canvas "layouts" (templates) for the Canvas Settings
  * popover (`seCanvasSettings.js`).
@@ -78,11 +77,12 @@ export const saveLayouts = (layouts) => {
 
 /**
  * Capture the current canvas (size, page background, and full SVG) as a layout.
+ * @param {object} editor The owning Editor instance
  * @param {string} name
  * @returns {{name:string,w:number,h:number,bg:string,svg:string}}
  */
-export const captureCurrentLayout = (name) => {
-  const { svgCanvas, configObj } = svgEditor
+export const captureCurrentLayout = (editor, name) => {
+  const { svgCanvas, configObj } = editor
   const res = svgCanvas.getResolution()
   return {
     name: name.trim(),
@@ -97,18 +97,19 @@ export const captureCurrentLayout = (name) => {
  * Apply a layout: overwrite canvas proportions + background, then re-inject the
  * saved objects onto a fresh `Layout: <name>` layer (replacing any same-named
  * layer from a previous apply). Existing canvas objects are preserved.
+ * @param {object} editor The owning Editor instance
  * @param {{name:string,w:number,h:number,bg:string,svg:string}} layout
  * @returns {void}
  */
-export const applyLayout = (layout) => {
-  const { svgCanvas } = svgEditor
+export const applyLayout = (editor, layout) => {
+  const { svgCanvas } = editor
   const drawing = svgCanvas.getCurrentDrawing()
   const originalLayer = drawing.getCurrentLayerName()
 
   // 1. Proportions + background (the only canvas-wide state a layout overwrites).
   svgCanvas.setResolution(layout.w, layout.h)
-  svgEditor.updateCanvas()
-  svgEditor.setBackground(layout.bg, undefined, undefined, true)
+  editor.updateCanvas()
+  editor.setBackground(layout.bg, undefined, undefined, true)
 
   // 2. Parse the saved canvas and collect its drawable objects + defs.
   const doc = new DOMParser().parseFromString(layout.svg, 'image/svg+xml')
@@ -183,6 +184,6 @@ export const applyLayout = (layout) => {
   // 6. Switch back so the layout layer becomes inactive (pointer-events: none),
   //    protecting its placeholders until the user explicitly selects the layer.
   svgCanvas.setCurrentLayer(originalLayer)
-  svgEditor.rightPanel.populateLayers()
-  svgEditor.updateCanvas()
+  editor.rightPanel.populateLayers()
+  editor.updateCanvas()
 }

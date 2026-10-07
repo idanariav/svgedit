@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuLayersDialog
@@ -151,15 +151,15 @@ export class SeCMenuLayerDialog extends HTMLElement {
     if (this._workarea !== undefined) {
       this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
       if (this.getAttribute('leftclick') === 'true') {
-        svgEditor.$click(this._workarea, onMenuOpenHandler)
+        $click(this._workarea, onMenuOpenHandler)
       }
       this._workarea.addEventListener('mousedown', onMenuCloseHandler)
       this.$sidePanels.addEventListener('mousedown', onMenuCloseHandler)
     }
-    svgEditor.$click(this.$duplicateLink, (evt) => onMenuClickHandler(evt, 'dupe', this.source))
-    svgEditor.$click(this.$deleteLink, (evt) => onMenuClickHandler(evt, 'delete', this.source))
-    svgEditor.$click(this.$mergeDownLink, (evt) => onMenuClickHandler(evt, 'merge_down', this.source))
-    svgEditor.$click(this.$mergeAllLink, (evt) => onMenuClickHandler(evt, 'merge_all', this.source))
+    $click(this.$duplicateLink, (evt) => onMenuClickHandler(evt, 'dupe', this.source))
+    $click(this.$deleteLink, (evt) => onMenuClickHandler(evt, 'delete', this.source))
+    $click(this.$mergeDownLink, (evt) => onMenuClickHandler(evt, 'merge_down', this.source))
+    $click(this.$mergeAllLink, (evt) => onMenuClickHandler(evt, 'merge_all', this.source))
   }
 }
 

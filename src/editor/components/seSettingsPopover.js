@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
+import { ownerEditor } from '../domScope.js'
 
 /**
  * @class SeSettingsPopover
@@ -51,7 +51,7 @@ export class SeSettingsPopover extends HTMLElement {
     template.innerHTML = templateHTML
     this._shadowRoot.append(template.content.cloneNode(true))
 
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.$icon = this._shadowRoot.querySelector('#icon')
     this.$trigger = this._shadowRoot.querySelector('.trigger')
     this.$popup = this._shadowRoot.querySelector('#options-container')

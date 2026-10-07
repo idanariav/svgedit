@@ -1,7 +1,8 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { formatHotkey } from '../Hotkeys.js'
 import hotkeyDialogHTML from './hotkeyDialog.html'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = hotkeyDialogHTML
@@ -75,11 +76,11 @@ export class SeHotkeyDialog extends HTMLElement {
 
   connectedCallback () {
     const close = () => this.setAttribute('dialog', 'close')
-    svgEditor.$click(this.$close, close)
-    svgEditor.$click(this.$done, close)
+    $click(this.$close, close)
+    $click(this.$done, close)
     this.$dialog.addEventListener('close', () => this._cancelRecording())
-    svgEditor.$click(this.$resetAll, () => {
-      svgEditor.hotkeys.resetAll()
+    $click(this.$resetAll, () => {
+      ownerEditor(this).hotkeys.resetAll()
       this._render()
     })
     // Delegate row actions (add / remove / reset).
@@ -96,7 +97,7 @@ export class SeHotkeyDialog extends HTMLElement {
 
   /** Build the grouped list of actions, applying the search / filter. */
   _render () {
-    const hk = svgEditor?.hotkeys
+    const hk = ownerEditor(this)?.hotkeys
     if (!hk) return
     const q = this._query.trim().toLowerCase()
     const groups = hk.listForUi()
@@ -162,7 +163,7 @@ export class SeHotkeyDialog extends HTMLElement {
     const btn = e.target.closest('[data-act]')
     if (!btn) return
     const { act, id, key } = btn.dataset
-    const hk = svgEditor.hotkeys
+    const hk = ownerEditor(this).hotkeys
     if (act === 'remove') {
       hk.removeKey(id, key)
       this._render()
@@ -189,7 +190,7 @@ export class SeHotkeyDialog extends HTMLElement {
     e.preventDefault()
     e.stopPropagation()
     if (e.key === 'Escape') { this._cancelRecording(); this._render(); return }
-    const hk = svgEditor.hotkeys
+    const hk = ownerEditor(this).hotkeys
     const key = hk.constructor.keyFromEvent(e)
     if (!key) return // lone modifier — keep waiting for the full combo
     const { id } = this._recording

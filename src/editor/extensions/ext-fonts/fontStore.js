@@ -1,4 +1,3 @@
-/* globals svgEditor */
 /**
  * @file fontStore.js
  *
@@ -139,12 +138,13 @@ const pickLatinWoff2 = (css) => {
  * Safe to call repeatedly.
  * @param {string} family
  * @param {string} base64 woff2
+ * @param {object} [editor] Owning Editor whose canvas should embed the font on export
  * @returns {Promise<void>}
  */
-export const registerFont = async (family, base64) => {
+export const registerFont = async (family, base64, editor) => {
   _cache.set(family, base64)
   // Expose to the export-time @font-face embedder
-  svgEditor?.svgCanvas?.setEncodableFont(family, base64)
+  editor?.svgCanvas?.setEncodableFont(family, base64)
   // Add to document.fonts so the canvas renders it live (skip if already present)
   const already = Array.from(document.fonts).some(f => f.family === family)
   if (!already) {
@@ -160,9 +160,9 @@ export const registerFont = async (family, base64) => {
  * @param {string} family
  * @returns {Promise<void>}
  */
-export const ensureFont = async (family) => {
+export const ensureFont = async (family, editor) => {
   if (_cache.has(family)) {
-    await registerFont(family, _cache.get(family))
+    await registerFont(family, _cache.get(family), editor)
     return
   }
   const adapter = getUserDataAdapter()
@@ -172,7 +172,7 @@ export const ensureFont = async (family) => {
     // download once, hand the binary to the host to persist, then register.
     const woff2Base64 = await downloadGoogleFont(family)
     await adapter.saveFont(family, woff2Base64)
-    await registerFont(family, woff2Base64)
+    await registerFont(family, woff2Base64, editor)
     return
   }
   let record = await getRecord(family)
@@ -183,7 +183,7 @@ export const ensureFont = async (family) => {
     record = { family, woff2Base64, v: REC_VERSION }
     await putRecord(record)
   }
-  await registerFont(family, record.woff2Base64)
+  await registerFont(family, record.woff2Base64, editor)
 }
 
 /**
@@ -191,7 +191,7 @@ export const ensureFont = async (family) => {
  * cached fonts render and export without any network access.
  * @returns {Promise<string[]>} families restored
  */
-export const restoreAll = async () => {
+export const restoreAll = async (editor) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     let records = []
@@ -202,7 +202,7 @@ export const restoreAll = async () => {
       return []
     }
     await Promise.all((records || []).map(r =>
-      registerFont(r.family, r.woff2Base64).catch(e =>
+      registerFont(r.family, r.woff2Base64, editor).catch(e =>
         logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
     ))
     return (records || []).map(r => r.family)
@@ -218,7 +218,7 @@ export const restoreAll = async () => {
   // the user next picks that font.
   const fresh = records.filter(r => r.v === REC_VERSION)
   await Promise.all(fresh.map(r =>
-    registerFont(r.family, r.woff2Base64).catch(e =>
+    registerFont(r.family, r.woff2Base64, editor).catch(e =>
       logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
   ))
   return fresh.map(r => r.family)

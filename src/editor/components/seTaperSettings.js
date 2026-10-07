@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -138,20 +138,20 @@ class SeTaperSettings extends SeSettingsPopover {
         const v = parseFloat(this._shadowRoot.querySelector(id).value)
         return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : fallback
       }
-      svgEditor.svgCanvas.applyTaperStroke?.({
+      ownerEditor(this).svgCanvas.applyTaperStroke?.({
         start: num('#taper_start', 100),
         end: num('#taper_end', 0)
       })
       this.close()
     })
     this.$remove.addEventListener('click', () => {
-      svgEditor.svgCanvas.removeTaperStroke?.()
+      ownerEditor(this).svgCanvas.removeTaperStroke?.()
       this.close()
     })
   }
 
   open () {
-    const existing = svgEditor.svgCanvas.getTaperParams?.()
+    const existing = ownerEditor(this).svgCanvas.getTaperParams?.()
     if (existing) {
       this._shadowRoot.querySelector('#taper_start').value = existing.start
       this._shadowRoot.querySelector('#taper_end').value = existing.end

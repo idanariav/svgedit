@@ -1,5 +1,6 @@
-/* globals svgEditor */
 import exportDialogHTML from './exportDialog.html'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 const template = document.createElement('template')
 template.innerHTML = exportDialogHTML
 /**
@@ -107,7 +108,7 @@ export class SeExportDialog extends HTMLElement {
     while (select.firstChild) select.removeChild(select.firstChild)
     this.$region.addOption('', 'Whole canvas')
 
-    const canvas = svgEditor?.svgCanvas
+    const canvas = ownerEditor(this)?.svgCanvas
     const content = canvas?.getSvgContent?.()
     const frames = content ? content.querySelectorAll('[data-frame]') : []
     frames.forEach((frame, i) => {
@@ -131,7 +132,7 @@ export class SeExportDialog extends HTMLElement {
       e.preventDefault()
       this.value = e.target.value
     })
-    svgEditor.$click(this.$input, (e) => {
+    $click(this.$input, (e) => {
       e.preventDefault()
       this.value = e.target.value
     })
@@ -152,8 +153,8 @@ export class SeExportDialog extends HTMLElement {
         this.setAttribute('dialog', 'close')
       }
     }
-    svgEditor.$click(this.$okBtn, (evt) => onSubmitHandler(evt, 'ok'))
-    svgEditor.$click(this.$cancelBtn, (evt) => onSubmitHandler(evt, 'cancel'))
+    $click(this.$okBtn, (evt) => onSubmitHandler(evt, 'ok'))
+    $click(this.$cancelBtn, (evt) => onSubmitHandler(evt, 'cancel'))
   }
 }
 

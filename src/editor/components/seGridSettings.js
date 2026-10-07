@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 
 // Grid shapes offered in the popover. `value` is stored in
 // `curConfig.gridShape`; `label` is shown in the <select>.
@@ -177,14 +177,14 @@ class SeGridSettings extends SeSettingsPopover {
    * @returns {void}
    */
   _commit (cfgKey, prefKey, value) {
-    svgEditor.configObj.curConfig[cfgKey] = value
-    svgEditor.configObj.pref(prefKey, String(value), true)
+    ownerEditor(this).configObj.curConfig[cfgKey] = value
+    ownerEditor(this).configObj.pref(prefKey, String(value), true)
     this._updateTriggerState()
     this.dispatchEvent(new CustomEvent('change', { detail: { key: cfgKey, value } }))
   }
 
   _syncFromConfig () {
-    const cfg = svgEditor.configObj.curConfig
+    const cfg = ownerEditor(this).configObj.curConfig
     this.$show.checked = !!cfg.showGrid
     this.$snap.checked = !!cfg.gridSnapping
     this.$shape.value = cfg.gridShape || 'square'
@@ -201,7 +201,7 @@ class SeGridSettings extends SeSettingsPopover {
   }
 
   _updateTriggerState () {
-    this.$trigger.setAttribute('data-active', String(!!svgEditor.configObj.curConfig.showGrid))
+    this.$trigger.setAttribute('data-active', String(!!ownerEditor(this).configObj.curConfig.showGrid))
   }
 
   open () {

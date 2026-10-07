@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -77,7 +77,7 @@ export class SeMenu extends HTMLElement {
     this.$toggle = this._shadowRoot.querySelector('#popupToggle')
     this.$popup = this._shadowRoot.querySelector('#menuPopup')
     this.$label = this.$toggle
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
   }
 
   /**

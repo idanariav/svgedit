@@ -143,10 +143,10 @@ class LeftPanel {
     // An editable (unlocked) whole-drawing import inserts real SVG elements;
     // everything else (locked embeds, raster images, frame crops) stays <image>.
     if (e.detail.editableSvg) {
-      insertSvgElements(e.detail.editableSvg, { vaultLink: e.detail.vaultLink, asPaths: e.detail.asPaths })
+      insertSvgElements(this.editor, e.detail.editableSvg, { vaultLink: e.detail.vaultLink, asPaths: e.detail.asPaths })
       return
     }
-    insertImageFromHref(e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked, external: e.detail.external })
+    insertImageFromHref(this.editor, e.detail.href, { vaultLink: e.detail.vaultLink, locked: e.detail.locked, external: e.detail.external })
   }
 
   /**

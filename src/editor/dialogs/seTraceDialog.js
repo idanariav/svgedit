@@ -1,6 +1,6 @@
-/* globals svgEditor */
 import traceDialogHTML from './seTraceDialog.html'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = traceDialogHTML
@@ -114,8 +114,8 @@ export class SeTraceDialog extends HTMLElement {
   setBusy (busy) {
     this.$okBtn.disabled = busy
     this.$okBtn.textContent = busy
-      ? svgEditor.i18next.t('tools.trace_working')
-      : svgEditor.i18next.t('tools.trace_convert')
+      ? ownerEditor(this).i18next.t('tools.trace_working')
+      : ownerEditor(this).i18next.t('tools.trace_convert')
   }
 
   /**
@@ -139,9 +139,9 @@ export class SeTraceDialog extends HTMLElement {
       this.$colorsVal.textContent = this.$colors.value
     })
 
-    svgEditor.$click(this.$cancelBtn, close)
-    svgEditor.$click(this.$closeBtn, close)
-    svgEditor.$click(this.$okBtn, () => {
+    $click(this.$cancelBtn, close)
+    $click(this.$closeBtn, close)
+    $click(this.$okBtn, () => {
       this.$error.classList.remove('show')
       this.dispatchEvent(new CustomEvent('change', {
         detail: {

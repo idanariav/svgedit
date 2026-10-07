@@ -1,4 +1,3 @@
-/* globals svgEditor */
 /**
  * SeShapeLibrary — <se-shape-library> web component.
  *
@@ -16,7 +15,7 @@
  */
 
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
@@ -592,7 +591,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   async _loadIcon (src) {
     if (!src) return
-    const imgPath = svgEditor?.configObj?.curConfig?.imgPath
+    const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (!imgPath) return
     const url = `${imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)

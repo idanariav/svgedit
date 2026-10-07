@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -64,7 +64,7 @@ export class SeMenuItem extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$label = this._shadowRoot.querySelector('.item-label')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
   }
 
   /**
@@ -157,7 +157,7 @@ export class SeMenuItem extends HTMLElement {
     // without a default `shortcut` (mirrors seButton.js's unconditional
     // registration, so unbound menu items are still searchable/bindable).
     if (this.id) {
-      svgEditor?.hotkeys?.registerEl({
+      ownerEditor(this)?.hotkeys?.registerEl({
         id: this.id,
         el: this,
         label: this.getAttribute('label'),

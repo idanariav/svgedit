@@ -1,6 +1,6 @@
-/* globals svgEditor */
 import imageImportDialogHTML from './imageImportDialog.html'
 import { closestRoot } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = imageImportDialogHTML
@@ -232,11 +232,11 @@ export class SeImageImportDialog extends HTMLElement {
     const close = () => this.setAttribute('dialog', 'close')
 
     // Browse / dropzone click open the native file picker
-    svgEditor.$click(this.$browseBtn, (e) => {
+    $click(this.$browseBtn, (e) => {
       e.stopPropagation()
       this.$fileInput.click()
     })
-    svgEditor.$click(this.$dropzone, () => this.$fileInput.click())
+    $click(this.$dropzone, () => this.$fileInput.click())
     this.$dropzone.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -302,7 +302,7 @@ export class SeImageImportDialog extends HTMLElement {
 
     // Vault import — delegates to the embedding host's picker. The host returns
     // a data URL (embedded inline) plus a provenance `link` to record.
-    svgEditor.$click(this.$vaultBtn, async () => {
+    $click(this.$vaultBtn, async () => {
       // A native <dialog> shown via showModal() renders in the browser's top
       // layer, which always paints above regular (non-native) content —
       // including the host's own modal system (e.g. Obsidian's file picker).
@@ -331,13 +331,13 @@ export class SeImageImportDialog extends HTMLElement {
     })
 
     // Footer + close
-    svgEditor.$click(this.$cancelBtn, close)
-    svgEditor.$click(this.$closeBtn, close)
+    $click(this.$cancelBtn, close)
+    $click(this.$closeBtn, close)
     this.$dialog.addEventListener('close', () => {
       if (this._suppressClose) return
       this.reset()
     })
-    svgEditor.$click(this.$okBtn, () => {
+    $click(this.$okBtn, () => {
       if (!this.href) return
       this.dispatchEvent(new CustomEvent('change', {
         detail: { trigger: 'ok', href: this.href, vaultLink: this.vaultLink || undefined, locked: this.locked || undefined, external: this.external || undefined, editableSvg: this.editableSvg || undefined, asPaths: this.asPaths || undefined }

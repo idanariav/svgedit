@@ -1,7 +1,8 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 /**
  * @class FlyingButton
@@ -15,7 +16,7 @@ export class FlyingButton extends HTMLElement {
     // Fixed trigger icon opt-in (see the 'src' case in attributeChangedCallback)
     this.staticIcon = false
     // create the shadowDom and insert the template
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate(this.imgPath)
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
@@ -373,8 +374,8 @@ export class FlyingButton extends HTMLElement {
           logError('unknown nodeName for: ' + ev.target.className, ev.target, 'seFlyingButton')
       }
     }
-    svgEditor.$click(this, onClickHandler)
-    svgEditor.$click(this.$handle, onClickHandler)
+    $click(this, onClickHandler)
+    $click(this.$handle, onClickHandler)
   }
 }
 

@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -92,7 +92,7 @@ export class ToolButton extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$div = this._shadowRoot.querySelector('div')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
 
     // `.disabled`'s `pointer-events: none` only excludes the inner shadow div
     // from hit-testing — the click still lands on this host element, so an
@@ -222,7 +222,7 @@ export class ToolButton extends HTMLElement {
     // toolbar/panel action can be listed and (re)bound from the Hotkey Manager.
     // Late-loading extension buttons register themselves the same way.
     if (this.id) {
-      svgEditor?.hotkeys?.registerEl({
+      ownerEditor(this)?.hotkeys?.registerEl({
         id: this.id,
         el: this,
         label: this.getAttribute('title'),

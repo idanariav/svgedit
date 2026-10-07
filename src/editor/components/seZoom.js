@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -165,7 +165,7 @@ class SeZoom extends HTMLElement {
     this.clickArea = this._shadowRoot.querySelector('#down')
     this.clickArea.addEventListener('click', this.handleClick.bind(this))
 
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.$icon = this._shadowRoot.querySelector('#icon')
 
     // Load zoom icon

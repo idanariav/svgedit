@@ -49,19 +49,20 @@ per-instance like the other core modules, and add a unit test that
 constructs two canvases, destroys one, and converts units on the other.
 Small.
 
-## Implicit `window.svgEditor` global (multi-instance)
+## Remaining `window.svgEditor` consumers
 
-74 files read the bare global `svgEditor` (`/* globals svgEditor */`).
-`EditorStartup.js` repoints it on every pointerdown/focusin as a
-workaround. That covers synchronous handlers, but not code that runs later
-(timers, awaited dialogs, promise continuations) after the user switches
-panes: that code acts on the wrong drawing, or a closed one.
-`window.seAlert`/`seConfirm`/`sePrompt`/`seSelect` are the same pattern.
-Fix: resolve the owning editor through `domScope.closestRoot(this)` mapped
-to the editor instance in components, and through the extension `S`
-context in extensions. Migrate gradually, with a `check-dom-scope.mjs`-style
-guard that rejects new bare `svgEditor.` references. Large: touches ~74
-files, so do it incrementally.
+Components and dialogs now resolve their editor with `domScope.ownerEditor(this)`
+(module helpers take an explicit `editor` argument) and `check-dom-scope.mjs`
+rejects new `window.svgEditor` reads / `/* globals svgEditor */` headers. Still
+on the global by design or not yet migrated: `ownerEditor()`'s last-resort
+fallback (unattached elements, e.g. a constructor running before connect, or a
+dialog appended to `document.body`), hosts and e2e tests that read
+`window.svgEditor`, `EditorStartup`'s repointing on interaction (kept for
+those), and `window.seAlert`/`seConfirm`/`sePrompt`/`seSelect`, which create
+standalone dialogs and don't touch an editor. Constructor-time reads such as
+`this.imgPath = ownerEditor(this).configObj…` still fall back to the global
+when the element isn't attached yet; they're harmless as long as `imgPath` is
+the same for every editor on the page. Small.
 
 ## `setSvgString` has no round-trip corpus test
 

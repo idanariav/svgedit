@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -147,7 +147,7 @@ class SeOffsetSettings extends SeSettingsPopover {
     const dist = parseFloat(this.$dist.value)
     if (!Number.isFinite(dist) || dist <= 0) return
     const delta = this._direction === 'inset' ? -dist : dist
-    svgEditor.svgCanvas.offsetPath(delta)
+    ownerEditor(this).svgCanvas.offsetPath(delta)
     this.close()
   }
 }

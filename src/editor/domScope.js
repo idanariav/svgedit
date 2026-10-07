@@ -136,3 +136,44 @@ export const ownsKeyEvent = (container, target) => {
  * @returns {Element|null}
  */
 export const getActiveRoot = () => activeEditor?.$container?.querySelector('.svg_editor') ?? document.querySelector('.svg_editor')
+
+/**
+ * container element -> the Editor instance mounted in it. Weak, so a destroyed
+ * editor's entry disappears with its container.
+ * @type {WeakMap<Element, object>}
+ */
+const editorsByRoot = new WeakMap()
+
+/**
+ * Record which editor owns `container` (called once from the editor
+ * constructor, next to the `data-svgedit-root` tagging).
+ * @param {Element} container
+ * @param {object} editor
+ * @returns {void}
+ */
+export const registerEditorRoot = (container, editor) => { editorsByRoot.set(container, editor) }
+
+/**
+ * The editor that owns `el`, found by walking up to its `data-svgedit-root`
+ * container — across shadow-DOM boundaries, so a component nested in another
+ * component's shadow root still resolves. This is the multi-editor-safe
+ * replacement for reading the `window.svgEditor` global, which only ever
+ * points at *one* editor and goes stale after the user switches panes (timers,
+ * awaited dialogs, promise continuations).
+ *
+ * Falls back to the active editor (or the `window.svgEditor` global) when `el`
+ * is not inside a registered editor container yet — e.g. a custom element's constructor
+ * running before it is attached, or a dialog appended to `document.body` — so
+ * the single-editor/standalone case behaves exactly as before.
+ * @param {?Node} el
+ * @returns {?object}
+ */
+export const ownerEditor = (el) => {
+  let node = el
+  while (node) {
+    const root = node.closest?.('[data-svgedit-root]')
+    if (root) return editorsByRoot.get(root) ?? activeEditor ?? window.svgEditor ?? null
+    node = node.getRootNode?.().host
+  }
+  return activeEditor ?? window.svgEditor ?? null
+}

@@ -1,6 +1,6 @@
-/* globals svgEditor */
 import { buildCommandSearchCatalog, activateCommandSearchResult } from '../commandSearch.js'
 import commandSearchDialogHTML from './commandSearchDialog.html'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = commandSearchDialogHTML
@@ -100,15 +100,15 @@ export class SeCommandSearchDialog extends HTMLElement {
   /** @param {string} id */
   _activate (id) {
     if (!id) return
-    activateCommandSearchResult(svgEditor, id)
+    activateCommandSearchResult(ownerEditor(this), id)
     this.close()
   }
 
   /** Build the grouped, filtered result list and keep `_flatIds` in sync. */
   _render () {
-    if (!svgEditor) return
+    if (!ownerEditor(this)) return
     const q = this._query.trim().toLowerCase()
-    const groups = buildCommandSearchCatalog(svgEditor)
+    const groups = buildCommandSearchCatalog(ownerEditor(this))
       .map((g) => ({
         group: g.group,
         actions: g.actions.filter((a) => !q || a.label.toLowerCase().includes(q))
@@ -119,7 +119,7 @@ export class SeCommandSearchDialog extends HTMLElement {
     if (this._selectedIndex >= this._flatIds.length) this._selectedIndex = 0
 
     if (!groups.length) {
-      this.$list.innerHTML = `<div class="cs-empty">${escapeHtml(svgEditor.i18next.t('command_search.no_results'))}</div>`
+      this.$list.innerHTML = `<div class="cs-empty">${escapeHtml(ownerEditor(this).i18next.t('command_search.no_results'))}</div>`
       return
     }
 

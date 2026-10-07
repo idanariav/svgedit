@@ -1,8 +1,8 @@
-/* globals svgEditor */
 /* eslint-disable max-len */
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const DEFAULT_PALETTE = [
   'none',
@@ -340,17 +340,17 @@ export class SEPalette extends HTMLElement {
     this._editMode = false
     this._target = 'fill'
 
-    svgEditor.$click(this.$targetBtn, (e) => {
+    $click(this.$targetBtn, (e) => {
       e.stopPropagation()
       this._cycleTarget()
     })
 
-    svgEditor.$click(this.$editBtn, (e) => {
+    $click(this.$editBtn, (e) => {
       e.stopPropagation()
       this._toggleEditMode()
     })
 
-    svgEditor.$click(this.$resetBtn, (e) => {
+    $click(this.$resetBtn, (e) => {
       e.stopPropagation()
       this._resetAll()
     })
@@ -434,7 +434,7 @@ export class SEPalette extends HTMLElement {
       swatch.dataset.rgb = color
     }
     swatch.dataset.index = String(i)
-    svgEditor.$click(swatch, (evt) => this._onSwatchClick(evt, i))
+    $click(swatch, (evt) => this._onSwatchClick(evt, i))
     swatch.addEventListener('contextmenu', (evt) => this._onSwatchContextMenu(evt, i))
     if (customised) {
       const revert = document.createElement('button')
@@ -443,7 +443,7 @@ export class SEPalette extends HTMLElement {
       revert.title = 'Revert to default color'
       revert.setAttribute('aria-label', 'Revert to default color')
       revert.textContent = '↺'
-      svgEditor.$click(revert, (evt) => {
+      $click(revert, (evt) => {
         evt.preventDefault()
         evt.stopPropagation()
         this._revert(i)
@@ -507,7 +507,7 @@ export class SEPalette extends HTMLElement {
     // tab (solid / linear / radial) and gradients stay editable.
     dialog.paint = paintFromOverride(this.getColor(i))
     dialog.type = 'fill'
-    dialog.i18next = svgEditor.i18next
+    dialog.i18next = ownerEditor(this).i18next
     ;(root.body ?? root).appendChild(dialog)
     dialog.addEventListener('change', (evt) => {
       const paint = evt.detail.paint

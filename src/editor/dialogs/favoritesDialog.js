@@ -1,8 +1,9 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.js'
 import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'
 import favoritesDialogHTML from './favoritesDialog.html'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = favoritesDialogHTML
@@ -85,8 +86,8 @@ export class SeFavoritesDialog extends HTMLElement {
 
   connectedCallback () {
     const close = () => this.setAttribute('dialog', 'close')
-    svgEditor.$click(this.$close, close)
-    svgEditor.$click(this.$done, close)
+    $click(this.$close, close)
+    $click(this.$done, close)
     this.$list.addEventListener('click', (e) => this._onListClick(e))
     this.$search.addEventListener('input', () => {
       this._query = this.$search.value
@@ -112,7 +113,7 @@ export class SeFavoritesDialog extends HTMLElement {
    * Normal mode: shows the full grouped catalog for browsing and starring.
    */
   _render () {
-    const editor = svgEditor
+    const editor = ownerEditor(this)
     if (!editor?.hotkeys) return
     const q = this._query.trim().toLowerCase()
 

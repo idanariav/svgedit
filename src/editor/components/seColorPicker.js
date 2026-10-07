@@ -1,11 +1,11 @@
-/* globals svgEditor */
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import './colorPicker/index.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -117,7 +117,7 @@ export class SeColorPicker extends HTMLElement {
     this.paintBox = null
     this.i18next = null
     this.$picker = this._shadowRoot.getElementById('picker')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
   }
 
   async _loadIcon (src) {
@@ -276,7 +276,7 @@ export class SeColorPicker extends HTMLElement {
    */
   connectedCallback () {
     this.paintBox = new PaintBox(this.$block, this.type)
-    svgEditor.$click(this.$picker, () => {
+    $click(this.$picker, () => {
       this.openColorDialog()
     })
   }

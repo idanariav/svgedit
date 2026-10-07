@@ -1,6 +1,6 @@
-/* globals svgEditor */
 import seTextPromptDialogHTML from './seTextPromptDialog.html'
 import { closestRoot } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = seTextPromptDialogHTML
@@ -103,9 +103,9 @@ export class SeTextPromptDialog extends HTMLElement {
       this.$dialog.close()
       this._settle(null)
     }
-    svgEditor.$click(this.$okBtn, submit)
-    svgEditor.$click(this.$cancelBtn, cancel)
-    svgEditor.$click(this.$closeBtn, cancel)
+    $click(this.$okBtn, submit)
+    $click(this.$cancelBtn, cancel)
+    $click(this.$closeBtn, cancel)
     this.$input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()

@@ -88,7 +88,7 @@ export default {
         // bitmap handling
         reader = new FileReader()
         reader.onloadend = ({ target: { result } }) => {
-          insertImageFromHref(result)
+          insertImageFromHref(svgEditor, result)
           $id('se-prompt-dialog').setAttribute('close', true)
           resetFileInput()
         }

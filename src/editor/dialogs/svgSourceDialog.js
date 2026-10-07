@@ -1,5 +1,6 @@
-/* globals svgEditor */
 import svgSourceDialogHTML from './svgSourceDialog.html'
+import { ownerEditor } from '../domScope.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = svgSourceDialogHTML
@@ -23,7 +24,7 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
     this.$copySec = this._shadowRoot.querySelector('#save_output_btns')
     this.$applySec = this._shadowRoot.querySelector('#tool_source_back')
     this.$toggleDynamic = this._shadowRoot.querySelector('#tool_source_dynamic')
-    this.$toggleDynamic.checked = svgEditor.configObj.curConfig.dynamicOutput
+    this.$toggleDynamic.checked = ownerEditor(this).configObj.curConfig.dynamicOutput
   }
 
   /**
@@ -209,10 +210,10 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
       })
       this.dispatchEvent(closeEvent)
     }
-    svgEditor.$click(this.$copyBtn, onCopyHandler)
-    svgEditor.$click(this.$saveBtn, onSaveHandler)
-    svgEditor.$click(this.$cancelBtn, onCancelHandler)
-    svgEditor.$click(this.$toggleDynamic, onToggleDynamicHandler)
+    $click(this.$copyBtn, onCopyHandler)
+    $click(this.$saveBtn, onSaveHandler)
+    $click(this.$cancelBtn, onCancelHandler)
+    $click(this.$toggleDynamic, onToggleDynamicHandler)
     this.$dialog.addEventListener('close', onCancelHandler)
   }
 }

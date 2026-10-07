@@ -1,7 +1,6 @@
-/* globals svgEditor */
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
-import { closestRoot } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { loadFavorites } from '../favorites.js'
 import {
@@ -11,6 +10,7 @@ import {
   runFavoriteTrigger
 } from '../favoriteActions.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuDialogHTML
@@ -82,7 +82,7 @@ export class SeCMenuDialog extends HTMLElement {
 
   /** Rebuild the menu contents from the user's favorites. */
   _build () {
-    const editor = svgEditor
+    const editor = ownerEditor(this)
     this.$dialog.replaceChildren()
     const hasSelection = !!(editor.selectedElement || editor.multiselected)
     let rendered = 0
@@ -122,7 +122,7 @@ export class SeCMenuDialog extends HTMLElement {
     a.append(label)
     if (meta.src) this._loadIcon(icon, meta.src)
     li.append(a)
-    svgEditor.$click(a, (e) => {
+    $click(a, (e) => {
       e.preventDefault()
       this._hide()
       runFavoriteTrigger(editor, id)
@@ -162,7 +162,7 @@ export class SeCMenuDialog extends HTMLElement {
    * @returns {Promise<void>}
    */
   async _loadIcon (host, src) {
-    const url = `${svgEditor.configObj.curConfig.imgPath}/${src}`
+    const url = `${ownerEditor(this).configObj.curConfig.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
     if (svgEl) {
       host.replaceChildren(svgEl)

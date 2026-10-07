@@ -41,7 +41,7 @@ describe('canvasLayouts applyLayout', () => {
       svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
     }
 
-    applyLayout(layout)
+    applyLayout(svgEditor, layout)
 
     expect(svgCanvas.setResolution).toHaveBeenCalledWith(200, 150)
     expect(svgEditor.setBackground).toHaveBeenCalledWith('#ff0000', undefined, undefined, true)

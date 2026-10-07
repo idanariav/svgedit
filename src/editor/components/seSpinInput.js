@@ -1,8 +1,8 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 
 // Press-and-hold auto-repeat: first repeat after HOLD_DELAY_MS, then every
 // HOLD_INTERVAL_MS until the mouse is released or the limit is reached.
@@ -147,7 +147,7 @@ export class SESpinInput extends HTMLElement {
     this.$input = this._shadowRoot.querySelector('.num-input')
     this.$upBtn = this._shadowRoot.querySelector('.spin-up')
     this.$downBtn = this._shadowRoot.querySelector('.spin-down')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
 
     // Matches the previous spin-box template's hardcoded defaults
     // (min="1" step="1") for consumers that don't set their own

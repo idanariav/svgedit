@@ -1,4 +1,3 @@
-/* globals svgEditor */
 import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.js'
 
 // Basic shapes that get converted to <path> on import, and the geometry
@@ -64,8 +63,8 @@ const convertShapesToPaths = (node, doc, svgCanvas) => {
  *   host should re-resolve to a fresh href on every load.
  * @returns {void}
  */
-export const insertImageFromHref = (href, opts = {}) => {
-  const svgCanvas = svgEditor.svgCanvas
+export const insertImageFromHref = (editor, href, opts = {}) => {
+  const svgCanvas = editor.svgCanvas
 
   /**
    * @param {Float} imageWidth
@@ -91,7 +90,7 @@ export const insertImageFromHref = (href, opts = {}) => {
     svgCanvas.selectOnly([newImage])
     svgCanvas.alignSelectedElements('m', 'page')
     svgCanvas.alignSelectedElements('c', 'page')
-    svgEditor.topPanel.updateContextPanel()
+    editor.topPanel.updateContextPanel()
   }
 
   // Probe the image to learn its natural dimensions before inserting.
@@ -139,8 +138,8 @@ export const insertImageFromHref = (href, opts = {}) => {
  *   drop the vectorized paths directly over the source image.
  * @returns {void}
  */
-export const insertSvgElements = (svgString, opts = {}) => {
-  const svgCanvas = svgEditor.svgCanvas
+export const insertSvgElements = (editor, svgString, opts = {}) => {
+  const svgCanvas = editor.svgCanvas
   const doc = svgCanvas.getDOMDocument()
 
   const parsed = new DOMParser().parseFromString(svgString, 'image/svg+xml')
@@ -272,5 +271,5 @@ export const insertSvgElements = (svgString, opts = {}) => {
   svgCanvas.addCommandToHistory(batchCmd)
   svgCanvas.call('changed', unit)
 
-  svgEditor.topPanel.updateContextPanel()
+  editor.topPanel.updateContextPanel()
 }

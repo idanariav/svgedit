@@ -1,9 +1,9 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { loadLayouts, saveLayouts, captureCurrentLayout, applyLayout } from '../canvasLayouts.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 // Built-in canvas size presets, used when the user has not curated their own
@@ -471,7 +471,7 @@ class SeCanvasSettings extends SeSettingsPopover {
   open () {
     // Pre-fill inputs with the current canvas resolution and remember it so
     // Reset can restore the size the canvas had when the popover was opened.
-    const res = svgEditor.svgCanvas.getResolution()
+    const res = ownerEditor(this).svgCanvas.getResolution()
     this._original = { w: Math.round(res.w), h: Math.round(res.h) }
     this.$w.value = this._original.w
     this.$h.value = this._original.h
@@ -632,7 +632,7 @@ class SeCanvasSettings extends SeSettingsPopover {
       applyBtn.textContent = 'Apply'
       applyBtn.title = 'Apply this layout'
       applyBtn.addEventListener('click', () => {
-        applyLayout(layout)
+        applyLayout(ownerEditor(this), layout)
         this.close()
       })
 
@@ -660,7 +660,7 @@ class SeCanvasSettings extends SeSettingsPopover {
     const name = this.$layoutName.value.trim()
     if (!name) return
     // Overwrite in place if the name already exists, else append.
-    const layout = captureCurrentLayout(name)
+    const layout = captureCurrentLayout(ownerEditor(this), name)
     const existing = this.layouts.findIndex(l => l.name === name)
     if (existing >= 0) {
       this.layouts[existing] = layout
@@ -677,7 +677,7 @@ class SeCanvasSettings extends SeSettingsPopover {
   overwriteLayout (index) {
     const existing = this.layouts[index]
     if (!existing) return
-    this.layouts[index] = captureCurrentLayout(existing.name)
+    this.layouts[index] = captureCurrentLayout(ownerEditor(this), existing.name)
     saveLayouts(this.layouts)
     this.renderLayouts()
   }
@@ -696,8 +696,8 @@ class SeCanvasSettings extends SeSettingsPopover {
     if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
       return
     }
-    svgEditor.svgCanvas.setResolution(w, h)
-    svgEditor.updateCanvas()
+    ownerEditor(this).svgCanvas.setResolution(w, h)
+    ownerEditor(this).updateCanvas()
     this.close()
   }
 

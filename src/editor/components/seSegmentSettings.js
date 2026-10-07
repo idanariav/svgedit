@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -201,7 +201,7 @@ class SeSegmentSettings extends SeSettingsPopover {
   open () {
     // Seed from an existing non-split segment result on the selection, so
     // Apply re-edits it (split results have no live params to seed from).
-    const existing = svgEditor.svgCanvas.getSegmentParams?.()
+    const existing = ownerEditor(this).svgCanvas.getSegmentParams?.()
     if (existing) {
       this._setMode(existing.mode)
       this._setSplit(existing.split)
@@ -238,7 +238,7 @@ class SeSegmentSettings extends SeSettingsPopover {
         axis: this._axis
       }
     }
-    svgEditor.svgCanvas.segmentSelection?.(params)
+    ownerEditor(this).svgCanvas.segmentSelection?.(params)
     this.close()
   }
 }

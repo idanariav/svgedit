@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -74,7 +74,7 @@ export class SeList extends HTMLElement {
     this.$label = this._shadowRoot.querySelector('label')
     this.$selection = this.$dropdown.querySelector('#selected-value')
     this.items = this.querySelectorAll('se-list-item')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.$optionsContainer = this._shadowRoot.querySelector('#options-container')
     this.$optionsContainer.classList.add('closed')
     this.$selection.addEventListener('click', this.toggleList)

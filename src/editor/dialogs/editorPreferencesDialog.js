@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import editorPreferencesDialog from './editorPreferencesDialog.html'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 const template = document.createElement('template')
 template.innerHTML = editorPreferencesDialog
 /**
@@ -171,8 +171,8 @@ export class SeEditPrefsDialog extends HTMLElement {
       })
       this.dispatchEvent(closeEvent)
     }
-    svgEditor.$click(this.$saveBtn, onSaveHandler)
-    svgEditor.$click(this.$cancelBtn, onCancelHandler)
+    $click(this.$saveBtn, onSaveHandler)
+    $click(this.$cancelBtn, onCancelHandler)
     this.$dialog.addEventListener('close', onCancelHandler)
   }
 }

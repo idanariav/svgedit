@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -251,7 +251,7 @@ class SeRepeatSettings extends SeSettingsPopover {
       sweep: this._shadowRoot.querySelector('#repeat_sweep').value
     }
     this.close()
-    svgEditor.svgCanvas.armRepeatCenterPick?.((x, y) => {
+    ownerEditor(this).svgCanvas.armRepeatCenterPick?.((x, y) => {
       this._centerX = x
       this._centerY = y
       this._pendingReopen = pending
@@ -283,13 +283,13 @@ class SeRepeatSettings extends SeSettingsPopover {
         this._shadowRoot.querySelector('#repeat_sweep').value = p.sweep
       }
       this._updateCenterReadout()
-      this.$apply.textContent = svgEditor.svgCanvas.getRepeatParams?.() ? 'Update' : 'Apply'
+      this.$apply.textContent = ownerEditor(this).svgCanvas.getRepeatParams?.() ? 'Update' : 'Apply'
       super.open()
       return
     }
 
     // Seed from an existing repeat on the selection so Apply re-edits it.
-    const existing = svgEditor.svgCanvas.getRepeatParams?.()
+    const existing = ownerEditor(this).svgCanvas.getRepeatParams?.()
     if (existing) {
       this._setMode(existing.mode)
       if (existing.mode === 'radial') {
@@ -349,7 +349,7 @@ class SeRepeatSettings extends SeSettingsPopover {
         follow: this.$follow.getAttribute('aria-pressed') === 'true'
       }
     }
-    svgEditor.svgCanvas.repeatSelection?.(params)
+    ownerEditor(this).svgCanvas.repeatSelection?.(params)
     this.close()
   }
 }

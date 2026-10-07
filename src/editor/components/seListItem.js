@@ -1,7 +1,7 @@
-/* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -82,7 +82,7 @@ export class SeListItem extends HTMLElement {
     this.$menuitem = this._shadowRoot.querySelector('[aria-label=option]')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$labelText = this._shadowRoot.querySelector('.label-text')
-    this.imgPath = svgEditor.configObj.curConfig.imgPath
+    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
     this.$menuitem.addEventListener('mousedown', e => {
       this.$menuitem.dispatchEvent(new CustomEvent('selectedindexchange', {
         bubbles: true,

@@ -1,5 +1,5 @@
-/* globals svgEditor */
 import { SeSettingsPopover } from './seSettingsPopover.js'
+import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -117,7 +117,7 @@ class SeSmoothPathSettings extends SeSettingsPopover {
   _preview () {
     const strength = parseFloat(this.$strength.value)
     if (!Number.isFinite(strength)) return
-    svgEditor.svgCanvas.previewSmoothPath?.(Math.max(0, Math.min(100, strength)) / 100)
+    ownerEditor(this).svgCanvas.previewSmoothPath?.(Math.max(0, Math.min(100, strength)) / 100)
   }
 
   open () {
@@ -128,13 +128,13 @@ class SeSmoothPathSettings extends SeSettingsPopover {
 
   apply () {
     this._applied = true
-    svgEditor.svgCanvas.commitSmoothPath?.()
+    ownerEditor(this).svgCanvas.commitSmoothPath?.()
     this.close()
   }
 
   close () {
     if (!this._applied) {
-      svgEditor.svgCanvas.cancelSmoothPath?.()
+      ownerEditor(this).svgCanvas.cancelSmoothPath?.()
     }
     super.close()
   }
