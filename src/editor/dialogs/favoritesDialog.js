@@ -4,6 +4,7 @@ import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'
 import favoritesDialogHTML from './favoritesDialog.html'
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = favoritesDialogHTML
@@ -74,6 +75,7 @@ export class SeFavoritesDialog extends HTMLElement {
     if (name === 'dialog') {
       if (newValue === 'open') {
         this._render()
+        syncDialogTheme(this)
         this.$dialog.showModal()
       } else {
         this.$dialog.close()

@@ -3,21 +3,9 @@
         display: none;
     }
 
-    /* Force the scroll bar to appear so we see it hide when overlay opens. */
-    body::-webkit-scrollbar {
-        background: lightgray;
-    }
-
-    body::-webkit-scrollbar-thumb {
-        background: darkgray;
-    }
-
+    /* Colours, buttons and fields come from dialogSkin.css.js (token-driven). */
     #svg_source_editor #svg_source_container {
-        background-color: #5a6162;
-        color: #c5c5c5;
-        opacity: 1.0;
         text-align: center;
-        border: 1px outset #777;
         z-index: 6;
     }
 
@@ -33,55 +21,43 @@
 
     #svg_source_editor form {
         width: 100%;
+        margin: 0;
     }
 
     #svg_source_editor #svg_source_textarea {
-        padding: 5px;
+        padding: 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 12px;
         min-height: 200px;
-        width: 95%;
+        width: 100%;
         height: 95%;
     }
 
     #svg_source_editor #tool_source_back {
-        text-align: left;
-        height: 30px;
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        margin-bottom: 10px;
     }
 
-    #tool_source_save {
-        width: 20%;
-        background-color: #c79605;
-        margin-left: 30%;
-        margin-top: 5px;
-    }
-    
     #tool_source_dynamic {
         cursor: pointer;
     }
-    
+
     .tool_label {
         cursor: pointer;
-        margin: 5px 0;
+        margin: 8px 0 0;
         display: inline-block;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
     }
-
-    #tool_source_cancel {
-        width: 20%;
-        background-color: #c8c8c8;
-    }
-
-    #svg_source_editor::backdrop {
-        background: rgba(0, 0, 0, 0.2);
-    }
 </style>
 <dialog id="svg_source_editor" aria-label="SVG Source Editor">
     <div id="svg_source_container">
         <div id="tool_source_back" class="toolbar_button">
-            <button id="tool_source_save"></button>
+            <button id="tool_source_save" class="dlg-primary"></button>
             <button id="tool_source_cancel"></button>
         </div>
         <div id="save_output_btns">

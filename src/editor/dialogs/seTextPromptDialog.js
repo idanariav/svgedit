@@ -1,6 +1,7 @@
 import seTextPromptDialogHTML from './seTextPromptDialog.html'
 import { closestRoot } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = seTextPromptDialogHTML
@@ -66,7 +67,7 @@ export class SeTextPromptDialog extends HTMLElement {
       // Mirror the editor's active theme onto the host so the shadow CSS tokens
       // resolve to the right palette (the dialog lives outside the themed
       // `.svg_editor` scope).
-      this.classList.toggle('theme-dark', !!closestRoot(this).querySelector('.svg_editor')?.classList.contains('theme-dark'))
+      syncDialogTheme(this)
       this.$dialog.showModal()
       // Focus + select after the dialog paints.
       setTimeout(() => {

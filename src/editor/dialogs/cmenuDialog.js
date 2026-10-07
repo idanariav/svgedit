@@ -1,6 +1,7 @@
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
+import { syncDialogTheme } from '../themeUtil.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { loadFavorites } from '../favorites.js'
 import {
@@ -64,6 +65,7 @@ export class SeCMenuDialog extends HTMLElement {
     this._workarea = closestRoot(this).querySelector('[id="workarea"]')
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
+      syncDialogTheme(current)
       current._build()
       positionContextMenu(current.$dialog, e.clientX, e.clientY)
     }

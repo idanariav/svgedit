@@ -12,8 +12,20 @@ const DIALOGS = {
   'se-text-prompt-dialog': 'dialogs/seTextPromptDialog.html',
   'se-image-import-dialog': 'dialogs/imageImportDialog.html',
   'se-trace-dialog': 'dialogs/seTraceDialog.html',
-  'se-edit-prefs-dialog': 'dialogs/editorPreferencesDialog.html'
+  'se-edit-prefs-dialog': 'dialogs/editorPreferencesDialog.html',
+  'se-export-dialog': 'dialogs/exportDialog.html',
+  'se-svg-source-editor-dialog': 'dialogs/svgSourceDialog.html',
+  'se-img-prop-dialog': 'dialogs/imagePropertiesDialog.html',
+  'se-plain-alert-dialog': 'dialogs/SePlainAlertDialog.js',
+  'se-cmenu_canvas-dialog': 'dialogs/cmenuDialog.html',
+  'se-cmenu-layers': 'dialogs/cmenuLayersDialog.html',
+  'se-hotkey-dialog': 'dialogs/hotkeyDialog.html',
+  'se-favorites-dialog': 'dialogs/favoritesDialog.html',
+  'se-command-search-dialog': 'dialogs/commandSearchDialog.html'
 }
+
+// Elements in dialogs/ that are not themed surfaces themselves.
+const NOT_A_SURFACE = new Set(['se-prompt-dialog']) // wraps se-plain-alert-dialog
 
 const selectorOf = (css, marker) => {
   const at = css.indexOf(marker)
@@ -28,6 +40,20 @@ describe('dialog theme tokens', () => {
   it.each(Object.keys(DIALOGS))('%s gets light and dark tokens from svgedit.css', (tag) => {
     expect(light).toMatch(new RegExp(`(^|\\s)${tag}(,|\\s*$)`))
     expect(dark).toContain(`${tag}.theme-dark`)
+  })
+
+  it('lists every custom element defined in dialogs/ (so a new dialog cannot ship unthemed)', () => {
+    const dir = resolve(process.cwd(), 'src/editor/dialogs')
+    const defined = readdirSync(dir).filter((f) => f.endsWith('.js')).flatMap((f) =>
+      [...readFileSync(join(dir, f), 'utf8').matchAll(/customElements\.define\('([a-z0-9_-]+)'/g)].map((m) => m[1]))
+    expect(defined.length).toBeGreaterThan(10)
+    expect(defined.filter((t) => !NOT_A_SURFACE.has(t) && !(t in DIALOGS))).toEqual([])
+  })
+
+  it('does not bring back the legacy grey dialog skin', () => {
+    const skin = /#5a6162|#c5c5c5|border: 1px outset|#CCC;|#DDD;/i
+    const hits = Object.values(DIALOGS).filter((f) => skin.test(read(f)))
+    expect(hits).toEqual([])
   })
 
   it('keeps ":root," directly before ".svg_editor" (the Obsidian plugin scopes it by regex)', () => {

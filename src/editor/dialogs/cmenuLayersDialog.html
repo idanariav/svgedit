@@ -2,8 +2,9 @@
     .contextMenu {
         position: fixed;
         z-index: 99999;
-        border: solid 1px rgba(0, 0, 0, .33);
-        background: rgba(255, 255, 255, .95);
+        border: solid 1px var(--chrome-border, rgba(0, 0, 0, .33));
+        background: var(--chrome-bg, rgba(255, 255, 255, .95));
+        color: var(--fg, #222);
         padding: 5px 0;
         margin: 0px;
         display: none;
@@ -31,7 +32,7 @@
         -moz-user-select: none;
         -webkit-user-select: none;
         user-select: none;
-        color: #222;
+        color: var(--fg, #222);
         text-decoration: none;
         display: block;
         line-height: 20px;
@@ -43,13 +44,13 @@
     }
 
     .contextMenu li.hover a {
-        background-color: #2e5dea;
-        color: white;
+        background-color: var(--accent, #2e5dea);
+        color: #fff;
         cursor: default;
     }
 
     .contextMenu li.disabled a {
-        color: #999;
+        color: var(--muted, #999);
         pointer-events: none;
     }
 
@@ -58,7 +59,7 @@
     }
 
     .contextMenu li.separator {
-        border-top: solid 1px #E3E3E3;
+        border-top: solid 1px var(--chrome-border, #E3E3E3);
         padding-top: 5px;
         margin-top: 5px;
     }

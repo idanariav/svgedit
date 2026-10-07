@@ -3,11 +3,13 @@
         display: none;
     }
 
-    #hotkey_dialog::part(frame) {
+    /* The card (#hk_container) is the visible surface; reset the native <dialog> frame. */
+    #hotkey_dialog {
         padding: 0;
         background: transparent;
         border: none;
         box-shadow: none;
+        overflow: visible;
     }
 
     #hk_container {

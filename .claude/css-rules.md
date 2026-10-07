@@ -11,14 +11,22 @@
 
 Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and overridden by `.svg_editor.theme-dark`.
 
-The modal dialogs (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`,
-`se-image-import-dialog`, `se-trace-dialog`, `se-edit-prefs-dialog`) are mounted next to `.svg_editor`, not inside
-it, so they are listed in the same two token blocks (`se-x-dialog` for light,
-`se-x-dialog.theme-dark` for dark; the dialog toggles `theme-dark` on its host). They
-must **not** redefine the shared tokens locally; only dialog-specific `--cp-*` / `--pd-*`
-tokens live in their own styles. A new dialog mounted outside `.svg_editor` needs adding to
-both blocks (`tests/unit/dialog-theme-tokens.test.js`). Keep `:root,` directly before
-`.svg_editor` — the Obsidian plugin strips it with a regex to scope the variables.
+Every dialog (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`,
+`se-image-import-dialog`, `se-trace-dialog`, `se-edit-prefs-dialog`, `se-export-dialog`,
+`se-svg-source-editor-dialog`, `se-img-prop-dialog`, `se-plain-alert-dialog` (alert/confirm/select/prompt),
+`se-cmenu_canvas-dialog`, `se-cmenu-layers`, `se-hotkey-dialog`, `se-favorites-dialog`,
+`se-command-search-dialog`) is mounted next to `.svg_editor`, not inside it, so it is listed in the
+same two token blocks (`se-x-dialog` for light, `se-x-dialog.theme-dark` for dark) and follows the
+editor's light/dark theme. Each dialog calls `syncDialogTheme(this)` (`themeUtil.js`) every time it
+opens, which copies the owning editor's theme onto the host as `theme-dark`/`theme-light`.
+Dialogs must **not** redefine the shared tokens locally; only dialog-specific `--cp-*` / `--pd-*`
+tokens live in their own styles. A new dialog needs: its tag in both blocks, `syncDialogTheme` on
+open, and (for form-style dialogs) `dialogSkin('#its_card')` from `dialogs/dialogSkin.css.js` for
+the card/buttons/fields — `tests/unit/dialog-theme-tokens.test.js` fails if the tag is missing.
+`<dialog>` elements need their own frame reset (`padding:0; background:transparent; border:none`)
+when the card inside is the visible surface; `::part(frame)` does nothing on a native `<dialog>`.
+Keep `:root,` directly before `.svg_editor` — the Obsidian plugin strips it with a regex to scope
+the variables.
 
 ### Surface Colors
 

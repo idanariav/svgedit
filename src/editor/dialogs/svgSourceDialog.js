@@ -1,9 +1,11 @@
 import svgSourceDialogHTML from './svgSourceDialog.html'
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { syncDialogTheme } from '../themeUtil.js'
+import { dialogSkin } from './dialogSkin.css.js'
 
 const template = document.createElement('template')
-template.innerHTML = svgSourceDialogHTML
+template.innerHTML = `<style>${dialogSkin('#svg_source_container')}</style>${svgSourceDialogHTML}`
 /**
  * @class SeSvgSourceEditorDialog
  */
@@ -63,6 +65,7 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
           // showModal() auto-focuses the first focusable descendant (the Save
           // button, here) — explicitly re-focus the textarea after so typing
           // can start immediately, same intent as before.
+          syncDialogTheme(this)
           this.$dialog.showModal()
           this.$sourceTxt.focus()
         } else {

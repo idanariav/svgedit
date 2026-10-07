@@ -104,23 +104,18 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 
 ## Hard-coded colours in component/dialog styles
 
-The six dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
-`imageImportDialog`, `seTraceDialog`, `editorPreferencesDialog`) no longer carry private copies of the
-shared design tokens: `svgedit.css` lists their tags in its light and dark
-token blocks, because the dialogs are mounted beside `.svg_editor`, not inside
-it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
+All dialogs now follow the editor theme: `svgedit.css` lists every dialog tag in its light
+and dark token blocks (they are mounted beside `.svg_editor`, not inside it), each calls
+`syncDialogTheme()` on open, and the form-style ones share `dialogs/dialogSkin.css.js`
+(`tests/unit/dialog-theme-tokens.test.js` guards all of it). What's left:
 
 - Hard-coded hex outside token definitions and `var(--x, #fallback)` (counted
-  2026-10-07): ~200 lines, of which ~115 are colour *data* and should stay
-  (`HsvBox.js` hue maths, `sePalette.js` swatches, picker/TabletShell preset
-  lists, `#fff` on accent buttons). The rest is the legacy grey-bevel skin of
-  `exportDialog`, `svgSourceDialog`, `imagePropertiesDialog`,
-  `SePlainAlertDialog`, `cmenuDialog`/`cmenuLayersDialog`, `hotkeyDialog`,
-  `favoritesDialog` and `seExplorerButton` (`#5a6162`, `#c8c8c8`, `#E8E8E8`, …).
-  Moving those onto the tokens is a restyle, not a find/replace: they have no
-  dark theme today (add them to the token blocks first, like the other dialogs)
-  and need visual QA in both themes. The `--cp-*` / `--pd-*` modal tokens in
-  `ColorDialog`/`PaletteDialog` are intentional named component tokens.
+  2026-10-07, before the dialog work): ~200 lines, of which ~115 are colour *data* that
+  should stay (`HsvBox.js` hue maths, `sePalette.js` swatches, picker/TabletShell preset
+  lists, `#fff` on accent buttons). The remaining legacy skin is `seExplorerButton`
+  (`#E8E8E8`, `#5a6162`), which is a component, not a dialog, and needs the same treatment.
+  Re-count before starting. The `--cp-*` / `--pd-*` modal tokens are intentional named
+  component tokens.
 - Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
   plugin) still don't reach these dialogs, since they sit outside it. Fixing
   that means mounting them inside `.svg_editor` (check `position: fixed`

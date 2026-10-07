@@ -1,6 +1,7 @@
 import { buildCommandSearchCatalog, activateCommandSearchResult } from '../commandSearch.js'
 import commandSearchDialogHTML from './commandSearchDialog.html'
 import { ownerEditor } from '../domScope.js'
+import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = commandSearchDialogHTML
@@ -64,6 +65,7 @@ export class SeCommandSearchDialog extends HTMLElement {
     this._selectedIndex = 0
     this.$search.value = ''
     this._render()
+    syncDialogTheme(this)
     this.$dialog.showModal()
     requestAnimationFrame(() => this.$search.focus())
   }

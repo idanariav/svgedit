@@ -3,24 +3,10 @@
         display: none;
     }
 
-    /* Force the scroll bar to appear so we see it hide when overlay opens. */
-    body::-webkit-scrollbar {
-        background: lightgray;
-    }
-
-    body::-webkit-scrollbar-thumb {
-        background: darkgray;
-    }
-
+    /* Colours, buttons and fields come from dialogSkin.css.js (token-driven). */
     #svg_docprops #svg_docprops_container {
-        padding: 10px;
-        background-color: #5a6162;
-        color: #c5c5c5;
-        border: 1px outset #777;
-        opacity: 1.0;
-        font-family: Verdana, Helvetica, sans-serif;
-        font-size: .8em;
         z-index: 20001;
+        display: flow-root; /* contain the floated fieldset */
     }
 
     #svg_docprops .error {
@@ -33,7 +19,9 @@
     }
 
     #tool_docprops_back {
-        margin-left: 1em;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
         overflow: auto;
     }
 
@@ -56,22 +44,17 @@
     #svg_docprops_container fieldset {
         padding: 5px;
         margin: 5px;
-        border: 1px solid #DDD;
     }
 
     #svg_docprops_container label {
         display: block;
         margin: .5em;
     }
-
-    #svg_docprops::backdrop {
-        background: rgba(0, 0, 0, 0.2);
-    }
 </style>
 <dialog id="svg_docprops" aria-label="Sample dialog">
     <div id="svg_docprops_container">
         <div id="tool_docprops_back" class="toolbar_button">
-            <button id="tool_docprops_save"></button>
+            <button id="tool_docprops_save" class="dlg-primary"></button>
             <button id="tool_docprops_cancel"></button>
         </div>
         <fieldset id="svg_docprops_docprops">

@@ -1,33 +1,26 @@
+import { syncDialogTheme } from '../themeUtil.js'
+import { dialogSkin } from './dialogSkin.css.js'
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
+    ${dialogSkin('dialog')}
     dialog {
-      padding: 1em;
-      background: #CCC;
-      width: 300px;
-      border: 1px outset #777;
-      font-size: 0.8em;
-      font-family: Verdana, Helvetica, sans-serif;
-      border-radius: 5px;
-    }
-    dialog::backdrop {
-      background: rgba(0, 0, 0, 0.2);
+      width: 340px;
+      max-width: 92vw;
     }
     #se-content-alert {
-      height: 95px;
-      background: #DDD;
+      max-height: 40vh;
+      min-height: 48px;
       overflow: auto;
       text-align: left;
-      border: 1px solid #5a6162;
-      padding: 1em;
-      border-radius: 5px;
+      line-height: 1.45;
     }
     #choiceButtonContainer {
-      margin-top: 1em;
-      text-align: center;
-    }
-    #choiceButtonContainer button:not(:first-child) {
-      margin-left: 0.5em;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
     }
   </style>
   <dialog>
@@ -104,8 +97,9 @@ export default class SePlainAlertDialog extends HTMLElement {
   set choices (choices) {
     this._choices = choices
     this.$buttonContainer.replaceChildren(
-      ...choices.map(choice => {
+      ...choices.map((choice, i) => {
         const btn = document.createElement('button')
+        if (i === 0) btn.className = 'dlg-primary'
         btn.textContent = choice
         return btn
       })
@@ -129,6 +123,7 @@ export default class SePlainAlertDialog extends HTMLElement {
       document.body.appendChild(this)
       this._autoAttached = true
     }
+    syncDialogTheme(this)
     this.$dialog.showModal()
   }
 

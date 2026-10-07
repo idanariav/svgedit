@@ -3,11 +3,13 @@
         display: none;
     }
 
-    #cs_dialog::part(frame) {
+    /* The card (#cs_container) is the visible surface; reset the native <dialog> frame. */
+    #cs_dialog {
         padding: 0;
         background: transparent;
         border: none;
         box-shadow: none;
+        overflow: visible;
     }
 
     #cs_container {

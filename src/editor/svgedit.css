@@ -16,7 +16,16 @@ se-palette-dialog,
 se-text-prompt-dialog,
 se-image-import-dialog,
 se-trace-dialog,
-se-edit-prefs-dialog {
+se-edit-prefs-dialog,
+se-export-dialog,
+se-svg-source-editor-dialog,
+se-img-prop-dialog,
+se-plain-alert-dialog,
+se-cmenu_canvas-dialog,
+se-cmenu-layers,
+se-hotkey-dialog,
+se-favorites-dialog,
+se-command-search-dialog {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */
@@ -134,7 +143,16 @@ se-palette-dialog.theme-dark,
 se-text-prompt-dialog.theme-dark,
 se-image-import-dialog.theme-dark,
 se-trace-dialog.theme-dark,
-se-edit-prefs-dialog.theme-dark {
+se-edit-prefs-dialog.theme-dark,
+se-export-dialog.theme-dark,
+se-svg-source-editor-dialog.theme-dark,
+se-img-prop-dialog.theme-dark,
+se-plain-alert-dialog.theme-dark,
+se-cmenu_canvas-dialog.theme-dark,
+se-cmenu-layers.theme-dark,
+se-hotkey-dialog.theme-dark,
+se-favorites-dialog.theme-dark,
+se-command-search-dialog.theme-dark {
   --ui-font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   /* Surfaces */

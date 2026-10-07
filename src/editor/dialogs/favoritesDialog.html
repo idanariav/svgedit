@@ -3,11 +3,13 @@
         display: none;
     }
 
-    #favorites_dialog::part(frame) {
+    /* The card (#fav_container) is the visible surface; reset the native <dialog> frame. */
+    #favorites_dialog {
         padding: 0;
         background: transparent;
         border: none;
         box-shadow: none;
+        overflow: visible;
     }
 
     #fav_container {

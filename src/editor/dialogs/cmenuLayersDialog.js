@@ -1,6 +1,7 @@
 import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot } from '../domScope.js'
+import { syncDialogTheme } from '../themeUtil.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')
@@ -131,6 +132,7 @@ export class SeCMenuLayerDialog extends HTMLElement {
     this.$sidePanels = closestRoot(this).querySelector('[id="sidepanels"]')
     const onMenuOpenHandler = (e) => {
       e.preventDefault()
+      syncDialogTheme(current)
       positionContextMenu(current.$dialog, e.clientX, e.clientY, -126)
     }
     const onMenuCloseHandler = (e) => {

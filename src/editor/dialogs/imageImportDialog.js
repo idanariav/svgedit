@@ -1,6 +1,6 @@
 import imageImportDialogHTML from './imageImportDialog.html'
-import { closestRoot } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = imageImportDialogHTML
@@ -97,7 +97,7 @@ export class SeImageImportDialog extends HTMLElement {
           // Mirror the editor's active theme onto the host so the shadow CSS
           // tokens resolve to the right palette (the dialog lives outside the
           // themed `.svg_editor` scope).
-          this.classList.toggle('theme-dark', !!closestRoot(this).querySelector('.svg_editor')?.classList.contains('theme-dark'))
+          syncDialogTheme(this)
           // Reveal the "Import from vault" option only when an embedding host
           // exposes a picker. Standalone svgedit keeps just file/URL.
           const hasVault = typeof window.svgEditHost?.pickVaultImage === 'function'

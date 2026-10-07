@@ -1,8 +1,9 @@
 import editorPreferencesDialog from './editorPreferencesDialog.html'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
-import { closestRoot } from '../domScope.js'
+import { syncDialogTheme } from '../themeUtil.js'
+import { dialogSkin } from './dialogSkin.css.js'
 const template = document.createElement('template')
-template.innerHTML = editorPreferencesDialog
+template.innerHTML = `<style>${dialogSkin('#svg_prefs_container')}</style>${editorPreferencesDialog}`
 /**
  * @class SeEditPrefsDialog
  */
@@ -60,7 +61,7 @@ export class SeEditPrefsDialog extends HTMLElement {
         if (newValue === 'open') {
           // Mirror the editor's theme onto the host (svgedit.css lists this element
           // in its token blocks; the dialog is mounted outside `.svg_editor`).
-          this.classList.toggle('theme-dark', !!closestRoot(this).querySelector('.svg_editor')?.classList.contains('theme-dark'))
+          syncDialogTheme(this)
           this.$dialog.showModal()
         } else {
           this.$dialog.close()

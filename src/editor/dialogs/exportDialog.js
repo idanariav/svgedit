@@ -1,8 +1,10 @@
 import exportDialogHTML from './exportDialog.html'
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { syncDialogTheme } from '../themeUtil.js'
+import { dialogSkin } from './dialogSkin.css.js'
 const template = document.createElement('template')
-template.innerHTML = exportDialogHTML
+template.innerHTML = `<style>${dialogSkin('#dialog_container')}</style>${exportDialogHTML}`
 /**
  * @class SeExportDialog
  */
@@ -58,6 +60,7 @@ export class SeExportDialog extends HTMLElement {
       case 'dialog':
         if (newValue === 'open') {
           this._populateRegions()
+          syncDialogTheme(this)
           this.$dialog.showModal()
         } else {
           this.$dialog.close()

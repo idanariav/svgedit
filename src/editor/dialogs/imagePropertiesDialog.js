@@ -1,9 +1,11 @@
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
+import { syncDialogTheme } from '../themeUtil.js'
+import { dialogSkin } from './dialogSkin.css.js'
 
 const template = document.createElement('template')
-template.innerHTML = imagePropertiesDialogHTML
+template.innerHTML = `<style>${dialogSkin('#svg_docprops_container')}</style>${imagePropertiesDialogHTML}`
 /**
  * @class SeImgPropDialog
  */
@@ -97,6 +99,7 @@ export class SeImgPropDialog extends HTMLElement {
       case 'dialog':
         if (this.eventlisten) {
           if (newValue === 'open') {
+            syncDialogTheme(this)
             this.$dialog.showModal()
           } else {
             this.$dialog.close()

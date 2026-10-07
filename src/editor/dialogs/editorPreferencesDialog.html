@@ -3,40 +3,10 @@
         display: none;
     }
 
-    /* Force the scroll bar to appear so we see it hide when overlay opens. */
-    body::-webkit-scrollbar {
-        background: lightgray;
-    }
-
-    body::-webkit-scrollbar-thumb {
-        background: darkgray;
-    }
-
-    .toolbar_button button {
-        line-height: 130%;
-        float: left;
-        background: var(--chrome-bg, #E8E8E8) none;
-        color: var(--fg, #1a1a1a);
-        padding: 5px 10px 5px 7px;
-        /* Firefox */
-        line-height: 17px;
-        /* Safari */
-        margin: 5px 20px 0 0;
-        border: 1px var(--chrome-border) solid;
-        border-top-color: var(--chrome-border, #FFF);
-        border-left-color: var(--chrome-border, #FFF);
-        border-radius: 5px;
-        -moz-border-radius: 5px;
-        -webkit-border-radius: 5px;
-        cursor: pointer;
-    }
-
-    .toolbar_button button:hover {
-        background-color: var(--icon-hover-bg, #FFC);
-    }
-
-    .toolbar_button button:active {
-        background-color: var(--icon-hover-bg, #F4E284);
+    /* Colours, buttons and fields come from dialogSkin.css.js (token-driven). */
+    #svg_prefs #svg_prefs_container {
+        z-index: 20001;
+        display: flow-root; /* contain the floated fieldsets */
     }
 
     .toolbar_button button .svg_icon {
@@ -68,34 +38,14 @@
     #svginfo_bg_note {
         font-size: .9em;
         font-style: italic;
-        color: #444;
-    }
-
-    #svg_prefs #svg_prefs_container {
-        padding: 10px;
-        background-color: var(--chrome-bg, #ececec);
-        color: var(--fg, #1a1a1a);
-        border: 1px outset var(--chrome-border, #c4c4c4);
-        opacity: 1.0;
-        font-family: Verdana, Helvetica, sans-serif;
-        font-size: .8em;
-        z-index: 20001;
+        color: var(--muted, #6B7280);
     }
 
     #tool_prefs_back {
-        margin-left: 1em;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
         overflow: auto;
-    }
-
-    #tool_prefs_save {
-        width: 30%;
-        background-color: var(--accent, #c79605);
-        margin-left: 20%;
-    }
-
-    #tool_prefs_cancel {
-        width: 30%;
-        background-color: var(--chrome-bg, #c8c8c8);
     }
 
     #svg_prefs #svg_docprops_prefs {
@@ -121,7 +71,6 @@
     #svg_prefs fieldset {
         padding: 5px;
         margin: 5px;
-        border: 1px solid var(--chrome-border, #DDD);
     }
 
     #svg_prefs_container label {
@@ -133,11 +82,11 @@
         float: left;
         margin: 2px;
         padding: 20px;
-        border: 1px solid #6f6f6f;
+        border: 1px solid var(--field-border, #6f6f6f);
     }
 
     #change_background div.cur_background {
-        border: 2px solid blue;
+        border: 2px solid var(--accent, blue);
         padding: 19px;
     }
 
@@ -150,15 +99,11 @@
         margin-top: 0;
         margin-bottom: 5px;
     }
-
-    #svg_prefs::backdrop {
-        background: rgba(0, 0, 0, 0.2);
-    }
 </style>
 <dialog id="svg_prefs" aria-label="Editor Preferences">
     <div id="svg_prefs_container">
         <div id="tool_prefs_back" class="toolbar_button">
-            <button id="tool_prefs_save"></button>
+            <button id="tool_prefs_save" class="dlg-primary"></button>
             <button id="tool_prefs_cancel"></button>
         </div>
         <fieldset>
