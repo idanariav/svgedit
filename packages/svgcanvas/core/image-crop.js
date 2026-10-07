@@ -315,7 +315,7 @@ export const init = (canvas) => {
 
   document.addEventListener('keydown', (evt) => {
     if (evt.key === 'Escape' && svgCanvas.getMode() === 'imagecrop') cancelImageCrop()
-  })
+  }, { signal: svgCanvas.destroyAbort.signal })
 
   svgCanvas.startImageCrop = startImageCrop
   svgCanvas.applyImageCrop = applyImageCrop

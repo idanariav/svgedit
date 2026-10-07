@@ -478,7 +478,9 @@ export default class HotkeyManager {
       else if (a.el) a.el.click()
       if (a.pd) e.preventDefault()
     }
-    document.addEventListener('keydown', this._handler)
+    // An already-aborted signal makes this a no-op, so a late register() on a
+    // destroyed editor (e.g. extensions finishing after destroy) can't leak.
+    document.addEventListener('keydown', this._handler, { signal: this.editor?.listenerAbort?.signal })
   }
 
   /**

@@ -336,6 +336,8 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)
     runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
     runGuardedInit(this, 'segment', segmentInit, initGuardRegistry)
+    // Created before the core inits so their document listeners can use its signal.
+    this.destroyAbort = new AbortController()
     runGuardedInit(this, 'imageCrop', imageCropInit, initGuardRegistry)
 
     /**
@@ -359,7 +361,6 @@ class SvgCanvas extends EventTarget {
     // instance (see destroy()) doesn't keep reacting to storage events, and
     // isn't kept alive for the life of the window by window's reference to
     // this closure.
-    this.destroyAbort = new AbortController()
     window.addEventListener('storage', storageChange, { signal: this.destroyAbort.signal })
     // Ask other tabs for sessionStorage (this is ONLY to trigger event).
     localStorage.setItem(`${CLIPBOARD_ID}_startup`, Math.random())

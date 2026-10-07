@@ -105,6 +105,7 @@ describe('image-crop: apply/cancel', () => {
     document.body.append(svgContent)
 
     canvas = {
+      destroyAbort: new AbortController(),
       history,
       zoom: 1,
       selectorManager: {
@@ -297,5 +298,20 @@ describe('image-crop: apply/cancel', () => {
     expect(historyStack).toHaveLength(0)
     expect(image.getAttribute('href')).toBe('data:image/png;base64,AAA')
     expect(image.getAttribute('width')).toBe('100')
+  })
+
+  it('stops listening for Escape once the canvas is destroyed', () => {
+    const esc = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    const start = () => canvas.startImageCrop(
+      makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
+    )
+    start()
+    esc()
+    expect(canvas.getMode()).toBe('select')
+
+    start()
+    canvas.destroyAbort.abort()
+    esc()
+    expect(canvas.getMode()).toBe('imagecrop')
   })
 })

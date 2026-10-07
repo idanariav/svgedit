@@ -299,11 +299,16 @@ class SeClassSelect extends HTMLElement {
     this._shadowRoot.querySelector('.cancel').addEventListener('click', () => this.closeSave())
     this._shadowRoot.querySelector('.save').addEventListener('click', () => this.save())
 
-    document.addEventListener('click', this.handleClose)
     this.addEventListener('keydown', this.handleKeyDown)
   }
 
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
   connectedCallback () {
+    this._globalAbort = new AbortController()
+    document.addEventListener('click', this.handleClose, { signal: this._globalAbort.signal })
     const label = this.getAttribute('label')
     if (label) this.$label.textContent = t(label)
     const title = this.getAttribute('title')

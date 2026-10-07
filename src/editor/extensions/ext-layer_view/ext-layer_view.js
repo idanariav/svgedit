@@ -256,7 +256,7 @@ export default {
     const addKeys = () => {
       if (keyHandler) return
       keyHandler = onKey
-      document.addEventListener('keydown', keyHandler)
+      document.addEventListener('keydown', keyHandler, { signal: svgEditor.listenerAbort?.signal })
     }
 
     const removeKeys = () => {

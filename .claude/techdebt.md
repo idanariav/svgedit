@@ -66,15 +66,6 @@ per-instance like the other core modules, and add a unit test that
 constructs two canvases, destroys one, and converts units on the other.
 Small.
 
-## Document/window listeners: remaining audit
-
-`seZoom`, `seFlyingButton`, `seToolOverflow`, `seList` and `ext-cutter` now
-release their document/window listeners (per-element AbortController aborted in
-`disconnectedCallback`; `ext-cutter` uses `listenerAbort`). Not yet done: audit
-the other components and extensions for global listeners that skip a signal,
-and add an N-editors mount/destroy test asserting the document listener count
-stays flat. Small.
-
 ## Implicit `window.svgEditor` global (multi-instance)
 
 74 files read the bare global `svgEditor` (`/* globals svgEditor */`).

@@ -399,8 +399,8 @@ class EditorStartup {
       this.svgCanvas.setSegType(evt.detail.value)
     })
 
-    const addListenerMulti = (element, eventNames, listener) => {
-      eventNames.split(' ').forEach((eventName) => element.addEventListener(eventName, listener, false))
+    const addListenerMulti = (element, eventNames, listener, options = false) => {
+      eventNames.split(' ').forEach((eventName) => element.addEventListener(eventName, listener, options))
     }
 
     addListenerMulti($id('text'), 'keyup input', (evt) => {
@@ -747,7 +747,7 @@ class EditorStartup {
       this.workarea.style.lineHeight = this.workarea.style.height
     }
 
-    addListenerMulti(window, 'load resize', centerCanvas)
+    addListenerMulti(window, 'load resize', centerCanvas, { signal: this.listenerAbort.signal })
 
     // Prevent browser from erroneously repopulating fields
     const inputEles = this.$qa('input') // container-scoped (see constructor)
