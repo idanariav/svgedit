@@ -1,13 +1,13 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
-import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
+import { attachUnits } from './unitsMock.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { toAbsolutePathData, getStyleAttrs, getMatrixScale, getOwnTransformScale, scaleStrokeWidth } from '../../packages/svgcanvas/core/paper-utils.js'
 
 const makeSvgCanvas = () => {
   const svgCanvas = { getRoundDigits: () => 5 }
-  unitsInit(svgCanvas)
+  attachUnits(svgCanvas)
   pathActionsInit(svgCanvas)
   return svgCanvas
 }

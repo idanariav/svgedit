@@ -30,7 +30,7 @@ export default {
     const { assignAttributes } = svgCanvas
     const hcanvas = document.createElement('canvas')
     const canvBG = $id('canvasBackground')
-    const units = svgCanvas.getTypeMap() // Assumes prior `init()` call on `units.js` module
+    const units = svgCanvas.getTypeMap()
     const intervals = [0.01, 0.1, 1, 10, 100, 1000]
     const curConfig = svgEditor.configObj.curConfig
 

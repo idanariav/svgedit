@@ -59,7 +59,7 @@ import {
 } from './core/math.js'
 import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.js'
 import { warn } from './common/logger.js'
-import { convertToNum, init as unitsInit, createUnits, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
+import { createUnits, getTypeMap } from './core/units.js'
 import { init as svgInit } from './core/svg-exec.js'
 import { init as svgDefsInit } from './core/svg-defs.js'
 import { init as coordsInit } from './core/coords.js'
@@ -124,8 +124,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     // on this instance, so a later call reusing the same name gets logged
     // instead of silently overwriting the earlier one (see .claude/techdebt.md #8).
     const initGuardRegistry = new Map()
-    // Legacy single-instance state behind the static SvgCanvas.convertToNum & co.
-    runGuardedInit(this, 'units', unitsInit, initGuardRegistry)
 
     // initialize class variables
     this.importIds = {} // Object with IDs for imported files, to see if one was already added
@@ -1645,8 +1643,5 @@ SvgCanvas.getParents = getParents
 SvgCanvas.blankPageObjectURL = blankPageObjectURL
 SvgCanvas.Paint = Paint
 SvgCanvas.getTypeMap = getTypeMap
-SvgCanvas.convertToNum = convertToNum
-SvgCanvas.isValidUnit = isValidUnit
-SvgCanvas.convertUnit = convertUnit
 
 export default SvgCanvas

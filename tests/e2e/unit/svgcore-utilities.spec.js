@@ -16,11 +16,11 @@ test.describe('SVG core utilities', () => {
       rect.setAttribute('width', '30')
       rect.setAttribute('height', '40')
       svg.append(rect)
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 2,
         getBaseUnit: () => 'cm'
       })
-      units.convertAttrs(rect)
+      u.convertAttrs(rect)
       return {
         x: rect.getAttribute('x'),
         y: rect.getAttribute('y'),
@@ -41,7 +41,7 @@ test.describe('SVG core utilities', () => {
       svg.setAttribute('width', '200')
       svg.setAttribute('height', '200')
       document.body.append(svg)
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 2,
         getBaseUnit: () => 'px'
       })
@@ -59,7 +59,7 @@ test.describe('SVG core utilities', () => {
         svg.append(el)
         return el
       }
-      const res = utilities.getStrokedBBox([rect], addSvg, { resetOrientation: () => {} })
+      const res = utilities.getStrokedBBox([rect], addSvg, { resetOrientation: () => {} }, u.shortFloat)
       return { x: res.x, y: res.y, width: res.width, height: res.height }
     })
     expect(Number.isFinite(bbox.x)).toBe(true)

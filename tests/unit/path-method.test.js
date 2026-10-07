@@ -3,6 +3,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as pathMethodInit } from '../../packages/svgcanvas/core/path-method.js'
 import { init as pathInit } from '../../packages/svgcanvas/core/path.js'
+import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
@@ -81,6 +82,7 @@ describe('path-method Path#addPtsToSelection', () => {
       getElement (id) { return svg.querySelector(`#${id}`) },
       addPtsToSelection () {} // canvas-level UI hook, irrelevant to sort order
     }
+    attachUnits(svgCanvas)
     pathInit(svgCanvas)
 
     const pathEl = createSvgElement('path')
@@ -110,6 +112,7 @@ describe('path-method Path#smoothSelectedNodes', () => {
       addPtsToSelection () {},
       endChanges () {}
     }
+    attachUnits(svgCanvas)
     pathInit(svgCanvas)
     return svgCanvas
   }
@@ -197,6 +200,7 @@ describe('path-method Path#endChanges', () => {
       endChanges () {},
       logDebugEvent
     }
+    attachUnits(svgCanvas)
     pathInit(svgCanvas)
 
     const pathEl = createSvgElement('path')
@@ -231,6 +235,7 @@ describe('path-method Path#endChanges', () => {
       endChanges () {}
       // no logDebugEvent -- mirrors an older bundle or a bare test fixture
     }
+    attachUnits(svgCanvas)
     pathInit(svgCanvas)
 
     const pathEl = createSvgElement('path')

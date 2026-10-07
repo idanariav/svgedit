@@ -10,7 +10,7 @@ test.describe('SVG core path extras', () => {
     const result = await page.evaluate(() => {
       const { pathModule, units } = window.svgHarness
       // Ensure unit helpers are initialized so shortFloat can round numbers.
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 3,
         getBaseUnit: () => 'px',
         getElement: () => null,
@@ -25,7 +25,7 @@ test.describe('SVG core path extras', () => {
 
       // convertPath is attached to canvas.pathActions by path.js's init
       // (which delegates to path-actions.js), not exported as a flat function.
-      const canvas = {}
+      const canvas = { units: u }
       pathModule.init(canvas)
       const rel = canvas.pathActions.convertPath(path, true)
       const abs = canvas.pathActions.convertPath(path, false)

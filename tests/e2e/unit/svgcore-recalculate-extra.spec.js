@@ -58,6 +58,7 @@ test.describe('SVG core recalculate extra cases', () => {
         getCurrentDrawing: () => ({ getNextId: () => 'g1' })
       }
 
+      canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
       coords.init(canvasStub)
       recalculate.init(canvasStub)
@@ -149,6 +150,7 @@ test.describe('SVG core recalculate extra cases', () => {
         getGridSnapping: () => false,
         getDrawing: () => drawing
       }
+      canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
       coords.init(canvasStub)
       recalculate.init(canvasStub)
@@ -240,6 +242,7 @@ test.describe('SVG core recalculate extra cases', () => {
         getGridSnapping: () => false,
         getDrawing: () => drawing
       }
+      canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
       coords.init(canvasStub)
       recalculate.init(canvasStub)

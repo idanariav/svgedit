@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { init as initUnits } from '../../packages/svgcanvas/core/units.js'
+import { createUnits } from '../../packages/svgcanvas/core/units.js'
 import {
   init as initUtilities,
   assignAttributes,
@@ -19,13 +19,13 @@ describe('utilities extra coverage', () => {
     document.body.append(svg)
 
     // Initialize units and utilities with a minimal canvas/context stub
-    initUnits({
-      getBaseUnit: () => 'px',
-      getWidth: () => 200,
-      getHeight: () => 100,
-      getRoundDigits: () => 2
-    })
     canvas = {
+      units: createUnits({
+        getBaseUnit: () => 'px',
+        getWidth: () => 200,
+        getHeight: () => 100,
+        getRoundDigits: () => 2
+      }),
       getSvgRoot: () => svg,
       getSvgContent: () => svg,
       getDOMDocument: () => document,

@@ -2,6 +2,7 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as coords from '../../packages/svgcanvas/core/coords.js'
+import { attachUnits } from './unitsMock.js'
 
 describe('coords', function () {
   let elemId = 1
@@ -50,6 +51,7 @@ describe('coords', function () {
         getCurrentDrawing () { return drawing },
         getDataStorage () { return mockDataStorage }
       }
+    attachUnits(coordsCanvas)
     domUtils.init(coordsCanvas)
     bboxUtils.init(coordsCanvas)
     coords.init(coordsCanvas)
@@ -362,6 +364,7 @@ describe('coords', function () {
         }
       }
     }
+    attachUnits(coordsCanvas)
     coords.init(coordsCanvas)
     const rect = document.createElementNS(NS.SVG, 'rect')
     rect.setAttribute('width', '10')

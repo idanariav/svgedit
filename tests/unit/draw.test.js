@@ -2,7 +2,6 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as draw from '../../packages/svgcanvas/core/draw.js'
-import * as units from '../../packages/svgcanvas/core/units.js'
 import { Layer } from '../../packages/svgcanvas/core/draw'
 
 describe('draw.Drawing', function () {
@@ -30,16 +29,6 @@ describe('draw.Drawing', function () {
     stroke: '#660000',
     fill: '#ff0000'
   }
-
-  units.init(
-    /**
-     * @implements {module:units.ElementContainer}
-     */
-    {
-      // used by units.shortFloat - call path: cloneLayer -> copyElem -> convertPath -> pathDSegment -> shortFloat
-      getRoundDigits () { return 3 }
-    }
-  )
 
   // Simplifying from svgcanvas.js usage
   const idprefix = 'svg_'

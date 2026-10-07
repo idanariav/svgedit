@@ -6,7 +6,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import { shortFloat as defaultShortFloat, getUnits } from './units.js'
+import { getUnits } from './units.js'
 import {
   hasMatrixTransform,
   transformListToTransform,
@@ -580,10 +580,10 @@ const getStrokeOffsetForBBox = elem => {
  * @param {Element[]} elems - Array with DOM elements to check
  * @param {module:utilities.EditorContext#addSVGElementsFromJson} addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
  * @param {module:path.pathActions} pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
- * @param {function(number): number} [shortFloat] - Rounding function of the owning canvas (`canvas.units.shortFloat`); defaults to the legacy single-canvas one
+ * @param {function(number): number} shortFloat - Rounding function of the owning canvas (`canvas.units.shortFloat`)
  * @returns {module:bbox-utils.BBoxObject|module:math.TransformedBox|DOMRect} A single bounding box object
  */
-export const getStrokedBBox = (elems, addSVGElementsFromJson, pathActions, shortFloat = defaultShortFloat) => {
+export const getStrokedBBox = (elems, addSVGElementsFromJson, pathActions, shortFloat) => {
   if (!elems || !elems.length) {
     return false
   }

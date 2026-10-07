@@ -267,46 +267,12 @@ export const createUnits = (elementContainer) => {
   return { shortFloat, convertUnit, convertAttrs, convertToNum, isValidUnit, getTypeMap, setUnitAttr }
 }
 
-// ── Legacy "default instance" ────────────────────────────────────────────────
-// `init(container)` plus the free functions below predate per-canvas instances:
-// they act on whichever container was passed to init() *last*. Production code
-// uses `svgCanvas.units` (see getUnits()); this stays for the static
-// `SvgCanvas.convertToNum`-style helpers handed to hosts, and for tests/tools
-// that run a single canvas.
-// Until init() runs this is bound to an empty container, so pure conversions
-// (numbers, absolute units) work and only the container-backed ones fail — the
-// same behaviour the old module-level functions had.
-let defaultUnits_ = createUnits({})
-
 /**
- * Initializes the legacy default instance (last call wins) and re-measures the
- * unit table.
- * @function module:units.init
- * @param {module:units.ElementContainer} elementContainer - An object implementing the ElementContainer interface.
- * @returns {void}
- */
-export const init = (elementContainer) => {
-  defaultUnits_ = createUnits(elementContainer)
-  typeMap_ = computeTypeMap()
-}
-
-const dflt = () => defaultUnits_
-
-export const shortFloat = (val) => dflt().shortFloat(val)
-export const convertUnit = (val, unit) => dflt().convertUnit(val, unit)
-export const convertAttrs = (element) => dflt().convertAttrs(element)
-export const convertToNum = (attr, val) => dflt().convertToNum(attr, val)
-export const isValidUnit = (attr, val, selectedElement) => dflt().isValidUnit(attr, val, selectedElement)
-
-// Call-time wrappers around the default instance, for canvas-like objects that
-// have no `units` of their own (unit-test stubs): resolving lazily keeps init()
-// order irrelevant, as it was when these were plain module-level functions.
-const legacyUnits = { shortFloat, convertUnit, convertAttrs, convertToNum, isValidUnit, getTypeMap, setUnitAttr }
-
-/**
- * The units bound to `canvas`, or the legacy default instance for a canvas-like
- * object that has none.
+ * The units bound to `canvas` (`canvas.units`, from createUnits()).
  * @param {{units?: object}} canvas
  * @returns {ReturnType<typeof createUnits>}
  */
-export const getUnits = (canvas) => canvas?.units ?? legacyUnits
+export const getUnits = (canvas) => {
+  if (!canvas?.units) throw new Error('getUnits: canvas has no `units` (create it with createUnits(canvas))')
+  return canvas.units
+}

@@ -1,6 +1,7 @@
 import * as units from '../../packages/svgcanvas/core/units.js'
 
 describe('units', function () {
+  let u
   /**
    * Set up tests, supplying mock data.
    * @returns {void}
@@ -26,7 +27,7 @@ describe('units', function () {
 
     document.body.append(anchor, elementsContainer)
 
-    units.init(
+    u = units.createUnits(
       /**
       * @implements {module:units.ElementContainer}
       */
@@ -46,10 +47,10 @@ describe('units', function () {
   })
 
   it('Test svgedit.units.shortFloat()', function () {
-    assert.ok(units.shortFloat)
-    assert.equal(typeof units.shortFloat, typeof function () { /* empty fn */ })
+    assert.ok(u.shortFloat)
+    assert.equal(typeof u.shortFloat, typeof function () { /* empty fn */ })
 
-    const { shortFloat } = units
+    const { shortFloat } = u
     assert.equal(shortFloat(0.00000001), 0)
     assert.equal(shortFloat(1), 1)
     assert.equal(shortFloat(3.45678), 3.4568)
@@ -58,10 +59,10 @@ describe('units', function () {
   })
 
   it('Test svgedit.units.isValidUnit()', function () {
-    assert.ok(units.isValidUnit)
-    assert.equal(typeof units.isValidUnit, typeof function () { /* empty fn */ })
+    assert.ok(u.isValidUnit)
+    assert.equal(typeof u.isValidUnit, typeof function () { /* empty fn */ })
 
-    const { isValidUnit } = units
+    const { isValidUnit } = u
     assert.ok(isValidUnit('0'))
     assert.ok(isValidUnit('1'))
     assert.ok(isValidUnit('1.1'))
@@ -82,28 +83,28 @@ describe('units', function () {
   })
 
   it('Test svgedit.units.convertUnit()', function () {
-    assert.ok(units.convertUnit)
-    assert.equal(typeof units.convertUnit, typeof function () { /* empty fn */ })
+    assert.ok(u.convertUnit)
+    assert.equal(typeof u.convertUnit, typeof function () { /* empty fn */ })
     // cm in default setup
-    assert.equal(units.convertUnit(42), 1.1113)
-    assert.equal(units.convertUnit(42, 'px'), 42)
+    assert.equal(u.convertUnit(42), 1.1113)
+    assert.equal(u.convertUnit(42, 'px'), 42)
   })
 
   it('Test svgedit.units.convertUnit() with mm', function () {
-    assert.equal(units.convertUnit(42, 'mm'), 11.1125)
+    assert.equal(u.convertUnit(42, 'mm'), 11.1125)
   })
 
   it('Test svgedit.units.convertUnit() with in', function () {
-    assert.equal(units.convertUnit(96, 'in'), 1)
+    assert.equal(u.convertUnit(96, 'in'), 1)
   })
 
   it('Test svgedit.units.convertUnit() with pt', function () {
-    const result = units.convertUnit(72, 'pt')
+    const result = u.convertUnit(72, 'pt')
     assert.ok(result > 0)
   })
 
   it('Test svgedit.units.convertUnit() with pc', function () {
-    const result = units.convertUnit(96, 'pc')
+    const result = u.convertUnit(96, 'pc')
     assert.ok(result > 0)
   })
 })

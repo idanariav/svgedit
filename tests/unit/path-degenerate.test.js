@@ -3,6 +3,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as pathInit } from '../../packages/svgcanvas/core/path.js'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
@@ -17,6 +18,7 @@ const makeBareCanvas = () => {
     getElement (id) { return svg.querySelector(`#${id}`) },
     addPtsToSelection () {}
   }
+  attachUnits(svgCanvas)
   pathInit(svgCanvas)
   return { svgCanvas, svg }
 }

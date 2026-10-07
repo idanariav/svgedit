@@ -35,6 +35,7 @@ test.describe('SVG core smoke', () => {
     const hasRemap = await page.evaluate(() => {
       const { coords } = window.svgHarness
       const canvas = { getGridSnapping: () => false, getDrawing: () => ({ getNextId: () => '1' }) }
+      canvas.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       coords.init(canvas)
       return typeof canvas.remapElement === 'function'
     })
@@ -44,7 +45,7 @@ test.describe('SVG core smoke', () => {
   test('path.convertPath converts to relative without throwing', async ({ page }) => {
     const d = await page.evaluate(() => {
       const { pathModule, units } = window.svgHarness
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 2,
         getBaseUnit: () => 'px'
       })
@@ -53,7 +54,7 @@ test.describe('SVG core smoke', () => {
       path.setAttribute('d', 'M0 0 L10 0 L10 10 Z')
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
-      const canvas = {}
+      const canvas = { units: u }
       pathModule.init(canvas)
       const dRel = canvas.pathActions.convertPath(path, true)
       path.setAttribute('d', dRel)

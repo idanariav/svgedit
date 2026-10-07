@@ -3,6 +3,7 @@ import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as coords from '../../packages/svgcanvas/core/coords.js'
 import * as recalculate from '../../packages/svgcanvas/core/recalculate.js'
+import { attachUnits } from './unitsMock.js'
 
 describe('recalculate', function () {
   const root = document.createElement('div')
@@ -63,6 +64,7 @@ describe('recalculate', function () {
       getStartTransform () { return '' },
       setStartTransform () { /* empty fn */ }
     }
+    attachUnits(recalculateCanvas)
     domUtils.init(recalculateCanvas)
     bboxUtils.init(recalculateCanvas)
     coords.init(recalculateCanvas)

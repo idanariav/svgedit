@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.js'
 import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.js'
-import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
+import { attachUnits } from './unitsMock.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 
 describe('PathActions', () => {
@@ -162,7 +162,7 @@ describe('PathActions', () => {
     // Initialize modules
     domUtilsInit(svgCanvas)
     bboxUtilsInit(svgCanvas)
-    unitsInit(svgCanvas)
+    attachUnits(svgCanvas)
     pathActionsInit(svgCanvas)
     pathActionsMethod = svgCanvas.pathActions
   })

@@ -9,13 +9,13 @@ test.describe('SVG core modules in browser', () => {
   test('units.convertUnit returns finite and px passthrough', async ({ page }) => {
     const result = await page.evaluate(async () => {
       const { units } = window.svgHarness
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 2,
         getBaseUnit: () => 'px'
       })
       return {
-        defaultConv: units.convertUnit(42),
-        pxConv: units.convertUnit(42, 'px')
+        defaultConv: u.convertUnit(42),
+        pxConv: u.convertUnit(42, 'px')
       }
     })
     expect(result.defaultConv).toBeGreaterThan(0)
@@ -32,7 +32,7 @@ test.describe('SVG core modules in browser', () => {
       const other = document.createElement('div')
       other.id = 'otherId'
       document.body.append(unique, other)
-      units.init({
+      const u = units.createUnits({
         getBaseUnit: () => 'cm',
         getHeight: () => 600,
         getWidth: () => 800,
@@ -41,11 +41,11 @@ test.describe('SVG core modules in browser', () => {
       })
       return {
         shortFloat: [
-          units.shortFloat(0.00000001),
-          units.shortFloat(1),
-          units.shortFloat(3.45678),
-          units.shortFloat(1.23443),
-          units.shortFloat(1.23455)
+          u.shortFloat(0.00000001),
+          u.shortFloat(1),
+          u.shortFloat(3.45678),
+          u.shortFloat(1.23443),
+          u.shortFloat(1.23455)
         ],
         validUnits: [
           '0',
@@ -60,12 +60,12 @@ test.describe('SVG core modules in browser', () => {
           '-0.4em',
           '-0.ex',
           '40.123%'
-        ].map((val) => units.isValidUnit(val)),
+        ].map((val) => u.isValidUnit(val)),
         idChecks: {
-          okExisting: units.isValidUnit('id', 'uniqueId', unique),
-          okNew: units.isValidUnit('id', 'newId', unique),
-          dupNoElem: units.isValidUnit('id', 'uniqueId'),
-          dupOther: units.isValidUnit('id', 'uniqueId', other)
+          okExisting: u.isValidUnit('id', 'uniqueId', unique),
+          okNew: u.isValidUnit('id', 'newId', unique),
+          dupNoElem: u.isValidUnit('id', 'uniqueId'),
+          dupOther: u.isValidUnit('id', 'uniqueId', other)
         }
       }
     })
@@ -122,7 +122,7 @@ test.describe('SVG core modules in browser', () => {
   test('path.convertPath converts absolute to relative', async ({ page }) => {
     const dRel = await page.evaluate(() => {
       const { pathModule, units } = window.svgHarness
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 2,
         getBaseUnit: () => 'px'
       })
@@ -131,7 +131,7 @@ test.describe('SVG core modules in browser', () => {
       path.setAttribute('d', 'M0 0 L10 0 L10 10 Z')
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
-      const canvas = {}
+      const canvas = { units: u }
       pathModule.init(canvas)
       return canvas.pathActions.convertPath(path, true)
     })
@@ -142,7 +142,7 @@ test.describe('SVG core modules in browser', () => {
   test('path.convertPath normalizes relative and absolute commands', async ({ page }) => {
     const result = await page.evaluate(() => {
       const { pathModule, units } = window.svgHarness
-      units.init({
+      const u = units.createUnits({
         getRoundDigits: () => 5,
         getBaseUnit: () => 'px'
       })
@@ -151,7 +151,7 @@ test.describe('SVG core modules in browser', () => {
       path.setAttribute('d', 'm40,55h20v20')
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
-      const canvas = {}
+      const canvas = { units: u }
       pathModule.init(canvas)
       const abs = canvas.pathActions.convertPath(path)
       const rel = canvas.pathActions.convertPath(path, true)

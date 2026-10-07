@@ -5,7 +5,7 @@ import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import * as pathModule from '../../packages/svgcanvas/core/path.js'
-import { init as unitsInit } from '../../packages/svgcanvas/core/units.js'
+import { attachUnits } from './unitsMock.js'
 
 const utilities = {
   init: (canvas) => {
@@ -26,7 +26,7 @@ describe('path', function () {
   * @returns {Function}
   */
   function getConvertPath () {
-    const canvas = {}
+    const canvas = attachUnits({ getRoundDigits: () => 5 })
     pathActionsInit(canvas)
     return canvas.pathActions.convertPath
   }
@@ -51,11 +51,11 @@ describe('path', function () {
       /**
       * @implements {module:path.EditorContext}
       */
-      {
+      attachUnits({
         getSvgRoot () { return svg },
         getZoom () { return 1 },
         getElement (id) { return svg.querySelector(`#${id}`) }
-      },
+      }),
       /**
       * @implements {module:utilities.EditorContext}
       */
@@ -255,10 +255,6 @@ describe('path', function () {
   })
 
   it('Test svgedit.path.convertPath', function () {
-    unitsInit({
-      getRoundDigits () { return 5 }
-    })
-
     const path = document.createElementNS(NS.SVG, 'path')
     path.setAttribute('d', 'M40,55h20v20')
 
@@ -270,10 +266,6 @@ describe('path', function () {
   })
 
   it('Test convertPath resets after closepath when relative', function () {
-    unitsInit({
-      getRoundDigits () { return 5 }
-    })
-
     const path = document.createElementNS(NS.SVG, 'path')
     path.setAttribute('d', 'M10,10 L20,10 Z L15,10')
     const expected = 'm10,10l10,0zl5,0'
@@ -308,10 +300,6 @@ describe('path', function () {
   })
 
   it('Test convertPath handles relative arcs', function () {
-    unitsInit({
-      getRoundDigits () { return 5 }
-    })
-
     const path = document.createElementNS(NS.SVG, 'path')
     path.setAttribute('d', 'M0,0 a10,20 30 0 1 40,50')
 

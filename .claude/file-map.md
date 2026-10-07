@@ -228,7 +228,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/cutter.js` | `cutShapes(points)` — 2 points (straight) or 3+ points (zigzag) both use the same exact boundary-splice algorithm (`cutContour`), handling any even number of shape-boundary crossings per loop (Weiler-Atherton-style decomposition into `m + 1` pieces for `m` crossing pairs). Compound-path targets (multiple disjoint closed loops in one `d`) are cut per-loop — a loop the cutter doesn't cross is carried through untouched |
 | `core/segment.js` | `segmentSelection(params)`/`getSegmentParams()`/`canSegment(elem)` — divides one shape into N (radial spokes) or N+1 (grid columns/rows) symmetric pieces. Split: `shapePath.intersect(wedgeOrStripPolygon)` per piece (paper.js), one `BatchCommand` of inserts + a remove. Non-split: divider lines clipped to the true boundary via `getIntersections()`, shape+lines wrapped in a `<g>` stamped `se:segment` for re-edit |
 | `core/json.js` | JSON import/export |
-| `core/units.js` | Unit conversion (px↔em↔cm…). `createUnits(canvas)` gives each canvas its own `svgCanvas.units`; production code reads that via `getUnits(canvas)`. The free functions + `init()` are a legacy "last init wins" default instance (static `SvgCanvas.convertToNum` | `core/units.js` | Unit conversion (px↔em↔cm…) | co., tests) |
+| `core/units.js` | Unit conversion (px↔em↔cm…). `createUnits(canvas)` gives each canvas its own `svgCanvas.units`; core modules read it via `getUnits(canvas)` (throws if the canvas has none — hand-built test canvases use `tests/unit/unitsMock.js`'s `attachUnits`). `getTypeMap()` is canvas-independent. |
 | `core/math.js` | Transform matrix math |
 | `core/paste-elem.js` | Paste handler |
 | `core/copy-elem.js` | Copy handler |

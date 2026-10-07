@@ -4,6 +4,7 @@ import * as history from '../../packages/svgcanvas/core/history.js'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.js'
 import { init as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.js'
 import * as undo from '../../packages/svgcanvas/core/undo.js'
+import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => {
   return document.createElementNS(NS.SVG, name)
@@ -62,6 +63,7 @@ describe('elem-get-set', () => {
     }
     svgContent.setAttribute('width', '100')
     svgContent.setAttribute('height', '100')
+    attachUnits(canvas)
     initElemGetSet(canvas)
   })
 
@@ -301,6 +303,7 @@ describe('elem-get-set', () => {
       setCurProperties () {},
       getSvgContent () { return svgContent }
     }
+    attachUnits(localCanvas)
     undo.init(localCanvas)
     initElemGetSet(localCanvas)
 

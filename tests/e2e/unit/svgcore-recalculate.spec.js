@@ -44,6 +44,7 @@ test.describe('SVG core recalculate', () => {
         getStartTransform: () => '',
         setStartTransform: () => {}
       }
+      canvas.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvas)
       coords.init(canvas)
       recalculate.init(canvas)

@@ -77,6 +77,7 @@ test.describe('SVG core math and coords', () => {
         getGridSnapping: () => false,
         getDrawing: () => ({ getNextId: () => '1' })
       }
+      coordsCanvas.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       coords.init(coordsCanvas)
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       rect.setAttribute('x', '200')

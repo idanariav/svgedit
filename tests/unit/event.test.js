@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import { init as initEvent } from '../../packages/svgcanvas/core/event.js'
+import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => {
   return document.createElementNS(NS.SVG, name)
@@ -152,6 +153,7 @@ describe('event', () => {
       }
     }
 
+    attachUnits(canvas)
     initEvent(canvas)
   })
 

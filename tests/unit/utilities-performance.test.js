@@ -4,11 +4,11 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import * as utilities from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as math from '../../packages/svgcanvas/core/math.js'
-import * as units from '../../packages/svgcanvas/core/units.js'
+import { createUnits } from '../../packages/svgcanvas/core/units.js'
 
 describe('utilities performance', function () {
   let currentLayer; let groupWithMatrixTransform; let textWithMatrixTransform
-  units.init({ getRoundDigits: () => 2 }) // mock getRoundDigits
+  const { shortFloat } = createUnits({ getRoundDigits: () => 2 }) // mock getRoundDigits
   beforeEach(() => {
     document.body.textContent = ''
     const style = document.createElement('style')
@@ -199,7 +199,7 @@ describe('utilities performance', function () {
     // Skip the first child which is the title.
     for (let index = 1; index < count; index++) {
       const child = children[index]
-      /* const obj = */ getStrokedBBox([child], mockaddSVGElementsFromJson, mockPathActions)
+      /* const obj = */ getStrokedBBox([child], mockaddSVGElementsFromJson, mockPathActions, shortFloat)
       now = Date.now(); const delta = now - lastTime; lastTime = now
       total += delta
       min = Math.min(min, delta)
@@ -219,7 +219,7 @@ describe('utilities performance', function () {
         // Skip the first child which is the title.
         for (let index = 1; index < ct; index++) {
           const child = children[index]
-          /* const obj = */ getStrokedBBox([child], mockaddSVGElementsFromJson, mockPathActions)
+          /* const obj = */ getStrokedBBox([child], mockaddSVGElementsFromJson, mockPathActions, shortFloat)
           now = Date.now(); const delta = now - lastTime; lastTime = now
           total += delta
           min = Math.min(min, delta)

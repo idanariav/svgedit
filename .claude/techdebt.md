@@ -36,18 +36,6 @@ The entries below came out of a whole-repo code review (2026-10-07). None
 were started at the time; they are listed in suggested order. Baseline then:
 1,631 unit tests passing, lint failing, e2e not run.
 
-## `units.js` legacy default instance
-
-Production code now uses a per-canvas `svgCanvas.units` (`createUnits(canvas)`;
-rounding digits, base unit, `%` size and id lookup all come from that canvas),
-`draw.js`'s randomize-ids mode is per canvas (`svgCanvas.randIdsMode`), and the
-unit table is a canvas-independent lazy cache. What remains is the legacy
-`units.init(container)` + free functions (`shortFloat`, `convertToNum`, …),
-a "last `init` wins" default instance kept for the static
-`SvgCanvas.convertToNum`-style helpers handed to hosts and for tests/tools that
-run one canvas. The editor no longer calls the statics. Remove them (and update
-the ~10 tests that call `units.init(mock)`) once no host depends on them. Small.
-
 ## Remaining `window.svgEditor` consumers
 
 Components and dialogs now resolve their editor with `domScope.ownerEditor(this)`
