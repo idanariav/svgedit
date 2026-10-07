@@ -60,6 +60,7 @@ import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-h
 import { warn } from './common/logger.js'
 import { convertToNum, init as unitsInit, getTypeMap, isValidUnit, convertUnit } from './core/units.js'
 import { init as svgInit } from './core/svg-exec.js'
+import { init as svgDefsInit } from './core/svg-defs.js'
 import { init as coordsInit } from './core/coords.js'
 import { init as recalculateInit } from './core/recalculate.js'
 import { init as selectInit } from './core/select.js'
@@ -304,6 +305,7 @@ class SvgCanvas extends EventTarget {
     runGuardedInit(this, 'event', eventInit, initGuardRegistry)
     runGuardedInit(this, 'textActions', textActionsInit, initGuardRegistry)
     runGuardedInit(this, 'svg', svgInit, initGuardRegistry)
+    runGuardedInit(this, 'svgDefs', svgDefsInit, initGuardRegistry)
     runGuardedInit(this, 'draw', draw.init, initGuardRegistry)
     runGuardedInit(this, 'elemGetSet', elemGetSet.init, initGuardRegistry)
 
