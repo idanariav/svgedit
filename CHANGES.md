@@ -1,5 +1,13 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.2
+- Fix: drawings using corner radius or taper were saved with an undeclared `se:` XML prefix and could not be reopened; the serializer now declares `xmlns:se` and files already saved that way are repaired on load.
+- Fix: layers, text and group operations, units, and the "randomize ids" mode no longer share state between editors on one page; components resolve their own editor instead of the `window.svgEditor` global.
+- Fix: document/window listeners are released when an editor is destroyed.
+- Fix: `keyDown` extension hook is now dispatched; a failed `setSvgString` rolls back to the previous drawing.
+- Logging: warnings/errors go through the central logger, with an optional host sink (`Editor.setLogSink`).
+- Internal: large modules split; extension hook registry with payload typedefs; round-trip corpus test.
+
 ## 7.4.1-fork.1
 - Fork identity: renamed `svgedit-fork`, private (not published to npm); releases are GitHub releases carrying `Editor.js`. Entries below this one are upstream's history.
 

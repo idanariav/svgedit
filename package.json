@@ -1,6 +1,6 @@
 {
   "name": "svgedit-fork",
-  "version": "7.4.1-fork.1",
+  "version": "7.4.1-fork.2",
   "private": true,
   "description": "Powerful SVG-Editor for your browser ",
   "main": "dist/editor/Editor.js",
