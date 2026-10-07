@@ -23,7 +23,8 @@
   "scripts": {
     "lint": "standard .",
     "check-dom-scope": "node scripts/check-dom-scope.mjs",
-    "pretest": "npm run lint && npm run check-dom-scope",
+    "typecheck": "tsc -p packages/svgcanvas/tsconfig.json",
+    "pretest": "npm run lint && npm run check-dom-scope && npm run typecheck",
     "test": "vitest run --coverage && node scripts/run-e2e.mjs",
     "build": "vite build packages/svgcanvas && vite build",
     "postbuild": "node scripts/copy-static.mjs",
@@ -108,6 +109,7 @@
     "remark-lint-ordered-list-marker-value": "4.0.1",
     "rimraf": "6.1.2",
     "standard": "17.1.2",
+    "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-istanbul": "^7.2.1",
     "vite-plugin-string": "^1.2.3",

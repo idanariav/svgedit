@@ -10,9 +10,9 @@ import { text2xml } from './encoding-utils.js'
 
 /**
 * @function module:svgcanvas.svgRootElement svgRootElement the svg node and its children.
-* @param {Element} svgdoc - window.document
-* @param {ArgumentsArray} dimensions - dimensions of width and height
-* @returns {svgRootElement}
+* @param {Document} svgdoc - window.document
+* @param {ArrayLike<number|string>} dimensions - dimensions of width and height
+* @returns {SVGSVGElement}
 */
 export const svgRootElement = (svgdoc, dimensions) => {
   return svgdoc.importNode(

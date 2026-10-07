@@ -74,19 +74,27 @@ markers/connectors, clip/mask, `<use>`/symbols, puppet-warp, mirror/repeat
 stamps). Add fixtures as such drawings turn up; each new corruption bug should
 add the file that exhibited it. Small per fixture.
 
-## No type checking; `svgcanvas.d.ts` is hand-written; no explicit host API
+## `svgcanvas.d.ts` is hand-written and incomplete; no explicit host API
 
-`tsconfig.json` exists but no script runs it, and it's set to
-`module: commonjs`. `packages/svgcanvas/svgcanvas.d.ts` is still hand-written:
-the members known to be missing (`setAllLayersMode`, `zoomAtPoint`,
-`insertSvgFragment`, `offsetPath`, `shapeBuilder`, `setDebugEventSink`,
-`getDebugSnapshot`, `runExtensions`, …) were added and a dead re-export of a
-non-existent `core/utilities.js` removed, but nothing stops it drifting again,
-and it still lacks `setLogSink`-style newer APIs and most of the canvas surface.
-The plugin types `Editor` as `unknown`-ish and reaches into internals
-(`svgCanvas`, `configObj`, `$svgEditor`, `svgCanvas.modeEvent`). Fix: define an
-explicit host API on `Editor`, enable `checkJs` for that surface first, generate
-`.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), and ship it
+`npm run typecheck` (part of `pretest`) compiles `packages/svgcanvas/svgcanvas.d.ts`
+via `packages/svgcanvas/tsconfig.json`, which catches broken re-exports (it found a
+stale `sanitizeSvg` export). `tests/unit/svgcanvas-dts-drift.test.js` compares a live
+`SvgCanvas` instance with the d.ts class and fails on any new undeclared public
+member; today's gap (~380 members) is the ratchet list
+`tests/unit/svgcanvas-dts-known-gap.json` — declare members in the d.ts and delete
+them from the list. Runtime-attached members now live in `packages/svgcanvas/svgcanvas-members.d.ts`
+(`AttachedMembers`): `svgcanvas.d.ts` merges it into the class, and `svgcanvas.js`
+extends it through a JSDoc cast on its base class (augmenting the JS module
+doesn't work — TS ignores `declare module` merges into a JS-declared class).
+`svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
+but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
+there; tighten per file). The other `core/*.js` modules are not checked yet:
+add `// @ts-check` to them one at a time, declaring what they attach in
+`AttachedMembers` as you go. Still open: the root `tsconfig.json` is `module: commonjs` and
+unused by any script; the plugin types `Editor` as `unknown`-ish and reaches into
+internals (`svgCanvas`, `configObj`, `$svgEditor`, `svgCanvas.modeEvent`). Fix:
+define an explicit host API on `Editor`, enable `checkJs` for that surface first,
+generate `.d.ts` from the JSDoc (`tsc --declaration --emitDeclarationOnly`), ship it
 in `dist/`. Medium.
 
 ## Oversized modules (remaining)

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Numerous tools for working with the editor's "canvas".
  * @module svgcanvas
@@ -107,7 +108,7 @@ const CLIPBOARD_ID = 'svgedit_clipboard'
  * @memberof module:svgcanvas
  *
  */
-class SvgCanvas extends EventTarget {
+class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-members.js").AttachedMembers} */ (EventTarget) {
   /**
    * @param {HTMLElement} container - The container HTML element that should hold the SVG root element
    * @param {module:SVGeditor.configObj.curConfig} config - An object that contains configuration data
@@ -272,7 +273,7 @@ class SvgCanvas extends EventTarget {
     this.svgroot = svgRootElement(this.svgdoc, dimensions)
     container.append(this.svgroot)
     // The actual element that represents the final output SVG element.
-    this.svgContent = this.svgdoc.createElementNS(NS.SVG, 'svg')
+    this.svgContent = /** @type {SVGSVGElement} */ (/** @type {unknown} */ (this.svgdoc.createElementNS(NS.SVG, 'svg')))
     runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
     runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
     this.clearSvgContentElement()
@@ -303,7 +304,7 @@ class SvgCanvas extends EventTarget {
     this.opacAni = document.createElementNS(NS.SVG, 'animate')
     this.opacAni.setAttribute('attributeName', 'opacity')
     this.opacAni.setAttribute('begin', 'indefinite')
-    this.opacAni.setAttribute('dur', 1)
+    this.opacAni.setAttribute('dur', '1')
     this.opacAni.setAttribute('fill', 'freeze')
     this.svgroot.appendChild(this.opacAni)
 
@@ -349,7 +350,7 @@ class SvgCanvas extends EventTarget {
 
     /**
      * Transfers sessionStorage from one tab to another.
-     * @param {!Event} ev Storage event.
+     * @param {StorageEvent} ev Storage event.
      * @returns {void}
      */
     const storageChange = ev => {
@@ -370,7 +371,7 @@ class SvgCanvas extends EventTarget {
     // this closure.
     window.addEventListener('storage', storageChange, { signal: this.destroyAbort.signal })
     // Ask other tabs for sessionStorage (this is ONLY to trigger event).
-    localStorage.setItem(`${CLIPBOARD_ID}_startup`, Math.random())
+    localStorage.setItem(`${CLIPBOARD_ID}_startup`, String(Math.random()))
 
     runGuardedInit(this, 'paste', pasteInit, initGuardRegistry)
 
@@ -600,11 +601,11 @@ class SvgCanvas extends EventTarget {
   }
 
   getHeight () {
-    return this.svgContent.getAttribute('height') / this.state.zoom.value
+    return Number(this.svgContent.getAttribute('height')) / this.state.zoom.value
   }
 
   getWidth () {
-    return this.svgContent.getAttribute('width') / this.state.zoom.value
+    return Number(this.svgContent.getAttribute('width')) / this.state.zoom.value
   }
 
   getRoundDigits () {
@@ -637,7 +638,7 @@ class SvgCanvas extends EventTarget {
 
   round (val) {
     const { value: zoom } = this.state.zoom
-    return Number.parseInt(val * zoom) / zoom
+    return Number.parseInt(String(val * zoom)) / zoom
   }
 
   createSVGElement (jsonMap) {
@@ -670,9 +671,7 @@ class SvgCanvas extends EventTarget {
   }
 
   /**
-   * @param {PlainObject} changes
-   * @param {ChangeElementCommand} changes.cmd
-   * @param {SVGPathElement} changes.elem
+   * @param {{cmd: import('./core/history.js').ChangeElementCommand, elem: SVGPathElement}} changes
    * @fires module:svgcanvas.SvgCanvas#event:changed
    * @returns {void}
    */
@@ -1214,7 +1213,7 @@ class SvgCanvas extends EventTarget {
   }
 
   call (ev, arg) {
-    const evt = new CustomEvent(ev, { detail: { arg } })
+    const evt = new CustomEvent(ev, { detail: /** @type {any} */ ({ arg }) })
     this.dispatchEvent(evt)
     return evt.detail.result
   }
@@ -1230,7 +1229,10 @@ class SvgCanvas extends EventTarget {
    * @returns {void}
    */
   bind (ev, f) {
-    this.addEventListener(ev, (e) => { e.detail.result = f(window, e.detail.arg) })
+    this.addEventListener(ev, (e) => {
+      const { detail } = /** @type {CustomEvent} */ (e)
+      detail.result = f(window, detail.arg)
+    })
   }
 
   /**
@@ -1248,8 +1250,8 @@ class SvgCanvas extends EventTarget {
   /**
    * Selects only the given elements, shortcut for `clearSelection(); addToSelection()`.
    * @function module:svgcanvas.SvgCanvas#selectOnly
-   * @param {Element[]} elems - an array of DOM elements to be selected
-   * @param {boolean} showGrips - Indicates whether the resize grips should be shown
+   * @param {ArrayLike<Element>} elems - an array of DOM elements to be selected
+   * @param {boolean} [showGrips] - Indicates whether the resize grips should be shown
    * @returns {void}
    */
   selectOnly (elems, showGrips) {
@@ -1383,7 +1385,7 @@ class SvgCanvas extends EventTarget {
 
   /**
    * @function module:svgcanvas.SvgCanvas#getStrokeWidth
-   * @returns {Float|string} The current stroke-width value
+   * @returns {number|string} The current stroke-width value
    */
   getStrokeWidth () {
     return this.state.style.properties.stroke_width
@@ -1410,7 +1412,7 @@ class SvgCanvas extends EventTarget {
 
   /**
    * @function module:svgcanvas.SvgCanvas#getFillOpacity
-   * @returns {Float} the current fill opacity
+   * @returns {number} the current fill opacity
    */
   getFillOpacity () {
     return this.state.style.shape.fill_opacity
@@ -1418,7 +1420,7 @@ class SvgCanvas extends EventTarget {
 
   /**
    * @function module:svgcanvas.SvgCanvas#getStrokeOpacity
-   * @returns {string} the current stroke opacity
+   * @returns {number} the current stroke opacity
    */
   getStrokeOpacity () {
     return this.state.style.shape.stroke_opacity
@@ -1428,7 +1430,7 @@ class SvgCanvas extends EventTarget {
    * Sets the current fill/stroke opacity.
    * @function module:svgcanvas.SvgCanvas#setPaintOpacity
    * @param {string} type - String with "fill" or "stroke"
-   * @param {Float} val - Float with the new opacity value
+   * @param {number} val - Float with the new opacity value
    * @param {boolean} preventUndo - Indicates whether or not this should be an undoable action
    * @returns {void}
    */
@@ -1445,7 +1447,7 @@ class SvgCanvas extends EventTarget {
    * Gets the current fill/stroke opacity.
    * @function module:svgcanvas.SvgCanvas#getPaintOpacity
    * @param {"fill"|"stroke"} type - String with "fill" or "stroke"
-   * @returns {Float} Fill/stroke opacity
+   * @returns {number} Fill/stroke opacity
    */
   getPaintOpacity (type) {
     return type === 'fill' ? this.getFillOpacity() : this.getStrokeOpacity()
@@ -1455,16 +1457,17 @@ class SvgCanvas extends EventTarget {
    * Gets the `stdDeviation` blur value of the given element.
    * @function module:svgcanvas.SvgCanvas#getBlur
    * @param {Element} elem - The element to check the blur value for
-   * @returns {string} stdDeviation blur attribute value
+   * @returns {number|string} stdDeviation blur attribute value (0 when unblurred)
    */
   getBlur (elem) {
+    /** @type {number|string} */
     let val = 0
     if (elem) {
       const filterUrl = elem.getAttribute('filter')
       if (filterUrl) {
         const blur = this.getElement(`${elem.id}_blur`)
         if (blur) {
-          val = blur.firstChild.getAttribute('stdDeviation')
+          val = /** @type {Element} */ (blur.firstChild).getAttribute('stdDeviation')
         } else {
           const filterElem = this.getRefElem(filterUrl)
           const blurElem = getFeGaussianBlur(filterElem)
@@ -1520,7 +1523,7 @@ class SvgCanvas extends EventTarget {
    * @function module:svgcanvas.SvgCanvas#convertToPath
    * @todo (codedread): Remove the getBBox argument and split this function into two.
    * @param {Element} elem - The DOM element to be converted
-   * @param {boolean} getBBox - Boolean on whether or not to only return the path's BBox
+   * @param {boolean} [getBBox] - Boolean on whether or not to only return the path's BBox
    * @returns {void|DOMRect|false|SVGPathElement|null} If the getBBox flag is true, the resulting path's bounding box object.
    * Otherwise the resulting path element is returned.
    */
