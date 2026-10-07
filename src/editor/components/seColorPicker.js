@@ -241,7 +241,40 @@ export class SeColorPicker extends HTMLElement {
     dialog.type = this.type
     dialog.i18next = this.i18next
     ;(root.body ?? root).appendChild(dialog)
+
+    // Live preview on the selected shapes (solid colours only). Previews write the
+    // attribute directly — no history entry — and the originals are put back
+    // before the real change is applied (so undo records old → new) or on cancel.
+    const attr = this.type
+    const originals = new Map()
+    const canvas = ownerEditor(this)?.svgCanvas
+    const revert = () => {
+      originals.forEach((orig, el) => {
+        for (const [name, val] of Object.entries(orig)) {
+          if (val === null) el.removeAttribute(name)
+          else el.setAttribute(name, val)
+        }
+      })
+      originals.clear()
+    }
+    if (attr === 'fill' || attr === 'stroke') {
+      dialog.addEventListener('preview', (evt) => {
+        const { paint } = evt.detail
+        if (paint.type !== 'solidColor') return
+        const targets = (canvas?.getSelectedElements?.() ?? []).filter((el) => el && el.tagName !== 'g')
+        targets.forEach((el) => {
+          if (!originals.has(el)) {
+            originals.set(el, { [attr]: el.getAttribute(attr), [`${attr}-opacity`]: el.getAttribute(`${attr}-opacity`) })
+          }
+          el.setAttribute(attr, `#${paint.solidColor}`)
+          el.setAttribute(`${attr}-opacity`, String((paint.alpha ?? 100) / 100))
+        })
+      })
+      dialog.addEventListener('cancel', revert)
+    }
+
     dialog.addEventListener('change', (evt) => {
+      revert()
       const paint = new Paint({ copy: evt.detail.paint })
       this.setPaint(paint)
       this.dispatchEvent(new CustomEvent('change', { detail: { paint } }))

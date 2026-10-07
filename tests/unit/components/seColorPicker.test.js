@@ -96,6 +96,40 @@ describe('se-colorpicker', () => {
     expect(dialogs[0]).not.toBe(first)
   })
 
+  describe('live preview', () => {
+    const open = (rect) => {
+      window.svgEditor.svgCanvas.getSelectedElements = () => [rect]
+      const el = mountElement('se-colorpicker')
+      el.type = 'fill'
+      el.setPaint = vi.fn()
+      el.openColorDialog()
+      return { el, dialog: document.querySelector('se-color-dialog') }
+    }
+    const solid = (hex) => ({ type: 'solidColor', solidColor: hex, alpha: 50 })
+
+    it('shows a solid preview on the selection and reverts it on cancel', () => {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      rect.setAttribute('fill', '#00ff00')
+      const { dialog } = open(rect)
+      dialog.dispatchEvent(new CustomEvent('preview', { detail: { paint: solid('ff0000') } }))
+      expect(rect.getAttribute('fill')).toBe('#ff0000')
+      expect(rect.getAttribute('fill-opacity')).toBe('0.5')
+      dialog.dispatchEvent(new CustomEvent('cancel'))
+      expect(rect.getAttribute('fill')).toBe('#00ff00')
+      expect(rect.hasAttribute('fill-opacity')).toBe(false)
+    })
+
+    it('restores the originals before applying, so the change records old to new', () => {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      rect.setAttribute('fill', '#00ff00')
+      const { el, dialog } = open(rect)
+      dialog.dispatchEvent(new CustomEvent('preview', { detail: { paint: solid('ff0000') } }))
+      el.setPaint.mockImplementation(() => { expect(rect.getAttribute('fill')).toBe('#00ff00') })
+      dialog.dispatchEvent(new CustomEvent('change', { detail: { paint: solid('0000ff') } }))
+      expect(el.setPaint).toHaveBeenCalled()
+    })
+  })
+
   it('setPaint delegates to the paintBox', () => {
     const el = mountElement('se-colorpicker')
     const spy = vi.spyOn(el.paintBox, 'setPaint')

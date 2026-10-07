@@ -158,6 +158,15 @@ export class SeColorDialog extends HTMLElement {
       if (!this._shadowRoot.activeElement) this._onCancel()
     })
 
+    // Live preview: while on the solid tab, report every colour tweak so the host
+    // can show it on the drawing before Apply (Cancel/Escape reverts).
+    this._shadowRoot.querySelector('.cp-body-slot').addEventListener('color-change', () => {
+      if (this._activeTab !== 'solid' || !this._currentPanel) return
+      this.dispatchEvent(new CustomEvent('preview', {
+        detail: { paint: stateToPaint(this._currentPanel.getPaintState()) }
+      }))
+    })
+
     // Mount initial panel
     this._switchTab(this._activeTab)
   }
@@ -222,6 +231,7 @@ export class SeColorDialog extends HTMLElement {
   }
 
   _onCancel () {
+    this.dispatchEvent(new CustomEvent('cancel'))
     this.remove()
   }
 

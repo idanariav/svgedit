@@ -224,13 +224,12 @@ Medium, mostly icon and CSS work.
 
 Small.
 
-## Colour picker is a modal, not a live popover
+## Colour picker is still a modal
 
-Preferences and Export were reskinned (title, aligned rows, actions bottom-right;
-Export gained Scale 1–4× via `rasterExport`'s `opts.scale`, Quality only for
-JPEG/WEBP, and an output-size preview; Preferences gained a Theme select, which
-is also the way to switch theme when the top-bar toggle is hidden at narrow
-widths). Remaining: the colour picker is still a modal with Cancel/Apply, so
-trying a colour takes three clicks and the drawing doesn't change until you
-apply. Figma, Affinity and Inkscape use a popover that updates the drawing live,
-where Escape reverts. Medium.
+Done: solid-colour tweaks now preview live on the selected shapes (the dialog
+emits `preview`; `seColorPicker.openColorDialog` writes the attribute directly,
+with no history entry, and reverts it on Cancel/Escape or just before the real
+change is applied so undo records old → new). Remaining: it is still a modal
+with Cancel/Apply rather than an anchored popover that applies on outside click;
+gradients and the canvas background don't preview; groups don't preview
+(fill is inherited by children). Medium.
