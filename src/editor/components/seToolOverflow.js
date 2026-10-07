@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 /**
  * `<se-tool-overflow>` — the left panel's "Additional tools" drawer.
@@ -144,7 +145,7 @@ export class ToolOverflow extends HTMLElement {
         this._loadIcon(newValue)
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seToolOverflow')
         break
     }
   }

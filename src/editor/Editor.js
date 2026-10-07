@@ -35,6 +35,7 @@ import { getIconDataUri } from './images/iconRegistry.js'
 import { blurActiveField } from './components/fieldAutoBlur.js'
 import { runSteps } from './runSteps.js'
 import { getDefaultClassForTag, getClass, applyDefaultClassAttrs } from './classLibrary.js'
+import { warn as logWarn, setLogSink, setLogLevel } from '@svgedit/svgcanvas/common/logger.js'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -688,6 +689,19 @@ class Editor extends EditorStartup {
     }
     this._debugSnapshotLogger.start(sink)
     this.svgCanvas.setDebugEventSink(sink)
+  }
+
+  /**
+   * Forward svgedit's warnings/errors (the central logger, which also prints
+   * to the console) to a host-provided sink, e.g. a plugin's debug log. Shared
+   * by every editor on the page. Pass `null` to stop.
+   * @param {?function(string, {message: string, data: any}): void} sink - `(level, { message, data })`
+   * @param {number} [level] - A `LogLevel` value; defaults to leaving the level unchanged
+   * @returns {void}
+   */
+  setLogSink (sink, level) {
+    setLogSink(sink)
+    if (level !== undefined) setLogLevel(level)
   }
 
   // parents() https://stackoverflow.com/a/12981248
@@ -1346,7 +1360,7 @@ class Editor extends EditorStartup {
     const icon = typeof iconId === 'string' ? img : iconId.cloneNode(true)
     if (!icon) {
       // Todo: Investigate why this still occurs in some cases
-      console.warn('NOTE: Icon image missing: ' + iconId)
+      logWarn('NOTE: Icon image missing: ' + iconId, undefined, 'Editor')
       return
     }
     // empty()

@@ -17,6 +17,7 @@ import { classifyClipboardText } from './pasteClipboardText.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
+import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
 
 /**
    * @fires module:svgcanvas.SvgCanvas#event:svgEditorReady
@@ -45,7 +46,7 @@ const readySignal = () => {
       })
       w.document.documentElement.dispatchEvent(svgEditorReadyEvent)
     } catch (e) {
-      console.warn('svgedit: failed to dispatch svgEditorReady on opener/parent (likely cross-origin)', e)
+      logWarn('svgedit: failed to dispatch svgEditorReady on opener/parent (likely cross-origin)', e, 'EditorStartup')
     }
   }
 }
@@ -239,7 +240,7 @@ class EditorStartup {
       this.$container.append(commandSearchDialog)
       commandSearchDialog.init(this.i18next)
     } catch (err) {
-      console.error(err)
+      logError('Failed to init command search dialog', err, 'EditorStartup')
     }
 
     /**
@@ -269,7 +270,7 @@ class EditorStartup {
       try {
         fn()
       } catch (err) {
-        console.error(`Panel failed to init: ${label}; `, err)
+        logError(`Panel failed to init: ${label}; `, err, 'EditorStartup')
       }
     }
     initPanel('leftPanel', () => this.leftPanel.init())
@@ -1351,7 +1352,7 @@ class EditorStartup {
             return this.addExtension(name, (initfn && initfn.bind(this)), { langParam: 'en' }) /** @todo  change to current lng */
           } catch (err) {
             // Todo: Add config to alert any errors
-            console.error('Extension failed to load: ' + extname + '; ', err)
+            logError('Extension failed to load: ' + extname + '; ', err, 'EditorStartup')
             return undefined
           }
         })
@@ -1375,7 +1376,7 @@ class EditorStartup {
             return this.addExtension(name, (initfn && initfn.bind(this, config)), {})
           } catch (err) {
             // Todo: Add config to alert any errors
-            console.error('Extension failed to load: ' + pathName + '; ', err)
+            logError('Extension failed to load: ' + pathName + '; ', err, 'EditorStartup')
             return undefined
           }
         })
@@ -1408,7 +1409,7 @@ class EditorStartup {
       this.svgCanvas.call('extensions_added')
     } catch (err) {
       // Todo: Report errors through the UI
-      console.error(err)
+      logError('Failed to finish loading extensions', err, 'EditorStartup')
     }
   }
 

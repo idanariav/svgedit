@@ -22,7 +22,7 @@ import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
 import Layer from './layer.js'
 import { isExtensionHook } from './extension-hooks.js'
-import { warn } from '../common/logger.js'
+import { warn, error as logError } from '../common/logger.js'
 
 const { BatchCommand } = hstry
 
@@ -295,7 +295,7 @@ export const init = (canvas) => {
             result = ext[action](vars)
           }
         } catch (err) {
-          console.error(`Extension "${name}" threw during "${action}":`, err)
+          logError(`Extension "${name}" threw during "${action}":`, err, 'selection')
         }
       }
     }

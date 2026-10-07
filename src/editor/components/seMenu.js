@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -143,7 +144,7 @@ export class SeMenu extends HTMLElement {
         this.$label.prepend(newValue)
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seMenu')
         break
     }
   }

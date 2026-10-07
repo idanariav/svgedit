@@ -10,6 +10,7 @@ import {
   VALUE_CONTROLS,
   runFavoriteTrigger
 } from '../favoriteActions.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuDialogHTML
@@ -150,7 +151,7 @@ export class SeCMenuDialog extends HTMLElement {
       try {
         ctrl.seed(widget, editor)
       } catch (err) {
-        console.error('Failed to seed favorite value control', id, err)
+        logError(`Failed to seed favorite value control ${id}`, err, 'cmenuDialog')
       }
     })
     return li

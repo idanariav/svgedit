@@ -17,6 +17,7 @@
    */
 import { fileOpen, fileSave } from 'browser-fs-access'
 import { insertImageFromHref } from '../../dialogs/insertImage.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const name = 'opensave'
 let handle = null
@@ -146,7 +147,7 @@ export default {
         svgEditor.rightPanel.populateLayers()
       } catch (err) {
         if (err.name !== 'AbortError') {
-          return console.error(err)
+          return logError('Failed to open file', err, 'ext-opensave')
         }
       }
     }
@@ -216,7 +217,7 @@ export default {
           })
         } catch (err) {
           if (err.name !== 'AbortError') {
-            return console.error(err)
+            return logError('Failed to save file', err, 'ext-opensave')
           }
         }
       }

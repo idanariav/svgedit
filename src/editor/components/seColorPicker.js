@@ -4,6 +4,7 @@ import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { closestRoot } from '../domScope.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import './colorPicker/index.js'
 
 const template = document.createElement('template')
@@ -175,7 +176,7 @@ export class SeColorPicker extends HTMLElement {
         this.$label.setAttribute('title', newValue)
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seColorPicker')
         break
     }
   }

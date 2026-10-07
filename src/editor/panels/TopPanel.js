@@ -4,6 +4,7 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import topPanelHTML from './TopPanel.html'
 import { runSteps } from '../runSteps.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const { $click, isValidUnit, getTypeMap, convertUnit } = SvgCanvas
 
@@ -1281,7 +1282,7 @@ class TopPanel {
             )
           },
           error => {
-            console.error('error =', error)
+            logError('error =', error, 'TopPanel')
             seAlert(editor.i18next.t('tools.no_embed'))
             editor.svgCanvas.deleteSelectedElements()
           }
@@ -1319,7 +1320,7 @@ class TopPanel {
     try {
       await this.editor.svgCanvas.applyImageCrop()
     } catch (err) {
-      console.error(err)
+      logError('Image crop failed', err, 'TopPanel')
       seAlert(this.editor.i18next.t('tools.image_crop_error'))
     }
   }

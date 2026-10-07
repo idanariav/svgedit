@@ -14,7 +14,7 @@ import {
   transformPoint, getTransformList, transformListToTransform
 } from './math.js'
 import * as hstry from './history.js'
-import { error as logError } from '../common/logger.js'
+import { error as logError, warn as logWarn } from '../common/logger.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
@@ -413,7 +413,7 @@ export const init = (canvas) => {
         // Fails in FF4 on foreignObject
           cAni.beginElement()
         } catch (e) {
-          console.warn('svgedit: opacity animation beginElement() failed (known FF/foreignObject quirk)', e)
+          logWarn('svgedit: opacity animation beginElement() failed (known FF/foreignObject quirk)', e, 'event')
         }
       } else {
         aniDur = 0

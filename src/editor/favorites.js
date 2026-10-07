@@ -11,6 +11,7 @@
  * @module favorites
  */
 import { getUserDataAdapter } from './userDataAdapter.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const STORAGE_KEY = 'svg-edit-favorites'
 
@@ -33,7 +34,7 @@ const readStored = () => {
       return raw ? JSON.parse(raw) : []
     }
   } catch (err) {
-    console.error('Failed to load favorites', err)
+    logError('Failed to load favorites', err, 'favorites')
   }
   return []
 }
@@ -61,7 +62,7 @@ export const saveFavorites = (ids) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
     }
   } catch (err) {
-    console.error('Failed to persist favorites', err)
+    logError('Failed to persist favorites', err, 'favorites')
   }
 }
 

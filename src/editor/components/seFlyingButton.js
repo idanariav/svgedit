@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 /**
  * @class FlyingButton
@@ -210,7 +211,7 @@ export class FlyingButton extends HTMLElement {
         this._loadIcon(newValue)
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seFlyingButton')
         break
     }
   }
@@ -369,7 +370,7 @@ export class FlyingButton extends HTMLElement {
           }
           break
         default:
-          console.error('unknown nodeName for:', ev.target, ev.target.className)
+          logError('unknown nodeName for: ' + ev.target.className, ev.target, 'seFlyingButton')
       }
     }
     svgEditor.$click(this, onClickHandler)

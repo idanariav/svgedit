@@ -23,6 +23,7 @@ import { isMac } from '@svgedit/svgcanvas/common/browser'
 import { isActiveEditor, ownsKeyEvent } from './domScope.js'
 import { getUserDataAdapter } from './userDataAdapter.js'
 import { t } from './locale.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const STORAGE_KEY = 'svg-edit-hotkeys'
 // Canonical physical-modifier order (matches the legacy editor handler order).
@@ -509,7 +510,7 @@ export default class HotkeyManager {
         this.overrides = raw ? JSON.parse(raw) : {}
       }
     } catch (err) {
-      console.error('Failed to load hotkeys', err)
+      logError('Failed to load hotkeys', err, 'Hotkeys')
       this.overrides = {}
     }
   }
@@ -533,7 +534,7 @@ export default class HotkeyManager {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.overrides))
       }
     } catch (err) {
-      console.error('Failed to persist hotkeys', err)
+      logError('Failed to persist hotkeys', err, 'Hotkeys')
     }
   }
 }

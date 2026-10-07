@@ -6,7 +6,7 @@
  */
 
 import * as history from './history.js'
-import { error } from '../common/logger.js'
+import { error, warn as logWarn } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
 import {
   cleanupElement,
@@ -179,7 +179,7 @@ export const init = canvas => {
       try {
         svgCanvas.pathActions.clear(true)
       } catch (e) {
-        console.warn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e)
+        logWarn('svgedit: pathActions.clear() failed during svgCanvasToString; continuing', e, 'svg-exec')
       }
     }
 
@@ -1285,7 +1285,7 @@ export const init = canvas => {
           }
 
           img.onerror = err => {
-            console.error('Failed to load SVG into image element:', err)
+            error('Failed to load SVG into image element:', err, 'svg-exec')
             reject(err)
           }
 

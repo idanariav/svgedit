@@ -8,7 +8,7 @@
 
 | File | Purpose |
 |------|---------|
-| `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports, `setDebugLogger(sink)` (~37KB) |
+| `Editor.js` | Main class extending EditorStartup; top-level event handlers, menu callbacks, alignment, groups, exports, `setDebugLogger(sink)`, `setLogSink(sink, level)` (~37KB) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions (~27KB) |
 | `DebugSnapshotLogger.js` | Polls `svgCanvas.getDebugSnapshot()` and forwards it to a host-provided sink whenever it changes — no side effects otherwise, so an idle canvas doesn't flood the log. Backs `Editor.setDebugLogger(sink)`; off by default. Surfaces selection boxes, path-node grips, or group-context dimming still rendered but no longer backed by the model (a history of desyncing — e.g. a selection box left shown after deselect, a path-node grip orphaned from a previously-drawn/edited path, group-context sibling dimming not cleared on `leaveContext()`). Caught a real live bug this way — see `path-actions.js`'s `mouseDown` hide-all-on-new-path guard and `tests/unit/path-draw-orphaned-grips.test.js`. Replaced the old `<se-debug-overlay>` UI panel — a host now receives `(event, detail)` calls instead of rendering a DOM overlay (e.g. the Obsidian plugin routes it into its file-based debug log). `Editor.setDebugLogger(sink)` wires this polled-state channel *and* the discrete `svgCanvas.setDebugEventSink(sink)`/`logDebugEvent(event, detail)` channel (below) to the same sink under one toggle — the poller only ever sees *state*, the event channel is the *gesture* that produced it |
 | `svgcanvas.js` (`setDebugEventSink`/`logDebugEvent`) | Discrete debug-event channel, complementing `getDebugSnapshot()`'s polled diff. No-op unless a sink is set (`setDebugEventSink(sink)`; `null` clears it), so every call site pays only one property check when logging is off. Fired from: `path-method.js`'s `endChanges()` (`path-commit` — action name + full before/after `d`, the single choke point for move/clone/delete/toggle-seg-type/smooth), `path-actions.js`'s `mouseDown` grip branches (`path-node-select`), `toEditMode`/`toSelectMode` (`pathedit-enter`/`pathedit-exit`), `opencloseSubPath` (`path-open-close` — see its NOTE: this action has **no undo-history entry at all**, so this log is its only record), `deletePathNode`'s element-dropped branch (`path-node-delete`), and `undo.js`'s `handleHistoryEvent` (`history-apply` — direction, command type/text, whether the actively-edited path was refreshed in place) |
@@ -228,7 +228,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/namespaces.js` | SVG/XML namespace constants |
 | `common/browser.js` | Browser detection utilities |
 | `common/util.js` | Common utility functions |
-| `common/logger.js` | Logging helpers |
+| `common/logger.js` | Central logger (level, prefix/context). All `console.error/warn` go through it; `setLogSink(fn)` forwards records to a host (`Editor.setLogSink`). Config lives on a `Symbol.for` global so the editor and svgcanvas bundles share it |
 | `common/initGuard.js` | `runGuardedInit()` — wraps each `core/*.js` `xxxInit(canvas)` call in `svgcanvas.js`'s constructor with an `Object.keys` diff, warning if two modules claim the same instance property name |
 
 ---

@@ -1096,12 +1096,12 @@ class SvgCanvas extends EventTarget {
     try {
       this.pathActions.clear(true)
     } catch (e) {
-      console.warn('svgedit: pathActions.clear() failed during setMode; continuing', e)
+      warn('svgedit: pathActions.clear() failed during setMode; continuing', e, 'svgcanvas')
     }
     try {
       this.textActions.clear()
     } catch (e) {
-      console.warn('svgedit: textActions.clear() failed during setMode; continuing', e)
+      warn('svgedit: textActions.clear() failed during setMode; continuing', e, 'svgcanvas')
     }
     this.state.style.properties =
       this.state.selection.elements[0]?.nodeName === 'text'

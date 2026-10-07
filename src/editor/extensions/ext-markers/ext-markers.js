@@ -1,3 +1,4 @@
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  * @file ext-markers.js
  *
@@ -134,7 +135,7 @@ export default {
       const markerHeight = 5
 
       if (!markerTypes[seType]) {
-        console.error(`unknown marker type: ${seType}`)
+        logError(`unknown marker type: ${seType}`, undefined, 'ext-markers')
         return undefined
       }
 

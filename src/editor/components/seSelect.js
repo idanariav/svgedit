@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
@@ -178,7 +179,7 @@ export class SeSelect extends HTMLElement {
         }
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seSelect')
         break
     }
   }

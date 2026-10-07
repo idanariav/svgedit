@@ -11,6 +11,7 @@
  * @module toolOrder
  */
 import { getUserDataAdapter } from './userDataAdapter.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const STORAGE_KEY = 'svg-edit-tool-order'
 
@@ -30,7 +31,7 @@ export const loadToolOrder = () => {
       return raw ? JSON.parse(raw) : null
     }
   } catch (err) {
-    console.error('Failed to load tool order', err)
+    logError('Failed to load tool order', err, 'toolOrder')
   }
   return null
 }
@@ -50,7 +51,7 @@ export const saveToolOrder = ({ main, overflow }) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
     }
   } catch (err) {
-    console.error('Failed to persist tool order', err)
+    logError('Failed to persist tool order', err, 'toolOrder')
   }
 }
 

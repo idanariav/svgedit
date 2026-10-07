@@ -21,6 +21,7 @@
  */
 
 import { getUserDataAdapter } from '../../userDataAdapter.js'
+import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
 
 const DB_NAME = 'svgedit-fonts'
 const STORE = 'fonts'
@@ -197,12 +198,12 @@ export const restoreAll = async () => {
     try {
       records = await adapter.getFonts()
     } catch (e) {
-      console.warn('fontStore: failed to read host fonts', e)
+      logWarn('fontStore: failed to read host fonts', e, 'fontStore')
       return []
     }
     await Promise.all((records || []).map(r =>
       registerFont(r.family, r.woff2Base64).catch(e =>
-        console.warn(`fontStore: failed to restore "${r.family}"`, e))
+        logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
     ))
     return (records || []).map(r => r.family)
   }
@@ -210,7 +211,7 @@ export const restoreAll = async () => {
   try {
     records = await getAllRecords()
   } catch (e) {
-    console.warn('fontStore: failed to read cached fonts', e)
+    logWarn('fontStore: failed to read cached fonts', e, 'fontStore')
     return []
   }
   // Ignore stale-version entries; they get re-downloaded (and overwritten) when
@@ -218,7 +219,7 @@ export const restoreAll = async () => {
   const fresh = records.filter(r => r.v === REC_VERSION)
   await Promise.all(fresh.map(r =>
     registerFont(r.family, r.woff2Base64).catch(e =>
-      console.warn(`fontStore: failed to restore "${r.family}"`, e))
+      logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
   ))
   return fresh.map(r => r.family)
 }

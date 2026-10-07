@@ -8,6 +8,7 @@
  */
 
 import { converter, formatHex, wcagContrast, clampChroma } from 'culori'
+import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
 
 const toRgb = converter('rgb')
 
@@ -86,13 +87,13 @@ export function oklchDistance (a, b) {
 export function normalizeFillToHex (fillAttr) {
   if (!fillAttr || fillAttr === 'none' || fillAttr.startsWith('url(')) {
     if (fillAttr && fillAttr !== 'none') {
-      console.warn(`[eyedropper] Cannot sample a solid color from fill="${fillAttr}", defaulting to black`)
+      logWarn(`[eyedropper] Cannot sample a solid color from fill="${fillAttr}", defaulting to black`, undefined, 'oklchColor')
     }
     return '#000000'
   }
   const rgb = toRgb(fillAttr)
   if (!rgb) {
-    console.warn(`[eyedropper] Unrecognized fill value "${fillAttr}", defaulting to black`)
+    logWarn(`[eyedropper] Unrecognized fill value "${fillAttr}", defaulting to black`, undefined, 'oklchColor')
     return '#000000'
   }
   return formatHex(rgb)

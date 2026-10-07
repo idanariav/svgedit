@@ -1,4 +1,5 @@
 import Paint from '@svgedit/svgcanvas/core/paint.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  *
  */
@@ -73,7 +74,7 @@ class PaintBox {
       let refElem = svgCanvas.getRefElem(color)
       refElem = (refElem) ? refElem.cloneNode(true) : svgCanvas.$qa('#' + type + '_color defs *')[0]
       if (!refElem) {
-        console.error(`the color ${color} is referenced by an url that can't be identified - using 'none'`)
+        logError(`the color ${color} is referenced by an url that can't be identified - using 'none'`, undefined, 'PaintBox')
         opts.solidColor = 'none'
       } else {
         opts[refElem.tagName] = refElem

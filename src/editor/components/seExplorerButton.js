@@ -1,6 +1,7 @@
 /* globals svgEditor */
 import { getIconDataUri } from '../images/iconRegistry.js'
 import { closestRoot } from '../domScope.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 /**
  * @class ExplorerButton
@@ -192,14 +193,14 @@ export class ExplorerButton extends HTMLElement {
           )).join('')
           await this.updateLib(lib[0])
         } catch (error) {
-          console.error(error)
+          logError('Failed to load library menu', error, 'seExplorerButton')
         }
         break
       case 'src':
         this.$img.setAttribute('src', this.imgPath + '/' + newValue)
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seExplorerButton')
         break
     }
   }
@@ -298,7 +299,7 @@ export class ExplorerButton extends HTMLElement {
           }
           break
         default:
-          console.error('unknown nodeName for:', ev.target, ev.target.className)
+          logError('unknown nodeName for: ' + ev.target.className, ev.target, 'seExplorerButton')
       }
     }
     // capture event from slots
@@ -333,7 +334,7 @@ export class ExplorerButton extends HTMLElement {
         return `<se-button data-shape="${key}" src="data:image/svg+xml;base64,${encoded}"></se-button>`
       }).join('')
     } catch (error) {
-      console.error(`could not read file:${libDir}${lib}.json`, error)
+      logError(`could not read file:${libDir}${lib}.json`, error, 'seExplorerButton')
     }
   }
 }

@@ -124,13 +124,14 @@ EditorStartup's paste/clipboard handling into its own module, and
 seShapeLibrary into store/view/menu. Do this only after the lint re-indent
 entry above lands. Large; do it opportunistically, one file at a time.
 
-## Logging bypasses `common/logger.js` and the host debug sink
+## Remaining logging gaps
 
-There are 65 raw `console.*` calls in `src/editor` and `packages/svgcanvas`,
-alongside the central logger and `Editor.setDebugLogger()`. 8 `catch`
-blocks contain only a comment. Route these through the logger, and let the
-host set its level and sink, so warnings from users' sessions reach the
-plugin's debug log. Small.
+`console.error`/`console.warn` now go through `common/logger.js` everywhere
+(a unit test enforces it) and reach a host via `Editor.setLogSink(sink, level)`.
+Not done: the `catch` blocks that only hold a comment (`bbox-utils.js`,
+`coords.js`, `json.js`, `ColorDialog.js`) are intentional fallbacks and stay
+silent; `console.log/info/debug` calls are untouched. The plugin still needs to
+call `setLogSink` (that half lives in `../obsidian-svgedit-plugin`). Small.
 
 ## Dialogs with private colour variables / hard-coded colours
 

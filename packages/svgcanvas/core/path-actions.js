@@ -17,6 +17,7 @@ import {
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.js'
+import { warn as logWarn } from '../common/logger.js'
 
 /**
 * @function module:path-actions.init
@@ -1110,7 +1111,7 @@ export const init = (canvas) => {
         try {
           this.toSelectMode()
         } catch (e) {
-          console.warn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e)
+          logWarn('svgedit: pathActions.toSelectMode() failed during clear(); continuing', e, 'path-actions')
         }
       } else if (mode === 'path') {
       // A locked path tool (double-click to keep it armed — see
@@ -1142,7 +1143,7 @@ export const init = (canvas) => {
         try {
           path.init().show(false)
         } catch (e) {
-          console.warn('svgedit: path.init().show(false) failed during clear(); continuing', e)
+          logWarn('svgedit: path.init().show(false) failed during clear(); continuing', e, 'path-actions')
         }
       }
       // Only reset `started` when this clear() call actually corresponds to

@@ -1,5 +1,6 @@
 import { t } from '../locale.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -117,7 +118,7 @@ export class SEInput extends HTMLElement {
         this.$input.value = newValue
         break
       default:
-        console.error(`unknown attribute: ${name}`)
+        logError(`unknown attribute: ${name}`, undefined, 'seInput')
         break
     }
   }

@@ -16,6 +16,7 @@
  * (`getCanvasLayouts`/`setCanvasLayouts`) when present, else `localStorage`.
  */
 import { getUserDataAdapter } from './userDataAdapter.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const STORAGE_KEY = 'svg-edit-canvas-layouts'
 const LAYER_PREFIX = 'Layout: '
@@ -52,7 +53,7 @@ export const loadLayouts = () => {
       return sanitizeLayouts(raw ? JSON.parse(raw) : null)
     }
   } catch (err) {
-    console.error('Failed to load canvas layouts', err)
+    logError('Failed to load canvas layouts', err, 'canvasLayouts')
   }
   return []
 }
@@ -71,7 +72,7 @@ export const saveLayouts = (layouts) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts))
     }
   } catch (err) {
-    console.error('Failed to persist canvas layouts', err)
+    logError('Failed to persist canvas layouts', err, 'canvasLayouts')
   }
 }
 
@@ -112,7 +113,7 @@ export const applyLayout = (layout) => {
   // 2. Parse the saved canvas and collect its drawable objects + defs.
   const doc = new DOMParser().parseFromString(layout.svg, 'image/svg+xml')
   if (doc.querySelector('parsererror')) {
-    console.error('Failed to parse layout SVG', layout.name)
+    logError('Failed to parse layout SVG', layout.name, 'canvasLayouts')
     return
   }
   const drawables = []

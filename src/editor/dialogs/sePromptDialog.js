@@ -1,4 +1,5 @@
 import SePlainAlertDialog from './SePlainAlertDialog.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  * @class SePromptDialog
  */
@@ -46,7 +47,7 @@ export class SePromptDialog extends HTMLElement {
         }
         break
       default:
-        console.error('unknown attr for:', name, 'newValue =', newValue)
+        logError(`unknown attr for: ${name}, newValue = ${newValue}`, undefined, 'sePromptDialog')
         break
     }
   }

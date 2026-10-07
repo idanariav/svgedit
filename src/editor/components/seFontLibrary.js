@@ -19,6 +19,7 @@ import { closestRoot } from '../domScope.js'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.
 import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const CAT_LABELS = {
   handwriting: 'Handwriting',
@@ -205,7 +206,7 @@ export class SeFontLibrary extends HTMLElement {
       this._categories = json?.categories || []
       this._loaded = true
     } catch (e) {
-      console.error('SeFontLibrary: failed to load catalog', e)
+      logError('SeFontLibrary: failed to load catalog', e, 'seFontLibrary')
     }
   }
 
@@ -361,7 +362,7 @@ export class SeFontLibrary extends HTMLElement {
     try {
       await ensureFont(family)
     } catch (e) {
-      console.error(`SeFontLibrary: failed to load "${family}"`, e)
+      logError(`SeFontLibrary: failed to load "${family}"`, e, 'seFontLibrary')
       btn.classList.remove('is-loading')
       const foot = this._shadow.querySelector('.fl-foot')
       if (foot) foot.textContent = `Could not download "${family}" — check your connection.`

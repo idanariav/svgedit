@@ -3,6 +3,7 @@ import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { loadLayouts, saveLayouts, captureCurrentLayout, applyLayout } from '../canvasLayouts.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import './seSpinInput.js'
 
 // Built-in canvas size presets, used when the user has not curated their own
@@ -54,7 +55,7 @@ const loadPresets = () => {
       return stored.length ? stored : DEFAULT_PRESETS.map(p => ({ ...p }))
     }
   } catch (err) {
-    console.error('Failed to load canvas presets', err)
+    logError('Failed to load canvas presets', err, 'seCanvasSettings')
   }
   return DEFAULT_PRESETS.map(p => ({ ...p }))
 }
@@ -73,7 +74,7 @@ const savePresets = (presets) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(presets))
     }
   } catch (err) {
-    console.error('Failed to persist canvas presets', err)
+    logError('Failed to persist canvas presets', err, 'seCanvasSettings')
   }
 }
 

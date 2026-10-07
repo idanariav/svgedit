@@ -8,6 +8,7 @@
 import { css } from './PaletteDialog.css.js'
 import { generatePalette } from '../../palette/generatePalette.js'
 import { closestRoot } from '../../domScope.js'
+import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
 
 const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path></svg>'
@@ -209,11 +210,11 @@ export class SePaletteDialog extends HTMLElement {
       }, 1200)
     }
     if (!navigator.clipboard?.writeText) {
-      console.warn('[se-palette-dialog] Clipboard API unavailable')
+      logWarn('[se-palette-dialog] Clipboard API unavailable', undefined, 'PaletteDialog')
       return
     }
     navigator.clipboard.writeText(text).then(markCopied, (err) => {
-      console.warn('[se-palette-dialog] Failed to copy to clipboard', err)
+      logWarn('[se-palette-dialog] Failed to copy to clipboard', err, 'PaletteDialog')
     })
   }
 

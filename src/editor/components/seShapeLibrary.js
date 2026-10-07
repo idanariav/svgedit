@@ -21,6 +21,7 @@ import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
 } from '../extensions/ext-shapes/userShapes.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 // Inlined shape library data (bundled at build time). Keyed by file basename
 // without `.json` — e.g. `index`, `animal`, `arrow`. This removes the runtime
@@ -639,7 +640,7 @@ export class SeShapeLibrary extends HTMLElement {
         const r = await fetch(`${this._libPath}index.json`)
         json = await r.json()
       } catch (e) {
-        console.error('SeShapeLibrary: failed to load index', e)
+        logError('SeShapeLibrary: failed to load index', e, 'seShapeLibrary')
         json = { lib: [] }
       }
     }
@@ -667,7 +668,7 @@ export class SeShapeLibrary extends HTMLElement {
         const r = await fetch(`${this._libPath}${catId}.json`)
         json = await r.json()
       } catch (e) {
-        console.error(`SeShapeLibrary: failed to load category "${catId}"`, e)
+        logError(`SeShapeLibrary: failed to load category "${catId}"`, e, 'seShapeLibrary')
         return null
       }
     }

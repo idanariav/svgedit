@@ -1,3 +1,4 @@
+import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  * Run a sequence of labeled, independent steps, isolating each from the
  * others: a step that throws (e.g. a stale DOM id after a panel refactor) is
@@ -13,7 +14,7 @@ export const runSteps = (steps) => {
     try {
       fn()
     } catch (err) {
-      console.error(`Step failed: ${label}; `, err)
+      logError(`Step failed: ${label}; `, err, 'runSteps')
     }
   }
 }

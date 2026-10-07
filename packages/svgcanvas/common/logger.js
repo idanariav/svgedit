@@ -18,13 +18,37 @@ export const LogLevel = {
 }
 
 /**
- * Logger configuration
+ * Logger configuration. Kept on a `Symbol.for` global so every copy of this
+ * module (the editor bundle and the svgcanvas bundle each inline their own)
+ * shares one level/sink, which a host sets once.
  * @type {Object}
  */
-const config = {
+const config = (globalThis[Symbol.for('svgedit.logger')] ??= {
   currentLevel: LogLevel.WARN,
   enabled: true,
-  prefix: '[SVGCanvas]'
+  prefix: '[SVGCanvas]',
+  sink: null
+})
+
+/**
+ * Route every emitted log record to a host-provided function, in addition to
+ * the console, so warnings from users' sessions reach e.g. a plugin's debug
+ * log. Records below the current log level are not delivered.
+ * @param {?function(string, {message: string, data: any}): void} sink -
+ *   Called as `sink(levelName, { message, data })`; pass `null` to stop.
+ * @returns {void}
+ */
+export const setLogSink = (sink) => {
+  config.sink = typeof sink === 'function' ? sink : null
+}
+
+const emit = (level, message, data) => {
+  if (!config.sink) return
+  try {
+    config.sink(level, { message, data })
+  } catch {
+    // A failing host sink must never break the editor.
+  }
 }
 
 /**
@@ -81,6 +105,7 @@ export const error = (message, error, context = '') => {
   if (error) {
     console.error(error)
   }
+  emit('error', formatMessage(message, context), error)
 }
 
 /**
@@ -97,6 +122,7 @@ export const warn = (message, data, context = '') => {
   if (data !== undefined) {
     console.warn(data)
   }
+  emit('warn', formatMessage(message, context), data)
 }
 
 /**
@@ -113,6 +139,7 @@ export const info = (message, data, context = '') => {
   if (data !== undefined) {
     console.info(data)
   }
+  emit('info', formatMessage(message, context), data)
 }
 
 /**
@@ -129,6 +156,7 @@ export const debug = (message, data, context = '') => {
   if (data !== undefined) {
     console.debug(data)
   }
+  emit('debug', formatMessage(message, context), data)
 }
 
 /**
@@ -143,6 +171,7 @@ export default {
   setLogLevel,
   setLoggingEnabled,
   setLogPrefix,
+  setLogSink,
   error,
   warn,
   info,
