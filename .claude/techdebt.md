@@ -132,19 +132,18 @@ Obsidian-only findings are in `../obsidian-svgedit-plugin/.claude/techdebt.md`.
 
 ## Toolbars get cut off in narrow or short panes
 
-Done: the left column stays 56px when the panel opens, `#tools_overflow` is
-sticky at the bottom of the left toolbar, and Undo/Redo + zoom (`#top_end`) are
-sticky at the right of the top bar, which also scrolls with the plain mouse
-wheel. Remaining:
-- When the top bar overflows, `TopPanel.js` adds `.tt-compact` to `#tools_top`
-  (hides the file-name chip and theme toggle). That makes 1024px fit; at 800px
-  the object trays still overflow by ~120px and are reached by scrolling. A
-  second tier ("more" menu for arrange/flip/align) would fix it.
-- Move tools into `…` automatically when the left column is too short (today it
-  scrolls).
+Done: left column stays 56px with the panel open; `#tools_overflow` is sticky;
+the right cluster (`#top_end`: Undo/Redo + zoom) is sticky; and the top bar
+collapses in two tiers (`TopPanel.js` `fitBar`): `tt-compact` hides the file chip
+and theme toggle (theme is in Preferences), `tt-tight` folds the object trays
+(clone/arrange/align…) into a "⋯" button (`#top_more`) that opens them as a
+floating panel (`#top_more_pop`). The bar is re-measured from the full state on
+resize and when a tray is shown/hidden. Remaining:
 - Tablet mode at 1024 wide: the command bar's undo/redo are still cut off.
 - Palette swatches shrink to slivers at 800px.
-Medium.
+- Tools in the left column scroll rather than moving into `…` automatically.
+- No automated test covers `fitBar` (jsdom has no layout) — only manual/e2e.
+Small.
 
 ## Missing translations show raw keys
 
@@ -220,7 +219,7 @@ Medium, mostly icon and CSS work.
   snap, layer view) are icons with no labels. The theme toggle takes a prime
   toolbar spot for a rarely used setting; move it to Preferences or the menu.
 - Zoom now has −/+ buttons and a "%" suffix; the value still shows one decimal
-  ("100.0").
+  ("100.0") — now trimmed to "100" for display.
 
 Small.
 

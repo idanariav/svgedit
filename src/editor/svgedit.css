@@ -1120,6 +1120,40 @@ hr {
 #tools_top.tt-compact #title_panel,
 #tools_top.tt-compact #theme_panel { display: none; }
 
+/* Tight panes: object trays fold behind #top_more and open as a floating panel */
+#top_more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--icon);
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+#top_more[hidden] { display: none; }
+#top_more:hover,
+#tools_top.tt-more-open #top_more { color: var(--icon-hover); background: var(--icon-hover-bg); }
+#top_more_pop {
+  display: none;
+  position: fixed;
+  top: calc(var(--top-toolbar-min-height, 56px) + 6px);
+  right: 10px;
+  max-width: calc(100vw - 20px);
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 30;
+}
+#tools_top.tt-more-open #top_more_pop { display: flex; }
+
 /* Right-hand cluster (Undo/Redo + zoom): pushed to the right edge and pinned
    there (sticky), so it neither moves when contextual trays appear nor scrolls
    out of reach in narrow panes. */

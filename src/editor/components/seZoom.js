@@ -145,6 +145,9 @@ template.innerHTML = `
   </div>
 `
 
+/** Display form of a zoom value: "100.0" → "100" (other decimals are kept). */
+const showZoom = (v) => (/^-?\d+\.0+$/.test(String(v)) ? String(v).replace(/\.0+$/, '') : v)
+
 class SeZoom extends HTMLElement {
   constructor () {
     super()
@@ -272,7 +275,7 @@ class SeZoom extends HTMLElement {
       switch (name) {
         case 'value':
           if (parseInt(this.inputElement.value) !== newValue) {
-            this.inputElement.value = newValue
+            this.inputElement.value = showZoom(newValue)
           }
           break
       }
@@ -282,7 +285,7 @@ class SeZoom extends HTMLElement {
 
     switch (name) {
       case 'value':
-        this.inputElement.value = newValue
+        this.inputElement.value = showZoom(newValue)
         this.dispatchEvent(
           new CustomEvent('change', { detail: { value: newValue } })
         )

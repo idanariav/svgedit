@@ -171,3 +171,17 @@ describe('se-zoom', () => {
     expect(el.value).toBe('120') // stopped repeating
   })
 })
+
+describe('se-zoom display', () => {
+  beforeEach(() => installMockSvgEditor())
+  afterEach(() => { uninstallMockSvgEditor(); document.body.innerHTML = '' })
+
+  it('drops a trailing ".0" in the shown value but keeps real decimals and the attribute', () => {
+    const el = mountElement('se-zoom')
+    el.value = '100.0'
+    expect(el.inputElement.value).toBe('100')
+    expect(el.getAttribute('value')).toBe('100.0')
+    el.value = '12.5'
+    expect(el.inputElement.value).toBe('12.5')
+  })
+})
