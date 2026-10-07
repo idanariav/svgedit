@@ -1,0 +1,15 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g class="layer">
+  <title>Layer 1</title>
+  <g id="g_3" transform="translate(30 20) rotate(8 100 100) scale(1.2)">
+   <rect fill="#ff8800" height="80" id="svg_1" opacity="0.5" paint-order="stroke" stroke="#000" stroke-width="2" width="120" x="40" y="40"/>
+   <circle cx="260" cy="90" fill="#0088ff" id="svg_2" opacity="0.5" paint-order="stroke" r="40" stroke="#000" stroke-width="2"/>
+  </g>
+ </g>
+
+ <g class="layer">
+  <title>Layer 2</title>
+  <text fill="#003366" font-family="sans-serif" font-size="28" id="svg_4" opacity="0.5" paint-order="stroke" stroke="#000000" stroke-width="5" x="50" y="300">Second layer</text>
+  <path d="m300,300l80,80l-80,0z" fill="#44aa44" id="svg_5" opacity="0.5" paint-order="stroke" stroke="#000" stroke-linejoin="round" stroke-width="2"/>
+ </g>
+</svg>

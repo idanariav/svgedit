@@ -1,0 +1,21 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g class="layer">
+  <title>Layer 1</title>
+  <rect fill="#ffcc00" filter="url(#svg_1_fx)" height="100" id="svg_1" opacity="0.5" paint-order="stroke" stroke="#000" stroke-width="2" width="160" x="80" y="80"/>
+  <ellipse cx="380" cy="130" fill="#9933cc" filter="url(#svg_2_fx)" id="svg_2" opacity="0.5" paint-order="stroke" rx="70" ry="50" stroke="#000" stroke-width="2"/>
+ </g>
+ <defs>
+  <filter data-fx="1" filterUnits="userSpaceOnUse" height="162" id="svg_1_fx" width="222" x="49" y="49">
+   <feDropShadow dx="8.49" dy="8.49" flood-color="#000000" flood-opacity="0.5" stdDeviation="6"/>
+  </filter>
+  <filter data-fx="1" filterUnits="userSpaceOnUse" height="110" id="svg_2_fx" width="150" x="305" y="75">
+   <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="fx_dil"/>
+   <feFlood flood-color="#ffffff" flood-opacity="undefined" result="fx_flood"/>
+   <feComposite in="fx_flood" in2="fx_dil" operator="in" result="fx_outline"/>
+   <feMerge result="fx_outlined">
+    <feMergeNode in="fx_outline"/>
+    <feMergeNode in="SourceGraphic"/>
+   </feMerge>
+  </filter>
+ </defs>
+</svg>

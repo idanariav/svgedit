@@ -8,6 +8,7 @@
 import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
+import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.js'
 import {
   cleanupElement,
   setHref,
@@ -396,6 +397,14 @@ export const init = canvas => {
           }
         })
 
+        // `se:` attributes set without a namespace (corner radius, taper, …)
+        // carry no namespaceURI, so the loop above can't see them — declare the
+        // prefix anyway or the saved file uses an undeclared prefix and can't
+        // be loaded again (see se-namespace.js).
+        if (!nsuris[NS.SE] && hasUnnamespacedSeAttr(cElements)) {
+          out.push(` xmlns:se="${NS.SE}"`)
+        }
+
         let i = attrs.length
         const attrNames = [
           'width',
@@ -593,8 +602,9 @@ export const init = canvas => {
     // otherwise a failed load would leave a half-processed drawing on the canvas.
     let previous = null
     try {
-    // convert string into XML document
-      const newDoc = text2xml(xmlString)
+    // convert string into XML document. Drawings saved by earlier versions can
+      // use `se:` attributes without declaring the prefix, which doesn't parse.
+      const newDoc = text2xml(declareMissingSeNamespace(xmlString))
       if (
         newDoc.firstElementChild &&
       newDoc.firstElementChild.namespaceURI !== NS.SVG

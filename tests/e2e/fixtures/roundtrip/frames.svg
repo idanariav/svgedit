@@ -1,0 +1,13 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g class="layer">
+  <title>Layer 1</title>
+  <rect data-frame="1" fill="transparent" height="200" id="rect_1" stroke="#3b82f6" stroke-dasharray="6 4" stroke-width="1.5" width="280" x="20" y="20">
+   <title>Frame 1</title>
+  </rect>
+  <rect data-frame="1" fill="transparent" height="200" id="rect_2" stroke="#3b82f6" stroke-dasharray="6 4" stroke-width="1.5" width="280" x="340" y="20">
+   <title>Frame 2</title>
+  </rect>
+  <rect fill="#ff0000" height="60" id="svg_3" opacity="0.5" paint-order="stroke" stroke="#000000" stroke-width="2" width="100" x="40" y="40"/>
+  <rect fill="#00aa44" height="80" id="svg_4" opacity="0.5" paint-order="stroke" stroke="#000000" stroke-width="2" width="80" x="360" y="60"/>
+ </g>
+</svg>

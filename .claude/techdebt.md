@@ -64,15 +64,16 @@ standalone dialogs and don't touch an editor. Constructor-time reads such as
 when the element isn't attached yet; they're harmless as long as `imgPath` is
 the same for every editor on the page. Small.
 
-## `setSvgString` has no round-trip corpus test
+## Round-trip corpus is small
 
-A failure after the document swap now rolls back to the previous drawing
-(`restorePreviousDocument()` in `svg-exec.js`), rather than processing the
-parsed document fully off-canvas — that would mean reworking every pass that
-reads `svgCanvas.getSvgContent()`. Still open: a round-trip test over a corpus
-of real-world drawings (frames, taper, corner radius, shadows,
-text-on-path): load → save → load should stop changing after one pass. Today
-round-trip assertions exist only per feature. Medium.
+`tests/e2e/roundtrip.spec.js` loads/saves/loads six generated drawings
+(`tests/e2e/fixtures/roundtrip/`: frames, corner radius, taper, shadow/outline,
+text-on-path, groups/layers) and asserts the output stabilises after one pass.
+Two of them (corner-radius, taper) were saved before the `xmlns:se` fix and
+double as legacy-file coverage. Missing: real drawings from the plugin (images,
+markers/connectors, clip/mask, `<use>`/symbols, puppet-warp, mirror/repeat
+stamps). Add fixtures as such drawings turn up; each new corruption bug should
+add the file that exhibited it. Small per fixture.
 
 ## No type checking; `svgcanvas.d.ts` is hand-written; no explicit host API
 

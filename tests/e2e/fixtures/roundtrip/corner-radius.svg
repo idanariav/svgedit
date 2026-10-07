@@ -1,0 +1,7 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g class="layer">
+  <title>Layer 1</title>
+  <rect fill="#3366cc" height="120" id="svg_1" opacity="0.5" paint-order="stroke" se:corner-radius="18" stroke="#000" stroke-width="3" width="200" x="60" y="60"/>
+  <rect fill="#cc6633" height="120" id="svg_2" opacity="0.5" paint-order="stroke" se:corner-radius="10" stroke="#000" stroke-width="3" transform="rotate(15 360 120)" width="120" x="300" y="60"/>
+ </g>
+</svg>
