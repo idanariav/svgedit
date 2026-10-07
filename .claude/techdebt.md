@@ -36,23 +36,6 @@ The entries below came out of a whole-repo code review (2026-10-07). None
 were started at the time; they are listed in suggested order. Baseline then:
 1,631 unit tests passing, lint failing, e2e not run.
 
-## Fork identity: plugin can silently build against upstream svgedit
-
-This fork is still `svgedit@7.4.1` (`package.json`), the same name and
-version as upstream's npm release. The plugin's
-`scripts/fetch-svgedit-dist.mjs` falls back to `npm install svgedit@7.4.1`
-when no sibling `../svgedit` checkout exists (fresh clone, CI). It also
-runs on every `npm install` via `prepare`. That fallback bundles the
-*upstream* editor (no host bridge, frame labels, taper, …) with no error.
-Related: `repository`/`bugs`/`homepage`, the README badges, and
-`CHANGES.md` (stops at 7.4.1) all describe upstream, and the
-`npmpublish*.yml` workflows would try to publish `svgedit`. Fix: give the
-fork its own identity (scoped name, or a `7.4.1-milani.N` version), consume
-it via a GitHub release asset or a commit-pinned git dependency, delete the
-publish workflows, and make the plugin's fallback fail loudly (that half
-lives in `../obsidian-svgedit-plugin`). Medium: it touches the release
-workflow in both repos.
-
 ## `units.js` is still a module-level singleton
 
 Despite `3348e5a3` ("closing the last module-singleton hazard"),
