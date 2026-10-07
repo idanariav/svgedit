@@ -80,7 +80,7 @@ add the file that exhibited it. Small per fixture.
 via `packages/svgcanvas/tsconfig.json`, which catches broken re-exports (it found a
 stale `sanitizeSvg` export). `tests/unit/svgcanvas-dts-drift.test.js` compares a live
 `SvgCanvas` instance with the d.ts class and fails on any new undeclared public
-member; today's gap (~380 members) is the ratchet list
+member; today's gap (~215 members, none called from the editor/extensions) is the ratchet list
 `tests/unit/svgcanvas-dts-known-gap.json` — declare members in the d.ts and delete
 them from the list. Runtime-attached members now live in `packages/svgcanvas/svgcanvas-members.d.ts`
 (`AttachedMembers`): `svgcanvas.d.ts` merges it into the class, and `svgcanvas.js`

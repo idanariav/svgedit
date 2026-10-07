@@ -138,7 +138,7 @@ const attrsToConvert = {
  * from that container, so two editors in one page never read each other's.
  * @function module:units.createUnits
  * @param {module:units.ElementContainer} elementContainer
- * @returns {{shortFloat: Function, convertUnit: (val: number, unit?: string) => number, convertAttrs: Function, convertToNum: Function, isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean, getTypeMap: Function, setUnitAttr: Function}}
+ * @returns {{shortFloat: Function, convertUnit: (val: number, unit?: string) => number, convertAttrs: Function, convertToNum: (attr: string, val: string) => number, isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean, getTypeMap: () => Record<string, number>, setUnitAttr: Function}}
  */
 export const createUnits = (elementContainer) => {
   /**

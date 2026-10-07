@@ -4,7 +4,7 @@
  * here: `svgcanvas.d.ts` merges it into the public class, and `svgcanvas.js`
  * extends it through its base-class type so `@ts-check` knows the surface.
  */
-import type { SVGElementJSON, Resolution, BBox, UndoManager } from './svgcanvas.js'
+import type { Config, SVGElementJSON, Resolution, BBox, UndoManager } from './svgcanvas.js'
 
 export interface AttachedMembers {
   setSvgString(xmlString: string, preventUndo?: boolean): boolean
@@ -218,4 +218,59 @@ export interface AttachedMembers {
   clearSvgContentElement(): void
   getDisabledElems(): Element[]
   getPathObj(): any
+
+  // Host-facing helpers (called from the editor and extensions)
+  /** History helpers (`HistoryCommand` classes, `UndoManager`, …). */
+  history: any
+  NS: Record<string, string>
+  svgroot: SVGSVGElement
+  curConfig: Config
+  $id: (id: string) => Element | null
+  $qa: (selector: string) => Element[]
+  getBrushParams(): any
+  setBrushParams(params: object): any
+  getCurShape(): any
+  getContentH(): number
+  getNonceId(base?: string): string
+  getHref(elem: Element): string | null
+  setHref(elem: Element, val: string): void
+  getRotationAngle(elem?: Element, toRad?: boolean): number
+  getEditorNS(add?: boolean): string
+  getTypeMap(): Record<string, number>
+  convertToNum(attr: string, val: string): number
+  getReferencedDefElements(elem: Element): Element[]
+  getParents(node: Node, selector?: string): Element[]
+  isLayer(elem: Element): boolean
+  hasVisibleStroke(elem: Element): boolean
+  mergeDeep(target: any, source: any): any
+  encode64(input: string): string
+  registerGeometryRemap(attrName: string, remapFn: Function): void
+  remapElementIdsAndRefs(rootEls: Element[], getNewId: () => string): Record<string, string>
+  uniquifyElems(g: Element): void
+  recalculateDimensions(selected: Element): any
+  updateCanvas(w: number, h: number): any
+  setCurrentZoom(zoomLevel: number): void
+  setContext(elem: Element | string): void
+  leaveContext(): void
+  rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: object): Promise<any>
+
+  // Clip / mask / boolean / segment / taper / crop
+  setClip(): void
+  setMask(): void
+  getFeather(elem: Element): number
+  booleanUnion(): void
+  booleanSubtract(): void
+  booleanIntersect(): void
+  booleanExclude(): void
+  booleanDivide(): void
+  canSegment(elem: Element): boolean
+  segmentSelection(params: object): any
+  getSegmentParams(): any
+  canTaperStroke(elem: Element): boolean
+  getTaperParams(): any
+  canTextOnPath(): boolean
+  simplifyPathD(d: string, tolerance?: number): string
+  cutShapes(points: Array<{ x: number, y: number }>): any
+  startImageCrop(imageElem: Element): any
+  isImageCropEligible(elem: Element): boolean
 }
