@@ -41,7 +41,7 @@ describe('dialog theme tokens', () => {
   })
 
   it('does not reference the retired legacy alias variables', () => {
-    const retired = /--(main-bg-color|text-color|input-color|border-color|icon-bg-color-hover|hover-highlight|dropdown-bg|dropdown-pressed-bg|canvas-bg-color|layer-bg|layer-selected-bg|link-color|orange-color)\b/
+    const retired = /--(main-bg-color|text-color|input-color|border-color|icon-bg-color-hover|hover-highlight|dropdown-bg|dropdown-pressed-bg|canvas-bg-color|layer-bg|layer-selected-bg|link-color|orange-color|workarea-bg|ruler-color|bevel-light|main-menu-bg)\b/
     const walk = (dir) => readdirSync(dir).flatMap((n) => {
       const p = join(dir, n)
       return statSync(p).isDirectory() ? walk(p) : /\.(js|html|css)$/.test(n) ? [p] : []

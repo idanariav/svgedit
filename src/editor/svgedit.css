@@ -119,13 +119,9 @@ se-edit-prefs-dialog {
   --ruler-tick: #B5BAC3;
   --ruler-text: #8A8F99;
 
-  /* ── Legacy aliases (consumed by remaining code + components) ─────── */
-  --workarea-bg:         var(--canvas-bg);
-  --ruler-color:         var(--ruler-bg);
+  /* ── Misc component tokens ────────────────────────────────────────── */
   --icon-bg-color:       transparent;
-  --main-menu-bg:        var(--chrome-bg);
   --main-menu-shadow:    rgba(0,0,0,0.12);
-  --bevel-light:         var(--chrome-border);
   --scrollbar-thumb:     rgba(80,80,80,0.3);
   --global-se-spin-input-width: 82px;
   --top-toolbar-min-height: 56px;
@@ -244,13 +240,9 @@ se-edit-prefs-dialog.theme-dark {
   --ruler-tick: #4A4F5A;
   --ruler-text: #7A8190;
 
-  /* ── Legacy aliases ───────────────────────────────────────────────── */
-  --workarea-bg:         var(--canvas-bg);
-  --ruler-color:         var(--ruler-bg);
+  /* ── Misc component tokens ────────────────────────────────────────── */
   --icon-bg-color:       transparent;
-  --main-menu-bg:        var(--chrome-bg);
   --main-menu-shadow:    rgba(0,0,0,0.5);
-  --bevel-light:         var(--chrome-border);
   --scrollbar-thumb:     rgba(180,180,180,0.25);
 }
 
@@ -812,7 +804,7 @@ hr {
   overflow: hidden;
   border: 1px solid var(--field-border);
   border-radius: 4px;
-  background: var(--workarea-bg);
+  background: var(--canvas-bg);
 }
 #layerlist td.layername {
   font-size: 13px;
@@ -1257,8 +1249,8 @@ input[type=text] {
   height: 21px;
   margin: 6px 0 0 1px;
   padding: 0;
-  border-left: 1px solid var(--bevel-light);
-  border-top: 1px solid var(--bevel-light);
+  border-left: 1px solid var(--chrome-border);
+  border-top: 1px solid var(--chrome-border);
   border-right: 1px solid var(--chrome-border);
   border-bottom: 1px solid var(--chrome-border);
   background-color: var(--chrome-bg);
@@ -1267,8 +1259,8 @@ input[type=text] {
 .dropdown button.down {
   border-left: 1px solid var(--chrome-border);
   border-top: 1px solid var(--chrome-border);
-  border-right: 1px solid var(--bevel-light);
-  border-bottom: 1px solid var(--bevel-light);
+  border-right: 1px solid var(--chrome-border);
+  border-bottom: 1px solid var(--chrome-border);
   background-color: var(--icon-hover-bg);
 }
 

@@ -110,7 +110,7 @@ Not done: the `catch` blocks that only hold a comment (`bbox-utils.js`,
 `coords.js`, `json.js`, `ColorDialog.js`) are intentional fallbacks and stay
 silent; `console.log/info/debug` calls are untouched. Small.
 
-## Hard-coded colours and legacy aliases in component/dialog styles
+## Hard-coded colours in component/dialog styles
 
 The six dialogs (`ColorDialog`, `PaletteDialog`, `seTextPromptDialog`,
 `imageImportDialog`, `seTraceDialog`, `editorPreferencesDialog`) no longer carry private copies of the
@@ -123,9 +123,6 @@ it (`tests/unit/dialog-theme-tokens.test.js` guards this). What's left:
   (the earlier estimate was ~76; not re-counted after this change). Replace
   with tokens where an equivalent exists; the rest can stay as named
   component tokens.
-- `--workarea-bg` (alias of `--canvas-bg`) and the other aliases left in
-  `svgedit.css`'s "Legacy aliases" blocks remain; `CLAUDE.md` still lists
-  `--workarea-bg` as a primary token, so decide which name wins first.
 - Host overrides set on `.svg_editor` (e.g. a theme tweak in the Obsidian
   plugin) still don't reach these dialogs, since they sit outside it. Fixing
   that means mounting them inside `.svg_editor` (check `position: fixed`

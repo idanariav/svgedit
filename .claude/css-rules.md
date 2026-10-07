@@ -91,15 +91,15 @@ both blocks (`tests/unit/dialog-theme-tokens.test.js`). Keep `:root,` directly b
 
 ---
 
-## Legacy Aliases
+## Retired Aliases
 
-Most legacy aliases (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`,
-`--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, …) were removed
-after every use was migrated to the canonical tokens above. What remains in the "Legacy aliases"
-blocks of `svgedit.css` (`--workarea-bg` → `--canvas-bg`, `--ruler-color`, `--main-menu-*`,
-`--bevel-light`, …) is still consumed in a few places.
+The legacy alias variables (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`,
+`--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, `--workarea-bg`,
+`--ruler-color`, `--bevel-light`, …) no longer exist; every use was migrated to the canonical tokens
+above (`--workarea-bg` → `--canvas-bg`, `--ruler-color` → `--ruler-bg`, `--bevel-light` →
+`--chrome-border`). `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again.
 
-**Rule:** For new code, always use the canonical token. Legacy aliases exist only for backward compatibility.
+**Rule:** Always use the canonical tokens above.
 
 ---
 
@@ -423,7 +423,7 @@ The **preview cell** (`td.layerpreview`) holds a small live thumbnail:
 #layerlist .layerpreview-thumb {
   display: block; width: 28px; height: 20px; overflow: hidden;
   border: 1px solid var(--field-border); border-radius: 4px;
-  background: var(--workarea-bg);
+  background: var(--canvas-bg);
 }
 ```
 `.layerpreview-thumb` is an inline `<svg>` containing one `<use>` targeting the layer's

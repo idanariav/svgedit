@@ -132,10 +132,10 @@ colors in shadow DOM templates.
 | `var(--field-border)` | Input field border |
 | `var(--group-bg)` | Control-group tray background |
 | `var(--group-border)` | Control-group tray border |
-| `var(--workarea-bg)` | Canvas workarea background |
+| `var(--canvas-bg)` | Canvas workarea background (outside the SVG paper) |
 
 **Retired aliases:** `--main-bg-color`, `--text-color`, `--input-color`, `--border-color`,
-`--icon-bg-color-hover`, `--hover-highlight`, `--dropdown-bg` (and a few others) no longer exist;
+`--icon-bg-color-hover`, `--hover-highlight`, `--dropdown-bg`, `--workarea-bg` (→ `--canvas-bg`) (and a few others) no longer exist;
 use the tokens above. `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again.
 
 ### Light / Dark themes

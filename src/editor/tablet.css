@@ -85,7 +85,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  background: var(--app-bg, var(--workarea-bg));
+  background: var(--app-bg, var(--canvas-bg));
   border: 1px solid var(--chrome-border);
   border-radius: var(--r-pill);
   padding: 5px;
