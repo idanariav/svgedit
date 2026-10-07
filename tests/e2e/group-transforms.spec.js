@@ -1,6 +1,18 @@
 import { test, expect } from './fixtures.js'
 import { setSvgSource, visitAndApproveStorage } from './helpers.js'
 
+// The group's *effective* transform, independent of how it is serialized
+// (`translate(..) translate(..)`, `rotate(..)` or one consolidated
+// `matrix(..)` — nudges consolidate on purpose, see moveSelectedElements()).
+// Asserting on the string format is what made these specs go stale.
+const groupMatrix = (page, selector) => page.locator(selector).evaluate((el) => {
+  const m = el.transform.baseVal.consolidate()?.matrix
+  return m
+    ? { a: m.a, b: m.b, c: m.c, d: m.d, e: m.e, f: m.f }
+    : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
+})
+const angleOf = ({ a, b }) => Math.atan2(b, a) * 180 / Math.PI
+
 test.describe('Group transform preservation', () => {
   test.beforeEach(async ({ page }) => {
     await visitAndApproveStorage(page)
@@ -54,7 +66,7 @@ test.describe('Group transform preservation', () => {
     await expect(selectedGroup).toBeVisible()
 
     // Test 1: Verify group transform is preserved after click
-    let groupTransform = await selectedGroup.getAttribute('transform')
+    const groupTransform = await selectedGroup.getAttribute('transform')
     expect(groupTransform).toContain('translate(91.56')
     expect(groupTransform).toContain('99.67')
 
@@ -64,12 +76,12 @@ test.describe('Group transform preservation', () => {
       await page.keyboard.press('ArrowLeft')
     }
 
-    // Verify group transform still contains the original translate
-    groupTransform = await selectedGroup.getAttribute('transform')
-    expect(groupTransform).toContain('translate(91.56')
-    expect(groupTransform).toContain('99.67')
-    // And now also has a translate for the movement
-    expect(groupTransform).toMatch(/translate\([^)]+\).*translate\([^)]+\)/)
+    // The original translate(91.56,99.67) is kept on the group itself and
+    // the nudge (10 presses x -10) is folded into it: x 91.56 -> -8.44.
+    let m = await groupMatrix(page, '#svgcontent #svg_1')
+    expect(m.a).toBeCloseTo(1, 5)
+    expect(m.e).toBeCloseTo(-8.44, 2)
+    expect(m.f).toBeCloseTo(99.67, 2)
 
     // Test 3: Rotate the group
     await page.locator('#angle').evaluate(el => {
@@ -78,11 +90,9 @@ test.describe('Group transform preservation', () => {
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    // Verify group transform has both rotate and original translate
-    groupTransform = await selectedGroup.getAttribute('transform')
-    expect(groupTransform).toContain('rotate(5')
-    expect(groupTransform).toContain('translate(91.56')
-    expect(groupTransform).toContain('99.67')
+    // The group now carries the 5 degree rotation as well (still on the group)
+    m = await groupMatrix(page, '#svgcontent #svg_1')
+    expect(angleOf(m)).toBeCloseTo(5, 1)
 
     // Verify child paths still have their own transforms
     const path1Transform = await page.locator('#svgcontent #svg_2').getAttribute('transform')
@@ -116,10 +126,11 @@ test.describe('Group transform preservation', () => {
       await page.keyboard.press('ArrowDown')
     }
 
-    // Verify original transform is still there
-    const groupTransform = await page.locator('#testGroup').getAttribute('transform')
-    expect(groupTransform).toContain('translate(100')
-    expect(groupTransform).toContain('100)')
+    // Original translate(100,100) kept on the group, plus 5 right / 3 down nudges
+    const m = await groupMatrix(page, '#testGroup')
+    expect(m.a).toBeCloseTo(1, 5)
+    expect(m.e).toBeCloseTo(150, 2)
+    expect(m.f).toBeCloseTo(130, 2)
   })
 
   test('rotation followed by movement preserves both transforms', async ({ page }) => {
@@ -145,11 +156,13 @@ test.describe('Group transform preservation', () => {
     await page.keyboard.press('ArrowLeft')
     await page.keyboard.press('ArrowLeft')
 
-    // Verify both rotate and translate are present
-    const groupTransform = await page.locator('#testGroup').getAttribute('transform')
-    expect(groupTransform).toContain('rotate(45')
-    expect(groupTransform).toContain('translate(200')
-    expect(groupTransform).toContain('150)')
+    // Both the 45 degree rotation and the translation survive on the group:
+    // translate(200,150) * rotate(45 about the circle's centre) = (225,139.645),
+    // then two 10px nudges left.
+    const m = await groupMatrix(page, '#testGroup')
+    expect(angleOf(m)).toBeCloseTo(45, 2)
+    expect(m.e).toBeCloseTo(205, 2)
+    expect(m.f).toBeCloseTo(139.645, 2)
   })
 
   test('multiple movements preserve group structure without flattening', async ({ page }) => {
@@ -177,11 +190,11 @@ test.describe('Group transform preservation', () => {
       await page.keyboard.press('ArrowDown')
     }
 
-    // Verify group still has transform attribute (not flattened to children)
-    let groupTransform = await page.locator('#testGroup').getAttribute('transform')
-    expect(groupTransform).toContain('translate')
-    // Verify original transform is preserved
-    expect(groupTransform).toContain('100')
+    // Verify group still has its transform (not flattened to children):
+    // translate(100,100) + 5 right / 5 down nudges
+    let m = await groupMatrix(page, '#testGroup')
+    expect(m.e).toBeCloseTo(150, 2)
+    expect(m.f).toBeCloseTo(150, 2)
 
     // Most importantly: verify child has no transform (not flattened)
     let rectTransform = await rect.getAttribute('transform')
@@ -195,9 +208,10 @@ test.describe('Group transform preservation', () => {
       await page.keyboard.press('ArrowUp')
     }
 
-    // Verify group still has transform
-    groupTransform = await page.locator('#testGroup').getAttribute('transform')
-    expect(groupTransform).toContain('translate')
+    // Verify group still has its transform: 3 left / 3 up
+    m = await groupMatrix(page, '#testGroup')
+    expect(m.e).toBeCloseTo(120, 2)
+    expect(m.f).toBeCloseTo(120, 2)
 
     // Critical: child should STILL have no transform
     rectTransform = await rect.getAttribute('transform')
@@ -208,9 +222,10 @@ test.describe('Group transform preservation', () => {
       await page.keyboard.press('ArrowRight')
     }
 
-    // Final verification: group has transforms, child does not
-    groupTransform = await page.locator('#testGroup').getAttribute('transform')
-    expect(groupTransform).toContain('translate')
+    // Final verification: group has transforms, child does not (2 more right)
+    m = await groupMatrix(page, '#testGroup')
+    expect(m.e).toBeCloseTo(140, 2)
+    expect(m.f).toBeCloseTo(120, 2)
     rectTransform = await rect.getAttribute('transform')
     expect(rectTransform).toBeNull()
   })
