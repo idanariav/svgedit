@@ -242,12 +242,16 @@ export class SeColorPicker extends HTMLElement {
     dialog.i18next = this.i18next
     ;(root.body ?? root).appendChild(dialog)
 
-    // Live preview on the selected shapes (solid colours only). Previews write the
-    // attribute directly — no history entry — and the originals are put back
+    // Live preview — solid colours and gradients, on the selected shapes (groups
+    // expand to their leaf shapes, exactly as the real `setColor` does) or on the
+    // canvas background. Previews bypass history; the originals are put back
     // before the real change is applied (so undo records old → new) or on cancel.
     const attr = this.type
+    const editor = ownerEditor(this)
+    const canvas = editor?.svgCanvas
     const originals = new Map()
-    const canvas = ownerEditor(this)?.svgCanvas
+    let previewGradient = null
+    let bgOriginal = null
     const revert = () => {
       originals.forEach((orig, el) => {
         for (const [name, val] of Object.entries(orig)) {
@@ -256,18 +260,65 @@ export class SeColorPicker extends HTMLElement {
         }
       })
       originals.clear()
+      previewGradient?.remove()
+      previewGradient = null
+      if (bgOriginal) {
+        editor.applyBackgroundState(bgOriginal.color, bgOriginal.url, editor.gradientElemFromXml(bgOriginal.gradient))
+        bgOriginal = null
+      }
     }
-    if (attr === 'fill' || attr === 'stroke') {
+    // Same element set as svgCanvas.setColor: group → every non-group descendant,
+    // and lines/polylines never take a fill.
+    const previewTargets = () => {
+      const out = []
+      ;(canvas?.getSelectedElements?.() ?? []).forEach((el) => {
+        if (!el) return
+        if (el.tagName === 'g') {
+          el.querySelectorAll('*').forEach((c) => { if (c.tagName !== 'g') out.push(c) })
+        } else if (attr !== 'fill' || (el.tagName !== 'polyline' && el.tagName !== 'line')) {
+          out.push(el)
+        }
+      })
+      return out
+    }
+    const gradientOf = (paint) => (paint.type === 'linearGradient' || paint.type === 'radialGradient') ? paint[paint.type] : null
+    if (attr === 'background') {
       dialog.addEventListener('preview', (evt) => {
         const { paint } = evt.detail
-        if (paint.type !== 'solidColor') return
-        const targets = (canvas?.getSelectedElements?.() ?? []).filter((el) => el && el.tagName !== 'g')
-        targets.forEach((el) => {
+        if (!bgOriginal) {
+          bgOriginal = {
+            color: editor.configObj.pref('bkgd_color'),
+            url: editor.configObj.pref('bkgd_url') || '',
+            gradient: editor.configObj.pref('bkgd_gradient') || ''
+          }
+        }
+        const grad = gradientOf(paint)
+        if (grad) editor.applyBackgroundState('gradient', '', grad)
+        else if (paint.type === 'solidColor') editor.applyBackgroundState(`#${paint.solidColor}`, '')
+      })
+      dialog.addEventListener('cancel', revert)
+    } else if (attr === 'fill' || attr === 'stroke') {
+      dialog.addEventListener('preview', (evt) => {
+        const { paint } = evt.detail
+        const grad = gradientOf(paint)
+        let value
+        if (grad) {
+          previewGradient?.remove()
+          previewGradient = grad.cloneNode(true)
+          previewGradient.id = `se_preview_${attr}`
+          canvas.findDefs().append(previewGradient)
+          value = `url(#${previewGradient.id})`
+        } else if (paint.type === 'solidColor') {
+          value = `#${paint.solidColor}`
+        } else {
+          return
+        }
+        previewTargets().forEach((el) => {
           if (!originals.has(el)) {
             originals.set(el, { [attr]: el.getAttribute(attr), [`${attr}-opacity`]: el.getAttribute(`${attr}-opacity`) })
           }
-          el.setAttribute(attr, `#${paint.solidColor}`)
-          el.setAttribute(`${attr}-opacity`, String((paint.alpha ?? 100) / 100))
+          el.setAttribute(attr, value)
+          if (!grad) el.setAttribute(`${attr}-opacity`, String((paint.alpha ?? 100) / 100))
         })
       })
       dialog.addEventListener('cancel', revert)

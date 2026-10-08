@@ -333,6 +333,7 @@ export default {
           btn.setAttribute('size', 'small')
           btn.setAttribute('title', title)
           btn.setAttribute('src', 'mirror_copy.svg')
+          if (after) btn.setAttribute('data-caption', svgEditor.i18next.t(`${name}:caption`))
           if (after) anchor.after(btn)
           else anchor.append(btn)
           btn.addEventListener('click', mirrorSelection)

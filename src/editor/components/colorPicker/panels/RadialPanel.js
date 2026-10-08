@@ -273,6 +273,8 @@ export function createRadialPanel (paint, i18next) {
     const stopsCss = sorted.map(s => `rgba(${_hexToRgb('#' + s.color)},${s.alpha / 100}) ${s.position}%`).join(', ')
     previewFill.style.background = `radial-gradient(ellipse at ${panelState.cx * 100}% ${panelState.cy * 100}%, ${stopsCss})`
     _updateMarkers()
+    // Tell the dialog (-> host live preview); a no-op until the panel is mounted.
+    panel.dispatchEvent(new CustomEvent('color-change', { bubbles: true }))
   }
 
   function setMode (newMode) {

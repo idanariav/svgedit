@@ -1,5 +1,6 @@
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import BottomPanelHtml from './BottomPanel.html'
+import { collectDocumentColors } from '../documentColors.js'
 
 /*
  * register actions for left panel
@@ -222,6 +223,19 @@ class BottomPanel {
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     $id('palette').addEventListener('change', this.handlePalette.bind(this))
     $id('palette').init(i18next)
+    // "Colors in this drawing" row: refresh (coalesced to one scan per frame) whenever
+    // the drawing, the selection or the loaded document changes.
+    let docColorsQueued = false
+    const refreshDocColors = () => {
+      if (docColorsQueued) return
+      docColorsQueued = true
+      requestAnimationFrame(() => {
+        docColorsQueued = false
+        $id('palette')?.setDocumentColors?.(collectDocumentColors(this.editor.svgCanvas.getSvgContent()))
+      })
+    }
+    ;['changed', 'elementInserted', 'selected', 'updateCanvas'].forEach(ev =>
+      this.editor.svgCanvas.bind(ev, refreshDocColors))
     const { curConfig } = this.editor.configObj
     $id('fill_color').setPaint(
       new Paint({ alpha: 100, solidColor: curConfig.initFill.color })

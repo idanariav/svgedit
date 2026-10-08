@@ -445,6 +445,10 @@ export default {
   },
   // Literal labels in the static panel templates (see panelI18n.js)
   panel: {
+    offset: 'Offset',
+    outline: 'Outline',
+    smooth: 'Smooth',
+    to_path: 'To path',
     adjust: 'Adjust',
     advanced: 'Advanced',
     align: 'Align',

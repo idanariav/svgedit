@@ -185,6 +185,8 @@ export function createLinearPanel (paint, i18next) {
       gradCSS = `linear-gradient(${cssAngle}deg, ${sorted.map(s => `rgba(${_hexToRgb('#' + s.color)},${s.alpha / 100}) ${s.position}%`).join(', ')})`
     }
     previewFill.style.background = gradCSS
+    // Tell the dialog (-> host live preview); a no-op until the panel is mounted.
+    panel.dispatchEvent(new CustomEvent('color-change', { bubbles: true }))
   }
 
   function _hexToRgb (hex) {

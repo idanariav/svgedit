@@ -25,7 +25,7 @@ describe('se-palette', () => {
 
   it('getColor returns the default color when no override exists', () => {
     const el = mountElement('se-palette')
-    expect(el.getColor(1)).toBe('#000000')
+    expect(el.getColor(1)).toBe('#111827')
     expect(el.isCustomised(1)).toBe(false)
   })
 
@@ -69,7 +69,7 @@ describe('se-palette', () => {
     swatch.dispatchEvent(new MouseEvent('click'))
 
     expect(handler).toHaveBeenCalledTimes(1)
-    expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: '#000000' })
+    expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: '#111827' })
   })
 
   it('clicking the "none" swatch dispatches color "none"', () => {
@@ -129,7 +129,7 @@ describe('se-palette', () => {
     swatch.dispatchEvent(new MouseEvent('contextmenu', { cancelable: true }))
 
     expect(el.isCustomised(1)).toBe(false)
-    expect(el.getColor(1)).toBe('#000000')
+    expect(el.getColor(1)).toBe('#111827')
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')[1]).toBeUndefined()
   })
 
@@ -179,5 +179,20 @@ describe('se-palette', () => {
     el.$strip.dispatchEvent(ev)
     expect(el.$strip.scrollLeft).toBe(40)
     expect(ev.defaultPrevented).toBe(true)
+  })
+
+  it('setDocumentColors shows the drawing\'s colours and applies one on click', () => {
+    const el = mountElement('se-palette')
+    const handler = vi.fn()
+    el.addEventListener('change', handler)
+    expect(el.$doc.classList.contains('has-colors')).toBe(false)
+    el.setDocumentColors(['#112233', '#aabbcc'])
+    expect(el.$doc.classList.contains('has-colors')).toBe(true)
+    const swatches = el.$doc.querySelectorAll('.palette_item')
+    expect(swatches.length).toBe(2)
+    swatches[1].click()
+    expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: '#aabbcc' })
+    el.setDocumentColors([])
+    expect(el.$doc.classList.contains('has-colors')).toBe(false)
   })
 })

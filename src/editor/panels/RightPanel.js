@@ -114,7 +114,11 @@ class RightPanel {
     $click($id('layer_rename'), this.layerRename.bind(this))
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
-    $click($id('sidepanel_handle'), () => this.toggleSidePanel())
+    $click($id('sidepanel_handle'), () => {
+      // A manual toggle means the user has an opinion: never auto-open again.
+      this.editor.configObj.pref('sidePanelManual', true, true)
+      this.toggleSidePanel()
+    })
     // "Convert to editable SVG" (image trace): open the options dialog for the
     // selected <image>, then run the trace when the user confirms.
     const traceDialog = $id('se-trace-dialog')
@@ -145,6 +149,7 @@ class RightPanel {
     })
     this.activateTab(this.activeTab)
     this.toggleSidePanel(this.editor.configObj.curConfig.showlayers)
+    this.autoOpenOnFirstSelection()
 
     // Group name input in objects panel — renames the group context, not necessarily
     // the currently selected element (which may be a child of the group).
@@ -152,6 +157,24 @@ class RightPanel {
       const g = this._groupContext
       if (!g) return
       g.setAttribute('data-name', evt.target.value)
+    })
+  }
+
+  /**
+   * The panel starts closed, so the editor stays uncluttered, but a first
+   * selection is when its fields become useful: open it once, in a pane wide
+   * enough to spare the space, unless the user ever toggled it by hand.
+   * @returns {void}
+   */
+  autoOpenOnFirstSelection () {
+    const { configObj, svgCanvas, $svgEditor } = this.editor
+    let pending = true
+    svgCanvas.bind('selected', (_win, elems) => {
+      if (!pending || !elems?.some(Boolean)) return
+      pending = false
+      const manual = String(configObj.pref('sidePanelManual')) === 'true'
+      if (manual || $svgEditor.classList.contains('ui-tablet') || $svgEditor.clientWidth < 1100) return
+      this.toggleSidePanel(true)
     })
   }
 

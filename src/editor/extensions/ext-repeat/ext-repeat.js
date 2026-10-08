@@ -288,6 +288,7 @@ export default {
           btn.id = 'tool_repeat'
           btn.setAttribute('title', title)
           btn.setAttribute('src', 'repeat.svg')
+          btn.setAttribute('data-caption', svgEditor.i18next.t(`${name}:caption`))
           $id('tool_path_offset').after(btn)
         }
         // Multi-selection Combine section.

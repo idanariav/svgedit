@@ -130,6 +130,61 @@ describe('se-colorpicker', () => {
     })
   })
 
+  describe('live preview: groups, gradients, background', () => {
+    const SVG = 'http://www.w3.org/2000/svg'
+    const solid = (hex) => ({ type: 'solidColor', solidColor: hex, alpha: 100 })
+    const openFor = (type, selected, extra = {}) => {
+      Object.assign(window.svgEditor.svgCanvas, { getSelectedElements: () => selected }, extra)
+      const el = mountElement('se-colorpicker')
+      el.type = type
+      el.setPaint = vi.fn()
+      el.openColorDialog()
+      return document.querySelector('se-color-dialog')
+    }
+
+    it('previews on a group\'s leaf shapes, not the group, and reverts them', () => {
+      const g = document.createElementNS(SVG, 'g')
+      g.innerHTML = '<rect fill="#00ff00"/><g><circle fill="#0000ff"/></g><line stroke="#000"/>'
+      const dialog = openFor('fill', [g])
+      dialog.dispatchEvent(new CustomEvent('preview', { detail: { paint: solid('ff0000') } }))
+      expect(g.hasAttribute('fill')).toBe(false)
+      expect(g.querySelector('rect').getAttribute('fill')).toBe('#ff0000')
+      expect(g.querySelector('circle').getAttribute('fill')).toBe('#ff0000')
+      dialog.dispatchEvent(new CustomEvent('cancel'))
+      expect(g.querySelector('rect').getAttribute('fill')).toBe('#00ff00')
+      expect(g.querySelector('circle').getAttribute('fill')).toBe('#0000ff')
+    })
+
+    it('previews a gradient through a temporary <defs> entry and removes it on cancel', () => {
+      const rect = document.createElementNS(SVG, 'rect')
+      rect.setAttribute('fill', '#00ff00')
+      const defs = document.createElementNS(SVG, 'defs')
+      const dialog = openFor('fill', [rect], { findDefs: () => defs })
+      const grad = document.createElementNS(SVG, 'linearGradient')
+      dialog.dispatchEvent(new CustomEvent('preview', { detail: { paint: { type: 'linearGradient', linearGradient: grad, alpha: 100 } } }))
+      expect(rect.getAttribute('fill')).toMatch(/^url\(#se_preview_fill\)$/)
+      expect(defs.querySelectorAll('#se_preview_fill').length).toBe(1)
+      dialog.dispatchEvent(new CustomEvent('cancel'))
+      expect(rect.getAttribute('fill')).toBe('#00ff00')
+      expect(defs.children.length).toBe(0)
+    })
+
+    it('previews the canvas background and restores the previous one on cancel', () => {
+      const prefs = { bkgd_color: '#ffffff', bkgd_url: '', bkgd_gradient: '' }
+      const applyBackgroundState = vi.fn()
+      Object.assign(window.svgEditor, {
+        applyBackgroundState,
+        gradientElemFromXml: () => undefined,
+        configObj: { ...window.svgEditor.configObj, pref: (k) => prefs[k] }
+      })
+      const dialog = openFor('background', [])
+      dialog.dispatchEvent(new CustomEvent('preview', { detail: { paint: solid('123456') } }))
+      expect(applyBackgroundState).toHaveBeenLastCalledWith('#123456', '')
+      dialog.dispatchEvent(new CustomEvent('cancel'))
+      expect(applyBackgroundState).toHaveBeenLastCalledWith('#ffffff', '', undefined)
+    })
+  })
+
   it('setPaint delegates to the paintBox', () => {
     const el = mountElement('se-colorpicker')
     const spy = vi.spyOn(el.paintBox, 'setPaint')

@@ -676,6 +676,28 @@ hr {
   align-items: center;
   gap: 6px;
 }
+/* Captioned action buttons: a short visible name under the icon (data-caption).
+   Absolutely positioned so it works whatever `display` the host ends up with
+   (several toggle their own inline display). */
+.sidepanel_btn_row > [data-caption] {
+  position: relative;
+  min-width: 44px;
+  padding-bottom: 14px;
+  box-sizing: border-box;
+}
+.sidepanel_btn_row > [data-caption]::after {
+  content: attr(data-caption);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
 /* group se-list/se-button into a single bordered "segmented" strip */
 .sidepanel_seg {
   display: inline-flex;

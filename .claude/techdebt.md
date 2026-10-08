@@ -51,18 +51,16 @@ standalone dialogs and don't touch an editor. Constructor-time reads such as
 when the element isn't attached yet; they're harmless as long as `imgPath` is
 the same for every editor on the page. Small.
 
-## Round-trip corpus is incomplete
+## Round-trip corpus: keep adding drawings
 
 `tests/e2e/roundtrip.spec.js` loads/saves/loads every drawing in
 `tests/e2e/fixtures/roundtrip/` and asserts the output stabilises after one
 pass. Covered: frames, corner radius, taper, shadow/outline, text-on-path,
 groups/layers/gradients, markers, clip-path/mask, `<use>`/symbols, embedded
-images (the last four are hand-written drawings normalised by the editor's own
-serializer; the first six were saved by driving the real tools). Corner-radius
-and taper predate the `xmlns:se` fix and double as legacy-file coverage.
-Missing: puppet-warp and mirror/repeat stamps (need the tools driven, or real
-drawings from the plugin). Add fixtures as such drawings turn up; each new
-corruption bug should add the file that exhibited it. Small per fixture.
+images, repeat (radial + grid), mirror and puppet-warp. Corner-radius and taper
+predate the `xmlns:se` fix and double as legacy-file coverage. Not covered:
+repeat's *path* mode, and real drawings from the plugin. Each new corruption bug
+should add the file that exhibited it. Small per fixture.
 
 ## `svgcanvas.d.ts` is hand-written and incomplete; no explicit host API
 
@@ -130,108 +128,56 @@ of the dev server at 1440×900, 1024×700 and 800×600, in light, dark and table
 modes, plus the live hotkey registry. They are listed most severe first.
 Obsidian-only findings are in `../obsidian-svgedit-plugin/.claude/techdebt.md`.
 
-## Toolbars get cut off in narrow or short panes
+## Toolbars: left column doesn't fold into "…" automatically
 
-Done: left column stays 56px with the panel open; `#tools_overflow` is sticky;
-the right cluster (`#top_end`: Undo/Redo + zoom) is sticky; and the top bar
-collapses in two tiers (`TopPanel.js` `fitBar`): `tt-compact` hides the file chip
-and theme toggle (theme is in Preferences), `tt-tight` folds the object trays
-(clone/arrange/align…) into a "⋯" button (`#top_more`) that opens them as a
-floating panel (`#top_more_pop`). The bar is re-measured from the full state on
-resize and when a tray is shown/hidden. Remaining:
-- (Done: tablet command bar sheds in tiers by container width — `@container` rules in
-  `tablet.css` hide the zoom row ≤1160px, slim the tool buttons ≤900px, hide Done ≤840px;
-  palette swatches keep a 14px minimum and the strip scrolls, `sePalette.js`.)
-- Tools in the left column scroll (with "Additional tools" pinned) rather than moving
-  into `…` automatically; auto-moving would have to avoid persisting the temporary
-  split as the user's saved order.
-- `fitBar`, the palette and the tablet bar are covered by `tests/e2e/top-bar-layout.spec.js` (jsdom has no layout).
+Narrow-pane work is done (top bar two-tier collapse + "⋯" tray, tablet command bar
+shedding by container width, palette keeps a 14px swatch minimum and scrolls). What's
+left: tools in the left column scroll (with "Additional tools" pinned) rather than
+moving into `…` when the pane is short. Moving them automatically must not persist the
+temporary split as the user's saved order. Covered by `tests/e2e/top-bar-layout.spec.js`.
 Small.
 
-## Missing translations show raw keys
+## Missing translations: extension-injected strings
 
-When an entry is missing, i18next returns the key, so `t('key') || 'Fallback'`
-never falls back (23 uses of `t(`, 5 of `_t(`). `tests/unit/locale-keys.test.js`
-fails if a literal `t('ns.key')` isn't in `lang.en.js`. The static panel
-templates' English labels are now localisable via `panelI18n.js`
-(`panel.<slug>` keys in `lang.en.js`, guarded by `panelI18n.test.js`). Remaining:
-dynamic keys (`'config.jgraduate_' + val`) aren't covered; labels injected by
-extensions (Brush, Markers, …) and a few component-internal strings (zoom
-"Zoom in/out" titles) are still English. A `parseMissingKeyHandler` isn't an
-option while components pass literal English as `title` (they rely on the key
-coming back). Small.
-## Keyboard shortcuts break common conventions
+When an entry is missing, i18next returns the key, so `t('key') || 'Fallback'` never falls
+back. `tests/unit/locale-keys.test.js` fails if a literal `t('ns.key')` isn't in
+`lang.en.js`; static panel labels go through `panelI18n.js` (`panel.<slug>`, also
+`data-caption`). Remaining: labels some extensions inject (Brush, Markers, …) and a
+handful of component strings are still English. A `parseMissingKeyHandler` isn't an
+option while components pass literal English as `title` (they rely on the key coming back).
+Only the English locale exists today. Small.
 
-Done: Tab = next / Shift+Tab = previous, `V` selects, `A` alone no longer selects
-all, Duplicate is `D` for one or many, tooltips and the main menu show
-platform-formatted shortcuts (⌘Z / Ctrl+Z; menu shortcuts right-aligned) with no
-trailing space. Release-note these default changes. Command search now shows shortcuts and ranks prefix matches first; explanatory
-tooltip text is stripped from action names in lists. Remaining:
-- Tab still isn't free for focus navigation (it cycles elements).
-- Image, Shapes, Brush, Shape library, Cutter, Curvature and Puppet warp have no
-  default shortcut.
-Small.
+## Keyboard shortcuts
 
-## Context menu: no icons
+Done: Tab/Shift+Tab cycle, `V` select, Duplicate `D`, platform-formatted tooltips, default
+keys for Image (M), Brush (W), Cutter (C), Curvature (Y), Puppet warp (X). Remaining:
+- Tab still isn't free for focus navigation (it cycles elements). Freeing it means
+  choosing another key for cycling; left as is.
+- The Shapes flyout and Shape library are not `se-button`s, so they can't take a
+  `shortcut` attribute yet (`seFlyingButton`/`seShapeLibrary` don't register with the
+  hotkey manager). Small.
 
-Done: rows show their shortcut (right-aligned) and disabled rows are clearly
-dimmed. Remaining: items without a toolbar button (Paste, Select all, Fit to
-canvas) have no icon, and the icon set has no paste glyph. Small.
-## Side panel: remaining polish
+## Side panel and top bar: remaining polish
 
-Done: tab renamed "Properties"; ID/Class moved into a collapsed "Advanced"
-section at the bottom of the Design tab (`#sidepanel_advanced`); the Text tab
-shows a hint when no text is selected; the drop shadow has an On switch
-(`#shadow_enabled`, editing a field switches it on) and its opacity runs 0–100
-like the Design tab. Remaining:
-- The panel is still closed by default (open on first selection?).
-- Join/Cap and the Object › Path actions are unlabelled 16px icons, and Brush is
-  a lone gear. Use segmented controls with labels or tooltips.
-- Side-panel tab/section names are hard-coded English (see translations entry).
-Small.
+Done: panel opens once on the first selection in a pane ≥1100px wide (a manual toggle is
+remembered, `sidePanelManual` pref); Path actions carry captions (`data-caption`); the
+theme toggle is no longer a default extension (Preferences has theme). Remaining:
+- The six top-bar toggles (frame, wireframe, canvas settings, grid, smart snap, layer view)
+  are icon-only with tooltips; visible labels don't fit the tight bar.
+- Join/Cap icons are solid glyphs; Brush settings is a lone gear. Small.
 
-## Inconsistent icons, selection handles and palette
+## Icons and palette
 
-- (Done: the solid-silhouette icons — Panning, Brush, Shapes, Shape library, Cutter, Puppet warp
-  (`pin.svg`), layer up/down arrows — are re-styled as 1.6px outlines at load time by
-  `OUTLINE_ICONS` in `svgIconLoader.js`, so the artwork files are unchanged. Still open: the
-  Cutter icon (a marker over a dotted line) doesn't suggest cutting — that is a redraw, not a
-  style fix; Shapes shows doubled lines where the artwork has holes.)
-- (Done: the left toolbar is grouped — `TOOL_GROUPS` in `toolOrder.js` — with a
-  divider where the group changes; the default order puts the drawing tools
-  together. Users with a customised order keep it; a tool id not listed in
-  `TOOL_GROUPS` lands in a trailing "other" group, so register new tools there.)
-- Selection handles now follow `--accent` with white fills (CSS overrides at the
-  end of `svgedit.css`; `select.js` still hard-codes `#22C`/lime as the
-  fallback). Still to do: a larger hit area on touch.
-- The default palette is 40 saturated rainbow swatches, which doesn't fit the
-  limited-palette illustration goal. Ship a curated default palette plus a
-  "colours in this drawing" row. In the dark theme the palette swatch
-  border now uses `--swatch-inset`; the "none" swatch is still faint.
-- Tooltips no longer end with a stray space. Some tooltips are full sentences ("Puppet Warp — pin an object, then drag…"),
-  and those sentences also appear as action names in the hotkey manager. Keep
-  tooltips to the name plus the shortcut, and put the explanation somewhere
-  else.
-
-Medium, mostly icon and CSS work.
-
-## Main menu and top-bar toggles are hard to discover
-
-- (Done: the main menu has a chevron and separators between groups.)
-- The six toggles at the top (frame, wireframe, canvas settings, grid, smart
-  snap, layer view) are icons with no labels. The theme toggle takes a prime
-  toolbar spot for a rarely used setting; move it to Preferences or the menu.
-- Zoom now has −/+ buttons and a "%" suffix; the value still shows one decimal
-  ("100.0") — now trimmed to "100" for display.
-
-Small.
+Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default palette
+plus a "colours in this drawing" row, larger selection handles on coarse pointers,
+tooltips shortened to the name. Remaining:
+- The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.
+- Shapes shows doubled lines where its artwork has holes.
+- The "none" swatch is still faint in the dark theme. Small.
 
 ## Colour picker is still a modal
 
-Done: solid-colour tweaks now preview live on the selected shapes (the dialog
-emits `preview`; `seColorPicker.openColorDialog` writes the attribute directly,
-with no history entry, and reverts it on Cancel/Escape or just before the real
-change is applied so undo records old → new). Remaining: it is still a modal
-with Cancel/Apply rather than an anchored popover that applies on outside click;
-gradients and the canvas background don't preview; groups don't preview
-(fill is inherited by children). Medium.
+Done: solid, gradient, group (leaf shapes) and canvas-background tweaks preview live and
+revert on Cancel/Escape; undo records old → new. Remaining: it is still a modal with
+Cancel/Apply rather than an anchored popover that applies on outside click — a UI rewrite,
+not scheduled. Medium.

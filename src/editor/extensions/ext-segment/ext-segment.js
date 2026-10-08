@@ -54,6 +54,7 @@ export default {
         btn.id = 'tool_segment'
         btn.setAttribute('title', title)
         btn.setAttribute('src', 'segment.svg')
+        btn.setAttribute('data-caption', svgEditor.i18next.t(`${name}:caption`))
         btn.style.display = 'none'
         anchor.after(btn)
       }

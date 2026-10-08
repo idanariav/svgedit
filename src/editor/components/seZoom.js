@@ -1,5 +1,6 @@
 import { fetchSvgEl } from './svgIconLoader.js'
 import { ownerEditor } from '../domScope.js'
+import { t } from '../locale.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -190,6 +191,7 @@ class SeZoom extends HTMLElement {
 
     // hookup events for arrow buttons
     this.arrowUp = this._shadowRoot.querySelector('#arrow-up')
+    this.arrowUp.title = this.arrowUp.ariaLabel = t('hotkeys.zoom_in')
     this.arrowUp.addEventListener('click', this.increment.bind(this))
     this.arrowUp.addEventListener('mousedown', e =>
       this.handleMouseDown('up', true)
@@ -198,6 +200,7 @@ class SeZoom extends HTMLElement {
     this.arrowUp.addEventListener('mouseup', e => this.handleMouseUp('up'))
 
     this.arrowDown = this._shadowRoot.querySelector('#arrow-down')
+    this.arrowDown.title = this.arrowDown.ariaLabel = t('hotkeys.zoom_out')
     this.arrowDown.addEventListener('click', this.decrement.bind(this))
     this.arrowDown.addEventListener('mousedown', e =>
       this.handleMouseDown('down', true)

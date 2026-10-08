@@ -14,7 +14,8 @@ import { NS } from './namespaces'
 import { warn } from '../common/logger.js'
 
 // change radius if touch screen
-const gripRadius = window.ontouchstart ? 10 : 4
+// Bigger handles whenever the primary pointer is a finger (not only where `ontouchstart` exists).
+export const gripRadius = (window.ontouchstart || window.matchMedia?.('(pointer: coarse)').matches) ? 10 : 4
 
 /**
  * Reentrant init: the Selector/SelectorManager classes are defined per

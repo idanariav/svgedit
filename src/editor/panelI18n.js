@@ -36,6 +36,9 @@ export const localizePanelFragment = (root, i18next) => {
     if (el.children.length || !el.textContent.trim()) return
     el.textContent = tr(el.textContent)
   })
+  root.querySelectorAll('[data-caption]').forEach((el) => {
+    el.setAttribute('data-caption', tr(el.getAttribute('data-caption')))
+  })
   root.querySelectorAll('[label], [title]').forEach((el) => {
     for (const attr of ['label', 'title']) {
       const v = el.getAttribute(attr)

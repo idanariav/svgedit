@@ -53,7 +53,7 @@ export default {
       name,
       callback () {
         const buttonTemplate = `
-          <se-button id="tool_brush" title="Brush" src="brush.svg"></se-button>
+          <se-button id="tool_brush" title="Brush" src="brush.svg" shortcut="W"></se-button>
         `
         svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 11)
         $click($id('tool_brush'), () => {

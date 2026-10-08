@@ -176,7 +176,7 @@ export default {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
           $id('tools_left'),
-          `<se-button id="tool_cutter" title="${title}" src="cutter.svg"></se-button>`,
+          `<se-button id="tool_cutter" title="${title}" src="cutter.svg" shortcut="C"></se-button>`,
           11
         )
 

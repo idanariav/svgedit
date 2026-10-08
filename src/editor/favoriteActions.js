@@ -18,6 +18,21 @@ import { t } from './locale.js'
 import { GROUP_ORDER } from './Hotkeys.js'
 
 /**
+ * Icons for actions that have no toolbar button of their own (keyboard-only
+ * shortcuts and the paste/fit entries below), so every context-menu row has one.
+ */
+const ACTION_ICONS = {
+  paste: 'paste.svg',
+  paste_in_place: 'paste_in_place.svg',
+  select_all: 'select_all.svg',
+  zoom_fit: 'zoom_fit.svg',
+  zoom_in: 'zoom.svg',
+  zoom_out: 'zoom_out.svg',
+  copy: 'copy.svg',
+  cut: 'cut.svg'
+}
+
+/**
  * Catalog-only trigger actions the hotkey registry does not contain (the canvas
  * context menu historically owned paste, which has no toolbar button).
  */
@@ -107,14 +122,14 @@ export const getFavoriteMeta = (editor, id) => {
   const v = VALUE_CONTROLS[id]
   if (v) return { id, group: v.group, label: t(v.labelKey) || v.labelKey, src: v.src, kind: 'value' }
   const x = EXTRA_TRIGGERS[id]
-  if (x) return { id, group: x.group, label: t(x.labelKey) || x.labelKey, src: null, kind: 'trigger' }
+  if (x) return { id, group: x.group, label: t(x.labelKey) || x.labelKey, src: ACTION_ICONS[id] ?? null, kind: 'trigger' }
   const a = editor.hotkeys.getAction(id)
   if (a) {
     return {
       id,
       group: a.group,
       label: editor.hotkeys.labelFor(a),
-      src: a.el ? a.el.getAttribute('src') : null,
+      src: (a.el ? a.el.getAttribute('src') : null) ?? ACTION_ICONS[id] ?? null,
       kind: 'trigger'
     }
   }

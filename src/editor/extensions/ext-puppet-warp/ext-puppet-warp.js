@@ -623,7 +623,7 @@ export default {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
           $id('tools_left'),
-          `<se-button id="tool_puppet_warp" title="${title}" src="pin.svg"></se-button>`,
+          `<se-button id="tool_puppet_warp" title="${title}" src="pin.svg" shortcut="X"></se-button>`,
           13
         )
 

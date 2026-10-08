@@ -4,49 +4,25 @@ import { getUserDataAdapter } from '../userDataAdapter.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
+// Curated default: "none", five neutrals, then twelve hues in three tones (mid, deep,
+// soft). Fewer, related colours push drawings toward a coherent limited palette.
+// Customised swatches are stored by index, so keep the length and order stable.
 const DEFAULT_PALETTE = [
   'none',
-  '#000000',
-  '#3f3f3f',
-  '#7f7f7f',
-  '#bfbfbf',
+  '#111827',
+  '#4b5563',
+  '#9ca3af',
+  '#e5e7eb',
   '#ffffff',
-  '#ff0000',
-  '#ff7f00',
-  '#ffff00',
-  '#7fff00',
-  '#00ff00',
-  '#00ff7f',
-  '#00ffff',
-  '#007fff',
-  '#0000ff',
-  '#7f00ff',
-  '#ff00ff',
-  '#ff007f',
-  '#7f0000',
-  '#7f3f00',
-  '#7f7f00',
-  '#3f7f00',
-  '#007f00',
-  '#007f3f',
-  '#007f7f',
-  '#003f7f',
-  '#00007f',
-  '#3f007f',
-  '#7f007f',
-  '#7f003f',
-  '#ffaaaa',
-  '#ffd4aa',
-  '#ffffaa',
-  '#d4ffaa',
-  '#aaffaa',
-  '#aaffd4',
-  '#aaffff',
-  '#aad4ff',
-  '#aaaaff',
-  '#d4aaff',
-  '#ffaaff',
-  '#ffaad4'
+  // mid tones
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+  '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
+  // deep tones
+  '#b91c1c', '#c2410c', '#b45309', '#a16207', '#4d7c0f', '#15803d',
+  '#0f766e', '#0e7490', '#1d4ed8', '#4338ca', '#7e22ce', '#be185d',
+  // soft tones
+  '#fecaca', '#fed7aa', '#fde68a', '#fef08a', '#d9f99d', '#bbf7d0',
+  '#99f6e4', '#a5f3fc', '#bfdbfe', '#c7d2fe', '#e9d5ff', '#fbcfe8'
 ]
 
 const STORAGE_KEY = 'svg-edit-custom-palette'
@@ -196,6 +172,17 @@ template.innerHTML = `
     height: 22px;
   }
   #js-se-palette::-webkit-scrollbar { display: none; }
+  #js-se-doc {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    padding-right: 6px;
+    margin-right: 2px;
+    border-right: 1px solid var(--group-border, #E6E8EC);
+  }
+  #js-se-doc.has-colors { display: flex; }
+  #js-se-doc div.palette_item { flex: 0 0 18px; min-width: 18px; max-width: 18px; height: 18px; }
   div.palette_item {
     flex: 1;
     /* never shrink to a sliver in a narrow pane: the strip scrolls instead */
@@ -316,6 +303,7 @@ template.innerHTML = `
   }
   </style>
   <div id="palette_holder" title="">
+    <div id="js-se-doc" title="Colors in this drawing"></div>
     <div id="js-se-palette"></div>
   </div>
   <button class="palette_edit_btn" title="Edit palette colors" aria-pressed="false">${PENCIL_SVG}</button>
@@ -336,6 +324,7 @@ export class SEPalette extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$holder = this._shadowRoot.getElementById('palette_holder')
     this.$strip = this._shadowRoot.getElementById('js-se-palette')
+    this.$doc = this._shadowRoot.getElementById('js-se-doc')
     // Narrow panes: the strip scrolls; let the plain mouse wheel do it.
     this.$strip.addEventListener('wheel', (e) => {
       if (this.$strip.scrollWidth <= this.$strip.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
@@ -419,6 +408,37 @@ export class SEPalette extends HTMLElement {
     })
     const hasOverrides = Object.keys(this._overrides).length > 0
     this.$resetBtn.classList.toggle('has-overrides', hasOverrides)
+  }
+
+  /**
+   * Show the colours already used in the drawing as a leading row of swatches.
+   * They are plain shortcuts (not customisable); clicking one applies it like
+   * any palette swatch.
+   * @param {string[]} colors `#rrggbb` values, most used first
+   * @returns {void}
+   */
+  setDocumentColors (colors) {
+    const list = colors || []
+    const key = list.join(',')
+    if (key === this._docKey) return
+    this._docKey = key
+    this.$doc.replaceChildren(...list.map((color) => {
+      const swatch = document.createElement('div')
+      swatch.classList.add('palette_item', 'doc_item')
+      swatch.style.backgroundColor = color
+      swatch.dataset.rgb = color
+      swatch.title = color
+      $click(swatch, (evt) => {
+        evt.preventDefault()
+        if (this._editMode) return
+        this.dispatchEvent(new CustomEvent('change', {
+          detail: { picker: this._target, color },
+          bubbles: false
+        }))
+      })
+      return swatch
+    }))
+    this.$doc.classList.toggle('has-colors', list.length > 0)
   }
 
   _buildSwatch (i) {
