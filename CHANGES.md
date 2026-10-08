@@ -1,6 +1,8 @@
 # SVG-Edit CHANGES
 
-## Unreleased
+## 7.4.1-fork.6
+- UI: the fill/stroke/background colour picker opens as a popover anchored to its swatch (outside click applies, Escape cancels); the tablet shell, command search and hidden swatches keep the centred modal. The screen eyedropper ignores in-group dimming.
+- UI: the shape-library toolbar icon is now a bookmark; narrow-pane cut-offs fixed and toolbar icons restyled as solid outlines.
 - Config: `hideTabletToggle` hides the main menu's "Tablet mode" item (and its separator) for hosts that choose the UI mode themselves via `tabletMode`.
 - Host API: `window.svgEditHost.exportDrawing()`, when present, replaces the main menu's Export dialog so a host can supply its own export flow.
 
