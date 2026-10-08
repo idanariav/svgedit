@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Registry for attribute-driven derived-geometry remap hooks.
  *

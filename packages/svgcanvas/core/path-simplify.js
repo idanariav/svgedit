@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path simplification / smoothing via paper.js curve fitting.
  *
@@ -49,7 +50,7 @@ export const init = (canvas) => {
    */
   const simplifyFreehand = (element, tolerance = DEFAULT_TOLERANCE) => {
     try {
-      const { points } = element
+      const { points } = /** @type {SVGPolylineElement} */ (element)
       const n = points.numberOfItems
       if (n < 2) return element
 

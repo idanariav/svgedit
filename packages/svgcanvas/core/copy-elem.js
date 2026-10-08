@@ -1,3 +1,4 @@
+// @ts-check
 import { preventClickDefault } from './dom-utils.js'
 import dataStorage from './dataStorage.js'
 
@@ -28,7 +29,7 @@ export const copyElem = (el, getNextId) => {
   el.childNodes.forEach((child) => {
     switch (child.nodeType) {
       case 1: // element node
-        newEl.append(copyElem(child, getNextId))
+        newEl.append(copyElem(/** @type {Element} */ (child), getNextId))
         break
       case 3: // text node
       case 4: // cdata section node

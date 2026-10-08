@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Helpers for the editor's `se:` attribute namespace.
  *

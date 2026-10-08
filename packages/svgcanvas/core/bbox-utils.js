@@ -107,10 +107,10 @@ export const init = canvas => {
 
 /**
  * @typedef {PlainObject} module:bbox-utils.BBoxObject (like `DOMRect`)
- * @property {Float} x
- * @property {Float} y
- * @property {Float} width
- * @property {Float} height
+ * @property {number} x
+ * @property {number} y
+ * @property {number} width
+ * @property {number} height
  */
 
 /**
@@ -407,7 +407,7 @@ export const getBBoxOfElementAsPath = (
  * The optimization is not needed if the rotation is a multiple 90 degrees. The default technique is to call
  * getBBox then apply the angle and any transforms.
  *
- * @param {Float} angle - The rotation angle in degrees
+ * @param {number} angle - The rotation angle in degrees
  * @param {boolean} hasAMatrixTransform - True if there is a matrix transform
  * @returns {boolean} True if the bbox can be optimized.
  */
@@ -552,7 +552,7 @@ export const getBBoxWithTransform = (
 
 /**
  * @param {Element} elem
- * @returns {Float}
+ * @returns {number}
  * @todo This is problematic with large stroke-width and, for example, a single
  * horizontal line. The calculated BBox extends way beyond left and right sides.
  */
@@ -568,10 +568,10 @@ const getStrokeOffsetForBBox = elem => {
 
 /**
  * @typedef {PlainObject} BBox
- * @property {Integer} x The x value
- * @property {Integer} y The y value
- * @property {Float} width
- * @property {Float} height
+ * @property {number} x The x value
+ * @property {number} y The y value
+ * @property {number} width
+ * @property {number} height
  */
 
 /**

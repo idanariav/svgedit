@@ -454,7 +454,7 @@ export const init = (canvas) => {
  * Removes any old rotations if present, prepends a new rotation at the
  * transformed center.
  * @function module:svgcanvas.SvgCanvas#setRotationAngle
- * @param {string|Float} val - The new rotation angle in degrees
+ * @param {string|number} val - The new rotation angle in degrees
  * @param {boolean} preventUndo - Indicates whether the action should be undoable or not
  * @fires module:svgcanvas.SvgCanvas#event:changed
  * @returns {void}

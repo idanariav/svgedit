@@ -138,6 +138,9 @@ colors in shadow DOM templates.
 `--icon-bg-color-hover`, `--hover-highlight`, `--dropdown-bg`, `--workarea-bg` (→ `--canvas-bg`) (and a few others) no longer exist;
 use the tokens above. `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again.
 
+> Dialogs sit outside `.svg_editor`; `syncDialogTheme()` (themeUtil.js) copies the tokens
+> listed in `DIALOG_TOKENS` onto each dialog on open. Add any new design token to that list.
+
 ### Light / Dark themes
 
 The editor root (`.svg_editor`) accepts one of two theme classes:

@@ -37,6 +37,13 @@ export const editorRootFor = (el) => {
   return getActiveRoot()
 }
 
+/** Design tokens (see CLAUDE.md "Theming conventions") a dialog inherits from its editor. */
+export const DIALOG_TOKENS = [
+  '--ui-font', '--fg', '--muted', '--icon', '--icon-hover', '--icon-hover-bg', '--icon-active-bg',
+  '--accent', '--accent-soft', '--accent-border', '--chrome-bg', '--chrome-border',
+  '--field-bg', '--field-border', '--group-bg', '--group-border', '--canvas-bg'
+]
+
 /**
  * Mirror the owning editor's light/dark theme onto a dialog host as
  * `theme-dark` / `theme-light`. Dialogs are mounted beside `.svg_editor`, not
@@ -48,7 +55,17 @@ export const editorRootFor = (el) => {
  * @returns {void}
  */
 export const syncDialogTheme = (host) => {
-  const isDark = !!editorRootFor(host)?.classList.contains('theme-dark')
+  const root = editorRootFor(host)
+  const isDark = !!root?.classList.contains('theme-dark')
   host.classList.toggle('theme-dark', isDark)
   host.classList.toggle('theme-light', !isDark)
+  // A host that overrides tokens on `.svg_editor` (inline or via a stylesheet rule)
+  // can't reach a dialog that sits outside it, so carry the resolved values across.
+  if (root) {
+    const computed = getComputedStyle(root)
+    for (const token of DIALOG_TOKENS) {
+      const value = computed.getPropertyValue(token).trim()
+      if (value) host.style.setProperty(token, value)
+    }
+  }
 }

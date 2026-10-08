@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { applyTheme } from '../../src/editor/themeUtil.js'
+import { applyTheme, syncDialogTheme } from '../../src/editor/themeUtil.js'
 import { setActiveEditor } from '../../src/editor/domScope.js'
 
 describe('themeUtil.applyTheme', () => {
@@ -67,5 +67,40 @@ describe('themeUtil.applyTheme', () => {
 
   it('is a no-op when no .svg_editor can be resolved', () => {
     expect(() => applyTheme('dark')).not.toThrow()
+  })
+})
+
+describe('themeUtil.syncDialogTheme', () => {
+  afterEach(() => {
+    setActiveEditor(null)
+    document.body.textContent = ''
+  })
+
+  const mount = (rootStyle = '') => {
+    const container = document.createElement('div')
+    container.setAttribute('data-svgedit-root', '')
+    const editor = document.createElement('div')
+    editor.className = 'svg_editor theme-dark'
+    editor.setAttribute('style', rootStyle)
+    const dialog = document.createElement('div')
+    container.append(editor, dialog) // a sibling of .svg_editor, like the real dialogs
+    document.body.append(container)
+    return { editor, dialog }
+  }
+
+  it('mirrors the editor theme class onto the dialog', () => {
+    const { dialog } = mount()
+    syncDialogTheme(dialog)
+    expect(dialog.classList.contains('theme-dark')).toBe(true)
+    expect(dialog.classList.contains('theme-light')).toBe(false)
+  })
+
+  it('carries a host\'s token overrides from .svg_editor onto the dialog', () => {
+    const { dialog } = mount('--accent: #ff00aa; --fg: rgb(1, 2, 3)')
+    syncDialogTheme(dialog)
+    expect(dialog.style.getPropertyValue('--accent')).toBe('#ff00aa')
+    expect(dialog.style.getPropertyValue('--fg')).toBe('rgb(1, 2, 3)')
+    // tokens the host didn't set are left to the dialog's own stylesheet rules
+    expect(dialog.style.getPropertyValue('--muted')).toBe('')
   })
 })

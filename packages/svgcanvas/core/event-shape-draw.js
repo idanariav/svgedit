@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shape-creation mode mouse handlers, extracted from the
  * rect/square/frame/foreignObject/image/circle/ellipse/line/text/
@@ -14,8 +15,8 @@ import { snapToAngle } from './math.js'
  * Cubic B-spline point used to smooth the freehand pencil stroke as it's
  * drawn (fhpath mouseMove).
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Float} t
- * @returns {{x: Float, y: Float}}
+ * @param {number} t
+ * @returns {{x: number, y: number}}
  */
 const getBsplinePoint = (svgCanvas, t) => {
   const spline = { x: 0, y: 0 }

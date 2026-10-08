@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Resize mode (`resize`) mouse handlers, extracted from the `resize` case of
  * `event.js`'s mouseDown/mouseMove switches. Covers both single-element
@@ -20,8 +21,8 @@ import { hasMatrixTransform, getTransformList, transformListToTransform, matrixM
  * dragged grip), so no shape is distorted and the relative layout is preserved.
  * `x`,`y` are the current pointer position in content/user coords.
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Float} x
- * @param {Float} y
+ * @param {number} x
+ * @param {number} y
  * @returns {void}
  */
 const resizeGroup = (svgCanvas, x, y) => {

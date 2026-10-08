@@ -142,8 +142,8 @@ export const init = (canvas) => {
   * @event module:svgcanvas.SvgCanvas#event:ext_mouseMove
   * @type {PlainObject}
   * @property {MouseEvent} event The event object
-  * @property {Float} mouse_x x coordinate on canvas
-  * @property {Float} mouse_y y coordinate on canvas
+  * @property {number} mouse_x x coordinate on canvas
+  * @property {number} mouse_y y coordinate on canvas
   * @property {Element} selected Refers to the first selected element
   */
     svgCanvas.runExtensions('mouseMove', /** @type {module:svgcanvas.SvgCanvas#event:ext_mouseMove} */ {
@@ -317,8 +317,8 @@ export const init = (canvas) => {
 * @event module:svgcanvas.SvgCanvas#event:ext_mouseUp
 * @type {PlainObject}
 * @property {MouseEvent} event The event object
-* @property {Float} mouse_x x coordinate on canvas
-* @property {Float} mouse_y y coordinate on canvas
+* @property {number} mouse_x x coordinate on canvas
+* @property {number} mouse_y y coordinate on canvas
 */
     const extResult = svgCanvas.runExtensions('mouseUp', {
       event: evt,
@@ -902,8 +902,8 @@ export const init = (canvas) => {
 * @event module:svgcanvas.SvgCanvas#event:ext_mouseDown
 * @type {PlainObject}
 * @property {MouseEvent} event The event object
-* @property {Float} start_x x coordinate on canvas
-* @property {Float} start_y y coordinate on canvas
+* @property {number} start_x x coordinate on canvas
+* @property {number} start_y y coordinate on canvas
 * @property {Element[]} selectedElements An array of the selected Elements
 */
     const extResult = svgCanvas.runExtensions('mouseDown', {

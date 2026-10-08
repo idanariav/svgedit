@@ -34,27 +34,27 @@ let typeMap_ = null
  */
 /**
  * @function module:units.ElementContainer#getHeight
- * @returns {Float} The container's height
+ * @returns {number} The container's height
  */
 /**
  * @function module:units.ElementContainer#getWidth
- * @returns {Float} The container's width
+ * @returns {number} The container's width
  */
 /**
  * @function module:units.ElementContainer#getRoundDigits
- * @returns {Integer} The number of digits number should be rounded to
+ * @returns {number} The number of digits number should be rounded to
  */
 
 /**
  * @typedef {PlainObject} module:units.TypeMap
- * @property {Float} em
- * @property {Float} ex
- * @property {Float} in
- * @property {Float} cm
- * @property {Float} mm
- * @property {Float} pt
- * @property {Float} pc
- * @property {Integer} px
+ * @property {number} em
+ * @property {number} ex
+ * @property {number} in
+ * @property {number} cm
+ * @property {number} mm
+ * @property {number} pt
+ * @property {number} pc
+ * @property {number} px
  * @property {0} %
  */
 
@@ -103,9 +103,9 @@ export const getTypeMap = () => {
 
 /**
 * @typedef {GenericArray} module:units.CompareNumbers
-* @property {Integer} length 2
-* @property {Float} 0
-* @property {Float} 1
+* @property {number} length 2
+* @property {number} 0
+* @property {number} 1
 */
 
 /**
@@ -146,8 +146,8 @@ export const createUnits = (elementContainer) => {
   * `round_digits` of `saveOptions`
   *
   * @function module:units.shortFloat
-  * @param {string|Float|module:units.CompareNumbers} val - The value (or Array of two numbers) to be rounded
-  * @returns {Float|string} If a string/number was given, returns a Float. If an array, return a string
+  * @param {string|number|module:units.CompareNumbers} val - The value (or Array of two numbers) to be rounded
+  * @returns {number|string} If a string/number was given, returns a number. If an array, return a string
   * with comma-separated floats
   */
   const shortFloat = (val) => {
@@ -164,9 +164,9 @@ export const createUnits = (elementContainer) => {
   /**
   * Converts the number to given unit or baseUnit.
   * @function module:units.convertUnit
-  * @param {string|Float} val
+  * @param {string|number} val
   * @param {"em"|"ex"|"in"|"cm"|"mm"|"pt"|"pc"|"px"|"%"} [unit]
-  * @returns {Float}
+  * @returns {number}
   */
   const convertUnit = (val, unit) => {
     unit = unit || elementContainer.getBaseUnit()
@@ -200,7 +200,7 @@ export const createUnits = (elementContainer) => {
   * @function module:units.convertToNum
   * @param {string} attr - Name of the attribute associated with the value
   * @param {string} val - Attribute value to convert
-  * @returns {Float} The converted number
+  * @returns {number} The converted number
   */
   const convertToNum = (attr, val) => {
     // Return a number if that's what it already is

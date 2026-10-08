@@ -43,3 +43,17 @@ describe('action labels', () => {
     expect(label('Align left')).toBe('Align left')
   })
 })
+
+describe('isFocusControl (Tab stays free for focus navigation)', () => {
+  it('is true for native controls and se-* hosts, false for the body and the editor container', async () => {
+    const { isFocusControl } = await import('../../src/editor/Hotkeys.js')
+    const make = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild }
+    expect(isFocusControl(make('<button></button>'))).toBe(true)
+    expect(isFocusControl(make('<input>'))).toBe(true)
+    expect(isFocusControl(make('<se-button></se-button>'))).toBe(true)
+    expect(isFocusControl(make('<div tabindex="0"></div>'))).toBe(true)
+    expect(isFocusControl(make('<div tabindex="-1" data-svgedit-root></div>'))).toBe(false)
+    expect(isFocusControl(document.body)).toBe(false)
+    expect(isFocusControl(null)).toBe(false)
+  })
+})

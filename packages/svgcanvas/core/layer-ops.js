@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge,
  * move-to-layer, all-layers mode), split out of draw.js. Created per SvgCanvas
@@ -162,7 +163,7 @@ export const init = canvas => {
  * this function does nothing and returns false, otherwise it returns true. This is an
  * undo-able action.
  * @function module:draw.setCurrentLayerPosition
- * @param {Integer} newPos - The zero-based index of the new position of the layer. This should be between
+ * @param {number} newPos - The zero-based index of the new position of the layer. This should be between
  * 0 and (number of layers - 1)
  * @returns {boolean} `true` if the current layer position was changed, `false` otherwise.
  */

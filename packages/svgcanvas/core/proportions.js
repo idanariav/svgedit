@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @file proportions.js
  *
@@ -31,8 +32,8 @@ export const PROPORTION_POINTS = PROPORTION_TIERS.flatMap(
 
 /**
  * Proportion lines for one canvas dimension, in user units.
- * @param {Float} dim canvas width or height in user units
- * @returns {Array<{pos: Float, color: string}>}
+ * @param {number} dim canvas width or height in user units
+ * @returns {Array<{pos: number, color: string}>}
  */
 export const proportionLines = (dim) =>
   PROPORTION_POINTS.map(({ frac, color }) => ({ pos: dim * frac, color }))

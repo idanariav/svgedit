@@ -104,9 +104,9 @@ export const init = (canvas) => {
 * Requires prior call to `setUiStrings` if `xlink:title`
 *    to be set on the grip.
 * @function module:path.addPointGrip
-* @param {Integer} index
-* @param {Integer} x
-* @param {Integer} y
+* @param {number} index
+* @param {number} x
+* @param {number} y
 * @returns {SVGRectElement}
 */
   // Side length of the square anchor-node grips. Larger than the round
@@ -286,8 +286,8 @@ export const init = (canvas) => {
   /**
 * This replaces the segment at the given index. Type is given as number.
 * @function module:path.replacePathSeg
-* @param {Integer} type Possible values set during {@link module:path.init}
-* @param {Integer} index
+* @param {number} type Possible values set during {@link module:path.init}
+* @param {number} index
 * @param {ArgumentsArray} pts
 * @param {SVGPathElement} elem
 * @returns {void}
@@ -370,7 +370,7 @@ export const init = (canvas) => {
 */
   class Segment {
   /**
-  * @param {Integer} index
+  * @param {number} index
   * @param {SVGPathSeg} item
   * @todo Is `item` be more constrained here?
   */
@@ -489,8 +489,8 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {Integer} dx
-   * @param {Integer} dy
+   * @param {number} dx
+   * @param {number} dy
    * @returns {void}
    */
     move (dx, dy) {
@@ -531,7 +531,7 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {Integer} num
+   * @param {number} num
    * @returns {void}
    */
     setLinked (num) {
@@ -563,9 +563,9 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {Integer} num
-   * @param {Integer} dx
-   * @param {Integer} dy
+   * @param {number} num
+   * @param {number} dx
+   * @param {number} dy
    * @returns {void}
    */
     moveCtrl (num, dx, dy) {
@@ -583,7 +583,7 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {Integer} newType Possible values set during {@link module:path.init}
+   * @param {number} newType Possible values set during {@link module:path.init}
    * @param {ArgumentsArray} pts
    * @returns {void}
    */
@@ -752,7 +752,7 @@ export const init = (canvas) => {
     /**
   * @callback module:path.PathEachSegCallback
   * @this module:path.Segment
-  * @param {Integer} i The index of the seg being iterated
+  * @param {number} i The index of the seg being iterated
   * @returns {boolean|void} Will stop execution of `eachSeg` if returns `false`
   */
     /**
@@ -768,7 +768,7 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer} index
+  * @param {number} index
   * @returns {void}
   */
     addSeg (index) {
@@ -809,7 +809,7 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer} index
+  * @param {number} index
   * @returns {void}
   */
     removePtFromSelection (index) {
@@ -861,7 +861,7 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer} y
+  * @param {number} y
   * @returns {Path}
   */
     show (y) {
@@ -887,8 +887,8 @@ export const init = (canvas) => {
 
     /**
   * Move selected points.
-  * @param {Integer} dx
-  * @param {Integer} dy
+  * @param {number} dx
+  * @param {number} dy
   * @returns {void}
   */
     movePts (dx, dy) {
@@ -900,8 +900,8 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer} dx
-  * @param {Integer} dy
+  * @param {number} dx
+  * @param {number} dy
   * @returns {void}
   */
     moveCtrl (dx, dy) {
@@ -913,7 +913,7 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {?Integer} newType See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
+  * @param {?number} newType See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
   * @returns {void}
   */
     setSegType (newType) {
@@ -1029,8 +1029,8 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer} pt
-  * @param {Integer} ctrlNum
+  * @param {number} pt
+  * @param {number} ctrlNum
   * @returns {void}
   */
     selectPt (pt, ctrlNum) {
@@ -1113,7 +1113,7 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {Integer|Integer[]} indexes
+  * @param {number|number[]} indexes
   * @returns {void}
   */
     addPtsToSelection (indexes) {
@@ -1143,7 +1143,7 @@ export const init = (canvas) => {
 
     // STATIC
     /**
-  * @param {Integer} index
+  * @param {number} index
   * @returns {boolean}
   */
     static subpathIsClosed (index) {

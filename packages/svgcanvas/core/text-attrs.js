@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Text attribute operations (bold/italic/decoration, anchor and spacing,
  * perspective, font family/size/colour, text content), split out of
@@ -420,7 +421,7 @@ export const init = canvas => {
 
   /**
 * @function module:svgcanvas.SvgCanvas#getFontSize
-* @returns {Float} The current font size
+* @returns {number} The current font size
 */
   const getFontSizeMethod = () => {
     return svgCanvas.getCurText('font_size')
@@ -429,7 +430,7 @@ export const init = canvas => {
   /**
 * Applies the given font size to the selected element.
 * @function module:svgcanvas.SvgCanvas#setFontSize
-* @param {Float} val - Float with the new font size
+* @param {number} val - number with the new font size
 * @returns {void}
 */
   const setFontSizeMethod = (val) => {

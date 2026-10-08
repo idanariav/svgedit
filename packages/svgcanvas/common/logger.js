@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Centralized logging utility for SVGCanvas.
  * Provides configurable log levels and the ability to disable logging in production.

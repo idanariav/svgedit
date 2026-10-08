@@ -14,9 +14,9 @@ import { mergeDeep } from '../common/util.js'
 
 /**
  * @typedef {GenericArray} module:path-utils.PathSegmentArray
- * @property {Integer} length 2
+ * @property {number} length 2
  * @property {"M"|"L"|"C"|"Z"} 0
- * @property {Float[]} 1
+ * @property {number[]} 1
  */
 
 /**

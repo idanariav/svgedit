@@ -1,3 +1,4 @@
+// @ts-check
 /**
  *
  */
@@ -101,7 +102,7 @@ export default class Paint {
       /**
        * Represents opacity (0-100).
        * @name module:jGraduate~Paint#alpha
-       * @type {Float}
+       * @type {number}
        */
       this.alpha = Paint.#normalizeAlpha(options.copy.alpha)
       /**

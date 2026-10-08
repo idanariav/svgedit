@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for blur event.
  * @module blur
@@ -30,7 +31,7 @@ export const init = (canvas) => {
   /**
   * Sets the `stdDeviation` blur value on the selected element without being undoable.
   * @function module:svgcanvas.SvgCanvas#setBlurNoUndo
-  * @param {Float} val - The new `stdDeviation` value
+  * @param {number} val - The new `stdDeviation` value
   * @returns {void}
   */
   const setBlurNoUndo = (val) => {
@@ -116,7 +117,7 @@ export const init = (canvas) => {
   * make the blur not be clipped. Removes them if not neeeded.
   * @function module:svgcanvas.SvgCanvas#setBlurOffsets
   * @param {Element} filterElem - The filter DOM element to update
-  * @param {Float} stdDev - The standard deviation value on which to base the offset size
+  * @param {number} stdDev - The standard deviation value on which to base the offset size
   * @returns {void}
   */
   const setBlurOffsets = (filterElem, stdDev) => {
@@ -145,7 +146,7 @@ export const init = (canvas) => {
   /**
   * Adds/updates the blur filter to the selected element.
   * @function module:svgcanvas.SvgCanvas#setBlur
-  * @param {Float} val - Float with the new `stdDeviation` blur value
+  * @param {number} val - number with the new `stdDeviation` blur value
   * @param {boolean} complete - Whether or not the action should be completed (to add to the undo manager)
   * @returns {void}
   */

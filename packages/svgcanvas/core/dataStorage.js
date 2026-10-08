@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * A storage solution aimed at replacing jQuery's data function.
  * Implementation Note: Elements are stored in a [WeakMap](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap).
@@ -13,7 +14,6 @@ class DataStorage {
    * Checks if the provided element is a valid WeakMap key.
    * @param {any} element - The element to validate
    * @returns {boolean} True if the element can be used as a WeakMap key
-   * @private
    */
   #isValidKey = (element) => {
     return element !== null && (typeof element === 'object' || typeof element === 'function')

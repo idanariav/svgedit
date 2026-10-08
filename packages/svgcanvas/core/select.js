@@ -34,7 +34,7 @@ export const init = (canvas) => {
 */
   class Selector {
   /**
-  * @param {Integer} id - Internally identify the selector
+  * @param {number} id - Internally identify the selector
   * @param {Element} elem - DOM element associated with this selector
   * @param {module:utilities.BBoxObject} [bbox] - Optional bbox to use for initialization (prevents duplicate `getBBox` call).
   */
@@ -266,7 +266,7 @@ export const init = (canvas) => {
     // STATIC methods
     /**
   * Updates cursors for corner grips on rotation so arrows point the right way.
-  * @param {Float} angle - Current rotation angle in degrees
+  * @param {number} angle - Current rotation angle in degrees
   * @returns {void}
   */
     static updateGripCursors (angle) {
@@ -540,7 +540,7 @@ export const init = (canvas) => {
   * Shows a single dashed box, the 8 resize grips and the rotate grip around a
   * multi-element selection (uniform group-scale + group-rotate mode).
   * @param {module:utilities.BBoxObject} contentBBox - Union bbox of the selection in content/user coords
-  * @param {Float} [angle] - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
+  * @param {number} [angle] - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
   * @returns {void}
   */
     showGroupSelector (contentBBox, angle = 0) {
@@ -648,14 +648,14 @@ export const init = (canvas) => {
  */
   /**
  * @function module:select.SVGFactory#getZoom
- * @returns {Float} The current zoom level
+ * @returns {number} The current zoom level
  */
 
   /**
  * @typedef {GenericArray} module:select.Dimensions
- * @property {Integer} length 2
- * @property {Float} 0 Width
- * @property {Float} 1 Height
+ * @property {number} length 2
+ * @property {number} 0 Width
+ * @property {number} 1 Height
  */
   /**
  * @typedef {PlainObject} module:select.Config

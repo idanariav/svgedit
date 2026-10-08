@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shape builder — region arithmetic for the interactive paint-to-merge tool
  * (UI/mode in ext-shape-builder; this module owns the paper.js math and the
@@ -57,7 +58,7 @@ export const init = (canvas) => {
   /**
    * Start a session from the given elements (defaults to the selection).
    * @param {Element[]} [elems]
-   * @returns {?Array<{index: Integer, d: string}>} Region outlines for the
+   * @returns {?Array<{index: number, d: string}>} Region outlines for the
    *   overlay, or null when the selection can't be decomposed.
    */
   const begin = (elems) => {
@@ -120,9 +121,9 @@ export const init = (canvas) => {
 
   /**
    * Topmost region containing the point, or -1.
-   * @param {Float} x
-   * @param {Float} y
-   * @returns {Integer}
+   * @param {number} x
+   * @param {number} y
+   * @returns {number}
    */
   const hitTest = (x, y) => {
     if (!session) return -1
@@ -137,7 +138,7 @@ export const init = (canvas) => {
 
   /**
    * Apply a gesture: merge (or delete) the picked regions, as one undo step.
-   * @param {Integer[]} indices - Picked region indices.
+   * @param {number[]} indices - Picked region indices.
    * @param {'merge'|'delete'} mode
    * @returns {?Element[]} The elements now making up the arrangement (input
    *   for the next `begin`), or null when nothing changed.

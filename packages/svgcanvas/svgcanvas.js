@@ -1428,7 +1428,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    * Sets the current fill/stroke opacity.
    * @function module:svgcanvas.SvgCanvas#setPaintOpacity
    * @param {string} type - String with "fill" or "stroke"
-   * @param {number} val - Float with the new opacity value
+   * @param {number} val - number with the new opacity value
    * @param {boolean} preventUndo - Indicates whether or not this should be an undoable action
    * @returns {void}
    */

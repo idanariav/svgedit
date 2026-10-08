@@ -563,14 +563,14 @@ export class UndoManager {
   }
 
   /**
-  * @returns {Integer} Current size of the undo history stack
+  * @returns {number} Current size of the undo history stack
   */
   getUndoStackSize () {
     return this.undoStackPointer
   }
 
   /**
-  * @returns {Integer} Current size of the redo history stack
+  * @returns {number} Current size of the redo history stack
   */
   getRedoStackSize () {
     return this.undoStack.length - this.undoStackPointer

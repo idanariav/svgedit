@@ -161,7 +161,7 @@ export const init = canvas => {
  * Looks at DOM elements inside the `<defs>` to see if they are referred to,
  * removes them from the DOM if they are not.
  * @function module:svgcanvas.SvgCanvas#removeUnusedDefElems
- * @returns {Integer} The number of elements that were removed
+ * @returns {number} The number of elements that were removed
  */
   const removeUnusedDefElemsMethod = () => {
     const defs = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')

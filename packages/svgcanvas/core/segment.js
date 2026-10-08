@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Segment tool: divides a single selected shape into symmetric pieces using
  * evenly-spaced dividing lines, in two generator modes:
@@ -88,7 +89,7 @@ export const parseParams = str => {
  * @returns {{cx: number, cy: number}}
  */
 export const resolveCenter = (elem, svgCanvas) => {
-  const hasTransform = elem.transform?.baseVal?.numberOfItems > 0
+  const hasTransform = /** @type {SVGGraphicsElement} */ (elem).transform?.baseVal?.numberOfItems > 0
   if (!hasTransform && (elem.tagName === 'circle' || elem.tagName === 'ellipse')) {
     return { cx: parseFloat(elem.getAttribute('cx')) || 0, cy: parseFloat(elem.getAttribute('cy')) || 0 }
   }

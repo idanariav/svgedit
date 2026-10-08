@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Smart alignment guides — object-to-object snapping math.
  *
@@ -21,7 +22,7 @@ const MAX_TARGETS = 60
 
 /**
  * Convert a bbox to its edge/center coordinate record.
- * @param {{x: Float, y: Float, width: Float, height: Float}} bb
+ * @param {{x: number, y: number, width: number, height: number}} bb
  * @returns {module:smart-guides.SnapTarget}
  */
 const toEdges = (bb) => ({
@@ -75,11 +76,11 @@ export const collectSnapTargets = (svgCanvas, excludeElems) => {
 
 /**
  * Find the best edge/center snap for the moving bbox on each axis.
- * @param {{x: Float, y: Float, width: Float, height: Float}} bb - Drag-start bbox.
- * @param {Float} dx - Candidate drag delta x.
- * @param {Float} dy - Candidate drag delta y.
+ * @param {{x: number, y: number, width: number, height: number}} bb - Drag-start bbox.
+ * @param {number} dx - Candidate drag delta x.
+ * @param {number} dy - Candidate drag delta y.
  * @param {module:smart-guides.SnapTarget[]} targets
- * @param {Float} tol - Snap tolerance in content units.
+ * @param {number} tol - Snap tolerance in content units.
  * @returns {{x: ?Object, y: ?Object}} Per-axis `{delta, pos, target}` or null.
  */
 export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
@@ -119,11 +120,11 @@ export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
  * the gap segments for rendering. Horizontal neighbors must overlap the
  * moving box vertically (and vice versa) so unrelated far-away elements
  * don't produce phantom spacing hints.
- * @param {{x: Float, y: Float, width: Float, height: Float}} bb - Drag-start bbox.
- * @param {Float} dx
- * @param {Float} dy
+ * @param {{x: number, y: number, width: number, height: number}} bb - Drag-start bbox.
+ * @param {number} dx
+ * @param {number} dy
  * @param {module:smart-guides.SnapTarget[]} targets
- * @param {Float} tol
+ * @param {number} tol
  * @returns {{x: ?Object, y: ?Object}} Per-axis `{delta, gap, segments}` or null.
  */
 export const findEqualSpacing = (bb, dx, dy, targets, tol) => {

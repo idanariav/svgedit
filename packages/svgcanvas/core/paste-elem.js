@@ -27,8 +27,8 @@ export const init = (canvas) => {
   /**
 * @function module:svgcanvas.SvgCanvas#pasteElements
 * @param {"in_place"|"point"|void} type
-* @param {Integer|void} x Expected if type is "point"
-* @param {Integer|void} y Expected if type is "point"
+* @param {number|void} x Expected if type is "point"
+* @param {number|void} y Expected if type is "point"
 * @param {module:svgcanvas.SVGAsJSON[]|void} data Already-parsed clipboard
 *   contents (e.g. from a native `paste` event's `e.clipboardData`). When
 *   omitted, falls back to the sessionStorage snapshot written by the last

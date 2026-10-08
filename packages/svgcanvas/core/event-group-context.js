@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove
  * preludes and the select/shape-draw mode handlers.
@@ -29,9 +30,9 @@ export const isCreateInCurrentGroup = (svgCanvas) =>
 
 /**
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Float} dx
- * @param {Float} dy
- * @returns {{dx: Float, dy: Float}}
+ * @param {number} dx
+ * @param {number} dy
+ * @returns {{dx: number, dy: number}}
  */
 export const toCurrentGroupLocalDelta = (svgCanvas, dx, dy) => {
   const g = svgCanvas.getCurrentGroup()
@@ -43,9 +44,9 @@ export const toCurrentGroupLocalDelta = (svgCanvas, dx, dy) => {
 
 /**
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Float} x
- * @param {Float} y
- * @returns {{x: Float, y: Float}}
+ * @param {number} x
+ * @param {number} y
+ * @returns {{x: number, y: number}}
  */
 export const toCurrentGroupLocalPoint = (svgCanvas, x, y) => {
   const g = svgCanvas.getCurrentGroup()

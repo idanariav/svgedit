@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path-node alignment guides — node-to-node alignment math for pathedit mode.
  *
@@ -25,9 +26,9 @@
  * Collect the snap targets for a node drag: every anchor node of the path
  * other than the ones being dragged.
  * @param {module:path.Path} path - The currently-edited Path instance.
- * @param {Integer[]} excludeIndices - Segment indices to leave out (the
+ * @param {number[]} excludeIndices - Segment indices to leave out (the
  *   dragged node(s) themselves).
- * @returns {{x: Float, y: Float, index: Integer}[]}
+ * @returns {{x: number, y: number, index: number}[]}
  */
 export const collectPathNodeTargets = (path, excludeIndices) => {
   const targets = []
@@ -43,10 +44,10 @@ export const collectPathNodeTargets = (path, excludeIndices) => {
 
 /**
  * Find the best per-axis snap for a candidate node position.
- * @param {Float} x - Candidate x (current position + drag delta).
- * @param {Float} y - Candidate y (current position + drag delta).
- * @param {{x: Float, y: Float, index: Integer}[]} targets
- * @param {Float} tol - Snap tolerance in content units.
+ * @param {number} x - Candidate x (current position + drag delta).
+ * @param {number} y - Candidate y (current position + drag delta).
+ * @param {{x: number, y: number, index: number}[]} targets
+ * @param {number} tol - Snap tolerance in content units.
  * @returns {{x: ?Object, y: ?Object}} Per-axis `{pos, delta, target}` or null.
  */
 export const snapPathNodeToTargets = (x, y, targets, tol) => {

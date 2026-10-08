@@ -77,9 +77,11 @@ extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
 `svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there; tighten per file). The other `core/*.js` modules are not checked yet:
-add `// @ts-check` to them one at a time, declaring what they attach in
-`AttachedMembers` as you go.
+there; tighten per file). 32 of the 73 `core/`+`common/` modules now carry it too (all
+those that type-checked with no, or only trivial, errors; JSDoc `{Float}`/`{Integer}`
+became `{number}`). The other 41 each have 2–14 errors, mostly `ChildNode`/`Element`
+vs `SVGGraphicsElement` casts and Paper.js item types — add the pragma to them one at a
+time, declaring what they attach in `AttachedMembers` as you go.
 
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
@@ -100,20 +102,16 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 ~1,300-line class: store/view/menu not separated), `Drawing` in `draw.js`
 (~880 lines), and `TopPanel.init()`. Split those only with a concrete reason.
 
-## Host theme overrides don't reach dialogs
+## Dialog colours: deliberate hard-coded hex
 
-Every dialog follows the editor's light/dark theme: `svgedit.css` lists each dialog tag in
-its light and dark token blocks, each calls `syncDialogTheme()` on open, and the
-form-style ones share `dialogs/dialogSkin.css.js` (`tests/unit/dialog-theme-tokens.test.js`
-guards it). The remaining hard-coded hex in components/dialogs (~50 lines, re-counted
-2026-10-07) is deliberate: text colour on accent buttons, colour-picker maths, danger red,
-grid default. The `--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
-
-What doesn't work: a host that overrides tokens on `.svg_editor` (e.g. a theme tweak in the
-Obsidian plugin) doesn't reach the dialogs, because they sit outside it. Fixing that means
-mounting them inside `.svg_editor` (check `position: fixed` against any transformed ancestor)
-or defining the tokens at the container level (`[data-svgedit-root]`). Medium; no host needs
-it today.
+Every dialog follows the editor's light/dark theme (`svgedit.css` lists each dialog tag in its
+light and dark token blocks; each calls `syncDialogTheme()` on open;
+`tests/unit/dialog-theme-tokens.test.js` guards it). `syncDialogTheme()` also copies the
+resolved design tokens (`DIALOG_TOKENS` in `themeUtil.js`) from the owning `.svg_editor`, so a
+host that overrides tokens there reaches the dialogs too — a token added to the design set
+must be added to that list. The ~50 remaining hard-coded hex values in components/dialogs are
+deliberate: text on accent buttons, colour-picker maths, danger red, grid default. The
+`--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
 
 ## Repo hygiene leftovers
 
@@ -150,9 +148,9 @@ Only the English locale exists today. Small.
 ## Keyboard shortcuts
 
 Done: Tab/Shift+Tab cycle, `V` select, Duplicate `D`, platform-formatted tooltips, default
-keys for Image (M), Brush (W), Cutter (C), Curvature (Y), Puppet warp (X). Remaining:
-- Tab still isn't free for focus navigation (it cycles elements). Freeing it means
-  choosing another key for cycling; left as is.
+keys for Image (M), Brush (W), Cutter (C), Curvature (Y), Puppet warp (X). Tab / Shift+Tab
+cycle the drawing's elements only when the canvas has the keyboard; on a focused toolbar
+control (`isFocusControl` in `Hotkeys.js`) they move focus normally. Remaining:
 - The Shapes flyout and Shape library are not `se-button`s, so they can't take a
   `shortcut` attribute yet (`seFlyingButton`/`seShapeLibrary` don't register with the
   hotkey manager). Small.

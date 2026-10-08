@@ -108,8 +108,8 @@ export const init = (canvas) => {
   /**
  * Note: This doesn't round to an integer necessarily.
  * @function module:path.EditorContext#round
- * @param {Float} val
- * @returns {Float} Rounded value to nearest value based on `zoom`
+ * @param {number} val
+ * @returns {number} Rounded value to nearest value based on `zoom`
  */
   /**
  * @function module:path.EditorContext#clearSelection
@@ -145,7 +145,7 @@ export const init = (canvas) => {
  */
   /**
  * @function module:path.EditorContext#getOpacity
- * @returns {Float}
+ * @returns {number}
  */
   /**
  * @function module:path.EditorContext#getSelectedElements
@@ -185,7 +185,7 @@ export const init = (canvas) => {
 */
   /**
  * @function module:path.EditorContext#getZoom
- * @returns {Float} The current zoom level
+ * @returns {number} The current zoom level
  */
   /**
  * Returns the last created DOM element ID string.
@@ -257,9 +257,9 @@ export const init = (canvas) => {
 * Requires prior call to `setUiStrings` if `xlink:title`
 *    to be set on the grip.
 * @function module:path.addPointGrip
-* @param {Integer} index
-* @param {Integer} x
-* @param {Integer} y
+* @param {number} index
+* @param {number} x
+* @param {number} y
 * @returns {SVGCircleElement}
 */
 
@@ -298,8 +298,8 @@ export const init = (canvas) => {
   /**
 * This replaces the segment at the given index. Type is given as number.
 * @function module:path.replacePathSeg
-* @param {Integer} type Possible values set during {@link module:path.init}
-* @param {Integer} index
+* @param {number} type Possible values set during {@link module:path.init}
+* @param {number} index
 * @param {ArgumentsArray} pts
 * @param {SVGPathElement} elem
 * @returns {void}
@@ -314,8 +314,8 @@ export const init = (canvas) => {
 
   /**
  * @typedef {PlainObject} Point
- * @property {Integer} x The x value
- * @property {Integer} y The y value
+ * @property {number} x The x value
+ * @property {number} y The y value
  */
 
   /**

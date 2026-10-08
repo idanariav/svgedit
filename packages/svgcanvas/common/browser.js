@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Browser detection.
  * @module browser
@@ -79,7 +80,7 @@ class BrowserDetector {
     const svgroot = document.createElementNS(NSSVG, 'svg')
     const svgContent = document.createElementNS(NSSVG, 'svg')
     document.documentElement.append(svgroot)
-    svgContent.setAttribute('x', 5)
+    svgContent.setAttribute('x', '5')
     svgroot.append(svgContent)
     const text = document.createElementNS(NSSVG, 'text')
     text.textContent = 'a'

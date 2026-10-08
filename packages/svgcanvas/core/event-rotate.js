@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Rotate mode (`rotate`) mouse handlers, extracted from the `rotate` case of
  * `event.js`'s mouseDown/mouseMove/mouseUp switches. Covers both
@@ -16,7 +17,7 @@ import { transformPoint, getMatrix, getTransformList, transformListToTransform, 
  * the drag began (svgCanvas.groupRotateStart), so the relative layout is
  * preserved and no shape is individually re-centered. Mirrors resizeGroup.
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Float} angle
+ * @param {number} angle
  * @returns {void}
  */
 const rotateGroup = (svgCanvas, angle) => {

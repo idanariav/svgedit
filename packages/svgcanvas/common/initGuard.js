@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Collision guard for SvgCanvas's per-module `xxxInit(canvas)` calls.
  *

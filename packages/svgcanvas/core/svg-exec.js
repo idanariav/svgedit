@@ -214,7 +214,7 @@ export const init = canvas => {
  * Sub function ran on each SVG element to convert it to a string as desired.
  * @function module:svgcanvas.SvgCanvas#svgToString
  * @param {Element} elem - The SVG element to convert
- * @param {Integer} indent - Number of spaces to indent this tag
+ * @param {number} indent - Number of spaces to indent this tag
  * @returns {string} The given element as an SVG tag
  */
   const svgToString = (elem, indent) => {
@@ -1068,7 +1068,7 @@ export const init = canvas => {
  * @property {module:svgcanvas.IssueCode[]} issueCodes CanVG issues found with the SVG
  * @property {"PNG"|"JPEG"|"BMP"|"WEBP"|"ICO"} type The chosen image type
  * @property {"image/png"|"image/jpeg"|"image/bmp"|"image/webp"} mimeType The image MIME type
- * @property {Float} quality A decimal between 0 and 1 (for use with JPEG or WEBP)
+ * @property {number} quality A decimal between 0 and 1 (for use with JPEG or WEBP)
  * @property {string} WindowName A convenience for passing along a `window.name` to target a window on which the  could be added
  */
 

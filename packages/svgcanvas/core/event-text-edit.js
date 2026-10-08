@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Text-editing mode (`textedit`) mouse handlers, extracted from the
  * `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches.

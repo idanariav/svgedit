@@ -42,10 +42,10 @@ export const TAPER_STYLE_ATTR = 'se:taper-style'
  * Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e): full width
  * mid-stroke, the given fractions at the tips. Shared with `brush-stroke.js`,
  * which applies the same tip-taper shape to its nib-based outline.
- * @param {Float} t - Position along the stroke, 0–1.
- * @param {Float} s - Start-tip width fraction, 0–1.
- * @param {Float} e - End-tip width fraction, 0–1.
- * @returns {Float}
+ * @param {number} t - Position along the stroke, 0–1.
+ * @param {number} s - Start-tip width fraction, 0–1.
+ * @param {number} e - End-tip width fraction, 0–1.
+ * @returns {number}
  */
 export const profile = (t, s, e) => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
 
@@ -54,9 +54,9 @@ const CAP_ANGLES = [30, 60, 90, 120, 150]
 /**
  * Build the filled-outline `d` for a centerline with a tapered width.
  * @param {string} d - Centerline path data (single open subpath).
- * @param {Float} width - Full stroke width.
- * @param {Float} startPct - Tip width at the start, % of full (0–100).
- * @param {Float} endPct - Tip width at the end, % of full (0–100).
+ * @param {number} width - Full stroke width.
+ * @param {number} startPct - Tip width at the start, % of full (0–100).
+ * @param {number} endPct - Tip width at the end, % of full (0–100).
  * @returns {?string} Outline path data, or null when not taperable.
  */
 export const buildTaperOutline = (d, width, startPct, endPct) => {
@@ -182,7 +182,7 @@ export const init = (canvas) => {
 
   /**
    * Read the current taper profile off the selection for popover seeding.
-   * @returns {?{start: Float, end: Float}}
+   * @returns {?{start: number, end: number}}
    */
   const getTaperParams = () => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
@@ -195,7 +195,7 @@ export const init = (canvas) => {
   /**
    * Apply (or re-apply) a taper to the selected stroked path as one undo
    * step. Lines/polylines are swapped for a `<path>` in the same batch.
-   * @param {{start: Float, end: Float}} params - Tip widths, % of full.
+   * @param {{start: number, end: number}} params - Tip widths, % of full.
    * @returns {?Element}
    */
   const applyTaperStroke = ({ start = 100, end = 0 } = {}) => {

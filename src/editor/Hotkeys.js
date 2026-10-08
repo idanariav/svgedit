@@ -244,6 +244,18 @@ export const GROUP_ORDER = [
  * @property {?string} decorative raw display string when the binding is fixed
  */
 
+const FOCUS_CONTROL = 'button, a[href], input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])'
+
+/**
+ * Whether a keydown target is a focusable UI control (native, or one of the
+ * editor's `se-*` custom elements, which retarget to their host) as opposed to
+ * the page body / editor container that the canvas leaves focus on.
+ * @param {?EventTarget} target
+ * @returns {boolean}
+ */
+export const isFocusControl = (target) =>
+  !!target?.matches && (target.localName.startsWith('se-') || target.matches(FOCUS_CONTROL))
+
 /**
  * Central hotkey registry.
  */
@@ -499,6 +511,9 @@ export default class HotkeyManager {
       if (!ownsKeyEvent(this.editor?.$container, e.target)) return
       const combo = pressedCombo(e)
       if (!combo) return
+      // Tab / Shift+Tab cycle the drawing's elements only while the canvas has the
+      // keyboard; on a focused toolbar control they keep moving focus as usual.
+      if ((combo === 'tab' || combo === 'shift+tab') && isFocusControl(e.target)) return
       const id = this.reverseMap().get(combo)
       if (!id) return
       const a = this.actions.get(id)

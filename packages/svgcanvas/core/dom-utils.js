@@ -61,7 +61,7 @@ import { getTransformList } from './math.js'
  */
 /**
  * @function module:utilities.EditorContext#getSnappingStep
- * @returns {Float|string}
+ * @returns {number|string}
  */
 
 /**
@@ -168,7 +168,7 @@ export const init = canvas => {
 
   /**
    * Snapping step size in px (snappingStep converted from the current base unit).
-   * @returns {Float}
+   * @returns {number}
    */
   const getSnapStepSize = () => {
     const unit = svgCanvas.getBaseUnit()
@@ -182,8 +182,8 @@ export const init = canvas => {
   /**
    * Round value to for snapping.
    * @function module:dom-utils.EditorContext#snapToGrid
-   * @param {Float} value
-   * @returns {Integer}
+   * @param {number} value
+   * @returns {number}
    */
   const snapToGrid = value => {
     value = Math.round(value / getSnapStepSize()) * getSnapStepSize()
@@ -198,9 +198,9 @@ export const init = canvas => {
    * snapped to the nearest node of the corresponding skewed lattice by inverting
    * its basis vectors.
    * @function module:dom-utils.EditorContext#snapPointToGrid
-   * @param {Float} x
-   * @param {Float} y
-   * @returns {{x: Float, y: Float}}
+   * @param {number} x
+   * @param {number} y
+   * @returns {{x: number, y: number}}
    */
   const snapPointToGrid = (x, y) => {
     const shape = svgCanvas.getGridShape ? svgCanvas.getGridShape() : 'square'
@@ -241,7 +241,7 @@ export const init = canvas => {
 
 /**
  * Multiplier applied to font-size to derive the row step for multiline text.
- * @type {Float}
+ * @type {number}
  */
 export const TEXT_LINE_HEIGHT = 1.2
 
@@ -272,7 +272,7 @@ export const getTextWithNewlines = (elem) => {
  * @function module:dom-utils.setMultilineText
  * @param {Element} elem - The `<text>` element
  * @param {string} value - The new content, rows separated by `\n`
- * @param {Float} [fontSizeFallback=16] - Used when the element has no font-size
+ * @param {number} [fontSizeFallback=16] - Used when the element has no font-size
  * @returns {void}
  */
 export const setMultilineText = (elem, value, fontSizeFallback = 16) => {
@@ -391,7 +391,7 @@ export let setHref = (elem, val) => {
  * @function module:dom-utils.getRotationAngleFromTransformList
  * @param {SVGTransformList} tlist - List of transforms
  * @param {boolean} toRad - When true returns the value in radians rather than degrees
- * @returns {Float} The angle in degrees or radians
+ * @returns {number} The angle in degrees or radians
  */
 export const getRotationAngleFromTransformList = (tlist, toRad) => {
   if (!tlist) {
@@ -415,7 +415,7 @@ export const getRotationAngleFromTransformList = (tlist, toRad) => {
  * @function module:dom-utils.getRotationAngle
  * @param {Element} elem - DOM element to get the angle for
  * @param {boolean} [toRad=false] - When true returns the value in radians rather than degrees
- * @returns {Float} The angle in degrees or radians
+ * @returns {number} The angle in degrees or radians
  */
 export let getRotationAngle = (elem, toRad) => {
   const tlist = getTransformList(elem)
@@ -505,7 +505,7 @@ export const getFeGaussianBlur = ele => {
  * @function module:dom-utils.assignAttributes
  * @param {Element} elem - DOM element to apply new attribute values to
  * @param {PlainObject<string, string>} attrs - Object with attribute keys/values
- * @param {Integer} [suspendLength] - Milliseconds to suspend redraw
+ * @param {number} [suspendLength] - Milliseconds to suspend redraw
  * @param {boolean} [unitCheck=false] - Boolean to indicate the need to use units.setUnitAttr
  * @returns {void}
  */

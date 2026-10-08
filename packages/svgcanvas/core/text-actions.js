@@ -78,7 +78,7 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Integer} index
+   * @param {number} index
    * @returns {void}
    * @private
    */
@@ -138,8 +138,8 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Integer} start
-   * @param {Integer} end
+   * @param {number} start
+   * @param {number} end
    * @param {boolean} skipInput
    * @returns {void}
    * @private
@@ -197,9 +197,9 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Float} mouseX
-   * @param {Float} mouseY
-   * @returns {Integer}
+   * @param {number} mouseX
+   * @param {number} mouseY
+   * @returns {number}
    * @private
    */
     #getIndexFromPoint = (mouseX, mouseY) => {
@@ -229,8 +229,8 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Float} mouseX
-   * @param {Float} mouseY
+   * @param {number} mouseX
+   * @param {number} mouseY
    * @returns {void}
    * @private
    */
@@ -240,8 +240,8 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Float} x
-   * @param {Float} y
+   * @param {number} x
+   * @param {number} y
    * @param {boolean} apply
    * @returns {void}
    * @private
@@ -257,8 +257,8 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Float} xIn
-   * @param {Float} yIn
+   * @param {number} xIn
+   * @param {number} yIn
    * @returns {module:math.XYObject}
    * @private
    */
@@ -282,8 +282,8 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Float} xIn
-   * @param {Float} yIn
+   * @param {number} xIn
+   * @param {number} yIn
    * @returns {module:math.XYObject}
    * @private
    */
@@ -320,8 +320,8 @@ export const init = canvas => {
 
     /**
    * @param {Element} target
-   * @param {Float} x
-   * @param {Float} y
+   * @param {number} x
+   * @param {number} y
    * @returns {void}
    */
     select (target, x, y) {
@@ -341,8 +341,8 @@ export const init = canvas => {
     /**
    * @param {external:MouseEvent} evt
    * @param {Element} mouseTarget
-   * @param {Float} startX
-   * @param {Float} startY
+   * @param {number} startX
+   * @param {number} startY
    * @returns {void}
    */
     mouseDown (evt, mouseTarget, startX, startY) {
@@ -357,8 +357,8 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Float} mouseX
-   * @param {Float} mouseY
+   * @param {number} mouseX
+   * @param {number} mouseY
    * @returns {void}
    */
     mouseMove (mouseX, mouseY) {
@@ -368,8 +368,8 @@ export const init = canvas => {
 
     /**
    * @param {external:MouseEvent} evt
-   * @param {Float} mouseX
-   * @param {Float} mouseY
+   * @param {number} mouseX
+   * @param {number} mouseY
    * @returns {void}
    */
     mouseUp (evt, mouseX, mouseY) {
@@ -395,7 +395,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Integer} index
+   * @param {number} index
    * @returns {void}
    */
     setCursor (index) {
@@ -403,8 +403,8 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Float} x
-   * @param {Float} y
+   * @param {number} x
+   * @param {number} y
    * @returns {void}
    */
     toEditMode (x, y) {

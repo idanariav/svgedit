@@ -211,9 +211,9 @@ export const init = (canvas) => {
  * TODO: refactor callers in `convertPath` to use `getPathDFromSegments` instead of this function.
  * Legacy code refactored from `svgcanvas.pathActions.convertPath`.
  * @param {string} letter - path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
- * @param {GenericArray<GenericArray<Integer>>} points - x,y points
- * @param {GenericArray<GenericArray<Integer>>} [morePoints] - x,y points
- * @param {Integer[]} [lastPoint] - x,y point
+ * @param {GenericArray<GenericArray<number>>} points - x,y points
+ * @param {GenericArray<GenericArray<number>>} [morePoints] - x,y points
+ * @param {number[]} [lastPoint] - x,y point
  * @returns {string}
  */
   const pathDSegment = (letter, points, morePoints, lastPoint) => {
@@ -381,8 +381,8 @@ export const init = (canvas) => {
     /**
   * @param {MouseEvent} evt
   * @param {Element} mouseTarget
-  * @param {Float} startX
-  * @param {Float} startY
+  * @param {number} startX
+  * @param {number} startY
   * @returns {boolean|void}
   */
     mouseDown (evt, mouseTarget, startX, startY) {
@@ -674,8 +674,8 @@ export const init = (canvas) => {
     }
 
     /**
-    * @param {Float} mouseX
-    * @param {Float} mouseY
+    * @param {number} mouseX
+    * @param {number} mouseY
     * @returns {void}
     */
     mouseMove (mouseX, mouseY) {
@@ -843,8 +843,8 @@ export const init = (canvas) => {
     /**
     * @param {Event} evt
     * @param {Element} element
-    * @param {Float} mouseX
-    * @param {Float} mouseY
+    * @param {number} mouseX
+    * @param {number} mouseY
     * @returns {module:path.keepElement|void}
     */
     mouseUp (evt, element, mouseX, mouseY) {
@@ -1215,9 +1215,9 @@ export const init = (canvas) => {
 
     /**
     * @typedef {PlainObject} module:path.NodePoint
-    * @property {Float} x
-    * @property {Float} y
-    * @property {Integer} type
+    * @property {number} x
+    * @property {number} y
+    * @property {number} type
     */
     /**
     * @returns {module:path.NodePoint}
@@ -1446,7 +1446,7 @@ export const init = (canvas) => {
 
     /* eslint-enable  */
     /**
-  * @param {?Integer} v See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
+  * @param {?number} v See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
   * @returns {void}
   */
     setSegType (v) {
@@ -1464,7 +1464,7 @@ export const init = (canvas) => {
 
     /**
   * @param {string} attr
-  * @param {Float} newValue
+  * @param {number} newValue
   * @returns {void}
   */
     moveNode (attr, newValue) {

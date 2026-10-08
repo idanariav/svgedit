@@ -36,7 +36,7 @@ export const CORNER_SOURCE_ATTR = 'se:orig-d'
  * Parse a path `d` into straight-line subpaths.
  * @param {string} d
  * @param {Document} doc - Owner document used to create a temp path element.
- * @returns {?Array<{closed: boolean, pts: Array<{x: Float, y: Float}>}>}
+ * @returns {?Array<{closed: boolean, pts: Array<{x: number, y: number}>}>}
  *   null when the path contains curve segments (not roundable).
  */
 export const parseStraightSubpaths = (d, doc) => {
@@ -104,7 +104,7 @@ export const parseStraightSubpaths = (d, doc) => {
 
 /**
  * Serialise subpaths back to the canonical source form (absolute M/L/Z).
- * @param {Array<{closed: boolean, pts: Array<{x: Float, y: Float}>}>} subpaths
+ * @param {Array<{closed: boolean, pts: Array<{x: number, y: number}>}>} subpaths
  * @returns {string}
  */
 export const subpathsToD = (subpaths) => subpaths.map(({ closed, pts }) => {
@@ -116,7 +116,7 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6
 
 /**
  * Build the fillet data for one corner.
- * @returns {?{ex: Float, ey: Float, xx: Float, xy: Float, r: Float, sweep: 0|1}}
+ * @returns {?{ex: number, ey: number, xx: number, xy: number, r: number, sweep: 0|1}}
  *   Entry point, exit point, arc radius, sweep flag — or null (skip corner).
  */
 const filletCorner = (prev, pt, next, radius) => {
@@ -148,8 +148,8 @@ const filletCorner = (prev, pt, next, radius) => {
 
 /**
  * Generate the rounded `d` from straight subpaths and a radius.
- * @param {Array<{closed: boolean, pts: Array<{x: Float, y: Float}>}>} subpaths
- * @param {Float} radius
+ * @param {Array<{closed: boolean, pts: Array<{x: number, y: number}>}>} subpaths
+ * @param {number} radius
  * @returns {string}
  */
 export const roundedPathD = (subpaths, radius) => subpaths.map(({ closed, pts }) => {
@@ -228,7 +228,7 @@ export const init = (canvas) => {
    * Apply (or clear, r = 0) a corner radius on the selected element,
    * recording one undo step. Polygons/polylines are swapped for a `<path>`
    * in the same batch.
-   * @param {Float} r
+   * @param {number} r
    * @returns {?Element} The (possibly new) rounded element.
    */
   const applyCornerRadius = (r) => {

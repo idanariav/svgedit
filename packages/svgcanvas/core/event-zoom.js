@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the
  * `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches.

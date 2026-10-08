@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Custom brush geometry: centerline smoothing + a nib-based variable-width
  * outline generator for the freehand "brush" tool (see `ext-brush`).
@@ -57,10 +58,10 @@ const rotate = (v, deg) => {
  * Five points sweeping a 180° arc of radius `halfWidth` around `center`, from
  * `+normal` through the outward tangent (`normal` rotated -90°) to `-normal`.
  * Mirrors `taper-stroke.js`'s `CAP_ANGLES` fan, in plain vector math.
- * @param {{x:Float,y:Float}} center
- * @param {{x:Float,y:Float}} normal - Unit vector.
- * @param {Float} halfWidth
- * @returns {Array<{x:Float,y:Float}>}
+ * @param {{x:number,y:number}} center
+ * @param {{x:number,y:number}} normal - Unit vector.
+ * @param {number} halfWidth
+ * @returns {Array<{x:number,y:number}>}
  */
 const capFan = (center, normal, halfWidth) =>
   CAP_ANGLES.map((a) => add(center, rotate(scale(normal, halfWidth), -a)))
@@ -71,10 +72,10 @@ const capFan = (center, normal, halfWidth) =>
  * parallel to the nib angle, maxing out perpendicular to it (the classic
  * calligraphy effect) — while `roundness` 100 holds a constant half-width
  * regardless of direction or angle.
- * @param {Float} travelRad
- * @param {Float} angleRad
- * @param {Float} roundness01 - 0-1.
- * @returns {Float} 0-1 factor to scale the full half-width by.
+ * @param {number} travelRad
+ * @param {number} angleRad
+ * @param {number} roundness01 - 0-1.
+ * @returns {number} 0-1 factor to scale the full half-width by.
  */
 const nibFactor = (travelRad, angleRad, roundness01) => {
   const chisel = Math.max(MIN_NIB, Math.abs(Math.sin(travelRad - angleRad)))
@@ -96,8 +97,8 @@ const pathFromLoop = (points) => {
  * A zero-length stroke (a tap/click without dragging): render the nib's own
  * footprint as a small ellipse — a thin dash along the nib angle for a
  * chiseled brush, a circle for a round one.
- * @param {{x:Float,y:Float}} center
- * @param {{thickness:Float, angle:Float, roundness:Float, pressure:Float}} p
+ * @param {{x:number,y:number}} center
+ * @param {{thickness:number, angle:number, roundness:number, pressure:number}} p
  * @returns {string}
  */
 const buildDab = (center, { thickness, angle, roundness, pressure }) => {
@@ -118,10 +119,10 @@ const buildDab = (center, { thickness, angle, roundness, pressure }) => {
 
 /**
  * Build a filled outline `d` string for a brush stroke.
- * @param {Array<{x:Float,y:Float,pressure?:Float}>} points - Centerline
+ * @param {Array<{x:number,y:number,pressure?:number}>} points - Centerline
  *  samples (already smoothed), each with optional real pen pressure (0-1,
  *  defaults to 1 — full width — for mouse/touch input).
- * @param {{thickness:Float, angle:Float, roundness:Float, taperStart:Float, taperEnd:Float}} params
+ * @param {{thickness:number, angle:number, roundness:number, taperStart:number, taperEnd:number}} params
  *  `angle` in degrees; `roundness`/`taperStart`/`taperEnd` are 0-100.
  * @returns {string} SVG path `d`, or `''` for fewer than 1 point.
  */
@@ -200,8 +201,8 @@ export const finalizeBrushOutline = (d, svgCanvas) => {
  * pencil tool's `pencilStabX/Y` (`event-shape-draw.js`), reimplemented here
  * as self-contained state so the brush and pencil tools never share mutable
  * fields.
- * @param {Float} smoothness - 0 (no smoothing, raw input) to 1 (heavy lag).
- * @returns {{push: function({x:Float,y:Float,pressure?:Float}): {x:Float,y:Float,pressure?:Float}}}
+ * @param {number} smoothness - 0 (no smoothing, raw input) to 1 (heavy lag).
+ * @returns {{push: function({x:number,y:number,pressure?:number}): {x:number,y:number,pressure?:number}}}
  */
 export const createSmoother = (smoothness) => {
   // Cap below 1 so the filter can never fully lock and stop following input.

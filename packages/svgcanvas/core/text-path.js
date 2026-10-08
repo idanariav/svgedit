@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Text on path — attach a `<text>` element's content to a path so the text
  * flows along it, and detach it back to plain text.
@@ -159,8 +160,8 @@ export const init = (canvas) => {
 
   /**
    * Read/write the startOffset (%) of the selected text-on-path.
-   * @param {Float} [pct] - Omit to read.
-   * @returns {?Float}
+   * @param {number} [pct] - Omit to read.
+   * @returns {?number}
    */
   const textPathOffset = (pct) => {
     const tp = getTextPath()

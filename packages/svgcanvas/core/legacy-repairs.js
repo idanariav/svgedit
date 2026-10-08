@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Load/save-time repairs for specific corruption patterns found in saved
  * drawings (see .claude/techdebt.md, "data-corruption fixes must also repair
@@ -90,7 +91,7 @@ export const sanitizeStackedTranslateTransforms = (root) => {
         for (let k = j - 1; k >= i; k--) {
           tlist.removeItem(k)
         }
-        const merged = root.createSVGTransform()
+        const merged = /** @type {SVGSVGElement} */ (root).createSVGTransform()
         merged.setTranslate(tx, ty)
         tlist.insertItemBefore(merged, i)
       }

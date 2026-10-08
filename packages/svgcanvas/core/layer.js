@@ -158,7 +158,7 @@ class Layer {
 
   /**
    * Get layer opacity.
-   * @returns {Float} Opacity value.
+   * @returns {number} Opacity value.
    */
   getOpacity () {
     const opacity = this.group_.getAttribute('opacity')
@@ -168,7 +168,7 @@ class Layer {
   /**
    * Sets the opacity of this layer. If opacity is not a value between 0.0 and 1.0,
    * nothing happens.
-   * @param {Float} opacity - A float value in the range 0.0-1.0
+   * @param {number} opacity - A float value in the range 0.0-1.0
    * @returns {void}
    */
   setOpacity (opacity) {

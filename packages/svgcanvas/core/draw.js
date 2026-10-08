@@ -94,7 +94,7 @@ export class Drawing {
 
     /**
      * The latest object number used in this drawing.
-     * @type {Integer}
+     * @type {number}
      */
     this.obj_num = 0
 
@@ -106,7 +106,7 @@ export class Drawing {
 
     /**
      * An array of released element ids to immediately reuse.
-     * @type {Integer[]}
+     * @type {number[]}
      */
     this.releasedNums = []
 
@@ -196,7 +196,7 @@ export class Drawing {
   }
 
   /**
-   * @returns {!(string|Integer)} The previously set nonce
+   * @returns {!(string|number)} The previously set nonce
    */
   getNonce () {
     return this.nonce_
@@ -225,7 +225,7 @@ export class Drawing {
   }
 
   /**
-   * @param {!(string|Integer)} n The nonce to set
+   * @param {!(string|number)} n The nonce to set
    * @returns {void}
    */
   setNonce (n) {
@@ -364,7 +364,7 @@ export class Drawing {
 
   /**
    * Returns the number of layers in the current drawing.
-   * @returns {Integer} The number of layers in the current drawing.
+   * @returns {number} The number of layers in the current drawing.
    */
   getNumLayers () {
     return this.all_layers.length
@@ -381,7 +381,7 @@ export class Drawing {
 
   /**
    * Returns the name of the ith layer. If the index is out of range, an empty string is returned.
-   * @param {Integer} i - The zero-based index of the layer you are querying.
+   * @param {number} i - The zero-based index of the layer you are querying.
    * @returns {string} The name of the ith layer (or the empty string if none found)
    */
   getLayerName (i) {
@@ -435,7 +435,7 @@ export class Drawing {
 
   /**
    * Set the current layer's position.
-   * @param {Integer} newpos - The zero-based index of the new position of the layer. Range should be 0 to layers-1
+   * @param {number} newpos - The zero-based index of the new position of the layer. Range should be 0 to layers-1
    * @returns {{title: SVGGElement, previousName: string}|null} If the name was changed, returns {title:SVGGElement, previousName:string}; otherwise null.
    */
   setCurrentLayerPosition (newpos) {
@@ -890,7 +890,7 @@ export class Drawing {
   /**
    * Returns the opacity of the given layer.  If the input name is not a layer, `null` is returned.
    * @param {string} layerName - name of the layer on which to get the opacity
-   * @returns {?Float} The opacity value of the given layer.  This will be a value between 0.0 and 1.0, or `null`
+   * @returns {?number} The opacity value of the given layer.  This will be a value between 0.0 and 1.0, or `null`
    * if `layerName` is not a valid layer
    */
   getLayerOpacity (layerName) {
@@ -910,7 +910,7 @@ export class Drawing {
    * of a layer, we will need to allow this function to produce an undo-able
    * action.
    * @param {string} layerName - Name of the layer on which to set the opacity
-   * @param {Float} opacity - A float value in the range 0.0-1.0
+   * @param {number} opacity - A float value in the range 0.0-1.0
    * @returns {void}
    */
   setLayerOpacity (layerName, opacity) {

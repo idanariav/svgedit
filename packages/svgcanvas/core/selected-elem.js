@@ -284,8 +284,8 @@ export const init = canvas => {
   /**
  * Moves selected elements on the X/Y axis.
  * @function module:selected-elem.SvgCanvas#moveSelectedElements
- * @param {Float} dx - Float with the distance to move on the x-axis
- * @param {Float} dy - Float with the distance to move on the y-axis
+ * @param {number} dx - number with the distance to move on the x-axis
+ * @param {number} dy - number with the distance to move on the y-axis
  * @param {boolean} undoable - Boolean indicating whether or not the action should be undoable
  * @fires module:selected-elem.SvgCanvas#event:changed
  * @returns {BatchCommand|void} Batch command for the move
@@ -378,8 +378,8 @@ export const init = canvas => {
  * Create deep DOM copies (clones) of all selected elements and move them slightly
  * from their originals.
  * @function module:selected-elem.SvgCanvas#cloneSelectedElements
- * @param {Float} x Float with the distance to move on the x-axis
- * @param {Float} y Float with the distance to move on the y-axis
+ * @param {number} x number with the distance to move on the x-axis
+ * @param {number} y number with the distance to move on the y-axis
  * @returns {void}
  */
   const cloneSelectedElements = (x, y) => {
@@ -405,7 +405,7 @@ export const init = canvas => {
    * Sorts an array numerically and ascending.
    * @param {Element} a
    * @param {Element} b
-   * @returns {Integer}
+   * @returns {number}
    */
     const sortfunction = (a, b) => {
       return index(b) - index(a)
@@ -703,11 +703,11 @@ export const init = canvas => {
  * @param {string} relativeTo
  * @param {Element[]} selectedElements - the array with selected DOM elements
  * @param {module:utilities.BBoxObject} bboxes - bounding box objects
- * @param {Float} minx - selected area min-x
- * @param {Float} maxx - selected area max-x
- * @param {Float} miny - selected area min-y
- * @param {Float} maxy - selected area max-y
- * @returns {Array.Float[]} x and y distances array
+ * @param {number} minx - selected area min-x
+ * @param {number} maxx - selected area max-x
+ * @param {number} miny - selected area min-y
+ * @param {number} maxy - selected area max-y
+ * @returns {Array.number[]} x and y distances array
  * @private
  */
   const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -764,11 +764,11 @@ export const init = canvas => {
  * @param {string} relativeTo
  * @param {Element[]} selectedElements - the array with selected DOM elements
  * @param {module:utilities.BBoxObject} bboxes - bounding box objects
- * @param {Float} minx - selected area min-x
- * @param {Float} maxx - selected area max-x
- * @param {Float} miny - selected area min-y
- * @param {Float} maxy - selected area max-y
- * @returns {Array.Float[]}} x and y distances array
+ * @param {number} minx - selected area min-x
+ * @param {number} maxx - selected area max-x
+ * @param {number} miny - selected area min-y
+ * @param {number} maxy - selected area max-y
+ * @returns {Array.number[]}} x and y distances array
  * @private
  */
   const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -825,11 +825,11 @@ export const init = canvas => {
  * @param {string} type
  * @param {Element[]} selectedElements - the array with selected DOM elements
  * @param {module:utilities.BBoxObject} bboxes - bounding box objects
- * @param {Float} minx - selected area min-x
- * @param {Float} maxx - selected area max-x
- * @param {Float} miny - selected area min-y
- * @param {Float} maxy - selected area max-y
- * @returns {Array.Float[]} x and y distances array
+ * @param {number} minx - selected area min-x
+ * @param {number} maxx - selected area max-x
+ * @param {number} miny - selected area min-y
+ * @param {number} maxy - selected area max-y
+ * @returns {Array.number[]} x and y distances array
  * @private
  */
   const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -1043,8 +1043,8 @@ export const init = canvas => {
   /**
  * Updates the editor canvas width/height/position after a zoom has occurred.
  * @function module:svgcanvas.SvgCanvas#updateCanvas
- * @param {Float} w - Float with the new width
- * @param {Float} h - Float with the new height
+ * @param {number} w - number with the new width
+ * @param {number} h - number with the new height
  * @fires module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
  * @returns {module:svgcanvas.CanvasInfo}
  */
@@ -1090,12 +1090,12 @@ export const init = canvas => {
    * Invoked upon updates to the canvas.
    * @event module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
    * @type {PlainObject}
-   * @property {Integer} new_x
-   * @property {Integer} new_y
-   * @property {string} old_x (Of Integer)
-   * @property {string} old_y (Of Integer)
-   * @property {Integer} d_x
-   * @property {Integer} d_y
+   * @property {number} new_x
+   * @property {number} new_y
+   * @property {string} old_x (Of number)
+   * @property {string} old_y (Of number)
+   * @property {number} d_x
+   * @property {number} d_y
    */
     svgCanvas.runExtensions(
       'canvasUpdated',

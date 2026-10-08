@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path drawing/editing mode (`path`/`pathedit`) mouse handlers, extracted
  * from the `path`/`pathedit` case of `event.js`'s mouseDown/mouseMove/mouseUp
@@ -15,7 +16,7 @@ import { snapToAngle } from './math.js'
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-path-edit.init
  * @param {module:svgcanvas.SvgCanvas} canvas
- * @returns {{down: Function, move: Function, up: Function}}
+ * @returns {{down: Function, move: Function, upPath: Function, upPathEdit: Function}}
  */
 export const init = (canvas) => {
   const svgCanvas = canvas

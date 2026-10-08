@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for clear.
  * @module clear

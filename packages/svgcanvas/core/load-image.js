@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Load an image href into an `HTMLImageElement`, ready for `drawImage`. Setting
  * `crossOrigin` before `src` is assigned matters on Safari/mobile browsers

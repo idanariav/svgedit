@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Registry of extension hook names, with the payload each one receives.
  * `svgCanvas.runExtensions(name, vars)` calls `ext[name](vars)` on every

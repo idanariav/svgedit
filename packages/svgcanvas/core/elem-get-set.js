@@ -180,9 +180,9 @@ export const init = (canvas) => {
   /**
 * Changes the document's dimensions to the given size.
 * @function module:elem-get-set.SvgCanvas#setResolution
-* @param {Float|"fit"} x - Number with the width of the new dimensions in user units.
+* @param {number|"fit"} x - Number with the width of the new dimensions in user units.
 * Can also be the string "fit" to indicate "fit to content".
-* @param {Float} y - Number with the height of the new dimensions in user units.
+* @param {number} y - Number with the height of the new dimensions in user units.
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {boolean} Indicates if resolution change was successful.
 * It will fail on "fit to content" option with no content to fit to.
@@ -257,15 +257,15 @@ export const init = (canvas) => {
 
   /**
  * @typedef {PlainObject} module:elem-get-set.ZoomAndBBox
- * @property {Float} zoom
+ * @property {number} zoom
  * @property {module:utilities.BBoxObject} bbox
  */
   /**
 * Sets the zoom level on the canvas-side based on the given value.
 * @function module:elem-get-set.SvgCanvas#setBBoxZoom
 * @param {"selection"|"canvas"|"content"|"layer"|module:SVGEditor.BBoxObjectWithFactor} val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
-* @param {Integer} editorW - The editor's workarea box's width
-* @param {Integer} editorH - The editor's workarea box's height
+* @param {number} editorW - The editor's workarea box's width
+* @param {number} editorH - The editor's workarea box's height
 * @returns {module:elem-get-set.ZoomAndBBox|void}
 */
   const setBBoxZoomMethod = (val, editorW, editorH) => {
@@ -334,7 +334,7 @@ export const init = (canvas) => {
   /**
 * Sets the zoom to the given level.
 * @function module:elem-get-set.SvgCanvas#setZoom
-* @param {Float} zoomLevel - Float indicating the zoom level to change to
+* @param {number} zoomLevel - number indicating the zoom level to change to
 * @fires module:elem-get-set.SvgCanvas#event:ext_zoomChanged
 * @returns {void}
 */
@@ -565,7 +565,7 @@ export const init = (canvas) => {
 * Sets the stroke width for the current selected elements.
 * When attempting to set a line's width to 0, this changes it to 1 instead.
 * @function module:elem-get-set.SvgCanvas#setStrokeWidth
-* @param {Float} val - A Float indicating the new stroke width value
+* @param {number} val - A number indicating the new stroke width value
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
@@ -612,7 +612,7 @@ export const init = (canvas) => {
 * Set the given stroke-related attribute the given value for selected elements.
 * @function module:elem-get-set.SvgCanvas#setStrokeAttr
 * @param {string} attr - String with the attribute name
-* @param {string|Float} val - String or number with the attribute value
+* @param {string|number} val - String or number with the attribute value
 * @fires module:elem-get-set.SvgCanvas#event:changed
 * @returns {void}
 */
@@ -744,7 +744,7 @@ export const init = (canvas) => {
 * Sets the `rx` and `ry` values to the selected `rect` element
 * to change its corner radius.
 * @function module:svgcanvas.SvgCanvas#setRectRadius
-* @param {string|Float} val - The new radius
+* @param {string|number} val - The new radius
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @returns {void}
 */
@@ -800,7 +800,7 @@ export const init = (canvas) => {
   /**
 * Sets the new segment type to the selected segment(s).
 * @function module:svgcanvas.SvgCanvas#setSegType
-* @param {Integer} newType - New segment type. See {@link https://www.w3.org/TR/SVG/paths.html#InterfaceSVGPathSeg} for list
+* @param {number} newType - New segment type. See {@link https://www.w3.org/TR/SVG/paths.html#InterfaceSVGPathSeg} for list
 * @returns {void}
 */
   const setSegTypeMethod = (newType) => {

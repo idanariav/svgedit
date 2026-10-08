@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for SVG Root Element.
  * @module svgcanvas
@@ -15,7 +16,7 @@ import { text2xml } from './encoding-utils.js'
 * @returns {SVGSVGElement}
 */
 export const svgRootElement = (svgdoc, dimensions) => {
-  return svgdoc.importNode(
+  return /** @type {SVGSVGElement} */ (/** @type {unknown} */ (svgdoc.importNode(
     text2xml(
       `<svg id="svgroot" xmlns="${NS.SVG}" xlinkns="${NS.XLINK}" width="${dimensions[0]}" 
         height="${dimensions[1]}" x="${dimensions[0]}" y="${dimensions[1]}" overflow="visible">
@@ -32,5 +33,5 @@ export const svgRootElement = (svgdoc, dimensions) => {
       </svg>`
     ).documentElement,
     true
-  )
+  )))
 }

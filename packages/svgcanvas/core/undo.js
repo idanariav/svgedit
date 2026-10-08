@@ -169,7 +169,7 @@ export const init = (canvas) => {
 * This function makes the changes to the elements. It does not add the change
 * to the history stack.
 * @param {string} attr - Attribute name
-* @param {string|Float} newValue - String or number with the new attribute value
+* @param {string|number} newValue - String or number with the new attribute value
 * @param {Element[]} elems - The DOM elements to apply the change to
 * @returns {void}
 */
@@ -319,7 +319,7 @@ export const init = (canvas) => {
 * subset to this function in the `elems` argument.
 * @function module:svgcanvas.SvgCanvas#changeSelectedAttribute
 * @param {string} attr - String with the attribute name
-* @param {string|Float} val - String or number with the new attribute value
+* @param {string|number} val - String or number with the new attribute value
 * @param {Element[]} elems - The DOM elements to apply the change to
 * @returns {void}
 */
