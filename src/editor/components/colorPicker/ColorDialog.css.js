@@ -793,4 +793,40 @@ export const css = /* css */`
 
   /* ── Stop color editor (right column of gradient panels) ────────────────── */
   .cp-stop-color-editor { padding: 0; flex: 1; min-width: 0; display: flex; }
+
+  /* ── Popover mode (anchored to its swatch; see SeColorDialog.anchor) ────── */
+  /* No backdrop, no footer: outside click applies, Escape cancels. The host
+     shrinks to nothing and the frame is placed with --cp-left / --cp-top. */
+  :host(.popover) { inset: auto; display: block; width: 0; height: 0; }
+  :host(.popover) .cp-backdrop,
+  :host(.popover) .cp-foot { display: none; }
+  :host(.popover) .cp-modal {
+    position: fixed;
+    left: var(--cp-left, 8px);
+    top: var(--cp-top, 8px);
+    width: 360px;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    border-radius: 14px;
+  }
+  :host(.popover) .cp-head { height: 40px; flex-basis: 40px; padding: 0 8px 0 14px; border-radius: 14px 14px 0 0; }
+  :host(.popover) .cp-head-title { font-size: 13px; }
+  :host(.popover) .cp-head-close { width: 28px; height: 28px; }
+  :host(.popover) .cp-tabsrow { padding: 10px 12px 0; }
+  :host(.popover) .cp-body { padding: 12px 12px 14px; gap: 14px; }
+  :host(.popover) .cp-body-solid { flex-direction: column; align-items: stretch; gap: 12px; }
+  :host(.popover) .cp-body-solid > div { flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
+  /* The bottom-bar palette is right there, so the popover skips its own preset grid. */
+  :host(.popover) .cp-body-solid .cp-preset { display: none; }
+  :host(.popover) .cp-side-col,
+  :host(.popover) .cp-canvas-col { width: 100%; flex: none; }
+  :host(.popover) .cp-num { min-width: 0; }
+  :host(.popover) .cp-num-value { min-width: 0; width: 100%; }
+  :host(.popover) .cp-tabsrow { gap: 8px; }
+  :host(.popover) .cp-tabs { flex: 1; min-width: 0; }
+  :host(.popover) .cp-tab { flex: 1; padding: 6px 4px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  :host(.popover) .cp-hsv { aspect-ratio: 1 / 0.7; }
+  :host(.popover) .cp-preview-big { height: 110px; }
+  :host(.popover) .cp-grad-top { flex-direction: column; gap: 14px; }
+  :host(.popover) .cp-grad-colors { flex: none; width: 100%; }
 `

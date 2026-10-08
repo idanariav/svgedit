@@ -1085,6 +1085,43 @@ export const init = canvas => {
   }
 
   /**
+ * Undo the in-group dimming (see setContext) and hand back a function that
+ * re-applies it, leaving the current group, selection and `disabledElems`
+ * untouched. For anything that must see the drawing's true colours while the
+ * user stays inside the group, including work that spans async gaps (the colour
+ * dialog's screen eyedropper). The returned function is idempotent and skips
+ * elements that have since left the context.
+ * @function module:draw.suspendContextDimming
+ * @returns {function(): void} resume
+ */
+  const suspendContextDimming = () => {
+    if (!disabledElems.length) { return () => {} }
+    const dataStorage = svgCanvas.getDataStorage()
+    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
+    for (const { elem } of dimmed) {
+      const orig = dataStorage.get(elem, 'orig_opac')
+      if (orig === null || orig === undefined) {
+        elem.removeAttribute('opacity')
+      } else {
+        elem.setAttribute('opacity', orig)
+      }
+    }
+    let resumed = false
+    return () => {
+      if (resumed) { return }
+      resumed = true
+      for (const { elem, opacity } of dimmed) {
+        if (!disabledElems.includes(elem)) { continue }
+        if (opacity === null) {
+          elem.removeAttribute('opacity')
+        } else {
+          elem.setAttribute('opacity', opacity)
+        }
+      }
+    }
+  }
+
+  /**
  * Run `fn` with the in-group dimming (see setContext) temporarily undone, then
  * re-apply it, leaving the current group, selection and `disabledElems`
  * untouched. For serialization while the user must stay inside the group
@@ -1096,27 +1133,11 @@ export const init = canvas => {
  * @returns {*} Whatever `fn` returns
  */
   const withContextUndimmed = (fn) => {
-    if (!disabledElems.length) { return fn() }
-    const dataStorage = svgCanvas.getDataStorage()
-    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
-    for (const { elem } of dimmed) {
-      const orig = dataStorage.get(elem, 'orig_opac')
-      if (orig === null || orig === undefined) {
-        elem.removeAttribute('opacity')
-      } else {
-        elem.setAttribute('opacity', orig)
-      }
-    }
+    const resume = suspendContextDimming()
     try {
       return fn()
     } finally {
-      for (const { elem, opacity } of dimmed) {
-        if (opacity === null) {
-          elem.removeAttribute('opacity')
-        } else {
-          elem.setAttribute('opacity', opacity)
-        }
-      }
+      resume()
     }
   }
 
@@ -1204,6 +1225,7 @@ export const init = canvas => {
   svgCanvas.leaveContext = leaveContext
   svgCanvas.setContext = setContext
   svgCanvas.withContextUndimmed = withContextUndimmed
+  svgCanvas.suspendContextDimming = suspendContextDimming
   // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
   // exposes the per-instance `disabledElems` closure var without letting
   // callers mutate it directly.

@@ -692,3 +692,17 @@ internal clipboard (an internal copy, pasted via `pasteInCenter`) and an externa
 latter is imported via `importSvgString` then `ungroupSelectedElement`ed into a
 real, editable group (otherwise it lands as one opaque `<use>` object). See the
 "System-clipboard paste" note in `architecture.md`.
+
+
+## Colour picker (`se-colorpicker` → `se-color-dialog`)
+
+Clicking the Fill / Stroke / Background swatch opens `<se-color-dialog>` as a **popover**
+anchored to that swatch (`dialog.anchor`, set by `seColorPicker.openColorDialog()`): no backdrop,
+no Apply/Cancel footer. Solid, gradient, group (leaf shapes, as `setColor` does) and
+canvas-background tweaks preview live and write no history; **a click outside commits** (one undo
+step old → new), **Escape cancels** and reverts, an untouched click-away changes nothing, and
+clicking the swatch again commits. The popover skips its built-in preset grid (the bottom palette is
+beside it). Without an on-screen anchor — the tablet shell, command search, a hidden swatch — it
+stays the centred modal (the palette's swatch editor also uses the modal). The dialog's screen
+eyedropper hides the dialog and calls `svgCanvas.suspendContextDimming()` so group-context dimming
+does not distort the sampled pixels. Layout lives under `:host(.popover)` in `ColorDialog.css.js`.

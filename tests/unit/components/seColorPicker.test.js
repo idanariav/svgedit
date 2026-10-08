@@ -185,6 +185,36 @@ describe('se-colorpicker', () => {
     })
   })
 
+  describe('eyedropper', () => {
+    afterEach(() => { delete window.EyeDropper })
+
+    it('un-dims the group context while sampling the screen, then restores it', async () => {
+      const order = []
+      window.svgEditor.svgCanvas.getSelectedElements = () => []
+      window.svgEditor.svgCanvas.suspendContextDimming = () => { order.push('undim'); return () => order.push('redim') }
+      window.EyeDropper = class { async open () { order.push('pick'); return { sRGBHex: '#123456' } } }
+      const el = mountElement('se-colorpicker')
+      el.type = 'fill'
+      el.openColorDialog()
+      const dialog = document.querySelector('se-color-dialog')
+      await dialog._startEyedropper()
+      expect(order).toEqual(['undim', 'pick', 'redim'])
+      expect(dialog.style.display).toBe('')
+    })
+
+    it('restores the dimming even when the pick is cancelled', async () => {
+      const order = []
+      window.svgEditor.svgCanvas.getSelectedElements = () => []
+      window.svgEditor.svgCanvas.suspendContextDimming = () => { order.push('undim'); return () => order.push('redim') }
+      window.EyeDropper = class { async open () { throw new Error('cancelled') } }
+      const el = mountElement('se-colorpicker')
+      el.type = 'fill'
+      el.openColorDialog()
+      await document.querySelector('se-color-dialog')._startEyedropper()
+      expect(order).toEqual(['undim', 'redim'])
+    })
+  })
+
   it('setPaint delegates to the paintBox', () => {
     const el = mountElement('se-colorpicker')
     const spy = vi.spyOn(el.paintBox, 'setPaint')

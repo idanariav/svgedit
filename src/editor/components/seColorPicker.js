@@ -230,16 +230,28 @@ export class SeColorPicker extends HTMLElement {
   }
 
   /**
-   * Open the <se-color-dialog> modal for this swatch.
+   * Open the <se-color-dialog> for this swatch: a popover beside it, or a modal where there is no
+   * on-screen swatch to anchor to (touch shell, command search).
    */
   openColorDialog () {
     const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
+    const existing = root.querySelector('se-color-dialog')
+    // Clicking the swatch of an open popover toggles it (commits it) rather than reopening.
+    if (existing?.anchor === this) {
+      existing._commit()
+      return
+    }
     // Remove any existing dialog
-    root.querySelector('se-color-dialog')?.remove()
+    existing?.remove()
     const dialog = document.createElement('se-color-dialog')
     dialog.paint = this.paintBox.paint
     dialog.type = this.type
     dialog.i18next = this.i18next
+    // Open as a popover beside the swatch when it is actually on screen; the touch
+    // shell and hidden swatches (command search, tablet) keep the centred modal.
+    const box = this.getBoundingClientRect()
+    const tablet = root.querySelector('.svg_editor')?.classList.contains('ui-tablet')
+    if (box.width > 0 && box.height > 0 && !tablet) dialog.anchor = this
     ;(root.body ?? root).appendChild(dialog)
 
     // Live preview — solid colours and gradients, on the selected shapes (groups

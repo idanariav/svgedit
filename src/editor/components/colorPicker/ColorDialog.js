@@ -39,13 +39,24 @@ export class SeColorDialog extends HTMLElement {
   get type () { return this._type }
   set i18next (i) { this._i18next = i }
   get i18next () { return this._i18next }
+  /**
+   * Swatch this dialog belongs to. When set before the dialog is attached it opens as
+   * a popover next to that element (no backdrop; outside click applies, Escape
+   * cancels) instead of a centred modal with Apply/Cancel.
+   * @type {?Element}
+   */
+  set anchor (el) { this._anchor = el }
+  get anchor () { return this._anchor ?? null }
 
   connectedCallback () {
     this._activeTab = this._inferTab()
+    this._popover = !!this._anchor
+    this.classList.toggle('popover', this._popover)
     this._render()
     this._syncTheme()
     this._observeTheme()
     this._bindKeys()
+    if (this._popover) this._setupPopover()
   }
 
   disconnectedCallback () {
@@ -53,6 +64,64 @@ export class SeColorDialog extends HTMLElement {
     if (this._keyHandler) {
       document.removeEventListener('keydown', this._keyHandler)
     }
+    this._teardownPopover()
+  }
+
+  // ── Popover mode ───────────────────────────────────────────────────────────
+  _setupPopover () {
+    this._dirty = false
+    // Pointer-down anywhere outside the popover (and its own swatch, whose click
+    // toggles it) commits it — and the click still reaches whatever was hit, so
+    // "pick a colour, then click the next shape" is one gesture.
+    this._outsideHandler = (e) => {
+      if (this._picking) return
+      const path = e.composedPath()
+      if (path.includes(this) || (this._anchor && path.includes(this._anchor))) return
+      this._commit()
+    }
+    document.addEventListener('pointerdown', this._outsideHandler, true)
+    this._resizeHandler = () => this._position()
+    window.addEventListener('resize', this._resizeHandler)
+    const modal = this._shadowRoot.querySelector('.cp-modal')
+    if (typeof ResizeObserver !== 'undefined') {
+      // Switching tabs changes the popover's height: keep it on screen.
+      this._sizeObserver = new ResizeObserver(this._resizeHandler)
+      this._sizeObserver.observe(modal)
+    }
+    this._position()
+  }
+
+  _teardownPopover () {
+    if (this._outsideHandler) document.removeEventListener('pointerdown', this._outsideHandler, true)
+    if (this._resizeHandler) window.removeEventListener('resize', this._resizeHandler)
+    this._sizeObserver?.disconnect()
+    this._outsideHandler = this._resizeHandler = this._sizeObserver = null
+  }
+
+  /** Place the popover beside its swatch: above it in the lower half of the window, else below; clamped on-screen. */
+  _position () {
+    const modal = this._shadowRoot.querySelector('.cp-modal')
+    if (!modal || !this._anchor?.isConnected) return
+    const a = this._anchor.getBoundingClientRect()
+    const M = 8
+    const mw = modal.offsetWidth
+    const mh = modal.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi))
+    const left = clamp(a.left, M, vw - mw - M)
+    const below = a.bottom + M
+    const above = a.top - M - mh
+    const preferAbove = a.top > vh / 2
+    const top = clamp(preferAbove ? (above >= M ? above : below) : (below + mh <= vh - M ? below : above), M, Math.max(M, vh - mh - M))
+    this.style.setProperty('--cp-left', `${Math.round(left)}px`)
+    this.style.setProperty('--cp-top', `${Math.round(top)}px`)
+  }
+
+  /** Popover: keep what the user changed, drop an untouched dialog without a no-op apply. */
+  _commit () {
+    if (this._popover && !this._dirty) this._onCancel()
+    else this._onApply()
   }
 
   // ── Theme sync ─────────────────────────────────────────────────────────────
@@ -147,7 +216,7 @@ export class SeColorDialog extends HTMLElement {
     }
 
     // Wire header close
-    this._shadowRoot.querySelector('.cp-head-close').addEventListener('click', () => this._onCancel())
+    this._shadowRoot.querySelector('.cp-head-close').addEventListener('click', () => (this._popover ? this._commit() : this._onCancel()))
 
     // Wire footer
     this._shadowRoot.querySelector('.cp-btn-ghost').addEventListener('click', () => this._onCancel())
@@ -162,6 +231,7 @@ export class SeColorDialog extends HTMLElement {
     // show it on the drawing before Apply (Cancel/Escape reverts).
     this._shadowRoot.querySelector('.cp-body-slot').addEventListener('color-change', () => {
       if (!this._currentPanel) return
+      this._dirty = true
       this.dispatchEvent(new CustomEvent('preview', {
         detail: { paint: stateToPaint(this._currentPanel.getPaintState()) }
       }))
@@ -173,6 +243,7 @@ export class SeColorDialog extends HTMLElement {
 
   // ── Tab switching ──────────────────────────────────────────────────────────
   _switchTab (tab) {
+    if (this._currentPanel) this._dirty = true // choosing another paint type is a change
     this._activeTab = tab
 
     // Update tab button states
@@ -205,8 +276,11 @@ export class SeColorDialog extends HTMLElement {
       logWarn('[se-color-dialog] EyeDropper API not available in this environment', undefined, 'ColorDialog')
       return
     }
-    // Hide the dialog so the user can see the canvas while picking.
+    // Hide the dialog so the user can see the canvas while picking, and undo the
+    // in-group dimming so the sampled pixels are the drawing's real colours.
     this.style.display = 'none'
+    this._picking = true
+    const resumeDimming = ownerEditor(this)?.svgCanvas?.suspendContextDimming?.()
     try {
       const result = await new window.EyeDropper().open()
       const hex = result.sRGBHex.replace('#', '')
@@ -214,6 +288,8 @@ export class SeColorDialog extends HTMLElement {
     } catch {
       // User cancelled (Escape) — no-op.
     } finally {
+      resumeDimming?.()
+      this._picking = false
       this.style.display = ''
     }
   }
@@ -241,6 +317,10 @@ export class SeColorDialog extends HTMLElement {
       if (e.key === 'Escape') {
         e.preventDefault()
         this._onCancel()
+      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some(n => n.tagName === 'INPUT' || n.tagName === 'BUTTON')) {
+        // Enter inside a field commits that field; elsewhere it commits the popover.
+        e.preventDefault()
+        this._commit()
       }
     }
     document.addEventListener('keydown', this._keyHandler)

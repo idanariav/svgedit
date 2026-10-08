@@ -124,6 +124,35 @@ describe('draw context', () => {
     expect(clearSelectionCalls).toStrictEqual([true])
     expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })
   })
+  describe('suspendContextDimming', () => {
+    it('undims until resumed, across async gaps, and resume is idempotent', () => {
+      canvas.setContext(editGroup)
+      const resume = canvas.suspendContextDimming()
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+      expect(currentGroup).toBe(editGroup)
+      resume()
+      expect(sibling.getAttribute('opacity')).toBe('0.33')
+      sibling.setAttribute('opacity', '0.5')
+      resume() // second call must not touch anything
+      expect(sibling.getAttribute('opacity')).toBe('0.5')
+    })
+
+    it('does not re-dim siblings once the context was left meanwhile', () => {
+      canvas.setContext(editGroup)
+      const resume = canvas.suspendContextDimming()
+      canvas.leaveContext()
+      resume()
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+    })
+
+    it('is a no-op outside a group context', () => {
+      const resume = canvas.suspendContextDimming()
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+      resume()
+      expect(sibling.getAttribute('opacity')).toBe('inherit')
+    })
+  })
+
   describe('withContextUndimmed', () => {
     it('un-dims siblings only for the duration of fn, staying inside the group', () => {
       canvas.setContext(editGroup)

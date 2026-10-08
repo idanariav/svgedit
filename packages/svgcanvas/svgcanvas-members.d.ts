@@ -252,6 +252,8 @@ export interface AttachedMembers {
   setCurrentZoom(zoomLevel: number): void
   setContext(elem: Element | string): void
   leaveContext(): void
+  /** Undo the in-group dimming; call the returned function to re-apply it. */
+  suspendContextDimming(): () => void
   rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: object): Promise<any>
 
   // Clip / mask / boolean / segment / taper / crop
