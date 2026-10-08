@@ -6,19 +6,20 @@ const html = readFileSync(join(__dirname, '../../src/editor/panels/RightPanel.ht
 const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
 
 describe('right panel layout', () => {
-  it('keeps ID and Class out of General, inside a collapsed Advanced group', () => {
+  it('keeps Class in General, always visible', () => {
     const general = doc.querySelector('#sidepanel_general')
-    expect(general.querySelector('#elem_id, #elem_class')).toBeNull()
+    expect(general.querySelector('#elem_class')).toBeTruthy()
+    expect(general.querySelector('#elem_id, #selected_x, #selected_y, #angle')).toBeNull()
+  })
+
+  it('Advanced is collapsed and holds X / Y / Rotate / ID', () => {
     const adv = doc.querySelector('#sidepanel_advanced details')
     expect(adv).toBeTruthy()
     expect(adv.hasAttribute('open')).toBe(false)
-    expect(adv.querySelector('#elem_id')).toBeTruthy()
-    expect(adv.querySelector('#elem_class')).toBeTruthy()
-  })
-
-  it('General still holds X / Y / Rotate together', () => {
-    const ids = [...doc.querySelectorAll('#sidepanel_general [id]')].map((e) => e.id)
-    expect(ids).toEqual(expect.arrayContaining(['selected_x', 'selected_y', 'angle']))
+    for (const id of ['selected_x', 'selected_y', 'angle', 'elem_id']) {
+      expect(adv.querySelector('#' + id), id).toBeTruthy()
+    }
+    expect(adv.querySelector('#elem_class')).toBeNull()
   })
 
   it('Advanced sits in the Design tab and the Text tab has an empty-state hint', () => {

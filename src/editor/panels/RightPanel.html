@@ -10,16 +10,12 @@
 
         <!-- ───────────────── DESIGN TAB ───────────────── -->
         <div id="tab_design" class="sidepanel_tabpanel active">
-            <!-- General: position + rotation (identity fields live in Advanced, below) -->
+            <!-- General: class (frequently used). Position / rotation / id live in Advanced, below -->
             <div id="sidepanel_general" class="sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">General</div>
                 <div class="sidepanel_section_grid">
-                    <se-spin-input id="selected_x" data-attr="x" size="4" type="text" label="properties.x_label"
-                        title="properties.pos_x"></se-spin-input>
-                    <se-spin-input id="selected_y" data-attr="y" size="4" type="text" label="properties.y_label"
-                        title="properties.pos_y"></se-spin-input>
-                    <se-spin-input id="angle" size="3" min="-180" max="180" step="5" label="Rotate"
-                        title="properties.angle"></se-spin-input>
+                    <se-class-select id="elem_class" class="span2" label="properties.class_label"
+                        title="properties.class"></se-class-select>
                 </div>
             </div>
 
@@ -216,15 +212,19 @@
                 </div>
             </div>
 
-            <!-- Advanced: identity fields most illustrators never touch; collapsed by default -->
+            <!-- Advanced: position, rotation and identity fields most illustrators rarely touch; collapsed by default -->
             <div id="sidepanel_advanced" class="sidepanel_section" style="display:none">
                 <details class="sidepanel_advanced">
                     <summary class="sidepanel_section_label">Advanced</summary>
                     <div class="sidepanel_section_grid">
+                        <se-spin-input id="selected_x" data-attr="x" size="4" type="text" label="properties.x_label"
+                            title="properties.pos_x"></se-spin-input>
+                        <se-spin-input id="selected_y" data-attr="y" size="4" type="text" label="properties.y_label"
+                            title="properties.pos_y"></se-spin-input>
+                        <se-spin-input id="angle" size="3" min="-180" max="180" step="5" label="Rotate"
+                            title="properties.angle"></se-spin-input>
                         <se-input id="elem_id" class="span2" data-attr="id" size="10" label="properties.id_label"
                             title="properties.id"></se-input>
-                        <se-class-select id="elem_class" class="span2" label="properties.class_label"
-                            title="properties.class"></se-class-select>
                     </div>
                 </details>
             </div>
