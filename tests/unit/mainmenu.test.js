@@ -116,6 +116,18 @@ describe('MainMenu', () => {
     )
   })
 
+  it('delegates Export to window.svgEditHost.exportDrawing when a host provides it', () => {
+    menu.init()
+    window.svgEditHost = { exportDrawing: vi.fn() }
+    try {
+      document.getElementById('tool_export').dispatchEvent(new Event('click', { bubbles: true }))
+      expect(window.svgEditHost.exportDrawing).toHaveBeenCalledTimes(1)
+      expect(document.getElementById('se-export-dialog').getAttribute('dialog')).not.toBe('open')
+    } finally {
+      delete window.svgEditHost
+    }
+  })
+
   it('creates menu entries and wires click handlers in init', () => {
     menu.init()
 

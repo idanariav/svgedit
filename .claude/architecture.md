@@ -343,6 +343,7 @@ Methods (all optional, async):
 |---|---|---|
 | `pickVaultImage()` | `{ dataUrl, link, locked?, editableSvg? } \| null` | Image dialog "Import from vault" |
 | `pickVaultFile()` | `{ link } \| null` | "Add to Shape Library" link control |
+| `exportDrawing()` | — | Main menu "Export": when present it replaces svgedit's own export dialog |
 
 **Locked vs. unlocked imports.** `pickVaultImage()` returns one of two shapes
 that select how the drawing is inserted:

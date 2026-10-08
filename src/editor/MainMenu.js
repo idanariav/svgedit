@@ -182,6 +182,12 @@ class MainMenu {
      * Associate all button actions as well as non-button keyboard shortcuts.
      */
     $click($id('tool_export'), function () {
+      // A host that owns exporting (window.svgEditHost.exportDrawing) takes over;
+      // standalone svgedit keeps its own dialog.
+      if (typeof window.svgEditHost?.exportDrawing === 'function') {
+        window.svgEditHost.exportDrawing()
+        return
+      }
       $id('se-export-dialog').setAttribute('dialog', 'open')
     })
     $id('se-export-dialog').addEventListener(
