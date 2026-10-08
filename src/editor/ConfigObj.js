@@ -178,6 +178,7 @@ export default class ConfigObj {
       baseUnit: 'px',
       snappingStep: 10,
       showRulers: false,
+      hideTabletToggle: false, // Hide the main menu's "Tablet mode" toggle; for hosts that choose the UI mode themselves via `tabletMode`
       hideTitle: false, // Hide the drawing-name (e.g. "untitled.svg") panel in the top bar; useful when the host UI already shows the filename
 
       // SOURCE OUTPUT BEHAVIOR
@@ -236,7 +237,6 @@ export default class ConfigObj {
       'ext-puppet-warp',
       'ext-opensave',
       'ext-layer_view',
-      'ext-theme-toggle',
       'ext-shadow',
       'ext-outline',
       'ext-color-shift',
