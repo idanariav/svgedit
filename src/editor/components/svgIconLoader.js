@@ -7,6 +7,16 @@
 
 import { getRawIcon } from '../images/iconRegistry.js'
 
+// Icons drawn as solid silhouettes. They are re-styled as outlines at load time so the
+// toolbar reads as one outline family. `vector-effect: non-scaling-stroke` keeps the line
+// at OUTLINE_STROKE screen px whatever the artwork's viewBox (several are 512 or 800 wide,
+// where a 1.6 user-unit stroke would be invisible). Add a file name here to convert it.
+const OUTLINE_ICONS = new Set([
+  'panning.svg', 'brush.svg', 'shapes.svg', 'shapelib.svg', 'cutter.svg', 'pin.svg', 'go_up.svg', 'go_down.svg'
+])
+const OUTLINE_STROKE = '1.6'
+const OUTLINE_SHAPES = 'path, polygon, polyline, rect, circle, ellipse'
+
 // Cache fetched+serialised SVG strings keyed by URL to avoid re-fetching
 const svgCache = new Map()
 
@@ -68,6 +78,15 @@ export async function fetchSvgEl (url) {
             }
           }
         })
+
+        if (OUTLINE_ICONS.has(url.split(/[?#]/)[0].split('/').pop())) {
+          svgEl.querySelectorAll(OUTLINE_SHAPES).forEach(el => {
+            el.setAttribute('fill', 'none')
+            el.setAttribute('stroke', 'currentColor')
+            el.setAttribute('stroke-width', OUTLINE_STROKE)
+            el.setAttribute('vector-effect', 'non-scaling-stroke')
+          })
+        }
 
         // Ensure consistent stroke-width for a clean look
         if (!svgEl.getAttribute('stroke-width')) {

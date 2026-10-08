@@ -121,6 +121,37 @@ test.describe('Top bar layout', () => {
   })
 })
 
+test.describe('Palette and tablet bar in narrow panes', () => {
+  test('palette swatches keep a usable width and the strip scrolls', async ({ page }) => {
+    await desktop(page, 800, 600)
+    const r = await page.evaluate(() => {
+      const strip = document.querySelector('#palette').shadowRoot.querySelector('#js-se-palette')
+      const sw = strip.querySelector('.palette_item:nth-child(5)')
+      return { w: sw.getBoundingClientRect().width, scrolls: strip.scrollWidth > strip.clientWidth }
+    })
+    expect(r.w).toBeGreaterThanOrEqual(13.5)
+    expect(r.scrolls).toBe(true)
+  })
+
+  for (const width of [1024, 900, 768]) {
+    test(`tablet command bar fits at ${width}px (Undo/Redo stay visible)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 700 })
+      await visitAndApproveStorage(page)
+      await page.evaluate(() => window.svgEditor.configObj.pref('tabletMode', true, true))
+      await page.reload()
+      await page.waitForSelector('#ts_hist', { state: 'attached' })
+      await page.waitForTimeout(500)
+      const r = await page.evaluate(() => {
+        const bar = document.querySelector('.ts-topbar')
+        const hist = document.querySelector('#ts_hist').getBoundingClientRect()
+        return { over: bar.scrollWidth - bar.clientWidth, right: hist.right }
+      })
+      expect(r.over).toBeLessThanOrEqual(1)
+      expect(r.right).toBeLessThanOrEqual(width)
+    })
+  }
+})
+
 test.describe('Left toolbar', () => {
   test('"Additional tools" stays reachable in a short pane', async ({ page }) => {
     await desktop(page, 1024, 600)

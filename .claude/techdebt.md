@@ -139,10 +139,13 @@ and theme toggle (theme is in Preferences), `tt-tight` folds the object trays
 (clone/arrange/align…) into a "⋯" button (`#top_more`) that opens them as a
 floating panel (`#top_more_pop`). The bar is re-measured from the full state on
 resize and when a tray is shown/hidden. Remaining:
-- Tablet mode at 1024 wide: the command bar's undo/redo are still cut off.
-- Palette swatches shrink to slivers at 800px.
-- Tools in the left column scroll rather than moving into `…` automatically.
-- `fitBar` is covered by `tests/e2e/top-bar-layout.spec.js` (jsdom has no layout).
+- (Done: tablet command bar sheds in tiers by container width — `@container` rules in
+  `tablet.css` hide the zoom row ≤1160px, slim the tool buttons ≤900px, hide Done ≤840px;
+  palette swatches keep a 14px minimum and the strip scrolls, `sePalette.js`.)
+- Tools in the left column scroll (with "Additional tools" pinned) rather than moving
+  into `…` automatically; auto-moving would have to avoid persisting the temporary
+  split as the user's saved order.
+- `fitBar`, the palette and the tablet bar are covered by `tests/e2e/top-bar-layout.spec.js` (jsdom has no layout).
 Small.
 
 ## Missing translations show raw keys
@@ -189,11 +192,11 @@ Small.
 
 ## Inconsistent icons, selection handles and palette
 
-- Icon styles are mixed in the left toolbar. Panning, Shapes, Brush, Shape
-  library, Cutter, Curvature, Puppet warp and the overflow icon are filled;
-  the rest are outlines. The layers toolbar mixes filled arrows with outline
-  icons. Redraw them in one outline style. The Cutter icon (a marker over a
-  dotted line) doesn't suggest cutting.
+- (Done: the solid-silhouette icons — Panning, Brush, Shapes, Shape library, Cutter, Puppet warp
+  (`pin.svg`), layer up/down arrows — are re-styled as 1.6px outlines at load time by
+  `OUTLINE_ICONS` in `svgIconLoader.js`, so the artwork files are unchanged. Still open: the
+  Cutter icon (a marker over a dotted line) doesn't suggest cutting — that is a redraw, not a
+  style fix; Shapes shows doubled lines where the artwork has holes.)
 - (Done: the left toolbar is grouped — `TOOL_GROUPS` in `toolOrder.js` — with a
   divider where the group changes; the default order puts the drawing tools
   together. Users with a customised order keep it; a tool id not listed in

@@ -104,6 +104,26 @@
   justify-content: center;
 }
 
+/* Narrow panes (container width, so a small host pane behaves like a small
+   screen). The bar sheds in tiers so Undo/Redo never get pushed off the right
+   edge: drop the zoom -/+ row (pinch zooms on touch); then slim the tool
+   buttons; then drop Done (the sheet's close button does the same). */
+.svg_editor.ui-tablet .tablet-shell { container-type: inline-size; }
+@container (max-width: 1160px) {
+  .svg_editor.ui-tablet .ts-topbar { gap: 6px; padding-right: 10px; }
+  .svg_editor.ui-tablet #ts_zoom,
+  .svg_editor.ui-tablet .ts-sep { display: none; }
+}
+@container (max-width: 900px) {
+  .svg_editor.ui-tablet .ts-topbar { padding-left: 130px; }
+  .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 38px; height: 38px; }
+  .svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 22px !important; height: 22px !important; }
+  .svg_editor.ui-tablet .ts-toolgroup se-shape-library { --sl-tool-size: 38px; --sl-tool-icon-size: 22px; }
+}
+@container (max-width: 840px) {
+  .svg_editor.ui-tablet .ts-done { display: none; }
+}
+
 /* The select cursor's filled mass sits toward the top-left of its viewBox, so
    geometric centering reads as off-centre inside the active blue circle. Nudge
    it down-right a touch so it looks centred. */

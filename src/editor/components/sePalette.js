@@ -190,12 +190,16 @@ template.innerHTML = `
     gap: 2px;
     flex: 1;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
     height: 22px;
   }
+  #js-se-palette::-webkit-scrollbar { display: none; }
   div.palette_item {
     flex: 1;
-    min-width: 0;
+    /* never shrink to a sliver in a narrow pane: the strip scrolls instead */
+    min-width: 14px;
     max-width: 22px;
     height: 22px;
     border-radius: 5px;
@@ -332,6 +336,12 @@ export class SEPalette extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
     this.$holder = this._shadowRoot.getElementById('palette_holder')
     this.$strip = this._shadowRoot.getElementById('js-se-palette')
+    // Narrow panes: the strip scrolls; let the plain mouse wheel do it.
+    this.$strip.addEventListener('wheel', (e) => {
+      if (this.$strip.scrollWidth <= this.$strip.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+      this.$strip.scrollLeft += e.deltaY
+      e.preventDefault()
+    }, { passive: false })
     this.$editBtn = this._shadowRoot.querySelector('button.palette_edit_btn')
     this.$targetBtn = this._shadowRoot.querySelector('button.palette_target_btn')
     this.$resetBtn = this._shadowRoot.querySelector('.reset_btn')

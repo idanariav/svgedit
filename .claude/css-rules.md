@@ -59,6 +59,11 @@ the variables.
 | `--icon-hover-bg` | `#EEF1F5` | `#2A2D35` | Button hover background |
 | `--icon-active-bg` | `#E2E6EC` | `#353944` | Button active/mousedown background |
 
+Icons drawn as solid silhouettes are converted to outlines at load time by `OUTLINE_ICONS`
+in `components/svgIconLoader.js` (`vector-effect: non-scaling-stroke`, so large-viewBox
+artwork keeps the same 1.6px line as the native outline icons). Add a file name to that set
+instead of redrawing the SVG.
+
 ### Accent (Active / Selected State)
 
 | Variable | Light | Dark | Purpose |
@@ -171,6 +176,11 @@ sized to the touch toolgroup via the component's `--sl-tool-size` /
 in `seShapeLibrary.js`; these inherit through the shadow boundary). The select
 cursor icon gets a small `translate(2px,1px)` nudge (`.ts-tool-select svg`) so its
 top-left-weighted shape reads as centred in the active blue circle.
+
+**Tablet narrow panes:** `.tablet-shell` is a size container (`container-type: inline-size`);
+`@container` rules near the end of the command-bar section hide the zoom row (≤1160px), slim
+the tool buttons (≤900px) and hide Done (≤840px) so Undo/Redo stay on screen. Add new tiers
+there, not as viewport `@media` (hosts embed the editor in panes).
 
 > **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline
 > `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves

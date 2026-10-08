@@ -166,4 +166,18 @@ describe('se-palette', () => {
     el.renderSwatches()
     expect(el.$resetBtn.classList.contains('has-overrides')).toBe(true)
   })
+
+  it('keeps swatches at a usable width and scrolls the strip with the mouse wheel', () => {
+    const el = mountElement('se-palette')
+    const css = el.shadowRoot.querySelector('style').textContent
+    expect(css).toMatch(/div\.palette_item\s*\{[^}]*min-width:\s*14px/)
+    expect(css).toMatch(/#js-se-palette\s*\{[^}]*overflow-x:\s*auto/)
+    // jsdom has no layout: fake an overflowing strip and check the wheel scrolls it.
+    Object.defineProperty(el.$strip, 'scrollWidth', { value: 500, configurable: true })
+    Object.defineProperty(el.$strip, 'clientWidth', { value: 100, configurable: true })
+    const ev = new WheelEvent('wheel', { deltaY: 40, cancelable: true })
+    el.$strip.dispatchEvent(ev)
+    expect(el.$strip.scrollLeft).toBe(40)
+    expect(ev.defaultPrevented).toBe(true)
+  })
 })
