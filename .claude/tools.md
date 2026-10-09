@@ -258,6 +258,10 @@ failure (non-embedded remote image) rejects and is surfaced via `seAlert` from `
 leaving the crop session open. Image loading (with the `crossOrigin` CORS dance) is shared with
 `traceImage.js` via `core/load-image.js`'s `loadImage(href)`.
 
+### Join paths (ext-path-edit, select mode)
+
+`svgCanvas.joinSelectedPaths()` (`core/path-join.js`, geometry `joinSubpaths` in `core/path-edit.js`; eligibility `svgCanvas.canJoinPaths(elems)`): one open plain path is **closed** (`tool_join_paths`, "Close", in Object → Path); two plain paths in the same parent are **joined** (`tool_join_paths_multi`, in the Combine row after `tool_match_strokes`). Endpoints within 0.5 user units (÷ zoom) merge into one anchor, otherwise a straight segment connects the nearest ends (reversing as needed). The lower element in the document keeps its id and style and the upper one is removed — one `BatchCommand`; the second path is brought into the first's coordinate system when their transforms differ. Not offered for closed paths, shapes, live-geometry paths (`se:fx-d` / `se:orig-d` / `se:taper-d`), or paths in different parents. Keyless Hotkey Manager / Command Search entries: `path_join`, `path_average_h/v/both`, `path_add_anchors` (group `Path`; the node ones only act in pathedit mode).
+
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 
 Stays in the top bar (it is a transient mode toolbar, not a property).
@@ -268,7 +272,9 @@ Stays in the top bar (it is a transient mode toolbar, not a property).
 | `seg_type` | Segment type: Straight (4) / Curve (6) |
 | `tool_node_smooth` | Smooth node — one-shot action (`svgCanvas.pathActions.smoothSelectedNodes()` → `Path#smoothSelectedNodes()` in `core/path-method.js`) that recomputes each selected node's in/out bezier handles so they're collinear through the node (tangent/G1 continuity) via the neighbor-anchor tangent construction, **without moving any anchor**. Unlike `tool_smooth_path` (a lossy paper.js re-fit, freehand-only), this preserves exact node-tool-authored geometry — it only repositions handles on sides that are already curve (type 6) segments; a side bordering a straight (`L`) segment, or a path endpoint with no neighbor on one side, is left untouched. One undo step per click |
 | `tool_node_clone` | Clone node |
-| `tool_node_delete` | Delete node — **reconnects** its neighbors, keeping the path closed/continuous (also bound to `Backspace`/`Delete` while in pathedit mode) |
+| `tool_node_delete` | Delete node — **reconnects** its neighbors and keeps the shape (neighbour handles are refitted), keeping the path closed/continuous (also bound to `Backspace`/`Delete` while in pathedit mode) |
+| `tool_node_average` | Average selected nodes (injected by ext-path-edit; `se-select` action menu — Horizontal / Vertical / Both → `pathActions.averageSelectedNodes('h'\|'v'\|'both')`; needs ≥ 2 selected nodes) |
+| `tool_node_add_anchors` | Add anchor points (injected by ext-path-edit → `pathActions.addAnchorPoints()`: a new node at the middle of every segment, shape kept) |
 | `tool_openclose_path` | Toggle open / closed path |
 | `tool_add_subpath` | Add sub-path |
 
@@ -305,15 +311,24 @@ found. Governed by the same `tool_smart_snap` toggle as object-to-object
 snapping (no separate control). Scope: anchor nodes only, same path only,
 drag-only (no live guide while placing new points during path creation).
 
-**Delete-node semantics (reconnect):** Both the `tool_node_delete` toolbar
+**Delete-node semantics (reconnect, shape kept):** Both the `tool_node_delete` toolbar
 button and the `Backspace`/`Delete` key call `pathActions.deletePathNode()`
 → `buildReconnectedPathData(path)`
 ([`packages/svgcanvas/core/path-actions.js`](../packages/svgcanvas/core/path-actions.js)),
-guarded by `pathActions.canDeleteNodes`. It drops the deleted node and joins
-its surviving neighbors directly, so a closed shape stays closed and an open
-line stays one line — the neighbor keeps its own original draw command
-(straight or curve), so a curve's control points may look different once its
-old neighbor is gone. Deliberately splitting a shape open is the **cutter
+guarded by `pathActions.canDeleteNodes`. The path is read into the anchor
+model (`segsToSubpaths` in [`core/path-edit.js`](../packages/svgcanvas/core/path-edit.js);
+the closing segment and `M` are folded into one start anchor, so a closed
+path's start vertex can be deleted too) and each deleted node goes through
+`removeAnchor`: the neighbours keep their handle directions and their facing
+handles are **refitted** (least squares with fixed tangents, golden-section
+search for where the new curve passes the old node — `core/bezier-fit.js`) so
+one cubic follows the two old segments; two straight segments become one;
+removing an end of an open path drops its segment. Several nodes are removed
+highest-index first, each seeing the already-refitted neighbours. A closed
+shape stays closed and an open line stays one line (a closed shape reduced
+to two straight nodes becomes an open line). The refit runs ~40 least-squares fits per
+deleted node — fine for a click, never call it from a mousemove. The emitted
+`d` is absolute `M/L/C` with an explicit closing lineto plus `Z`. Deliberately splitting a shape open is the **cutter
 tool**'s job (`ext-cutter`), not delete-node's — the two used to be
 conflated (delete-node briefly severed the path on `Backspace`/`Delete`),
 but that's been removed now that the cutter handles cuts explicitly. The

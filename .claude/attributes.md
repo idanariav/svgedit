@@ -173,7 +173,9 @@ In **pathedit mode** (double-click a path), the `.path_node_panel` appears:
 | `seg_type` | — | Segment type: Straight (value=4) / Curve (value=6) |
 | `tool_node_link` | — | Link/unlink bezier control handles |
 | `tool_node_clone` | — | Clone the selected node |
-| `tool_node_delete` | — | Delete the selected node |
+| `tool_node_delete` | — | Delete the selected node (neighbours refitted so the shape is kept) |
+| `tool_node_average` | — | Average selected nodes (H / V / both) — ext-path-edit |
+| `tool_node_add_anchors` | — | Add an anchor at the middle of every segment — ext-path-edit |
 | `tool_openclose_path` | — | Toggle open/closed subpath |
 | `tool_add_subpath` | — | Add a new sub-path |
 

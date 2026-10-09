@@ -196,6 +196,8 @@ describe('PathActions', () => {
         'clonePathNode',
         'opencloseSubPath',
         'deletePathNode',
+        'averageSelectedNodes',
+        'addAnchorPoints',
         'smoothPolylineIntoPath',
         'setSegType',
         'moveNode',
@@ -797,9 +799,10 @@ describe('PathActions', () => {
   describe('deletePathNode', () => {
     it('should drop the selected node and reconnect its neighbors directly, without splitting the path', () => {
       pathActionsMethod.toEditMode(pathElement)
-      // deletePathNode rebuilds `d` via buildReconnectedPathData, which drops
-      // the deleted point and joins its two surviving neighbors directly —
-      // splitting a shape open is the cutter tool's job now, not this one's.
+      // deletePathNode rebuilds `d` via buildReconnectedPathData (path-edit.js
+      // removeAnchor), which drops the deleted point and joins its two
+      // surviving neighbors directly, refitting curve handles so the shape is
+      // kept — splitting a shape open is the cutter tool's job, not this one's.
       mockPath.selected_pts = [1]
 
       // Mock canDeleteNodes property
@@ -811,7 +814,7 @@ describe('PathActions', () => {
       pathActionsMethod.deletePathNode()
 
       expect(mockPath.storeD).toHaveBeenCalled()
-      expect(pathElement.getAttribute('d')).toBe('M 10 10 L 90 10')
+      expect(pathElement.getAttribute('d')).toBe('M10,10 L90,10')
       expect(mockPath.init).toHaveBeenCalled()
       expect(mockPath.clearSelection).toHaveBeenCalled()
       expect(mockPath.endChanges).toHaveBeenCalledWith('Delete path node(s)', { deletedIndexes: [1] })
@@ -850,6 +853,40 @@ describe('PathActions', () => {
 
       expect(mockPath.storeD).not.toHaveBeenCalled()
       expect(pathElement.getAttribute('d')).toBe('M10,10 L50,50 L90,10 z')
+    })
+  })
+
+  describe('averageSelectedNodes / addAnchorPoints', () => {
+    it('averages the selected nodes onto a common horizontal line in one undo step', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      mockPath.selected_pts = [1, 2]
+
+      pathActionsMethod.averageSelectedNodes('h')
+
+      expect(mockPath.storeD).toHaveBeenCalled()
+      expect(pathElement.getAttribute('d')).toBe('M10,10 L50,30 L90,30')
+      expect(mockPath.init).toHaveBeenCalled()
+      expect(mockPath.clearSelection).toHaveBeenCalled()
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Average path node(s)', { axis: 'h' })
+    })
+
+    it('needs at least two selected nodes', () => {
+      pathActionsMethod.toEditMode(pathElement)
+      mockPath.selected_pts = [1]
+
+      pathActionsMethod.averageSelectedNodes('both')
+
+      expect(mockPath.endChanges).not.toHaveBeenCalled()
+      expect(pathElement.getAttribute('d')).toBe('M10,10 L50,50 L90,10 z')
+    })
+
+    it('adds an anchor at the middle of every segment in one undo step', () => {
+      pathActionsMethod.toEditMode(pathElement)
+
+      pathActionsMethod.addAnchorPoints()
+
+      expect(pathElement.getAttribute('d')).toBe('M10,10 L30,30 L50,50 L70,30 L90,10')
+      expect(mockPath.endChanges).toHaveBeenCalledWith('Add anchor points')
     })
   })
 

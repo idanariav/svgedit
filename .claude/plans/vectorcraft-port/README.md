@@ -24,7 +24,7 @@ the user says otherwise; the **Depends on** column is a hard prerequisite.
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
 | T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see techdebt.md) |
-| T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | todo |
+| T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | done — see git log |
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | todo |
 | T1.6 | Shaper tool (rough stroke → clean shape) | — | todo |
 | T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |

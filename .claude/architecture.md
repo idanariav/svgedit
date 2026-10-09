@@ -84,6 +84,7 @@ svgedit/
 │   │   ├── ext-live-effects/      # "Distort" panel — re-editable se:fx effect stack (core/live-effects.js glue)
 │   │   ├── ext-outline/           # Second outline/halo color for line strokes (feMorphology)
 │   │   ├── ext-glow/              # Outer / inner glow (shared fx-filter composer)
+│   │   ├── ext-path-edit/         # Average / Add anchor points / Join buttons
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
@@ -205,6 +206,7 @@ src/editor/index.html
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `remapCornerSource` keeps the source in sync from `coords.js` |
+| `bezier-fit.js` / `path-edit.js` / `path-join.js` | Least-squares Bézier fit; anchor-model path edits (refit remove-anchor, add anchors, average, join); select-mode Join |
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |
 | `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |

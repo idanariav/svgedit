@@ -241,6 +241,7 @@ export default class ConfigObj {
       'ext-live-effects',
       'ext-outline',
       'ext-glow',
+      'ext-path-edit',
       'ext-color-shift',
       'ext-fonts',
       'ext-eyedropper'

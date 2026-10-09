@@ -34,6 +34,8 @@ export interface AttachedMembers {
     linkControlPoints: (linkPoints: boolean) => void
     clonePathNode: () => void
     deletePathNode: () => void
+    averageSelectedNodes: (axis?: 'h' | 'v' | 'both') => void
+    addAnchorPoints: () => void
     smoothPolylineIntoPath: () => void
     setSegType: (type: number) => void
     moveNode: (attr: string, newValue: number) => void
@@ -195,6 +197,8 @@ export interface AttachedMembers {
   removeTaperStroke(): void
   applyCornerRadius(r?: number, opts?: { kind?: 'r' | 'i' | 'c', corners?: number[] }): Element | null
   canRoundCorners(elem: Element): boolean
+  canJoinPaths(elems: Element[]): boolean
+  joinSelectedPaths(): Element | null
   getCornerSettings(elem?: Element): Array<{ index: number, radius: number, kind: 'r' | 'i' | 'c', max: number }>
 
   // Live effects (se:fx stack)

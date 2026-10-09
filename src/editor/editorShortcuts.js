@@ -399,6 +399,46 @@ export const buildEditorShortcuts = (editor) => [
     }
   },
   {
+    id: 'path_average_h',
+    group: 'Path',
+    label: 'tools.node_average_h',
+    fn: () => {
+      if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('h')
+    }
+  },
+  {
+    id: 'path_average_v',
+    group: 'Path',
+    label: 'tools.node_average_v',
+    fn: () => {
+      if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('v')
+    }
+  },
+  {
+    id: 'path_average_both',
+    group: 'Path',
+    label: 'tools.node_average_both',
+    fn: () => {
+      if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('both')
+    }
+  },
+  {
+    id: 'path_add_anchors',
+    group: 'Path',
+    label: 'tools.node_add_anchors',
+    fn: () => {
+      if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.addAnchorPoints()
+    }
+  },
+  {
+    id: 'path_join',
+    group: 'Path',
+    label: 'tools.join_paths',
+    fn: () => {
+      editor.svgCanvas.joinSelectedPaths()
+    }
+  },
+  {
     id: 'bool_union',
     group: 'Boolean',
     label: 'tools.bool_union_label',

@@ -18,6 +18,7 @@ import {
 import { getBBox } from './bbox-utils.js'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.js'
 import { warn as logWarn } from '../common/logger.js'
+import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
 
 /**
 * @function module:path-actions.init
@@ -226,60 +227,17 @@ export const init = (canvas) => {
   }
 
   /**
- * Build a new `d` attribute for `path` with every selected node *reconnected* —
- * the node is dropped and its two neighbors become adjacent, so the sub-path
- * stays exactly as continuous/closed as it was. Splitting a path open is the
- * cutter tool's job, not delete-node's. The surviving neighbor keeps its own
- * draw command (straight or curve) verbatim, so a curve's control points may
- * end up describing a different-looking curve now that its old neighbor is gone.
+ * Build a new `d` attribute for `path` with every selected node removed and the
+ * shape kept: the sub-path stays exactly as continuous/closed as it was
+ * (splitting a path open is the cutter tool's job, not delete-node's), and
+ * the neighbours keep their handle directions while their facing handles are
+ * refitted so one cubic follows the two old segments (two straight segments
+ * become one). Several nodes are removed one after another. See
+ * `core/path-edit.js` (`removeAnchor`) and `core/bezier-fit.js`.
  * @param {module:path.Path} pathObj - the path being edited
  * @returns {string} the rebuilt `d`, or '' if nothing renderable remains
  */
-  const buildReconnectedPathData = (pathObj) => {
-    const { segs } = pathObj
-    const deleted = new Set(pathObj.selected_pts)
-
-    // Split segs into sub-paths of drawable points (M starts one, Z closes it).
-    const subpaths = []
-    let cur = null
-    segs.forEach((seg, i) => {
-      if (seg.type === 2) { // M
-        cur = { points: [], closed: false }
-        subpaths.push(cur)
-        cur.points.push({ idx: i, seg })
-      } else if (seg.type === 1) { // Z
-        if (cur) { cur.closed = true }
-      } else if (cur) { // L / C / ... drawable point
-        cur.points.push({ idx: i, seg })
-      }
-    })
-
-    const emitPt = (pt, role) => {
-      const it = pt.seg.item
-      const x = shortFloat(it.x)
-      const y = shortFloat(it.y)
-      if (role === 'M') { return `M ${x} ${y}` }
-      if (pt.seg.type === 6) { // cubic curve
-        return `C ${shortFloat(it.x1)} ${shortFloat(it.y1)} ` +
-        `${shortFloat(it.x2)} ${shortFloat(it.y2)} ${x} ${y}`
-      }
-      return `L ${x} ${y}`
-    }
-
-    const out = []
-    subpaths.forEach((sp) => {
-      const survivors = sp.points.filter((p) => !deleted.has(p.idx))
-
-      // Nothing left to render in this sub-path: drop it.
-      if (survivors.length < 2) { return }
-
-      const parts = survivors.map((p, i) => emitPt(p, i === 0 ? 'M' : 'orig'))
-      if (sp.closed) { parts.push('Z') }
-      out.push(parts.join(' '))
-    })
-
-    return out.join(' ').trim()
-  }
+  const buildReconnectedPathData = (pathObj) => deleteNodesD(pathObj.segs, pathObj.selected_pts)
 
   /**
 * Group: Path edit functions.
@@ -1432,6 +1390,40 @@ export const init = (canvas) => {
         path.elem.setAttribute('d', path.elem.getAttribute('d'))
       }
       path.endChanges('Delete path node(s)', { deletedIndexes })
+    }
+
+    /**
+  * Move the selected nodes (with their handles) to their average position:
+  * `'h'` onto a common horizontal line, `'v'` onto a common vertical line,
+  * `'both'` onto one point. One undo step.
+  * @param {'h'|'v'|'both'} [axis]
+  * @returns {void}
+  */
+    averageSelectedNodes (axis = 'both') {
+      if (!path || path.selected_pts.length < 2) { return }
+      const newD = averageNodesD(path.segs, path.selected_pts, axis)
+      if (!newD) { return }
+      path.storeD()
+      path.elem.setAttribute('d', newD)
+      path.init()
+      path.clearSelection()
+      path.endChanges('Average path node(s)', { axis })
+    }
+
+    /**
+  * Add an anchor at the middle of every segment of the path being edited,
+  * keeping its shape. One undo step.
+  * @returns {void}
+  */
+    addAnchorPoints () {
+      if (!path) { return }
+      const newD = addAnchorPointsD(path.segs)
+      if (!newD) { return }
+      path.storeD()
+      path.elem.setAttribute('d', newD)
+      path.init()
+      path.clearSelection()
+      path.endChanges('Add anchor points')
     }
 
     // Can't seem to use `@borrows` here, so using `@see`
