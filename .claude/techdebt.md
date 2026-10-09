@@ -217,6 +217,10 @@ Small.
   defaults to `points=corner` (Illustrator's default; VectorCraft's missing-key
   default is smooth), and Pucker & Bloat / Twist default to a visible
   amount (30 / 50°) so a freshly added effect does something.
+- **Warp on a flat box borrows the other axis.** VectorCraft clamps a
+  zero-height box to 1e-9, so warping a straight horizontal line moves it by
+  ~1e-9 px; `core/warp.js` uses the other axis' half-size instead so Arc on a
+  line visibly bends it. Warp on text is out of scope (no glyph outlines).
 - **Preview selection box.** While previewing, the original element is hidden
   and a clone shows the result, so the selection box keeps the *original's*
   bbox until Apply. Cosmetic.

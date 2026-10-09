@@ -217,7 +217,12 @@ export default {
       const available = svgCanvas.listLiveEffects().length > 0
       const usable = !!elem && svgCanvas.getMode() !== 'pathedit' &&
         (svgCanvas.canApplyLiveEffect(elem) || elem.hasAttribute('se:fx-d'))
-      showPanel(available && usable)
+      // Text can't take effects (no glyph outlines without a font parser): say
+      // so instead of silently hiding the section.
+      const isText = elem?.tagName === 'text' && svgCanvas.getMode() !== 'pathedit'
+      showPanel(available && (usable || isText))
+      $id(`${P}-body`).style.display = usable ? '' : 'none'
+      $id(`${P}-hint`).style.display = isText && !usable ? '' : 'none'
       if (!editing) renderRows()
     }
 
@@ -229,12 +234,15 @@ export default {
         panelTemplate.innerHTML = `
           <div id="${P}-panel" class="sidepanel_section" style="display:none">
             <div class="sidepanel_section_label">${tr('label')}</div>
-            <div id="${P}-rows"></div>
-            <div id="${P}-editor" style="display:none"></div>
-            <div class="${P}-actions">
-              <se-select id="${P}-add" title="${tr('add')}"></se-select>
-              <button type="button" id="${P}-expand" class="${P}-btn" style="display:none"
-                title="${tr('expandTitle')}">${tr('expand')}</button>
+            <p id="${P}-hint" class="${P}-hint" style="display:none">${tr('textHint')}</p>
+            <div id="${P}-body">
+              <div id="${P}-rows"></div>
+              <div id="${P}-editor" style="display:none"></div>
+              <div class="${P}-actions">
+                <se-select id="${P}-add" title="${tr('add')}"></se-select>
+                <button type="button" id="${P}-expand" class="${P}-btn" style="display:none"
+                  title="${tr('expandTitle')}">${tr('expand')}</button>
+              </div>
             </div>
           </div>
         `

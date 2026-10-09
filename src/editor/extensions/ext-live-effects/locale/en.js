@@ -9,5 +9,6 @@ export default {
   expandTitle: 'Bake the effects into the path and stop them being editable',
   apply: 'Apply',
   cancel: 'Cancel',
-  randomize: 'Randomize'
+  randomize: 'Randomize',
+  textHint: 'Live effects apply to shapes and paths, not text.'
 }

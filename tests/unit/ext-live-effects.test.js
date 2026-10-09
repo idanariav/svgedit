@@ -104,10 +104,18 @@ describe('ext-live-effects', function () {
   it('stays hidden while the selection cannot take effects, shows once it can', function () {
     registerEffect()
     const text = svgCanvas.addSVGElementsFromJson({ element: 'text', attr: { id: 'txt', x: 0, y: 0 } })
-    select(text)
+    const group = svgCanvas.addSVGElementsFromJson({ element: 'g', attr: { id: 'grp' } })
+    select(group)
     assert.equal(display(`${P}-panel`), 'none')
     select(addRect())
     assert.equal(display(`${P}-panel`), '')
+    assert.equal(display(`${P}-body`), '')
+    assert.equal(display(`${P}-hint`), 'none')
+    // text: explained rather than silently hidden
+    select(text)
+    assert.equal(display(`${P}-panel`), '')
+    assert.equal(display(`${P}-body`), 'none')
+    assert.equal(display(`${P}-hint`), '')
   })
 
   it('lists registered effects in the Add select', function () {
