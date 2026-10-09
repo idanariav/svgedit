@@ -322,7 +322,8 @@ via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
 `src/editor/classLibrary.js`. A preset may also carry a `shadow` block
 (`{angle,length,blur,opacity,color}`) captured/re-applied via `svgEditor.shadowApi`
 (from ext-shadow) — a drop shadow can't be stamped as a flat attribute, so it is
-rebuilt per-element into the same undo batch on apply.
+rebuilt per-element into the same undo batch on apply. Outline (`outlineApi`) and
+glow (`glowApi`, `glow: {outer, inner}`) presets are captured and re-applied the same way.
 
 **Exception — custom palette swatches (`se-palette` / `BottomPanel.handlePalette`):**
 a plain palette swatch has no alpha channel. Clicking one only changes

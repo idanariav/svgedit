@@ -797,6 +797,13 @@ hr {
 #shadow_panel[data-off] .sidepanel_section_grid,
 #shadow_panel[data-off] .shadow_panel_footer { opacity: 0.45; }
 
+/* Glow: an outer and an inner group; a group whose blur is 0 reads as off */
+.glow_group + .glow_group { margin-top: 14px; }
+.glow_group_label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.glow_group[data-off] .sidepanel_section_grid,
+.glow_group[data-off] .shadow_panel_footer { opacity: 0.45; }
+.glow_group .shadow_panel_footer se-select { margin-left: auto; }
+
 /* ── Color-shift toggles / reset ──────────────────────────────────── */
 .color_shift_toggles {
   display: flex;

@@ -10,12 +10,15 @@
  * Preset shape:
  *   { name: string, scope: 'text'|'shape'|'any', attrs: { [attr]: string },
  *     shadow?: { angle, length, blur, opacity, color },
- *     outline?: { width, color, opacity } }
+ *     outline?: { width, color, opacity },
+ *     glow?: { outer: { blur, color, opacity } | null,
+ *              inner: { blur, color, opacity, source } | null } }
  *
- * A drop shadow or outline is not a plain attribute (each is a `filter`
+ * A drop shadow, outline or glow is not a plain attribute (each is a `filter`
  * reference plus filter primitives in <defs>), so they are captured separately
- * as structured params under `shadow` / `outline` and re-applied via the shadow
- * and outline extension APIs rather than stamped like the flat `attrs`.
+ * as structured params under `shadow` / `outline` / `glow` and re-applied via
+ * the shadow, outline and glow extension APIs rather than stamped like the flat
+ * `attrs`.
  *
  * Reads/writes go through the optional host storage adapter when one is
  * registered (see userDataAdapter.js); otherwise they fall back to the
@@ -252,7 +255,7 @@ export const nextClassString = (elem, name) => {
  * `<se-class-select>`'s `applyClass`, which stamps onto an already-inserted,
  * possibly-selected element and must record each change for undo.
  *
- * Shadow/outline (structured, filter-based) presets are not applied here —
+ * Shadow/outline/glow (structured, filter-based) presets are not applied here —
  * defaults only cover the flat attribute set.
  * @param {Element} elem
  * @param {{name:string,attrs:Object}} preset

@@ -380,10 +380,11 @@ container simply hides everything inside it.
 | `#clipmask_panel` | element has `clip-path`/`mask` | `clipmask_feather` (−50…50; +soft edge / −rim; applying to a hard clip auto-converts to a mask), `clipmask_release` |
 | `#shadow_panel` | injected by ext-shadow | see ext-shadow below |
 | `#outline_panel` | injected by ext-outline; line-family only | see ext-outline below |
+| `#glow_panel` "Glow" | injected by ext-glow after `#outline_panel`; any single selected element (text too) | `glow_feather_radius` (feather, 0 = off), `glow_outer_blur` / `glow_outer_opacity` / `glow_outer_color`, `glow_inner_blur` / `glow_inner_opacity` / `glow_inner_color` / `glow_inner_source` (`se-select` edge\|centre), `glow_remove`. Blur 0 = no glow; one undo step per edit; see ext-glow below |
 | `#ext-live-effects-panel` "Distort" | injected by ext-live-effects; single element that can take effects (`path`/`rect`/`ellipse`/`circle`/`line`/`polyline`/`polygon`, not taper/corner-radius paths) **and** at least one effect registered | stack rows (✎/✕), `ext-live-effects-add` (`se-select`), `ext-live-effects-expand`, inline param editor (Apply/Cancel). Live preview adds no undo step; Apply/remove/expand are one undo step each. Primitives are swapped for a `<path>` (same id) on first apply. Effects: **Warp** (`core/warp.js`; 15 styles, bend, horizontal/vertical distortion, orientation) and (`core/live-effects-distort.js`) Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (closed shapes only; repaints as a stroke). Seeded effects start with a random seed and have a Randomize button. A selected `<text>` shows a hint ("Live effects apply to shapes and paths, not text.") instead of the controls. See `core/live-effects.js` |
 | `#color_shift_panel` | injected by ext-color-shift | see ext-color-shift below |
 
-ext-shadow, ext-outline, ext-live-effects, and ext-color-shift now inject into `#tab_effects`
+ext-shadow, ext-outline, ext-glow, ext-live-effects, and ext-color-shift now inject into `#tab_effects`
 (falling back to `#sidepanel_content`).
 
 ---
@@ -640,8 +641,13 @@ Flying button (left panel):
 - **Class-library integration:** exposes `svgEditor.outlineApi = { read, apply }`; the save popover shows an **outline** checklist row, storing `outline: {width,color,opacity}` on the preset.
 - Shares the single per-element filter with shadow via `fx-filter.js`; the two can be on the same line simultaneously.
 
-### Filter coexistence (ext-shadow + ext-outline)
-- SVG's `filter` attribute references only one `<filter>`. Both effects compose into ONE filter (`{id}_fx`, or a legacy `{id}_shadow` reused in place) via `fx-filter.js`, so shadow + outline coexist and are independently editable. A pre-existing *foreign* filter (e.g. blur) is saved and restored when both effects are removed — so an effect still cannot coexist with blur.
+### ext-glow — Outer / Inner Glow (`extensions/ext-glow/`)
+- Adds a "Glow" section to `#tab_effects` (`#glow_panel`), right after `#outline_panel`, for any single selected element (text included — neon headings). An **outer** group (Blur, Opacity %, colour), an **inner** group (the same plus `glow_inner_source`: Edge = inward from the edge, Centre = outward from the middle) and a **Feather** group (`glow_feather_radius`: fades the object's own edges inward; the outline, glows and shadow then follow the soft edge). **Blur 0 = no glow**; a group whose blur is 0 is dimmed (`data-off`). Defaults: blur 5, opacity 75 %, outer `#ffff00`, inner `#ffffff`.
+- Owns only the glow and feather slices of the shared composer spec, so a shadow / outline on the element is preserved. One undo step per edit. `getBlur()` ignores composer-owned filters (`data-fx` / `_fx` / `_shadow`), so a glow's blur never reads as the element's Blur value.
+- `svgEditor.glowApi` (`read` / `apply`) lets class presets capture and re-apply glow + feather (`preset.glow = {outer, inner, feather}`).
+
+### Filter coexistence (ext-shadow + ext-outline + ext-glow)
+- SVG's `filter` attribute references only one `<filter>`. All the effects compose into ONE filter (`{id}_fx`, or a legacy `{id}_shadow` reused in place) via `fx-filter.js`, so shadow + outline + glow coexist and are independently editable (the shadow is cast by the shape plus its glow). A pre-existing *foreign* filter (e.g. blur) is saved and restored when both effects are removed — so an effect still cannot coexist with blur.
 - `feMorphology`/`feMerge` need `result` in the sanitize whitelist (added in `sanitize.js`) to survive save/load.
 
 ### ext-fonts — Custom Fonts (`extensions/ext-fonts/`)

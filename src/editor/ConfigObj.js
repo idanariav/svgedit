@@ -240,6 +240,7 @@ export default class ConfigObj {
       'ext-shadow',
       'ext-live-effects',
       'ext-outline',
+      'ext-glow',
       'ext-color-shift',
       'ext-fonts',
       'ext-eyedropper'

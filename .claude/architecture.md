@@ -83,6 +83,7 @@ svgedit/
 │   │   ├── ext-shadow/            # Drop shadow filter (feDropShadow)
 │   │   ├── ext-live-effects/      # "Distort" panel — re-editable se:fx effect stack (core/live-effects.js glue)
 │   │   ├── ext-outline/           # Second outline/halo color for line strokes (feMorphology)
+│   │   ├── ext-glow/              # Outer / inner glow (shared fx-filter composer)
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button

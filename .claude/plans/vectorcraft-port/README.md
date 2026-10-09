@@ -27,7 +27,7 @@ the user says otherwise; the **Depends on** column is a hard prerequisite.
 | T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | todo |
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | todo |
 | T1.6 | Shaper tool (rough stroke → clean shape) | — | todo |
-| T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | todo |
+| T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |
 | T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | todo |
 | T2.2 | Ruler guides | — (T2.1 helps) | todo |
 | T2.3 | Pen continues / joins open paths | T1.4 (join helper) | todo |

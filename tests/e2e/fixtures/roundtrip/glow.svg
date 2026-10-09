@@ -1,0 +1,109 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <defs>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="175" id="svg_2_fx" width="265" x="-2.5" y="-2.5">
+   <feGaussianBlur in="SourceAlpha" result="fx_oglow_blur" stdDeviation="7"/>
+   <feFlood flood-color="#ffd400" flood-opacity="0.75" result="fx_oglow_flood"/>
+   <feComposite in="fx_oglow_flood" in2="fx_oglow_blur" operator="in" result="fx_oglow"/>
+   <feMerge result="fx_oglowed">
+    <feMergeNode in="fx_oglow"/>
+    <feMergeNode in="SourceGraphic"/>
+   </feMerge>
+   <feComponentTransfer in="SourceAlpha" result="fx_iglow_inv">
+    <feFuncA tableValues="1 0" type="table"/>
+   </feComponentTransfer>
+   <feGaussianBlur in="fx_iglow_inv" result="fx_iglow_blur" stdDeviation="10"/>
+   <feFlood flood-color="#ff3366" flood-opacity="0.75" result="fx_iglow_flood"/>
+   <feComposite in="fx_iglow_flood" in2="fx_iglow_blur" operator="in" result="fx_iglow_col"/>
+   <feComposite in="fx_iglow_col" in2="SourceAlpha" operator="in" result="fx_iglow"/>
+   <feMerge result="fx_iglowed">
+    <feMergeNode in="fx_oglowed"/>
+    <feMergeNode in="fx_iglow"/>
+   </feMerge>
+  </filter>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="95" id="svg_3_fx" width="135" x="287.5" y="37.5">
+   <feGaussianBlur in="SourceAlpha" result="fx_iglow_blur" stdDeviation="12.5"/>
+   <feFlood flood-color="#33ffcc" flood-opacity="0.75" result="fx_iglow_flood"/>
+   <feComposite in="fx_iglow_flood" in2="fx_iglow_blur" operator="in" result="fx_iglow_col"/>
+   <feComposite in="fx_iglow_col" in2="SourceAlpha" operator="in" result="fx_iglow"/>
+   <feMerge result="fx_iglowed">
+    <feMergeNode in="SourceGraphic"/>
+    <feMergeNode in="fx_iglow"/>
+   </feMerge>
+  </filter>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="127" id="svg_4_fx" width="237.91" x="13.5" y="144.5">
+   <feGaussianBlur in="SourceAlpha" result="fx_oglow_blur" stdDeviation="8"/>
+   <feFlood flood-color="#ff00ff" flood-opacity="0.75" result="fx_oglow_flood"/>
+   <feComposite in="fx_oglow_flood" in2="fx_oglow_blur" operator="in" result="fx_oglow"/>
+   <feMerge result="fx_oglowed">
+    <feMergeNode in="fx_oglow"/>
+    <feMergeNode in="SourceGraphic"/>
+   </feMerge>
+   <feComponentTransfer in="SourceAlpha" result="fx_iglow_inv">
+    <feFuncA tableValues="1 0" type="table"/>
+   </feComponentTransfer>
+   <feGaussianBlur in="fx_iglow_inv" result="fx_iglow_blur" stdDeviation="5"/>
+   <feFlood flood-color="#00e5ff" flood-opacity="0.75" result="fx_iglow_flood"/>
+   <feComposite in="fx_iglow_flood" in2="fx_iglow_blur" operator="in" result="fx_iglow_col"/>
+   <feComposite in="fx_iglow_col" in2="SourceAlpha" operator="in" result="fx_iglow"/>
+   <feMerge result="fx_iglowed">
+    <feMergeNode in="fx_oglowed"/>
+    <feMergeNode in="fx_iglow"/>
+   </feMerge>
+  </filter>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="125" id="svg_5_fx" width="195" x="287.5" y="177.5">
+   <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="fx_dil"/>
+   <feFlood flood-color="#000000" flood-opacity="1" result="fx_flood"/>
+   <feComposite in="fx_flood" in2="fx_dil" operator="in" result="fx_outline"/>
+   <feMerge result="fx_outlined">
+    <feMergeNode in="fx_outline"/>
+    <feMergeNode in="SourceGraphic"/>
+   </feMerge>
+   <feGaussianBlur in="fx_outlined" result="fx_oglow_blur" stdDeviation="6"/>
+   <feFlood flood-color="#ffff00" flood-opacity="0.75" result="fx_oglow_flood"/>
+   <feComposite in="fx_oglow_flood" in2="fx_oglow_blur" operator="in" result="fx_oglow"/>
+   <feMerge result="fx_oglowed">
+    <feMergeNode in="fx_oglow"/>
+    <feMergeNode in="fx_outlined"/>
+   </feMerge>
+   <feComponentTransfer in="SourceAlpha" result="fx_iglow_inv">
+    <feFuncA tableValues="1 0" type="table"/>
+   </feComponentTransfer>
+   <feGaussianBlur in="fx_iglow_inv" result="fx_iglow_blur" stdDeviation="6"/>
+   <feFlood flood-color="#ffffff" flood-opacity="0.75" result="fx_iglow_flood"/>
+   <feComposite in="fx_iglow_flood" in2="fx_iglow_blur" operator="in" result="fx_iglow_col"/>
+   <feComposite in="fx_iglow_col" in2="SourceAlpha" operator="in" result="fx_iglow"/>
+   <feMerge result="fx_iglowed">
+    <feMergeNode in="fx_oglowed"/>
+    <feMergeNode in="fx_iglow"/>
+   </feMerge>
+   <feDropShadow dx="4" dy="6.93" flood-color="#000000" flood-opacity="0.5" in="fx_iglowed" stdDeviation="4"/>
+  </filter>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="105" id="svg_6_fx" width="175" x="57.5" y="297.5">
+   <feGaussianBlur in="SourceAlpha" result="fx_feather_soft" stdDeviation="12"/>
+   <feComposite in="SourceGraphic" in2="fx_feather_soft" operator="in" result="fx_feather_mul"/>
+   <feComposite in="fx_feather_mul" in2="SourceAlpha" operator="in" result="fx_feathered"/>
+  </filter>
+  <filter color-interpolation-filters="sRGB" data-fx="1" filterUnits="userSpaceOnUse" height="111" id="svg_7_fx" width="196.33" x="256.5" y="305.5">
+   <feGaussianBlur in="SourceAlpha" result="fx_feather_soft" stdDeviation="4"/>
+   <feComposite in="SourceGraphic" in2="fx_feather_soft" operator="in" result="fx_feather_mul"/>
+   <feComposite in="fx_feather_mul" in2="SourceAlpha" operator="in" result="fx_feathered"/>
+   <feGaussianBlur in="fx_feathered" result="fx_oglow_blur" stdDeviation="7"/>
+   <feFlood flood-color="#00aaff" flood-opacity="0.75" result="fx_oglow_flood"/>
+   <feComposite in="fx_oglow_flood" in2="fx_oglow_blur" operator="in" result="fx_oglow"/>
+   <feMerge result="fx_oglowed">
+    <feMergeNode in="fx_oglow"/>
+    <feMergeNode in="fx_feathered"/>
+   </feMerge>
+  </filter>
+ </defs>
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <rect fill="#1b2a49" filter="url(#svg_2_fx)" height="110" id="svg_2" opacity="0.5" paint-order="stroke" stroke-width="5" width="200" x="30" y="30"/>
+  <path d="m300,40l100,0l20,90l-130,0l10,-90z" fill="#2a2a2a" filter="url(#svg_3_fx)" id="svg_3" opacity="0.5" paint-order="stroke" stroke-width="5"/>
+  <text fill="#ffffff" filter="url(#svg_4_fx)" font-family="sans-serif" font-size="64" id="svg_4" opacity="0.5" paint-order="stroke" stroke-width="5" x="40" y="230">NEON</text>
+  <path d="m320,200l140,0l-20,80l-130,-10l10,-70z" fill="#e0e0e0" filter="url(#svg_5_fx)" id="svg_5" opacity="0.5" paint-order="stroke" stroke-width="5"/>
+  <path d="m60,310l140,-10l30,80l-140,20l-30,-90z" fill="#cc3333" filter="url(#svg_6_fx)" id="svg_6" opacity="0.5" paint-order="stroke" stroke-width="5"/>
+  <text fill="#222222" filter="url(#svg_7_fx)" font-family="sans-serif" font-size="56" id="svg_7" opacity="0.5" paint-order="stroke" stroke-width="5" x="280" y="380">SOFT</text>
+ </g>
+</svg>

@@ -203,6 +203,20 @@ describe('se-class-select', () => {
       expect(outlineApi.apply).toHaveBeenCalledWith(rect, outline, expect.anything())
     })
 
+    it('calls glowApi.apply when the preset has a glow', () => {
+      const rect = makeRect()
+      svgCanvas.getSelectedElements.mockReturnValue([rect])
+      const glow = { outer: { blur: 6, color: '#ff0', opacity: 0.5 }, inner: null }
+      getClass.mockReturnValue({ name: 'neon', scope: 'shape', attrs: {}, glow })
+      const glowApi = { apply: vi.fn(), read: vi.fn() }
+      installMockSvgEditor({ svgCanvas, topPanel, glowApi })
+      const el = mountElement('se-class-select')
+
+      el.applyClass('neon')
+
+      expect(glowApi.apply).toHaveBeenCalledWith(rect, glow, expect.anything())
+    })
+
     it('does not add to history when nothing actually changed', () => {
       const rect = makeRect('same')
       svgCanvas.getSelectedElements.mockReturnValue([rect])
@@ -337,6 +351,25 @@ describe('se-class-select', () => {
       const row = el.$checklist.querySelector('input[data-outline]')
       expect(row).toBeTruthy()
       expect(row.checked).toBe(true)
+    })
+
+    it('renders a glow checklist row, and save() captures the glow', () => {
+      getClassesForScope.mockReturnValue([])
+      getClass.mockReturnValue(undefined)
+      const glow = { outer: { blur: 6, color: '#ff0', opacity: 0.5 }, inner: null }
+      const glowApi = { read: vi.fn(() => glow) }
+      installMockSvgEditor({ svgCanvas, topPanel, glowApi })
+      const el = mountElement('se-class-select')
+      el.refresh(makeRect())
+
+      el.openSave()
+      const row = el.$checklist.querySelector('input[data-glow]')
+      expect(row).toBeTruthy()
+      expect(row.checked).toBe(true)
+      el.$name.value = 'neon'
+      el.save()
+
+      expect(saveClass).toHaveBeenCalledWith(expect.objectContaining({ name: 'neon', glow }))
     })
 
     it('openSave checks the default checkbox when this preset is the tag\'s current default', () => {

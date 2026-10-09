@@ -1474,7 +1474,10 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
           val = /** @type {Element} */ (blur.firstChild).getAttribute('stdDeviation')
         } else {
           const filterElem = this.getRefElem(filterUrl)
-          const blurElem = getFeGaussianBlur(filterElem)
+          // The effect composer's filter (shadow / outline / glow) is not a
+          // blur: a glow's feGaussianBlur must not read as the Blur value.
+          const composed = filterElem?.hasAttribute('data-fx') || /_(fx|shadow)$/.test(filterElem?.id || '')
+          const blurElem = composed ? null : getFeGaussianBlur(filterElem)
           if (blurElem !== null) {
             val = blurElem.getAttribute('stdDeviation')
           }

@@ -395,15 +395,18 @@ class SeClassSelect extends HTMLElement {
       if (Object.keys(oldAttrs).length) {
         batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
       }
-      // A captured drop shadow / outline can't be stamped as a flat attribute —
+      // A captured drop shadow / outline / glow can't be stamped as a flat attribute —
       // rebuild the per-element effect filter via the extension APIs, adding the
       // undo subcommands to this same batch. Both share one filter (fx-filter),
-      // so order doesn't matter; each preserves the other's slice.
+      // so order doesn't matter; each preserves the others' slices.
       if (preset?.shadow && ownerEditor(this).shadowApi) {
         ownerEditor(this).shadowApi.apply(elem, preset.shadow, batch)
       }
       if (preset?.outline && ownerEditor(this).outlineApi) {
         ownerEditor(this).outlineApi.apply(elem, preset.outline, batch)
+      }
+      if (preset?.glow && ownerEditor(this).glowApi) {
+        ownerEditor(this).glowApi.apply(elem, preset.glow, batch)
       }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
@@ -502,6 +505,24 @@ class SeClassSelect extends HTMLElement {
       row.append(cb, nameEl, valEl)
       this.$checklist.append(row)
     }
+
+    // Glow (outer / inner) and feather are captured as structured params too.
+    const glow = ownerEditor(this).glowApi?.read(elem) || editing?.glow
+    if (glow) {
+      const row = document.createElement('label')
+      row.className = 'checkrow'
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.dataset.glow = 'true'
+      cb.checked = true
+      const nameEl = document.createElement('span')
+      nameEl.textContent = 'glow'
+      const valEl = document.createElement('span')
+      valEl.className = 'val'
+      valEl.textContent = [glow.outer && `out ${glow.outer.blur}`, glow.inner && `in ${glow.inner.blur}`, glow.feather && `feather ${glow.feather.radius}`].filter(Boolean).join(' · ')
+      row.append(cb, nameEl, valEl)
+      this.$checklist.append(row)
+    }
   }
 
   save () {
@@ -530,6 +551,11 @@ class SeClassSelect extends HTMLElement {
     const outline = outlineCb?.checked
       ? (ownerEditor(this).outlineApi?.read(elem) || this._editingPreset?.outline)
       : undefined
+    // Capture the glow (structured params) when its row is checked.
+    const glowCb = this.$checklist.querySelector('input[data-glow]')
+    const glow = glowCb?.checked
+      ? (ownerEditor(this).glowApi?.read(elem) || this._editingPreset?.glow)
+      : undefined
     const existing = getClass(name)
     if (existing && this._editingPreset?.name !== name) {
       if (!window.confirm(`A class named "${name}" already exists. Overwrite it?`)) {
@@ -539,6 +565,7 @@ class SeClassSelect extends HTMLElement {
     const preset = { name, scope, attrs }
     if (shadow) preset.shadow = shadow
     if (outline) preset.outline = outline
+    if (glow) preset.glow = glow
     saveClass(preset)
     // Persist the "default for new <tag> objects" toggle. Only clear the
     // existing default when it pointed at *this* preset (by its old name) —
