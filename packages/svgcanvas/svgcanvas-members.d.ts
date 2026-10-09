@@ -193,8 +193,9 @@ export interface AttachedMembers {
   cancelSmoothPath(): void
   applyTaperStroke(opts?: { start?: number, end?: number }): void
   removeTaperStroke(): void
-  applyCornerRadius(r: number): void
+  applyCornerRadius(r?: number, opts?: { kind?: 'r' | 'i' | 'c', corners?: number[] }): Element | null
   canRoundCorners(elem: Element): boolean
+  getCornerSettings(elem?: Element): Array<{ index: number, radius: number, kind: 'r' | 'i' | 'c', max: number }>
 
   // Live effects (se:fx stack)
   registerLiveEffect(name: string, def: object): void

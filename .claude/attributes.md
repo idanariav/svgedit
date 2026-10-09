@@ -186,6 +186,17 @@ over it) instead of as a hole.
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** in select mode.
 
+### Live-corner attributes (`se:corner-radius`, `se:orig-d`)
+
+A path whose straight-sided corners are cut (`packages/svgcanvas/core/corner-radius.js`, UI in ext-corner-radius). `se:orig-d` is the uncut geometry (canonical absolute `M/L/C/Z`); `d` is regenerated from it. Mutually exclusive with `se:fx-d` / `se:taper-d`.
+
+| `se:corner-radius` value | Meaning |
+|---|---|
+| `8` | Every corner round, radius 8 (the original format; renders exactly as before) |
+| `8:i,0,5:c` | List indexed by anchor index (all subpaths counted in order); each entry `radius[:kind]`, kind `r` round (default), `i` inverted round, `c` chamfer; missing / non-corner entries are 0. A one-entry list is written `8:r` so it is not read as the single-number form |
+
+A corner is an anchor with no handles between two straight sides that meet at an angle (the path may curve elsewhere). Each cut is trimmed `min(r / tan(θ/2), side₁/2, side₂/2)` from the corner, so radii stop at half the shorter side. Round cuts are SVG arcs tangent to both sides; inverted cuts are arcs centred on the corner; chamfers are straight lines — all three share their end points. A transform baked into the path scales the radii uniformly (`remapCornerSource`). If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (compared within 0.1px because the saver rewrites `d`).
+
 ### Live-effect attributes (`se:fx`, `se:fx-d`)
 
 A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-effects.js`, UI in ext-live-effects):

@@ -1,5 +1,8 @@
 export default {
   name: 'Corner rounding',
   label: 'Corners',
-  radius: 'R'
+  radius: 'R',
+  kind_r: 'Round corners',
+  kind_i: 'Inverted round corners',
+  kind_c: 'Chamfered corners'
 }

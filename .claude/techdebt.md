@@ -262,3 +262,12 @@ tooltips shortened to the name. Remaining:
 - The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.
 - Shapes shows doubled lines where its artwork has holes.
 - The "none" swatch is still faint in the dark theme. Small.
+
+## Live Corners (`se:corner-radius`): follow-ups from T1.3
+
+Done: per-corner radius + kind (round / inverted / chamfer) on any path's straight-sided corners, rects and polygons convert to a path on first use; the single-number format renders exactly as before (the arc construction was kept, not VectorCraft's cubic approximation, so saved drawings do not move — verified byte-identical against the old implementation on 3,200 random shapes). Remaining:
+- **No per-corner UI.** The panel edits every corner; per-corner values only come from the attribute / `applyCornerRadius(r, {kind, corners})`. VectorCraft's on-canvas widgets (`crates/tools/src/corners.rs`: drag to change radius, Alt-click cycles kind) and "selected anchors in pathedit limit the corners the panel edits" are not ported. Pathedit still shows the *cut* anchors and drops the attrs when `d` is edited, so editing the source in pathedit needs its own design.
+- **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
+- **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
+- **No stacking with live effects / taper** (same limit as the live-effects entry above).
+

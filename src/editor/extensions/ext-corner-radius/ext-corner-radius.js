@@ -1,27 +1,31 @@
 /**
  * @file ext-corner-radius.js
  *
- * "Corners" section in the right-panel Design tab: rounds the corners of the
- * selected straight-segment `<path>` / `<polygon>` / `<polyline>` with a
- * circular-arc fillet. Attribute-driven and re-editable — the geometry and
- * radius live on the element as `se:orig-d` / `se:corner-radius` and the
- * math is in `@svgedit/svgcanvas/core/corner-radius.js`
- * (`svgCanvas.applyCornerRadius` / `canRoundCorners`).
+ * "Corners" section in the right-panel Design tab (Live Corners): cuts the
+ * corners of the selected `<path>` / `<polygon>` / `<polyline>` / `<rect>` —
+ * every anchor where two straight sides meet, even on a path that curves
+ * elsewhere — with a radius and a kind (round, inverted round, chamfer).
+ * Attribute-driven and re-editable — the geometry and choices live on the
+ * element as `se:orig-d` / `se:corner-radius` and the math is in
+ * `@svgedit/svgcanvas/core/corner-radius.js` (`svgCanvas.applyCornerRadius` /
+ * `canRoundCorners` / `getCornerSettings`). The radius field and kind buttons
+ * edit every corner; per-corner values written by other means (the attribute
+ * accepts a list) are kept and shown.
  *
- * If the rounded `d` is later rewritten by something other than the rounding
- * pipeline (e.g. node editing in pathedit mode), the stored source no longer
- * matches — the rounding attributes are then dropped so the user edits what
- * they see (the shape itself is untouched).
+ * If the cut `d` is later rewritten by something other than this pipeline
+ * (e.g. node editing in pathedit mode), the stored source no longer matches —
+ * the attributes are then dropped so the user edits what they see (the shape
+ * itself is untouched).
  *
  * @license Apache-2.0
  */
 
 import {
-  parseStraightSubpaths, roundedPathD, subpathsToD,
-  CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR
+  isCornerStateCurrent, CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR
 } from '@svgedit/svgcanvas/core/corner-radius.js'
 
 const name = 'corner-radius'
+const KIND_ICONS = { r: 'round', i: 'inverted', c: 'chamfer' }
 
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
@@ -40,36 +44,45 @@ export default {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
 
+    // Last kind picked / seen; applied to corners when a radius is first set.
+    let curKind = 'r'
+
     /**
-     * Drop stale rounding attributes when the element's `d` was rewritten
-     * outside the rounding pipeline (pathedit, …).
+     * Drop stale corner attributes when the element's `d` was rewritten
+     * outside the corner pipeline (pathedit, …).
      * @param {Element} elem
-     * @returns {boolean} true when the element still carries valid rounding.
+     * @returns {boolean} true when the element still carries valid corners.
      */
     const reconcile = (elem) => {
-      const src = elem.getAttribute(CORNER_SOURCE_ATTR)
-      if (!src) return false
-      const radius = parseFloat(elem.getAttribute(CORNER_RADIUS_ATTR)) || 0
-      const subpaths = parseStraightSubpaths(src, elem.ownerDocument)
-      const expected = subpaths
-        ? (radius > 0 ? roundedPathD(subpaths, radius) : subpathsToD(subpaths))
-        : null
-      if (expected !== elem.getAttribute('d')) {
-        elem.removeAttribute(CORNER_SOURCE_ATTR)
-        elem.removeAttribute(CORNER_RADIUS_ATTR)
-        return false
+      if (isCornerStateCurrent(elem)) return true
+      elem.removeAttribute(CORNER_SOURCE_ATTR)
+      elem.removeAttribute(CORNER_RADIUS_ATTR)
+      return false
+    }
+
+    // The value the R field shows: a rect's own rounding until it is cut,
+    // otherwise the first cut corner's radius.
+    const shownRadius = (elem, cut) => {
+      if (cut.length) return cut[0].radius
+      return elem.tagName === 'rect' ? parseFloat(elem.getAttribute('rx')) || 0 : 0
+    }
+
+    const refresh = (elem) => {
+      const cut = svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0)
+      const kinds = new Set(cut.map((c) => c.kind))
+      if (kinds.size === 1) curKind = [...kinds][0]
+      $id('corner_radius_value').value = shownRadius(elem, cut)
+      for (const k of CORNER_KINDS) {
+        const btn = $id(`corner_kind_${k}`)
+        if (btn) btn.pressed = kinds.size ? kinds.has(k) : k === curKind
       }
-      return true
     }
 
     const showPanel = (on, elem) => {
       const panel = $id('corner_panel')
       if (!panel) return
       panel.style.display = on ? 'block' : 'none'
-      if (on && elem) {
-        $id('corner_radius_value').value =
-          parseFloat(elem.getAttribute(CORNER_RADIUS_ATTR)) || 0
-      }
+      if (on && elem) refresh(elem)
     }
 
     const update = (opts) => {
@@ -96,6 +109,10 @@ export default {
               <se-spin-input id="corner_radius_value" label="${svgEditor.i18next.t(`${name}:radius`)}"
                 min="0" max="500" step="1" value="0" title="${name}:label"></se-spin-input>
             </div>
+            <div class="sidepanel_btn_row" id="corner_kind_row">
+              ${CORNER_KINDS.map((k) => `<se-button id="corner_kind_${k}" title="${svgEditor.i18next.t(`${name}:kind_${k}`)}"
+                src="corner_${KIND_ICONS[k]}.svg"></se-button>`).join('')}
+            </div>
           </div>
         `
         // Inject into the Design tab right before the Object section (same
@@ -109,8 +126,22 @@ export default {
         }
         $id('corner_radius_value').addEventListener('change', (e) => {
           const r = Math.max(0, parseFloat(e.target.value) || 0)
-          svgCanvas.applyCornerRadius(r)
+          const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
+          // Only impose the panel's kind when every cut corner already shares
+          // it (or none is cut yet): a mixed set keeps its per-corner kinds.
+          const cut = elem ? svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0) : []
+          const uniform = new Set(cut.map((c) => c.kind)).size <= 1
+          svgCanvas.applyCornerRadius(r, uniform ? { kind: curKind } : {})
         })
+        for (const k of CORNER_KINDS) {
+          $id(`corner_kind_${k}`).addEventListener('click', () => {
+            curKind = k
+            const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
+            const cut = elem ? svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0) : []
+            if (cut.length) svgCanvas.applyCornerRadius(undefined, { kind: k })
+            else if (elem) refresh(elem)
+          })
+        }
       },
       selectedChanged (opts) {
         update(opts)
@@ -118,10 +149,7 @@ export default {
       elementChanged (opts) {
         const elem = opts.elems.filter(Boolean)[0]
         const panel = $id('corner_panel')
-        if (elem && panel && panel.style.display !== 'none') {
-          $id('corner_radius_value').value =
-            parseFloat(elem.getAttribute(CORNER_RADIUS_ATTR)) || 0
-        }
+        if (elem && panel && panel.style.display !== 'none') refresh(elem)
       }
     }
   }

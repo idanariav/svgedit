@@ -23,7 +23,7 @@ the user says otherwise; the **Depends on** column is a hard prerequisite.
 | T1.0 | Live-effect foundation (`se:fx` stack) | — | done — b99390d0 |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
-| T1.3 | Live Corners upgrade (per-corner radius + kind) | — | todo |
+| T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see techdebt.md) |
 | T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | todo |
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | todo |
 | T1.6 | Shaper tool (rough stroke → clean shape) | — | todo |

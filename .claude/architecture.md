@@ -72,7 +72,7 @@ svgedit/
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-frame-labels/      # Name label above each frame; double-click to rename
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
-│   │   ├── ext-corner-radius/     # "Corners" panel — arc-fillet rounding
+│   │   ├── ext-corner-radius/     # "Corners" panel — Live Corners (per-corner radius, round/inverted/chamfer)
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
 │   │   ├── ext-mirror/            # Mirror drawing mode (API-only) + live linked symmetry
 │   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
@@ -203,7 +203,7 @@ src/editor/index.html
 | `path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening via `paper-utils.js`) |
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
-| `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
+| `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `remapCornerSource` keeps the source in sync from `coords.js` |
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |
 | `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |
