@@ -186,6 +186,18 @@ over it) instead of as a hole.
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** in select mode.
 
+### Live-effect attributes (`se:fx`, `se:fx-d`)
+
+A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-effects.js`, UI in ext-live-effects):
+
+| Attribute | Value |
+|-----------|-------|
+| `se:fx` | Effect stack, applied left to right: `name(key=val,key=val);name(…)`. Numbers, `true`/`false`, or bare words. Unknown names are dropped on parse; a missing / non-finite / wrong-typed param falls back to the effect's default |
+| `se:fx-d` | Source geometry (absolute `M/L/C/Z`) the stack is applied to |
+| `d` | The baked result, regenerated from `se:fx-d` + `se:fx` |
+
+Mutually exclusive with `se:taper-d` and `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
+
 ---
 
 ## `<g>` — Group

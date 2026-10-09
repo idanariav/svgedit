@@ -1,0 +1,8 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <path d="m77.5,61.25l200,0l0,112.5l-200,0l0,-112.5z" fill="#3b82f6" id="svg_2" opacity="0.5" paint-order="stroke" se:fx="fxshift(dx=30,dy=10);fxgrow(amount=0.25,mode=corner)" se:fx-d="M60,60 L220,60 L220,150 L60,150 L60,60 Z" stroke="#1e3a8a" stroke-width="4"/>
+  <path d="m352,200c0,-26.52 21.48,-48 48,-48c26.52,0 48,21.48 48,48c0,26.52 -21.48,48 -48,48c-26.52,0 -48,-21.48 -48,-48z" fill="#f59e0b" id="svg_3" opacity="0.5" paint-order="stroke" se:fx="fxgrow(amount=-0.2,mode=smooth)" se:fx-d="M340,200 C340,166.850829 366.850829,140 400,140 C433.149171,140 460,166.850829 460,200 C460,233.149171 433.149171,260 400,260 C366.850829,260 340,233.149171 340,200 Z" stroke-width="5"/>
+ </g>
+</svg>

@@ -28,6 +28,7 @@
 
 import { NS } from './namespaces.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { FX_SOURCE_ATTR } from './live-effects.js'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
 export const CORNER_SOURCE_ATTR = 'se:orig-d'
@@ -218,6 +219,7 @@ export const init = (canvas) => {
    */
   const canRoundCorners = (elem) => {
     if (!elem) return false
+    if (elem.hasAttribute(FX_SOURCE_ATTR)) return false // exclusive with live effects
     if (elem.tagName === 'polygon' || elem.tagName === 'polyline') return true
     if (elem.tagName !== 'path') return false
     if (elem.hasAttribute(CORNER_SOURCE_ATTR)) return true

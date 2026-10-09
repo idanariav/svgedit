@@ -195,6 +195,25 @@ moving into `…` when the pane is short. Moving them automatically must not per
 temporary split as the user's saved order. Covered by `tests/e2e/top-bar-layout.spec.js`.
 Small.
 
+## Live effects (`se:fx`): follow-ups from T1.0
+
+- **No stacking with taper / corner radius.** v1 makes `se:fx-d` mutually
+  exclusive with `se:taper-d` and `se:orig-d` (`canApplyLiveEffect`,
+  `canTaperStroke`, `canRoundCorners`). Letting them stack means defining an
+  order (corners → effects → taper?) and a single source-of-truth attribute;
+  not attempted. Size M.
+- **Param labels aren't localized.** `ext-live-effects` builds its param form
+  from each effect's `defaults` keys and humanizes them (`dx` → "Dx"); only the
+  effect `label` and the panel chrome are translatable. Add per-effect
+  `labels` to the registry when a second locale needs them.
+- **`tests/e2e/fixtures/roundtrip/live-effects.svg` uses placeholder effect
+  names** (`fxshift`, `fxgrow`) because no real effect existed when T1.0
+  landed. It still proves `se:fx`/`se:fx-d` survive load → save → load;
+  regenerate it with real effects (Roughen/Warp) once T1.1/T1.2 ship.
+- **Preview selection box.** While previewing, the original element is hidden
+  and a clone shows the result, so the selection box keeps the *original's*
+  bbox until Apply. Cosmetic.
+
 ## Missing translations: extension-injected strings
 
 When an entry is missing, i18next returns the key, so `t('key') || 'Fallback'` never falls

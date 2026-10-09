@@ -424,6 +424,8 @@ align. Use `.span2` on a field to make it fill the full row (e.g. ID / Class).
 ```
 Each section sets `style.display: 'none'` until its trigger selection is active.
 
+`ext-live-effects` adds a "Distort" section to `#tab_effects` (`.sidepanel_section` + `.ext-live-effects-*` rules in `svgedit.css`, all on the primary tokens: `--field-bg/--field-border` rows, `--group-bg/--group-border` inline param editor, `--accent-soft/--accent-border/--accent` for the primary button).
+
 ### Layer-row cells (`#layerlist`)
 Each `tr.layer` has icon cells before the name. The visibility cell (`td.layervis`,
 hidden via `td.layerinvis * { display:none }`) and the **lock cell**:

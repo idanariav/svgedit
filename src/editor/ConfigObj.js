@@ -238,6 +238,7 @@ export default class ConfigObj {
       'ext-opensave',
       'ext-layer_view',
       'ext-shadow',
+      'ext-live-effects',
       'ext-outline',
       'ext-color-shift',
       'ext-fonts',

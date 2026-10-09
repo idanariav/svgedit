@@ -81,6 +81,7 @@ svgedit/
 │   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
 │   │   ├── ext-fonts/             # Font catalog + Google Fonts loading for the Text tab
 │   │   ├── ext-shadow/            # Drop shadow filter (feDropShadow)
+│   │   ├── ext-live-effects/      # "Distort" panel — re-editable se:fx effect stack (core/live-effects.js glue)
 │   │   ├── ext-outline/           # Second outline/halo color for line strokes (feMorphology)
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
@@ -93,7 +94,7 @@ svgedit/
 │
 ├── packages/svgcanvas/            # Core drawing engine (separate npm workspace)
 │   ├── svgcanvas.js               # SvgCanvas class (aggregates all core modules)
-│   ├── core/                      # 34 single-responsibility modules (see table below)
+│   ├── core/                      # 36 single-responsibility modules (see table below)
 │   └── common/                    # Shared utilities (browser.js, util.js, logger.js)
 │
 └── vite.config.mjs                # Build configuration (Vite)
@@ -203,6 +204,8 @@ src/editor/index.html
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Attribute-driven corner fillets (`se:corner-radius`/`se:orig-d`); `remapCornerSource` keeps the source in sync from `coords.js` |
+| `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
+| `live-effects.js` | Re-editable path effects (`se:fx` stack + `se:fx-d` source): effect registry (`registerLiveEffect`), `applyLiveEffects`/`removeLiveEffects`/`expandLiveEffects`/`getLiveEffects`, non-undo `previewLiveEffects`/`cancelLiveEffectsPreview`, `reconcileLiveEffects`; `remapFxSource` keeps the source in sync from `coords.js`. Mutually exclusive with taper/corner-radius. Foundation for the Distort/Warp effects |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
 | `image-crop.js` | Destructive re-encode crop for `<image>` elements — resamples the source pixels to just the cropped region via canvas `drawImage`, replacing `href`/`x`/`y`/`width`/`height` in one undo step; excludes vault-linked and transformed images. Own hand-rolled overlay/drag mechanics, not `select.js`'s `SelectorManager` |
 | `load-image.js` | Shared `loadImage(href)` — `HTMLImageElement` loader with CORS handling, used by both `image-crop.js` and `dialogs/traceImage.js` |

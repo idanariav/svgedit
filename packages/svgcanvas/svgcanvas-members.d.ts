@@ -196,6 +196,18 @@ export interface AttachedMembers {
   applyCornerRadius(r: number): void
   canRoundCorners(elem: Element): boolean
 
+  // Live effects (se:fx stack)
+  registerLiveEffect(name: string, def: object): void
+  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }> }>
+  canApplyLiveEffect(elem: Element): boolean
+  reconcileLiveEffects(elem: Element): boolean
+  getLiveEffects(): Array<{ name: string, params: Record<string, number | boolean | string> }>
+  previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
+  cancelLiveEffectsPreview(): void
+  applyLiveEffects(stack: Array<{ name: string, params?: object }>): Element | null
+  removeLiveEffects(): Element | null
+  expandLiveEffects(): Element | null
+
   // Image crop
   applyImageCrop(): Promise<void>
   cancelImageCrop(): void

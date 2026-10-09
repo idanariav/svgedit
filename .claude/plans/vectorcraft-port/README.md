@@ -20,7 +20,7 @@ the user says otherwise; the **Depends on** column is a hard prerequisite.
 
 | ID | Feature | Depends on | Status |
 |---|---|---|---|
-| T1.0 | Live-effect foundation (`se:fx` stack) | — | todo |
+| T1.0 | Live-effect foundation (`se:fx` stack) | — | done — uncommitted (working tree, 2026-10-09) |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | todo |
 | T1.2 | Warp effect (15 styles) | T1.0 | todo |
 | T1.3 | Live Corners upgrade (per-corner radius + kind) | — | todo |

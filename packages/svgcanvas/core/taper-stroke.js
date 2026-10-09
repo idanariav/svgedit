@@ -33,6 +33,7 @@ import { NS } from './namespaces.js'
 import { warn } from '../common/logger.js'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { FX_SOURCE_ATTR } from './live-effects.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
@@ -172,6 +173,7 @@ export const init = (canvas) => {
    */
   const canTaperStroke = (elem) => {
     if (!elem) return false
+    if (elem.hasAttribute(FX_SOURCE_ATTR)) return false // exclusive with live effects
     if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
     if (!['line', 'polyline', 'path'].includes(elem.tagName)) return false
     if ((elem.getAttribute('stroke') || 'none') === 'none') return false

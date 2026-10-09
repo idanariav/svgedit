@@ -718,6 +718,59 @@ hr {
 }
 .sidepanel_text_font se-font-select { flex: 1; min-width: 0; }
 
+/* ── Live effects (ext-live-effects) ──────────────────────────────── */
+.ext-live-effects-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 4px 0 10px;
+  margin-bottom: 6px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.ext-live-effects-row-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-live-effects-icon-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--icon);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ext-live-effects-icon-btn:hover { background: var(--icon-hover-bg); color: var(--icon-hover); }
+#ext-live-effects-editor {
+  margin: 4px 0 10px;
+  padding: 12px;
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: 8px;
+}
+.ext-live-effects-editor-title { font-size: 12.5px; font-weight: 600; color: var(--fg); margin-bottom: 10px; }
+.ext-live-effects-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); grid-column: 1 / -1; cursor: pointer; }
+.ext-live-effects-editor-footer,
+.ext-live-effects-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ext-live-effects-actions se-select { flex: 1; min-width: 0; }
+.ext-live-effects-btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  background: var(--field-bg);
+  color: var(--fg);
+  font: 500 13px var(--ui-font);
+  cursor: pointer;
+}
+.ext-live-effects-btn:hover { background: var(--icon-hover-bg); }
+.ext-live-effects-btn-primary { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+
 /* ── Shadow / Clip-Mask footers ───────────────────────────────────── */
 .shadow_panel_footer,
 .clipmask_panel_footer {
