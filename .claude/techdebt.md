@@ -89,6 +89,66 @@ typechecked against `Editor` by `npm run typecheck` and copied to
 Also open: generate the `svgcanvas.d.ts` from JSDoc instead of hand-writing it,
 and the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
 
+## Convert `packages/svgcanvas` core modules to TypeScript
+
+Raised 2026-10-09 while comparing svgedit with VectorCraft (Rust): most of
+the bugs this file records (`undefined` appended into `<defs>`, wrong
+element types, stale attribute names) are ones a strict compiler catches. Not started
+because nobody asked for it yet. The editor stays JavaScript; the goal is
+type safety in the canvas engine, not a rewrite.
+
+**Where things stand:** 31 of the 73 `core/` + `common/` modules carry
+`// @ts-check` (JSDoc types), checked by `npm run typecheck` with
+`noImplicitAny` and `strictNullChecks` **off**
+(`packages/svgcanvas/tsconfig.json`). Public types live in the hand-written
+`svgcanvas.d.ts` / `svgcanvas-members.d.ts` / `svgcanvas-internal.d.ts`,
+kept honest by `tests/unit/svgcanvas-dts-drift.test.js`. The entry above
+covers finishing that `@ts-check` rollout.
+
+**Decide first ❓ — `.ts` files or strict JSDoc?** Both give the same checks.
+Strict JSDoc (`checkJs`, as Svelte does) needs no toolchain change; `.ts`
+files are terser and let `tsc --emitDeclarationOnly` generate the d.ts.
+Either way, do steps 1–2 first, since they pay off immediately and are
+needed by both.
+
+1. **Finish `@ts-check`** on the remaining 42 modules (entry above).
+2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
+   (globally they give ~150 errors in `svgcanvas.js` alone, so use a
+   per-file opt-in, e.g. a second tsconfig listing the files already clean).
+3. **Only if `.ts` was chosen — toolchain:**
+   - Vite and Vitest already transpile `.ts` (no type checking at build
+     time; `npm run typecheck` stays the gate).
+   - Lint: `standard` doesn't lint TypeScript. Switch to `ts-standard` or
+     ESLint with `typescript-eslint` + the standard config, so `.js` and
+     `.ts` follow one style. This is the main cost.
+   - e2e coverage (`vite-plugin-istanbul` + nyc in `scripts/run-e2e.mjs`):
+     check that `.ts` files still map back to source.
+   - The canvas wires its modules together with `runGuardedInit` and
+     members attached at runtime (`AttachedMembers`); type that pattern
+     through an interface rather than rewriting it.
+4. **Convert leaf modules first** (no or few imports, pure math): `math.js`,
+   `units.js`, `namespaces.js`, `se-namespace.js`, `proportions.js`,
+   `geometry-remap-registry.js`, `common/util.js`. Then upward through the
+   import graph; `svgcanvas.js` last. One module per commit, tests green
+   after each.
+5. **Generate the declarations** from source and delete the hand-written
+   d.ts files (and probably the drift test, or point it at the generated
+   output). This also closes the "generate `svgcanvas.d.ts`" item above.
+
+**Don't break:** the published package shape (`main: dist/svgcanvas.js`,
+`types: svgcanvas.d.ts`), `src/editor/hostApi.d.ts`, which the Obsidian
+plugin consumes, and the self-contained `dist/editor/Editor.js` bundle. The
+plugin only sees built JS, so it is unaffected as long as those hold.
+
+**New code meanwhile:** modules added by the VectorCraft port plans
+(`.claude/plans/vectorcraft-port/`, e.g. `anchor-path.js`,
+`live-effects.js`, `bezier-fit.js`) should start with `// @ts-check` and
+full JSDoc types (or as `.ts` if the decision above has been made), so they
+don't add to this backlog.
+
+Effort: large in total (69+ files) but small per module; risky only in the
+toolchain step.
+
 ## Oversized modules (remaining)
 
 All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
