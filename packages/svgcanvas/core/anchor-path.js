@@ -48,9 +48,12 @@ const makeAnchor = (x, y) => ({ p: { x, y }, hIn: { x, y }, hOut: { x, y } })
  * segment that returns to the first anchor (explicit `L`/`C` before `Z`) is
  * folded into the closed subpath instead of producing a duplicate anchor.
  * @param {string} d
+ * @param {number} [closeTol] - How close the closing segment's end must be to
+ *   the start to count as "returns to the first anchor" (default: exact).
+ *   Path data re-serialised with rounding needs a looser value.
  * @returns {SubPath[]}
  */
-export const parseAnchors = (d) => {
+export const parseAnchors = (d, closeTol = EPS) => {
   let segments
   try {
     segments = new SvgPath(d || '').abs().unarc().unshort().segments
@@ -118,12 +121,18 @@ export const parseAnchors = (d) => {
       case 'Z':
         if (cur) {
           cur.closed = true
+          // Fold the closing segment(s) that return to the first anchor. With a
+          // tolerance, a curve that stops just short of the start followed by a
+          // tiny closing `L` (what the saver writes) folds too; the incoming
+          // handle comes from the curve.
           const first = cur.anchors[0]
-          const end = last()
-          if (cur.anchors.length > 1 && same(first.p, end.p)) {
-            first.hIn = end.hIn
-            cur.anchors.pop()
+          let handle = null
+          while (cur.anchors.length > 1 &&
+            Math.abs(first.p.x - last().p.x) <= closeTol && Math.abs(first.p.y - last().p.y) <= closeTol) {
+            const a = cur.anchors.pop()
+            if (!handle && !same(a.hIn, a.p)) handle = a.hIn
           }
+          if (handle) first.hIn = handle
         }
         cx = sx
         cy = sy
@@ -143,6 +152,25 @@ export const parseAnchors = (d) => {
  * @returns {boolean}
  */
 export const isLineSegment = (a, b) => same(a.hOut, a.p) && same(b.hIn, b.p)
+
+/**
+ * Whether an anchor has an incoming / outgoing handle.
+ * @param {Anchor} a
+ * @returns {boolean}
+ */
+export const hasIn = (a) => !same(a.hIn, a.p)
+export const hasOut = (a) => !same(a.hOut, a.p)
+
+/**
+ * Handle-less subpath through `pts`.
+ * @param {Pt[]} pts
+ * @param {boolean} closed
+ * @returns {SubPath}
+ */
+export const polyline = (pts, closed) => ({
+  closed,
+  anchors: pts.map((pt) => makeAnchor(pt.x, pt.y))
+})
 
 /**
  * Number of segments in a subpath (a closed one has a closing segment).
@@ -263,6 +291,43 @@ export const normalAt = (c, t) => {
   const len = Math.hypot(dx, dy)
   return len < 1e-12 ? { x: 0, y: 0 } : { x: dy / len, y: -dx / len }
 }
+
+/**
+ * Approximate arc length of a cubic (20-sample polyline).
+ * @param {Cubic} c
+ * @returns {number}
+ */
+export const cubicLength = (c) => {
+  let len = 0
+  let prev = c.p0
+  for (let k = 1; k <= 20; k++) {
+    const q = evalCubic(c, k / 20)
+    len += dist(prev, q)
+    prev = q
+  }
+  return len
+}
+
+/**
+ * Flatten subpaths to polylines. Closed subpaths come back with the start
+ * point repeated at the end.
+ * @param {SubPath[]} subpaths
+ * @returns {Array<{closed: boolean, pts: Pt[]}>}
+ */
+export const flattenSubpaths = (subpaths) => subpaths.map((sp) => {
+  const pts = [sp.anchors[0].p]
+  const n = sp.anchors.length
+  for (let i = 0; i < segmentCount(sp); i++) {
+    if (isLineSegment(sp.anchors[i], sp.anchors[(i + 1) % n])) {
+      pts.push(sp.anchors[(i + 1) % n].p)
+      continue
+    }
+    const c = segCubic(sp, i)
+    const steps = Math.min(100, Math.max(2, Math.ceil(polyLen(c) / 3)))
+    for (let k = 1; k <= steps; k++) pts.push(evalCubic(c, k / steps))
+  }
+  return { closed: sp.closed, pts }
+})
 
 const polyLen = (c) => dist(c.p0, c.p1) + dist(c.p1, c.p2) + dist(c.p2, c.p3)
 

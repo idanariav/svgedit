@@ -50,6 +50,14 @@ describe('anchor-path', function () {
       assert.equal(anchorsToD([sp]), 'M0,0 L10,0 L10,10 L0,0 Z')
     })
 
+    it('folds a closing anchor that misses the start by rounding, only with closeTol', function () {
+      const d = 'M0,0 L10,0 C10,10 0,10 0.04,0.03 Z'
+      assert.equal(parseAnchors(d)[0].anchors.length, 3)
+      const folded = parseAnchors(d, 0.1)[0]
+      assert.equal(folded.anchors.length, 2)
+      assert.deepEqual(folded.anchors[0].hIn, { x: 0, y: 10 })
+    })
+
     it('keeps a curved closing segment', function () {
       const [sp] = parseAnchors('M0,0 L10,0 C10,10 0,10 0,0 Z')
       assert.equal(sp.anchors.length, 2)

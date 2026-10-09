@@ -46,6 +46,8 @@ export default {
     /** @type {?{index: number, stack: Array<{name: string, params: Object}>}} */
     let editing = null
 
+    const randomSeed = () => 1 + Math.floor(Math.random() * 1e9)
+
     const effectDef = (effectName) => svgCanvas.listLiveEffects().find((e) => e.name === effectName)
 
     const selectedElem = () => {
@@ -156,7 +158,11 @@ export default {
       title.textContent = def.label
       const grid = document.createElement('div')
       grid.className = 'sidepanel_section_grid'
-      for (const key of Object.keys(def.defaults)) grid.append(buildField(def, key, working))
+      const fields = {}
+      for (const key of Object.keys(def.defaults)) {
+        fields[key] = buildField(def, key, working)
+        grid.append(fields[key])
+      }
       const footer = document.createElement('div')
       footer.className = `${P}-editor-footer`
       const apply = document.createElement('button')
@@ -175,6 +181,19 @@ export default {
       cancel.textContent = tr('cancel')
       cancel.addEventListener('click', cancelEdit)
       footer.append(apply, cancel)
+      if ('seed' in def.defaults) {
+        // Seeded effects (Roughen, Tweak, Scribble): re-roll the jitter pattern.
+        const randomize = document.createElement('button')
+        randomize.type = 'button'
+        randomize.className = `${P}-btn`
+        randomize.textContent = tr('randomize')
+        randomize.addEventListener('click', () => {
+          working.params.seed = randomSeed()
+          fields.seed.value = working.params.seed
+          svgCanvas.previewLiveEffects(editing.stack)
+        })
+        footer.append(randomize)
+      }
       host.replaceChildren(title, grid, footer)
       host.style.display = ''
       svgCanvas.previewLiveEffects(editing.stack)
@@ -232,7 +251,10 @@ export default {
           setTimeout(() => { const add = $id(`${P}-add`); if (add) add.value = '' }, 0)
           if (!def) return
           const stack = svgCanvas.getLiveEffects()
-          stack.push({ name: effectName, params: { ...def.defaults } })
+          // A fixed default seed would make every new object jitter identically.
+          const params = { ...def.defaults }
+          if ('seed' in params) params.seed = randomSeed()
+          stack.push({ name: effectName, params })
           openEditor(stack.length - 1, stack)
         })
         $id(`${P}-expand`).addEventListener('click', () => {

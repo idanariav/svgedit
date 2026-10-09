@@ -65,7 +65,8 @@ describe('ext-live-effects', function () {
       'live-effects:addPlaceholder': 'Add effect…',
       'live-effects:apply': 'Apply',
       'live-effects:cancel': 'Cancel',
-      'live-effects:expand': 'Expand'
+      'live-effects:expand': 'Expand',
+      'live-effects:randomize': 'Randomize'
     }
     const svgEditor = {
       svgCanvas,
@@ -203,5 +204,29 @@ describe('ext-live-effects', function () {
     assert.equal(a.hasAttribute('visibility'), false)
     assert.equal(display(`${P}-editor`), 'none')
     assert.equal(document.querySelectorAll('path[pointer-events="none"]').length, 0)
+  })
+
+  it('seeded effects start with a random seed and offer Randomize', function () {
+    const rect = addRect()
+    select(rect)
+    chooseEffect('roughen')
+    const seedField = [...document.querySelectorAll(`#${P}-editor se-spin-input`)].pop()
+    const first = Number(seedField.value)
+    assert.ok(first > 0)
+    const clone = rect.nextElementSibling
+    const dBefore = clone.getAttribute('d')
+    button('Randomize').click()
+    assert.notEqual(Number(seedField.value), first)
+    assert.notEqual(clone.getAttribute('d'), dBefore)
+    button('Apply').click()
+    const [entry] = svgCanvas.getLiveEffects()
+    assert.equal(entry.name, 'roughen')
+    assert.equal(entry.params.seed, Number(seedField.value))
+  })
+
+  it('effects without a seed have no Randomize button', function () {
+    select(addRect())
+    chooseEffect('twist')
+    assert.equal(button('Randomize'), undefined)
   })
 })

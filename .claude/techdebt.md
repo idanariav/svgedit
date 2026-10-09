@@ -195,7 +195,7 @@ moving into `…` when the pane is short. Moving them automatically must not per
 temporary split as the user's saved order. Covered by `tests/e2e/top-bar-layout.spec.js`.
 Small.
 
-## Live effects (`se:fx`): follow-ups from T1.0
+## Live effects (`se:fx`): follow-ups from T1.0 / T1.1
 
 - **No stacking with taper / corner radius.** v1 makes `se:fx-d` mutually
   exclusive with `se:taper-d` and `se:orig-d` (`canApplyLiveEffect`,
@@ -206,10 +206,17 @@ Small.
   from each effect's `defaults` keys and humanizes them (`dx` → "Dx"); only the
   effect `label` and the panel chrome are translatable. Add per-effect
   `labels` to the registry when a second locale needs them.
-- **`tests/e2e/fixtures/roundtrip/live-effects.svg` uses placeholder effect
-  names** (`fxshift`, `fxgrow`) because no real effect existed when T1.0
-  landed. It still proves `se:fx`/`se:fx-d` survive load → save → load;
-  regenerate it with real effects (Roughen/Warp) once T1.1/T1.2 ship.
+- **Scribble is a stroked centerline, not an outlined shape.** The effect
+  returns the hatch line and the registry paints it as a stroke
+  (`strokeOutput` + `se:fx-style`), so the element is no longer a *filled*
+  shape while it is applied; "Expand" keeps the stroke paint. Outlining it
+  with `core/path-offset.js` `strokeToPath` would give a real fill, but that
+  path depends on paper/clipper (not unit-testable under jsdom). The hatch
+  stroke-width is also not rescaled when the element is scaled.
+- **Distort effect defaults differ slightly from VectorCraft.** Zig Zag
+  defaults to `points=corner` (Illustrator's default; VectorCraft's missing-key
+  default is smooth), and Pucker & Bloat / Twist default to a visible
+  amount (30 / 50°) so a freshly added effect does something.
 - **Preview selection box.** While previewing, the original element is hidden
   and a clone shows the result, so the selection box keeps the *original's*
   bbox until Apply. Cosmetic.

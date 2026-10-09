@@ -8,6 +8,11 @@
  * Attribute-driven and non-destructive, mirroring `taper-stroke.js`:
  *  - `se:fx-d`  — the source geometry (absolute `M/L/C/Z`, from
  *    `anchor-path.js`), kept while effects are applied;
+ *  - `se:fx-style` — only while an effect that outputs a *stroked centerline*
+ *    (def.strokeOutput, e.g. Scribble) is in the stack: the element's original
+ *    `fill|stroke|stroke-width|stroke-linecap|stroke-linejoin` (empty = absent),
+ *    restored when the effect is removed. The element is then painted as a
+ *    stroke (fill none, stroke = the original fill) of the effect's width;
  *  - `se:fx`    — the effect stack, `name(key=val,key=val);name(…)`, applied
  *    left to right. Unknown effect names are dropped when parsing; a param
  *    whose value is missing, non-finite or of the wrong type falls back to
@@ -40,11 +45,21 @@ import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anch
 
 export const FX_ATTR = 'se:fx'
 export const FX_SOURCE_ATTR = 'se:fx-d'
+export const FX_STYLE_ATTR = 'se:fx-style'
+
+const STYLE_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']
 
 // Attributes of the features live effects exclude (see module header). Held as
 // literals so taper-stroke.js / corner-radius.js can import the constants from
 // here without an import cycle.
 const EXCLUSIVE_ATTRS = ['se:taper-d', 'se:orig-d']
+
+/**
+ * Slack (px) when comparing a re-serialised `d` against the regenerated one:
+ * the saver rounds to 2 decimals as *relative* commands, so a closed curve's
+ * final point can miss its start by the accumulated rounding.
+ */
+const ROUNDING_TOL = 0.1
 
 /** Total anchor budget per element, to keep the DOM responsive. */
 export const MAX_FX_ANCHORS = 20000
@@ -78,6 +93,9 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6
  * @property {Object<string, string[]>} [choices] - Allowed values for string params.
  * @property {Object<string, {min?: number, max?: number, step?: number}>} [ranges]
  *   - Suggested bounds for number params (UI hints only).
+ * @property {{widthParam: string}} [strokeOutput] - The effect returns an open
+ *   *centerline* to be painted as a stroke whose width is `params[widthParam]`
+ *   (the element's fill becomes the stroke paint; see `se:fx-style`).
  */
 
 /** @type {Map<string, LiveEffectDef>} */
@@ -260,7 +278,7 @@ export const isFxCurrent = (elem) => {
   if (unknown) return true
   const expected = computeFxD(src, stack)
   return expected !== null &&
-    sameAnchorGeometry(parseAnchors(expected), parseAnchors(elem.getAttribute('d') || ''))
+    sameAnchorGeometry(parseAnchors(expected), parseAnchors(elem.getAttribute('d') || '', ROUNDING_TOL))
 }
 
 /**
@@ -303,6 +321,73 @@ const primitiveToPath = (elem) => {
   return path
 }
 
+/**
+ * The stroke-output effect (if any) governing the element's paint: the last
+ * one in the stack.
+ * @param {Array<{name: string, params: Object}>} stack
+ * @returns {?{width: number}}
+ */
+const strokeOutputOf = (stack) => {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const so = registry.get(stack[i].name)?.strokeOutput
+    if (so) return { width: stack[i].params[so.widthParam] }
+  }
+  return null
+}
+
+/**
+ * The element's style before any stroke-output effect repainted it: the
+ * values saved in `se:fx-style`, else its current attributes (null = absent).
+ * @param {Element} elem
+ * @returns {Object<string, ?string>}
+ */
+const originalStyle = (elem) => {
+  const saved = elem.getAttribute(FX_STYLE_ATTR)
+  const vals = saved !== null
+    ? saved.split('|').map((v) => (v === '' ? null : v))
+    : STYLE_ATTRS.map((a) => elem.getAttribute(a))
+  return Object.fromEntries(STYLE_ATTRS.map((a, i) => [a, vals[i] ?? null]))
+}
+
+/**
+ * Paint attributes for an element whose stack outputs a stroked centerline:
+ * the original fill (else stroke) becomes the stroke paint.
+ * @param {Element} elem
+ * @param {number} width
+ * @returns {Object<string, string>}
+ */
+const hatchPaint = (elem, width) => {
+  const { fill, stroke } = originalStyle(elem)
+  const ink = fill === null ? '#000000' : (fill !== 'none' ? fill : stroke)
+  return {
+    fill: 'none',
+    stroke: ink || '#000000',
+    'stroke-width': String(round6(width)),
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round'
+  }
+}
+
+const setAttrs = (elem, attrs) => {
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null) elem.removeAttribute(k)
+    else elem.setAttribute(k, v)
+  }
+}
+
+/**
+ * Put back the style saved in `se:fx-style` and drop the attribute.
+ * @param {Element} elem
+ * @returns {void}
+ */
+const restoreStyle = (elem) => {
+  if (!elem.hasAttribute(FX_STYLE_ATTR)) return
+  setAttrs(elem, originalStyle(elem))
+  elem.removeAttribute(FX_STYLE_ATTR)
+}
+
+const snapshot = (elem, names) => Object.fromEntries(names.map((n) => [n, elem.getAttribute(n)]))
+
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -334,6 +419,7 @@ export const init = (canvas) => {
     if (isFxCurrent(elem)) return true
     elem.removeAttribute(FX_SOURCE_ATTR)
     elem.removeAttribute(FX_ATTR)
+    elem.removeAttribute(FX_STYLE_ATTR)
     return false
   }
 
@@ -392,6 +478,8 @@ export const init = (canvas) => {
       elem.setAttribute('visibility', 'hidden')
     }
     session.clone.setAttribute('d', d)
+    const paint = strokeOutputOf(sanitizeFxStack(stack))
+    setAttrs(session.clone, paint ? hatchPaint(elem, paint.width) : originalStyle(elem))
   }
 
   /**
@@ -441,10 +529,16 @@ export const init = (canvas) => {
       elem = path
     }
 
-    const oldValues = {
-      d: elem.getAttribute('d'),
-      [FX_ATTR]: elem.getAttribute(FX_ATTR),
-      [FX_SOURCE_ATTR]: elem.getAttribute(FX_SOURCE_ATTR)
+    const oldValues = snapshot(elem, ['d', FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR, ...STYLE_ATTRS])
+    const paint = strokeOutputOf(clean)
+    if (paint) {
+      const attrs = hatchPaint(elem, paint.width)
+      if (!elem.hasAttribute(FX_STYLE_ATTR)) {
+        elem.setAttribute(FX_STYLE_ATTR, STYLE_ATTRS.map((a) => elem.getAttribute(a) ?? '').join('|'))
+      }
+      setAttrs(elem, attrs)
+    } else {
+      restoreStyle(elem)
     }
     elem.setAttribute(FX_SOURCE_ATTR, src)
     elem.setAttribute(FX_ATTR, serializeFxStack(clean))
@@ -465,11 +559,10 @@ export const init = (canvas) => {
     if (!src) return null
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Remove live effects')
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, {
-      d: elem.getAttribute('d'),
-      [FX_ATTR]: elem.getAttribute(FX_ATTR),
-      [FX_SOURCE_ATTR]: src
-    }))
+    batchCmd.addSubCommand(new ChangeElementCommand(
+      elem, snapshot(elem, ['d', FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR, ...STYLE_ATTRS])
+    ))
+    restoreStyle(elem)
     elem.setAttribute('d', src)
     elem.removeAttribute(FX_ATTR)
     elem.removeAttribute(FX_SOURCE_ATTR)
@@ -486,12 +579,12 @@ export const init = (canvas) => {
     if (!elem?.hasAttribute(FX_SOURCE_ATTR)) return null
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Expand live effects')
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, {
-      [FX_ATTR]: elem.getAttribute(FX_ATTR),
-      [FX_SOURCE_ATTR]: elem.getAttribute(FX_SOURCE_ATTR)
-    }))
+    batchCmd.addSubCommand(new ChangeElementCommand(
+      elem, snapshot(elem, [FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR])
+    ))
     elem.removeAttribute(FX_ATTR)
     elem.removeAttribute(FX_SOURCE_ATTR)
+    elem.removeAttribute(FX_STYLE_ATTR)
     return finish(batchCmd, elem)
   }
 

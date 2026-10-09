@@ -8,5 +8,6 @@ export default {
   expand: 'Expand',
   expandTitle: 'Bake the effects into the path and stop them being editable',
   apply: 'Apply',
-  cancel: 'Cancel'
+  cancel: 'Cancel',
+  randomize: 'Randomize'
 }

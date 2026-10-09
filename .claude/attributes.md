@@ -194,6 +194,7 @@ A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-ef
 |-----------|-------|
 | `se:fx` | Effect stack, applied left to right: `name(key=val,key=val);name(…)`. Numbers, `true`/`false`, or bare words. Unknown names are dropped on parse; a missing / non-finite / wrong-typed param falls back to the effect's default |
 | `se:fx-d` | Source geometry (absolute `M/L/C/Z`) the stack is applied to |
+| `se:fx-style` | Only while a stroke-output effect (Scribble) is in the stack: the original `fill\|stroke\|stroke-width\|stroke-linecap\|stroke-linejoin` (empty = absent). The element is then painted as a stroke (fill none, stroke = original fill); removing the effect restores these |
 | `d` | The baked result, regenerated from `se:fx-d` + `se:fx` |
 
 Mutually exclusive with `se:taper-d` and `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
