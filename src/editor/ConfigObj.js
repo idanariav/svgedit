@@ -251,6 +251,7 @@ export default class ConfigObj {
       'ext-shaper',
       'ext-smooth-tool',
       'ext-width-tool',
+      'ext-art-brush',
       'ext-curvature',
       'ext-puppet-warp',
       'ext-opensave',

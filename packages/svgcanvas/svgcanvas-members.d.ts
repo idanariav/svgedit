@@ -310,6 +310,19 @@ export interface AttachedMembers {
   /** Live stack (`core/live-stack.js`): null when the element is not stacked, else whether its stack is still current (stale stacks are dropped). */
   reconcileLiveStack(elem: Element): boolean | null
   isLiveStacked(elem: Element): boolean
+  /** Art and pattern brushes (`core/art-brush-canvas.js`). */
+  getArtBrushLibrary(): Array<{ id: string, name: string, type: 'art' | 'pattern' }>
+  canMakeArtBrush(): boolean
+  makeArtBrush(type: 'art' | 'pattern', name?: string): string | null
+  deleteArtBrush(id: string): boolean
+  canApplyArtBrush(elem: Element | null): boolean
+  applyArtBrush(brushId: string): Element[]
+  getArtBrush(elem?: Element): { type: 'art' | 'pattern', opts: Record<string, any> } | null
+  setArtBrushOptions(changes: Record<string, any>): Element[]
+  expandArtBrush(): Element[]
+  releaseArtBrush(): Element[]
+  refreshArtBrush(elem: Element | null): boolean
+  getArtBrushGroup(elem: Element | null): Element | null
   getLiveEffects(): Array<{ name: string, params: Record<string, number | boolean | string> }>
   previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
   cancelLiveEffectsPreview(): void

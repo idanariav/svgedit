@@ -27,9 +27,8 @@ small items (S) fill gaps between large ones.
 14. ~~**T2.6 Width profiles + Width tool**~~ done (follow-ups, below).
 15. ~~**Live effects / corner radius / taper stacking**~~ done (corners + width, effects + width; follow-ups in
     "The live stack", below; design in [`plans/live-stack.md`](plans/live-stack.md)).
-16. **T2.14 Art / pattern brushes** (no dependency on width profiles; it reuses T1.0's `mapNonlinear`; grouped here as the
-    other "appearance follows the path" feature), then 17. **T2.13 Blend tool** — build `options()/setOption()` with
-    Blend (steps/spacing), the first tool with a real options bar.
+16. ~~**T2.14 Art / pattern brushes**~~ done (follow-ups, below), then 17. **T2.13 Blend tool** — build
+    `options()/setOption()` with Blend (steps/spacing), the first tool with a real options bar.
 
 **Phase 5 — on-canvas editors (session-style tools)**
 18. **T2.7 Free / Perspective Distort** — on-canvas handles with a live preview of effect params, so it is the first
@@ -221,6 +220,17 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
 - Stacks with a width stroke (not with live effects); see "The live stack".
+
+## Art and pattern brushes (`core/art-brush.js`, `core/art-brush-canvas.js`, `ext-art-brush`): follow-ups from T2.14
+
+Done: art brush (one copy of the art stretched along the path: stretch / proportional, width %, direction, flips) and pattern brush (the side tile repeated along each straight run: stretch / add space / approximate, size, spacing, flips); a brush library in the drawing's `<defs>`; a brushed path is a group (hidden spine, hidden artwork copy, generated art) that renders anywhere; Apply / options / Expand / Release are undo steps; the art follows the spine when it is edited (and when that is undone); the `ext-art-brush` Design-tab section and the `brush_*` commands. Remaining:
+- **VectorCraft's pattern corner / start / end tiles** are not ported (the geometry already splits the path into runs at corners; the library holds one artwork per brush). Also not ported: *between guides* art scaling, scatter and calligraphic / bristle brushes (the Brush tool `ext-brush` stays the nib brush), and **colorization** (tints / hue shift to the stroke colour): the art keeps its own colours.
+- **Brushes are copied, not linked.** Choosing a brush copies its artwork into the path's group; changing or deleting the library entry does not touch paths already brushed (they keep a working copy, so copy / paste and other documents work). An "update strokes from this brush" action would need the group to remember which brush it came from.
+- **Art is bent as a polyline**, thinned to the corners it needs (0.01 units): long strokes still carry many points. Fitting cubics (`bezier-fit.js`) would shrink them and keep them smooth at high zoom.
+- **Editing the path** is through the invisible spine: the Edit path button (or entering the group and selecting the spine) opens the node editor; the generated art is rewritten on every change of the spine. That rewrite is not an undo step of its own: undo of the spine edit regenerates (or restores the earlier paths if this session made them). A drawing opened and then edited with no selection first has no record of its art and rewrites it once, textually different (same shape).
+- **Select inside the group** and the generated paths can be edited or deleted by hand; the next regeneration overwrites them, and a group that lost its spine / art simply stops being a brush (`getArtBrushGroup` returns null).
+- **Stroke width of the original path is not used**: the art is as big as it was drawn (× width %); a brushed path's own stroke paint is kept on the hidden spine only. One brush per path; no brush on top of live effects, corners or a width stroke.
+- **Only plain shapes** (path, line, polyline, polygon, rect, ellipse, circle) are artwork or spines; text, images and groups' non-shape members are skipped.
 
 ## The live stack (`core/live-stack.js`): follow-ups from item 15
 
