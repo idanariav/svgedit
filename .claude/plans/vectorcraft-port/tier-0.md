@@ -256,7 +256,7 @@ transitional adapter.
   `se:*` attributes). `refreshEnablement()` runs after **every** command, because an atomic command's selection
   events fire before its undo step is recorded and left the undo button stale.
 - The disabled reason is in `list()` / `isEnabled()`; the button's `title` does not show it (would need a
-  restore step for the tooltip). `interactive` adapters are flagged by id (`INTERACTIVE_IDS` in `Hotkeys.js`).
+  restore step for the tooltip). `interactive` adapters were flagged by id (`INTERACTIVE_IDS`, since removed: commands declare `interactive` themselves, an adapter's element via an `interactive` attribute).
 - `paste`, `paste_in_place`, `zoom_fit` are now real commands, so they also appear in the Hotkey Manager list.
 - Not done: the plugin-side palette (plugin repo), migrating the remaining ~130 buttons.
 

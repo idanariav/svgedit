@@ -30,6 +30,20 @@ describe('se-button', () => {
     expect(el.$div.getAttribute('title')).toBe('undo [Ctrl+Z]')
   })
 
+  it('shows why the button is disabled in its tooltip, and only while it is', () => {
+    const el = mountElement('se-button')
+    el.setAttribute('title', 'bold')
+    el.setAttribute('shortcut', 'ctrl+b')
+    el.setAttribute('disabled-reason', 'Select some text')
+    expect(el.$div.getAttribute('title')).toBe('bold [Ctrl+B]') // enabled: no reason shown
+    el.disabled = true
+    expect(el.$div.getAttribute('title')).toBe('bold [Ctrl+B]\nSelect some text')
+    el.setAttribute('disabled-reason', 'Edit a path’s nodes first')
+    expect(el.$div.getAttribute('title')).toBe('bold [Ctrl+B]\nEdit a path’s nodes first')
+    el.disabled = false
+    expect(el.$div.getAttribute('title')).toBe('bold [Ctrl+B]')
+  })
+
   it('toggles the pressed class via attribute and property', () => {
     const el = mountElement('se-button')
     el.setAttribute('pressed', 'true')

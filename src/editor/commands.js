@@ -48,6 +48,8 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
  * @property {(editor: any, params: Object<string, any>) => any} run
  * @property {boolean} [interactive] opens a dialog / file picker / prompt (excluded from sweeps and automation)
  * @property {boolean} [palette] list in host command palettes (default true)
+ * @property {boolean} [alias] a second button for another command (e.g. the multi-selection toolbar's clone): it
+ *   owns no keys, so a key can't end up bound twice and rebinding the real command frees it; not listed in palettes or the shortcut manager
  * @property {boolean} [atomic] run inside `svgCanvas.transact()` so a throw rolls the drawing back
  *   and the whole command is one undo step. Only for synchronous, document-only commands.
  */
@@ -149,17 +151,18 @@ export class CommandRegistry {
       // just remember the button for labels/icons/focus. Keys come from the
       // command, falling back to the button's `shortcut` attribute.
       existing.el = spec.el ?? existing.el
-      if (!existing.defaultKeys.length && spec.defaultKeys?.length) existing.defaultKeys = spec.defaultKeys
+      if (!existing.alias && !existing.defaultKeys.length && spec.defaultKeys?.length) existing.defaultKeys = spec.defaultKeys
       existing.decorative = existing.decorative ?? spec.decorative ?? null
       return
     }
-    const defaultKeys = spec.defaultKeys ?? (spec.keys ? [spec.keys].flat().flatMap(expandEditorKey) : [])
+    const defaultKeys = spec.alias ? [] : (spec.defaultKeys ?? (spec.keys ? [spec.keys].flat().flatMap(expandEditorKey) : []))
     /** @type {CommandRecord} */
     const rec = {
       ...spec,
       group: spec.group || 'Tools',
       labelKey: spec.labelKey ?? spec.label,
-      defaultKeys: defaultKeys.length || !existing?.adapter ? defaultKeys : existing.defaultKeys,
+      defaultKeys: defaultKeys.length || !existing?.adapter || spec.alias ? defaultKeys : existing.defaultKeys,
+      palette: spec.alias ? false : spec.palette,
       pd: spec.pd ?? false,
       el: spec.el ?? existing?.el ?? null,
       decorative: spec.decorative ?? (existing?.adapter ? existing.decorative : null) ?? null,
@@ -353,6 +356,7 @@ export class CommandRegistry {
 
   /**
    * Sync every element declaring `command="<id>"` with that command's state.
+   * Also mirrors an unavailable command's reason into `disabled-reason` (shown in the tooltip).
    * Called from the editor's existing selection / change / history paths.
    * @returns {void}
    */
@@ -362,8 +366,16 @@ export class CommandRegistry {
     for (const el of /** @type {NodeListOf<Element & {disabled?: boolean}>} */ (root.querySelectorAll('[command]'))) {
       const id = el.getAttribute('command')
       if (!id || !this.table.has(id)) continue
-      const off = this.isEnabled(id) !== true
+      const state = this.isEnabled(id)
+      const off = state !== true
       if (Boolean(el.disabled) !== off) el.disabled = off
+      // The tooltip says why (se-button appends it); adapters' bare 'disabled' says nothing.
+      const reason = off && state !== 'disabled' && state !== 'unavailable' ? state : null
+      if (reason) {
+        if (el.getAttribute('disabled-reason') !== reason) el.setAttribute('disabled-reason', reason)
+      } else if (el.hasAttribute('disabled-reason')) {
+        el.removeAttribute('disabled-reason')
+      }
     }
   }
 }

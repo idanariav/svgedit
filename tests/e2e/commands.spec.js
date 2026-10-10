@@ -90,7 +90,7 @@ test.describe('command registry', () => {
   test('list() covers every visible toolbar button id and the pilot commands are real', async ({ page }) => {
     const r = await page.evaluate(() => {
       const ed = window.svgEditor
-      const listed = new Set(ed.commands.list().map((c) => c.id))
+      const listed = new Set(ed.commands.list({ includeHidden: true }).map((c) => c.id))
       const buttons = [...ed.$container.querySelectorAll('se-button[id], se-menu-item[id]')].map((b) => b.id)
       return {
         missing: buttons.filter((id) => !listed.has(id)),
@@ -108,10 +108,43 @@ test.describe('command registry', () => {
     await page.evaluate(() => window.svgEditor.commands.run('zoom_fit'))
   })
 
+  test('a disabled button says why in its tooltip, and the reason goes away when it is enabled', async ({ page }) => {
+    const tip = () => page.evaluate(() => {
+      const btn = document.querySelector('#tool_node_smooth')
+      return { disabled: btn.disabled, reason: btn.getAttribute('disabled-reason'), title: btn.shadowRoot.querySelector('div').getAttribute('title') }
+    })
+    await selectA(page)
+    await page.evaluate(() => window.svgEditor.commands.refreshEnablement())
+    const off = await tip()
+    expect(off.disabled).toBe(true)
+    expect(off.reason).toBeTruthy()
+    expect(off.title).toContain(off.reason)
+    // enter the path editor on a path: the node actions become available
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      const path = c.addSVGElementsFromJson({ element: 'path', attr: { id: 'p', d: 'M10,10 L100,10 L100,100 Z', fill: 'none', stroke: '#000' } })
+      c.selectOnly([path])
+      c.setMode('pathedit')
+      window.svgEditor.commands.refreshEnablement()
+    })
+    const on = await tip()
+    expect(on.disabled).toBe(false)
+    expect(on.reason).toBeNull()
+    expect(on.title).not.toContain(off.reason)
+  })
+
+  test('the multi-selection duplicate button owns no key (D belongs to Duplicate alone)', async ({ page }) => {
+    const owners = () => page.evaluate(() => {
+      const hk = window.svgEditor.hotkeys
+      return { d: hk.reverseMap().get('d') ?? null, multi: hk.effectiveKeys('tool_clone_multi') }
+    })
+    expect(await owners()).toEqual({ d: 'tool_clone', multi: [] })
+  })
+
   test('stored hotkey overrides and favorites keep working after the registry change', async ({ page }) => {
     await page.evaluate(() => {
-      // the multi-selection toolbar's duplicate button shares the default `D`, so both ids are rebound
-      localStorage.setItem('svg-edit-hotkeys', JSON.stringify({ tool_clone: ['shift+d'], tool_clone_multi: [] }))
+      // the multi-selection toolbar's duplicate button is an alias: it never owned `D`
+      localStorage.setItem('svg-edit-hotkeys', JSON.stringify({ tool_clone: ['shift+d'] }))
     })
     await page.reload()
     await page.waitForSelector('#svgroot', { timeout: 20000 })

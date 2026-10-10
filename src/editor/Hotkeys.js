@@ -224,14 +224,6 @@ const GROUP_BY_ID = {
   tool_clear: 'File',
   tool_save: 'File'
 }
-// Buttons that open a dialog / file picker, or start a modal session (puppet warp,
-// image crop). They self-register as adapter commands, which cannot know that, so
-// they are flagged here; the command sweep and automation skip `interactive` ones.
-// (Found by the sweep: it closes any dialog a command opens and reports it.)
-export const INTERACTIVE_IDS = new Set([
-  'tool_image', 'tool_trace_image', 'tool_export', 'tool_hotkeys', 'tool_favorites',
-  'tool_editor_prefs', 'tool_puppet_warp', 'tool_image_crop'
-])
 // Stable display order for groups; unknown groups are appended alphabetically.
 export const GROUP_ORDER = [
   'Tools', 'View', 'Edit', 'Group', 'Transform', 'Arrange', 'Align',
@@ -249,6 +241,7 @@ export const GROUP_ORDER = [
  * @property {?Element} el component element to click (null for editor actions)
  * @property {string} labelKey i18n key / fallback label
  * @property {?string} decorative raw display string when the binding is fixed
+ * @property {boolean} [alias] twin button of another command: owns no keys (see commands.js)
  */
 
 const FOCUS_CONTROL = 'button, a[href], input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])'
@@ -338,7 +331,7 @@ export default class HotkeyManager {
       group: GROUP_BY_ID[id] || 'Tools',
       defaultKeys: canonical ? [canonical] : [],
       decorative,
-      interactive: INTERACTIVE_IDS.has(id)
+      interactive: el.hasAttribute?.('interactive') ?? false
     })
   }
 
@@ -361,8 +354,9 @@ export default class HotkeyManager {
    * @returns {string[]}
    */
   effectiveKeys (id) {
-    if (Object.prototype.hasOwnProperty.call(this.overrides, id)) return this.overrides[id]
     const a = this.actions.get(id)
+    if (a?.alias) return []
+    if (Object.prototype.hasOwnProperty.call(this.overrides, id)) return this.overrides[id]
     return a ? a.defaultKeys : []
   }
 
@@ -413,6 +407,7 @@ export default class HotkeyManager {
   listForUi () {
     const groups = new Map()
     for (const a of this.actions.values()) {
+      if (a.alias) continue
       if (!groups.has(a.group)) groups.set(a.group, [])
       groups.get(a.group).push({
         id: a.id,

@@ -245,5 +245,42 @@ describe('CommandRegistry', () => {
       reg.refreshEnablement()
       expect(btn.disabled).toBe(false)
     })
+
+    it('mirrors the reason into disabled-reason while unavailable, and clears it', () => {
+      const container = document.createElement('div')
+      const btn = document.createElement('button')
+      btn.setAttribute('command', 'a')
+      const plain = document.createElement('button')
+      plain.setAttribute('command', 'b')
+      container.append(btn, plain)
+      editor.$container = container
+      let on = false
+      reg.register({ id: 'a', label: 'A', enabled: () => (on ? true : 'Select a group'), run () {} })
+      reg.register({ id: 'b', label: 'B', enabled: () => 'unavailable', run () {} })
+      reg.refreshEnablement()
+      expect(btn.getAttribute('disabled-reason')).toBe('Select a group')
+      expect(plain.hasAttribute('disabled-reason')).toBe(false) // a bare 'unavailable' explains nothing
+      on = true
+      reg.refreshEnablement()
+      expect(btn.hasAttribute('disabled-reason')).toBe(false)
+    })
+  })
+
+  describe('alias commands (a second button for another command)', () => {
+    it('own no keys, even when the button self-registers with a shortcut, in either order', () => {
+      reg.register({ id: 'real', label: 'R', keys: 'd', run () {} })
+      reg.register({ id: 'twin', label: 'T', alias: true, run () {} })
+      reg.registerAdapter({ id: 'twin', el: document.createElement('button'), label: 'T', defaultKeys: ['d'], decorative: null, group: 'Edit' })
+      expect(reg.get('twin').defaultKeys).toEqual([])
+      reg.registerAdapter({ id: 'twin2', el: document.createElement('button'), label: 'T', defaultKeys: ['d'], decorative: null, group: 'Edit' })
+      reg.register({ id: 'twin2', label: 'T', alias: true, run () {} })
+      expect(reg.get('twin2').defaultKeys).toEqual([])
+    })
+
+    it('are hidden from palettes', () => {
+      reg.register({ id: 'twin', label: 'T', alias: true, run () {} })
+      expect(reg.list().map((c) => c.id)).not.toContain('twin')
+      expect(reg.list({ includeHidden: true }).map((c) => c.id)).toContain('twin')
+    })
   })
 })

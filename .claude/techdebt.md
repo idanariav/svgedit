@@ -212,14 +212,10 @@ Also: other buttons/shortcuts that are fine today but would be safer `atomic` (o
   that changes the text's x and independently its tspans' x by a different amount would undo wrongly.
 
 **Command registry**
-- Only the pilot commands are real commands; every other button/menu item is an *adapter*. Migrate button
-  by button (`command="…"`), moving its enable/disable logic out of `topPanelContext.js` into `enabled`.
-  The button's `title` does not yet show the disabled reason (`list()` / `isEnabled()` do).
-- `INTERACTIVE_IDS` (`Hotkeys.js`) is a static list found by the sweep; a new dialog-opening button must be
-  added (or registered as a real command with `interactive: true`).
-- A hotkey on a disabled command is now inert and does not `preventDefault` (before, the button's own
-  guard swallowed it but the key was still prevented). `tool_clone` and `tool_clone_multi` share the default
-  key `D`; rebinding one leaves the other on it.
+- Every button is a real command now (see the status above); what's left is making their `enabled` precise
+  (most are still "always").
+- A hotkey on a disabled command is inert and does not `preventDefault` (before, the button's own guard swallowed
+  it but the key was still prevented).
 - Plugin-side: expose `editor.commands.list()/run()` as Obsidian palette entries / hotkeys (plugin repo work,
   see its techdebt).
 

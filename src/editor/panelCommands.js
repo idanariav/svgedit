@@ -213,13 +213,15 @@ export const registerPanelCommands = (commands) => {
     })
   }
 
-  // The "multi-selection" toolbar twins of clone / delete have ids of their own.
+  // The "multi-selection" toolbar twins of clone / delete have ids of their own (persisted), but they are
+  // aliases: the keys belong to tool_clone / tool_delete alone.
   for (const [id, target] of [['tool_clone_multi', 'tool_clone'], ['tool_delete_multi', 'tool_delete']]) {
     commands.register({
       id,
       label: target === 'tool_clone' ? 'tools.clone' : 'tools.del',
       group: 'Edit',
       pd: true,
+      alias: true,
       enabled: (/** @type {any} */ editor) => commands.isEnabled(target),
       run: (editor) => commands.run(target)
     })

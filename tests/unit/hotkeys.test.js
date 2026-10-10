@@ -111,6 +111,27 @@ describe('HotkeyManager over the command registry', () => {
     })
   })
 
+  it('a twin button (alias) owns no keys: rebinding the real command frees the key', () => {
+    registerCoreCommands(editor.commands)
+    editor.commands.register({ id: 'tool_clone_multi', label: 'tools.clone', group: 'Edit', alias: true, run: () => {} })
+    hk.registerEl({ id: 'tool_clone_multi', el: document.createElement('div'), label: 'tools.clone', rawKey: 'D' })
+    localStorage.setItem('svg-edit-hotkeys', JSON.stringify({ tool_clone: ['shift+d'], tool_clone_multi: ['d'] }))
+    hk.register()
+    expect(hk.effectiveKeys('tool_clone_multi')).toEqual([])
+    expect(hk.reverseMap().get('d')).toBeUndefined()
+    expect(hk.reverseMap().get('shift+d')).toBe('tool_clone')
+    expect(hk.listForUi().flatMap((g) => g.actions).map((a) => a.id)).not.toContain('tool_clone_multi')
+  })
+
+  it('an adapter is interactive when its element says so (no static id list)', () => {
+    const dialogBtn = document.createElement('div')
+    dialogBtn.setAttribute('interactive', '')
+    hk.registerEl({ id: 'tool_dialog', el: dialogBtn, label: 'x' })
+    hk.registerEl({ id: 'tool_plain', el: document.createElement('div'), label: 'y' })
+    expect(editor.commands.get('tool_dialog').interactive).toBe(true)
+    expect(editor.commands.get('tool_plain').interactive).toBe(false)
+  })
+
   it('listForUi lists commands from the registry, grouped', () => {
     registerCoreCommands(editor.commands)
     const groups = hk.listForUi()

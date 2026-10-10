@@ -114,7 +114,7 @@ export class ToolButton extends HTMLElement {
    * @returns {any} observed
    */
   static get observedAttributes () {
-    return ['title', 'src', 'pressed', 'locked', 'disabled', 'size', 'style']
+    return ['title', 'src', 'pressed', 'locked', 'disabled', 'disabled-reason', 'size', 'style']
   }
 
   /**
@@ -123,11 +123,10 @@ export class ToolButton extends HTMLElement {
   attributeChangedCallback (name, oldValue, newValue) {
     if (oldValue === newValue) return
     switch (name) {
-      case 'title': {
-        const shortcut = this.getAttribute('shortcut')
-        this.$div.setAttribute('title', tooltipText(t(newValue), shortcut))
+      case 'title':
+      case 'disabled-reason':
+        this._syncTooltip()
         break
-      }
       case 'style':
         this.$div.style = newValue
         break
@@ -161,11 +160,24 @@ export class ToolButton extends HTMLElement {
         } else {
           this.$div.classList.remove('disabled')
         }
+        this._syncTooltip()
         break
       default:
         logError(`unknown attribute: ${name}`, undefined, 'seButton')
         break
     }
+  }
+
+  /**
+   * The tooltip: name + shortcut, and while the button is disabled the reason
+   * the command is unavailable (`disabled-reason`, set by the command registry).
+   */
+  _syncTooltip () {
+    const title = this.getAttribute('title')
+    if (title === null) return
+    const text = tooltipText(t(title), this.getAttribute('shortcut'))
+    const reason = this.disabled ? this.getAttribute('disabled-reason') : null
+    this.$div.setAttribute('title', reason ? `${text}\n${reason}` : text)
   }
 
   /**
