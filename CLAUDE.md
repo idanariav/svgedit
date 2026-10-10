@@ -203,7 +203,8 @@ code exploration.
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
 | [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
-| [`techdebt.md`](.claude/techdebt.md) | Deferred refactors and follow-ups from past sessions — check before starting non-trivial work in an area it covers |
+| [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
+| [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes) and unscheduled planned work (tool hooks, typing rollout, live effects / corners / glow follow-ups, UI polish). Apply the guidelines while you work; fold an item in when your task touches its area |
 
 ### Keeping the docs fresh
 
@@ -215,8 +216,9 @@ the relevant doc(s) to reflect the change. Specifically:
 - Changed which attributes are editable for a shape → update `attributes.md`
 - Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`
 - Created or changed an extension → update `extensions.md`
-- Deferred a proper fix in favor of a quick one, or left a planned refactor
-  undone → add an entry to `techdebt.md`; remove its entry once addressed
+- Deferred a proper fix in favor of a quick one → add an entry to `techdebt.md`;
+  deferred a feature, or left a planned refactor/follow-up undone → add it to
+  `roadmap.md`. Remove the entry once addressed
 
 ---
 

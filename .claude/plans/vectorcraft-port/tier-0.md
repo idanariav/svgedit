@@ -43,7 +43,7 @@ explicitly out of scope.
   and SVG can't express it without wrapper groups.
 - **WASM plugin sandbox** (`crates/plugins`). Extensions are already JS.
 - **No-panic lints.** The JS analogue is strict typing, tracked separately in
-  `techdebt.md` › "Convert `packages/svgcanvas` core modules to TypeScript".
+  `roadmap.md` › "Convert `packages/svgcanvas` core modules to TypeScript".
 - **Crash recovery / Data Recovery copies** (`ui-egui/src/recovery.rs`). The
   Obsidian plugin already autosaves (`autosaveSeconds` in
   `../obsidian-svgedit-plugin/src/main.ts`), and the standalone editor has a
@@ -511,7 +511,7 @@ Differences from the design above, found while building it:
   effects (`identifyLayers`, `restoreRefElements`, text shift, …) still run per
   command. `BatchCommand` stays as the container type (transactions produce
   one); *hand-built* batches are migrated to `transact()` opportunistically —
-  see `techdebt.md`.
+  see `roadmap.md` (standing guidelines).
 - **Recording is snapshot-and-diff, not a MutationObserver** (the design above was built first and replaced).
   Two holes made the observer unfit: (1) Chromium never reports edits made through the SVG list APIs
   (`elem.transform.baseVal.appendItem(…)` — how the canvas moves things — not even after the attribute is read);
@@ -692,7 +692,7 @@ new tools.
 
 ### Implementation notes (T0.3, done 2026-10-10)
 
-- `core/tool-registry.js` as designed, minus `cursor()` and `options()/setOption()` (no consumer; see techdebt).
+- `core/tool-registry.js` as designed, minus `cursor()` and `options()/setOption()` (no consumer; see roadmap.md).
   Dispatch sites: `event.js` mouseDown (after the shared prelude, before the mode `switch`), mouseMove
   (before the `switch`; hover at the top), mouseUp (before the `switch`), `EditorStartup`'s keydown (before the
   extension `keyDown` hook), and `svgcanvas.js` `setMode` (cancels an open gesture, fires `activate/deactivate`).

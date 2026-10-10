@@ -33,9 +33,9 @@ is in [tier-0.md](tier-0.md).
 | T1.0 | Live-effect foundation (`se:fx` stack) | — | done — b99390d0 |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
-| T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see techdebt.md) |
+| T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see roadmap.md) |
 | T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | done — see git log |
-| T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | done — see git log (snapping, re-editable params, tablet shell deferred, see techdebt.md) |
+| T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | done — see git log (snapping, re-editable params, tablet shell deferred, see roadmap.md) |
 | T1.6 | Shaper tool (rough stroke → clean shape) | — (T0.3 helps) | todo |
 | T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |
 | T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | todo |
@@ -67,7 +67,7 @@ is in [tier-0.md](tier-0.md).
 
 1. **Read before coding:** `CLAUDE.md`, then `.claude/architecture.md`,
    `.claude/tools.md`, `.claude/extensions.md`, `.claude/css-rules.md` as
-   relevant, and `.claude/techdebt.md` for the area you touch.
+   relevant, and `.claude/roadmap.md` + `.claude/techdebt.md` for the area you touch.
 2. **LSP over Grep** for symbol lookups in JS (`ToolSearch` → `select:LSP`).
 3. **Web search before finalizing your own sub-plan** (the searches done for
    this survey are listed under *Research notes* below; add feature-specific
@@ -82,7 +82,7 @@ is in [tier-0.md](tier-0.md).
    command sweep runs every command over every fixture.
 6. **Docs stay fresh:** update `.claude/tools.md`, `file-map.md`,
    `architecture.md`, `extensions.md`, `attributes.md`, `css-rules.md` as the
-   change requires. Anything deferred goes in `.claude/techdebt.md`.
+   change requires. A deferred feature goes in `.claude/roadmap.md`, a shortcut taken in `.claude/techdebt.md`.
 7. **Repo boundary:** everything here is generic svgedit work (belongs in this
    repo). Nothing in these plans is Obsidian-specific.
 8. **Testing in the browser:** `packages/svgcanvas` is served from its built
