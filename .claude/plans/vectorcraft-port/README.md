@@ -8,6 +8,7 @@ memory of the survey session can pick it up, implement it, and verify it.
 
 | File | Contents |
 |---|---|
+| [tier-0.md](tier-0.md) | **Architecture, not features**: command registry, undo transactions, tool contract, drawing invariants + command sweep, automation API, layering guard. Do these before the tier-2/3 items marked "T0.x helps". Also records what was deliberately *not* borrowed. |
 | [tier-1.md](tier-1.md) | High value, mostly self-contained math. Start here (T1.7 Glow is the quickest win). Includes **T1.0**, the shared live-effect foundation that several later items depend on. |
 | [tier-2.md](tier-2.md) | Clear value, more integration work (on-canvas UI, new data models). |
 | [tier-3.md](tier-3.md) | Small UX wins and nice-to-haves. |
@@ -17,36 +18,45 @@ memory of the survey session can pick it up, implement it, and verify it.
 Update the row when you start (`in progress — <agent/session>, <date>`) and
 when you finish (`done — <commit sha>`). Pick items in the listed order unless
 the user says otherwise; the **Depends on** column is a hard prerequisite.
+"(T0.x helps)" is soft: the item can ship without it but gets smaller with
+it. Tier 0's own suggested order (T0.6 → T0.2 → T0.1 → T0.4 → T0.3 → T0.5)
+is in [tier-0.md](tier-0.md).
 
 | ID | Feature | Depends on | Status |
 |---|---|---|---|
+| T0.1 | Command registry ("everything is a command") | — | todo |
+| T0.2 | Undo transactions (begin → preview → commit / cancel) | — | todo |
+| T0.3 | Tool contract (`registerTool`) | T0.2 (+ T1.5 committed, for the pilot) | todo |
+| T0.4 | Drawing invariants + command sweep + property tests | sweep: T0.1 | todo |
+| T0.5 | Automation API (inspect + doc-space pointer) | T0.1 | todo |
+| T0.6 | Layering guard (`check-layers.mjs`) | — | todo |
 | T1.0 | Live-effect foundation (`se:fx` stack) | — | done — b99390d0 |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
 | T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see techdebt.md) |
 | T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | done — see git log |
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | todo |
-| T1.6 | Shaper tool (rough stroke → clean shape) | — | todo |
+| T1.6 | Shaper tool (rough stroke → clean shape) | — (T0.3 helps) | todo |
 | T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |
 | T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | todo |
 | T2.2 | Ruler guides | — (T2.1 helps) | todo |
 | T2.3 | Pen continues / joins open paths | T1.4 (join helper) | todo |
 | T2.4 | Arrowheads with tip-on-end alignment | — | todo |
 | T2.5 | Dashes fitted to corners and path ends | — | todo |
-| T2.6 | Width profiles + Width tool (generalizes taper) | — | todo |
-| T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 | todo |
-| T2.8 | On-canvas gradient editor | — | todo |
+| T2.6 | Width profiles + Width tool (generalizes taper) | — (T0.3 helps) | todo |
+| T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | todo |
+| T2.8 | On-canvas gradient editor | — (T0.2, T0.3 help) | todo |
 | T2.9 | Eyedropper "Copy style" action | — | todo |
 | T2.10 | Magic Wand / Select Same with tolerance | — | todo |
 | T2.11 | Recolor Artwork + harmony rules | — | todo |
 | T2.12 | Centerline tracing (raster line art → stroked paths) | T1.4 (fit module) | todo |
-| T2.13 | Blend tool | — | todo |
+| T2.13 | Blend tool | — (T0.3 helps) | todo |
 | T2.14 | Art / pattern brushes (art bent along a path) | — | todo |
 | T2.15 | Corner-keeping simplify (pencil commit + Smooth Path) | T1.4 | todo |
-| T2.16 | Smooth tool (brush to smooth part of a path) | T2.15 | todo |
+| T2.16 | Smooth tool (brush to smooth part of a path) | T2.15 (T0.3 helps) | todo |
 | T2.17 | Layers panel: object rows (tree, hide/lock per object, drag, Locate Object) | — | todo |
-| T3.1 | Scrubby labels + wheel stepping on numeric fields | — | todo |
-| T3.2 | Measure tool | — | todo |
+| T3.1 | Scrubby labels + wheel stepping on numeric fields | — (T0.2 helps: one undo step per scrub) | todo |
+| T3.2 | Measure tool | — (T0.3 helps) | todo |
 | T3.3 | Transform Each | — | todo |
 | T3.4 | Split Into Grid | — | todo |
 | T3.5 | Area text with wrapping | — | todo |
