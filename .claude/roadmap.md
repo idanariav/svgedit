@@ -11,13 +11,12 @@ add it here; when you take a shortcut, add it to `techdebt.md`.
 ## Implementation order
 
 One sequence for the VectorCraft port plans (`plans/vectorcraft-port/tier-1|2|3.md`) **and** the roadmap items
-below. It supersedes the ID order on the plans' status board. Tier 0 and all of Tier 1 except T1.6 are done.
+below. It supersedes the ID order on the plans' status board. Tier 0 and all of Tier 1 are done.
 Rules used: dependencies and shared modules first; quick wins before large items; a roadmap item is scheduled
 with the first feature that needs it (never as a standalone task, so nothing gets built without a consumer);
 small items (S) fill gaps between large ones.
 
-**Phase 1 — finish Tier 1, cheap wins on the new tool contract**
-1. **T1.6 Shaper** — the last Tier 1 item, and the first brand-new tool on `registerTool`.
+**Phase 1 — cheap wins on the new tool contract** (item 1, T1.6 Shaper, is done; numbers below are stable references)
 2. **T2.9 Eyedropper "Copy style"** — extends the already-ported eyedropper; no dependencies.
 3. **T3.1 Scrubby labels** — S; one undo step per scrub is now just a transaction around the drag.
 4. **T2.10 Magic Wand / Select Same** — S.
@@ -234,6 +233,16 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
 - **No stacking with live effects / taper** (same limit as the live-effects entry above).
+
+## Shaper (ext-shaper): follow-ups from T1.6
+
+Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-delete, one undo step per stroke (`core/shape-recognize.js`, `ext-shaper`). Remaining:
+- **Not in the tablet shell** (`TabletShell.js` `TOOLS`), though pen/tablet users are the target. A ninth button overflows the command bar at 768px (`tests/e2e/top-bar-layout.spec.js` "tablet command bar fits"); add the button together with another width tier in `tablet.css` (or fold the freehand tools into one flyout). Small.
+- **Shaper Groups** (VectorCraft's live compound results that re-recognise when a stroke is added) are deliberately skipped; results are plain shapes.
+- **Polygons are plain `<polygon>`s**, not polystar polygons. Making them editable with the polystar sides field means teaching `ext-polystar` to keep an orientation instead of rebuilding from angle 0.
+- **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
+- **Scribble hit-testing is sample-based** (`strokeTouches`): spacing is ≥ 0.5 document units and at most 2,000 samples, so a hairline crossed by a very long scribble at very low zoom can be missed. Text and images are tested by their bounding box.
+- No custom cursor and no options bar (waits for the `cursor()` / `options()` tool hooks).
 
 ## Glow (`fx-filter.js` / ext-glow): follow-ups from T1.7
 

@@ -87,6 +87,7 @@ svgedit/
 │   │   ├── ext-glow/              # Outer / inner glow (shared fx-filter composer)
 │   │   ├── ext-path-edit/         # Average / Add anchor points / Join buttons
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
+│   │   ├── ext-shaper/            # Shaper — rough stroke → clean shape; scribble deletes (core/shape-recognize.js)
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │
@@ -215,6 +216,7 @@ src/editor/index.html
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `remapCornerSource` keeps the source in sync from `coords.js` |
 | `shape-family.js` | DOM-free generators + drag geometry for the Spiral / Arc / Rectangular Grid / Polar Grid tools (`spiralD`, `arcD`, `dragRect`, `arcDragEnds`, `rectangularGridParts`, `polarGridParts`); used by ext-shape-family |
+| `shape-recognize.js` | DOM-free freehand shape recogniser behind the Shaper tool: `recognize(points)` → `line` / `rectangle` / `ellipse` / `polygon` / `scribble` / `null`. Distance-resampled (256), Douglas–Peucker with an explicit stack, corner count independent of where the stroke began, 45° snapping for rectangles/ellipses, upright/inverted triangles, 90° hexagons. Strict-typed (`tsconfig.strict.json`). VectorCraft port |
 | `bezier-fit.js` / `path-edit.js` / `path-join.js` | Least-squares Bézier fit; anchor-model path edits (refit remove-anchor, add anchors, average, join); select-mode Join |
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |

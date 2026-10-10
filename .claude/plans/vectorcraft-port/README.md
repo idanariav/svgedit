@@ -37,7 +37,7 @@ is in [tier-0.md](tier-0.md).
 | T1.3 | Live Corners upgrade (per-corner radius + kind) | — | done — see git log (on-canvas widgets / per-corner UI deferred, see roadmap.md) |
 | T1.4 | Path edits: remove-anchor refit, Average, Join, Add Anchor Points (+ shared Bézier-fit module) | — | done — see git log |
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | done — see git log (snapping, re-editable params, tablet shell deferred, see roadmap.md) |
-| T1.6 | Shaper tool (rough stroke → clean shape) | — (T0.3 helps) | todo |
+| T1.6 | Shaper tool (rough stroke → clean shape) | — (T0.3 helps) | done — see git log (tablet shell, Shaper Groups deferred, see roadmap.md) |
 | T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |
 | T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | todo |
 | T2.2 | Ruler guides | — (T2.1 helps) | todo |

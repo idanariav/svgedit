@@ -49,6 +49,7 @@ position, surviving move/delete) after the path is done.
   (ext-polystar), not a separate flyout of their own (see above)
 - `tool_spiral` / `tool_arc` / `tool_rectgrid` / `tool_polargrid` — also appended into the `tools_shapes` flyout
   (ext-shape-family), after star/polygon; see "ext-shape-family" below
+- `tool_shaper` — Shaper tool (ext-shaper, shortcut Shift+N) — inserted right after the pencil (`tool_fhpath`); see "ext-shaper" below
 - `tool_cutter` — Cutter/knife tool (ext-cutter, shortcut C) — position 11, after polystar
 - `tool_curvature` — Curvature tool (ext-curvature, shortcut Y) — position 12, after cutter
 - `tool_puppet_warp` — Puppet Warp tool (ext-puppet-warp, shortcut X) — position 13, after curvature.
@@ -591,6 +592,12 @@ Four more variants in the `tools_shapes` flyout (`tool_spiral`, `tool_arc`, `too
 - Marker options: None, Left Arrow, Right Arrow, Triangle, Diamond, Open Arrow (V), Box, Circle, Star, X, and Forward/Reverse/Vertical Slash. Filled shapes (arrows, triangle, diamond, box, circle, star) also have open `_o` variants. Open-stroke types (`openarrow`, slashes, `xmark`) are forced `fill:none` via the `strokeOnly` set so SVG doesn't auto-close them.
 - Marker geometry is defined in the `markerTypes` map (100×100 box, forward = +x); each type needs a matching icon in `src/editor/images/<id>.svg`
 - Panel show/hide is self-managed in the extension's `selectedChanged` (`showPanel`), independent of `updateContextPanel`
+
+### ext-shaper — Shaper (`extensions/ext-shaper/`)
+- **Shaper** (`tool_shaper`, mode `shaper`, Shift+N, button right after the pencil): draw a rough shape with the pen / mouse / finger. On release the stroke is classified by `core/shape-recognize.js` (DOM-free, VectorCraft `recognize.rs` port) and replaced by a native element in the current paint: **line** → `<line>` (fill none; keeps its free angle), **rectangle** → `<rect>`, **ellipse** → `<ellipse>`, **regular polygon** (3–8 sides) → plain `<polygon>`. Near-squares and near-circles snap to equal sides (within 10%); rectangles and ellipses snap to 45° steps (a `rotate(a cx cy)` transform when ≠ 0); a triangle points up or down, a hexagon sits on a flat or pointy side.
+- **Scribble** (a zig-zag with several sharp reversals) **deletes** the objects it touches instead: children of the current layer / group whose painted fill or stroke a sample of the scribble lands on (browser `isPointInFill` / `isPointInStroke`, only for paint the element has, so a scribble inside an unfilled outline leaves it; groups recurse; text/images use their bbox; frames are skipped). Deletion goes through `deleteSelectedElements`, so mirror twins and text-on-path behave as for Delete. A scribble that touches nothing is cancelled.
+- A stroke that is none of these is **discarded**: no freehand path is left, no undo step. The tool stays active after a discard or a scribble; after a created shape it returns to Select like every drawing tool (tool lock keeps it).
+- One undo step per stroke (`registerTool`, undo label "Shape stroke"); the live ink is a `<polyline>` in the tool overlay (`vector-effect: non-scaling-stroke`), never saved. Not in the tablet shell yet (the bar has no room at 768px; see `roadmap.md`).
 
 ### ext-cutter — Knife/Cut Tool (`extensions/ext-cutter/`)
 - **Cutter** (`tool_cutter`): affects selected shapes only (or all shapes if nothing selected). Two ways to cut:
