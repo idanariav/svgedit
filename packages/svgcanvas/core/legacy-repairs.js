@@ -99,3 +99,27 @@ export const sanitizeStackedTranslateTransforms = (root) => {
     }
   })
 }
+
+/**
+ * One-time repair for a legacy bug: undoing/redoing any attribute change on a
+ * `<text>` with `<tspan>` children shifted the tspans by `undefined - undefined`
+ * (undo.js, now guarded), writing `x="NaN" y="NaN"` into them. The original
+ * positions are not recoverable, so drop the NaN coordinate(s) and let the tspan
+ * inherit from its `<text>` (the closest valid position). Only touches a tspan
+ * `x`/`y` whose value is literally non-numeric.
+ *
+ * Called from setSvgString() (heal on open) and svgCanvasToString() (heal on save).
+ * @param {Element} root
+ * @returns {void}
+ */
+export const sanitizeLegacyNaNTspans = (root) => {
+  const tspans = root.getElementsByTagNameNS(NS.SVG, 'tspan')
+  Array.prototype.forEach.call(tspans, (tspan) => {
+    for (const name of ['x', 'y', 'dx', 'dy']) {
+      const value = tspan.getAttribute(name)
+      if (value !== null && /(?:^|[^A-Za-z])(?:NaN|undefined|Infinity)(?![A-Za-z])/.test(value)) {
+        tspan.removeAttribute(name)
+      }
+    }
+  })
+}

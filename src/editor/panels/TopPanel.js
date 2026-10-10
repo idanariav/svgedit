@@ -526,14 +526,6 @@ class TopPanel {
   }
 
   /**
-   *
-   * @returns {void}
-   */
-  clickClone () {
-    this.editor.svgCanvas.cloneSelectedElements(20, 20)
-  }
-
-  /**
    * @param {PlainObject} evt
    * @returns {void}
    */
@@ -1026,12 +1018,9 @@ class TopPanel {
     // register action to top panel buttons
     $click($id('tool_frame'), this.clickFrame.bind(this))
     $click($id('tool_wireframe'), this.clickWireframe.bind(this))
-    $click($id('tool_undo'), this.clickUndo.bind(this))
-    $click($id('tool_redo'), this.clickRedo.bind(this))
-    $click($id('tool_clone'), this.clickClone.bind(this))
-    $click($id('tool_clone_multi'), this.clickClone.bind(this))
-    $click($id('tool_delete'), this.deleteSelected.bind(this))
-    $click($id('tool_delete_multi'), this.deleteSelected.bind(this))
+    // tool_undo / tool_redo / tool_clone(_multi) / tool_delete(_multi) /
+    // tool_group_elements / tool_ungroup are views of registry commands
+    // (`command=` in TopPanel.html, see coreCommands.js) -- no direct binding.
     $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
     $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
     $click($id('tool_topath'), this.convertToPath.bind(this))
@@ -1042,7 +1031,6 @@ class TopPanel {
     $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
     $click($id('tool_flip_h'), this.clickFlipHorizontal.bind(this))
     $click($id('tool_flip_v'), this.clickFlipVertical.bind(this))
-    $click($id('tool_group_elements'), this.clickGroup.bind(this))
     $id('tool_bool_ops').addEventListener('change', this.clickBoolOps.bind(this))
     $click($id('tool_clip_set'), this.clickClipSet.bind(this))
     $click($id('tool_mask_set'), this.clickMaskSet.bind(this))
@@ -1071,7 +1059,6 @@ class TopPanel {
       field.dispatchEvent(new CustomEvent('change'))
     }))
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
-    $click($id('tool_ungroup'), this.clickGroup.bind(this))
     $click($id('tool_bold'), this.clickBold.bind(this))
     $click($id('tool_italic'), this.clickItalic.bind(this))
     $click($id('tool_text_decoration_underline'), () =>

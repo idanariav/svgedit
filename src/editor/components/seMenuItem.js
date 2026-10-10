@@ -3,6 +3,7 @@ import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import { ownerEditor } from '../domScope.js'
 import { formatShortcutAttr } from '../Hotkeys.js'
+import { onCommandClick } from './commandBinding.js'
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -160,6 +161,8 @@ export class SeMenuItem extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
+    // `command="<id>"` makes this item a view of a registry command (idempotent listener).
+    this.addEventListener('click', this._onCommandClick ??= () => onCommandClick(this))
     if (!this.hasAttribute('role')) this.setAttribute('role', 'menuitem')
     if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0')
     // Shortcut dispatch is owned by the central HotkeyManager; register this

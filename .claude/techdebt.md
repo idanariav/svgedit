@@ -97,10 +97,19 @@ element types, stale attribute names) are ones a strict compiler catches. Not st
 because nobody asked for it yet. The editor stays JavaScript; the goal is
 type safety in the canvas engine, not a rewrite.
 
-**Where things stand:** 31 of the 73 `core/` + `common/` modules carry
-`// @ts-check` (JSDoc types), checked by `npm run typecheck` with
+**Where things stand (updated 2026-10-10):** the modules added by Tier 0
+(`transaction.js`, `tool-registry.js`, `drawing-invariants.js`) plus
+`common/logger.js` are `// @ts-check` **and strict-clean** — the first three are listed in
+`packages/svgcanvas/tsconfig.strict.json` (`logger.js` is pulled in through their imports) (`noImplicitAny` +
+`strictNullChecks`), part of `npm run typecheck`; add a file there once it
+passes (that is step 2 below, done for these four). Editor-layer Tier 0
+modules (`commands.js`, `coreCommands.js`, `automation.js`,
+`components/commandBinding.js`) are `// @ts-check` too, checked through
+`src/editor/tsconfig.hostapi.json`. Everything else: 34 of the ~76 `core/` +
+`common/` modules carry `// @ts-check` (JSDoc types), checked with
 `noImplicitAny` and `strictNullChecks` **off**
-(`packages/svgcanvas/tsconfig.json`). Public types live in the hand-written
+(`packages/svgcanvas/tsconfig.json`). Decision so far: strict JSDoc, no `.ts`
+files (no toolchain change). Public types live in the hand-written
 `svgcanvas.d.ts` / `svgcanvas-members.d.ts` / `svgcanvas-internal.d.ts`,
 kept honest by `tests/unit/svgcanvas-dts-drift.test.js`. The entry above
 covers finishing that `@ts-check` rollout.
@@ -148,6 +157,80 @@ don't add to this backlog.
 
 Effort: large in total (69+ files) but small per module; risky only in the
 toolchain step.
+
+## Tier 0 follow-ups (VectorCraft port, 2026-10-10)
+
+Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing), command
+registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
+ext-shape-family), automation API. What it deliberately left, and what it found:
+
+**Bugs the sweep / property tests found and that are NOT fixed**
+- **`getSvgString()` purges unused `<defs>` as a side effect** (`svg-exec.js` ≈ line 47, the
+  `removeUnusedDefElems` loop), and that purge is not an undo step. Delete the only user of a
+  gradient/filter, autosave (or save) → undo → the shape comes back with `fill="url(#gone)"`.
+  Fix: record the purge, or only purge on export. High (silent data loss with autosave).
+- **NaN tspans in saved drawings.** Before this work, undoing/redoing *any* attribute change on a
+  `<text>` with tspans wrote `x="NaN" y="NaN"` into them (`undo.js` computed `undefined - undefined`).
+  Prevention is fixed and tested, and `sanitizeLegacyNaNTspans()` (`legacy-repairs.js`, called from
+  `setSvgString()` and `svgCanvasToString()`, `tests/unit/legacy-repairs.test.js`) drops NaN x/y/dx/dy from
+  tspans so they inherit from their `<text>` (the original positions are not recoverable). **Fixed.**
+- **Deleting a path leaves the `<textPath>` that runs along it dangling** (`dangling-ref`), as does
+  Stroke-to-Path. Known issue in `tests/e2e/command-sweep.spec.js` (`KNOWN_ISSUES`).
+- **ext-mirror:** redo of Object-to-Path on a mirrored shape re-syncs the twin from a style-less path
+  (also in `KNOWN_ISSUES`). Not caused by the batch coalescing (verified with it disabled).
+- Layer lock / dim (`tool_layerView`) is not an undo step (documented in `draw.js`), so the sweep excludes it.
+- Fixed on the way (all "ChangeElementCommand constructed before the mutation" — redo re-applied the old
+  value and left dangling refs): `fx-filter.js` `writeEffects` (glow / outline / shadow removal), `clip-mask.js`
+  `releaseClipMask`, `text-attrs.js` text-decoration toggles. Also: `paste` before the first right-click threw
+  (`getLastClickPoint` on `null`), `ext-mirror` threw on a source replaced by Object-to-Path, move / delete /
+  cut didn't record `se:*` source attributes (now `atomic`).
+
+**Migrate hand-built undo to `transact()`** — 60 `new BatchCommand` call sites in 34 files remain
+(`grep -rn "new BatchCommand"`). Do it opportunistically when touching a file; the pattern to look for is a
+`ChangeElementCommand` built before its mutation. `live-effects.js` apply/remove/expand, `text-attrs.js`
+decoration toggles and ext-shape-family are done. Also: other buttons/shortcuts that the sweep shows are
+fine today but would be safer `atomic` (it is opt-in per command, `editorShortcuts.js` / `coreCommands.js`).
+
+**Transactions**
+- Cost is O(elements) at begin and at commit/cancel (≈14 ms at begin, ≈22 ms at commit for 5,000 elements). Fine for gestures; if a
+  future caller wraps something that runs per pointer-move, add a lazy/targeted snapshot.
+- `live-effects.js` *preview* still uses the hidden-original + throwaway-clone design (clone marked
+  `data-se-ephemeral`). A transaction-based preview would mutate and re-select the real element on every
+  param tick and rebuild the effects panel mid-edit. Other hand-rolled previews: ext-curvature, ext-cutter.
+- `undo.js`'s `<text>` x/y tspan shift still applies only when the command carries x/y; a transaction that
+  moves a text and its tspans drops the tspans' x/y so they are not shifted twice (tested). A transaction
+  that changes the text's x and independently its tspans' x by a different amount would undo wrongly.
+
+**Command registry**
+- Only the pilot commands are real commands; every other button/menu item is an *adapter*. Migrate button
+  by button (`command="…"`), moving its enable/disable logic out of `topPanelContext.js` into `enabled`.
+  The button's `title` does not yet show the disabled reason (`list()` / `isEnabled()` do).
+- `INTERACTIVE_IDS` (`Hotkeys.js`) is a static list found by the sweep; a new dialog-opening button must be
+  added (or registered as a real command with `interactive: true`).
+- A hotkey on a disabled command is now inert and does not `preventDefault` (before, the button's own
+  guard swallowed it but the key was still prevented). `tool_clone` and `tool_clone_multi` share the default
+  key `D`; rebinding one leaves the other on it.
+- Plugin-side: expose `editor.commands.list()/run()` as Obsidian palette entries / hotkeys (plugin repo work,
+  see its techdebt).
+
+**Tool contract**
+- Only ext-shape-family is ported. ext-polystar has no tests; write characterisation tests before porting it.
+  `cursor()` and `options()/setOption()` from the plan are not implemented (no consumer yet); hover is
+  implemented (`wantsHover`) but has no pilot. Built-in modes (select/path/text/resize/rotate/zoom/shape) stay
+  in `event.js`.
+- Behaviour change in the ported tools: with grid snapping on, the dragged end now snaps too (the legacy
+  hooks snapped only the start point).
+
+**Tests / tooling**
+- `@fast-check/vitest` (0.5.0) needs vitest ≥ 4.1; the repo is on 4.0.16, so only `fast-check` is installed
+  (`tests/unit/properties/`, seed with `FC_SEED=…`). Install the vitest integration after the vitest upgrade.
+- The e2e `afterEach` invariant check can be opted out per test with
+  `test.info().annotations.push({ type: 'allow-corrupt-drawing', description: '…' })`; none do today. The
+  `closed-subpath` rule from the plan was not implemented on purpose (the node editor repairs `Z`-only
+  subpaths itself; it is not corruption) and a layer without `<title>` is not flagged (external SVGs have them).
+- `tests/e2e/unit/*` (the browser harness) was failing on HEAD: `anchor-path.js`'s bare `import 'svgpath'`
+  was unresolvable in the harness page. Fixed by bundling it (`copy-static.mjs`) and mapping it in
+  `unit-harness.html`. `check-dom-scope` was also failing on HEAD (`ext-path-edit.js`); fixed.
 
 ## Oversized modules (remaining)
 

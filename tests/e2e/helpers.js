@@ -36,13 +36,16 @@ export async function setSvgSource (page, svgMarkup) {
   await page.locator('#tool_source_save').click()
 }
 
+/**
+ * Click at a point given relative to #svgroot's top-left corner, in screen px.
+ * Driven through the editor's automation API (src/editor/automation.js) rather
+ * than raw page.mouse, so it works at any viewport size.
+ */
 export async function clickCanvas (page, point) {
-  const canvas = page.locator('#svgroot')
-  const box = await canvas.boundingBox()
-  if (!box) {
-    throw new Error('Could not determine canvas bounds')
-  }
-  await page.mouse.click(box.x + point.x, box.y + point.y)
+  await page.evaluate(({ x, y }) => {
+    const root = window.svgEditor.$id('svgroot').getBoundingClientRect()
+    window.svgEditor.automation.pointer([{ kind: 'click', x: root.left + x, y: root.top + y, space: 'screen' }])
+  }, point)
 }
 
 /**
@@ -59,19 +62,27 @@ export async function answerTextPrompt (page, value) {
   await dialog.locator('#text_prompt_ok').click()
 }
 
-export async function dragOnCanvas (page, start, end) {
-  const canvas = page.locator('#svgroot')
-  const box = await canvas.boundingBox()
-  if (!box) {
-    throw new Error('Could not determine canvas bounds')
-  }
-  const startX = box.x + start.x
-  const startY = box.y + start.y
-  const endX = box.x + end.x
-  const endY = box.y + end.y
+/**
+ * Drag between two points given relative to #svgroot's top-left corner (screen px),
+ * through the automation API.
+ */
+export async function dragOnCanvas (page, start, end, { steps = 10 } = {}) {
+  await page.evaluate((args) => {
+    const root = window.svgEditor.$id('svgroot').getBoundingClientRect()
+    window.svgEditor.automation.pointer([{
+      kind: 'drag',
+      x: root.left + args.start.x,
+      y: root.top + args.start.y,
+      to: { x: root.left + args.end.x, y: root.top + args.end.y },
+      steps: args.steps,
+      space: 'screen'
+    }])
+  }, { start, end, steps })
+}
 
-  await page.mouse.move(startX, startY)
-  await page.mouse.down()
-  await page.mouse.move(endX, endY)
-  await page.mouse.up()
+/** Drag between two points in document units (any zoom/scroll), through the automation API. */
+export async function dragInDocument (page, from, to, { steps = 10, mods } = {}) {
+  await page.evaluate((args) => {
+    window.svgEditor.automation.pointer([{ kind: 'drag', x: args.from.x, y: args.from.y, to: args.to, steps: args.steps, mods: args.mods, space: 'doc' }])
+  }, { from, to, steps, mods })
 }

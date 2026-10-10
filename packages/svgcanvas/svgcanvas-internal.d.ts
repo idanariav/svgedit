@@ -442,4 +442,18 @@ export interface InternalMembers {
   updateClipPath: any
   /** @internal */
   withContextUndimmed: any
+  /** @internal */
+  cancelToolGesture(...args: any[]): any
+  /** @internal */
+  toolHover(...args: any[]): any
+  /** @internal */
+  toolKeyDown(...args: any[]): any
+  /** @internal */
+  toolModeChanged(...args: any[]): any
+  /** @internal */
+  toolPointerDown(...args: any[]): any
+  /** @internal */
+  toolPointerMove(...args: any[]): any
+  /** @internal */
+  toolPointerUp(...args: any[]): any
 }

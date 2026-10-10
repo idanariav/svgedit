@@ -3,7 +3,9 @@
  * carries `id`/`group`/`label` so the Hotkey Manager (see Hotkeys.js) can
  * list and rebind it. `key` may use the `mod` token (platform command key)
  * and `/` to separate equivalent default keys; the trailing `true` keeps the
- * original preventDefault behaviour.
+ * original preventDefault behaviour. `atomic: true` runs the command inside an
+ * undo transaction (see commands.js), for the ones whose hand-recorded undo
+ * missed part of what they change (found by the command sweep).
  * Split out of Editor.js; `buildEditorShortcuts(editor)` returns the table and
  * every handler acts on the given editor instance.
  */
@@ -101,6 +103,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_up',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_up',
     key: ['arrowup', true],
@@ -110,6 +113,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_down',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_down',
     key: ['arrowdown', true],
@@ -119,6 +123,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_left',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_left',
     key: ['arrowleft', true],
@@ -128,6 +133,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_right',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_right',
     key: ['arrowright', true],
@@ -137,6 +143,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_up_big',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_up_big',
     key: 'shift+arrowup',
@@ -146,6 +153,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_down_big',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_down_big',
     key: 'shift+arrowdown',
@@ -155,6 +163,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_left_big',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_left_big',
     key: 'shift+arrowleft',
@@ -164,6 +173,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'move_right_big',
+    atomic: true,
     group: 'Move',
     label: 'hotkeys.move_right_big',
     key: 'shift+arrowright',
@@ -263,6 +273,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'delete_selected',
+    atomic: true,
     group: 'Edit',
     label: 'hotkeys.delete_selected',
     key: ['delete/backspace', true],
@@ -287,6 +298,7 @@ export const buildEditorShortcuts = (editor) => [
   },
   {
     id: 'cut',
+    atomic: true,
     group: 'Edit',
     label: 'hotkeys.cut',
     key: 'mod+x',

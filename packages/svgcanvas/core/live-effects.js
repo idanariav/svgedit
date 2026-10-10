@@ -38,6 +38,8 @@
  */
 
 import { NS } from './namespaces.js'
+import { EPHEMERAL_ATTR } from './history.js'
+import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { warn } from '../common/logger.js'
 import { getPathDFromElement } from './path-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
@@ -386,12 +388,15 @@ const restoreStyle = (elem) => {
   elem.removeAttribute(FX_STYLE_ATTR)
 }
 
-const snapshot = (elem, names) => Object.fromEntries(names.map((n) => [n, elem.getAttribute(n)]))
-
 export const init = (canvas) => {
   const svgCanvas = canvas
 
   registerGeometryRemap(FX_SOURCE_ATTR, remapFxSource)
+  registerAttrValidator(FX_SOURCE_ATTR, pathDataValidator)
+  registerAttrValidator(FX_ATTR, (value) => {
+    const named = value.split(';').filter((part) => part.trim()).length
+    return parseFxRaw(value).unknown === 0 && named > 0 ? true : 'names an unknown or malformed effect'
+  })
 
   const getSelected = () => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
@@ -473,6 +478,7 @@ export const init = (canvas) => {
         if (a.name === 'id' || a.name.startsWith('se:')) clone.removeAttribute(a.name)
       }
       clone.setAttribute('pointer-events', 'none')
+      clone.setAttribute(EPHEMERAL_ATTR, '')
       elem.after(clone)
       session = { elem, clone, visibility: elem.getAttribute('visibility') }
       elem.setAttribute('visibility', 'hidden')
@@ -489,8 +495,9 @@ export const init = (canvas) => {
   const cancelLiveEffectsPreview = () => endPreview()
 
   // --- history-recording operations --------------------------------------
-  const finish = (batchCmd, elem) => {
-    svgCanvas.addCommandToHistory(batchCmd)
+  // Each runs inside svgCanvas.transact(), so the one undo step is whatever
+  // the body changed; nothing here builds commands by hand.
+  const finish = (elem) => {
     svgCanvas.selectOnly([elem], true)
     svgCanvas.call('changed', [elem])
     return elem
@@ -499,52 +506,49 @@ export const init = (canvas) => {
   /**
    * Apply (or replace) a stack on the selected element as one undo step.
    * Primitives are swapped for an equivalent `<path>` (same id) in the same
-   * batch. An empty stack removes the effects.
+   * step. An empty stack removes the effects.
    * @param {Array<{name: string, params?: Object}>} stack
    * @returns {?Element} The (possibly new) element, or null when not applicable.
    */
   const applyLiveEffects = (stack) => {
     endPreview()
-    let elem = getSelected()
-    if (!canApplyLiveEffect(elem)) return null
+    const selected = getSelected()
+    if (!canApplyLiveEffect(selected)) return null
     const clean = sanitizeFxStack(stack)
     if (!clean.length) return removeLiveEffects()
-    reconcileLiveEffects(elem)
-    const src = getSource(elem)
+    reconcileLiveEffects(selected)
+    const src = getSource(selected)
     const d = src && computeFxD(src, clean)
     if (!d) {
       warn('Live effect could not be applied to the selection', null, 'live-effects')
       return null
     }
 
-    const { BatchCommand, ChangeElementCommand, InsertElementCommand, RemoveElementCommand } = svgCanvas.history
-    const batchCmd = new BatchCommand('Live effects')
-    if (elem.tagName !== 'path') {
-      const path = primitiveToPath(elem)
-      if (!path) return null
-      elem.before(path)
-      batchCmd.addSubCommand(new InsertElementCommand(path))
-      batchCmd.addSubCommand(new RemoveElementCommand(elem, elem.nextSibling, elem.parentNode))
-      elem.remove()
-      elem = path
-    }
-
-    const oldValues = snapshot(elem, ['d', FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR, ...STYLE_ATTRS])
-    const paint = strokeOutputOf(clean)
-    if (paint) {
-      const attrs = hatchPaint(elem, paint.width)
-      if (!elem.hasAttribute(FX_STYLE_ATTR)) {
-        elem.setAttribute(FX_STYLE_ATTR, STYLE_ATTRS.map((a) => elem.getAttribute(a) ?? '').join('|'))
+    const elem = svgCanvas.transact('Live effects', () => {
+      let target = selected
+      if (target.tagName !== 'path') {
+        const path = primitiveToPath(target)
+        if (!path) return null
+        target.before(path)
+        target.remove()
+        target = path
       }
-      setAttrs(elem, attrs)
-    } else {
-      restoreStyle(elem)
-    }
-    elem.setAttribute(FX_SOURCE_ATTR, src)
-    elem.setAttribute(FX_ATTR, serializeFxStack(clean))
-    elem.setAttribute('d', d)
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, oldValues))
-    return finish(batchCmd, elem)
+      const paint = strokeOutputOf(clean)
+      if (paint) {
+        const attrs = hatchPaint(target, paint.width)
+        if (!target.hasAttribute(FX_STYLE_ATTR)) {
+          target.setAttribute(FX_STYLE_ATTR, STYLE_ATTRS.map((a) => target.getAttribute(a) ?? '').join('|'))
+        }
+        setAttrs(target, attrs)
+      } else {
+        restoreStyle(target)
+      }
+      target.setAttribute(FX_SOURCE_ATTR, src)
+      target.setAttribute(FX_ATTR, serializeFxStack(clean))
+      target.setAttribute('d', d)
+      return target
+    })
+    return elem && finish(elem)
   }
 
   /**
@@ -557,16 +561,13 @@ export const init = (canvas) => {
     const elem = getSelected()
     const src = elem?.getAttribute(FX_SOURCE_ATTR)
     if (!src) return null
-    const { BatchCommand, ChangeElementCommand } = svgCanvas.history
-    const batchCmd = new BatchCommand('Remove live effects')
-    batchCmd.addSubCommand(new ChangeElementCommand(
-      elem, snapshot(elem, ['d', FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR, ...STYLE_ATTRS])
-    ))
-    restoreStyle(elem)
-    elem.setAttribute('d', src)
-    elem.removeAttribute(FX_ATTR)
-    elem.removeAttribute(FX_SOURCE_ATTR)
-    return finish(batchCmd, elem)
+    svgCanvas.transact('Remove live effects', () => {
+      restoreStyle(elem)
+      elem.setAttribute('d', src)
+      elem.removeAttribute(FX_ATTR)
+      elem.removeAttribute(FX_SOURCE_ATTR)
+    })
+    return finish(elem)
   }
 
   /**
@@ -577,15 +578,12 @@ export const init = (canvas) => {
     endPreview()
     const elem = getSelected()
     if (!elem?.hasAttribute(FX_SOURCE_ATTR)) return null
-    const { BatchCommand, ChangeElementCommand } = svgCanvas.history
-    const batchCmd = new BatchCommand('Expand live effects')
-    batchCmd.addSubCommand(new ChangeElementCommand(
-      elem, snapshot(elem, [FX_ATTR, FX_SOURCE_ATTR, FX_STYLE_ATTR])
-    ))
-    elem.removeAttribute(FX_ATTR)
-    elem.removeAttribute(FX_SOURCE_ATTR)
-    elem.removeAttribute(FX_STYLE_ATTR)
-    return finish(batchCmd, elem)
+    svgCanvas.transact('Expand live effects', () => {
+      elem.removeAttribute(FX_ATTR)
+      elem.removeAttribute(FX_SOURCE_ATTR)
+      elem.removeAttribute(FX_STYLE_ATTR)
+    })
+    return finish(elem)
   }
 
   svgCanvas.registerLiveEffect = registerLiveEffect

@@ -29,6 +29,9 @@ import BottomPanel from './panels/BottomPanel.js'
 import RightPanel from './panels/RightPanel.js'
 import TabletShell from './panels/TabletShell.js'
 import MainMenu from './MainMenu.js'
+import { CommandRegistry } from './commands.js'
+import { registerCoreCommands } from './coreCommands.js'
+import { Automation } from './automation.js'
 import HotkeyManager from './Hotkeys.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
 import { getIconDataUri } from './images/iconRegistry.js'
@@ -83,6 +86,9 @@ class Editor extends EditorStartup {
     // and `/` to separate equivalent default keys; the trailing `true` keeps the
     // original preventDefault behaviour.
     this.shortcuts = buildEditorShortcuts(this)
+    this.commands = new CommandRegistry(this)
+    registerCoreCommands(this.commands)
+    this.automation = new Automation(this)
     this.hotkeys = new HotkeyManager(this)
     this.hotkeys.ingestEditorShortcuts(this.shortcuts)
     this.leftPanel = new LeftPanel(this)

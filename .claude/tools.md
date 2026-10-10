@@ -111,6 +111,16 @@ mechanics live in `toolDragReorder.js`.
 
 ---
 
+## Adding or changing a toolbar control
+
+A toolbar/menu action is a **command** (`editor.commands`, `commands.js`): register it with a stable id
+and point the button at it with `command="<id>"` — that gives the hotkey, the favorites menu, the tablet
+shell and the host API the same single implementation, and the button's `disabled` state follows the
+command's `enabled` check (`refreshEnablement`). Buttons without `command=` keep working through the
+transitional adapter. Pilot-migrated: `tool_clone`, `tool_delete`, `tool_group_elements`, `tool_ungroup`,
+`tool_undo`, `tool_redo` (+ `paste`, `paste_in_place`, `zoom_fit`, which have no toolbar button); see
+`coreCommands.js` and `extensions.md` › Commands.
+
 ## Top Panel — Quick Actions (`src/editor/panels/TopPanel.html`)
 
 The top panel is a horizontal flex bar of rounded **trays** (shared `.quick_tray`
@@ -543,6 +553,7 @@ Flying button (left panel):
 
 ### ext-shape-family — Spiral, Arc, Rectangular Grid, Polar Grid (`extensions/ext-shape-family/`)
 Four more variants in the `tools_shapes` flyout (`tool_spiral`, `tool_arc`, `tool_rectgrid`, `tool_polargrid`; modes `spiral`, `arc`, `rectgrid`, `polargrid`; double-click locks like the other shapes). No context panel — the options are in the drag keys and a popover:
+- Registered through `svgCanvas.registerTool` (`core/tool-registry.js`): document-space coordinates at any zoom, one undo step per drag (`Draw spiral`, …), Esc rolls the drag back. With grid snapping on, both ends of the drag now snap (the legacy hooks snapped only the start).
 - **Drag** to draw. **Shift** = equal axes (square box / arc), **Alt** = from the centre (arc and grids), **Space held** moves the shape instead of resizing it, **↑/↓** = spiral segments / grid horizontal dividers / polar concentric dividers, **←/→** = grid vertical dividers / polar radial dividers, **Esc** aborts. Counts persist for the next shape.
 - **Click without dragging** opens the options form at the pointer (size, counts; spiral decay % and direction; arc slope % and closed/pie; rect-grid frame). Enter / Create inserts the shape there; Esc, Cancel or clicking elsewhere dismisses it.
 - Output: spiral and arc are a single `<path>` (no fill unless a closed arc); a grid is a `<g>` of lines/ellipses/frame so it moves as one. Style comes from the current stroke (a `none` stroke falls back to black).

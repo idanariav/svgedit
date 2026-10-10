@@ -4,7 +4,47 @@
  * here: `svgcanvas.d.ts` merges it into the public class, and `svgcanvas.js`
  * extends it through its base-class type so `@ts-check` knows the surface.
  */
-import type { Config, SVGElementJSON, Resolution, BBox, UndoManager } from './svgcanvas.js'
+import type { Config, SVGElementJSON, Resolution, BBox, UndoManager, HistoryCommand } from './svgcanvas.js'
+
+export interface ToolMods { shift: boolean, alt: boolean, ctrl: boolean, meta: boolean, mod: boolean }
+export interface ToolEvent {
+  /** Document units, unzoomed, grid-snapped, in the current group's local space. */
+  x: number
+  y: number
+  /** The same, before grid snapping. */
+  rawX: number
+  rawY: number
+  screenX: number
+  screenY: number
+  /** Screen pixels moved since the press. */
+  dragDistance: number
+  mods: ToolMods
+  button: number
+  event: MouseEvent
+}
+export interface ToolContext {
+  canvas: AttachedMembers & Record<string, any>
+  zoom: number
+  start?: ToolEvent
+  snap(pt: { x: number, y: number }): { x: number, y: number }
+  addOverlay(el: Element): void
+  clearOverlays(): void
+  finishCreated(el: Element, evt?: { altKey?: boolean }): void
+}
+export interface ToolDef {
+  id: string
+  activate?(ctx: ToolContext): void
+  deactivate?(ctx: ToolContext): void
+  /** Return false to decline; the legacy pipeline then handles the press. */
+  pointerDown(ctx: ToolContext, ev: ToolEvent): void | false
+  pointerMove?(ctx: ToolContext, ev: ToolEvent): void
+  /** 'cancel' rolls the gesture back; `{ created }` finishes a new element. */
+  pointerUp?(ctx: ToolContext, ev: ToolEvent): void | 'cancel' | { created?: Element }
+  keyDown?(ctx: ToolContext, ev: KeyboardEvent): boolean
+  cancel?(ctx: ToolContext): void
+  undoLabel?: string
+  wantsHover?: boolean
+}
 
 export interface AttachedMembers {
   setSvgString(xmlString: string, preventUndo?: boolean): boolean
@@ -58,6 +98,26 @@ export interface AttachedMembers {
   undo(): void
   redo(): void
   unbind(event: string, callback: Function): void
+  /**
+   * Start recording every change to the drawing as ONE undo step (core/transaction.js).
+   * Nested calls join the outermost transaction. `commit()` returns the pushed
+   * batch, or null when nothing net-changed; `cancel()` restores the drawing and selection.
+   */
+  beginTransaction(label: string, options?: { selection?: boolean }): { label: string, commit(): HistoryCommand | null, cancel(): void }
+  /** Run `fn` as one undo step; a throw rolls the drawing back and rethrows. `fn` must be synchronous. */
+  transact<T>(label: string, fn: () => T): T
+  inTransaction(): boolean
+  /**
+   * Register a tool whose id is the mode name `setMode(id)` switches to (core/tool-registry.js).
+   * Events arrive in document units; each press-to-release gesture is one undo step.
+   */
+  registerTool(def: ToolDef): void
+  unregisterTool(id: string): boolean
+  hasTool(id: string): boolean
+  /** Finish a newly created element like a drawn shape (opacity, events, select it unless locked). */
+  finishCreatedElement(el: Element, evt?: { altKey?: boolean }): void
+  /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
+  checkDrawing(): Array<{ code: string, message: string, id?: string }>
   
   // Attribute manipulation
   changeSelectedAttribute(attr: string, val: string | number, elems?: Element[]): void

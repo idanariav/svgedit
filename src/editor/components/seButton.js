@@ -3,6 +3,7 @@ import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import { ownerEditor } from '../domScope.js'
+import { onCommandClick } from './commandBinding.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -218,6 +219,8 @@ export class ToolButton extends HTMLElement {
   set size (value) { this.setAttribute('size', value) }
 
   connectedCallback () {
+    // `command="<id>"` makes this button a view of a registry command (idempotent listener).
+    this.addEventListener('click', this._onCommandClick ??= () => onCommandClick(this))
     // Register this button as a hotkey-able action with the central
     // HotkeyManager — whether or not it ships a default `shortcut`, so every
     // toolbar/panel action can be listed and (re)bound from the Hotkey Manager.

@@ -349,7 +349,7 @@ export class ChangeElementCommand extends Command {
   /**
   * @param {Element} elem - The DOM element that was changed
   * @param {module:history.CommandAttributes} attrs - Attributes to be changed with the values they had *before* the change
-  * @param {string} text - An optional string visible to user related to this change
+  * @param {string} [text] - An optional string visible to user related to this change
    */
   constructor (elem, attrs, text) {
     super()
@@ -479,9 +479,11 @@ export class BatchCommand extends Command {
   * @returns {void}
   */
   apply (handler) {
-    this.stack.forEach((stackItem) => {
-      console.assert(stackItem, 'stack item should not be null')
-      stackItem && stackItem.apply(handler)
+    this.runBatched(handler, () => {
+      this.stack.forEach((stackItem) => {
+        console.assert(stackItem, 'stack item should not be null')
+        stackItem && stackItem.apply(handler)
+      })
     })
   }
 
@@ -493,10 +495,31 @@ export class BatchCommand extends Command {
   * @returns {void}
   */
   unapply (handler) {
-    [...this.stack].reverse().forEach((stackItem) => {
-      console.assert(stackItem, 'stack item should not be null')
-      stackItem && stackItem.unapply(handler)
+    this.runBatched(handler, () => {
+      [...this.stack].reverse().forEach((stackItem) => {
+        console.assert(stackItem, 'stack item should not be null')
+        stackItem && stackItem.unapply(handler)
+      })
     })
+  }
+
+  /**
+   * Brackets `fn` with the handler's optional `beginBatch()`/`endBatch()` so it
+   * can coalesce the expensive, global notifications (clear selection, the
+   * `changed` event) into ONE per batch instead of one per subcommand. Before
+   * this, undoing a 5,000-element move cost ~12 s, almost all of it 5,000
+   * `changed` dispatches. Handlers without the hooks behave as before.
+   * @param {module:history.HistoryEventHandler} handler
+   * @param {function(): void} fn
+   * @returns {void}
+   */
+  runBatched (handler, fn) {
+    handler?.beginBatch?.()
+    try {
+      fn()
+    } finally {
+      handler?.endBatch?.()
+    }
   }
 
   /**
@@ -532,6 +555,168 @@ export class BatchCommand extends Command {
   */
   isEmpty () {
     return !this.stack.length
+  }
+}
+
+/**
+ * @typedef {object} ChildListChange
+ * @property {Node} parent
+ * @property {Node[]} before - `parent.childNodes` before the change
+ * @property {Node[]} after - `parent.childNodes` after the change
+ */
+
+/**
+ * Marker for nodes that live inside `#svgcontent` without being document
+ * content (previews, overlays). Transactions never record them or their
+ * subtrees, and structural undo/redo leaves them where they are.
+ */
+export const EPHEMERAL_ATTR = 'data-se-ephemeral'
+
+/**
+ * @param {Node} node
+ * @returns {boolean} whether `node` is, or sits inside, an ephemeral element
+ */
+export const isEphemeral = (node) => {
+  const el = node.nodeType === 1 ? /** @type {Element} */ (node) : node.parentElement
+  return Boolean(el?.closest(`[${EPHEMERAL_ATTR}]`))
+}
+
+const sameNodes = (a, b) => a.length === b.length && a.every((n, i) => n === b[i])
+
+/**
+ * Sets every change's parent to its `before` or `after` child list.
+ * Two phases so that moving a node *between* parents (or re-nesting groups)
+ * can't hit a transient "insert an ancestor into its descendant" error: first
+ * detach whatever a parent shouldn't hold, then fill each parent in order.
+ * Parents that already hold the target children are left alone, so undoing a
+ * single insert in a 5,000-child layer doesn't re-attach all 5,000.
+ * @param {ChildListChange[]} changes
+ * @param {'before'|'after'} key
+ * @returns {void}
+ */
+const setChildLists = (changes, key) => {
+  for (const change of changes) {
+    const keep = new Set(change[key])
+    for (const child of [...change.parent.childNodes]) {
+      if (!keep.has(child) && !isEphemeral(child)) child.parentNode.removeChild(child)
+    }
+  }
+  for (const change of changes) {
+    const kids = Array.from(change.parent.childNodes)
+    if (!sameNodes(kids.filter((n) => !isEphemeral(n)), change[key])) {
+      /** @type {Element} */ (change.parent).replaceChildren(...change[key], ...kids.filter(isEphemeral))
+    }
+  }
+}
+
+/**
+ * History command for a structural change to one or more parents' child
+ * lists (insert, remove, reorder, move between parents), stored as the full
+ * before/after child lists. Produced by `transaction.js`, which reconstructs
+ * the lists from MutationObserver records; hand-written code should keep
+ * using Insert/Remove/MoveElementCommand.
+ * @implements {module:history.HistoryCommand}
+ */
+export class ChildListCommand extends Command {
+  /**
+   * @param {ChildListChange[]} changes
+   * @param {string} [text]
+   */
+  constructor (changes, text) {
+    super()
+    this.changes = changes
+    this.text = text || 'Change structure'
+    const before = new Set(changes.flatMap((c) => c.before))
+    const after = new Set(changes.flatMap((c) => c.after))
+    // Nodes that enter / leave the drawing altogether (moves between parents
+    // are in both sets and so are neither).
+    this.entering = [...after].filter((n) => !before.has(n))
+    this.leaving = [...before].filter((n) => !after.has(n))
+  }
+
+  /**
+   * @param {module:history.HistoryEventHandler} handler
+   * @returns {void}
+   */
+  apply (handler) {
+    super.apply(handler, () => setChildLists(this.changes, 'after'))
+  }
+
+  /**
+   * @param {module:history.HistoryEventHandler} handler
+   * @returns {void}
+   */
+  unapply (handler) {
+    super.unapply(handler, () => setChildLists(this.changes, 'before'))
+  }
+
+  /**
+   * Elements attached to the drawing by applying (`isApply`) or unapplying.
+   * @param {boolean} isApply
+   * @returns {Element[]}
+   */
+  attachedElements (isApply) {
+    return (isApply ? this.entering : this.leaving).filter((n) => n.nodeType === 1)
+  }
+
+  /**
+   * Elements whose membership in a parent changed; a pure reorder reports the
+   * parent itself.
+   * @returns {Element[]}
+   */
+  elements () {
+    const elems = new Set()
+    for (const { parent, before, after } of this.changes) {
+      const b = new Set(before)
+      const a = new Set(after)
+      const moved = [...before.filter((n) => !a.has(n)), ...after.filter((n) => !b.has(n))]
+      for (const n of moved) if (n.nodeType === 1) elems.add(n)
+      if (!moved.length && parent.nodeType === 1) elems.add(parent)
+    }
+    return [...elems]
+  }
+}
+
+/**
+ * History command for editing a text node's data in place (typing inside a
+ * `<text>`/`<tspan>`/`<title>`). Produced by `transaction.js`.
+ * @implements {module:history.HistoryCommand}
+ */
+export class CharacterDataCommand extends Command {
+  /**
+   * @param {CharacterData} node
+   * @param {string} oldData
+   * @param {string} [text]
+   */
+  constructor (node, oldData, text) {
+    super()
+    this.node = node
+    this.oldData = oldData
+    this.newData = node.data
+    this.text = text || 'Change text'
+  }
+
+  /**
+   * @param {module:history.HistoryEventHandler} handler
+   * @returns {void}
+   */
+  apply (handler) {
+    super.apply(handler, () => { this.node.data = this.newData })
+  }
+
+  /**
+   * @param {module:history.HistoryEventHandler} handler
+   * @returns {void}
+   */
+  unapply (handler) {
+    super.unapply(handler, () => { this.node.data = this.oldData })
+  }
+
+  /**
+   * @returns {Element[]} The element owning the text node
+   */
+  elements () {
+    return this.node.parentElement ? [this.node.parentElement] : []
   }
 }
 

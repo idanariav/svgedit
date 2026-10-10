@@ -29,18 +29,39 @@ const {
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
+  // Batch coalescing (see BatchCommand.runBatched): while a batch is being
+  // (un)applied, the selection is cleared once and `changed` fires once with
+  // every element the batch touched.
+  let batchDepth = 0
+  let batchCleared = false
+  const batchChanged = new Set()
+
   const getUndoManager = () => {
     return new UndoManager({
-    /**
-     * @param {string} eventType One of the HistoryEvent types
-     * @param {module:history.HistoryCommand} cmd Fulfills the HistoryCommand interface
-     * @fires module:undo.SvgCanvas#event:changed
-     * @returns {void}
-     */
+      beginBatch () {
+        batchDepth++
+      },
+      endBatch () {
+        if (--batchDepth > 0) return
+        batchCleared = false
+        const elems = [...batchChanged]
+        batchChanged.clear()
+        if (elems.length) svgCanvas.call('changed', elems)
+      },
+      /**
+       * @param {string} eventType One of the HistoryEvent types
+       * @param {module:history.HistoryCommand} cmd Fulfills the HistoryCommand interface
+       * @fires module:undo.SvgCanvas#event:changed
+       * @returns {void}
+       */
       handleHistoryEvent (eventType, cmd) {
         const EventTypes = HistoryEventTypes
         // TODO: handle setBlurOffsets.
         if (eventType === EventTypes.BEFORE_UNAPPLY || eventType === EventTypes.BEFORE_APPLY) {
+          if (batchDepth > 0) {
+            if (batchCleared) return
+            batchCleared = true
+          }
           svgCanvas.clearSelection()
         } else if (eventType === EventTypes.AFTER_APPLY || eventType === EventTypes.AFTER_UNAPPLY) {
           const cmdType = cmd.type()
@@ -88,11 +109,25 @@ export const init = (canvas) => {
             mode: svgCanvas.getCurrentMode(),
             refreshedInPlace
           })
-          svgCanvas.call('changed', elems)
+          if (batchDepth > 0) {
+            for (const el of elems) batchChanged.add(el)
+          } else {
+            svgCanvas.call('changed', elems)
+          }
           if (cmdType === 'MoveElementCommand') {
             const parent = isApply ? cmd.newParent : cmd.oldParent
             if (parent === svgCanvas.getSvgContent()) {
               svgCanvas.identifyLayers()
+            }
+          } else if (cmdType === 'ChildListCommand') {
+            // Same side effects as Insert/Remove/Move, for a transaction's
+            // before/after child lists.
+            if (cmd.changes.some((c) => c.parent === svgCanvas.getSvgContent())) {
+              svgCanvas.identifyLayers()
+            }
+            for (const el of cmd.attachedElements(isApply)) {
+              svgCanvas.restoreRefElements(el)
+              if (el.tagName === 'use') svgCanvas.setUseData(el)
             }
           } else if (cmdType === 'InsertElementCommand' || cmdType === 'RemoveElementCommand') {
             if (cmd.parent === svgCanvas.getSvgContent()) {
@@ -121,10 +156,16 @@ export const init = (canvas) => {
               svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)
             }
             if (cmd.elem.tagName === 'text') {
-              const [dx, dy] = [cmd.newValues.x - cmd.oldValues.x,
-                cmd.newValues.y - cmd.oldValues.y]
+              // Only an x/y change moves the tspans. A command that touched
+              // neither (fill, font-size, …) used to compute NaN here and
+              // write x="NaN" y="NaN" into every tspan on undo/redo.
+              const delta = (k) => {
+                const d = (k in cmd.newValues && k in cmd.oldValues) ? cmd.newValues[k] - cmd.oldValues[k] : 0
+                return Number.isFinite(d) ? d : 0
+              }
+              const [dx, dy] = [delta('x'), delta('y')]
 
-              const tspans = cmd.elem.children
+              const tspans = (dx || dy) ? cmd.elem.children : []
 
               for (let i = 0; i < tspans.length; i++) {
                 let x = Number(tspans[i].getAttribute('x'))

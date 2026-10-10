@@ -355,7 +355,6 @@ export const createFxComposer = (svgCanvas) => {
         existing.remove()
       }
       if (oldFilterAttr) {
-        batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr }))
         const saved = prevFilterMap[elemId]
         if (saved) {
           elem.setAttribute('filter', saved)
@@ -363,6 +362,9 @@ export const createFxComposer = (svgCanvas) => {
         } else {
           elem.removeAttribute('filter')
         }
+        // Built after the change: ChangeElementCommand reads the NEW value from
+        // the DOM at construction, so building it first made redo re-apply the old one.
+        batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr }))
       }
       return
     }
@@ -387,8 +389,8 @@ export const createFxComposer = (svgCanvas) => {
     batchCmd.addSubCommand(new InsertElementCommand(filter))
     const newFilterAttr = `url(#${filterId})`
     if (oldFilterAttr !== newFilterAttr) {
-      batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr ?? '' }))
       elem.setAttribute('filter', newFilterAttr)
+      batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr ?? '' }))
     }
   }
 

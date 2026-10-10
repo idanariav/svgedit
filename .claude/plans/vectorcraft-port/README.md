@@ -24,12 +24,12 @@ is in [tier-0.md](tier-0.md).
 
 | ID | Feature | Depends on | Status |
 |---|---|---|---|
-| T0.1 | Command registry ("everything is a command") | — | todo |
-| T0.2 | Undo transactions (begin → preview → commit / cancel) | — | todo |
-| T0.3 | Tool contract (`registerTool`) | T0.2 (+ T1.5 committed, for the pilot) | todo |
-| T0.4 | Drawing invariants + command sweep + property tests | sweep: T0.1 | todo |
-| T0.5 | Automation API (inspect + doc-space pointer) | T0.1 | todo |
-| T0.6 | Layering guard (`check-layers.mjs`) | — | todo |
+| T0.1 | Command registry ("everything is a command") | — | done — uncommitted, 2026-10-10 (pilot: 9 commands; other buttons ride the adapter) |
+| T0.2 | Undo transactions (begin → preview → commit / cancel) **+ BatchCommand coalescing fix** | — | done — uncommitted, 2026-10-10 (property test lands with T0.4) |
+| T0.3 | Tool contract (`registerTool`) | T0.2 (+ T1.5 committed, for the pilot) | done — uncommitted, 2026-10-10 (pilot: ext-shape-family) |
+| T0.4 | Drawing invariants + command sweep + property tests | sweep: T0.1 | done — uncommitted, 2026-10-10 |
+| T0.5 | Automation API (inspect + doc-space pointer) | T0.1 | done — uncommitted, 2026-10-10 |
+| T0.6 | Layering guard (`check-layers.mjs`) | — | done — uncommitted, 2026-10-10 |
 | T1.0 | Live-effect foundation (`se:fx` stack) | — | done — b99390d0 |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
@@ -77,7 +77,9 @@ is in [tier-0.md](tier-0.md).
    the behaviour spans real DOM wiring.
 5. **Every new `se:*` attribute gets a round-trip fixture** in
    `tests/e2e/fixtures/roundtrip/` (the round-trip spec asserts load→save→load
-   stabilises).
+   stabilises), **and `checkDrawing` must stay clean** on it: register an
+   `registerAttrValidator` for the attribute from the module's `init`. The
+   command sweep runs every command over every fixture.
 6. **Docs stay fresh:** update `.claude/tools.md`, `file-map.md`,
    `architecture.md`, `extensions.md`, `attributes.md`, `css-rules.md` as the
    change requires. Anything deferred goes in `.claude/techdebt.md`.

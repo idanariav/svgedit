@@ -48,6 +48,7 @@ describe('ext-path-edit', function () {
     })
     const svgEditor = {
       svgCanvas,
+      $container: document.body,
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => key, addResourceBundle () {} }
     }

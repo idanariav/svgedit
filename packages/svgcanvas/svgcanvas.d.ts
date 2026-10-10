@@ -90,14 +90,20 @@ export interface HistoryCommand {
   unapply(handler: HistoryEventHandler): void | true
   elements(): Element[]
   type(): string
+  getText?(): string
 }
 
 export interface HistoryEventHandler {
   handleHistoryEvent(eventType: string, cmd: HistoryCommand): void
+  /** Optional: called around a BatchCommand's (un)apply so global notifications fire once per batch. */
+  beginBatch?(): void
+  endBatch?(): void
 }
 
 export interface UndoManager {
   addCommandToHistory(cmd: HistoryCommand): void
+  undo(): void
+  redo(): void
   getUndoStackSize(): number
   getRedoStackSize(): number
   getNextUndoCommandText(): string

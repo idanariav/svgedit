@@ -22,7 +22,6 @@
 import { isMac } from '@svgedit/svgcanvas/common/browser'
 import { isActiveEditor, ownsKeyEvent } from './domScope.js'
 import { getUserDataAdapter } from './userDataAdapter.js'
-import { t } from './locale.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
 const STORAGE_KEY = 'svg-edit-hotkeys'
@@ -89,7 +88,7 @@ const normalizeComponentSpec = (raw) => {
  * @param {string} key
  * @returns {string[]}
  */
-const expandEditorKey = (key) =>
+export const expandEditorKey = (key) =>
   String(key).split('/').map((k) => normalizeSpec(k)).filter(Boolean)
 
 /**
@@ -225,6 +224,14 @@ const GROUP_BY_ID = {
   tool_clear: 'File',
   tool_save: 'File'
 }
+// Buttons that open a dialog / file picker, or start a modal session (puppet warp,
+// image crop). They self-register as adapter commands, which cannot know that, so
+// they are flagged here; the command sweep and automation skip `interactive` ones.
+// (Found by the sweep: it closes any dialog a command opens and reports it.)
+export const INTERACTIVE_IDS = new Set([
+  'tool_image', 'tool_trace_image', 'tool_export', 'tool_hotkeys', 'tool_favorites',
+  'tool_editor_prefs', 'tool_puppet_warp', 'tool_image_crop'
+])
 // Stable display order for groups; unknown groups are appended alphabetically.
 export const GROUP_ORDER = [
   'Tools', 'View', 'Edit', 'Group', 'Transform', 'Arrange', 'Align',
@@ -265,8 +272,12 @@ export default class HotkeyManager {
    */
   constructor (editor) {
     this.editor = editor
-    /** @type {Map<string, HotkeyAction>} */
-    this.actions = new Map()
+    /**
+     * The hotkey table IS the command registry's table (`editor.commands`,
+     * see commands.js): one catalogue, with this class as the key-binding view.
+     * @type {Map<string, HotkeyAction>}
+     */
+    this.actions = editor.commands.table
     /** @type {Object<string, string[]>} per-action override of canonical keys */
     this.overrides = {}
     this._loaded = false
@@ -291,16 +302,15 @@ export default class HotkeyManager {
         keyval = sc.key[0]
         pd = sc.key.length > 1 ? sc.key[1] : false
       }
-      this.actions.set(sc.id, {
+      this.editor.commands.register({
         id: sc.id,
+        label: sc.label,
         group: sc.group || 'Selection',
-        defaultKeys: keyval ? expandEditorKey(keyval) : [],
+        keys: keyval || undefined,
         pd,
-        run: sc.fn,
-        el: null,
-        labelKey: sc.label,
-        decorative: null
-      })
+        atomic: sc.atomic,
+        run: () => sc.fn()
+      }, { replace: true })
     })
   }
 
@@ -321,15 +331,14 @@ export default class HotkeyManager {
     // read-only; anything else with no valid combo is simply unassigned (and so
     // remains editable, letting the user add a real binding).
     const decorative = (!canonical && rawKey && isDisplayString(rawKey)) ? rawKey : null
-    this.actions.set(id, {
+    this.editor.commands.registerAdapter({
       id,
+      el,
+      label: label || id,
       group: GROUP_BY_ID[id] || 'Tools',
       defaultKeys: canonical ? [canonical] : [],
-      pd: true,
-      run: null,
-      el,
-      labelKey: label || id,
-      decorative
+      decorative,
+      interactive: INTERACTIVE_IDS.has(id)
     })
   }
 
@@ -363,11 +372,7 @@ export default class HotkeyManager {
    * @returns {string}
    */
   labelFor (a) {
-    const key = a.el ? (a.el.getAttribute('title') || a.labelKey) : a.labelKey
-    const translated = t(key) || key
-    // Some tooltips carry an explanation ("Shape builder (click a region…)",
-    // "Puppet Warp — pin an object…"); lists and search want just the name.
-    return translated.split(/ — | \(/)[0].trim() || translated
+    return this.editor.commands.labelFor(a)
   }
 
   /**
@@ -518,8 +523,9 @@ export default class HotkeyManager {
       if (!id) return
       const a = this.actions.get(id)
       if (!a) return
-      if (a.run) a.run()
-      else if (a.el) a.el.click()
+      // A disabled command does nothing and leaves the key to the browser.
+      if (this.editor.commands.isEnabled(id) !== true) return
+      this.editor.commands.tryRun(id)
       if (a.pd) e.preventDefault()
     }
     // An already-aborted signal makes this a no-op, so a late register() on a

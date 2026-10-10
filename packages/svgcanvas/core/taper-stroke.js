@@ -34,6 +34,7 @@ import { warn } from '../common/logger.js'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
 import { FX_SOURCE_ATTR } from './live-effects.js'
+import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
@@ -164,6 +165,12 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   registerGeometryRemap(TAPER_SOURCE_ATTR, remapTaperSource)
+  registerAttrValidator(TAPER_SOURCE_ATTR, pathDataValidator)
+  registerAttrValidator(TAPER_ATTR, (value) => {
+    const parts = value.split(',').map(Number)
+    return parts.length === 2 && parts.every(Number.isFinite) ? true : 'is not "start,end"'
+  })
+  registerAttrValidator(TAPER_STYLE_ATTR, (value) => (/^[\d.]+\|.+$/.test(value) ? true : 'is not "width|paint"'))
 
   /**
    * Whether the taper tool applies to this element right now: an already

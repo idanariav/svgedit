@@ -108,6 +108,9 @@ export default {
      * @returns {?Element}
      */
     const makeTwin = (src, ax) => {
+      // A source that was replaced (Object to Path, Stroke to Path, …) can still reach
+      // elementChanged after it left the document; there is nothing to mirror then.
+      if (!src.parentNode) return null
       const res = svgCanvas.getResolution()
       const clone = src.cloneNode(true)
       svgCanvas.remapElementIdsAndRefs([clone], () => svgCanvas.getNextId())

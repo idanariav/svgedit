@@ -39,7 +39,10 @@ export default {
       // Add items to a panel (via innerHTML or DOM manipulation)
       // Use S.editor or document.querySelector() to find containers
 
-      // Register a new drawing mode
+      // Register a new drawing mode. PREFERRED for new tools: svgCanvas.registerTool({...})
+      // (see "Adding a canvas tool" below) -- normalised document-space events and
+      // automatic undo. The legacy hooks below still work, but note their
+      // coordinates mix spaces (start_x unzoomed, mouse_x ZOOMED).
       // S.svgCanvas.setMode('my-mode') triggers mousedown/mousemove/up hooks
 
       mouseDown (opts) { },
@@ -146,6 +149,61 @@ though only English ships.
 | `ext-puppet-warp` | **Puppet Warp** (`#tool_puppet_warp`) — Illustrator-style mesh deformation via Moving Least Squares (`mls.js`). Drop pins on a selection, drag one to bend the shape around the others; Escape cancels, any exit commits one undo step. **Persistent for single-shape selections** (one shape, or a group with exactly one warp-able descendant): rest pose + pins are cached as `se:puppet-rest-d`/`se:puppet-pins` (same `se:`-attribute idiom as `core/corner-radius.js`'s `se:orig-d`) and re-hydrated on re-entry via `svgCanvas.registerGeometryRemap` (an extension can't import `geometry-remap-registry.js` directly — that resolves to a source copy disjoint from the `packages/svgcanvas` dist bundle `coords.js` ships in). Multi-shape selections stay session-only (`coords.js`'s remap-registry hook only fires for `<path>`, not `<g>`) | `ext-puppet-warp.js` |
 
 ---
+
+## Adding a canvas tool (`registerTool`)
+
+Register the tool from `init()`; its `id` is the mode name `setMode(id)` switches to
+(the toolbar button keeps calling `setMode`, and stays a command — see below).
+
+```js
+svgCanvas.registerTool({
+  id: 'spiral',
+  undoLabel: 'Draw spiral',                    // one undo step per press→release
+  pointerDown (ctx, ev) { /* ev.x, ev.y: document units, unzoomed, grid-snapped; return false to decline */ },
+  pointerMove (ctx, ev) { /* ev.dragDistance (screen px), ev.mods.{shift,alt,ctrl,meta,mod} */ },
+  pointerUp (ctx, ev) { return { created: el } /* or 'cancel' to roll back */ },
+  keyDown (ctx, e) { return true /* handled */ },   // Escape never reaches it: the registry cancels
+  cancel (ctx) { /* reset your own state: Escape / tool switch / error rolled the drawing back */ }
+})
+```
+
+Rules: the gesture runs inside an undo transaction, so mutate the drawing freely and **never call
+`addCommandToHistory`**; put previews/guides in `ctx.addOverlay(el)` (outside `#svgcontent`) or mark
+them `data-se-ephemeral`; hand a finished new element back as `{ created }` (or call
+`svgCanvas.finishCreatedElement(el)` for shapes created outside a drag, e.g. from a popover, inside
+`svgCanvas.transact`). ext-shape-family is the reference implementation.
+
+## Recording undo
+
+New code should prefer `svgCanvas.transact(label, () => { … })` over hand-built
+`BatchCommand`s: everything that changes in the callback becomes ONE undo step, a throw rolls the
+drawing back, and "forgot to record this attribute" bugs cannot happen. If you must build commands by
+hand, remember `ChangeElementCommand(elem, oldValues)` reads the **new** values from the DOM *when it is
+constructed* — construct it **after** mutating, or redo re-applies the old value (this exact bug was in
+glow/outline removal, clip release and the text-decoration toggles). Text edited in place and structure
+changes are covered by transactions too. While a transaction is open, `addCommandToHistory` is
+swallowed, so existing canvas methods can be called inside one unchanged.
+
+## Commands
+
+Every user-visible action is a command in `editor.commands` (see `architecture.md`). An extension that
+adds a button gives it a stable id and registers the command, then references it from the markup:
+
+```js
+svgEditor.commands.register({
+  id: 'tool_my_action',                 // persisted by hotkey overrides and favorites: never rename
+  label: 'myext:buttons.0.title',
+  group: 'Edit',
+  keys: 'mod+shift+m',                  // optional default binding
+  enabled: (editor) => editor.selectedElement ? true : 'Select something first',   // a REASON, not false
+  atomic: true,                         // optional: run in an undo transaction (document-only, synchronous)
+  run: (editor) => editor.svgCanvas.doMyThing()
+})
+// <se-button id="tool_my_action" command="tool_my_action" title="…" src="…"></se-button>
+```
+
+A `<se-button>` without `command=` still works (it self-registers as an adapter command). Flag commands
+that open a dialog / file picker with `interactive: true` so the sweep and automation skip them.
 
 ## Adding UI from an Extension
 

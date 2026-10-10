@@ -134,4 +134,50 @@ test.describe('shape-family tools', () => {
     await page.mouse.up()
     await expect(layer(page).locator('> g')).toHaveCount(0)
   })
+
+  test('at 200% zoom the drawn end point still lands under the pointer (document units, not zoomed)', async ({ page }) => {
+    // The legacy extension hooks mixed spaces: start_x unzoomed, mouse_x zoomed.
+    await page.evaluate(() => window.svgEditor.bottomPanel.changeZoom(200))
+    o = await origin(page)
+    expect(o.z).toBeCloseTo(2, 1)
+    await pick(page, 'arc')
+    await page.mouse.move(...at(100, 100))
+    await page.mouse.down()
+    await page.mouse.move(...at(160, 140), { steps: 5 })
+    await page.mouse.up()
+    const d = await layer(page).locator('> path').getAttribute('d')
+    const nums = d.match(/-?\d+(?:\.\d+)?/g).map(Number)
+    expect(nums[0]).toBeCloseTo(100, 0) // starts at the press point
+    expect(nums[1]).toBeCloseTo(100, 0)
+    // absolute or relative, the arc ends one drag away from where it began
+    const box = await page.evaluate(() => {
+      const b = document.querySelector('#svgcontent g.layer > path').getBBox()
+      return { w: b.width, h: b.height }
+    })
+    expect(box.w).toBeCloseTo(60, 0)
+    expect(box.h).toBeLessThanOrEqual(40.5)
+  })
+
+  test('a drag is exactly one undo step, and Escape leaves nothing on the undo stack', async ({ page }) => {
+    await pick(page, 'rectgrid')
+    await page.mouse.move(...at(100, 100))
+    await page.mouse.down()
+    await page.mouse.move(...at(160, 150), { steps: 4 })
+    await page.keyboard.press('Escape')
+    await page.mouse.up()
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())).toBe(0)
+
+    await pick(page, 'rectgrid')
+    await page.mouse.move(...at(100, 100))
+    await page.mouse.down()
+    await page.mouse.move(...at(160, 150), { steps: 4 })
+    await page.mouse.up()
+    await expect(layer(page).locator('> g')).toHaveCount(1)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())).toBe(1)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getNextUndoCommandText())).toBe('Draw rectangular grid')
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    await expect(layer(page).locator('> g')).toHaveCount(0)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+    await expect(layer(page).locator('> g')).toHaveCount(1)
+  })
 })

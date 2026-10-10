@@ -10,10 +10,14 @@ describe('ext-shape-family', () => {
   let ext
   let mode
   let nextId
-  let history
+  let tools
+  let ctx
+  let down
+  let transacted
+  let finished
+  let released
   let setMode
   let selectOnly
-  let started
 
   const JSON_NS = NS.SVG
   const addFromJson = (data) => {
@@ -25,28 +29,48 @@ describe('ext-shape-family', () => {
     return el
   }
 
+  // The extension registers one tool per mode; these drive them the way the
+  // canvas's tool registry (core/tool-registry.js) would: document-space events.
   const key = (k, extra = {}) => {
     const event = { key: k, code: k === ' ' ? 'Space' : k, shiftKey: false, altKey: false, ...extra }
-    return ext.keyDown({ event })
+    return tools[mode]?.keyDown(ctx, event)
   }
 
-  const press = (m, x, y) => {
+  const press = (m, x, y, mods = {}) => {
     mode = m
-    return ext.mouseDown({ start_x: x, start_y: y, event: {} })
+    down = { x, y }
+    ctx.start = { x, y }
+    return tools[m].pointerDown(ctx, ev(x, y, mods))
   }
-  const move = (x, y, event = {}) => ext.mouseMove({ mouse_x: x, mouse_y: y, event })
-  const release = (x, y) => ext.mouseUp({ mouse_x: x, mouse_y: y, event: { clientX: 5, clientY: 6 } })
+  const ev = (x, y, mods = {}, event = {}) => ({
+    x,
+    y,
+    rawX: x,
+    rawY: y,
+    screenX: x,
+    screenY: y,
+    dragDistance: down ? Math.hypot(x - down.x, y - down.y) : 0,
+    mods: { shift: false, alt: false, ctrl: false, meta: false, mod: false, ...mods },
+    button: 0,
+    event
+  })
+  const move = (x, y, event = {}) => tools[mode].pointerMove(ctx, ev(x, y, {
+    shift: !!event.shiftKey, alt: !!event.altKey
+  }))
+  const release = (x, y) => tools[mode].pointerUp(ctx, ev(x, y, {}, { clientX: 5, clientY: 6 }))
 
   beforeEach(async () => {
     document.body.innerHTML = '<div id="tools_shapes"></div>'
     svgContent = document.createElementNS(NS.SVG, 'svg')
     document.body.append(svgContent)
     nextId = 1
-    started = false
-    history = []
+    transacted = []
+    finished = []
+    released = []
+    tools = {}
+    down = null
     setMode = vi.fn((m) => { mode = m })
     selectOnly = vi.fn()
-    class InsertElementCommand { constructor (el) { this.el = el } }
     svgCanvas = {
       $id: (id) => document.getElementById(id),
       $click: (el, fn) => el.addEventListener('click', fn),
@@ -57,14 +81,16 @@ describe('ext-shape-family', () => {
       getColor: () => '#000000',
       getStyle: () => ({ opacity: 1 }),
       getToolLocked: () => false,
-      setStarted: (v) => { started = v },
       selectOnly,
       clearSelection: vi.fn(),
       call: vi.fn(),
-      addCommandToHistory: (c) => history.push(c),
       addSVGElementsFromJson: addFromJson,
-      history: { InsertElementCommand }
+      registerTool: (def) => { tools[def.id] = def },
+      transact: (label, fn) => { transacted.push(label); return fn() },
+      finishCreatedElement: (el) => finished.push(el),
+      getCurrentDrawing: () => ({ releaseId: (id) => released.push(id) })
     }
+    ctx = { canvas: svgCanvas, zoom: 1, start: null }
     svgEditor = {
       svgCanvas,
       workarea: document.body,
@@ -102,15 +128,18 @@ describe('ext-shape-family', () => {
     release(10, 10)
   })
 
-  it('ignores other modes', () => {
-    assert.equal(press('rect', 10, 10), undefined)
-    assert.equal(move(50, 50), undefined)
-    assert.equal(release(50, 50), undefined)
-    assert.equal(svgContent.children.length, 0)
+  it('registers one tool per mode, each with its own undo label', () => {
+    assert.deepEqual(Object.keys(tools), ['spiral', 'arc', 'rectgrid', 'polargrid'])
+    assert.equal(tools.spiral.undoLabel, 'Draw spiral')
+    assert.equal(tools.polargrid.undoLabel, 'Draw polar grid')
+  })
+
+  it('does not register legacy mouse hooks any more', () => {
+    for (const hook of ['mouseDown', 'mouseMove', 'mouseUp', 'keyDown']) assert.equal(ext[hook], undefined)
   })
 
   it('draws a spiral centred on the press point, radius = drag distance', () => {
-    assert.deepEqual(press('spiral', 100, 100), { started: true })
+    assert.equal(press('spiral', 100, 100), undefined) // not declined: the registry starts the gesture
     move(100, 100)
     assert.equal(svgContent.children.length, 0, 'nothing before the drag threshold')
     move(160, 100)
@@ -118,9 +147,7 @@ describe('ext-shape-family', () => {
     assert.equal(path.tagName, 'path')
     assert.equal(path.getAttribute('fill'), 'none')
     assert.ok(/^M/.test(path.getAttribute('d')))
-    const r = release(160, 100)
-    assert.equal(r.keep, true)
-    assert.equal(r.element, path)
+    assert.deepEqual(release(160, 100), { created: path })
   })
 
   it('a spiral has segments + 1 nodes and ↑/↓ change that mid-drag', () => {
@@ -128,7 +155,7 @@ describe('ext-shape-family', () => {
     move(160, 100)
     const nodes = () => (shape().getAttribute('d').match(/C/g) || []).length
     assert.equal(nodes(), 10)
-    assert.deepEqual(key('ArrowUp'), { preventDefault: true })
+    assert.equal(key('ArrowUp'), true)
     assert.equal(nodes(), 11)
     key('ArrowDown')
     key('ArrowDown')
@@ -167,8 +194,7 @@ describe('ext-shape-family', () => {
       ['x', 'y', 'width', 'height'].map((a) => Number(rect.getAttribute(a))),
       [10, 10, 60, 30]
     )
-    const r = release(70, 40)
-    assert.equal(r.keep, true)
+    assert.deepEqual(release(70, 40), { created: g })
     assert.ok([...g.children].every((c) => c.id), 'every grid member has an id')
   })
 
@@ -227,7 +253,7 @@ describe('ext-shape-family', () => {
     move(70, 40)
     const frame = () => ['x', 'y', 'width', 'height'].map((a) => Number(shape().querySelector('rect').getAttribute(a)))
     assert.deepEqual(frame(), [10, 10, 60, 30])
-    assert.deepEqual(key(' '), { preventDefault: true })
+    assert.equal(key(' '), true)
     move(90, 60)
     assert.deepEqual(frame(), [30, 30, 60, 30])
     // Space released: it resizes again from the new place.
@@ -237,30 +263,37 @@ describe('ext-shape-family', () => {
     release(130, 90)
   })
 
-  it('Escape cancels the drag and removes what was drawn', () => {
+  it('when the registry cancels the gesture (Escape, tool switch) the tool forgets the drag', () => {
     press('spiral', 100, 100)
     move(160, 100)
-    assert.equal(svgContent.children.length, 1)
-    assert.equal(key('Escape'), undefined)
-    assert.equal(svgContent.children.length, 0)
-    assert.equal(started, false)
-    assert.equal(ext.mouseUp({ mouse_x: 160, mouse_y: 100, event: {} }), undefined)
+    // The registry rolls the drawing back through its transaction, then tells the tool.
+    tools.spiral.cancel(ctx)
+    assert.equal(key('ArrowUp'), false)
+    assert.equal(release(160, 100), undefined)
   })
 
   it('keys do nothing when no drag is in progress', () => {
-    assert.equal(key('ArrowUp'), undefined)
-    assert.equal(key(' '), undefined)
+    mode = 'spiral'
+    assert.equal(key('ArrowUp'), false)
+    assert.equal(key(' '), false)
     press('spiral', 0, 0)
     // pressed but not dragged yet: arrows are not captured
-    assert.equal(key('ArrowUp'), undefined)
+    assert.equal(key('ArrowUp'), false)
     release(0, 0)
+  })
+
+  it('a zero-size drag is rolled back (and its id released) instead of left behind', () => {
+    press('spiral', 50, 50)
+    move(54, 50) // past the threshold: an element exists
+    move(50, 50) // ... then back to the centre: radius 0
+    assert.equal(release(50, 50), 'cancel')
+    assert.equal(released.length, 1)
   })
 
   it('a click without a drag opens the options popover and draws nothing', () => {
     press('rectgrid', 40, 50)
     move(41, 50)
-    const r = release(41, 50)
-    assert.deepEqual(r, { keep: false, element: null })
+    assert.equal(release(41, 50), undefined) // nothing to commit: the popover takes over
     assert.equal(svgContent.children.length, 0)
     const pop = document.querySelector('.shape_family_popover')
     assert.ok(pop)
@@ -285,10 +318,9 @@ describe('ext-shape-family', () => {
     assert.equal(g.tagName, 'g')
     assert.equal(g.querySelectorAll('path').length, 3)
     assert.equal(g.querySelectorAll('rect').length, 0)
-    assert.equal(history.length, 1)
-    assert.equal(history[0].el, g)
-    assert.equal(selectOnly.mock.calls.at(-1)[0][0], g)
-    assert.equal(setMode.mock.calls.at(-1)[0], 'select')
+    // created inside one transaction (= one undo step), then finished like a drawn shape
+    assert.deepEqual(transacted, ['Draw rectangular grid'])
+    assert.deepEqual(finished, [g])
     assert.equal(document.querySelector('.shape_family_popover'), null)
     assert.ok([...g.children].every((c) => c.id))
   })
@@ -318,7 +350,7 @@ describe('ext-shape-family', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     assert.equal(document.querySelector('.shape_family_popover'), null)
     assert.equal(svgContent.children.length, 0)
-    assert.equal(history.length, 0)
+    assert.equal(transacted.length, 0)
   })
 
   it('switching to another tool dismisses an open popover', () => {

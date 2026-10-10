@@ -39,6 +39,11 @@ switch to the plugin repo instead.
 | `src/editor/images/` | SVG toolbar icons (source of truth — `dist/` is gitignored) |
 | `src/editor/svgedit.css` | Editor base stylesheet |
 | `src/editor/Editor.js` | Main editor entry point |
+| `src/editor/commands.js`, `coreCommands.js` | **Command registry** (`editor.commands`): every user-visible action is a command with a stable id (never rename one — hotkey overrides and favorites store them). New toolbar action = register a command + `command="<id>"` on the button |
+| `src/editor/automation.js` | `editor.automation`: `inspect()`, `pointer()` (document coordinates), `key()` |
+| `packages/svgcanvas/core/transaction.js` | `svgCanvas.transact(label, fn)` — prefer it over hand-built `BatchCommand`s (one undo step, rolls back on throw). Never construct a `ChangeElementCommand` *before* the mutation |
+| `packages/svgcanvas/core/tool-registry.js` | `svgCanvas.registerTool` — the contract for new drawing tools (document-space events, automatic undo) |
+| `packages/svgcanvas/core/drawing-invariants.js` | `checkDrawing()` structural health check |
 | `dist/` | **Build output — gitignored, never commit** |
 
 ---
@@ -102,7 +107,10 @@ half the fix. Add a targeted, narrow sanitizer for the *specific* corruption
 pattern found (not a generic "clean up anything weird" pass) alongside it,
 call it from `setSvgString()`, and cover both with a unit test — one proving
 the guard prevents new corruption, one proving the sanitizer repairs a
-drawing that already has it. See `.claude/techdebt.md`'s `<defs>`-append audit
+drawing that already has it. Also add a **`checkDrawing` rule** for the
+pattern (`packages/svgcanvas/core/drawing-invariants.js`) so the e2e suite and
+the command sweep catch a regression; `checkDrawing` must stay clean after
+every e2e test. See `.claude/techdebt.md`'s `<defs>`-append audit
 for a worked example (`sanitizeLegacyUndefinedDefs()` in
 `packages/svgcanvas/core/svg-exec.js`).
 
@@ -236,6 +244,18 @@ workflows) a missing/broken Playwright install now **fails the build**
 rather than silently skipping the suite — only outside CI does it warn and
 skip, for contributors without browsers installed locally.
 
+`npm test` first runs the `pretest` gates: `standard` lint, `check-dom-scope`
+(multi-editor DOM scoping), **`check-layers`** (`packages/svgcanvas` must not
+import `src/editor`, read `window.svgEditor` or define custom elements) and
+`typecheck` (`tsc` over the JSDoc-typed modules, a strict config for the
+cleanest ones, and the host API conformance check).
+
+Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
+(`tests/e2e/fixtures.js`) and fails on structural corruption; opt out with
+`test.info().annotations.push({ type: 'allow-corrupt-drawing', description })`.
+`tests/e2e/command-sweep.spec.js` runs every non-interactive command against
+every round-trip fixture (`SWEEP=full` for the larger matrix).
+
 When adding or changing editor-layer behavior (not just canvas-core logic),
 prefer extending this suite over `tests/unit/` hand-mocked fixtures where
 the behavior spans real DOM wiring (e.g. "does selecting an element update
@@ -266,6 +286,16 @@ npm start -- --port 8001
 > then reload the page (no server restart needed). Editor-side files
 > (`src/editor/**`) are served from source as usual.
 
+### Prefer the automation API
+
+`window.svgEditor.automation` (`src/editor/automation.js`) does the next three sections for you:
+`automation.pointer([{ kind: 'drag', x, y, to: { x, y } }])` takes **document** coordinates (any zoom,
+scrolls the point into view, dispatches real mouse events), `automation.inspect()` returns mode / zoom /
+selection / layers / undo state / open dialog, `automation.key('mod+d')` goes through the hotkey path, and
+`svgEditor.commands.run('tool_clone')` runs any action by id (no off-screen buttons). The helpers
+`clickCanvas`, `dragOnCanvas` and `dragInDocument` in `tests/e2e/helpers.js` are built on it. The raw
+formulas below stay as background.
+
 ### Coordinate mapping for real mouse drags
 
 Do **not** derive the content origin from
@@ -286,6 +316,8 @@ element — `x`/`y` attributes are **not** rewritten. Assert on effective
 position (attr + matrix offset), not on the attribute alone.
 
 ### Toolbar tools are off-screen at small viewports
+
+(Prefer `svgEditor.commands.run(id)`; the rest of this section is the manual fallback.)
 
 Left-panel tool buttons (`#tool_rect`, `#tool_ellipse`, …) report zero
 bounding-box size in headless Chromium unless the viewport is tall enough to

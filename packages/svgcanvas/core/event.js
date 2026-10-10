@@ -53,7 +53,10 @@ export const init = (canvas) => {
  */
   const mouseMoveEvent = (evt) => {
   // if the mouse is move without dragging an element, just return.
-    if (!svgCanvas.getStarted()) { return }
+    if (!svgCanvas.getStarted()) {
+      svgCanvas.toolHover?.(evt) // registered tools that asked for hover (core/tool-registry.js)
+      return
+    }
     if (evt.button === 1 || svgCanvas.spaceKey) { return }
 
     svgCanvas.textActions.init()
@@ -86,6 +89,10 @@ export const init = (canvas) => {
     if (svgCanvas.getCurConfig().gridSnapping) {
       ({ x, y } = svgCanvas.snapPointToGrid(x, y))
     }
+
+    // A registered tool (core/tool-registry.js) owns the gesture: it gets normalised
+    // document-space events and skips the mode switch and the extension hooks.
+    if (svgCanvas.toolPointerMove?.(evt)) return
 
     switch (svgCanvas.getCurrentMode()) {
       case 'select': {
@@ -261,6 +268,12 @@ export const init = (canvas) => {
     // Resize must be flattened via recalculateDimensions (which bakes the scale into
     // real attributes like width/height/font-size), not consolidated into a matrix.
     const operationMode = svgCanvas.getCurrentMode()
+    if (svgCanvas.toolPointerUp?.(evt)) {
+      svgCanvas.hasDragStartTransform = false
+      svgCanvas.dragStartTransforms = null
+      svgCanvas.setStartTransform(null)
+      return
+    }
     switch (svgCanvas.getCurrentMode()) {
     // intentionally fall-through to select here (handled inside eventSelect.up)
       case 'resize':
@@ -856,6 +869,9 @@ export const init = (canvas) => {
       newTransform.setMatrix(consolidatedMatrix)
       tlist.appendItem(newTransform)
     }
+    // A registered tool (core/tool-registry.js) may take the press; it can still decline.
+    if (!rightClick && svgCanvas.toolPointerDown?.(evt)) return
+
     switch (svgCanvas.getCurrentMode()) {
       case 'select':
         eventSelect.down(evt, { mouseTarget, svgRoot, rightClick, selectedElements, zoom })

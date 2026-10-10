@@ -244,6 +244,22 @@ those, so one action has exactly one implementation across hotkey, button,
 favorites menu, tablet shell and host. Everything else rides the
 transitional adapter.
 
+### Implementation notes (T0.1, done 2026-10-10)
+
+- `src/editor/commands.js` (`CommandRegistry`, `CommandError`), `coreCommands.js` (9 pilot commands),
+  `components/commandBinding.js`. `HotkeyManager.actions` **is** `editor.commands.table`; there is no second catalogue.
+- Registration order is irrelevant: a real command declared before or after its button's adapter keeps the button
+  as `el` and takes its key from the command, falling back to the button's `shortcut`.
+- **`atomic` is opt-in per command**, not "wrap every command in `transact`" as the plan suggested: a blanket
+  wrap would swallow the history of async/modal commands and tool switches. Used by clone, delete, group,
+  ungroup, the arrow-key nudges, `delete_selected` and `cut` (the sweep showed their hand-recorded undo missed
+  `se:*` attributes). `refreshEnablement()` runs after **every** command, because an atomic command's selection
+  events fire before its undo step is recorded and left the undo button stale.
+- The disabled reason is in `list()` / `isEnabled()`; the button's `title` does not show it (would need a
+  restore step for the tooltip). `interactive` adapters are flagged by id (`INTERACTIVE_IDS` in `Hotkeys.js`).
+- `paste`, `paste_in_place`, `zoom_fit` are now real commands, so they also appear in the Hotkey Manager list.
+- Not done: the plugin-side palette (plugin repo), migrating the remaining ~130 buttons.
+
 ### Pitfalls
 - **Ids are persisted user data. Never rename one.** Hotkey overrides
   (`svg-edit-hotkeys` / `userDataAdapter.getHotkeys`) and favorites
@@ -362,7 +378,7 @@ svgCanvas.transact(label, fn)   // begin; fn(); commit — on throw: cancel, ret
 svgCanvas.inTransaction()       // → boolean
 ```
 
-**Recording:** exactly one `MutationObserver` on `svgCanvas.getSvgContent()`
+**Recording (superseded by snapshot-and-diff, see the implementation notes below):** exactly one `MutationObserver` on `svgCanvas.getSvgContent()`
 with `{ attributes: true, attributeOldValue: true, childList: true,
 subtree: true, characterData: true, characterDataOldValue: true }`, created
 at `begin` and disconnected at commit/cancel. At commit, call
@@ -479,6 +495,51 @@ redo; tspan positions must match.
   exported API; only the internals change.
 - Wrap `CommandRegistry.run` (T0.1) in `transact` if T0.1 has landed;
   otherwise leave a TODO in T0.1's row.
+
+### Implementation notes (T0.2, done 2026-10-10)
+
+Differences from the design above, found while building it:
+
+- **`BatchCommand` fixed, not just bypassed** (added at the user's request).
+  The legacy `BatchCommand` notified the history handler once per subcommand,
+  so undoing N edits dispatched `changed` and cleared the selection N times:
+  5,000 moved elements took **12.1 s** to undo, ≈99 % of it `call('changed')`.
+  `BatchCommand.apply/unapply` now bracket their loop with the handler's
+  optional `beginBatch()`/`endBatch()` (`BatchCommand.runBatched`); `undo.js`
+  clears the selection once and fires **one** `changed` with the union of
+  touched elements (**0.46 s** for the same case). Per-command structural side
+  effects (`identifyLayers`, `restoreRefElements`, text shift, …) still run per
+  command. `BatchCommand` stays as the container type (transactions produce
+  one); *hand-built* batches are migrated to `transact()` opportunistically —
+  see `techdebt.md`.
+- **Recording is snapshot-and-diff, not a MutationObserver** (the design above was built first and replaced).
+  Two holes made the observer unfit: (1) Chromium never reports edits made through the SVG list APIs
+  (`elem.transform.baseVal.appendItem(…)` — how the canvas moves things — not even after the attribute is read);
+  (2) edits made to an element while it is *detached* (remove → modify → re-attach) are invisible, so undo
+  restored the modified state (the fast-check property test found this). `begin` now snapshots every element's
+  attributes, every text node's data and every parent's child list; `commit`/`cancel` diff that against the live
+  drawing. No async record delivery, `takeRecords()`, replay or namespace-prefix lookup needed (`attr.name` is
+  already qualified), and nothing is paid while the user drags. Cost: O(elements) at begin and commit
+  (measured: ≈14 ms begin, ≈22 ms commit, 2 ms to mutate 5,000 elements; undo/redo ≈0.46 s).
+- **`ChildListCommand` holds all parents' before/after lists in one command**
+  (not one command per parent) and applies them in two phases (detach, then
+  fill) so re-nesting groups can't hit a transient "insert ancestor into
+  descendant" error. Text-node child changes *and* in-place text edits
+  (`CharacterDataCommand`) are supported, so the "characterData not supported
+  in v1" limitation in the design is gone.
+- **Elements created during the transaction are recorded whole** with their parent's child list (their own
+  attribute/text edits need no command), which also makes "add then remove" net out to `null`. A new container
+  that adopted existing nodes (grouping) records its child list too, so redo refills it.
+- **Pre-existing bug fixed on the way:** undoing/redoing *any* attribute change
+  on a `<text>` with tspans wrote `x="NaN" y="NaN"` into the tspans
+  (`undo.js` shifted them by `undefined - undefined`). Prevention is fixed and
+  tested, and `sanitizeLegacyNaNTspans()` (`legacy-repairs.js`) repairs already-saved
+  drawings on load and on save.
+- **Live-effects pilot:** `apply/remove/expandLiveEffects` now run in
+  `transact()`; the preview keeps its hidden-original + throwaway-clone design
+  (the clone is marked `data-se-ephemeral`). Moving the preview onto
+  begin/cancel would mutate the real element and re-select it on every param
+  tick, which would rebuild the effects panel mid-edit.
 
 ### Performance
 - A drag of a 5,000-element selection must not lag. Profile with the
@@ -629,6 +690,23 @@ the current behaviour *before* porting it.
 (other consumers may use them); document `registerTool` as preferred for
 new tools.
 
+### Implementation notes (T0.3, done 2026-10-10)
+
+- `core/tool-registry.js` as designed, minus `cursor()` and `options()/setOption()` (no consumer; see techdebt).
+  Dispatch sites: `event.js` mouseDown (after the shared prelude, before the mode `switch`), mouseMove
+  (before the `switch`; hover at the top), mouseUp (before the `switch`), `EditorStartup`'s keydown (before the
+  extension `keyDown` hook), and `svgcanvas.js` `setMode` (cancels an open gesture, fires `activate/deactivate`).
+- A tool that returns `{ created }` is finished by the registry like a drawn shape (opacity, `elementInserted`,
+  `changed`, select it and leave the tool unless locked/Alt) minus the history entry, which the transaction
+  already holds. `svgCanvas.finishCreatedElement(el)` does the same for shapes created outside a drag.
+- `pointerDown` opens the transaction *before* calling the tool and cancels it if the tool declines, so a tool
+  may mutate the drawing in `pointerDown`.
+- Pilot ext-shape-family ported (T1.5 had been committed). Its unit test was rewritten against the tool
+  contract; an e2e draws at 200 % zoom and checks one undo step / Escape. With grid snapping on, both drag ends
+  now snap (before, only the start did).
+- The overlay is an `<svg id="toolOverlay">` in `#svgroot` that copies `#svgcontent`'s box and viewBox, so
+  overlay children are in document units.
+
 ### Pitfalls
 - Grid snapping: today `start_x` is snapped but `realX` isn't (≈ lines
   794–806). Expose both (`x` snapped, `rawX` not). Tools like the pencil
@@ -754,6 +832,23 @@ examples:
 Keep `numRuns` modest (100–200). Seed from an env var so a failure
 reproduces.
 
+### Implementation notes (T0.4, done 2026-10-10)
+
+- `core/drawing-invariants.js` as designed, except: no `closed-subpath` rule (the node editor repairs `Z`-only
+  subpaths on entry — it is not corruption) and a layer without `<title>` is **not** flagged (external SVGs have
+  unnamed layers and load fine; found when the rule failed ten e2e specs that load hand-written SVG).
+  All 18 round-trip fixtures are clean; the e2e `afterEach` flagged one genuine test bug (a hand-assigned
+  duplicate id in `scenarios.spec.js`). `svgCanvas.checkDrawing()` exposes it.
+- `tests/e2e/command-sweep.spec.js`: per fixture × representative element × every enabled non-interactive command:
+  no error, healthy drawing, undo/redo exact. It compares a *canonical* snapshot (attribute order, layer
+  `pointer-events`, `data-fx` filter regions ignored) and never calls `getSvgString()` (which purges `<defs>`).
+  ~12 s for all 18 fixtures; `SWEEP=full` runs up to 8 elements each. `KNOWN_ISSUES` lists tolerated, documented
+  failures and fails when one stops reproducing.
+- What the sweep found and what was fixed is in `techdebt.md` › Tier 0 follow-ups.
+- Property tests: `tests/unit/properties/` (anchor-path, bezier-fit, warp, corner-radius, transaction undo) with
+  plain `fast-check` (`@fast-check/vitest` needs vitest ≥ 4.1). One generator bug and one real finding came out of
+  them: the transaction recorder initially used a MutationObserver and lost edits made to a *detached* element.
+
 ### Pitfalls
 - Some drawings legitimately reference ids outside the drawing (an
   `<image href="https://…">`, or an Obsidian vault link). Only `#fragment`
@@ -831,6 +926,15 @@ top of `automation.pointer`, and update CLAUDE.md's Playwright sections
 (Coordinate mapping, Toolbar tools off-screen, Creating elements) to point
 at the API, keeping the raw formula as background.
 
+### Implementation notes (T0.5, done 2026-10-10)
+
+`src/editor/automation.js` as designed. `pointer` resolves coordinates once per gesture (the canvas keeps the
+root CTM from `mousedown`, so scrolling mid-drag would skew the move events) and scrolls the point into view
+first. `tests/e2e/helpers.js` `clickCanvas`/`dragOnCanvas` are rebuilt on it (same svgroot-relative screen
+coordinates), plus a new document-space `dragInDocument`; CLAUDE.md's Playwright section points at the API.
+Note `ctrl+z` in the editor means the *platform* command key (⌘ on macOS): use `ControlOrMeta+z` in Playwright.
+`hostApi.d.ts` does not expose `automation` (only `commands`).
+
 ### Tests
 - Unit: doc → client mapping at zoom 0.5/1/2 with scroll offsets
   (jsdom-mocked rects).
@@ -853,6 +957,11 @@ layers` enforces VectorCraft's crate layering. Today the boundary holds
 (verified 2026-10-10: nothing under `packages/svgcanvas/` imports from
 `src/editor`; the only `svgEditor` mention is a comment in `core/undo.js`).
 This item keeps it that way.
+
+### Implementation notes (T0.6, done 2026-10-10)
+
+As designed; `findLayerViolations()` is exported so the unit test exercises the matcher. Also handles
+`import()`/`require()` and block comments. Wired into `pretest`.
 
 ### What to build
 - `scripts/check-layers.mjs`, same style as `scripts/check-dom-scope.mjs`

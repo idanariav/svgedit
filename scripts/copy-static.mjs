@@ -45,6 +45,17 @@ await esbuild.build({
   platform: 'browser'
 })
 
+// Core modules the harness loads unbundled (anchor-path.js, via path-edit.js)
+// import the bare specifier 'svgpath', which a plain browser can't resolve. The
+// harness page maps it (import map) to this standalone ESM bundle.
+await esbuild.build({
+  entryPoints: [resolve(root, 'node_modules/svgpath/index.js')],
+  outfile: resolve(outDir, 'tests/vendor/svgpath/svgpath.js'),
+  bundle: true,
+  format: 'esm',
+  platform: 'browser'
+})
+
 // Instrument svgcanvas sources when collecting coverage so Playwright runs hit instrumented code.
 const svgCanvasSrc = resolve(root, 'packages/svgcanvas')
 const svgCanvasDest = resolve(outDir, 'tests/vendor/svgcanvas')

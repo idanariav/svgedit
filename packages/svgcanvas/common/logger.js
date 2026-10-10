@@ -22,14 +22,19 @@ export const LogLevel = {
  * Logger configuration. Kept on a `Symbol.for` global so every copy of this
  * module (the editor bundle and the svgcanvas bundle each inline their own)
  * shares one level/sink, which a host sets once.
- * @type {Object}
+ * @typedef {object} LoggerConfig
+ * @property {number} currentLevel
+ * @property {boolean} enabled
+ * @property {string} prefix
+ * @property {?function(string, {message: string, data: any}): void} sink
  */
-const config = (globalThis[Symbol.for('svgedit.logger')] ??= {
+/** @type {LoggerConfig} */
+const config = (/** @type {any} */ (globalThis))[Symbol.for('svgedit.logger')] ??= {
   currentLevel: LogLevel.WARN,
   enabled: true,
   prefix: '[SVGCanvas]',
   sink: null
-})
+}
 
 /**
  * Route every emitted log record to a host-provided function, in addition to
@@ -43,6 +48,12 @@ export const setLogSink = (sink) => {
   config.sink = typeof sink === 'function' ? sink : null
 }
 
+/**
+ * @param {string} level
+ * @param {string} message
+ * @param {any} data
+ * @returns {void}
+ */
 const emit = (level, message, data) => {
   if (!config.sink) return
   try {

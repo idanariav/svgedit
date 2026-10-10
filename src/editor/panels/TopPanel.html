@@ -21,8 +21,8 @@
   </div> <!-- path_node_panel -->
   <!-- Object actions when a single element is selected: clone / delete / arrange / flip / align -->
   <div class="selected_panel quick_tray" style="display:none">
-    <se-button id="tool_clone" title="tools.clone" shortcut="D" src="clone.svg"></se-button>
-    <se-button id="tool_delete" title="tools.del" shortcut="Delete/Backspace" src="delete.svg"></se-button>
+    <se-button id="tool_clone" command="tool_clone" title="tools.clone" shortcut="D" src="clone.svg"></se-button>
+    <se-button id="tool_delete" command="tool_delete" title="tools.del" shortcut="Delete/Backspace" src="delete.svg"></se-button>
     <se-list id="tool_arrange" src="move_top.svg" title="tools.arrange" width="28px" height="28px">
       <se-list-item id="arrange_front" value="front" title="tools.move_top" src="move_top.svg"
         img-height="22px"></se-list-item>
@@ -56,9 +56,9 @@
   </div>
   <!-- Object actions when multiple elements are selected: clone / delete / group / arrange / align -->
   <div class="multiselected_panel quick_tray" style="display:none">
-    <se-button id="tool_clone_multi" title="tools.clone" shortcut="D" src="clone.svg"></se-button>
-    <se-button id="tool_delete_multi" title="tools.del" shortcut="Delete/Backspace" src="delete.svg"></se-button>
-    <se-button id="tool_group_elements" title="tools.group_elements" shortcut="G" src="group_elements.svg">
+    <se-button id="tool_clone_multi" command="tool_clone" title="tools.clone" shortcut="D" src="clone.svg"></se-button>
+    <se-button id="tool_delete_multi" command="tool_delete" title="tools.del" shortcut="Delete/Backspace" src="delete.svg"></se-button>
+    <se-button id="tool_group_elements" command="tool_group_elements" title="tools.group_elements" shortcut="G" src="group_elements.svg">
     </se-button>
     <se-list id="tool_arrange_multi" src="move_top.svg" title="tools.arrange" width="28px" height="28px">
       <se-list-item id="arrange_front_multi" value="front" title="tools.move_top" src="move_top.svg"
@@ -94,7 +94,7 @@
   </div>
   <!-- Ungroup (shown for a selected group / link) -->
   <div class="g_panel quick_tray" style="display:none">
-    <se-button id="tool_ungroup" title="tools.ungroup" src="ungroup.svg"></se-button>
+    <se-button id="tool_ungroup" command="tool_ungroup" title="tools.ungroup" src="ungroup.svg"></se-button>
   </div>
   <!-- Image actions (single imported <image> selected) -->
   <div class="image_panel quick_tray" style="display:none">
@@ -113,8 +113,8 @@
   </button>
   <div id="top_more_pop"></div>
   <div id="history_panel">
-    <se-button id="tool_undo" title="tools.undo" shortcut="ctrl+Z" src="undo.svg" disabled></se-button>
-    <se-button id="tool_redo" title="tools.redo" shortcut="ctrl+Y" src="redo.svg" disabled></se-button>
+    <se-button id="tool_undo" command="tool_undo" title="tools.undo" shortcut="ctrl+Z" src="undo.svg" disabled></se-button>
+    <se-button id="tool_redo" command="tool_redo" title="tools.redo" shortcut="ctrl+Y" src="redo.svg" disabled></se-button>
   </div> <!-- history_panel (fixed slot beside zoom; contextual trays fill the space before it) -->
   <!-- Zoom (far right) -->
   <div id="zoom_panel">

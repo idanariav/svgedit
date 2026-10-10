@@ -199,8 +199,8 @@ class TabletShell {
     this.syncZoom()
 
     // Undo / redo
-    this.bUndo = this.makeBtn('undo.svg', { cls: 'sm', title: 'Undo', tap: () => this.undo() })
-    this.bRedo = this.makeBtn('redo.svg', { cls: 'sm', title: 'Redo', tap: () => this.redo() })
+    this.bUndo = this.makeBtn('undo.svg', { cls: 'sm', title: 'Undo', tap: () => this.run('tool_undo') })
+    this.bRedo = this.makeBtn('redo.svg', { cls: 'sm', title: 'Redo', tap: () => this.run('tool_redo') })
     $id('ts_hist').append(this.bUndo, this.bRedo)
     this.syncHistory()
 
@@ -214,14 +214,10 @@ class TabletShell {
     this.editor.bottomPanel.changeZoom(next)
   }
 
-  undo () {
-    const { undoMgr } = this.svgCanvas
-    if (undoMgr.getUndoStackSize() > 0) { undoMgr.undo(); this.syncHistory() }
-  }
-
-  redo () {
-    const { undoMgr } = this.svgCanvas
-    if (undoMgr.getRedoStackSize() > 0) { undoMgr.redo(); this.syncHistory() }
+  /** Run a registry command, then refresh the history buttons. */
+  run (id) {
+    this.editor.commands.tryRun(id)
+    this.syncHistory()
   }
 
   /* ─────────────────── color popovers ─────────────────── */
@@ -362,8 +358,8 @@ class TabletShell {
     // Object: Duplicate · Delete
     const acts = this.el('div', 'ts-actions')
     acts.append(
-      this.makeBtn('clone.svg', { cls: 'sm', title: 'Duplicate', tap: () => this.svgCanvas.cloneSelectedElements(20, 20) }),
-      this.makeBtn('delete.svg', { cls: 'sm', title: 'Delete', tap: () => this.svgCanvas.deleteSelectedElements() }))
+      this.makeBtn('clone.svg', { cls: 'sm', title: 'Duplicate', tap: () => this.editor.commands.tryRun('tool_clone') }),
+      this.makeBtn('delete.svg', { cls: 'sm', title: 'Delete', tap: () => this.editor.commands.tryRun('tool_delete') }))
     row.append(this.col('Object', acts))
   }
 

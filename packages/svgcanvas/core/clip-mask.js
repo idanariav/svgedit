@@ -241,9 +241,11 @@ export const init = (canvas) => {
     const { BatchCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Release clip/mask')
 
-    // Drop the reference from the element
-    batchCmd.addSubCommand(new ChangeElementCommand(elem, { [refAttr]: refValue }))
+    // Drop the reference from the element. The command is built after the change:
+    // it reads the new value from the DOM at construction, so building it first
+    // made redo restore the reference to a definition that redo then removes.
     elem.removeAttribute(refAttr)
+    batchCmd.addSubCommand(new ChangeElementCommand(elem, { [refAttr]: refValue }))
 
     // Discard the definition only if nothing else references it
     if (container) {

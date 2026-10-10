@@ -542,6 +542,11 @@ class EditorStartup {
     document.addEventListener('keydown', (e) => {
       if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
+      // A registered tool (core/tool-registry.js) sees the key first; Escape rolls its gesture back.
+      if (this.svgCanvas.toolKeyDown?.(e)) {
+        e.preventDefault()
+        return
+      }
       // Collect every extension's answer: without returnArray only the last
       // extension implementing keyDown is heard, silencing the others.
       if (this.svgCanvas.runExtensions('keyDown', { event: e }, true).some((r) => r?.preventDefault)) {

@@ -4,13 +4,13 @@
  * The right-click quick-action menu and the Favorites dialog are both thin views
  * over this catalog. It is a *superset* of the hotkey registry (see
  * `Hotkeys.js`):
- *   - every registered hotkey action is favoritable (trigger actions), plus
- *   - `EXTRA_TRIGGERS` — context-menu staples the registry lacks (paste), plus
+ *   - every registered command is favoritable (trigger actions; paste / paste in
+ *     place / zoom fit are now real commands in `coreCommands.js`), plus
  *   - `VALUE_CONTROLS` — stateful controls (stroke width, fill/stroke colour)
  *     that render as a live widget so the value is adjustable in place.
  *
- * Trigger actions execute through the same path hotkeys use (`run()` /
- * `el.click()`); value controls reuse the real panel handlers in `BottomPanel`.
+ * Trigger actions execute through `editor.commands`, the same path hotkeys
+ * and buttons use; value controls reuse the real panel handlers in `BottomPanel`.
  *
  * @module favoriteActions
  */
@@ -30,28 +30,6 @@ const ACTION_ICONS = {
   zoom_out: 'zoom_out.svg',
   copy: 'copy.svg',
   cut: 'cut.svg'
-}
-
-/**
- * Catalog-only trigger actions the hotkey registry does not contain (the canvas
- * context menu historically owned paste, which has no toolbar button).
- */
-const EXTRA_TRIGGERS = {
-  paste: {
-    group: 'Edit',
-    labelKey: 'tools.paste',
-    exec: (editor) => editor.svgCanvas.pasteElements()
-  },
-  zoom_fit: {
-    group: 'View',
-    labelKey: 'tools.fit_to_canvas',
-    exec: (editor) => editor.bottomPanel.changeZoom('canvas')
-  },
-  paste_in_place: {
-    group: 'Edit',
-    labelKey: 'tools.paste_in_place',
-    exec: (editor) => editor.svgCanvas.pasteElements('in_place')
-  }
 }
 
 /**
@@ -121,15 +99,13 @@ export const isValueControl = (id) =>
 export const getFavoriteMeta = (editor, id) => {
   const v = VALUE_CONTROLS[id]
   if (v) return { id, group: v.group, label: t(v.labelKey) || v.labelKey, src: v.src, kind: 'value' }
-  const x = EXTRA_TRIGGERS[id]
-  if (x) return { id, group: x.group, label: t(x.labelKey) || x.labelKey, src: ACTION_ICONS[id] ?? null, kind: 'trigger' }
-  const a = editor.hotkeys.getAction(id)
+  const a = editor.commands.get(id)
   if (a) {
     return {
       id,
       group: a.group,
-      label: editor.hotkeys.labelFor(a),
-      src: (a.el ? a.el.getAttribute('src') : null) ?? ACTION_ICONS[id] ?? null,
+      label: editor.commands.labelFor(a),
+      src: (a.el ? a.el.getAttribute('src') : null) ?? a.icon ?? ACTION_ICONS[id] ?? null,
       kind: 'trigger'
     }
   }
@@ -152,9 +128,6 @@ export const buildFavoritesCatalog = (editor) => {
   for (const g of editor.hotkeys.listForUi()) {
     for (const a of g.actions) push(g.group, { id: a.id, label: a.label })
   }
-  for (const [id, x] of Object.entries(EXTRA_TRIGGERS)) {
-    push(x.group, { id, label: t(x.labelKey) || x.labelKey })
-  }
   for (const [id, v] of Object.entries(VALUE_CONTROLS)) {
     push(v.group, { id, label: t(v.labelKey) || v.labelKey })
   }
@@ -172,16 +145,12 @@ export const buildFavoritesCatalog = (editor) => {
 }
 
 /**
- * Execute a trigger favorite, reusing the same dispatch hotkeys use.
+ * Execute a trigger favorite through the command registry (the same path
+ * hotkeys and buttons use). A disabled or unknown command is a no-op.
  * @param {object} editor
  * @param {string} id
  * @returns {void}
  */
 export const runFavoriteTrigger = (editor, id) => {
-  const x = EXTRA_TRIGGERS[id]
-  if (x) { x.exec(editor); return }
-  const a = editor.hotkeys.getAction(id)
-  if (!a) return
-  if (a.run) a.run()
-  else if (a.el) a.el.click()
+  editor.commands.tryRun(id)
 }

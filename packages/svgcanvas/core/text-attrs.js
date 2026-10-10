@@ -74,21 +74,20 @@ export const init = canvas => {
  * @returns {void}
  */
   const addTextDecorationMethod = (value) => {
-    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const textElements = getSelectedTextElements()
 
-    const batchCmd = new BatchCommand()
-    textElements.forEach(elem => {
-      const oldValue = elem.getAttribute('text-decoration') || ''
-      // Add the new text decoration value if it did not exist
-      if (!oldValue.includes(value)) {
-        batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': oldValue }))
-        svgCanvas.changeSelectedAttributeNoUndo('text-decoration', `${oldValue} ${value}`.trim(), [elem])
-      }
+    // One transaction instead of a hand-built batch: the old code built each
+    // ChangeElementCommand before changing the attribute, and that command reads
+    // the new value from the DOM at construction, so redo re-applied the old one.
+    svgCanvas.transact('Add text decoration', () => {
+      textElements.forEach(elem => {
+        const oldValue = elem.getAttribute('text-decoration') || ''
+        // Add the new text decoration value if it did not exist
+        if (!oldValue.includes(value)) {
+          svgCanvas.changeSelectedAttributeNoUndo('text-decoration', `${oldValue} ${value}`.trim(), [elem])
+        }
+      })
     })
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.undoMgr.addCommandToHistory(batchCmd)
-    }
 
     if (!textElements.some(el => el.textContent)) {
       svgCanvas.textActions.setCursor()
@@ -101,18 +100,14 @@ export const init = canvas => {
  * @returns {void}
  */
   const removeTextDecorationMethod = (value) => {
-    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const textElements = getSelectedTextElements()
 
-    const batchCmd = new BatchCommand()
-    textElements.forEach(elem => {
-      const actualValues = elem.getAttribute('text-decoration') || ''
-      batchCmd.addSubCommand(new ChangeElementCommand(elem, { 'text-decoration': actualValues }))
-      svgCanvas.changeSelectedAttributeNoUndo('text-decoration', actualValues.replace(value, '').trim(), [elem])
+    svgCanvas.transact('Remove text decoration', () => {
+      textElements.forEach(elem => {
+        const actualValues = elem.getAttribute('text-decoration') || ''
+        svgCanvas.changeSelectedAttributeNoUndo('text-decoration', actualValues.replace(value, '').trim(), [elem])
+      })
     })
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.undoMgr.addCommandToHistory(batchCmd)
-    }
 
     if (!textElements.some(el => el.textContent)) {
       svgCanvas.textActions.setCursor()

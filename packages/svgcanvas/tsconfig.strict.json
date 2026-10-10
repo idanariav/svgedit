@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noImplicitAny": true, "strictNullChecks": true },
+  "files": ["svgcanvas.d.ts", "core/transaction.js", "core/tool-registry.js", "core/drawing-invariants.js"]
+}

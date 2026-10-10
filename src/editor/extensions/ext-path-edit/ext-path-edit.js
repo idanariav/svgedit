@@ -49,7 +49,7 @@ export default {
 
       callback () {
         // Node-editing tray: Average (action menu) and Add anchor points.
-        const tray = document.querySelector('.path_node_panel')
+        const tray = svgEditor.$container.querySelector('.path_node_panel') // this editor's own tray (several can be mounted)
         const after = $id('tool_node_delete')
         if (tray) {
           const average = document.createElement('se-select')

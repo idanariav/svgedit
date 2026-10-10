@@ -101,4 +101,41 @@ describe('se-button', () => {
 
     expect(registered).toMatchObject({ id: 'tool_undo', rawKey: 'ctrl+z' })
   })
+  describe('command attribute (view of a registry command)', () => {
+    const withCommands = (commands) => installMockSvgEditor({ commands })
+
+    it('runs the command on click', () => {
+      const run = vi.fn()
+      withCommands({ get: () => ({ adapter: false }), tryRun: run })
+      const el = mountElement('se-button', { id: 'tool_clone', command: 'tool_clone' })
+      el.click()
+      expect(run).toHaveBeenCalledWith('tool_clone')
+    })
+
+    it('does nothing while disabled', () => {
+      const run = vi.fn()
+      withCommands({ get: () => ({ adapter: false }), tryRun: run })
+      const el = mountElement('se-button', { id: 'tool_clone', command: 'tool_clone' })
+      el.disabled = true
+      el.click()
+      expect(run).not.toHaveBeenCalled()
+    })
+
+    it('never dispatches an adapter back to its own element (no click loop)', () => {
+      const run = vi.fn()
+      const el = document.createElement('se-button')
+      el.setAttribute('command', 'self')
+      withCommands({ get: () => ({ adapter: true, el }), tryRun: run })
+      document.body.append(el)
+      el.click()
+      expect(run).not.toHaveBeenCalled()
+    })
+
+    it('ignores buttons without a command attribute', () => {
+      const run = vi.fn()
+      withCommands({ get: () => ({}), tryRun: run })
+      mountElement('se-button', { id: 'plain' }).click()
+      expect(run).not.toHaveBeenCalled()
+    })
+  })
 })

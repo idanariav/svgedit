@@ -84,7 +84,8 @@ test.describe('Tool scenarios', () => {
     const PIXEL_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
     await page.evaluate((href) => {
       const img = document.createElementNS('http://www.w3.org/2000/svg', 'image')
-      img.setAttribute('id', 'svg_2')
+      // not `svg_2`: the editor already gave the loaded layer that id
+      img.setAttribute('id', 'inserted_image')
       img.setAttribute('href', href)
       img.setAttribute('x', '80')
       img.setAttribute('y', '80')

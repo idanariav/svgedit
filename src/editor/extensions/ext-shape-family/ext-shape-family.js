@@ -15,6 +15,11 @@
  * ellipses / a frame rect, inserted as one undo step so it moves as one; the
  * paint lives on the group (fill none) and the children inherit it. The
  * geometry is in {@link module:shape-family}.
+ *
+ * The four tools are registered with `svgCanvas.registerTool` (core/tool-registry.js),
+ * the pilot for that contract: pointer events arrive in document units, the
+ * whole press-to-release gesture is one undo step, and Escape / switching tools
+ * mid-drag roll the drawing back, so none of that is hand-written here.
  */
 
 import {
@@ -26,6 +31,7 @@ import { positionContextMenu } from '../../dialogs/positionContextMenu.js'
 const name = 'shape-family'
 
 const MODES = ['spiral', 'arc', 'rectgrid', 'polargrid']
+const UNDO_LABEL = { spiral: 'Draw spiral', arc: 'Draw arc', rectgrid: 'Draw rectangular grid', polargrid: 'Draw polar grid' }
 const MODE_TITLE = { spiral: 0, arc: 1, rectgrid: 2, polargrid: 3 }
 const BUTTON_ICON = { spiral: 'spiral.svg', arc: 'arc.svg', rectgrid: 'grid_rect.svg', polargrid: 'grid_polar.svg' }
 
@@ -86,7 +92,6 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { InsertElementCommand } = svgCanvas.history
     const { $id, $click } = svgCanvas
     await loadExtensionTranslation(svgEditor)
     const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
@@ -99,7 +104,7 @@ export default {
       polargrid: { concentric: 5, radial: 5, width: 100, height: 100 }
     }
 
-    /** In-progress drag: `{ mode, start, end, last, origin, mods, el }`; `el` appears after the threshold. */
+    /** In-progress drag: `{ mode, start, end, last, mods, el }`; `el` appears after the threshold. */
     let drag = null
     let spaceHeld = false
     let popover = null
@@ -199,18 +204,20 @@ export default {
       popover = null
     }
 
-    /** Finish a shape created outside the mouse pipeline (the popover) like `mouseUp` would. */
-    const insertCreated = (el) => {
-      if (el.tagName === 'g') assignChildIds(el)
-      el.setAttribute('opacity', svgCanvas.getStyle().opacity)
-      el.setAttribute('style', 'pointer-events:inherit')
-      svgCanvas.call('elementInserted', [el])
-      svgCanvas.addCommandToHistory(new InsertElementCommand(el))
-      svgCanvas.call('changed', [el])
-      if (!svgCanvas.getToolLocked()) {
-        svgCanvas.setMode('select')
-        svgCanvas.selectOnly([el], true)
-      }
+    /**
+     * Add a shape created outside a drag (the popover) as one undo step and
+     * finish it like a drawn one.
+     * @param {string} mode
+     * @param {object} desc what to draw, from {@link describe}
+     * @returns {void}
+     */
+    const insertCreated = (mode, desc) => {
+      const el = svgCanvas.transact(UNDO_LABEL[mode], () => {
+        const created = createElement(desc)
+        if (created.tagName === 'g') assignChildIds(created)
+        return created
+      })
+      svgCanvas.finishCreatedElement(el)
     }
 
     const readField = (input, field) => {
@@ -235,7 +242,7 @@ export default {
       if (mode === 'spiral') geom = { cx: at.x, cy: at.y, radius: o.radius }
       else if (mode === 'arc') geom = { x1: at.x, y1: at.y, x2: at.x + o.width, y2: at.y + o.height }
       else geom = { x: at.x, y: at.y, width: o.width, height: o.height }
-      insertCreated(createElement(describe(mode, geom)))
+      insertCreated(mode, describe(mode, geom))
     }
 
     const openPopover = (mode, at, evt) => {
@@ -322,16 +329,90 @@ export default {
       ;(Object.values(inputs)[0]?.input)?.focus()
     }
 
-    // ---- extension hooks ----------------------------------------------------
+    // ---- tools ----------------------------------------------------------------
 
-    /** Cancel the drag in progress, removing what was drawn so far. */
-    const abortDrag = () => {
-      if (!drag) return
-      drag.el?.remove()
-      drag = null
-      spaceHeld = false
-      svgCanvas.setStarted(false)
-    }
+    /** The tool for one mode; the four share their handlers and differ only in id and undo label. */
+    const toolFor = (mode) => ({
+      id: mode,
+      undoLabel: UNDO_LABEL[mode],
+
+      pointerDown (ctx, ev) {
+        closePopover()
+        // Nothing stays selected while drawing: the arrow keys step the counts
+        // below, and the editor's own arrow-key nudge would move the selection.
+        svgCanvas.clearSelection()
+        const start = { x: ev.x, y: ev.y }
+        drag = { mode, start, end: start, last: start, mods: { shift: ev.mods.shift, alt: ev.mods.alt }, el: null }
+        spaceHeld = false
+      },
+
+      pointerMove (ctx, ev) {
+        if (!drag) return
+        const p = { x: ev.x, y: ev.y }
+        drag.mods = { shift: ev.mods.shift, alt: ev.mods.alt }
+        if (!drag.el && ev.dragDistance < DRAG_THRESHOLD) {
+          drag.last = p
+          return
+        }
+        if (spaceHeld) {
+          // Move the shape at its current size instead of resizing it.
+          const dx = p.x - drag.last.x
+          const dy = p.y - drag.last.y
+          drag.start = { x: drag.start.x + dx, y: drag.start.y + dy }
+          drag.end = { x: drag.end.x + dx, y: drag.end.y + dy }
+        } else {
+          drag.end = p
+        }
+        drag.last = p
+        render()
+      },
+
+      pointerUp (ctx, ev) {
+        if (!drag) return undefined
+        const { el, start } = drag
+        const geom = el && geometry(mode, drag.start, drag.end, drag.mods)
+        drag = null
+        spaceHeld = false
+        if (!el) {
+          // A click: ask for the options instead of drawing.
+          openPopover(mode, start, ev.event)
+          return undefined
+        }
+        if (isDegenerate(geom)) {
+          svgCanvas.getCurrentDrawing().releaseId(el.id)
+          return 'cancel'
+        }
+        if (el.tagName === 'g') assignChildIds(el)
+        return { created: el }
+      },
+
+      keyDown (ctx, e) {
+        if (!drag) return false
+        if (e.code === 'Space') {
+          spaceHeld = true
+          return true
+        }
+        if (!drag.el) return false
+        const arrow = ARROW_OPTION[drag.mode]
+        const axis = { ArrowUp: ['vertical', 1], ArrowDown: ['vertical', -1], ArrowRight: ['horizontal', 1], ArrowLeft: ['horizontal', -1] }[e.key]
+        if (!axis) return false
+        const key = arrow[axis[0]]
+        if (!key) return true
+        const o = options[drag.mode]
+        o[key] = key === 'segments' ? clampSegments(o[key] + axis[1]) : clampDividers(o[key] + axis[1])
+        drag.mods = { shift: e.shiftKey, alt: e.altKey }
+        render()
+        return true
+      },
+
+      // Escape, a tool switch or an error rolled the drawing back; forget the drag.
+      cancel () {
+        drag = null
+        spaceHeld = false
+      }
+    })
+
+    for (const mode of MODES) svgCanvas.registerTool(toolFor(mode))
 
     return {
       name: t('name'),
@@ -356,91 +437,6 @@ export default {
         document.addEventListener('modeChange', (e) => {
           if (popover && !isFamilyMode(e.detail?.getMode?.())) closePopover()
         }, { signal: svgEditor.listenerAbort?.signal })
-      },
-
-      mouseDown (opts) {
-        const mode = svgCanvas.getMode()
-        if (!isFamilyMode(mode)) return undefined
-        closePopover()
-        // Nothing stays selected while drawing: the arrow keys step the counts
-        // below, and the editor's own arrow-key nudge would move the selection.
-        svgCanvas.clearSelection()
-        const start = { x: opts.start_x, y: opts.start_y }
-        const zoom = svgCanvas.getZoom()
-        drag = {
-          mode,
-          start,
-          end: start,
-          last: { x: start.x, y: start.y },
-          origin: { x: start.x * zoom, y: start.y * zoom },
-          mods: { shift: !!opts.event?.shiftKey, alt: !!opts.event?.altKey },
-          el: null
-        }
-        spaceHeld = false
-        return { started: true }
-      },
-
-      mouseMove (opts) {
-        if (!drag) return undefined
-        const zoom = svgCanvas.getZoom()
-        const p = { x: opts.mouse_x / zoom, y: opts.mouse_y / zoom }
-        drag.mods = { shift: !!opts.event?.shiftKey, alt: !!opts.event?.altKey }
-        if (!drag.el && Math.hypot(opts.mouse_x - drag.origin.x, opts.mouse_y - drag.origin.y) < DRAG_THRESHOLD) {
-          drag.last = p
-          return { started: true }
-        }
-        if (spaceHeld) {
-          // Move the shape at its current size instead of resizing it.
-          const dx = p.x - drag.last.x
-          const dy = p.y - drag.last.y
-          drag.start = { x: drag.start.x + dx, y: drag.start.y + dy }
-          drag.end = { x: drag.end.x + dx, y: drag.end.y + dy }
-        } else {
-          drag.end = p
-        }
-        drag.last = p
-        render()
-        return { started: true }
-      },
-
-      mouseUp (opts) {
-        if (!drag) return undefined
-        const { mode, el, start } = drag
-        const geom = el && geometry(mode, drag.start, drag.end, drag.mods)
-        drag = null
-        spaceHeld = false
-        if (!el) {
-          // A click: ask for the options. element:null stops the canvas from
-          // treating whatever shares the current id as the new element.
-          openPopover(mode, start, opts.event)
-          return { keep: false, element: null }
-        }
-        if (isDegenerate(geom)) return { keep: false, element: el }
-        if (el.tagName === 'g') assignChildIds(el)
-        return { keep: true, element: el }
-      },
-
-      keyDown ({ event: e }) {
-        if (!drag) return undefined
-        if (e.key === 'Escape') {
-          abortDrag()
-          return undefined // let the editor leave the tool as usual
-        }
-        if (e.code === 'Space') {
-          spaceHeld = true
-          return { preventDefault: true }
-        }
-        if (!drag.el) return undefined
-        const arrow = ARROW_OPTION[drag.mode]
-        const axis = { ArrowUp: ['vertical', 1], ArrowDown: ['vertical', -1], ArrowRight: ['horizontal', 1], ArrowLeft: ['horizontal', -1] }[e.key]
-        if (!axis) return undefined
-        const key = arrow[axis[0]]
-        if (!key) return { preventDefault: true }
-        const o = options[drag.mode]
-        o[key] = key === 'segments' ? clampSegments(o[key] + axis[1]) : clampDividers(o[key] + axis[1])
-        drag.mods = { shift: e.shiftKey, alt: e.altKey }
-        render()
-        return { preventDefault: true }
       }
     }
   }

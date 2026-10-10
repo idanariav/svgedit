@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import HotkeyManager, { formatShortcutAttr, tooltipText } from '../../src/editor/Hotkeys.js'
+import { formatShortcutAttr, tooltipText } from '../../src/editor/Hotkeys.js'
+import { CommandRegistry } from '../../src/editor/commands.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { DEFAULT_FAVORITES } from '../../src/editor/favorites.js'
 
@@ -36,7 +37,7 @@ describe('context menu defaults', () => {
 })
 
 describe('action labels', () => {
-  const label = (labelKey) => HotkeyManager.prototype.labelFor.call({}, { labelKey })
+  const label = (labelKey) => CommandRegistry.prototype.labelFor.call({}, { labelKey })
   it('strips explanatory suffixes so lists show just the name', () => {
     expect(label('Shape builder (click a region to merge)')).toBe('Shape builder')
     expect(label('Puppet Warp — pin an object, then drag')).toBe('Puppet Warp')

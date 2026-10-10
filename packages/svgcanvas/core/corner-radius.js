@@ -44,6 +44,7 @@
 import { NS } from './namespaces.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
 import { FX_SOURCE_ATTR } from './live-effects.js'
+import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.js'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
@@ -394,6 +395,11 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   registerGeometryRemap(CORNER_SOURCE_ATTR, remapCornerSource)
+  registerAttrValidator(CORNER_SOURCE_ATTR, pathDataValidator)
+  registerAttrValidator(CORNER_RADIUS_ATTR, (value) => {
+    const entry = /^\s*\d*\.?\d+(?:e[+-]?\d+)?\s*(?::\s*[ric]\s*)?$/i
+    return value.trim() && value.split(',').every((e) => entry.test(e)) ? true : 'is not a radius list'
+  })
 
   /**
    * Whether corner cutting can apply to this element right now.

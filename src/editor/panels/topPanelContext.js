@@ -360,10 +360,9 @@ export const updateContextPanel = (topPanel) => {
 
   runSteps([
     ['historyButtons', () => {
-      $id('tool_undo').disabled =
-        topPanel.editor.svgCanvas.undoMgr.getUndoStackSize() === 0
-      $id('tool_redo').disabled =
-        topPanel.editor.svgCanvas.undoMgr.getRedoStackSize() === 0
+      // Undo/redo (and every other `command=` control) follow their command's
+      // `enabled` check; see CommandRegistry.refreshEnablement.
+      topPanel.editor.commands?.refreshEnablement()
 
       topPanel.editor.svgCanvas.addedNew = false
     }],

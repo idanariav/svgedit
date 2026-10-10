@@ -18,6 +18,9 @@ import { init as pasteInit } from './core/paste-elem.js'
 import { init as touchInit } from './core/touch.js'
 import { svgRootElement } from './core/svgroot.js'
 import { init as undoInit } from './core/undo.js'
+import { init as transactionInit } from './core/transaction.js'
+import { checkDrawing } from './core/drawing-invariants.js'
+import { init as toolRegistryInit } from './core/tool-registry.js'
 import { init as selectionInit } from './core/selection.js'
 import { init as textActionsInit } from './core/text-actions.js'
 import { init as eventInit } from './core/event.js'
@@ -283,6 +286,9 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     this.randIdsMode = draw.RandomizeModes.LET_DOCUMENT_DECIDE // set by randomizeIds()
     this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix, this.randIdsMode)
 
+    // Created before the core inits so their document/window listeners can use its signal.
+    this.destroyAbort = new AbortController()
+
     runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
     runGuardedInit(this, 'bboxUtils', bboxUtilsInit, initGuardRegistry)
@@ -292,6 +298,10 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'recalculate', recalculateInit, initGuardRegistry)
     runGuardedInit(this, 'select', selectInit, initGuardRegistry)
     runGuardedInit(this, 'undo', undoInit, initGuardRegistry)
+    runGuardedInit(this, 'transaction', transactionInit, initGuardRegistry)
+    runGuardedInit(this, 'toolRegistry', toolRegistryInit, initGuardRegistry)
+    /** Structural health check of the current drawing (empty = healthy); see core/drawing-invariants.js. */
+    this.checkDrawing = () => checkDrawing(this.getSvgContent())
     runGuardedInit(this, 'selection', selectionInit, initGuardRegistry)
 
     this.nsMap = getReverseNS()
@@ -350,8 +360,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)
     runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
     runGuardedInit(this, 'segment', segmentInit, initGuardRegistry)
-    // Created before the core inits so their document listeners can use its signal.
-    this.destroyAbort = new AbortController()
     runGuardedInit(this, 'imageCrop', imageCropInit, initGuardRegistry)
 
     /**
@@ -927,7 +935,8 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   }
 
   getLastClickPoint (key) {
-    return this.state.drawing.lastClickPoint[key]
+    // null until the first right-click: pasting by command/keyboard before that used to throw
+    return this.state.drawing.lastClickPoint?.[key]
   }
 
   setLastClickPoint (value) {
@@ -1097,6 +1106,9 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    * @returns {void}
    */
   setMode (name) {
+    // A registered tool's open gesture is rolled back by any mode change (core/tool-registry.js).
+    this.cancelToolGesture?.()
+    const previousMode = this.state.drawing.currentMode
     // Tear down any in-progress path/text edit before switching. These run
     // FIRST because clear() inspects the *current* (outgoing) mode to know what
     // to clean up. But a throw in here must never block the mode change below:
@@ -1120,6 +1132,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
         ? this.state.style.text
         : this.state.style.shape
     this.state.drawing.currentMode = name
+    this.toolModeChanged?.(previousMode, name)
 
     // fires modeChange event for the editor
     if (this.modeEvent) {

@@ -48,6 +48,24 @@ export interface HostConfigObj {
   pref(key: string, val?: unknown): unknown
 }
 
+/** One entry of `EditorHostApi.commands.list()`. */
+export interface HostCommandInfo {
+  /** Stable, persisted id -- never renamed. */
+  id: string
+  /** Translated display name. */
+  label: string
+  group: string
+  /** Effective key bindings (canonical, e.g. `meta+d`), after user overrides. */
+  keys: string[]
+  enabled: boolean
+  /** Why the command can't run right now (set when `enabled` is false). */
+  disabledReason?: string
+  /** Typed parameters `run` accepts: `{ type: 'number'|'string'|'boolean'|'enum', default?, min?, max?, values?, required? }`. */
+  params?: Record<string, unknown>
+  /** Opens a dialog / file picker / prompt; don't drive it unattended. */
+  interactive: boolean
+}
+
 export interface EditorHostApi {
   /** Merge config options; call before `init()`. */
   setConfig(cfg: Record<string, unknown>): void
@@ -72,6 +90,15 @@ export interface EditorHostApi {
   setLogSink(sink: LogSink | null, level?: number): void
   configObj: HostConfigObj
   svgCanvas: HostCanvas
+  /**
+   * Every user-visible editing action (the same ones hotkeys, toolbar buttons
+   * and the favorites menu use). `run` throws a `CommandError`
+   * (`code`: `unknown` | `disabled` | `badParams` | `internal`) on failure.
+   */
+  commands: {
+    list(): HostCommandInfo[]
+    run(id: string, params?: Record<string, unknown>): unknown
+  }
 }
 
 export interface EditorHostConstructor {

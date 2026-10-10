@@ -9,7 +9,7 @@ import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
 import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.js'
-import { sanitizeLegacyUndefinedDefs, sanitizeStackedTranslateTransforms } from './legacy-repairs.js'
+import { sanitizeLegacyUndefinedDefs, sanitizeStackedTranslateTransforms, sanitizeLegacyNaNTspans } from './legacy-repairs.js'
 import {
   cleanupElement,
   setHref,
@@ -90,6 +90,7 @@ export const init = canvas => {
     try {
       sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
       sanitizeStackedTranslateTransforms(svgCanvas.getSvgContent())
+      sanitizeLegacyNaNTspans(svgCanvas.getSvgContent())
 
       // Keep SVG-Edit comment on top
       const childNodesElems = svgCanvas.getSvgContent().childNodes
@@ -554,9 +555,10 @@ export const init = canvas => {
       // save. A drawing opened read-only, or opened and closed without
       // editing, should still self-heal rather than carry the scar forward
       // indefinitely. See sanitizeLegacyUndefinedDefs(),
-      // sanitizeStackedTranslateTransforms() and techdebt.md.
+      // sanitizeStackedTranslateTransforms(), sanitizeLegacyNaNTspans() and techdebt.md.
       sanitizeLegacyUndefinedDefs(content)
       sanitizeStackedTranslateTransforms(content)
+      sanitizeLegacyNaNTspans(content)
 
       svgCanvas.current_drawing_ = new draw.Drawing(
         svgCanvas.getSvgContent(),
