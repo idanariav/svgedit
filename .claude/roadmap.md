@@ -23,7 +23,7 @@ small items (S) fill gaps between large ones.
 **Phase 3 — done** (items 7–11: T2.15 Corner-keeping simplify, T2.3 Pen continues / joins, T2.16 Smooth tool, T3.7 Pencil continues, T2.12 Centerline tracing; the path commands got their precise `enabled` with it).
 
 **Phase 4 — stroke and appearance**
-12. **T2.5 Dashes fitted** (v1) and 13. **T2.4 Arrowheads** — both small stroke features, no deps.
+12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. **T2.4 Arrowheads** — a small stroke feature, no deps.
 14. **T2.6 Width profiles + Width tool** (L) — generalises taper.
 15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — design it *after* T2.6, because
     width profiles change the single-source-of-truth question (`se:taper-d` vs. the new profile).
@@ -261,6 +261,16 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Fitted dashes (`core/dash-fit.js`): follow-ups from T2.5 (v1)
+
+Done: the Dash row's Fit toggle fits the pattern of a line, circle, ellipse or corner-less one-piece path to a whole number of periods, a dash centred on each end of an open stroke. Remaining:
+- **v2: corners.** A rectangle, polygon or any path with corners is refused ("needs a path without corners"), which is most of what people dash. The plan's option (a), one sibling path per run inside a `<g se:dash-fit>`, was not started: it restructures the DOM (selection, undo, node editing, markers all see a group), so it deserves its own design. A cheaper partial win is a closed shape whose sides are all the same length (a square, a regular polygon): one pattern fits every side if it holds a whole number of periods per side.
+- **The fit is not live.** `stroke-dasharray` is computed once; resizing, node editing or remapping the path leaves the old fit, which is a little off until Fit is pressed twice (off, on) or a dash style is picked again. `se:dash-fit` keeps the nominal pattern so a refit never compounds, but nothing triggers it. Auto-refit on `changed` would add a second, unrecorded write to the same gesture, or a second undo step; it needs a way to fold an attribute change into the command that was just recorded.
+- **Round and square caps lengthen each dash** by the stroke width, which the fit ignores (it fits the pattern, not the painted marks). A dot pattern with round caps still centres its dots.
+- **A `stroke-dashoffset` the user had set is replaced** by the fit and not restored when the fit is turned off.
+- **Copy style** copies `stroke-dasharray` but not the offset or the marker, so a fitted source gives its target the stretched pattern without the fit.
+- The Dash select shows blank for a pattern that is not one of its five presets (including every fitted one); only the Fit button shows that something is fitted.
 
 ## Centerline tracing (`dialogs/traceCenterline.js`): follow-ups from T2.12
 

@@ -119,9 +119,12 @@
                 </div>
                 <div class="sidepanel_subsection">
                     <div class="sub_label">Dash</div>
-                    <se-select id="stroke_style" title="properties.stroke_style"
-                        options="&#8212;,...,- -,- .,- .." values="none::2,2::5,5::5,2,2,2::5,2,2,2,2,2">
-                    </se-select>
+                    <div class="dash_row">
+                        <se-select id="stroke_style" title="properties.stroke_style"
+                            options="&#8212;,...,- -,- .,- .." values="none::2,2::5,5::5,2,2,2::5,2,2,2,2,2">
+                        </se-select>
+                        <se-button id="tool_dash_fit" command="tool_dash_fit" title="tools.dash_fit" src="dash_fit.svg" size="small"></se-button>
+                    </div>
                 </div>
                 <div class="sidepanel_section_grid sidepanel_subsection">
                     <div>

@@ -45,6 +45,15 @@ const strokeToPathable = (editor) => {
   return el && el.tagName.toLowerCase() !== 'path' && editor.svgCanvas.hasVisibleStroke(el) ? true : 'Select one shape with a visible stroke'
 }
 
+/** @param {any} editor @returns {true|string} Fit Dashes works on whatever of the selection can be fitted, or undoes a fit */
+const dashFittable = (editor) => {
+  const list = editor.svgCanvas.getSelectedElements().filter(Boolean)
+  if (!list.length) return 'Select a line, circle, ellipse or path first'
+  if (editor.svgCanvas.isDashFitted(list)) return true
+  const issues = list.map((el) => editor.svgCanvas.dashFitIssue(el))
+  return issues.includes(null) ? true : issues[0]
+}
+
 /** @param {any} editor @returns {true|string} */
 const textSelected = (editor) => editor.topPanel.anyTextSelected ? true : 'Select some text'
 
@@ -117,6 +126,7 @@ const TOP_PANEL = [
   ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
   ['tool_stroke_to_path', 'Path', 'strokeToPath', { enabled: strokeToPathable }],
   ['tool_match_strokes', 'Tools', 'clickMatchStrokes'],
+  ['tool_dash_fit', 'Tools', 'clickDashFit', { enabled: dashFittable }],
   ['tool_make_link', 'Group', 'makeHyperlink'],
   ['tool_make_link_multi', 'Group', 'makeHyperlink'],
   ['tool_flip_h', 'Transform', 'clickFlipHorizontal'],

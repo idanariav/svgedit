@@ -241,6 +241,14 @@ export interface AttachedMembers {
   getGuides(): { v: number[]; h: number[] }
   /** Replace the ruler guides as one undo step; false when nothing changed. */
   setGuides(guides: { v?: number[]; h?: number[] }, label?: string): boolean
+  /** Whether dashes are fitted on every one of the elements (default: the selection). */
+  isDashFitted(elems?: Element[]): boolean
+  /** Why the element cannot have its dashes fitted, or null. */
+  dashFitIssue(elem: Element): string | null
+  /** Fit the dashes of the elements (or turn the fit off) as one undo step; returns how many changed. */
+  setDashFit(on: boolean, elems?: Element[]): number
+  /** Choose a dash pattern for the selection (fitted elements are fitted again); false when nothing is fitted. */
+  setDashPattern(value: string): boolean
   switchSelectedZorder(): void
   matchStrokes(): void
   setRotationAngle(val: number, preventUndo?: boolean): void

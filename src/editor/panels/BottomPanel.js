@@ -158,6 +158,8 @@ class BottomPanel {
    * @type {module}
    */
   handleStrokeAttr (type, evt) {
+    // A fitted dash takes the new pattern as the one to fit.
+    if (type === 'stroke-dasharray' && this.editor.svgCanvas.setDashPattern(evt.detail.value)) return
     this.editor.svgCanvas.setStrokeAttr(type, evt.detail.value)
   }
 

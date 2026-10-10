@@ -159,6 +159,7 @@ class TopPanel {
             $id('stroke_style').value =
               this.selectedElement.getAttribute('stroke-dasharray') || 'none'
             $id('stroke_style').setAttribute('value', $id('stroke_style').value)
+            this.updateDashFitButton()
 
             let attr =
               this.selectedElement.getAttribute('stroke-linejoin') || 'miter'
@@ -321,7 +322,26 @@ class TopPanel {
   }
 
   /**
-   *
+   * Fit the selection's dashes to their strokes, or turn the fit off.
+   * @returns {void}
+   */
+  clickDashFit () {
+    const { svgCanvas } = this.editor
+    svgCanvas.setDashFit(!svgCanvas.isDashFitted())
+    this.updateDashFitButton()
+  }
+
+  /**
+   * Show whether the selection's dashes are fitted (the Dash row's Fit button).
+   * @returns {void}
+   */
+  updateDashFitButton () {
+    const button = this.editor.$id('tool_dash_fit')
+    if (button) button.pressed = this.editor.svgCanvas.isDashFitted()
+  }
+
+  /**
+   * Toggle wireframe mode.
    * @returns {void}
    */
   clickWireframe () {

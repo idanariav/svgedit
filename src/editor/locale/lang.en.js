@@ -237,6 +237,7 @@ export default {
     import_or: 'or',
     import_insert: 'Insert',
     import_image_error: 'Could not load that image URL.',
+    dash_fit: 'Fit dashes to the stroke (a dash centred on each end)',
     trace_image: 'Convert to editable SVG',
     trace_image_title: 'Convert to editable SVG',
     trace_style: 'Style',

@@ -283,7 +283,8 @@ These controls are always available when any element is selected.
 | `fill_color` | `fill` | Color picker (includes "none") |
 | `stroke_color` | `stroke` | Color picker |
 | `stroke_width` | `stroke-width` | 0–99, step 1; Shift+click = step 0.1 |
-| `stroke_style` | `stroke-dasharray` | Solid / Dotted / Dashed / Dash-dot / Dash-dot-dot |
+| `stroke_style` | `stroke-dasharray` | Solid / Dotted / Dashed / Dash-dot / Dash-dot-dot. On a path with fitted dashes (`se:dash-fit`) the choice is the new pattern to fit (`svgCanvas.setDashPattern`), not a plain attribute write |
+| `tool_dash_fit` (beside `stroke_style`) | `se:dash-fit`, `stroke-dasharray`, `stroke-dashoffset` | Toggle: fit the dash pattern to the stroke's length. Disabled (with the reason) for shapes with corners, several pieces, tapered or solid strokes |
 | `stroke_linejoin` | `stroke-linejoin` | Miter / Round / Bevel |
 | `stroke_linecap` | `stroke-linecap` | Butt / Round / Square |
 | `opacity` | `opacity` | 0–100%, step 5 |
