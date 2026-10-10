@@ -553,3 +553,6 @@ Groups are native `<g>` containers. Selection/editing follows an Excalidraw-styl
   and `applyGroupDetachTransform`, which bakes the accumulated ancestor
   matrix into the copy's own `transform` so it lands in the same visual spot
   it was copied from.
+
+
+> **Commands (updated 2026-10-10):** every panel, main-menu and extension button is a real command in `editor.commands` (`panelCommands.js`, per-extension `commands.register`, `LeftPanel.addModeCommand`); buttons carry `command="<id>"` and no `$click`. `layer_moreopts` is the only adapter left. New buttons: register a command, add `command=`.

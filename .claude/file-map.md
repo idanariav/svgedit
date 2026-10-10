@@ -309,3 +309,6 @@ of `ext-*/ext-*.js`, bundled into `Editor.js`).
 | `packages/svgcanvas/package.json` | svgcanvas workspace package |
 | `CLAUDE.md` | This repo's coding guidelines for AI agents |
 | `.claude/` | Agent documentation (this folder) |
+
+| `src/editor/panelCommands.js` | Real registry commands for panel / main-menu buttons (`registerPanelCommands`) and `registerModeCommand` (drawing-tool buttons; `LeftPanel.addModeCommand`). Buttons are views via `command="<id>"` |
+| `scripts/repair-drawings.mjs` | See above |

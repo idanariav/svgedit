@@ -984,3 +984,9 @@ violating import, a comment mentioning svgEditor, a clean file).
 `architecture.md` (one line under the packages/editor split), CLAUDE.md
 "Key source locations" or the Playwright/test section where `npm test`'s
 gates are listed.
+
+
+## Status update (2026-10-10)
+- T0.1: complete for commands - panel, main-menu and extension buttons register real commands (`panelCommands.js`, `registerModeCommand`); `layer_moreopts` remains an adapter (menu anchor). Enablement now reflects context (path editor open, text selected, stroke/fill gating); calling handlers directly exposed errors that click listeners had been swallowing.
+- T0.3: pilot only (`ext-shape-family`). Remaining tool ports are listed in `.claude/techdebt.md`.
+- Known issues from T0.4: all fixed; the sweep's `KNOWN_ISSUES` is empty.

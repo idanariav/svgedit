@@ -184,3 +184,7 @@ attribute and renders the baked result in `d`. Precedents to copy:
 gradients), Perspective Grid, Live Paint, Liquify, envelope *mesh* distort,
 all non-SVG file formats (PDF/EPS/DXF/EMF/Affinity), CMYK/ICC/print, graphs,
 the MCP server.
+
+
+## Status update (2026-10-10)
+T0.1-T0.6 are committed. Follow-ups done since: review fixes, all known sweep issues (defs purge undo, textPath rail removal, Object-to-Path style, ephemeral nodes), full command migration (all buttons are real commands). Not done: porting the remaining drawing tools to `registerTool` (see `.claude/techdebt.md` > Remaining Tier 0 work).
