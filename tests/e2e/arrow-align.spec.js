@@ -175,4 +175,32 @@ test.describe('Arrowhead alignment', () => {
     expect(p['se:arrow-d']).toBeUndefined()
     expect(p.d).toMatch(/[AC]/) // the rounded corner is still there
   })
+
+  test('cloning an arrowed line is one undo step that takes its marker with it, and redo brings both back', async ({ page }) => {
+    await select(page, 'a')
+    await setHead(page, 'end', 'rightarrow')
+    const count = () => page.evaluate(() => ({
+      markers: document.querySelectorAll('#svgcontent marker').length,
+      lines: document.querySelectorAll('#svgcontent line').length
+    }))
+    const before = await count()
+    await page.evaluate(() => window.svgEditor.commands.run('clone_right'))
+    const cloned = await count()
+    expect(cloned).toEqual({ markers: before.markers + 1, lines: before.lines + 1 })
+    const copy = await page.evaluate(() => {
+      const el = window.svgEditor.svgCanvas.getSelectedElements()[0]
+      return { align: el.getAttribute('se:arrow-align'), pts: el.getAttribute('se:arrow-pts'), x2: Number(el.getAttribute('x2')) }
+    })
+    expect(copy.align).toBe('tip')
+    expect(copy.x2).toBeLessThan(Number(copy.pts.split(' ')[1].split(',')[0]))
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await count()).toEqual(before)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+    expect(await count()).toEqual(cloned)
+    const redone = await page.evaluate(() => {
+      const el = window.svgEditor.svgCanvas.getSelectedElements()[0] ?? [...document.querySelectorAll('#svgcontent line')].pop()
+      return { pts: el.getAttribute('se:arrow-pts'), x2: Number(el.getAttribute('x2')) }
+    })
+    expect(redone).toEqual({ pts: copy.pts, x2: copy.x2 })
+  })
 })

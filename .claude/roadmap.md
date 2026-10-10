@@ -272,7 +272,7 @@ Done: the Markers panel's **Head position** picker (Centered on the end = the ol
 - **Marker box clipping.** The head's tip is where the marker's 100×100 box ends, so the tip is the clipped edge (slightly blunt, as the old heads were), not a mitred point. Heads were not redrawn.
 - **Node editing a tipped path** edits the trimmed geometry; the source no longer matches, so on the next change the element becomes Extend on what it has (same picture, the head stays put). The same happens to an undo that restores only the geometry. Entering path edit on a tipped path could instead untrim first and re-trim on leave.
 - **Stroke width scaling.** A resize does not scale the stroke width (as elsewhere), so the head keeps its size and the trim follows.
-- **Copies.** A copy of an arrowed element gets its own markers, outside the undo history (techdebt: "Markers made for a copy are not in the undo history").
+- **Copies.** Clone and paste duplicate an element's markers inside the copy's own undo step (core clones the referenced `<defs>`); `ext-markers` only gives an element a marker of its own when it still shares one with a non-mirror element, and that creation is still outside the undo history. Mirror twins share their source's markers on purpose.
 - Not done from the plan: a custom-geometry head table for hand-made markers, the connector's legacy polyline offsets for heads that are not extension-made (they keep `stroke width × 5`).
 
 ## Fitted dashes (`core/dash-fit.js`): follow-ups from T2.5 (v1)

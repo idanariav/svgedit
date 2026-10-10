@@ -263,6 +263,11 @@ export const init = (canvas) => {
    */
   const syncArrowAlign = (elem, trusted = false) => {
     if (!elem?.hasAttribute?.(ARROW_ALIGN_ATTR)) return false
+    // Not in the drawing (an undo just took it out), or its marker is not there (yet): its state is not ours to judge.
+    if (!elem.isConnected || ['start', 'end'].some((pos) => {
+      const ref = /\(#(.+)\)/.exec(elem.getAttribute(`marker-${pos}`) || '')
+      return ref && !svgCanvas.getElement(ref[1])
+    })) return false
     let mode = getArrowAlign(elem)
     const before = geometryKey(elem)
     const ends = { start: markerAt(elem, 'start'), end: markerAt(elem, 'end') }

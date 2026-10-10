@@ -291,8 +291,9 @@ export default {
     }
 
     /**
-    * Called when the main system creates or modifies an object.
-    * Its primary purpose is to create new markers for cloned objects.
+    * Called when the main system creates or modifies an object. It gives an element that shares a
+    * marker with another one (a copy made without duplicating <defs>) a marker of its own.
+    * Clone and paste already duplicate the markers inside the copy's own undo step, so they need nothing here.
     * @param {Element} el
     * @returns {void}
     */
@@ -303,16 +304,16 @@ export default {
         const marker = getLinked(el, markerName)
         if (!marker || !marker.attributes.se_type) { return } // not created by this extension
         const url = el.getAttribute(markerName)
-        if (url) {
-          const len = el.id.length
-          const linkid = url.substr(-len - 1, len)
-          if (el.id !== linkid) {
-            const newMarkerId = 'mkr_' + pos + '_' + el.id
-            addMarker(newMarkerId, marker.attributes.se_type.value, el)
-            svgCanvas.changeSelectedAttribute(markerName, 'url(#' + newMarkerId + ')', [el])
-            svgCanvas.syncArrowAlign(el)
-            svgCanvas.call('changed', selElems)
-          }
+        // Mirror twins stay linked to their source and share its markers on purpose.
+        const partners = (other) => other.getAttribute('se:mirror-of') === el.id || el.getAttribute('se:mirror-of') === other.id
+        const shared = Array.from(svgCanvas.getSvgContent().querySelectorAll('*'))
+          .some((other) => other !== el && other.getAttribute(markerName) === url && !partners(other))
+        const newMarkerId = 'mkr_' + pos + '_' + el.id
+        if (shared && url !== `url(#${newMarkerId})`) {
+          addMarker(newMarkerId, marker.attributes.se_type.value, el)
+          svgCanvas.changeSelectedAttribute(markerName, 'url(#' + newMarkerId + ')', [el])
+          svgCanvas.syncArrowAlign(el)
+          svgCanvas.call('changed', selElems)
         }
       })
     }

@@ -150,19 +150,6 @@ must be added to that list. The ~50 remaining hard-coded hex values in component
 deliberate: text on accent buttons, colour-picker maths, danger red, grid default. The
 `--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
 
-## Markers made for a copy are not in the undo history
-
-`ext-markers` gives every element its own marker in `<defs>` (`mkr_<pos>_<id>`, so colour follows the
-element). When an element carrying such markers is copied (clone, paste, mirror copy, transform again),
-`updateReferences` creates the copy's markers from the `changed` event, after the copy's command is
-recorded, and `changeSelectedAttribute` records the `marker-*` change as a separate step. Undoing the
-copy therefore leaves the new marker behind and needs a second undo for the attribute. Found by the
-command sweep on `arrow-align.svg` (listed in its `KNOWN_ISSUES`; the old `markers.svg` fixture has
-markers without `se_type`, which the extension ignores). The fix is to make the marker part of the
-copy's own command — either create it before the copy's command is recorded, or let the undo manager
-amend the last command (only safe once the order of `changed` and `addCommandToHistory` is the same
-for every copying command). Delete the sweep entry when done.
-
 ## Repo hygiene leftovers
 
 - Two coverage systems remain: nyc (`nyc.config.js`, used by

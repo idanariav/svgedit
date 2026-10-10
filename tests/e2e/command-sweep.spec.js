@@ -19,15 +19,7 @@ const FIXTURES = path.resolve('tests/e2e/fixtures/roundtrip')
 const VIEW_STATE = new Set(['tool_layerView'])
 // Problems the sweep found that are real but not fixed yet (each is in techdebt.md).
 // A listed problem is tolerated; one that stops reproducing fails the run so the entry gets deleted.
-const KNOWN_ISSUES = [
-  {
-    file: 'arrow-align.svg',
-    commands: ['clone_up', 'clone_down', 'clone_left', 'clone_right', 'clone_up_big', 'clone_down_big', 'clone_left_big', 'clone_right_big',
-      'transform_again', 'paste', 'paste_in_place', 'tool_mirror_copy', 'tool_mirror_copy_multi'],
-    match: /did not (restore|reproduce)/,
-    why: 'ext-markers gives a copy its own marker in <defs> outside the undo history, so undoing the copy leaves that marker behind'
-  }
-]
+const KNOWN_ISSUES = []
 const MAX_ELEMENTS = process.env.SWEEP === 'full' ? 8 : 2
 
 test.describe.configure({ mode: 'parallel' })
