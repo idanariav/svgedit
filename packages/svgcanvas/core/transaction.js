@@ -55,6 +55,15 @@ const LOG = 'transaction'
  */
 
 /**
+ * @typedef {object} TransactionOptions
+ * @property {boolean} [selection] `false` skips capturing/restoring the selection.
+ * @property {() => void} [onAbort] Called when the transaction is ended *for* its owner, not by it:
+ *   undo/redo cancelled it (the drawing is already reverted), or the drawing was replaced
+ *   (`clear`/`setSvgString`). A transaction held across many pointer gestures (a tool session)
+ *   uses it to drop its own state; it is not called by the owner's own `commit()`/`cancel()`.
+ */
+
+/**
  * @typedef {object} Snapshot
  * @property {Map<Element, Map<string, string>>} attrs every element → its attributes
  * @property {Map<CharacterData, string>} text every text/comment node → its data
@@ -69,6 +78,7 @@ const LOG = 'transaction'
  * @property {boolean} closed
  * @property {Element[]} selection
  * @property {Snapshot} before
+ * @property {(() => void)|undefined} onAbort
  */
 
 /** Attributes written through native SVG lists; reading one forces the browser to sync it. */
@@ -222,6 +232,24 @@ export const init = (canvas) => {
     session = null
   }
 
+  /**
+   * End the open transaction on its owner's behalf (undo/redo, drawing replaced) and tell it.
+   * @param {boolean} revert Put the drawing back (undo/redo) or leave it (it is being replaced).
+   */
+  const abort = (revert) => {
+    const { onAbort } = /** @type {Session} */ (session)
+    try {
+      if (revert) {
+        /** @type {Session} */ (session).depth = 0
+        doCancel()
+      } else {
+        end()
+      }
+    } finally {
+      try { onAbort?.() } catch (err) { error('transaction onAbort handler failed', err, LOG) }
+    }
+  }
+
   const doCommit = () => {
     const s = /** @type {Session} */ (session)
     let batch = null
@@ -254,7 +282,7 @@ export const init = (canvas) => {
 
   /**
    * @param {string} label Undo-menu text of the resulting step.
-   * @param {{selection?: boolean}} [options] `selection: false` skips capturing/restoring the selection.
+   * @param {TransactionOptions} [options]
    * @returns {Transaction}
    */
   const beginTransaction = (label, options = {}) => {
@@ -264,6 +292,7 @@ export const init = (canvas) => {
         depth: 0,
         doomed: false,
         closed: false,
+        onAbort: options.onAbort,
         selection: options.selection === false ? [] : svgCanvas.getSelectedElements().filter(Boolean),
         before: takeSnapshot(svgCanvas.getSvgContent())
       }
@@ -331,8 +360,7 @@ export const init = (canvas) => {
       // its own state resets and a later mouseup does not "finish" a dead gesture.
       /** @type {any} */ (svgCanvas).cancelToolGesture?.()
       if (session) {
-        session.depth = 0
-        try { doCancel() } catch (err) { error('failed to cancel transaction before undo/redo', err, LOG) }
+        try { abort(true) } catch (err) { error('failed to cancel transaction before undo/redo', err, LOG) }
       }
       raw()
     }
@@ -342,7 +370,7 @@ export const init = (canvas) => {
   // left to revert to.
   const rawReset = undoMgr.resetUndoStack.bind(undoMgr)
   undoMgr.resetUndoStack = () => {
-    if (session) end()
+    if (session) abort(false)
     rawReset()
   }
 

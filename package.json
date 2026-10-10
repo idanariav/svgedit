@@ -99,7 +99,7 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@rollup/plugin-dynamic-import-vars": "2.1.5",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/coverage-v8": "^4.1.11",
     "fast-check": "^4.10.2",
     "jamilih": "0.63.1",
     "jsdoc": "4.0.5",
@@ -115,7 +115,7 @@
     "vite": "^7.3.1",
     "vite-plugin-istanbul": "^7.2.1",
     "vite-plugin-string": "^1.2.3",
-    "vitest": "^4.0.16"
+    "vitest": "^4.1.11"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.55.1"

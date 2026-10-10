@@ -11,6 +11,7 @@
  *                          around the fixed pins
  *   • Escape             → cancel the session (restore the shape) and exit
  *   • Switch tools       → commit the current pose as one undo step
+ *   • Undo / open a file → the session is dropped (undo cancels the open transaction)
  *
  * Model: for a *single-shape* selection (one shape, or a group with exactly
  * one warp-able descendant), the rig is persistent — the rest pose and pins
@@ -24,6 +25,12 @@
  * layout is discarded on exit) — the remap registry only fires for `<path>`
  * elements (`coords.js`'s `case 'g':` never calls it), so a group's rig
  * can't be kept in sync and isn't persisted.
+ *
+ * Undo: the whole session — the primitive→path conversions, every warp tick and
+ * the rig attributes — runs inside ONE `beginTransaction` held from `startSession`
+ * to `commit`/`cancel`, so it is one undo step without a hand-built batch, and
+ * cancelling puts the shape (and the selection) back exactly. The transaction's
+ * `onAbort` tells the tool when undo or a file load ended it from outside.
  *
  * Deformation: Moving Least Squares rigid (see ./mls.js).
  * Geometry is subdivided (paper.js flatten) so straight limbs bend smoothly.
@@ -250,38 +257,26 @@ export const resolveWarpableShapes = (selected) => {
 }
 
 /**
- * Decide what `commit()` should persist for one target: which attributes
- * changed (for the undo snapshot) and which new attribute values to write.
- * Pure — takes plain values/flags rather than touching the DOM or
- * `svgCanvas.history`, so the per-target commit decision (skip-if-unchanged,
- * persistable-only rest-d/pins handling) is unit-testable on its own.
- * @param {{currentD:string, origD:string, hasRestD:boolean, oldPinsJson:?string, newPinsJson:string, persistRig:boolean}} args
- * @returns {{oldValues:Object, newRestD:?string, newPins:?string}} `newRestD`/
- *   `newPins` are `null` when that attribute shouldn't be written.
+ * Decide which persistent-rig attributes `commit()` writes for one target.
+ * Pure — takes plain values/flags rather than touching the DOM — so the
+ * persistable-only rest-d/pins handling is unit-testable on its own. (Which
+ * attributes *changed* is the transaction's business, not ours.)
+ * @param {{origD:string, hasRestD:boolean, oldPinsJson:?string, newPinsJson:string, persistRig:boolean}} args
+ * @returns {{newRestD:?string, newPins:?string}} `null` when that attribute shouldn't be written.
  */
-export const computeCommitPatch = ({ currentD, origD, hasRestD, oldPinsJson, newPinsJson, persistRig }) => {
-  const oldValues = {}
+export const computeCommitPatch = ({ origD, hasRestD, oldPinsJson, newPinsJson, persistRig }) => {
   let newRestD = null
   let newPins = null
-
-  // Skip targets that ended up unchanged (dragged then returned to rest).
-  if (currentD !== origD) oldValues.d = origD
 
   if (persistRig) {
     // Rest-d is the canonical, never-warped rest pose — written once, at rig
     // creation, and never overwritten so every future session keeps warping
     // from the same rest (see file header).
-    if (!hasRestD) {
-      oldValues[REST_D_ATTR] = null
-      newRestD = origD
-    }
-    if (oldPinsJson !== newPinsJson) {
-      oldValues[PINS_ATTR] = oldPinsJson
-      newPins = newPinsJson
-    }
+    if (!hasRestD) newRestD = origD
+    if (oldPinsJson !== newPinsJson) newPins = newPinsJson
   }
 
-  return { oldValues, newRestD, newPins }
+  return { newRestD, newPins }
 }
 
 export default {
@@ -316,9 +311,8 @@ export default {
     // the geometry-remap registry only fires for <path>, so a multi-shape
     // rig's metadata can't be kept in sync with external transforms).
     let persistable = false
-    // convertToPath auto-commits its own undo command; we capture those here so
-    // the whole session is one atomic, cancelable undo step (see startSession).
-    let convertCmds = []
+    // The open undo transaction for the whole session (see file header).
+    let tx = null
     /** @type {SVGCircleElement[]} */
     let pinDots = []
 
@@ -463,23 +457,12 @@ export default {
       const shapes = resolveWarpableShapes(sel)
       if (!shapes.length) return 0
 
-      // Convert primitives to paths up front. convertToPath pushes its own undo
-      // command immediately; capture and detach each so the session controls
-      // atomicity (folded into the warp batch on commit, reverted on cancel).
-      convertCmds = []
-      const { undoMgr } = svgCanvas
+      // One transaction for the whole session: the conversions below, every warp
+      // tick and the rig attributes become a single undo step on commit, and
+      // cancel() reverts all of it. onAbort: undo or a file load ended it.
+      tx = svgCanvas.beginTransaction('Puppet Warp', { onAbort: abandon })
       const paths = shapes
-        .map((el) => {
-          if (el.tagName === 'path') return el
-          const before = undoMgr.getUndoStackSize()
-          const path = svgCanvas.convertToPath(el)
-          if (path && undoMgr.getUndoStackSize() > before) {
-            convertCmds.push(undoMgr.undoStack[undoMgr.getUndoStackSize() - 1])
-            undoMgr.undoStack.length = before // detach — the session owns it now
-            undoMgr.undoStackPointer = before
-          }
-          return path
-        })
+        .map((el) => (el.tagName === 'path' ? el : svgCanvas.convertToPath(el)))
         .filter(Boolean)
 
       svgCanvas.clearSelection() // drop selector grips so they don't eat our drags
@@ -514,6 +497,12 @@ export default {
         if (storedPins) pins = storedPins
       }
 
+      if (!targets.length) {
+        tx.cancel()
+        teardown()
+        return 0
+      }
+
       dragIndex = -1
       dirty = false
       removePins()
@@ -524,21 +513,9 @@ export default {
       return targets.length
     }
 
-    /** Undo (in reverse) the primitive→path conversions made this session. */
-    const revertConversions = () => {
-      const handler = svgCanvas.undoMgr.handler_
-      convertCmds.slice().reverse().forEach((cmd) => cmd.unapply(handler))
-      convertCmds = []
-    }
-
     /** Bake the current pose as one atomic undo step. */
     const commit = () => {
       if (dirty && targets.length) {
-        const { BatchCommand, ChangeElementCommand } = svgCanvas.history
-        const batch = new BatchCommand('Puppet Warp')
-        // Conversions (already applied to the DOM) go first so undo reverses
-        // warp→convert and the whole session is one step.
-        convertCmds.forEach((cmd) => batch.addSubCommand(cmd))
         targets.forEach((t, i) => {
           // Refit the dense warp polyline into smooth cubic béziers so the baked
           // path is compact (and doesn't grow each re-pose session). Falls back
@@ -548,12 +525,9 @@ export default {
             if (refit) t.el.setAttribute('d', refit)
           } catch { /* keep the raw polyline */ }
 
-          // Element now holds the final `d`; compute the undo snapshot + which
-          // persistent-rig attrs to write (single-target sessions only), then
-          // apply — one ChangeElementCommand per target so `d` and the rig
-          // metadata land in the same undo step.
+          // The persistent-rig attributes (single-target sessions only) land in
+          // the same undo step as `d`.
           const patch = computeCommitPatch({
-            currentD: t.el.getAttribute('d'),
             origD: t.origD,
             hasRestD: t.el.hasAttribute(REST_D_ATTR),
             oldPinsJson: t.el.getAttribute(PINS_ATTR),
@@ -562,24 +536,18 @@ export default {
           })
           if (patch.newRestD !== null) t.el.setAttribute(REST_D_ATTR, patch.newRestD)
           if (patch.newPins !== null) t.el.setAttribute(PINS_ATTR, patch.newPins)
-
-          if (Object.keys(patch.oldValues).length) {
-            batch.addSubCommand(new ChangeElementCommand(t.el, patch.oldValues, 'Puppet Warp'))
-          }
         })
-        convertCmds = [] // ownership transferred into the batch
-        if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
+        tx.commit()
       } else {
-        // Entered but never warped — undo the conversions so it's a true no-op.
-        revertConversions()
+        // Entered but never warped — roll the conversions back so it's a true no-op.
+        tx.cancel()
       }
       teardown()
     }
 
-    /** Discard the session: restore rest geometry, revert conversions, no undo entry. */
+    /** Discard the session: the transaction restores geometry, conversions and selection; no undo entry. */
     const cancel = () => {
-      targets.forEach((t) => t.el.setAttribute('d', t.origD))
-      revertConversions()
+      tx?.cancel()
       teardown()
     }
 
@@ -589,7 +557,13 @@ export default {
       pins = []
       dragIndex = -1
       dirty = false
-      convertCmds = []
+      tx = null
+    }
+
+    /** Undo or a file load ended the transaction for us: the drawing is already settled; drop the tool state. */
+    function abandon () {
+      teardown()
+      if (svgCanvas.getMode() === name) svgEditor.leftPanel.clickSelect()
     }
 
     // Any exit from puppetwarp mode commits the pose (mirrors ext-curvature's

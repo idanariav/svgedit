@@ -210,7 +210,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
 | `core/history.js` | Undo/redo stack: command types incl. `ChildListCommand`/`CharacterDataCommand`, `BatchCommand` with begin/end-batch coalescing, `UndoManager`, `EPHEMERAL_ATTR`/`isEphemeral` |
 | `core/undo.js` | Change recording + the history-event handler (undo/redo side effects, batch coalescing) |
-| `core/transaction.js` | Undo transactions (`beginTransaction`/`transact`/`inTransaction`): snapshot at begin, diff at commit into one `BatchCommand`; cancel restores drawing + selection |
+| `core/transaction.js` | Undo transactions (`beginTransaction`/`transact`/`inTransaction`): snapshot at begin, diff at commit into one `BatchCommand`; cancel restores drawing + selection; `onAbort` tells a long-lived owner (tool session) that undo/redo/clear ended it |
 | `core/tool-registry.js` | `registerTool` contract: normalised document-space pointer events, automatic per-gesture transaction, overlays, `finishCreated`; dispatched from `event.js` |
 | `core/drawing-invariants.js` | `checkDrawing()` structural health check + `registerAttrValidator()`; `svgCanvas.checkDrawing()` |
 | `core/coords.js` | Coordinate transform + remapping |

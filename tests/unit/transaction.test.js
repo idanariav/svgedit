@@ -334,6 +334,39 @@ describe('undo transactions', () => {
       expect(tx.commit()).toBeNull() // stale handle is inert
     })
 
+    describe('onAbort (a transaction held across gestures learns it was ended for it)', () => {
+      it('fires after undo cancelled the transaction and the drawing is already reverted', () => {
+        const seen = []
+        canvas.beginTransaction('session', { onAbort: () => seen.push(circle.getAttribute('r')) })
+        circle.setAttribute('r', '5')
+        canvas.undoMgr.undo()
+        expect(seen).toEqual(['20'])
+        expect(canvas.inTransaction()).toBe(false)
+      })
+
+      it('fires when the drawing is replaced, leaving the new drawing alone', () => {
+        const onAbort = vi.fn()
+        canvas.beginTransaction('session', { onAbort })
+        canvas.clear()
+        expect(onAbort).toHaveBeenCalledTimes(1)
+        expect(canvas.inTransaction()).toBe(false)
+      })
+
+      it('does not fire for the owner\'s own commit or cancel', () => {
+        const onAbort = vi.fn()
+        canvas.beginTransaction('a', { onAbort }).commit()
+        canvas.beginTransaction('b', { onAbort }).cancel()
+        expect(onAbort).not.toHaveBeenCalled()
+      })
+
+      it('a throwing handler does not break undo', () => {
+        canvas.transact('first', () => rect.setAttribute('x', '1'))
+        canvas.beginTransaction('session', { onAbort: () => { throw new Error('boom') } })
+        expect(() => canvas.undoMgr.undo()).not.toThrow()
+        expect(rect.getAttribute('x')).toBe('10')
+      })
+    })
+
     it('stale handles are inert', () => {
       const tx = canvas.beginTransaction('a')
       tx.cancel()

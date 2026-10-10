@@ -104,7 +104,7 @@ export interface AttachedMembers {
    * Nested calls join the outermost transaction. `commit()` returns the pushed
    * batch, or null when nothing net-changed; `cancel()` restores the drawing and selection.
    */
-  beginTransaction(label: string, options?: { selection?: boolean }): { label: string, commit(): HistoryCommand | null, cancel(): void }
+  beginTransaction(label: string, options?: { selection?: boolean, onAbort?: () => void }): { label: string, commit(): HistoryCommand | null, cancel(): void }
   /** Run `fn` as one undo step; a throw rolls the drawing back and rethrows. `fn` must be synchronous. */
   transact<T>(label: string, fn: () => T): T
   inTransaction(): boolean

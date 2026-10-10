@@ -187,4 +187,4 @@ the MCP server.
 
 
 ## Status update (2026-10-10)
-T0.1-T0.6 are committed. Follow-ups done since: review fixes, all known sweep issues (defs purge undo, textPath rail removal, Object-to-Path style, ephemeral nodes), full command migration (all buttons are real commands). Drawing tools are ported to `registerTool` (puppet-warp and connector stay on legacy hooks on purpose, see `.claude/techdebt.md`).
+T0.1-T0.6 are committed. Follow-ups done since: review fixes, all known sweep issues (defs purge undo, textPath rail removal, Object-to-Path style, ephemeral nodes), full command migration (all buttons are real commands). Drawing tools are ported to `registerTool`; puppet-warp keeps its legacy mouse hooks (see `.claude/techdebt.md`) but its undo is now one session-long transaction; connector is not a tool.

@@ -6,8 +6,8 @@ const el = (tag) => document.createElementNS(NS_SVG, tag)
 
 /**
  * `resolveWarpableShapes` (selection→target filtering, extracted from
- * `startSession`) and `computeCommitPatch` (per-target undo-snapshot
- * decision, extracted from `commit`) are DOM-light/pure respectively, so
+ * `startSession`) and `computeCommitPatch` (which rig attributes
+ * `commit` writes) are DOM-light/pure respectively, so
  * they're unit-testable without a svgCanvas/undo-history mock — see
  * .claude/techdebt.md's former "Extension logic has no vitest coverage"
  * entry.
@@ -63,7 +63,6 @@ describe('ext-puppet-warp session-lifecycle helpers', () => {
 
   describe('computeCommitPatch', () => {
     const base = {
-      currentD: 'M0,0 L10,10',
       origD: 'M0,0 L10,10',
       hasRestD: false,
       oldPinsJson: null,
@@ -71,27 +70,18 @@ describe('ext-puppet-warp session-lifecycle helpers', () => {
       persistRig: false
     }
 
-    it('is a no-op when d is unchanged and the rig is not persisted', () => {
-      expect(computeCommitPatch(base)).toEqual({ oldValues: {}, newRestD: null, newPins: null })
+    it('writes nothing when the rig is not persisted', () => {
+      expect(computeCommitPatch(base)).toEqual({ newRestD: null, newPins: null })
     })
 
-    it('snapshots the old d when it changed', () => {
-      const patch = computeCommitPatch({ ...base, currentD: 'M0,0 L20,20' })
-      expect(patch.oldValues).toEqual({ d: 'M0,0 L10,10' })
-      expect(patch.newRestD).toBeNull()
-      expect(patch.newPins).toBeNull()
-    })
-
-    it('initializes rest-d on first persist (rig creation)', () => {
+    it('initializes rest-d to the pre-warp d on first persist (rig creation)', () => {
       const patch = computeCommitPatch({ ...base, persistRig: true, hasRestD: false })
       expect(patch.newRestD).toBe(base.origD)
-      expect(patch.oldValues['se:puppet-rest-d']).toBeNull()
     })
 
     it('never rewrites rest-d once it exists', () => {
       const patch = computeCommitPatch({ ...base, persistRig: true, hasRestD: true })
       expect(patch.newRestD).toBeNull()
-      expect(patch.oldValues['se:puppet-rest-d']).toBeUndefined()
     })
 
     it('writes pins when they changed and the rig is persisted', () => {
@@ -99,7 +89,6 @@ describe('ext-puppet-warp session-lifecycle helpers', () => {
         ...base, persistRig: true, hasRestD: true, oldPinsJson: '[[0,0,0,0]]', newPinsJson: '[[0,0,5,5]]'
       })
       expect(patch.newPins).toBe('[[0,0,5,5]]')
-      expect(patch.oldValues['se:puppet-pins']).toBe('[[0,0,0,0]]')
     })
 
     it('skips pins when unchanged even if the rig is persisted', () => {
@@ -107,33 +96,17 @@ describe('ext-puppet-warp session-lifecycle helpers', () => {
         ...base, persistRig: true, hasRestD: true, oldPinsJson: '[[0,0,0,0]]', newPinsJson: '[[0,0,0,0]]'
       })
       expect(patch.newPins).toBeNull()
-      expect(patch.oldValues['se:puppet-pins']).toBeUndefined()
     })
 
-    it('never touches rest-d/pins for a non-persisted (multi-target) session even if d changed', () => {
-      const patch = computeCommitPatch({
-        ...base,
-        currentD: 'M0,0 L99,99',
-        persistRig: false,
-        hasRestD: false,
-        oldPinsJson: null,
-        newPinsJson: '[[1,1,2,2]]'
-      })
-      expect(patch.newRestD).toBeNull()
-      expect(patch.newPins).toBeNull()
-      expect(patch.oldValues).toEqual({ d: base.origD })
+    it('never touches rest-d/pins for a non-persisted (multi-target) session', () => {
+      const patch = computeCommitPatch({ ...base, oldPinsJson: null, newPinsJson: '[[1,1,2,2]]' })
+      expect(patch).toEqual({ newRestD: null, newPins: null })
     })
 
-    it('bundles d + rest-d + pins into one patch when all three change on rig creation', () => {
+    it('writes both rest-d and pins on rig creation', () => {
       const patch = computeCommitPatch({
-        currentD: 'M0,0 L50,50',
-        origD: 'M0,0 L0,0',
-        hasRestD: false,
-        oldPinsJson: null,
-        newPinsJson: '[[0,0,5,5]]',
-        persistRig: true
+        origD: 'M0,0 L0,0', hasRestD: false, oldPinsJson: null, newPinsJson: '[[0,0,5,5]]', persistRig: true
       })
-      expect(patch.oldValues).toEqual({ d: 'M0,0 L0,0', 'se:puppet-rest-d': null, 'se:puppet-pins': null })
       expect(patch.newRestD).toBe('M0,0 L0,0')
       expect(patch.newPins).toBe('[[0,0,5,5]]')
     })

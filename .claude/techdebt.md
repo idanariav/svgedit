@@ -160,7 +160,7 @@ toolchain step.
 
 ## Tier 0 follow-ups (VectorCraft port, 2026-10-10)
 
-Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: every standalone drawing tool uses `registerTool` (shape-family, brush, panning, eyedropper, cutter, polystar, shapes, curvature, shape-builder). Two extensions keep legacy hooks on purpose: puppet-warp and connector (see below).
+Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: every standalone drawing tool uses `registerTool` (shape-family, brush, panning, eyedropper, cutter, polystar, shapes, curvature, shape-builder). Two extensions keep legacy mouse hooks on purpose: puppet-warp and connector (see below); puppet-warp's undo is a session-long `beginTransaction`.
 
 Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing), command
 registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
@@ -233,8 +233,8 @@ Also: other buttons/shortcuts that are fine today but would be safer `atomic` (o
   hooks snapped only the start point).
 
 **Tests / tooling**
-- `@fast-check/vitest` (0.5.0) needs vitest ≥ 4.1; the repo is on 4.0.16, so only `fast-check` is installed
-  (`tests/unit/properties/`, seed with `FC_SEED=…`). Install the vitest integration after the vitest upgrade.
+- Property tests use `fast-check` directly (`tests/unit/properties/`, seed with `FC_SEED=…`). vitest is on 4.1, so
+  `@fast-check/vitest` (`it.prop`) would install now; it adds nothing the `fc.assert` + `params()` helper lacks, so it isn't.
 - The e2e `afterEach` invariant check can be opted out per test with
   `test.info().annotations.push({ type: 'allow-corrupt-drawing', description: '…' })`; none do today. The
   `closed-subpath` rule from the plan was not implemented on purpose (the node editor repairs `Z`-only
@@ -390,13 +390,18 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
   at zoom != 100% (legacy hook read the zoomed `mouse_x`) and is fixed; `ctx.start` stays valid inside `pointerUp`;
   curvature finalizes a double-click on release (finishing switches tool, which cancels the gesture it runs in) and
   its preview/dots are `data-se-ephemeral`; `cancelTool` now includes `curvature`.
-  **Left on legacy hooks on purpose:** `ext-puppet-warp` (a session across many gestures that bakes its own undo
-  batch: per-gesture transactions would double-record the live warp, and holding one transaction open for the whole
-  session would swallow other edits' undo steps; the right fix is a session-level transaction API) and
-  `ext-connector` (augments the built-in line and select modes, it is not a tool). `glow`/`outline`/`shadow`/
-  `repeat` only refresh on mouseup; they are not tools.
+  **Left on legacy mouse hooks on purpose:** `ext-puppet-warp` — a session across many gestures. Its *undo* is
+  done: the session holds one `beginTransaction('Puppet Warp', { onAbort })` from entry to exit (conversion, warp and
+  rig attributes are one step, cancel reverts everything and restores the selection, undo/redo/clear drop the session
+  through `onAbort`; `tests/e2e/puppet-warp-session.spec.js`). Not ported to `registerTool` because the registry opens
+  a nested transaction per gesture and a cancelled gesture (tool switch mid-drag, window blur) dooms the outer one,
+  silently discarding the whole warp while the tool still shows its pins; it would need a way for a gesture to cancel
+  without dooming a session. Also, edits that run while a session is open (a command that calls `transact`) fold into
+  the puppet step; nothing in the tool's flow does that today (the selection is cleared). `ext-connector` augments the
+  built-in line and select modes; it is not a tool. `glow`/`outline`/`shadow`/`repeat` only refresh on mouseup; they
+  are not tools.
 - Commands are real now but their `enabled` is mostly "always" (what the buttons were); several would be better
   gated on selection type.
-- Still open from the plan: `cursor()` / `options()` tool hooks, live-effects preview on transactions,
-  `@fast-check/vitest` (needs vitest >= 4.1).
+- Still open from the plan: `cursor()` / `options()` tool hooks (no consumer yet), live-effects preview on
+  transactions.
 - Run `node scripts/repair-drawings.mjs --write <vault>` once (NaN tspans), then delete its `REPAIRS` entry.
