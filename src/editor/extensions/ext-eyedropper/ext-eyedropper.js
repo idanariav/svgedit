@@ -37,7 +37,7 @@ export default {
     const svgEditor = this
     const { svgCanvas } = svgEditor
     await loadExtensionTranslation(svgEditor)
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
 
     /**
      * Open the action menu at the click point, sampling the target's fill.
@@ -88,14 +88,10 @@ export default {
         const title = `${name}:buttons.0.title`
         const key = 'ctrl+I'
         const buttonTemplate = `
-        <se-button id="tool_eyedropper" title="${title}" src="eye_dropper.svg" shortcut=${key}></se-button>
+        <se-button id="tool_eyedropper" command="tool_eyedropper" title="${title}" src="eye_dropper.svg" shortcut=${key}></se-button>
         `
         svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 12)
-        $click($id('tool_eyedropper'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_eyedropper')) {
-            svgCanvas.setMode(name)
-          }
-        })
+        svgEditor.leftPanel.addModeCommand('tool_eyedropper', name, { label: title })
 
         // Escape while the tool is active (and no menu is capturing it)
         // returns to the Select tool.

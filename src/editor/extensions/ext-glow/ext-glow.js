@@ -168,7 +168,7 @@ export default {
           <div id="glow_panel" class="sidepanel_section" style="display:none">
             <div class="shadow_panel_header">
               <div class="sidepanel_section_label">${t('name')}</div>
-              <se-button id="glow_remove" src="delete.svg" title="${t('contextTools.remove.title')}"></se-button>
+              <se-button id="glow_remove" command="glow_remove" src="delete.svg" title="${t('contextTools.remove.title')}"></se-button>
             </div>
             ${group('outer')}
             ${group('inner')}
@@ -216,7 +216,13 @@ export default {
           commit()
         })
         $id('glow_feather_radius').addEventListener('change', commit)
-        $id('glow_remove').addEventListener('click', () => setGlow({ remove: true }))
+        svgEditor.commands.register({
+          id: 'glow_remove',
+          label: t('contextTools.remove.title'),
+          group: 'Tools',
+          pd: true,
+          run: () => setGlow({ remove: true })
+        })
       },
 
       selectedChanged (opts) {

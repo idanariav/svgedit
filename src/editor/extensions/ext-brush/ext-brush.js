@@ -33,7 +33,7 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     let element = null
     let points = []
     let smoother = null
@@ -53,14 +53,10 @@ export default {
       name,
       callback () {
         const buttonTemplate = `
-          <se-button id="tool_brush" title="Brush" src="brush.svg" shortcut="W"></se-button>
+          <se-button id="tool_brush" command="tool_brush" title="Brush" src="brush.svg" shortcut="W"></se-button>
         `
         svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 11)
-        $click($id('tool_brush'), () => {
-          if (svgEditor.leftPanel.updateLeftPanel('tool_brush')) {
-            svgCanvas.setMode('brush')
-          }
-        })
+        svgEditor.leftPanel.addModeCommand('tool_brush', 'brush', { label: 'Brush' })
         // Double-click to lock, matching the other drawing tools (LeftPanel.js's
         // `lockable` list) — added dynamically here since #tool_brush doesn't
         // exist yet when LeftPanel.js wires up its own static lockable buttons.

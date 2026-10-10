@@ -35,6 +35,12 @@ export default {
     const { $id } = svgCanvas
     const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
 
+    /** Whether the selection is `count` paths that can be joined (or closed, for one). */
+    const joinable = (count) => {
+      const list = svgCanvas.getSelectedElements().filter(Boolean)
+      return list.length === count && svgCanvas.canJoinPaths(list)
+    }
+
     const updateJoin = (elems) => {
       const list = (elems || svgCanvas.getSelectedElements()).filter(Boolean)
       const ok = svgCanvas.canJoinPaths(list)
@@ -61,6 +67,7 @@ export default {
           average.addOption('both', t('averageBoth'))
           const addAnchors = document.createElement('se-button')
           addAnchors.id = 'tool_node_add_anchors'
+          addAnchors.setAttribute('command', 'tool_node_add_anchors')
           addAnchors.setAttribute('title', t('addAnchors'))
           addAnchors.setAttribute('src', 'node_add_anchors.svg')
           if (after) after.after(average, addAnchors)
@@ -74,7 +81,14 @@ export default {
             setTimeout(() => { const el = $id('tool_node_average'); if (el) el.value = '' }, 0)
             svgCanvas.pathActions.averageSelectedNodes(axis)
           })
-          addAnchors.addEventListener('click', () => svgCanvas.pathActions.addAnchorPoints())
+          svgEditor.commands.register({
+            id: 'tool_node_add_anchors',
+            label: t('addAnchors'),
+            group: 'Tools',
+            pd: true,
+            enabled: () => svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first',
+            run: () => svgCanvas.pathActions.addAnchorPoints()
+          })
         }
 
         // Join: "Close" for one open path (Object → Path), "Join" for two (Combine).
@@ -83,24 +97,40 @@ export default {
         if (pathAnchor) {
           const btn = document.createElement('se-button')
           btn.id = 'tool_join_paths'
+          btn.setAttribute('command', 'tool_join_paths')
           btn.setAttribute('title', t('close'))
           btn.setAttribute('src', 'join_paths.svg')
           btn.setAttribute('size', 'small')
           btn.setAttribute('data-caption', t('closeCaption'))
           btn.style.display = 'none'
-          btn.addEventListener('click', join)
           pathAnchor.after(btn)
+          svgEditor.commands.register({
+            id: 'tool_join_paths',
+            label: t('close'),
+            group: 'Tools',
+            pd: true,
+            enabled: () => joinable(1) ? true : 'Select one open path',
+            run: join
+          })
         }
         const multiAnchor = $id('tool_match_strokes')
         if (multiAnchor) {
           const btn = document.createElement('se-button')
           btn.id = 'tool_join_paths_multi'
+          btn.setAttribute('command', 'tool_join_paths_multi')
           btn.setAttribute('title', t('join'))
           btn.setAttribute('src', 'join_paths.svg')
           btn.setAttribute('size', 'small')
           btn.style.display = 'none'
-          btn.addEventListener('click', join)
           multiAnchor.after(btn)
+          svgEditor.commands.register({
+            id: 'tool_join_paths_multi',
+            label: t('join'),
+            group: 'Tools',
+            pd: true,
+            enabled: () => joinable(2) ? true : 'Select two paths',
+            run: join
+          })
         }
       },
 

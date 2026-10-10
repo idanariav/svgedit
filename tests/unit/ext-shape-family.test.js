@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import extShapeFamily from '../../src/editor/extensions/ext-shape-family/ext-shape-family.js'
 import en from '../../src/editor/extensions/ext-shape-family/locale/en.js'
+import { mockCommands } from './helpers/commands.js'
 
 describe('ext-shape-family', () => {
   let svgContent
@@ -102,6 +103,7 @@ describe('ext-shape-family', () => {
       },
       listenerAbort: new AbortController()
     }
+    mockCommands(svgEditor)
     ext = await extShapeFamily.init.call(svgEditor)
     ext.callback.call(svgEditor)
   })

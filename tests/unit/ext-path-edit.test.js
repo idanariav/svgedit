@@ -4,6 +4,7 @@ import '../../src/editor/components/seSelect.js'
 import extPathEdit from '../../src/editor/extensions/ext-path-edit/ext-path-edit.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
+import { mockCommands } from './helpers/commands.js'
 
 vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -52,6 +53,7 @@ describe('ext-path-edit', function () {
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => key, addResourceBundle () {} }
     }
+    mockCommands(svgEditor)
     ext = await extPathEdit.init.call(svgEditor)
     ext.callback.call(svgEditor)
   })
@@ -82,9 +84,12 @@ describe('ext-path-edit', function () {
     assert.equal(spy.mock.calls.length, 1)
   })
 
-  it('Add anchor points button calls the path action', function () {
+  it('Add anchor points button calls the path action, but only while a path is being node-edited', function () {
     const spy = vi.fn()
     svgCanvas.pathActions.addAnchorPoints = spy
+    $('tool_node_add_anchors').dispatchEvent(new Event('click'))
+    assert.equal(spy.mock.calls.length, 0)
+    vi.spyOn(svgCanvas, 'getMode').mockReturnValue('pathedit')
     $('tool_node_add_anchors').dispatchEvent(new Event('click'))
     assert.equal(spy.mock.calls.length, 1)
   })

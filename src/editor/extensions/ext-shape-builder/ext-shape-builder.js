@@ -263,11 +263,19 @@ export default {
         if (!combine) return
         const btn = document.createElement('se-button')
         btn.id = 'tool_shape_builder'
+        btn.setAttribute('command', 'tool_shape_builder')
         btn.setAttribute('size', 'small')
         btn.setAttribute('title', svgEditor.i18next.t(`${name}:title`))
         btn.setAttribute('src', 'shape_builder.svg')
         combine.append(btn)
-        btn.addEventListener('click', enter)
+        svgEditor.commands.register({
+          id: 'tool_shape_builder',
+          label: `${name}:title`,
+          group: 'Tools',
+          pd: true,
+          enabled: () => svgCanvas.getSelectedElements().filter(Boolean).length >= 2 ? true : 'Select two or more shapes',
+          run: enter
+        })
         svgEditor.workarea?.addEventListener('mousemove', onHover)
       }
     }

@@ -110,7 +110,7 @@ export default {
                 min="0" max="500" step="1" value="0" title="${name}:label"></se-spin-input>
             </div>
             <div class="sidepanel_btn_row" id="corner_kind_row">
-              ${CORNER_KINDS.map((k) => `<se-button id="corner_kind_${k}" title="${svgEditor.i18next.t(`${name}:kind_${k}`)}"
+              ${CORNER_KINDS.map((k) => `<se-button id="corner_kind_${k}" command="corner_kind_${k}" title="${svgEditor.i18next.t(`${name}:kind_${k}`)}"
                 src="corner_${KIND_ICONS[k]}.svg"></se-button>`).join('')}
             </div>
           </div>
@@ -134,12 +134,18 @@ export default {
           svgCanvas.applyCornerRadius(r, uniform ? { kind: curKind } : {})
         })
         for (const k of CORNER_KINDS) {
-          $id(`corner_kind_${k}`).addEventListener('click', () => {
-            curKind = k
-            const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
-            const cut = elem ? svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0) : []
-            if (cut.length) svgCanvas.applyCornerRadius(undefined, { kind: k })
-            else if (elem) refresh(elem)
+          svgEditor.commands.register({
+            id: `corner_kind_${k}`,
+            label: `${name}:kind_${k}`,
+            group: 'Tools',
+            pd: true,
+            run: () => {
+              curKind = k
+              const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
+              const cut = elem ? svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0) : []
+              if (cut.length) svgCanvas.applyCornerRadius(undefined, { kind: k })
+              else if (elem) refresh(elem)
+            }
           })
         }
       },

@@ -192,16 +192,22 @@ export default {
         const buttonTemplate = document.createElement('template')
         const title = `${name}:buttons.0.title`
         buttonTemplate.innerHTML = `
-          <se-button id="tool_smart_snap" title="${title}" src="smart_snap.svg"></se-button>
+          <se-button id="tool_smart_snap" command="tool_smart_snap" title="${title}" src="smart_snap.svg"></se-button>
         `
         $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
         const btn = $id('tool_smart_snap')
         btn.pressed = svgCanvas.getCurConfig().smartSnapping
-        btn.addEventListener('click', () => {
-          const on = !svgCanvas.getCurConfig().smartSnapping
-          svgCanvas.getCurConfig().smartSnapping = on
-          btn.pressed = on
-          svgEditor.configObj.pref('smart_snapping', on ? 'on' : 'off')
+        svgEditor.commands.register({
+          id: 'tool_smart_snap',
+          label: title,
+          group: 'Tools',
+          pd: true,
+          run: () => {
+            const on = !svgCanvas.getCurConfig().smartSnapping
+            svgCanvas.getCurConfig().smartSnapping = on
+            btn.pressed = on
+            svgEditor.configObj.pref('smart_snapping', on ? 'on' : 'off')
+          }
         })
       }
     }

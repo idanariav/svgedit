@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import extLayerView from '../../src/editor/extensions/ext-layer_view/ext-layer_view.js'
+import { mockCommands } from './helpers/commands.js'
 
 describe('ext-layer_view', () => {
   let svgCanvas
@@ -71,6 +72,8 @@ describe('ext-layer_view', () => {
       configObj: { pref: () => 'en', curConfig: {} },
       i18next: { t: (key) => key, addResourceBundle: vi.fn() }
     }
+
+    mockCommands(svgEditor)
 
     extInstance = await extLayerView.init.call(svgEditor)
     extInstance.callback()

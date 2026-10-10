@@ -30,7 +30,7 @@ export default {
     const {
       svgCanvas
     } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     const insertAfter = (referenceNode, newNode) => {
       referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling)
     }
@@ -41,14 +41,10 @@ export default {
         // Add the button and its handler(s)
         const buttonTemplate = document.createElement('template')
         buttonTemplate.innerHTML = `
-        <se-button id="ext-panning" title="${btitle}" src="panning.svg"></se-button>
+        <se-button id="ext-panning" command="ext-panning" title="${btitle}" src="panning.svg"></se-button>
         `
         insertAfter($id('tool_select'), buttonTemplate.content.cloneNode(true))
-        $click($id('ext-panning'), () => {
-          if (this.leftPanel.updateLeftPanel('ext-panning')) {
-            svgCanvas.setMode('ext-panning')
-          }
-        })
+        svgEditor.leftPanel.addModeCommand('ext-panning', 'ext-panning', { label: btitle })
       },
       mouseDown () {
         if (svgCanvas.getMode() === 'ext-panning') {

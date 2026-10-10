@@ -6,6 +6,7 @@ import {
   markToolGroups, defaultToolOrder, isUncustomisedOrder
 } from '../toolOrder.js'
 import { initToolDragReorder } from '../toolDragReorder.js'
+import { registerModeCommand } from '../panelCommands.js'
 
 const { $click } = SvgCanvas
 
@@ -170,6 +171,17 @@ class LeftPanel {
     if (this.updateLeftPanel('tool_path')) {
       this.editor.svgCanvas.setMode('path')
     }
+  }
+
+  /**
+   * Register the command of a drawing-tool button (see `registerModeCommand`).
+   * @param {string} id the button's id (a persisted command id: never rename)
+   * @param {string} mode the canvas mode the tool uses
+   * @param {{label?: string, group?: string, onEnter?: () => void, enabled?: (editor: any) => true|string}} [opts]
+   * @returns {void}
+   */
+  addModeCommand (id, mode, opts) {
+    registerModeCommand(this.editor, id, mode, opts)
   }
 
   /**

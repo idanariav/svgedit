@@ -48,7 +48,7 @@ export default {
   async init (_S) {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     // Lock state of every layer captured when focus mode is enabled, so exiting
@@ -291,9 +291,15 @@ export default {
         const title = `${name}:buttons.0.title`
         const key = `${name}:buttons.0.key`
         buttonTemplate.innerHTML = `
-      <se-button id="tool_layerView" title="${title}" shortcut="${key}" src="layer_view.svg"></se-button>`
+      <se-button id="tool_layerView" command="tool_layerView" title="${title}" shortcut="${key}" src="layer_view.svg"></se-button>`
         $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
-        $click($id('tool_layerView'), clickLayerView.bind(this))
+        svgEditor.commands.register({
+          id: 'tool_layerView',
+          label: title,
+          group: 'Tools',
+          pd: true,
+          run: clickLayerView
+        })
       }
     }
   }

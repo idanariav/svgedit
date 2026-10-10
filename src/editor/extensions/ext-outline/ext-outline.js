@@ -145,7 +145,7 @@ export default {
               <input type="color" id="outline_color" value="#000000"
                 title="${svgEditor.i18next.t(`${name}:contextTools.color.title`)}">
               <span class="shadow_panel_footer_label">${svgEditor.i18next.t(`${name}:contextTools.color.title`)}</span>
-              <se-button id="outline_remove" src="delete.svg"
+              <se-button id="outline_remove" command="outline_remove" src="delete.svg"
                 title="${svgEditor.i18next.t(`${name}:contextTools.remove.title`)}"></se-button>
             </div>
           </div>
@@ -164,7 +164,13 @@ export default {
           $id(id).addEventListener('change', () => setOutline(getOutlinePanelValues()))
         })
         $id('outline_color').addEventListener('change', () => setOutline(getOutlinePanelValues()))
-        $id('outline_remove').addEventListener('click', () => setOutline({ remove: true }))
+        svgEditor.commands.register({
+          id: 'outline_remove',
+          label: `${name}:contextTools.remove.title`,
+          group: 'Tools',
+          pd: true,
+          run: () => setOutline({ remove: true })
+        })
       },
 
       selectedChanged (opts) {

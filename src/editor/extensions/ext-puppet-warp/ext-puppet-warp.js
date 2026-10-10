@@ -289,7 +289,7 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -623,19 +623,26 @@ export default {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
           $id('tools_left'),
-          `<se-button id="tool_puppet_warp" title="${title}" src="pin.svg" shortcut="X"></se-button>`,
+          `<se-button id="tool_puppet_warp" command="tool_puppet_warp" title="${title}" src="pin.svg" shortcut="X"></se-button>`,
           13
         )
 
-        $click($id('tool_puppet_warp'), () => {
-          if (svgCanvas.getMode() === name) return
-          if (!this.leftPanel.updateLeftPanel('tool_puppet_warp')) return
-          if (startSession() === 0) {
-            // Nothing warp-able selected — bail back to select.
-            svgEditor.leftPanel.clickSelect()
-            return
+        svgEditor.commands.register({
+          id: 'tool_puppet_warp',
+          label: title,
+          group: 'Tools',
+          pd: true,
+          interactive: true,
+          run: () => {
+            if (svgCanvas.getMode() === name) return
+            if (!svgEditor.leftPanel.updateLeftPanel('tool_puppet_warp')) return
+            if (startSession() === 0) {
+              // Nothing warp-able selected — bail back to select.
+              svgEditor.leftPanel.clickSelect()
+              return
+            }
+            svgCanvas.setMode(name)
           }
-          svgCanvas.setMode(name)
         })
       },
 

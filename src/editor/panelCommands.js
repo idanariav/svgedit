@@ -126,6 +126,33 @@ const TEXT_DECORATIONS = [
 ]
 
 /**
+ * Register the command of a drawing-tool button: press the button in the left
+ * panel, switch the canvas mode, then run `onEnter`. The button itself carries
+ * `command="<id>"`, so a click, its hotkey, the favorites menu and `commands.run(id)`
+ * share this one path (the same behaviour as `LeftPanel.clickRect()` & co.).
+ * @param {any} editor
+ * @param {string} id the button's id (a persisted command id: never rename)
+ * @param {string} mode the canvas mode the tool uses
+ * @param {{label?: string, group?: string, onEnter?: () => void, enabled?: (editor: any) => true|string}} [opts]
+ * @returns {void}
+ */
+export const registerModeCommand = (editor, id, mode, { label = id, group = 'Tools', onEnter, enabled } = {}) => {
+  editor.commands.register({
+    id,
+    label,
+    group,
+    pd: true,
+    enabled,
+    run: () => {
+      if (editor.leftPanel.updateLeftPanel(id)) {
+        editor.svgCanvas.setMode(mode)
+        onEnter?.()
+      }
+    }
+  })
+}
+
+/**
  * @param {CommandRegistry} commands
  * @returns {void}
  */

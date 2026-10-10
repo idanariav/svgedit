@@ -5,6 +5,7 @@ import '../../src/editor/components/seSelect.js'
 import extGlow from '../../src/editor/extensions/ext-glow/ext-glow.js'
 import { createFxComposer } from '../../src/editor/extensions/fx-filter.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
+import { mockCommands } from './helpers/commands.js'
 
 vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -60,6 +61,7 @@ describe('ext-glow', function () {
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => labels[key] ?? key, addResourceBundle () {} }
     }
+    mockCommands(svgEditor)
     ext = await extGlow.init.call(svgEditor)
     ext.callback.call(svgEditor)
     fx = svgEditor.fxFilter

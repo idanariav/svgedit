@@ -47,7 +47,7 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -176,15 +176,11 @@ export default {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
           $id('tools_left'),
-          `<se-button id="tool_cutter" title="${title}" src="cutter.svg" shortcut="C"></se-button>`,
+          `<se-button id="tool_cutter" command="tool_cutter" title="${title}" src="cutter.svg" shortcut="C"></se-button>`,
           11
         )
 
-        $click($id('tool_cutter'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_cutter')) {
-            svgCanvas.setMode('cutter')
-          }
-        })
+        svgEditor.leftPanel.addModeCommand('tool_cutter', 'cutter', { label: title })
 
         // Finish a multi-point line via double-click.
         svgEditor.workarea?.addEventListener('dblclick', () => {

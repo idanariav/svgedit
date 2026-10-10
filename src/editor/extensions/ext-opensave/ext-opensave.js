@@ -37,7 +37,7 @@ export default {
   async init (_S) {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
     /**
     * @param {Event} e
@@ -228,24 +228,33 @@ export default {
       // The callback should be used to load the DOM with the appropriate UI items
       callback () {
         const buttonTemplate = `
-        <se-menu-item id="tool_clear" label="opensave.new_doc" shortcut="N" src="new.svg"></se-menu-item>`
+        <se-menu-item id="tool_clear" command="tool_clear" label="opensave.new_doc" shortcut="N" src="new.svg"></se-menu-item>`
         svgCanvas.insertChildAtIndex($id('main_button'), buttonTemplate, 0)
-        const openButtonTemplate = '<se-menu-item id="tool_open" label="opensave.open_image_doc" src="open.svg"></se-menu-item>'
+        const openButtonTemplate = '<se-menu-item id="tool_open" command="tool_open" label="opensave.open_image_doc" src="open.svg"></se-menu-item>'
         svgCanvas.insertChildAtIndex($id('main_button'), openButtonTemplate, 1)
-        const saveButtonTemplate = '<se-menu-item id="tool_save" label="opensave.save_doc" shortcut="S" src="saveImg.svg"></se-menu-item>'
+        const saveButtonTemplate = '<se-menu-item id="tool_save" command="tool_save" label="opensave.save_doc" shortcut="S" src="saveImg.svg"></se-menu-item>'
         svgCanvas.insertChildAtIndex($id('main_button'), saveButtonTemplate, 2)
-        const saveAsButtonTemplate = '<se-menu-item id="tool_save_as" label="opensave.save_as_doc" src="saveImg.svg"></se-menu-item>'
+        const saveAsButtonTemplate = '<se-menu-item id="tool_save_as" command="tool_save_as" label="opensave.save_as_doc" src="saveImg.svg"></se-menu-item>'
         svgCanvas.insertChildAtIndex($id('main_button'), saveAsButtonTemplate, 3)
-        const importButtonTemplate = '<se-menu-item id="tool_import" label="tools.import_doc" src="importImg.svg"></se-menu-item>'
+        const importButtonTemplate = '<se-menu-item id="tool_import" command="tool_import" label="tools.import_doc" src="importImg.svg"></se-menu-item>'
         svgCanvas.insertChildAtIndex($id('main_button'), importButtonTemplate, 4)
 
-        // handler
-        $click($id('tool_clear'), clickClear.bind(this))
-        $click($id('tool_open'), clickOpen.bind(this))
-        $click($id('tool_save'), clickSave.bind(this, 'save'))
-        $click($id('tool_save_as'), clickSave.bind(this, 'saveas'))
-        // tool_import pressed with shiftKey will not scale the SVG
-        $click($id('tool_import'), (ev) => { imgImport.shiftKey = ev.shiftKey; imgImport.click() })
+        // The menu entries are views of these commands (`command=` above).
+        const register = (id, label, run, extra = {}) =>
+          this.commands.register({ id, label, group: 'Tools', pd: true, run, ...extra })
+        register('tool_clear', 'opensave.new_doc', () => clickClear.call(this), { group: 'File' })
+        register('tool_open', 'opensave.open_image_doc', () => clickOpen.call(this), { interactive: true })
+        register('tool_save', 'opensave.save_doc', () => clickSave.call(this, 'save'), { group: 'File' })
+        register('tool_save_as', 'opensave.save_as_doc', () => clickSave.call(this, 'saveas'))
+        // tool_import pressed with shiftKey will not scale the SVG: the menu entry's
+        // click tells us whether shift was held; any other route (hotkey, commands.run) scales.
+        let shiftHeld = false
+        $id('tool_import').addEventListener('click', (ev) => { shiftHeld = ev.shiftKey }, { capture: true })
+        register('tool_import', 'tools.import_doc', () => {
+          imgImport.shiftKey = shiftHeld
+          shiftHeld = false
+          imgImport.click()
+        }, { interactive: true })
       }
     }
   }

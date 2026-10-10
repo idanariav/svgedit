@@ -333,13 +333,21 @@ export default {
           if (!anchor) return
           const btn = document.createElement('se-button')
           btn.id = id
+          btn.setAttribute('command', id)
           btn.setAttribute('size', 'small')
           btn.setAttribute('title', title)
           btn.setAttribute('src', 'mirror_copy.svg')
           if (after) btn.setAttribute('data-caption', svgEditor.i18next.t(`${name}:caption`))
           if (after) anchor.after(btn)
           else anchor.append(btn)
-          btn.addEventListener('click', mirrorSelection)
+          svgEditor.commands.register({
+            id,
+            label: title,
+            group: 'Tools',
+            pd: true,
+            enabled: () => svgCanvas.getSelectedElements().some(Boolean) ? true : 'No selection',
+            run: mirrorSelection
+          })
         }
         addBtn('tool_mirror_copy', $id('tool_repeat') || $id('tool_path_offset'), true)
         addBtn('tool_mirror_copy_multi', $id('tool_repeat_multi')?.parentElement || $id('tool_clip_set')?.parentElement, false)

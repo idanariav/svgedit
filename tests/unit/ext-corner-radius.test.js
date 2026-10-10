@@ -3,6 +3,7 @@ import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import '../../src/editor/components/seSpinInput.js'
 import extCornerRadius from '../../src/editor/extensions/ext-corner-radius/ext-corner-radius.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
+import { mockCommands } from './helpers/commands.js'
 
 vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -59,6 +60,7 @@ describe('ext-corner-radius', function () {
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => key, addResourceBundle () {} }
     }
+    mockCommands(svgEditor)
     ext = await extCornerRadius.init.call(svgEditor)
     ext.callback.call(svgEditor)
   })

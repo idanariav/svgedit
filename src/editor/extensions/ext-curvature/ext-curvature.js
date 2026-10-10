@@ -229,7 +229,7 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -414,15 +414,11 @@ export default {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
           $id('tools_left'),
-          `<se-button id="tool_curvature" title="${title}" src="curvature.svg" shortcut="Y"></se-button>`,
+          `<se-button id="tool_curvature" command="tool_curvature" title="${title}" src="curvature.svg" shortcut="Y"></se-button>`,
           12
         )
 
-        $click($id('tool_curvature'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_curvature')) {
-            svgCanvas.setMode('curvature')
-          }
-        })
+        svgEditor.leftPanel.addModeCommand('tool_curvature', 'curvature', { label: title })
       },
 
       mouseDown (opts) {

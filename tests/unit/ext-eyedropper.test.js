@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import extEyedropper from '../../src/editor/extensions/ext-eyedropper/ext-eyedropper.js'
+import { mockCommands } from './helpers/commands.js'
 
 describe('ext-eyedropper', () => {
   let svgCanvas
   let svgEditor
   let extInstance
   let toolsLeft
-  let clickHandler
 
   beforeEach(async () => {
     toolsLeft = document.createElement('div')
@@ -15,7 +15,6 @@ describe('ext-eyedropper', () => {
 
     svgCanvas = {
       $id: vi.fn((id) => (id === 'tools_left' ? toolsLeft : document.getElementById(id))),
-      $click: vi.fn((_el, handler) => { clickHandler = handler }),
       insertChildAtIndex: vi.fn((parent, html) => { parent.innerHTML = html }),
       getMode: vi.fn(() => 'eyedropper'),
       setMode: vi.fn(),
@@ -31,6 +30,8 @@ describe('ext-eyedropper', () => {
       i18next: { t: (key) => key, addResourceBundle: vi.fn() },
       setBackground: vi.fn()
     }
+
+    mockCommands(svgEditor)
 
     extInstance = await extEyedropper.init.call(svgEditor)
     extInstance.callback.call(svgEditor)
@@ -54,20 +55,20 @@ describe('ext-eyedropper', () => {
     extInstance.mouseDown({ event: { target, clientX, clientY } })
   }
 
-  it('injects the toolbar button and wires the click handler', () => {
-    expect(svgCanvas.insertChildAtIndex).toHaveBeenCalledWith(toolsLeft, expect.stringContaining('tool_eyedropper'), 12)
-    expect(typeof clickHandler).toBe('function')
+  it('injects the toolbar button as a view of the tool_eyedropper command', () => {
+    expect(svgCanvas.insertChildAtIndex).toHaveBeenCalledWith(toolsLeft, expect.stringContaining('command="tool_eyedropper"'), 12)
+    expect(svgEditor.commands.get('tool_eyedropper').adapter).toBe(false)
   })
 
   it('sets eyedropper mode on toolbar click when the left panel accepts it', () => {
-    clickHandler()
+    svgEditor.commands.run('tool_eyedropper')
     expect(svgEditor.leftPanel.updateLeftPanel).toHaveBeenCalledWith('tool_eyedropper')
     expect(svgCanvas.setMode).toHaveBeenCalledWith('eyedropper')
   })
 
   it('does not set mode if the left panel rejects the tool switch (e.g. locked tool)', () => {
     svgEditor.leftPanel.updateLeftPanel.mockReturnValue(false)
-    clickHandler()
+    svgEditor.commands.run('tool_eyedropper')
     expect(svgCanvas.setMode).not.toHaveBeenCalled()
   })
 

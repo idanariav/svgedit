@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import extCutter from '../../src/editor/extensions/ext-cutter/ext-cutter.js'
+import { mockCommands } from './helpers/commands.js'
 
 describe('ext-cutter', () => {
   let svgCanvas
@@ -46,6 +47,8 @@ describe('ext-cutter', () => {
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => key, addResourceBundle: vi.fn() }
     }
+
+    mockCommands(svgEditor)
 
     extInstance = await extCutter.init.call(svgEditor)
     extInstance.callback()

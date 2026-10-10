@@ -27,7 +27,7 @@ export default {
     const { svgCanvas } = svgEditor
     const { ChangeElementCommand } = svgCanvas.history
     const addToHistory = (cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     let selElems
     let started
     let newFO
@@ -172,26 +172,20 @@ export default {
         const titlePolygon = `${name}:buttons.1.title`
         const buttonTemplate = document.createElement('template')
         buttonTemplate.innerHTML = `
-            <se-button id="tool_star" title="${titleStar}" src="star.svg">
+            <se-button id="tool_star" command="tool_star" title="${titleStar}" src="star.svg">
             </se-button>
-            <se-button id="tool_polygon" title="${titlePolygon}" src="polygon.svg">
+            <se-button id="tool_polygon" command="tool_polygon" title="${titlePolygon}" src="polygon.svg">
             </se-button>
           `
         $id('tools_shapes').append(buttonTemplate.content.cloneNode(true))
         // handler
-        $click($id('tool_star'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_star')) {
-            svgCanvas.setMode('star')
-            showPanel(true, 'star')
-            showPanel(false, 'polygon')
-          }
+        svgEditor.leftPanel.addModeCommand('tool_star', 'star', {
+          label: titleStar,
+          onEnter: () => { showPanel(true, 'star'); showPanel(false, 'polygon') }
         })
-        $click($id('tool_polygon'), () => {
-          if (this.leftPanel.updateLeftPanel('tool_polygon')) {
-            svgCanvas.setMode('polygon')
-            showPanel(true, 'polygon')
-            showPanel(false, 'star')
-          }
+        svgEditor.leftPanel.addModeCommand('tool_polygon', 'polygon', {
+          label: titlePolygon,
+          onEnter: () => { showPanel(true, 'polygon'); showPanel(false, 'star') }
         })
         // Hide each context panel when the canvas leaves its drawing mode.
         // setMode dispatches 'modeChange' for every tool switch (button, flyout

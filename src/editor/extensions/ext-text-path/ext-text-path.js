@@ -30,7 +30,7 @@ export default {
     const svgEditor = this
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
 
     const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
 
@@ -64,12 +64,20 @@ export default {
         if (combine) {
           const btn = document.createElement('se-button')
           btn.id = 'tool_text_on_path'
+          btn.setAttribute('command', 'tool_text_on_path')
           btn.setAttribute('size', 'small')
           btn.setAttribute('title', t('attach'))
           btn.setAttribute('src', 'text_on_path.svg')
           btn.style.display = 'none'
           combine.append(btn)
-          $click(btn, () => svgCanvas.attachTextToPath())
+          svgEditor.commands.register({
+            id: 'tool_text_on_path',
+            label: t('attach'),
+            group: 'Tools',
+            pd: true,
+            enabled: () => svgCanvas.canTextOnPath() ? true : 'Select a text and a path',
+            run: () => svgCanvas.attachTextToPath()
+          })
         }
 
         // "Text path" section — Text tab, after the Text Style section.
@@ -83,7 +91,7 @@ export default {
             <div class="sidepanel_section_label">${t('panel')}</div>
             <div class="sidepanel_btn_row">
               <se-spin-input id="textpath_offset" label="${t('offset')}" min="0" max="100" step="1" value="0"></se-spin-input>
-              <se-button id="tool_text_path_release" size="small" title="${t('release')}" src="text_on_path_release.svg"></se-button>
+              <se-button id="tool_text_path_release" command="tool_text_path_release" size="small" title="${t('release')}" src="text_on_path_release.svg"></se-button>
             </div>
           `
           const anchor = tab.querySelector('.text_panel')
@@ -92,7 +100,14 @@ export default {
           $id('textpath_offset').addEventListener('change', (e) => {
             svgCanvas.textPathOffset(parseFloat(e.target.value) || 0)
           })
-          $click($id('tool_text_path_release'), () => svgCanvas.detachTextFromPath())
+          svgEditor.commands.register({
+            id: 'tool_text_path_release',
+            label: t('release'),
+            group: 'Tools',
+            pd: true,
+            enabled: () => svgCanvas.getSelectedElements().some((el) => el?.querySelector?.('textPath')) ? true : 'Select text that follows a path',
+            run: () => svgCanvas.detachTextFromPath()
+          })
         }
       }
     }

@@ -92,7 +92,7 @@ export default {
   async init () {
     const svgEditor = this
     const { svgCanvas } = svgEditor
-    const { $id, $click } = svgCanvas
+    const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
     const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
 
@@ -420,13 +420,11 @@ export default {
       callback () {
         const template = document.createElement('template')
         template.innerHTML = MODES.map((mode) =>
-          `<se-button id="tool_${mode}" title="${name}:buttons.${MODE_TITLE[mode]}.title" src="${BUTTON_ICON[mode]}"></se-button>`
+          `<se-button id="tool_${mode}" command="tool_${mode}" title="${name}:buttons.${MODE_TITLE[mode]}.title" src="${BUTTON_ICON[mode]}"></se-button>`
         ).join('')
         $id('tools_shapes').append(template.content.cloneNode(true))
         for (const mode of MODES) {
-          $click($id(`tool_${mode}`), () => {
-            if (this.leftPanel.updateLeftPanel(`tool_${mode}`)) svgCanvas.setMode(mode)
-          })
+          svgEditor.leftPanel.addModeCommand(`tool_${mode}`, mode, { label: `${name}:buttons.${MODE_TITLE[mode]}.title` })
         }
         // Space is read here, not from keyDown's payload alone: the editor's own
         // keyup handler only knows about its pan mode.
