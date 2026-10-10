@@ -89,6 +89,7 @@ svgedit/
 │   │   ├── ext-path-edit/         # Average / Add anchor points / Join buttons
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-shaper/            # Shaper — rough stroke → clean shape; scribble deletes (core/shape-recognize.js)
+│   │   ├── ext-smooth-tool/       # Smooth tool — brush to smooth part of a path (core/path-fit.js smoothRegion)
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │

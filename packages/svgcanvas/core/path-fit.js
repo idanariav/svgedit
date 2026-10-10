@@ -315,3 +315,108 @@ export const fitFreehand = (pts, tolerance) => {
   })
   return segsToSubpath(segs, false) ?? { closed: false, anchors: kept.map(cornerAnchor) }
 }
+
+/** Turns up to this are smoothed away by the Smooth tool: only a path that doubles back on itself keeps a corner. */
+const SMOOTH_CORNER_ANGLE = 179
+
+/**
+ * Distance from `p` to the segment `a`–`b`.
+ * @param {Pt} p
+ * @param {Pt} a
+ * @param {Pt} b
+ * @returns {number}
+ */
+const distToSegment = (p, a, b) => {
+  const vx = b.x - a.x
+  const vy = b.y - a.y
+  const len2 = vx * vx + vy * vy
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.y - a.y) * vy) / len2))
+  return Math.hypot(p.x - (a.x + t * vx), p.y - (a.y + t * vy))
+}
+
+/**
+ * Mark the anchors within `radius` of the segment `from`–`to` (a step of the Smooth tool's drag).
+ * Marks are only ever added, so a drag's reach grows monotonically.
+ * @param {SubPath[]} subpaths
+ * @param {boolean[][]} marks per subpath, per anchor; updated in place
+ * @param {Pt} from
+ * @param {Pt} to
+ * @param {number} radius
+ * @returns {boolean} whether an anchor was newly marked
+ */
+export const markAnchorsNear = (subpaths, marks, from, to, radius) => {
+  let added = false
+  subpaths.forEach((sp, s) => {
+    sp.anchors.forEach((a, i) => {
+      if (!marks[s][i] && distToSegment(a.p, from, to) <= radius) {
+        marks[s][i] = true
+        added = true
+      }
+    })
+  })
+  return added
+}
+
+/**
+ * Smooth the part of a subpath whose anchors are marked: each run of marked anchors, together with the
+ * unmarked anchor on either side of it, is refit with as few cubics as stay within `tolerance`. The unmarked
+ * anchors keep their position and the direction of their outer handle. A closed subpath is opened at an
+ * unmarked anchor first (so it comes out starting there); when every anchor of a closed subpath is marked the
+ * whole of it is refit.
+ * @param {SubPath} sp
+ * @param {boolean[]} marked
+ * @param {number} tolerance
+ * @returns {SubPath}
+ */
+const smoothSubpath = (sp, marked, tolerance) => {
+  if (!marked.some(Boolean)) return sp
+  let anchors = sp.anchors
+  let flags = marked
+  if (sp.closed) {
+    const k = marked.indexOf(false)
+    if (k < 0) return simplifySubpath(sp, tolerance, SMOOTH_CORNER_ANGLE)
+    // Open the loop at the unmarked anchor `k`; the path ends on a copy of it.
+    anchors = [...sp.anchors.slice(k), ...sp.anchors.slice(0, k)]
+    anchors.push(anchors[0])
+    flags = [...marked.slice(k), ...marked.slice(0, k), false]
+  }
+  const last = anchors.length - 1
+  /** @type {import('./anchor-path.js').Anchor[]} */
+  const out = []
+  let i = 0
+  while (i <= last) {
+    if (!flags[i]) {
+      out.push(anchors[i])
+      i++
+      continue
+    }
+    let j = i
+    while (j < last && flags[j + 1]) j++
+    const a = Math.max(i - 1, 0)
+    const b = Math.min(j + 1, last)
+    const fitted = simplifySubpath({ closed: false, anchors: anchors.slice(a, b + 1) }, tolerance, SMOOTH_CORNER_ANGLE).anchors
+    // The section's end anchors keep their own outer handles; only the handles facing the run come from the fit.
+    // (The anchor before the run may already be the end of the previous run's fit: keep its fitted `hIn`.)
+    if (a === i) out.push({ ...anchors[a], hOut: fitted[0].hOut })
+    else out[out.length - 1] = { ...out[out.length - 1], hOut: fitted[0].hOut }
+    out.push(...fitted.slice(1, -1))
+    out.push({ ...fitted[fitted.length - 1], hOut: anchors[b].hOut })
+    i = b + 1
+  }
+  if (!sp.closed) return { closed: false, anchors: out }
+  const end = /** @type {import('./anchor-path.js').Anchor} */ (out.pop())
+  out[0] = { ...out[0], hIn: end.hIn }
+  return { closed: true, anchors: out }
+}
+
+/**
+ * The Smooth tool's geometry: smooth every subpath where its anchors are marked, leaving the rest alone.
+ * @param {SubPath[]} subpaths
+ * @param {boolean[][]} marks per subpath, per anchor
+ * @param {number} tolerance largest distance between the original and the smoothed part, in user units
+ * @returns {SubPath[]} subpaths without a mark are returned as they are
+ */
+export const smoothRegion = (subpaths, marks, tolerance) => {
+  const tol = Math.max(tolerance, 1e-6)
+  return subpaths.map((sp, s) => smoothSubpath(sp, marks[s], tol))
+}

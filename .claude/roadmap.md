@@ -20,8 +20,8 @@ small items (S) fill gaps between large ones.
 
 **Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
-**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–8, T2.15 Corner-keeping simplify and T2.3 Pen continues / joins, are done; T2.16 / T3.7 build on them)
-9. **T2.16 Smooth tool** → 10. **T3.7 Pencil continues** (reuse `core/pen-continue.js` `findPenEnd` / `continuationD`) → 11. **T2.12 Centerline
+**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–9, T2.15 Corner-keeping simplify, T2.3 Pen continues / joins and T2.16 Smooth tool, are done; T3.7 builds on them)
+10. **T3.7 Pencil continues** (reuse `core/pen-continue.js` `findPenEnd` / `continuationD`) → 11. **T2.12 Centerline
    tracing** (L, last: it only needs the fit module).
    Do the **precise `enabled` pass for the path commands** while in these panels.
 
@@ -264,6 +264,16 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Smooth tool (ext-smooth-tool): follow-ups from T2.16
+
+Done: the brush smooths the anchors it passes over, live, in one undo step. Remaining:
+- **Anchors, not segments, are what the brush reaches**: a long segment the drag crosses between two anchors outside the radius is left alone (already smooth enough to have no anchors there). Sampling along segments would let a brush over a sparse curve pull in its neighbours.
+- **The neighbouring unmarked anchors keep their handle directions**, so a fit that has to leave an anchor at a steep angle (a jittery stroke right at the edge of the brush) keeps some wiggle there: the edge of the brush is smoothed less than the middle. Freeing the end tangents would smooth more but break the join.
+- **A closed path whose first anchor is smoothed starts at a different anchor afterwards** (it is opened at the first unmarked anchor), which moves the dash pattern's phase.
+- **Targets are the selected paths, else the one under the press**: pressing a few pixels beside a thin path with nothing selected does nothing (no nearest-path search).
+- **No options UI**: the radius (18 px) and tolerance (2.5 px) are constants. VectorCraft defaults to a 12 pt radius and 2.5 pt fidelity; the radius here is 18 px, a guess for a mouse, so judge it by hand and a tablet may want a smaller one.
+- Not in the tablet shell (same reason as the Shaper: the command bar is full at 768 px).
 
 ## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
 
