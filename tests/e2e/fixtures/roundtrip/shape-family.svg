@@ -1,0 +1,35 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <path d="m141.41,150c0,5.34 3.25,10.74 8.59,10.74c6.67,0 13.42,-4.07 13.42,-10.74c0,-8.34 -5.08,-16.78 -13.42,-16.78c-10.42,0 -20.97,6.35 -20.97,16.78c0,13.03 7.94,26.21 20.97,26.21c16.29,0 32.77,-9.93 32.77,-26.21c0,-20.36 -12.41,-40.96 -32.77,-40.96c-25.45,0 -51.2,15.51 -51.2,40.96c0,31.81 19.39,64 51.2,64c39.76,0 80,-24.24 80,-64" fill="none" id="svg_2" paint-order="stroke" stroke="#000000" stroke-width="5"/>
+  <path d="m300,80c66.27,0 120,49.25 120,110" fill="none" id="svg_3" paint-order="stroke" stroke="#000000" stroke-width="5"/>
+  <g fill="none" id="svg_4" paint-order="stroke" stroke="#000000" stroke-width="5">
+   <path d="m80,294.29l150,0" id="svg_5"/>
+   <path d="m80,308.57l150,0" id="svg_6"/>
+   <path d="m80,322.86l150,0" id="svg_7"/>
+   <path d="m80,337.14l150,0" id="svg_8"/>
+   <path d="m80,351.43l150,0" id="svg_10"/>
+   <path d="m80,365.71l150,0" id="svg_11"/>
+   <path d="m101.43,280l0,100" id="svg_12"/>
+   <path d="m122.86,280l0,100" id="svg_13"/>
+   <path d="m144.29,280l0,100" id="svg_14"/>
+   <path d="m165.71,280l0,100" id="svg_15"/>
+   <path d="m187.14,280l0,100" id="svg_16"/>
+   <path d="m208.57,280l0,100" id="svg_17"/>
+   <rect height="100" id="svg_18" width="150" x="80" y="280"/>
+  </g>
+  <g fill="none" id="svg_19" paint-order="stroke" stroke="#000000" stroke-width="5">
+   <ellipse cx="420" cy="385" id="svg_20" rx="10" ry="7"/>
+   <ellipse cx="420" cy="385" id="svg_21" rx="20" ry="14"/>
+   <ellipse cx="420" cy="385" id="svg_22" rx="30" ry="21"/>
+   <ellipse cx="420" cy="385" id="svg_23" rx="40" ry="28"/>
+   <ellipse cx="420" cy="385" id="svg_24" rx="50" ry="35"/>
+   <path d="m420,385l0,-35" id="svg_25"/>
+   <path d="m420,385l47.55,-10.82" id="svg_26"/>
+   <path d="m420,385l29.39,28.32" id="svg_27"/>
+   <path d="m420,385l-29.39,28.32" id="svg_28"/>
+   <path d="m420,385l-47.55,-10.82" id="svg_29"/>
+  </g>
+ </g>
+</svg>

@@ -232,6 +232,7 @@ export default class ConfigObj {
       'ext-brush',
       'ext-shapes',
       'ext-polystar',
+      'ext-shape-family',
       'ext-cutter',
       'ext-curvature',
       'ext-puppet-warp',

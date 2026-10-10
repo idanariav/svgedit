@@ -441,7 +441,7 @@ export const init = (canvas) => {
         // earlier path). Only touch mode/selection if nothing has been created
         // since — i.e. this is still the most recent element.
         if (svgCanvas.getCurConfig().selectNew && svgCanvas.pendingNewElement === element) {
-          const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'shapelib', 'frame', 'brush']
+          const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'spiral', 'arc', 'rectgrid', 'polargrid', 'shapelib', 'frame', 'brush']
           if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
             svgCanvas.setMode('select')
           }

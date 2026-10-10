@@ -66,6 +66,7 @@ svgedit/
 │   │   ├── ext-opensave/          # File open / save / import dialogs
 │   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
 │   │   ├── ext-polystar/          # Star and polygon drawing tools
+│   │   ├── ext-shape-family/      # Spiral, Arc, Rectangular Grid, Polar Grid drag tools (+ options popover)
 │   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
 │   │   ├── ext-curvature/         # Curvature tool — Spiro smooth curves
 │   │   ├── ext-puppet-warp/       # Puppet warp — MLS rigid mesh deformation (mls.js)
@@ -206,6 +207,7 @@ src/editor/index.html
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `remapCornerSource` keeps the source in sync from `coords.js` |
+| `shape-family.js` | DOM-free generators + drag geometry for the Spiral / Arc / Rectangular Grid / Polar Grid tools (`spiralD`, `arcD`, `dragRect`, `arcDragEnds`, `rectangularGridParts`, `polarGridParts`); used by ext-shape-family |
 | `bezier-fit.js` / `path-edit.js` / `path-join.js` | Least-squares Bézier fit; anchor-model path edits (refit remove-anchor, add anchors, average, join); select-mode Join |
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |

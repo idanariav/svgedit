@@ -542,7 +542,9 @@ class EditorStartup {
     document.addEventListener('keydown', (e) => {
       if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
-      if (this.svgCanvas.runExtensions('keyDown', { event: e })?.preventDefault) {
+      // Collect every extension's answer: without returnArray only the last
+      // extension implementing keyDown is heard, silencing the others.
+      if (this.svgCanvas.runExtensions('keyDown', { event: e }, true).some((r) => r?.preventDefault)) {
         e.preventDefault()
         return
       }
@@ -642,8 +644,12 @@ class EditorStartup {
       if (!ownsKeyEvent(this.$container, e.target)) return
       if (!isActiveEditor(this)) return // only the focused editor handles shortcuts
       if (e.code.toLowerCase() === 'space') {
+        // A Space press an extension claimed in its keyDown hook (the shape-family
+        // tools use it to move the shape being drawn) never armed pan, so there
+        // is no mode to restore; resetting it would end the drag in progress.
+        const panArmed = keypan
         this.svgCanvas.spaceKey = keypan = false
-        this.svgCanvas.setMode(previousMode === 'ext-panning' ? 'select' : previousMode ?? 'select')
+        if (panArmed) this.svgCanvas.setMode(previousMode === 'ext-panning' ? 'select' : previousMode ?? 'select')
         e.preventDefault()
       } else if ((e.key.toLowerCase() === 'shift') && (this.svgCanvas.getMode() === 'zoom')) {
         this.workarea.style.cursor = zoomInIcon
@@ -1052,6 +1058,10 @@ class EditorStartup {
       case 'shapelib':
       case 'repeat-pick-center':
       case 'puppetwarp':
+      case 'spiral':
+      case 'arc':
+      case 'rectgrid':
+      case 'polargrid':
         cs = 'crosshair'
         break
       case 'circle':
@@ -1082,7 +1092,7 @@ class EditorStartup {
   cancelTool () {
     const mode = this.svgCanvas.getMode()
     // list of modes that are currently save to cancel
-    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center', 'cutter', 'path', 'pathedit']
+    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'spiral', 'arc', 'rectgrid', 'polargrid', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center', 'cutter', 'path', 'pathedit']
     if (modesToCancel.includes(mode)) {
       this.leftPanel.clickSelect()
     }

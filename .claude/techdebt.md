@@ -279,3 +279,13 @@ Done: outer and inner (edge / centre) glow and feather in the shared composer, o
 - **The shadow is cast by shape + outer glow** (it is fed from the newest merge). Deliberate, matches the plan; a shadow of the bare shape would need the shadow placed before the glow blocks.
 - Fixed on the way: the composer built `RemoveElementCommand(existing, existing.parentNode)` (parent passed as `oldNextSibling`), so undoing any shadow / outline edit that replaced or removed the filter threw; it now passes `(existing, existing.nextSibling, existing.parentNode)`.
 
+
+## Shape-family tools (ext-shape-family): follow-ups from T1.5
+
+Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt / Space / arrow-key modifiers and a click-for-options popover. Remaining:
+- **Shapes are plain paths / groups, not re-editable.** VectorCraft keeps no parameters either, but the plan floated `se:shape="spiral(decay=80,segments=10)"` so the popover could regenerate a selected shape; not stored. Changing a count means redrawing (undo, then arrow keys while dragging).
+- **No smart-guide snapping while drawing** (VectorCraft snaps the start and the dragged corner, and shows a measurement label) — that is T2.1.
+- **Not in the tablet shell** (`TabletShell.js` `SHAPES`): the four tools are only in the desktop shapes flyout.
+- **No keyboard shortcuts / no custom cursor** (they use the plain crosshair).
+- **Alt held at release keeps the tool** — core `mouseUpEvent` skips `setMode('select')` when `evt.altKey` is set for every shape tool; with Alt now meaning "from the centre" for arc/grids, releasing the mouse before Alt leaves the tool active (the shape is still selected). Pre-existing core rule, only more visible here.
+- Fixed on the way: `EditorStartup` read only the last extension's answer to the `keyDown` hook (`runExtensions` without `returnArray` keeps the last result), so another extension's `undefined` could cancel an earlier `preventDefault` (e.g. curvature's Escape); it now collects all answers. The editor's Space `keyup` also unconditionally reset the mode to the previous one (a bare Space tap in any drawing tool switched to Select); it now only does so when Space had armed pan.

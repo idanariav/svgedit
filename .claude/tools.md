@@ -47,6 +47,8 @@ position, surviving move/delete) after the path is done.
 - `tool_shapelib` — Shape Library (ext-shapes) — position 9
 - `tool_star` / `tool_polygon` — appended into the core `tools_shapes` flyout
   (ext-polystar), not a separate flyout of their own (see above)
+- `tool_spiral` / `tool_arc` / `tool_rectgrid` / `tool_polargrid` — also appended into the `tools_shapes` flyout
+  (ext-shape-family), after star/polygon; see "ext-shape-family" below
 - `tool_cutter` — Cutter/knife tool (ext-cutter, shortcut C) — position 11, after polystar
 - `tool_curvature` — Curvature tool (ext-curvature, shortcut Y) — position 12, after cutter
 - `tool_puppet_warp` — Puppet Warp tool (ext-puppet-warp, shortcut X) — position 13, after curvature.
@@ -538,6 +540,12 @@ is unaffected — it keeps frames in the document.
 Flying button (left panel):
 - **Star tool** (`tool_star`): Context panel shows Points / Pointy (pointiness) / Shift (radial shift). All three fields live-rebuild the selected star's `points` via the shared `applyStarAttr`/`buildStarPoints` helpers (not just on next draw); `buildStarPoints` excludes the closing duplicate vertices when finding the centroid so live edits don't drift the shape. Labels are kept short and fields width-capped (58px, see css-rules) so the panel stays on one toolbar row down to ~1250px wide.
 - **Polygon tool** (`tool_polygon`): Context panel shows Sides count
+
+### ext-shape-family — Spiral, Arc, Rectangular Grid, Polar Grid (`extensions/ext-shape-family/`)
+Four more variants in the `tools_shapes` flyout (`tool_spiral`, `tool_arc`, `tool_rectgrid`, `tool_polargrid`; modes `spiral`, `arc`, `rectgrid`, `polargrid`; double-click locks like the other shapes). No context panel — the options are in the drag keys and a popover:
+- **Drag** to draw. **Shift** = equal axes (square box / arc), **Alt** = from the centre (arc and grids), **Space held** moves the shape instead of resizing it, **↑/↓** = spiral segments / grid horizontal dividers / polar concentric dividers, **←/→** = grid vertical dividers / polar radial dividers, **Esc** aborts. Counts persist for the next shape.
+- **Click without dragging** opens the options form at the pointer (size, counts; spiral decay % and direction; arc slope % and closed/pie; rect-grid frame). Enter / Create inserts the shape there; Esc, Cancel or clicking elsewhere dismisses it.
+- Output: spiral and arc are a single `<path>` (no fill unless a closed arc); a grid is a `<g>` of lines/ellipses/frame so it moves as one. Style comes from the current stroke (a `none` stroke falls back to black).
 
 ### ext-shapes — Shape Library (`extensions/ext-shapes/`)
 - **Shape Library** (`tool_shapelib`): Opens modal with categorized pre-made SVG shapes. Thumbnails (`_shapeThumb`) fit each path into a viewBox sized by the category's `size` (default 300) and rendered `fill`ed or stroked per the category's `fill` flag. Because the cleaned-up library mixes shapes authored in different coordinate spaces / fill modes within one category (e.g. 32-unit *filled* Raphael icons redistributed next to 300-unit *stroked* shapes), a category JSON may carry an **`overrides` map** (`{ [shapeName]: { size, fill } }`) that `_shapeThumb` consults per shape, falling back to the category-level `size`/`fill`. Insertion is unaffected — the placed path is drag-sized regardless of these preview-only settings. A default virtual **"All"** tab (id `'all'`, first in the sidebar and the popover chip row, selected by default) aggregates every category, rendered as category-labelled groups (same grouped layout as search results, via `_renderGroups`). The component tracks the active tab (`_categoryId`) separately from the selected shape's own category (`_selectedCat`) so selecting/inserting from a grouped view keeps the "All" tab intact.
