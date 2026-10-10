@@ -51,6 +51,7 @@ svgedit/
 │   │   ├── imageImportDialog.js     # Insert-image dialog (file upload + URL)
 │   │   ├── insertImage.js           # insertImageFromHref() + insertSvgElements() helpers
 │   │   ├── traceImage.js            # traceImageToSvg() — raster <image> → editable paths (imagetracerjs)
+│   │   ├── traceCenterline.js       # pure centerline tracer (ImageData → stroked open paths): Otsu, distance transform, Zhang-Suen, skeleton graph, path-fit
 │   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
 │   │   ├── svgSourceDialog.js
 │   │   ├── SePlainAlertDialog.js     # native-<dialog> choice-prompt base class

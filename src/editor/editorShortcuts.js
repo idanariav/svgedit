@@ -10,6 +10,9 @@
  * every handler acts on the given editor instance.
  */
 
+/** @param {any} editor @returns {true|string} node editing needs the path editor open */
+const inPathEdit = (editor) => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
+
 export const buildEditorShortcuts = (editor) => [
   {
     id: 'rotate_ccw_fine',
@@ -413,6 +416,7 @@ export const buildEditorShortcuts = (editor) => [
   {
     id: 'path_average_h',
     group: 'Path',
+    enabled: () => inPathEdit(editor),
     label: 'tools.node_average_h',
     fn: () => {
       if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('h')
@@ -421,6 +425,7 @@ export const buildEditorShortcuts = (editor) => [
   {
     id: 'path_average_v',
     group: 'Path',
+    enabled: () => inPathEdit(editor),
     label: 'tools.node_average_v',
     fn: () => {
       if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('v')
@@ -429,6 +434,7 @@ export const buildEditorShortcuts = (editor) => [
   {
     id: 'path_average_both',
     group: 'Path',
+    enabled: () => inPathEdit(editor),
     label: 'tools.node_average_both',
     fn: () => {
       if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.averageSelectedNodes('both')
@@ -437,6 +443,7 @@ export const buildEditorShortcuts = (editor) => [
   {
     id: 'path_add_anchors',
     group: 'Path',
+    enabled: () => inPathEdit(editor),
     label: 'tools.node_add_anchors',
     fn: () => {
       if (editor.svgCanvas.getMode() === 'pathedit') editor.svgCanvas.pathActions.addAnchorPoints()
@@ -445,6 +452,9 @@ export const buildEditorShortcuts = (editor) => [
   {
     id: 'path_join',
     group: 'Path',
+    enabled: () => (editor.svgCanvas.canJoinPaths(editor.svgCanvas.getSelectedElements().filter(Boolean))
+      ? true
+      : 'Select two open paths, or one open path to close'),
     label: 'tools.join_paths',
     fn: () => {
       editor.svgCanvas.joinSelectedPaths()

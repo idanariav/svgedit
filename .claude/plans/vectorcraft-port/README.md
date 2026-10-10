@@ -50,7 +50,7 @@ is in [tier-0.md](tier-0.md).
 | T2.9 | Eyedropper "Copy style" action | — | done — see git log (pixel sampling skipped, see roadmap.md) |
 | T2.10 | Magic Wand / Select Same with tolerance | — | done — see git log (the optional Magic Wand tool is not built, see roadmap.md) |
 | T2.11 | Recolor Artwork + harmony rules | — | todo |
-| T2.12 | Centerline tracing (raster line art → stroked paths) | T1.4 (fit module) | todo |
+| T2.12 | Centerline tracing (raster line art → stroked paths) | T1.4 (fit module) | done — see git log (wide areas skipped, no worker; the path commands also got their precise `enabled`; see roadmap.md) |
 | T2.13 | Blend tool | — (T0.3 helps) | todo |
 | T2.14 | Art / pattern brushes (art bent along a path) | — | todo |
 | T2.15 | Corner-keeping simplify (pencil commit + Smooth Path) | T1.4 | done — see git log (pencil corners measured over a window; 90° elbows held to the fidelity, see roadmap.md) |

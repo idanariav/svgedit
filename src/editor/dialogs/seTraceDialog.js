@@ -24,6 +24,7 @@ export class SeTraceDialog extends HTMLElement {
     this.$presetLabel = this._shadowRoot.querySelector('#trace_preset_label')
     this.$preset = this._shadowRoot.querySelector('#trace_preset')
     this.$colorsLabel = this._shadowRoot.querySelector('#trace_colors_label')
+    this.$colorsField = this._shadowRoot.querySelector('#trace_colors_field')
     this.$colors = this._shadowRoot.querySelector('#trace_colors')
     this.$colorsVal = this._shadowRoot.querySelector('#trace_colors_val')
     this.$error = this._shadowRoot.querySelector('#trace_error')
@@ -105,6 +106,15 @@ export class SeTraceDialog extends HTMLElement {
     this.$error.classList.remove('show')
     this.$okBtn.disabled = false
     this.$colorsVal.textContent = this.$colors.value
+    this.syncPreset()
+  }
+
+  /**
+   * The centerline style makes stroked paths in the ink's own colours, so the palette size does not apply.
+   * @returns {void}
+   */
+  syncPreset () {
+    this.$colorsField.hidden = this.$preset.value === 'centerline'
   }
 
   /**
@@ -136,6 +146,7 @@ export class SeTraceDialog extends HTMLElement {
   connectedCallback () {
     const close = () => this.setAttribute('dialog', 'close')
 
+    this.$preset.addEventListener('change', () => this.syncPreset())
     this.$colors.addEventListener('input', () => {
       this.$colorsVal.textContent = this.$colors.value
     })

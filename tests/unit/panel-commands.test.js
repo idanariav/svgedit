@@ -8,12 +8,14 @@ describe('panel commands', () => {
   let state
 
   beforeEach(() => {
-    state = { mode: 'select', stroke: '#000', fill: '#f00', text: false, canDeleteNodes: true }
+    state = { mode: 'select', stroke: '#000', fill: '#f00', text: false, canDeleteNodes: true, selected: [] }
     const spyOn = (...names) => Object.fromEntries(names.map((n) => [n, vi.fn()]))
     editor = {
       svgCanvas: {
         getMode: () => state.mode,
         getColor: (k) => state[k],
+        getSelectedElements: () => state.selected,
+        hasVisibleStroke: (el) => el.getAttribute('stroke') !== 'none',
         cancelImageCrop: vi.fn()
       },
       leftPanel: spyOn('clickSelect', 'clickFHPath', 'clickText', 'clickPath', 'clickLine', 'clickRect', 'clickEllipse', 'clickImage'),
@@ -42,6 +44,7 @@ describe('panel commands', () => {
   it('delegates to the panel method that used to be the click handler', () => {
     commands.run('tool_rect')
     expect(editor.leftPanel.clickRect).toHaveBeenCalledTimes(1)
+    state.selected = [document.createElementNS('http://www.w3.org/2000/svg', 'rect')]
     commands.run('tool_topath')
     expect(editor.topPanel.convertToPath).toHaveBeenCalledTimes(1)
     commands.run('layer_down')
@@ -70,6 +73,40 @@ describe('panel commands', () => {
     expect(commands.isEnabled('tool_node_delete')).not.toBe(true)
     state.canDeleteNodes = true
     expect(commands.isEnabled('tool_node_delete')).toBe(true)
+  })
+
+  it('Convert to Path needs one shape that is not already a path, text, image or group', () => {
+    const shape = (tag, attrs = {}) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag)
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      return el
+    }
+    expect(commands.isEnabled('tool_topath')).not.toBe(true)
+    state.selected = [shape('rect')]
+    expect(commands.isEnabled('tool_topath')).toBe(true)
+    for (const tag of ['path', 'text', 'image', 'g', 'use']) {
+      state.selected = [shape(tag)]
+      expect(commands.isEnabled('tool_topath'), tag).not.toBe(true)
+    }
+    state.selected = [shape('rect'), shape('circle')]
+    expect(commands.isEnabled('tool_topath')).not.toBe(true)
+    expect(() => commands.run('tool_topath')).toThrow(/Select one shape/)
+  })
+
+  it('Stroke to Path needs one non-path shape with a visible stroke', () => {
+    const el = (tag, attrs = {}) => {
+      const e = document.createElementNS('http://www.w3.org/2000/svg', tag)
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v)
+      return e
+    }
+    state.selected = [el('rect', { stroke: '#000' })]
+    expect(commands.isEnabled('tool_stroke_to_path')).toBe(true)
+    state.selected = [el('rect', { stroke: 'none' })]
+    expect(commands.isEnabled('tool_stroke_to_path')).not.toBe(true)
+    state.selected = [el('path', { stroke: '#000' })]
+    expect(commands.isEnabled('tool_stroke_to_path')).not.toBe(true)
+    state.selected = []
+    expect(commands.isEnabled('tool_stroke_to_path')).not.toBe(true)
   })
 
   it('text commands need selected text', () => {

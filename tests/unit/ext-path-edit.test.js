@@ -156,4 +156,26 @@ describe('ext-path-edit', function () {
     byId.path_add_anchors.fn()
     assert.deepEqual(calls, [])
   })
+
+  it('those entries say why they are unavailable', function () {
+    let mode = 'select'
+    let joinable = false
+    const editor = {
+      svgCanvas: {
+        getMode: () => mode,
+        getSelectedElements: () => [null, {}],
+        canJoinPaths: () => joinable
+      }
+    }
+    const byId = Object.fromEntries(buildEditorShortcuts(editor).map((s) => [s.id, s]))
+    for (const id of ['path_average_h', 'path_average_v', 'path_average_both', 'path_add_anchors']) {
+      assert.match(byId[id].enabled(), /Edit a path/)
+    }
+    assert.match(byId.path_join.enabled(), /open path/)
+    mode = 'pathedit'
+    joinable = true
+    for (const id of ['path_average_h', 'path_average_v', 'path_average_both', 'path_add_anchors', 'path_join']) {
+      assert.equal(byId[id].enabled(), true, id)
+    }
+  })
 })

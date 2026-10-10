@@ -20,10 +20,7 @@ small items (S) fill gaps between large ones.
 
 **Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
-**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–10, T2.15 Corner-keeping simplify, T2.3 Pen continues / joins, T2.16 Smooth tool and T3.7 Pencil continues, are done)
-11. **T2.12 Centerline
-   tracing** (L, last: it only needs the fit module).
-   Do the **precise `enabled` pass for the path commands** while in these panels.
+**Phase 3 — done** (items 7–11: T2.15 Corner-keeping simplify, T2.3 Pen continues / joins, T2.16 Smooth tool, T3.7 Pencil continues, T2.12 Centerline tracing; the path commands got their precise `enabled` with it).
 
 **Phase 4 — stroke and appearance**
 12. **T2.5 Dashes fitted** (v1) and 13. **T2.4 Arrowheads** — both small stroke features, no deps.
@@ -76,7 +73,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   Other hand-rolled previews: ext-curvature, ext-cutter (both already ephemeral). *Scheduled:* with T2.7 (Phase 5).
 - **Precise `enabled` on commands.** Most commands are still "always" (what the buttons were). Gate them on selection
   type (path, text, group, ≥2 shapes, …), with a reason string; the command sweep and `list()` get more truthful and
-  the tooltips explain themselves. *Scheduled:* per area as phases touch it (path commands in Phase 3, text in Phase 6); new commands get it from day one.
+  the tooltips explain themselves. Done for the path commands (node tray, Convert to Path, Stroke to Path, Join/Close, the keyless `path_*` entries); *Scheduled:* text in Phase 6; new commands get it from day one.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
   appears; then give the registry a session concept instead of special-casing. *Scheduled:* with T2.7 if its design needs it, else with the next session-style tool (T2.8 / T2.11).
@@ -264,6 +261,16 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Centerline tracing (`dialogs/traceCenterline.js`): follow-ups from T2.12
+
+Done: **Line art (centerlines)** in Convert to editable SVG traces thin strokes as stroked open (or closed) paths with their width and colour. Remaining:
+- **Wide areas are skipped, not traced.** A component whose widest point is over 12 px is treated as a filled area and left out, so a drawing with a solid block shows only its lines; run the Line art / Color style as well for the fills. VectorCraft handles both in one pass. A line that touches a wide area is in the same component, so it is skipped with it. The width limit (`maxWidth`) and the other thresholds (`minLength`, `minSpur`, `tolerance`) are options of the module but not in the dialog.
+- **No Web Worker.** A dense 2000 × 2000 test drawing took about 1.6 s end to end with no single stage over ~650 ms; the pipeline yields to the event loop between stages (and between thinning passes and every ~50 ms of fitting) instead, so the UI stays responsive. A worker would need an inlined worker in the single bundle the plugin re-bundles; revisit if a huge scan still feels stuck.
+- **Even stroke widths** are measured from ink area over run length (so accurate), but the width limit test uses the distance transform, which reads an even width one pixel narrow.
+- **Ink is chosen by a global Otsu threshold**: uneven lighting or a coloured ground can merge ink with paper. No adaptive threshold, no choice of ink colour.
+- **Zhang-Suen can erase a 2 × 2 blob** (an isolated dot) and rounds the ends of lines by about a pixel; a staircase cleanup runs afterwards. Corners are kept by `fitFreehand`'s own corner finder, tuned for pen strokes at a tolerance of one pixel.
+- Each run is its own `<path>`; touching strokes are not merged, and colour is one per run (the middle of the stroke, not the anti-aliased fringe).
 
 ## Pencil continue and settings (`pen-continue.js` `extendWith`): follow-ups from T3.7
 

@@ -1,6 +1,7 @@
 import ImageTracer from 'imagetracerjs'
 import { insertSvgElements } from './insertImage.js'
 import { loadImage } from '@svgedit/svgcanvas/core/load-image.js'
+import { traceCenterline } from './traceCenterline.js'
 
 /**
  * Map the trace dialog's friendly preset names to an imagetracerjs option-preset
@@ -82,8 +83,9 @@ const loadImageData = async (href) => {
  *
  * @param {Element} imageElem - The selected SVG `<image>` to trace.
  * @param {{ preset?: string, numberofcolors?: number }} [opts]
- *   `preset` is one of `lineart`/`detailed`/`posterized`/`color`;
- *   `numberofcolors` overrides the palette size.
+ *   `preset` is one of `lineart`/`detailed`/`posterized`/`color`, or `centerline`
+ *   (stroked open paths along thin lines, see traceCenterline.js; filled areas are
+ *   left out); `numberofcolors` overrides the palette size.
  * @returns {Promise<void>}
  */
 export const traceImageToSvg = async (editor, imageElem, opts = {}) => {
@@ -94,9 +96,13 @@ export const traceImageToSvg = async (editor, imageElem, opts = {}) => {
 
   const imagedata = await loadImageData(href)
 
-  const options = buildTraceOptions(preset, numberofcolors)
-
-  const svgString = ImageTracer.imagedataToSVG(imagedata, options)
+  let svgString
+  if (preset === 'centerline') {
+    svgString = await traceCenterline(imagedata)
+    if (!svgString.includes('<path')) throw new Error('No thin lines were found in this image. Try another style.')
+  } else {
+    svgString = ImageTracer.imagedataToSVG(imagedata, buildTraceOptions(preset, numberofcolors))
+  }
 
   // Position/scale the trace to overlay the source image (user-space rect,
   // transform-aware). insertSvgElements maps the trace's intrinsic pixel size

@@ -20,6 +20,31 @@
 /** @param {any} editor @returns {true|string} node editing needs the path editor open */
 const inPathEdit = (editor) => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
 
+/** Elements Convert to Path leaves alone: nothing to convert (already a path) or no outline to take (image, text, group, use). */
+const NOT_CONVERTIBLE = ['image', 'text', 'path', 'g', 'use']
+
+/**
+ * The one selected element, if exactly one is selected.
+ * @param {any} editor
+ * @returns {?Element}
+ */
+const soleSelected = (editor) => {
+  const list = editor.svgCanvas.getSelectedElements().filter(Boolean)
+  return list.length === 1 ? list[0] : null
+}
+
+/** @param {any} editor @returns {true|string} Convert to Path needs a shape that is not yet a path */
+const convertible = (editor) => {
+  const el = soleSelected(editor)
+  return el && !NOT_CONVERTIBLE.includes(el.tagName.toLowerCase()) ? true : 'Select one shape (not a path, text, image or group)'
+}
+
+/** @param {any} editor @returns {true|string} Stroke to Path needs a visible stroke on a shape that is not a path */
+const strokeToPathable = (editor) => {
+  const el = soleSelected(editor)
+  return el && el.tagName.toLowerCase() !== 'path' && editor.svgCanvas.hasVisibleStroke(el) ? true : 'Select one shape with a visible stroke'
+}
+
 /** @param {any} editor @returns {true|string} */
 const textSelected = (editor) => editor.topPanel.anyTextSelected ? true : 'Select some text'
 
@@ -89,8 +114,8 @@ const MODE_BUTTONS = [
 const TOP_PANEL = [
   ['tool_frame', 'View', 'clickFrame'],
   ['tool_wireframe', 'View', 'clickWireframe'],
-  ['tool_topath', 'Path', 'convertToPath'],
-  ['tool_stroke_to_path', 'Path', 'strokeToPath'],
+  ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
+  ['tool_stroke_to_path', 'Path', 'strokeToPath', { enabled: strokeToPathable }],
   ['tool_match_strokes', 'Tools', 'clickMatchStrokes'],
   ['tool_make_link', 'Group', 'makeHyperlink'],
   ['tool_make_link_multi', 'Group', 'makeHyperlink'],
