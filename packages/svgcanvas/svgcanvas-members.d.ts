@@ -44,6 +44,7 @@ export interface ToolDef {
   cancel?(ctx: ToolContext): void
   undoLabel?: string
   wantsHover?: boolean
+  keepOpacity?: boolean
 }
 
 export interface AttachedMembers {
@@ -115,7 +116,7 @@ export interface AttachedMembers {
   unregisterTool(id: string): boolean
   hasTool(id: string): boolean
   /** Finish a newly created element like a drawn shape (opacity, events, select it unless locked). */
-  finishCreatedElement(el: Element, evt?: { altKey?: boolean }): void
+  finishCreatedElement(el: Element, evt?: { altKey?: boolean }, opts?: { keepOpacity?: boolean }): void
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
   checkDrawing(): Array<{ code: string, message: string, id?: string }>
   

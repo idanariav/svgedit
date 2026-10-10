@@ -8,6 +8,7 @@ describe('ext-eyedropper', () => {
   let svgEditor
   let extInstance
   let toolsLeft
+  let tool
 
   beforeEach(async () => {
     toolsLeft = document.createElement('div')
@@ -18,7 +19,8 @@ describe('ext-eyedropper', () => {
       insertChildAtIndex: vi.fn((parent, html) => { parent.innerHTML = html }),
       getMode: vi.fn(() => 'eyedropper'),
       setMode: vi.fn(),
-      setColor: vi.fn()
+      setColor: vi.fn(),
+      registerTool: vi.fn((def) => { tool = def })
     }
 
     svgEditor = {
@@ -52,7 +54,7 @@ describe('ext-eyedropper', () => {
   }
 
   const mouseDownOn = (target, clientX = 10, clientY = 20) => {
-    extInstance.mouseDown({ event: { target, clientX, clientY } })
+    return tool.pointerDown({}, { event: { target, clientX, clientY } })
   }
 
   it('injects the toolbar button as a view of the tool_eyedropper command', () => {
@@ -72,10 +74,9 @@ describe('ext-eyedropper', () => {
     expect(svgCanvas.setMode).not.toHaveBeenCalled()
   })
 
-  it('ignores mouseDown when not in eyedropper mode', () => {
-    svgCanvas.getMode.mockReturnValue('select')
-    mouseDownOn(makeRect({ fill: '#ff0000' }))
-    expect(document.querySelector('se-eyedropper-menu')).toBeNull()
+  it('registers as the eyedropper tool (the registry only dispatches to it in its own mode)', () => {
+    expect(svgCanvas.registerTool).toHaveBeenCalledTimes(1)
+    expect(tool.id).toBe('eyedropper')
   })
 
   it('ignores clicks on svg/g/use container elements', () => {

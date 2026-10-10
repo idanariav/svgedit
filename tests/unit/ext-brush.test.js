@@ -17,17 +17,14 @@ const parsePoints = (d) => {
 describe('ext-brush', () => {
   let svgCanvas
   let svgEditor
-  let extInstance
-  let zoom
+  let tool
 
   beforeEach(async () => {
-    zoom = 1
     const brushParams = { thickness: 0.02, angle: 0, roundness: 100, taperStart: 0, taperEnd: 0, opacity: 1, smoothness: 0 }
 
     svgCanvas = {
       $id: vi.fn(),
-      $click: vi.fn(),
-      getZoom: () => zoom,
+      registerTool: vi.fn((def) => { tool = def }),
       getMode: () => 'brush',
       getBrushParams: () => brushParams,
       getColor: () => '#000000',
@@ -42,42 +39,46 @@ describe('ext-brush', () => {
 
     svgEditor = { svgCanvas }
 
-    extInstance = await extBrush.init.call(svgEditor)
+    await extBrush.init.call(svgEditor)
   })
 
   afterEach(() => {
     document.body.textContent = ''
   })
 
-  // mouseDown opts (start_x/start_y) are already in canvas coordinates;
-  // mouseMove opts (mouse_x/mouse_y) are screen-pixel coordinates that must
-  // be divided by zoom — same convention as ext-cutter/ext-curvature/etc.
-  it('draws in real canvas coordinates at 100% zoom', () => {
-    extInstance.mouseDown({ start_x: 10, start_y: 20 })
-    extInstance.mouseMove({ mouse_x: 40, mouse_y: 80 })
-    const { element } = extInstance.mouseUp()
+  // The registry hands tools document-space events (unzoomed), so the brush no
+  // longer divides by zoom itself: the first point is the (snapped) press, the rest are raw.
+  const ev = (x, y) => ({ x, y, rawX: x, rawY: y })
+  const ctx = {}
 
-    const pts = parsePoints(element.getAttribute('d'))
-    const xs = pts.map((p) => p.x)
-    const ys = pts.map((p) => p.y)
-    expect(Math.max(...xs)).toBeCloseTo(40, 1)
-    expect(Math.max(...ys)).toBeCloseTo(80, 1)
+  it('registers itself as the brush tool, keeping its own opacity', () => {
+    expect(svgCanvas.registerTool).toHaveBeenCalledTimes(1)
+    expect(tool.id).toBe('brush')
+    expect(tool.keepOpacity).toBe(true)
   })
 
-  it('divides mouse_x/mouse_y by zoom so the stroke tracks the real cursor position, not the raw screen pixel', () => {
-    zoom = 2
-    extInstance.mouseDown({ start_x: 10, start_y: 20 })
-    // At 200% zoom, a screen position of (80, 160) corresponds to the real
-    // canvas point (40, 80) — the same point the cursor is actually over.
-    extInstance.mouseMove({ mouse_x: 80, mouse_y: 160 })
-    const { element } = extInstance.mouseUp()
+  it('draws in document coordinates and hands the stroke back as created', () => {
+    tool.pointerDown(ctx, ev(10, 20))
+    tool.pointerMove(ctx, ev(40, 80))
+    const { created } = tool.pointerUp(ctx, ev(40, 80))
 
-    const pts = parsePoints(element.getAttribute('d'))
-    const xs = pts.map((p) => p.x)
-    const ys = pts.map((p) => p.y)
-    // Before the fix this asserted 80/160 (the raw, undivided screen pixel),
-    // which is exactly the "stroke jumps far from the cursor" bug.
-    expect(Math.max(...xs)).toBeCloseTo(40, 1)
-    expect(Math.max(...ys)).toBeCloseTo(80, 1)
+    const pts = parsePoints(created.getAttribute('d'))
+    expect(Math.max(...pts.map((p) => p.x))).toBeCloseTo(40, 1)
+    expect(Math.max(...pts.map((p) => p.y))).toBeCloseTo(80, 1)
+    expect(created.getAttribute('opacity')).toBe('1') // the brush's own opacity param
+  })
+
+  it('uses the raw pointer position (not the grid-snapped one) after the press', () => {
+    tool.pointerDown(ctx, { x: 10, y: 20, rawX: 11, rawY: 21 })
+    tool.pointerMove(ctx, { x: 40, y: 80, rawX: 43, rawY: 83 })
+    const { created } = tool.pointerUp(ctx, ev(0, 0))
+    expect(Math.max(...parsePoints(created.getAttribute('d')).map((p) => p.x))).toBeCloseTo(43, 1)
+  })
+
+  it('a cancelled gesture forgets its stroke; a stray release cancels', () => {
+    tool.pointerDown(ctx, ev(10, 20))
+    tool.cancel(ctx)
+    expect(tool.pointerUp(ctx, ev(10, 20))).toBe('cancel')
+    tool.pointerMove(ctx, ev(5, 5)) // no element: must not throw
   })
 })

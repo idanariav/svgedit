@@ -160,7 +160,7 @@ toolchain step.
 
 ## Tier 0 follow-ups (VectorCraft port, 2026-10-10)
 
-Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: only `ext-shape-family` uses `registerTool`.
+Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: `ext-shape-family`, `ext-brush`, `ext-panning` and `ext-eyedropper` use `registerTool`.
 
 Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing), command
 registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
@@ -385,13 +385,11 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
 - Fixed on the way: `EditorStartup` read only the last extension's answer to the `keyDown` hook (`runExtensions` without `returnArray` keeps the last result), so another extension's `undefined` could cancel an earlier `preventDefault` (e.g. curvature's Escape); it now collects all answers. The editor's Space `keyup` also unconditionally reset the mode to the previous one (a bare Space tap in any drawing tool switched to Select); it now only does so when Space had armed pan.
 
 **Remaining Tier 0 work (not started)**
-- **Port the other drawing tools to `registerTool`** (their `mouseDown/Move/Up` extension hooks still use the legacy
-  pipeline): `ext-brush`, `ext-panning`, `ext-eyedropper`, `ext-cutter`, `ext-polystar`, `ext-shapes`,
-  `ext-curvature`, `ext-puppet-warp`, `ext-shape-builder`, `ext-connector`. Do the small ones first (brush,
-  panning, eyedropper). Gotchas found while reading: `finishCreated` overwrites `opacity` with the style opacity
-  but the brush stamps its own (legacy event.js special-cases mode `brush`), so brush needs that carved out;
-  legacy hooks receive `mouse_x/mouse_y` zoomed and `start_x/start_y` unzoomed, the tool contract gives one
-  unzoomed convention.
+- **Port the remaining drawing tools to `registerTool`** (their `mouseDown/Move/Up` extension hooks still use the
+  legacy pipeline): `ext-cutter`, `ext-polystar`, `ext-shapes`, `ext-curvature`, `ext-puppet-warp`,
+  `ext-shape-builder`, `ext-connector`. Done: brush (uses `keepOpacity`), panning, eyedropper. Gotchas: legacy
+  hooks receive `mouse_x/mouse_y` zoomed and `start_x/start_y` unzoomed, the tool contract gives one unzoomed
+  convention (`x/y` snapped, `rawX/rawY` not).
 - Commands are real now but their `enabled` is mostly "always" (what the buttons were); several would be better
   gated on selection type.
 - Still open from the plan: `cursor()` / `options()` tool hooks, live-effects preview on transactions,

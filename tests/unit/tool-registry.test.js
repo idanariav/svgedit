@@ -237,6 +237,26 @@ describe('tool registry (registerTool)', () => {
       expect(canvas.getMode()).toBe('select')
     })
 
+    it('keep the opacity the tool stamped only when the tool says so (the brush)', () => {
+      for (const [keepOpacity, expected] of [[true, '0.4'], [false, null]]) {
+        layer.querySelectorAll('rect').forEach((r) => r.remove())
+        const t = makeTool({
+          keepOpacity,
+          pointerUp: () => {
+            const el = layer.querySelector('rect')
+            el.setAttribute('opacity', '0.4')
+            return { created: el }
+          }
+        })
+        canvas.unregisterTool('dragrect')
+        canvas.registerTool(t.tool)
+        canvas.setMode('dragrect')
+        gesture([10, 10], [60, 50])
+        release(60, 50)
+        expect(layer.querySelector('rect').getAttribute('opacity'), `keepOpacity=${keepOpacity}`).toBe(expected)
+      }
+    })
+
     it('stay armed and unselected while the tool is locked', () => {
       canvas.registerTool(makeTool().tool)
       canvas.setMode('dragrect')

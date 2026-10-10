@@ -94,6 +94,7 @@ const LOG = 'tool-registry'
  *   `'cancel'`, an error): reset the tool's own state
  * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
  * @property {boolean} [wantsHover] receive `pointerMove` with no button down
+ * @property {boolean} [keepOpacity] created elements keep the `opacity` the tool stamped (the brush has its own)
  */
 
 /**
@@ -188,13 +189,14 @@ export const init = (canvas) => {
    * history entry (the gesture's transaction already records the insertion).
    * @param {Element} el
    * @param {{altKey?: boolean}} [evt]
+   * @param {{keepOpacity?: boolean}} [opts] `keepOpacity`: leave the element's own `opacity` alone
    * @returns {void}
    */
-  const finishCreated = (el, evt) => {
+  const finishCreated = (el, evt, opts) => {
     const style = svgCanvas.getStyle()
     svgCanvas.addedNew = true
     svgCanvas.pendingNewElement = el
-    el.setAttribute('opacity', style.opacity)
+    if (!opts?.keepOpacity) el.setAttribute('opacity', style.opacity)
     el.setAttribute('style', 'pointer-events:inherit')
     cleanupElement(el)
     if (svgCanvas.getCurConfig().selectNew) {
@@ -321,7 +323,7 @@ export const init = (canvas) => {
       return true
     }
     tx.commit()
-    if (result && typeof result === 'object' && result.created) finishCreated(result.created, evt)
+    if (result && typeof result === 'object' && result.created) finishCreated(result.created, evt, { keepOpacity: tool.keepOpacity })
     return true
   }
 

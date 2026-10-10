@@ -37,7 +37,6 @@ export default {
     let element = null
     let points = []
     let smoother = null
-    let started = false
 
     const recordPressure = (e) => {
       lastPressure = e.pressure
@@ -48,6 +47,52 @@ export default {
     const redraw = () => {
       element.setAttribute('d', buildBrushOutline(points, svgCanvas.getBrushParams()))
     }
+
+    // The brush as a registered tool: one undo step per stroke, rolled back on Escape
+    // or a tool switch. First point is the (grid-snapped) press, the rest are raw.
+    svgCanvas.registerTool({
+      id: 'brush',
+      undoLabel: 'Brush stroke',
+      keepOpacity: true, // the stroke carries the brush popover's opacity, not the shape style's
+      pointerDown (ctx, ev) {
+        smoother = createSmoother(svgCanvas.getBrushParams().smoothness)
+        points = [smoother.push({ x: ev.x, y: ev.y, pressure: pressureNow() })]
+        element = svgCanvas.addSVGElementsFromJson({
+          element: 'path',
+          attr: {
+            id: svgCanvas.getNextId(),
+            d: '',
+            // The outline is a closed filled shape, so the stroke colour is
+            // applied as fill and the path has no SVG stroke of its own.
+            fill: svgCanvas.getColor('stroke'),
+            'fill-rule': 'nonzero',
+            stroke: 'none',
+            opacity: svgCanvas.getBrushParams().opacity,
+            style: 'pointer-events:none'
+          }
+        })
+        redraw()
+      },
+      pointerMove (ctx, ev) {
+        if (!element) return
+        points.push(smoother.push({ x: ev.rawX, y: ev.rawY, pressure: pressureNow() }))
+        redraw()
+      },
+      pointerUp () {
+        const el = element
+        if (!el) return 'cancel'
+        el.setAttribute('d', finalizeBrushOutline(el.getAttribute('d'), svgCanvas))
+        element = null
+        points = []
+        smoother = null
+        return { created: el }
+      },
+      cancel () {
+        element = null
+        points = []
+        smoother = null
+      }
+    })
 
     return {
       name,
@@ -76,58 +121,6 @@ export default {
         // Passive pressure side-channel — never interferes with the mouse pipeline.
         svgCanvas.svgroot.addEventListener('pointerdown', recordPressure, { passive: true })
         svgCanvas.svgroot.addEventListener('pointermove', recordPressure, { passive: true })
-      },
-
-      mouseDown (opts) {
-        if (svgCanvas.getMode() !== 'brush') return undefined
-        started = true
-        smoother = createSmoother(svgCanvas.getBrushParams().smoothness)
-        points = [smoother.push({ x: opts.start_x, y: opts.start_y, pressure: pressureNow() })]
-        element = svgCanvas.addSVGElementsFromJson({
-          element: 'path',
-          attr: {
-            id: svgCanvas.getNextId(),
-            d: '',
-            // The outline is a closed filled shape, so the stroke colour is
-            // applied as fill and the path has no SVG stroke of its own.
-            fill: svgCanvas.getColor('stroke'),
-            'fill-rule': 'nonzero',
-            stroke: 'none',
-            opacity: svgCanvas.getBrushParams().opacity,
-            style: 'pointer-events:none'
-          }
-        })
-        redraw()
-        return { started: true }
-      },
-
-      mouseMove (opts) {
-        if (!started || svgCanvas.getMode() !== 'brush') return undefined
-        // mouseDown opts use start_x/start_y (already in canvas coords).
-        // mouseMove/mouseUp use mouse_x/mouse_y (screen-pixel coords, need /zoom)
-        // — see ext-cutter for the same convention. Without the division the
-        // stroke tracked the cursor 1:1 only at 100% zoom; at any other zoom
-        // level every point after the first landed far off from where it was
-        // drawn, stretching a straight line from the start point out to the
-        // wrong location.
-        const zoom = svgCanvas.getZoom()
-        points.push(smoother.push({ x: opts.mouse_x / zoom, y: opts.mouse_y / zoom, pressure: pressureNow() }))
-        redraw()
-        return { started: true }
-      },
-
-      mouseUp () {
-        if (svgCanvas.getMode() !== 'brush') return undefined
-        started = false
-        const keep = points.length > 0
-        const el = element
-        if (el) el.setAttribute('d', finalizeBrushOutline(el.getAttribute('d'), svgCanvas))
-        element = null
-        points = []
-        smoother = null
-        // Core commits the InsertElementCommand and handles selection when keep
-        // is true (see core/event.js mouseUp) — do not add to history here.
-        return { keep, element: el, started: false }
       }
     }
   }

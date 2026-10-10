@@ -81,6 +81,16 @@ export default {
       })
     }
 
+    // Clicking a shape opens the sampling menu at the pointer; nothing is drawn.
+    svgCanvas.registerTool({
+      id: name,
+      pointerDown (ctx, ev) {
+        const { target } = ev.event
+        if (['svg', 'g', 'use'].includes(target.nodeName)) return false
+        openActionMenu(ev.event, target)
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -100,12 +110,6 @@ export default {
             svgEditor.leftPanel.clickSelect()
           }
         }, { signal: svgEditor.listenerAbort.signal })
-      },
-      mouseDown (opts) {
-        if (svgCanvas.getMode() !== name) return
-        const { target } = opts.event
-        if (['svg', 'g', 'use'].includes(target.nodeName)) return
-        openActionMenu(opts.event, target)
       }
     }
   }

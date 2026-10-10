@@ -246,8 +246,9 @@ export const registerPanelCommands = (commands) => {
     run: (editor) => {
       // A host that owns exporting (window.svgEditHost.exportDrawing) takes over;
       // standalone svgedit keeps its own dialog.
-      if (typeof window.svgEditHost?.exportDrawing === 'function') {
-        window.svgEditHost.exportDrawing()
+      const host = /** @type {any} */ (window).svgEditHost
+      if (typeof host?.exportDrawing === 'function') {
+        host.exportDrawing()
         return
       }
       editor.$id('se-export-dialog').setAttribute('dialog', 'open')

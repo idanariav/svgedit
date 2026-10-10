@@ -34,6 +34,14 @@ export default {
     const insertAfter = (referenceNode, newNode) => {
       referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling)
     }
+    // The drag itself pans the workarea (editor.setPanning); nothing is drawn.
+    svgCanvas.registerTool({
+      id: 'ext-panning',
+      pointerDown () { svgEditor.setPanning(true) },
+      pointerUp () { svgEditor.setPanning(false) },
+      cancel () { svgEditor.setPanning(false) }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -45,25 +53,6 @@ export default {
         `
         insertAfter($id('tool_select'), buttonTemplate.content.cloneNode(true))
         svgEditor.leftPanel.addModeCommand('ext-panning', 'ext-panning', { label: btitle })
-      },
-      mouseDown () {
-        if (svgCanvas.getMode() === 'ext-panning') {
-          svgEditor.setPanning(true)
-          return {
-            started: true
-          }
-        }
-        return undefined
-      },
-      mouseUp () {
-        if (svgCanvas.getMode() === 'ext-panning') {
-          svgEditor.setPanning(false)
-          return {
-            keep: false,
-            element: null
-          }
-        }
-        return undefined
       }
     }
   }
