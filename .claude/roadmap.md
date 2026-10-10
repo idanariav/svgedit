@@ -8,27 +8,87 @@ a roadmap item is something we *want*, a techdebt item is something we *owe*.
 When you finish an item, delete it (git history keeps the record). When you defer a feature,
 add it here; when you take a shortcut, add it to `techdebt.md`.
 
+## Implementation order
+
+One sequence for the VectorCraft port plans (`plans/vectorcraft-port/tier-1|2|3.md`) **and** the roadmap items
+below. It supersedes the ID order on the plans' status board. Tier 0 and all of Tier 1 except T1.6 are done.
+Rules used: dependencies and shared modules first; quick wins before large items; a roadmap item is scheduled
+with the first feature that needs it (never as a standalone task, so nothing gets built without a consumer);
+small items (S) fill gaps between large ones.
+
+**Phase 1 — finish Tier 1, cheap wins on the new tool contract**
+1. **T1.6 Shaper** — the last Tier 1 item, and the first brand-new tool on `registerTool`.
+2. **T2.9 Eyedropper "Copy style"** — extends the already-ported eyedropper; no dependencies.
+3. **T3.1 Scrubby labels** — S; one undo step per scrub is now just a transaction around the drag.
+4. **T2.10 Magic Wand / Select Same** — S.
+
+**Phase 2 — drawing precision**
+5. **T2.1 Snapping while drawing** — also closes shape-family's "no smart-guide snapping while drawing".
+6. **T2.2 Ruler guides** — build the `cursor()` tool hook here (guide hover needs resize cursors); first consumer.
+
+**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers)
+7. **T2.15 Corner-keeping simplify** — T2.16 and T3.7 build on it.
+8. **T2.3 Pen continues / joins** → 9. **T2.16 Smooth tool** → 10. **T3.7 Pencil continues** → 11. **T2.12 Centerline
+   tracing** (L, last: it only needs the fit module).
+   Do the **precise `enabled` pass for the path commands** while in these panels.
+
+**Phase 4 — stroke and appearance**
+12. **T2.5 Dashes fitted** (v1) and 13. **T2.4 Arrowheads** — both small stroke features, no deps.
+14. **T2.6 Width profiles + Width tool** (L) — generalises taper.
+15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — design it *after* T2.6, because
+    width profiles change the single-source-of-truth question (`se:taper-d` vs. the new profile).
+16. **T2.14 Art / pattern brushes** (no dependency on width profiles; it reuses T1.0's `mapNonlinear`; grouped here as the
+    other "appearance follows the path" feature), then 17. **T2.13 Blend tool** — build `options()/setOption()` with
+    Blend (steps/spacing), the first tool with a real options bar.
+
+**Phase 5 — on-canvas editors (session-style tools)**
+18. **T2.7 Free / Perspective Distort** — on-canvas handles with a live preview of effect params, so it is the first
+    real consumer of two Tier 0 follow-ups, done *with* it: (a) the lighter "apply without re-select" path, then
+    **live-effects preview moves onto transactions**; (b) if its design keeps the mode open across several handle drags
+    as one undo step (the plan says one step per mouseup, in which case skip this), the registry gets a **session
+    concept and puppet-warp moves onto `registerTool`**. Otherwise puppet-warp waits for the next session-style tool
+    (T2.8 or T2.11 are candidates).
+19. **T2.8 On-canvas gradient editor**; the **corner-radius widgets** deferred from T1.3 reuse the same handle
+    infrastructure. 20. **T2.11 Recolor Artwork** (M–L).
+
+**Phase 6 — panels and text**
+21. **T2.17 Layers panel: object rows** (L) → 22. **T3.6 Layers extras**.
+23. **T3.5 Area text** (M–L) — do the text-command `enabled` pass with it.
+24. **T3.3 Transform Each**, **T3.4 Split Into Grid**, **T3.2 Measure tool** — S; slot them between large items
+    (Measure is a second consumer for `cursor()`).
+
+**Background tracks (no phase)**
+- **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Finish the remaining `@ts-check` modules in
+  small batches whenever a phase touches them; once most are checked, generate the declarations from source and delete
+  the hand-written d.ts files (see the TypeScript section). Do not start a dedicated conversion project.
+- **Plugin command palette** (plugin repo): independent and high leverage, since every command added in the phases above
+  appears there for free. Best done before Phase 3, whenever the plugin is next touched.
+- **UI/UX polish** (toolbars folding, shortcuts for the flyouts, the cutter icon, faint "none" swatch): one batched pass
+  after Phase 2, or opportunistically when a feature touches that toolbar.
+- **Translations:** wait until a second locale is wanted; the guideline (all new strings via `t()`) keeps the cost down.
+- **Round-trip corpus, `checkDrawing` rules, command sweep:** every phase adds its fixtures and keeps the sweep green.
+
 ## Tier 0 follow-ups (VectorCraft port)
 
-Not started; none has a consumer yet unless noted.
+Not started. Each is scheduled with the first feature that needs it (see *Implementation order*); do not build them standalone.
 
 - **Tool hooks `cursor()` and `options()/setOption()`** from the tool-contract plan. Implement with the first
   tool that needs a custom cursor or a tool-options bar (shape-family's "no custom cursor" is the likely first).
-  `wantsHover` exists and is used by the cutter.
+  `wantsHover` exists and is used by the cutter. *Scheduled:* `cursor()` with T2.2 (Phase 2), `options()` with T2.13 (Phase 4).
 - **Live-effects preview on transactions.** `live-effects.js` still hides the original and shows a throwaway
   clone (`data-se-ephemeral`). A transaction-based preview would mutate and re-select the real element on every
   param tick and rebuild the effects panel mid-edit, so it needs a lighter "apply without re-select" path first.
-  Other hand-rolled previews: ext-curvature, ext-cutter (both already ephemeral).
+  Other hand-rolled previews: ext-curvature, ext-cutter (both already ephemeral). *Scheduled:* with T2.7 (Phase 5).
 - **Precise `enabled` on commands.** Most commands are still "always" (what the buttons were). Gate them on selection
   type (path, text, group, ≥2 shapes, …), with a reason string; the command sweep and `list()` get more truthful and
-  the tooltips explain themselves. Do it per area when touching its panel.
+  the tooltips explain themselves. *Scheduled:* per area as phases touch it (path commands in Phase 3, text in Phase 6); new commands get it from day one.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
-  appears (e.g. a mesh/lattice tool); then give the registry a session concept instead of special-casing.
+  appears; then give the registry a session concept instead of special-casing. *Scheduled:* with T2.7 if its design needs it, else with the next session-style tool (T2.8 / T2.11).
 - **Lazy transaction snapshot** (targeted at the elements a caller declares) if anything ever needs a transaction
-  per pointer-move.
+  per pointer-move. *Not scheduled:* no known consumer (T3.1's scrub is one transaction around a drag, which is cheap).
 - **Plugin side:** expose `editor.commands.list()/run()` as Obsidian palette entries and hotkeys. Tracked in the
-  plugin repo (`../obsidian-svgedit-plugin/.claude/techdebt.md`, "Expose the editor's command registry…").
+  plugin repo (`../obsidian-svgedit-plugin/.claude/techdebt.md`, "Expose the editor's command registry…"). *Scheduled:* a background track, best before Phase 3.
 
 ## Round-trip corpus: keep adding drawings
 

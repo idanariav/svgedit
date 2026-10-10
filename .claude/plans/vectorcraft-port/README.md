@@ -16,7 +16,8 @@ memory of the survey session can pick it up, implement it, and verify it.
 ## Status board
 
 Update the row when you start (`in progress — <agent/session>, <date>`) and
-when you finish (`done — <commit sha>`). Pick items in the listed order unless
+when you finish (`done — <commit sha>`). Pick items in the order decided in
+[`../../roadmap.md`](../../roadmap.md) › *Implementation order* (it supersedes the ID order below) unless
 the user says otherwise; the **Depends on** column is a hard prerequisite.
 "(T0.x helps)" is soft: the item can ship without it but gets smaller with
 it. Tier 0's own suggested order (T0.6 → T0.2 → T0.1 → T0.4 → T0.3 → T0.5)
@@ -24,12 +25,12 @@ is in [tier-0.md](tier-0.md).
 
 | ID | Feature | Depends on | Status |
 |---|---|---|---|
-| T0.1 | Command registry ("everything is a command") | — | done — uncommitted, 2026-10-10 (pilot: 9 commands; other buttons ride the adapter) |
-| T0.2 | Undo transactions (begin → preview → commit / cancel) **+ BatchCommand coalescing fix** | — | done — uncommitted, 2026-10-10 (property test lands with T0.4) |
-| T0.3 | Tool contract (`registerTool`) | T0.2 (+ T1.5 committed, for the pilot) | done — uncommitted, 2026-10-10 (pilot: ext-shape-family) |
-| T0.4 | Drawing invariants + command sweep + property tests | sweep: T0.1 | done — uncommitted, 2026-10-10 |
-| T0.5 | Automation API (inspect + doc-space pointer) | T0.1 | done — uncommitted, 2026-10-10 |
-| T0.6 | Layering guard (`check-layers.mjs`) | — | done — uncommitted, 2026-10-10 |
+| T0.1 | Command registry ("everything is a command") | — | done — committed 2026-10-10 (every button is a command) |
+| T0.2 | Undo transactions (begin → preview → commit / cancel) **+ BatchCommand coalescing fix** | — | done — committed 2026-10-10 |
+| T0.3 | Tool contract (`registerTool`) | T0.2 (+ T1.5 committed, for the pilot) | done — committed 2026-10-10 (all standalone tools; puppet-warp/connector by design) |
+| T0.4 | Drawing invariants + command sweep + property tests | sweep: T0.1 | done — committed 2026-10-10 |
+| T0.5 | Automation API (inspect + doc-space pointer) | T0.1 | done — committed 2026-10-10 |
+| T0.6 | Layering guard (`check-layers.mjs`) | — | done — committed 2026-10-10 |
 | T1.0 | Live-effect foundation (`se:fx` stack) | — | done — b99390d0 |
 | T1.1 | Distort & Transform effects (Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble) | T1.0 | done — 07891b3c |
 | T1.2 | Warp effect (15 styles) | T1.0 | done — see git log |
