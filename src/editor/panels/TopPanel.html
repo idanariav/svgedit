@@ -3,21 +3,21 @@
     <p>untitled.svg</p>
   </div> <!-- title panel -->
   <div id="editor_panel">
-    <se-button id="tool_frame" title="tools.tool_frame" shortcut="U" src="frame.svg"></se-button>
-    <se-button id="tool_wireframe" title="tools.wireframe_mode" shortcut="F" src="wireframe.svg"></se-button>
+    <se-button id="tool_frame" command="tool_frame" title="tools.tool_frame" shortcut="U" src="frame.svg"></se-button>
+    <se-button id="tool_wireframe" command="tool_wireframe" title="tools.wireframe_mode" shortcut="F" src="wireframe.svg"></se-button>
     <se-canvas-settings id="tool_canvas_settings" title="Canvas settings" src="canvas.svg"></se-canvas-settings>
   </div> <!-- editor_panel (view toggles) -->
   <div id="theme_panel"></div> <!-- theme_panel -->
   <!-- Path node editing (transient, pathedit mode) -->
   <div class="path_node_panel quick_tray">
-    <se-button id="tool_node_link" title="tools.node_link" src="tool_node_link.svg" pressed></se-button>
+    <se-button id="tool_node_link" command="tool_node_link" title="tools.node_link" src="tool_node_link.svg" pressed></se-button>
     <se-select id="seg_type" title="properties.seg_type" label=""
       options="properties.straight_segments,properties.curve_segments" values="4::6"></se-select>
-    <se-button id="tool_node_smooth" title="tools.node_smooth" src="tool_node_smooth.svg"></se-button>
-    <se-button id="tool_node_clone" title="tools.node_clone" src="tool_node_clone.svg"></se-button>
-    <se-button id="tool_node_delete" title="tools.node_delete" src="tool_node_delete.svg"></se-button>
-    <se-button id="tool_openclose_path" title="tools.openclose_path" src="tool_openclose_path.svg"></se-button>
-    <se-button id="tool_add_subpath" title="tools.add_subpath" src="tool_add_subpath.svg"></se-button>
+    <se-button id="tool_node_smooth" command="tool_node_smooth" title="tools.node_smooth" src="tool_node_smooth.svg"></se-button>
+    <se-button id="tool_node_clone" command="tool_node_clone" title="tools.node_clone" src="tool_node_clone.svg"></se-button>
+    <se-button id="tool_node_delete" command="tool_node_delete" title="tools.node_delete" src="tool_node_delete.svg"></se-button>
+    <se-button id="tool_openclose_path" command="tool_openclose_path" title="tools.openclose_path" src="tool_openclose_path.svg"></se-button>
+    <se-button id="tool_add_subpath" command="tool_add_subpath" title="tools.add_subpath" src="tool_add_subpath.svg"></se-button>
   </div> <!-- path_node_panel -->
   <!-- Object actions when a single element is selected: clone / delete / arrange / flip / align -->
   <div class="selected_panel quick_tray" style="display:none">
@@ -33,8 +33,8 @@
       <se-list-item id="arrange_back" value="back" title="tools.move_bottom" src="move_bottom.svg"
         img-height="22px"></se-list-item>
     </se-list>
-    <se-button id="tool_flip_h" title="tools.flip_horizontal" src="flip_horizontal.svg"></se-button>
-    <se-button id="tool_flip_v" title="tools.flip_vertical" src="flip_vertical.svg"></se-button>
+    <se-button id="tool_flip_h" command="tool_flip_h" title="tools.flip_horizontal" src="flip_horizontal.svg"></se-button>
+    <se-button id="tool_flip_v" command="tool_flip_v" title="tools.flip_vertical" src="flip_vertical.svg"></se-button>
     <se-list id="tool_position" src="align.svg" title="tools.align_to_page" label="" width="28px" height="28px">
       <se-list-item id="tool_posleft" value="l" title="tools.align_left" src="align_left.svg" img-height="22px">
       </se-list-item>
@@ -98,10 +98,10 @@
   </div>
   <!-- Image actions (single imported <image> selected) -->
   <div class="image_panel quick_tray" style="display:none">
-    <se-button id="tool_image_crop" title="tools.image_crop" src="crop.svg"></se-button>
-    <se-button id="tool_image_crop_apply" class="imagecrop_panel" title="tools.image_crop_apply" src="ok.svg"
+    <se-button id="tool_image_crop" command="tool_image_crop" title="tools.image_crop" src="crop.svg"></se-button>
+    <se-button id="tool_image_crop_apply" command="tool_image_crop_apply" class="imagecrop_panel" title="tools.image_crop_apply" src="ok.svg"
       style="display:none"></se-button>
-    <se-button id="tool_image_crop_cancel" class="imagecrop_panel" title="tools.image_crop_cancel" src="cancel.svg"
+    <se-button id="tool_image_crop_cancel" command="tool_image_crop_cancel" class="imagecrop_panel" title="tools.image_crop_cancel" src="cancel.svg"
       style="display:none"></se-button>
   </div>
   <!-- Right-hand cluster: stays pinned to the right edge (sticky) so Undo/Redo and zoom

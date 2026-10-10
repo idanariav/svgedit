@@ -31,6 +31,7 @@ import TabletShell from './panels/TabletShell.js'
 import MainMenu from './MainMenu.js'
 import { CommandRegistry } from './commands.js'
 import { registerCoreCommands } from './coreCommands.js'
+import { registerPanelCommands } from './panelCommands.js'
 import { Automation } from './automation.js'
 import HotkeyManager from './Hotkeys.js'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.js'
@@ -90,6 +91,7 @@ class Editor extends EditorStartup {
     // Order matters: the hotkey table is first-registered-wins, so a core command's key
     // outranks an editor shortcut with the same one (none overlap today).
     registerCoreCommands(this.commands)
+    registerPanelCommands(this.commands)
     this.automation = new Automation(this)
     this.hotkeys = new HotkeyManager(this)
     this.hotkeys.ingestEditorShortcuts(this.shortcuts)

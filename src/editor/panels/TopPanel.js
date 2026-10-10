@@ -8,7 +8,7 @@ import { runSteps } from '../runSteps.js'
 import { updateContextPanel, round1 } from './topPanelContext.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 
-const { $click, getTypeMap } = SvgCanvas
+const { getTypeMap } = SvgCanvas
 
 /*
  * register actions for left panel
@@ -1015,37 +1015,20 @@ class TopPanel {
     this.updateTitle()
     newSeEditorDialog.init(i18next)
     $id('tool_link_url').setAttribute('title', i18next.t('tools.set_link_url'))
-    // register action to top panel buttons
-    $click($id('tool_frame'), this.clickFrame.bind(this))
-    $click($id('tool_wireframe'), this.clickWireframe.bind(this))
+    // The panel's buttons are views of registry commands (`command=` in the markup,
+    // panelCommands.js); only inputs / selects are bound here.
     // tool_undo / tool_redo / tool_clone(_multi) / tool_delete(_multi) /
     // tool_group_elements / tool_ungroup are views of registry commands
     // (`command=` in TopPanel.html, see coreCommands.js) -- no direct binding.
     $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
     $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
-    $click($id('tool_topath'), this.convertToPath.bind(this))
-    $click($id('tool_stroke_to_path'), this.strokeToPath.bind(this))
     $id('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
-    $click($id('tool_match_strokes'), this.clickMatchStrokes.bind(this))
-    $click($id('tool_make_link'), this.makeHyperlink.bind(this))
-    $click($id('tool_make_link_multi'), this.makeHyperlink.bind(this))
-    $click($id('tool_flip_h'), this.clickFlipHorizontal.bind(this))
-    $click($id('tool_flip_v'), this.clickFlipVertical.bind(this))
     $id('tool_bool_ops').addEventListener('change', this.clickBoolOps.bind(this))
-    $click($id('tool_clip_set'), this.clickClipSet.bind(this))
-    $click($id('tool_mask_set'), this.clickMaskSet.bind(this))
-    $click($id('clipmask_release'), this.clickClipRelease.bind(this))
     $id('clipmask_feather').addEventListener('change', this.changeFeather.bind(this))
     $id('tool_position').addEventListener('change', evt =>
       this.clickAlignEle.bind(this)(evt)
     )
     $id('tool_align_multi').addEventListener('change', this.clickAlignMulti.bind(this))
-    $click($id('tool_node_smooth'), this.smoothPathNode.bind(this))
-    $click($id('tool_node_clone'), this.clonePathNode.bind(this))
-    $click($id('tool_node_delete'), this.deletePathNode.bind(this))
-    $click($id('tool_openclose_path'), this.opencloseSubPath.bind(this))
-    $click($id('tool_add_subpath'), this.addSubPath.bind(this))
-    $click($id('tool_node_link'), this.linkControlPoints.bind(this))
     $id('angle').addEventListener('change', this.changeRotationAngle.bind(this))
     $id('blur').addEventListener('change', this.changeBlur.bind(this))
     $id('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
@@ -1059,17 +1042,6 @@ class TopPanel {
       field.dispatchEvent(new CustomEvent('change'))
     }))
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
-    $click($id('tool_bold'), this.clickBold.bind(this))
-    $click($id('tool_italic'), this.clickItalic.bind(this))
-    $click($id('tool_text_decoration_underline'), () =>
-      this.clickTextDecoration.bind(this)('underline')
-    )
-    $click($id('tool_text_decoration_linethrough'), () =>
-      this.clickTextDecoration.bind(this)('line-through')
-    )
-    $click($id('tool_text_decoration_overline'), () =>
-      this.clickTextDecoration.bind(this)('overline')
-    )
     $id('tool_text_anchor').addEventListener('change', evt =>
       this.clickTextAnchor.bind(this)(evt)
     )
@@ -1096,13 +1068,9 @@ class TopPanel {
       'change',
       this.changeTextPerspectiveY.bind(this)
     )
-    $click($id('tool_unlink_use'), this.clickGroup.bind(this))
     $id('image_url').addEventListener('change', evt => {
       this.setImageURL(evt.currentTarget.value)
     })
-    $click($id('tool_image_crop'), this.clickImageCrop.bind(this))
-    $click($id('tool_image_crop_apply'), this.applyImageCrop.bind(this))
-    $click($id('tool_image_crop_cancel'), () => this.editor.svgCanvas.cancelImageCrop())
 
     // Controls relocated out of the bottom panel: zoom now lives in the top bar,
     // stroke + opacity in the right "Design" tab. They are bound here (TopPanel

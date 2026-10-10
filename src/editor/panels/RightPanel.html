@@ -51,7 +51,7 @@
                         label="properties.image_url"></se-input>
                 </div>
                 <div class="sidepanel_btn_row">
-                    <se-button id="tool_trace_image" size="small" title="tools.trace_image"
+                    <se-button id="tool_trace_image" command="tool_trace_image" size="small" title="tools.trace_image"
                         src="trace.svg"></se-button>
                 </div>
             </div>
@@ -155,10 +155,10 @@
                 <div class="sidepanel_btn_group">
                     <div class="sub_label">Path</div>
                     <div class="sidepanel_btn_row">
-                        <se-button id="tool_topath" data-caption="To path" class="tool_topath" size="small" title="tools.to_path" src="to_path.svg"></se-button>
+                        <se-button id="tool_topath" command="tool_topath" data-caption="To path" class="tool_topath" size="small" title="tools.to_path" src="to_path.svg"></se-button>
                         <se-smooth-path-settings id="tool_smooth_path" data-caption="Smooth" class="tool_smooth_path" title="tools.smooth_path" src="smooth_path.svg"></se-smooth-path-settings>
                         <se-offset-settings id="tool_path_offset" data-caption="Offset" class="tool_path_offset" title="tools.path_offset" src="path_offset.svg"></se-offset-settings>
-                        <se-button id="tool_stroke_to_path" data-caption="Outline" class="tool_stroke_to_path" size="small" title="tools.stroke_to_path" src="stroke_to_path.svg"></se-button>
+                        <se-button id="tool_stroke_to_path" command="tool_stroke_to_path" data-caption="Outline" class="tool_stroke_to_path" size="small" title="tools.stroke_to_path" src="stroke_to_path.svg"></se-button>
                     </div>
                 </div>
                 <div class="sidepanel_btn_group">
@@ -169,14 +169,14 @@
                             <se-list-item id="tool_select_same_stroke" value="stroke" title="tools.select_same_stroke" src="stroke.svg" img-height="22px"></se-list-item>
                             <se-list-item id="tool_select_same_type" value="type" title="tools.select_same_type" src="select_same.svg" img-height="22px"></se-list-item>
                         </se-list>
-                        <se-button id="tool_make_link" class="tool_make_link" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
+                        <se-button id="tool_make_link" command="tool_make_link" class="tool_make_link" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
                     </div>
                 </div>
                 <div class="container_panel sidepanel_subsection" style="display:none">
                     <se-input id="g_title" data-attr="title" size="8" label="properties.label"></se-input>
                 </div>
                 <div class="use_panel sidepanel_subsection" style="display:none">
-                    <se-button id="tool_unlink_use" size="small" title="tools.tool_unlink_use" src="unlink_use.svg"></se-button>
+                    <se-button id="tool_unlink_use" command="tool_unlink_use" size="small" title="tools.tool_unlink_use" src="unlink_use.svg"></se-button>
                 </div>
                 <div class="a_panel sidepanel_subsection" style="display:none">
                     <label id="tool_link_url">
@@ -205,10 +205,10 @@
                     </se-list>
                 </div>
                 <div class="sidepanel_btn_row sidepanel_subsection">
-                    <se-button id="tool_clip_set" size="small" title="tools.clip_set" src="clip_set.svg"></se-button>
-                    <se-button id="tool_mask_set" size="small" title="tools.mask_set" src="mask_set.svg"></se-button>
-                    <se-button id="tool_match_strokes" size="small" title="tools.match_strokes" src="match_strokes.svg"></se-button>
-                    <se-button id="tool_make_link_multi" class="tool_make_link_multi" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
+                    <se-button id="tool_clip_set" command="tool_clip_set" size="small" title="tools.clip_set" src="clip_set.svg"></se-button>
+                    <se-button id="tool_mask_set" command="tool_mask_set" size="small" title="tools.mask_set" src="mask_set.svg"></se-button>
+                    <se-button id="tool_match_strokes" command="tool_match_strokes" size="small" title="tools.match_strokes" src="match_strokes.svg"></se-button>
+                    <se-button id="tool_make_link_multi" command="tool_make_link_multi" class="tool_make_link_multi" size="small" title="tools.make_link" src="globe_link.svg"></se-button>
                 </div>
             </div>
 
@@ -259,13 +259,13 @@
                 <div class="sidepanel_subsection">
                     <div class="sub_label">Style</div>
                     <div class="sidepanel_btn_row">
-                        <se-button id="tool_bold" size="small" title="properties.bold" src="bold.svg" shortcut="B"></se-button>
-                        <se-button id="tool_italic" size="small" title="properties.italic" src="italic.svg" shortcut="I"></se-button>
-                        <se-button id="tool_text_decoration_underline" size="small" title="properties.text_decoration_underline"
+                        <se-button id="tool_bold" command="tool_bold" size="small" title="properties.bold" src="bold.svg" shortcut="B"></se-button>
+                        <se-button id="tool_italic" command="tool_italic" size="small" title="properties.italic" src="italic.svg" shortcut="I"></se-button>
+                        <se-button id="tool_text_decoration_underline" command="tool_text_decoration_underline" size="small" title="properties.text_decoration_underline"
                             src="text_decoration_underline.svg"></se-button>
-                        <se-button id="tool_text_decoration_linethrough" size="small" title="properties.text_decoration_linethrough"
+                        <se-button id="tool_text_decoration_linethrough" command="tool_text_decoration_linethrough" size="small" title="properties.text_decoration_linethrough"
                             src="text_decoration_linethrough.svg"></se-button>
-                        <se-button id="tool_text_decoration_overline" size="small" title="properties.text_decoration_overline"
+                        <se-button id="tool_text_decoration_overline" command="tool_text_decoration_overline" size="small" title="properties.text_decoration_overline"
                             src="text_decoration_overline.svg"></se-button>
                     </div>
                 </div>
@@ -307,7 +307,7 @@
                         title="properties.feather" src="feather.svg"></se-spin-input>
                 </div>
                 <div class="clipmask_panel_footer">
-                    <se-button id="clipmask_release" size="small" title="tools.clip_release" src="clip_release.svg"></se-button>
+                    <se-button id="clipmask_release" command="clipmask_release" size="small" title="tools.clip_release" src="clip_release.svg"></se-button>
                 </div>
             </div>
             <!-- ext-shadow (#shadow_panel) and ext-color-shift (#color_shift_panel) inject here -->
@@ -318,11 +318,11 @@
             <div id="layerpanel">
                 <se-text id="layersLabel" text="layers.layers"></se-text>
                 <fieldset id="layerbuttons">
-                    <se-button id="layer_new" title="layers.new" size="small" src="new.svg"></se-button>
-                    <se-button id="layer_delete" title="layers.del" size="small" src="delete.svg"></se-button>
-                    <se-button id="layer_rename" title="layers.rename" size="small" src="text.svg"></se-button>
-                    <se-button id="layer_up" title="layers.move_up" size="small" src="go_up.svg"></se-button>
-                    <se-button id="layer_down" title="layers.move_down" size="small" src="go_down.svg"></se-button>
+                    <se-button id="layer_new" command="layer_new" title="layers.new" size="small" src="new.svg"></se-button>
+                    <se-button id="layer_delete" command="layer_delete" title="layers.del" size="small" src="delete.svg"></se-button>
+                    <se-button id="layer_rename" command="layer_rename" title="layers.rename" size="small" src="text.svg"></se-button>
+                    <se-button id="layer_up" command="layer_up" title="layers.move_up" size="small" src="go_up.svg"></se-button>
+                    <se-button id="layer_down" command="layer_down" title="layers.move_down" size="small" src="go_down.svg"></se-button>
                     <se-button id="layer_moreopts" title="common.more_opts" size="small" src="context_menu.svg">
                     </se-button>
                 </fieldset>

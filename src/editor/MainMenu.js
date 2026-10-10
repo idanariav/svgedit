@@ -1,8 +1,5 @@
-import SvgCanvas from '@svgedit/svgcanvas'
 import { applyUiMode, isTabletMode } from './uiMode.js'
 import { applyTheme } from './themeUtil.js'
-
-const { $click } = SvgCanvas
 
 /**
  *
@@ -161,52 +158,26 @@ class MainMenu {
     const hideTabletToggle = this.editor.configObj.curConfig.hideTabletToggle
     const tabletItem = hideTabletToggle
       ? ''
-      : `<se-menu-item id="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
+      : `<se-menu-item id="tool_tablet_mode" command="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
         <div role="separator"></div>`
     const template = document.createElement('template')
     template.innerHTML = `
     <se-menu id="main_button" label="Sketch Editor" src="logo.svg" alt="logo">
-        <se-menu-item id="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
+        <se-menu-item id="tool_export" command="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
         <div role="separator"></div>
         ${tabletItem}
-        <se-menu-item id="tool_command_search" label="tools.command_search" src="search.svg" shortcut="mod+k"></se-menu-item>
-        <se-menu-item id="tool_hotkeys" label="tools.hotkey_manager" src="keyboard.svg"></se-menu-item>
-        <se-menu-item id="tool_favorites" label="tools.favorites_manager" src="star.svg"></se-menu-item>
+        <se-menu-item id="tool_command_search" command="tool_command_search" label="tools.command_search" src="search.svg" shortcut="mod+k"></se-menu-item>
+        <se-menu-item id="tool_hotkeys" command="tool_hotkeys" label="tools.hotkey_manager" src="keyboard.svg"></se-menu-item>
+        <se-menu-item id="tool_favorites" command="tool_favorites" label="tools.favorites_manager" src="star.svg"></se-menu-item>
         <div role="separator"></div>
-        <se-menu-item id="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
+        <se-menu-item id="tool_editor_prefs" command="tool_editor_prefs" label="config.editor_prefs" src="editPref.svg"></se-menu-item>
     </se-menu>`
     this.editor.$svgEditor.append(template.content.cloneNode(true))
 
-    // register action to main menu entries
-    /**
-     * Associate all button actions as well as non-button keyboard shortcuts.
-     */
-    $click($id('tool_export'), function () {
-      // A host that owns exporting (window.svgEditHost.exportDrawing) takes over;
-      // standalone svgedit keeps its own dialog.
-      if (typeof window.svgEditHost?.exportDrawing === 'function') {
-        window.svgEditHost.exportDrawing()
-        return
-      }
-      $id('se-export-dialog').setAttribute('dialog', 'open')
-    })
+    // The menu entries are views of registry commands (`command=` below, panelCommands.js).
     $id('se-export-dialog').addEventListener(
       'change',
       this.clickExport.bind(this)
-    )
-    if (!hideTabletToggle) $click($id('tool_tablet_mode'), this.clickTabletMode.bind(this))
-    $click($id('tool_command_search'), function () {
-      $id('se-command-search-dialog').open()
-    })
-    $click($id('tool_hotkeys'), function () {
-      $id('se-hotkey-dialog').setAttribute('dialog', 'open')
-    })
-    $click($id('tool_favorites'), function () {
-      $id('se-favorites-dialog').setAttribute('dialog', 'open')
-    })
-    $id('tool_editor_prefs').addEventListener(
-      'click',
-      this.showPreferences.bind(this)
     )
     $id('se-edit-prefs').addEventListener(
       'change',

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MainMenu from '../../src/editor/MainMenu.js'
+import { CommandRegistry } from '../../src/editor/commands.js'
+import { registerPanelCommands } from '../../src/editor/panelCommands.js'
 
 vi.mock('@svgedit/svgcanvas', () => ({
   default: {
@@ -62,6 +64,10 @@ describe('MainMenu', () => {
     }
     globalThis.seAlert = vi.fn()
     menu = new MainMenu(editor)
+    // The menu entries are views of registry commands (panelCommands.js).
+    editor.mainMenu = menu
+    editor.commands = new CommandRegistry(editor)
+    registerPanelCommands(editor.commands)
   })
 
   it('saves preferences and updates config', async () => {
@@ -120,7 +126,7 @@ describe('MainMenu', () => {
     menu.init()
     window.svgEditHost = { exportDrawing: vi.fn() }
     try {
-      document.getElementById('tool_export').dispatchEvent(new Event('click', { bubbles: true }))
+      editor.commands.run('tool_export')
       expect(window.svgEditHost.exportDrawing).toHaveBeenCalledTimes(1)
       expect(document.getElementById('se-export-dialog').getAttribute('dialog')).not.toBe('open')
     } finally {
@@ -128,13 +134,18 @@ describe('MainMenu', () => {
     }
   })
 
-  it('creates menu entries and wires click handlers in init', () => {
+  it('creates menu entries that are views of their commands, and wires the dialogs in init', () => {
     menu.init()
 
-    document.getElementById('tool_export').dispatchEvent(new Event('click', { bubbles: true }))
+    for (const id of ['tool_export', 'tool_command_search', 'tool_hotkeys', 'tool_favorites', 'tool_editor_prefs']) {
+      expect(document.getElementById(id).getAttribute('command'), id).toBe(id)
+      expect(editor.commands.get(id).adapter, id).toBe(false)
+    }
+
+    editor.commands.run('tool_export')
     expect(document.getElementById('se-export-dialog').getAttribute('dialog')).toBe('open')
 
-    document.getElementById('tool_editor_prefs').dispatchEvent(new Event('click', { bubbles: true }))
+    editor.commands.run('tool_editor_prefs')
     expect(editor.configObj.preferences).toBe(true)
 
     const prefsDialog = document.getElementById('se-edit-prefs')

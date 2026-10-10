@@ -254,18 +254,10 @@ class LeftPanel {
     template.innerHTML = leftPanelHTML
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     this.editor.svgCanvas.bind('extensions_added', () => this.finalizeToolOrder())
-    // register actions for left panel
-    $click($id('tool_select'), this.clickSelect.bind(this))
-    $click($id('tool_fhpath'), this.clickFHPath.bind(this))
-    $click($id('tool_text'), this.clickText.bind(this))
-    $click($id('tool_image'), this.clickImage.bind(this))
+    // the tool buttons are views of registry commands (`command=` in LeftPanel.html, panelCommands.js)
     $id('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
-    $click($id('tool_path'), this.clickPath.bind(this))
-    $click($id('tool_line'), this.clickLine.bind(this))
 
     // flyout
-    $click($id('tool_rect'), this.clickRect.bind(this))
-    $click($id('tool_ellipse'), this.clickEllipse.bind(this))
 
     // double-click a drawing tool to lock it (stays selected after each object).
     // Plain buttons bind on themselves; shape groups bind on the flyout host

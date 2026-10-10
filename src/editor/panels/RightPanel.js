@@ -107,11 +107,6 @@ class RightPanel {
     menuLayerBox.setAttribute('leftclick', false)
     this.editor.$container.append(menuLayerBox)
     menuLayerBox.init(i18next)
-    $click($id('layer_new'), this.newLayer.bind(this))
-    $click($id('layer_delete'), this.deleteLayer.bind(this))
-    $click($id('layer_up'), () => this.moveLayer.bind(this)(-1))
-    $click($id('layer_down'), () => this.moveLayer.bind(this)(1))
-    $click($id('layer_rename'), this.layerRename.bind(this))
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => {
@@ -119,15 +114,9 @@ class RightPanel {
       this.editor.configObj.pref('sidePanelManual', true, true)
       this.toggleSidePanel()
     })
-    // "Convert to editable SVG" (image trace): open the options dialog for the
-    // selected <image>, then run the trace when the user confirms.
+    // "Convert to editable SVG" (image trace): the `tool_trace_image` command opens
+    // the options dialog (openTraceDialog); the trace runs when the user confirms.
     const traceDialog = $id('se-trace-dialog')
-    $click($id('tool_trace_image'), () => {
-      const sel = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
-      if (sel[0]?.tagName !== 'image') return
-      traceDialog._targetImage = sel[0]
-      traceDialog.setAttribute('dialog', 'open')
-    })
     traceDialog?.addEventListener('change', async (e) => {
       if (e.detail?.trigger !== 'ok') return
       const img = traceDialog._targetImage
@@ -214,6 +203,20 @@ class RightPanel {
       return null
     }
     return newName
+  }
+
+  /**
+   * "Convert to editable SVG": open the trace options dialog for the selected
+   * `<image>` (the `tool_trace_image` command). The trace itself runs when the
+   * user confirms (see the dialog's `change` listener in init()).
+   * @returns {void}
+   */
+  openTraceDialog () {
+    const traceDialog = this.editor.$id('se-trace-dialog')
+    const sel = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
+    if (sel[0]?.tagName !== 'image') return
+    traceDialog._targetImage = sel[0]
+    traceDialog.setAttribute('dialog', 'open')
   }
 
   /**

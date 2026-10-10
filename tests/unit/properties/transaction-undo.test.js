@@ -3,7 +3,7 @@ import { NS } from '../../../packages/svgcanvas/core/namespaces.js'
 import { fc, params } from './fc.js'
 
 // Random DOM edits inside one transaction: undo must restore the drawing
-// byte-for-byte and redo must reproduce the edited state.
+// (attribute order aside) and redo must reproduce the edited state.
 const ATTRS = ['x', 'y', 'fill', 'opacity', 'stroke-width', 'se:fx', 'class']
 const op = fc.oneof(
   fc.record({ kind: fc.constant('set'), el: fc.nat(40), attr: fc.constantFrom(...ATTRS), value: fc.stringMatching(/^[a-z0-9]{1,6}$/) }),
@@ -25,7 +25,17 @@ describe('transaction undo/redo properties', () => {
   it('undo restores the exact markup; redo restores the edited markup', () => {
     const canvas = makeCanvas()
     const layer = canvas.getCurrentDrawing().getCurrentLayer()
-    const html = () => canvas.getSvgContent().outerHTML
+    // Attribute order is not document state (remove + re-add moves an attribute to the end,
+    // and redo sets it back in place), so compare with each element's attributes sorted.
+    const html = () => {
+      const clone = canvas.getSvgContent().cloneNode(true)
+      for (const el of [clone, ...clone.querySelectorAll('*')]) {
+        const attrs = [...el.attributes].map((a) => [a.name, a.value]).sort(([a], [b]) => (a < b ? -1 : 1))
+        for (const [name] of attrs) el.removeAttribute(name)
+        for (const [name, value] of attrs) el.setAttribute(name, value)
+      }
+      return clone.outerHTML
+    }
 
     fc.assert(fc.property(fc.array(op, { minLength: 1, maxLength: 25 }), (ops) => {
       // fresh, deterministic starting drawing
