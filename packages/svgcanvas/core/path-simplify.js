@@ -1,37 +1,38 @@
 // @ts-check
 /**
- * Path simplification / smoothing via paper.js curve fitting.
+ * Path simplification / smoothing, on the corner-keeping Bézier fit in
+ * `path-fit.js` (sharp turns stay corners; tolerances are distances in user
+ * units).
  *
- *  - `simplifyFreehand(element, tolerance)` — replaces the freehand pencil
+ *  - `simplifyFreehand(element, fidelity)` — replaces the freehand pencil
  *    polyline with a fitted-cubic `<path>` (used by the fhpath commit in
  *    event.js instead of the legacy every-3-points smoothing).
  *  - `previewSmoothPath(strength)` / `commitSmoothPath()` / `cancelSmoothPath()`
  *    — non-destructive smoothing of the selected `<path>` for the
- *    `se-smooth-path-settings` popover: flattens curves to dense samples,
- *    then refits an optimal set of cubic segments (paper.js flatten →
- *    simplify round-trip). `strength` (0-1) always re-fits from the shape as
- *    it was when the popover opened, not from the live (possibly
- *    already-smoothed) `d` — repeated adjustments within one session cannot
- *    compound.
+ *    `se-smooth-path-settings` popover: refits each run of the path between
+ *    its corners with as few cubics as fit within the tolerance. `strength`
+ *    (0-1) always re-fits from the shape as it was when the popover opened,
+ *    not from the live (possibly already-smoothed) `d` — repeated adjustments
+ *    within one session cannot compound.
  *
  * @module path-simplify
  * @license MIT
  */
 
 import { warn } from '../common/logger.js'
-import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
+import { parseAnchors, anchorsToD } from './anchor-path.js'
+import { simplifyWith, fitFreehand } from './path-fit.js'
 
-// Flattening tolerance (user units) when resampling an existing path's curves.
-const FLATTEN_TOLERANCE = 0.25
-// Default curve-fitting tolerance — paper.js' recommended default for
-// mouse/touch freehand input is 2.5.
-const DEFAULT_TOLERANCE = 2.5
+// The pencil's default fidelity: the most the committed curve may stray from
+// the drawn stroke, in user units (about 2 px at 100% zoom).
+const DEFAULT_FIDELITY = 2
 // Strength (0-1, from the "Smooth Path" popover) maps linearly onto this
-// tolerance range (paper compares squared distances, so tolerance 10 ≈ ~3px
-// max error).
-const MIN_TOLERANCE = 1
-const MAX_TOLERANCE = 25
+// tolerance range, in user units.
+const MIN_TOLERANCE = 0.5
+const MAX_TOLERANCE = 10
 const DEFAULT_STRENGTH = 0.4
+// Turns sharper than this stay corners when smoothing an existing path.
+const SMOOTH_CORNER_ANGLE = 30
 
 // Exported for direct unit testing — pure math, no paper.js dependency.
 export const strengthToTolerance = (strength) =>
@@ -41,36 +42,34 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   /**
-   * Fit smooth cubic curves through a freehand polyline's points and swap it
-   * for a `<path>`. Mirrors the contract of pathActions.smoothPolylineIntoPath:
-   * reuses the polyline's id so addSVGElementsFromJson replaces it in place.
+   * Fit smooth cubic curves through a freehand polyline's points (sharp turns
+   * of the pen stay corners) and swap it for a `<path>`. Mirrors the contract
+   * of pathActions.smoothPolylineIntoPath: reuses the polyline's id so
+   * addSVGElementsFromJson replaces it in place.
    * @param {Element} element - The `<polyline>` created by the fhpath tool.
-   * @param {number} [tolerance]
+   * @param {number} [fidelity] - Largest distance, in user units, the curve may stray from the stroke.
    * @returns {Element} The new `<path>` (or the original element on failure).
    */
-  const simplifyFreehand = (element, tolerance = DEFAULT_TOLERANCE) => {
+  const simplifyFreehand = (element, fidelity = DEFAULT_FIDELITY) => {
     try {
       const { points } = /** @type {SVGPolylineElement} */ (element)
       const n = points.numberOfItems
       if (n < 2) return element
 
-      const scope = getPaperScope()
-      const path = new scope.Path()
+      const stroke = []
       for (let i = 0; i < n; i++) {
         const pt = points.getItem(i)
-        path.add(new scope.Point(pt.x, pt.y))
+        stroke.push({ x: pt.x, y: pt.y })
       }
-      path.simplify(tolerance)
-      const d = path.pathData
-      path.remove()
-      if (!d) return element
+      const fitted = fitFreehand(stroke, Number.isFinite(fidelity) && fidelity > 0 ? fidelity : DEFAULT_FIDELITY)
+      if (fitted.anchors.length < 2) return element
 
       return svgCanvas.addSVGElementsFromJson({
         element: 'path',
         curStyles: true,
         attr: {
           id: svgCanvas.getId(),
-          d: toAbsolutePathData(d, svgCanvas),
+          d: anchorsToD([fitted]),
           fill: 'none',
           'data-freehand': '1'
         }
@@ -82,25 +81,16 @@ export const init = (canvas) => {
   }
 
   /**
-   * Smooth one path's `d` (local space; transforms untouched): flatten curves
-   * to dense line samples, then refit optimal cubics through them.
+   * Smooth one path's `d` (local space; transforms untouched): refit each run
+   * between its corners with as few cubics as fit within `tolerance`.
    * @param {string} d
-   * @param {number} tolerance
+   * @param {number} tolerance - Largest distance, in user units, the result may stray from `d`.
    * @returns {string|null} The smoothed `d`, or null when nothing usable.
    */
   const smoothPathD = (d, tolerance) => {
-    const scope = getPaperScope()
-    const compound = new scope.CompoundPath(d)
-    const children = compound.children?.length ? compound.children : [compound]
-    const parts = []
-    for (const child of children) {
-      if (!child.segments?.length) continue
-      child.flatten(FLATTEN_TOLERANCE)
-      child.simplify(tolerance)
-      parts.push(child.pathData)
-    }
-    compound.remove()
-    return parts.length ? toAbsolutePathData(parts.join(' '), svgCanvas) : null
+    const subpaths = parseAnchors(d).filter((sp) => sp.anchors.length > 0)
+    if (!subpaths.length) return null
+    return anchorsToD(simplifyWith(subpaths, { tolerance, cornerAngleDeg: SMOOTH_CORNER_ANGLE }))
   }
 
   // Non-destructive smoothing session state for the se-smooth-path-settings

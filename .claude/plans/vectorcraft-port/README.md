@@ -53,7 +53,7 @@ is in [tier-0.md](tier-0.md).
 | T2.12 | Centerline tracing (raster line art → stroked paths) | T1.4 (fit module) | todo |
 | T2.13 | Blend tool | — (T0.3 helps) | todo |
 | T2.14 | Art / pattern brushes (art bent along a path) | — | todo |
-| T2.15 | Corner-keeping simplify (pencil commit + Smooth Path) | T1.4 | todo |
+| T2.15 | Corner-keeping simplify (pencil commit + Smooth Path) | T1.4 | done — see git log (pencil corners measured over a window; 90° elbows held to the fidelity, see roadmap.md) |
 | T2.16 | Smooth tool (brush to smooth part of a path) | T2.15 (T0.3 helps) | todo |
 | T2.17 | Layers panel: object rows (tree, hide/lock per object, drag, Locate Object) | — | todo |
 | T3.1 | Scrubby labels + wheel stepping on numeric fields | — (T0.2 helps: one undo step per scrub) | done — see git log |

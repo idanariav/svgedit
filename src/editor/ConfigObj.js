@@ -205,6 +205,11 @@ export default class ConfigObj {
       // EMA low-pass factor applied to raw pointer coords while drawing with
       // the freehand pencil (0 = off/raw input, closer to 1 = more lag/smoothing).
       pencilStabilization: 0.3,
+      // How far (user units, about px at 100% zoom) the committed pencil curve may stray from the
+      // drawn stroke; sharp turns of the pen stay corners. Replaces `pencilSimplifyTolerance`
+      // (paper.js units), which is no longer read. `pencilSimplify: false` keeps the legacy
+      // every-3-points smoothing.
+      pencilFidelity: 2,
       // USER DATA PERSISTENCE
       userDataAdapter: null // Optional host storage adapter for custom palette + user shapes; see userDataAdapter.js. Falls back to localStorage when null.
     }

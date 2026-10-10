@@ -20,8 +20,7 @@ small items (S) fill gaps between large ones.
 
 **Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
-**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers)
-7. **T2.15 Corner-keeping simplify** — T2.16 and T3.7 build on it.
+**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; item 7, T2.15 Corner-keeping simplify, is done and T2.16 / T3.7 build on it)
 8. **T2.3 Pen continues / joins** → 9. **T2.16 Smooth tool** → 10. **T3.7 Pencil continues** → 11. **T2.12 Centerline
    tracing** (L, last: it only needs the fit module).
    Do the **precise `enabled` pass for the path commands** while in these panels.
@@ -247,6 +246,15 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 - **Other numeric fields**: only `<se-spin-input>` scrubs. Plain `<input type=number>` fields (a few dialogs) and `se-input` do not; the tablet shell's sheet fields never scrub (touch).
 - **Wheel stepping is one undo step per notch** (like the arrow keys); coalescing a burst of notches is not done.
 - A modifier pressed mid-drag changes the speed from then on (the value does not jump), but there is no on-screen hint of which multiplier is active.
+
+## Pencil and Smooth Path fit (`core/path-fit.js`): follow-ups from T2.15
+
+Done: the pencil commit and Smooth Path run on the corner-keeping fit (no paper.js left in `path-simplify.js`); Smooth Path is offered on any plain path. Remaining:
+- **Corners are only turns of more than about 100°** (VectorCraft's threshold), so a 90° elbow (an L, a rectangle corner) is held to `pencilFidelity` rather than kept razor sharp. The window that measures the turn (`CORNER_REACH`, 6 tolerances) is also why a smooth curve tighter than about 6 units of radius reads as a corner. Both are tuning, not structure; judge them on real pen strokes and adjust.
+- **The editor's own stabiliser** (`pencilStabilization`, an EMA) and B-spline capture round a corner before the fit sees it; the fit recovers the vertex from the two legs, but a tight hairpin loses a little more than a gentle turn. Lowering the stabilisation keeps corners truer.
+- **`pencilFidelity` is in user units, not screen pixels**: drawing zoomed in commits as coarsely (in screen terms) as a stroke drawn zoomed out. Dividing by the zoom would make the pencil zoom-independent; not done, to keep the commit what it was.
+- **Closed pencil strokes** (a loop closed onto its start) are not recognised as closed; the fit is always an open path. VectorCraft's `closed` flag was not ported.
+- `simplifyWith` has no "straight lines only" mode (VectorCraft's Convert to Straight Lines); add it with the first caller.
 
 ## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
 

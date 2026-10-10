@@ -5,6 +5,7 @@
  */
 
 import { runSteps } from '../runSteps.js'
+import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
 
 // Position/dimension fields read straight off drag math (move/resize) can
 // carry long floating-point tails (e.g. 200.00000596046448) — round for
@@ -130,9 +131,10 @@ export const updateContextPanel = (topPanel) => {
           } else {
             topPanel.hideTool('tool_path_offset')
           }
-          // Curve-fit smoothing assumes dense freehand point clouds — it
-          // distorts the precise nodes of a hand-authored or converted path.
-          if (elname === 'path' && elem.hasAttribute('data-freehand')) {
+          // Smoothing refits the path's own nodes and keeps its corners (core/path-fit.js), so it
+          // fits any plain path. A path whose geometry is derived from a source attribute (live
+          // effects, corner radius, taper) would be rewritten out from under that source.
+          if (elname === 'path' && !LIVE_ATTRS.some((attr) => elem.hasAttribute(attr))) {
             topPanel.displayTool('tool_smooth_path')
           } else {
             topPanel.hideTool('tool_smooth_path')

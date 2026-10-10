@@ -422,11 +422,12 @@ export const init = (canvas) => {
         const commaIndex = coords.indexOf(',')
         keep = commaIndex >= 0 ? coords.includes(',', commaIndex + 1) : coords.includes(' ', coords.indexOf(' ') + 1)
         if (keep) {
-          // Fit smooth cubics through the raw points (paper.js simplify) unless
-          // disabled; falls back to the legacy every-3-points smoothing inside.
+          // Fit smooth cubics through the raw points (sharp turns stay corners; see
+          // core/path-fit.js) unless disabled; falls back to the legacy
+          // every-3-points smoothing inside.
           element = svgCanvas.getCurConfig().pencilSimplify === false
             ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
-            : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilSimplifyTolerance)
+            : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilFidelity)
         }
         break
       } case 'line': {

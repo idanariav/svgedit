@@ -109,16 +109,15 @@ describe('TopPanel: path/stroke tool visibility', () => {
     expect(container.querySelector('.tool_path_offset').style.display).not.toBe('none')
   })
 
-  it('hides tool_smooth_path for a regular (non-freehand) path', () => {
+  it('shows tool_smooth_path for a regular hand-built path too (smoothing keeps its corners)', () => {
     const container = buildContainer()
-    // e.g. drawn node-by-node with the Path tool, or produced by Convert to
-    // Path — curve-fit smoothing distorts its deliberately-placed nodes.
+    // e.g. drawn node-by-node with the Path tool, or produced by Convert to Path.
     const path = createSvgEl('path', { d: 'M0,0 L10,10' })
     const topPanel = makeTopPanel(container, path)
 
     topPanel.updateContextPanel()
 
-    expect(container.querySelector('.tool_smooth_path').style.display).toBe('none')
+    expect(container.querySelector('.tool_smooth_path').style.display).not.toBe('none')
   })
 
   it('shows tool_smooth_path for a freehand-drawn path', () => {
@@ -129,6 +128,16 @@ describe('TopPanel: path/stroke tool visibility', () => {
     topPanel.updateContextPanel()
 
     expect(container.querySelector('.tool_smooth_path').style.display).not.toBe('none')
+  })
+
+  it.each(['se:fx-d', 'se:orig-d', 'se:taper-d'])('hides tool_smooth_path for a path whose geometry derives from %s', (attr) => {
+    const container = buildContainer()
+    const path = createSvgEl('path', { d: 'M0,0 L10,10', [attr]: 'M0,0 L10,10' })
+    const topPanel = makeTopPanel(container, path)
+
+    topPanel.updateContextPanel()
+
+    expect(container.querySelector('.tool_smooth_path').style.display).toBe('none')
   })
 
   it('hides tool_stroke_to_path for a path even with a visible stroke', () => {
