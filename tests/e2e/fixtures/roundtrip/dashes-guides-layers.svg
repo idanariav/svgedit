@@ -1,0 +1,21 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com" se:guides="v:120,350.5;h:200">
+ <g class="layer" id="svg_3">
+  <title>Layer 1</title>
+  <path d="m50,100c100,-80 200,80 300,0" fill="none" id="dcurve" se:dash-fit="6,4" stroke="#000000" stroke-dasharray="5.96413,3.97609" stroke-dashoffset="2.98" stroke-width="3"/>
+  <circle cx="480" cy="110" fill="none" id="dring" r="50" se:dash-fit="5,5" stroke="#000000" stroke-dasharray="5.0589,5.0589" stroke-width="3"/>
+  <g id="svg_7" se:segment="grid;count=3;split=0;axis=vertical">
+   <rect fill="#fecaca" height="120" id="seg" stroke="#7f1d1d" stroke-width="2" width="180" x="60" y="220"/>
+   <line id="svg_4" se:segment-line="1" stroke="#7f1d1d" x1="105" x2="105" y1="220" y2="340"/>
+   <line id="svg_5" se:segment-line="1" stroke="#7f1d1d" x1="150" x2="150" y1="220" y2="340"/>
+   <line id="svg_6" se:segment-line="1" stroke="#7f1d1d" x1="195" x2="195" y1="220" y2="340"/>
+  </g>
+ </g>
+ <g class="layer" id="svg_2" se:locked="true">
+  <title>Locked</title>
+  <rect fill="#e5e7eb" height="60" id="lockedRect" stroke="#374151" width="90" x="300" y="240"/>
+ </g>
+ <g class="layer" id="svg_1" se:comment="true">
+  <title>Notes</title>
+  <text fill="#111827" font-size="20" id="note" x="420" y="320">note</text>
+ </g>
+</svg>

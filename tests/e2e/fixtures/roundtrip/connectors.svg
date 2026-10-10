@@ -1,0 +1,19 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <rect fill="#dbeafe" height="70" id="boxA" stroke="#1e3a8a" stroke-width="2" width="100" x="60" y="60"/>
+  <rect fill="#dcfce7" height="70" id="boxB" stroke="#166534" stroke-width="2" width="100" x="360" y="80"/>
+  <ellipse cx="260" cy="300" fill="#fef9c3" id="ovalC" rx="70" ry="45" stroke="#854d0e" stroke-width="2"/>
+  <line fill="none" id="c1" marker-end="url(#mkr_end_c1)" se:arrow-align="tip" se:arrow-pts="161,98.4 359,111.6" se:arrow-trim="0,5" se:bind-end="boxB" se:bind-start="boxA" stroke="#333333" stroke-width="2" x1="161" x2="354.01" y1="98.4" y2="111.27"/>
+  <line fill="none" id="c2" marker-end="url(#mkr_end_c2)" se:arrow-align="tip" se:arrow-pts="136.34146,131 226.34146,254" se:arrow-trim="0,9.75" se:bind-end="ovalC" se:bind-start="boxA" stroke="#333333" stroke-width="2" x1="136.34" x2="220.58" y1="131" y2="246.13"/>
+  <polyline fill="none" id="c3" points="410,151 335,202.5 260,254" se:connector="boxB ovalC" stroke="#333333" stroke-width="2"/>
+ </g>
+ <defs>
+  <marker id="mkr_end_c1" markerHeight="5" markerUnits="strokeWidth" markerWidth="5" orient="auto" refX="100" refY="50" se_type="rightarrow" viewBox="0 0 100 100">
+   <path d="m100,50l-100,40l30,-40l-30,-40z" fill="#333333" stroke="#333333" stroke-width="10"/>
+  </marker>
+  <marker id="mkr_end_c2" markerHeight="5" markerUnits="strokeWidth" markerWidth="5" orient="auto" refX="100" refY="50" se_type="triangle_o" viewBox="0 0 100 100">
+   <path d="m0,10l100,40l-100,40z" fill="none" stroke="#333333" stroke-width="10"/>
+  </marker>
+ </defs>
+</svg>

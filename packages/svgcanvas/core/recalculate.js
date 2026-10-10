@@ -298,6 +298,10 @@ export const init = canvas => {
         initial[attr] = convertToNum(attr, val)
       }
     }
+    // An attribute the element did not have is put back by removing it, not by writing its default.
+    for (const attr of attrs) {
+      if (!selected.hasAttribute(attr)) initial[attr] = null
+    }
     // Save the start transform value
     initial.transform = svgCanvas.getStartTransform() || ''
     // The cached source geometry of live features is rewritten by the bake too: undo restores it with the rest.

@@ -56,7 +56,7 @@ small items (S) fill gaps between large ones.
 - **UI/UX polish** (toolbars folding, shortcuts for the flyouts, the cutter icon, faint "none" swatch): one batched pass
   after Phase 2, or opportunistically when a feature touches that toolbar.
 - **Translations:** wait until a second locale is wanted; the guideline (all new strings via `t()`) keeps the cost down.
-- **Round-trip corpus, `checkDrawing` rules, command sweep:** every phase adds its fixtures and keeps the sweep green.
+- **Round-trip corpus, `checkDrawing` rules, command sweep:** every phase adds its fixtures and keeps the sweep green. The sweep picks one element per kind (tag + which `se:` features it carries), then runs the commands that need several shapes on two and on up to four of them together; it compares numbers at the saver's 2-decimal precision and skips the file-picker commands (`tool_save`, `tool_save_as`: they need a fresh user gesture). A feature that persists `se:` state needs a fixture saved by the real tool (the corpus covers connectors, fitted dashes, ruler guides, locked and comment layers, segments, tipped arrows…); `SWEEP=full` before closing a phase.
 
 ## Tier 0 follow-ups (VectorCraft port)
 

@@ -460,6 +460,38 @@ describe('selected-elem', () => {
     expect(rect.getAttribute('transform')).toBe('matrix(1 0 0 1 8 0)')
   })
 
+  it('undoing a nudge or an align gives back the transform the element already had', () => {
+    // Regression (found by the command sweep): moveSelectedElements() never told recalculateDimensions()
+    // the element's own starting transform, so for an element that already carried one (a repeat copy)
+    // the baked move undid to the right x but with the transform gone.
+    const rect = svgCanvas.addSVGElementsFromJson({
+      element: 'rect',
+      attr: { id: 'nudge-transformed', x: 40, y: 40, width: 50, height: 30, transform: 'translate(75 0)' }
+    })
+    svgCanvas.selectOnly([rect], true)
+    svgCanvas.moveSelectedElements(10, 0)
+    const moved = { x: rect.getAttribute('x'), transform: rect.getAttribute('transform') }
+    expect(moved).not.toEqual({ x: '40', transform: 'translate(75 0)' })
+    svgCanvas.undoMgr.undo()
+    expect(rect.getAttribute('x')).toBe('40')
+    expect(rect.getAttribute('transform')).toBe('translate(75 0)')
+    svgCanvas.undoMgr.redo()
+    expect({ x: rect.getAttribute('x'), transform: rect.getAttribute('transform') }).toEqual(moved)
+  })
+
+  it('undoing a move removes the position attributes the element never had', () => {
+    const text = svgCanvas.addSVGElementsFromJson({
+      element: 'text',
+      attr: { id: 'nudge-text', 'font-size': 24 }
+    })
+    text.textContent = 'hi'
+    svgCanvas.selectOnly([text], true)
+    svgCanvas.moveSelectedElements(5, 0)
+    svgCanvas.undoMgr.undo()
+    expect(text.hasAttribute('x')).toBe(false)
+    expect(text.hasAttribute('y')).toBe(false)
+  })
+
   it('duplicating an element with a filter clones the filter instead of sharing it with the original', () => {
     const rect = svgCanvas.addSVGElementsFromJson({
       element: 'rect',

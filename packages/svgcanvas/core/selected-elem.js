@@ -325,7 +325,12 @@ export const init = canvas => {
           tlist.appendItem(xform)
         }
 
+        // recalculateDimensions() records this as the "old" transform on its undo command (one shared slot,
+        // set by mousedown for drags): without it an element that already had a transform loses it on undo.
+        const priorStart = svgCanvas.getStartTransform()
+        svgCanvas.setStartTransform(existingTransform)
         const cmd = svgCanvas.recalculateDimensions(selected)
+        svgCanvas.setStartTransform(priorStart)
         if (cmd) {
           batchCmd.addSubCommand(cmd)
         } else {
