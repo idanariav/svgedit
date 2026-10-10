@@ -25,8 +25,10 @@ small items (S) fill gaps between large ones.
 **Phase 4 — stroke and appearance**
 12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. ~~**T2.4 Arrowheads**~~ done (follow-ups, below).
 14. ~~**T2.6 Width profiles + Width tool**~~ done (follow-ups, below).
-15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — design it *after* T2.6, because
-    width profiles change the single-source-of-truth question (`se:taper-d` vs. the new profile).
+15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — designed in
+    [`plans/live-stack.md`](plans/live-stack.md) (one ordered chain corners → effects → width, mirrors for the later
+    sources, one `rebuildStack`); v1 would support corners + width and effects + width. Not built yet: awaiting a go on
+    the scope.
 16. **T2.14 Art / pattern brushes** (no dependency on width profiles; it reuses T1.0's `mapNonlinear`; grouped here as the
     other "appearance follows the path" feature), then 17. **T2.13 Blend tool** — build `options()/setOption()` with
     Blend (steps/spacing), the first tool with a real options bar.
