@@ -11,93 +11,32 @@
  *
  * Each repair is a narrow text rewrite (the rest of the file is left byte-for-byte
  * as it was). When a repair has been run over every drawing you care about, delete
- * it from REPAIRS — this list is meant to shrink, not grow forever.
+ * it from REPAIRS — this list is meant to shrink, not grow forever (it is empty now).
  */
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import LZString from 'lz-string'
 
-const NON_NUMBER = '(?:[^"]*\\b)?(?:NaN|undefined|Infinity)\\b[^"]*'
-
 /**
- * Undo/redo of any attribute change on a <text> with tspans used to write
- * x="NaN" y="NaN" into the tspans (fixed in undo.js). The real positions are
- * gone, so drop the bad coordinates and let each tspan inherit from its <text>.
- * @param {string} source
- * @returns {string}
+ * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. Empty
+ * on purpose: the earlier ones (NaN tspans, `undefined` text in <defs>, stacked translate())
+ * ran over the vault on 2026-10-10 and were deleted; `git log -- scripts/repair-drawings.mjs`
+ * has them as templates.
+ * @typedef {{name: string, run: (source: string) => string}} Repair
+ * @type {Repair[]}
  */
-export const repairNaNTspans = (source) =>
-  source.replace(/<tspan\b[^>]*>/g, (tag) =>
-    tag.replace(new RegExp(`\\s(?:x|y|dx|dy)="${NON_NUMBER}"`, 'g'), '')
-  )
-
-/**
- * Element.append(undefined) used to insert a literal "undefined" text node into
- * <defs> (the old `sanitizeLegacyUndefinedDefs`, removed from the editor). Drops
- * text children of <defs> that are nothing but "undefined"; every other text is untouched.
- * @param {string} source
- * @returns {string}
- */
-export const repairUndefinedDefs = (source) =>
-  source.replace(/<defs\b[^>]*>[\s\S]*?<\/defs>/g, (defs) =>
-    defs.replace(/(<defs\b[^>]*>|<\/[\w:.-]+>|<[^<>]*\/>)(?:undefined)+(?=<)/g, '$1')
-  )
-
-// Six significant digits, which is what the editor itself writes (SVG lists hold float32).
-const num = (v) => String(+v.toPrecision(6))
-
-/**
- * Nudging a group / clipped element used to append one more raw translate() to its
- * transform every time (the old `sanitizeStackedTranslateTransforms`, removed from the
- * editor). Merges each run of 2+ consecutive translate() items into one; a run broken
- * by rotate/scale/matrix is left alone.
- * @param {string} source
- * @returns {string}
- */
-export const repairStackedTranslates = (source) =>
-  source.replace(/(\stransform=")([^"]*)(")/g, (all, open, value, close) => {
-    const items = [...value.matchAll(/([a-zA-Z]+)\s*\(([^)]*)\)/g)]
-    const out = []
-    let changed = false
-    let last = 0
-    for (let i = 0; i < items.length;) {
-      if (items[i][1] !== 'translate') { i++; continue }
-      let j = i
-      let tx = 0
-      let ty = 0
-      while (j < items.length && items[j][1] === 'translate' && (j === i || /^\s*$/.test(value.slice(items[j - 1].index + items[j - 1][0].length, items[j].index).replace(/,/g, '')))) {
-        const [x, y = '0'] = items[j][2].split(/[\s,]+/).filter(Boolean)
-        tx += parseFloat(x)
-        ty += parseFloat(y)
-        j++
-      }
-      if (j - i > 1 && Number.isFinite(tx) && Number.isFinite(ty)) {
-        out.push(value.slice(last, items[i].index), `translate(${num(tx)} ${num(ty)})`)
-        last = items[j - 1].index + items[j - 1][0].length
-        changed = true
-      }
-      i = j
-    }
-    if (!changed) return all
-    out.push(value.slice(last))
-    return open + out.join('') + close
-  })
-
-export const REPAIRS = [
-  { name: 'NaN tspan coordinates', run: repairNaNTspans },
-  { name: 'undefined text in <defs>', run: repairUndefinedDefs },
-  { name: 'stacked translate() transforms', run: repairStackedTranslates }
-]
+export const REPAIRS = []
 
 /**
  * @param {string} source
+ * @param {Repair[]} [repairs]
  * @returns {{source: string, applied: string[]}}
  */
-export const repairSvg = (source) => {
+export const repairSvg = (source, repairs = REPAIRS) => {
   const applied = []
   let out = source
-  for (const { name, run } of REPAIRS) {
+  for (const { name, run } of repairs) {
     const next = run(out)
     if (next !== out) applied.push(name)
     out = next
@@ -114,9 +53,10 @@ const fromBase64 = (payload) => LZString.decompressFromBase64(payload.replace(/\
  * ```compressed-svg block and the "## Versions" snapshots. Everything else in the
  * note is left byte-for-byte.
  * @param {string} content
+ * @param {Repair[]} [repairs]
  * @returns {{source: string, applied: string[]}}
  */
-export const repairMarkdown = (content) => {
+export const repairMarkdown = (content, repairs = REPAIRS) => {
   const applied = new Set()
   const note = (list) => list.forEach((n) => applied.add(n))
   const repairSnapshots = (json) => {
@@ -126,7 +66,7 @@ export const repairMarkdown = (content) => {
     let changed = false
     for (const snap of list) {
       if (typeof snap?.svg !== 'string') continue
-      const r = repairSvg(snap.svg)
+      const r = repairSvg(snap.svg, repairs)
       if (r.applied.length) { snap.svg = r.source; note(r.applied); changed = true }
     }
     return changed ? JSON.stringify(list) : json
@@ -138,7 +78,7 @@ export const repairMarkdown = (content) => {
       if (!raw) return all
       let fixed
       if (isSvg) {
-        const r = repairSvg(raw)
+        const r = repairSvg(raw, repairs)
         note(r.applied)
         fixed = r.source
       } else {

@@ -406,4 +406,4 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
 - `scripts/repair-drawings.mjs` ran over `GitProjects/Obsidian_Vault` and `Documents/test_vault` (2026-10-10): 54 notes/exports
   had stacked `translate()` runs and 1 had `undefined` text in `<defs>` (no NaN tspans); all 55 verified to load identically.
   The two load-time sanitizers it replaced are gone from the editor (a `stacked-translate` rule joined `stray-text-in-defs` in
-  `checkDrawing`). Its three `REPAIRS` entries stay for drawings on other machines/vaults; delete them once those are repaired.
+  `checkDrawing`). `REPAIRS` is empty again (no other vault or machine); `git log -- scripts/repair-drawings.mjs` has the three entries as templates.
