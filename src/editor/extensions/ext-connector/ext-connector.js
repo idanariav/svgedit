@@ -405,6 +405,9 @@ export default {
      * @returns {Float} - The endpoint offset if a marker is present, else 0.
      */
     const getOffset = (side, line) => {
+      // An aligned head knows exactly how far from the shape the stroke must stop.
+      const aligned = svgCanvas.getArrowOffset(line, side)
+      if (aligned !== null) return aligned
       const hasMarker = line.getAttribute('marker-' + side)
       // TODO: This factor should ideally be based on the actual marker size.
       // A missing stroke-width means the SVG initial value of 1, not 0 —
@@ -477,7 +480,8 @@ export default {
     const routeConnector = (line, startBB, endBB) => {
       if (!startBB || !endBB) return
       const pts = computeConnectorPoints(startBB, endBB, line)
-      line.setAttribute('points', pts.map((p) => `${p.x},${p.y}`).join(' '))
+      // An aligned polyline is trimmed from its real ends.
+      if (!svgCanvas.setArrowSourcePoints(line, pts)) line.setAttribute('points', pts.map((p) => `${p.x},${p.y}`).join(' '))
     }
 
     /**
@@ -495,10 +499,12 @@ export default {
       const endBB = eId ? dataStorage.get(line, 'end_bb') : null
       if (!startBB && !endBB) return
 
-      let x1 = Number(line.getAttribute('x1'))
-      let y1 = Number(line.getAttribute('y1'))
-      let x2 = Number(line.getAttribute('x2'))
-      let y2 = Number(line.getAttribute('y2'))
+      // An aligned head is drawn on a trimmed line: the ends to move are the real ones.
+      const real = svgCanvas.getArrowSourcePoints(line)
+      let x1 = real ? real[0].x : Number(line.getAttribute('x1'))
+      let y1 = real ? real[0].y : Number(line.getAttribute('y1'))
+      let x2 = real ? real[1].x : Number(line.getAttribute('x2'))
+      let y2 = real ? real[1].y : Number(line.getAttribute('y2'))
 
       // Aim each bound endpoint toward the opposite end.
       const startAim = endBB
@@ -511,15 +517,20 @@ export default {
       if (startBB) {
         const p = getBBintersect(startAim.x, startAim.y, startBB, getOffset('start', line))
         x1 = p.x; y1 = p.y
-        line.setAttribute('x1', x1)
-        line.setAttribute('y1', y1)
+        if (!real) {
+          line.setAttribute('x1', x1)
+          line.setAttribute('y1', y1)
+        }
       }
       if (endBB) {
         const p = getBBintersect(endAim.x, endAim.y, endBB, getOffset('end', line))
         x2 = p.x; y2 = p.y
-        line.setAttribute('x2', x2)
-        line.setAttribute('y2', y2)
+        if (!real) {
+          line.setAttribute('x2', x2)
+          line.setAttribute('y2', y2)
+        }
       }
+      if (real) svgCanvas.setArrowSourcePoints(line, [{ x: x1, y: y1 }, { x: x2, y: y2 }])
     }
 
     /** Re-routes any connector (new line or legacy polyline) from cached bboxes. */

@@ -77,7 +77,8 @@ describe('Pen continue and join', () => {
       add('M200,0 L210,0', { 'se:taper-d': 'x' })
       add('M300,0 L310,0', { 'se:orig-d': 'x' })
       add('M400,0 L410,0', { 'se:fx-d': 'x' })
-      for (const x of [0, 10, 100, 110, 200, 210, 300, 310, 400, 410]) {
+      add('M500,0 L510,0', { 'se:arrow-d': 'x' })
+      for (const x of [0, 10, 100, 110, 200, 210, 300, 310, 400, 410, 500, 510]) {
         assert.equal(findPenEnd(layer, x, 0, 6), null, `x=${x}`)
       }
     })

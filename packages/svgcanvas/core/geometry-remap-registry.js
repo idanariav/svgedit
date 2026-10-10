@@ -44,3 +44,11 @@ export const runGeometryRemaps = (elem, remap, scalew, scaleh, svgCanvas) => {
     }
   })
 }
+
+/**
+ * The attributes that have a remap hook, i.e. the cached source geometry that a transform bake rewrites.
+ * Anything that records the old values of a bake for undo must include these.
+ * @function module:geometry-remap-registry.remapSourceAttrs
+ * @returns {string[]}
+ */
+export const remapSourceAttrs = () => [...registry.keys()]

@@ -213,6 +213,7 @@ export const init = canvas => {
         changes.x2 = pt2.x
         changes.y2 = pt2.y
         finishUp()
+        runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
         break
       }
       case 'text': {
@@ -304,6 +305,7 @@ export const init = canvas => {
         })
         const pstr = changes.points.map(pt => `${pt.x},${pt.y}`).join(' ')
         selected.setAttribute('points', pstr)
+        runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
         break
       }
       case 'path': {

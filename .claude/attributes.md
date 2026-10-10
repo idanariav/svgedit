@@ -256,7 +256,7 @@ Plus [common attributes](#common-attributes-all-shapes).
 
 No dedicated panel — these shapes show only [common attributes](#common-attributes-all-shapes). **No x/y panel** (excluded in TopPanel.js ~line 235).
 
-**Extension:** `ext-markers` adds Marker Start / Middle / End controls.
+**Extension:** `ext-markers` adds Marker Start / Middle / End controls and the **Head position** picker (`marker_align` → `se:arrow-align`: absent = centred, `tip`, `extend`). With Tip the real geometry is kept in `se:arrow-pts` (`x,y x,y …`, line/polyline) or `se:arrow-d` (path) and `se:arrow-trim` (`start,end` user units); `x1…y2` / `points` / `d` hold the trimmed stroke. Do not edit those by hand: `svgCanvas.syncArrowAlign` re-derives them.
 
 ---
 

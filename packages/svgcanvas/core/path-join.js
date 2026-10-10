@@ -16,7 +16,7 @@ import { getTransformList, transformListToTransform, matrixMultiply, transformPo
 const JOIN_TOLERANCE = 0.5
 
 /** Source-geometry attributes of the live features: a path carrying one is not plain path data. */
-export const LIVE_ATTRS = ['se:fx-d', 'se:orig-d', 'se:taper-d']
+export const LIVE_ATTRS = ['se:fx-d', 'se:orig-d', 'se:taper-d', 'se:arrow-d']
 
 const isPlainPath = (elem) =>
   !!elem && elem.tagName === 'path' && !LIVE_ATTRS.some((a) => elem.hasAttribute(a))

@@ -104,6 +104,9 @@ export default {
     const showPanel = (on, elem) => {
       $id('marker_panel').style.display = (on) ? 'block' : 'none'
       if (on && elem) {
+        const align = $id('marker_align')
+        align.value = svgCanvas.getArrowAlign(elem) ?? 'center'
+        align.toggleAttribute('disabled', !svgCanvas.canAlignArrows(elem))
         mtypes.forEach((pos) => {
           const marker = getLinked(elem, 'marker-' + pos)
           if (marker?.attributes?.se_type) {
@@ -120,12 +123,10 @@ export default {
     * @param {""|"nomarker"|"nomarker"|"leftarrow"|"rightarrow"|"textmarker"|"forwardslash"|"reverseslash"|"verticalslash"|"box"|"star"|"xmark"|"triangle"|"mcircle"} seType
     * @returns {SVGMarkerElement}
     */
-    const addMarker = (id, seType) => {
-      const selElems = svgCanvas.getSelectedElements()
+    const addMarker = (id, seType, el = svgCanvas.getSelectedElements()[0]) => {
       let marker = svgCanvas.getElement(id)
       if (marker) { return undefined }
       if (seType === '' || seType === 'nomarker') { return undefined }
-      const el = selElems[0]
       const color = el.getAttribute('stroke')
       const strokeWidth = 10
       const refX = 50
@@ -194,11 +195,12 @@ export default {
       const y2 = Number(elem.getAttribute('y2'))
       const { id } = elem
 
-      const midPt = (' ' + ((x1 + x2) / 2) + ',' + ((y1 + y2) / 2) + ' ')
+      // An aligned line is drawn trimmed: the new polyline starts from its real ends and trims again.
+      const [p1, p2] = svgCanvas.getArrowSourcePoints(elem) ?? [{ x: x1, y: y1 }, { x: x2, y: y2 }]
       const pline = addElem({
         element: 'polyline',
         attr: {
-          points: (x1 + ',' + y1 + midPt + x2 + ',' + y2),
+          points: (p1.x + ',' + p1.y + ' ' + ((p1.x + p2.x) / 2) + ',' + ((p1.y + p2.y) / 2) + ' ' + p2.x + ',' + p2.y),
           stroke: elem.getAttribute('stroke'),
           // A missing stroke-width means the SVG initial value of 1 — pass
           // that through explicitly, since assignAttributes would otherwise
@@ -218,6 +220,7 @@ export default {
       // halo/shadow would be dropped when a mid-marker forces the conversion.
       const filterAttr = elem.getAttribute('filter')
       if (filterAttr) { pline.setAttribute('filter', filterAttr) }
+      const align = svgCanvas.getArrowAlign(elem)
 
       const batchCmd = new BatchCommand()
       batchCmd.addSubCommand(new RemoveElementCommand(elem, elem.parentNode))
@@ -227,6 +230,7 @@ export default {
       elem.remove()
       svgCanvas.clearSelection()
       pline.id = id
+      if (align) svgCanvas.setArrowAlign(pline, align)
       svgCanvas.addToSelection([pline])
       svgCanvas.addCommandToHistory(batchCmd)
       return pline
@@ -239,25 +243,29 @@ export default {
     const setMarker = (pos, markerType) => {
       const selElems = svgCanvas.getSelectedElements()
       if (selElems.length === 0) return
-      const markerName = 'marker-' + pos
-      const el = selElems[0]
-      const marker = getLinked(el, markerName)
-      if (marker) { marker.remove() }
-      el.removeAttribute(markerName)
-      let val = markerType
-      if (val === '') { val = 'nomarker' }
-      if (val === 'nomarker') {
-        svgCanvas.call('changed', selElems)
-        return
-      }
-      // Set marker on element
-      const id = 'mkr_' + pos + '_' + el.id
-      addMarker(id, val)
-      svgCanvas.changeSelectedAttribute(markerName, 'url(#' + id + ')')
-      if (el.tagName === 'line' && pos === 'mid') {
-        convertline(el)
-      }
-      svgCanvas.call('changed', selElems)
+      // One undo step for the marker, its alignment and the trimmed geometry.
+      svgCanvas.transact('Set marker', () => {
+        const markerName = 'marker-' + pos
+        let el = selElems[0]
+        const marker = getLinked(el, markerName)
+        if (marker) { marker.remove() }
+        el.removeAttribute(markerName)
+        let val = markerType
+        if (val === '') { val = 'nomarker' }
+        if (val !== 'nomarker') {
+          // Set marker on element
+          const id = 'mkr_' + pos + '_' + el.id
+          addMarker(id, val)
+          svgCanvas.changeSelectedAttribute(markerName, 'url(#' + id + ')')
+          if (el.tagName === 'line' && pos === 'mid') {
+            el = convertline(el)
+          }
+        }
+        // New heads go tip-on-end; an aligned element follows its markers.
+        if (pos !== 'mid' && val !== 'nomarker' && !svgCanvas.getArrowAlign(el)) svgCanvas.setArrowAlign(el, 'tip')
+        svgCanvas.syncArrowAlign(el)
+      })
+      svgCanvas.call('changed', svgCanvas.getSelectedElements().filter(Boolean))
     }
 
     /**
@@ -300,8 +308,9 @@ export default {
           const linkid = url.substr(-len - 1, len)
           if (el.id !== linkid) {
             const newMarkerId = 'mkr_' + pos + '_' + el.id
-            addMarker(newMarkerId, marker.attributes.se_type.value)
-            svgCanvas.changeSelectedAttribute(markerName, 'url(#' + newMarkerId + ')')
+            addMarker(newMarkerId, marker.attributes.se_type.value, el)
+            svgCanvas.changeSelectedAttribute(markerName, 'url(#' + newMarkerId + ')', [el])
+            svgCanvas.syncArrowAlign(el)
             svgCanvas.call('changed', selElems)
           }
         }
@@ -327,7 +336,9 @@ export default {
           })
           innerHTML += '</se-list></div>'
         })
-        innerHTML += '</div></div>'
+        innerHTML += '</div>'
+        innerHTML += '<se-select id="marker_align" label="Head position" title="Where the head sits on the end of the line"></se-select>'
+        innerHTML += '</div>'
         panelTemplate.innerHTML = innerHTML
         // Inject into the Design tab, right after Stroke & Opacity (before the
         // Object section); fall back to the top toolbar if the tab is missing.
@@ -342,6 +353,18 @@ export default {
         } else {
           $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
         }
+        const align = $id('marker_align')
+        align.addOption('center', 'Centered on the end')
+        align.addOption('tip', 'Tip on the end')
+        align.addOption('extend', 'Tip past the end')
+        align.addEventListener('change', (evt) => {
+          const el = svgCanvas.getSelectedElements()[0]
+          const mode = evt.target.value === 'center' ? null : evt.target.value
+          if (!el || svgCanvas.getArrowAlign(el) === mode) return
+          svgCanvas.transact('Head position', () => svgCanvas.setArrowAlign(el, mode))
+          svgCanvas.gettingSelectorManager().requestSelector(el).resize()
+          svgCanvas.call('changed', [el])
+        })
         // don't display the panels on start
         showPanel(false)
         mtypes.forEach((pos) => {
@@ -367,6 +390,10 @@ export default {
       },
       elementChanged (opts) {
         const elem = opts.elems[0]
+        // Stroke width, markers or the source changed: the trimmed geometry follows.
+        if (elem?.hasAttribute?.('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
+          svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
+        }
         if (elem && (
           elem.getAttribute('marker-start') ||
           elem.getAttribute('marker-mid') ||

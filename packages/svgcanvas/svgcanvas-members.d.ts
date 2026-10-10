@@ -249,6 +249,20 @@ export interface AttachedMembers {
   setDashFit(on: boolean, elems?: Element[]): number
   /** Choose a dash pattern for the selection (fitted elements are fitted again); false when nothing is fitted. */
   setDashPattern(value: string): boolean
+  /** Whether the element's ends can carry an aligned arrowhead (a line, polyline or one open path with its own geometry). */
+  canAlignArrows(elem: Element | null): boolean
+  /** The element's head alignment (`se:arrow-align`), or null for the legacy centred heads. */
+  getArrowAlign(elem: Element): 'tip' | 'extend' | null
+  /** Set (or with null clear) the alignment and re-derive markers and geometry; records no history. */
+  setArrowAlign(elem: Element, mode: 'tip' | 'extend' | null): boolean
+  /** Re-derive an aligned element's marker `refX` and trimmed geometry; returns whether the geometry changed. */
+  syncArrowAlign(elem: Element, trusted?: boolean): boolean
+  /** The distance a connector keeps an aligned head's end from its shape, or null when not aligned. */
+  getArrowOffset(elem: Element, pos: 'start' | 'end'): number | null
+  /** The untrimmed points of an aligned line or polyline, or null. */
+  getArrowSourcePoints(elem: Element): Array<{ x: number; y: number }> | null
+  /** Replace the untrimmed points of an aligned line or polyline and trim again. */
+  setArrowSourcePoints(elem: Element, pts: Array<{ x: number; y: number }>): boolean
   switchSelectedZorder(): void
   matchStrokes(): void
   setRotationAngle(val: number, preventUndo?: boolean): void

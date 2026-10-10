@@ -42,7 +42,7 @@ is in [tier-0.md](tier-0.md).
 | T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | done — see git log (hover guides, curvature / shape library not opted in, see roadmap.md) |
 | T2.2 | Ruler guides | — (T2.1 helps) | done — see git log (`cursor()` hook not needed; toolbar entries / touch deferred, see roadmap.md) |
 | T2.3 | Pen continues / joins open paths | T1.4 (join helper) | done — see git log (ring marks the end instead of a cursor; plain untransformed paths only, see roadmap.md) |
-| T2.4 | Arrowheads with tip-on-end alignment | — | todo |
+| T2.4 | Arrowheads with tip-on-end alignment | — | done — see git log (Tip and Extend; start/end heads only, polygons and multi-piece paths stay centred, see roadmap.md) |
 | T2.5 | Dashes fitted to corners and path ends | — | v1 done — see git log (single run only; corners are v2, see roadmap.md) |
 | T2.6 | Width profiles + Width tool (generalizes taper) | — (T0.3 helps) | todo |
 | T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | todo |

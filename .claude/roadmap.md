@@ -23,7 +23,7 @@ small items (S) fill gaps between large ones.
 **Phase 3 — done** (items 7–11: T2.15 Corner-keeping simplify, T2.3 Pen continues / joins, T2.16 Smooth tool, T3.7 Pencil continues, T2.12 Centerline tracing; the path commands got their precise `enabled` with it).
 
 **Phase 4 — stroke and appearance**
-12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. **T2.4 Arrowheads** — a small stroke feature, no deps.
+12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. ~~**T2.4 Arrowheads**~~ done (follow-ups, below).
 14. **T2.6 Width profiles + Width tool** (L) — generalises taper.
 15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — design it *after* T2.6, because
     width profiles change the single-source-of-truth question (`se:taper-d` vs. the new profile).
@@ -261,6 +261,19 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Arrowhead alignment (`core/arrow-align.js`): follow-ups from T2.4
+
+Done: the Markers panel's **Head position** picker (Centered on the end = the old behaviour / Tip on the end / Tip past the end). A head newly picked for a start or end marker is Tip; existing drawings stay centred until the picker is used. Tip trims the stroke by the head's inset (`se:arrow-pts` / `se:arrow-d` keep the real geometry, re-trimmed when the stroke width, the marker or the connector changes). Remaining:
+- **Only heads at the start and end, only on a line, polyline or one open path.** A polygon, a closed path or a path of several pieces keeps centred heads (the picker is disabled). Mid markers are never aligned.
+- **Heads with no tip stay centred** (box, circle, star, slashes, X): there is no tip to put on the end, and the stroke ends in the middle of them as before.
+- **For solid heads Extend equals the old centred head** (the inset is half the head); it differs only for hollow heads and the open arrow. Both are offered because Extend needs no trimming and keeps the line's length.
+- **A head pointing into the line** (a triangle at the start, a left arrow at the end) puts its tip on the end and trims nothing: the head sits beyond the line, pointing at it.
+- **Marker box clipping.** The head's tip is where the marker's 100×100 box ends, so the tip is the clipped edge (slightly blunt, as the old heads were), not a mitred point. Heads were not redrawn.
+- **Node editing a tipped path** edits the trimmed geometry; the source no longer matches, so on the next change the element becomes Extend on what it has (same picture, the head stays put). The same happens to an undo that restores only the geometry. Entering path edit on a tipped path could instead untrim first and re-trim on leave.
+- **Stroke width scaling.** A resize does not scale the stroke width (as elsewhere), so the head keeps its size and the trim follows.
+- **Copies.** A copy of an arrowed element gets its own markers, outside the undo history (techdebt: "Markers made for a copy are not in the undo history").
+- Not done from the plan: a custom-geometry head table for hand-made markers, the connector's legacy polyline offsets for heads that are not extension-made (they keep `stroke width × 5`).
 
 ## Fitted dashes (`core/dash-fit.js`): follow-ups from T2.5 (v1)
 

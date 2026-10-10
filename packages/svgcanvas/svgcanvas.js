@@ -78,6 +78,7 @@ import { init as selectSameInit } from './core/select-same.js'
 import { init as drawSnapInit } from './core/draw-snap.js'
 import { init as guidesInit } from './core/guides.js'
 import { init as dashFitInit } from './core/dash-fit.js'
+import { init as arrowAlignInit } from './core/arrow-align.js'
 import { init as pathJoinInit } from './core/path-join.js'
 import { init as liveEffectsInit } from './core/live-effects.js'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.js'
@@ -359,6 +360,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'drawSnap', drawSnapInit, initGuardRegistry)
     runGuardedInit(this, 'guides', guidesInit, initGuardRegistry)
     runGuardedInit(this, 'dashFit', dashFitInit, initGuardRegistry)
+    runGuardedInit(this, 'arrowAlign', arrowAlignInit, initGuardRegistry)
     runGuardedInit(this, 'pathJoin', pathJoinInit, initGuardRegistry)
     runGuardedInit(this, 'liveEffects', liveEffectsInit, initGuardRegistry)
     runGuardedInit(this, 'liveEffectsDistort', liveEffectsDistortInit, initGuardRegistry)

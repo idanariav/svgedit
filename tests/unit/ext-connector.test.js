@@ -22,6 +22,9 @@ describe('ext-connector', () => {
       getDataStorage: () => ({ put: vi.fn(), get: vi.fn() }),
       groupSelectedElements: vi.fn(),
       moveSelectedElements: vi.fn(),
+      getArrowOffset: () => null,
+      getArrowSourcePoints: () => null,
+      setArrowSourcePoints: () => false,
       getMode: () => 'select'
     }
 

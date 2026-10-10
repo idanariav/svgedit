@@ -17,6 +17,7 @@ import {
   getTransformList
 } from './math.js'
 import { mergeDeep } from '../common/util.js'
+import { remapSourceAttrs } from './geometry-remap-registry.js'
 
 /**
  * Attribute list to translate for each simple (non-points, non-path) tag
@@ -299,6 +300,10 @@ export const init = canvas => {
     }
     // Save the start transform value
     initial.transform = svgCanvas.getStartTransform() || ''
+    // The cached source geometry of live features is rewritten by the bake too: undo restores it with the rest.
+    for (const attr of remapSourceAttrs()) {
+      if (selected.hasAttribute(attr)) initial[attr] = selected.getAttribute(attr)
+    }
 
     let oldcenter, newcenter
 

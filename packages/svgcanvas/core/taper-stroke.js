@@ -217,8 +217,12 @@ export const init = (canvas) => {
     // line / polyline → equivalent <path> (they can't hold an outline `d`).
     if (elem.tagName === 'line' || elem.tagName === 'polyline') {
       let d
-      const dropAttrs = ['x1', 'y1', 'x2', 'y2', 'points']
-      if (elem.tagName === 'line') {
+      // Arrowhead alignment belongs to the line: the tapered path starts from the real, untrimmed ends.
+      const dropAttrs = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
+      const real = svgCanvas.getArrowSourcePoints(elem)
+      if (real) {
+        d = real.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+      } else if (elem.tagName === 'line') {
         d = `M${elem.getAttribute('x1')},${elem.getAttribute('y1')} L${elem.getAttribute('x2')},${elem.getAttribute('y2')}`
       } else {
         const coords = (elem.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number)
@@ -254,7 +258,7 @@ export const init = (canvas) => {
       width = parseFloat(elem.getAttribute('stroke-width')) || 1
       paint = elem.getAttribute('stroke')
     }
-    const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d')
+    const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d')
     const outline = buildTaperOutline(srcD, width, start, end)
     if (!outline) {
       warn('Selection is not taperable (needs a single open stroked subpath)', null, 'taper-stroke')
