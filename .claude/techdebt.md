@@ -189,11 +189,16 @@ ext-shape-family), automation API. What it deliberately left, and what it found:
   (`getLastClickPoint` on `null`), `ext-mirror` threw on a source replaced by Object-to-Path, move / delete /
   cut didn't record `se:*` source attributes (now `atomic`).
 
-**Migrate hand-built undo to `transact()`** — 60 `new BatchCommand` call sites in 34 files remain
-(`grep -rn "new BatchCommand"`). Do it opportunistically when touching a file; the pattern to look for is a
-`ChangeElementCommand` built before its mutation. `live-effects.js` apply/remove/expand, `text-attrs.js`
-decoration toggles and ext-shape-family are done. Also: other buttons/shortcuts that the sweep shows are
-fine today but would be safer `atomic` (it is opt-in per command, `editorShortcuts.js` / `coreCommands.js`).
+**Hand-built `BatchCommand`s (audited 2026-10-10, no blanket migration)** — 60 `new BatchCommand` sites in
+34 files remain. All ~50 `new ChangeElementCommand(...)` sites were read for the one real hazard (command
+built *before* its mutation, so redo re-applies the old value): none is left, the three that were wrong are
+fixed (`fx-filter.js`, `clip-mask.js`, `text-attrs.js`). The remaining sites build precise commands
+(`MoveElementCommand`, `RemoveElementCommand`, …) and already give one undo step; swapping them for
+`transact()`'s coarser `ChildListCommand` would add churn without fixing anything. Convert a site only when
+you are already changing it, or when it spans several steps that can throw half-way. The command sweep
+(redo must reproduce the edit) is what catches a regression of the build-before-mutate bug; keep it green.
+Also: other buttons/shortcuts that are fine today but would be safer `atomic` (opt-in per command,
+`editorShortcuts.js` / `coreCommands.js`).
 
 **Transactions**
 - Cost is O(elements) at begin and at commit/cancel (≈14 ms at begin, ≈22 ms at commit for 5,000 elements). Fine for gestures; if a
