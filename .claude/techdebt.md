@@ -160,7 +160,7 @@ toolchain step.
 
 ## Tier 0 follow-ups (VectorCraft port, 2026-10-10)
 
-Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: `ext-shape-family`, `ext-brush`, `ext-panning` and `ext-eyedropper` use `registerTool`.
+Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: `ext-shape-family`, `ext-brush`, `ext-panning`, `ext-eyedropper`, `ext-cutter`, `ext-polystar` and `ext-shapes` use `registerTool`.
 
 Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing), command
 registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
@@ -386,8 +386,10 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
 
 **Remaining Tier 0 work (not started)**
 - **Port the remaining drawing tools to `registerTool`** (their `mouseDown/Move/Up` extension hooks still use the
-  legacy pipeline): `ext-cutter`, `ext-polystar`, `ext-shapes`, `ext-curvature`, `ext-puppet-warp`,
-  `ext-shape-builder`, `ext-connector`. Done: brush (uses `keepOpacity`), panning, eyedropper. Gotchas: legacy
+  legacy pipeline): `ext-curvature`, `ext-puppet-warp`, `ext-shape-builder`, `ext-connector`. Done: brush
+  (`keepOpacity`), panning, eyedropper, cutter (`wantsHover` + `deactivate`; its preview is `data-se-ephemeral`),
+  polystar (also fixes stars / polygons being the wrong size at zoom != 100%: the legacy hook used the zoomed
+  `mouse_x`), shapes (library insert). `ctx.start` stays valid inside `pointerUp`. Gotchas: legacy
   hooks receive `mouse_x/mouse_y` zoomed and `start_x/start_y` unzoomed, the tool contract gives one unzoomed
   convention (`x/y` snapped, `rawX/rawY` not).
 - Commands are real now but their `enabled` is mostly "always" (what the buttons were); several would be better

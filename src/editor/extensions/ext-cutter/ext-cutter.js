@@ -91,6 +91,7 @@ export default {
       path.setAttribute('opacity', '0.85')
       path.setAttribute('pointer-events', 'none')
       path.setAttribute('id', 'cutter_preview_line')
+      path.setAttribute('data-se-ephemeral', '') // scaffolding: never part of a save or an undo step
       // Append to svgcontent (not a layer) — uses canvas coordinates.
       // Elements outside layer <g>s are not included in normal SVG exports.
       svgCanvas.getSvgContent().appendChild(path)
@@ -156,13 +157,89 @@ export default {
       }
     }
 
-    // Leaving cutter mode by any route (Escape → cancelTool, switching tools)
-    // must tear down an in-progress line so no stale state/preview lingers.
-    const origSetMode = svgCanvas.setMode.bind(svgCanvas)
-    svgCanvas.setMode = (mode) => {
-      if (active && mode !== 'cutter') cancel()
-      origSetMode(mode)
+    // ── The tool ─────────────────────────────────────────────────────────────
+
+    const point = (ev, snapped) => (snapped ? { x: ev.x, y: ev.y } : { x: ev.rawX, y: ev.rawY })
+
+    const rubberBand = (ev) => {
+      if (!active) return
+      let { x, y } = point(ev, false)
+      const anchor = drawing ? points[points.length - 1] : pendingStart
+      if (ev.mods.shift) ({ x, y } = snapToAngle(anchor.x, anchor.y, x, y))
+      updateRubberBand(x, y)
     }
+
+    svgCanvas.registerTool({
+      id: 'cutter',
+      undoLabel: 'Cut shapes',
+      wantsHover: true, // the rubber band follows the pointer between clicks
+
+      // Leaving cutter mode by any route (Escape, switching tools) tears down an
+      // in-progress line so no stale state or preview lingers.
+      deactivate () { if (active) cancel() },
+      cancel () { if (active) cancel() },
+
+      pointerDown (ctx, ev) {
+        const { x, y } = point(ev, true)
+
+        if (!active) {
+          active = true
+          pendingStart = { x, y }
+          createPreviewPath(pendingStart)
+          return
+        }
+
+        if (!drawing) return // stray mousedown before the first mouseUp resolved
+
+        // Already drawing: commit a new vertex (pen-tool style — click to add a point).
+        const last = points[points.length - 1]
+        let px = x
+        let py = y
+        if (ev.mods.shift) ({ x: px, y: py } = snapToAngle(last.x, last.y, px, py))
+        const dx = px - last.x
+        const dy = py - last.y
+        if (Math.sqrt(dx * dx + dy * dy) < MIN_SEGMENT) {
+          // Too close to the previous vertex — likely the second mousedown
+          // of a double-click finishing the line. Don't add a duplicate.
+          return
+        }
+
+        points.push({ x: px, y: py })
+        updatePreviewPath()
+      },
+
+      pointerMove (ctx, ev) { rubberBand(ev) },
+
+      pointerUp (ctx, ev) {
+        if (!active) return
+        if (drawing) return // vertices commit on mouseDown; nothing more to do per click
+
+        let { x, y } = point(ev, false)
+        if (ev.mods.shift) ({ x, y } = snapToAngle(pendingStart.x, pendingStart.y, x, y))
+        const dx = x - pendingStart.x
+        const dy = y - pendingStart.y
+
+        if (Math.sqrt(dx * dx + dy * dy) >= MIN_SEGMENT) {
+          // A real drag: instant straight cut, exactly like before.
+          const cutPoints = [pendingStart, { x, y }]
+          removePreviewPath()
+          reset()
+          svgCanvas.cutShapes(cutPoints)
+          svgEditor.leftPanel.clickSelect()
+          return
+        }
+
+        // A plain click: start multi-point mode and keep the tool active.
+        // Clear the selection for the duration of the draw so the global
+        // Backspace/Delete "delete selected shape" hotkey has nothing to act
+        // on — it would otherwise also fire when Backspace removes a vertex
+        // here. Restored right before the cut (or on cancel) in finish/cancel.
+        selectionAtStart = svgCanvas.getSelectedElements().filter(Boolean)
+        svgCanvas.clearSelection()
+        points = [pendingStart]
+        drawing = true
+      }
+    })
 
     // ── Extension object ─────────────────────────────────────────────────────
 
@@ -199,109 +276,6 @@ export default {
             removeLastPoint()
           }
         }, { signal: svgEditor.listenerAbort?.signal })
-      },
-
-      mouseDown (opts) {
-        if (svgCanvas.getMode() !== 'cutter') return undefined
-
-        // mouseDown opts use start_x/start_y (already in canvas coords).
-        // mouseMove/mouseUp use mouse_x/mouse_y (screen-pixel coords, need /zoom).
-        const x = opts.start_x
-        const y = opts.start_y
-
-        if (!active) {
-          active = true
-          pendingStart = { x, y }
-          createPreviewPath(pendingStart)
-          return { started: true }
-        }
-
-        if (!drawing) return { started: true } // stray mousedown before the first mouseUp resolved
-
-        // Already drawing: commit a new vertex (pen-tool style — click to add a point).
-        const last = points[points.length - 1]
-        let px = x
-        let py = y
-        if (opts.event?.shiftKey) {
-          ({ x: px, y: py } = snapToAngle(last.x, last.y, px, py))
-        }
-        const dx = px - last.x
-        const dy = py - last.y
-        if (Math.sqrt(dx * dx + dy * dy) < MIN_SEGMENT) {
-          // Too close to the previous vertex — likely the second mousedown
-          // of a double-click finishing the line. Don't add a duplicate.
-          return { started: true }
-        }
-
-        points.push({ x: px, y: py })
-        updatePreviewPath()
-        return { started: true }
-      },
-
-      mouseMove (opts) {
-        if (!active) return undefined
-
-        const zoom = svgCanvas.getZoom()
-        let x = opts.mouse_x / zoom
-        let y = opts.mouse_y / zoom
-        const anchor = drawing ? points[points.length - 1] : pendingStart
-        if (opts.event?.shiftKey) {
-          ({ x, y } = snapToAngle(anchor.x, anchor.y, x, y))
-        }
-        updateRubberBand(x, y)
-        return { started: true }
-      },
-
-      mouseUp (opts) {
-        // Every other extension's mouseUp hook gates on svgCanvas.getMode()
-        // (see ext-brush, ext-shape-builder, ext-connector, ...); this one
-        // gated on the local `active` flag alone. `active` is reset whenever
-        // svgCanvas.setMode() leaves 'cutter' (see the monkey-patch above),
-        // but anything that changes mode via setCurrentMode() directly
-        // (several core call sites do, e.g. finishing a path draw's mode
-        // switch) bypasses that patch — if `active` were ever left stale
-        // while a *different* tool's mouseUp is dispatched, this hook would
-        // fire regardless of the current tool and return { keep: true,
-        // started: true } (no `element`), which the core mouseUp epilogue
-        // (event.js) uses to unconditionally overwrite its own `element` —
-        // silently discarding whatever that tool just produced. Checking the
-        // live mode here too closes that gap regardless of how mode changed.
-        if (!active || svgCanvas.getMode() !== 'cutter') return undefined
-
-        if (drawing) {
-          // Vertices commit on mouseDown; nothing more to do per click.
-          return { keep: true, started: true }
-        }
-
-        const zoom = svgCanvas.getZoom()
-        let x = opts.mouse_x / zoom
-        let y = opts.mouse_y / zoom
-        if (opts.event?.shiftKey) {
-          ({ x, y } = snapToAngle(pendingStart.x, pendingStart.y, x, y))
-        }
-        const dx = x - pendingStart.x
-        const dy = y - pendingStart.y
-
-        if (Math.sqrt(dx * dx + dy * dy) >= MIN_SEGMENT) {
-          // A real drag: instant straight cut, exactly like before.
-          const cutPoints = [pendingStart, { x, y }]
-          removePreviewPath()
-          reset()
-          svgCanvas.cutShapes(cutPoints)
-          svgEditor.leftPanel.clickSelect()
-          return { keep: false, started: false }
-        }
-
-        // A plain click: start multi-point mode and keep the tool active.
-        // Clear the selection for the duration of the draw so the global
-        // Backspace/Delete "delete selected shape" hotkey has nothing to act
-        // on — it would otherwise also fire when Backspace removes a vertex
-        // here. Restored right before the cut (or on cancel) in finish/cancel.
-        selectionAtStart = svgCanvas.getSelectedElements().filter(Boolean)
-        svgCanvas.clearSelection()
-        points = [pendingStart]
-        drawing = true
-        return { keep: true, started: true }
       }
     }
   }

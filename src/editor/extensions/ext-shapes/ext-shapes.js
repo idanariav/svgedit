@@ -29,7 +29,6 @@ export default {
     loadExtensionTranslation(svgEditor)
 
     const modeId = 'shapelib'
-    const startClientPos = {}
 
     let curShape
     let startX
@@ -57,45 +56,22 @@ export default {
     // Expose for programmatic callers (kept element-agnostic)
     svgEditor.armShapeInsert = armShapeInsert
 
-    return {
-      callback () {
-        if ($id('tool_shapelib') === null) {
-          const extPath = svgEditor.configObj.curConfig.extPath
-          const buttonTemplate = `
-          <se-shape-library id="tool_shapelib"
-            title="${svgEditor.i18next.t(`${name}:buttons.0.title`)}"
-            lib="${extPath}/ext-shapes/shapelib/"
-            src="shapelib.svg"></se-shape-library>
-          `
-          canv.insertChildAtIndex($id('tools_left'), buttonTemplate, 9)
-
-          // `shape-insert` bubbles + is composed, so a single document-level
-          // listener catches every `se-shape-library` instance (desktop or
-          // tablet). `e.target` is retargeted to the dispatching host element.
-          document.addEventListener('shape-insert', (e) => {
-            armShapeInsert(e.detail, e.target)
-          }, { signal: svgEditor.listenerAbort.signal })
-        }
-      },
-      mouseDown (opts) {
-        const mode = canv.getMode()
-        if (mode !== modeId) { return undefined }
-
-        startX = opts.start_x
+    canv.registerTool({
+      id: modeId,
+      undoLabel: 'Insert shape',
+      pointerDown (ctx, ev) {
+        startX = ev.x
         const x = startX
-        startY = opts.start_y
+        startY = ev.y
         const y = startY
 
-        startClientPos.x = opts.event.clientX
-        startClientPos.y = opts.event.clientY
-
         if (_userShapeData) {
-          // ── User shape (SVG group) insertion ────────────────────────────────
+        // ── User shape (SVG group) insertion ────────────────────────────────
           const { svgContent, bbox } = _userShapeData
           const parser = new DOMParser()
           const parsed = parser.parseFromString(
-            `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
-            'image/svg+xml'
+          `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
+          'image/svg+xml'
           )
           // A saved shape may carry its referenced paint servers in a leading
           // <defs>. Split it from the shape, import both, then remap every id to
@@ -123,7 +99,7 @@ export default {
           // Apply tiny initial scale anchored at the click point, adjusted for the shape's own origin
           imported.setAttribute(
             'transform',
-            `translate(${x},${y}) scale(0.005) translate(${-bbox.x},${-bbox.y})`
+          `translate(${x},${y}) scale(0.005) translate(${-bbox.x},${-bbox.y})`
           )
           // NOTE: deliberately *no* recalculateDimensions here. For container
           // elements (`<g>`, `<image>`, …) recalc cannot bake a scale into
@@ -146,7 +122,7 @@ export default {
 
           curShape = imported
         } else {
-          // ── Built-in path-based shape (existing flow) ────────────────────────
+        // ── Built-in path-based shape (existing flow) ────────────────────────
           const currentD = _armedDraw
           const curStyle = canv.getStyle()
 
@@ -166,28 +142,21 @@ export default {
         }
 
         lastBBox = curShape.getBBox()
-
-        return {
-          started: true
-        }
       },
-      mouseMove (opts) {
-        const mode = canv.getMode()
-        if (mode !== modeId) { return }
+      pointerMove (ctx, ev) {
+        if (!curShape) return
+        const evt = { shiftKey: ev.mods.shift }
 
-        const zoom = canv.getZoom()
-        const evt = opts.event
-
-        const x = opts.mouse_x / zoom
-        const y = opts.mouse_y / zoom
+        const x = ev.rawX
+        const y = ev.rawY
 
         if (_userShapeData) {
-          // ── User shape: size deterministically from the saved bbox ──────────
-          // Drives placement straight off `bbox` (the content's own coordinate
-          // space) instead of the path-shape's incremental getBBox()/transform
-          // accumulation, which breaks for container elements whose transform
-          // can't be flattened. The transform is rewritten from scratch each
-          // move (no recalc until mouseUp), keeping the saved bbox valid.
+        // ── User shape: size deterministically from the saved bbox ──────────
+        // Drives placement straight off `bbox` (the content's own coordinate
+        // space) instead of the path-shape's incremental getBBox()/transform
+        // accumulation, which breaks for container elements whose transform
+        // can't be flattened. The transform is rewritten from scratch each
+        // move (no recalc until mouseUp), keeping the saved bbox valid.
           const { bbox } = _userShapeData
           const newbox = {
             x: Math.min(startX, x),
@@ -198,14 +167,14 @@ export default {
           let sx = (newbox.width / bbox.width) || 0
           let sy = (newbox.height / bbox.height) || 0
           if (evt.shiftKey) {
-            // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
+          // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
             const min = Math.min(sx, sy)
             sx = min
             sy = min
           }
           curShape.setAttribute(
             'transform',
-            `translate(${newbox.x},${newbox.y}) scale(${sx},${sy}) translate(${-bbox.x},${-bbox.y})`
+          `translate(${newbox.x},${newbox.y}) scale(${sx},${sy}) translate(${-bbox.x},${-bbox.y})`
           )
           return
         }
@@ -241,7 +210,7 @@ export default {
 
         translateOrigin.setTranslate(-(left + tx), -(top + ty))
         if (evt.shiftKey) {
-          // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
+        // Shift: uniform scale (preserve original aspect ratio). Default = free resize.
           const max = Math.min(Math.abs(sx), Math.abs(sy))
 
           sx = max * (sx < 0 ? -1 : 1)
@@ -258,22 +227,43 @@ export default {
 
         lastBBox = curShape.getBBox()
       },
-      mouseUp (opts) {
-        const mode = canv.getMode()
-        if (mode !== modeId) { return undefined }
+      pointerUp (ctx, ev) {
+        const shape = curShape
+        curShape = null
+        if (!shape) return 'cancel'
 
-        const keepObject = (opts.event.clientX !== startClientPos.x && opts.event.clientY !== startClientPos.y)
+        // a click without a drag on both axes places nothing
+        const keepObject = ev.screenX !== ctx.start.screenX && ev.screenY !== ctx.start.screenY
 
         // Finalize the user shape's transform once (bakes primitives into
         // geometry, normalizes containers) now that resizing is done.
         if (_userShapeData && keepObject) {
-          canv.recalculateDimensions(curShape)
+          canv.recalculateDimensions(shape)
         }
 
-        return {
-          keep: keepObject,
-          element: curShape,
-          started: false
+        return keepObject ? { created: shape } : 'cancel'
+      },
+      cancel () { curShape = null }
+    })
+
+    return {
+      callback () {
+        if ($id('tool_shapelib') === null) {
+          const extPath = svgEditor.configObj.curConfig.extPath
+          const buttonTemplate = `
+          <se-shape-library id="tool_shapelib"
+            title="${svgEditor.i18next.t(`${name}:buttons.0.title`)}"
+            lib="${extPath}/ext-shapes/shapelib/"
+            src="shapelib.svg"></se-shape-library>
+          `
+          canv.insertChildAtIndex($id('tools_left'), buttonTemplate, 9)
+
+          // `shape-insert` bubbles + is composed, so a single document-level
+          // listener catches every `se-shape-library` instance (desktop or
+          // tablet). `e.target` is retargeted to the dispatching host element.
+          document.addEventListener('shape-insert', (e) => {
+            armShapeInsert(e.detail, e.target)
+          }, { signal: svgEditor.listenerAbort.signal })
         }
       }
     }

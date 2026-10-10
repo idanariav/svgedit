@@ -257,6 +257,17 @@ describe('tool registry (registerTool)', () => {
       }
     })
 
+    it('ctx.start is still the press while pointerUp runs', () => {
+      let seen = null
+      const t = makeTool({ pointerUp: (ctx) => { seen = ctx.start } })
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      gesture([10, 10], [60, 50])
+      release(60, 50)
+      expect(seen).toMatchObject({ screenX: 10, screenY: 10 })
+      expect(t.tool.id).toBe('dragrect')
+    })
+
     it('stay armed and unselected while the tool is locked', () => {
       canvas.registerTool(makeTool().tool)
       canvas.setMode('dragrect')

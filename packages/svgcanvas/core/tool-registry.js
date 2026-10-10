@@ -113,6 +113,8 @@ export const init = (canvas) => {
   let gesture = null
   /** @type {?SVGSVGElement} */
   let overlay = null
+  /** The press of the gesture whose `pointerUp` is running (the gesture itself is already closed). @type {?ToolEvent} */
+  let endingStart = null
 
   // ---- coordinates --------------------------------------------------------
 
@@ -213,7 +215,7 @@ export const init = (canvas) => {
   const ctx = {
     canvas: svgCanvas,
     get zoom () { return svgCanvas.getZoom() },
-    get start () { return gesture?.start },
+    get start () { return gesture?.start ?? endingStart ?? undefined },
     snap: (pt) => (svgCanvas.getCurConfig().gridSnapping ? svgCanvas.snapPointToGrid(pt.x, pt.y) : pt),
     addOverlay: (el) => { ensureOverlay().append(el) },
     clearOverlays,
@@ -307,6 +309,7 @@ export const init = (canvas) => {
     gesture = null // closed before anything below can call setMode()
     svgCanvas.setStarted(false)
     let result
+    endingStart = start
     try {
       result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }))
     } catch (err) {
@@ -315,6 +318,8 @@ export const init = (canvas) => {
       svgCanvas.setStarted(false)
       try { tool.cancel?.(ctx) } catch (e) { logError(`Tool "${tool.id}" cancel() failed`, e, LOG) }
       throw err
+    } finally {
+      endingStart = null
     }
     clearOverlays()
     if (result === 'cancel') {

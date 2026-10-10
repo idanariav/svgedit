@@ -29,7 +29,6 @@ export default {
     const addToHistory = (cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
     const { $id } = svgCanvas
     let selElems
-    let started
     let newFO
     await loadExtensionTranslation(svgEditor)
 
@@ -159,6 +158,167 @@ export default {
       }
     }
 
+    // Both shapes are drawn by dragging from the centre; the pointer is in document units.
+    const startStar = (ev) => {
+      const fill = svgCanvas.getColor('fill')
+      const stroke = svgCanvas.getColor('stroke')
+      const strokeWidth = svgCanvas.getStrokeWidth()
+      newFO = svgCanvas.addSVGElementsFromJson({
+        element: 'polygon',
+        attr: {
+          cx: ev.x,
+          cy: ev.y,
+          id: svgCanvas.getNextId(),
+          shape: 'star',
+          point: $id('starNumPoints').value,
+          r: 0,
+          radialshift: $id('radialShift').value,
+          r2: 0,
+          orient: 'point',
+          fill,
+          stroke,
+          'stroke-width': strokeWidth
+        }
+      })
+    }
+    const updateStar = (px, py) => {
+      const cx = Number(newFO.getAttribute('cx'))
+      const cy = Number(newFO.getAttribute('cy'))
+      const point = Number(newFO.getAttribute('point'))
+      const orient = newFO.getAttribute('orient')
+      const fill = newFO.getAttribute('fill')
+      const stroke = newFO.getAttribute('stroke')
+      // A missing stroke-width means the SVG initial value of 1, not 0 —
+      // cleanupElement strips the attribute at that value (writing 0 back
+      // below would make the shape invisible mid-draw).
+      const strokeWidthAttr = newFO.getAttribute('stroke-width')
+      const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
+      const radialshift = Number(newFO.getAttribute('radialshift'))
+
+      let x = px
+      let y = py
+
+      const circumradius =
+      Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
+      const RadiusMultiplier = $id('RadiusMultiplier').value
+      const inradius =
+      circumradius / RadiusMultiplier
+      newFO.setAttribute('r', circumradius)
+      newFO.setAttribute('r2', inradius)
+      newFO.setAttribute('starRadiusMultiplier', RadiusMultiplier)
+
+      let polyPoints = ''
+      for (let s = 0; point >= s; s++) {
+        let angle = 2.0 * Math.PI * (s / point)
+        if (orient === 'point') {
+          angle -= Math.PI / 2
+        } else if (orient === 'edge') {
+          angle = angle + Math.PI / point - Math.PI / 2
+        }
+
+        x = circumradius * Math.cos(angle) + cx
+        y = circumradius * Math.sin(angle) + cy
+
+        polyPoints += x + ',' + y + ' '
+
+        if (!isNaN(inradius)) {
+          angle = 2.0 * Math.PI * (s / point) + Math.PI / point
+          if (orient === 'point') {
+            angle -= Math.PI / 2
+          } else if (orient === 'edge') {
+            angle = angle + Math.PI / point - Math.PI / 2
+          }
+          angle += radialshift
+
+          x = inradius * Math.cos(angle) + cx
+          y = inradius * Math.sin(angle) + cy
+
+          polyPoints += x + ',' + y + ' '
+        }
+      }
+      newFO.setAttribute('points', polyPoints)
+      newFO.setAttribute('fill', fill)
+      newFO.setAttribute('stroke', stroke)
+      newFO.setAttribute('stroke-width', strokeWidth)
+      /* const shape = */ newFO.getAttribute('shape')
+    }
+    const startPolygon = (ev) => {
+      const fill = svgCanvas.getColor('fill')
+      const stroke = svgCanvas.getColor('stroke')
+      const strokeWidth = svgCanvas.getStrokeWidth()
+      newFO = svgCanvas.addSVGElementsFromJson({
+        element: 'polygon',
+        attr: {
+          cx: ev.x,
+          cy: ev.y,
+          id: svgCanvas.getNextId(),
+          shape: 'regularPoly',
+          sides: $id('polySides').value,
+          orient: 'x',
+          edge: 0,
+          fill,
+          stroke,
+          'stroke-width': strokeWidth
+        }
+      })
+    }
+    const updatePolygon = (px, py) => {
+      const cx = Number(newFO.getAttribute('cx'))
+      const cy = Number(newFO.getAttribute('cy'))
+      const sides = Number(newFO.getAttribute('sides'))
+      // const orient = newFO.getAttribute('orient');
+      const fill = newFO.getAttribute('fill')
+      const stroke = newFO.getAttribute('stroke')
+      // A missing stroke-width means the SVG initial value of 1, not 0 —
+      // cleanupElement strips the attribute at that value (writing 0 back
+      // below would make the shape invisible mid-draw).
+      const strokeWidthAttr = newFO.getAttribute('stroke-width')
+      const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
+
+      let x = px
+      let y = py
+
+      const edg =
+      Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
+      newFO.setAttribute('edge', edg)
+
+      const inradius = (edg / 2) * cot(Math.PI / sides)
+      const circumradius = inradius * sec(Math.PI / sides)
+      let points = ''
+      for (let s = 0; sides >= s; s++) {
+        const angle = (2.0 * Math.PI * s) / sides
+        x = circumradius * Math.cos(angle) + cx
+        y = circumradius * Math.sin(angle) + cy
+
+        points += x + ',' + y + ' '
+      }
+
+      // const poly = newFO.createElementNS(NS.SVG, 'polygon');
+      newFO.setAttribute('points', points)
+      newFO.setAttribute('fill', fill)
+      newFO.setAttribute('stroke', stroke)
+      newFO.setAttribute('stroke-width', strokeWidth)
+    }
+
+    for (const [mode, start, update, emptyAttr, emptyValue] of [
+      ['star', startStar, updateStar, 'r', '0'],
+      ['polygon', startPolygon, updatePolygon, 'edge', '0']
+    ]) {
+      svgCanvas.registerTool({
+        id: mode,
+        undoLabel: `Draw ${mode}`,
+        pointerDown (ctx, ev) { start(ev) },
+        pointerMove (ctx, ev) { if (newFO) update(ev.rawX, ev.rawY) },
+        pointerUp () {
+          const el = newFO
+          newFO = null
+          // a click without a drag leaves a zero-size shape: drop it
+          return el && el.getAttribute(emptyAttr) !== emptyValue ? { created: el } : 'cancel'
+        },
+        cancel () { newFO = null }
+      })
+    }
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       // The callback should be used to load the DOM with the appropriate UI items
@@ -275,190 +435,6 @@ export default {
             }
           }
         })
-      },
-      mouseDown (opts) {
-        if (svgCanvas.getMode() === 'star') {
-          const fill = svgCanvas.getColor('fill')
-          const stroke = svgCanvas.getColor('stroke')
-          const strokeWidth = svgCanvas.getStrokeWidth()
-          started = true
-          newFO = svgCanvas.addSVGElementsFromJson({
-            element: 'polygon',
-            attr: {
-              cx: opts.start_x,
-              cy: opts.start_y,
-              id: svgCanvas.getNextId(),
-              shape: 'star',
-              point: $id('starNumPoints').value,
-              r: 0,
-              radialshift: $id('radialShift').value,
-              r2: 0,
-              orient: 'point',
-              fill,
-              stroke,
-              'stroke-width': strokeWidth
-            }
-          })
-          return {
-            started: true
-          }
-        }
-        if (svgCanvas.getMode() === 'polygon') {
-          const fill = svgCanvas.getColor('fill')
-          const stroke = svgCanvas.getColor('stroke')
-          const strokeWidth = svgCanvas.getStrokeWidth()
-          started = true
-          newFO = svgCanvas.addSVGElementsFromJson({
-            element: 'polygon',
-            attr: {
-              cx: opts.start_x,
-              cy: opts.start_y,
-              id: svgCanvas.getNextId(),
-              shape: 'regularPoly',
-              sides: $id('polySides').value,
-              orient: 'x',
-              edge: 0,
-              fill,
-              stroke,
-              'stroke-width': strokeWidth
-            }
-          })
-
-          return {
-            started: true
-          }
-        }
-        return undefined
-      },
-      mouseMove (opts) {
-        if (!started) {
-          return undefined
-        }
-        if (svgCanvas.getMode() === 'star') {
-          const cx = Number(newFO.getAttribute('cx'))
-          const cy = Number(newFO.getAttribute('cy'))
-          const point = Number(newFO.getAttribute('point'))
-          const orient = newFO.getAttribute('orient')
-          const fill = newFO.getAttribute('fill')
-          const stroke = newFO.getAttribute('stroke')
-          // A missing stroke-width means the SVG initial value of 1, not 0 —
-          // cleanupElement strips the attribute at that value (writing 0 back
-          // below would make the shape invisible mid-draw).
-          const strokeWidthAttr = newFO.getAttribute('stroke-width')
-          const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
-          const radialshift = Number(newFO.getAttribute('radialshift'))
-
-          let x = opts.mouse_x
-          let y = opts.mouse_y
-
-          const circumradius =
-            Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
-          const RadiusMultiplier = $id('RadiusMultiplier').value
-          const inradius =
-            circumradius / RadiusMultiplier
-          newFO.setAttribute('r', circumradius)
-          newFO.setAttribute('r2', inradius)
-          newFO.setAttribute('starRadiusMultiplier', RadiusMultiplier)
-
-          let polyPoints = ''
-          for (let s = 0; point >= s; s++) {
-            let angle = 2.0 * Math.PI * (s / point)
-            if (orient === 'point') {
-              angle -= Math.PI / 2
-            } else if (orient === 'edge') {
-              angle = angle + Math.PI / point - Math.PI / 2
-            }
-
-            x = circumradius * Math.cos(angle) + cx
-            y = circumradius * Math.sin(angle) + cy
-
-            polyPoints += x + ',' + y + ' '
-
-            if (!isNaN(inradius)) {
-              angle = 2.0 * Math.PI * (s / point) + Math.PI / point
-              if (orient === 'point') {
-                angle -= Math.PI / 2
-              } else if (orient === 'edge') {
-                angle = angle + Math.PI / point - Math.PI / 2
-              }
-              angle += radialshift
-
-              x = inradius * Math.cos(angle) + cx
-              y = inradius * Math.sin(angle) + cy
-
-              polyPoints += x + ',' + y + ' '
-            }
-          }
-          newFO.setAttribute('points', polyPoints)
-          newFO.setAttribute('fill', fill)
-          newFO.setAttribute('stroke', stroke)
-          newFO.setAttribute('stroke-width', strokeWidth)
-          /* const shape = */ newFO.getAttribute('shape')
-
-          return {
-            started: true
-          }
-        }
-        if (svgCanvas.getMode() === 'polygon') {
-          const cx = Number(newFO.getAttribute('cx'))
-          const cy = Number(newFO.getAttribute('cy'))
-          const sides = Number(newFO.getAttribute('sides'))
-          // const orient = newFO.getAttribute('orient');
-          const fill = newFO.getAttribute('fill')
-          const stroke = newFO.getAttribute('stroke')
-          // A missing stroke-width means the SVG initial value of 1, not 0 —
-          // cleanupElement strips the attribute at that value (writing 0 back
-          // below would make the shape invisible mid-draw).
-          const strokeWidthAttr = newFO.getAttribute('stroke-width')
-          const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
-
-          let x = opts.mouse_x
-          let y = opts.mouse_y
-
-          const edg =
-            Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
-          newFO.setAttribute('edge', edg)
-
-          const inradius = (edg / 2) * cot(Math.PI / sides)
-          const circumradius = inradius * sec(Math.PI / sides)
-          let points = ''
-          for (let s = 0; sides >= s; s++) {
-            const angle = (2.0 * Math.PI * s) / sides
-            x = circumradius * Math.cos(angle) + cx
-            y = circumradius * Math.sin(angle) + cy
-
-            points += x + ',' + y + ' '
-          }
-
-          // const poly = newFO.createElementNS(NS.SVG, 'polygon');
-          newFO.setAttribute('points', points)
-          newFO.setAttribute('fill', fill)
-          newFO.setAttribute('stroke', stroke)
-          newFO.setAttribute('stroke-width', strokeWidth)
-          return {
-            started: true
-          }
-        }
-        return undefined
-      },
-      mouseUp () {
-        if (svgCanvas.getMode() === 'star') {
-          const r = newFO.getAttribute('r')
-          return {
-            keep: r !== '0',
-            element: newFO
-          }
-        }
-        if (svgCanvas.getMode() === 'polygon') {
-          const edge = newFO.getAttribute('edge')
-          const keep = edge !== '0'
-          // svgCanvas.addToSelection([newFO], true);
-          return {
-            keep,
-            element: newFO
-          }
-        }
-        return undefined
       },
       selectedChanged (opts) {
         // Use this to update the current selected elements

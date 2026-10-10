@@ -7,13 +7,15 @@ describe('ext-cutter', () => {
   let svgCanvas
   let svgContent
   let svgEditor
-  let extInstance
+  let tool
   let workarea
-  let origSetModeMock
 
+  // The registry hands tools document-space events (see tool-registry.js).
+  const ctx = {}
+  const ev = (x, y, shift = false) => ({ x, y, rawX: x, rawY: y, mods: { shift } })
   const click = (x, y) => {
-    extInstance.mouseDown({ start_x: x, start_y: y })
-    extInstance.mouseUp({ mouse_x: x, mouse_y: y, event: {} })
+    tool.pointerDown(ctx, ev(x, y))
+    tool.pointerUp(ctx, ev(x, y))
   }
 
   const previewD = () => svgContent.querySelector('#cutter_preview_line')?.getAttribute('d')
@@ -25,14 +27,14 @@ describe('ext-cutter', () => {
     workarea = document.createElement('div')
     document.body.append(workarea)
 
-    origSetModeMock = vi.fn()
     svgCanvas = {
       $id: vi.fn(),
       $click: vi.fn(),
       getZoom: () => 1,
       getSvgContent: () => svgContent,
       getMode: () => 'cutter',
-      setMode: origSetModeMock,
+      setMode: vi.fn(),
+      registerTool: vi.fn((def) => { tool = def }),
       insertChildAtIndex: vi.fn(),
       cutShapes: vi.fn(),
       getSelectedElements: vi.fn(() => []),
@@ -50,7 +52,7 @@ describe('ext-cutter', () => {
 
     mockCommands(svgEditor)
 
-    extInstance = await extCutter.init.call(svgEditor)
+    const extInstance = await extCutter.init.call(svgEditor)
     extInstance.callback()
   })
 
@@ -59,15 +61,15 @@ describe('ext-cutter', () => {
   })
 
   it('does not snap the preview line when shift is not held', () => {
-    extInstance.mouseDown({ start_x: 100, start_y: 100 })
-    extInstance.mouseMove({ mouse_x: 250, mouse_y: 110, event: { shiftKey: false } })
+    tool.pointerDown(ctx, ev(100, 100))
+    tool.pointerMove(ctx, ev(250, 110, false))
 
     expect(previewD()).toBe('M100,100 L250,110')
   })
 
   it('snaps the preview line to the nearest 15-degree angle when shift is held', () => {
-    extInstance.mouseDown({ start_x: 100, start_y: 100 })
-    extInstance.mouseMove({ mouse_x: 250, mouse_y: 110, event: { shiftKey: true } })
+    tool.pointerDown(ctx, ev(100, 100))
+    tool.pointerMove(ctx, ev(250, 110, true))
 
     // Nearly horizontal drag snaps flat onto the 0-degree line from the start point.
     const d = previewD()
@@ -76,9 +78,9 @@ describe('ext-cutter', () => {
   })
 
   it('performs an instant straight cut on a plain drag (legacy behavior)', () => {
-    extInstance.mouseDown({ start_x: 100, start_y: 100 })
-    extInstance.mouseMove({ mouse_x: 250, mouse_y: 110, event: { shiftKey: false } })
-    extInstance.mouseUp({ mouse_x: 250, mouse_y: 110, event: { shiftKey: false } })
+    tool.pointerDown(ctx, ev(100, 100))
+    tool.pointerMove(ctx, ev(250, 110, false))
+    tool.pointerUp(ctx, ev(250, 110, false))
 
     expect(svgCanvas.cutShapes).toHaveBeenCalledTimes(1)
     expect(svgCanvas.cutShapes).toHaveBeenCalledWith([
@@ -90,9 +92,9 @@ describe('ext-cutter', () => {
   })
 
   it('cuts along the snapped endpoint when shift is held on a drag', () => {
-    extInstance.mouseDown({ start_x: 100, start_y: 100 })
-    extInstance.mouseMove({ mouse_x: 250, mouse_y: 110, event: { shiftKey: true } })
-    extInstance.mouseUp({ mouse_x: 250, mouse_y: 110, event: { shiftKey: true } })
+    tool.pointerDown(ctx, ev(100, 100))
+    tool.pointerMove(ctx, ev(250, 110, true))
+    tool.pointerUp(ctx, ev(250, 110, true))
 
     expect(svgCanvas.cutShapes).toHaveBeenCalledTimes(1)
     const [p1, p2] = svgCanvas.cutShapes.mock.calls[0][0]
@@ -146,10 +148,10 @@ describe('ext-cutter', () => {
     click(150, 80)
     // Double-click at (200, 60): first mousedown/up adds the 3rd vertex,
     // the second mousedown/up lands on the same spot and must be ignored.
-    extInstance.mouseDown({ start_x: 200, start_y: 60 })
-    extInstance.mouseUp({ mouse_x: 200, mouse_y: 60, event: {} })
-    extInstance.mouseDown({ start_x: 200, start_y: 60 })
-    extInstance.mouseUp({ mouse_x: 200, mouse_y: 60, event: {} })
+    tool.pointerDown(ctx, ev(200, 60))
+    tool.pointerUp(ctx, ev(200, 60))
+    tool.pointerDown(ctx, ev(200, 60))
+    tool.pointerUp(ctx, ev(200, 60))
     workarea.dispatchEvent(new MouseEvent('dblclick'))
 
     expect(svgCanvas.cutShapes).toHaveBeenCalledTimes(1)
@@ -180,38 +182,36 @@ describe('ext-cutter', () => {
     click(100, 100)
     click(150, 80)
 
-    svgCanvas.setMode('select')
+    tool.deactivate(ctx) // the registry calls this when the mode changes away from 'cutter'
 
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
     expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
-    expect(origSetModeMock).toHaveBeenCalledWith('select')
 
     // A stray Enter afterwards must not resurrect the cancelled line.
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
   })
 
-  // Regression guard: mouseUp used to gate only on the local `active` flag,
-  // unlike every other extension's mouseUp hook (ext-brush, ext-shape-builder,
-  // ext-connector, ...), which all check svgCanvas.getMode() too. `active` is
-  // only reset by the setMode() monkey-patch above; if mode ever changes away
-  // from 'cutter' through some other route (core has several direct
-  // setCurrentMode() call sites), `active` is left stale and this hook would
-  // fire for whatever tool's mouseUp comes next -- returning an object with
-  // no `element`, which the core mouseUp epilogue (event.js) uses to
-  // unconditionally overwrite its own `element`, discarding that tool's result.
-  it('does not act on mouseUp once mode has changed away from cutter, even if `active` is still stale', () => {
+  it('a cancelled gesture (Escape, an error) tears the line down and forgets it', () => {
     click(100, 100)
     click(150, 80)
-    expect(previewD()).toBe('M100,100 L150,80')
+    tool.cancel(ctx)
 
-    // Simulate mode having changed via a route that bypasses the setMode()
-    // monkey-patch, leaving `active` stale (true).
-    svgCanvas.getMode = () => 'path'
-
-    const result = extInstance.mouseUp({ mouse_x: 200, mouse_y: 130, event: {} })
-
-    expect(result).toBeUndefined()
+    expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
+  })
+
+  it('the preview line is scaffolding: marked ephemeral so it is never saved or recorded', () => {
+    click(100, 100)
+    expect(svgContent.querySelector('#cutter_preview_line').hasAttribute('data-se-ephemeral')).toBe(true)
+  })
+
+  it('registers as the cutter tool and follows the pointer between clicks', () => {
+    expect(tool.id).toBe('cutter')
+    expect(tool.wantsHover).toBe(true)
+    click(100, 100)
+    tool.pointerMove(ctx, ev(180, 90)) // hover: no button down
+    expect(previewD()).toBe('M100,100 L180,90')
   })
 })

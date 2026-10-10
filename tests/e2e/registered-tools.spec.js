@@ -73,4 +73,80 @@ test.describe('registered tools', () => {
     expect(await page.evaluate(() => document.querySelectorAll('se-eyedropper-menu').length)).toBe(1)
     expect(await undoSize(page)).toBe(0)
   })
+
+  test('a cutter drag across a shape cuts it in one undo step', async ({ page }) => {
+    const shapes = () => page.evaluate(() => document.querySelectorAll('#svgcontent g.layer > :not(title)').length)
+    await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly([document.getElementById('a')])
+      window.svgEditor.commands.run('tool_cutter')
+    })
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('cutter')
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 30, y: 80, to: { x: 130, y: 80 }, steps: 6 }]))
+    expect(await shapes()).toBeGreaterThan(1)
+    expect(await undoSize(page)).toBe(1)
+    expect(await page.evaluate(() => document.getElementById('cutter_preview_line'))).toBeNull()
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await shapes()).toBe(1)
+  })
+
+  test('Escape during a multi-point cutter line removes the preview and cuts nothing', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.commands.run('tool_cutter'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'click', x: 30, y: 80 }, { kind: 'move', x: 90, y: 60 }]))
+    expect(await page.evaluate(() => document.getElementById('cutter_preview_line') !== null)).toBe(true)
+    await page.evaluate(() => window.svgEditor.automation.key('escape'))
+    expect(await page.evaluate(() => document.getElementById('cutter_preview_line'))).toBeNull()
+    expect(await undoSize(page)).toBe(0)
+  })
+
+  for (const zoom of [100, 200]) {
+    test(`a star is sized by the drag in document units at ${zoom}% zoom, in one undo step`, async ({ page }) => {
+      await page.evaluate((z) => window.svgEditor.bottomPanel.changeZoom(z), zoom)
+      await page.evaluate(() => window.svgEditor.commands.run('tool_star'))
+      expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('star')
+      await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 300, y: 200, to: { x: 360, y: 200 }, steps: 6 }]))
+      const star = await page.evaluate(() => {
+        const el = document.querySelector('#svgcontent polygon[shape="star"]')
+        return el && { r: Number(el.getAttribute('r')), cx: Number(el.getAttribute('cx')) }
+      })
+      expect(star.cx).toBeCloseTo(300, 0)
+      expect(star.r).toBeCloseTo(40, 0) // |drag| / 1.5, whatever the zoom
+      expect(await undoSize(page)).toBe(1)
+      await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+      expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(0)
+    })
+  }
+
+  test('a polygon click without a drag creates nothing, and Escape mid-drag rolls back', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.commands.run('tool_polygon'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'click', x: 300, y: 200 }]))
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(0)
+    await page.evaluate(() => window.svgEditor.commands.run('tool_polygon'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 300, y: 200 }, { kind: 'move', x: 340, y: 230 }]))
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(1)
+    await page.evaluate(() => window.svgEditor.automation.key('escape'))
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(0)
+    expect(await undoSize(page)).toBe(0)
+  })
+
+  test('an armed library shape is placed by a drag in one undo step; a click places nothing', async ({ page }) => {
+    const shapes = () => page.evaluate(() => document.querySelectorAll('#svgcontent g.layer > path').length)
+    await page.evaluate(() => window.svgEditor.armShapeInsert({ draw: 'M0 0 L10 0 L10 10 L0 10 Z' }))
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('shapelib')
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'click', x: 300, y: 200 }]))
+    expect(await shapes()).toBe(0)
+    await page.evaluate(() => window.svgEditor.armShapeInsert({ draw: 'M0 0 L10 0 L10 10 L0 10 Z' }))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 300, y: 200, to: { x: 380, y: 260 }, steps: 6 }]))
+    expect(await shapes()).toBe(1)
+    expect(await undoSize(page)).toBe(1)
+    const box = await page.evaluate(() => {
+      const b = document.querySelector('#svgcontent g.layer > path').getBBox()
+      return { x: b.x, y: b.y, w: b.width, h: b.height }
+    })
+    // the library shape's incremental scaling drifts by a pixel or two (as it always did)
+    expect(Math.abs(box.x - 300)).toBeLessThan(3)
+    expect(Math.abs(box.w - 80)).toBeLessThan(3)
+    expect(Math.abs(box.h - 60)).toBeLessThan(3)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await shapes()).toBe(0)
+  })
 })
