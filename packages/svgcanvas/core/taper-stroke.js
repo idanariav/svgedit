@@ -18,6 +18,13 @@
  * the normal, closing the tips with round caps, then refitting compact
  * cubics via paper's `simplify()`.
  *
+ * A width profile (`se:width-profile`, see width-profile.js) generalises the taper: width points anywhere along
+ * the path, each side apart. The element is the same kind of thing — `se:taper-d` is its centerline and
+ * `se:taper-style` its width and paint — only the outline comes from `width-outline.js` (which also takes
+ * closed paths and the stroke's caps and joins) instead of the three-point curve above. When a profile is
+ * present it wins; `se:taper` is kept alongside it (the profile's two end widths) because code that only asks
+ * "is this stroke tapered" reads that.
+ *
  * `remapTaperSource(elem, remap, scalew, scaleh, svgCanvas)` is registered with
  * `geometry-remap-registry.js` (from this module's own `init`) and run by
  * `coords.js` `remapElement` when a transform is baked into a tapered path:
@@ -35,6 +42,8 @@ import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
 import { FX_SOURCE_ATTR } from './live-effects.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
+import { widthOutline } from './width-outline.js'
+import { WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.js'
 
 export const TAPER_ATTR = 'se:taper'
 export const TAPER_SOURCE_ATTR = 'se:taper-d'
@@ -119,6 +128,31 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
 }
 
 /**
+ * The caps and joins a width outline takes from the element's stroke attributes.
+ * @param {Element} elem
+ * @returns {import('./width-outline.js').OutlineOptions}
+ */
+const outlineOptions = (elem) => ({
+  cap: ['round', 'square'].includes(elem.getAttribute('stroke-linecap')) ? elem.getAttribute('stroke-linecap') : 'butt',
+  join: ['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin')) ? elem.getAttribute('stroke-linejoin') : 'miter',
+  miterLimit: parseFloat(elem.getAttribute('stroke-miterlimit')) || 4
+})
+
+/**
+ * The outline of `elem`'s stored centerline: from its width profile when it has one, else from its taper.
+ * @param {Element} elem
+ * @param {string} srcD the centerline
+ * @param {number} width the full stroke width
+ * @returns {?string}
+ */
+const outlineOf = (elem, srcD, width) => {
+  const profile = parseProfile(elem.getAttribute(WIDTH_PROFILE_ATTR))
+  if (profile) return widthOutline(srcD, width, profile, outlineOptions(elem))
+  const [start = 100, end = 0] = (elem.getAttribute(TAPER_ATTR) || '').split(',').map(Number)
+  return buildTaperOutline(srcD, width, start, end)
+}
+
+/**
  * Called from `remapElement` (coords.js) when a transform is baked into a
  * tapered path: apply the affine map to the stored centerline, scale the
  * stored width, regenerate the outline `d`.
@@ -149,16 +183,14 @@ export const remapTaperSource = (elem, remap, scalew, scaleh, svgCanvas) => {
   const width = (parseFloat(style.slice(0, sep)) || 1) *
     Math.sqrt(Math.abs(scalew(1) * scaleh(1)))
   const paint = style.slice(sep + 1)
-  const [start = 100, end = 0] = (elem.getAttribute(TAPER_ATTR) || '')
-    .split(',').map(Number)
   // Normalize before storing: this source is also restored verbatim onto
   // `d` by removeTaperStroke, so it needs to be node-edit-safe too, not
   // just the outline below (see toAbsolutePathData's doc comment).
   const absSrc = toAbsolutePathData(newSrc, svgCanvas)
   elem.setAttribute(TAPER_SOURCE_ATTR, absSrc)
   elem.setAttribute(TAPER_STYLE_ATTR, `${Math.round(width * 1e4) / 1e4}|${paint}`)
-  const outline = buildTaperOutline(absSrc, width, start, end)
-  if (outline) elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
+  const outline = outlineOf(elem, absSrc, width)
+  if (outline) elem.setAttribute('d', elem.hasAttribute(WIDTH_PROFILE_ATTR) ? outline : toAbsolutePathData(outline, svgCanvas))
 }
 
 export const init = (canvas) => {
@@ -170,6 +202,7 @@ export const init = (canvas) => {
     const parts = value.split(',').map(Number)
     return parts.length === 2 && parts.every(Number.isFinite) ? true : 'is not "start,end"'
   })
+  registerAttrValidator(WIDTH_PROFILE_ATTR, validateProfile)
   registerAttrValidator(TAPER_STYLE_ATTR, (value) => (/^[\d.]+\|.+$/.test(value) ? true : 'is not "width|paint"'))
 
   /**
@@ -271,8 +304,10 @@ export const init = (canvas) => {
       stroke: elem.getAttribute('stroke'),
       [TAPER_ATTR]: elem.getAttribute(TAPER_ATTR),
       [TAPER_SOURCE_ATTR]: elem.getAttribute(TAPER_SOURCE_ATTR),
-      [TAPER_STYLE_ATTR]: elem.getAttribute(TAPER_STYLE_ATTR)
+      [TAPER_STYLE_ATTR]: elem.getAttribute(TAPER_STYLE_ATTR),
+      [WIDTH_PROFILE_ATTR]: elem.getAttribute(WIDTH_PROFILE_ATTR)
     }
+    elem.removeAttribute(WIDTH_PROFILE_ATTR) // the sliders replace a width profile
     elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
     elem.setAttribute('fill', paint)
     elem.setAttribute('stroke', 'none')
@@ -309,8 +344,10 @@ export const init = (canvas) => {
       'stroke-width': elem.getAttribute('stroke-width'),
       [TAPER_ATTR]: elem.getAttribute(TAPER_ATTR),
       [TAPER_SOURCE_ATTR]: srcD,
-      [TAPER_STYLE_ATTR]: style
+      [TAPER_STYLE_ATTR]: style,
+      [WIDTH_PROFILE_ATTR]: elem.getAttribute(WIDTH_PROFILE_ATTR)
     }
+    elem.removeAttribute(WIDTH_PROFILE_ATTR)
     elem.setAttribute('d', srcD)
     elem.setAttribute('fill', 'none')
     elem.setAttribute('stroke', paint)
@@ -326,6 +363,117 @@ export const init = (canvas) => {
     return elem
   }
 
+  // ---- width profiles ------------------------------------------------------
+
+  /**
+   * Whether a width profile can be put on this element now: an already profiled or tapered stroke, or a stroked
+   * line, polyline or path without a fill. Unlike the taper, a closed path is fine.
+   * @param {?Element} elem
+   * @returns {boolean}
+   */
+  const canWidthStroke = (elem) => {
+    if (!elem) return false
+    if (elem.hasAttribute(FX_SOURCE_ATTR) || elem.hasAttribute('se:orig-d')) return false // exclusive with live effects and corners
+    if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
+    if (!['line', 'polyline', 'path'].includes(elem.tagName)) return false
+    if ((elem.getAttribute('stroke') || 'none') === 'none') return false
+    return elem.tagName === 'line' || (elem.getAttribute('fill') || 'none') === 'none'
+  }
+
+  /**
+   * The width profile of an element (the selection's by default), or null for a plain or only-tapered stroke.
+   * @param {Element} [elem]
+   * @returns {?import('./width-profile.js').WidthPoint[]}
+   */
+  const getWidthProfile = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) =>
+    parseProfile(elem?.getAttribute(WIDTH_PROFILE_ATTR))
+
+  /**
+   * A line or polyline as the equivalent `<path>` (keeping its id and attributes), in place and without
+   * history: for use inside an open transaction. Any path is returned as it is.
+   * @param {Element} elem
+   * @returns {Element}
+   */
+  const asPath = (elem) => {
+    if (elem.tagName === 'path') return elem
+    let pts = svgCanvas.getArrowSourcePoints(elem)
+    if (!pts && elem.tagName === 'line') {
+      pts = [{ x: +elem.getAttribute('x1'), y: +elem.getAttribute('y1') }, { x: +elem.getAttribute('x2'), y: +elem.getAttribute('y2') }]
+    } else if (!pts) {
+      const c = (elem.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number)
+      pts = []
+      for (let i = 0; i + 1 < c.length; i += 2) pts.push({ x: c[i], y: c[i + 1] })
+    }
+    const path = elem.ownerDocument.createElementNS(NS.SVG, 'path')
+    const drop = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
+    for (const attr of elem.attributes) if (!drop.includes(attr.name)) path.setAttribute(attr.name, attr.value)
+    path.setAttribute('d', pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
+    elem.before(path)
+    elem.remove()
+    return path
+  }
+
+  /**
+   * Draw `elem` (a path that can take a width profile) with the profile, regenerating the outline from its stored
+   * centerline. Records no history: use it inside `transact` or a tool gesture.
+   * @param {Element} elem
+   * @param {import('./width-profile.js').WidthPoint[]} points
+   * @returns {boolean} false when nothing could be drawn (no width, no centerline).
+   */
+  const drawWidthProfile = (elem, points) => {
+    if (!isProfile(points)) return false
+    if (svgCanvas.getArrowAlign(elem)) svgCanvas.setArrowAlign(elem, null) // the centerline is the real, untrimmed one
+    const style = elem.getAttribute(TAPER_STYLE_ATTR)
+    let width
+    let paint
+    if (style) {
+      const sep = style.indexOf('|')
+      width = parseFloat(style.slice(0, sep)) || 1
+      paint = style.slice(sep + 1)
+    } else {
+      width = parseFloat(elem.getAttribute('stroke-width')) || 1
+      paint = elem.getAttribute('stroke')
+    }
+    const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d')
+    const outline = widthOutline(srcD, width, points, outlineOptions(elem))
+    if (!outline) return false
+    elem.setAttribute('d', outline)
+    elem.setAttribute('fill', paint)
+    elem.setAttribute('stroke', 'none')
+    elem.setAttribute(WIDTH_PROFILE_ATTR, formatProfile(points))
+    elem.setAttribute(TAPER_ATTR, endPercents(points).join(','))
+    elem.setAttribute(TAPER_SOURCE_ATTR, srcD)
+    elem.setAttribute(TAPER_STYLE_ATTR, `${width}|${paint}`)
+    return true
+  }
+
+  /**
+   * Give the selected strokes a width profile as one undo step (lines and polylines become paths).
+   * @param {import('./width-profile.js').WidthPoint[]} points
+   * @returns {Element[]} the elements that took it.
+   */
+  const applyWidthProfile = (points) => {
+    const targets = svgCanvas.getSelectedElements().filter(canWidthStroke)
+    if (!targets.length || !isProfile(points)) return []
+    const done = []
+    svgCanvas.transact('Width profile', () => {
+      for (const t of targets) {
+        const el = asPath(t)
+        if (drawWidthProfile(el, points)) done.push(el)
+      }
+    })
+    if (done.length) {
+      svgCanvas.selectOnly(done, true)
+      svgCanvas.call('changed', done)
+    }
+    return done
+  }
+
+  svgCanvas.canWidthStroke = canWidthStroke
+  svgCanvas.getWidthProfile = getWidthProfile
+  svgCanvas.widthStrokeAsPath = asPath
+  svgCanvas.drawWidthProfile = drawWidthProfile
+  svgCanvas.applyWidthProfile = applyWidthProfile
   svgCanvas.applyTaperStroke = applyTaperStroke
   svgCanvas.removeTaperStroke = removeTaperStroke
   svgCanvas.getTaperParams = getTaperParams

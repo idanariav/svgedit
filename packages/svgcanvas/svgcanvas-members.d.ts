@@ -263,6 +263,16 @@ export interface AttachedMembers {
   getArrowSourcePoints(elem: Element): Array<{ x: number; y: number }> | null
   /** Replace the untrimmed points of an aligned line or polyline and trim again. */
   setArrowSourcePoints(elem: Element, pts: Array<{ x: number; y: number }>): boolean
+  /** Whether a width profile can be put on the element (a stroked line, polyline or path, open or closed). */
+  canWidthStroke(elem: Element | null): boolean
+  /** The element's (default: the selection's) width profile as `[t, left, right]` points, or null. */
+  getWidthProfile(elem?: Element): Array<[number, number, number]> | null
+  /** A line or polyline as an equivalent path, in place, without history (inside a transaction). */
+  widthStrokeAsPath(elem: Element): Element
+  /** Draw a path with a width profile from its stored centerline, without history; false if nothing could be drawn. */
+  drawWidthProfile(elem: Element, points: Array<[number, number, number]>): boolean
+  /** Give the selected strokes a width profile as one undo step; returns the elements that took it. */
+  applyWidthProfile(points: Array<[number, number, number]>): Element[]
   switchSelectedZorder(): void
   matchStrokes(): void
   setRotationAngle(val: number, preventUndo?: boolean): void

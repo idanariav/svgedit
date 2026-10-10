@@ -1,6 +1,8 @@
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
+import './seSelect.js'
+import { PRESETS, presetId, presetPoints } from '@svgedit/svgcanvas/core/width-profile.js'
 
 const TEMPLATE_HTML = `
   <style>
@@ -108,11 +110,12 @@ const TEMPLATE_HTML = `
     <span id="icon"></span>
   </button>
   <div id="options-container" role="dialog" aria-label="Taper stroke" style="display:none">
+    <se-select id="taper_preset" label="Profile"></se-select>
     <div class="row2">
       <se-spin-input id="taper_start" label="Start %" min="0" max="100" step="5" value="100"></se-spin-input>
       <se-spin-input id="taper_end" label="End %" min="0" max="100" step="5" value="0"></se-spin-input>
     </div>
-    <div class="hint">Tip width as % of the stroke width; the middle stays full. 100→0 is a classic brush taper.</div>
+    <div class="hint">Tip width as % of the stroke width; the middle stays full. 100→0 is a classic brush taper. A profile sets the widths along the whole stroke (edit them with the Width tool); Update replaces it.</div>
     <div class="actions">
       <button class="apply">Apply</button>
       <button class="remove" style="display:none">Remove</button>
@@ -132,6 +135,14 @@ class SeTaperSettings extends SeSettingsPopover {
 
     this.$apply = this._shadowRoot.querySelector('.apply')
     this.$remove = this._shadowRoot.querySelector('.remove')
+
+    this.$preset = this._shadowRoot.querySelector('#taper_preset')
+    this.$preset.addEventListener('change', () => {
+      const id = this.$preset.value
+      if (!id) return
+      ownerEditor(this).svgCanvas.applyWidthProfile?.(presetPoints(id))
+      this.close()
+    })
 
     this.$apply.addEventListener('click', () => {
       const num = (id, fallback) => {
@@ -156,6 +167,14 @@ class SeTaperSettings extends SeSettingsPopover {
       this._shadowRoot.querySelector('#taper_start').value = existing.start
       this._shadowRoot.querySelector('#taper_end').value = existing.end
     }
+    // The picker is upgraded once the popover is in the document (not while the template is cloned).
+    if (!this._presetsReady) {
+      this.$preset.addOption('', 'Taper (Start / End)')
+      for (const { id, label } of PRESETS) this.$preset.addOption(id, label)
+      this._presetsReady = true
+    }
+    const profile = ownerEditor(this).svgCanvas.getWidthProfile?.()
+    this.$preset.value = profile ? presetId(profile) : ''
     this.$apply.textContent = existing ? 'Update' : 'Apply'
     this.$remove.style.display = existing ? '' : 'none'
     super.open()

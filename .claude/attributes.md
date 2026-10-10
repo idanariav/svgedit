@@ -199,6 +199,10 @@ A path whose straight-sided corners are cut (`packages/svgcanvas/core/corner-rad
 
 A corner is an anchor with no handles between two straight sides that meet at an angle (the path may curve elsewhere). Each cut is trimmed `min(r / tan(θ/2), side₁/2, side₂/2)` from the corner, so radii stop at half the shorter side. Round cuts are SVG arcs tangent to both sides; inverted cuts are arcs centred on the corner; chamfers are straight lines — all three share their end points. A transform baked into the path scales the radii uniformly (`remapCornerSource`). If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (compared within 0.1px because the saver rewrites `d`).
 
+### Width-profile attribute (`se:width-profile`)
+
+A tapered-stroke element (`se:taper-d` = the centerline, `se:taper-style` = `width|paint`, `fill` = the paint, `stroke="none"`) whose outline follows a width profile instead of the three-point curve of `se:taper`. `se:width-profile="t:left:right;t:left:right;…"`: `t` is the fraction (0–1) of the path's length, `left` / `right` the factors of the stroke's full width on each side of the direction of travel (y down: left is up when travelling +x); linear between points, two points at one `t` make a step. At least two points, `t` not decreasing. It wins over `se:taper`, which is kept as the profile's two end widths in percent. Caps, joins and the miter limit come from the element's `stroke-linecap` / `-linejoin` / `-miterlimit`. UI: the Width tool (ext-width-tool) and the Profile presets in the taper popover. Exclusive with `se:fx-d` and `se:orig-d`.
+
 ### Live-effect attributes (`se:fx`, `se:fx-d`)
 
 A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-effects.js`, UI in ext-live-effects):

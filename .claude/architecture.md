@@ -90,6 +90,7 @@ svgedit/
 │   │   ├── ext-path-edit/         # Average / Add anchor points / Join buttons
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-shaper/            # Shaper — rough stroke → clean shape; scribble deletes (core/shape-recognize.js)
+│   │   ├── ext-width-tool/        # Width tool — variable-width strokes on the canvas (core/width-outline.js)
 │   │   ├── ext-smooth-tool/       # Smooth tool — brush to smooth part of a path (core/path-fit.js smoothRegion)
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
@@ -233,6 +234,7 @@ src/editor/index.html
 | `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |
 | `live-effects.js` | Re-editable path effects (`se:fx` stack + `se:fx-d` source): effect registry (`registerLiveEffect`), `applyLiveEffects`/`removeLiveEffects`/`expandLiveEffects` (each one `transact`), `getLiveEffects`, non-undo `previewLiveEffects`/`cancelLiveEffectsPreview`, `reconcileLiveEffects`; `remapFxSource` keeps the source in sync from `coords.js`. Mutually exclusive with taper/corner-radius. Foundation for the Distort/Warp effects |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
+| `width-profile.js` / `width-outline.js` | Width profiles (T2.6): `se:width-profile="t:l:r;…"` on a tapered-stroke element (`se:taper-d` centerline, `se:taper-style` width and paint; `se:taper` kept as its two end widths); `widthOutline` is the filled outline (joins by `stroke-linejoin`, caps by `stroke-linecap`, closed paths as two loops, non-zero fill); `taper-stroke.js` draws it (`drawWidthProfile` / `applyWidthProfile`) and `remapTaperSource` regenerates it after a bake. VectorCraft port |
 | `image-crop.js` | Destructive re-encode crop for `<image>` elements — resamples the source pixels to just the cropped region via canvas `drawImage`, replacing `href`/`x`/`y`/`width`/`height` in one undo step; excludes vault-linked and transformed images. Own hand-rolled overlay/drag mechanics, not `select.js`'s `SelectorManager` |
 | `load-image.js` | Shared `loadImage(href)` — `HTMLImageElement` loader with CORS handling, used by both `image-crop.js` and `dialogs/traceImage.js` |
 | `text-path.js` | Text on path: attach/detach a `<textPath>` (href + xlink:href), rail auto-converted to `<path>`, `textPathOffset(pct)` for startOffset |

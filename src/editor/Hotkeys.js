@@ -510,6 +510,12 @@ export default class HotkeyManager {
       // so accept either the page body or anything inside this editor's own
       // container. Never steal keystrokes aimed at a focused text field.
       if (!ownsKeyEvent(this.editor?.$container, e.target)) return
+      // A registered tool (core/tool-registry.js) sees the key before any shortcut, so that a tool's own
+      // Delete (a width point, say) is not also "delete the selected shape".
+      if (this.editor.svgCanvas?.toolKeyDown?.(e)) {
+        e.preventDefault()
+        return
+      }
       const combo = pressedCombo(e)
       if (!combo) return
       // Tab / Shift+Tab cycle the drawing's elements only while the canvas has the

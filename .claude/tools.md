@@ -50,6 +50,7 @@ position, surviving move/delete) after the path is done.
 - `tool_spiral` / `tool_arc` / `tool_rectgrid` / `tool_polargrid` — also appended into the `tools_shapes` flyout
   (ext-shape-family), after star/polygon; see "ext-shape-family" below
 - `tool_shaper` — Shaper tool (ext-shaper, shortcut Shift+N) — inserted right after the pencil (`tool_fhpath`); see "ext-shaper" below
+- `tool_width` — Width tool (ext-width-tool, no shortcut) — inserted after the Smooth tool; drag outward from a stroke to add a width point, drag a diamond to slide it, Delete removes it (see `extensions.md`)
 - `tool_smooth` — Smooth tool (ext-smooth-tool, no shortcut) — inserted after the Shaper; brush over part of a path to smooth just that part (see `extensions.md`)
 - `tool_cutter` — Cutter/knife tool (ext-cutter, shortcut C) — position 11, after polystar
 - `tool_curvature` — Curvature tool (ext-curvature, shortcut Y) — position 12, after cutter

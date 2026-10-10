@@ -24,7 +24,7 @@ small items (S) fill gaps between large ones.
 
 **Phase 4 — stroke and appearance**
 12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. ~~**T2.4 Arrowheads**~~ done (follow-ups, below).
-14. **T2.6 Width profiles + Width tool** (L) — generalises taper.
+14. ~~**T2.6 Width profiles + Width tool**~~ done (follow-ups, below).
 15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — design it *after* T2.6, because
     width profiles change the single-source-of-truth question (`se:taper-d` vs. the new profile).
 16. **T2.14 Art / pattern brushes** (no dependency on width profiles; it reuses T1.0's `mapNonlinear`; grouped here as the
@@ -261,6 +261,18 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Width profiles and the Width tool (`core/width-profile.js`, `core/width-outline.js`, `ext-width-tool`): follow-ups from T2.6
+
+Done: `se:width-profile="t:l:r;…"` (width factors per side along the path) on a tapered-stroke element; the outline is the `width_outline` port (corner joins by the stroke's `stroke-linejoin`/`-miterlimit`, caps by `stroke-linecap`, closed paths as two loops, steps); the Width tool (`tool_width`, mode `width`): hover diamond, drag outward adds a point (both sides, Alt = the side being dragged), drag a diamond slides it, drag a side handle widens it, click selects, Delete removes (one undo step each); six presets in the taper popover (`applyWidthProfile`). A legacy `se:taper` drawing renders exactly as before; a profile wins over it and keeps `se:taper` as its two end widths so dash-fit, style copy and the taper popover still see a taper. Remaining:
+- **Not in v1 from VectorCraft's tool:** the numeric editor for a point (double-click), selecting and dragging several points, Alt-dragging a diamond to copy a point, dropping a point on another to make a step (a discontinuous profile renders and round-trips, there is just no gesture to make one), compound paths.
+- **One subpath.** A path of several pieces is not offered (as for taper); VectorCraft runs the profile along each.
+- **Entering the tool does not select a stroke.** It works on the selection, or the stroke under the press (which it then selects).
+- **Output is a polygon** (`M/L/Z`, flattened to 0.1 units), not fitted cubics like the legacy taper's `simplify` — larger in the file for a long curved stroke, and not meant to be node-edited (its source is the centerline). Fitting each side with `fitCubics` between corners would shrink it.
+- **Stacking.** A profiled stroke is as exclusive as a taper (no live effects, no corner radius, no arrowhead alignment — a tipped line loses its alignment when profiled), so the "live effects / corners / taper stacking" design item stays open; with width profiles in, `se:taper-d` is the one centerline of the whole family.
+- **Fixed-width cap** at a zero-width end: a round cap there is a point; VectorCraft's blend of the two sides is what is ported.
+- **A transform bake** (move / resize) rewrites the centerline and the width; the profile's `t` is the fraction of arc length, so a non-uniform scale shifts points slightly along the path.
+- The Delete key goes to the tool through the shortcut dispatcher as well as the canvas listener (`toolKeyDown` is idempotent per event): any tool with a `keyDown` now wins over the global shortcut.
 
 ## Arrowhead alignment (`core/arrow-align.js`): follow-ups from T2.4
 

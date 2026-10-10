@@ -336,6 +336,9 @@ export const init = (canvas) => {
     return true
   }
 
+  /** Key events a tool has handled. @type {WeakSet<KeyboardEvent>} */
+  const handledKeys = new WeakSet()
+
   /**
    * @param {KeyboardEvent} evt
    * @returns {boolean} whether the key was handled (the caller should preventDefault)
@@ -345,10 +348,15 @@ export const init = (canvas) => {
       cancelGesture()
       return false
     }
+    // The editor has two keydown listeners (the shortcut dispatcher and the canvas one) and either may run
+    // first: a key a tool took is taken once, and the other listener hears that it was.
+    if (handledKeys.has(evt)) return true
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool?.keyDown) return false
     try {
-      return tool.keyDown(ctx, evt) === true
+      const handled = tool.keyDown(ctx, evt) === true
+      if (handled) handledKeys.add(evt)
+      return handled
     } catch (err) {
       logError(`Tool "${tool.id}" keyDown failed`, err, LOG)
       return false

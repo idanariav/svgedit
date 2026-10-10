@@ -319,6 +319,18 @@ describe('tool registry (registerTool)', () => {
       expect(canvas.toolKeyDown({ key: 'y' })).toBe(false)
       expect(seen).toEqual(['x', 'y'])
     })
+
+    it('a key the tool took is taken once, however many listeners ask', () => {
+      let calls = 0
+      canvas.registerTool(makeTool({ keyDown: () => { calls++; return true } }).tool)
+      canvas.setMode('dragrect')
+      const evt = { key: 'Delete' }
+      expect(canvas.toolKeyDown(evt)).toBe(true)
+      expect(canvas.toolKeyDown(evt)).toBe(true)
+      expect(calls).toBe(1)
+      expect(canvas.toolKeyDown({ key: 'Delete' })).toBe(true) // a new event is a new key
+      expect(calls).toBe(2)
+    })
   })
 
   describe('overlays', () => {
