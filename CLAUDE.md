@@ -189,6 +189,25 @@ pattern is retired.
 
 ---
 
+## VectorCraft as a reference for best practices
+
+`/Users/idanariav/GitProjects/vectorcraft` (https://github.com/storytold/vectorcraft, Rust, `MIT OR Apache-2.0`) is a
+mature vector editor and a good source of **coding and infrastructure practice**, not only of features to port. When you
+debug or design an area of svgedit (undo/history, commands and tools, invariants and health checks, test strategy,
+geometry kernels, file round-tripping, performance), look at how VectorCraft does the equivalent first and take
+the idea, adapted to this codebase. Much of the infrastructure already came that way (tier 0 of the port plan): the
+**command registry**, **undo transactions**, the **tool contract** (`registerTool`), **`checkDrawing` invariants**, the
+**command sweep** (`crates/engine/tests/command_sweep.rs`), the automation API and the layering guard; so did the
+geometry behind live effects, corners, simplify, smooth, dash fit and arrowheads. Its tests are a source of cases.
+
+- Start with its `CLAUDE.md` / `AGENTS.md` / `docs/` and the crate that owns the area (`crates/engine`, `crates/effects`,
+  `crates/tools`, …); `ROADMAP.md` shows what it plans next.
+- Port the *idea* (structure, invariants, edge cases, test cases), not the Rust: svgedit is DOM and attribute driven,
+  so its source of truth, undo and persistence differ. Where they differ, follow svgedit's conventions
+  (see `.claude/plans/vectorcraft-port/README.md` for the mapping and the status board).
+- Any module that ports its logic carries the attribution header given in that README, and VectorCraft **assets**
+  (icons, fonts, images) are never copied.
+
 ## Agent reference docs (`.claude/`)
 
 The `.claude/` folder contains structured docs for fast codebase orientation.
