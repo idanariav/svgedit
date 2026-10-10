@@ -166,10 +166,10 @@ describe('live-effects', function () {
       assert.equal(svgCanvas.canApplyLiveEffect(null), false)
     })
 
-    it('is exclusive with taper and corner radius, and they with it', function () {
+    it('is exclusive with corner radius and they with it; a width stroke may stack', function () {
       const a = addRect('a')
       a.setAttribute('se:taper-d', 'M0,0 L1,1')
-      assert.equal(svgCanvas.canApplyLiveEffect(a), false)
+      assert.equal(svgCanvas.canApplyLiveEffect(a), true)
       const b = addRect('b')
       b.setAttribute('se:orig-d', 'M0,0 L1,1')
       assert.equal(svgCanvas.canApplyLiveEffect(b), false)

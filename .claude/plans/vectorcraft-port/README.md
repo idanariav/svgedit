@@ -45,6 +45,7 @@ is in [tier-0.md](tier-0.md).
 | T2.4 | Arrowheads with tip-on-end alignment | — | done — see git log (Tip and Extend; start/end heads only, polygons and multi-piece paths stay centred, see roadmap.md) |
 | T2.5 | Dashes fitted to corners and path ends | — | v1 done — see git log (single run only; corners are v2, see roadmap.md) |
 | T2.6 | Width profiles + Width tool (generalizes taper) | — (T0.3 helps) | done — see git log (v1: one point at a time, no numeric editor, steps or compound paths; see roadmap.md) |
+| — | Live stack: corners → effects → width on one element (roadmap item 15) | T2.6 | done — see git log (corners + width, effects + width; see roadmap.md) |
 | T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | todo |
 | T2.8 | On-canvas gradient editor | — (T0.2, T0.3 help) | todo |
 | T2.9 | Eyedropper "Copy style" action | — | done — see git log (pixel sampling skipped, see roadmap.md) |

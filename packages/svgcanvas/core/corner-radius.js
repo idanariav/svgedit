@@ -43,13 +43,12 @@
 
 import { NS } from './namespaces.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
-import { FX_SOURCE_ATTR } from './live-effects.js'
+import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.js'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
 export const CORNER_SOURCE_ATTR = 'se:orig-d'
-const TAPER_SOURCE_ATTR = 'se:taper-d' // literal: taper-stroke.js imports from here
 
 /** Corner kinds, in the order the UI cycles through them. */
 export const CORNER_KINDS = ['r', 'i', 'c']
@@ -370,7 +369,7 @@ export const remapCornerSource = (elem, remap, scalew, scaleh) => {
 const cornerSourceD = (elem) => {
   switch (elem.tagName) {
     case 'path':
-      return elem.getAttribute(CORNER_SOURCE_ATTR) || elem.getAttribute('d')
+      return elem.getAttribute(CORNER_SOURCE_ATTR) || stackSource(elem, 'corners') || elem.getAttribute('d')
     case 'polygon':
     case 'polyline': {
       const coords = (elem.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number)
@@ -391,6 +390,17 @@ const cornerSourceD = (elem) => {
   }
 }
 
+registerLiveStage({
+  id: 'corners',
+  order: 10,
+  srcAttr: CORNER_SOURCE_ATTR,
+  attrs: [CORNER_SOURCE_ATTR, CORNER_RADIUS_ATTR],
+  run: (view, inputD) => {
+    const subpaths = parseSource(inputD)
+    return subpaths.length ? cornersD(subpaths, parseCornerSpec(view.getAttribute(CORNER_RADIUS_ATTR))) : null
+  }
+})
+
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -408,7 +418,7 @@ export const init = (canvas) => {
    */
   const canRoundCorners = (elem) => {
     if (!elem) return false
-    if (elem.hasAttribute(FX_SOURCE_ATTR) || elem.hasAttribute(TAPER_SOURCE_ATTR)) return false // exclusive
+    if (!canAddStage(elem, 'corners')) return false // live-stack.js: only corners + width share an element
     if (elem.tagName === 'path' && elem.hasAttribute(CORNER_SOURCE_ATTR)) return true
     if (!['path', 'polygon', 'polyline', 'rect'].includes(elem.tagName)) return false
     const d = cornerSourceD(elem)
@@ -491,21 +501,17 @@ export const init = (canvas) => {
       elem = path
     }
 
-    const oldValues = {
-      d: elem.getAttribute('d'),
-      [CORNER_RADIUS_ATTR]: elem.getAttribute(CORNER_RADIUS_ATTR),
-      [CORNER_SOURCE_ATTR]: elem.getAttribute(CORNER_SOURCE_ATTR)
-    }
+    // The element's other live stages (a width profile on top) run over the cut shape: the plan holds the
+    // regenerated `d` and the mirror sources (live-stack.js).
+    const plan = planStack(elem, value != null
+      ? { [CORNER_SOURCE_ATTR]: subpathsToD(subpaths), [CORNER_RADIUS_ATTR]: value }
+      : removalSet(elem, 'corners'), svgCanvas)
+    if (!plan) return null
+    const oldValues = { d: elem.getAttribute('d') }
+    for (const name of Object.keys(plan.attrs)) oldValues[name] = elem.getAttribute(name)
 
-    if (value != null) {
-      elem.setAttribute(CORNER_SOURCE_ATTR, subpathsToD(subpaths))
-      elem.setAttribute(CORNER_RADIUS_ATTR, value)
-      elem.setAttribute('d', cornersD(subpaths, parseCornerSpec(value)))
-    } else {
-      elem.setAttribute('d', subpathsToD(subpaths))
-      elem.removeAttribute(CORNER_RADIUS_ATTR)
-      elem.removeAttribute(CORNER_SOURCE_ATTR)
-    }
+    commitPlan(elem, plan)
+    if (plan.d == null) elem.setAttribute('d', subpathsToD(subpaths)) // no stage left: the sharp shape
     batchCmd.addSubCommand(new ChangeElementCommand(elem, oldValues))
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.selectOnly([elem], true)

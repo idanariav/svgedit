@@ -190,7 +190,7 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** in sel
 
 ### Live-corner attributes (`se:corner-radius`, `se:orig-d`)
 
-A path whose straight-sided corners are cut (`packages/svgcanvas/core/corner-radius.js`, UI in ext-corner-radius). `se:orig-d` is the uncut geometry (canonical absolute `M/L/C/Z`); `d` is regenerated from it. Mutually exclusive with `se:fx-d` / `se:taper-d`.
+A path whose straight-sided corners are cut (`packages/svgcanvas/core/corner-radius.js`, UI in ext-corner-radius). `se:orig-d` is the uncut geometry (canonical absolute `M/L/C/Z`); `d` is regenerated from it. Shares an element with a width stroke (`se:taper-d`; see *The live stack* below), not with `se:fx-d`.
 
 | `se:corner-radius` value | Meaning |
 |---|---|
@@ -201,7 +201,7 @@ A corner is an anchor with no handles between two straight sides that meet at an
 
 ### Width-profile attribute (`se:width-profile`)
 
-A tapered-stroke element (`se:taper-d` = the centerline, `se:taper-style` = `width|paint`, `fill` = the paint, `stroke="none"`) whose outline follows a width profile instead of the three-point curve of `se:taper`. `se:width-profile="t:left:right;t:left:right;…"`: `t` is the fraction (0–1) of the path's length, `left` / `right` the factors of the stroke's full width on each side of the direction of travel (y down: left is up when travelling +x); linear between points, two points at one `t` make a step. At least two points, `t` not decreasing. It wins over `se:taper`, which is kept as the profile's two end widths in percent. Caps, joins and the miter limit come from the element's `stroke-linecap` / `-linejoin` / `-miterlimit`. UI: the Width tool (ext-width-tool) and the Profile presets in the taper popover. Exclusive with `se:fx-d` and `se:orig-d`.
+A tapered-stroke element (`se:taper-d` = the centerline, `se:taper-style` = `width|paint`, `fill` = the paint, `stroke="none"`) whose outline follows a width profile instead of the three-point curve of `se:taper`. `se:width-profile="t:left:right;t:left:right;…"`: `t` is the fraction (0–1) of the path's length, `left` / `right` the factors of the stroke's full width on each side of the direction of travel (y down: left is up when travelling +x); linear between points, two points at one `t` make a step. At least two points, `t` not decreasing. It wins over `se:taper`, which is kept as the profile's two end widths in percent. Caps, joins and the miter limit come from the element's `stroke-linecap` / `-linejoin` / `-miterlimit`. UI: the Width tool (ext-width-tool) and the Profile presets in the taper popover. Can sit on top of `se:fx-d` or `se:orig-d` (see *The live stack* below).
 
 ### Live-effect attributes (`se:fx`, `se:fx-d`)
 
@@ -214,7 +214,7 @@ A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-ef
 | `se:fx-style` | Only while a stroke-output effect (Scribble) is in the stack: the original `fill\|stroke\|stroke-width\|stroke-linecap\|stroke-linejoin` (empty = absent). The element is then painted as a stroke (fill none, stroke = original fill); removing the effect restores these |
 | `d` | The baked result, regenerated from `se:fx-d` + `se:fx` |
 
-Mutually exclusive with `se:taper-d` and `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
+Shares an element with a width stroke (`se:taper-d`) unless the stack has a stroke-output effect (Scribble), not with `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
 
 ---
 
@@ -372,3 +372,7 @@ Panel values are rounded to 1 decimal (`round1` helper in `TopPanel.js`, same
 convention as `font_size`) since resize/scale math can produce long float
 tails (e.g. `200.00000596046448`) — display only, not the underlying SVG
 attribute precision.
+
+### The live stack (`core/live-stack.js`)
+
+Corner radius, live effects and a variable-width stroke are stages of one chain, geometry first: `se:orig-d` (corners) → `se:fx-d` (effects) → `se:taper-d` (width) → `d`. Supported on one element: corners + width, effects + width (never corners + effects, never Scribble + width). The earliest stage's source attribute is the **root** (the sharp geometry); every later stage's source is a **mirror**, the previous stage's output, rewritten whenever a stage changes (so `se:taper-d` is always the centerline the outline is drawn around, stacked or not). An element with one stage has exactly the attributes it always had. A stack is current when `d` equals the chain run from the root (within the saver's rounding); if `d` is edited outside, every stage's attributes are dropped on the next selection and the shape stays. `checkDrawing` rule `se-stack`: an unsupported set of stages, or a mirror that is not its stage's input.

@@ -44,8 +44,10 @@ describe('width profiles on the canvas', () => {
     expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0 L10,10 Z' }))).toBe(true) // closed is fine
     expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', fill: '#ff0000' }))).toBe(false)
     expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', stroke: 'none' }))).toBe(false)
-    expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', 'se:fx-d': 'M0,0 L10,0' }))).toBe(false)
-    expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', 'se:orig-d': 'M0,0 L10,0' }))).toBe(false)
+    // effects or corners underneath are fine (live-stack.js), not both and not Scribble
+    expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', 'se:fx-d': 'M0,0 L10,0' }))).toBe(true)
+    expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', 'se:orig-d': 'M0,0 L10,0' }))).toBe(true)
+    expect(svgCanvas.canWidthStroke(make('path', { d: 'M0,0 L10,0', 'se:orig-d': 'M0,0 L10,0', 'se:fx-d': 'M0,0 L10,0' }))).toBe(false)
     expect(svgCanvas.canWidthStroke(make('rect', { x: 0, y: 0, width: 5, height: 5 }))).toBe(false)
     expect(svgCanvas.canWidthStroke(null)).toBe(false)
   })

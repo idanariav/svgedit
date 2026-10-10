@@ -1,6 +1,6 @@
 # Live stack: corners → effects → width (roadmap item 15)
 
-Design only. Nothing here is built yet. Written after T2.6 (width profiles), which made `se:taper-d` the one
+Status: built (corners + width, effects + width). Written after T2.6 (width profiles), which made `se:taper-d` the one
 centerline of the whole stroke-outline family.
 
 ## Today
@@ -65,7 +65,7 @@ import cycles the three modules already dance around with string literals.
 - Existing drawings are untouched (single-stage elements keep their exact attributes); no repair script needed.
 - A fixture saved by the old editor with two stage attributes present cannot exist (they were exclusive).
 
-## Proposed cut (v1)
+## Built (v1)
 
 Build the chain with **corners → width** and **effects → width** (non-Scribble) as the supported pairs; keep
 corners + effects and anything with arrow alignment exclusive until someone needs them. The model above does not

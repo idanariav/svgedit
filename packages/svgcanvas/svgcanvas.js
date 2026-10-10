@@ -80,6 +80,7 @@ import { init as guidesInit } from './core/guides.js'
 import { init as dashFitInit } from './core/dash-fit.js'
 import { init as arrowAlignInit } from './core/arrow-align.js'
 import { init as pathJoinInit } from './core/path-join.js'
+import { init as liveStackInit } from './core/live-stack.js'
 import { init as liveEffectsInit } from './core/live-effects.js'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.js'
 import { init as warpInit } from './core/warp.js'
@@ -354,6 +355,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'booleanOps', booleanOpsInit, initGuardRegistry)
     runGuardedInit(this, 'pathOffset', pathOffsetInit, initGuardRegistry)
     runGuardedInit(this, 'pathSimplify', pathSimplifyInit, initGuardRegistry)
+    runGuardedInit(this, 'liveStack', liveStackInit, initGuardRegistry)
     runGuardedInit(this, 'cornerRadius', cornerRadiusInit, initGuardRegistry)
     runGuardedInit(this, 'taperStroke', taperStrokeInit, initGuardRegistry)
     runGuardedInit(this, 'selectSame', selectSameInit, initGuardRegistry)

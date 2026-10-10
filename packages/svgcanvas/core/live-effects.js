@@ -26,12 +26,14 @@
  * their pixel size) — only the stored source is transformed, then `d` is
  * regenerated (`remapFxSource`, registered with `geometry-remap-registry.js`).
  *
- * v1 interaction rules: live effects are mutually exclusive with taper
- * (`se:taper-d`) and corner radius (`se:orig-d`) — `canApplyLiveEffect` is
- * false when either is present, and `canTaperStroke`/`canRoundCorners` are
- * false when `se:fx-d` is. Node-editing an effect path makes the stored source
- * stale; `reconcileLiveEffects` drops both attributes when `d` no longer
- * matches the regenerated output.
+ * Interaction rules: effects are one stage of the live stack (`live-stack.js`):
+ * they can share an element with a variable-width stroke (`se:taper-d`; the
+ * effects then run first and the outline is drawn over their result), but not
+ * with corner radius (`se:orig-d`; the Round Corners effect covers it), and a
+ * stroke-output effect (Scribble) paints its own stroke so it takes no width
+ * stage. Node-editing an effect path makes the stored source stale;
+ * `reconcileLiveEffects` drops the attributes when `d` no longer matches the
+ * regenerated output.
  *
  * @module live-effects
  * @license MIT
@@ -44,17 +46,15 @@ import { warn } from '../common/logger.js'
 import { getPathDFromElement } from './path-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
+import {
+  registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked
+} from './live-stack.js'
 
 export const FX_ATTR = 'se:fx'
 export const FX_SOURCE_ATTR = 'se:fx-d'
 export const FX_STYLE_ATTR = 'se:fx-style'
 
 const STYLE_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']
-
-// Attributes of the features live effects exclude (see module header). Held as
-// literals so taper-stroke.js / corner-radius.js can import the constants from
-// here without an import cycle.
-const EXCLUSIVE_ATTRS = ['se:taper-d', 'se:orig-d']
 
 /**
  * Slack (px) when comparing a re-serialised `d` against the regenerated one:
@@ -388,6 +388,15 @@ const restoreStyle = (elem) => {
   elem.removeAttribute(FX_STYLE_ATTR)
 }
 
+registerLiveStage({
+  id: 'fx',
+  order: 20,
+  srcAttr: FX_SOURCE_ATTR,
+  attrs: [FX_SOURCE_ATTR, FX_ATTR, FX_STYLE_ATTR],
+  run: (view, inputD) => computeFxD(inputD, parseFxStack(view.getAttribute(FX_ATTR))),
+  stackable: (view) => !strokeOutputOf(parseFxStack(view.getAttribute(FX_ATTR)))
+})
+
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -410,7 +419,7 @@ export const init = (canvas) => {
    */
   const canApplyLiveEffect = (elem) => {
     if (!elem || !SUPPORTED_TAGS.has(elem.tagName)) return false
-    return !EXCLUSIVE_ATTRS.some((a) => elem.hasAttribute(a))
+    return canAddStage(elem, 'fx') // live-stack.js: effects share an element with a width stroke only
   }
 
   /**
@@ -421,6 +430,7 @@ export const init = (canvas) => {
    */
   const reconcileLiveEffects = (elem) => {
     if (!elem?.hasAttribute(FX_SOURCE_ATTR)) return false
+    if (isStacked(elem)) return reconcileStack(elem, svgCanvas) ?? false // drops every stage's attributes
     if (isFxCurrent(elem)) return true
     elem.removeAttribute(FX_SOURCE_ATTR)
     elem.removeAttribute(FX_ATTR)
@@ -439,7 +449,7 @@ export const init = (canvas) => {
 
   const getSource = (elem) => {
     if (elem.hasAttribute(FX_SOURCE_ATTR)) return elem.getAttribute(FX_SOURCE_ATTR)
-    const src = normalizeD(getPathDFromElement(elem) || '')
+    const src = normalizeD(stackSource(elem, 'fx') || getPathDFromElement(elem) || '')
     return src || null
   }
 
@@ -469,7 +479,7 @@ export const init = (canvas) => {
     if (session && session.elem !== elem) endPreview()
     reconcileLiveEffects(elem)
     const src = getSource(elem)
-    const d = src && computeFxD(src, stack)
+    const d = src && planFx(elem, src, stack)?.d
     if (!d) return
     if (!session) {
       const clone = primitiveToPath(elem)
@@ -497,6 +507,10 @@ export const init = (canvas) => {
   // --- history-recording operations --------------------------------------
   // Each runs inside svgCanvas.transact(), so the one undo step is whatever
   // the body changed; nothing here builds commands by hand.
+  // What the element becomes with `stack` over `src`: its stage attributes and `d`, the width outline included.
+  const planFx = (elem, src, stack) =>
+    planStack(elem, { [FX_SOURCE_ATTR]: src, [FX_ATTR]: serializeFxStack(stack) }, svgCanvas)
+
   const finish = (elem) => {
     svgCanvas.selectOnly([elem], true)
     svgCanvas.call('changed', [elem])
@@ -518,8 +532,8 @@ export const init = (canvas) => {
     if (!clean.length) return removeLiveEffects()
     reconcileLiveEffects(selected)
     const src = getSource(selected)
-    const d = src && computeFxD(src, clean)
-    if (!d) {
+    const plan = src && planFx(selected, src, clean)
+    if (!plan?.d) {
       warn('Live effect could not be applied to the selection', null, 'live-effects')
       return null
     }
@@ -543,9 +557,7 @@ export const init = (canvas) => {
       } else {
         restoreStyle(target)
       }
-      target.setAttribute(FX_SOURCE_ATTR, src)
-      target.setAttribute(FX_ATTR, serializeFxStack(clean))
-      target.setAttribute('d', d)
+      commitPlan(target, plan) // the source, the stack, a width stage's mirror and `d`
       return target
     })
     return elem && finish(elem)
@@ -561,11 +573,12 @@ export const init = (canvas) => {
     const elem = getSelected()
     const src = elem?.getAttribute(FX_SOURCE_ATTR)
     if (!src) return null
+    const plan = planStack(elem, removalSet(elem, 'fx'), svgCanvas)
+    if (!plan) return null
     svgCanvas.transact('Remove live effects', () => {
       restoreStyle(elem)
-      elem.setAttribute('d', src)
-      elem.removeAttribute(FX_ATTR)
-      elem.removeAttribute(FX_SOURCE_ATTR)
+      commitPlan(elem, plan)
+      if (plan.d == null) elem.setAttribute('d', src) // no stage left: the source geometry
     })
     return finish(elem)
   }

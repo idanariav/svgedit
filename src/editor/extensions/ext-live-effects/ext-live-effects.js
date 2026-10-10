@@ -223,6 +223,9 @@ export default {
       showPanel(available && (usable || isText))
       $id(`${P}-body`).style.display = usable ? '' : 'none'
       $id(`${P}-hint`).style.display = isText && !usable ? '' : 'none'
+      // A stroke-output effect (Scribble) paints its own stroke, so it cannot go on a variable-width stroke.
+      const noteShown = usable && elem.hasAttribute('se:taper-d') && svgCanvas.listLiveEffects().some((e) => e.strokeOutput)
+      $id(`${P}-note`).style.display = noteShown ? '' : 'none'
       if (!editing) renderRows()
     }
 
@@ -236,6 +239,7 @@ export default {
             <div class="sidepanel_section_label">${tr('label')}</div>
             <p id="${P}-hint" class="${P}-hint" style="display:none">${tr('textHint')}</p>
             <div id="${P}-body">
+              <p id="${P}-note" class="${P}-hint" style="display:none">${tr('widthNote')}</p>
               <div id="${P}-rows"></div>
               <div id="${P}-editor" style="display:none"></div>
               <div class="${P}-actions">
@@ -258,6 +262,8 @@ export default {
           // to the placeholder once that has happened.
           setTimeout(() => { const add = $id(`${P}-add`); if (add) add.value = '' }, 0)
           if (!def) return
+          // The note under the section says why: a variable-width stroke takes no stroke-output effect.
+          if (def.strokeOutput && selectedElem()?.hasAttribute('se:taper-d')) return
           const stack = svgCanvas.getLiveEffects()
           // A fixed default seed would make every new object jitter identically.
           const params = { ...def.defaults }

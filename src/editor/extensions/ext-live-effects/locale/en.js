@@ -10,5 +10,6 @@ export default {
   apply: 'Apply',
   cancel: 'Cancel',
   randomize: 'Randomize',
+  widthNote: 'Scribble paints its own stroke, so it can\'t be added to a variable-width stroke.',
   textHint: 'Live effects apply to shapes and paths, not text.'
 }

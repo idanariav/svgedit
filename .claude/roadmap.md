@@ -25,10 +25,8 @@ small items (S) fill gaps between large ones.
 **Phase 4 — stroke and appearance**
 12. ~~**T2.5 Dashes fitted** (v1)~~ done (v2, corners, below) and 13. ~~**T2.4 Arrowheads**~~ done (follow-ups, below).
 14. ~~**T2.6 Width profiles + Width tool**~~ done (follow-ups, below).
-15. **Live effects / corner radius / taper stacking** (roadmap, "Live effects" section) — designed in
-    [`plans/live-stack.md`](plans/live-stack.md) (one ordered chain corners → effects → width, mirrors for the later
-    sources, one `rebuildStack`); v1 would support corners + width and effects + width. Not built yet: awaiting a go on
-    the scope.
+15. ~~**Live effects / corner radius / taper stacking**~~ done (corners + width, effects + width; follow-ups in
+    "The live stack", below; design in [`plans/live-stack.md`](plans/live-stack.md)).
 16. **T2.14 Art / pattern brushes** (no dependency on width profiles; it reuses T1.0's `mapNonlinear`; grouped here as the
     other "appearance follows the path" feature), then 17. **T2.13 Blend tool** — build `options()/setOption()` with
     Blend (steps/spacing), the first tool with a real options bar.
@@ -193,11 +191,6 @@ toolchain step.
 
 ## Live effects (`se:fx`): follow-ups from T1.0 / T1.1
 
-- **No stacking with taper / corner radius.** v1 makes `se:fx-d` mutually
-  exclusive with `se:taper-d` and `se:orig-d` (`canApplyLiveEffect`,
-  `canTaperStroke`, `canRoundCorners`). Letting them stack means defining an
-  order (corners → effects → taper?) and a single source-of-truth attribute;
-  not attempted. Size M.
 - **Param labels aren't localized.** `ext-live-effects` builds its param form
   from each effect's `defaults` keys and humanizes them (`dx` → "Dx"); only the
   effect `label` and the panel chrome are translatable. Add per-effect
@@ -227,7 +220,19 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
 - **No per-corner UI.** The panel edits every corner; per-corner values only come from the attribute / `applyCornerRadius(r, {kind, corners})`. VectorCraft's on-canvas widgets (`crates/tools/src/corners.rs`: drag to change radius, Alt-click cycles kind) and "selected anchors in pathedit limit the corners the panel edits" are not ported. Pathedit still shows the *cut* anchors and drops the attrs when `d` is edited, so editing the source in pathedit needs its own design.
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
-- **No stacking with live effects / taper** (same limit as the live-effects entry above).
+- Stacks with a width stroke (not with live effects); see "The live stack".
+
+## The live stack (`core/live-stack.js`): follow-ups from item 15
+
+Done: corners → effects → width as one chain with a root source and mirrored later sources; corners + width and effects + width on one element, every change one undo step, the transform bake, stale detection (`d` edited outside drops the whole stack), the `se-stack` invariant, a round-trip fixture (`live-stack.svg`). Remaining:
+- **Corners + effects stay exclusive** (the Round Corners effect covers the use, and cut corners are SVG arcs that effects would first convert). The model takes it as one more entry in `ALLOWED`; the work is the arc → cubic hand-off and a per-corner UI that edits the root.
+- **Scribble + width stay exclusive** (Scribble paints its own stroke, which collides with the width stage's paint). A stroke-output effect would need to hand its width and paint to the width stage.
+- **Arrowhead alignment + width/effects stays exclusive**: markers sit on the vertices of the element's `d`, so a filled outline would carry them on its outline. Real support means drawing the heads as separate elements.
+- **The width stage is last**: width cannot sit under effects ("roughen the outline"); that is Illustrator's Expand-then-effect, which Expand already gives.
+- **Mirrors cost size**: a three-stage element carries `orig-d`, `fx-d`, `taper-d` and `d`.
+- **Node editing a stacked element** edits `d` (the outline), so the stack is dropped on the next selection, as for each feature alone. Editing the root in pathedit needs its own design.
+- **Stale detection is tolerance based**: the saver's rounding adds up along a long path, so the tolerance grows with `sqrt(anchors)` (0.1 + 0.01·√n). A very small outside edit to a dense stacked path can go unnoticed and be regenerated over.
+- **Preview** of an effect over a width stroke runs the whole chain on the clone on every param tick (a dense outline makes that heavier).
 
 ## Shaper (ext-shaper): follow-ups from T1.6
 
@@ -271,7 +276,7 @@ Done: `se:width-profile="t:l:r;…"` (width factors per side along the path) on 
 - **One subpath.** A path of several pieces is not offered (as for taper); VectorCraft runs the profile along each.
 - **Entering the tool does not select a stroke.** It works on the selection, or the stroke under the press (which it then selects).
 - **Output is a polygon** (`M/L/Z`, flattened to 0.1 units), not fitted cubics like the legacy taper's `simplify` — larger in the file for a long curved stroke, and not meant to be node-edited (its source is the centerline). Fitting each side with `fitCubics` between corners would shrink it.
-- **Stacking.** A profiled stroke is as exclusive as a taper (no live effects, no corner radius, no arrowhead alignment — a tipped line loses its alignment when profiled), so the "live effects / corners / taper stacking" design item stays open; with width profiles in, `se:taper-d` is the one centerline of the whole family.
+- **Stacking.** A profiled stroke can sit on top of live effects or corner radius (see "The live stack"); it is still exclusive with arrowhead alignment (a tipped line loses its alignment when profiled).
 - **Fixed-width cap** at a zero-width end: a round cap there is a point; VectorCraft's blend of the two sides is what is ported.
 - **A transform bake** (move / resize) rewrites the centerline and the width; the profile's `t` is the fraction of arc length, so a non-uniform scale shifts points slightly along the path.
 - The Delete key goes to the tool through the shortcut dispatcher as well as the canvas listener (`toolKeyDown` is idempotent per event): any tool with a `keyDown` now wins over the global shortcut.

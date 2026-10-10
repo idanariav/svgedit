@@ -97,7 +97,7 @@ describe('corner-radius on the canvas', () => {
     assert.equal(svgCanvas.undoMgr.getUndoStackSize(), before)
   })
 
-  it('canRoundCorners: paths with a corner, rects, polygons — not smooth shapes or effect/taper paths', () => {
+  it('canRoundCorners: paths with a corner, rects, polygons — not smooth shapes or effect paths (a width stroke may stack)', () => {
     assert.ok(svgCanvas.canRoundCorners(add('rect', { x: 0, y: 0, width: 10, height: 10 })))
     assert.ok(svgCanvas.canRoundCorners(add('path', { d: 'M0,0 L50,0 C80,0 80,50 50,50 L0,50 Z' })))
     assert.ok(!svgCanvas.canRoundCorners(add('ellipse', { cx: 10, cy: 10, rx: 5, ry: 5 })))
@@ -107,7 +107,7 @@ describe('corner-radius on the canvas', () => {
     assert.ok(!svgCanvas.canRoundCorners(fx))
     const taper = add('path', { d: 'M0,0 L10,0 L10,10 Z' })
     taper.setAttribute('se:taper-d', 'M0,0 L10,0 L10,10 Z')
-    assert.ok(!svgCanvas.canRoundCorners(taper))
+    assert.ok(svgCanvas.canRoundCorners(taper))
   })
 
   it('a legacy single-number drawing is read back unchanged', () => {

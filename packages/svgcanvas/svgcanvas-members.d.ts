@@ -307,6 +307,9 @@ export interface AttachedMembers {
   listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }> }>
   canApplyLiveEffect(elem: Element): boolean
   reconcileLiveEffects(elem: Element): boolean
+  /** Live stack (`core/live-stack.js`): null when the element is not stacked, else whether its stack is still current (stale stacks are dropped). */
+  reconcileLiveStack(elem: Element): boolean | null
+  isLiveStacked(elem: Element): boolean
   getLiveEffects(): Array<{ name: string, params: Record<string, number | boolean | string> }>
   previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
   cancelLiveEffectsPreview(): void

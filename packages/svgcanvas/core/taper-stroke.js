@@ -40,7 +40,7 @@ import { NS } from './namespaces.js'
 import { warn } from '../common/logger.js'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.js'
-import { FX_SOURCE_ATTR } from './live-effects.js'
+import { registerLiveStage, canAddStage } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { widthOutline } from './width-outline.js'
 import { WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.js'
@@ -193,6 +193,24 @@ export const remapTaperSource = (elem, remap, scalew, scaleh, svgCanvas) => {
   if (outline) elem.setAttribute('d', elem.hasAttribute(WIDTH_PROFILE_ATTR) ? outline : toAbsolutePathData(outline, svgCanvas))
 }
 
+/**
+ * The width stage of the live stack (live-stack.js): the outline of the stage's input as a centerline. The width and
+ * paint are the ones `se:taper-style` recorded. A legacy taper's outline is made absolute when a canvas is given.
+ */
+registerLiveStage({
+  id: 'width',
+  order: 30,
+  srcAttr: TAPER_SOURCE_ATTR,
+  attrs: [TAPER_SOURCE_ATTR, TAPER_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR],
+  run: (view, inputD, canvas) => {
+    const style = view.getAttribute(TAPER_STYLE_ATTR)
+    if (!style) return null
+    const outline = outlineOf(view, inputD, parseFloat(style) || 1)
+    if (!outline) return null
+    return view.hasAttribute(WIDTH_PROFILE_ATTR) || !canvas ? outline : toAbsolutePathData(outline, canvas)
+  }
+})
+
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -213,7 +231,7 @@ export const init = (canvas) => {
    */
   const canTaperStroke = (elem) => {
     if (!elem) return false
-    if (elem.hasAttribute(FX_SOURCE_ATTR)) return false // exclusive with live effects
+    if (!canAddStage(elem, 'width')) return false // live-stack.js: a width stroke shares an element with effects or corners only
     if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
     if (!['line', 'polyline', 'path'].includes(elem.tagName)) return false
     if ((elem.getAttribute('stroke') || 'none') === 'none') return false
@@ -373,7 +391,7 @@ export const init = (canvas) => {
    */
   const canWidthStroke = (elem) => {
     if (!elem) return false
-    if (elem.hasAttribute(FX_SOURCE_ATTR) || elem.hasAttribute('se:orig-d')) return false // exclusive with live effects and corners
+    if (!canAddStage(elem, 'width')) return false // live-stack.js
     if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
     if (!['line', 'polyline', 'path'].includes(elem.tagName)) return false
     if ((elem.getAttribute('stroke') || 'none') === 'none') return false

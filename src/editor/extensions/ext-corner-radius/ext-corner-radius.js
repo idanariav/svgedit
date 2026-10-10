@@ -54,6 +54,8 @@ export default {
      * @returns {boolean} true when the element still carries valid corners.
      */
     const reconcile = (elem) => {
+      const stacked = svgCanvas.reconcileLiveStack(elem) // drops every stage when a stack went stale
+      if (stacked !== null) return stacked
       if (isCornerStateCurrent(elem)) return true
       elem.removeAttribute(CORNER_SOURCE_ATTR)
       elem.removeAttribute(CORNER_RADIUS_ATTR)

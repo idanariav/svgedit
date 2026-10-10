@@ -57,6 +57,26 @@ export const registerAttrValidator = (attrName, validator) => {
 }
 
 /**
+ * A check a module owns that looks at one element and returns what is wrong with it.
+ * @callback ElementCheck
+ * @param {Element} elem
+ * @returns {string[]} messages, empty when healthy
+ */
+
+/** @type {Map<string, ElementCheck>} */
+const elementChecks = new Map()
+
+/**
+ * Register a per-element check, reported under `code` (e.g. the live stack's `se-stack`).
+ * @param {string} code stable rule name
+ * @param {ElementCheck} check
+ * @returns {void}
+ */
+export const registerElementCheck = (code, check) => {
+  elementChecks.set(code, check)
+}
+
+/**
  * Validator for attributes that hold SVG path data (`se:fx-d`, `se:orig-d`, `se:taper-d`).
  * @type {AttrValidator}
  */
@@ -166,6 +186,19 @@ export const checkDrawing = (svgContent) => {
     const transform = el.getAttribute('transform')
     if (transform && STACKED_TRANSLATE_RE.test(transform)) {
       add('stacked-translate', `<${tag}> transform="${transform.length > 60 ? transform.slice(0, 60) + '…' : transform}" stacks translate() items`, el)
+    }
+
+    // module-owned checks (se-stack, …): only elements with `se:` state are worth the call
+    if (elementChecks.size && Array.from(el.attributes).some((a) => a.name.startsWith('se:'))) {
+      for (const [code, check] of elementChecks) {
+        let problems
+        try {
+          problems = check(el)
+        } catch (err) {
+          problems = [`check threw: ${err instanceof Error ? err.message : err}`]
+        }
+        for (const message of problems) add(code, `<${tag}> ${message}`, el)
+      }
     }
 
     // se-attr-parse

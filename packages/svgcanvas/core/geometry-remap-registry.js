@@ -13,6 +13,8 @@
  * @license MIT
  */
 
+import { rebuildAfterRemap } from './live-stack.js'
+
 const registry = new Map()
 
 /**
@@ -43,6 +45,9 @@ export const runGeometryRemaps = (elem, remap, scalew, scaleh, svgCanvas) => {
       remapFn(elem, remap, scalew, scaleh, svgCanvas)
     }
   })
+  // A stacked element (live-stack.js): the hooks mapped every source and scaled every stage's size parameters;
+  // now the mirrors and `d` are regenerated from the root.
+  rebuildAfterRemap(elem, svgCanvas)
 }
 
 /**
