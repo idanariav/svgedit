@@ -306,6 +306,7 @@ export default {
       el.setAttribute('opacity', '0.75')
       el.setAttribute('pointer-events', 'none')
       el.setAttribute('id', 'curvature_preview')
+      el.setAttribute('data-se-ephemeral', '') // scaffolding: never saved or recorded in an undo step
       getLayer().appendChild(el)
       previewEl = el
     }
@@ -391,6 +392,7 @@ export default {
       dot.setAttribute('stroke', isBoundary ? '#000' : '#fff')
       dot.setAttribute('stroke-width', String((isBoundary ? 2 : 1) / zoom))
       dot.setAttribute('pointer-events', 'none')
+      dot.setAttribute('data-se-ephemeral', '')
       getLayer().appendChild(dot)
       anchorDots.push(dot)
     }
@@ -404,6 +406,125 @@ export default {
       removeAnchorDots()
       points.forEach((_, i) => addAnchorDot(i))
     }
+
+    // ── The tool ───────────────────────────────────────────────────────────
+    // A path is built over several clicks; every click is its own gesture (one
+    // transaction), the session between them is this tool's own state. The
+    // preview and anchor dots are data-se-ephemeral, so no click's undo step
+    // records them. Escape and switching tools end the session through the
+    // 'modeChange' listener above (finalize as an open path).
+
+    // Finishing switches to Select, which would cancel the gesture it happens in:
+    // a double-click therefore finalizes on release, once the gesture has closed.
+    let finalizeOnRelease = false
+
+    svgCanvas.registerTool({
+      id: 'curvature',
+      undoLabel: 'Draw curvature path',
+      wantsHover: true, // the tentative segment follows the pointer between clicks
+
+      pointerDown (ctx, ev) {
+        const isDoubleClick = ev.event.detail >= 2
+        const isCorner = ev.mods.shift // Shift+click = corner (sharp) anchor
+        const isEnd = ev.mods.alt // Alt+click = end anchor (combinable with corner)
+        const { x, y } = ev
+
+        mouseDownPos = { x, y }
+        mouseDownHitIndex = -1
+
+        // Double-click finalizes the path open. Checked before hit-testing:
+        // the double-click's own first (detail=1) click just placed a point
+        // at this exact location, so the second (detail=2) click would
+        // otherwise always hit-test against that just-placed point and be
+        // mistaken for a drag/close gesture instead of reaching this check.
+        if (isDoubleClick && isDrawing) {
+          finalizeOnRelease = true
+          return
+        }
+
+        // Clicking on an already-placed anchor picks it up for dragging
+        // instead of adding a new point. points[0] is ambiguous with the
+        // "click near start closes the path" gesture, so its close-vs-drag
+        // decision is deferred to pointerUp (movement threshold); it's still
+        // live-updated during the drag via the shared draggingIndex path.
+        if (isDrawing) {
+          const hitIndex = hitTestAnchor(x, y)
+          if (hitIndex !== -1) {
+            draggingIndex = hitIndex
+            mouseDownHitIndex = hitIndex
+            return
+          }
+        }
+
+        if (!isDrawing) {
+          isDrawing = true
+          createPreview(x, y)
+        }
+
+        points.push({ x, y, corner: isCorner, end: isEnd })
+        addAnchorDot(points.length - 1)
+        updatePreview(null, false)
+      },
+
+      pointerMove (ctx, ev) {
+        if (!isDrawing || finalizeOnRelease) return
+
+        const mx = ev.rawX
+        const my = ev.rawY
+
+        if (draggingIndex >= 0) {
+          // Leave the anchor untouched until the pointer clears the
+          // click-vs-drag threshold, so a click landing anywhere within the
+          // (larger) hit radius — not necessarily exactly on the anchor —
+          // doesn't itself register as a move.
+          if (!dragMoved) {
+            if (dist(mx, my, mouseDownPos.x, mouseDownPos.y) <= getMoveThreshold()) return
+            dragMoved = true
+          }
+          points[draggingIndex].x = mx
+          points[draggingIndex].y = my
+          redrawAnchorDots()
+          updatePreview(null, false) // no tentative point while repositioning a placed anchor
+          return
+        }
+
+        updatePreview({ x: mx, y: my }, false)
+      },
+
+      pointerUp () {
+        if (finalizeOnRelease) {
+          finalizeOnRelease = false
+          finalize(false)
+          return
+        }
+        if (!isDrawing) return
+
+        // points[0] is ambiguous between "close the path" (never crossed the
+        // drag threshold, mirrors today's click-near-start gesture) and
+        // "drag the start anchor" (crossed it — already live-updated by
+        // pointerMove above).
+        if (draggingIndex === 0 && mouseDownHitIndex === 0) {
+          const wasMoved = dragMoved
+          resetDragState()
+
+          if (!wasMoved && points.length >= 2) {
+            finalize(true)
+            return
+          }
+
+          // Either a genuine drag (points[0] already holds its live-updated
+          // position) or too few points to close yet — leave session open.
+          redrawAnchorDots()
+          updatePreview(null, false)
+          return
+        }
+
+        if (draggingIndex >= 0) resetDragState()
+        // otherwise a plain click: the point was added on press and the session stays open
+      },
+
+      cancel () { finalizeOnRelease = false }
+    })
 
     // ── Extension object ───────────────────────────────────────────────────
 
@@ -419,128 +540,6 @@ export default {
         )
 
         svgEditor.leftPanel.addModeCommand('tool_curvature', 'curvature', { label: title })
-      },
-
-      mouseDown (opts) {
-        if (svgCanvas.getMode() !== 'curvature') return undefined
-
-        const evt = opts.event
-        const isDoubleClick = evt.detail >= 2
-        const isCorner = evt.shiftKey // Shift+click = corner (sharp) anchor
-        const isEnd = evt.altKey // Alt+click = end anchor (combinable with corner)
-        const x = opts.start_x
-        const y = opts.start_y
-
-        mouseDownPos = { x, y }
-        mouseDownHitIndex = -1
-
-        // Double-click finalizes the path open. Checked before hit-testing:
-        // the double-click's own first (detail=1) click just placed a point
-        // at this exact location, so the second (detail=2) click would
-        // otherwise always hit-test against that just-placed point and be
-        // mistaken for a drag/close gesture instead of reaching this check.
-        if (isDoubleClick && isDrawing) {
-          finalize(false)
-          return { started: false }
-        }
-
-        // Clicking on an already-placed anchor picks it up for dragging
-        // instead of adding a new point. points[0] is ambiguous with the
-        // "click near start closes the path" gesture, so its close-vs-drag
-        // decision is deferred to mouseUp (movement threshold); it's still
-        // live-updated during the drag via the shared draggingIndex path.
-        if (isDrawing) {
-          const hitIndex = hitTestAnchor(x, y)
-          if (hitIndex !== -1) {
-            draggingIndex = hitIndex
-            mouseDownHitIndex = hitIndex
-            return { started: true }
-          }
-        }
-
-        if (!isDrawing) {
-          isDrawing = true
-          createPreview(x, y)
-        }
-
-        points.push({ x, y, corner: isCorner, end: isEnd })
-        addAnchorDot(points.length - 1)
-        updatePreview(null, false)
-
-        return { started: true }
-      },
-
-      mouseMove (opts) {
-        if (!isDrawing) return undefined
-
-        const zoom = svgCanvas.getZoom()
-        const mx = opts.mouse_x / zoom
-        const my = opts.mouse_y / zoom
-
-        if (draggingIndex >= 0) {
-          // Leave the anchor untouched until the pointer clears the
-          // click-vs-drag threshold, so a click landing anywhere within the
-          // (larger) hit radius — not necessarily exactly on the anchor —
-          // doesn't itself register as a move.
-          if (!dragMoved) {
-            if (dist(mx, my, mouseDownPos.x, mouseDownPos.y) <= getMoveThreshold()) {
-              return { started: true }
-            }
-            dragMoved = true
-          }
-          points[draggingIndex].x = mx
-          points[draggingIndex].y = my
-          redrawAnchorDots()
-          updatePreview(null, false) // no tentative point while repositioning a placed anchor
-          return { started: true }
-        }
-
-        updatePreview({ x: mx, y: my }, false)
-        return { started: true }
-      },
-
-      mouseUp (_opts) {
-        if (!isDrawing) return undefined
-
-        // points[0] is ambiguous between "close the path" (never crossed the
-        // drag threshold, mirrors today's click-near-start gesture) and
-        // "drag the start anchor" (crossed it — already live-updated by
-        // mouseMove above).
-        if (draggingIndex === 0 && mouseDownHitIndex === 0) {
-          const wasMoved = dragMoved
-          resetDragState()
-
-          if (!wasMoved && points.length >= 2) {
-            finalize(true)
-            return { keep: false, started: false }
-          }
-
-          // Either a genuine drag (points[0] already holds its live-updated
-          // position) or too few points to close yet — leave session open.
-          redrawAnchorDots()
-          updatePreview(null, false)
-          return { keep: false, started: false }
-        }
-
-        if (draggingIndex >= 0) {
-          resetDragState()
-          return { keep: false, started: false }
-        }
-
-        // Each click is a complete editor drag from svgedit's perspective.
-        // We signal "no new element created" and keep our own session alive.
-        return { keep: false, started: false }
-      },
-
-      keyDown (opts) {
-        if (svgCanvas.getMode() !== 'curvature') return undefined
-        if (!isDrawing) return undefined
-
-        if (opts.event.key === 'Escape') {
-          finalize(false)
-          return { preventDefault: true }
-        }
-        return undefined
       }
     }
   }

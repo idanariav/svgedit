@@ -149,4 +149,57 @@ test.describe('registered tools', () => {
     await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
     expect(await shapes()).toBe(0)
   })
+
+  test('curvature: clicks build a path, Escape finishes it open as one undo step, nothing is left over', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.commands.run('tool_curvature'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([
+      { kind: 'click', x: 300, y: 300 }, { kind: 'click', x: 380, y: 250 }, { kind: 'click', x: 460, y: 300 }
+    ]))
+    expect(await undoSize(page)).toBe(0) // the session is scaffolding until it is finished
+    expect(await page.evaluate(() => document.querySelectorAll('#curvature_preview').length)).toBe(1)
+    await page.evaluate(() => window.svgEditor.automation.key('escape'))
+    expect(await page.evaluate(() => document.querySelectorAll('#curvature_preview').length)).toBe(0)
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent g.layer circle').length)).toBe(0)
+    expect(await paths(page)).toBe(1)
+    expect(await undoSize(page)).toBe(1)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('select')
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await paths(page)).toBe(0)
+  })
+
+  test('curvature: clicking the first anchor again closes the path in one undo step', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.commands.run('tool_curvature'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([
+      { kind: 'click', x: 300, y: 300 }, { kind: 'click', x: 380, y: 250 }, { kind: 'click', x: 460, y: 300 }, { kind: 'click', x: 300, y: 300 }
+    ]))
+    expect(await paths(page)).toBe(1)
+    expect(await undoSize(page)).toBe(1)
+    expect(await page.evaluate(() => document.querySelector('#svgcontent g.layer > path').getAttribute('d'))).toMatch(/z\s*$/i)
+  })
+
+  test('shape builder: one drag across the regions merges them in one undo step; Escape leaves cleanly', async ({ page }) => {
+    const count = () => page.evaluate(() => document.querySelectorAll('#svgcontent g.layer > :not(title)').length)
+    await page.evaluate(async () => {
+      await window.svgEditor.loadFromString(`<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg"><g class="layer"><title>L</title>
+        <rect id="a" x="50" y="50" width="80" height="80" fill="#00aa00"/><rect id="b" x="100" y="50" width="80" height="80" fill="#0000aa"/></g></svg>`)
+      window.svgEditor.svgCanvas.selectOnly([document.getElementById('a'), document.getElementById('b')])
+      window.svgEditor.commands.run('tool_shape_builder')
+    })
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('shapebuilder')
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 60, y: 90, to: { x: 170, y: 90 }, steps: 12 }]))
+    expect(await count()).toBe(1)
+    expect(await undoSize(page)).toBe(1)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('select')
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await count()).toBe(2)
+
+    // Escape: the session ends and the overlay is gone
+    await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly([document.getElementById('a'), document.getElementById('b')])
+      window.svgEditor.commands.run('tool_shape_builder')
+    })
+    await page.evaluate(() => window.svgEditor.automation.key('escape'))
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('select')
+    expect(await page.evaluate(() => document.getElementById('shape_builder_hint')?.classList.contains('visible') ?? false)).toBe(false)
+  })
 })

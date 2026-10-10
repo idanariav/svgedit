@@ -988,5 +988,5 @@ gates are listed.
 
 ## Status update (2026-10-10)
 - T0.1: complete for commands - panel, main-menu and extension buttons register real commands (`panelCommands.js`, `registerModeCommand`); `layer_moreopts` remains an adapter (menu anchor). Enablement now reflects context (path editor open, text selected, stroke/fill gating); calling handlers directly exposed errors that click listeners had been swallowing.
-- T0.3: `ext-shape-family`, `ext-brush` (new `keepOpacity` tool flag), `ext-panning`, `ext-eyedropper`, `ext-cutter`, `ext-polystar`, `ext-shapes` are on `registerTool`. Remaining tool ports are listed in `.claude/techdebt.md`.
+- T0.3: complete for standalone tools - shape-family, brush (new `keepOpacity` flag), panning, eyedropper, cutter (`wantsHover`, `deactivate`), polystar, shapes, curvature and shape-builder run on `registerTool`. Puppet-warp (session across gestures) and connector (augments built-in modes) stay on the legacy hooks on purpose; see `.claude/techdebt.md`.
 - Known issues from T0.4: all fixed; the sweep's `KNOWN_ISSUES` is empty.

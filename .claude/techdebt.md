@@ -160,7 +160,7 @@ toolchain step.
 
 ## Tier 0 follow-ups (VectorCraft port, 2026-10-10)
 
-Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: `ext-shape-family`, `ext-brush`, `ext-panning`, `ext-eyedropper`, `ext-cutter`, `ext-polystar` and `ext-shapes` use `registerTool`.
+Status (2026-10-10, committed): T0.1-T0.6 are implemented and committed. Commands: every panel, main-menu and extension button is a real registry command (`panelCommands.js`, `registerModeCommand`, per-extension `commands.register`); the only adapter left is `layer_moreopts` (a menu anchor, on purpose). Tools: every standalone drawing tool uses `registerTool` (shape-family, brush, panning, eyedropper, cutter, polystar, shapes, curvature, shape-builder). Two extensions keep legacy hooks on purpose: puppet-warp and connector (see below).
 
 Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing), command
 registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
@@ -385,13 +385,16 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
 - Fixed on the way: `EditorStartup` read only the last extension's answer to the `keyDown` hook (`runExtensions` without `returnArray` keeps the last result), so another extension's `undefined` could cancel an earlier `preventDefault` (e.g. curvature's Escape); it now collects all answers. The editor's Space `keyup` also unconditionally reset the mode to the previous one (a bare Space tap in any drawing tool switched to Select); it now only does so when Space had armed pan.
 
 **Remaining Tier 0 work (not started)**
-- **Port the remaining drawing tools to `registerTool`** (their `mouseDown/Move/Up` extension hooks still use the
-  legacy pipeline): `ext-curvature`, `ext-puppet-warp`, `ext-shape-builder`, `ext-connector`. Done: brush
-  (`keepOpacity`), panning, eyedropper, cutter (`wantsHover` + `deactivate`; its preview is `data-se-ephemeral`),
-  polystar (also fixes stars / polygons being the wrong size at zoom != 100%: the legacy hook used the zoomed
-  `mouse_x`), shapes (library insert). `ctx.start` stays valid inside `pointerUp`. Gotchas: legacy
-  hooks receive `mouse_x/mouse_y` zoomed and `start_x/start_y` unzoomed, the tool contract gives one unzoomed
-  convention (`x/y` snapped, `rawX/rawY` not).
+- **Tools on `registerTool`: done** (shape-family, brush, panning, eyedropper, cutter, polystar, shapes, curvature,
+  shape-builder). Notes: brush needs `keepOpacity`; cutter uses `wantsHover` + `deactivate`; polystar's size was wrong
+  at zoom != 100% (legacy hook read the zoomed `mouse_x`) and is fixed; `ctx.start` stays valid inside `pointerUp`;
+  curvature finalizes a double-click on release (finishing switches tool, which cancels the gesture it runs in) and
+  its preview/dots are `data-se-ephemeral`; `cancelTool` now includes `curvature`.
+  **Left on legacy hooks on purpose:** `ext-puppet-warp` (a session across many gestures that bakes its own undo
+  batch: per-gesture transactions would double-record the live warp, and holding one transaction open for the whole
+  session would swallow other edits' undo steps; the right fix is a session-level transaction API) and
+  `ext-connector` (augments the built-in line and select modes, it is not a tool). `glow`/`outline`/`shadow`/
+  `repeat` only refresh on mouseup; they are not tools.
 - Commands are real now but their `enabled` is mostly "always" (what the buttons were); several would be better
   gated on selection type.
 - Still open from the plan: `cursor()` / `options()` tool hooks, live-effects preview on transactions,

@@ -5,7 +5,7 @@ import extCurvature from '../../src/editor/extensions/ext-curvature/ext-curvatur
 describe('ext-curvature', () => {
   let svgCanvas
   let svgEditor
-  let extInstance
+  let tool
   let layer
 
   beforeEach(async () => {
@@ -14,7 +14,7 @@ describe('ext-curvature', () => {
 
     svgCanvas = {
       $id: vi.fn(),
-      $click: vi.fn(),
+      registerTool: vi.fn((def) => { tool = def }),
       insertChildAtIndex: vi.fn(),
       getMode: () => 'curvature',
       getCurrentDrawing: () => ({ getCurrentLayer: () => layer }),
@@ -41,16 +41,20 @@ describe('ext-curvature', () => {
       i18next: { t: (key) => key, addResourceBundle: vi.fn() }
     }
 
-    extInstance = await extCurvature.init.call(svgEditor)
+    await extCurvature.init.call(svgEditor)
   })
 
   afterEach(() => {
     document.body.textContent = ''
   })
 
-  const click = (x, y, event = {}) => {
-    extInstance.mouseDown({ event, start_x: x, start_y: y })
-  }
+  // Document-space events, as the tool registry hands them out.
+  const ctx = {}
+  const ev = (x, y, { detail = 1, shift = false, alt = false } = {}) =>
+    ({ x, y, rawX: x, rawY: y, mods: { shift, alt }, event: { detail } })
+  const down = (x, y, opts) => tool.pointerDown(ctx, ev(x, y, opts))
+  const up = (x, y) => tool.pointerUp(ctx, ev(x, y))
+  const click = (x, y, opts) => { down(x, y, opts); up(x, y) }
 
   it('switching tools mid-session cleans up the preview and anchor dots instead of leaving them in the layer', () => {
     click(10, 10)
@@ -84,5 +88,40 @@ describe('ext-curvature', () => {
     document.dispatchEvent(new CustomEvent('modeChange', { detail: { getMode: () => 'curvature' } }))
 
     expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
+  })
+
+  it('hovers: the tentative segment follows the pointer between clicks', () => {
+    expect(tool.id).toBe('curvature')
+    expect(tool.wantsHover).toBe(true)
+    click(10, 10)
+    tool.pointerMove(ctx, ev(80, 40))
+    expect(layer.querySelector('#curvature_preview').getAttribute('d')).toContain('80,40')
+  })
+
+  it('the preview and anchor dots are ephemeral scaffolding (not recorded, not saved)', () => {
+    click(10, 10)
+    expect(layer.querySelector('#curvature_preview').hasAttribute('data-se-ephemeral')).toBe(true)
+    expect(layer.querySelector('circle').hasAttribute('data-se-ephemeral')).toBe(true)
+  })
+
+  it('a double-click finalizes on release (finishing switches tool, which would cancel the gesture)', () => {
+    click(10, 10)
+    click(50, 10)
+    down(50, 10, { detail: 2 })
+    expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
+    expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()
+    up(50, 10)
+    expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalledTimes(1)
+    expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalledTimes(1)
+    expect(layer.querySelector('#curvature_preview')).toBeNull()
+  })
+
+  it('clicking the start anchor again closes the path', () => {
+    click(10, 10)
+    click(60, 10)
+    click(60, 60)
+    click(10, 10) // back on the first anchor, no drag
+    const path = [...layer.querySelectorAll('path')].find((p) => p.id !== 'curvature_preview')
+    expect(path.getAttribute('d')).toMatch(/Z\s*$/i)
   })
 })

@@ -182,13 +182,67 @@ export default {
       svgEditor.leftPanel?.updateLeftPanel?.('tool_select') // unpress draw tools
     }
 
-    // Leaving the mode by any route (Escape → cancelTool, tool switch, our
-    // own exits) tears the session down.
-    const origSetMode = svgCanvas.setMode.bind(svgCanvas)
-    svgCanvas.setMode = (mode) => {
-      if (active && mode !== 'shapebuilder') teardown()
-      origSetMode(mode)
-    }
+    // Each pick gesture (click, or drag across regions) is one transaction: merging or
+    // deleting the picked regions is a single undo step, and the session carries on
+    // with the resulting shapes.
+    svgCanvas.registerTool({
+      id: 'shapebuilder',
+      undoLabel: 'Shape builder',
+
+      // Leaving the mode by any route (Escape, tool switch, our own exits) tears the session down.
+      deactivate () { teardown() },
+      cancel () { started = false; picked = new Set(); if (active) paintStates(-1) },
+
+      pointerDown (ctx, ev) {
+        if (!active) return false
+        started = true
+        picked = new Set()
+        const hit = svgCanvas.shapeBuilder.hitTest(ev.x, ev.y)
+        if (hit >= 0) picked.add(hit)
+        paintStates(-1)
+      },
+
+      pointerMove (ctx, ev) {
+        if (!started) return
+        const hit = svgCanvas.shapeBuilder.hitTest(ev.rawX, ev.rawY)
+        if (hit >= 0 && !picked.has(hit)) {
+          picked.add(hit)
+          paintStates(-1)
+        }
+      },
+
+      pointerUp (ctx, ev) {
+        if (!started) return
+        started = false
+        const indices = [...picked]
+        picked = new Set()
+        if (!indices.length) {
+          paintStates(-1)
+          return
+        }
+        busy = true
+        let result
+        try {
+          result = svgCanvas.shapeBuilder.apply(indices, ev.mods.alt ? 'delete' : 'merge')
+        } finally {
+          busy = false
+        }
+        if (!result) return
+        const alive = result.filter((el) => el.parentNode)
+        if (alive.length >= 2) {
+          busy = true
+          try {
+            startSession(alive)
+          } finally {
+            busy = false
+          }
+        } else {
+          teardown()
+          svgCanvas.setMode('select')
+          if (alive.length) svgCanvas.selectOnly(alive, true)
+        }
+      }
+    })
 
     return {
       name: svgEditor.i18next.t(`${name}:name`),
@@ -205,58 +259,6 @@ export default {
           teardown()
           if (svgCanvas.getMode() === 'shapebuilder') svgCanvas.setMode('select')
         }
-      },
-      mouseDown (opts) {
-        if (svgCanvas.getMode() !== 'shapebuilder' || !active) return undefined
-        started = true
-        picked = new Set()
-        const hit = svgCanvas.shapeBuilder.hitTest(opts.start_x, opts.start_y)
-        if (hit >= 0) picked.add(hit)
-        paintStates(-1)
-        return { started: true }
-      },
-      mouseMove (opts) {
-        if (!started || svgCanvas.getMode() !== 'shapebuilder') return undefined
-        const zoom = svgCanvas.getZoom()
-        const hit = svgCanvas.shapeBuilder.hitTest(opts.mouse_x / zoom, opts.mouse_y / zoom)
-        if (hit >= 0 && !picked.has(hit)) {
-          picked.add(hit)
-          paintStates(-1)
-        }
-        return { started: true }
-      },
-      mouseUp (opts) {
-        if (svgCanvas.getMode() !== 'shapebuilder' || !started) return undefined
-        started = false
-        const indices = [...picked]
-        picked = new Set()
-        if (indices.length) {
-          busy = true
-          let result
-          try {
-            result = svgCanvas.shapeBuilder.apply(indices, opts.event?.altKey ? 'delete' : 'merge')
-          } finally {
-            busy = false
-          }
-          if (result) {
-            const alive = result.filter((el) => el.parentNode)
-            if (alive.length >= 2) {
-              busy = true
-              try {
-                startSession(alive)
-              } finally {
-                busy = false
-              }
-            } else {
-              teardown()
-              svgCanvas.setMode('select')
-              if (alive.length) svgCanvas.selectOnly(alive, true)
-            }
-          }
-        } else {
-          paintStates(-1)
-        }
-        return { keep: true, element: null, started: false }
       },
       callback () {
         const combine = $id('tool_clip_set')?.parentElement
