@@ -189,6 +189,17 @@ const reverseSub = (sp) => {
   sp.anchors = sp.anchors.map((a) => ({ p: a.p, hIn: a.hOut, hOut: a.hIn }))
 }
 
+/**
+ * The subpath run the other way (its handles swap with it).
+ * @param {import('./anchor-path.js').SubPath} sp
+ * @returns {import('./anchor-path.js').SubPath} A new subpath.
+ */
+export const reversedSubpath = (sp) => {
+  const out = copySub(sp)
+  reverseSub(out)
+  return out
+}
+
 const endAnchor = (sp, last) => sp.anchors[last ? sp.anchors.length - 1 : 0]
 
 /**
@@ -242,21 +253,44 @@ export const joinSubpaths = (subpaths, tolerance = 0) => {
     }
     const { d, i, j, ei, ej } = best
     const b = open.splice(j, 1)[0]
-    const a = open[i]
-    if (!ei) reverseSub(a)
-    if (ej) reverseSub(b)
-    const tail = endAnchor(a, true)
-    if (d <= tolerance && b.anchors.length) {
-      const first = b.anchors.shift()
-      // A retracted handle sits on its own anchor, so re-seat it on the merged one.
-      a.anchors[a.anchors.length - 1] = { p: tail.p, hIn: tail.hIn, hOut: hasOut(first) ? first.hOut : copyPt(tail.p) }
-    } else {
-      tail.hOut = copyPt(tail.p)
-      b.anchors[0].hIn = copyPt(b.anchors[0].p)
-    }
-    a.anchors.push(...b.anchors)
+    attach(open[i], ei, b, ej, d <= tolerance)
   }
   return [...closed, ...open]
+}
+
+/**
+ * Join end `aAtEnd` of `a` to end `bAtEnd` of `b` (`true` = the last anchor).
+ * Either may be a lone anchor. Endpoints closer than `tolerance` merge into one
+ * anchor, otherwise a straight segment connects them.
+ * @param {import('./anchor-path.js').SubPath} a
+ * @param {boolean} aAtEnd
+ * @param {import('./anchor-path.js').SubPath} b
+ * @param {boolean} bAtEnd
+ * @param {number} [tolerance]
+ * @returns {import('./anchor-path.js').SubPath} A new open subpath; the inputs are untouched.
+ */
+export const joinEnds = (a, aAtEnd, b, bAtEnd, tolerance = 0) => {
+  const out = copySub(a)
+  const rest = copySub(b)
+  const gap = Math.hypot(endAnchor(a, aAtEnd).p.x - endAnchor(b, bAtEnd).p.x, endAnchor(a, aAtEnd).p.y - endAnchor(b, bAtEnd).p.y)
+  attach(out, aAtEnd, rest, bAtEnd, gap <= tolerance)
+  return out
+}
+
+/** Append `b` to `a` (both are changed), reversing either so the chosen ends meet; `merge` fuses the two meeting anchors. */
+const attach = (a, aAtEnd, b, bAtEnd, merge) => {
+  if (!aAtEnd) reverseSub(a)
+  if (bAtEnd) reverseSub(b)
+  const tail = endAnchor(a, true)
+  if (merge && b.anchors.length) {
+    const first = b.anchors.shift()
+    // A retracted handle sits on its own anchor, so re-seat it on the merged one.
+    a.anchors[a.anchors.length - 1] = { p: tail.p, hIn: tail.hIn, hOut: hasOut(first) ? first.hOut : copyPt(tail.p) }
+  } else {
+    tail.hOut = copyPt(tail.p)
+    b.anchors[0].hIn = copyPt(b.anchors[0].p)
+  }
+  a.anchors.push(...b.anchors)
 }
 
 const REL = new Set([3, 5, 7, 9, 11, 13, 15, 17, 19])

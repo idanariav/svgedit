@@ -84,6 +84,7 @@ export interface AttachedMembers {
     moveNode: (attr: string, newValue: number) => void
     selectNode: (node?: Element) => void
     opencloseSubPath: () => void
+    hover: (mouseX: number, mouseY: number) => void
   }
   getNumLayers(): number
   getLayer(name: string): any

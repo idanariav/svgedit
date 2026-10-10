@@ -19,6 +19,8 @@ import { getBBox } from './bbox-utils.js'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.js'
 import { warn as logWarn } from '../common/logger.js'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
+import { anchorsToD } from './anchor-path.js'
+import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.js'
 
 /**
 * @function module:path-actions.init
@@ -28,6 +30,9 @@ import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
   const { shortFloat } = getUnits(canvas)
+  /** Screen pixels within which a press counts as on an open path's end. */
+  const PEN_END_REACH = 6
+  const END_HINT_ID = 'pen_end_hint'
   let path = null // current path being edited (per instance)
 
   /**
@@ -252,6 +257,9 @@ export const init = (canvas) => {
     #currentPath = null
     #hasMoved = false
     #downOnPath = false
+    // The open path the Pen is carrying on (pressed at one of its ends): hidden while
+    // the drawing stands in for it, then given the drawing's geometry on commit.
+    #continued = null
     // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
     // applied at any point during the drag currently in progress — reset at
     // drag-start, read (and logged) once at drag-end, since the per-mousemove
@@ -337,6 +345,134 @@ export const init = (canvas) => {
     }
 
     /**
+     * The open path end under (x, y) that the Pen could carry on or join to: ends of
+     * the carried-on path itself are not offered (clicking its far end closes it).
+     * @param {number} x
+     * @param {number} y
+     * @param {?Element} drawnPath
+     * @returns {?module:pen-continue.PenEnd}
+     */
+    #penEnd (x, y, drawnPath) {
+      if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
+      const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+      const exclude = [drawnPath, this.#continued?.elem].filter(Boolean)
+      return findPenEnd(layer, x, y, PEN_END_REACH / svgCanvas.getZoom(), exclude)
+    }
+
+    /** Start a drawing that carries on `end`'s path from the pressed end. */
+    #carryOn (end, stretchy) {
+      const zoom = svgCanvas.getZoom()
+      this.#newPoint = null
+      this.#firstCtrl = null
+      const drawn = svgCanvas.addSVGElementsFromJson({
+        element: 'path',
+        curStyles: true,
+        attr: {
+          d: continuationD(end),
+          id: svgCanvas.getNextId('path'),
+          opacity: svgCanvas.getOpacity() / 2
+        }
+      })
+      svgCanvas.setDrawnPath(drawn)
+      this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: drawn.pathSegList.numberOfItems }
+      end.elem.setAttribute('display', 'none')
+      const x = end.point.x * zoom
+      const y = end.point.y * zoom
+      stretchy.setAttribute('d', `M${x} ${y} ${x} ${y}`)
+      svgCanvas.addPointGrip(this.#continued.count - 1, x, y)
+    }
+
+    /** Finish the drawing by joining it to `end`'s path. */
+    #joinTo (end, drawnPath, stretchy) {
+      const drawn = drawnSubpath(drawnPath.getAttribute('d'))
+      this.#newPoint = null
+      if (!drawn) return
+      const { subpath, keepsDrawing } = joinDrawn(drawn, end, !!this.#continued)
+      const survivor = keepsDrawing ? this.#continued.elem : end.elem
+      svgCanvas.removePath_(svgCanvas.getId())
+      stretchy.remove()
+      svgCanvas.setDrawnPath(null)
+      svgCanvas.setStarted(false)
+      this.#commitInto(survivor, anchorsToD([subpath]), keepsDrawing ? [end.elem] : [], drawnPath)
+    }
+
+    /**
+     * Give `survivor` the finished geometry (and drop the paths it absorbed) as one
+     * undo step, in place of the throwaway drawing.
+     * @param {Element} survivor
+     * @param {string} d
+     * @param {Element[]} absorbed
+     * @param {Element} drawnPath
+     */
+    #commitInto (survivor, d, absorbed, drawnPath) {
+      const label = absorbed.length || (this.#continued && survivor !== this.#continued.elem) ? 'Join paths' : 'Continue path'
+      svgCanvas.getCurrentDrawing().releaseId(drawnPath.id)
+      drawnPath.remove()
+      svgCanvas.getElement('path_stretch_line')?.remove()
+      this.#restoreContinued()
+      for (const grip of svgCanvas.getElement('pathpointgrip_container')?.querySelectorAll('*') ?? []) {
+        grip.setAttribute('display', 'none')
+      }
+      this.#hideEndHint()
+      svgCanvas.transact(label, () => {
+        survivor.setAttribute('d', d)
+        for (const el of absorbed) el.remove()
+      })
+      if (!svgCanvas.getToolLocked()) {
+        svgCanvas.setMode('select')
+        svgCanvas.selectOnly([survivor], true)
+      }
+      svgCanvas.call('changed', [survivor])
+    }
+
+    /** Un-hide the path the drawing stood in for. */
+    #restoreContinued () {
+      if (!this.#continued) return
+      const { elem, display } = this.#continued
+      if (display === null) elem.removeAttribute('display')
+      else elem.setAttribute('display', display)
+      this.#continued = null
+    }
+
+    /**
+     * The pointer moved with no button down in `path` mode.
+     * @param {number} mouseX
+     * @param {number} mouseY
+     * @returns {void}
+     */
+    hover (mouseX, mouseY) {
+      this.#showEndHint(mouseX, mouseY)
+    }
+
+    /**
+     * A ring on the open end the next press would carry on or join to (screen coordinates).
+     * @param {number} mouseX
+     * @param {number} mouseY
+     * @returns {void}
+     */
+    #showEndHint (mouseX, mouseY) {
+      const zoom = svgCanvas.getZoom()
+      const end = this.#subpath ? null : this.#penEnd(mouseX / zoom, mouseY / zoom, svgCanvas.getDrawnPath())
+      if (!end) {
+        this.#hideEndHint()
+        return
+      }
+      let ring = svgCanvas.getElement(END_HINT_ID)
+      if (!ring) {
+        ring = document.createElementNS(NS.SVG, 'circle')
+        assignAttributes(ring, {
+          id: END_HINT_ID, r: 7, fill: 'none', stroke: '#22C', 'stroke-width': 1.5, 'pointer-events': 'none'
+        })
+        svgCanvas.getElement('selectorParentGroup').append(ring)
+      }
+      assignAttributes(ring, { cx: end.point.x * zoom, cy: end.point.y * zoom, display: 'inline' })
+    }
+
+    #hideEndHint () {
+      svgCanvas.getElement(END_HINT_ID)?.setAttribute('display', 'none')
+    }
+
+    /**
   * @param {MouseEvent} evt
   * @param {Element} mouseTarget
   * @param {number} startX
@@ -354,6 +490,8 @@ export const init = (canvas) => {
         let y = mouseY / zoom
         let stretchy = svgCanvas.getElement('path_stretch_line')
         this.#newPoint = [x, y]
+        const rawX = x
+        const rawY = y
 
         if (svgCanvas.getGridSnapping()) {
           const sp = svgCanvas.snapPointToGrid(x, y)
@@ -379,6 +517,15 @@ export const init = (canvas) => {
         let index
         // if pts array is empty, create path element with M at current point
         const drawnPath = svgCanvas.getDrawnPath()
+        const end = this.#subpath || evt.altKey ? null : this.#penEnd(rawX, rawY, drawnPath)
+        if (!drawnPath && end) {
+          this.#carryOn(end, stretchy)
+          return undefined
+        }
+        if (drawnPath && end) {
+          this.#joinTo(end, drawnPath, stretchy)
+          return undefined
+        }
         if (!drawnPath) {
           if (!this.#subpath) {
           // Starting a brand-new path (not extending the currently-tracked
@@ -420,6 +567,8 @@ export const init = (canvas) => {
           let clickOnPoint = false
           while (i) {
             i--
+            // The carried-on path's own points: only its first one (closing the loop) counts.
+            if (this.#continued && i >= 1 && i < this.#continued.count) continue
             const item = seglist.getItem(i)
             const px = item.x; const py = item.y
             // found a matching point
@@ -479,6 +628,11 @@ export const init = (canvas) => {
             // const element = newpath; // Other event handlers define own `element`, so this was probably not meant to interact with them or one which shares state (as there were none); I therefore adding a missing `var` to avoid a global
             /* drawnPath = */ svgCanvas.setDrawnPath(null)
             svgCanvas.setStarted(false)
+
+            if (this.#continued) {
+              this.#commitInto(this.#continued.elem, newpath.getAttribute('d'), [], newpath)
+              return false
+            }
 
             if (this.#subpath) {
               if (path.matrix) {
@@ -641,6 +795,7 @@ export const init = (canvas) => {
       this.#hasMoved = true
       const drawnPath = svgCanvas.getDrawnPath()
       if (svgCanvas.getCurrentMode() === 'path') {
+        this.#showEndHint(mouseX, mouseY)
         if (!drawnPath) { return }
         const seglist = drawnPath.pathSegList
         const index = seglist.numberOfItems - 1
@@ -1042,6 +1197,8 @@ export const init = (canvas) => {
       this.#downOnPath = false
       this.#hasMoved = false
       this.#subpath = false
+      this.#restoreContinued()
+      this.#hideEndHint()
       if (drawnPath) {
       // Optional-chained: a missing element here must not throw and abort the
       // caller (svgCanvas.setMode() calls this before committing the new

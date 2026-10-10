@@ -75,6 +75,7 @@ describe('PathActions', () => {
       getDrawnPath: vi.fn(() => null),
       setDrawnPath: vi.fn(),
       getCurrentGroup: vi.fn(() => null),
+      getCurrentDrawing: () => ({ getCurrentLayer: () => document.createElementNS('http://www.w3.org/2000/svg', 'g') }),
       leaveContext: vi.fn(),
       getPath_: vi.fn(() => mockPath),
       getId: vi.fn(() => 'svg_1'),

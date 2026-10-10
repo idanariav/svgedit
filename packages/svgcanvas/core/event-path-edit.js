@@ -9,14 +9,14 @@
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.js'
-import { snapToAngle } from './math.js'
+import { snapToAngle, transformPoint } from './math.js'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-path-edit.init
  * @param {module:svgcanvas.SvgCanvas} canvas
- * @returns {{down: Function, move: Function, upPath: Function, upPathEdit: Function}}
+ * @returns {{down: Function, move: Function, hover: Function, upPath: Function, upPathEdit: Function}}
  */
 export const init = (canvas) => {
   const svgCanvas = canvas
@@ -72,6 +72,16 @@ export const init = (canvas) => {
     svgCanvas.pathActions.mouseMove(x, y)
   }
 
+  // The pointer moving over the canvas with no button down in `path` mode: the Pen marks the open
+  // end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
+  const hover = (evt) => {
+    const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
+    if (!ctm) return
+    const pt = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
+    const zoom = svgCanvas.getZoom()
+    svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom)
+  }
+
   // 'path': element is nulled here so it is not removed nor finalized by the
   // shared epilogue; started stays true so mouseMove keeps running.
   const upPath = (evt, ctx) => {
@@ -86,5 +96,5 @@ export const init = (canvas) => {
     return { element: null, keep: true }
   }
 
-  return { down, move, upPath, upPathEdit }
+  return { down, move, hover, upPath, upPathEdit }
 }

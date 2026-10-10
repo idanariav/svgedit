@@ -20,8 +20,8 @@ small items (S) fill gaps between large ones.
 
 **Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
-**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; item 7, T2.15 Corner-keeping simplify, is done and T2.16 / T3.7 build on it)
-8. **T2.3 Pen continues / joins** → 9. **T2.16 Smooth tool** → 10. **T3.7 Pencil continues** → 11. **T2.12 Centerline
+**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–8, T2.15 Corner-keeping simplify and T2.3 Pen continues / joins, are done; T2.16 / T3.7 build on them)
+9. **T2.16 Smooth tool** → 10. **T3.7 Pencil continues** (reuse `core/pen-continue.js` `findPenEnd` / `continuationD`) → 11. **T2.12 Centerline
    tracing** (L, last: it only needs the fit module).
    Do the **precise `enabled` pass for the path commands** while in these panels.
 
@@ -255,6 +255,15 @@ Done: the pencil commit and Smooth Path run on the corner-keeping fit (no paper.
 - **`pencilFidelity` is in user units, not screen pixels**: drawing zoomed in commits as coarsely (in screen terms) as a stroke drawn zoomed out. Dividing by the zoom would make the pencil zoom-independent; not done, to keep the commit what it was.
 - **Closed pencil strokes** (a loop closed onto its start) are not recognised as closed; the fit is always an open path. VectorCraft's `closed` flag was not ported.
 - `simplifyWith` has no "straight lines only" mode (VectorCraft's Convert to Straight Lines); add it with the first caller.
+
+## Pen continue / join (`core/pen-continue.js`): follow-ups from T2.3
+
+Done: pressing an open path's end with the Pen carries it on (the same element, one undo step); pressing another open path's end while drawing joins them. Remaining:
+- **A ring marks the end, not a cursor.** The plan asked for "continue" and "join" cursors; a `pen_end_hint` ring in the selector layer shows the same thing, and says nothing about continue vs join. Distinct cursor icons would need a tool-level `cursor()` hook (see "Tool hooks").
+- **Only plain, untransformed, single-subpath open paths in the current layer** are offered (no current group, no `transform`, no `se:taper-d` / `se:orig-d` / `se:fx-d`, which would desync from their source). A rotated or grouped path draws a new path instead. Mapping the press into the path's own space would lift the transform limit.
+- **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
+- A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
+- The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
 
 ## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
 
