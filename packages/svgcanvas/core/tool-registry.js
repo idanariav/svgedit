@@ -79,6 +79,22 @@ const LOG = 'tool-registry'
  */
 
 /**
+ * One control of a tool's options bar (`ToolDef.options`). The editor draws the bar from these, so a tool
+ * never builds UI of its own for them.
+ * @typedef {object} ToolOption
+ * @property {string} id passed back to `setOption`
+ * @property {string} label already translated
+ * @property {'number'|'select'|'checkbox'} type
+ * @property {number|string|boolean} value the current value
+ * @property {number} [min] number
+ * @property {number} [max] number
+ * @property {number} [step] number
+ * @property {Array<{value: string, label: string}>} [choices] select; labels already translated
+ * @property {string} [title] tooltip
+ * @property {boolean} [hidden] the control is not relevant right now (e.g. the distance while spacing is by step count)
+ */
+
+/**
  * @typedef {object} ToolDef
  * @property {string} id the mode name passed to `setMode()`
  * @property {(ctx: ToolContext) => void} [activate] the mode became current
@@ -92,6 +108,9 @@ const LOG = 'tool-registry'
  *   Escape never reaches this: the registry cancels the gesture and lets the editor leave the tool.
  * @property {(ctx: ToolContext) => void} [cancel] the gesture was rolled back (Escape, mode switch,
  *   `'cancel'`, an error): reset the tool's own state
+ * @property {() => ToolOption[]} [options] the controls of the tool's options bar, shown while the tool is the mode;
+ *   read again after every `setOption` and mode change, so `value` / `hidden` may depend on the tool's state
+ * @property {(id: string, value: number|string|boolean) => void} [setOption] the user changed a control of `options()`
  * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
  * @property {boolean} [wantsHover] receive `pointerMove` with no button down
  * @property {boolean} [keepOpacity] created elements keep the `opacity` the tool stamped (the brush has its own)
@@ -405,7 +424,42 @@ export const init = (canvas) => {
     return tools.delete(id)
   }
 
+  /**
+   * The options bar of the current tool (or of tool `id`): empty when it has none.
+   * @param {string} [id]
+   * @returns {ToolOption[]}
+   */
+  const getToolOptions = (id = svgCanvas.getMode()) => {
+    try {
+      return tools.get(id)?.options?.() ?? []
+    } catch (err) {
+      logError(`Tool "${id}" options() failed`, err, LOG)
+      return []
+    }
+  }
+
+  /**
+   * Change one control of the current tool's (or tool `id`'s) options bar.
+   * @param {string} optionId
+   * @param {number|string|boolean} value
+   * @param {string} [id]
+   * @returns {boolean} whether the tool took it
+   */
+  const setToolOption = (optionId, value, id = svgCanvas.getMode()) => {
+    const tool = tools.get(id)
+    if (!tool?.setOption) return false
+    try {
+      tool.setOption(optionId, value)
+      return true
+    } catch (err) {
+      logError(`Tool "${id}" setOption() failed`, err, LOG)
+      return false
+    }
+  }
+
   svgCanvas.registerTool = registerTool
+  svgCanvas.getToolOptions = getToolOptions
+  svgCanvas.setToolOption = setToolOption
   svgCanvas.unregisterTool = unregisterTool
   svgCanvas.hasTool = (/** @type {string} */ id) => tools.has(id)
   svgCanvas.finishCreatedElement = finishCreated

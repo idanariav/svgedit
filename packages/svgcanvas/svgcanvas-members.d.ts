@@ -31,6 +31,18 @@ export interface ToolContext {
   clearOverlays(): void
   finishCreated(el: Element, evt?: { altKey?: boolean }): void
 }
+export interface ToolOption {
+  id: string
+  label: string
+  type: 'number' | 'select' | 'checkbox'
+  value: number | string | boolean
+  min?: number
+  max?: number
+  step?: number
+  choices?: Array<{ value: string, label: string }>
+  title?: string
+  hidden?: boolean
+}
 export interface ToolDef {
   id: string
   activate?(ctx: ToolContext): void
@@ -42,6 +54,9 @@ export interface ToolDef {
   pointerUp?(ctx: ToolContext, ev: ToolEvent): void | 'cancel' | { created?: Element }
   keyDown?(ctx: ToolContext, ev: KeyboardEvent): boolean
   cancel?(ctx: ToolContext): void
+  /** The controls of the tool's options bar, shown while it is the mode; read again after every `setOption` and mode change. */
+  options?(): ToolOption[]
+  setOption?(id: string, value: number | string | boolean): void
   undoLabel?: string
   wantsHover?: boolean
   /** Snap `ev.x` / `ev.y` to other objects' anchors, boxes and the page (default false). */
@@ -117,6 +132,9 @@ export interface AttachedMembers {
    */
   registerTool(def: ToolDef): void
   unregisterTool(id: string): boolean
+  /** The options bar of the current tool (or tool `id`): empty when it has none. */
+  getToolOptions(id?: string): ToolOption[]
+  setToolOption(optionId: string, value: number | string | boolean, id?: string): boolean
   hasTool(id: string): boolean
   /** Finish a newly created element like a drawn shape (opacity, events, select it unless locked). */
   finishCreatedElement(el: Element, evt?: { altKey?: boolean }, opts?: { keepOpacity?: boolean }): void
@@ -323,6 +341,18 @@ export interface AttachedMembers {
   releaseArtBrush(): Element[]
   refreshArtBrush(elem: Element | null): boolean
   getArtBrushGroup(elem: Element | null): Element | null
+  /** Blends (`core/blend-canvas.js`). */
+  canBlend(elems?: Element[]): boolean
+  makeBlend(elems?: Element[], options?: Record<string, any>): Element | null
+  getBlend(elem?: Element): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number } | null
+  setBlendOptions(changes: Record<string, any>, elems?: Element[]): Element[]
+  expandBlend(): Element[]
+  releaseBlend(): Element[]
+  refreshBlend(elem: Element | null): boolean
+  getBlendGroup(elem: Element | null): Element | null
+  isBlendKeyCandidate(elem: Element | null): boolean
+  getBlendDefaults(): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
+  setBlendDefaults(changes: Record<string, any>): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
   getLiveEffects(): Array<{ name: string, params: Record<string, number | boolean | string> }>
   previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
   cancelLiveEffectsPreview(): void

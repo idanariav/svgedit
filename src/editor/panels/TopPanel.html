@@ -19,6 +19,8 @@
     <se-button id="tool_openclose_path" command="tool_openclose_path" title="tools.openclose_path" src="tool_openclose_path.svg"></se-button>
     <se-button id="tool_add_subpath" command="tool_add_subpath" title="tools.add_subpath" src="tool_add_subpath.svg"></se-button>
   </div> <!-- path_node_panel -->
+  <!-- The current tool's options (drawn from its options() by panels/toolOptionsBar.js) -->
+  <div id="tool_options_panel" class="quick_tray" style="display:none"></div>
   <!-- Object actions when a single element is selected: clone / delete / arrange / flip / align -->
   <div class="selected_panel quick_tray" style="display:none">
     <se-button id="tool_clone" command="tool_clone" title="tools.clone" shortcut="D" src="clone.svg"></se-button>

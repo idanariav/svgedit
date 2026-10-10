@@ -413,4 +413,47 @@ describe('tool registry (registerTool)', () => {
       expect(rects()).toBe(0)
     })
   })
+
+  describe('options bar (options / setOption)', () => {
+    const withOptions = (state = { size: 3 }) => makeTool({
+      options: () => [{ id: 'size', type: 'number', label: 'Size', value: state.size, min: 1, max: 9 }],
+      setOption: (id, value) => { state[id] = value }
+    })
+
+    it('reads the options of the current tool, or of a tool by id', () => {
+      const t = withOptions()
+      canvas.registerTool(t.tool)
+      expect(canvas.getToolOptions()).toEqual([]) // the mode is "select"
+      expect(canvas.getToolOptions('dragrect')).toEqual([{ id: 'size', type: 'number', label: 'Size', value: 3, min: 1, max: 9 }])
+      canvas.setMode('dragrect')
+      expect(canvas.getToolOptions()[0].value).toBe(3)
+    })
+
+    it('a change goes to the tool, which is read again afterwards', () => {
+      const t = withOptions()
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      expect(canvas.setToolOption('size', 7)).toBe(true)
+      expect(canvas.getToolOptions()[0].value).toBe(7)
+    })
+
+    it('a tool without options has an empty bar and takes no change', () => {
+      canvas.registerTool(makeTool().tool)
+      canvas.setMode('dragrect')
+      expect(canvas.getToolOptions()).toEqual([])
+      expect(canvas.setToolOption('size', 7)).toBe(false)
+      expect(canvas.setToolOption('size', 7, 'nothing')).toBe(false)
+    })
+
+    it('a tool that throws does not break the bar', () => {
+      const t = makeTool({
+        options: () => { throw new Error('boom') },
+        setOption: () => { throw new Error('boom') }
+      })
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      expect(canvas.getToolOptions()).toEqual([])
+      expect(canvas.setToolOption('size', 1)).toBe(false)
+    })
+  })
 })

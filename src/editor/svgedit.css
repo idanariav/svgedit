@@ -1238,6 +1238,17 @@ hr {
   gap: 6px;
 }
 
+/* The current tool's options bar (panels/toolOptionsBar.js): labels inline, like the path-node fields. */
+#tool_options_panel se-spin-input,
+#tool_options_panel se-select {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+}
+#tool_options_panel se-spin-input { max-width: 150px; }
+.tool-option-check { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--fg); cursor: pointer; }
+
 /* Polystar context fields hold only small numbers, but the default spin-box
    is ~184px wide — three of them wrap the top toolbar to a second row. Cap the
    width (labels are kept short to match) so the star panel fits one row. */

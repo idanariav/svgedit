@@ -51,6 +51,7 @@ position, surviving move/delete) after the path is done.
   (ext-shape-family), after star/polygon; see "ext-shape-family" below
 - `tool_shaper` — Shaper tool (ext-shaper, shortcut Shift+N) — inserted right after the pencil (`tool_fhpath`); see "ext-shaper" below
 - Brush section (Design tab, ext-art-brush): `brush_new_art`, `brush_new_pattern`, `brush_delete`, `brush_edit_path`, `brush_expand`, `brush_release` and the brush picker `#ext-art-brush-pick`, see `extensions.md`.
+- `tool_blend` — Blend tool (ext-blend, no shortcut) — inserted after the Width tool; click one shape then another to blend them; the first tool with an options bar (`#tool_options_panel`, drawn from the tool's `options()`); Blend section (Design tab): `blend_make`, `blend_expand`, `blend_release`, see `extensions.md`
 - `tool_width` — Width tool (ext-width-tool, no shortcut) — inserted after the Smooth tool; drag outward from a stroke to add a width point, drag a diamond to slide it, Delete removes it (see `extensions.md`)
 - `tool_smooth` — Smooth tool (ext-smooth-tool, no shortcut) — inserted after the Shaper; brush over part of a path to smooth just that part (see `extensions.md`)
 - `tool_cutter` — Cutter/knife tool (ext-cutter, shortcut C) — position 11, after polystar
@@ -148,7 +149,7 @@ selection-agnostic *quick actions* — shape attributes, text styling, stroke an
 combine ops now live in the Right Side Panel tabs. Trays are shown/hidden by the same
 class-based logic in `TopPanel.js` `updateContextPanel`.
 
-> Layout: title (left) → view tray → `#theme_panel` → `.path_node_panel` →
+> Layout: title (left) → view tray → `#theme_panel` → `.path_node_panel` → `#tool_options_panel` →
 > object/arrange trays → `#top_end` (sticky right cluster: `#history_panel` Undo/Redo +
 > `#zoom_panel`, so Undo/Redo never move when trays appear).
 
@@ -293,6 +294,10 @@ leaving the crop session open. Image loading (with the `crossOrigin` CORS dance)
 ### Join paths (ext-path-edit, select mode)
 
 `svgCanvas.joinSelectedPaths()` (`core/path-join.js`, geometry `joinSubpaths` in `core/path-edit.js`; eligibility `svgCanvas.canJoinPaths(elems)`): one open plain path is **closed** (`tool_join_paths`, "Close", in Object → Path); two plain paths in the same parent are **joined** (`tool_join_paths_multi`, in the Combine row after `tool_match_strokes`). Endpoints within 0.5 user units (÷ zoom) merge into one anchor, otherwise a straight segment connects the nearest ends (reversing as needed). The lower element in the document keeps its id and style and the upper one is removed — one `BatchCommand`; the second path is brought into the first's coordinate system when their transforms differ. Not offered for closed paths, shapes, live-geometry paths (`se:fx-d` / `se:orig-d` / `se:taper-d`), or paths in different parents. Keyless Hotkey Manager / Command Search entries: `path_join`, `path_average_h/v/both`, `path_add_anchors` (group `Path`; the node ones only act in pathedit mode).
+
+### Tool options bar (`#tool_options_panel`, shown while a tool with `options()` is the mode)
+
+A drawing tool that registers `options()` / `setOption(id, value)` (`core/tool-registry.js`) gets this tray; nothing else is needed in the markup. `src/editor/panels/toolOptionsBar.js` draws one control per descriptor (`number` → `se-spin-input`, `select` → `se-select`, `checkbox`), sends a change to `svgCanvas.setToolOption`, then reads `options()` again (a descriptor may be `hidden` depending on another option). It refreshes on `modeChange` and from `updateContextPanel` (selection and undo), and hides when the tool has no options. Labels in the descriptors are already translated. First consumer: the Blend tool (spacing mode, steps, distance).
 
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 

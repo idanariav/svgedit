@@ -120,7 +120,7 @@ export const formatBrush = (type, opts = {}) => {
 // Artwork
 // ---------------------------------------------------------------------------
 
-const localMatrix = (el) => {
+export const localMatrix = (el) => {
   const list = getTransformList(el)
   return list && list.numberOfItems ? transformListToTransform(list).matrix : null
 }
@@ -135,7 +135,7 @@ const matrixToContent = (el) => {
   return m
 }
 
-const applyMatrix = (d, m) => {
+export const applyMatrix = (d, m) => {
   if (!m) return d
   const map = (pt) => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
   return anchorsToD(parseAnchors(d, 0.1).map((sp) => ({

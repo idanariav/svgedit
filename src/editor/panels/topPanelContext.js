@@ -5,6 +5,7 @@
  */
 
 import { runSteps } from '../runSteps.js'
+import { refreshToolOptions } from './toolOptionsBar.js'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
 
 // Position/dimension fields read straight off drag math (move/resize) can
@@ -368,6 +369,8 @@ export const updateContextPanel = (topPanel) => {
 
       topPanel.editor.svgCanvas.addedNew = false
     }],
+    // The current tool's options may depend on the selection (the Blend tool shows the selected blend's).
+    ['toolOptions', () => refreshToolOptions(topPanel.editor)],
     ['layerAndMenuState', () => {
       if ((elem && !isNode) || topPanel.multiselected) {
         // update the selected elements' layer

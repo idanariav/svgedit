@@ -94,6 +94,11 @@ for (const file of fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.svg')).so
         for (const el of c.getSvgContent().querySelectorAll('g.layer *')) {
           if (!el.id || ['title', 'defs', 'tspan', 'stop', 'linearGradient', 'radialGradient', 'filter', 'marker', 'clipPath', 'mask', 'symbol', 'pattern', 'style', 'desc', 'metadata'].includes(el.localName)) continue
           if (el.closest('defs')) continue
+          // Generated content (blend steps, brush art) belongs to the element that regenerates it: anything done to
+          // one of its paths is rewritten with the next change of the keys / spine, by design.
+          let generated = false
+          for (let up = el.parentElement; up && !generated; up = up.parentElement) generated = up.hasAttribute('se:blend-steps') || up.hasAttribute('se:art-out')
+          if (generated) continue
           // One element per kind: the tag plus which `se:` features it carries (a plain line and a
           // connector-bound line, or two differently-live paths, are different cases).
           const kind = `${el.localName} ${[...el.attributes].map((a) => a.name).filter((n) => n.startsWith('se:')).sort().join(' ')}`

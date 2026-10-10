@@ -27,8 +27,8 @@ small items (S) fill gaps between large ones.
 14. ~~**T2.6 Width profiles + Width tool**~~ done (follow-ups, below).
 15. ~~**Live effects / corner radius / taper stacking**~~ done (corners + width, effects + width; follow-ups in
     "The live stack", below; design in [`plans/live-stack.md`](plans/live-stack.md)).
-16. ~~**T2.14 Art / pattern brushes**~~ done (follow-ups, below), then 17. **T2.13 Blend tool** — build
-    `options()/setOption()` with Blend (steps/spacing), the first tool with a real options bar.
+16. ~~**T2.14 Art / pattern brushes**~~ done (follow-ups, below), then 17. ~~**T2.13 Blend tool**~~ done (follow-ups,
+    below; it built `options()/setOption()`, the first tool with a real options bar).
 
 **Phase 5 — on-canvas editors (session-style tools)**
 18. **T2.7 Free / Perspective Distort** — on-canvas handles with a live preview of effect params, so it is the first
@@ -61,11 +61,11 @@ small items (S) fill gaps between large ones.
 
 Not started. Each is scheduled with the first feature that needs it (see *Implementation order*); do not build them standalone.
 
-- **Tool hooks `cursor()` and `options()/setOption()`** from the tool-contract plan. Implement with the first
-  tool that needs a custom cursor or a tool-options bar (shape-family's "no custom cursor" is the likely first).
-  `wantsHover` exists and is used by the cutter. *Scheduled:* `options()` with T2.13 (Phase 4). `cursor()` was planned
-  for T2.2 but the ruler guides did not need it: their grab lines carry a CSS resize cursor of their own, so it
-  waits for the first tool that has to change the cursor over the plain canvas (T3.2 Measure is the likely one).
+- **Tool hook `cursor()`** from the tool-contract plan. Implement with the first tool that has to change the cursor
+  over the plain canvas (T3.2 Measure is the likely one; shape-family's "no custom cursor" is the other).
+  `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
+  editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
+  the wand's tolerance and the smooth tool's radius are candidates, below.)
 - **Live-effects preview on transactions.** `live-effects.js` still hides the original and shows a throwaway
   clone (`data-se-ephemeral`). A transaction-based preview would mutate and re-select the real element on every
   param tick and rebuild the effects panel mid-edit, so it needs a lighter "apply without re-select" path first.
@@ -232,6 +232,18 @@ Done: art brush (one copy of the art stretched along the path: stretch / proport
 - **Stroke width of the original path is not used**: the art is as big as it was drawn (× width %); a brushed path's own stroke paint is kept on the hidden spine only. One brush per path; no brush on top of live effects, corners or a width stroke.
 - **Only plain shapes** (path, line, polyline, polygon, rect, ellipse, circle) are artwork or spines; text, images and groups' non-shape members are skipped.
 
+## Blend (`core/blend.js`, `core/blend-canvas.js`, `ext-blend`): follow-ups from T2.13
+
+Done: blends of two or more key shapes (path, line, polyline, polygon, rect, ellipse, circle) as a group of keys and generated steps (`se:blend`, `se:blend-key`, `se:blend-steps`); anchor-by-anchor path matching (subpaths paired in order, a missing one grows out of a point, equal anchor counts by splitting the longest segments, same winding, the start anchor that twists least); fill and stroke in OKLab, opacities / stroke width / miter limit / dashes as numbers, caps / joins / fill rule switching halfway; spacing by step count, by distance or "smooth colour"; the Blend tool (click a shape, then another or a blend), Make / Expand / Release commands, the Design-tab section; the steps follow a key when it changes (and when that is undone). It is the first tool with an options bar (`options()/setOption()` on the tool, `panels/toolOptionsBar.js`). Remaining:
+- **No spine.** The steps lie on the straight line between the keys' centres; VectorCraft's replaceable spine (steps by arc length along a path, Align to Path) is not ported. Most useful next; the group would hold a `se:blend-spine` path like the brush does.
+- **Keys are shapes only.** Groups (children paired in stacking order), text, images and compound paths are not keys; gradients and patterns switch halfway instead of resampling stops; a solid colour against `none` switches halfway rather than fading.
+- **No start-anchor choice.** VectorCraft's tool lets a click on an anchor choose where an open path starts (`starts`); here closed shapes pick the start that twists least and open paths run first-to-first.
+- **No live drag preview.** Steps are rewritten when a key's edit ends (mouse-up), not while it moves. Dragging a key inside the group (enter it, select the key) is the way to edit one; there is no key picker on the blend itself.
+- **Steps are generated content.** Anything added to or edited inside a `se:blend-steps` group is overwritten by the next regeneration; a group that lost a part (or whose parts no longer alternate key / steps / key) simply stops being a blend. The command sweep does not target generated paths for that reason.
+- **The step count is capped at 200 per pair** (every step is a DOM element, and each transaction snapshots the drawing).
+- **The options bar shows the selected blend's values, else the defaults new blends start with;** defaults live in memory (a reload resets them).
+- **Tool hooks.** Only the Blend tool has `options()` so far. The wand's tolerance and the smooth tool's radius / tolerance are the obvious next consumers.
+
 ## The live stack (`core/live-stack.js`): follow-ups from item 15
 
 Done: corners → effects → width as one chain with a root source and mirrored later sources; corners + width and effects + width on one element, every change one undo step, the transform bake, stale detection (`d` edited outside drops the whole stack), the `se-stack` invariant, a round-trip fixture (`live-stack.svg`). Remaining:
@@ -367,7 +379,7 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
 
 Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands. Remaining:
 - **Magic Wand tool** (the plan's optional part: click an object to select similar, Shift adds, Alt subtracts) is not built. It would be a `registerTool` tool calling `selectSameAs('fillstroke', …)`; the criteria, tolerance and commands are in place.
-- **Tolerance is a preference, not a control next to the menu**, so changing it means opening Editor Preferences. A small field in the Select & Link cluster (or on the wand's options bar, once `options()` exists) would be quicker.
+- **Tolerance is a preference, not a control next to the menu**, so changing it means opening Editor Preferences. A small field in the Select & Link cluster (or on the wand's options bar: `options()` exists now, see `panels/toolOptionsBar.js`) would be quicker.
 - Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
 
 ## Eyedropper Copy style (`styleCopy.js`): follow-ups from T2.9

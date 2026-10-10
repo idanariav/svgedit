@@ -15,6 +15,7 @@ import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } fro
 import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
 import { classifyClipboardText } from './pasteClipboardText.js'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
+import { refreshToolOptions } from './panels/toolOptionsBar.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
@@ -1043,6 +1044,7 @@ class EditorStartup {
     const frameBtn = $id('tool_frame')
     if (frameBtn) frameBtn.pressed = mode === 'frame'
     this.topPanel.toggleImageCropMode(mode === 'imagecrop')
+    refreshToolOptions(this)
   }
 
   /**

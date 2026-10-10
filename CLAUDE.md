@@ -42,7 +42,7 @@ switch to the plugin repo instead.
 | `src/editor/commands.js`, `coreCommands.js` | **Command registry** (`editor.commands`): every user-visible action is a command with a stable id (never rename one — hotkey overrides and favorites store them). New toolbar action = register a command (panel buttons: `panelCommands.js`; extensions: `svgEditor.commands.register`, drawing tools: `leftPanel.addModeCommand`) + `command="<id>"` on the button, no `$click` |
 | `src/editor/automation.js` | `editor.automation`: `inspect()`, `pointer()` (document coordinates), `key()` |
 | `packages/svgcanvas/core/transaction.js` | `svgCanvas.transact(label, fn)` — prefer it over hand-built `BatchCommand`s (one undo step, rolls back on throw). Never construct a `ChangeElementCommand` *before* the mutation |
-| `packages/svgcanvas/core/tool-registry.js` | `svgCanvas.registerTool` — the contract for new drawing tools (document-space events, automatic undo) |
+| `packages/svgcanvas/core/tool-registry.js` | `svgCanvas.registerTool` — the contract for new drawing tools (document-space events, automatic undo; `options()/setOption()` give a tool an options bar, drawn by `src/editor/panels/toolOptionsBar.js`) |
 | `packages/svgcanvas/core/drawing-invariants.js` | `checkDrawing()` structural health check |
 | `dist/` | **Build output — gitignored, never commit** |
 
