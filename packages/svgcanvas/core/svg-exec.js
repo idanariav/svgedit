@@ -9,7 +9,6 @@ import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
 import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.js'
-import { sanitizeLegacyUndefinedDefs, sanitizeStackedTranslateTransforms } from './legacy-repairs.js'
 import {
   cleanupElement,
   setHref,
@@ -88,9 +87,6 @@ export const init = canvas => {
     }
 
     try {
-      sanitizeLegacyUndefinedDefs(svgCanvas.getSvgContent())
-      sanitizeStackedTranslateTransforms(svgCanvas.getSvgContent())
-
       // Keep SVG-Edit comment on top
       const childNodesElems = svgCanvas.getSvgContent().childNodes
       childNodesElems.forEach((node, i) => {
@@ -552,14 +548,6 @@ export const init = canvas => {
 
       svgCanvas.getSvgRoot().append(svgCanvas.getSvgContent())
       const content = svgCanvas.getSvgContent()
-
-      // Repair legacy corruption up front, on load — not just on the next
-      // save. A drawing opened read-only, or opened and closed without
-      // editing, should still self-heal rather than carry the scar forward
-      // indefinitely. See sanitizeLegacyUndefinedDefs(),
-      // sanitizeStackedTranslateTransforms() and techdebt.md.
-      sanitizeLegacyUndefinedDefs(content)
-      sanitizeStackedTranslateTransforms(content)
 
       svgCanvas.current_drawing_ = new draw.Drawing(
         svgCanvas.getSvgContent(),

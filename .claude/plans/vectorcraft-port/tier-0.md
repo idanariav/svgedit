@@ -753,9 +753,9 @@ them. That's cheaper than repairing the saved files afterwards
 - `crates/format/tests/prop_format.rs`: property tests.
 
 ### svgedit today
-- Load-time repairs in `packages/svgcanvas/core/legacy-repairs.js`
-  (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`),
-  called from `svg-exec.js` (≈ lines 91, 558).
+- (At the time of writing) load-time repairs in `core/legacy-repairs.js`
+  (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`), called from `svg-exec.js`.
+  Since moved into `scripts/repair-drawings.mjs`, run over the vault and deleted (2026-10-10).
 - `tests/e2e/roundtrip.spec.js` asserts that load → save → load stabilises,
   for the fixtures in `tests/e2e/fixtures/roundtrip/`.
 - No structural check runs after edits, and no test runs every action.

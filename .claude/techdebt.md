@@ -174,8 +174,7 @@ ext-shape-family), automation API. What it deliberately left, and what it found:
   (`tests/unit/defs-purge-undo.test.js`). The purge itself is still a live-DOM side effect of saving.
 - **NaN tspans in saved drawings.** Undoing/redoing *any* attribute change on a `<text>` with tspans
   wrote `x="NaN" y="NaN"` into them (`undo.js`). Prevention is fixed and tested; already-saved drawings
-  are repaired in the files: **run `node scripts/repair-drawings.mjs --write <vault>`** (dry run without
-  `--write`), then delete the `REPAIRS` entry.
+  are repaired in the files. Done 2026-10-10: Obsidian_Vault and Documents/test_vault scanned (found none).
 - **Deleting / Stroke-to-Path / Offset on a path left the `<textPath>` that runs along it dangling.**
   `releaseTextOnPath` (`text-path.js`) now turns that text into plain text in the same undo step
   (`tests/unit/text-path-rail-removal.test.js`).
@@ -249,7 +248,7 @@ All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
 seShapeLibrary.js 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
 1,172, TopPanel.js 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
 moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
-`seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`, `core/legacy-repairs.js`,
+`seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`,
 `core/layer-ops.js`, `core/text-attrs.js`, `core/group-ops.js` and
 `panels/topPanelContext.js`. What's left is still big in one place each:
 `EditorStartup.init()` (~770 lines of listener wiring), `SeShapeLibrary` (one
@@ -404,4 +403,7 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
   gated on selection type.
 - Still open from the plan: `cursor()` / `options()` tool hooks (no consumer yet), live-effects preview on
   transactions.
-- Run `node scripts/repair-drawings.mjs --write <vault>` once (NaN tspans), then delete its `REPAIRS` entry.
+- `scripts/repair-drawings.mjs` ran over `GitProjects/Obsidian_Vault` and `Documents/test_vault` (2026-10-10): 54 notes/exports
+  had stacked `translate()` runs and 1 had `undefined` text in `<defs>` (no NaN tspans); all 55 verified to load identically.
+  The two load-time sanitizers it replaced are gone from the editor (a `stacked-translate` rule joined `stray-text-in-defs` in
+  `checkDrawing`). Its three `REPAIRS` entries stay for drawings on other machines/vaults; delete them once those are repaired.

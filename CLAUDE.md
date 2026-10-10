@@ -104,10 +104,9 @@ invalid transform, orphaned ids, …) is complete when it has:
    vault (`node scripts/repair-drawings.mjs --write <dir>`; a dry run is the
    default). Delete the entry once the drawings are clean.
 
-Do not add new sanitizers to `setSvgString()`/`legacy-repairs.js`. The two that
-exist there (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`)
-predate this rule; they can move to the script and be removed once the vault is
-repaired.
+Do not add sanitizers to `setSvgString()`. (The two that used to live in
+`legacy-repairs.js` were moved into the script and removed once the vault was
+repaired; the script reads the plugin's `.md` drawings too, raw or compressed, and their saved versions.)
 
 ## Theming conventions
 

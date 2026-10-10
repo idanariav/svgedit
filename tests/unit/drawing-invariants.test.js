@@ -42,6 +42,12 @@ describe('checkDrawing', () => {
     expect(codes(wrap('<rect id="a"/>', '<defs>\n  </defs>'))).toEqual([])
   })
 
+  it('stacked-translate (a nudge that was never consolidated)', () => {
+    expect(codes(wrap('<g id="a" transform="translate(1 0) translate(1,0)"/>'))).toEqual(['stacked-translate'])
+    expect(codes(wrap('<g id="a" transform="translate(1 0) rotate(5) translate(1 0)"/>'))).toEqual([])
+    expect(codes(wrap('<g id="a" transform="translate(1 0)"/>'))).toEqual([])
+  })
+
   it('bad-number in geometry', () => {
     expect(codes(wrap('<rect id="a" x="NaN" y="1" width="undefined" height="2"/>'))).toEqual(['bad-number', 'bad-number'])
     expect(codes(wrap('<path id="p" d="M 0 0 L Infinity 5"/>'))).toEqual(['bad-number'])

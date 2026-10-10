@@ -77,6 +77,7 @@ const NUMERIC_ATTRS = [
 const ROOT_CHILDREN = new Set(['defs', 'title', 'metadata', 'desc', 'style'])
 
 const URL_RE = /url\(\s*['"]?#([^'")\s]+)/g
+const STACKED_TRANSLATE_RE = /translate\([^)]*\)[\s,]*translate\(/
 const BAD_NUMBER_RE = /(?:^|[^A-Za-z])(NaN|undefined|Infinity)(?![A-Za-z])/
 
 /**
@@ -151,6 +152,13 @@ export const checkDrawing = (svgContent) => {
           add('stray-text-in-defs', `<defs> holds the text "${(node.nodeValue ?? '').trim().slice(0, 40)}"`, el)
         }
       }
+    }
+
+    // stacked-translate: a run of translate() items in one transform list (a nudge that
+    // was never consolidated); recalculateDimensions/moveSelectedElements merge them.
+    const transform = el.getAttribute('transform')
+    if (transform && STACKED_TRANSLATE_RE.test(transform)) {
+      add('stacked-translate', `<${tag}> transform="${transform.length > 60 ? transform.slice(0, 60) + '…' : transform}" stacks translate() items`, el)
     }
 
     // se-attr-parse
