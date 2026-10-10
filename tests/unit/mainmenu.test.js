@@ -91,6 +91,19 @@ describe('MainMenu', () => {
     expect(document.getElementById('se-edit-prefs').getAttribute('dialog')).toBe('close')
   })
 
+  it('persists the scrub-fields preference and shows the stored value when the dialog opens', async () => {
+    await menu.savePreferences({ detail: { showrulers: false, baseunit: 'px', scrubfields: false } })
+    expect(editor.configObj.pref).toHaveBeenCalledWith('scrub_numeric_fields', false, true)
+    expect(prefStore.scrub_numeric_fields).toBe(false)
+    const dialog = document.getElementById('se-edit-prefs')
+    menu.showPreferences()
+    expect(dialog.scrubFields).toBe(false)
+    editor.configObj.preferences = false
+    prefStore.scrub_numeric_fields = 'true' // storage hands prefs back as strings
+    menu.showPreferences()
+    expect(dialog.scrubFields).toBe(true)
+  })
+
   it('opens preferences dialog only once', () => {
     menu.showPreferences()
     const prefs = document.getElementById('se-edit-prefs')

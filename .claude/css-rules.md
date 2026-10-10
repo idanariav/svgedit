@@ -532,6 +532,18 @@ disconnect). Every tick fires `change`, so a long hold on an undoable field
 (e.g. stroke width) records one undo step per tick. Touch has no hold-repeat
 (mouse events are only synthesized on tap).
 
+**Scrubby labels:** dragging the `.top-label` (pointer-captured; a 3px threshold separates
+a click from a drag) changes the value, one step per 2px (**Shift** x10, **Ctrl/Cmd** x0.1,
+which keeps one more decimal than the step), clamped to min/max, `ew-resize` cursor
+(`.scrubbable`, set on pointerenter from the preference). Every tick still fires `change`
+(live preview), but the drag runs inside `svgCanvas.beginTransaction('Change value')`, so
+it commits as **one undo step** (a field without a canvas, e.g. in a dialog, just fires
+the changes). **Escape** cancels the transaction, restores the field and refreshes the
+panels. A plain click on the label focuses the field; touch pointers never scrub; the
+text box never scrubs. The **mouse wheel** over a *focused* field steps it with the same
+modifiers (one `change` per notch); an unfocused field leaves the wheel to the page.
+Preference `scrub_numeric_fields` (default on; checkbox in Editor Preferences, `config.scrub_fields`).
+
 Arc quick-pick chips (`svgedit.css`): `.arc_field` (flex column) wraps the arc
 `se-spin-input` + `.arc_presets` row of `.arc_preset` buttons (22px tall, 10px/600,
 `--field-bg`/`--field-border`, hover → `--accent`/`--icon-hover-bg`/`--accent-border`).

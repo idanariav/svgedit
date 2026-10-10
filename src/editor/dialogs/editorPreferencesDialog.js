@@ -22,6 +22,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
     this.$theme = this._shadowRoot.querySelector('#theme_select')
+    this.$scrub = this._shadowRoot.querySelector('#scrub_fields')
   }
 
   /**
@@ -36,6 +37,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('config-theme', i18next.t('config.theme'))
     this.setAttribute('config-show_rulers', i18next.t('config.show_rulers'))
     this.setAttribute('config-base_unit', i18next.t('config.base_unit'))
+    this.setAttribute('config-scrub_fields', i18next.t('config.scrub_fields'))
   }
 
   /**
@@ -44,7 +46,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit']
+    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields']
   }
 
   /**
@@ -103,6 +105,10 @@ export class SeEditPrefsDialog extends HTMLElement {
         node = this._shadowRoot.querySelector('#svginfo_unit')
         node.textContent = newValue
         break
+      case 'config-scrub_fields':
+        node = this._shadowRoot.querySelector('#svginfo_scrub')
+        node.textContent = newValue
+        break
       default:
         super.attributeChangedCallback(name, oldValue, newValue)
         break
@@ -158,6 +164,20 @@ export class SeEditPrefsDialog extends HTMLElement {
   }
 
   /**
+   * Whether dragging a numeric field's label changes it (the checkbox; set on open, so a
+   * cancelled edit never leaves a stale tick).
+   * @param {boolean} on
+   * @returns {void}
+   */
+  set scrubFields (on) {
+    this.$scrub.checked = Boolean(on)
+  }
+
+  get scrubFields () {
+    return this.$scrub.checked
+  }
+
+  /**
    * @function connectedCallback
    * @returns {void}
    */
@@ -176,7 +196,8 @@ export class SeEditPrefsDialog extends HTMLElement {
           dialog: 'close',
           showrulers: this.$showRulers.checked,
           baseunit: this.$baseUnit.value,
-          theme: this.$theme.value
+          theme: this.$theme.value,
+          scrubfields: this.$scrub.checked
         }
       })
       this.dispatchEvent(closeEvent)

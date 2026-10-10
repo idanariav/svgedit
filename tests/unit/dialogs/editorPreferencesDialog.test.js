@@ -49,3 +49,22 @@ describe('se-edit-prefs-dialog theme preference', () => {
     expect(detail.theme).toBe('light')
   })
 })
+
+describe('se-edit-prefs-dialog scrub preference', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('shows the translated label and reports the checkbox on save', () => {
+    const dialog = mount(false)
+    dialog.init({ t: (key) => key })
+    expect(dialog.shadowRoot.querySelector('#svginfo_scrub').textContent).toBe('config.scrub_fields')
+    dialog.scrubFields = true
+    expect(dialog.scrubFields).toBe(true)
+    let detail
+    dialog.addEventListener('change', (e) => { detail = e.detail })
+    dialog.$saveBtn.click()
+    expect(detail.scrubfields).toBe(true)
+    dialog.scrubFields = false
+    dialog.$saveBtn.click()
+    expect(detail.scrubfields).toBe(false)
+  })
+})

@@ -352,6 +352,7 @@ export default {
     theme: 'Theme',
     show_rulers: 'Show rulers',
     base_unit: 'Base unit',
+    scrub_fields: 'Drag labels to change numbers',
     grid: 'Grid',
     snapping_onoff: 'Snapping on/off',
     snapping_stepsize: 'Snapping Step-Size:',

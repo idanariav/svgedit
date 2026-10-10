@@ -10,6 +10,13 @@ import { ownerEditor } from '../domScope.js'
 const HOLD_DELAY_MS = 400
 const HOLD_INTERVAL_MS = 60
 
+// Scrubby labels: a press on the label becomes a drag after SCRUB_THRESHOLD px,
+// then every SCRUB_PX_PER_STEP px of travel is one step (Shift x10, Ctrl/Cmd x0.1).
+const SCRUB_THRESHOLD = 3
+const SCRUB_PX_PER_STEP = 2
+/** Preference that turns label scrubbing off (default on). */
+export const SCRUB_PREF = 'scrub_numeric_fields'
+
 const template = document.createElement('template')
 template.innerHTML = `
   <style>
@@ -30,7 +37,9 @@ template.innerHTML = `
     color: var(--muted, #6B7280);
     margin: 0 0 5px 2px;
     white-space: nowrap;
+    user-select: none;
   }
+  .top-label.scrubbable { cursor: ew-resize; }
   .field {
     display: flex;
     align-items: center;
@@ -158,6 +167,12 @@ export class SESpinInput extends HTMLElement {
     this._stepValue = 1
     this._holdTimer = null
     this._stopHold = this._stopHold.bind(this)
+    this._scrub = null
+    this._justScrubbed = false
+    this._onScrubMove = this._onScrubMove.bind(this)
+    this._onScrubUp = this._onScrubUp.bind(this)
+    this._onScrubKey = this._onScrubKey.bind(this)
+    this._initScrub()
     this._updateButtonState()
   }
 
@@ -259,14 +274,142 @@ export class SESpinInput extends HTMLElement {
     this.$downBtn.disabled = !canGoDown
   }
 
-  _step (direction) {
+  /**
+   * Step the value by `direction` steps (scaled by `scale`), clamp it and report a change.
+   * A scale below 1 (fine stepping) keeps one more decimal than the step has.
+   * @param {number} direction
+   * @param {number} [scale]
+   * @returns {void}
+   */
+  _step (direction, scale = 1) {
     const precision = this._precision
     const current = this._parseValue(this.$input.value, precision)
-    let result = current + direction * this._stepValue
+    this._setClamped(current + direction * this._stepValue * scale, precision + (scale < 1 ? 1 : 0))
+    this.dispatchEvent(this.$event)
+  }
+
+  /**
+   * @param {number} result
+   * @param {number} digits decimals to keep
+   * @returns {void}
+   */
+  _setClamped (result, digits) {
     if (this._max !== null) result = Math.min(result, this._max)
     if (this._min !== null) result = Math.max(result, this._min)
-    this.value = Number(result).toFixed(precision)
-    this.dispatchEvent(this.$event)
+    this.value = Number(result).toFixed(digits)
+  }
+
+  // ---- scrubby labels + wheel stepping ---------------------------------------
+
+  /** Whether dragging the label changes the value (preference, default on). */
+  _scrubEnabled () {
+    try {
+      return String(ownerEditor(this)?.configObj?.pref(SCRUB_PREF)) !== 'false'
+    } catch {
+      return true
+    }
+  }
+
+  _initScrub () {
+    const label = this.$label
+    // The cursor follows the preference without needing a re-render.
+    label.addEventListener('pointerenter', () => label.classList.toggle('scrubbable', this._scrubEnabled()))
+    label.addEventListener('pointerdown', (e) => this._onScrubDown(e))
+    // A plain click on the label focuses the field; the click that ends a drag does not.
+    label.addEventListener('click', () => {
+      if (!this._justScrubbed) this.$input.focus()
+    })
+    // The wheel steps the field only while it has focus; otherwise the page scrolls as usual.
+    this.$input.addEventListener('wheel', (e) => {
+      if (this._shadowRoot.activeElement !== this.$input || !e.deltaY) return
+      e.preventDefault()
+      this._step(e.deltaY < 0 ? 1 : -1, this._modifierScale(e))
+    }, { passive: false })
+  }
+
+  /** Shift steps by 10, Ctrl/Cmd by a tenth. */
+  _modifierScale (e) {
+    if (e.shiftKey) return 10
+    return e.ctrlKey || e.metaKey ? 0.1 : 1
+  }
+
+  _onScrubDown (e) {
+    // Touch would fight page scrolling; the text box itself never scrubs.
+    if (e.button !== 0 || e.pointerType === 'touch' || this._scrub || !this._scrubEnabled()) return
+    const start = parseFloat(this.$input.value)
+    this._scrub = {
+      id: e.pointerId,
+      startX: e.clientX,
+      lastX: e.clientX,
+      acc: 0,
+      start: isNaN(start) ? 0 : start,
+      original: this.$input.value,
+      tx: null,
+      active: false
+    }
+    e.preventDefault() // no text selection while dragging
+    this.$label.setPointerCapture?.(e.pointerId)
+    this.$label.addEventListener('pointermove', this._onScrubMove)
+    this.$label.addEventListener('pointerup', this._onScrubUp)
+    this.$label.addEventListener('pointercancel', this._onScrubUp)
+    window.addEventListener('keydown', this._onScrubKey, true)
+  }
+
+  _onScrubMove (e) {
+    const s = this._scrub
+    if (!s || e.pointerId !== s.id) return
+    if (!s.active) {
+      if (Math.abs(e.clientX - s.startX) < SCRUB_THRESHOLD) return
+      s.active = true
+      // The whole drag is one undo step: every change event of the drag lands in one transaction.
+      s.tx = ownerEditor(this)?.svgCanvas?.beginTransaction?.('Change value') ?? null
+    }
+    const scale = this._modifierScale(e)
+    s.acc += (e.clientX - s.lastX) / SCRUB_PX_PER_STEP * scale
+    s.lastX = e.clientX
+    const before = this.$input.value
+    this._setClamped(s.start + s.acc * this._stepValue, this._precision + (scale < 1 ? 1 : 0))
+    if (this.$input.value !== before) this.dispatchEvent(this.$event)
+  }
+
+  _onScrubUp () {
+    this._endScrub(true)
+  }
+
+  // Escape during the drag puts the original value back and rolls the drawing back with it.
+  _onScrubKey (e) {
+    if (e.key !== 'Escape' || !this._scrub) return
+    e.preventDefault()
+    e.stopPropagation()
+    this._endScrub(false)
+  }
+
+  /**
+   * @param {boolean} commit keep the dragged value, or restore the original
+   * @returns {void}
+   */
+  _endScrub (commit) {
+    const s = this._scrub
+    if (!s) return
+    this._scrub = null
+    this.$label.removeEventListener('pointermove', this._onScrubMove)
+    this.$label.removeEventListener('pointerup', this._onScrubUp)
+    this.$label.removeEventListener('pointercancel', this._onScrubUp)
+    window.removeEventListener('keydown', this._onScrubKey, true)
+    try { this.$label.releasePointerCapture?.(s.id) } catch { /* capture already gone */ }
+    if (s.active) {
+      this._justScrubbed = true
+      setTimeout(() => { this._justScrubbed = false }, 0)
+    }
+    if (commit) {
+      s.tx?.commit()
+      return
+    }
+    s.tx?.cancel()
+    this.value = s.original
+    // The rollback does not run the consumers' change handlers: refresh the other fields from the drawing.
+    const editor = ownerEditor(this)
+    editor?.topPanel?.updateContextPanel?.()
   }
 
   // One step now, then keep stepping while the button stays pressed. Stops on

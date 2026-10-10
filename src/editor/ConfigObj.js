@@ -62,6 +62,8 @@ export default class ConfigObj {
       theme: 'light',
       /** Touch-first tablet shell on/off (see uiMode.js) */
       tabletMode: false,
+      /** Drag a numeric field's label to change its value (seSpinInput.js); a stored 'false' turns it off */
+      scrub_numeric_fields: true,
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',
       // ALERT NOTICES

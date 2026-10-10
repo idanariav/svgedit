@@ -16,8 +16,7 @@ Rules used: dependencies and shared modules first; quick wins before large items
 with the first feature that needs it (never as a standalone task, so nothing gets built without a consumer);
 small items (S) fill gaps between large ones.
 
-**Phase 1 — cheap wins on the new tool contract** (items 1–2, T1.6 Shaper and T2.9 Copy style, are done; numbers below are stable references)
-3. **T3.1 Scrubby labels** — S; one undo step per scrub is now just a transaction around the drag.
+**Phase 1 — cheap wins on the new tool contract** (items 1–3, T1.6 Shaper, T2.9 Copy style and T3.1 Scrubby labels, are done; numbers below are stable references)
 4. **T2.10 Magic Wand / Select Same** — S.
 
 **Phase 2 — drawing precision**
@@ -242,6 +241,13 @@ Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-dele
 - **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
 - **Scribble hit-testing is sample-based** (`strokeTouches`): spacing is ≥ 0.5 document units and at most 2,000 samples, so a hairline crossed by a very long scribble at very low zoom can be missed. Text and images are tested by their bounding box.
 - No custom cursor and no options bar (waits for the `cursor()` / `options()` tool hooks).
+
+## Scrubby labels (`seSpinInput.js`): follow-ups from T3.1
+
+Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wheel stepping, the preference. Remaining:
+- **Other numeric fields**: only `<se-spin-input>` scrubs. Plain `<input type=number>` fields (a few dialogs) and `se-input` do not; the tablet shell's sheet fields never scrub (touch).
+- **Wheel stepping is one undo step per notch** (like the arrow keys); coalescing a burst of notches is not done.
+- A modifier pressed mid-drag changes the speed from then on (the value does not jump), but there is no on-screen hint of which multiplier is active.
 
 ## Eyedropper Copy style (`styleCopy.js`): follow-ups from T2.9
 

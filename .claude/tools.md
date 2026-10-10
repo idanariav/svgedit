@@ -458,7 +458,7 @@ ext-shadow, ext-outline, ext-glow, ext-live-effects, and ext-color-shift now inj
 | `tool_command_search` | Open **Command Search** (`se-command-search-dialog`) | Ctrl/Cmd+K |
 | `tool_hotkeys` | Open the **Hotkey Manager** (`se-hotkey-dialog`) | — |
 | `tool_favorites` | Open the **Favorites** manager (`se-favorites-dialog`) | — |
-| `tool_editor_prefs` | Editor Preferences | — |
+| `tool_editor_prefs` | Editor Preferences (rulers, base unit, theme, **"Drag labels to change numbers"** = pref `scrub_numeric_fields`, see `css-rules.md` `se-spin-input`) | — |
 
 **Command Search** (`tool_command_search` / Ctrl+Cmd+K → opens `se-command-search-dialog`,
 `dialogs/commandSearchDialog.js`): a searchable palette over every action/setting in the

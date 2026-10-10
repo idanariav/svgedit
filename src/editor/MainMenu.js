@@ -47,8 +47,11 @@ class MainMenu {
     const {
       showrulers,
       baseunit,
-      theme
+      theme,
+      scrubfields
     } = e.detail
+
+    if (scrubfields !== undefined) this.editor.configObj.pref('scrub_numeric_fields', scrubfields, true)
 
     if (theme && theme !== (this.editor.configObj.pref('theme') || 'light')) {
       this.editor.configObj.pref('theme', theme)
@@ -146,6 +149,7 @@ class MainMenu {
     this.editor.configObj.preferences = true
     $id('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     const $editDialog = $id('se-edit-prefs')
+    $editDialog.scrubFields = String(this.editor.configObj.pref('scrub_numeric_fields')) !== 'false'
     $editDialog.setAttribute('dialog', 'open')
   }
 

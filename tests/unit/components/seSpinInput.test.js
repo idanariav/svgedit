@@ -250,3 +250,171 @@ describe('se-spin-input', () => {
     expect(handler).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('se-spin-input scrubby labels and wheel stepping', () => {
+  let mock
+  let tx
+  let changes
+
+  // jsdom has no PointerEvent: a MouseEvent with the pointer fields added is enough for the handlers.
+  const pointer = (type, clientX, extra = {}) => {
+    const e = new MouseEvent(type, { clientX, button: 0, bubbles: true, cancelable: true, ...extra })
+    Object.assign(e, { pointerId: 1, pointerType: extra.pointerType ?? 'mouse' })
+    return e
+  }
+  const field = (attrs = {}) => {
+    const el = mountElement('se-spin-input', { label: 'Width', value: '5', min: '0', max: '100', step: '1', ...attrs })
+    el.addEventListener('change', () => changes.push(el.value))
+    return el
+  }
+  const drag = (el, from, to, extra = {}) => {
+    el.$label.dispatchEvent(pointer('pointerdown', from))
+    el.$label.dispatchEvent(pointer('pointermove', to, extra))
+  }
+  const release = (el, x) => el.$label.dispatchEvent(pointer('pointerup', x))
+
+  beforeEach(() => {
+    tx = { commit: vi.fn(), cancel: vi.fn() }
+    mock = installMockSvgEditor({
+      configObj: { curConfig: { imgPath: 'images' }, pref: vi.fn(() => true) },
+      svgCanvas: { beginTransaction: vi.fn(() => tx) }
+    })
+    mock.topPanel.updateContextPanel = vi.fn()
+    changes = []
+  })
+  afterEach(() => {
+    uninstallMockSvgEditor()
+    document.body.innerHTML = ''
+  })
+
+  it('a drag of +20 px with step 1 adds 10, as one transaction and one change event per value', () => {
+    const el = field()
+    drag(el, 100, 120)
+    expect(el.value).toBe('15')
+    expect(mock.svgCanvas.beginTransaction).toHaveBeenCalledTimes(1)
+    release(el, 120)
+    expect(tx.commit).toHaveBeenCalledTimes(1)
+    expect(tx.cancel).not.toHaveBeenCalled()
+    expect(changes).toEqual(['15'])
+  })
+
+  it('works left as well as right, and honours the step size and its precision', () => {
+    const el = field({ step: '0.5', value: '10' })
+    drag(el, 100, 80)
+    expect(el.value).toBe('5.0')
+    release(el, 80)
+  })
+
+  it('Shift multiplies the step by 10 and Ctrl or Cmd by 0.1', () => {
+    const shift = field({ value: '0', max: '1000' })
+    drag(shift, 0, 20, { shiftKey: true })
+    expect(shift.value).toBe('100')
+    release(shift, 20)
+    const fine = field({ value: '5' })
+    drag(fine, 0, 20, { ctrlKey: true })
+    expect(fine.value).toBe('6.0')
+    release(fine, 20)
+    const cmd = field({ value: '5' })
+    drag(cmd, 0, 20, { metaKey: true })
+    expect(cmd.value).toBe('6.0')
+    release(cmd, 20)
+  })
+
+  it('stays within min and max', () => {
+    const el = field({ value: '95', max: '100' })
+    drag(el, 0, 200)
+    expect(el.value).toBe('100')
+    el.$label.dispatchEvent(pointer('pointermove', -400))
+    expect(el.value).toBe('0')
+    release(el, -400)
+  })
+
+  it('Escape during the drag restores the value, rolls the drawing back and refreshes the panels', () => {
+    const el = field()
+    drag(el, 100, 130)
+    expect(el.value).toBe('20')
+    const esc = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    window.dispatchEvent(esc)
+    expect(esc.defaultPrevented).toBe(true)
+    expect(el.value).toBe('5')
+    expect(tx.cancel).toHaveBeenCalledTimes(1)
+    expect(tx.commit).not.toHaveBeenCalled()
+    expect(mock.topPanel.updateContextPanel).toHaveBeenCalled()
+    // the drag is over: further moves change nothing
+    el.$label.dispatchEvent(pointer('pointermove', 300))
+    expect(el.value).toBe('5')
+  })
+
+  it('a press that does not move past the threshold is a click: it focuses the field and changes nothing', () => {
+    const el = field()
+    drag(el, 100, 101)
+    release(el, 101)
+    el.$label.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.value).toBe('5')
+    expect(mock.svgCanvas.beginTransaction).not.toHaveBeenCalled()
+    expect(el.shadowRoot.activeElement).toBe(el.$input)
+  })
+
+  it('the click that ends a drag does not focus the field', () => {
+    const el = field()
+    drag(el, 100, 120)
+    release(el, 120)
+    el.$label.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.shadowRoot.activeElement).toBeNull()
+  })
+
+  it('ignores touch pointers and the text box itself', () => {
+    const el = field()
+    el.$label.dispatchEvent(pointer('pointerdown', 0, { pointerType: 'touch' }))
+    el.$label.dispatchEvent(pointer('pointermove', 50))
+    expect(el.value).toBe('5')
+    el.$input.dispatchEvent(pointer('pointerdown', 0))
+    el.$input.dispatchEvent(pointer('pointermove', 50))
+    expect(el.value).toBe('5')
+    expect(mock.svgCanvas.beginTransaction).not.toHaveBeenCalled()
+  })
+
+  it('the preference turns scrubbing off and takes the resize cursor away', () => {
+    const el = field()
+    el.$label.dispatchEvent(new MouseEvent('pointerenter'))
+    expect(el.$label.classList.contains('scrubbable')).toBe(true)
+    mock.configObj.pref.mockReturnValue('false')
+    el.$label.dispatchEvent(new MouseEvent('pointerenter'))
+    expect(el.$label.classList.contains('scrubbable')).toBe(false)
+    drag(el, 0, 40)
+    expect(el.value).toBe('5')
+    expect(mock.svgCanvas.beginTransaction).not.toHaveBeenCalled()
+  })
+
+  it('works without a canvas (a field in a dialog): the value still changes', () => {
+    mock.svgCanvas = {}
+    const el = field()
+    drag(el, 0, 10)
+    expect(el.value).toBe('10')
+    expect(() => release(el, 10)).not.toThrow()
+  })
+
+  it('the wheel steps a focused field, with the same modifiers, and leaves an unfocused one to the page', () => {
+    const el = field({ value: '5', max: '1000' })
+    const wheel = (deltaY, extra = {}) => {
+      const e = new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true, ...extra })
+      el.$input.dispatchEvent(e)
+      return e
+    }
+    const unfocused = wheel(-100)
+    expect(unfocused.defaultPrevented).toBe(false)
+    expect(el.value).toBe('5')
+    el.$input.focus()
+    const up = wheel(-100)
+    expect(up.defaultPrevented).toBe(true)
+    expect(el.value).toBe('6')
+    wheel(100)
+    wheel(100)
+    expect(el.value).toBe('4')
+    wheel(-100, { shiftKey: true })
+    expect(el.value).toBe('14')
+    wheel(-100, { ctrlKey: true })
+    expect(el.value).toBe('14.1')
+    expect(changes.at(-1)).toBe('14.1')
+  })
+})

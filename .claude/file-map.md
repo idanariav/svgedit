@@ -75,7 +75,7 @@
 | `seToolOverflow.js` | `<se-tool-overflow>` | Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes the popover, closes on outside click/Escape/after a slotted tool is clicked. Slotted children are real tools dragged in via `toolDragReorder.js` — each keeps its own click handler/hotkey/lock gesture. See [tools.md](tools.md) |
 | `seList.js` | `<se-list>` | Icon-based dropdown list |
 | `seListItem.js` | `<se-list-item>` | Item inside `<se-list>` |
-| `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner |
+| `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, **scrubby label** (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and focused-wheel stepping; pref `scrub_numeric_fields` |
 | `seInput.js` | `<se-input>` | Text input with icon/label |
 | `seClassSelect.js` | `<se-class-select>` | Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, **"Default for new `<tag>` objects" checkbox**). Applying a class stamps its captured attributes onto the selection as one undo step. The default checkbox reads/writes `classLibrary.js`'s per-tag default map, keyed off the currently-edited element's exact tag (`elem.tagName.toLowerCase()`), independent of the class's `scope`. Backed by `../classLibrary.js` |
 | `seZoom.js` | `<se-zoom>` | Zoom percentage selector |
