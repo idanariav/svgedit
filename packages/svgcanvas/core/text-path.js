@@ -12,9 +12,9 @@
  * (boolean-ops precedent) so undo/redo restores the exact original nodes.
  *
  * Caveats (v1): multi-line text is flattened to one line (SVG text-on-path is
- * single-line by nature); deleting the rail path orphans the textPath (the
- * text stops rendering until re-detached); glyphs past the end of an open
- * rail are clipped by the renderer.
+ * single-line by nature); glyphs past the end of an open rail are clipped by
+ * the renderer. Deleting or replacing (Stroke to Path, Offset) the rail turns
+ * its text back into plain text in the same undo step (`releaseTextOnPath`).
  *
  * @module text-path
  * @license MIT
@@ -113,27 +113,28 @@ export const init = (canvas) => {
   }
 
   /**
-   * Detach the selected text from its path, planting it as plain text at its
-   * current rendered position (baseline of the first glyph).
-   * @returns {?Element} The new plain text element.
+   * Replace a text-on-path with plain text at its current rendered position
+   * (baseline of the first glyph). Must run while the rail is still in the
+   * document (the position is read from the laid-out glyphs). Records the
+   * swap in `batchCmd`; does not touch history or the selection.
+   * @param {Element} elem the `<text>` holding a `<textPath>`
+   * @param {import('./history.js').BatchCommand} batchCmd
+   * @returns {Element} The new plain text element.
    */
-  const detachTextFromPath = () => {
-    const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
-    const tp = elem?.querySelector?.('textPath')
-    if (!tp) return null
-    const { BatchCommand, InsertElementCommand, RemoveElementCommand } = svgCanvas.history
-    const batchCmd = new BatchCommand('Detach text from path')
+  const plainifyTextPath = (elem, batchCmd) => {
+    const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
+    const tp = /** @type {Element} */ (elem.querySelector('textPath'))
     const doc = elem.ownerDocument
 
     let x = 0
     let y = 0
     try {
-      const pt = elem.getStartPositionOfChar(0)
+      const pt = /** @type {any} */ (elem).getStartPositionOfChar(0)
       x = pt.x
       y = pt.y
     } catch {
       try {
-        const bb = elem.getBBox()
+        const bb = /** @type {any} */ (elem).getBBox()
         x = bb.x
         y = bb.y + bb.height
       } catch { /* keep 0,0 */ }
@@ -144,18 +145,59 @@ export const init = (canvas) => {
       newText.setAttribute(attr.name, attr.value)
     }
     newText.id = svgCanvas.getNextId()
-    newText.setAttribute('x', x)
-    newText.setAttribute('y', y)
+    newText.setAttribute('x', String(x))
+    newText.setAttribute('y', String(y))
     newText.textContent = tp.textContent
     elem.before(newText)
     batchCmd.addSubCommand(new InsertElementCommand(newText))
     batchCmd.addSubCommand(new RemoveElementCommand(elem, elem.nextSibling, elem.parentNode))
     elem.remove()
+    return newText
+  }
 
+  /**
+   * Detach the selected text from its path, planting it as plain text at its
+   * current rendered position (baseline of the first glyph).
+   * @returns {?Element} The new plain text element.
+   */
+  const detachTextFromPath = () => {
+    const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!elem?.querySelector?.('textPath')) return null
+    const batchCmd = new svgCanvas.history.BatchCommand('Detach text from path')
+    const newText = plainifyTextPath(elem, batchCmd)
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.selectOnly([newText], true)
     svgCanvas.call('changed', [newText])
     return newText
+  }
+
+  /**
+   * Called before elements are deleted or replaced: every text that follows one
+   * of them (or a descendant of one) becomes plain text in the same undo step,
+   * instead of being left on a rail that no longer exists (it would stop
+   * rendering and could no longer be selected).
+   * @param {Element[]} removing the elements about to leave the document
+   * @param {import('./history.js').BatchCommand} batchCmd receives the swap commands
+   * @returns {Element[]} the new plain texts
+   */
+  const releaseTextOnPath = (removing, batchCmd) => {
+    const ids = new Set()
+    for (const el of removing) {
+      if (el.id) ids.add(el.id)
+      for (const d of el.querySelectorAll('[id]')) ids.add(d.id)
+    }
+    if (!ids.size) return []
+    /** @type {Set<Element>} */
+    const texts = new Set()
+    for (const tp of svgCanvas.getSvgContent().querySelectorAll('textPath')) {
+      const ref = svgCanvas.getHref(tp)
+      const owner = tp.closest('text')
+      // a text that is itself being removed needs no rescue
+      if (ref?.startsWith('#') && ids.has(ref.slice(1)) && owner && !removing.some((r) => r === owner || r.contains(owner))) {
+        texts.add(owner)
+      }
+    }
+    return [...texts].map((text) => plainifyTextPath(text, batchCmd))
   }
 
   /**
@@ -184,6 +226,7 @@ export const init = (canvas) => {
 
   svgCanvas.attachTextToPath = attachTextToPath
   svgCanvas.detachTextFromPath = detachTextFromPath
+  svgCanvas.releaseTextOnPath = releaseTextOnPath
   svgCanvas.canTextOnPath = canTextOnPath
   svgCanvas.textPathOffset = textPathOffset
 }

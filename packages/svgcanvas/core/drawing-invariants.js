@@ -7,8 +7,9 @@
  * test; the command sweep runs it after every command), so corruption is
  * caught before it ships rather than repaired after users have saved it.
  * It is deliberately NOT run inside `setSvgString()` in production (cost and
- * noise); when a check catches something common, add a narrow load-time repair
- * to `legacy-repairs.js` instead (see CLAUDE.md, "Data-corruption bug fixes").
+ * noise); when a check catches something common, add a narrow entry to
+ * `scripts/repair-drawings.mjs` that repairs the saved files instead (see
+ * CLAUDE.md, "Data-corruption bug fixes").
  *
  * Ported in spirit from VectorCraft (https://github.com/storytold/vectorcraft),
  * `crates/testkit/src/invariants.rs` (`check_document`), MIT OR Apache-2.0.

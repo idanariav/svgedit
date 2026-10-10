@@ -231,6 +231,7 @@ export interface AttachedMembers {
   getTextPerspectiveX(elem: Element): number
   getTextPerspectiveY(elem: Element): number
   detachTextFromPath(): void
+  releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
   selectSameAs(criterion: string): void
   switchSelectedZorder(): void
   matchStrokes(): void

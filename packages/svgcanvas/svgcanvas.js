@@ -1204,22 +1204,27 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   restoreRefElements (elem) {
     // Look for missing reference elements, restore any found
-    const attrs = {}
-    refAttrs.forEach((item, _) => {
-      attrs[item] = elem.getAttribute(item)
+    if (!Object.keys(this.removedElements).length) return // nothing was ever purged
+    const refs = []
+    refAttrs.forEach((item) => {
+      const val = elem.getAttribute(item)
+      if (val?.startsWith('url(')) refs.push(getUrlFromAttr(val).slice(1))
     })
-    Object.values(attrs).forEach(val => {
-      if (val?.startsWith('url(')) {
-        const id = getUrlFromAttr(val).slice(1)
-        const ref = this.getElement(id)
-        // Only restore a ref we actually tracked when it was removed. Appending
-        // a missing (undefined) entry injects a literal "undefined" text node
-        // into <defs> and never restores the paint server (e.g. cross-document
-        // paste, where the def was never removed from *this* canvas).
-        if (!ref && this.removedElements[id]) {
-          this.findDefs().append(this.removedElements[id])
-          delete this.removedElements[id]
-        }
+    // A gradient may inherit from another via href (`g1` -> `base`): the purge
+    // removes the whole chain, so restoring one link must restore the next.
+    const href = getHref(elem)
+    if (href?.startsWith('#')) refs.push(href.slice(1))
+    refs.forEach((id) => {
+      const ref = this.getElement(id)
+      // Only restore a ref we actually tracked when it was removed. Appending
+      // a missing (undefined) entry injects a literal "undefined" text node
+      // into <defs> and never restores the paint server (e.g. cross-document
+      // paste, where the def was never removed from *this* canvas).
+      if (!ref && this.removedElements[id]) {
+        const restored = this.removedElements[id]
+        this.findDefs().append(restored)
+        delete this.removedElements[id]
+        this.restoreRefElements(restored)
       }
     })
     const childs = elem.getElementsByTagName('*')
@@ -1567,20 +1572,16 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
         this.pathActions
       )
     }
-    // TODO: Why is this applying attributes from the current shape style, then inside utilities.convertToPath it's pulling addition attributes from elem?
-    // TODO: If convertToPath is called with one elem, curShape and elem are probably the same; but calling with multiple is a bug or cool feature.
-    const curShape = this.state.style.shape
-    const attrs = {
-      fill: curShape.fill,
-      'fill-opacity': curShape.fill_opacity,
-      stroke: curShape.stroke,
-      'stroke-width': curShape.stroke_width,
-      'stroke-dasharray': curShape.stroke_dasharray,
-      'stroke-linejoin': curShape.stroke_linejoin,
-      'stroke-linecap': curShape.stroke_linecap,
-      'stroke-opacity': curShape.stroke_opacity,
-      opacity: curShape.opacity,
-      visibility: 'hidden'
+    // The path keeps the element's OWN paint/stroke attributes. (It used to take the
+    // editor's current shape style, so converting an element whose style differed
+    // from that global lost its fill, stroke and opacity.)
+    /** @type {Object<string, string>} */
+    const attrs = { visibility: 'hidden' }
+    for (const name of ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-dasharray',
+      'stroke-dashoffset', 'stroke-linejoin', 'stroke-linecap', 'stroke-miterlimit', 'stroke-opacity',
+      'opacity', 'paint-order', 'style']) {
+      const value = elem.getAttribute(name)
+      if (value !== null) attrs[name] = value
     }
     return convertToPath(elem, attrs, this) // call convertToPath from path-utils.js
   }

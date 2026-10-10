@@ -151,6 +151,9 @@ export const init = (canvas) => {
               svgCanvas.identifyLayers()
             }
             const values = isApply ? cmd.newValues : cmd.oldValues
+            // The value coming back may point at a gradient/filter that a save
+            // purged as unused (svg-defs.js removeUnusedDefElems).
+            svgCanvas.restoreRefElements(cmd.elem)
             // If stdDeviation was changed, update the blur.
             if (values.stdDeviation) {
               svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)

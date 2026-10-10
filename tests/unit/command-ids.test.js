@@ -3,6 +3,7 @@ import path from 'node:path'
 import { CommandRegistry } from '../../src/editor/commands.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { registerCoreCommands } from '../../src/editor/coreCommands.js'
+import { CORNER_KINDS } from '../../packages/svgcanvas/core/corner-radius.js'
 
 // Command ids are persisted user data: hotkey overrides (`svg-edit-hotkeys`) and
 // favorites (`svg-edit-favorites`) are keyed by them, so renaming or dropping
@@ -36,10 +37,17 @@ const markupIds = () => {
   return ids
 }
 
+// Buttons whose ids are built from a template literal at runtime (the markup regex
+// above only sees literal ids). Keep in step with the extensions that build them.
+const TEMPLATED_IDS = [
+  ...['spiral', 'arc', 'rectgrid', 'polargrid'].map((m) => `tool_${m}`), // ext-shape-family MODES
+  ...CORNER_KINDS.map((k) => `corner_kind_${k}`) // ext-corner-radius
+]
+
 const currentIds = () => {
   const reg = new CommandRegistry({})
   registerCoreCommands(reg)
-  const ids = new Set([...reg.table.keys(), ...markupIds()])
+  const ids = new Set([...reg.table.keys(), ...markupIds(), ...TEMPLATED_IDS])
   for (const sc of buildEditorShortcuts({})) ids.add(sc.id)
   return [...ids].sort()
 }
@@ -53,6 +61,14 @@ describe('command id stability', () => {
     const recorded = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'))
     expect(recorded.length).toBeGreaterThan(100)
     expect(recorded.filter((id) => !now.includes(id))).toEqual([])
+  })
+
+  it('the templated ids still match the source that builds them', () => {
+    const shapes = fs.readFileSync(path.join(SRC, 'extensions/ext-shape-family/ext-shape-family.js'), 'utf8')
+    expect(shapes).toContain("const MODES = ['spiral', 'arc', 'rectgrid', 'polargrid']")
+    expect(shapes).toContain('id="tool_$' + '{mode}"')
+    const corners = fs.readFileSync(path.join(SRC, 'extensions/ext-corner-radius/ext-corner-radius.js'), 'utf8')
+    expect(corners).toContain('id="corner_kind_$' + '{k}"')
   })
 
   it('the core (pilot) command ids are exactly the ids buttons / favorites already used', () => {

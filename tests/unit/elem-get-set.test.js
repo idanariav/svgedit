@@ -224,6 +224,7 @@ describe('elem-get-set', () => {
       getCurrentMode () { return 'select' },
       getPathObj () { return null },
       pathActions: { clear () {} },
+      restoreRefElements () {},
       call () {}
     }
     undo.init(localCanvas)
@@ -298,6 +299,7 @@ describe('elem-get-set', () => {
       getPathObj () { return null },
       clearSelection () {},
       pathActions: { clear () {} },
+      restoreRefElements () {},
       call () {},
       setCurShape () {},
       setCurProperties () {},

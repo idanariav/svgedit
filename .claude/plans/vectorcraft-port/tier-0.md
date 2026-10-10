@@ -533,8 +533,8 @@ Differences from the design above, found while building it:
 - **Pre-existing bug fixed on the way:** undoing/redoing *any* attribute change
   on a `<text>` with tspans wrote `x="NaN" y="NaN"` into the tspans
   (`undo.js` shifted them by `undefined - undefined`). Prevention is fixed and
-  tested, and `sanitizeLegacyNaNTspans()` (`legacy-repairs.js`) repairs already-saved
-  drawings on load and on save.
+  tested; already-saved drawings are repaired in the files by
+  `scripts/repair-drawings.mjs` (no load-time sanitizer, by decision).
 - **Live-effects pilot:** `apply/remove/expandLiveEffects` now run in
   `transact()`; the preview keeps its hidden-original + throwaway-clone design
   (the clone is marked `data-se-ephemeral`). Moving the preview onto
@@ -742,8 +742,8 @@ dispatch order), `file-map.md`.
 
 ### Goal
 Catch corrupted drawings **before** they ship, not after users have saved
-them. That's cheaper than the load-time repair that CLAUDE.md requires for
-every corruption bug.
+them. That's cheaper than repairing the saved files afterwards
+(`scripts/repair-drawings.mjs`, per CLAUDE.md).
 
 ### VectorCraft source
 - `crates/testkit/src/invariants.rs`: `check_document(doc)` (unique ids,
@@ -790,7 +790,7 @@ healthy. Checks, each with its own `code`:
 
 **Baseline first:** run `checkDrawing` on every round-trip fixture before
 wiring it into tests. Each finding is either (a) a real corruption, which
-gets a narrow repair in `legacy-repairs.js` + `setSvgString()` + tests per
+gets a narrow entry in `scripts/repair-drawings.mjs` + tests per
 the CLAUDE.md rule, or (b) the check being wrong, so fix the check. Don't
 add an allowlist to make findings go away.
 

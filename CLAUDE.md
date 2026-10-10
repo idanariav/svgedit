@@ -84,35 +84,30 @@ This step is **mandatory** for non-trivial plans. Skip only for purely mechanica
 - Don't skip this because the change "looks small" — a one-line behavior
   change still needs its assertion updated or added.
 
-### Data-corruption bug fixes must also repair legacy drawings
+### Data-corruption bug fixes: prevent in code, repair the files directly
 
-**Drawings are created continuously, not just at fix time.** By the time any
-bug that corrupts saved SVG data (a bad attribute, stray text nodes, an
-invalid transform, orphaned ids, …) is found and fixed, an unknown number of
-already-saved drawings carry that corruption forward. Every one of them is
-opened again in some future session — patching the bug so it can't happen
-*again* fixes nothing for drawings where it already *did* happen.
+Drawings saved before a corruption bug was fixed still carry the scar. Repair
+them **in the files**, not with a load-time sanitizer that the editor then carries
+forever: a growing pile of historical cleanups in `setSvgString()` is a cost on
+every open of every drawing, long after the last affected drawing is gone.
 
-So a fix for this class of bug is not complete until it also includes a
-**repair path that runs on load** (`setSvgString()`), not only prevention
-going forward and not only a save-time cleanup. Load-time repair matters
-because a drawing can be opened read-only, or opened and closed without
-triggering a save, and should still self-heal rather than carry the scar
-indefinitely. (Repairing on save too, as a second pass, is fine — a session
-could theoretically re-acquire the corruption in memory — but it must not be
-the *only* place the repair runs.)
+A fix for a bug that corrupts saved SVG data (bad attribute, stray text nodes,
+invalid transform, orphaned ids, …) is complete when it has:
 
-Concretely: prevention alone (guarding whatever created the corruption) is
-half the fix. Add a targeted, narrow sanitizer for the *specific* corruption
-pattern found (not a generic "clean up anything weird" pass) alongside it,
-call it from `setSvgString()`, and cover both with a unit test — one proving
-the guard prevents new corruption, one proving the sanitizer repairs a
-drawing that already has it. Also add a **`checkDrawing` rule** for the
-pattern (`packages/svgcanvas/core/drawing-invariants.js`) so the e2e suite and
-the command sweep catch a regression; `checkDrawing` must stay clean after
-every e2e test. See `.claude/techdebt.md`'s `<defs>`-append audit
-for a worked example (`sanitizeLegacyUndefinedDefs()` in
-`packages/svgcanvas/core/svg-exec.js`).
+1. **Prevention** — the guard that stops new corruption, with a unit test.
+2. **A `checkDrawing` rule** for the pattern
+   (`packages/svgcanvas/core/drawing-invariants.js`) so the e2e suite and the
+   command sweep catch a regression; `checkDrawing` must stay clean after every
+   e2e test.
+3. **A narrow entry in `scripts/repair-drawings.mjs`** (`REPAIRS`), unit-tested in
+   `tests/unit/repair-drawings.test.js`, and tell the user to run it over their
+   vault (`node scripts/repair-drawings.mjs --write <dir>`; a dry run is the
+   default). Delete the entry once the drawings are clean.
+
+Do not add new sanitizers to `setSvgString()`/`legacy-repairs.js`. The two that
+exist there (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`)
+predate this rule; they can move to the script and be removed once the vault is
+repaired.
 
 ## Theming conventions
 

@@ -87,6 +87,8 @@ class Editor extends EditorStartup {
     // original preventDefault behaviour.
     this.shortcuts = buildEditorShortcuts(this)
     this.commands = new CommandRegistry(this)
+    // Order matters: the hotkey table is first-registered-wins, so a core command's key
+    // outranks an editor shortcut with the same one (none overlap today).
     registerCoreCommands(this.commands)
     this.automation = new Automation(this)
     this.hotkeys = new HotkeyManager(this)

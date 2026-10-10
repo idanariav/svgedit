@@ -164,20 +164,24 @@ Done in Tier 0: layering guard, undo transactions (+ `BatchCommand` coalescing),
 registry (pilot), drawing invariants + command sweep + property tests, tool contract (pilot:
 ext-shape-family), automation API. What it deliberately left, and what it found:
 
-**Bugs the sweep / property tests found and that are NOT fixed**
-- **`getSvgString()` purges unused `<defs>` as a side effect** (`svg-exec.js` ≈ line 47, the
-  `removeUnusedDefElems` loop), and that purge is not an undo step. Delete the only user of a
-  gradient/filter, autosave (or save) → undo → the shape comes back with `fill="url(#gone)"`.
-  Fix: record the purge, or only purge on export. High (silent data loss with autosave).
-- **NaN tspans in saved drawings.** Before this work, undoing/redoing *any* attribute change on a
-  `<text>` with tspans wrote `x="NaN" y="NaN"` into them (`undo.js` computed `undefined - undefined`).
-  Prevention is fixed and tested, and `sanitizeLegacyNaNTspans()` (`legacy-repairs.js`, called from
-  `setSvgString()` and `svgCanvasToString()`, `tests/unit/legacy-repairs.test.js`) drops NaN x/y/dx/dy from
-  tspans so they inherit from their `<text>` (the original positions are not recoverable). **Fixed.**
-- **Deleting a path leaves the `<textPath>` that runs along it dangling** (`dangling-ref`), as does
-  Stroke-to-Path. Known issue in `tests/e2e/command-sweep.spec.js` (`KNOWN_ISSUES`).
-- **ext-mirror:** redo of Object-to-Path on a mirrored shape re-syncs the twin from a style-less path
-  (also in `KNOWN_ISSUES`). Not caused by the batch coalescing (verified with it disabled).
+**Bugs the sweep / property tests found (all fixed; one action left for the vault)**
+- **Unused `<defs>` purged by `getSvgString()` weren't restored by undo.** Undo of a delete restored
+  the gradient the shape used but not the gradient it inherits from (`href` chain), and undo of a plain
+  attribute change (fill back to a gradient) restored nothing. `restoreRefElements` now follows `href`
+  and recurses into restored defs, and a `ChangeElementCommand` undo/redo calls it
+  (`tests/unit/defs-purge-undo.test.js`). The purge itself is still a live-DOM side effect of saving.
+- **NaN tspans in saved drawings.** Undoing/redoing *any* attribute change on a `<text>` with tspans
+  wrote `x="NaN" y="NaN"` into them (`undo.js`). Prevention is fixed and tested; already-saved drawings
+  are repaired in the files: **run `node scripts/repair-drawings.mjs --write <vault>`** (dry run without
+  `--write`), then delete the `REPAIRS` entry.
+- **Deleting / Stroke-to-Path / Offset on a path left the `<textPath>` that runs along it dangling.**
+  `releaseTextOnPath` (`text-path.js`) now turns that text into plain text in the same undo step
+  (`tests/unit/text-path-rail-removal.test.js`).
+- **Object-to-Path lost the element's fill, stroke and opacity** whenever it differed from the editor's
+  current shape style (`convertToPath` copied the global style; the old TODO). It now copies the
+  element's own attributes. This was also the "ext-mirror redo" bug: the twin re-synced from the
+  style-less path. The sweep's `KNOWN_ISSUES` is empty again.
+- `data-se-ephemeral` nodes (a live-effects preview clone) are no longer serialised.
 - Layer lock / dim (`tool_layerView`) is not an undo step (documented in `draw.js`), so the sweep excludes it.
 - Fixed on the way (all "ChangeElementCommand constructed before the mutation" — redo re-applied the old
   value and left dangling refs): `fx-filter.js` `writeEffects` (glow / outline / shadow removal), `clip-mask.js`

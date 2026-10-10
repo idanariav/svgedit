@@ -105,6 +105,7 @@ export const init = (canvas) => {
     const { BatchCommand, InsertElementCommand, RemoveElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Path offset')
     batchCmd.addSubCommand(new InsertElementCommand(newPath))
+    svgCanvas.releaseTextOnPath?.([elem], batchCmd) // text on the old path becomes plain text
 
     const nextSibling = elem.nextSibling
     const parent = elem.parentNode

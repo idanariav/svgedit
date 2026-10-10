@@ -889,6 +889,9 @@ export const init = canvas => {
     const batchCmd = new BatchCommand('Delete Elements')
     const selectedCopy = [] // selectedElements is being deleted
 
+    // Text that follows a path being deleted becomes plain text (needs the rail still in place).
+    svgCanvas.releaseTextOnPath?.(selectedElements.filter(Boolean), batchCmd)
+
     selectedElements.forEach(selected => {
       if (selected) {
         let parent = selected.parentNode

@@ -200,7 +200,8 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of `draw.js`; `draw.init()` calls it |
 | `core/text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor/spacing/length, perspective, font family/size/colour, text content), split out of `elem-get-set.js`; its `init()` calls it |
 | `core/group-ops.js` | Group / ungroup / convert-to-group / push-group-properties, split out of `selected-elem.js`; its `init()` calls it |
-| `core/legacy-repairs.js` | Narrow load/save-time repairs for specific corruption patterns (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`, `sanitizeLegacyNaNTspans`), split out of `svg-exec.js` |
+| `scripts/repair-drawings.mjs` | One-off CLI that rewrites already-saved `.svg` files to repair known corruption (`REPAIRS`; dry run by default, `--write` to apply). New data-corruption repairs go here, not into `legacy-repairs.js` |
+| `core/legacy-repairs.js` | Narrow load/save-time repairs for specific corruption patterns (`sanitizeLegacyUndefinedDefs`, `sanitizeStackedTranslateTransforms`), split out of `svg-exec.js` |
 | `core/se-namespace.js` | `se:` namespace helpers: `hasUnnamespacedSeAttr()` (serializer declares `xmlns:se` when `se:*` attrs set via plain `setAttribute` are present) and `declareMissingSeNamespace()` (load-time repair of drawings saved without the declaration) |
 | `core/select.js` | Rubber-band selector + resize handles UI |
 | `core/path.js` | Path state and node data |

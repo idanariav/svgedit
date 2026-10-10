@@ -19,20 +19,7 @@ const FIXTURES = path.resolve('tests/e2e/fixtures/roundtrip')
 const VIEW_STATE = new Set(['tool_layerView'])
 // Problems the sweep found that are real but not fixed yet (each is in techdebt.md).
 // A listed problem is tolerated; one that stops reproducing fails the run so the entry gets deleted.
-const KNOWN_ISSUES = [
-  {
-    file: 'text-on-path.svg',
-    commands: ['tool_delete', 'tool_delete_multi', 'delete_selected', 'cut', 'tool_stroke_to_path'],
-    match: /<textPath> href=\\?"#\S+?\\?" references a missing element/,
-    why: 'deleting (or stroke-converting) a path leaves the <textPath> that runs along it pointing at nothing'
-  },
-  {
-    file: 'mirror.svg',
-    commands: ['tool_topath'],
-    match: /redo did not reproduce the edit/,
-    why: 'redoing Object-to-Path on a mirrored shape re-syncs its twin from a style-less path (ext-mirror)'
-  }
-]
+const KNOWN_ISSUES = []
 const MAX_ELEMENTS = process.env.SWEEP === 'full' ? 8 : 2
 
 test.describe.configure({ mode: 'parallel' })
