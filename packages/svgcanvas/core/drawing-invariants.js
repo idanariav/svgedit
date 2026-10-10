@@ -101,6 +101,13 @@ export const checkDrawing = (svgContent) => {
 
   const all = Array.from(svgContent.querySelectorAll('*'))
 
+  // se-attr-parse on the drawing root itself (descendants are checked in the loop below)
+  for (const attr of Array.from(svgContent.attributes)) {
+    const validator = attr.name.startsWith('se:') ? attrValidators.get(attr.name) : undefined
+    const verdict = validator ? validator(attr.value, svgContent) : true
+    if (verdict !== true) add('se-attr-parse', `<${svgContent.localName}> ${attr.name}="${attr.value.slice(0, 60)}": ${verdict}`, svgContent)
+  }
+
   // duplicate-id
   /** @type {Map<string, number>} */
   const ids = new Map()

@@ -18,8 +18,7 @@ small items (S) fill gaps between large ones.
 
 **Phase 1 — done** (items 1–4: T1.6 Shaper, T2.9 Copy style, T3.1 Scrubby labels, T2.10 Select Same). Item numbers below are stable references, so they start at 5.
 
-**Phase 2 — drawing precision** (item 5, T2.1 Snapping while drawing, is done)
-6. **T2.2 Ruler guides** — build the `cursor()` tool hook here (guide hover needs resize cursors); first consumer.
+**Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
 **Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers)
 7. **T2.15 Corner-keeping simplify** — T2.16 and T3.7 build on it.
@@ -50,7 +49,7 @@ small items (S) fill gaps between large ones.
 21. **T2.17 Layers panel: object rows** (L) → 22. **T3.6 Layers extras**.
 23. **T3.5 Area text** (M–L) — do the text-command `enabled` pass with it.
 24. **T3.3 Transform Each**, **T3.4 Split Into Grid**, **T3.2 Measure tool** — S; slot them between large items
-    (Measure is a second consumer for `cursor()`).
+    (Measure is the first consumer for `cursor()`).
 
 **Background tracks (no phase)**
 - **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Finish the remaining `@ts-check` modules in
@@ -69,7 +68,9 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
 
 - **Tool hooks `cursor()` and `options()/setOption()`** from the tool-contract plan. Implement with the first
   tool that needs a custom cursor or a tool-options bar (shape-family's "no custom cursor" is the likely first).
-  `wantsHover` exists and is used by the cutter. *Scheduled:* `cursor()` with T2.2 (Phase 2), `options()` with T2.13 (Phase 4).
+  `wantsHover` exists and is used by the cutter. *Scheduled:* `options()` with T2.13 (Phase 4). `cursor()` was planned
+  for T2.2 but the ruler guides did not need it: their grab lines carry a CSS resize cursor of their own, so it
+  waits for the first tool that has to change the cursor over the plain canvas (T3.2 Measure is the likely one).
 - **Live-effects preview on transactions.** `live-effects.js` still hides the original and shows a throwaway
   clone (`data-se-ephemeral`). A transaction-based preview would mutate and re-select the real element on every
   param tick and rebuild the effects panel mid-edit, so it needs a lighter "apply without re-select" path first.
@@ -246,6 +247,16 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 - **Other numeric fields**: only `<se-spin-input>` scrubs. Plain `<input type=number>` fields (a few dialogs) and `se-input` do not; the tablet shell's sheet fields never scrub (touch).
 - **Wheel stepping is one undo step per notch** (like the arrow keys); coalescing a burst of notches is not done.
 - A modifier pressed mid-drag changes the speed from then on (the value does not jump), but there is no on-screen hint of which multiplier is active.
+
+## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
+
+Done: guides dragged out of both rulers, moved (Alt copies), deleted by dragging back onto the ruler, Escape cancels, saved as `se:guides` on the root with undo, shown/hidden/locked/cleared by commands, snapped to by drawing tools and by select-mode moves. Remaining:
+- **No toolbar buttons or menu entries for show / lock / clear**: they are registry commands only (`guides_toggle_show` mod+;, `guides_toggle_lock`, `guides_clear`), reachable from Command Search, the Hotkey Manager and Favorites. The top bar is full; a place in the grid popover or the main menu's View group is the likely home.
+- **A guide's own position snaps to whole units** (or the grid), not to objects or ruler ticks (VectorCraft: Shift snaps to ticks, otherwise grid / smart targets).
+- **Guides need the rulers to be created** (rulers are a preference, off by default in some hosts); existing guides still show and snap without them.
+- **Mouse only**: touch and pen go through `core/touch.js`'s synthetic mouse events at the canvas, not at the rulers, so the tablet shell cannot make or move guides.
+- **Angled guides and guide layers/colours** (Illustrator's) are not planned; one cyan colour for all.
+- The guides are saved in the drawing file, so an Obsidian note keeps them; the plugin's rendered image ignores them. Whether a host wants them stripped on export is for the host to decide (`svgCanvas.setGuides({})`).
 
 ## Snapping while drawing (`core/draw-snap.js`): follow-ups from T2.1
 

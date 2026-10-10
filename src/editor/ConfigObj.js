@@ -224,6 +224,7 @@ export default class ConfigObj {
       'ext-proportion-markers',
       'ext-frame-labels',
       'ext-smart-guides',
+      'ext-ruler-guides',
       'ext-corner-radius',
       'ext-repeat',
       'ext-mirror',

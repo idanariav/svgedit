@@ -73,6 +73,7 @@ svgedit/
 │   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
 │   │   ├── ext-frame-labels/      # Name label above each frame; double-click to rename
 │   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
+│   │   ├── ext-ruler-guides/      # Ruler guides dragged from the rulers (data: core/guides.js)
 │   │   ├── ext-corner-radius/     # "Corners" panel — Live Corners (per-corner radius, round/inverted/chamfer)
 │   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
 │   │   ├── ext-mirror/            # Mirror drawing mode (API-only) + live linked symmetry
@@ -214,6 +215,7 @@ src/editor/index.html
 | `segment.js` | **Segment** tool — divides a single shape into symmetric pieces via evenly-spaced dividing lines: radial (spokes from a center) or grid (parallel vertical/horizontal lines). Split mode cuts via paper.js `intersect()` against a generated wedge/strip polygon per piece (uses `paper-utils.js`); non-split mode clips the divider lines to the shape's true boundary via `getIntersections()` and wraps shape+lines in a `<g>`, re-editable via an `se:segment` attribute stamp |
 | `path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening via `paper-utils.js`) |
 | `path-simplify.js` | paper.js curve fitting: `simplifyFreehand` (pencil commit) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover, non-destructive session baseline so repeated strength adjustments never compound) (uses `paper-utils.js`'s shared scope) |
+| `guides.js` | Ruler guides data model: `se:guides="v:x,…;h:y,…"` on the drawing root, `svgCanvas.getGuides()` / `setGuides(guides, label)` (one transaction = one undo step), `checkDrawing` validator (checkDrawing now also validates `se:` attributes on the root); guides are axis-only snap targets in `smart-guides.js` and line targets for `draw-snap.js` |
 | `draw-snap.js` | Snapping while drawing: `svgCanvas.snapDrawPoint(x, y)` snaps a point a drawing tool places to other objects' anchors / boxes / the page (`smart-guides.js` `collectPointTargets` + `snapPoint`), once-per-gesture target cache cleared on mouse-up. Called from the `event.js` mouseDown/mouseMove prelude for the built-in drawing modes (not the pencil, not inside a group) and from `tool-registry.js` for tools with `snap: true`; grid snapping wins; same `smartSnapping` switch as below |
 | `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
 | `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `remapCornerSource` keeps the source in sync from `coords.js` |

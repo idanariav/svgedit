@@ -236,6 +236,10 @@ export interface AttachedMembers {
   detachTextFromPath(): void
   releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
   selectSameAs(criterion: string, options?: { tolerance?: number }): void
+  /** The drawing's ruler guides (`se:guides` on the root): `v` = x positions of vertical lines, `h` = y positions of horizontal ones. */
+  getGuides(): { v: number[]; h: number[] }
+  /** Replace the ruler guides as one undo step; false when nothing changed. */
+  setGuides(guides: { v?: number[]; h?: number[] }, label?: string): boolean
   switchSelectedZorder(): void
   matchStrokes(): void
   setRotationAngle(val: number, preventUndo?: boolean): void

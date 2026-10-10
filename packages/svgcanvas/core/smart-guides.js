@@ -18,6 +18,7 @@
  */
 
 import { parseAnchors } from './anchor-path.js'
+import { visibleGuides } from './guides.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.js'
 
 // Cap the number of snap targets for drag-time performance.
@@ -79,6 +80,14 @@ export const collectSnapTargets = (svgCanvas, excludeElems) => {
   targets.push({
     left: 0, cx: res.w / 2, right: res.w, top: 0, cy: res.h / 2, bottom: res.h, isPage: true
   })
+  // Ruler guides: lines a moving box aligns to on their own axis only (`axis`), spanning the page.
+  const guides = visibleGuides(svgCanvas)
+  for (const x of guides.v) {
+    targets.push({ left: x, cx: x, right: x, top: 0, cy: res.h / 2, bottom: res.h, isGuide: true, axis: 'x' })
+  }
+  for (const y of guides.h) {
+    targets.push({ left: 0, cx: res.w / 2, right: res.w, top: y, cy: y, bottom: y, isGuide: true, axis: 'y' })
+  }
   return targets
 }
 
@@ -101,8 +110,9 @@ export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
     if (cand.same !== best.same) return cand.same
     return Math.abs(cand.delta) < Math.abs(best.delta)
   }
-  const axisBest = (keys, best) => {
+  const axisBest = (keys, best, axis) => {
     for (const t of targets) {
+      if (t.axis && t.axis !== axis) continue // a guide only aligns on its own axis
       for (const mk of keys) {
         for (const tk of keys) {
           const same = mk === tk
@@ -117,8 +127,8 @@ export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
     return best
   }
   return {
-    x: axisBest(['left', 'cx', 'right'], null),
-    y: axisBest(['top', 'cy', 'bottom'], null)
+    x: axisBest(['left', 'cx', 'right'], null, 'x'),
+    y: axisBest(['top', 'cy', 'bottom'], null, 'y')
   }
 }
 
@@ -139,7 +149,7 @@ export const findEqualSpacing = (bb, dx, dy, targets, tol) => {
   const m = toEdges({ x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height })
   const overlapV = (t) => t.bottom >= m.top && t.top <= m.bottom
   const overlapH = (t) => t.right >= m.left && t.left <= m.right
-  const real = targets.filter((t) => !t.isPage)
+  const real = targets.filter((t) => !t.isPage && !t.isGuide)
 
   let x = null
   const lefts = real.filter((t) => overlapV(t) && t.right <= m.left + tol)
@@ -284,6 +294,9 @@ export const collectPointTargets = (svgCanvas, excludeElems = []) => {
   }
   const res = svgCanvas.getResolution()
   addBox({ x: 0, y: 0, width: res.w, height: res.h })
+  const guides = visibleGuides(svgCanvas)
+  for (const pos of guides.v) xLines.push({ pos, lo: 0, hi: res.h })
+  for (const pos of guides.h) yLines.push({ pos, lo: 0, hi: res.w })
   points.sort((a, b) => a.x - b.x)
   xLines.sort((a, b) => a.pos - b.pos)
   yLines.sort((a, b) => a.pos - b.pos)
