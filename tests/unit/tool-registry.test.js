@@ -117,6 +117,36 @@ describe('tool registry (registerTool)', () => {
       expect({ x: ev.x, y: ev.y }).toEqual(canvas.snapPointToGrid(13, 27))
     })
 
+    it('a tool with snap: true gets x/y snapped to other objects (rawX/rawY stay raw); one without does not', () => {
+      const snapped = vi.spyOn(canvas, 'snapDrawPoint').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      const plain = makeTool({ id: 'plain' })
+      const snapping = makeTool({ id: 'snappy', snap: true })
+      canvas.registerTool(plain.tool)
+      canvas.registerTool(snapping.tool)
+      canvas.setMode('plain')
+      canvas.toolPointerDown(mouse('mousedown', 13, 27))
+      canvas.cancelToolGesture()
+      expect(snapped).not.toHaveBeenCalled()
+      canvas.setMode('snappy')
+      canvas.toolPointerDown(mouse('mousedown', 13, 27))
+      const [, ev] = snapping.calls.find((c) => c[0] === 'down')
+      expect([ev.x, ev.y]).toEqual([113, 127])
+      expect([ev.rawX, ev.rawY]).toEqual([13, 27])
+      expect(snapped).toHaveBeenCalledWith(13, 27, { tool: true })
+      canvas.toolPointerMove(mouse('mousemove', 20, 30))
+      expect(snapped).toHaveBeenCalledTimes(2)
+    })
+
+    it('grid snapping wins over object snapping', () => {
+      const snapped = vi.spyOn(canvas, 'snapDrawPoint')
+      canvas.getCurConfig().gridSnapping = true
+      const t = makeTool({ snap: true })
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      canvas.toolPointerDown(mouse('mousedown', 13, 27))
+      expect(snapped).not.toHaveBeenCalled()
+    })
+
     it('reports drag distance in screen pixels, modifiers (incl. the platform mod key)', () => {
       const t = makeTool()
       canvas.registerTool(t.tool)

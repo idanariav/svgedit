@@ -307,8 +307,9 @@ export default {
       svgCanvas.registerTool({
         id: mode,
         undoLabel: `Draw ${mode}`,
+        snap: true, // the centre and the dragged point snap to other objects
         pointerDown (ctx, ev) { start(ev) },
-        pointerMove (ctx, ev) { if (newFO) update(ev.rawX, ev.rawY) },
+        pointerMove (ctx, ev) { if (newFO) update(ev.x, ev.y) },
         pointerUp () {
           const el = newFO
           newFO = null

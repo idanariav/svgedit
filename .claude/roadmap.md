@@ -18,8 +18,7 @@ small items (S) fill gaps between large ones.
 
 **Phase 1 — done** (items 1–4: T1.6 Shaper, T2.9 Copy style, T3.1 Scrubby labels, T2.10 Select Same). Item numbers below are stable references, so they start at 5.
 
-**Phase 2 — drawing precision**
-5. **T2.1 Snapping while drawing** — also closes shape-family's "no smart-guide snapping while drawing".
+**Phase 2 — drawing precision** (item 5, T2.1 Snapping while drawing, is done)
 6. **T2.2 Ruler guides** — build the `cursor()` tool hook here (guide hover needs resize cursors); first consumer.
 
 **Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers)
@@ -248,6 +247,15 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 - **Wheel stepping is one undo step per notch** (like the arrow keys); coalescing a burst of notches is not done.
 - A modifier pressed mid-drag changes the speed from then on (the value does not jump), but there is no on-screen hint of which multiplier is active.
 
+## Snapping while drawing (`core/draw-snap.js`): follow-ups from T2.1
+
+Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-family and polystar points snap to anchors, box corners / midpoints / centres, edge lines and the page, with guides. Remaining:
+- **No guides while hovering before the press**: the pointer prelude ignores moves with no button down, so a snap is only shown from the press on. Hover snapping needs a per-move target cache that survives mouse-ups (and the cutter/pen rubber band as consumers).
+- **Tools that did not opt in** (`snap: true`): curvature (its anchors use `rawX`), shape library placement, cutter, brush, shaper and eyedropper. Curvature and the shape library mix `x` and `rawX` per event; fixing that is the work.
+- **Not inside a group context** (the children's boxes are in the group's local space; same limit as object-to-object snapping), and targets are only the top level of each layer: shapes nested in closed groups contribute their group's box.
+- **The pen's own earlier anchors are targets** (targets are collected on each press, and the path being drawn is part of the drawing then), so a click near one lands exactly on it. Not checked beyond that; if the in-progress segment ever turns out to snap to itself, exclude the pen's element in `event.js`'s `snapDraw` call.
+- No equal-spacing or angle-from-last-point hints while drawing (VectorCraft has neither either); Shift still constrains angle/ratio after snapping.
+
 ## Select Same (`core/select-same.js`): follow-ups from T2.10
 
 Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands. Remaining:
@@ -275,7 +283,7 @@ Done: outer and inner (edge / centre) glow and feather in the shared composer, o
 
 Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt / Space / arrow-key modifiers and a click-for-options popover. Remaining:
 - **Shapes are plain paths / groups, not re-editable.** VectorCraft keeps no parameters either, but the plan floated `se:shape="spiral(decay=80,segments=10)"` so the popover could regenerate a selected shape; not stored. Changing a count means redrawing (undo, then arrow keys while dragging).
-- **No smart-guide snapping while drawing** (VectorCraft snaps the start and the dragged corner, and shows a measurement label) — that is T2.1.
+- **No measurement label while drawing** (VectorCraft shows one next to the snapped corner). Snapping itself is done (T2.1).
 - **Not in the tablet shell** (`TabletShell.js` `SHAPES`): the four tools are only in the desktop shapes flyout.
 - **No keyboard shortcuts / no custom cursor** (they use the plain crosshair).
 - **Alt held at release keeps the tool** — core `mouseUpEvent` skips `setMode('select')` when `evt.altKey` is set for every shape tool; with Alt now meaning "from the centre" for arc/grids, releasing the mouse before Alt leaves the tool active (the shape is still selected). Pre-existing core rule, only more visible here.

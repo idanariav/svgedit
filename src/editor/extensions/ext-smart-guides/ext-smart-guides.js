@@ -141,6 +141,40 @@ export default {
     }
 
     /**
+     * Draw the snap state of a point being drawn (core/draw-snap.js): a ring on the anchor / box corner /
+     * midpoint / centre it snapped to, or a guide line along each box edge or centre line it snapped to,
+     * from the snapped point out to the object's extent. `null` clears the overlay.
+     * @param {?{at: {x: Float, y: Float}, point: ?{x: Float, y: Float},
+     *   xLine: ?{pos: Float, lo: Float, hi: Float}, yLine: ?{pos: Float, lo: Float, hi: Float}}} payload
+     * @returns {void}
+     */
+    svgCanvas.showDrawGuides = (payload) => {
+      if (!payload || (!payload.point && !payload.xLine && !payload.yLine)) {
+        overlay.replaceChildren()
+        return
+      }
+      const content = svgCanvas.getSvgContent()
+      for (const attr of ['x', 'y', 'width', 'height']) {
+        overlay.setAttribute(attr, content.getAttribute(attr))
+      }
+      const zoom = svgCanvas.getZoom()
+      const frag = svgdoc.createDocumentFragment()
+      const { at } = payload
+      if (payload.point) {
+        addNodeTargetRing(frag, payload.point.x * zoom, payload.point.y * zoom)
+      }
+      if (payload.xLine) {
+        const { pos, lo, hi } = payload.xLine
+        addLine(frag, pos * zoom, Math.min(lo, at.y) * zoom, pos * zoom, Math.max(hi, at.y) * zoom)
+      }
+      if (payload.yLine) {
+        const { pos, lo, hi } = payload.yLine
+        addLine(frag, Math.min(lo, at.x) * zoom, pos * zoom, Math.max(hi, at.x) * zoom, pos * zoom)
+      }
+      overlay.replaceChildren(frag)
+    }
+
+    /**
      * Draw the current path-node alignment snap state (pathedit node drag).
      * Same overlay/mechanism as `showSmartGuides`, but for a single dragged
      * anchor node snapping to another node's x/y rather than bbox edges —

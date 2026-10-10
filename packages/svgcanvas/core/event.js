@@ -43,6 +43,8 @@ export const init = (canvas) => {
   const eventResize = eventResizeInit(svgCanvas)
   const eventRotate = eventRotateInit(svgCanvas)
   const eventSelect = eventSelectInit(svgCanvas)
+  // Snap a point being drawn to other objects (core/draw-snap.js); a no-op where that module is absent.
+  const snapDraw = (x, y, opts) => svgCanvas.snapDrawPoint?.(x, y, opts) ?? { x, y }
 
   /**
  *
@@ -88,6 +90,9 @@ export const init = (canvas) => {
 
     if (svgCanvas.getCurConfig().gridSnapping) {
       ({ x, y } = svgCanvas.snapPointToGrid(x, y))
+    } else {
+      // Drawing modes also snap to other objects (core/draw-snap.js); the shape being drawn is not a target.
+      ({ x, y } = snapDraw(x, y, { exclude: [shape] }))
     }
 
     // A registered tool (core/tool-registry.js) owns the gesture: it gets normalised
@@ -226,7 +231,8 @@ export const init = (canvas) => {
     svgCanvas.dragStartBBox = null
     svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
     svgCanvas.smartSnapTargets = null
-    svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines
+    svgCanvas.clearDrawSnap?.()
+    svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines (the drawing-time ones share the overlay)
     const pendingMove = svgCanvas.pendingMoveDelta
     svgCanvas.pendingMoveDelta = null
     if (evt.button === 2) { return }
@@ -817,6 +823,12 @@ export const init = (canvas) => {
       const sp = svgCanvas.snapPointToGrid(svgCanvas.getStartX(), svgCanvas.getStartY())
       svgCanvas.setStartX(sp.x)
       svgCanvas.setStartY(sp.y)
+    } else {
+      const sp = snapDraw(x, y)
+      x = sp.x
+      y = sp.y
+      svgCanvas.setStartX(x)
+      svgCanvas.setStartY(y)
     }
 
     // if it is a selector grip, then it must be a single element selected,

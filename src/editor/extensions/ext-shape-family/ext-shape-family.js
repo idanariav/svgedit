@@ -335,6 +335,7 @@ export default {
     const toolFor = (mode) => ({
       id: mode,
       undoLabel: UNDO_LABEL[mode],
+      snap: true, // the start and the dragged corner snap to other objects
 
       pointerDown (ctx, ev) {
         closePopover()

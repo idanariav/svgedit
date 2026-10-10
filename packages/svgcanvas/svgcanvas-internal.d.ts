@@ -443,6 +443,10 @@ export interface InternalMembers {
   /** @internal */
   withContextUndimmed: any
   /** @internal */
+  clearDrawSnap(...args: any[]): any
+  /** @internal */
+  snapDrawPoint(...args: any[]): any
+  /** @internal */
   cancelToolGesture(...args: any[]): any
   /** @internal */
   toolHover(...args: any[]): any

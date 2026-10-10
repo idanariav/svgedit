@@ -39,7 +39,7 @@ is in [tier-0.md](tier-0.md).
 | T1.5 | Shape tools: Spiral, Arc, Rectangular Grid, Polar Grid | — | done — see git log (snapping, re-editable params, tablet shell deferred, see roadmap.md) |
 | T1.6 | Shaper tool (rough stroke → clean shape) | — (T0.3 helps) | done — see git log (tablet shell, Shaper Groups deferred, see roadmap.md) |
 | T1.7 | Outer Glow, Inner Glow (+ Feather) in the shared filter composer | — | done — see git log |
-| T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | todo |
+| T2.1 | Snapping while drawing (smart-guide targets for drawn points) | — | done — see git log (hover guides, curvature / shape library not opted in, see roadmap.md) |
 | T2.2 | Ruler guides | — (T2.1 helps) | todo |
 | T2.3 | Pen continues / joins open paths | T1.4 (join helper) | todo |
 | T2.4 | Arrowheads with tip-on-end alignment | — | todo |

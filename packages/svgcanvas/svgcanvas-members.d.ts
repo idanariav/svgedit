@@ -44,6 +44,8 @@ export interface ToolDef {
   cancel?(ctx: ToolContext): void
   undoLabel?: string
   wantsHover?: boolean
+  /** Snap `ev.x` / `ev.y` to other objects' anchors, boxes and the page (default false). */
+  snap?: boolean
   keepOpacity?: boolean
 }
 

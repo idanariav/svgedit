@@ -95,6 +95,8 @@ const LOG = 'tool-registry'
  * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
  * @property {boolean} [wantsHover] receive `pointerMove` with no button down
  * @property {boolean} [keepOpacity] created elements keep the `opacity` the tool stamped (the brush has its own)
+ * @property {boolean} [snap] `ev.x` / `ev.y` also snap to other objects' anchors, bounding boxes and the page (with guides),
+ *   when grid snapping is off. Opt in only if the tool places points with `x` / `y` (not `rawX` / `rawY`) on press AND drag.
  */
 
 /**
@@ -124,14 +126,16 @@ export const init = (canvas) => {
    * hover.
    * @param {MouseEvent} evt
    * @param {{x: number, y: number}} [downClient]
+   * @param {ToolDef} [tool] the tool the event is for; one with `snap` gets object snapping
    * @returns {ToolEvent}
    */
-  const toToolEvent = (evt, downClient) => {
+  const toToolEvent = (evt, downClient, tool) => {
     const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
     let { x, y } = pt
     if (isCreateInCurrentGroup(svgCanvas)) ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
     const raw = { x, y }
     if (svgCanvas.getCurConfig().gridSnapping) ({ x, y } = svgCanvas.snapPointToGrid(x, y))
+    else if (tool?.snap) ({ x, y } = svgCanvas.snapDrawPoint?.(x, y, { tool: true }) ?? { x, y })
     const mac = isMac()
     return {
       x,
@@ -249,7 +253,7 @@ export const init = (canvas) => {
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool) return false
     cancelGesture() // a previous press that never saw its mouseup
-    const start = toToolEvent(evt)
+    const start = toToolEvent(evt, undefined, tool)
     const tx = svgCanvas.beginTransaction(tool.undoLabel ?? tool.id)
     gesture = { tool, tx, start }
     let declined
@@ -276,7 +280,7 @@ export const init = (canvas) => {
     if (!gesture) return false
     const { tool, start } = gesture
     try {
-      tool.pointerMove?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }))
+      tool.pointerMove?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
     } catch (err) {
       cancelGesture()
       throw err
@@ -311,7 +315,7 @@ export const init = (canvas) => {
     let result
     endingStart = start
     try {
-      result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }))
+      result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
     } catch (err) {
       clearOverlays()
       tx.cancel()

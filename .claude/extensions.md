@@ -166,9 +166,12 @@ svgCanvas.registerTool({
   pointerMove (ctx, ev) { /* ev.dragDistance (screen px), ev.mods.{shift,alt,ctrl,meta,mod} */ },
   pointerUp (ctx, ev) { return { created: el } /* or 'cancel' to roll back */ },
   keyDown (ctx, e) { return true /* handled */ },   // Escape never reaches it: the registry cancels
-  cancel (ctx) { /* reset your own state: Escape / tool switch / error rolled the drawing back */ }
+  cancel (ctx) { /* reset your own state: Escape / tool switch / error rolled the drawing back */ },
+  snap: true   // optional: ev.x / ev.y also snap to other objects' anchors, boxes and the page (grid wins; rawX / rawY stay raw)
 })
 ```
+
+`snap: true` only for a tool that places points with `ev.x` / `ev.y` on press **and** drag (shape-family, polystar do); a tool that ignores them during the drag (brush, shaper) would show guides for points it never uses.
 
 Rules: the gesture runs inside an undo transaction, so mutate the drawing freely and **never call
 `addCommandToHistory`**; put previews/guides in `ctx.addOverlay(el)` (outside `#svgcontent`) or mark
