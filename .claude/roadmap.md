@@ -16,8 +16,7 @@ Rules used: dependencies and shared modules first; quick wins before large items
 with the first feature that needs it (never as a standalone task, so nothing gets built without a consumer);
 small items (S) fill gaps between large ones.
 
-**Phase 1 — cheap wins on the new tool contract** (item 1, T1.6 Shaper, is done; numbers below are stable references)
-2. **T2.9 Eyedropper "Copy style"** — extends the already-ported eyedropper; no dependencies.
+**Phase 1 — cheap wins on the new tool contract** (items 1–2, T1.6 Shaper and T2.9 Copy style, are done; numbers below are stable references)
 3. **T3.1 Scrubby labels** — S; one undo step per scrub is now just a transaction around the drag.
 4. **T2.10 Magic Wand / Select Same** — S.
 
@@ -243,6 +242,14 @@ Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-dele
 - **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
 - **Scribble hit-testing is sample-based** (`strokeTouches`): spacing is ≥ 0.5 document units and at most 2,000 samples, so a hairline crossed by a very long scribble at very low zoom can be missed. Text and images are tested by their bounding box.
 - No custom cursor and no options bar (waits for the `cursor()` / `options()` tool hooks).
+
+## Eyedropper Copy style (`styleCopy.js`): follow-ups from T2.9
+
+Done: **Apply style to selection** / **Apply selection's style to this** on the eyedropper menu. Remaining:
+- **Pixel sampling** (VectorCraft's Shift-click colour from the rendered canvas) is not done: it needs rasterising the drawing, and CORS-tainted images break it. Only on request.
+- **Tapered targets are skipped silently**, since writing `fill`/`stroke` would break the taper; no message tells the user. Copying into a taper means updating `se:taper-style` and `fill` together.
+- **Filters other than shadow / outline / glow / feather** (the Blur slider's `{id}_blur`, imported filters) are not copied.
+- **Not a registry command**: the actions need a clicked source, so they live on the menu only; there is no keyless palette entry or hotkey for them.
 
 ## Glow (`fx-filter.js` / ext-glow): follow-ups from T1.7
 

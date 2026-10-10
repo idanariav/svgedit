@@ -6,7 +6,7 @@ describe('se-eyedropper-menu', () => {
     document.body.innerHTML = ''
   })
 
-  it('renders the 4 fixed action rows with default English labels', () => {
+  it('renders the 6 fixed action rows with default English labels', () => {
     const el = document.createElement('se-eyedropper-menu')
     document.body.append(el)
     const labels = Array.from(el.shadowRoot.querySelectorAll('a[data-action] .qa-label')).map((n) => n.textContent)
@@ -14,7 +14,9 @@ describe('se-eyedropper-menu', () => {
       'Set as fill color',
       'Set as outline color',
       'Set as background color',
-      'Generate matching palette'
+      'Generate matching palette',
+      'Apply style to selection',
+      'Apply selection\u2019s style to this'
     ])
   })
 
@@ -89,5 +91,27 @@ describe('se-eyedropper-menu', () => {
     vi.useRealTimers()
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
     expect(el.isConnected).toBe(false)
+  })
+})
+
+describe('se-eyedropper-menu disabled rows', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('greys out and ignores the rows named in options.disabled', () => {
+    const el = document.createElement('se-eyedropper-menu')
+    document.body.append(el)
+    const onStyleToSelection = vi.fn()
+    const onFill = vi.fn()
+    el.open(0, 0, { onStyleToSelection, onFill }, { disabled: ['styleToSelection'] })
+    const row = el.shadowRoot.querySelector('a[data-action="styleToSelection"]')
+    expect(row.parentElement.classList.contains('disabled')).toBe(true)
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(onStyleToSelection).not.toHaveBeenCalled()
+    expect(el.isConnected).toBe(true)
+    el.shadowRoot.querySelector('a[data-action="fill"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(onFill).toHaveBeenCalledTimes(1)
   })
 })

@@ -18,6 +18,10 @@ describe('ext-eyedropper', () => {
       $id: vi.fn((id) => (id === 'tools_left' ? toolsLeft : document.getElementById(id))),
       insertChildAtIndex: vi.fn((parent, html) => { parent.innerHTML = html }),
       getMode: vi.fn(() => 'eyedropper'),
+      getSelectedElements: vi.fn(() => []),
+      transact: vi.fn((label, fn) => fn()),
+      getElement: vi.fn((id) => document.getElementById(id)),
+      history: { BatchCommand: class { addSubCommand () {} } },
       setMode: vi.fn(),
       setColor: vi.fn(),
       registerTool: vi.fn((def) => { tool = def })
@@ -169,6 +173,53 @@ describe('ext-eyedropper', () => {
         .querySelector('a[data-action="palette"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
 
       expect(document.querySelectorAll('se-palette-dialog').length).toBe(1)
+    })
+  })
+
+  describe('copy style actions', () => {
+    const click = (action) => document.querySelector('se-eyedropper-menu').shadowRoot
+      .querySelector(`a[data-action="${action}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    const enabled = (action) => !document.querySelector('se-eyedropper-menu').shadowRoot
+      .querySelector(`a[data-action="${action}"]`).parentElement.classList.contains('disabled')
+
+    it('are greyed out and inert when nothing else is selected', () => {
+      const source = makeRect({ fill: '#336699' })
+      svgCanvas.getSelectedElements.mockReturnValue([source]) // only the clicked shape itself
+      mouseDownOn(source)
+      expect(enabled('styleToSelection')).toBe(false)
+      expect(enabled('styleFromSelection')).toBe(false)
+      click('styleToSelection')
+      expect(svgCanvas.transact).not.toHaveBeenCalled()
+      expect(document.querySelector('se-eyedropper-menu')).not.toBeNull() // an inert row does not close the menu
+    })
+
+    it('"Apply style to selection" copies the clicked shape\'s look onto the selection in one step', () => {
+      const source = makeRect({ fill: '#336699', stroke: '#ff0000', opacity: '0.5' })
+      const a = makeRect({ fill: '#000000' })
+      const b = makeRect({ stroke: '#00ff00' })
+      svgCanvas.getSelectedElements.mockReturnValue([a, b])
+      mouseDownOn(source)
+      expect(enabled('styleToSelection')).toBe(true)
+      click('styleToSelection')
+      expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalled()
+      expect(svgCanvas.transact).toHaveBeenCalledTimes(1)
+      for (const el of [a, b]) {
+        expect(el.getAttribute('fill')).toBe('#336699')
+        expect(el.getAttribute('stroke')).toBe('#ff0000')
+        expect(el.getAttribute('opacity')).toBe('0.5')
+      }
+    })
+
+    it('"Apply selection\'s style to this" copies the selection onto the clicked shape', () => {
+      const selected = makeRect({ fill: '#abcdef', stroke: '#123456' })
+      const clicked = makeRect({ fill: '#000000', opacity: '0.2' })
+      svgCanvas.getSelectedElements.mockReturnValue([selected])
+      mouseDownOn(clicked)
+      click('styleFromSelection')
+      expect(clicked.getAttribute('fill')).toBe('#abcdef')
+      expect(clicked.getAttribute('stroke')).toBe('#123456')
+      expect(clicked.hasAttribute('opacity')).toBe(false)
+      expect(selected.getAttribute('fill')).toBe('#abcdef') // the source is untouched
     })
   })
 

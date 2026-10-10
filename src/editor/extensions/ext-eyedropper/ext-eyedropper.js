@@ -3,9 +3,10 @@
  *
  * Toolbar eyedropper tool: click an element on canvas to sample its fill
  * color, then choose what to do with it from a small action menu (set as
- * fill/outline/background, or generate a matching OKLCH palette). This is
- * a single-shot pick-then-act flow — it does not stamp a whole style
- * (stroke/width/dasharray/opacity) the way the tool historically did.
+ * fill/outline/background, generate a matching OKLCH palette, or copy the
+ * whole style to / from the selection, see styleCopy.js). This is a
+ * single-shot pick-then-act flow: a click never stamps a style by itself the
+ * way the tool historically did.
  *
  * @license MIT
  *
@@ -18,6 +19,7 @@ import '../../components/eyedropper/EyedropperActionMenu.js'
 import '../../components/palette/PaletteDialog.js'
 import { closestRoot } from '../../domScope.js'
 import { normalizeFillToHex } from '../../palette/oklchColor.js'
+import { copyStyle } from '../../styleCopy.js'
 
 const name = 'eyedropper'
 
@@ -56,6 +58,8 @@ export default {
       host.appendChild(menu)
 
       const backToSelect = () => svgEditor.leftPanel.clickSelect()
+      const selection = svgCanvas.getSelectedElements().filter(Boolean)
+      const others = selection.filter((el) => el !== target)
 
       menu.open(e.clientX, e.clientY, {
         onFill: () => {
@@ -77,7 +81,18 @@ export default {
           dialog.i18next = svgEditor.i18next
           dialog.backgroundHex = hex
           host.appendChild(dialog)
+        },
+        // The clicked shape's whole look onto the selection, or the selection's onto the clicked shape.
+        onStyleToSelection: () => {
+          backToSelect()
+          copyStyle(svgEditor, target, others)
+        },
+        onStyleFromSelection: () => {
+          backToSelect()
+          copyStyle(svgEditor, others[0], [target])
         }
+      }, {
+        disabled: others.length ? [] : ['styleToSelection', 'styleFromSelection']
       })
     }
 

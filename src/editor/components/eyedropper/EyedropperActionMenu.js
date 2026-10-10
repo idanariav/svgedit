@@ -1,6 +1,6 @@
 /**
  * EyedropperActionMenu.js — <se-eyedropper-menu> web component.
- * A small, fixed 4-item action menu shown at the eyedropper tool's click
+ * A small, fixed 6-item action menu shown at the eyedropper tool's click
  * point after a color is sampled. Not a reuse of SeCMenuDialog (that class
  * is tightly coupled to the user's favorites system); this menu reuses only
  * `positionContextMenu` for click-anchored, viewport-clamped placement.
@@ -13,7 +13,9 @@ const ACTIONS = [
   { id: 'fill', labelKey: 'eyedropper:menu.fill', fallback: 'Set as fill color', callback: 'onFill' },
   { id: 'stroke', labelKey: 'eyedropper:menu.stroke', fallback: 'Set as outline color', callback: 'onStroke' },
   { id: 'background', labelKey: 'eyedropper:menu.background', fallback: 'Set as background color', callback: 'onBackground' },
-  { id: 'palette', labelKey: 'eyedropper:menu.palette', fallback: 'Generate matching palette', callback: 'onPalette' }
+  { id: 'palette', labelKey: 'eyedropper:menu.palette', fallback: 'Generate matching palette', callback: 'onPalette' },
+  { id: 'styleToSelection', labelKey: 'eyedropper:menu.styleToSelection', fallback: 'Apply style to selection', callback: 'onStyleToSelection', separator: true },
+  { id: 'styleFromSelection', labelKey: 'eyedropper:menu.styleFromSelection', fallback: 'Apply selection\u2019s style to this', callback: 'onStyleFromSelection' }
 ]
 
 /**
@@ -26,6 +28,7 @@ export class SeEyedropperMenu extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._i18next = null
     this._callbacks = {}
+    this._disabled = new Set()
     this._outsideClickHandler = null
     this._keyHandler = null
     this._render()
@@ -46,8 +49,9 @@ export class SeEyedropperMenu extends HTMLElement {
     const list = document.createElement('ul')
     list.className = 'contextMenu'
     list.setAttribute('role', 'menu')
-    ACTIONS.forEach(({ id, labelKey, fallback }) => {
+    ACTIONS.forEach(({ id, labelKey, fallback, separator }) => {
       const li = document.createElement('li')
+      if (separator) li.className = 'separator'
       const a = document.createElement('a')
       a.href = '#'
       a.setAttribute('role', 'menuitem')
@@ -69,6 +73,7 @@ export class SeEyedropperMenu extends HTMLElement {
 
   _runAction (id) {
     const action = ACTIONS.find((a) => a.id === id)
+    if (this._disabled.has(id)) return
     this.close()
     this._callbacks[action.callback]?.()
   }
@@ -77,11 +82,18 @@ export class SeEyedropperMenu extends HTMLElement {
    * Show the menu anchored at a viewport point.
    * @param {number} clientX
    * @param {number} clientY
-   * @param {{onFill?: Function, onStroke?: Function, onBackground?: Function, onPalette?: Function}} callbacks
+   * @param {{onFill?: Function, onStroke?: Function, onBackground?: Function, onPalette?: Function, onStyleToSelection?: Function, onStyleFromSelection?: Function}} callbacks
+   * @param {{disabled?: string[]}} [options] `disabled`: action ids shown greyed out and inert
    * @returns {void}
    */
-  open (clientX, clientY, callbacks = {}) {
+  open (clientX, clientY, callbacks = {}, options = {}) {
     this._callbacks = callbacks
+    this._disabled = new Set(options.disabled ?? [])
+    this._shadowRoot.querySelectorAll('a[data-action]').forEach((a) => {
+      const off = this._disabled.has(a.dataset.action)
+      a.parentElement.classList.toggle('disabled', off)
+      a.setAttribute('aria-disabled', String(off))
+    })
     this.classList.add('is-open')
     positionContextMenu(this.$menu, clientX, clientY)
 

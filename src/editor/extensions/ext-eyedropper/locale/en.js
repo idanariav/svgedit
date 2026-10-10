@@ -10,7 +10,9 @@ export default {
     fill: 'Set as fill color',
     stroke: 'Set as outline color',
     background: 'Set as background color',
-    palette: 'Generate matching palette'
+    palette: 'Generate matching palette',
+    styleToSelection: 'Apply style to selection',
+    styleFromSelection: 'Apply selection\u2019s style to this'
   },
   palette: {
     title: 'Matching Palette',

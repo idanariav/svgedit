@@ -49,6 +49,15 @@ export const css = /* css */`
     background-color: var(--accent, #2e5dea);
     color: #fff;
   }
+  .contextMenu li.disabled a {
+    opacity: .45;
+    cursor: default;
+  }
+  .contextMenu li.disabled:hover a,
+  .contextMenu li.disabled a:focus {
+    background-color: transparent;
+    color: var(--fg, #222);
+  }
   .contextMenu li.separator {
     border-top: solid 1px var(--chrome-border, #E3E3E3);
     padding-top: 5px;

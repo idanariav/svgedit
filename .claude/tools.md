@@ -58,13 +58,28 @@ position, surviving move/delete) after the path is done.
   canvas to sample its **fill color** (only the fill — stroke/width/opacity are
   not sampled), then choose an action from a small menu that appears at the
   click point: **Set as fill color**, **Set as outline color**, **Set as
-  background color**, or **Generate matching palette** (opens `<se-palette-dialog>`,
+  background color**, **Apply style to selection** / **Apply selection's style to
+  this** (greyed out unless some *other* shape is selected; `styleCopy.js` — see
+  below), or **Generate matching palette** (opens `<se-palette-dialog>`,
   an 8-color OKLCH palette — one per hue red/orange/yellow/green/cyan/blue/purple/pink
   — optimized against the sampled color for contrast, colorfulness, and
   cross-palette harmony; purpose dropdown reweights the optimizer for
   icons/text/charts/illustrations/buttons/notifications; see `extensions.md`
   and `file-map.md`'s `src/editor/palette/` entry for the algorithm). Escape
-  returns to the Select tool
+  returns to the Select tool.
+  **Copy style** (`src/editor/styleCopy.js`, `copyStyle(editor, source, targets)`,
+  one `transact` = one undo step): copies fill, stroke, stroke-width, dasharray,
+  linecap/linejoin/miterlimit, opacity, fill/stroke-opacity, fill-rule, paint-order
+  (an attribute the source lacks is *removed* from the target) and, text → text only,
+  font family/size/weight/style. A gradient/pattern fill is shared **by reference**;
+  drop shadow / outline / glow / feather are re-built per target through
+  `shadowApi`/`outlineApi`/`glowApi` (own `<filter>`, removed when the source has none);
+  markers are cloned per target (`mkr_<pos>_<targetId>`, so a colour change on one
+  never recolours the other; a marker not made by ext-markers is shared; only
+  line/polyline/polygon/path take markers, `<line>` gets no mid marker). A group source
+  contributes its first shape; a group target restyles the shapes inside it. A
+  **tapered** source is read through `se:taper-style` (colour = stroke, `fill: none`);
+  a tapered *target* is skipped. The Blur slider, geometry and live-effect state are not copied
 - `ext-panning` — Pan/hand tool (ext-panning) — after the Select tool (the
   toolbar's Zoom tool this was originally positioned after was removed — see
   below; the top-panel `<se-zoom>` dropdown and Ctrl+wheel zoom still cover
