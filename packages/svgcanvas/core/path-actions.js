@@ -388,7 +388,7 @@ export const init = (canvas) => {
           // Any grip still `display:inline` here is left over from
           // whatever was previously drawn/edited and would otherwise sit
           // orphaned on screen at its old position for the whole time this
-          // path is drawn (see .claude/techdebt.md). Hide everything first,
+          // path is drawn. Hide everything first,
           // mirroring Path#init()'s hide-all-then-reveal-mine guard for
           // entering pathedit mode, which this freehand-draw path lacks.
             const pointGripContainer = svgCanvas.getElement('pathpointgrip_container')
@@ -1066,7 +1066,7 @@ export const init = (canvas) => {
       // teardown. Guarding here protects all of them — including any future
       // call site — at the source, instead of relying on each caller to
       // separately remember to wrap it (which is how most of the existing
-      // call sites ended up unguarded; see techdebt.md).
+      // call sites ended up unguarded).
         try {
           this.toSelectMode()
         } catch (e) {

@@ -155,8 +155,7 @@ export const remapPuppetRestD = (elem, remap) => {
 
 // ── Warp-mapping helpers ─────────────────────────────────────────────────────
 // Pure functions (no DOM/paper.js/svgCanvas), extracted from applyWarp() below
-// so they're unit-testable against a stub matrix/pin set (see .claude/techdebt.md's
-// former "Extension logic has no vitest coverage" entry): warpSubpaths applies
+// so they're unit-testable against a stub matrix/pin set: warpSubpaths applies
 // the MLS deformation to a rest pose, buildD converts warped content-space
 // points back to a local-space `d` string.
 
@@ -176,8 +175,7 @@ export const warpSubpaths = (rest, pins) =>
  * coordinate outright (`px,py = x,y`) silently mixes coordinate frames: the
  * new pin ends up anchored to a point that has no relationship to the actual
  * rest geometry, so it can visually drift off the limb it was dropped on as
- * further pins are dragged (see .claude/techdebt.md's former "pins are fixed
- * content-space anchors, not mesh-attached" entry). Instead, find the
+ * further pins are dragged. Instead, find the
  * current-pose sample nearest the click, across every target, and re-express
  * the click as that sample's rest-space point plus the click↔sample offset —
  * "nearest sample + offset" attachment — so the anchor always refers to real

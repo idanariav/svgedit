@@ -129,7 +129,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     this.initializeSvgCanvasMethods()
     // Tracks which `core/*.js` init() call last claimed each property name
     // on this instance, so a later call reusing the same name gets logged
-    // instead of silently overwriting the earlier one (see .claude/techdebt.md #8).
+    // instead of silently overwriting the earlier one.
     const initGuardRegistry = new Map()
 
     // initialize class variables
@@ -198,7 +198,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     }
 
     // Session/UI state, grouped by concern rather than as flat instance
-    // properties (see .claude/techdebt.md history). curConfig (persisted
+    // properties. curConfig (persisted
     // config), DOM refs, and already-object-scoped subsystems (undoMgr,
     // selectorManager, pathActions, ...) are intentionally NOT here — they
     // stay top-level instance properties.

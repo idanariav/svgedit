@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, extname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Regression guard for the bug class documented in .claude/techdebt.md #4:
+// Regression guard for a bug class:
 // panel/extension JS files reference DOM ids and classes that are physically
 // defined in a *different* file (a Panel.html template, another extension,
 // or the svgcanvas engine) via plain string literals -- nothing ties the two

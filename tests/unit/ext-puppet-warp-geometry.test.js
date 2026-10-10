@@ -5,7 +5,7 @@ const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
 /**
  * `buildD`/`warpSubpaths` are the pure geometry helpers extracted from
- * `applyWarp()` (see ext-puppet-warp.js's file-header techdebt note): the
+ * `applyWarp()`: the
  * MLS re-warp of a cached rest pose, and the content-space→local-space `d`
  * string rebuild. Both take plain data (no DOM/paper.js/svgCanvas), so they're
  * testable against a stub matrix/pin set without mocking the canvas.

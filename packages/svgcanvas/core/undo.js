@@ -98,7 +98,7 @@ export const init = (canvas) => {
             svgCanvas.pathActions.clear()
           }
           // Several past "path node grip" bugs traced back to exactly this
-          // undo/redo boundary (see .claude/techdebt.md history) -- logging it
+          // undo/redo boundary -- logging it
           // unconditionally, not just for path commands, since a bug can also
           // stem from an unrelated undo landing while pathedit mode is active.
           svgCanvas.logDebugEvent?.('history-apply', {

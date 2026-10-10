@@ -8,9 +8,7 @@ const el = (tag) => document.createElementNS(NS_SVG, tag)
  * `resolveWarpableShapes` (selection→target filtering, extracted from
  * `startSession`) and `computeCommitPatch` (which rig attributes
  * `commit` writes) are DOM-light/pure respectively, so
- * they're unit-testable without a svgCanvas/undo-history mock — see
- * .claude/techdebt.md's former "Extension logic has no vitest coverage"
- * entry.
+ * they're unit-testable without a svgCanvas/undo-history mock.
  */
 describe('ext-puppet-warp session-lifecycle helpers', () => {
   describe('resolveWarpableShapes', () => {

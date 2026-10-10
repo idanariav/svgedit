@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures.js'
 import { visitAndApproveStorage } from './helpers.js'
 
-// Regression coverage for the gap noted in .claude/techdebt.md item 7: unit
+// Regression coverage for a gap in the unit tests: unit
 // tests mock the DOM they already know about and can't catch a selection ->
 // right-panel wiring regression (e.g. 26b91862, a stale id that silently
 // broke selectedChanged()). This drives selection through the real canvas
