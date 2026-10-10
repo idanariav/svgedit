@@ -196,6 +196,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/event-text-edit.js` | `textedit` mode handlers — thin delegates onto `textActions.*` |
 | `core/event-zoom.js` | `zoom` mode handlers (marquee-zoom rubber band + `zoomed` event) |
 | `core/selected-elem.js` | Move, resize, flip selected elements |
+| `core/select-same.js` | `svgCanvas.selectSameAs(criterion, {tolerance})` — Select Same by fill / stroke / fill & stroke / stroke weight / opacity / type, with an OKLab colour tolerance (`colorDistance`, `appearanceOf`, `matchesSame`); `culori/fn` with only the rgb/hsl/oklab modes and hex/named/rgb()/hsl() parsers. Split out of `selected-elem.js` |
 | `core/selection.js` | Selection list management |
 | `core/extension-hooks.js` | Registry of valid extension hook names (`EXTENSION_HOOKS`) plus a payload typedef per hook (`ExtensionHookPayloads`) |
 | `core/svg-defs.js` | Defs/reference maintenance split out of `svg-exec.js`: `uniquifyElems`, `setUseData`, `removeUnusedDefElems`, `convertGradients`, `convertDropShadowFilters` (still exposed on the canvas under those names) |

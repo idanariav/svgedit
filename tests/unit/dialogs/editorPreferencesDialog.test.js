@@ -68,3 +68,26 @@ describe('se-edit-prefs-dialog scrub preference', () => {
     expect(detail.scrubfields).toBe(false)
   })
 })
+
+describe('se-edit-prefs-dialog select-same tolerance', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('shows the translated label, clamps to 0-100 and reports the value on save', () => {
+    const dialog = mount(false)
+    dialog.init({ t: (key) => key })
+    expect(dialog.shadowRoot.querySelector('#svginfo_select_same').textContent).toBe('config.select_same_tolerance')
+    dialog.selectSameTolerance = 6
+    expect(dialog.selectSameTolerance).toBe(6)
+    dialog.$selectSame.value = '250'
+    expect(dialog.selectSameTolerance).toBe(100)
+    dialog.$selectSame.value = '-3'
+    expect(dialog.selectSameTolerance).toBe(0)
+    dialog.$selectSame.value = 'abc'
+    expect(dialog.selectSameTolerance).toBe(0)
+    let detail
+    dialog.addEventListener('change', (e) => { detail = e.detail })
+    dialog.selectSameTolerance = 12
+    dialog.$saveBtn.click()
+    expect(detail.selectsametolerance).toBe(12)
+  })
+})

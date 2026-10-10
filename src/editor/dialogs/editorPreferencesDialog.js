@@ -23,6 +23,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
     this.$theme = this._shadowRoot.querySelector('#theme_select')
     this.$scrub = this._shadowRoot.querySelector('#scrub_fields')
+    this.$selectSame = this._shadowRoot.querySelector('#select_same_tolerance')
   }
 
   /**
@@ -38,6 +39,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('config-show_rulers', i18next.t('config.show_rulers'))
     this.setAttribute('config-base_unit', i18next.t('config.base_unit'))
     this.setAttribute('config-scrub_fields', i18next.t('config.scrub_fields'))
+    this.setAttribute('config-select_same_tolerance', i18next.t('config.select_same_tolerance'))
   }
 
   /**
@@ -46,7 +48,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields']
+    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields', 'config-select_same_tolerance']
   }
 
   /**
@@ -103,6 +105,10 @@ export class SeEditPrefsDialog extends HTMLElement {
         break
       case 'config-base_unit':
         node = this._shadowRoot.querySelector('#svginfo_unit')
+        node.textContent = newValue
+        break
+      case 'config-select_same_tolerance':
+        node = this._shadowRoot.querySelector('#svginfo_select_same')
         node.textContent = newValue
         break
       case 'config-scrub_fields':
@@ -178,6 +184,20 @@ export class SeEditPrefsDialog extends HTMLElement {
   }
 
   /**
+   * "Select same" colour tolerance shown in the field (0 = exact).
+   * @param {number} value
+   * @returns {void}
+   */
+  set selectSameTolerance (value) {
+    this.$selectSame.value = String(Number.isFinite(Number(value)) ? value : 0)
+  }
+
+  get selectSameTolerance () {
+    const value = parseFloat(this.$selectSame.value)
+    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0
+  }
+
+  /**
    * @function connectedCallback
    * @returns {void}
    */
@@ -197,7 +217,8 @@ export class SeEditPrefsDialog extends HTMLElement {
           showrulers: this.$showRulers.checked,
           baseunit: this.$baseUnit.value,
           theme: this.$theme.value,
-          scrubfields: this.$scrub.checked
+          scrubfields: this.$scrub.checked,
+          selectsametolerance: this.selectSameTolerance
         }
       })
       this.dispatchEvent(closeEvent)

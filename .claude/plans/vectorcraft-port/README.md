@@ -48,7 +48,7 @@ is in [tier-0.md](tier-0.md).
 | T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | todo |
 | T2.8 | On-canvas gradient editor | — (T0.2, T0.3 help) | todo |
 | T2.9 | Eyedropper "Copy style" action | — | done — see git log (pixel sampling skipped, see roadmap.md) |
-| T2.10 | Magic Wand / Select Same with tolerance | — | todo |
+| T2.10 | Magic Wand / Select Same with tolerance | — | done — see git log (the optional Magic Wand tool is not built, see roadmap.md) |
 | T2.11 | Recolor Artwork + harmony rules | — | todo |
 | T2.12 | Centerline tracing (raster line art → stroked paths) | T1.4 (fit module) | todo |
 | T2.13 | Blend tool | — (T0.3 helps) | todo |

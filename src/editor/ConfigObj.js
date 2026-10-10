@@ -64,6 +64,8 @@ export default class ConfigObj {
       tabletMode: false,
       /** Drag a numeric field's label to change its value (seSpinInput.js); a stored 'false' turns it off */
       scrub_numeric_fields: true,
+      /** Colour distance (OKLab, black to white = 100) within which "Select same" fill / stroke match; 0 = exact */
+      select_same_tolerance: 0,
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',
       // ALERT NOTICES

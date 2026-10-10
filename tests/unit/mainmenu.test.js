@@ -104,6 +104,14 @@ describe('MainMenu', () => {
     expect(dialog.scrubFields).toBe(true)
   })
 
+  it('persists the select-same tolerance and shows the stored value when the dialog opens', async () => {
+    await menu.savePreferences({ detail: { showrulers: false, baseunit: 'px', selectsametolerance: 4 } })
+    expect(editor.configObj.pref).toHaveBeenCalledWith('select_same_tolerance', 4, true)
+    const dialog = document.getElementById('se-edit-prefs')
+    menu.showPreferences()
+    expect(dialog.selectSameTolerance).toBe(4)
+  })
+
   it('opens preferences dialog only once', () => {
     menu.showPreferences()
     const prefs = document.getElementById('se-edit-prefs')

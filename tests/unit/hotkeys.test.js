@@ -43,6 +43,30 @@ describe('HotkeyManager over the command registry', () => {
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
+  it('an editor shortcut can say when it is unavailable, with a reason', () => {
+    const fn = vi.fn()
+    hk.ingestEditorShortcuts([{ id: 'sc_gated', label: 'hotkeys.g', enabled: () => 'Select a shape first', fn }])
+    expect(editor.commands.get('sc_gated').enabled(editor)).toBe('Select a shape first')
+    expect(() => editor.commands.run('sc_gated')).toThrow(/Select a shape first/)
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('"Select same" has a keyless command per criterion, available once something is selected', () => {
+    const selected = []
+    const clickSelectSame = vi.fn()
+    editor.svgCanvas = { getSelectedElements: () => selected }
+    editor.topPanel = { clickSelectSame }
+    hk.ingestEditorShortcuts(buildEditorShortcuts(editor))
+    const ids = ['fill', 'stroke', 'type', 'fillstroke', 'strokeweight', 'opacity'].map((c) => `select_same_${c}`)
+    for (const id of ids) {
+      expect(editor.commands.get(id)).toMatchObject({ group: 'Select', defaultKeys: [] })
+      expect(editor.commands.get(id).enabled(editor)).toBe('Select a shape first')
+    }
+    selected.push(document.createElement('div'))
+    editor.commands.run('select_same_fillstroke')
+    expect(clickSelectSame).toHaveBeenCalledWith({ detail: { value: 'fillstroke' } })
+  })
+
   it('registerEl creates an adapter command that clicks the element', () => {
     const el = document.createElement('div')
     const click = vi.fn()

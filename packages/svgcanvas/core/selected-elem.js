@@ -516,53 +516,6 @@ export const init = canvas => {
   }
 
   /**
- * Extend the selection to every element (in the current group context, or on
- * any visible layer) that shares a property with the primary selected element.
- * @function module:selected-elem.SvgCanvas#selectSameAs
- * @param {"fill"|"stroke"|"type"} criterion
- * @returns {void}
- */
-  const selectSameAs = criterion => {
-    const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!ref) return
-    const norm = (el, attr, def) => {
-      const v = el.getAttribute(attr)
-      return v === null || v === '' ? def : v.toLowerCase()
-    }
-    const matches = el => {
-      switch (criterion) {
-        case 'fill':
-          return norm(el, 'fill', '#000000') === norm(ref, 'fill', '#000000')
-        case 'stroke':
-          return norm(el, 'stroke', 'none') === norm(ref, 'stroke', 'none')
-        case 'type':
-        default:
-          return el.tagName === ref.tagName
-      }
-    }
-    const found = []
-    const scan = parent => {
-      for (const el of parent.children) {
-        if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
-        if (matches(el)) found.push(el)
-      }
-    }
-    const group = svgCanvas.getCurrentGroup()
-    if (group) {
-      scan(group)
-    } else {
-      for (const layer of svgCanvas.getSvgContent().children) {
-        if (layer.tagName !== 'g') continue
-        if (layer.getAttribute('display') === 'none' || layer.style.display === 'none') continue
-        scan(layer)
-      }
-    }
-    if (found.length) {
-      svgCanvas.selectOnly(found, true)
-    }
-  }
-
-  /**
  * One-click stroke cleanup across the selection (groups included): every
  * stroked element gets the primary element's stroke-width plus round
  * joins/caps — uniform confident linework in one undo step.
@@ -1165,7 +1118,6 @@ export const init = canvas => {
   svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
   svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
   svgCanvas.transformAgain = transformAgain // Repeat the last duplicate+transform (clone offset by the last committed move delta)
-  svgCanvas.selectSameAs = selectSameAs // Select all elements sharing the primary selection's fill/stroke/type
   svgCanvas.matchStrokes = matchStrokes // Uniform stroke-width + round joins/caps across the selection
   svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
   svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.

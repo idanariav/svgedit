@@ -48,10 +48,12 @@ class MainMenu {
       showrulers,
       baseunit,
       theme,
-      scrubfields
+      scrubfields,
+      selectsametolerance
     } = e.detail
 
     if (scrubfields !== undefined) this.editor.configObj.pref('scrub_numeric_fields', scrubfields, true)
+    if (selectsametolerance !== undefined) this.editor.configObj.pref('select_same_tolerance', selectsametolerance, true)
 
     if (theme && theme !== (this.editor.configObj.pref('theme') || 'light')) {
       this.editor.configObj.pref('theme', theme)
@@ -150,6 +152,7 @@ class MainMenu {
     $id('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     const $editDialog = $id('se-edit-prefs')
     $editDialog.scrubFields = String(this.editor.configObj.pref('scrub_numeric_fields')) !== 'false'
+    $editDialog.selectSameTolerance = parseFloat(this.editor.configObj.pref('select_same_tolerance')) || 0
     $editDialog.setAttribute('dialog', 'open')
   }
 

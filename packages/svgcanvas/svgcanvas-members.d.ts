@@ -233,7 +233,7 @@ export interface AttachedMembers {
   getTextPerspectiveY(elem: Element): number
   detachTextFromPath(): void
   releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
-  selectSameAs(criterion: string): void
+  selectSameAs(criterion: string, options?: { tolerance?: number }): void
   switchSelectedZorder(): void
   matchStrokes(): void
   setRotationAngle(val: number, preventUndo?: boolean): void

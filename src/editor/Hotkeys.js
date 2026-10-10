@@ -302,6 +302,7 @@ export default class HotkeyManager {
         keys: keyval || undefined,
         pd,
         atomic: sc.atomic,
+        enabled: sc.enabled,
         run: () => sc.fn()
       }, { replace: true })
     })

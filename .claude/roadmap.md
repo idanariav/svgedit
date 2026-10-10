@@ -16,8 +16,7 @@ Rules used: dependencies and shared modules first; quick wins before large items
 with the first feature that needs it (never as a standalone task, so nothing gets built without a consumer);
 small items (S) fill gaps between large ones.
 
-**Phase 1 — cheap wins on the new tool contract** (items 1–3, T1.6 Shaper, T2.9 Copy style and T3.1 Scrubby labels, are done; numbers below are stable references)
-4. **T2.10 Magic Wand / Select Same** — S.
+**Phase 1 — done** (items 1–4: T1.6 Shaper, T2.9 Copy style, T3.1 Scrubby labels, T2.10 Select Same). Item numbers below are stable references, so they start at 5.
 
 **Phase 2 — drawing precision**
 5. **T2.1 Snapping while drawing** — also closes shape-family's "no smart-guide snapping while drawing".
@@ -248,6 +247,13 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 - **Other numeric fields**: only `<se-spin-input>` scrubs. Plain `<input type=number>` fields (a few dialogs) and `se-input` do not; the tablet shell's sheet fields never scrub (touch).
 - **Wheel stepping is one undo step per notch** (like the arrow keys); coalescing a burst of notches is not done.
 - A modifier pressed mid-drag changes the speed from then on (the value does not jump), but there is no on-screen hint of which multiplier is active.
+
+## Select Same (`core/select-same.js`): follow-ups from T2.10
+
+Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands. Remaining:
+- **Magic Wand tool** (the plan's optional part: click an object to select similar, Shift adds, Alt subtracts) is not built. It would be a `registerTool` tool calling `selectSameAs('fillstroke', …)`; the criteria, tolerance and commands are in place.
+- **Tolerance is a preference, not a control next to the menu**, so changing it means opening Editor Preferences. A small field in the Select & Link cluster (or on the wand's options bar, once `options()` exists) would be quicker.
+- Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
 
 ## Eyedropper Copy style (`styleCopy.js`): follow-ups from T2.9
 

@@ -183,6 +183,7 @@ src/editor/index.html
 | `event-path-edit.js` | `path`/`pathedit` mode — thin delegates onto `path-actions.js` |
 | `event-text-edit.js` | `textedit` mode — thin delegates onto `text-actions.js` |
 | `event-zoom.js` | `zoom` mode (marquee-zoom rubber band) |
+| `select-same.js` | Select Same (`svgCanvas.selectSameAs(criterion, { tolerance })`): fill, stroke, fill & stroke, stroke weight, opacity, type; colour tolerance = OKLab distance (black↔white = 100) via `culori/fn`; tapered paths are read as their stroked line |
 | `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
 | `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box. `getMouseTargetFromNode` (click hit-testing) and `getIntersectionListMethod` (rubber-band) both normally resolve/scope to the current layer only, but widen to any layer when `svgCanvas.getAllLayersMode()` is on (and no group-isolation context is active) |
 | `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector(bbox, angle)`/`hideGroupSelector()` draw one union box + 8 resize grips **+ the rotate grip** around a multi-selection (the optional `angle` rotates the box+grips rigidly during a live group rotation) |

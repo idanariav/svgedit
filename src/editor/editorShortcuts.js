@@ -450,6 +450,22 @@ export const buildEditorShortcuts = (editor) => [
       editor.svgCanvas.joinSelectedPaths()
     }
   },
+  ...[
+    ['fill', 'tools.select_same_fill'],
+    ['stroke', 'tools.select_same_stroke'],
+    ['type', 'tools.select_same_type'],
+    ['fillstroke', 'tools.select_same_fillstroke'],
+    ['strokeweight', 'tools.select_same_strokeweight'],
+    ['opacity', 'tools.select_same_opacity']
+  ].map(([criterion, label]) => ({
+    id: `select_same_${criterion}`,
+    group: 'Select',
+    label,
+    enabled: () => (editor.svgCanvas.getSelectedElements().some(Boolean) ? true : 'Select a shape first'),
+    fn: () => {
+      editor.topPanel.clickSelectSame({ detail: { value: criterion } })
+    }
+  })),
   {
     id: 'bool_union',
     group: 'Boolean',

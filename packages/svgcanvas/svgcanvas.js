@@ -74,6 +74,7 @@ import { init as pathOffsetInit } from './core/path-offset.js'
 import { init as pathSimplifyInit } from './core/path-simplify.js'
 import { init as cornerRadiusInit } from './core/corner-radius.js'
 import { init as taperStrokeInit } from './core/taper-stroke.js'
+import { init as selectSameInit } from './core/select-same.js'
 import { init as pathJoinInit } from './core/path-join.js'
 import { init as liveEffectsInit } from './core/live-effects.js'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.js'
@@ -351,6 +352,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'pathSimplify', pathSimplifyInit, initGuardRegistry)
     runGuardedInit(this, 'cornerRadius', cornerRadiusInit, initGuardRegistry)
     runGuardedInit(this, 'taperStroke', taperStrokeInit, initGuardRegistry)
+    runGuardedInit(this, 'selectSame', selectSameInit, initGuardRegistry)
     runGuardedInit(this, 'pathJoin', pathJoinInit, initGuardRegistry)
     runGuardedInit(this, 'liveEffects', liveEffectsInit, initGuardRegistry)
     runGuardedInit(this, 'liveEffectsDistort', liveEffectsDistortInit, initGuardRegistry)

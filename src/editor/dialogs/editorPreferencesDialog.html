@@ -26,6 +26,7 @@
 
     .pref-row > span { flex: 1 1 auto; }
     .pref-row > select { flex: 0 0 150px; }
+    .pref-row > input[type="number"] { flex: 0 0 64px; }
 
     #tool_prefs_back {
         display: flex;
@@ -57,6 +58,10 @@
         <label class="pref-row">
             <span id="svginfo_scrub"></span>
             <input id="scrub_fields" type="checkbox" checked="checked" />
+        </label>
+        <label class="pref-row">
+            <span id="svginfo_select_same"></span>
+            <input id="select_same_tolerance" type="number" min="0" max="100" step="1" value="0" />
         </label>
         <label class="pref-row">
             <span id="svginfo_theme"></span>

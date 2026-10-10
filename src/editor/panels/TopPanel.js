@@ -623,12 +623,21 @@ class TopPanel {
   }
 
   /**
+   * The colour tolerance of "Select same" (Editor Preferences; 0 = exact).
+   * @returns {number}
+   */
+  selectSameTolerance () {
+    const value = parseFloat(this.editor.configObj.pref('select_same_tolerance'))
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }
+
+  /**
    * Select every element sharing a property with the current selection.
    * @param {Event} evt - `change` event from the select-same dropdown.
    * @returns {void}
    */
   clickSelectSame (evt) {
-    this.editor.svgCanvas.selectSameAs(evt.detail.value)
+    this.editor.svgCanvas.selectSameAs(evt.detail.value, { tolerance: this.selectSameTolerance() })
   }
 
   /**
