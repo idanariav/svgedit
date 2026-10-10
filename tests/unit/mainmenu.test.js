@@ -112,6 +112,18 @@ describe('MainMenu', () => {
     expect(dialog.selectSameTolerance).toBe(4)
   })
 
+  it('persists the pencil settings, applies them to the config and shows them when the dialog opens', async () => {
+    await menu.savePreferences({ detail: { showrulers: false, baseunit: 'px', pencilstabilization: 50, pencilfidelity: 4 } })
+    expect(editor.configObj.pref).toHaveBeenCalledWith('pencil_stabilization', 50, true)
+    expect(editor.configObj.pref).toHaveBeenCalledWith('pencil_fidelity', 4, true)
+    expect(editor.configObj.curConfig.pencilStabilization).toBe(0.5)
+    expect(editor.configObj.curConfig.pencilFidelity).toBe(4)
+    const dialog = document.getElementById('se-edit-prefs')
+    menu.showPreferences()
+    expect(dialog.pencilStabilization).toBe(50)
+    expect(dialog.pencilFidelity).toBe(4)
+  })
+
   it('opens preferences dialog only once', () => {
     menu.showPreferences()
     const prefs = document.getElementById('se-edit-prefs')

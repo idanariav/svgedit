@@ -16,6 +16,26 @@ describe('ConfigObj', () => {
     expect(regexEscape('a+b?')).toBe('a\\+b\\?')
   })
 
+  it('seeds the pencil config from the stored preferences, clamped, and keeps defaults when none', () => {
+    const cfg = new ConfigObj(stubEditor())
+    cfg.setupCurConfig()
+    cfg.seedPencilConfigFromPrefs()
+    expect(cfg.curConfig.pencilStabilization).toBe(0.3)
+    expect(cfg.curConfig.pencilFidelity).toBe(2)
+
+    cfg.pref('pencil_stabilization', '55', true)
+    cfg.pref('pencil_fidelity', '4.5', true)
+    cfg.seedPencilConfigFromPrefs()
+    expect(cfg.curConfig.pencilStabilization).toBe(0.55)
+    expect(cfg.curConfig.pencilFidelity).toBe(4.5)
+
+    cfg.pref('pencil_stabilization', '400', true)
+    cfg.pref('pencil_fidelity', '0', true)
+    cfg.seedPencilConfigFromPrefs()
+    expect(cfg.curConfig.pencilStabilization).toBe(0.95)
+    expect(cfg.curConfig.pencilFidelity).toBe(0.5)
+  })
+
   it('merges defaults and respects allowInitialUserOverride', () => {
     const editor = stubEditor()
     const cfg = new ConfigObj(editor)

@@ -68,15 +68,22 @@ export const init = (canvas) => {
   // below). Reset per-stroke in the fhpath mousedown case.
   let pencilStabX = null
   let pencilStabY = null
+  // The end of the selected open path the current pencil stroke started on (it carries that path on).
+  let pencilEnd = null
 
   const down = (evt, ctx) => {
-    const { x, y, realX, realY, curShape } = ctx
+    const { x, y, curShape } = ctx
+    let { realX, realY } = ctx
     switch (svgCanvas.getCurrentMode()) {
       case 'fhellipse':
       case 'fhrect':
       case 'fhpath':
         pencilStabX = null
         pencilStabY = null
+        svgCanvas.pathActions.hover(null, null)
+        pencilEnd = svgCanvas.getCurrentMode() === 'fhpath' && !evt.altKey ? svgCanvas.pencilEnd?.(realX, realY) ?? null : null
+        // Starting on an end of the selected open path: the stroke begins exactly there.
+        if (pencilEnd) ({ x: realX, y: realY } = pencilEnd.point)
         svgCanvas.setStart({ x: realX, y: realY })
         svgCanvas.setControllPoint1('x', 0)
         svgCanvas.setControllPoint1('y', 0)
@@ -425,10 +432,17 @@ export const init = (canvas) => {
           // Fit smooth cubics through the raw points (sharp turns stay corners; see
           // core/path-fit.js) unless disabled; falls back to the legacy
           // every-3-points smoothing inside.
-          element = svgCanvas.getCurConfig().pencilSimplify === false
-            ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
-            : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilFidelity)
+          if (pencilEnd) {
+            // Added to the path the stroke started on; nothing new is inserted.
+            svgCanvas.continueFreehand(element, pencilEnd, svgCanvas.getCurConfig().pencilFidelity)
+            element = null
+          } else {
+            element = svgCanvas.getCurConfig().pencilSimplify === false
+              ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
+              : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilFidelity)
+          }
         }
+        pencilEnd = null
         break
       } case 'line': {
         const x1 = element.getAttribute('x1')

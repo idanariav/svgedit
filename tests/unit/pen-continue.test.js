@@ -1,7 +1,7 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { joinEnds, reversedSubpath } from '../../packages/svgcanvas/core/path-edit.js'
 import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.js'
-import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from '../../packages/svgcanvas/core/pen-continue.js'
+import { findPenEnd, continuationD, drawnSubpath, joinDrawn, extendWith } from '../../packages/svgcanvas/core/pen-continue.js'
 
 const sub = (d) => parseAnchors(d)[0]
 const NS = 'http://www.w3.org/2000/svg'
@@ -147,6 +147,42 @@ describe('Pen continue and join', () => {
       const end = press('M0,0 L40,0', true)
       const out = joinDrawn(drawnSubpath('M60,10'), end, false)
       assert.equal(anchorsToD([out.subpath]), 'M0,0 L40,0 L60,10')
+    })
+  })
+
+  describe('extendWith (pencil continues the selected path)', () => {
+    const endOf = (d, x, y) => {
+      add(d)
+      return findPenEnd(layer, x, y, 3)
+    }
+
+    it('appends a stroke that starts on the last anchor, merging the seam', () => {
+      const out = extendWith(endOf('M0,0 L50,0', 50, 0), sub('M50,0 L80,20 L100,20'), 6)
+      assert.equal(out.closed, false)
+      assert.equal(anchorsToD([out]), 'M0,0 L50,0 L80,20 L100,20')
+    })
+
+    it('continuing from the first anchor keeps the path running the way it did', () => {
+      const out = extendWith(endOf('M0,0 L50,0', 0, 0), sub('M0,0 L-30,20'), 6)
+      assert.equal(anchorsToD([out]), 'M-30,20 L0,0 L50,0')
+    })
+
+    it('closes the path when the stroke ends near its other end', () => {
+      const out = extendWith(endOf('M0,0 L50,0 L50,50', 50, 50), sub('M50,50 L0,50 L2,1'), 6)
+      assert.equal(out.closed, true)
+      assert.equal(out.anchors.length, 4)
+      assert.match(anchorsToD([out]), /Z$/)
+    })
+
+    it('stays open when the stroke ends farther than the closing tolerance', () => {
+      const out = extendWith(endOf('M0,0 L50,0 L50,50', 50, 50), sub('M50,50 L0,50 L2,20'), 6)
+      assert.equal(out.closed, false)
+      assert.equal(out.anchors.length, 5)
+    })
+
+    it('keeps curve handles of the old path', () => {
+      const out = extendWith(endOf('M0,0 C0,20 30,20 30,0', 30, 0), sub('M30,0 L60,0'), 6)
+      assert.equal(anchorsToD([out]), 'M0,0 C0,20 30,20 30,0 L60,0')
     })
   })
 })

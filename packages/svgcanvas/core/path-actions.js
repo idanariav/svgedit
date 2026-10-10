@@ -435,24 +435,30 @@ export const init = (canvas) => {
     }
 
     /**
-     * The pointer moved with no button down in `path` mode.
-     * @param {number} mouseX
-     * @param {number} mouseY
+     * The pointer moved with no button down in `path` or `fhpath` mode (`null` coordinates just hide the ring).
+     * @param {?number} mouseX
+     * @param {?number} mouseY
+     * @param {string} [mode]
      * @returns {void}
      */
-    hover (mouseX, mouseY) {
-      this.#showEndHint(mouseX, mouseY)
+    hover (mouseX, mouseY, mode = 'path') {
+      if (mouseX === null || mouseY === null) this.#hideEndHint()
+      else this.#showEndHint(mouseX, mouseY, mode)
     }
 
     /**
      * A ring on the open end the next press would carry on or join to (screen coordinates).
      * @param {number} mouseX
      * @param {number} mouseY
+     * @param {string} [mode]
      * @returns {void}
      */
-    #showEndHint (mouseX, mouseY) {
+    #showEndHint (mouseX, mouseY, mode = 'path') {
       const zoom = svgCanvas.getZoom()
-      const end = this.#subpath ? null : this.#penEnd(mouseX / zoom, mouseY / zoom, svgCanvas.getDrawnPath())
+      const at = [mouseX / zoom, mouseY / zoom]
+      const end = this.#subpath
+        ? null
+        : mode === 'fhpath' ? svgCanvas.pencilEnd?.(...at) : this.#penEnd(...at, svgCanvas.getDrawnPath())
       if (!end) {
         this.#hideEndHint()
         return

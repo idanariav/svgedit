@@ -57,7 +57,7 @@ export const init = (canvas) => {
   // if the mouse is move without dragging an element, just return.
     if (!svgCanvas.getStarted()) {
       svgCanvas.toolHover?.(evt) // registered tools that asked for hover (core/tool-registry.js)
-      if (svgCanvas.getCurrentMode() === 'path') eventPathEdit.hover(evt)
+      if (['path', 'fhpath'].includes(svgCanvas.getCurrentMode())) eventPathEdit.hover(evt)
       return
     }
     if (evt.button === 1 || svgCanvas.spaceKey) { return }

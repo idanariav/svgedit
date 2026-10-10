@@ -22,6 +22,7 @@
 import { warn } from '../common/logger.js'
 import { parseAnchors, anchorsToD } from './anchor-path.js'
 import { simplifyWith, fitFreehand } from './path-fit.js'
+import { findPenEnd, extendWith } from './pen-continue.js'
 
 // The pencil's default fidelity: the most the committed curve may stray from
 // the drawn stroke, in user units (about 2 px at 100% zoom).
@@ -33,6 +34,8 @@ const MAX_TOLERANCE = 10
 const DEFAULT_STRENGTH = 0.4
 // Turns sharper than this stay corners when smoothing an existing path.
 const SMOOTH_CORNER_ANGLE = 30
+// A pencil press this close (screen px) to an end of the selected open path carries that path on.
+const CONTINUE_REACH = 6
 
 // Exported for direct unit testing — pure math, no paper.js dependency.
 export const strengthToTolerance = (strength) =>
@@ -186,6 +189,52 @@ export const init = (canvas) => {
     refreshSelector(elem)
   }
 
+  /**
+   * The end of the selected open path a pencil press at (x, y) would carry on, if any: exactly one plain,
+   * untransformed, single-subpath open path selected in the current layer, pressed within `CONTINUE_REACH`.
+   * @param {number} x
+   * @param {number} y
+   * @returns {?import('./pen-continue.js').PenEnd}
+   */
+  const pencilEnd = (x, y) => {
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    if (selected.length !== 1 || svgCanvas.getCurrentGroup()) return null
+    if (selected[0].parentNode !== svgCanvas.getCurrentDrawing().getCurrentLayer()) return null
+    return findPenEnd(/** @type {any} */ ({ children: [selected[0]] }), x, y, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
+  }
+
+  /**
+   * Finish a pencil stroke that started on `end` by adding it to that path (one undo step) instead of
+   * creating a new element. The stroke's `<polyline>` is thrown away; a stroke that ends near the path's
+   * other end closes the path.
+   * @param {Element} polyline - The `<polyline>` created by the fhpath tool; its first point is `end.point`.
+   * @param {import('./pen-continue.js').PenEnd} end
+   * @param {number} [fidelity] - As for `simplifyFreehand`.
+   * @returns {Element} The continued path.
+   */
+  const continueFreehand = (polyline, end, fidelity = DEFAULT_FIDELITY) => {
+    const { points } = /** @type {SVGPolylineElement} */ (polyline)
+    const stroke = []
+    for (let i = 0; i < points.numberOfItems; i++) stroke.push({ x: points.getItem(i).x, y: points.getItem(i).y })
+    svgCanvas.getCurrentDrawing().releaseId(svgCanvas.getId())
+    polyline.remove()
+    const tolerance = Number.isFinite(fidelity) && fidelity > 0 ? fidelity : DEFAULT_FIDELITY
+    const fitted = fitFreehand(stroke, tolerance)
+    if (fitted.anchors.length >= 2) {
+      const closeTol = Math.max(4 * tolerance, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
+      const d = anchorsToD([extendWith(end, fitted, closeTol)])
+      svgCanvas.transact('Continue path', () => end.elem.setAttribute('d', d))
+    }
+    if (!svgCanvas.getToolLocked()) {
+      svgCanvas.setMode('select')
+      svgCanvas.selectOnly([end.elem], true)
+    }
+    svgCanvas.call('changed', [end.elem])
+    return end.elem
+  }
+
+  svgCanvas.pencilEnd = pencilEnd
+  svgCanvas.continueFreehand = continueFreehand
   svgCanvas.simplifyFreehand = simplifyFreehand
   svgCanvas.previewSmoothPath = previewSmoothPath
   svgCanvas.commitSmoothPath = commitSmoothPath

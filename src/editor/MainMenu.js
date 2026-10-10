@@ -49,11 +49,22 @@ class MainMenu {
       baseunit,
       theme,
       scrubfields,
-      selectsametolerance
+      selectsametolerance,
+      pencilstabilization,
+      pencilfidelity
     } = e.detail
 
     if (scrubfields !== undefined) this.editor.configObj.pref('scrub_numeric_fields', scrubfields, true)
     if (selectsametolerance !== undefined) this.editor.configObj.pref('select_same_tolerance', selectsametolerance, true)
+    // The pencil reads its settings from the canvas config (a 0-0.95 factor and user units).
+    if (pencilstabilization !== undefined) {
+      this.editor.configObj.pref('pencil_stabilization', pencilstabilization, true)
+      this.editor.configObj.curConfig.pencilStabilization = pencilstabilization / 100
+    }
+    if (pencilfidelity !== undefined) {
+      this.editor.configObj.pref('pencil_fidelity', pencilfidelity, true)
+      this.editor.configObj.curConfig.pencilFidelity = pencilfidelity
+    }
 
     if (theme && theme !== (this.editor.configObj.pref('theme') || 'light')) {
       this.editor.configObj.pref('theme', theme)
@@ -153,6 +164,9 @@ class MainMenu {
     const $editDialog = $id('se-edit-prefs')
     $editDialog.scrubFields = String(this.editor.configObj.pref('scrub_numeric_fields')) !== 'false'
     $editDialog.selectSameTolerance = parseFloat(this.editor.configObj.pref('select_same_tolerance')) || 0
+    const { pencilStabilization, pencilFidelity } = this.editor.configObj.curConfig
+    $editDialog.pencilStabilization = Math.round((pencilStabilization ?? 0.3) * 100)
+    $editDialog.pencilFidelity = pencilFidelity ?? 2
     $editDialog.setAttribute('dialog', 'open')
   }
 

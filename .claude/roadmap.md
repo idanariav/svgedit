@@ -20,8 +20,8 @@ small items (S) fill gaps between large ones.
 
 **Phase 2 — done** (items 5–6: T2.1 Snapping while drawing, T2.2 Ruler guides). Item numbers below stay as they were.
 
-**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–9, T2.15 Corner-keeping simplify, T2.3 Pen continues / joins and T2.16 Smooth tool, are done; T3.7 builds on them)
-10. **T3.7 Pencil continues** (reuse `core/pen-continue.js` `findPenEnd` / `continuationD`) → 11. **T2.12 Centerline
+**Phase 3 — path editing cluster** (shares T1.4's Bézier-fit/join helpers; items 7–10, T2.15 Corner-keeping simplify, T2.3 Pen continues / joins, T2.16 Smooth tool and T3.7 Pencil continues, are done)
+11. **T2.12 Centerline
    tracing** (L, last: it only needs the fit module).
    Do the **precise `enabled` pass for the path commands** while in these panels.
 
@@ -264,6 +264,16 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
+
+## Pencil continue and settings (`pen-continue.js` `extendWith`): follow-ups from T3.7
+
+Done: a pencil stroke that starts on an end of the single selected open path extends it (one `Continue path` step) or closes it; Stabilisation and Fidelity are in Editor Preferences. Remaining:
+- **The seam is not tangent-continuous.** The stroke is fitted on its own and its first anchor merged into the path's end, so the old path's last handle and the new first handle can differ. VectorCraft refits with the old end tangent fixed; `fitFreehand` has no start-tangent option yet. A stroke that sets off in the path's direction is visually fine.
+- **Only the selected path, plain and untransformed, in the current layer**, same limits as the Pen (see "Pen continue / join"). With the pencil tool armed the selection has to be made first, then the tool picked (the selection survives the switch).
+- **The ring** marks the end like the Pen's; there is no distinct cursor.
+- **Closing is judged on the stroke's last captured point**, which trails the pointer (stabiliser and spline capture): finish with a short pause, or lower the stabilisation. The closing distance is `max(4 × fidelity, 6 screen px)`.
+- **Preferences are plain number fields** (stabilisation %, fidelity in user units), not a popover on the tool; double-click on a tool button means lock mode, so VectorCraft's "double-click opens Tool Options" is not available.
+- Stroke continued from a path's start comes back running the way the path ran; a path that gets closed keeps the stroke's direction.
 
 ## Smooth tool (ext-smooth-tool): follow-ups from T2.16
 

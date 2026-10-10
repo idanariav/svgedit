@@ -62,7 +62,7 @@ is in [tier-0.md](tier-0.md).
 | T3.4 | Split Into Grid | — | todo |
 | T3.5 | Area text with wrapping | — | todo |
 | T3.6 | Layers panel extras (Alt-click hide/lock others, column drag, row drag reorder, template comment layers) | — | todo |
-| T3.7 | Pencil continues a selected path + visible smoothing settings | — (T2.15 helps) | todo |
+| T3.7 | Pencil continues a selected path + visible smoothing settings | — (T2.15 helps) | done — see git log (seam not tangent-continuous; settings are Preferences fields, see roadmap.md) |
 
 ## Rules every agent must follow (from this repo's `CLAUDE.md`)
 

@@ -10,7 +10,7 @@
  */
 
 import { parseAnchors, anchorsToD } from './anchor-path.js'
-import { joinEnds, reversedSubpath } from './path-edit.js'
+import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.js'
 import { LIVE_ATTRS } from './path-join.js'
 import { getTransformList, transformListToTransform, isIdentity } from './math.js'
 
@@ -21,6 +21,9 @@ import { getTransformList, transformListToTransform, isIdentity } from './math.j
  * @property {{x: number, y: number}} point the end's position
  * @property {import('./anchor-path.js').SubPath} subpath the path's only subpath
  */
+
+/** The stroke's first anchor sits on the path's end; this much apart still counts as the same point (user units). */
+const MERGE_TOLERANCE = 0.5
 
 /** Parsed open single-subpath paths, by element (a mouse move asks about every path in the layer). */
 const parsed = new WeakMap()
@@ -112,4 +115,25 @@ export const joinDrawn = (drawn, other, continued) => {
     return { subpath: joinEnds(drawn, true, other.subpath, other.atEnd), keepsDrawing: continued }
   }
   return { subpath: joinEnds(other.subpath, true, drawn, true), keepsDrawing: false }
+}
+
+/**
+ * Carry `end`'s path on with a pencil stroke. The stroke's first anchor is expected to sit on the pressed
+ * end (the pencil snaps its first point there) and merges into it. When the stroke finishes within `closeTol`
+ * of the path's other end the path is closed instead. A path continued from its first anchor comes back the
+ * way round it started (so markers and dashes keep their direction); a closed one has no direction to keep.
+ * @param {PenEnd} end
+ * @param {import('./anchor-path.js').SubPath} stroke the fitted stroke, starting at the pressed end
+ * @param {number} closeTol
+ * @returns {import('./anchor-path.js').SubPath}
+ */
+export const extendWith = (end, stroke, closeTol) => {
+  const base = end.atEnd ? end.subpath : reversedSubpath(end.subpath)
+  const joined = joinEnds(base, true, stroke, false, MERGE_TOLERANCE)
+  const first = joined.anchors[0].p
+  const last = joined.anchors[joined.anchors.length - 1].p
+  if (joined.anchors.length > 2 && Math.hypot(first.x - last.x, first.y - last.y) <= closeTol) {
+    return joinSubpaths([joined], closeTol)[0]
+  }
+  return end.atEnd ? joined : reversedSubpath(joined)
 }

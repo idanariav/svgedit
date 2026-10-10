@@ -72,14 +72,14 @@ export const init = (canvas) => {
     svgCanvas.pathActions.mouseMove(x, y)
   }
 
-  // The pointer moving over the canvas with no button down in `path` mode: the Pen marks the open
-  // end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
+  // The pointer moving over the canvas with no button down in `path` / `fhpath` mode: the Pen (or the pencil, for
+  // the selected path) marks the open end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
   const hover = (evt) => {
     const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
     if (!ctm) return
     const pt = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
     const zoom = svgCanvas.getZoom()
-    svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom)
+    svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom, svgCanvas.getCurrentMode())
   }
 
   // 'path': element is nulled here so it is not removed nor finalized by the

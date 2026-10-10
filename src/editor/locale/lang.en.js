@@ -357,6 +357,8 @@ export default {
     base_unit: 'Base unit',
     scrub_fields: 'Drag labels to change numbers',
     select_same_tolerance: 'Select same: colour tolerance (0 = exact)',
+    pencil_stabilization: 'Pencil: stabilisation (%)',
+    pencil_fidelity: 'Pencil: fidelity, max distance from stroke',
     grid: 'Grid',
     snapping_onoff: 'Snapping on/off',
     snapping_stepsize: 'Snapping Step-Size:',

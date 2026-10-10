@@ -24,6 +24,8 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.$theme = this._shadowRoot.querySelector('#theme_select')
     this.$scrub = this._shadowRoot.querySelector('#scrub_fields')
     this.$selectSame = this._shadowRoot.querySelector('#select_same_tolerance')
+    this.$pencilStabilization = this._shadowRoot.querySelector('#pencil_stabilization')
+    this.$pencilFidelity = this._shadowRoot.querySelector('#pencil_fidelity')
   }
 
   /**
@@ -40,6 +42,8 @@ export class SeEditPrefsDialog extends HTMLElement {
     this.setAttribute('config-base_unit', i18next.t('config.base_unit'))
     this.setAttribute('config-scrub_fields', i18next.t('config.scrub_fields'))
     this.setAttribute('config-select_same_tolerance', i18next.t('config.select_same_tolerance'))
+    this.setAttribute('config-pencil_stabilization', i18next.t('config.pencil_stabilization'))
+    this.setAttribute('config-pencil_fidelity', i18next.t('config.pencil_fidelity'))
   }
 
   /**
@@ -48,7 +52,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    */
   static get observedAttributes () {
     // eslint-disable-next-line max-len
-    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields', 'config-select_same_tolerance']
+    return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields', 'config-select_same_tolerance', 'config-pencil_stabilization', 'config-pencil_fidelity']
   }
 
   /**
@@ -109,6 +113,14 @@ export class SeEditPrefsDialog extends HTMLElement {
         break
       case 'config-select_same_tolerance':
         node = this._shadowRoot.querySelector('#svginfo_select_same')
+        node.textContent = newValue
+        break
+      case 'config-pencil_stabilization':
+        node = this._shadowRoot.querySelector('#svginfo_pencil_stabilization')
+        node.textContent = newValue
+        break
+      case 'config-pencil_fidelity':
+        node = this._shadowRoot.querySelector('#svginfo_pencil_fidelity')
         node.textContent = newValue
         break
       case 'config-scrub_fields':
@@ -198,6 +210,34 @@ export class SeEditPrefsDialog extends HTMLElement {
   }
 
   /**
+   * Pencil stabilisation shown in the field, in percent (0-95).
+   * @param {number} value
+   * @returns {void}
+   */
+  set pencilStabilization (value) {
+    this.$pencilStabilization.value = String(Number.isFinite(Number(value)) ? value : 30)
+  }
+
+  get pencilStabilization () {
+    const value = parseFloat(this.$pencilStabilization.value)
+    return Number.isFinite(value) ? Math.min(95, Math.max(0, value)) : 30
+  }
+
+  /**
+   * Pencil fidelity shown in the field, in user units (0.5-10).
+   * @param {number} value
+   * @returns {void}
+   */
+  set pencilFidelity (value) {
+    this.$pencilFidelity.value = String(Number.isFinite(Number(value)) ? value : 2)
+  }
+
+  get pencilFidelity () {
+    const value = parseFloat(this.$pencilFidelity.value)
+    return Number.isFinite(value) ? Math.min(10, Math.max(0.5, value)) : 2
+  }
+
+  /**
    * @function connectedCallback
    * @returns {void}
    */
@@ -218,7 +258,9 @@ export class SeEditPrefsDialog extends HTMLElement {
           baseunit: this.$baseUnit.value,
           theme: this.$theme.value,
           scrubfields: this.$scrub.checked,
-          selectsametolerance: this.selectSameTolerance
+          selectsametolerance: this.selectSameTolerance,
+          pencilstabilization: this.pencilStabilization,
+          pencilfidelity: this.pencilFidelity
         }
       })
       this.dispatchEvent(closeEvent)

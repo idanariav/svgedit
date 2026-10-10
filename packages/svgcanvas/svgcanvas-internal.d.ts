@@ -416,6 +416,8 @@ export interface InternalMembers {
   setbSpline(...args: any[]): any
   /** @internal */
   simplifyFreehand: any
+  pencilEnd: any
+  continueFreehand: any
   /** @internal */
   smoothControlPoints: any
   /** @internal */

@@ -66,6 +66,10 @@ export default class ConfigObj {
       scrub_numeric_fields: true,
       /** Colour distance (OKLab, black to white = 100) within which "Select same" fill / stroke match; 0 = exact */
       select_same_tolerance: 0,
+      /** Pencil stabilisation, 0-95 (%): how much the pen trails the pointer to damp tremor (mirrors `curConfig.pencilStabilization`, 0-0.95) */
+      pencil_stabilization: 30,
+      /** Pencil fidelity, 0.5-10 user units: the most the committed curve may stray from the stroke (mirrors `curConfig.pencilFidelity`) */
+      pencil_fidelity: 2,
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',
       // ALERT NOTICES
@@ -535,6 +539,7 @@ export default class ConfigObj {
     this.loadFromURL(this.editor)
     this.setupCurPrefs(this.editor)
     this.seedGridConfigFromPrefs()
+    this.seedPencilConfigFromPrefs()
   }
 
   /**
@@ -552,5 +557,17 @@ export default class ConfigObj {
     const step = parseFloat(this.pref('grid_snapping_step'))
     if (Number.isFinite(step) && step > 0) this.curConfig.snappingStep = step
     this.curConfig.gridShape = this.pref('grid_shape') || this.curConfig.gridShape
+  }
+
+  /**
+   * Copy the persisted pencil preferences (percent and user units, as strings from storage) into the
+   * `curConfig` values the pencil reads (a 0-0.95 factor and user units). A missing or unusable value keeps the default.
+   * @returns {void}
+   */
+  seedPencilConfigFromPrefs () {
+    const stabilization = parseFloat(this.pref('pencil_stabilization'))
+    if (Number.isFinite(stabilization)) this.curConfig.pencilStabilization = Math.min(95, Math.max(0, stabilization)) / 100
+    const fidelity = parseFloat(this.pref('pencil_fidelity'))
+    if (Number.isFinite(fidelity)) this.curConfig.pencilFidelity = Math.min(10, Math.max(0.5, fidelity))
   }
 }
