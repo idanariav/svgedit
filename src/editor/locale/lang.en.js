@@ -337,7 +337,22 @@ export default {
     merge_all: 'Merge All',
     move_elems_to: 'Move elements to:',
     move_elems_to_new: '+ New layer…',
-    move_selected: 'Move selected elements to a different layer'
+    move_selected: 'Move selected elements to a different layer',
+    locate: 'Locate Object in Layers',
+    obj_toggle: 'Show or hide the objects in this layer',
+    obj_hide: 'Hide',
+    obj_show: 'Show',
+    obj_lock: 'Lock',
+    obj_unlock: 'Unlock',
+    show_more: '{{count}} more…',
+    obj_group: 'Group',
+    obj_rect: 'Rectangle',
+    obj_ellipse: 'Ellipse',
+    obj_line: 'Line',
+    obj_path: 'Path',
+    obj_polygon: 'Polygon',
+    obj_text: 'Text',
+    obj_image: 'Image'
   },
   config: {
     image_props: 'Image Properties',

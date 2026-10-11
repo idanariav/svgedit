@@ -977,6 +977,73 @@ hr {
 #layerlist td.layername:hover { color: var(--accent); }
 #layerlist tr.layersel td.layername { font-weight: 600; }
 
+/* Object rows (layerTree.js): a tree under each expanded layer */
+#layerlist td.layertoggle {
+  width: 14px;
+  padding: 9px 0 9px 6px;
+  text-align: center;
+}
+#layerlist td.layertoggle::before {
+  content: '\25B8';
+  display: inline-block;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.12s;
+}
+#layerlist td.layertoggle.open::before { transform: rotate(90deg); }
+#layerlist td.layertoggle:hover::before { color: var(--fg); }
+#layerlist tr.object { background: transparent; }
+#layerlist tr.object td { padding: 4px 6px; border-top: 1px solid var(--section-rule, #EEF0F3); }
+#layerlist tr.object td.objlead { width: 14px; padding: 0; }
+#layerlist tr.object:hover { background: var(--icon-hover-bg); }
+#layerlist tr.objsel { background: var(--accent-soft); }
+#layerlist tr.objhidden td.objname { opacity: 0.5; }
+#layerlist tr.objlockedtree td.objname { font-style: italic; }
+#layerlist td.objvis,
+#layerlist td.objlock { width: 22px; text-align: center; }
+#layerlist td.objvis { padding-left: 11px; width: 30px; }
+#layerlist td.objvis .tree-icon,
+#layerlist td.objlock .tree-icon { display: block; width: 12px; height: 12px; }
+#layerlist td.objinvis .tree-icon { visibility: hidden; }
+#layerlist td.objlock .tree-icon { color: var(--muted); }
+#layerlist td.objlock:hover .tree-icon { color: var(--icon-hover, var(--fg)); }
+#layerlist td.objlock.locked .tree-icon { color: var(--accent); }
+#layerlist td.objname {
+  font-size: 12px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+}
+#layerlist .disclosure {
+  display: inline-block;
+  width: 12px;
+  margin-right: 2px;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+#layerlist .disclosure.closed::before { content: '\25B8'; }
+#layerlist .disclosure.open::before { content: '\25BE'; }
+#layerlist .objrename {
+  width: 70%;
+  font-size: 12px;
+  padding: 1px 4px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--field-bg);
+  color: var(--fg);
+}
+#layerlist tr.objmore td { font-size: 11px; color: var(--muted); cursor: pointer; }
+#layerlist tr.objmore:hover td { color: var(--accent); }
+#layerlist tr.objflash { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-border); }
+#layerlist.tree-dragging { cursor: grabbing; user-select: none; }
+#layerlist tr.objdragging { opacity: 0.45; }
+#layerlist tr.drop-above td { box-shadow: inset 0 2px 0 var(--accent); }
+#layerlist tr.drop-below td { box-shadow: inset 0 -2px 0 var(--accent); }
+#layerlist tr.drop-into td { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-border); }
+
 #selLayerLabel { white-space: nowrap; }
 #selLayerNames {
   display: block;
@@ -1021,37 +1088,6 @@ hr {
 #group_name_input:focus {
   outline: none;
   border-color: var(--accent);
-}
-
-.object-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.object-list li {
-  padding-left: 14px;
-}
-
-.object-list > li {
-  padding-left: 0;
-}
-
-.object-list-item {
-  display: block;
-  padding: 3px 6px;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 4px;
-  color: var(--fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.object-list-item:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
 }
 
 /* ── Brand pill / main button ─────────────────────────────────────── */

@@ -58,6 +58,7 @@
 | `BottomPanel.js` | Color-picker handlers + zoom/stroke/opacity handler methods (listeners bound in TopPanel) |
 | `BottomPanel.html` | Bottom "Colors" bar markup (fill/stroke/bg pickers + palette) |
 | `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
+| `layerTree.js` | The Layers panel's object tree (`LayerTree`): `tr.object` rows after each layer row in `#layerlist`, eye / lock / rename / select / drag-to-move / Locate; `objectRows()` is the pure row model |
 | `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
 | `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native `EventTarget`, so multiple handlers per event coexist), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
 | `TabletShell.html` | Tablet shell skeleton (`.tablet-shell` overlay: `.ts-topbar` command bar + `.ts-sheet` bottom sheet) |
@@ -208,6 +209,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/event-text-edit.js` | `textedit` mode handlers — thin delegates onto `textActions.*` |
 | `core/event-zoom.js` | `zoom` mode handlers (marquee-zoom rubber band + `zoomed` event) |
 | `core/selected-elem.js` | Move, resize, flip selected elements |
+| `core/object-state.js` | Hide / lock / rename / move objects for the Layers panel's object rows (`svgCanvas.setObjectsHidden`, `setObjectsLocked`, `setObjectName`, `moveObjects`, `objectMoveIssue`) and the pure helpers (`isPanelObject`, `isExpandableGroup`, `isObjectLocked`, `isObjectHidden`) `selection.js` uses to refuse locked objects |
 | `core/select-same.js` | `svgCanvas.selectSameAs(criterion, {tolerance})` — Select Same by fill / stroke / fill & stroke / stroke weight / opacity / type, with an OKLab colour tolerance (`colorDistance`, `appearanceOf`, `matchesSame`); `culori/fn` with only the rgb/hsl/oklab modes and hex/named/rgb()/hsl() parsers. Split out of `selected-elem.js` |
 | `core/selection.js` | Selection list management |
 | `core/extension-hooks.js` | Registry of valid extension hook names (`EXTENSION_HOOKS`) plus a payload typedef per hook (`ExtensionHookPayloads`) |

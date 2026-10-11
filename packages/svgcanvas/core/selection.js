@@ -21,6 +21,7 @@ import {
 import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
 import Layer from './layer.js'
+import { isObjectLocked, isObjectHidden } from './object-state.js'
 import { isExtensionHook } from './extension-hooks.js'
 import { warn, error as logError } from '../common/logger.js'
 
@@ -107,6 +108,11 @@ export const init = (canvas) => {
       if (elem.tagName === 'a' && elem.childNodes.length === 1) {
       // Make "a" element's child be the selected element
         elem = elem.firstChild
+      }
+
+      // Locked objects (and everything in a locked group) cannot be selected
+      if (isObjectLocked(elem)) {
+        continue
       }
 
       // if it's not already there, add it
@@ -239,6 +245,9 @@ export const init = (canvas) => {
       if (!mouseTarget) return svgCanvas.getSvgRoot()
     }
 
+    // A locked object is not a target: the press falls through to the canvas
+    if (isObjectLocked(mouseTarget)) return svgCanvas.getSvgRoot()
+
     return mouseTarget
   }
   /**
@@ -328,7 +337,7 @@ export const init = (canvas) => {
       return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
     }
     Array.from(elements).forEach((elem) => {
-      if (elem.getBBox) {
+      if (elem.getBBox && !isObjectLocked(elem) && !isObjectHidden(elem)) {
         contentElems.push({ elem, bbox: mapBox(svgCanvas.getStrokedBBoxDefaultVisible([elem])) })
       }
     })

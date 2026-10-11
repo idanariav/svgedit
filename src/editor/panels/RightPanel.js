@@ -4,6 +4,7 @@ import RightPanelHtml from './RightPanel.html'
 import { localizePanelFragment } from '../panelI18n.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { traceImageToSvg } from '../dialogs/traceImage.js'
+import { LayerTree } from './layerTree.js'
 
 const { $click } = SvgCanvas
 
@@ -22,6 +23,7 @@ class RightPanel {
     this.updateContextPanel = editor.topPanel.updateContextPanel.bind(editor.topPanel)
     this.editor = editor
     this.activeTab = 'design'
+    this.layerTree = new LayerTree(editor)
   }
 
   /**
@@ -37,6 +39,8 @@ class RightPanel {
     this.editor.$qa('#sidepanel_content .sidepanel_tabpanel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `tab_${name}`)
     })
+    // The object rows are not kept current while the tab is hidden.
+    if (name === 'layers') this.layerTree.refresh()
   }
 
   /**
@@ -107,6 +111,7 @@ class RightPanel {
     menuLayerBox.setAttribute('leftclick', false)
     this.editor.$container.append(menuLayerBox)
     menuLayerBox.init(i18next)
+    this.layerTree.attach()
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => {
@@ -302,7 +307,7 @@ class RightPanel {
 
   index (el) {
     if (!el) return -1
-    return Array.from(this.editor.$qq('#layerlist tbody').children).indexOf(el)
+    return Array.from(this.editor.$qq('#layerlist tbody').children).filter(tr => !tr.classList.contains('object') && !tr.classList.contains('objmore')).indexOf(el)
   }
 
   /**
@@ -410,6 +415,9 @@ class RightPanel {
       const name = drawing.getLayerName(layer)
       const layerTr = document.createElement('tr')
       layerTr.className = (name === currentLayerName) ? 'layer layersel' : 'layer'
+      const layerToggle = document.createElement('td')
+      layerToggle.className = 'layertoggle'
+      layerToggle.title = this.editor.i18next.t('layers.obj_toggle')
       const layerVis = document.createElement('td')
       layerVis.className = (!drawing.getLayerVisibility(name)) ? 'layerinvis layervis' : 'layervis'
 
@@ -472,6 +480,7 @@ class RightPanel {
       const layerName = document.createElement('td')
       layerName.className = 'layername'
       layerName.textContent = name
+      layerTr.appendChild(layerToggle)
       layerTr.appendChild(layerVis)
       layerTr.appendChild(layerLock)
       layerTr.appendChild(layerComment)
@@ -500,6 +509,7 @@ class RightPanel {
         })
         evt.currentTarget.parentNode.classList.add('layersel')
         self.editor.svgCanvas.setCurrentLayer(evt.currentTarget.textContent)
+        self.layerTree.invalidate()
         // run extension when different layer is selected from listener
         self.editor.svgCanvas.runExtensions(
           'layersChanged'
@@ -573,6 +583,9 @@ class RightPanel {
       tlayer.innerHTML = '<td style="color:white">_</td><td/>'
       layerlist.append(tlayer)
     }
+    // the object rows follow the (new) layer rows
+    this.layerTree.observe()
+    this.layerTree.invalidate()
     // run extension when layer panel is populated
     self.editor.svgCanvas.runExtensions(
       'layersChanged'
@@ -580,16 +593,14 @@ class RightPanel {
   }
 
   /**
-   * Shows or hides the objects panel depending on whether the selected element
-   * is a user <g> group or an element inside one. When visible, lists all
-   * children of the nearest ancestor group, highlighting the selected child.
-   * The panel stays visible as long as the selection is within a group context.
+   * Shows or hides the group-name field depending on whether the selected element
+   * is a user <g> group or an element inside one. (The group's children are rows
+   * of the layer tree, `layerTree.js`.)
    * @param {Element|null} elem - The currently selected SVG element (or null).
    */
   updateObjectList (elem) {
     const { $id } = this.editor
     const panel = $id('objects_panel')
-    const listEl = $id('objects_list')
     const nameInput = $id('group_name_input')
     if (!panel) return
 
@@ -616,41 +627,9 @@ class RightPanel {
     const groupEl = findGroupContext(elem)
     this._groupContext = groupEl
     panel.style.display = groupEl ? '' : 'none'
-    if (!groupEl) {
-      if (listEl) listEl.innerHTML = ''
-      return
-    }
+    if (!groupEl) return
 
     if (nameInput) nameInput.value = groupEl.getAttribute('data-name') || ''
-
-    const buildList = (parentEl) => {
-      const ul = document.createElement('ul')
-      ul.className = 'object-list'
-      for (const child of parentEl.childNodes) {
-        if (child.nodeType !== 1 || child.tagName === 'title') continue
-        const li = document.createElement('li')
-        const span = document.createElement('span')
-        span.className = 'object-list-item'
-        if (child === elem) span.classList.add('selected')
-        const label = child.getAttribute('data-name') || child.id || child.tagName
-        span.textContent = label
-        span.title = label
-        span.addEventListener('click', () => {
-          this.editor.svgCanvas.selectOnly([child], true)
-        })
-        li.appendChild(span)
-        if (child.tagName === 'g') {
-          li.appendChild(buildList(child))
-        }
-        ul.appendChild(li)
-      }
-      return ul
-    }
-
-    if (listEl) {
-      listEl.innerHTML = ''
-      listEl.appendChild(buildList(groupEl))
-    }
   }
 }
 

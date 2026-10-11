@@ -603,6 +603,7 @@ class Editor extends EditorStartup {
       // object's stroke width).
       ['rightPanel.autoSelectTab', () => this.rightPanel.autoSelectTab(this.selectedElement, this.multiselected)],
       ['rightPanel.updateObjectList', () => this.rightPanel.updateObjectList(this.selectedElement)],
+      ['rightPanel.layerTree', () => this.rightPanel.layerTree.schedule()],
       // Some tools (e.g. curvature/path, text) commit a new element by
       // firing only 'selected', not 'changed', so refresh the empty-canvas
       // watermark here too — otherwise it lingers after drawing with those
@@ -714,6 +715,7 @@ class Editor extends EditorStartup {
           }
         })
       }],
+      ['rightPanel.layerTree', () => this.rightPanel.layerTree.schedule()],
       ['showSaveWarning', () => { this.showSaveWarning = true }],
       // we update the contextual panel with potentially new
       // positional/sizing information (we DON'T want to update the

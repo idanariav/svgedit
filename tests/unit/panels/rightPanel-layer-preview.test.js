@@ -58,6 +58,7 @@ const buildEditor = (layerGroups) => {
       getCurrentDrawing: () => drawing,
       getNextId: () => `svg_${nextId++}`,
       getResolution: () => ({ w: 640, h: 480 }),
+      getSvgContent: () => null,
       runExtensions: () => {}
     }
   }

@@ -70,6 +70,7 @@ const LABELS = {
   clipmask_release: 'tools.clip_release',
   layer_delete: 'layers.del',
   layer_down: 'layers.move_down',
+  layer_locate: 'layers.locate',
   layer_new: 'layers.new',
   layer_rename: 'layers.rename',
   layer_up: 'layers.move_up',
@@ -272,6 +273,14 @@ export const registerPanelCommands = (commands) => {
   ])) {
     commands.register({ id, label: LABELS[id] ?? id, group: 'Layers', pd: true, run })
   }
+  commands.register({
+    id: 'layer_locate',
+    label: LABELS.layer_locate,
+    group: 'Layers',
+    pd: true,
+    enabled: (/** @type {any} */ editor) => soleSelected(editor) ? true : 'Select one object first',
+    run: (/** @type {any} */ editor) => editor.rightPanel.layerTree.locate(soleSelected(editor))
+  })
 
   // Main menu.
   commands.register({

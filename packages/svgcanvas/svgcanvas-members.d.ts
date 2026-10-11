@@ -255,6 +255,16 @@ export interface AttachedMembers {
   detachTextFromPath(): void
   releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
   selectSameAs(criterion: string, options?: { tolerance?: number }): void
+  /** Hide (`display="none"`) or show objects as one undo step; hidden objects leave the selection. False when nothing changed. */
+  setObjectsHidden(elems: Element[], hidden: boolean): boolean
+  /** Lock (`se:locked`) or unlock objects as one undo step; locked objects (and what is inside a locked group) cannot be selected. False when nothing changed. */
+  setObjectsLocked(elems: Element[], locked: boolean): boolean
+  /** Set or clear an object's `data-name` as one undo step. */
+  setObjectName(el: Element, name: string): boolean
+  /** Why the objects cannot be moved into `parent` (a layer or plain group) in front of `before`, or null. */
+  objectMoveIssue(elems: Element[], parent: Element, before?: Node | null): string | null
+  /** Move objects into `parent` in front of `before` (the end when null) as one undo step, keeping their place on the page. False when refused or nothing moved. */
+  moveObjects(elems: Element[], parent: Element, before?: Node | null): boolean
   /** The drawing's ruler guides (`se:guides` on the root): `v` = x positions of vertical lines, `h` = y positions of horizontal ones. */
   getGuides(): { v: number[]; h: number[] }
   /** Replace the ruler guides as one undo step; false when nothing changed. */
