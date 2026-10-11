@@ -31,14 +31,14 @@ small items (S) fill gaps between large ones.
     below; it built `options()/setOption()`, the first tool with a real options bar).
 
 **Phase 5 — on-canvas editors (session-style tools)**
-18. **T2.7 Free / Perspective Distort** — on-canvas handles with a live preview of effect params, so it is the first
-    real consumer of two Tier 0 follow-ups, done *with* it: (a) the lighter "apply without re-select" path, then
-    **live-effects preview moves onto transactions**; (b) if its design keeps the mode open across several handle drags
-    as one undo step (the plan says one step per mouseup, in which case skip this), the registry gets a **session
-    concept and puppet-warp moves onto `registerTool`**. Otherwise puppet-warp waits for the next session-style tool
-    (T2.8 or T2.11 are candidates).
-19. **T2.8 On-canvas gradient editor**; the **corner-radius widgets** deferred from T1.3 reuse the same handle
-    infrastructure. 20. **T2.11 Recolor Artwork** (M–L).
+18. ~~**T2.7 Free / Perspective Distort**~~ done (follow-ups, below). It needed only part of the Tier 0 follow-ups it
+    was meant to build: the gesture's own transaction is its undo step (one step per drag), so (b), a session concept for
+    puppet-warp, was skipped; (a), the lighter apply, exists as `applyLiveEffectsTo`; moving the Effects *panel's* preview
+    onto transactions was not done (see "Tier 0 follow-ups").
+19. ~~**T2.8 On-canvas gradient editor**~~ done (follow-ups, below); it needed no session concept either (one undo
+    step per gesture), and the Width, Distort and Gradient tools each draw their own handles, so no shared handle
+    infrastructure came out of it. The **corner-radius widgets** deferred from T1.3 are still open (see "Live Corners")
+    and can take the same shape: a tool with its own overlay. 20. **T2.11 Recolor Artwork** (M–L).
 
 **Phase 6 — panels and text**
 21. **T2.17 Layers panel: object rows** (L) → 22. **T3.6 Layers extras**.
@@ -66,20 +66,49 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
   the wand's tolerance and the smooth tool's radius are candidates, below.)
-- **Live-effects preview on transactions.** `live-effects.js` still hides the original and shows a throwaway
-  clone (`data-se-ephemeral`). A transaction-based preview would mutate and re-select the real element on every
-  param tick and rebuild the effects panel mid-edit, so it needs a lighter "apply without re-select" path first.
-  Other hand-rolled previews: ext-curvature, ext-cutter (both already ephemeral). *Scheduled:* with T2.7 (Phase 5).
+- **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
+  for the Distort tool, which mutates the real element on every pointer move inside its gesture's transaction). What is
+  left is the Effects *panel's* preview: `live-effects.js` still hides the original and shows a throwaway clone
+  (`data-se-ephemeral`). Moving it onto a transaction means holding one open across the user's panel session (many
+  param ticks, any other click or undo in between), which `techdebt.md` lists as a hazard, and the primitive → path
+  swap re-selects, which the panel treats as "selection changed, cancel the edit". Do it only if the clone preview
+  causes a real problem (a selection box that keeps the original's bbox is the known cosmetic one). Other hand-rolled
+  previews: ext-curvature, ext-cutter (both already ephemeral).
 - **Precise `enabled` on commands.** Most commands are still "always" (what the buttons were). Gate them on selection
   type (path, text, group, ≥2 shapes, …), with a reason string; the command sweep and `list()` get more truthful and
   the tooltips explain themselves. Done for the path commands (node tray, Convert to Path, Stroke to Path, Join/Close, the keyless `path_*` entries); *Scheduled:* text in Phase 6; new commands get it from day one.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
-  appears; then give the registry a session concept instead of special-casing. *Scheduled:* with T2.7 if its design needs it, else with the next session-style tool (T2.8 / T2.11).
+  appears; then give the registry a session concept instead of special-casing. *Scheduled:* T2.7 and T2.8 did not need it (one undo step per drag); the next candidate is T2.11, if it becomes a tool at all.
 - **Lazy transaction snapshot** (targeted at the elements a caller declares) if anything ever needs a transaction
   per pointer-move. *Not scheduled:* no known consumer (T3.1's scrub is one transaction around a drag, which is cheap).
 - **Plugin side:** expose `editor.commands.list()/run()` as Obsidian palette entries and hotkeys. Tracked in the
   plugin repo (`../obsidian-svgedit-plugin/.claude/techdebt.md`, "Expose the editor's command registry…"). *Scheduled:* a background track, best before Phase 3.
+
+## Distort tool (`core/distort.js`, `ext-distort-tool`): follow-ups from T2.7
+
+Done: `freeDistort` (bilinear) and `perspective` (projective, Heckbert's square-to-quad) live effects on eight unit-box corner params; the Distort tool (`tool_distort`, mode `distort`): four grips on the selected shape's source box, drag one (Shift = one axis) for one undo step, Free / Perspective on the options bar (converts a distorted selection), a press on another shape selects it. The effect stacks with the others (the corners edit the first distort entry; the unit box is the source box, whatever comes before it). Remaining:
+- **Shapes only, no groups.** A group (or text, image, compound selection) is skipped; the plan's alternative was an effect per child. Distorting several selected shapes with one set of corners (their common box) is not offered either.
+- **Perspective is the free-corner homography.** VectorCraft's "Perspective" *mode* is a drag constraint (the corner and its partner move symmetrically) on top of the bilinear effect; here each corner is free and the map is truly projective, so a quad that stops being convex is refused while dragging (the last valid corner stays) and falls back to bilinear if it arrives from the panel's numbers.
+- **No snapping** to other objects or guides (`snap: true` on the tool def needs the corner to follow the pointer by an offset, not jump to it; with grid snapping on, the grid is used). No custom cursor (waits for `cursor()`), no measurement label.
+- **A corner jumps to the pointer** by up to the grab radius (10 px) on the first move; the grab offset is not kept.
+- **Reset** is the ✕ on the effect's row in the Effects panel; there is no double-click-a-grip or Enter-to-reset gesture.
+- **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
+- **The element's own transform only.** The grips and the pointer are mapped through the element's `transform`, not those of the groups above it (as in the Width tool); a shape inside a transformed group that is entered misplaces the grips.
+- A pathological stack (a distort entry before another effect that changes the anchor count a lot) can hit `MAX_FX_ANCHORS`; the drag then stops updating, it does not corrupt the shape.
+
+## Gradient tool (`core/gradient-edit.js`, `ext-gradient-tool`): follow-ups from T2.8
+
+Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's linear or radial gradient — start handle (moves the whole gradient), end handle (length and angle, Shift = 45° steps; a radial's radius), stop chips (move, drag off to delete, Alt-drag to copy, double-click for the colour dialog, Delete, click the bar to add), a radial's extent and focal dot; Fill / Stroke on the options bar. `objectBoundingBox` and `userSpaceOnUse` units, `gradientTransform`, the element's and its groups' transforms and `href`-inherited stops are honoured; only the geometry attributes and stops are written. A gradient another element (or gradient) uses is copied first, so editing one shape never recolours another. Remaining:
+- **No gradient creation.** A solid paint is not turned into a gradient by dragging across the shape (VectorCraft does); make the gradient in the colour picker first, then edit it here.
+- **A radial gradient has no rotate / aspect handles.** VectorCraft's aspect and rotate zones need `gradientTransform` rewritten; here the ellipse is whatever the units and transform make it (a bounding-box radial on a non-square shape is already an ellipse). The end handle sets `r` from its distance to the centre, so with a rotated `gradientTransform` the handle can slide off the pointer.
+- **A linear gradient's bar sits where its attributes put it.** The default `x1=0 y1=0 x2=1 y2=0` is the shape's top edge (the gradient is constant along y, so it looks the same mid-shape); drag the start handle to move it.
+- **The editor normalises user-space gradients on load** (`convertGradients` turns a `userSpaceOnUse` gradient referenced by a `fill` / `stroke` attribute into box units and drops its `gradientTransform`), so they rarely reach the tool. It handles them anyway (unit-tested, and e2e by switching the units after load).
+- **No midpoint diamonds** (SVG has no midpoints), no spread-method UI, no stop-opacity beyond what the colour dialog's alpha sets; a stop dragged past a neighbour swaps places in the DOM (SVG would clamp it).
+- **No snapping** (to anchors, boxes, guides or the grid) and no custom cursor (waits for `cursor()`); the handle follows the pointer with the grab offset kept.
+- **Single element, plain shapes and text only** (path, rect, ellipse, circle, line, polyline, polygon, text). A group, or several selected shapes with one shared gradient, is not edited; shapes in a taper / width stack keep their gradient on the generated outline and are treated like any path.
+- **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
+- A freshly double-clicked stop opens the *modal* colour dialog (Apply / Cancel); the popover mode used by the swatches needs an anchor element, which a canvas chip does not have.
 
 ## Round-trip corpus: keep adding drawings
 
@@ -87,7 +116,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
 `tests/e2e/fixtures/roundtrip/` and asserts the output stabilises after one
 pass. Covered: frames, corner radius, taper, shadow/outline, text-on-path,
 groups/layers/gradients, markers, clip-path/mask, `<use>`/symbols, embedded
-images, repeat (radial + grid), mirror and puppet-warp. Corner-radius and taper
+images, repeat (radial + grid), mirror, puppet-warp and free/perspective distort. Corner-radius and taper
 predate the `xmlns:se` fix and double as legacy-file coverage. Not covered:
 repeat's *path* mode, and real drawings from the plugin. Each new corruption bug
 should add the file that exhibited it. Small per fixture.

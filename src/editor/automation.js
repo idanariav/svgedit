@@ -255,7 +255,7 @@ export class Automation {
       const [at, to] = wanted.map((p) => (spec.space === 'screen' ? p : docToClient(this.frame(), p.x, p.y)))
 
       const down = (/** @type {{x: number, y: number}} */ c) => { held = true; fire('mousedown', spec.mods, c) }
-      const up = (/** @type {{x: number, y: number}} */ c) => { held = false; fire('mouseup', spec.mods, c) }
+      const up = (/** @type {{x: number, y: number}} */ c, detail = 1) => { held = false; fire('mouseup', spec.mods, c, detail) }
       switch (spec.kind) {
         case 'down': down(at); break
         case 'move': fire('mousemove', spec.mods, at); break
@@ -270,7 +270,7 @@ export class Automation {
           up(at)
           fire('click', spec.mods, at)
           down(at)
-          up(at)
+          up(at, 2) // a browser counts the click on the mouseup of the second press too
           fire('click', spec.mods, at, 2)
           fire('dblclick', spec.mods, at, 2)
           break

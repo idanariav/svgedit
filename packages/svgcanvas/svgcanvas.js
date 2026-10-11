@@ -86,6 +86,7 @@ import { init as blendInit } from './core/blend-canvas.js'
 import { init as liveEffectsInit } from './core/live-effects.js'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.js'
 import { init as warpInit } from './core/warp.js'
+import { init as distortInit } from './core/distort.js'
 import { init as textPathInit } from './core/text-path.js'
 import { init as shapeBuilderInit } from './core/shape-builder.js'
 import { init as clipMaskInit } from './core/clip-mask.js'
@@ -371,6 +372,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'liveEffects', liveEffectsInit, initGuardRegistry)
     runGuardedInit(this, 'liveEffectsDistort', liveEffectsDistortInit, initGuardRegistry)
     runGuardedInit(this, 'warp', warpInit, initGuardRegistry)
+    runGuardedInit(this, 'distort', distortInit, initGuardRegistry)
     runGuardedInit(this, 'textPath', textPathInit, initGuardRegistry)
     runGuardedInit(this, 'shapeBuilder', shapeBuilderInit, initGuardRegistry)
     runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)

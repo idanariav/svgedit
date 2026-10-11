@@ -442,9 +442,19 @@ export const init = (canvas) => {
    * Effect stack of the selected element (empty when none).
    * @returns {Array<{name: string, params: Object}>}
    */
-  const getLiveEffects = () => {
-    const elem = getSelected()
-    return elem?.hasAttribute(FX_SOURCE_ATTR) ? parseFxStack(elem.getAttribute(FX_ATTR)) : []
+  const getLiveEffects = (elem = getSelected()) =>
+    elem?.hasAttribute(FX_SOURCE_ATTR) ? parseFxStack(elem.getAttribute(FX_ATTR)) : []
+
+  /**
+   * The box the effects are computed against: that of the element's source geometry, in the element's own
+   * coordinates (what on-canvas editors such as the distort tool place their handles on).
+   * @param {Element} elem
+   * @returns {?{x: number, y: number, width: number, height: number}}
+   */
+  const getLiveEffectsBox = (elem) => {
+    const src = elem && canApplyLiveEffect(elem) ? getSource(elem) : null
+    const subpaths = src ? parseAnchors(src) : []
+    return subpaths.length ? anchorBBox(subpaths) : null
   }
 
   const getSource = (elem) => {
@@ -518,6 +528,53 @@ export const init = (canvas) => {
   }
 
   /**
+   * Write a planned stack into `elem` (the caller's transaction records it): a primitive is swapped for an
+   * equivalent `<path>` (same id), a stroke-output effect repaints it, then the source, the stack and `d` go in.
+   * @returns {?Element} The (possibly new) element.
+   */
+  const writeFx = (elem, clean, plan) => {
+    let target = elem
+    if (target.tagName !== 'path') {
+      const path = primitiveToPath(target)
+      if (!path) return null
+      target.before(path)
+      target.remove()
+      target = path
+    }
+    const paint = strokeOutputOf(clean)
+    if (paint) {
+      const attrs = hatchPaint(target, paint.width)
+      if (!target.hasAttribute(FX_STYLE_ATTR)) {
+        target.setAttribute(FX_STYLE_ATTR, STYLE_ATTRS.map((a) => target.getAttribute(a) ?? '').join('|'))
+      }
+      setAttrs(target, attrs)
+    } else {
+      restoreStyle(target)
+    }
+    commitPlan(target, plan) // the source, the stack, a width stage's mirror and `d`
+    return target
+  }
+
+  /**
+   * Apply (or replace) a stack on `elem` *inside the caller's transaction*: no undo step of its own, no
+   * re-selection, no `changed` event. For a tool that rewrites the effect on every pointer move of a gesture
+   * (the registry's gesture transaction is the undo step); the caller selects the returned element when it
+   * differs from `elem` (a primitive becomes a path).
+   * @param {Element} elem
+   * @param {Array<{name: string, params?: Object}>} stack
+   * @returns {?Element} The (possibly new) element, or null when the stack cannot be applied.
+   */
+  const applyLiveEffectsTo = (elem, stack) => {
+    if (!canApplyLiveEffect(elem)) return null
+    const clean = sanitizeFxStack(stack)
+    if (!clean.length) return null
+    reconcileLiveEffects(elem)
+    const src = getSource(elem)
+    const plan = src && planFx(elem, src, clean)
+    return plan?.d ? writeFx(elem, clean, plan) : null
+  }
+
+  /**
    * Apply (or replace) a stack on the selected element as one undo step.
    * Primitives are swapped for an equivalent `<path>` (same id) in the same
    * step. An empty stack removes the effects.
@@ -538,28 +595,7 @@ export const init = (canvas) => {
       return null
     }
 
-    const elem = svgCanvas.transact('Live effects', () => {
-      let target = selected
-      if (target.tagName !== 'path') {
-        const path = primitiveToPath(target)
-        if (!path) return null
-        target.before(path)
-        target.remove()
-        target = path
-      }
-      const paint = strokeOutputOf(clean)
-      if (paint) {
-        const attrs = hatchPaint(target, paint.width)
-        if (!target.hasAttribute(FX_STYLE_ATTR)) {
-          target.setAttribute(FX_STYLE_ATTR, STYLE_ATTRS.map((a) => target.getAttribute(a) ?? '').join('|'))
-        }
-        setAttrs(target, attrs)
-      } else {
-        restoreStyle(target)
-      }
-      commitPlan(target, plan) // the source, the stack, a width stage's mirror and `d`
-      return target
-    })
+    const elem = svgCanvas.transact('Live effects', () => writeFx(selected, clean, plan))
     return elem && finish(elem)
   }
 
@@ -607,6 +643,8 @@ export const init = (canvas) => {
   svgCanvas.previewLiveEffects = previewLiveEffects
   svgCanvas.cancelLiveEffectsPreview = cancelLiveEffectsPreview
   svgCanvas.applyLiveEffects = applyLiveEffects
+  svgCanvas.applyLiveEffectsTo = applyLiveEffectsTo
+  svgCanvas.getLiveEffectsBox = getLiveEffectsBox
   svgCanvas.removeLiveEffects = removeLiveEffects
   svgCanvas.expandLiveEffects = expandLiveEffects
 }

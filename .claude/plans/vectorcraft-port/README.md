@@ -46,8 +46,8 @@ is in [tier-0.md](tier-0.md).
 | T2.5 | Dashes fitted to corners and path ends | — | v1 done — see git log (single run only; corners are v2, see roadmap.md) |
 | T2.6 | Width profiles + Width tool (generalizes taper) | — (T0.3 helps) | done — see git log (v1: one point at a time, no numeric editor, steps or compound paths; see roadmap.md) |
 | — | Live stack: corners → effects → width on one element (roadmap item 15) | T2.6 | done — see git log (corners + width, effects + width; see roadmap.md) |
-| T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | todo |
-| T2.8 | On-canvas gradient editor | — (T0.2, T0.3 help) | todo |
+| T2.7 | Free Distort / Perspective Distort (on-canvas) | T1.0 (T0.2, T0.3 help) | done — see git log (shapes only, no groups; Perspective is a true projective map; no snapping; see roadmap.md) |
+| T2.8 | On-canvas gradient editor | — (T0.2, T0.3 help) | done — see git log (linear + radial; clone-on-write, units and `gradientTransform` kept; no gradient creation by dragging, no radial rotate/aspect, no snapping; see roadmap.md) |
 | T2.9 | Eyedropper "Copy style" action | — | done — see git log (pixel sampling skipped, see roadmap.md) |
 | T2.10 | Magic Wand / Select Same with tolerance | — | done — see git log (the optional Magic Wand tool is not built, see roadmap.md) |
 | T2.11 | Recolor Artwork + harmony rules | — | todo |

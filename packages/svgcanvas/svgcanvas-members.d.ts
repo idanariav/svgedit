@@ -353,10 +353,14 @@ export interface AttachedMembers {
   isBlendKeyCandidate(elem: Element | null): boolean
   getBlendDefaults(): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
   setBlendDefaults(changes: Record<string, any>): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
-  getLiveEffects(): Array<{ name: string, params: Record<string, number | boolean | string> }>
+  getLiveEffects(elem?: Element | null): Array<{ name: string, params: Record<string, number | boolean | string> }>
+  /** The box the effects are computed against (the source geometry's), in the element's own coordinates. */
+  getLiveEffectsBox(elem: Element): { x: number, y: number, width: number, height: number } | null
   previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
   cancelLiveEffectsPreview(): void
   applyLiveEffects(stack: Array<{ name: string, params?: object }>): Element | null
+  /** Like `applyLiveEffects` on `elem`, inside the caller's transaction: no undo step, no re-selection, no event. */
+  applyLiveEffectsTo(elem: Element, stack: Array<{ name: string, params?: object }>): Element | null
   removeLiveEffects(): Element | null
   expandLiveEffects(): Element | null
 

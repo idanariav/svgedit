@@ -214,6 +214,8 @@ A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-ef
 | `se:fx-style` | Only while a stroke-output effect (Scribble) is in the stack: the original `fill\|stroke\|stroke-width\|stroke-linecap\|stroke-linejoin` (empty = absent). The element is then painted as a stroke (fill none, stroke = original fill); removing the effect restores these |
 | `d` | The baked result, regenerated from `se:fx-d` + `se:fx` |
 
+`freeDistort(topLeftX=0,topLeftY=0,topRightX=1,topRightY=0,bottomRightX=1,bottomRightY=1,bottomLeftX=0,bottomLeftY=1)` and `perspective(…same…)` (`core/distort.js`, edited on the canvas by ext-distort-tool): the four corners the source box's corners move to, in unit box coordinates (`0,0` = the source box's top left, `1,1` = its bottom right), so they follow a resize of the source; the defaults are the identity. A flat source box (a straight line) uses the other axis' size for the unit. Perspective on a non-convex quad draws the bilinear map instead.
+
 Shares an element with a width stroke (`se:taper-d`) unless the stack has a stroke-output effect (Scribble), not with `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
 
 ---

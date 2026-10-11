@@ -251,6 +251,8 @@ export default class ConfigObj {
       'ext-shaper',
       'ext-smooth-tool',
       'ext-width-tool',
+      'ext-distort-tool',
+      'ext-gradient-tool',
       'ext-art-brush',
       'ext-blend',
       'ext-curvature',

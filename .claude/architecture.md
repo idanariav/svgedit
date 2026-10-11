@@ -91,6 +91,8 @@ svgedit/
 │   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
 │   │   ├── ext-shaper/            # Shaper — rough stroke → clean shape; scribble deletes (core/shape-recognize.js)
 │   │   ├── ext-width-tool/        # Width tool — variable-width strokes on the canvas (core/width-outline.js)
+│   │   ├── ext-distort-tool/      # Distort tool — drag a shape's four box corners (core/distort.js via the live-effect stack)
+│   │   ├── ext-gradient-tool/     # Gradient tool — on-canvas gradient handles and stops (core/gradient-edit.js)
 │   │   ├── ext-art-brush/         # Art / pattern brushes panel (core/art-brush.js, core/art-brush-canvas.js)
 │   │   ├── ext-blend/             # Blend tool + Design-tab section (core/blend.js, core/blend-canvas.js); first tool with an options bar
 │   │   ├── ext-smooth-tool/       # Smooth tool — brush to smooth part of a path (core/path-fit.js smoothRegion)
@@ -233,6 +235,8 @@ src/editor/index.html
 | `bezier-fit.js` / `path-edit.js` / `path-join.js` | Least-squares Bézier fit; anchor-model path edits (refit remove-anchor, add anchors, average, join); select-mode Join |
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |
+| `distort.js` | Free Distort / Perspective Distort live effects (`freeDistort` bilinear, `perspective` homography) on eight unit-box corner params; `distortFrame`, `isConvexQuad`; the on-canvas editor is `ext-distort-tool`. `live-effects.js` gained `applyLiveEffectsTo(elem, stack)` (apply inside the caller's transaction: no undo step, no re-select, no event) and `getLiveEffectsBox(elem)` for it |
+| `gradient-edit.js` | Gradient editing for the Gradient tool: gradient space → local matrix (units + `gradientTransform`), `href`-aware reads, clone-on-write of shared gradients, geometry setters, stop add / move / copy / remove |
 | `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |
 | `live-effects.js` | Re-editable path effects (`se:fx` stack + `se:fx-d` source): effect registry (`registerLiveEffect`), `applyLiveEffects`/`removeLiveEffects`/`expandLiveEffects` (each one `transact`), `getLiveEffects`, non-undo `previewLiveEffects`/`cancelLiveEffectsPreview`, `reconcileLiveEffects`; `remapFxSource` keeps the source in sync from `coords.js`. Mutually exclusive with taper/corner-radius. Foundation for the Distort/Warp effects |
 | `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
