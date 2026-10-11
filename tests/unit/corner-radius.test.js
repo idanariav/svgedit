@@ -1,7 +1,8 @@
 import {
   parseSource, pathCorners, cutCorner, cornerSetback, maxCornerRadius, parseCornerSpec,
   formatCornerSpec, cornersD, subpathsToD, expectedCornerD, isCornerStateCurrent,
-  remapCornerSource, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR
+  remapCornerSource, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR,
+  fittedCornerRadius, cornerWidgetAt, cornerRadiusChange
 } from '../../packages/svgcanvas/core/corner-radius.js'
 import { polyline } from '../../packages/svgcanvas/core/anchor-path.js'
 
@@ -215,6 +216,65 @@ describe('corner-radius', function () {
       assert.equal(el.getAttribute(CORNER_RADIUS_ATTR), '10')
       assert.ok(isCornerStateCurrent(el))
       assert.equal((el.getAttribute('d').match(/A/g) || []).length, 4)
+    })
+  })
+
+  describe('on-canvas widget geometry', function () {
+    const rect = () => pathCorners(parseSource('M100,100 L200,100 L200,200 L100,200 Z'))
+    // The corner at (200, 200): its sides run left and up.
+    const br = () => rect()[2]
+
+    it('fitted radius is clamped to what the corner draws', function () {
+      const c = br()
+      assert.equal(fittedCornerRadius(c, 20), 20)
+      assert.ok(near(fittedCornerRadius(c, 500), 50, 1e-9)) // half the shorter side of a square
+      assert.equal(fittedCornerRadius(c, -4), 0)
+      assert.equal(fittedCornerRadius(c, NaN), 0)
+    })
+
+    it('the widget sits at the centre of the arc as drawn', function () {
+      const at = cornerWidgetAt(br(), 20)
+      assert.ok(near(at.x, 180) && near(at.y, 180), JSON.stringify(at))
+      const full = cornerWidgetAt(br(), 500)
+      assert.ok(near(full.x, 150) && near(full.y, 150), JSON.stringify(full))
+    })
+
+    it('a square corner keeps the widget a minimum inset inside', function () {
+      const at = cornerWidgetAt(br(), 0, 10)
+      // 10 along each side of a right angle.
+      assert.ok(near(at.x, 190) && near(at.y, 190), JSON.stringify(at))
+      // …but never past halfway along the shorter side.
+      const far = cornerWidgetAt(br(), 0, 400)
+      assert.ok(near(far.x, 150) && near(far.y, 150), JSON.stringify(far))
+    })
+
+    it('an acute corner puts the widget on its bisector', function () {
+      const acute = pathCorners(parseSource('M0,0 L100,0 L100,60 Z'))[0]
+      const at = cornerWidgetAt(acute, 5)
+      // The centre of a round cut of radius 5 is 5 from both sides.
+      const toTop = Math.abs(at.y)
+      const toHyp = Math.abs(at.y * 100 - at.x * 60) / Math.hypot(100, 60)
+      assert.ok(near(toTop, 5, 1e-6) && near(toHyp, 5, 1e-6), `${toTop} ${toHyp}`)
+    })
+
+    it('dragging along the bisector changes the radius by the travel along the sides', function () {
+      const c = br()
+      // Inward by (15, 15): the centre of the arc moves 15 sideways each way, a radius of 15.
+      assert.ok(near(cornerRadiusChange(c, { x: -15, y: -15 }), 15))
+      assert.ok(near(cornerRadiusChange(c, { x: 15, y: 15 }), -15))
+      assert.ok(near(cornerRadiusChange(c, { x: -30, y: 30 }), 0)) // across the bisector
+      assert.ok(near(cornerRadiusChange(c, { x: -10, y: 0 }), 5))
+    })
+
+    it('radius change agrees with the widget position at any angle', function () {
+      for (const d of ['M0,0 L100,0 L100,60 Z', 'M0,0 L80,10 L50,90 Z']) {
+        for (const c of pathCorners(parseSource(d))) {
+          const a = cornerWidgetAt(c, 6)
+          const b = cornerWidgetAt(c, 11)
+          const change = cornerRadiusChange(c, { x: b.x - a.x, y: b.y - a.y })
+          assert.ok(near(change, 5, 1e-6), `${d} #${c.index}: ${change}`)
+        }
+      }
     })
   })
 })

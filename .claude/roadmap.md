@@ -37,8 +37,8 @@ small items (S) fill gaps between large ones.
     onto transactions was not done (see "Tier 0 follow-ups").
 19. ~~**T2.8 On-canvas gradient editor**~~ done (follow-ups, below); it needed no session concept either (one undo
     step per gesture), and the Width, Distort and Gradient tools each draw their own handles, so no shared handle
-    infrastructure came out of it. The **corner-radius widgets** deferred from T1.3 are still open (see "Live Corners")
-    and can take the same shape: a tool with its own overlay.
+    infrastructure came out of it. The **corner-radius widgets** deferred from T1.3 were then built the same way, as a
+    tool with its own overlay (`ext-corner-tool`; follow-ups under "Live Corners").
 20. ~~**T2.11 Recolor Artwork**~~ done (follow-ups, below): a dialog, not a tool; it previews inside a transaction held
     across the dialog's edits (cancel + re-begin per edit), so it needed no session concept either.
 
@@ -271,7 +271,13 @@ toolchain step.
 ## Live Corners (`se:corner-radius`): follow-ups from T1.3
 
 Done: per-corner radius + kind (round / inverted / chamfer) on any path's straight-sided corners, rects and polygons convert to a path on first use; the single-number format renders exactly as before (the arc construction was kept, not VectorCraft's cubic approximation, so saved drawings do not move — verified byte-identical against the old implementation on 3,200 random shapes). Remaining:
-- **No per-corner UI.** The panel edits every corner; per-corner values only come from the attribute / `applyCornerRadius(r, {kind, corners})`. VectorCraft's on-canvas widgets (`crates/tools/src/corners.rs`: drag to change radius, Alt-click cycles kind) and "selected anchors in pathedit limit the corners the panel edits" are not ported. Pathedit still shows the *cut* anchors and drops the attrs when `d` is edited, so editing the source in pathedit needs its own design.
+- **Per-corner UI is the Corners tool** (`ext-corner-tool`, `tool_corners`): widgets, drag to round, Alt-click to cycle the kind, click / Shift-click to pick corners, Radius and Kind on the options bar. The Design-tab panel still edits every corner. Not ported from VectorCraft's `corners.rs`:
+  - **Widgets inside the Selection and Direct Selection tools.** VectorCraft shows them there; here the tool is a mode of its own (the select mode is the legacy `event.js` path), so you switch to it. "Selected anchors in pathedit limit the corners the panel edits" is not done either: pathedit still shows the *cut* anchors and drops the attrs when `d` is edited, so editing the source in pathedit needs its own design.
+  - **Double-click for a Corners dialog**, the "Hide Corner Widget for angles greater than" preference and the red outline of corners at their largest radius while dragging.
+  - **Only the element's own transform** maps the widgets (as in the Width and Distort tools); a shape inside a transformed group that was entered misplaces them.
+  - **A drag sets one radius for every targeted corner** (the dragged corner's), as VectorCraft does; corners that had different radii are levelled. Per-corner radii come from picking corners first.
+  - **No cursor and no tablet-shell button**, like the other newer tools.
+  - **Corner widgets are circles for every kind**; the kind is read off the options bar or the shape.
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
 - Stacks with a width stroke (not with live effects); see "The live stack".

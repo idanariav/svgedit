@@ -253,6 +253,7 @@ export default class ConfigObj {
       'ext-width-tool',
       'ext-distort-tool',
       'ext-gradient-tool',
+      'ext-corner-tool',
       'ext-art-brush',
       'ext-blend',
       'ext-curvature',

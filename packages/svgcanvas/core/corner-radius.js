@@ -202,6 +202,43 @@ export const cornerSetback = (c, radius) => Math.min(radius / c.tanHalf, c.lu / 
 export const maxCornerRadius = (c) => Math.min(c.lu, c.lv) / 2 * c.tanHalf
 
 /**
+ * The radius a corner draws for a stored `radius`: no larger than {@link maxCornerRadius}, 0 when negative or not
+ * a number.
+ * @param {Corner} c
+ * @param {number} radius
+ * @returns {number}
+ */
+export const fittedCornerRadius = (c, radius) => Math.min(Math.max(radius, 0) || 0, maxCornerRadius(c))
+
+const cornerCos = (c) => c.u.x * c.v.x + c.u.y * c.v.y
+const cornerSin = (c) => Math.abs(c.u.x * c.v.y - c.u.y * c.v.x)
+
+/**
+ * Where a corner's on-canvas widget sits (in the corner's own space): on the bisector at the centre of the arc
+ * as drawn, at least `minInset` in from the corner along each side of a right angle (√2 times it along the
+ * bisector, at any angle) and at most halfway along the shorter side.
+ * @param {Corner} c
+ * @param {number} radius - The stored radius.
+ * @param {number} [minInset] - In the corner's units (a screen distance divided by the scale).
+ * @returns {{x: number, y: number}}
+ */
+export const cornerWidgetAt = (c, radius, minInset = 0) => {
+  const k = Math.min(Math.max(fittedCornerRadius(c, radius) / cornerSin(c), minInset / Math.sqrt(1 + cornerCos(c))),
+    Math.min(c.lu, c.lv) / 2)
+  return { x: c.at.x + (c.u.x + c.v.x) * k, y: c.at.y + (c.u.y + c.v.y) * k }
+}
+
+/**
+ * How much a corner's round radius grows when the centre of its arc moves by `d` (in the corner's units): `d`'s
+ * part along the bisector, in radius units. A widget dragged by `d` changes the radius by this.
+ * @param {Corner} c
+ * @param {{x: number, y: number}} d
+ * @returns {number}
+ */
+export const cornerRadiusChange = (c, d) =>
+  ((d.x * (c.u.x + c.v.x) + d.y * (c.u.y + c.v.y)) * cornerSin(c)) / (2 + 2 * cornerCos(c))
+
+/**
  * The two anchors replacing a corner: where the cut meets the arriving side,
  * then the leaving one. The first carries the `arc` towards the second.
  * @param {Corner} c
@@ -428,7 +465,7 @@ export const init = (canvas) => {
   /**
    * The corners of the selected element and their current radius / kind.
    * @param {Element} [elem] - Defaults to the selected element.
-   * @returns {Array<{index: number, radius: number, kind: string, max: number}>}
+   * @returns {Array<{index: number, radius: number, kind: string, max: number, corner: Corner}>}
    */
   const getCornerSettings = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) => {
     if (!elem) return []
@@ -441,7 +478,8 @@ export const init = (canvas) => {
       index: c.index,
       radius: specRadius(spec, c.index),
       kind: specKind(spec, c.index),
-      max: maxCornerRadius(c)
+      max: maxCornerRadius(c),
+      corner: c
     }))
   }
 

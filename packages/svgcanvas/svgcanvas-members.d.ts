@@ -318,7 +318,11 @@ export interface AttachedMembers {
   canRoundCorners(elem: Element): boolean
   canJoinPaths(elems: Element[]): boolean
   joinSelectedPaths(): Element | null
-  getCornerSettings(elem?: Element): Array<{ index: number, radius: number, kind: 'r' | 'i' | 'c', max: number }>
+  getCornerSettings(elem?: Element): Array<{
+    index: number, radius: number, kind: 'r' | 'i' | 'c', max: number,
+    /** The corner's geometry in the element's own space (`core/corner-radius.js`). */
+    corner: { index: number, at: { x: number, y: number }, u: { x: number, y: number }, v: { x: number, y: number }, lu: number, lv: number, tanHalf: number }
+  }>
 
   // Live effects (se:fx stack)
   registerLiveEffect(name: string, def: object): void

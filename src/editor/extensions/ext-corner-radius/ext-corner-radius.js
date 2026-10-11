@@ -10,7 +10,7 @@
  * `@svgedit/svgcanvas/core/corner-radius.js` (`svgCanvas.applyCornerRadius` /
  * `canRoundCorners` / `getCornerSettings`). The radius field and kind buttons
  * edit every corner; per-corner values written by other means (the attribute
- * accepts a list) are kept and shown.
+ * accepts a list, or the Corners tool's widgets in `ext-corner-tool`) are kept and shown.
  *
  * If the cut `d` is later rewritten by something other than this pipeline
  * (e.g. node editing in pathedit mode), the stored source no longer matches —

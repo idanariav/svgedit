@@ -81,6 +81,16 @@ describe('corner-radius on the canvas', () => {
     assert.equal(el.getAttribute('se:corner-radius'), '0,10')
   })
 
+  it('getCornerSettings carries each corner\'s geometry for the on-canvas widgets', () => {
+    const el = add('path', { d: 'M0,0 L100,0 L100,60 L0,60 Z' })
+    const settings = svgCanvas.getCornerSettings(el)
+    assert.deepEqual(settings.map((s) => s.corner.index), [0, 1, 2, 3])
+    const br = settings[2].corner
+    assert.deepEqual(br.at, { x: 100, y: 60 })
+    assert.deepEqual([br.lu, br.lv], [60, 100])
+    assert.ok(Math.abs(settings[2].max - 30) < 1e-9)
+  })
+
   it('radius 0 on every corner restores the source and drops the attributes', () => {
     add('path', { d: 'M0,0 L100,0 L100,60 L0,60 Z' })
     let el = svgCanvas.applyCornerRadius(8)
