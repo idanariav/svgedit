@@ -265,6 +265,7 @@ export default class ConfigObj {
       'ext-glow',
       'ext-path-edit',
       'ext-color-shift',
+      'ext-recolor',
       'ext-fonts',
       'ext-eyedropper'
     ]

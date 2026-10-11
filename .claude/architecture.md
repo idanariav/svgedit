@@ -53,6 +53,7 @@ svgedit/
 │   │   ├── traceImage.js            # traceImageToSvg() — raster <image> → editable paths (imagetracerjs)
 │   │   ├── traceCenterline.js       # pure centerline tracer (ImageData → stroked open paths): Otsu, distance transform, Zhang-Suen, skeleton graph, path-fit
 │   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
+│   │   ├── seRecolorDialog.js       # Recolor Artwork dialog (se-recolor-dialog): colour rows, harmony, reduce, hue; a view only
 │   │   ├── svgSourceDialog.js
 │   │   ├── SePlainAlertDialog.js     # native-<dialog> choice-prompt base class
 │   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js / seSelectDialog.js
@@ -97,6 +98,7 @@ svgedit/
 │   │   ├── ext-blend/             # Blend tool + Design-tab section (core/blend.js, core/blend-canvas.js); first tool with an options bar
 │   │   ├── ext-smooth-tool/       # Smooth tool — brush to smooth part of a path (core/path-fit.js smoothRegion)
 │   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
+│   │   ├── ext-recolor/           # Recolor Artwork — button in the Effects tab + `se-recolor-dialog` (core/recolor.js)
 │   │   └── ext-theme-toggle/      # Light/dark theme toggle button
 │   │
 │   ├── images/                    # SVG toolbar icons (source of truth; dist/ is generated)
@@ -236,6 +238,7 @@ src/editor/index.html
 | `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
 | `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |
 | `distort.js` | Free Distort / Perspective Distort live effects (`freeDistort` bilinear, `perspective` homography) on eight unit-box corner params; `distortFrame`, `isConvexQuad`; the on-canvas editor is `ext-distort-tool`. `live-effects.js` gained `applyLiveEffectsTo(elem, stack)` (apply inside the caller's transaction: no undo step, no re-select, no event) and `getLiveEffectsBox(elem)` for it |
+| `recolor.js` | Recolor Artwork maths + DOM walk: colour parsing, preserve rules, row methods, Lab clustering, 21 harmony rules, `collectColors` / `applyColors` (clone-on-write of shared gradients and filters) |
 | `gradient-edit.js` | Gradient editing for the Gradient tool: gradient space → local matrix (units + `gradientTransform`), `href`-aware reads, clone-on-write of shared gradients, geometry setters, stop add / move / copy / remove |
 | `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |
 | `live-effects.js` | Re-editable path effects (`se:fx` stack + `se:fx-d` source): effect registry (`registerLiveEffect`), `applyLiveEffects`/`removeLiveEffects`/`expandLiveEffects` (each one `transact`), `getLiveEffects`, non-undo `previewLiveEffects`/`cancelLiveEffectsPreview`, `reconcileLiveEffects`; `remapFxSource` keeps the source in sync from `coords.js`. Mutually exclusive with taper/corner-radius. Foundation for the Distort/Warp effects |

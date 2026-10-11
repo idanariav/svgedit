@@ -12,6 +12,7 @@ const DIALOGS = {
   'se-text-prompt-dialog': 'dialogs/seTextPromptDialog.html',
   'se-image-import-dialog': 'dialogs/imageImportDialog.html',
   'se-trace-dialog': 'dialogs/seTraceDialog.html',
+  'se-recolor-dialog': 'dialogs/seRecolorDialog.js',
   'se-edit-prefs-dialog': 'dialogs/editorPreferencesDialog.html',
   'se-export-dialog': 'dialogs/exportDialog.html',
   'se-svg-source-editor-dialog': 'dialogs/svgSourceDialog.html',

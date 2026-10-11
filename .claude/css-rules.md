@@ -12,7 +12,7 @@
 Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and overridden by `.svg_editor.theme-dark`.
 
 Every dialog (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`,
-`se-image-import-dialog`, `se-trace-dialog`, `se-edit-prefs-dialog`, `se-export-dialog`,
+`se-image-import-dialog`, `se-trace-dialog`, `se-recolor-dialog`, `se-edit-prefs-dialog`, `se-export-dialog`,
 `se-svg-source-editor-dialog`, `se-img-prop-dialog`, `se-plain-alert-dialog` (alert/confirm/select/prompt),
 `se-cmenu_canvas-dialog`, `se-cmenu-layers`, `se-hotkey-dialog`, `se-favorites-dialog`,
 `se-command-search-dialog`) is mounted next to `.svg_editor`, not inside it, so it is listed in the

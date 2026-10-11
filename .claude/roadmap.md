@@ -38,7 +38,9 @@ small items (S) fill gaps between large ones.
 19. ~~**T2.8 On-canvas gradient editor**~~ done (follow-ups, below); it needed no session concept either (one undo
     step per gesture), and the Width, Distort and Gradient tools each draw their own handles, so no shared handle
     infrastructure came out of it. The **corner-radius widgets** deferred from T1.3 are still open (see "Live Corners")
-    and can take the same shape: a tool with its own overlay. 20. **T2.11 Recolor Artwork** (M–L).
+    and can take the same shape: a tool with its own overlay.
+20. ~~**T2.11 Recolor Artwork**~~ done (follow-ups, below): a dialog, not a tool; it previews inside a transaction held
+    across the dialog's edits (cancel + re-begin per edit), so it needed no session concept either.
 
 **Phase 6 — panels and text**
 21. **T2.17 Layers panel: object rows** (L) → 22. **T3.6 Layers extras**.
@@ -109,6 +111,30 @@ Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's li
 - **Single element, plain shapes and text only** (path, rect, ellipse, circle, line, polyline, polygon, text). A group, or several selected shapes with one shared gradient, is not edited; shapes in a taper / width stack keep their gradient on the generated outline and are treated like any path.
 - **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
 - A freshly double-clicked stop opens the *modal* colour dialog (Apply / Cancel); the popover mode used by the swatches needs an anchor element, which a canvas chip does not have.
+
+## Recolor Artwork (`core/recolor.js`, `ext-recolor`, `se-recolor-dialog`): follow-ups from T2.11
+
+Done: `tool_recolor` (Edit group, Effects tab button) opens a dialog of rows "current → new" for the selection's solid
+colours (fills, strokes, `style`, gradient stops, filter flood colours), with the five row methods, 21 harmony rules,
+reduce to N (Lab k-means), a hue turn and keep white / black / grays; live preview in an undo transaction, one undo step on
+OK, clone-on-write for gradients and filters something unselected also uses.
+
+- **RGB only.** VectorCraft's colour models (CMYK, Gray, Lab keys), *Limit to Library* (snap to a swatch set with CIEDE2000)
+  and the randomizers (shuffle, random saturation / brightness) are not ported; Library needs a swatch store first.
+- **Per-row method and the Color Guide variation grid** (`harmony.rs` `Guide`, `variation`, `move_on_wheel`, the
+  five-colour themes) are not ported: one method for all rows, no wheel.
+- **Only plain opaque colours are collected:** `#hex`, `rgb()` and the 20 basic names. `rgba()` with alpha, `hsl()`, other
+  named colours and `currentColor` are left as they are (the editor writes hex). An element with **no fill attribute**
+  (SVG's implicit black) is not counted, so "recolor black" misses it.
+- **Not reached:** `<use>` / symbol content, patterns, markers, masks and clip paths, art / pattern brush tiles, and the
+  `se:` live-effect parameters that hold colours (the shadow / outline / glow filters are covered through their flood colours).
+- **Selection only.** With nothing selected the command is disabled; VectorCraft recolors the whole document then.
+- **The preview costs a snapshot per edit** (`beginTransaction` diffs O(elements)); fine to a few thousand elements, a very
+  large selection will lag on the hue slider (debounce it if it shows).
+- **Overlap with Color Shift** (relative H/S/L/T deltas per element) is left as is: Color Shift is a live slider on the
+  selection, Recolor is a palette-level edit; merging them would need Recolor to remember a snapshot.
+- Modal dialog (the canvas cannot be panned while it is open) and not in the tablet shell; the native colour input is driven by
+  synthetic events in the e2e tests, so the OS picker itself is untested.
 
 ## Round-trip corpus: keep adding drawings
 
