@@ -954,6 +954,13 @@ hr {
 #layerlist td.layercomment * { display: block; color: var(--muted); }
 #layerlist td.layercomment:hover * { color: var(--icon-hover, var(--fg)); }
 #layerlist td.layercomment.commented * { color: var(--accent); }
+#layerlist td.layercomment.templated * { color: var(--accent); opacity: 0.55; }
+#layerlist td.colpaint { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-border); }
+#layerlist tr.layerdragging { opacity: 0.45; }
+
+/* A tracing-template layer sits under the drawing as a faded reference. A
+   stylesheet rule, not an opacity attribute, so nothing about it is saved. */
+#svgcontent > g[*|template="true"] { opacity: 0.35; }
 #layerlist td.layerpreview {
   width: 30px;
   padding-left: 0;

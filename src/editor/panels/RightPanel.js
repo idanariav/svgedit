@@ -5,6 +5,7 @@ import { localizePanelFragment } from '../panelI18n.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { traceImageToSvg } from '../dialogs/traceImage.js'
 import { LayerTree } from './layerTree.js'
+import { LayerGestures } from './layerGestures.js'
 
 const { $click } = SvgCanvas
 
@@ -15,6 +16,17 @@ export const NEW_LAYER_OPTION_VALUE = '__svgedit_move_to_new_layer__'
 /**
  *
  */
+/**
+ * Render the open/closed padlock into a lock-cell's icon span.
+ * @param {Element} span
+ * @param {boolean} locked
+ * @returns {void}
+ */
+const renderLockIcon = (span, locked) => {
+  while (span.firstChild) { span.removeChild(span.firstChild) }
+  fetchSvgEl(locked ? 'lock.svg' : 'lock_open.svg').then(svg => { if (svg) span.appendChild(svg) })
+}
+
 class RightPanel {
   /**
    * @param {PlainObject} editor
@@ -24,6 +36,7 @@ class RightPanel {
     this.editor = editor
     this.activeTab = 'design'
     this.layerTree = new LayerTree(editor)
+    this.layerGestures = new LayerGestures(editor)
   }
 
   /**
@@ -112,6 +125,7 @@ class RightPanel {
     this.editor.$container.append(menuLayerBox)
     menuLayerBox.init(i18next)
     this.layerTree.attach()
+    this.layerGestures.attach()
     $id('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $id('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
     $click($id('sidepanel_handle'), () => {
@@ -398,12 +412,6 @@ class RightPanel {
     const layerlist = $id('layerlist').querySelector('tbody')
     while (layerlist.firstChild) { layerlist.removeChild(layerlist.firstChild) }
 
-    // Render the open/closed padlock into a lock-cell's icon span.
-    const renderLockIcon = (span, locked) => {
-      while (span.firstChild) { span.removeChild(span.firstChild) }
-      fetchSvgEl(locked ? 'lock.svg' : 'lock_open.svg').then(svg => { if (svg) span.appendChild(svg) })
-    }
-
     $id('selLayerNames').setAttribute('options', '')
     const drawing = this.editor.svgCanvas.getCurrentDrawing()
     const currentLayerName = drawing.getCurrentLayerName()
@@ -420,6 +428,7 @@ class RightPanel {
       layerToggle.title = this.editor.i18next.t('layers.obj_toggle')
       const layerVis = document.createElement('td')
       layerVis.className = (!drawing.getLayerVisibility(name)) ? 'layerinvis layervis' : 'layervis'
+      layerVis.title = this.editor.i18next.t('layers.vis_hint')
 
       // fix the eye icon lost at right layers (inline SVG from the bundle)
       const _eye = document.createElement('span')
@@ -431,6 +440,7 @@ class RightPanel {
 
       const layerLock = document.createElement('td')
       layerLock.className = drawing.getLayerLocked(name) ? 'layerlock locked' : 'layerlock'
+      layerLock.title = this.editor.i18next.t('layers.lock_hint')
       const _lock = document.createElement('span')
       _lock.style.width = '14px'
       _lock.style.height = '14px'
@@ -440,7 +450,9 @@ class RightPanel {
       layerLock.appendChild(_lock)
 
       const layerComment = document.createElement('td')
-      layerComment.className = drawing.getLayerComment(name) ? 'layercomment commented' : 'layercomment'
+      layerComment.className = 'layercomment' + (drawing.getLayerComment(name) ? ' commented' : '') +
+        (drawing.getLayerTemplate(name) ? ' templated' : '')
+      layerComment.title = this.editor.i18next.t('layers.comment_hint')
       const _comment = document.createElement('span')
       _comment.style.width = '14px'
       _comment.style.height = '14px'
@@ -529,12 +541,7 @@ class RightPanel {
         const ele = evt.currentTarget.parentNode.querySelector('td.layername')
         const name = (ele) ? ele.textContent : ''
         const vis = evt.currentTarget.classList.contains('layerinvis')
-        self.editor.svgCanvas.setLayerVisibility(name, vis)
-        evt.currentTarget.classList.toggle('layerinvis')
-        // run extension if layer visibility is changed from listener
-        self.editor.svgCanvas.runExtensions(
-          'layerVisChanged'
-        )
+        self.applyLayerVisibility({ [name]: vis })
       })
     })
     const lockElements = $id('layerlist').querySelectorAll('td.layerlock')
@@ -543,14 +550,7 @@ class RightPanel {
         const ele = evt.currentTarget.parentNode.querySelector('td.layername')
         const name = (ele) ? ele.textContent : ''
         const locked = evt.currentTarget.classList.contains('locked')
-        self.editor.svgCanvas.setLayerLocked(name, !locked)
-        evt.currentTarget.classList.toggle('locked')
-        const span = evt.currentTarget.querySelector('span')
-        if (span) { renderLockIcon(span, !locked) }
-        // run extension when layer lock state is changed from listener
-        self.editor.svgCanvas.runExtensions(
-          'layersChanged'
-        )
+        self.applyLayerLock({ [name]: !locked })
       })
     })
     const commentElements = $id('layerlist').querySelectorAll('td.layercomment')
@@ -562,6 +562,8 @@ class RightPanel {
         const wasComment = evt.currentTarget.classList.contains('commented')
         self.editor.svgCanvas.setLayerComment(name, !wasComment)
         evt.currentTarget.classList.toggle('commented')
+        // Un-marking also ends a tracing template (and unlocks the layer).
+        if (wasComment) self.syncLayerRows()
         // Marking a layer as comments hides it immediately, so it doesn't
         // clutter the canvas until deliberately shown again via the eye icon.
         if (!wasComment) {
@@ -590,6 +592,80 @@ class RightPanel {
     self.editor.svgCanvas.runExtensions(
       'layersChanged'
     )
+  }
+
+  /**
+   * Show / hide several layers as one undo step, then bring their rows up to date.
+   * @param {Object<string, boolean>} states layer name → visible
+   * @returns {boolean} whether anything changed
+   */
+  applyLayerVisibility (states) {
+    if (!this.editor.svgCanvas.setLayersVisibility(states)) return false
+    this.syncLayerRows()
+    // Toggling visibility by hand takes over from Focus mode (ext-layer_view).
+    this.editor.svgCanvas.runExtensions('layerVisChanged')
+    return true
+  }
+
+  /**
+   * Lock / unlock several layers (not undoable), then bring their rows up to date.
+   * @param {Object<string, boolean>} states layer name → locked
+   * @returns {boolean} whether anything changed
+   */
+  applyLayerLock (states) {
+    if (!this.editor.svgCanvas.setLayersLocked(states)) return false
+    this.syncLayerRows()
+    this.editor.svgCanvas.runExtensions('layersChanged')
+    return true
+  }
+
+  /**
+   * Make a layer a tracing template (a comment layer that is dimmed, locked,
+   * unselectable and never exported), or end that. A layer that is not a comment
+   * layer yet becomes one.
+   * @param {string} [name] the current layer by default
+   * @returns {boolean} whether the layer is a template now
+   */
+  toggleLayerTemplate (name) {
+    const c = this.editor.svgCanvas
+    const drawing = c.getCurrentDrawing()
+    const layerName = name || drawing.getCurrentLayerName()
+    const group = drawing.getLayerByName(layerName)
+    if (!group) return false
+    const on = !c.getLayerTemplate(layerName)
+    if (on) {
+      if (!c.getLayerComment(layerName)) c.setLayerComment(layerName, true)
+      // Its objects are about to become unselectable.
+      if (c.getSelectedElements().some((e) => e && group.contains(e))) c.clearSelection()
+    }
+    c.setLayerTemplate(layerName, on)
+    this.syncLayerRows()
+    c.runExtensions('layersChanged')
+    return on
+  }
+
+  /**
+   * Bring every layer row's eye, padlock and comment cells up to date with the
+   * drawing, without rebuilding the rows (which would clear the selection).
+   * @returns {void}
+   */
+  syncLayerRows () {
+    const drawing = this.editor.svgCanvas.getCurrentDrawing()
+    for (const tr of this.layerTree.layerRows()) {
+      const name = tr.querySelector('td.layername')?.textContent
+      if (!name || !drawing.getLayerByName(name)) continue
+      tr.querySelector('td.layervis')?.classList.toggle('layerinvis', !drawing.getLayerVisibility(name))
+      const lockCell = tr.querySelector('td.layerlock')
+      const locked = drawing.getLayerLocked(name)
+      if (lockCell && lockCell.classList.contains('locked') !== locked) {
+        lockCell.classList.toggle('locked', locked)
+        const span = lockCell.querySelector('span')
+        if (span) renderLockIcon(span, locked)
+      }
+      const commentCell = tr.querySelector('td.layercomment')
+      commentCell?.classList.toggle('commented', drawing.getLayerComment(name))
+      commentCell?.classList.toggle('templated', drawing.getLayerTemplate(name))
+    }
   }
 
   /**

@@ -203,6 +203,10 @@ export interface AttachedMembers {
 
   // Layers
   setLayerLocked(layerName: string, locked: boolean): void
+  setLayersVisibility(states: Record<string, boolean>): boolean
+  setLayersLocked(states: Record<string, boolean>): boolean
+  setLayerTemplate(layerName: string, template: boolean): boolean
+  getLayerTemplate(layerName: string): boolean
 
   // Events
   /** `modeChange` event dispatched by `setMode`. */

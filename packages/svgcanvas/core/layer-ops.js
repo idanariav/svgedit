@@ -274,6 +274,69 @@ export const init = canvas => {
   }
 
   /**
+ * Sets the visibility of several layers as ONE undo step (an Alt-click on an
+ * eye, a drag down the eye column). Layers already in the requested state are
+ * skipped.
+ * @function module:draw.setLayersVisibility
+ * @param {Object<string, boolean>} states - layer name → visible
+ * @returns {boolean} true if any layer changed
+ */
+  const setLayersVisibility = (states) => {
+    const drawing = svgCanvas.getCurrentDrawing()
+    const todo = Object.entries(states).filter(([name, visible]) =>
+      drawing.getLayerByName(name) && (drawing.getLayerByName(name).getAttribute('display') !== 'none') !== visible)
+    if (!todo.length) return false
+    if (todo.length === 1) return setLayerVisibility(todo[0][0], todo[0][1])
+    svgCanvas.transact('Layer Visibility', () => {
+      for (const [name, visible] of todo) setLayerVisibility(name, visible)
+    })
+    return true
+  }
+
+  /**
+ * Locks or unlocks several layers (an Alt-click on a padlock, a drag down the
+ * lock column). Not undo-able, like `setLayerLocked`.
+ * @function module:draw.setLayersLocked
+ * @param {Object<string, boolean>} states - layer name → locked
+ * @returns {boolean} true if any layer changed
+ */
+  const setLayersLocked = (states) => {
+    const drawing = svgCanvas.getCurrentDrawing()
+    let changed = false
+    for (const [name, locked] of Object.entries(states)) {
+      if (!drawing.getLayerByName(name) || drawing.getLayerLocked(name) === locked) continue
+      changed = setLayerLocked(name, locked) || changed
+    }
+    return changed
+  }
+
+  /**
+ * Makes a comment layer a tracing template (dimmed, locked, its objects cannot
+ * be selected, never exported) or turns that off. Turning it on also shows the
+ * layer (undo-able). Only comment layers can be templates.
+ * @function module:draw.setLayerTemplate
+ * @param {string} layerName
+ * @param {boolean} bTemplate
+ * @returns {boolean} true if applied
+ */
+  const setLayerTemplate = (layerName, bTemplate) => {
+    const drawing = svgCanvas.getCurrentDrawing()
+    if (!drawing.setLayerTemplate(layerName, bTemplate)) return false
+    if (bTemplate && drawing.getLayerByName(layerName).getAttribute('display') === 'none') {
+      setLayerVisibility(layerName, true)
+    }
+    return true
+  }
+
+  /**
+ * Returns whether the named layer is a tracing template.
+ * @function module:draw.getLayerTemplate
+ * @param {string} layerName
+ * @returns {boolean}
+ */
+  const getLayerTemplate = (layerName) => svgCanvas.getCurrentDrawing().getLayerTemplate(layerName)
+
+  /**
  * Sets whether every layer is simultaneously selectable ("All Layers" mode)
  * instead of just the current layer. Does not change which layer new/pasted
  * content lands on. Not undo-able (a transient view/selection state).
@@ -374,6 +437,10 @@ export const init = canvas => {
   svgCanvas.setLayerVisibility = setLayerVisibility
   svgCanvas.setLayerLocked = setLayerLocked
   svgCanvas.getLayerLocked = getLayerLocked
+  svgCanvas.setLayersVisibility = setLayersVisibility
+  svgCanvas.setLayersLocked = setLayersLocked
+  svgCanvas.setLayerTemplate = setLayerTemplate
+  svgCanvas.getLayerTemplate = getLayerTemplate
   svgCanvas.setLayerComment = setLayerComment
   svgCanvas.getLayerComment = getLayerComment
   svgCanvas.setAllLayersMode = setAllLayersMode

@@ -1,0 +1,11 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer" id="svg_4" se:comment="true" se:locked="true" se:template="true">
+  <title>Reference</title>
+  <rect fill="#cccccc" height="260" id="svg_1" width="360" x="20" y="20"/>
+ </g>
+
+ <g class="layer" id="svg_3">
+  <title>Drawing</title>
+  <circle cx="200" cy="150" fill="#3366cc" id="svg_2" r="60"/>
+ </g>
+</svg>

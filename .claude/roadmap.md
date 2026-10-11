@@ -43,7 +43,7 @@ small items (S) fill gaps between large ones.
     across the dialog's edits (cancel + re-begin per edit), so it needed no session concept either.
 
 **Phase 6 — panels and text**
-21. ~~**T2.17 Layers panel: object rows**~~ done (follow-ups, below) → 22. **T3.6 Layers extras** (it reuses the eye / lock column gestures on the object rows too).
+21. ~~**T2.17 Layers panel: object rows**~~ done (follow-ups, below) → 22. ~~**T3.6 Layers extras**~~ done (follow-ups, below).
 23. **T3.5 Area text** (M–L) — do the text-command `enabled` pass with it.
 24. **T3.3 Transform Each**, **T3.4 Split Into Grid**, **T3.2 Measure tool** — S; slot them between large items
     (Measure is the first consumer for `cursor()`).
@@ -142,13 +142,22 @@ Done: a tree under each layer (objects and plain groups, front to back; layers o
 - **Capped, not virtualized.** A parent lists at most 200 children ("N more…" adds 200); measured at 5,000 objects in a layer: 200 rows, ≈ 23 ms to rebuild, ≈ 1 ms when nothing changed. Real windowing only if a drawing needs to scroll through thousands of rows.
 - **Not in the tablet shell** (`TabletShell.js` has its own layers UI), and **no keyboard access**: rows are not focusable (no ARIA treegrid, no arrow-key navigation or keyboard move). Pointer drag only.
 - **A locked object is not a click target at all**, so a press on it starts a rubber band instead of selecting what is under it (Illustrator picks the next object down). There are no "Lock selection" / "Hide selection" / "Show all" / "Unlock all" commands or hotkeys: lock and hide are the row toggles only (and locking from the canvas is impossible without a selection command).
-- **Alt-click the eye / lock** and drag down a column are T3.6; so are object thumbnails (rows have none).
+- Object thumbnails: rows have none.
 - **Moving between parents folds the parents' transforms into the object's own `transform`** (as one matrix). A `clip-path` / `mask` or a `userSpaceOnUse` gradient on the moved object is not compensated, and a rotation held as `rotate()` becomes part of the matrix.
 - **Shift-range and Cmd-toggle work among siblings only** (the selection cannot span two parents); a row click in another parent starts a new selection.
 - **The canvas selection does not auto-open its row**; the highlight shows only when the row is visible. Use Locate Object.
 - **A generated group (blend, brushed path, repeat) is one row** and cannot be opened; its parts are edited by entering it on the canvas as before.
 - **The layer context menu** (right-click in the list) acts on layers and also opens on object rows.
 - The group-name field in `#objects_panel` (shown when a group is selected) stays; it duplicates the row rename.
+
+## Layers panel gestures (`panels/layerGestures.js`): follow-ups from T3.6
+
+Done: Alt-click an eye / padlock (others, or an object's siblings), drag down a column (one undo step for visibility), drag a layer row to reorder, tracing-template comment layers (`se:template`, `layer_template`, Alt-click the comment icon). Remaining:
+- **Pointer only**: touch scrolls the panel instead of dragging; the tablet shell has its own layers UI without any of this. No keyboard route to reorder (the Move Layer Up / Down buttons stay).
+- **Alt-click skips comment layers** (their lock / eye are managed by hand, as in Focus mode); a layer *drag* down a column does include them. A column drag that spans object rows of several parents works, but one undo step covers only the visibility part; lock is undoable for objects and not for layers.
+- **Alt-click the eye in Focus mode** ends Focus mode (as any eye click does) and an Alt-click lock is re-derived by Focus mode at once; once it ends the locks are the ones saved on entry. Not changed.
+- **Templates**: no UI beyond the Alt-click and the command (no context-menu entry, no dim level setting; `0.35` is a CSS rule in `svgedit.css`). Un-templating unlocks the layer even if it was locked before. Exports leave out *every* comment layer (`rasterExport`, per the `Layer#setCommentLayer` contract), not only templates; saving keeps them.
+- Reordering rebuilds the layer rows (`populateLayers`, which clears the selection), as the Move Up / Down buttons do.
 
 ## Round-trip corpus: keep adding drawings
 

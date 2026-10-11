@@ -854,7 +854,39 @@ export class Drawing {
     if (!layer) {
       return null
     }
+    if (!bComment && layer.isTemplate()) {
+      layer.setTemplate(false)
+      layer.setLocked(false)
+    }
     layer.setCommentLayer(bComment)
+    return layer.getGroup()
+  }
+
+  /**
+   * Returns whether the layer is a tracing template. Invalid names give `false`.
+   * @param {string} layerName
+   * @returns {boolean}
+   */
+  getLayerTemplate (layerName) {
+    const layer = this.layer_map[layerName]
+    return layer ? layer.isTemplate() : false
+  }
+
+  /**
+   * Makes a comment layer a tracing template (or not). A template is locked
+   * (new objects land elsewhere); un-templating unlocks it. Only
+   * comment layers can be templates: the call returns `null` for any other
+   * layer (and for an invalid name). Not undo-able, like locking.
+   * @param {string} layerName
+   * @param {boolean} bTemplate
+   * @returns {?SVGGElement} The layer group, or `null` when refused.
+   */
+  setLayerTemplate (layerName, bTemplate) {
+    if (typeof bTemplate !== 'boolean') return null
+    const layer = this.layer_map[layerName]
+    if (!layer || !layer.isCommentLayer()) return null
+    layer.setTemplate(bTemplate)
+    layer.setLocked(bTemplate)
     return layer.getGroup()
   }
 

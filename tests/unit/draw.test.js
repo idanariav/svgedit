@@ -896,6 +896,45 @@ describe('draw.Drawing', function () {
     cleanupSVG(svg)
   })
 
+  it('Test getLayerTemplate() / setLayerTemplate()', function () {
+    const drawing = new draw.Drawing(svg)
+    setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+
+    // Only comment layers can be tracing templates.
+    assert.equal(drawing.setLayerTemplate(LAYER1, true), null)
+    assert.equal(drawing.getLayerTemplate(LAYER1), false)
+
+    drawing.setLayerComment(LAYER1, true)
+    assert.ok(drawing.setLayerTemplate(LAYER1, true))
+    assert.equal(drawing.getLayerTemplate(LAYER1), true)
+    assert.equal(drawing.getLayerLocked(LAYER1), true)
+    assert.equal(drawing.getLayerTemplate(LAYER2), false)
+
+    assert.ok(drawing.setLayerTemplate(LAYER1, false))
+    assert.equal(drawing.getLayerTemplate(LAYER1), false)
+    assert.equal(drawing.getLayerLocked(LAYER1), false)
+
+    assert.equal(drawing.setLayerTemplate(LAYER1, 'test-string'), null)
+    assert.equal(drawing.setLayerTemplate('no such layer', true), null)
+
+    cleanupSVG(svg)
+  })
+
+  it('Un-marking a template layer as a comment ends the template and the lock', function () {
+    const drawing = new draw.Drawing(svg)
+    setupSVGWith3Layers(svg)
+    drawing.identifyLayers()
+    drawing.setLayerComment(LAYER1, true)
+    drawing.setLayerTemplate(LAYER1, true)
+
+    drawing.setLayerComment(LAYER1, false)
+    assert.equal(drawing.getLayerTemplate(LAYER1), false)
+    assert.equal(drawing.getLayerLocked(LAYER1), false)
+
+    cleanupSVG(svg)
+  })
+
   it('Test svgedit.draw.randomizeIds()', function () {
     // Confirm in LET_DOCUMENT_DECIDE mode that the document decides
     // if there is a nonce.

@@ -59,6 +59,7 @@
 | `BottomPanel.html` | Bottom "Colors" bar markup (fill/stroke/bg pickers + palette) |
 | `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
 | `layerTree.js` | The Layers panel's object tree (`LayerTree`): `tr.object` rows after each layer row in `#layerlist`, eye / lock / rename / select / drag-to-move / Locate; `objectRows()` is the pure row model |
+| `layerGestures.js` | Layers panel gestures (`LayerGestures`): Alt-click eye / padlock / comment icon, drag down the eye or lock column, drag a layer row to reorder; `planOthers()` and `layerDropIndex()` are the pure parts |
 | `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
 | `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native `EventTarget`, so multiple handlers per event coexist), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
 | `TabletShell.html` | Tablet shell skeleton (`.tablet-shell` overlay: `.ts-topbar` command bar + `.ts-sheet` bottom sheet) |
@@ -214,7 +215,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/selection.js` | Selection list management |
 | `core/extension-hooks.js` | Registry of valid extension hook names (`EXTENSION_HOOKS`) plus a payload typedef per hook (`ExtensionHookPayloads`) |
 | `core/svg-defs.js` | Defs/reference maintenance split out of `svg-exec.js`: `uniquifyElems`, `setUseData`, `removeUnusedDefElems`, `convertGradients`, `convertDropShadowFilters` (still exposed on the canvas under those names) |
-| `core/layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of `draw.js`; `draw.init()` calls it |
+| `core/layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode; `setLayersVisibility` (one undo step) / `setLayersLocked` for several layers; `setLayerTemplate` tracing templates), split out of `draw.js`; `draw.init()` calls it |
 | `core/text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor/spacing/length, perspective, font family/size/colour, text content), split out of `elem-get-set.js`; its `init()` calls it |
 | `core/group-ops.js` | Group / ungroup / convert-to-group / push-group-properties, split out of `selected-elem.js`; its `init()` calls it |
 | `scripts/repair-drawings.mjs` | One-off CLI that rewrites already-saved drawings (`.svg`, and the plugin's `.md` notes: raw/compressed drawing block and saved versions) to repair known corruption (`REPAIRS`; dry run by default, `--write` to apply). New data-corruption repairs go here; the editor has no load-time sanitizers |

@@ -1117,6 +1117,11 @@ export const init = canvas => {
       // Frames mark export regions and must never appear in an exported image.
       svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
 
+      // Comment layers (and so tracing templates) are notes, never output.
+      Array.from(svgClone.children).forEach(child => {
+        if (child.getAttributeNS(NS.SE, 'comment') === 'true') child.remove()
+      })
+
       // Inline used custom fonts as base64 @font-face. The clone is rendered via an
       // <img>, which has no access to the document's fonts, so without this the
       // text would rasterize with a default font instead of the chosen one.

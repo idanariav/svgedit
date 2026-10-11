@@ -17,8 +17,9 @@ import { visitAndApproveStorage } from './helpers.js'
 // CI runs a deterministic subset (2 kinds per drawing); SWEEP=full runs up to 8.
 const FIXTURES = path.resolve('tests/e2e/fixtures/roundtrip')
 // Toggle editor/view state that is deliberately not an undo step (and persists across
-// loads, which would leak between sweep iterations): layer lock/dim.
-const VIEW_STATE = new Set(['tool_layerView'])
+// loads, which would leak between sweep iterations): layer lock/dim, and the tracing template
+// (a meta-action like the lock and the comment mark it builds on).
+const VIEW_STATE = new Set(['tool_layerView', 'layer_template'])
 // Commands that open the browser's file picker, which needs a fresh user gesture (the page's expires within seconds).
 const FILE_PICKER = ['tool_save', 'tool_save_as']
 // Problems the sweep found that are real but not fixed yet (each is in techdebt.md).

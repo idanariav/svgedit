@@ -95,6 +95,151 @@ test.describe('Layers panel', () => {
     expect(svgStr).toContain('se:locked="true"')
   })
 
+  test.describe('layer gestures', () => {
+    const DOC = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com" width="640" height="480" viewBox="0 0 640 480">
+      <g class="layer"><title>Trace</title><rect id="tr" x="0" y="0" width="300" height="200" fill="#888"/></g>
+      <g class="layer"><title>L1</title><rect id="a" x="10" y="10" width="40" height="40" fill="#f00"/></g>
+      <g class="layer"><title>L2</title><rect id="b" x="100" y="10" width="40" height="40" fill="#0f0"/></g>
+      <g class="layer"><title>L3</title><rect id="c" x="200" y="10" width="40" height="40" fill="#00f"/></g>
+    </svg>`
+
+    const layerRow = (page, name) => page.locator('#layerlist tr.layer', { has: page.locator('td.layername', { hasText: new RegExp(`^${name}$`) }) })
+    const hiddenLayers = (page) => page.evaluate(() => {
+      const d = window.svgEditor.svgCanvas.getCurrentDrawing()
+      return Array.from({ length: d.getNumLayers() }, (_, i) => d.getLayerName(i)).filter((n) => !d.getLayerVisibility(n))
+    })
+    const lockedLayers = (page) => page.evaluate(() => {
+      const d = window.svgEditor.svgCanvas.getCurrentDrawing()
+      return Array.from({ length: d.getNumLayers() }, (_, i) => d.getLayerName(i)).filter((n) => d.getLayerLocked(n))
+    })
+    const zOrder = (page) => page.evaluate(() => {
+      const d = window.svgEditor.svgCanvas.getCurrentDrawing()
+      return Array.from({ length: d.getNumLayers() }, (_, i) => d.getLayerName(i))
+    })
+    const domOrder = (page) => page.evaluate(() => [...document.querySelectorAll('#svgcontent > g.layer > title')].map((t) => t.textContent))
+    const undo = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    const dragBetween = async (page, from, to, dy = 0) => {
+      const a = await from.boundingBox()
+      const b = await to.boundingBox()
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 + 6, { steps: 3 })
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + dy, { steps: 8 })
+      await page.mouse.up()
+    }
+
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate((svg) => {
+        window.svgEditor.svgCanvas.setSvgString(svg)
+        window.svgEditor.rightPanel.populateLayers()
+      }, DOC)
+      await page.waitForSelector('#layerlist tr.layer')
+    })
+
+    test('Alt-click an eye hides the other layers; again shows them; one undo reverts', async ({ page }) => {
+      await layerRow(page, 'L2').locator('td.layervis').click({ modifiers: ['Alt'] })
+      await expect.poll(() => hiddenLayers(page)).toEqual(['Trace', 'L1', 'L3'])
+      expect(await hiddenLayers(page)).not.toContain('L2')
+      // the rows follow
+      await expect(layerRow(page, 'L3').locator('td.layervis')).toHaveClass(/layerinvis/)
+      await expect(layerRow(page, 'L2').locator('td.layervis')).not.toHaveClass(/layerinvis/)
+
+      await undo(page) // the whole Alt-click is one step
+      expect(await hiddenLayers(page)).toEqual([])
+      await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+      expect((await hiddenLayers(page)).length).toBe(3)
+
+      await layerRow(page, 'L2').locator('td.layervis').click({ modifiers: ['Alt'] })
+      expect(await hiddenLayers(page)).toEqual([])
+    })
+
+    test('Alt-click a padlock locks the other layers; again unlocks them', async ({ page }) => {
+      await layerRow(page, 'L2').locator('td.layerlock').click({ modifiers: ['Alt'] })
+      await expect.poll(() => lockedLayers(page).then((l) => l.sort())).toEqual(['L1', 'L3', 'Trace'])
+      await expect(layerRow(page, 'L1').locator('td.layerlock')).toHaveClass(/locked/)
+      await layerRow(page, 'L2').locator('td.layerlock').click({ modifiers: ['Alt'] })
+      expect(await lockedLayers(page)).toEqual([])
+    })
+
+    test('dragging down the eye column sets every row it passes in one undo step', async ({ page }) => {
+      await dragBetween(page, layerRow(page, 'L3').locator('td.layervis'), layerRow(page, 'L1').locator('td.layervis'))
+      expect((await hiddenLayers(page)).sort()).toEqual(['L1', 'L2', 'L3'])
+      await undo(page)
+      expect(await hiddenLayers(page)).toEqual([])
+    })
+
+    test('a drag from a hidden eye shows the rows it passes; a plain click still toggles one', async ({ page }) => {
+      await layerRow(page, 'L3').locator('td.layervis').click()
+      await layerRow(page, 'L2').locator('td.layervis').click()
+      expect((await hiddenLayers(page)).sort()).toEqual(['L2', 'L3'])
+      await dragBetween(page, layerRow(page, 'L3').locator('td.layervis'), layerRow(page, 'L1').locator('td.layervis'))
+      expect(await hiddenLayers(page)).toEqual([])
+    })
+
+    test('dragging down the lock column locks the rows it passes', async ({ page }) => {
+      await dragBetween(page, layerRow(page, 'L3').locator('td.layerlock'), layerRow(page, 'L2').locator('td.layerlock'))
+      expect((await lockedLayers(page)).sort()).toEqual(['L2', 'L3'])
+    })
+
+    test('dragging a layer row reorders the layers (one undo step)', async ({ page }) => {
+      expect(await zOrder(page)).toEqual(['Trace', 'L1', 'L2', 'L3'])
+      // drop L1 on the upper half of the top row, L3
+      await dragBetween(page, layerRow(page, 'L1').locator('td.layername'), layerRow(page, 'L3').locator('td.layername'), -8)
+      await expect.poll(() => zOrder(page)).toEqual(['Trace', 'L2', 'L3', 'L1'])
+      expect(await layerNames(page)).toEqual(['L1', 'L3', 'L2', 'Trace'])
+      await undo(page)
+      expect(await domOrder(page)).toEqual(['Trace', 'L1', 'L2', 'L3'])
+    })
+
+    test('a tracing template is dimmed, unselectable, saved, and left out of exports', async ({ page }) => {
+      await layerRow(page, 'Trace').locator('td.layercomment').click({ modifiers: ['Alt'] })
+      await expect(layerRow(page, 'Trace').locator('td.layercomment')).toHaveClass(/templated/)
+      const state = await page.evaluate(() => {
+        const c = window.svgEditor.svgCanvas
+        const g = document.getElementById('tr').parentNode
+        c.setCurrentLayer('Trace')
+        c.selectAllInCurrentLayer?.()
+        return {
+          opacity: getComputedStyle(g).opacity,
+          selected: c.getSelectedElements().filter(Boolean).length,
+          visible: c.getCurrentDrawing().getLayerVisibility('Trace'),
+          locked: c.getLayerLocked('Trace'),
+          saved: c.getSvgString().includes('se:template="true"') && c.getSvgString().includes('id="tr"')
+        }
+      })
+      expect(Number(state.opacity)).toBeCloseTo(0.35, 2)
+      expect(state.selected).toBe(0)
+      expect(state.visible).toBe(true)
+      expect(state.locked).toBe(true)
+      expect(state.saved).toBe(true)
+      const exported = await page.evaluate(async () => (await window.svgEditor.svgCanvas.rasterExport('PNG', 1, 'x', { avoidEvent: true })).svg)
+      expect(exported).not.toContain('id="tr"')
+      expect(exported).toContain('id="a"')
+      // the row's objects are listed as locked: clicking one does not select it
+      await expect(page.locator('#layerlist tr.object.objlockedtree')).toHaveCount(1)
+      await page.locator('#layerlist tr.object.objlockedtree').locator('.objname').click()
+      expect(await page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean).length)).toBe(0)
+
+      // the command ends it again; the layer unlocks but stays a comment layer
+      await page.evaluate(() => { window.svgEditor.svgCanvas.setCurrentLayer('Trace'); return window.svgEditor.commands.run('layer_template') })
+      await expect(layerRow(page, 'Trace').locator('td.layercomment')).not.toHaveClass(/templated/)
+      const after = await page.evaluate(() => {
+        const g = document.getElementById('tr').parentNode
+        return { opacity: getComputedStyle(g).opacity, locked: window.svgEditor.svgCanvas.getLayerLocked('Trace'), comment: window.svgEditor.svgCanvas.getLayerComment('Trace') }
+      })
+      expect(after).toEqual({ opacity: '1', locked: false, comment: true })
+    })
+
+    test('Alt-click lock inside Focus mode leaves the locks as they were once it ends', async ({ page }) => {
+      await page.evaluate(() => window.svgEditor.svgCanvas.setLayerLocked('L1', true))
+      const before = await lockedLayers(page)
+      await page.evaluate(() => window.svgEditor.commands.run('tool_layerView'))
+      await layerRow(page, 'L2').locator('td.layerlock').click({ modifiers: ['Alt'] })
+      await page.evaluate(() => window.svgEditor.commands.run('tool_layerView'))
+      expect(await lockedLayers(page)).toEqual(before)
+    })
+  })
+
   test.describe('object rows', () => {
     const DOC = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="640" height="480" viewBox="0 0 640 480">
       <g class="layer"><title>Layer 1</title>
@@ -179,6 +324,20 @@ test.describe('Layers panel', () => {
       await (await (await rowFor(page, 'r2')).$('td.objlock')).click()
       await (await rowFor(page, 'r2')).click()
       expect(await selectedIds(page)).toEqual(['r2'])
+    })
+
+    test('Alt-click an object eye hides its siblings only; Alt-click a lock locks them', async ({ page }) => {
+      const hidden = () => page.evaluate(() => ['r1', 'r2', 'grp', 'e1'].filter((id) => document.getElementById(id).getAttribute('display') === 'none'))
+      const locked = () => page.evaluate(() => ['r1', 'r2', 'grp', 'e1'].filter((id) => document.getElementById(id).getAttributeNS('http://svg-edit.googlecode.com', 'locked') === 'true'))
+      const r2 = await rowFor(page, 'r2')
+      await (await r2.$('td.objvis')).click({ modifiers: ['Alt'] })
+      expect(await hidden()).toEqual(['r1', 'grp'])
+      await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+      expect(await hidden()).toEqual([])
+      await (await (await rowFor(page, 'r2')).$('td.objlock')).click({ modifiers: ['Alt'] })
+      expect(await locked()).toEqual(['r1', 'grp'])
+      await (await (await rowFor(page, 'r2')).$('td.objlock')).click({ modifiers: ['Alt'] })
+      expect(await locked()).toEqual([])
     })
 
     test('double-click renames; the name is undoable', async ({ page }) => {

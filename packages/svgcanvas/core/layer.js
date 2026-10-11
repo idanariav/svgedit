@@ -157,6 +157,31 @@ class Layer {
   }
 
   /**
+   * Mark or unmark this layer as a tracing template: a comment layer that sits
+   * under the drawing as a reference. The editor dims it (a stylesheet rule on
+   * `[se:template]`, so no saved opacity changes) and its objects cannot be
+   * selected (`object-state.js`); it is never exported. Persisted as the
+   * namespaced `se:template` attribute; a meta-action like locking.
+   * @param {boolean} isTemplate
+   * @returns {void}
+   */
+  setTemplate (isTemplate) {
+    if (isTemplate) {
+      this.group_.setAttributeNS(NS.SE, 'se:template', 'true')
+    } else {
+      this.group_.removeAttributeNS(NS.SE, 'template')
+    }
+  }
+
+  /**
+   * Is this layer a tracing template?
+   * @returns {boolean}
+   */
+  isTemplate () {
+    return this.group_.getAttributeNS(NS.SE, 'template') === 'true'
+  }
+
+  /**
    * Get layer opacity.
    * @returns {number} Opacity value.
    */

@@ -64,9 +64,16 @@ export const isExpandableGroup = (el) =>
 export const hasLockMark = (el) => el.getAttributeNS(NS.SE, 'locked') === 'true'
 
 /**
+ * Is the layer a tracing template (`se:template`)? Its objects cannot be selected.
+ * @param {Element} el
+ * @returns {boolean}
+ */
+const isTemplateLayer = (el) => el.getAttributeNS(NS.SE, 'template') === 'true'
+
+/**
  * Is the object, or a group above it (up to the layer), locked? A locked
  * *layer* does not make its objects unselectable (a layer lock only redirects
- * newly drawn objects).
+ * newly drawn objects), but a tracing-template layer does.
  * @param {Element|null|undefined} el
  * @returns {boolean}
  */
@@ -76,7 +83,7 @@ export const isObjectLocked = (el) => {
     if (hasLockMark(cur)) return true
     cur = cur.parentNode instanceof Element ? cur.parentNode : null
   }
-  return false
+  return !!cur && isLayer(cur) && isTemplateLayer(cur)
 }
 
 /**

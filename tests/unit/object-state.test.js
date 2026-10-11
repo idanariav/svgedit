@@ -57,6 +57,19 @@ describe('locked and hidden state', () => {
     expect(hasLockMark(rect)).toBe(false)
   })
 
+  it('makes every object of a tracing-template layer unselectable', () => {
+    const lay = layer(document.body)
+    const rect = make('rect', {}, lay)
+    const grp = make('g', {}, lay)
+    const inner = make('rect', {}, grp)
+    expect(isObjectLocked(rect)).toBe(false)
+    lay.setAttributeNS(NS.SE, 'se:template', 'true')
+    expect(isObjectLocked(rect)).toBe(true)
+    expect(isObjectLocked(inner)).toBe(true)
+    lay.removeAttributeNS(NS.SE, 'template')
+    expect(isObjectLocked(inner)).toBe(false)
+  })
+
   it('reports display="none" as hidden', () => {
     const r = make('rect')
     expect(isObjectHidden(r)).toBe(false)

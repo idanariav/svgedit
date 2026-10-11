@@ -73,6 +73,7 @@ const LABELS = {
   layer_locate: 'layers.locate',
   layer_new: 'layers.new',
   layer_rename: 'layers.rename',
+  layer_template: 'layers.template',
   layer_up: 'layers.move_up',
   tool_add_subpath: 'tools.add_subpath',
   tool_bold: 'properties.bold',
@@ -273,6 +274,13 @@ export const registerPanelCommands = (commands) => {
   ])) {
     commands.register({ id, label: LABELS[id] ?? id, group: 'Layers', pd: true, run })
   }
+  commands.register({
+    id: 'layer_template',
+    label: LABELS.layer_template,
+    group: 'Layers',
+    pd: true,
+    run: (/** @type {any} */ editor) => editor.rightPanel.toggleLayerTemplate()
+  })
   commands.register({
     id: 'layer_locate',
     label: LABELS.layer_locate,
