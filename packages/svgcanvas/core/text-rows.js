@@ -363,6 +363,28 @@ export const getAreaBox = (elem) => {
 }
 
 /**
+ * The topmost area text under a screen point, hit on its *box* rather than its glyphs (so the empty part of a
+ * box is clickable). The point is mapped into each text's own coordinates, so zoom and transforms are handled.
+ * @param {ParentNode} root where to look (the drawing's content)
+ * @param {number} clientX
+ * @param {number} clientY
+ * @returns {SVGTextElement|null}
+ */
+export const areaTextAtPoint = (root, clientX, clientY) => {
+  const texts = /** @type {SVGTextElement[]} */ (Array.from(root.querySelectorAll('text')).filter(isAreaText))
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const text = texts[i]
+    if (text.checkVisibility?.() === false) continue // display:none on it or an ancestor (hidden layer)
+    const ctm = text.getScreenCTM?.()
+    if (!ctm) continue
+    const local = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse())
+    const box = getAreaBox(text)
+    if (local.x >= box.x && local.x <= box.x + box.width && local.y >= box.y && local.y <= box.y + box.height) return text
+  }
+  return null
+}
+
+/**
  * The attributes that put an area text's box at `box` for the given anchor and
  * font size (`x` / `y` stay the anchor and the first baseline). Pass `height: 0`
  * for a box that grows with its content.

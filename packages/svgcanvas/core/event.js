@@ -16,6 +16,7 @@ import { error as logError, warn as logWarn } from '../common/logger.js'
 import { findPos } from '../../svgcanvas/common/util.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
+import { areaTextAtPoint } from './text-rows.js'
 import { init as eventZoomInit } from './event-zoom.js'
 import { init as eventTextEditInit } from './event-text-edit.js'
 import { init as eventPathEditInit } from './event-path-edit.js'
@@ -784,6 +785,14 @@ export const init = (canvas) => {
     ) {
       const strokeHit = findStrokeElementNearPoint(evt, mouseTarget)
       if (strokeHit) { mouseTarget = strokeHit }
+    }
+
+    // The empty part of an area text's box is part of the text: a click there selects it (only its glyphs are hit
+    // natively). Only where the native hit-test found nothing, so a shape drawn under or over the box still wins.
+    if (svgCanvas.getCurrentMode() === 'select' && !rightClick && mouseTarget === svgRoot) {
+      const text = areaTextAtPoint(svgRoot, evt.clientX, evt.clientY)
+      const target = text && svgCanvas.getMouseTargetFromNode(text)
+      if (target && target !== svgRoot) { mouseTarget = target }
     }
 
     // Treat the whole selection bbox as a move handle: when a click that would

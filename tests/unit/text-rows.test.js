@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import {
   getTextWithNewlines, setMultilineText, isAreaText, getWrapWidth, getWrapHeight, getValign, getAreaBox,
-  areaAttrsForBox, writeAreaAttrs, reflowAreaText, makeAreaText, makePointText, TEXT_ASCENT, TEXT_LINE_HEIGHT
+  areaAttrsForBox, writeAreaAttrs, reflowAreaText, makeAreaText, makePointText, areaTextAtPoint, TEXT_ASCENT, TEXT_LINE_HEIGHT
 } from '../../packages/svgcanvas/core/text-rows.js'
 
 // jsdom has no SVG text metrics, so layout uses the character-count estimate: 0.55 × font-size per character.
@@ -218,5 +218,47 @@ describe('area / point conversion', () => {
     expect(rows(t)).toEqual(['aaa bbb', 'ccc ddd'])
     expect(getTextWithNewlines(t)).toBe('aaa bbb\nccc ddd')
     expect(makePointText(t)).toBe(false)
+  })
+})
+
+describe('areaTextAtPoint', () => {
+  beforeEach(() => { document.body.innerHTML = '' })
+
+  // jsdom has no layout: give the texts an identity-plus-offset screen matrix and DOMPoint
+  const identity = { inverse: () => ({}) }
+  const stub = (text, ctm = identity) => { text.getScreenCTM = () => ctm }
+  class Point {
+    constructor (x, y) { this.x = x; this.y = y }
+    matrixTransform () { return new Point(this.x, this.y) }
+  }
+  beforeEach(() => { globalThis.DOMPoint = Point })
+
+  it('hits the box, not the glyphs', () => {
+    const t = makeText({ x: 100, y: 50, 'se:wrap-width': 200, 'se:wrap-height': 100, 'text-anchor': 'start' })
+    stub(t)
+    const root = t.ownerSVGElement
+    const box = getAreaBox(t)
+    expect(areaTextAtPoint(root, box.x + 5, box.y + box.height - 5)).toBe(t)
+    expect(areaTextAtPoint(root, box.x + box.width + 5, box.y + 5)).toBe(null)
+    expect(areaTextAtPoint(root, box.x + 5, box.y + box.height + 5)).toBe(null)
+  })
+
+  it('ignores point text and takes the topmost of overlapping boxes', () => {
+    const point = makeText({ x: 100, y: 50 })
+    const under = makeText({ x: 100, y: 50, 'se:wrap-width': 200, 'se:wrap-height': 100, 'text-anchor': 'start' })
+    const over = makeText({ x: 100, y: 50, 'se:wrap-width': 200, 'se:wrap-height': 100, 'text-anchor': 'start' })
+    for (const t of [point, under, over]) { stub(t); under.ownerSVGElement.append(t) }
+    const box = getAreaBox(under)
+    expect(areaTextAtPoint(under.ownerSVGElement, box.x + 10, box.y + 10)).toBe(over)
+    over.remove()
+    expect(areaTextAtPoint(under.ownerSVGElement, box.x + 10, box.y + 10)).toBe(under)
+  })
+
+  it('skips a text that is not rendered', () => {
+    const t = makeText({ x: 100, y: 50, 'se:wrap-width': 200, 'se:wrap-height': 100, 'text-anchor': 'start' })
+    stub(t)
+    t.checkVisibility = () => false
+    const box = getAreaBox(t)
+    expect(areaTextAtPoint(t.ownerSVGElement, box.x + 10, box.y + 10)).toBe(null)
   })
 })

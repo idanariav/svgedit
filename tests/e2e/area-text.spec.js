@@ -105,6 +105,18 @@ test.describe('Area text', () => {
     expect(box.height).toBeCloseTo(t.height, 1)
   })
 
+  test('clicking the empty part of a box selects the text; outside the box does not', async ({ page }) => {
+    await makeAreaText(page, 'short')
+    const selected = () => page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean).map((e) => e.localName))
+    await page.evaluate(() => window.svgEditor.svgCanvas.clearSelection())
+    expect(await selected()).toEqual([])
+    await pointer(page, [{ kind: 'click', x: 280, y: 240 }])
+    expect(await selected()).toEqual(['text'])
+    await page.evaluate(() => window.svgEditor.svgCanvas.clearSelection())
+    await pointer(page, [{ kind: 'click', x: 400, y: 400 }])
+    expect(await selected()).toEqual([])
+  })
+
   test('resizing the box re-wraps without touching the type, in one undo step', async ({ page }) => {
     await makeAreaText(page)
     await select(page)
