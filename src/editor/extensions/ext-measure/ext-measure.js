@@ -43,6 +43,8 @@ export default {
 
     /** The line being measured, or the last one (it stays until the next press). */
     let line = null
+    /** The tool context of the last gesture, to redraw the readout when the zoom changes. */
+    let toolCtx = null
 
     /** px → the base unit (the number only), and the unit's name. */
     const unit = () => svgEditor.configObj.curConfig.baseUnit || 'px'
@@ -88,6 +90,7 @@ export default {
       },
 
       pointerDown (ctx, ev) {
+        toolCtx = ctx
         line = { a: { x: ev.x, y: ev.y }, b: { x: ev.x, y: ev.y } }
         draw(ctx)
       },
@@ -114,6 +117,10 @@ export default {
 
     return {
       name: svgEditor.i18next.t(`${name}:name`),
+      // The label and dots are sized in screen pixels, so they are redrawn at the new zoom.
+      zoomChanged () {
+        if (line && toolCtx && svgCanvas.getMode() === name) draw(toolCtx)
+      },
       callback () {
         const title = `${name}:buttons.0.title`
         const button = `<se-button id="tool_measure" command="tool_measure" title="${title}" src="measure.svg"></se-button>`

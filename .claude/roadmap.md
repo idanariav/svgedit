@@ -103,8 +103,7 @@ Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %
 
 ## Measure tool (`core/measure.js`, `ext-measure`): follow-ups from T3.2
 
-Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedropper, no shortcut): drag to read distance, angle (counter-clockwise, as on paper), Δx and Δy in the editor's base unit; the end points snap like the drawing tools' (`snap: true`); Shift constrains to 45° steps; the readout (cyan line, end dots, label box) stays until the next press, Escape or leaving the tool; the drawing is never changed and nothing is recorded. Remaining:
-- **The readout does not follow the zoom** after the gesture (the label is sized for the zoom it was drawn at; it scales with the drawing). Redrawing on a zoom event would fix it.
+Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedropper, no shortcut): drag to read distance, angle (counter-clockwise, as on paper), Δx and Δy in the editor's base unit; the end points snap like the drawing tools' (`snap: true`); Shift constrains to 45° steps; the readout (cyan line, end dots, label box) stays until the next press, Escape or leaving the tool (and is redrawn at the new zoom, via the extension `zoomChanged` hook); the drawing is never changed and nothing is recorded. Remaining:
 - **The start point only snaps with `snap: true`'s targets** (no guides while hovering before the press, as in "Snapping while drawing"); no measuring of an object's own size on click, no persistent rulers or multiple measurements.
 - **The unit comes from Editor Options `baseUnit`;** there is no unit switch on the tool, and areas / perimeters are not measured.
 - Not in the tablet shell (the command bar is full at 768 px); no keyboard shortcut.

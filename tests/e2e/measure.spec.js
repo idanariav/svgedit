@@ -26,6 +26,16 @@ test.describe('Measure tool', () => {
     return l ? ['x1', 'y1', 'x2', 'y2'].map((a) => Number(l.getAttribute(a))) : null
   })
 
+  test('the readout is redrawn at the new zoom, so its dots and label keep their screen size', async ({ page }) => {
+    await tool(page)
+    await drag(page, { x: 100, y: 100 }, { x: 130, y: 60 })
+    const dot = (p) => p.evaluate(() => Number(document.querySelector('#toolOverlay circle').getAttribute('r')))
+    const before = await dot(page)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setCurrentZoom(2))
+    expect(await dot(page)).toBeCloseTo(before / 2, 5)
+    expect(await readout(page)).toEqual(['D: 50 px', 'Angle: 53.1°', 'Δx: 30 px', 'Δy: -40 px'])
+  })
+
   test('the tool is in the left panel, arms its mode and shows a crosshair', async ({ page }) => {
     await page.evaluate(() => document.querySelector('#tool_measure').click())
     expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('measure')
