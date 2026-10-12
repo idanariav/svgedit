@@ -253,6 +253,30 @@ test.describe('Area text', () => {
     expect((await info(page)).content.replace('X', '')).toBe(SENTENCE)
   })
 
+  test('Home / End (and Shift) go to the start / end of the drawn row, not of the paragraph', async ({ page }) => {
+    await makeAreaText(page)
+    await select(page)
+    await page.evaluate(() => window.svgEditor.svgCanvas.textActions.start(document.querySelector('#svgcontent text')))
+    const { rows } = await info(page)
+    const starts = rows.reduce((acc, r, i) => [...acc, i ? acc[i - 1] + rows[i - 1].length + 1 : 0], [])
+    const sel = () => page.evaluate(() => { const ta = document.getElementById('text'); return [ta.selectionStart, ta.selectionEnd] })
+    const put = (at) => page.evaluate((i) => { const ta = document.getElementById('text'); ta.focus(); ta.setSelectionRange(i, i) }, at)
+    const mid = starts[1] + 2
+    await put(mid)
+    await page.keyboard.press('Home')
+    expect(await sel()).toEqual([starts[1], starts[1]])
+    await put(mid)
+    await page.keyboard.press('End')
+    // the end of a soft row includes the space the break swallowed, i.e. the position just before the next row
+    expect(await sel()).toEqual([starts[2] - 1, starts[2] - 1])
+    await page.keyboard.press('Shift+Home')
+    expect(await sel()).toEqual([starts[1], starts[2] - 1])
+    // the last row ends at the end of the text
+    await put(starts[rows.length - 1] + 1)
+    await page.keyboard.press('End')
+    expect((await sel())[0]).toBe(SENTENCE.length)
+  })
+
   test('area text survives save and load', async ({ page }) => {
     await makeAreaText(page)
     const before = await info(page)

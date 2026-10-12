@@ -419,6 +419,8 @@ class EditorStartup {
       } else if ((evt.key === 'ArrowUp' || evt.key === 'ArrowDown') && !evt.altKey && !evt.metaKey && !evt.ctrlKey) {
         // area text wraps where the edit buffer cannot see: move by drawn row
         if (this.svgCanvas.textActions.verticalMove(evt.key === 'ArrowUp' ? -1 : 1, evt.shiftKey)) evt.preventDefault()
+      } else if ((evt.key === 'Home' || evt.key === 'End') && !evt.altKey && !evt.metaKey && !evt.ctrlKey) {
+        if (this.svgCanvas.textActions.lineEdge(evt.key === 'Home' ? 'start' : 'end', evt.shiftKey)) evt.preventDefault()
       }
     })
 

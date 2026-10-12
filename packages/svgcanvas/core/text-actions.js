@@ -424,10 +424,45 @@ export const init = canvas => {
           if (Math.abs(cd[i].x - cd[head].x) < Math.abs(cd[target].x - cd[head].x)) { target = i }
         }
       }
-      const from = extend ? anchor : target
-      input.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
-      this.init()
+      this.#moveCaret(target, anchor, extend)
       return true
+    }
+
+    /**
+   * Home / End by drawn row: the textarea's own would go to the start / end of the whole paragraph. A row's caret
+   * positions are the consecutive ones that share its y (the end of a soft row includes the spaces the break swallowed).
+   * @param {'start'|'end'} edge
+   * @param {boolean} [extend] Shift: grow the selection from its anchor
+   * @returns {boolean} Whether the key was handled (only area text is)
+   */
+    lineEdge (edge, extend = false) {
+      const text = this.#curtext
+      const input = this.#textinput
+      if (!text || !isAreaText(text) || !this.#chardata.length) { return false }
+      const cd = this.#chardata
+      const backward = input.selectionDirection === 'backward'
+      const head = Math.min(backward ? input.selectionStart : input.selectionEnd, cd.length - 1)
+      const anchor = backward ? input.selectionEnd : input.selectionStart
+      let target = head
+      if (edge === 'start') {
+        while (target > 0 && cd[target - 1].y === cd[head].y) { target-- }
+      } else {
+        while (target < cd.length - 1 && cd[target + 1].y === cd[head].y) { target++ }
+      }
+      this.#moveCaret(target, anchor, extend)
+      return true
+    }
+
+    /**
+   * @param {number} target caret position to move to
+   * @param {number} anchor the selection's fixed end
+   * @param {boolean} extend keep the anchor (a selection) instead of collapsing onto `target`
+   * @returns {void}
+   */
+    #moveCaret (target, anchor, extend) {
+      const from = extend ? anchor : target
+      this.#textinput.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
+      this.init()
     }
 
     /**
