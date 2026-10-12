@@ -12,7 +12,7 @@ import { getRawIcon } from '../images/iconRegistry.js'
 // at OUTLINE_STROKE screen px whatever the artwork's viewBox (several are 512 or 800 wide,
 // where a 1.6 user-unit stroke would be invisible). Add a file name here to convert it.
 const OUTLINE_ICONS = new Set([
-  'panning.svg', 'brush.svg', 'shapelib.svg', 'cutter.svg', 'pin.svg', 'go_up.svg', 'go_down.svg'
+  'panning.svg', 'brush.svg', 'shapelib.svg', 'pin.svg', 'go_up.svg', 'go_down.svg'
 ])
 const OUTLINE_STROKE = '1.6'
 const OUTLINE_SHAPES = 'path, polygon, polyline, rect, circle, ellipse'

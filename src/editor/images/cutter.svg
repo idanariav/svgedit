@@ -1,52 +1,5 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
-<svg fill="currentColor" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 viewBox="0 0 512 512" xml:space="preserve">
-<g>
-	<g>
-		<polygon fill="currentColor" points="380.296,115.896 212.148,284.043 190.646,262.541 358.793,94.394 312.935,48.535 128.517,232.952 149.74,324.959
-			241.736,346.174 426.155,161.755 		"/>
-	</g>
-</g>
-<g>
-	<g>
-		<path fill="currentColor" d="M451.241,23.448C436.12,8.328,416.014,0,394.63,0c-21.385,0-41.49,8.328-56.61,23.448l-3.584,3.584l113.221,113.22
-			l3.584-3.584C482.456,105.454,482.456,54.663,451.241,23.448z"/>
-	</g>
-</g>
-<g>
-	<g>
-		<polygon fill="currentColor" points="124.382,350.319 107.322,276.358 0.229,383.451 53.7,512 198.329,367.371 		"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="467.69" y="481.453" width="44.081" height="30.409"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="397.446" y="481.453" width="44.082" height="30.409"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="327.201" y="481.453" width="44.082" height="30.409"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="256.957" y="481.453" width="44.081" height="30.409"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="186.712" y="481.453" width="44.081" height="30.409"/>
-	</g>
-</g>
-<g>
-	<g>
-		<rect fill="currentColor" x="116.468" y="481.453" width="44.081" height="30.409"/>
-	</g>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A shape cut along its diagonal: the two pieces sit apart and the gap is the cut -->
+  <path d="M4 4 H17 L4 17 Z"/>
+  <path d="M20 7 V20 H7 Z"/>
 </svg>

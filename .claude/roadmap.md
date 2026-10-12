@@ -56,7 +56,7 @@ small items (S) fill gaps between large ones.
   the hand-written d.ts files (see the TypeScript section). Do not start a dedicated conversion project.
 - **Plugin command palette** (plugin repo): independent and high leverage, since every command added in the phases above
   appears there for free. Best done before Phase 3, whenever the plugin is next touched.
-- **UI/UX polish** (toolbars folding, shortcuts for the flyouts, the cutter icon, faint "none" swatch): one batched pass
+- **UI/UX polish** (the six icon-only top-bar toggles stay icon-only by decision; left-column fold, flyout shortcuts, Cutter icon and "none" swatch are done): one batched pass
   after Phase 2, or opportunistically when a feature touches that toolbar.
 - **Translations:** wait until a second locale is wanted; the guideline (all new strings via `t()`) keeps the cost down.
 - **Round-trip corpus, `checkDrawing` rules, command sweep:** every phase adds its fixtures and keeps the sweep green. The sweep picks one element per kind (tag + which `se:` features it carries), then runs the commands that need several shapes on two and on up to four of them together; it compares numbers at the saver's 2-decimal precision and skips the file-picker commands (`tool_save`, `tool_save_as`: they need a fresh user gesture). A feature that persists `se:` state needs a fixture saved by the real tool (the corpus covers connectors, fitted dashes, ruler guides, locked and comment layers, segments, tipped arrows…); `SWEEP=full` before closing a phase.
@@ -563,13 +563,12 @@ control (`isFocusControl` in `Hotkeys.js`) they move focus normally. The Shapes 
 
 Done: panel opens once on the first selection in a pane ≥1100px wide (a manual toggle is
 remembered, `sidePanelManual` pref); Path actions carry captions (`data-caption`); the
-theme toggle is no longer a default extension (Preferences has theme). Remaining:
-- The six top-bar toggles (frame, wireframe, canvas settings, grid, smart snap, layer view)
-  are icon-only with tooltips; visible labels don't fit the tight bar.
+theme toggle is no longer a default extension (Preferences has theme). The six top-bar toggles (frame,
+wireframe, canvas settings, grid, smart snap, layer view) stay icon-only with tooltips (decided: labels
+don't fit the tight bar). Nothing further planned.
 
 ### Icons and palette
 
 Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default palette
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
-tooltips shortened to the name and following a rebinding (`boundTooltipText`; `se-button` only — the flyout, spin-input and explorer-button tooltips still read the authored `shortcut`), Brush settings carries its text next to the gear. Remaining:
-- The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.
+tooltips shortened to the name and following a rebinding (`boundTooltipText`; `se-button` only — the flyout, spin-input and explorer-button tooltips still read the authored `shortcut`), Brush settings carries its text next to the gear, the Cutter icon is a shape cut along its diagonal (two pieces with a gap; stroke-drawn, so no longer in `OUTLINE_ICONS`). Remaining: the flyout, spin-input and explorer-button tooltips (above) still show the authored key.
