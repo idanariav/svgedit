@@ -570,4 +570,3 @@ Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default 
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
 tooltips shortened to the name. Remaining:
 - The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.
-- Shapes shows doubled lines where its artwork has holes.

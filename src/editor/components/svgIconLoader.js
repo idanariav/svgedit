@@ -11,7 +11,6 @@ import { getRawIcon } from '../images/iconRegistry.js'
 // toolbar reads as one outline family. `vector-effect: non-scaling-stroke` keeps the line
 // at OUTLINE_STROKE screen px whatever the artwork's viewBox (several are 512 or 800 wide,
 // where a 1.6 user-unit stroke would be invisible). Add a file name here to convert it.
-// shapes.svg is deliberately absent: its three tiny shapes read better solid than hollow.
 const OUTLINE_ICONS = new Set([
   'panning.svg', 'brush.svg', 'shapelib.svg', 'cutter.svg', 'pin.svg', 'go_up.svg', 'go_down.svg'
 ])
