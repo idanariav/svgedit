@@ -188,11 +188,84 @@ describe('se-palette', () => {
     expect(el.$doc.classList.contains('has-colors')).toBe(false)
     el.setDocumentColors(['#112233', '#aabbcc'])
     expect(el.$doc.classList.contains('has-colors')).toBe(true)
-    const swatches = el.$doc.querySelectorAll('.palette_item')
+    const swatches = el.$recent.querySelectorAll('.palette_item')
     expect(swatches.length).toBe(2)
+    expect(el.$doc.querySelector('.group_label').textContent).toBe('Recent')
     swatches[1].click()
     expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: '#aabbcc' })
     el.setDocumentColors([])
     expect(el.$doc.classList.contains('has-colors')).toBe(false)
+  })
+
+  it('shows at most five recent colours, as the same swatch size as the palette', () => {
+    const el = mountElement('se-palette')
+    el.setDocumentColors(['#000001', '#000002', '#000003', '#000004', '#000005', '#000006', '#000007'])
+    expect(el.$recent.querySelectorAll('.palette_item').length).toBe(5)
+    const css = el.shadowRoot.querySelector('style').textContent
+    expect(css).toMatch(/#js-se-recent div\.palette_item\s*\{[^}]*22px/)
+  })
+
+  describe('removing and re-adding colours', () => {
+    const live = (el) => el.$strip.querySelectorAll('.palette_item:not(.is-removed)').length
+    const removeBtn = (el, i) => el.shadowRoot.querySelector(`.palette_item[data-index="${i}"] .remove_btn`)
+
+    it('removes a swatch from the palette and persists it', () => {
+      const el = mountElement('se-palette')
+      removeBtn(el, 5).dispatchEvent(new MouseEvent('click'))
+      expect(el.isRemoved(5)).toBe(true)
+      expect(live(el)).toBe(41)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).removed).toEqual([5])
+      expect(el.$resetBtn.classList.contains('has-overrides')).toBe(true)
+    })
+
+    it('loads removed swatches from storage', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ removed: [2, 7] }))
+      const el = mountElement('se-palette')
+      expect(el.isRemoved(2)).toBe(true)
+      expect(el.isRemoved(3)).toBe(false)
+      expect(live(el)).toBe(40)
+    })
+
+    it('never offers to remove the "none" swatch', () => {
+      const el = mountElement('se-palette')
+      expect(removeBtn(el, 0)).toBeNull()
+      el._setRemoved(0, true)
+      expect(el.isRemoved(0)).toBe(false)
+    })
+
+    it('a removed swatch does nothing outside edit mode', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ removed: [3] }))
+      const el = mountElement('se-palette')
+      const handler = vi.fn()
+      el.addEventListener('change', handler)
+      el.shadowRoot.querySelector('.palette_item[data-index="3"]').dispatchEvent(new MouseEvent('click'))
+      expect(handler).not.toHaveBeenCalled()
+      expect(el.isRemoved(3)).toBe(true)
+    })
+
+    it('clicking a removed swatch in edit mode adds it back, keeping its customised colour', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ 3: '#abcdef', removed: [3, 4] }))
+      const el = mountElement('se-palette')
+      el.$editBtn.dispatchEvent(new MouseEvent('click'))
+      el.shadowRoot.querySelector('.palette_item[data-index="3"]').dispatchEvent(new MouseEvent('click'))
+      expect(el.isRemoved(3)).toBe(false)
+      expect(el.getColor(3)).toBe('#abcdef')
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
+      expect(saved.removed).toEqual([4])
+      expect(live(el)).toBe(41)
+    })
+
+    it('restoring the last removed swatch drops the key; reset restores everything', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ removed: [4] }))
+      const el = mountElement('se-palette')
+      el._setRemoved(4, false)
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+
+      el._setRemoved(6, true)
+      el._setRemoved(7, true)
+      el._resetAll()
+      expect(live(el)).toBe(42)
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
   })
 })

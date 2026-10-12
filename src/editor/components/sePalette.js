@@ -27,6 +27,14 @@ const DEFAULT_PALETTE = [
 
 const STORAGE_KEY = 'svg-edit-custom-palette'
 
+// Indices of default swatches the user took out of the palette. Kept inside the same
+// overrides map (next to the `{index: color}` entries) so a host adapter that stores the
+// map verbatim persists it without changes.
+const REMOVED_KEY = 'removed'
+// "none" always stays: it is the only way to clear a fill or stroke from the palette.
+const KEEP_INDEX = 0
+const RECENT_LIMIT = 5
+
 const loadOverrides = () => {
   const adapter = getUserDataAdapter()
   if (adapter) {
@@ -175,14 +183,29 @@ template.innerHTML = `
   #js-se-doc {
     display: none;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     flex: 0 0 auto;
     padding-right: 6px;
     margin-right: 2px;
     border-right: 1px solid var(--group-border, #E6E8EC);
   }
   #js-se-doc.has-colors { display: flex; }
-  #js-se-doc div.palette_item { flex: 0 0 18px; min-width: 18px; max-width: 18px; height: 18px; }
+  #js-se-recent {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  /* Same swatch size as the palette at full width, so the two groups line up. */
+  #js-se-recent div.palette_item { flex: 0 0 22px; min-width: 22px; max-width: 22px; }
+  .group_label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #6B7280);
+    user-select: none;
+    flex: 0 0 auto;
+  }
   div.palette_item {
     flex: 1;
     /* never shrink to a sliver in a narrow pane: the strip scrolls instead */
@@ -224,7 +247,7 @@ template.innerHTML = `
     box-shadow: 0 0 0 1px rgba(255,255,255,0.7);
     pointer-events: none;
   }
-  :host(.edit-mode) div.palette_item {
+  :host(.edit-mode) #js-se-palette div.palette_item {
     outline: 1px dashed var(--accent, #2563EB);
     outline-offset: 1px;
     cursor: crosshair;
@@ -249,6 +272,63 @@ template.innerHTML = `
   }
   button.revert_btn:hover {
     background: var(--accent-soft, #E0EAFD);
+  }
+  /* Inside the swatch (the strip clips anything poking out of it). */
+  button.remove_btn {
+    display: none;
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid var(--chrome-border, #E6E8EC);
+    background: var(--chrome-bg, #FFFFFF);
+    color: var(--fg, #0F172A);
+    font-size: 8px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    z-index: 2;
+  }
+  button.remove_btn:hover {
+    background: var(--accent-soft, #E0EAFD);
+  }
+  :host(.edit-mode) div.palette_item button.remove_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* A removed swatch is invisible until editing, when it shows dimmed with a "+" to add it back. */
+  div.palette_item.is-removed { display: none; }
+  :host(.edit-mode) div.palette_item.is-removed {
+    display: block;
+    opacity: 0.45;
+    outline: none;
+    border-style: dashed;
+    border-color: var(--muted, #6B7280);
+    cursor: pointer;
+  }
+  :host(.edit-mode) div.palette_item.is-removed::after {
+    content: '+';
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    bottom: auto;
+    right: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--fg, #0F172A);
+    text-shadow: 0 0 2px var(--chrome-bg, #FFFFFF);
+    pointer-events: none;
   }
   :host(.edit-mode) div.palette_item.is-customised button.revert_btn {
     display: flex;
@@ -303,7 +383,10 @@ template.innerHTML = `
   }
   </style>
   <div id="palette_holder" title="">
-    <div id="js-se-doc" title="Colors in this drawing"></div>
+    <div id="js-se-doc" title="Latest colors used in this drawing">
+      <span class="group_label">Recent</span>
+      <div id="js-se-recent"></div>
+    </div>
     <div id="js-se-palette"></div>
   </div>
   <button class="palette_edit_btn" title="Edit palette colors" aria-pressed="false">${PENCIL_SVG}</button>
@@ -325,6 +408,7 @@ export class SEPalette extends HTMLElement {
     this.$holder = this._shadowRoot.getElementById('palette_holder')
     this.$strip = this._shadowRoot.getElementById('js-se-palette')
     this.$doc = this._shadowRoot.getElementById('js-se-doc')
+    this.$recent = this._shadowRoot.getElementById('js-se-recent')
     // Narrow panes: the strip scrolls; let the plain mouse wheel do it.
     this.$strip.addEventListener('wheel', (e) => {
       if (this.$strip.scrollWidth <= this.$strip.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
@@ -400,6 +484,21 @@ export class SEPalette extends HTMLElement {
     return Object.prototype.hasOwnProperty.call(this._overrides, i)
   }
 
+  isRemoved (i) {
+    const removed = this._overrides[REMOVED_KEY]
+    return Array.isArray(removed) && removed.includes(i)
+  }
+
+  _setRemoved (i, removed) {
+    if (i === KEEP_INDEX) return
+    const list = (this._overrides[REMOVED_KEY] || []).filter((n) => n !== i)
+    if (removed) list.push(i)
+    if (list.length) this._overrides[REMOVED_KEY] = list.sort((a, b) => a - b)
+    else delete this._overrides[REMOVED_KEY]
+    saveOverrides(this._overrides)
+    this.renderSwatches()
+  }
+
   // ── Rendering ────────────────────────────────────────────────────────────
   renderSwatches () {
     this.$strip.replaceChildren()
@@ -411,18 +510,18 @@ export class SEPalette extends HTMLElement {
   }
 
   /**
-   * Show the colours already used in the drawing as a leading row of swatches.
+   * Show the drawing's latest colours as a labelled "Recent" row of swatches.
    * They are plain shortcuts (not customisable); clicking one applies it like
    * any palette swatch.
-   * @param {string[]} colors `#rrggbb` values, most used first
+   * @param {string[]} colors `#rrggbb` values, most recent first (only the first five show)
    * @returns {void}
    */
   setDocumentColors (colors) {
-    const list = colors || []
+    const list = (colors || []).slice(0, RECENT_LIMIT)
     const key = list.join(',')
     if (key === this._docKey) return
     this._docKey = key
-    this.$doc.replaceChildren(...list.map((color) => {
+    this.$recent.replaceChildren(...list.map((color) => {
       const swatch = document.createElement('div')
       swatch.classList.add('palette_item', 'doc_item')
       swatch.style.backgroundColor = color
@@ -445,7 +544,9 @@ export class SEPalette extends HTMLElement {
     const color = this.getColor(i)
     const swatch = document.createElement('div')
     swatch.classList.add('palette_item')
-    const customised = this.isCustomised(i)
+    const removed = this.isRemoved(i)
+    const customised = this.isCustomised(i) && !removed
+    if (removed) swatch.classList.add('is-removed')
     if (customised) swatch.classList.add('is-customised')
     if (isGradientOverride(color)) {
       const cssGrad = gradientToCss(gradientElFromXml(color.xml))
@@ -466,6 +567,22 @@ export class SEPalette extends HTMLElement {
     swatch.dataset.index = String(i)
     $click(swatch, (evt) => this._onSwatchClick(evt, i))
     swatch.addEventListener('contextmenu', (evt) => this._onSwatchContextMenu(evt, i))
+    if (removed) {
+      swatch.title = 'Add back to the palette'
+    } else if (i !== KEEP_INDEX) {
+      const remove = document.createElement('button')
+      remove.className = 'remove_btn'
+      remove.type = 'button'
+      remove.title = 'Remove from the palette'
+      remove.setAttribute('aria-label', 'Remove from the palette')
+      remove.textContent = '✕'
+      $click(remove, (evt) => {
+        evt.preventDefault()
+        evt.stopPropagation()
+        this._setRemoved(i, true)
+      })
+      swatch.append(remove)
+    }
     if (customised) {
       const revert = document.createElement('button')
       revert.className = 'revert_btn'
@@ -500,6 +617,10 @@ export class SEPalette extends HTMLElement {
 
   _onSwatchClick (evt, i) {
     evt.preventDefault()
+    if (this.isRemoved(i)) {
+      if (this._editMode) this._setRemoved(i, false)
+      return
+    }
     if (this._editMode) {
       if (DEFAULT_PALETTE[i] === 'none') return
       this._openEditDialog(i)
@@ -524,7 +645,7 @@ export class SEPalette extends HTMLElement {
   }
 
   _onSwatchContextMenu (evt, i) {
-    if (!this._editMode) return
+    if (!this._editMode || this.isRemoved(i)) return
     evt.preventDefault()
     this._revert(i)
   }

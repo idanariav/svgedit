@@ -1,6 +1,6 @@
 /**
  * documentColors.js — the distinct solid colours a drawing already uses, for the
- * palette's "in this drawing" row.
+ * palette's "Recent" row.
  * @module documentColors
  */
 
@@ -29,26 +29,28 @@ export const normalizeColor = (value) => {
 }
 
 /**
- * Distinct fill/stroke colours under `root`, most used first.
+ * Distinct fill/stroke colours under `root`, most recent first. An SVG keeps no
+ * history, so "recent" is document order: a colour ranks by the last element that
+ * uses it, and later elements (on top, usually drawn last) win.
  * @param {?Element} root drawing content element (e.g. `#svgcontent`)
- * @param {number} [limit=10]
+ * @param {number} [limit=5]
  * @returns {string[]} `#rrggbb` values
  */
-export const collectDocumentColors = (root, limit = 10) => {
+export const collectDocumentColors = (root, limit = 5) => {
   if (!root) return []
-  const counts = new Map()
-  const add = (v) => {
-    const c = normalizeColor(v)
-    if (c) counts.set(c, (counts.get(c) || 0) + 1)
-  }
+  const lastSeen = new Map()
+  let pos = 0
   root.querySelectorAll('*').forEach((el) => {
+    pos++
     if (el.closest('defs')) return
     for (const prop of ['fill', 'stroke']) {
-      add(el.getAttribute(prop))
-      add(el.style?.getPropertyValue(prop))
+      for (const v of [el.getAttribute(prop), el.style?.getPropertyValue(prop)]) {
+        const c = normalizeColor(v)
+        if (c) lastSeen.set(c, pos)
+      }
     }
   })
-  return [...counts.entries()]
+  return [...lastSeen.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([c]) => c)

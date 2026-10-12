@@ -16,7 +16,7 @@
  * Adapter shape (all methods synchronous from the editor's perspective; writes
  * may be fire-and-forget on the host side):
  *   {
- *     getPalette(): object,                     // overrides map, e.g. { 6: '#abc' }
+ *     getPalette(): object,                     // overrides map, e.g. { 6: '#abc', removed: [3, 4] }
  *     setPalette(overrides: object): void,      // full overrides map
  *     getUserShapes(): { categories, shapes },  // user shape store
  *     setUserShapes(store): void,               // full store
