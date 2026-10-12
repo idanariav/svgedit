@@ -37,6 +37,32 @@ test.describe('Right panel selection sync', () => {
     expect(await page.evaluate(readSpinValue, 'rect_height')).toBe('75')
   })
 
+  test('stroke Join and Cap are framed fields with a chevron, and picking one writes the attribute', async ({ page }) => {
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      const rect = canv.addSVGElementsFromJson({
+        element: 'rect', curStyles: true, attr: { x: 10, y: 10, width: 50, height: 50, stroke: '#000000', 'stroke-width': 4, id: canv.getNextId() }
+      })
+      canv.selectOnly([rect], true)
+    })
+    await page.waitForSelector('#stroke_linejoin', { state: 'visible' })
+    const frame = (id) => page.evaluate((i) => {
+      const box = document.getElementById(i).shadowRoot.querySelector('#select-container')
+      const s = getComputedStyle(box)
+      return { width: box.getBoundingClientRect().width, border: s.borderTopColor, radius: parseFloat(s.borderTopLeftRadius) }
+    }, id)
+    for (const id of ['stroke_linejoin', 'stroke_linecap']) {
+      const f = await frame(id)
+      expect(f.width).toBeGreaterThan(44)
+      expect(f.border).not.toBe('rgba(0, 0, 0, 0)') // a visible frame, like the Dash field
+      expect(f.radius).toBeGreaterThan(4)
+    }
+    // choosing an item still sets the attribute on the shape
+    await page.locator('#stroke_linejoin').click()
+    await page.locator('#linejoin_round').click()
+    await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements()[0].getAttribute('stroke-linejoin'))).toBe('round')
+  })
+
   test('selecting a different rect re-syncs the right panel fields (not stale from prior selection)', async ({ page }) => {
     await page.evaluate(() => {
       const canv = window.svgEditor.svgCanvas

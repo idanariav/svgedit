@@ -153,4 +153,12 @@ describe('se-list', () => {
     el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
     expect(el.isDropdownOpen).toBe(true)
   })
+
+  it('has a [field] variant: a framed trigger with a chevron, for settings rather than toolbar actions', () => {
+    const el = mountList(basicItems, { field: '' })
+    const css = el.shadowRoot.querySelector('style').textContent
+    expect(css).toContain(':host([field]) #select-container')
+    expect(css).toContain(':host([field]) #selected-value::after') // the chevron, inside the clickable part
+    expect(el.hasAttribute('field')).toBe(true)
+  })
 })

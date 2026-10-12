@@ -30,6 +30,43 @@ label {
   background: var(--icon-hover-bg, #EEF1F5);
   color: var(--icon-hover, #0F172A);
 }
+/* [field]: the trigger looks like the editor's other fields (a framed box with a chevron), for a setting
+   such as stroke join / cap rather than a toolbar action. The whole box is the click target: the padding and
+   the chevron live inside #selected-value, which is what carries the click handler. */
+:host([field]) #select-container {
+  width: auto;
+  min-width: 52px;
+  height: 34px;
+  padding: 0;
+  background: var(--field-bg, #F7F8FA);
+  border-color: var(--field-border, #E2E5EA);
+  border-radius: 8px;
+}
+:host([field]) #select-container:hover { border-color: var(--field-border-h, #C8CDD6); }
+:host([field]) #select-container:focus-visible {
+  outline: none;
+  border-color: var(--accent, #2962FF);
+  box-shadow: 0 0 0 3px var(--accent-ring, rgba(41,98,255,0.16));
+}
+:host([field]) #selected-value {
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 10px;
+}
+:host([field]) #selected-value::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  margin-top: -3px;
+  border-right: 1.5px solid var(--muted, #6B7280);
+  border-bottom: 1.5px solid var(--muted, #6B7280);
+  transform: rotate(45deg);
+}
 #options-container.closed {
   display: none;
 }

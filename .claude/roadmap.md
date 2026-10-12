@@ -562,7 +562,7 @@ remembered, `sidePanelManual` pref); Path actions carry captions (`data-caption`
 theme toggle is no longer a default extension (Preferences has theme). Remaining:
 - The six top-bar toggles (frame, wireframe, canvas settings, grid, smart snap, layer view)
   are icon-only with tooltips; visible labels don't fit the tight bar.
-- Join/Cap icons are solid glyphs; Brush settings is a lone gear. Small.
+- Brush settings is a lone gear. Small.
 
 ### Icons and palette
 

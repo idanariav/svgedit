@@ -1,12 +1,4 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg fill="currentColor" height="800px" width="800px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 viewBox="0 0 495.65 495.65" xml:space="preserve">
-<g>
-	<path fill="currentColor" d="M480.135,52.739H195.086C87.346,52.739,0,140.091,0,247.825c0,107.738,87.346,195.086,195.086,195.086h285.049
-		c8.578,0,15.516-6.936,15.516-15.514V272.601H304.949v24.74c0,8.578-6.938,15.514-15.515,15.514h-96.966
-		c-8.578,0-15.516-6.936-15.516-15.514v-96.963c0-8.58,6.938-15.516,15.516-15.516h96.966c8.577,0,15.515,6.936,15.515,15.516
-		v22.676H495.65V68.255C495.65,59.675,488.713,52.739,480.135,52.739z"/>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+  <path d="M7.5 12 H16.5" stroke-width="6" stroke-linecap="round"/>
+  <path d="M7.5 4 V20 M16.5 4 V20" stroke-width="1" stroke-linecap="butt" opacity="0.45"/>
 </svg>

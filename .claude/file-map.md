@@ -76,7 +76,7 @@
 | `seSelect.js` | `<se-select>` | Styled `<select>` dropdown |
 | `seFontSelect.js` | `<se-font-select>` | Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface). Drop-in replacement for the old `<se-select>` font dropdown — same `value`/`addOption`/`change`/`src`/`options`/`values` interface. Powers `tool_font_family` |
 | `seToolOverflow.js` | `<se-tool-overflow>` | Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes the popover, closes on outside click/Escape/after a slotted tool is clicked. Slotted children are real tools dragged in via `toolDragReorder.js` — each keeps its own click handler/hotkey/lock gesture. See [tools.md](tools.md) |
-| `seList.js` | `<se-list>` | Icon-based dropdown list |
+| `seList.js` | `<se-list>` | Icon-based dropdown list; the `field` attribute draws the trigger as a framed field with a chevron (used for stroke Join / Cap) |
 | `seListItem.js` | `<se-list-item>` | Item inside `<se-list>` |
 | `seSpinInput.js` | `<se-spin-input>` | Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, **scrubby label** (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and focused-wheel stepping; pref `scrub_numeric_fields` |
 | `seInput.js` | `<se-input>` | Text input with icon/label |
