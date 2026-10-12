@@ -120,6 +120,27 @@ test.describe('Width tool', () => {
     expect(await profile(page, 'box')).toBeNull()
   })
 
+  test('the cursor says what a press would do: add a point on the stroke, grab a diamond, nothing elsewhere', async ({ page }) => {
+    await tool(page)
+    await select(page, 'ln')
+    const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py }]), [x, y])
+    const hint = () => page.evaluate(() => window.svgEditor.svgCanvas.getCursorHint())
+    const cursor = () => page.evaluate(() => window.svgEditor.workarea.style.cursor)
+    await move(300, 380)
+    expect(await hint()).toBeNull()
+    const plain = await cursor()
+    await move(300, 200)
+    expect(await hint()).toBe('add')
+    const adding = await cursor()
+    expect(adding).not.toBe(plain)
+    await drag(page, { x: 300, y: 200 }, { x: 300, y: 170 })
+    await move(300, 200)
+    expect(await hint()).toBe('grab')
+    expect(await cursor()).toBe('grab')
+    await move(300, 380)
+    expect(await cursor()).toBe(plain)
+  })
+
   test('Escape mid-drag puts the stroke back', async ({ page }) => {
     await select(page, 'ln')
     await tool(page)

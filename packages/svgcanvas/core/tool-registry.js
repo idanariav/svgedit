@@ -113,7 +113,8 @@ const LOG = 'tool-registry'
  * @property {(id: string, value: number|string|boolean) => void} [setOption] the user changed a control of `options()`
  * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
  * @property {string|((ctx: ToolContext) => string)} [cursor] the CSS cursor of the canvas while the tool is the mode
- *   (set on activate, removed on deactivate); a tool that changes it by position is still to come
+ *   (set on activate, removed on deactivate). A cursor that follows what is under the pointer goes through
+ *   `svgCanvas.setCursorHint(name)`: the editor picks the artwork (core never does)
  * @property {boolean} [keepOverlays] a finished gesture leaves its overlay on show (a readout); the tool clears it
  *   itself on the next press and in `deactivate`
  * @property {boolean} [wantsHover] receive `pointerMove` with no button down

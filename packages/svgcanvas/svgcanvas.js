@@ -691,6 +691,26 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     this.state.drawing.started = s
   }
 
+  /**
+   * Say what the pointer is over, for the editor to pick the tool's cursor by position (a pen end that a press would
+   * carry on or join, a width point...). The editor owns the artwork: `hint` is a short name ('continue', 'join',
+   * 'add', ...) or `null` for none. A mode change clears it. Only a change fires `cursorHint`.
+   * @function module:svgcanvas.SvgCanvas#setCursorHint
+   * @param {?string} hint
+   * @returns {void}
+   * @fires module:svgcanvas.SvgCanvas#event:cursorHint
+   */
+  setCursorHint (hint) {
+    const next = hint || null
+    if (next === (this.cursorHintValue ?? null)) return
+    this.cursorHintValue = next
+    this.call('cursorHint', next)
+  }
+
+  getCursorHint () {
+    return this.cursorHintValue ?? null
+  }
+
   getRubberBox () {
     return this.state.selection.rubberBox
   }
@@ -1156,6 +1176,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
         ? this.state.style.text
         : this.state.style.shape
     this.state.drawing.currentMode = name
+    this.setCursorHint(null)
     this.toolModeChanged?.(previousMode, name)
 
     // fires modeChange event for the editor

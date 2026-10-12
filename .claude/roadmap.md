@@ -66,10 +66,9 @@ small items (S) fill gaps between large ones.
 
 Not started. Each is scheduled with the first feature that needs it (see *Implementation order*); do not build them standalone.
 
-- **Tool hook `cursor()` by position.** `ToolDef.cursor` (a CSS cursor, or a function of the context) is built, applied on
-  activate and removed on deactivate (Measure uses `crosshair`); no tool yet changes it with the pointer's position (a
-  cursor that depends on what is under the pointer: a continue / join pen cursor, a width-tool hover). Do that with the
-  first tool that needs it. Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
+- **Tool cursors by position** are done through `svgCanvas.setCursorHint` (see "Tool cursors"), not a `ToolDef.cursor()` by
+  position; `ToolDef.cursor` (a CSS cursor, or a function of the context) is still applied on activate and removed on
+  deactivate (Measure uses `crosshair`). Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
   the wand's tolerance and the smooth tool's radius are candidates, below.)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
@@ -403,7 +402,7 @@ Done: the pencil commit and Smooth Path run on the corner-keeping fit (no paper.
 ## Pen continue / join (`core/pen-continue.js`): follow-ups from T2.3
 
 Done: pressing an open path's end with the Pen carries it on (the same element, one undo step); pressing another open path's end while drawing joins them. Remaining:
-- **A ring marks the end, not a cursor.** The plan asked for "continue" and "join" cursors; a `pen_end_hint` ring in the selector layer shows the same thing, and says nothing about continue vs join. Distinct cursor icons would need a tool-level `cursor()` hook (see "Tool hooks").
+- **A ring and a cursor mark the end.** The `pen_end_hint` ring in the selector layer shows the end; the cursor (`path_continue`, or `path_join` while drawing) says whether a press carries on or joins.
 - **Only plain, untransformed, single-subpath open paths in the current layer** are offered (no current group, no `transform`, no `se:taper-d` / `se:orig-d` / `se:fx-d`, which would desync from their source). A rotated or grouped path draws a new path instead. Mapping the press into the path's own space would lift the transform limit.
 - **Path ends behind other shapes still win**: the nearest end within 6 screen px is used, whatever is on top of it. Alt starts a new path instead; there is no option to turn the behaviour off.
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
@@ -459,7 +458,7 @@ Done: **Line art (centerlines)** in Convert to editable SVG traces thin strokes 
 Done: a pencil stroke that starts on an end of the single selected open path extends it (one `Continue path` step) or closes it; Stabilisation and Fidelity are in Editor Preferences. Remaining:
 - **The seam is not tangent-continuous.** The stroke is fitted on its own and its first anchor merged into the path's end, so the old path's last handle and the new first handle can differ. VectorCraft refits with the old end tangent fixed; `fitFreehand` has no start-tangent option yet. A stroke that sets off in the path's direction is visually fine.
 - **Only the selected path, plain and untransformed, in the current layer**, same limits as the Pen (see "Pen continue / join"). With the pencil tool armed the selection has to be made first, then the tool picked (the selection survives the switch).
-- **The ring** marks the end like the Pen's; the cursor is the tool's static one, not a continue/join variant.
+- **The ring** marks the end like the Pen's, and the cursor turns into `fhpath_continue`.
 - **Closing is judged on the stroke's last captured point**, which trails the pointer (stabiliser and spline capture): finish with a short pause, or lower the stabilisation. The closing distance is `max(4 × fidelity, 6 screen px)`.
 - **Preferences are plain number fields** (stabilisation %, fidelity in user units), not a popover on the tool; double-click on a tool button means lock mode, so VectorCraft's "double-click opens Tool Options" is not available.
 - Stroke continued from a path's start comes back running the way the path ran; a path that gets closed keeps the stroke's direction.
@@ -575,8 +574,14 @@ working tip are drawn as the tool with its tip at the hotspot (Pencil `fhpath`, 
 Cutter); shape and effect tools are a crosshair (hotspot at its centre) with a small glyph of the tool beside it (rect/square/ellipse/
 circle/polygon/star, line, arc, spiral, rect/polar grid, shape builder, gradient, distort, corners, width, blend, shaper). Zoom, shape
 library, puppet warp and repeat-pick-center keep a crosshair, text its I-beam, pan a hand; Measure's `ToolDef.cursor` is a crosshair.
-Remaining: a cursor that changes with the pointer position (continue / join pen, width-tool hover) still needs the tool-level
-`cursor()` by position (see "Tool hooks"); Image has no mode, so no cursor; cursors are not shown on touch (tablet) anyway.
+Cursors by position: a tool says what the pointer is over with `svgCanvas.setCursorHint(hint)` (a short name, `null` for none; a mode
+change clears it; the `cursorHint` event fires on change), and the editor picks `cursors/<mode>_<hint>_cursor.svg` or a system
+cursor for the hint (`SYSTEM_HINT_CURSORS` in `toolCursors.js`). Used by the Pen (`path_continue`: an open end a press would carry on;
+`path_join`: the same end while a drawing is under way), the Pencil (`fhpath_continue`) and the Width tool (`width_add` on the
+stroke, `grab` on a diamond, `grabbing` while dragging it, a pointer on a side handle). Core never touches artwork (layering guard).
+Remaining: other tools could opt in (Corners widgets, Distort / Gradient handles: a `move` or `grab` over a handle); the select
+tool's move cursor is its own mousemove code in `EditorStartup`, not a hint; Image has no mode, so no cursor; cursors are not
+shown on touch (tablet) anyway.
 
 ### Icons and palette
 

@@ -120,8 +120,11 @@ test.describe('Pencil continues the selected open path', () => {
     await pencil(page)
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 301, y: 201 }]))
     await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'inline')
+    // and the cursor says "continue" while the ring is there
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getCursorHint())).toBe('continue')
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 400, y: 100 }]))
     await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'none')
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getCursorHint())).toBeNull()
   })
 
   test('the preferences dialog sets the pencil stabilisation and fidelity, and they reach the pencil', async ({ page }) => {

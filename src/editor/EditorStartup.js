@@ -325,6 +325,11 @@ class EditorStartup {
     this.svgCanvas.bind('elementInserted', this.elementInserted.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))
+    // A tool says what is under the pointer (a pen end to carry on, a width point): its cursor follows.
+    this.svgCanvas.bind('cursorHint', (_win, hint) => {
+      this.cursorHint = hint
+      this.setCursorStyle(this.svgCanvas.getMode())
+    })
     this.svgCanvas.bind('zoomDone', this.zoomDone.bind(this))
     this.svgCanvas.bind(
       'updateCanvas',
@@ -1066,7 +1071,7 @@ class EditorStartup {
     // workarea; bail rather than throw on `this.workarea.style` (defence in
     // depth — destroy() should already have removed those listeners).
     if (!this.workarea) return
-    this.workarea.style.cursor = cursorForMode(mode)
+    this.workarea.style.cursor = cursorForMode(mode, this.cursorHint)
   }
 
   /**

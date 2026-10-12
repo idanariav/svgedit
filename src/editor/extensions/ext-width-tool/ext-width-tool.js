@@ -272,6 +272,7 @@ export default {
         }
         const press = { x: ev.screenX, y: ev.screenY }
         const points0 = target.points.map((p) => [...p])
+        svgCanvas.setCursorHint(h.kind === 'center' ? 'grabbing' : null)
         if (h.kind === 'center') {
           drag = { mode: 'move', index: h.m.index, side: null, t: h.m.t, points0, moved: false, press }
           selected = { el: target.el, index: h.m.index }
@@ -289,7 +290,10 @@ export default {
           // Hover: the stroke under the pointer, with a diamond where a point would go.
           const t = pickTarget(ev)
           target = t
-          hover = t ? hoverAt(t, hit(t, toLocal(t, ev), ctx.zoom)) : null
+          const over = t ? hit(t, toLocal(t, ev), ctx.zoom) : null
+          hover = t ? hoverAt(t, over) : null
+          // The cursor says what a press would do: add a point, grab a point, or take a side handle.
+          svgCanvas.setCursorHint(over ? { stroke: 'add', center: 'grab', handle: 'handle' }[over.kind] : null)
           draw(ctx)
           return
         }

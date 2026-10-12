@@ -399,6 +399,10 @@ export interface InternalMembers {
   /** @internal */
   setStartY(...args: any[]): any
   /** @internal */
+  setCursorHint(...args: any[]): any
+  /** @internal */
+  getCursorHint(...args: any[]): any
+  /** @internal */
   setStarted(...args: any[]): any
   /** @internal */
   setStrokePaint(...args: any[]): any

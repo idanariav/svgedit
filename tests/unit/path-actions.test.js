@@ -73,6 +73,7 @@ describe('PathActions', () => {
       logDebugEvent: vi.fn(),
       getSelectedElements: vi.fn(() => [pathElement]),
       getDrawnPath: vi.fn(() => null),
+      setCursorHint: vi.fn(),
       setDrawnPath: vi.fn(),
       getCurrentGroup: vi.fn(() => null),
       getCurrentDrawing: () => ({ getCurrentLayer: () => document.createElementNS('http://www.w3.org/2000/svg', 'g') }),
@@ -255,6 +256,22 @@ describe('PathActions', () => {
       expect(svgCanvas.logDebugEvent).toHaveBeenCalledWith('path-node-select', {
         elemId: 'path1', index: 1, kind: 'ctrl', ctrlNum: 2, shiftKey: true
       })
+    })
+  })
+
+  describe('cursor hint', () => {
+    it('hiding the end hint clears the cursor hint (pointer left the end, or the tool changed)', () => {
+      svgCanvas.setCursorHint.mockClear()
+      pathActionsMethod.hover(null, null)
+      expect(svgCanvas.setCursorHint).toHaveBeenCalledWith(null)
+    })
+
+    it('a pointer over nothing continuable asks for no hint', () => {
+      svgCanvas.getCurrentMode.mockReturnValue('path')
+      svgCanvas.setCursorHint.mockClear()
+      pathActionsMethod.hover(500, 500, 'path')
+      expect(svgCanvas.setCursorHint).toHaveBeenCalledWith(null)
+      expect(svgCanvas.setCursorHint).not.toHaveBeenCalledWith('continue')
     })
   })
 

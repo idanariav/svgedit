@@ -21,11 +21,25 @@ const SYSTEM_CURSORS = {
   text: 'text'
 }
 
+/** System cursors for a hint (`<mode>:<hint>`) that has no artwork of its own. */
+const SYSTEM_HINT_CURSORS = {
+  'width:grab': 'grab',
+  'width:grabbing': 'grabbing',
+  'width:handle': 'pointer'
+}
+
 /**
  * @param {string} mode the canvas mode
+ * @param {?string} [hint] what the pointer is over (`svgCanvas.setCursorHint`): the cursor of `<mode>_<hint>`, or
+ *   a system cursor from the table above, else the mode's own cursor
  * @returns {string} a CSS `cursor` value
  */
-export const cursorForMode = (mode) => {
+export const cursorForMode = (mode, hint = null) => {
+  if (hint) {
+    const system = SYSTEM_HINT_CURSORS[`${mode}:${hint}`]
+    if (system) return system
+    if (getIconDataUri(`cursors/${mode}_${hint}_cursor.svg`)) return cursorForMode(`${mode}_${hint}`)
+  }
   if (Object.prototype.hasOwnProperty.call(SYSTEM_CURSORS, mode)) return SYSTEM_CURSORS[mode]
   const file = `cursors/${mode}_cursor.svg`
   const uri = getIconDataUri(file)

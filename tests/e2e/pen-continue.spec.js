@@ -130,6 +130,30 @@ test.describe('Pen continues and joins open paths', () => {
     expect(await points(page, 'a')).toEqual([[100, 100], [200, 100]])
   })
 
+  test('the cursor says what a press on an end does: continue, or join while drawing; the Pen\'s own cursor elsewhere', async ({ page }) => {
+    const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py }]), [x, y])
+    const state = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
+    await pen(page)
+    await move(250, 250)
+    const plain = await state()
+    expect(plain.hint).toBeNull()
+    expect(plain.cursor).toContain('url(')
+    await move(201, 101)
+    const onEnd = await state()
+    expect(onEnd.hint).toBe('continue')
+    expect(onEnd.cursor).toContain('url(')
+    expect(onEnd.cursor).not.toBe(plain.cursor)
+    await move(250, 250)
+    expect(await state()).toEqual(plain)
+    // with a drawing under way, an end is a join
+    await click(page, 250, 200)
+    await move(301, 101)
+    const joining = await state()
+    expect(joining.hint).toBe('join')
+    expect(joining.cursor).not.toBe(onEnd.cursor)
+    expect(joining.cursor).not.toBe(plain.cursor)
+  })
+
   test('a ring marks an end the next press would use', async ({ page }) => {
     await pen(page)
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 201, y: 101 }]))

@@ -463,6 +463,8 @@ export const init = (canvas) => {
         this.#hideEndHint()
         return
       }
+      // Which cursor says what a press would do: carry the path on, or (the pen, with a drawing under way) join to it.
+      svgCanvas.setCursorHint(mode === 'path' && svgCanvas.getDrawnPath() ? 'join' : 'continue')
       let ring = svgCanvas.getElement(END_HINT_ID)
       if (!ring) {
         ring = document.createElementNS(NS.SVG, 'circle')
@@ -476,6 +478,7 @@ export const init = (canvas) => {
 
     #hideEndHint () {
       svgCanvas.getElement(END_HINT_ID)?.setAttribute('display', 'none')
+      svgCanvas.setCursorHint(null)
     }
 
     /**
