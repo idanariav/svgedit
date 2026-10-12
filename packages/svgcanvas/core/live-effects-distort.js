@@ -27,21 +27,31 @@ import {
 } from './anchor-path.js'
 import { registerLiveEffect } from './live-effects.js'
 
+/** @typedef {import('./anchor-path.js').SubPath} SubPath */
+/** @typedef {{x: number, y: number}} Pt */
+/** @typedef {{x: number, y: number, width: number, height: number}} Box */
+
 const KAPPA = 0.5522847498307936
 
+/** @type {(v: number, lo: number, hi: number) => number} */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+/** @type {(a: Pt, b: Pt, t: number) => Pt} */
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t })
+/** @param {Box} b */
 const meanSize = (b) => (Math.abs(b.width) + Math.abs(b.height)) / 2
+/** @param {Box} b */
 const diag = (b) => Math.max(Math.hypot(b.width, b.height), 1e-6)
+/** @param {Box} b */
 const center = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 })
+/** @type {(pts: Pt[], closed: boolean, smooth: boolean) => any} */
 const smoothOrPolyline = (pts, closed, smooth) => (smooth ? catmullRom(pts, closed, 1) : polyline(pts, closed))
 
 /**
  * Roughen: resample at `detail` points per inch and jitter each point.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
- * @param {Object} bbox
- * @param {Object} p
- * @returns {import('./anchor-path.js').SubPath[]}
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const roughen = (subpaths, bbox, p) => {
   const size = clamp(p.size, 0, 1e4)
@@ -71,6 +81,10 @@ export const roughen = (subpaths, bbox, p) => {
 /**
  * Zig Zag: `ridges` extra points per segment, alternately displaced along the
  * normal.
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const zigZag = (subpaths, bbox, p) => {
   const size = clamp(p.size, -1e4, 1e4)
@@ -125,6 +139,10 @@ export const zigZag = (subpaths, bbox, p) => {
  * Pucker & Bloat: anchors move toward the centre, handles the opposite way.
  * Straight segments first get handles at 1/3 and 2/3 so they bulge — the
  * order matters.
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const puckerBloat = (subpaths, bbox, p) => {
   const a = clamp(p.amount, -200, 200) / 100
@@ -153,12 +171,17 @@ export const puckerBloat = (subpaths, bbox, p) => {
  * Twist: rotation strongest at the centre, fading to zero at the bounding
  * circle (radius `diag/2`). The piece size shrinks with the angle so large
  * twists stay smooth.
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const twist = (subpaths, bbox, p) => {
   const ang = clamp(p.angle, -3600, 3600) * Math.PI / 180
   if (ang === 0) return subpaths
   const c = center(bbox)
   const r = diag(bbox) / 2
+  /** @param {Pt} q */
   const f = (q) => {
     const dx = q.x - c.x
     const dy = q.y - c.y
@@ -172,13 +195,20 @@ export const twist = (subpaths, bbox, p) => {
   return mapNonlinear(subpaths, pieces, f)
 }
 
-/** Tweak: random displacement of anchors and/or control points. */
+/**
+ * tweak live effect.
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
+ */
 export const tweak = (subpaths, bbox, p) => {
   const ah = p.relative ? p.h / 100 * Math.abs(bbox.width) : p.h
   const av = p.relative ? p.v / 100 * Math.abs(bbox.height) : p.v
   return subpaths.map((sp, si) => ({
     closed: sp.closed,
     anchors: sp.anchors.map((an, ai) => {
+      /** @param {number} ch */
       const d = (ch) => ({
         x: ah * seededNoise(p.seed, si, ai, ch * 2 + 1),
         y: av * seededNoise(p.seed, si, ai, ch * 2 + 2)
@@ -186,6 +216,7 @@ export const tweak = (subpaths, bbox, p) => {
       let pt = an.p
       let hIn = an.hIn
       let hOut = an.hOut
+      /** @type {(q: Pt, v: Pt) => Pt} */
       const add = (q, v) => ({ x: q.x + v.x, y: q.y + v.y })
       if (p.anchors) {
         const dp = d(0)
@@ -204,6 +235,10 @@ export const tweak = (subpaths, bbox, p) => {
  * Round Corners: every sharp, handle-less interior corner becomes a
  * circular-ish arc of `radius` (capped at half the adjoining edges). Corners
  * that already carry handles are left alone.
+ * @param {SubPath[]} subpaths
+ * @param {Box} _bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const roundCorners = (subpaths, _bbox, p) => {
   const radius = p.radius
@@ -260,6 +295,10 @@ export const roundCorners = (subpaths, _bbox, p) => {
  * Returns the *centerline*; the registry paints it as a stroke of
  * `strokeWidth` (`strokeOutput`). Open subpaths enclose no area and are
  * ignored — with none closed the result is empty (the effect is refused).
+ * @param {SubPath[]} subpaths
+ * @param {Box} bbox
+ * @param {any} p
+ * @returns {SubPath[]}
  */
 export const scribble = (subpaths, bbox, p) => {
   const closed = subpaths.filter((sp) => sp.closed)
@@ -270,6 +309,7 @@ export const scribble = (subpaths, bbox, p) => {
   const spacing = Math.max(p.spacing, 0.1)
   const variation = clamp(p.variation, 0, 100)
   const c = center(bbox)
+  /** @type {(q: Pt, a: number) => Pt} */
   const rot = (q, a) => {
     const dx = q.x - c.x
     const dy = q.y - c.y
@@ -304,6 +344,7 @@ export const scribble = (subpaths, bbox, p) => {
     for (let i = 0; i + 1 < xs.length; i += 2) spans.push([xs[i] - overlap, xs[i + 1] + overlap])
     if (row % 2 === 1) spans.reverse()
     for (const [a, bx] of spans) {
+      /** @param {number} k */
       const jitter = (k) => variation * seededNoise(p.seed, row, k, 3)
       const l = { x: a + jitter(0), y: y + jitter(1) }
       const r = { x: bx + jitter(2), y: y + jitter(3) }
@@ -313,6 +354,7 @@ export const scribble = (subpaths, bbox, p) => {
   }
   if (pts.length < 2) return []
   const line = curvy > 0 ? catmullRom(pts, false, curvy * 2) : polyline(pts, false)
+  /** @param {Pt} q */
   const back = (q) => rot(q, angle)
   return [{
     closed: false,

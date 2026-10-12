@@ -53,6 +53,7 @@ export const init = (canvas) => {
 * @returns {string|void} the current group/SVG's title contents or
 * `undefined` if no element is passed nd there are no selected elements.
 */
+  /** @param {Element} [elem] */
   const getTitleMethod = (elem) => {
     const selectedElements = svgCanvas.getSelectedElements()
     const dataStorage = svgCanvas.getDataStorage()
@@ -63,10 +64,10 @@ export const init = (canvas) => {
     } else if (dataStorage.has(elem, 'symbol')) {
       elem = dataStorage.get(elem, 'symbol')
     }
-    const childs = elem.childNodes
+    const childs = /** @type {Element} */ (elem).childNodes
     for (const child of childs) {
       if (child.nodeName === 'title') {
-        return child.textContent
+        return /** @type {string} */ (child.textContent)
       }
     }
     return ''
@@ -147,8 +148,9 @@ export const init = (canvas) => {
     const batchCmd = new BatchCommand('Change Image Title')
 
     /** @type {Element|null} */
+    /** @type {Element|null} */
     let docTitle = null
-    for (const child of svgContent.childNodes) {
+    for (const child of /** @type {Element[]} */ ([...svgContent.childNodes])) {
       if (child.nodeName === 'title') {
         docTitle = child
         break
@@ -157,7 +159,7 @@ export const init = (canvas) => {
 
     if (!docTitle) {
       if (!newTitle.length) { return }
-      docTitle = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title')
+      docTitle = /** @type {Element} */ (svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title'))
       docTitle.textContent = newTitle
       svgContent.insertBefore(docTitle, svgContent.firstChild)
       batchCmd.addSubCommand(new InsertElementCommand(docTitle))
@@ -202,8 +204,11 @@ export const init = (canvas) => {
         batchCmd = new BatchCommand('Fit Canvas to Content')
         const visEls = svgCanvas.getVisibleElements()
         svgCanvas.addToSelection(visEls)
-        const dx = []; const dy = []
-        visEls.forEach((_item, _i) => {
+        /** @type {number[]} */
+        const dx = []
+        /** @type {number[]} */
+        const dy = []
+        visEls.forEach((/** @type {any} */ _item, /** @type {number} */ _i) => {
           dx.push(bbox.x * -1)
           dy.push(bbox.y * -1)
         })
@@ -273,7 +278,9 @@ export const init = (canvas) => {
     const zoom = svgCanvas.getZoom()
     const selectedElements = svgCanvas.getSelectedElements()
     let spacer = 0.85
+    /** @type {any} */
     let bb
+    /** @param {any} bb */
     const calcZoom = (bb) => {
       if (!bb) { return undefined }
       if (!Number.isFinite(editorW) || !Number.isFinite(editorH) || editorW <= 0 || editorH <= 0) {
@@ -352,7 +359,7 @@ export const init = (canvas) => {
     }
     svgCanvas.getSvgContent().setAttribute('viewBox', `0 0 ${w} ${h}`)
     svgCanvas.setZoom(zoomLevel)
-    selectedElements.forEach((elem) => {
+    selectedElements.forEach((/** @type {Element|null} */ elem) => {
       if (!elem) { return }
       const selector = svgCanvas.selectorManager.requestSelector(elem)
       selector && selector.resize()
@@ -456,7 +463,7 @@ export const init = (canvas) => {
 * Check if exact gradient already exists.
 * @function module:svgcanvas~findDuplicateGradient
 * @param {SVGGradientElement} grad - The gradient DOM element to compare to others
-* @returns {SVGGradientElement} The existing gradient if found, `null` if not
+* @returns {SVGGradientElement|null} The existing gradient if found, `null` if not
 */
   const findDuplicateGradient = (grad) => {
     if (!grad) {
@@ -500,7 +507,7 @@ export const init = (canvas) => {
 
         let diff = false
         radAttrs.forEach((attr) => {
-          if (gradAttrs[attr] !== ogAttrs[attr]) { diff = true }
+          if (/** @type {Record<string, number>} */ (gradAttrs)[attr] !== /** @type {Record<string, number>} */ (ogAttrs)[attr]) { diff = true }
         })
 
         if (diff) { continue }
@@ -815,6 +822,7 @@ export const init = (canvas) => {
 * @param {string} url - URL or path to image to use
 * @returns {void}
 */
+  /** @type {(color: string, url?: string, gradientElem?: Element, recordUndo?: boolean) => void} */
   const setBackgroundMethod = (color, url, gradientElem) => {
     const bg = svgCanvas.getElement('canvasBackground')
     if (!bg) { return }
@@ -846,7 +854,7 @@ export const init = (canvas) => {
       // document-wide — can't have a second canvas's background rect bind to
       // the first's gradient.
       const gradId = svgCanvas.getNonceId(`background_gradient_${++bgGradientSeq}`)
-      grad.id = gradId
+      ;/** @type {Element} */ (grad).id = gradId
       bgDefs.appendChild(grad)
       border.setAttribute('fill', `url(#${gradId})`)
     } else {
@@ -942,6 +950,7 @@ export const init = (canvas) => {
  * @returns {{cx:number, cy:number, rx:number, ry:number}}
  */
   const readArcGeom = (elem) => {
+    /** @param {string} a */
     const num = (a) => Number(elem.getAttribute(a)) || 0
     if (elem.tagName === 'circle') {
       const r = num('r')
@@ -987,13 +996,15 @@ export const init = (canvas) => {
     const { BatchCommand, RemoveElementCommand, InsertElementCommand, ChangeElementCommand } = svgCanvas.history
 
     // Collect presentational attributes from elem
+    /** @param {Element} elem */
     const collectPresAttrs = (elem) => ARC_PRES_ATTRS.reduce((o, a) => {
       const v = elem.getAttribute(a)
       if (v !== null) o[a] = v
       return o
-    }, {})
+    }, /** @type {Record<string, string>} */ ({}))
 
     // Swap `selected` out for `replacement`, preserving id/transform, as one undo step.
+    /** @type {(replacement: Element, label: string) => void} */
     const replaceSelected = (replacement, label) => {
       const batchCmd = new BatchCommand(label)
       const eltrans = selected.getAttribute('transform')
@@ -1059,7 +1070,7 @@ export const init = (canvas) => {
     const oldVals = changedAttrs.reduce((o, a) => {
       o[a] = selected.getAttribute(a)
       return o
-    }, {})
+    }, /** @type {Record<string, string|null>} */ ({}))
 
     if (attr === 'cx') {
       geom.cx = val

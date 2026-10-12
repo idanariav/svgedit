@@ -71,7 +71,8 @@ export const init = (canvas) => {
       this.selectorGroup.append(this.selectorRect)
 
       // this holds a reference to the grip coordinates for this selector
-      this.gripCoords = {
+      /** @type {Record<string, number[]>} */
+      this.gripCoords = /** @type {any} */ ({
         nw: null,
         n: null,
         ne: null,
@@ -80,7 +81,7 @@ export const init = (canvas) => {
         s: null,
         sw: null,
         w: null
-      }
+      })
 
       this.reset(this.selectedElement, bbox)
     }
@@ -239,8 +240,8 @@ export const init = (canvas) => {
         selectedBox.setAttribute('d', dstr)
         this.selectorGroup.setAttribute('transform', xform)
         Object.entries(this.gripCoords).forEach(([dir, coords]) => {
-          selectedGrips[dir].setAttribute('cx', coords[0])
-          selectedGrips[dir].setAttribute('cy', coords[1])
+          selectedGrips[dir].setAttribute('cx', String(coords[0]))
+          selectedGrips[dir].setAttribute('cy', String(coords[1]))
         })
 
         // we want to go 20 pixels in the negative transformed y direction, ignoring scale
@@ -265,7 +266,7 @@ export const init = (canvas) => {
       let steps = Math.round(angle / 45)
       if (steps < 0) { steps += 8 }
       while (steps > 0) {
-        dirArr.push(dirArr.shift())
+        dirArr.push(/** @type {string} */ (dirArr.shift()))
         steps--
       }
       Object.values(selectorManager.selectorGrips).forEach((gripElement, i) => {
@@ -289,13 +290,16 @@ export const init = (canvas) => {
       this.rubberBandBox = null
 
       // this will hold objects of type Selector (see above)
+      /** @type {Selector[]} */
       this.selectors = []
 
       // this holds a map of SVG elements to their Selector object
+      /** @type {Record<string, Selector>} */
       this.selectorMap = {}
 
       // this holds a reference to the grip elements
-      this.selectorGrips = {
+      /** @type {Record<string, SVGElement>} */
+      this.selectorGrips = /** @type {any} */ ({
         nw: null,
         n: null,
         ne: null,
@@ -304,7 +308,7 @@ export const init = (canvas) => {
         s: null,
         sw: null,
         w: null
-      }
+      })
 
       this.selectorGripsGroup = null
       this.rotateGripConnector = null
@@ -339,7 +343,9 @@ export const init = (canvas) => {
       this.selectorParentGroup.append(this.selectorGripsGroup)
       svgCanvas.getSvgRoot().append(this.selectorParentGroup)
 
+      /** @type {Record<string, Selector>} */
       this.selectorMap = {}
+      /** @type {Selector[]} */
       this.selectors = []
       this.rubberBandBox = null
       // the old group box was a child of the parent group we just removed
@@ -436,7 +442,7 @@ export const init = (canvas) => {
   * @returns {Selector} The selector based on the given element
   */
     requestSelector (elem, bbox) {
-      if (!elem) { return null }
+      if (!elem) { return /** @type {any} */ (null) }
 
       const N = this.selectors.length
       // If we've already acquired one for this element, return it.
@@ -490,7 +496,7 @@ export const init = (canvas) => {
             if (this.selectorMap[key] === sel) delete this.selectorMap[key]
           }
           sel.locked = false
-          sel.selectedElement = null
+          sel.selectedElement = /** @type {any} */ (null)
           sel.showGrips(false)
 
           // remove from DOM and store reference in JS but only if it exists in the DOM
@@ -573,8 +579,8 @@ export const init = (canvas) => {
         s: [x + w / 2, y + h]
       }
       Object.entries(gripCoords).forEach(([dir, coords]) => {
-        this.selectorGrips[dir].setAttribute('cx', coords[0])
-        this.selectorGrips[dir].setAttribute('cy', coords[1])
+        this.selectorGrips[dir].setAttribute('cx', String(coords[0]))
+        this.selectorGrips[dir].setAttribute('cy', String(coords[1]))
       })
 
       // position the rotate grip + its connector at the top-center of the box

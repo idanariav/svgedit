@@ -70,6 +70,7 @@ export const MAX_FX_ANCHORS = 20000
 const SUPPORTED_TAGS = new Set(['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygon'])
 
 // Geometry attributes dropped when a primitive is swapped for a <path>.
+/** @type {Record<string, string[]>} */
 const GEOMETRY_ATTRS = {
   rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
   ellipse: ['cx', 'cy', 'rx', 'ry'],
@@ -79,6 +80,7 @@ const GEOMETRY_ATTRS = {
   polygon: ['points']
 }
 
+/** @param {number} n */
 const round6 = (n) => Math.round(n * 1e6) / 1e6
 
 // ---------------------------------------------------------------------------
@@ -135,6 +137,7 @@ export const listLiveEffects = () => [...registry].map(([name, def]) => ({ name,
 const NUMBER_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
 const WORD_RE = /^[\w.-]+$/
 
+/** @param {string} raw */
 const parseValue = (raw) => {
   const v = raw.trim()
   if (v === 'true') return true
@@ -148,10 +151,11 @@ const parseValue = (raw) => {
  * default's type (and, for strings with `choices`, is an allowed value),
  * otherwise use the default. Keys that are not declared are dropped.
  * @param {LiveEffectDef} def
- * @param {Object} [raw]
- * @returns {Object}
+ * @param {Record<string, any>} [raw]
+ * @returns {Record<string, any>}
  */
 export const resolveParams = (def, raw = {}) => {
+  /** @type {Record<string, any>} */
   const out = {}
   for (const [key, dflt] of Object.entries(def.defaults)) {
     let v = raw[key]
@@ -186,6 +190,7 @@ const parseFxRaw = (str) => {
       unknown++
       continue
     }
+    /** @type {Record<string, any>} */
     const raw = {}
     for (const pair of m[2].split(',')) {
       const eq = pair.indexOf('=')
@@ -227,7 +232,7 @@ export const serializeFxStack = (stack) => sanitizeFxStack(stack).map(({ name, p
  */
 export const sanitizeFxStack = (stack) => (Array.isArray(stack) ? stack : [])
   .filter((e) => e && registry.has(e.name))
-  .map((e) => ({ name: e.name, params: resolveParams(registry.get(e.name), e.params) }))
+  .map((e) => ({ name: e.name, params: resolveParams(/** @type {LiveEffectDef} */ (registry.get(e.name)), e.params) }))
 
 // ---------------------------------------------------------------------------
 // Geometry
@@ -247,7 +252,7 @@ export const computeFxD = (srcD, stack) => {
   const bbox = anchorBBox(subpaths)
   for (const { name, params } of sanitizeFxStack(stack)) {
     try {
-      subpaths = registry.get(name).apply(subpaths, bbox, params)
+      subpaths = /** @type {LiveEffectDef} */ (registry.get(name)).apply(subpaths, bbox, params)
     } catch (err) {
       warn(`Live effect "${name}" failed`, err, 'live-effects')
       return null
@@ -262,6 +267,7 @@ export const computeFxD = (srcD, stack) => {
   return anchorsToD(subpaths)
 }
 
+/** @param {string} d */
 const normalizeD = (d) => anchorsToD(parseAnchors(d))
 
 /**
@@ -333,7 +339,7 @@ const primitiveToPath = (elem) => {
 const strokeOutputOf = (stack) => {
   for (let i = stack.length - 1; i >= 0; i--) {
     const so = registry.get(stack[i].name)?.strokeOutput
-    if (so) return { width: stack[i].params[so.widthParam] }
+    if (so) return { width: /** @type {Record<string, any>} */ (stack[i].params)[so.widthParam] }
   }
   return null
 }
@@ -371,6 +377,10 @@ const hatchPaint = (elem, width) => {
   }
 }
 
+/**
+ * @param {Element} elem
+ * @param {Record<string, string|null>} attrs
+ */
 const setAttrs = (elem, attrs) => {
   for (const [k, v] of Object.entries(attrs)) {
     if (v === null) elem.removeAttribute(k)
@@ -398,6 +408,7 @@ registerLiveStage({
   stackable: (view) => !strokeOutputOf(parseFxStack(view.getAttribute(FX_ATTR)))
 })
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -458,6 +469,7 @@ export const init = (canvas) => {
     return subpaths.length ? anchorBBox(subpaths) : null
   }
 
+  /** @param {Element} elem */
   const getSource = (elem) => {
     if (elem.hasAttribute(FX_SOURCE_ATTR)) return elem.getAttribute(FX_SOURCE_ATTR)
     const src = normalizeD(stackSource(elem, 'fx') || getPathDFromElement(elem) || '')
@@ -468,6 +480,7 @@ export const init = (canvas) => {
   // The selected element is hidden and a throwaway <path> clone shows the
   // result, so previewing never touches the real element (a rect can't hold
   // a baked `d`) and cancelling is just removing the clone.
+  /** @type {{elem: Element, clone: Element, [k: string]: any}|null} */
   let session = null
 
   const endPreview = () => {
@@ -490,7 +503,7 @@ export const init = (canvas) => {
     if (session && session.elem !== elem) endPreview()
     reconcileLiveEffects(elem)
     const src = getSource(elem)
-    const d = src && planFx(elem, src, stack)?.d
+    const d = src && planFx(elem, src, /** @type {any} */ (stack))?.d
     if (!d) return
     if (!session) {
       const clone = primitiveToPath(elem)
@@ -519,9 +532,11 @@ export const init = (canvas) => {
   // Each runs inside svgCanvas.transact(), so the one undo step is whatever
   // the body changed; nothing here builds commands by hand.
   // What the element becomes with `stack` over `src`: its stage attributes and `d`, the width outline included.
+  /** @type {(elem: Element, src: string, stack: Array<{name: string, params: Object}>) => any} */
   const planFx = (elem, src, stack) =>
     planStack(elem, { [FX_SOURCE_ATTR]: src, [FX_ATTR]: serializeFxStack(stack) }, svgCanvas)
 
+  /** @param {Element} elem */
   const finish = (elem) => {
     svgCanvas.selectOnly([elem], true)
     svgCanvas.call('changed', [elem])
@@ -531,6 +546,9 @@ export const init = (canvas) => {
   /**
    * Write a planned stack into `elem` (the caller's transaction records it): a primitive is swapped for an
    * equivalent `<path>` (same id), a stroke-output effect repaints it, then the source, the stack and `d` go in.
+   * @param {Element} elem
+   * @param {any} clean
+   * @param {any} plan
    * @returns {?Element} The (possibly new) element.
    */
   const writeFx = (elem, clean, plan) => {

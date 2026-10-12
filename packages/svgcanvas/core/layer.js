@@ -33,7 +33,8 @@ class Layer {
   */
   constructor (name, group, svgElem) {
     this.name_ = name
-    this.group_ = svgElem ? null : group
+    // (null only until the branch below creates the group)
+    this.group_ = /** @type {SVGGElement} */ (svgElem ? null : group)
 
     if (svgElem) {
       // Create a group element with title and add it to the DOM.
@@ -258,7 +259,7 @@ class Layer {
   removeGroup () {
     const group = this.group_
     this.group_.remove()
-    this.group_ = undefined
+    this.group_ = /** @type {any} */ (undefined)
     return group
   }
 
@@ -268,7 +269,7 @@ class Layer {
    * @returns {boolean} True if the element is a layer
    */
   static isLayer (elem) {
-    return elem && elem.tagName === 'g' && Layer.CLASS_REGEX.test(elem.getAttribute('class'))
+    return elem && elem.tagName === 'g' && Layer.CLASS_REGEX.test(elem.getAttribute('class') ?? '')
   }
 }
 /**

@@ -40,6 +40,7 @@ const MODES = ['steps', 'distance', 'smooth']
 
 /** @typedef {import('./blend.js').BlendSpacing} BlendSpacing */
 
+/** @type {(v: number, lo: number, hi: number) => number} */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ export const BLEND_DEFAULTS = Object.freeze({ mode: 'steps', steps: 5, distance:
  * @returns {BlendSpacing}
  */
 export const sanitizeBlendOptions = (raw = {}) => {
+  /** @type {(v: any, def: number, lo: number, hi: number) => number} */
   const num = (v, def, lo, hi) => (Number.isFinite(Number(v)) && v !== '' && v != null ? clamp(Number(v), lo, hi) : def)
   return {
     mode: MODES.includes(raw.mode) ? raw.mode : BLEND_DEFAULTS.mode,
@@ -69,6 +71,7 @@ export const sanitizeBlendOptions = (raw = {}) => {
 export const parseBlend = (str) => {
   const m = /^\s*blend\s*\(([^()]*)\)\s*$/.exec(str ?? '')
   if (!m) return null
+  /** @type {Record<string, string>} */
   const raw = {}
   for (const pair of m[1].split(',')) {
     const eq = pair.indexOf('=')
@@ -116,6 +119,7 @@ export const blendGroupOf = (elem) => {
   return blendParts(/** @type {Element} */ (group)) ? /** @type {Element} */ (group) : null
 }
 
+/** @type {(doc: Document, tag: string) => Element} */
 const svgNS = (doc, tag) => doc.createElementNS(NS.SVG, tag)
 
 /** @param {Element} key @returns {import('./anchor-path.js').SubPath[]} the key's path in its parent's coordinates */
@@ -147,6 +151,7 @@ const stepsBetween = (a, b, spacing) => {
   const boxB = anchorBBox(gb)
   const sa = keyStyle(a)
   const sb = keyStyle(b)
+  /** @param {{x: number, y: number, width: number, height: number}} box */
   const centre = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
   const ca = centre(boxA)
   const cb = centre(boxB)
@@ -166,6 +171,7 @@ const stepsBetween = (a, b, spacing) => {
 /**
  * Whether the paths in `container` are these steps (within the saver's rounding, which adds up along a long path).
  */
+/** @type {(container: Element, steps: any[]) => boolean} */
 const sameSteps = (container, steps) => {
   const kids = [...container.children]
   if (kids.length !== steps.length) return false
@@ -181,7 +187,9 @@ const sameSteps = (container, steps) => {
 }
 
 /** What the steps of a gap are made from: both keys (shape, transform, paint) and the spacing. */
+/** @type {(a: Element, b: Element, spacing: any) => string} */
 const signature = (a, b, spacing) => {
+  /** @param {Element} el */
   const key = (el) => `${getPathDFromElement(el)}~${el.getAttribute('transform') ?? ''}~${JSON.stringify(keyStyle(el))}`
   return `${key(a)}|${key(b)}|${spacing.mode},${spacing.steps},${spacing.distance}`
 }
@@ -198,6 +206,7 @@ const madeFrom = new WeakMap()
 const earlier = new WeakMap()
 const KEEP_EARLIER = 4
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -209,6 +218,7 @@ export const init = (canvas) => {
   /** What new blends start with (the Blend tool's options bar). */
   let defaults = sanitizeBlendOptions()
   const getBlendDefaults = () => ({ ...defaults })
+  /** @param {Record<string, any>} changes */
   const setBlendDefaults = (changes) => {
     defaults = sanitizeBlendOptions({ ...defaults, ...changes })
     return getBlendDefaults()
@@ -227,6 +237,7 @@ export const init = (canvas) => {
     const kids = [...gap.children]
     const was = kids.length ? madeFrom.get(kids[0]) : undefined
     if (was === sig) return false
+    /** @param {Element[]} nodes */
     const mark = (nodes) => nodes.forEach((n) => madeFrom.set(n, sig))
     const kept = earlier.get(gap) ?? new Map()
     earlier.set(gap, kept)
@@ -302,15 +313,16 @@ export const init = (canvas) => {
   }
 
   /** The blend and the new keys of a selection, or null when it makes no blend. */
+  /** @param {Element[]} elems */
   const plan = (elems) => {
-    const blends = elems.filter((e) => blendParts(e))
+    const blends = elems.filter((/** @type {Element} */ e) => blendParts(e))
     const shapes = elems.filter(isKeyCandidate)
     if (blends.length > 1 || blends.length + shapes.length !== elems.length) return null
     const [blend] = blends
     const parent = (blend ?? shapes[0])?.parentNode
-    if (!parent || !shapes.every((s) => s.parentNode === parent)) return null
+    if (!parent || !shapes.every((/** @type {Element} */ s) => s.parentNode === parent)) return null
     if (blend ? shapes.length < 1 : shapes.length < 2) return null
-    shapes.sort((x, y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    shapes.sort((/** @type {Element} */ x, /** @type {Element} */ y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
     return { blend: blend ?? null, shapes, parent }
   }
 
@@ -322,6 +334,7 @@ export const init = (canvas) => {
    */
   const canBlend = (elems = getSelected()) => !!plan(elems)
 
+  /** @param {Document} doc */
   const newSteps = (doc) => {
     const g = svgNS(doc, 'g')
     g.setAttribute('id', newId())
@@ -339,7 +352,7 @@ export const init = (canvas) => {
   const makeBlend = (elems = getSelected(), options) => {
     const p = plan(elems)
     if (!p) return null
-    const doc = p.parent.ownerDocument
+    const doc = /** @type {Document} */ (p.parent.ownerDocument)
     const group = svgCanvas.transact('Blend', () => {
       let g = p.blend
       if (!g) {
@@ -378,7 +391,7 @@ export const init = (canvas) => {
    * @returns {Element[]} the blends changed
    */
   const setBlendOptions = (changes, elems = getSelected()) => {
-    const groups = [...new Set(elems.map(blendGroupOf).filter(Boolean))]
+    const groups = /** @type {Element[]} */ ([...new Set(elems.map(blendGroupOf).filter(Boolean))])
     if (!groups.length) return []
     svgCanvas.transact('Blend options', () => {
       for (const g of groups) {
@@ -418,8 +431,9 @@ export const init = (canvas) => {
    * @returns {Element[]} the keys
    */
   const releaseBlend = () => {
-    const groups = [...new Set(getSelected().map(blendGroupOf).filter(Boolean))]
+    const groups = /** @type {Element[]} */ ([...new Set(getSelected().map(blendGroupOf).filter(Boolean))])
     if (!groups.length) return []
+    /** @type {Element[]} */
     const released = []
     svgCanvas.transact('Release blend', () => {
       for (const g of groups) {
