@@ -217,7 +217,7 @@ extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
 `svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there; tighten per file). **All 107 `core/`+`common/` modules carry it** (2026-10-12: 72 added in three passes; JSDoc
+there: that is the next step, below). **All 107 `core/`+`common/` modules carry it** (2026-10-12: 72 added in three passes; JSDoc
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
 checked by *both* configs, so a file the strict config reaches through an import must be strict-clean, and all of them are.
@@ -273,6 +273,7 @@ needed by both.
 2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
    (globally they give ~150 errors in `svgcanvas.js` alone, so use a
    per-file opt-in, e.g. a second tsconfig listing the files already clean).
+   **Done for all 107 `core/`+`common/` modules** (`tsconfig.strict.json`, 2026-10-12); only `svgcanvas.js` itself is left.
 3. **Only if `.ts` was chosen — toolchain:**
    - Vite and Vitest already transpile `.ts` (no type checking at build
      time; `npm run typecheck` stays the gate).
