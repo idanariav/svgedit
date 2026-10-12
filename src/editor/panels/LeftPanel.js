@@ -6,6 +6,7 @@ import {
   markToolGroups, defaultToolOrder, isUncustomisedOrder
 } from '../toolOrder.js'
 import { initToolDragReorder } from '../toolDragReorder.js'
+import { initToolAutoFold, withoutFold } from '../toolAutoFold.js'
 import { registerModeCommand } from '../panelCommands.js'
 
 const { $click } = SvgCanvas
@@ -230,12 +231,16 @@ class LeftPanel {
     saveToolOrder({ main, overflow })
     markToolGroups(container)
 
+    // In a short pane the last tools fold into "Additional tools" for as long as it stays short; the saved
+    // order never records that (`withoutFold`).
+    const autoFold = initToolAutoFold({ container, overflowHost: overflowEl })
     initToolDragReorder({
       container,
       overflowHost: overflowEl,
       onChange: (order) => {
-        saveToolOrder(order)
+        saveToolOrder(withoutFold(order, autoFold.folded()))
         markToolGroups(container)
+        autoFold.fit()
       }
     })
 

@@ -169,8 +169,15 @@ export const formatShortcutAttr = (raw) => {
   if (!raw) return ''
   const canonical = normalizeComponentSpec(raw)
   if (!canonical) return raw
-  return formatHotkey(canonical).replace(/ \+ /g, isMac() ? '' : '+')
+  return formatCanonicalShortcut(canonical)
 }
+
+/**
+ * A canonical key as tooltip text, per platform: `meta+z` → `⌘Z` (Mac) / `Meta+Z`.
+ * @param {string} canonical
+ * @returns {string}
+ */
+const formatCanonicalShortcut = (canonical) => formatHotkey(canonical).replace(/ \+ /g, isMac() ? '' : '+')
 
 /**
  * Tooltip text: the name, plus the formatted shortcut in brackets if any
@@ -182,6 +189,23 @@ export const formatShortcutAttr = (raw) => {
 export const tooltipText = (name, rawShortcut) => {
   const sc = formatShortcutAttr(rawShortcut)
   return sc ? `${name} [${sc}]` : name
+}
+
+/**
+ * Like `tooltipText`, but the key is the action's *effective* binding in the hotkey manager, so a
+ * rebinding (or a removed key) shows in the tooltip. An action the manager does not know yet, or one with
+ * a read-only hint such as "Z / Ctrl + wheel", keeps the authored `shortcut` attribute.
+ * @param {string} name already-translated name
+ * @param {?string} rawShortcut the authored `shortcut` attribute
+ * @param {?HotkeyManager} hotkeys
+ * @param {string} [id] the action id
+ * @returns {string}
+ */
+export const boundTooltipText = (name, rawShortcut, hotkeys, id) => {
+  const action = id ? hotkeys?.getAction(id) : undefined
+  if (!hotkeys || !action || action.decorative) return tooltipText(name, rawShortcut)
+  const key = hotkeys.effectiveKeys(id)[0]
+  return key ? `${name} [${formatCanonicalShortcut(key)}]` : name
 }
 
 // Bucket a component (button/menu) action into a manager group by its id.

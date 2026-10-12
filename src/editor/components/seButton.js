@@ -1,4 +1,4 @@
-import { tooltipText } from '../Hotkeys.js'
+import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -175,7 +175,7 @@ export class ToolButton extends HTMLElement {
   _syncTooltip () {
     const title = this.getAttribute('title')
     if (title === null) return
-    const text = tooltipText(t(title), this.getAttribute('shortcut'))
+    const text = boundTooltipText(t(title), this.getAttribute('shortcut'), ownerEditor(this)?.hotkeys, this.id)
     const reason = this.disabled ? this.getAttribute('disabled-reason') : null
     this.$div.setAttribute('title', reason ? `${text}\n${reason}` : text)
   }
@@ -244,7 +244,15 @@ export class ToolButton extends HTMLElement {
         label: this.getAttribute('title'),
         rawKey: this.getAttribute('shortcut')
       })
+      // The tooltip names the key the action is bound to now, not the one it shipped with.
+      this._unsubscribeHotkeys ??= ownerEditor(this)?.hotkeys?.onChange(() => this._syncTooltip())
+      this._syncTooltip()
     }
+  }
+
+  disconnectedCallback () {
+    this._unsubscribeHotkeys?.()
+    this._unsubscribeHotkeys = undefined
   }
 }
 

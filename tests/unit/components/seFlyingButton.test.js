@@ -200,7 +200,7 @@ describe('se-flyingbutton', () => {
 
   it('registers itself with the hotkey manager on connect when it has an id, and its click arms the last tool', () => {
     const all = []
-    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { all.push(opts) } } })
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { all.push(opts) }, getAction: () => undefined, onChange: () => () => {} } })
     const el = mountFlyingButton('id="tools_shapes" title="tools.shapes_tool" shortcut="alt+1"')
     const registered = all.find((r) => r.id === 'tools_shapes') // the slotted se-buttons register too
     expect(registered).toMatchObject({ id: 'tools_shapes', rawKey: 'alt+1', label: 'tools.shapes_tool' })
@@ -212,7 +212,7 @@ describe('se-flyingbutton', () => {
   })
   it('stays unregistered without an id', () => {
     const ids = []
-    installMockSvgEditor({ hotkeys: { registerEl: (opts) => ids.push(opts.id) } })
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => ids.push(opts.id), getAction: () => undefined, onChange: () => () => {} } })
     mountFlyingButton()
     expect(ids).toEqual(['tool_rect', 'tool_square']) // only the slotted buttons
   })

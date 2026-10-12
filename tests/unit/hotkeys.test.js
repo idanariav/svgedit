@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import HotkeyManager, { formatBadgeKey } from '../../src/editor/Hotkeys.js'
+import HotkeyManager, { boundTooltipText, formatBadgeKey } from '../../src/editor/Hotkeys.js'
 import { CommandRegistry } from '../../src/editor/commands.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { registerCoreCommands } from '../../src/editor/coreCommands.js'
@@ -80,6 +80,29 @@ describe('HotkeyManager over the command registry', () => {
   it('a decorative shortcut string is display-only', () => {
     hk.registerEl({ id: 'zoom_thing', el: document.createElement('div'), label: 'z', rawKey: 'Z / Ctrl + wheel' })
     expect(editor.commands.get('zoom_thing')).toMatchObject({ defaultKeys: [], decorative: 'Z / Ctrl + wheel' })
+  })
+
+  describe('tooltip text follows the effective binding', () => {
+    beforeEach(() => hk.registerEl({ id: 'tool_x', el: document.createElement('div'), label: 'x', rawKey: 'q' }))
+
+    it('shows the default key until it is rebound, then the new one', () => {
+      expect(boundTooltipText('Pencil', 'q', hk, 'tool_x')).toBe('Pencil [Q]')
+      hk.overrides.tool_x = ['shift+k']
+      expect(boundTooltipText('Pencil', 'q', hk, 'tool_x')).toMatch(/^Pencil \[.*K\]$/)
+      expect(boundTooltipText('Pencil', 'q', hk, 'tool_x')).not.toContain('Q')
+    })
+
+    it('shows no key once the binding is removed', () => {
+      hk.overrides.tool_x = []
+      expect(boundTooltipText('Pencil', 'q', hk, 'tool_x')).toBe('Pencil')
+    })
+
+    it('falls back to the authored attribute for an unknown action or a read-only hint', () => {
+      expect(boundTooltipText('Other', 'q', hk, 'nope')).toBe('Other [Q]')
+      expect(boundTooltipText('Other', 'q', null, 'nope')).toBe('Other [Q]')
+      hk.registerEl({ id: 'zoom_y', el: document.createElement('div'), label: 'z', rawKey: 'Z / Ctrl + wheel' })
+      expect(boundTooltipText('Zoom', 'Z / Ctrl + wheel', hk, 'zoom_y')).toBe('Zoom [Z / Ctrl + wheel]')
+    })
   })
 
   describe('keydown dispatch', () => {

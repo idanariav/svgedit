@@ -130,7 +130,7 @@ trailing `dblclick`. A visually-hidden live region announces grabs/moves/drops. 
 membership persists via `toolOrder.js` (`userDataAdapter.getToolOrder`/
 `setToolOrder`, else `localStorage` key `svg-edit-tool-order`), reconciled
 against whatever tools actually exist on each load (`reconcileToolOrder` —
-stale ids drop, new ids default into the main row). Built once, after every
+stale ids drop, new ids default into the main row). In a pane too short for the column, `toolAutoFold.js` temporarily folds the last main tools into the drawer (`data-auto-folded`); `withoutFold` keeps that out of the saved order, and a tool the user drags out of the drawer is theirs again. Built once, after every
 extension has inserted its own button, via `LeftPanel.finalizeToolOrder()`
 bound to the canvas `extensions_added` event; both the drag and keyboard
 mechanics live in `toolDragReorder.js`.

@@ -30,6 +30,30 @@ describe('se-button', () => {
     expect(el.$div.getAttribute('title')).toBe('undo [Ctrl+Z]')
   })
 
+  it('names the key the action is bound to now, and follows a rebinding', () => {
+    let listener
+    let keys = ['q']
+    const unsubscribe = vi.fn()
+    installMockSvgEditor({
+      hotkeys: {
+        registerEl: () => {},
+        getAction: () => ({ id: 'tool_pencil' }),
+        effectiveKeys: () => keys,
+        onChange: (fn) => { listener = fn; return unsubscribe }
+      }
+    })
+    const el = mountElement('se-button', { id: 'tool_pencil', title: 'pencil', shortcut: 'q' })
+    expect(el.$div.getAttribute('title')).toBe('pencil [Q]')
+    keys = ['w']
+    listener()
+    expect(el.$div.getAttribute('title')).toBe('pencil [W]')
+    keys = []
+    listener()
+    expect(el.$div.getAttribute('title')).toBe('pencil')
+    el.remove()
+    expect(unsubscribe).toHaveBeenCalled()
+  })
+
   it('shows why the button is disabled in its tooltip, and only while it is', () => {
     const el = mountElement('se-button')
     el.setAttribute('title', 'bold')
@@ -110,7 +134,7 @@ describe('se-button', () => {
 
   it('registers itself with the hotkey manager on connect when it has an id', () => {
     let registered = null
-    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { registered = opts } } })
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { registered = opts }, getAction: () => undefined, onChange: () => () => {} } })
     mountElement('se-button', { title: 'undo', shortcut: 'ctrl+z', id: 'tool_undo' })
 
     expect(registered).toMatchObject({ id: 'tool_undo', rawKey: 'ctrl+z' })

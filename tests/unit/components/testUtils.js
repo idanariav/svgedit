@@ -27,7 +27,7 @@ export function installMockSvgEditor (overrides = {}) {
     configObj: { curConfig: { imgPath: 'images' } },
     $click: (el, handler) => el.addEventListener('click', handler),
     i18next: { t: (key) => key },
-    hotkeys: { registerEl: () => {}, effectiveKeys: () => [] },
+    hotkeys: { registerEl: () => {}, effectiveKeys: () => [], getAction: () => undefined, onChange: () => () => {} },
     svgCanvas: {},
     updateCanvas: () => {},
     topPanel: { update: () => {}, updateContextPanel: () => {} },

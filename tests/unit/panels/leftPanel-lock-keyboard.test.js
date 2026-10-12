@@ -62,7 +62,9 @@ describe('LeftPanel keyboard lock (Shift+Enter)', () => {
   let $id, editor
 
   beforeEach(() => {
-    ({ $id, editor } = buildLeftPanel())
+    // jsdom has no layout and no ResizeObserver (the column's auto-fold watches its size)
+    vi.stubGlobal('ResizeObserver', class { observe () {} disconnect () {} })
+    ;({ $id, editor } = buildLeftPanel())
   })
 
   it('locks a lockable tool and calls setToolLocked(true)', () => {

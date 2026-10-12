@@ -539,13 +539,17 @@ Only the English locale exists today. Small.
 
 *The UI sections below came out of a UI/UX review (2026-10-07: screenshots at 1440×900, 1024×700 and 800×600, light, dark and tablet modes, plus the live hotkey registry). Obsidian-only findings are in `../obsidian-svgedit-plugin/.claude/techdebt.md`.*
 
-### Toolbars: left column doesn't fold into "…" automatically
+### Toolbars: left column folds into "…" automatically
 
-Narrow-pane work is done (top bar two-tier collapse + "⋯" tray, tablet command bar
-shedding by container width, palette keeps a 14px swatch minimum and scrolls). What's
-left: tools in the left column scroll (with "Additional tools" pinned) rather than
-moving into `…` when the pane is short. Moving them automatically must not persist the
-temporary split as the user's saved order. Covered by `tests/e2e/top-bar-layout.spec.js`.
+Done: narrow-pane work (top bar two-tier collapse + "⋯" tray, tablet command bar shedding by
+container width, palette keeps a 14px swatch minimum and scrolls) and, in a short pane, the left
+column's last tools fold into "Additional tools" (`toolAutoFold.js`) and return when there is room;
+the saved order never records the fold. Covered by `tests/e2e/top-bar-layout.spec.js`,
+`tests/e2e/tool-auto-fold.spec.js`, `tests/unit/toolAutoFold.test.js`. Remaining:
+- Folding is strictly from the end of the main list: the user cannot say which tools matter most
+  (they can reorder, so the tail is theirs to choose). A count badge on the drawer button would say
+  "6 more".
+- A folded tool the user drags *within* the drawer is still treated as folded (saved as main).
 Small.
 
 ### Keyboard shortcuts
@@ -562,11 +566,10 @@ remembered, `sidePanelManual` pref); Path actions carry captions (`data-caption`
 theme toggle is no longer a default extension (Preferences has theme). Remaining:
 - The six top-bar toggles (frame, wireframe, canvas settings, grid, smart snap, layer view)
   are icon-only with tooltips; visible labels don't fit the tight bar.
-- Brush settings is a lone gear. Small.
 
 ### Icons and palette
 
 Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default palette
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
-tooltips shortened to the name. Remaining:
+tooltips shortened to the name and following a rebinding (`boundTooltipText`; `se-button` only — the flyout, spin-input and explorer-button tooltips still read the authored `shortcut`), Brush settings carries its text next to the gear. Remaining:
 - The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.

@@ -26,6 +26,12 @@ describe('se-brush-settings', () => {
     expect(el.shadowRoot.querySelectorAll('.slot').length).toBe(5)
   })
 
+  it('the trigger names itself in text, not only with a gear', () => {
+    installMockSvgEditor({ svgCanvas: { getBrushParams: () => DEFAULT_PARAMS } })
+    const el = mountElement('se-brush-settings')
+    expect(el.shadowRoot.querySelector('.trigger .trigger-label').textContent).toBe('Brush settings')
+  })
+
   it('open() seeds fields from svgCanvas.getBrushParams (percent fields scaled to 0-100)', () => {
     installMockSvgEditor({
       svgCanvas: {

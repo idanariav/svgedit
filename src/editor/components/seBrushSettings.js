@@ -11,12 +11,15 @@ const TEMPLATE_HTML = `
     align-items: center;
   }
   .trigger {
-    width: 30px;
+    min-width: 30px;
     height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    gap: 6px;
+    padding: 0 10px 0 6px;
+    font: inherit;
+    font-size: 12px;
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
@@ -125,6 +128,7 @@ const TEMPLATE_HTML = `
   </style>
   <button class="trigger" title="Brush settings" aria-haspopup="dialog" aria-expanded="false">
     <span id="icon"></span>
+    <span class="trigger-label">Brush settings</span>
   </button>
   <div id="options-container" role="dialog" aria-label="Brush settings" style="display:none">
     <div class="row2">
