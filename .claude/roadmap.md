@@ -222,8 +222,12 @@ there; tighten per file). **All 107 `core/`+`common/` modules carry it** (2026-1
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
 checked by *both* configs, so a file the strict config reaches through an import must be strict-clean, and all of them are.
-What is left is tightening, not coverage: `svgcanvas.js` itself under `noImplicitAny`/`strictNullChecks`, and the many
-`/** @type {any} */` casts these passes left at DOM-API seams (legacy `pathSegList`, `Segment` links, `this` in callbacks).
+What is left is tightening, not coverage: `tsconfig.strict.json` (`noImplicitAny` + `strictNullChecks`) now covers 74 of the 107
+modules; the other 33 pass only the lax config. The big ones still outside it: `coords` (~123 strict errors), `path-actions` (~119),
+`segment` (~88), `text-actions` (~81), `selected-elem` / `path-edit` (~67), `image-crop` / `live-effects-distort` / `art-brush-canvas` /
+`svg-exec` (~55), `path-seg-shim` (~51), `text-attrs` (~48), `recalculate` (~43); then `svgcanvas.js` itself. Most errors are
+untyped parameters and `null`-initialised variables; the rest are nullable DOM links (`parentNode`, `firstChild`) and the legacy
+`pathSegList` API. A `/** @type {any} */` cast at a DOM-API seam is the accepted stopgap; the casts are the thing to shrink next.
 Writing a module: a stale `@param` name that is not a parameter, or a `module:…` typedef name, is an error under the checker,
 so write the real name.
 

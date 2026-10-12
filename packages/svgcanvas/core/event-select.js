@@ -22,6 +22,13 @@ const { BatchCommand, ChangeElementCommand } = hstry
 // update the dummy transform in our transform list
 // to be a translate. We need to check if there was a transformation
 // to avoid loosing it
+/**
+ * @param {SVGSVGElement} svgRoot
+ * @param {Element} element
+ * @param {number} dx
+ * @param {number} dy
+ * @returns {void}
+ */
 const updateTransformList = (svgRoot, element, dx, dy) => {
   const xform = svgRoot.createSVGTransform()
   xform.setTranslate(dx, dy)
@@ -172,7 +179,9 @@ export const init = (canvas) => {
         const res = svgCanvas.getResolution()
         const tol = 8 / zoom // ~8 screen px
         const bb = svgCanvas.dragStartBBox
+        /** @type {(lines: Array<{pos: number, color?: string}>, refs: number[]) => ({delta: number, pos: number, color?: string}|null)} */
         const snapAxis = (lines, refs) => {
+          /** @type {{delta: number, pos: number, color?: string}|null} */
           let best = null
           for (const ln of lines) {
             for (const r of refs) {
@@ -208,8 +217,8 @@ export const init = (canvas) => {
         // > equal spacing > mixed alignment (edge↔center).
         const useSpacingX = spacing.x && !(snap.x?.same)
         const useSpacingY = spacing.y && !(snap.y?.same)
-        if (useSpacingX) { dx += spacing.x.delta } else if (snap.x) { dx += snap.x.delta }
-        if (useSpacingY) { dy += spacing.y.delta } else if (snap.y) { dy += snap.y.delta }
+        if (useSpacingX) { dx += /** @type {{delta: number}} */ (spacing.x).delta } else if (snap.x) { dx += snap.x.delta }
+        if (useSpacingY) { dy += /** @type {{delta: number}} */ (spacing.y).delta } else if (snap.y) { dy += snap.y.delta }
         svgCanvas.showSmartGuides?.({
           x: useSpacingX ? null : snap.x,
           y: useSpacingY ? null : snap.y,
@@ -240,7 +249,7 @@ export const init = (canvas) => {
         const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(svgCanvas, dx, dy)
         // Candidate delta for transformAgain — committed in mouseUp.
         svgCanvas.pendingMoveDelta = { dx, dy }
-        selectedElements.forEach((el) => {
+        selectedElements.forEach((/** @type {Element} */ el) => {
           if (el) {
             updateTransformList(svgRoot, el, ldx, ldy)
             // update our internal bbox that we're tracking while dragging
@@ -361,7 +370,7 @@ export const init = (canvas) => {
         // Create a single batch command for all moved elements
         const batchCmd = new BatchCommand('position')
 
-        selectedElements.forEach((elem) => {
+        selectedElements.forEach((/** @type {Element} */ elem) => {
           if (!elem) return
 
           const tlist = getTransformList(elem)
@@ -487,7 +496,7 @@ export const init = (canvas) => {
         // pointer. This takes priority over path-edit entry so a shift-click
         // always deselects rather than diving into a single selected path.
         const shiftHit = evt.shiftKey &&
-          selectedElements.find((s) => s && (s === t || s.contains(t)))
+          selectedElements.find((/** @type {Element|null} */ s) => s && (s === t || s.contains(/** @type {Node|null} */ (t))))
         if (shiftHit && tempJustSelected !== shiftHit) {
           svgCanvas.removeFromSelection([shiftHit])
         } else if (!evt.shiftKey && selectedElements[0].nodeName === 'path' && !selectedElements[1]) {

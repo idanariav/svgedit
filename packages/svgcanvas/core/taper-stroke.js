@@ -134,9 +134,9 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
  * @returns {import('./width-outline.js').OutlineOptions}
  */
 const outlineOptions = (elem) => ({
-  cap: /** @type {'round'|'square'|'butt'} */ (['round', 'square'].includes(elem.getAttribute('stroke-linecap')) ? elem.getAttribute('stroke-linecap') : 'butt'),
-  join: /** @type {'round'|'bevel'|'miter'} */ (['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin')) ? elem.getAttribute('stroke-linejoin') : 'miter'),
-  miterLimit: parseFloat(elem.getAttribute('stroke-miterlimit')) || 4
+  cap: /** @type {'round'|'square'|'butt'} */ (['round', 'square'].includes(elem.getAttribute('stroke-linecap') ?? '') ? elem.getAttribute('stroke-linecap') : 'butt'),
+  join: /** @type {'round'|'bevel'|'miter'} */ (['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin') ?? '') ? elem.getAttribute('stroke-linejoin') : 'miter'),
+  miterLimit: parseFloat(elem.getAttribute('stroke-miterlimit') ?? '') || 4
 })
 
 /**
@@ -212,6 +212,7 @@ registerLiveStage({
   }
 })
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -273,7 +274,7 @@ export const init = (canvas) => {
       const dropAttrs = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
       const real = svgCanvas.getArrowSourcePoints(elem)
       if (real) {
-        d = real.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+        d = real.map((/** @type {{x: number, y: number}} */ p, /** @type {number} */ i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
       } else if (elem.tagName === 'line') {
         d = `M${elem.getAttribute('x1')},${elem.getAttribute('y1')} L${elem.getAttribute('x2')},${elem.getAttribute('y2')}`
       } else {
@@ -307,7 +308,7 @@ export const init = (canvas) => {
       width = parseFloat(style.slice(0, sep)) || 1
       paint = style.slice(sep + 1)
     } else {
-      width = parseFloat(elem.getAttribute('stroke-width')) || 1
+      width = parseFloat(elem.getAttribute('stroke-width') ?? '') || 1
       paint = elem.getAttribute('stroke')
     }
     const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d')
@@ -328,7 +329,7 @@ export const init = (canvas) => {
     }
     elem.removeAttribute(WIDTH_PROFILE_ATTR) // the sliders replace a width profile
     elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
-    elem.setAttribute('fill', paint)
+    elem.setAttribute('fill', /** @type {string} */ (paint))
     elem.setAttribute('stroke', 'none')
     elem.setAttribute(TAPER_ATTR, `${start},${end}`)
     elem.setAttribute(TAPER_SOURCE_ATTR, srcD)
@@ -417,7 +418,7 @@ export const init = (canvas) => {
     if (elem.tagName === 'path') return elem
     let pts = svgCanvas.getArrowSourcePoints(elem)
     if (!pts && elem.tagName === 'line') {
-      pts = [{ x: +elem.getAttribute('x1'), y: +elem.getAttribute('y1') }, { x: +elem.getAttribute('x2'), y: +elem.getAttribute('y2') }]
+      pts = [{ x: Number(elem.getAttribute('x1')), y: Number(elem.getAttribute('y1')) }, { x: Number(elem.getAttribute('x2')), y: Number(elem.getAttribute('y2')) }]
     } else if (!pts) {
       const c = (elem.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number)
       pts = []
@@ -426,7 +427,7 @@ export const init = (canvas) => {
     const path = elem.ownerDocument.createElementNS(NS.SVG, 'path')
     const drop = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
     for (const attr of elem.attributes) if (!drop.includes(attr.name)) path.setAttribute(attr.name, attr.value)
-    path.setAttribute('d', pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
+    path.setAttribute('d', pts.map((/** @type {{x: number, y: number}} */ p, /** @type {number} */ i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
     elem.before(path)
     elem.remove()
     return path
@@ -450,14 +451,14 @@ export const init = (canvas) => {
       width = parseFloat(style.slice(0, sep)) || 1
       paint = style.slice(sep + 1)
     } else {
-      width = parseFloat(elem.getAttribute('stroke-width')) || 1
+      width = parseFloat(elem.getAttribute('stroke-width') ?? '') || 1
       paint = elem.getAttribute('stroke')
     }
-    const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d')
+    const srcD = /** @type {string} */ (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d'))
     const outline = widthOutline(srcD, width, points, outlineOptions(elem))
     if (!outline) return false
     elem.setAttribute('d', outline)
-    elem.setAttribute('fill', paint)
+    elem.setAttribute('fill', /** @type {string} */ (paint))
     elem.setAttribute('stroke', 'none')
     elem.setAttribute(WIDTH_PROFILE_ATTR, formatProfile(points))
     elem.setAttribute(TAPER_ATTR, endPercents(points).join(','))
@@ -474,6 +475,7 @@ export const init = (canvas) => {
   const applyWidthProfile = (points) => {
     const targets = svgCanvas.getSelectedElements().filter(canWidthStroke)
     if (!targets.length || !isProfile(points)) return []
+    /** @type {Element[]} */
     const done = []
     svgCanvas.transact('Width profile', () => {
       for (const t of targets) {

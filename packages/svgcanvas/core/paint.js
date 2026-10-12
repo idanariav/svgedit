@@ -3,12 +3,14 @@
  *
  */
 export default class Paint {
+  /** @param {any} alpha */
   static #normalizeAlpha (alpha) {
     const numeric = Number(alpha)
     if (!Number.isFinite(numeric)) return 100
     return Math.min(100, Math.max(0, numeric))
   }
 
+  /** @param {any} color */
   static #normalizeSolidColor (color) {
     if (color === null || color === undefined) return null
     const str = String(color).trim()
@@ -17,6 +19,7 @@ export default class Paint {
     return str.startsWith('#') ? str.slice(1) : str
   }
 
+  /** @param {string|null|undefined} hrefAttr */
   static #extractHrefId (hrefAttr) {
     if (!hrefAttr) return null
     const href = String(hrefAttr).trim()
@@ -31,6 +34,7 @@ export default class Paint {
     return null
   }
 
+  /** @param {any} gradient */
   static #resolveGradient (gradient) {
     if (!gradient?.cloneNode) return null
     const doc = gradient.ownerDocument || document
@@ -108,17 +112,17 @@ export default class Paint {
       /**
        * Represents #RRGGBB hex of color.
        * @name module:jGraduate~Paint#solidColor
-       * @type {string}
+       * @type {string|null}
        */
       this.solidColor = null
       /**
        * @name module:jGraduate~Paint#linearGradient
-       * @type {SVGLinearGradientElement}
+       * @type {SVGLinearGradientElement|null}
        */
       this.linearGradient = null
       /**
        * @name module:jGraduate~Paint#radialGradient
-       * @type {SVGRadialGradientElement}
+       * @type {SVGRadialGradientElement|null}
        */
       this.radialGradient = null
 

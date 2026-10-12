@@ -60,9 +60,10 @@ export const init = (canvas) => {
  * @type {module:draw.DrawCanvasInit#clearSelection|module:path.EditorContext#clearSelection}
  * @fires module:selection.SvgCanvas#event:selected
  */
+  /** @param {boolean} [noCall] */
   const clearSelectionMethod = (noCall) => {
     const selectedElements = svgCanvas.getSelectedElements()
-    selectedElements.forEach((elem) => {
+    selectedElements.forEach((/** @type {Element|null} */ elem) => {
       if (!elem) {
         return
       }
@@ -83,6 +84,7 @@ export const init = (canvas) => {
  * @type {module:path.EditorContext#addToSelection}
  * @fires module:selection.SvgCanvas#event:selected
  */
+  /** @type {(elemsToAdd: Element[], showGrips?: boolean) => void} */
   const addToSelectionMethod = (elemsToAdd, showGrips) => {
     const selectedElements = svgCanvas.getSelectedElements()
     if (!elemsToAdd.length) {
@@ -101,14 +103,14 @@ export const init = (canvas) => {
     // now add each element consecutively
     let i = elemsToAdd.length
     while (i--) {
-      let elem = elemsToAdd[i]
+      let elem = /** @type {SVGGraphicsElement} */ (elemsToAdd[i])
       if (!elem || !elem.getBBox) {
         continue
       }
 
       if (elem.tagName === 'a' && elem.childNodes.length === 1) {
       // Make "a" element's child be the selected element
-        elem = elem.firstChild
+        elem = /** @type {SVGGraphicsElement} */ (elem.firstChild)
       }
 
       // Locked objects (and everything in a locked group) cannot be selected
@@ -144,7 +146,7 @@ export const init = (canvas) => {
     // make sure the elements are in the correct order
     // See: https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-compareDocumentPosition
 
-    selectedElements.sort((a, b) => {
+    selectedElements.sort((/** @type {any} */ a, /** @type {any} */ b) => {
       if (a && b && a.compareDocumentPosition) {
         return 3 - (b.compareDocumentPosition(a) & 6)
       }
@@ -166,11 +168,12 @@ export const init = (canvas) => {
  * @name module:svgcanvas.SvgCanvas#getMouseTarget
  * @type {module:path.EditorContext#getMouseTarget}
  */
+  /** @param {Event|null|undefined} evt */
   const getMouseTargetMethod = (evt) => {
     if (!evt) {
       return null
     }
-    return getMouseTargetFromNode(evt.target)
+    return getMouseTargetFromNode(/** @type {Element} */ (evt.target))
   }
   /**
  * Resolve a raw DOM node (e.g. the literal element under the cursor) to the
@@ -326,6 +329,7 @@ export const init = (canvas) => {
       const svgContent = svgCanvas.getSvgContent()
       parent = svgContent.children // Prevent layers from being included
     }
+    /** @type {Array<{elem: Element, bbox: any}>} */
     const contentElems = []
     const elements = parent.children
     // When the parent is a transformed container (e.g. rubber-band selecting
@@ -334,6 +338,7 @@ export const init = (canvas) => {
     // rubber band, which is tracked in content coords. No-op for an untransformed
     // parent such as a layer.
     const toContent = parent.nodeType === 1 ? getMatrixToContent(parent) : null
+    /** @param {any} bb */
     const mapBox = (bb) => {
       if (!bb || !toContent || isIdentity(toContent)) { return bb }
       return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
@@ -356,7 +361,7 @@ export const init = (canvas) => {
  * Firefox does not implement `getIntersectionList()`, see {@link https://bugzilla.mozilla.org/show_bug.cgi?id=501421}.
  * @function module:svgcanvas.SvgCanvas#getIntersectionList
  * @param {SVGRect} rect
- * @returns {Element[]|NodeList} Bbox elements
+ * @returns {Element[]|NodeList|null} Bbox elements
  */
   const getIntersectionListMethod = (rect) => {
     const zoom = svgCanvas.getZoom()
@@ -368,6 +373,7 @@ export const init = (canvas) => {
     svgCanvas.getCurrentGroup() ||
     svgCanvas.getCurrentDrawing().getCurrentLayer()
 
+    /** @type {any} */
     let rubberBBox
     if (!rect) {
       rubberBBox = getBBox(svgCanvas.getRubberBox())
@@ -394,6 +400,7 @@ export const init = (canvas) => {
     // the current one, so the rubber band can pick up elements anywhere.
       if (svgCanvas.getAllLayersMode() && !svgCanvas.getCurrentGroup()) {
         const drawing = svgCanvas.getCurrentDrawing()
+        /** @type {any[]} */
         let boxes = []
         for (let li = 0; li < drawing.getNumLayers(); li++) {
           const layerName = drawing.getLayerName(li)
@@ -479,7 +486,7 @@ export const init = (canvas) => {
     const bbox = getBBox(elem)
     const cx = bbox.x + bbox.width / 2
     const cy = bbox.y + bbox.height / 2
-    const tlist = getTransformList(elem)
+    const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
 
     // only remove the real rotational transform if present (i.e. at index=0)
     if (tlist.numberOfItems > 0) {
@@ -521,6 +528,7 @@ export const init = (canvas) => {
         const match = newTransform.match(/^rotate\(([\d.\-e]+)\s+([\d.\-e]+)\s+([\d.\-e]+)\)(.*)/)
         if (match) {
           const angle = Number.parseFloat(match[1])
+          /** @param {string|number} num */
           const round = (num) => Math.round(Number(num) + Number.EPSILON)
           const x = round(match[2])
           const y = round(match[3])
@@ -565,7 +573,7 @@ export const init = (canvas) => {
     const batchCmd = new BatchCommand(text)
     const selectedElements = svgCanvas.getSelectedElements()
 
-    selectedElements.forEach((elem) => {
+    selectedElements.forEach((/** @type {Element} */ elem) => {
       const cmd = svgCanvas.recalculateDimensions(elem)
       if (cmd) {
         batchCmd.addSubCommand(cmd)

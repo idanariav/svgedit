@@ -46,7 +46,9 @@ const CONTAINER_TAGS = new Set(['g', 'a'])
  * @returns {Element[]}
  */
 const collectCuttableElements = (elems) => {
+  /** @type {Element[]} */
   const result = []
+  /** @param {Element} el */
   const visit = (el) => {
     if (el.tagName === 'title') return
     if (CONTAINER_TAGS.has(el.tagName)) {
@@ -91,6 +93,7 @@ const getElemAsPath = (elem, scope) => {
 }
 
 // A valid piece has non-trivial path data (more than a lone "M x,y")
+/** @param {{pathData?: string}|null|undefined} p */
 const hasValidPiece = (p) => p && p.pathData && p.pathData.length > 4
 
 /**
@@ -129,12 +132,14 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // cutting straight across an ellipse's left/right/top/bottom), in which
   // case divideAt() has nothing to split and returns null; fall back to the
   // segment already there.
+  /** @type {(path: paper.Path, offset: number) => paper.Segment} */
   const divideOrGetSegment = (path, offset) => {
     const loc = path.getLocationAt(offset)
-    return path.divideAt(loc) || loc.getSegment()
+    return path.divideAt(loc) || loc.segment
   }
   // Reverse a segment chain while keeping its curvature: flip the segment
   // order AND swap each segment's handleIn/handleOut (mirrors Path#reverse()).
+  /** @param {paper.Segment[]} arc */
   const reverseArc = (arc) => arc.slice().reverse().map((s) => s.reversed())
 
   // Pair crossings into m chords by cutter order: consecutive pairs along
@@ -183,6 +188,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // Walk the crossings in shape-boundary order with an explicit stack
   // (bottom frame = the surviving "core" region) to decompose the boundary
   // into m+1 regions — see the function doc comment for the algorithm.
+  /** @type {Array<{chordId: any, items: any[]}>} */
   const stack = [{ chordId: null, items: [] }]
   const seen = new Set()
   const biteItems = new Array(m)
@@ -213,6 +219,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // Resolve a region's item list (gaps + nested-chord markers) into
   // directed edges: nested chords are always referenced by their *parent*
   // region here, so always in "open -> close" direction.
+  /** @param {any[]} items */
   const resolveItems = (items) => items.map((item) => (item.type === 'gap'
     ? item
     : { type: 'chord', segs: chordOpenToClose[item.chordId] }))
@@ -225,8 +232,10 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // boundary instead of following its curve); an arc edge contributes only
   // its interior points (both its endpoints are already covered by the
   // neighboring chords).
+  /** @param {any[]} edges */
   const buildLoopSegments = (edges) => {
     const n = edges.length
+    /** @type {paper.Segment[]} */
     const out = []
     edges.forEach((edge, i) => {
       if (edge.type === 'gap') {
@@ -243,6 +252,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
     })
     return out
   }
+  /** @param {any[]} edges */
   const makePiece = (edges) => new scope.Path({ segments: buildLoopSegments(edges), closed: true, insert: false })
 
   const core = makePiece(resolveItems(stack[0].items))
@@ -381,6 +391,7 @@ const cutShapes = (svgCanvas, points) => {
   const scope = getPaperScope()
   const { BatchCommand } = svgCanvas.history
   const batchCmd = new BatchCommand('Cut shapes')
+  /** @type {Element[]} */
   const resultElems = []
 
   for (const elem of elems) {
@@ -414,5 +425,5 @@ const cutShapes = (svgCanvas, points) => {
  */
 export const init = canvas => {
   const svgCanvas = canvas
-  svgCanvas.cutShapes = (points) => cutShapes(svgCanvas, points)
+  svgCanvas.cutShapes = (/** @type {any} */ points) => cutShapes(svgCanvas, points)
 }

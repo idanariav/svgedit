@@ -130,10 +130,10 @@ export class Drawing {
     this.layer_map = {}
 
     /**
-     * The current layer being used.
+     * The current layer being used (null only until identifyLayers() has run).
      * @type {Layer}
      */
-    this.current_layer = null
+    this.current_layer = /** @type {any} */ (null)
 
     /**
      * When true, every layer accepts pointer events (selectable), not just
@@ -170,7 +170,7 @@ export class Drawing {
    * ref. The subtree check runs first so a detached svgElem_ (never inserted
    * into a document, e.g. in unit tests) still resolves correctly.
    * @param {string} id Element ID to retrieve
-   * @returns {Element} SVG element within the root SVGSVGElement
+   * @returns {Element|null} SVG element within the root SVGSVGElement
    */
   getElem_ (id) {
     if (this.svgElem_.querySelector) {
@@ -247,7 +247,7 @@ export class Drawing {
 
   /**
    * Computes the ID prefix for a given element type, respecting the nonce.
-   * @param {string|null} elemType
+   * @param {string|null|undefined} elemType
    * @returns {string}
    */
   _makePrefix (elemType) {
@@ -286,7 +286,7 @@ export class Drawing {
     // If there are any released numbers in the release stack,
     // use the last one instead of the next obj_num.
     if (this.releasedNums.length > 0) {
-      this.obj_num = this.releasedNums.pop()
+      this.obj_num = /** @type {number} */ (this.releasedNums.pop())
       restoreOldObjNum = true
     } else {
       this.obj_num++
@@ -399,7 +399,7 @@ export class Drawing {
   /**
    * Get a layer by name.
    * @param {string} name
-   * @returns {SVGGElement} The SVGGElement representing the named layer or null.
+   * @returns {SVGGElement|null} The SVGGElement representing the named layer or null.
    */
   getLayerByName (name) {
     const layer = this.layer_map[name]
@@ -604,7 +604,7 @@ export class Drawing {
    * Deletes the current layer from the drawing and then clears the selection.
    * This function then calls the 'changed' handler.  This is an undoable action.
    * @todo Does this actually call the 'changed' handler?
-   * @returns {SVGGElement} The SVGGElement of the layer removed or null.
+   * @returns {SVGGElement|null} The SVGGElement of the layer removed or null.
    */
   deleteCurrentLayer () {
     if (this.current_layer && this.getNumLayers() > 1) {
@@ -660,7 +660,7 @@ export class Drawing {
       this.all_layers.push(layer)
       this.layer_map[name] = layer
     }
-    this.current_layer = layer
+    this.current_layer = /** @type {Layer} */ (layer)
     this.refreshLayerPointerEvents()
   }
 
@@ -703,8 +703,7 @@ export class Drawing {
    * Creates a copy of the current layer with the given name and makes it the current layer.
    * @param {string} name - The given name. If the layer name exists, a new name will be generated.
    * @param {module:history.HistoryRecordingService} hrService - History recording service
-   * @returns {SVGGElement} The SVGGElement of the new layer, which is
-   *     also the current layer of this drawing.
+   * @returns {SVGGElement|null} The SVGGElement of the new layer (also the current layer of this drawing), or null when there is no current layer.
    */
   cloneLayer (name, hrService) {
     if (!this.current_layer) {
@@ -960,6 +959,7 @@ export class Drawing {
   copyElem (el) {
     // Preserve each source element's own id prefix (e.g. `ellipse_1` →
     // `ellipse_2`) instead of forcing the default `svg_`, matching paste.
+    /** @param {Element} srcEl */
     const getNextIdClosure = (srcEl) => {
       const srcId = srcEl?.getAttribute?.('id')
       if (!srcId) return this.getNextId()
@@ -1073,6 +1073,7 @@ export const init = canvas => {
   const svgCanvas = canvas
   layerOpsInit(canvas)
   // Disabled elements during in-group editing (per instance).
+  /** @type {Element[]} */
   let disabledElems = []
 
   /**
@@ -1173,7 +1174,7 @@ export const init = canvas => {
   /**
  * Set the current context (for in-group editing).
  * @function module:draw.setContext
- * @param {Element} elem
+ * @param {Element|string|null} elem
  * @fires module:svgcanvas.SvgCanvas#event:contextset
  * @returns {void}
  */
@@ -1220,6 +1221,7 @@ export const init = canvas => {
     if (!parentsUntil) {
       return
     }
+    /** @type {Element[]} */
     const siblings = []
     parentsUntil.forEach(function (parent) {
       if (!parent?.parentNode) {
@@ -1240,9 +1242,9 @@ export const init = canvas => {
     // Store the original's opacity
       const origOpacity = curthis.getAttribute('opacity')
       dataStorage.put(curthis, 'orig_opac', origOpacity)
-      const parsedOpacity = Number.parseFloat(origOpacity)
+      const parsedOpacity = Number.parseFloat(origOpacity ?? '')
       const opac = Number.isFinite(parsedOpacity) ? parsedOpacity : 1
-      curthis.setAttribute('opacity', opac * 0.33)
+      curthis.setAttribute('opacity', String(opac * 0.33))
       curthis.setAttribute('style', 'pointer-events: none')
       disabledElems.push(curthis)
     })

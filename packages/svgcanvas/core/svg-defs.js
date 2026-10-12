@@ -18,6 +18,7 @@ import {
 import { isWebkit } from '../common/browser.js'
 import { NS } from './namespaces.js'
 
+/** @param {any} canvas */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
@@ -28,6 +29,7 @@ export const init = canvas => {
  * @returns {void}
  */
   const uniquifyElemsMethod = g => {
+    /** @type {Record<string, {elem: Element|null, attrs: Attr[], hrefs: Element[]}>} */
     const ids = {}
     // TODO: Handle markers and connectors. These are not yet re-identified properly
     // as their referring elements do not get remapped.
@@ -62,7 +64,7 @@ export const init = canvas => {
 
         // now search for all attributes on this element that might refer
         // to other elements
-        svgCanvas.getrefAttrs().forEach(attr => {
+        svgCanvas.getrefAttrs().forEach((/** @type {string} */ attr) => {
           const attrnode = n.getAttributeNode(attr)
           if (attrnode) {
           // the incoming file has been sanitized, so we should be able to safely just strip off the leading #
@@ -111,7 +113,7 @@ export const init = canvas => {
         let j = attrs.length
         while (j--) {
           const attr = attrs[j]
-          attr.ownerElement.setAttribute(attr.name, `url(#${newid})`)
+          ;/** @type {Element} */ (attr.ownerElement).setAttribute(attr.name, `url(#${newid})`)
         }
 
         // remap all href attributes
@@ -173,6 +175,7 @@ export const init = canvas => {
 
     // if (!defs.firstChild) { return; }
 
+    /** @type {string[]} */
     const defelemUses = []
     let numRemoved = 0
     const attrs = [
@@ -290,7 +293,7 @@ export const init = canvas => {
 
           // If has transform, convert
           const tlist = getTransformList(grad)
-          if (tlist?.numberOfItems > 0) {
+          if (tlist && tlist.numberOfItems > 0) {
             const m = transformListToTransform(tlist).matrix
             const pt1 = transformPoint(gCoords.x1, gCoords.y1, m)
             const pt2 = transformPoint(gCoords.x2, gCoords.y2, m)
@@ -307,6 +310,7 @@ export const init = canvas => {
           grad.setAttribute('y2', (gCoords.y2 - bb.y) / bb.height)
           grad.removeAttribute('gradientUnits')
         } else if (grad.tagName === 'radialGradient') {
+          /** @type {(value: string|null, fallback: number) => number} */
           const getNum = (value, fallback) => {
             const num = Number(value)
             return Number.isFinite(num) ? num : fallback
@@ -319,7 +323,7 @@ export const init = canvas => {
 
           // If has transform, convert
           const tlist = getTransformList(grad)
-          if (tlist?.numberOfItems > 0) {
+          if (tlist && tlist.numberOfItems > 0) {
             const m = transformListToTransform(tlist).matrix
             const cpt = transformPoint(cx, cy, m)
             const fpt = transformPoint(fx, fy, m)

@@ -32,21 +32,27 @@ const AREA_EPS = 0.5
 // Region decomposition is O(n²) boolean ops — keep sessions sane.
 const MAX_SHAPES = 12
 
+/** @param {paper.Item|null|undefined} item */
 const areaOf = (item) => {
   if (!item) return 0
+  /** @type {any[]} */
   const kids = item.children?.length ? item.children : [item]
-  return kids.reduce((sum, k) => sum + Math.abs(k.area || 0), 0)
+  return kids.reduce((/** @type {number} */ sum, /** @type {any} */ k) => sum + Math.abs(k.area || 0), 0)
 }
 
 /** Element → paper item in content space (own transform applied). */
+/** @type {(elem: Element, scope: paper.PaperScope) => paper.Path|paper.CompoundPath|null} */
 const elemToItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: true })
 
+/** @param {Element} elem */
 const getStyleAttrs = (elem) => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
-  let session = null // { entries: [{elem, item}], regions: [{geom, sources}] }
+  /** @type {{entries: Array<{elem: Element, item: any}>, regions: Array<{geom: any, sources: Element[]}>}|null} */
+  let session = null
 
   const disposeSession = () => {
     if (!session) return
@@ -65,7 +71,7 @@ export const init = (canvas) => {
     disposeSession()
     const scope = getPaperScope()
     const source = (elems || svgCanvas.getSelectedElements()).filter(Boolean)
-      .filter((el) => !el.hasAttribute('data-frame'))
+      .filter((/** @type {Element} */ el) => !el.hasAttribute('data-frame'))
     if (source.length < 2) {
       warn('Shape builder needs at least 2 shapes', null, 'shape-builder')
       return null
@@ -89,9 +95,11 @@ export const init = (canvas) => {
     }
 
     // Planar arrangement: fold each shape into the region set.
+    /** @type {Array<{geom: any, sources: Element[]}>} */
     let regions = []
     try {
       for (const entry of entries) {
+        /** @type {Array<{geom: any, sources: Element[]}>} */
         const next = []
         let remainder = entry.item.clone({ insert: false })
         for (const r of regions) {
@@ -145,7 +153,8 @@ export const init = (canvas) => {
    */
   const apply = (indices, mode = 'merge') => {
     if (!session || !indices.length) return null
-    const picked = indices.map((i) => session.regions[i]).filter(Boolean)
+    const live = session
+    const picked = indices.map((i) => live.regions[i]).filter(Boolean)
     if (!picked.length) return null
     const { BatchCommand, InsertElementCommand, RemoveElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand(mode === 'merge' ? 'Merge regions' : 'Delete regions')
@@ -161,6 +170,7 @@ export const init = (canvas) => {
     const resultElems = []
     // `place(path)` must put the node in the DOM before the command is
     // recorded — InsertElementCommand snapshots the position on construction.
+    /** @type {(d: string, styleSrc: Element, place: (p: Element) => void) => Element} */
     const makePath = (d, styleSrc, place) => {
       const path = doc.createElementNS(NSSVG, 'path')
       const style = getStyleAttrs(styleSrc)
@@ -202,7 +212,7 @@ export const init = (canvas) => {
       const styleSrc = picked[0].sources[picked[0].sources.length - 1]
       const last = resultElems[resultElems.length - 1]
       const merged = makePath(union.pathData, styleSrc,
-        (p) => { if (last) last.after(p); else layer.append(p) })
+        (p) => { if (last) last.after(p); else /** @type {Element} */ (layer).append(p) })
       resultElems.push(merged)
     }
     union.remove()

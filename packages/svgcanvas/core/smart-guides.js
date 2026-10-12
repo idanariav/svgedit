@@ -21,6 +21,14 @@ import { parseAnchors } from './anchor-path.js'
 import { visibleGuides } from './guides.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.js'
 
+/**
+ * @typedef {{left: number, cx: number, right: number, top: number, cy: number, bottom: number,
+ *   isPage?: boolean, isGuide?: boolean, axis?: string} & Record<string, any>} SnapTarget
+ */
+/** @typedef {{delta: number, pos: number, target: SnapTarget, same: boolean}} AlignSnap */
+/** @typedef {{delta: number, gap: number, segments: any[]}} SpacingSnap */
+/** @typedef {{pos: number, lo: number, hi: number}} GuideLine */
+
 // Cap the number of snap targets for drag-time performance.
 const MAX_TARGETS = 60
 // Drawing-time snapping looks at many more objects and their anchors, so it keeps
@@ -32,7 +40,7 @@ const MAX_DRAW_ANCHORS = 20000
 /**
  * Convert a bbox to its edge/center coordinate record.
  * @param {{x: number, y: number, width: number, height: number}} bb
- * @returns {module:smart-guides.SnapTarget}
+ * @returns {SnapTarget}
  */
 const toEdges = (bb) => ({
   left: bb.x,
@@ -49,13 +57,15 @@ const toEdges = (bb) => ({
  * itself so canvas-centering works on an empty page.
  * @param {module:svgcanvas.SvgCanvas} svgCanvas
  * @param {Element[]} excludeElems - The elements being dragged.
- * @returns {module:smart-guides.SnapTarget[]}
+ * @returns {SnapTarget[]}
  */
 export const collectSnapTargets = (svgCanvas, excludeElems) => {
   const exclude = excludeElems.filter(Boolean)
+  /** @param {Element} el */
   const isExcluded = (el) => exclude.some(
     (sel) => sel === el || sel.contains(el) || el.contains(sel)
   )
+  /** @type {SnapTarget[]} */
   const targets = []
   const content = svgCanvas.getSvgContent()
   for (const layer of content.children) {
@@ -96,20 +106,22 @@ export const collectSnapTargets = (svgCanvas, excludeElems) => {
  * @param {{x: number, y: number, width: number, height: number}} bb - Drag-start bbox.
  * @param {number} dx - Candidate drag delta x.
  * @param {number} dy - Candidate drag delta y.
- * @param {module:smart-guides.SnapTarget[]} targets
+ * @param {SnapTarget[]} targets
  * @param {number} tol - Snap tolerance in content units.
- * @returns {{x: ?Object, y: ?Object}} Per-axis `{delta, pos, target}` or null.
+ * @returns {{x: ?AlignSnap, y: ?AlignSnap}} Per-axis `{delta, pos, target}` or null.
  */
 export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
   const moving = toEdges({ x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height })
   // Same-kind matches (edge↔edge, center↔center) beat mixed ones (edge↔center),
   // and mixed matches only engage at a reduced tolerance — otherwise e.g. the
   // page's center line grabs a passing edge and drowns out the intended snap.
+  /** @type {(cand: AlignSnap, best: AlignSnap|null) => boolean} */
   const better = (cand, best) => {
     if (!best) return true
     if (cand.same !== best.same) return cand.same
     return Math.abs(cand.delta) < Math.abs(best.delta)
   }
+  /** @type {(keys: string[], best: AlignSnap|null, axis: string) => AlignSnap|null} */
   const axisBest = (keys, best, axis) => {
     for (const t of targets) {
       if (t.axis && t.axis !== axis) continue // a guide only aligns on its own axis
@@ -141,13 +153,15 @@ export const snapMovingBBox = (bb, dx, dy, targets, tol) => {
  * @param {{x: number, y: number, width: number, height: number}} bb - Drag-start bbox.
  * @param {number} dx
  * @param {number} dy
- * @param {module:smart-guides.SnapTarget[]} targets
+ * @param {SnapTarget[]} targets
  * @param {number} tol
- * @returns {{x: ?Object, y: ?Object}} Per-axis `{delta, gap, segments}` or null.
+ * @returns {{x: ?SpacingSnap, y: ?SpacingSnap}} Per-axis `{delta, gap, segments}` or null.
  */
 export const findEqualSpacing = (bb, dx, dy, targets, tol) => {
   const m = toEdges({ x: bb.x + dx, y: bb.y + dy, width: bb.width, height: bb.height })
+  /** @param {SnapTarget} t */
   const overlapV = (t) => t.bottom >= m.top && t.top <= m.bottom
+  /** @param {SnapTarget} t */
   const overlapH = (t) => t.right >= m.left && t.left <= m.right
   const real = targets.filter((t) => !t.isPage && !t.isGuide)
 
@@ -210,15 +224,21 @@ export const findEqualSpacing = (bb, dx, dy, targets, tol) => {
  * @property {{pos: number, lo: number, hi: number}[]} yLines Horizontal lines, sorted by `pos`.
  */
 
-/** The anchors of a line, polyline, polygon or path, in the element's own coordinates. */
+/**
+ * The anchors of a line, polyline, polygon or path, in the element's own coordinates.
+ * @param {Element} el
+ * @returns {{x: number, y: number}[]}
+ */
 const localAnchors = (el) => {
-  const num = (name) => parseFloat(el.getAttribute(name))
+  /** @param {string} name */
+  const num = (name) => parseFloat(el.getAttribute(name) ?? '')
   switch (el.tagName) {
     case 'line':
       return [{ x: num('x1'), y: num('y1') }, { x: num('x2'), y: num('y2') }]
     case 'polyline':
     case 'polygon': {
       const nums = (el.getAttribute('points') || '').split(/[\s,]+/).filter(Boolean).map(Number)
+      /** @type {{x: number, y: number}[]} */
       const out = []
       for (let i = 0; i + 1 < nums.length; i += 2) out.push({ x: nums[i], y: nums[i + 1] })
       return out
@@ -241,13 +261,18 @@ const localAnchors = (el) => {
  */
 export const collectPointTargets = (svgCanvas, excludeElems = []) => {
   const exclude = excludeElems.filter(Boolean)
+  /** @param {Element} el */
   const isExcluded = (el) => exclude.some((sel) => sel === el || sel.contains(el) || el.contains(sel))
+  /** @type {{x: number, y: number}[]} */
   const points = []
+  /** @type {GuideLine[]} */
   const xLines = []
+  /** @type {GuideLine[]} */
   const yLines = []
   let anchors = 0
   let elements = 0
 
+  /** @param {{x: number, y: number, width: number, height: number}} bb */
   const addBox = (bb) => {
     const l = bb.x
     const r = bb.x + bb.width
@@ -303,7 +328,14 @@ export const collectPointTargets = (svgCanvas, excludeElems = []) => {
   return { points, xLines, yLines }
 }
 
-/** Index of the first element of `sorted` whose `key` is `>= value`. */
+/**
+ * Index of the first element of `sorted` whose `key` is `>= value`.
+ * @template T
+ * @param {T[]} sorted
+ * @param {number} value
+ * @param {(item: T) => number} key
+ * @returns {number}
+ */
 const lowerBound = (sorted, value, key) => {
   let lo = 0
   let hi = sorted.length
@@ -315,8 +347,15 @@ const lowerBound = (sorted, value, key) => {
   return lo
 }
 
-/** The line of `sorted` (by `pos`) nearest to `value`, within `tol`. */
+/**
+ * The line of `sorted` (by `pos`) nearest to `value`, within `tol`.
+ * @param {GuideLine[]} sorted
+ * @param {number} value
+ * @param {number} tol
+ * @returns {GuideLine|null}
+ */
 const nearestLine = (sorted, value, tol) => {
+  /** @type {GuideLine|null} */
   let best = null
   for (let i = lowerBound(sorted, value - tol, (l) => l.pos); i < sorted.length && sorted[i].pos <= value + tol; i++) {
     if (!best || Math.abs(sorted[i].pos - value) < Math.abs(best.pos - value)) best = sorted[i]

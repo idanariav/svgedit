@@ -46,6 +46,7 @@ export const init = (canvas) => {
   const eventRotate = eventRotateInit(svgCanvas)
   const eventSelect = eventSelectInit(svgCanvas)
   // Snap a point being drawn to other objects (core/draw-snap.js); a no-op where that module is absent.
+  /** @type {(x: number, y: number, opts?: any) => {x: number, y: number}} */
   const snapDraw = (x, y, opts) => svgCanvas.snapDrawPoint?.(x, y, opts) ?? { x, y }
 
   /**
@@ -173,6 +174,7 @@ export const init = (canvas) => {
 *
 * @returns {void}
 */
+  /** @param {MouseEvent} evt */
   const mouseOutEvent = (evt) => {
     const { $id } = svgCanvas
     if (svgCanvas.getCurrentMode() !== 'select' && svgCanvas.getStarted()) {
@@ -228,6 +230,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @param {MouseEvent} evt */
   const mouseUpEventImpl = (evt) => {
     evt.preventDefault()
     svgCanvas.moveSelectionThresholdReached = false
@@ -272,6 +275,7 @@ export const init = (canvas) => {
     // event-select.js never got a chance to see) must not leak into a later,
     // unrelated select-mode drag.
     svgCanvas.altCloneArmed = false
+    /** @type {any} */
     let t
     // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
     // Resize must be flattened via recalculateDimensions (which bakes the scale into
@@ -349,7 +353,7 @@ export const init = (canvas) => {
       element
     }, true)
 
-    extResult.forEach((r) => {
+    extResult.forEach((/** @type {any} */ r) => {
       if (r) {
         keep = r.keep || keep;
         ({ element } = r)
@@ -422,6 +426,7 @@ export const init = (canvas) => {
       }
 
       let aniDur = 0.2
+      /** @type {any} */
       let cAni
       const curShape = svgCanvas.getStyle()
       const opacAni = svgCanvas.getOpacAni()
@@ -489,9 +494,10 @@ export const init = (canvas) => {
     svgCanvas.setStartTransform(null)
   }
 
+  /** @param {MouseEvent} evt */
   const dblClickEvent = (evt) => {
-    const evtTarget = evt.target
-    const parent = evtTarget.parentNode
+    const evtTarget = /** @type {Element} */ (evt.target)
+    const parent = /** @type {Element} */ (evtTarget.parentNode)
 
     const mouseTarget = svgCanvas.getMouseTarget(evt)
     const { tagName } = mouseTarget
@@ -577,6 +583,7 @@ export const init = (canvas) => {
   // "inside" it) apart from a closed shape (a hollow rect/circle, or a filled
   // shape's rotated-corner gaps) whose whole bbox is a reasonable grab target.
   const OPEN_LINE_TAGS = new Set(['line', 'polyline'])
+  /** @param {Element|null|undefined} el */
   const isOpenPathElement = (el) => {
     if (!el) { return false }
     if (OPEN_LINE_TAGS.has(el.tagName)) { return true }
@@ -660,6 +667,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @param {MouseEvent} evt */
   const mouseDownEventImpl = (evt) => {
     const dataStorage = svgCanvas.getDataStorage()
     const selectedElements = svgCanvas.getSelectedElements()
@@ -770,7 +778,7 @@ export const init = (canvas) => {
       // is (or contains) a currently-selected element.
         const stack = document.elementsFromPoint(evt.clientX, evt.clientY)
         for (const node of stack) {
-          const hit = sel.find((s) => s === node || s.contains(node))
+          const hit = sel.find((/** @type {Element} */ s) => s === node || s.contains(node))
           if (hit) { mouseTarget = hit; break }
         }
       }
@@ -879,7 +887,7 @@ export const init = (canvas) => {
     // Consolidate transforms for non-group elements to simplify dragging
     // For elements with multiple transforms (e.g., after ungrouping), consolidate them
     // into a single matrix so the dummy translate can be properly applied during drag
-    if (tlist?.numberOfItems > 1 && mouseTarget.tagName !== 'g' && mouseTarget.tagName !== 'a') {
+    if (tlist && tlist.numberOfItems > 1 && mouseTarget.tagName !== 'g' && mouseTarget.tagName !== 'a') {
     // Compute the consolidated matrix from all transforms
       const consolidatedMatrix = transformListToTransform(tlist).matrix
 
@@ -952,7 +960,7 @@ export const init = (canvas) => {
       selectedElements
     }, true)
 
-    extResult.forEach((r) => {
+    extResult.forEach((/** @type {any} */ r) => {
       if (r?.started) {
         svgCanvas.setStarted(true)
       }
