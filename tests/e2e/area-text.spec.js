@@ -52,6 +52,7 @@ test.describe('Area text', () => {
   })
   /** Draw a box, type into it and leave edit mode. */
   const makeAreaText = async (page, text = SENTENCE) => {
+    const stepsBefore = await undoSize(page)
     await drawBox(page, { x: 100, y: 100 }, { x: 300, y: 260 })
     // Enter ends editing; Shift+Enter starts a new row
     const lines = text.split('\n')
@@ -61,6 +62,9 @@ test.describe('Area text', () => {
     }
     await page.keyboard.press('Enter')
     await page.evaluate(() => window.svgEditor.commands.run('tool_select'))
+    // The creation's undo step is recorded by a timer after the release (event.js, aniDur): wait for it, or a
+    // test that counts undo steps sees it land in the middle of its own gesture.
+    await expect.poll(() => undoSize(page)).toBeGreaterThan(stepsBefore)
   }
   const select = (page) => page.evaluate(() => {
     const t = document.querySelector('#svgcontent text')
