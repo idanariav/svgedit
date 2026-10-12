@@ -84,10 +84,11 @@ export const init = canvas => {
       return
     }
     const batchCmd = new BatchCommand('Move to Top')
+    /** @type {Element[]} */
     const changedEls = []
     _groupSelectedByParent(selected).forEach(els => {
       els.forEach(t => {
-        const oldParent = t.parentNode
+        const oldParent = /** @type {ParentNode} */ (t.parentNode)
         const oldNextSibling = t.nextSibling
         oldParent.append(t)
         // If the element actually moved position, add the command and fire the changed
@@ -120,6 +121,7 @@ export const init = canvas => {
       return
     }
     const batchCmd = new BatchCommand('Move to Bottom')
+    /** @type {Element[]} */
     const changedEls = []
     _groupSelectedByParent(selected).forEach((els, parent) => {
       let firstChild = parent.firstElementChild
@@ -170,7 +172,7 @@ export const init = canvas => {
     svgCanvas.setCurBBoxes([])
     /** @type {Element|undefined} */
     let closest
-    let foundCur
+    let foundCur = false
     // jQuery sorts this list
     const list = svgCanvas.getIntersectionList(
       svgCanvas.getStrokedBBoxDefaultVisible([selected])
@@ -234,6 +236,7 @@ export const init = canvas => {
     const ordered = dir === 'Down' ? ascending : ascending.reverse()
 
     const batchCmd = new BatchCommand(`Move ${dir}`)
+    /** @type {Element[]} */
     const changedEls = []
     ordered.forEach(selected => {
       const cmd = _moveUpDownOne(selected, dir)
@@ -306,17 +309,17 @@ export const init = canvas => {
     }
 
     const batchCmd = new BatchCommand('position')
-    selectedElements.forEach((selected, i) => {
+    selectedElements.forEach((/** @type {?Element} */ selected, /** @type {number} */ i) => {
       if (selected) {
       // Store the existing transform before modifying
         const existingTransform = selected.getAttribute('transform') || ''
 
         const xform = svgCanvas.getSvgRoot().createSVGTransform()
-        const tlist = getTransformList(selected)
+        const tlist = /** @type {SVGTransformList} */ (getTransformList(selected))
 
         // dx and dy could be arrays
         if (Array.isArray(dx)) {
-          xform.setTranslate(dx[i], dy[i])
+          xform.setTranslate(dx[i], /** @type {number[]} */ (dy)[i])
         } else {
           xform.setTranslate(dx, dy)
         }
@@ -397,9 +400,10 @@ export const init = canvas => {
     // find all the elements selected (stop at first null)
     const len = selectedElements.length
 
-    const index = el => {
+    const index = (/** @type {?Element} */ el) => {
       if (!el) return -1
       let i = 0
+      /** @type {?Element} */
       let current = el
       do {
         i++
@@ -443,19 +447,20 @@ export const init = canvas => {
     // mirroring what copySelectedElements/pasteElements already do for the
     // clipboard path.
     const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
+    /** @type {Record<string, string>} */
     let defIdMap = {}
     if (originalDefs.length) {
-      const clonedDefs = originalDefs.map((def) => def.cloneNode(true))
+      const clonedDefs = originalDefs.map((/** @type {Element} */ def) => /** @type {Element} */ (def.cloneNode(true)))
       defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
       const defs = svgCanvas.findDefs()
-      clonedDefs.forEach((def) => {
+      clonedDefs.forEach((/** @type {Element} */ def) => {
         defs.append(def)
         batchCmd.addSubCommand(new InsertElementCommand(def))
       })
     }
     // Rewrite an element's (and its descendants') url(#…)/href references from
     // the originals' def ids to the freshly cloned ones above.
-    const remapToClonedDefs = (el) => {
+    const remapToClonedDefs = (/** @type {Element} */ el) => {
       Array.from(el.attributes).forEach((attr) => {
         if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#')) {
           const refId = attr.value.slice(1)
@@ -533,8 +538,9 @@ export const init = canvas => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selected.length) return
     const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
+    /** @type {Element[]} */
     const targets = []
-    const collect = el => {
+    const collect = (/** @type {Element} */ el) => {
       if (skip.has(el.tagName)) return
       if (el.tagName === 'g' || el.tagName === 'a') {
         for (const c of el.children) collect(c)
@@ -547,7 +553,7 @@ export const init = canvas => {
 
     const width = targets[0].getAttribute('stroke-width') || '1'
     const batchCmd = new BatchCommand('Match strokes')
-    const changeAttr = (el, attr, val) => {
+    const changeAttr = (/** @type {Element} */ el, /** @type {string} */ attr, /** @type {string} */ val) => {
       const old = el.getAttribute(attr)
       if (old === val) return
       el.setAttribute(attr, val)
@@ -582,8 +588,8 @@ export const init = canvas => {
     let miny = Number.MAX_VALUE
     let maxy = Number.MIN_VALUE
 
-    const isHorizontalAlign = (type) => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
-    const isVerticalAlign = (type) => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
+    const isHorizontalAlign = (/** @type {string} */ type) => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
+    const isVerticalAlign = (/** @type {string} */ type) => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
 
     for (let i = 0; i < len; ++i) {
       if (!selectedElements[i]) {
@@ -662,7 +668,7 @@ export const init = canvas => {
  *
  * @param {string} relativeTo
  * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {module:utilities.BBoxObject} bboxes - bounding box objects
+ * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
  * @param {number} minx - selected area min-x
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
@@ -671,7 +677,9 @@ export const init = canvas => {
  * @private
  */
   const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+    /** @type {number[]} */
     const dx = []
+    /** @type {number[]} */
     const dy = []
 
     for (let i = 0; i < selectedElements.length; i++) {
@@ -695,6 +703,7 @@ export const init = canvas => {
     const totalWidth = maxx - minx
     const totalBoxWidth = bboxesSortedClone.map(b => b.width).reduce((w1, w2) => w1 + w2, 0)
     const space = (totalWidth - totalBoxWidth) / (bboxesSortedClone.length - 1)
+    /** @type {number[]} */
     const _dx = []
 
     for (let i = 0; i < bboxesSortedClone.length; ++i) {
@@ -723,7 +732,7 @@ export const init = canvas => {
  *
  * @param {string} relativeTo
  * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {module:utilities.BBoxObject} bboxes - bounding box objects
+ * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
  * @param {number} minx - selected area min-x
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
@@ -732,7 +741,9 @@ export const init = canvas => {
  * @private
  */
   const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+    /** @type {number[]} */
     const dx = []
+    /** @type {number[]} */
     const dy = []
 
     for (let i = 0; i < selectedElements.length; i++) {
@@ -756,6 +767,7 @@ export const init = canvas => {
     const totalHeight = maxy - miny
     const totalBoxHeight = bboxesSortedClone.map(b => b.height).reduce((h1, h2) => h1 + h2, 0)
     const space = (totalHeight - totalBoxHeight) / (bboxesSortedClone.length - 1)
+    /** @type {number[]} */
     const _dy = []
 
     for (let i = 0; i < bboxesSortedClone.length; ++i) {
@@ -784,7 +796,7 @@ export const init = canvas => {
  *
  * @param {string} type
  * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {module:utilities.BBoxObject} bboxes - bounding box objects
+ * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
  * @param {number} minx - selected area min-x
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
@@ -847,29 +859,30 @@ export const init = canvas => {
   const deleteSelectedElements = () => {
     const selectedElements = svgCanvas.getSelectedElements()
     const batchCmd = new BatchCommand('Delete Elements')
+    /** @type {Element[]} */
     const selectedCopy = [] // selectedElements is being deleted
 
     // Text that follows a path being deleted becomes plain text (needs the rail still in place).
     svgCanvas.releaseTextOnPath?.(selectedElements.filter(Boolean), batchCmd)
 
-    selectedElements.forEach(selected => {
+    selectedElements.forEach((/** @type {?Element} */ selected) => {
       if (selected) {
-        let parent = selected.parentNode
+        let parent = /** @type {?Element} */ (selected.parentNode)
         let t = selected
         // this will unselect the element and remove the selectedOutline
         svgCanvas.gettingSelectorManager().releaseSelector(t)
         // Remove the path if present.
         svgCanvas.removePath_(t.id)
         // Get the parent if it's a single-child anchor
-        if (parent.tagName === 'a' && parent.childNodes.length === 1) {
+        if (parent && parent.tagName === 'a' && parent.childNodes.length === 1) {
           t = parent
-          parent = parent.parentNode
+          parent = /** @type {?Element} */ (parent.parentNode)
         }
         const { nextSibling } = t
         t.remove()
         const elem = t
         selectedCopy.push(selected) // for the copy
-        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, parent))
+        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, /** @type {Element} */ (parent)))
       }
     })
     svgCanvas.setEmptySelectedElements()
@@ -894,14 +907,14 @@ export const init = canvas => {
     const batchCmd = new BatchCommand('Flip Elements')
     const svgRoot = svgCanvas.getSvgRoot()
 
-    selectedElements.forEach(selected => {
+    selectedElements.forEach((/** @type {?SVGGraphicsElement} */ selected) => {
       if (!selected) return
 
       const localBBox = selected.getBBox()
       if (!localBBox) return
 
       const existingTransform = selected.getAttribute('transform') || ''
-      const tlist = getTransformList(selected)
+      const tlist = /** @type {SVGTransformList} */ (getTransformList(selected))
       const elemMatrix = transformListToTransform(tlist).matrix
 
       // Pivot the flip around the element's *true* axis-aligned bbox centre in
@@ -970,12 +983,12 @@ export const init = canvas => {
  */
   const copySelectedElements = () => {
     const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-    const elemsJson = selectedElements.map(x => svgCanvas.getJsonFromSvgElements(x))
+    const elemsJson = selectedElements.map((/** @type {Element} */ x) => svgCanvas.getJsonFromSvgElements(x))
     // Carry the referenced paint servers (gradients, filters, markers, …) on the
     // clipboard, tagged `_defs`, so a paste into another drawing recreates them
     // instead of leaving dangling url(#…) references and a corrupted <defs>.
     const defsJson = svgCanvas.getReferencedDefElements(selectedElements)
-      .map(d => {
+      .map((/** @type {Element} */ d) => {
         const json = svgCanvas.getJsonFromSvgElements(d)
         if (json) json._defs = true
         return json

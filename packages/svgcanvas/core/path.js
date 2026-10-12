@@ -18,6 +18,7 @@ import {
 import { init as pathMethodInit } from './path-method.js'
 import { init as pathActionsInit } from './path-actions.js'
 
+/** @type {Record<number, string[]>} */
 const segData = {
   2: ['x', 'y'], // PATHSEG_MOVETO_ABS
   4: ['x', 'y'], // PATHSEG_LINETO_ABS
@@ -56,12 +57,14 @@ export const init = (canvas) => {
     Object.assign(uiStrings, strs.ui)
   }
 
+  /** @type {Array<string|number>} */
   let pathFuncs = []
 
   let linkControlPts = true
 
   // Stores references to paths via IDs.
   // TODO: Make this cross-document happy.
+  /** @type {Record<string, any>} */
   let pathData = {}
 
   /**
@@ -78,6 +81,7 @@ export const init = (canvas) => {
  * @type {null|object}
  * @memberof module:path
 */
+  /** @type {?{elem: SVGPathElement, oldbbox?: ?{x: number, y: number, width: number, height: number}}} */
   let path = null
 
   /**
@@ -325,7 +329,7 @@ export const init = (canvas) => {
 * @param {Point} ct1 - Object with x and y values (first control point)
 * @param {Point} ct2 - Object with x and y values (second control point)
 * @param {Point} pt - Object with x and y values (third point)
-* @returns {Point[]} Array of two "smoothed" point objects
+* @returns {Point[]|undefined} Array of two "smoothed" point objects (`undefined` when a control point sits on the vertex)
 */
   const smoothControlPoints = (ct1, ct2, pt) => {
   // each point must not be the origin
@@ -390,9 +394,9 @@ export const init = (canvas) => {
     if (id in pathData) { delete pathData[id] }
   }
 
-  let newcx; let newcy; let oldcx; let oldcy; let angle
+  let newcx = 0; let newcy = 0; let oldcx = 0; let oldcy = 0; let angle = 0
 
-  const getRotVals = (x, y) => {
+  const getRotVals = (/** @type {number} */ x, /** @type {number} */ y) => {
     let dx = x - oldcx
     let dy = y - oldcy
 
@@ -435,7 +439,7 @@ export const init = (canvas) => {
     angle = getRotationAngle(currentPath, true)
     if (!angle) { return }
     // selectedBBoxes[0] = path.oldbbox;
-    const oldbox = path.oldbbox // selectedBBoxes[0],
+    const oldbox = path?.oldbbox // selectedBBoxes[0],
     if (!oldbox) { return }
     oldcx = oldbox.x + oldbox.width / 2
     oldcy = oldbox.y + oldbox.height / 2
@@ -453,7 +457,7 @@ export const init = (canvas) => {
     newcx = r * Math.cos(theta) + oldcx
     newcy = r * Math.sin(theta) + oldcy
 
-    const list = currentPath.pathSegList
+    const list = /** @type {any} */ (currentPath).pathSegList
     if (!list) { return }
 
     let i = list.numberOfItems
@@ -466,6 +470,7 @@ export const init = (canvas) => {
       const props = segData[type]
       if (!props) { continue }
 
+      /** @type {Record<string, number>} */
       const newVals = {}
       if (seg.x !== null && seg.x !== undefined && seg.y !== null && seg.y !== undefined) {
         const rvals = getRotVals(seg.x, seg.y)
@@ -593,7 +598,7 @@ export const init = (canvas) => {
   svgCanvas.getSegData = () => { return segData }
   svgCanvas.getUIStrings = () => { return uiStrings }
   svgCanvas.getPathObj = () => { return path }
-  svgCanvas.setPathObj = (obj) => { path = obj }
+  svgCanvas.setPathObj = (/** @type {any} */ obj) => { path = obj }
   svgCanvas.getPathFuncs = () => { return pathFuncs }
   svgCanvas.getLinkControlPts = () => { return linkControlPts }
   pathFuncs = [0, 'ClosePath']

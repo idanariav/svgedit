@@ -21,6 +21,7 @@ import {
 } from './math.js'
 import { getUnits } from './units.js'
 
+/** @param {*} value */
 const flipBoxCoordinate = (value) => {
   if (value === null || value === undefined) return null
   const str = String(value).trim()
@@ -35,6 +36,10 @@ const flipBoxCoordinate = (value) => {
   return Number.isNaN(num) ? str : String(1 - num)
 }
 
+/**
+ * @param {Element} elem
+ * @param {string} attr
+ */
 const flipAttributeInBoxUnits = (elem, attr) => {
   const value = elem.getAttribute(attr)
   if (value === null || value === undefined) return
@@ -48,7 +53,7 @@ const flipAttributeInBoxUnits = (elem, attr) => {
 /**
  * Initialize the coords module with the SVG canvas.
  * @function module:coords.init
- * @param {Object} canvas - The SVG canvas object
+ * @param {any} canvas - The SVG canvas object
  * @returns {void}
  */
 export const init = canvas => {
@@ -64,14 +69,14 @@ export const init = canvas => {
  * Applies coordinate changes to an element based on the given matrix.
  * @function module:coords.remapElement
  * @param {Element} selected - The DOM element to remap
- * @param {Object} changes - An object containing attribute changes
+ * @param {Record<string, any>} changes - An object containing attribute changes
  * @param {SVGMatrix} m - The transformation matrix
  * @returns {void}
  */
   const remapElement = (selected, changes, m) => {
-    const remap = (x, y) => transformPoint(x, y, m)
-    const scalew = (w) => m.a * w
-    const scaleh = (h) => m.d * h
+    const remap = (/** @type {number} */ x, /** @type {number} */ y) => transformPoint(x, y, m)
+    const scalew = (/** @type {number} */ w) => m.a * w
+    const scaleh = (/** @type {number} */ h) => m.d * h
     const doSnapping =
     svgCanvas.getGridSnapping?.() &&
     /** @type {Element|null|undefined} */ (selected?.parentNode?.parentNode)?.localName === 'svg'
@@ -168,7 +173,7 @@ export const init = canvas => {
       // Allow images to be inverted (give them matrix when flipped)
         if (elName === 'image' && (m.a < 0 || m.d < 0)) {
         // Convert to matrix if flipped
-          const chlist = getTransformList(selected)
+          const chlist = /** @type {SVGTransformList} */ (getTransformList(selected))
           const mt = svgCanvas.getSvgRoot().createSVGTransform()
           mt.setMatrix(matrixMultiply(transformListToTransform(chlist).matrix, m))
           chlist.clear()
@@ -246,19 +251,19 @@ export const init = canvas => {
             const hasX = child.hasAttribute('x')
             const hasY = child.hasAttribute('y')
             if (hasX) {
-              const childX = convertToNum('x', child.getAttribute('x'))
+              const childX = convertToNum('x', child.getAttribute('x') ?? 0)
               const childPtX = remap(childX, changes.y).x
               childChanges.x = childPtX
             }
             if (hasY) {
-              const childY = convertToNum('y', child.getAttribute('y'))
+              const childY = convertToNum('y', child.getAttribute('y') ?? 0)
               const childPtY = remap(changes.x, childY).y
               childChanges.y = childPtY
             }
 
             // Only a size of its own is scaled: one it inherits follows the text's (writing the computed
             // size onto every row on each move, as this used to, left it behind after an undo).
-            const tspanFSNum = parseFloat(child.getAttribute('font-size'))
+            const tspanFSNum = parseFloat(child.getAttribute('font-size') ?? '')
             if (!isNaN(tspanFSNum)) {
               childChanges['font-size'] = tspanFSNum * Math.abs(m.a)
             }
@@ -300,12 +305,12 @@ export const init = canvas => {
       }
       case 'polyline':
       case 'polygon': {
-        changes.points.forEach(pt => {
+        changes.points.forEach((/** @type {{x: number, y: number}} */ pt) => {
           const { x, y } = remap(pt.x, pt.y)
           pt.x = x
           pt.y = y
         })
-        const pstr = changes.points.map(pt => `${pt.x},${pt.y}`).join(' ')
+        const pstr = changes.points.map((/** @type {{x: number, y: number}} */ pt) => `${pt.x},${pt.y}`).join(' ')
         selected.setAttribute('points', pstr)
         runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
         break
@@ -329,6 +334,7 @@ export const init = canvas => {
             const type = pathMap.indexOf(t)
             if (type === -1) continue
             const values = seg.values || []
+            /** @type {Record<string, any>} */
             const entry = { type }
             switch (t.toUpperCase()) {
               case 'M':
@@ -388,7 +394,7 @@ export const init = canvas => {
         }
 
         const firstseg = changes.d[0]
-        let currentpt
+        let currentpt = { x: 0, y: 0 } // set from the first segment below; the loop only runs when there is one
         if (len > 0) {
           currentpt = remap(firstseg.x, firstseg.y)
           changes.d[0].x = currentpt.x
@@ -446,10 +452,11 @@ export const init = canvas => {
         }
 
         let dstr = ''
+        /** @type {Array<{type: string, values: number[]}>} */
         const newPathData = []
-        changes.d.forEach(seg => {
+        changes.d.forEach((/** @type {Record<string, any>} */ seg) => {
           const { type } = seg
-          const letter = pathMap[type]
+          const letter = /** @type {string} */ (pathMap[type])
           dstr += letter
           switch (type) {
             case 13: // relative horizontal line (h)
@@ -541,7 +548,7 @@ export const init = canvas => {
         // shape back to its pre-move/resize geometry. The M point is always the
         // center and the (sole) A/a segment always carries the radii.
         if (selected.hasAttribute('data-arc')) {
-          const arcSeg = changes.d.find(seg => seg.type === 10 || seg.type === 11)
+          const arcSeg = changes.d.find((/** @type {Record<string, any>} */ seg) => seg.type === 10 || seg.type === 11)
           selected.setAttribute('data-cx', changes.d[0].x)
           selected.setAttribute('data-cy', changes.d[0].y)
           if (arcSeg) {

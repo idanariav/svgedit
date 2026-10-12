@@ -34,7 +34,8 @@ export const init = (canvas) => {
   /** Screen pixels within which a press counts as on an open path's end. */
   const PEN_END_REACH = 6
   const END_HINT_ID = 'pen_end_hint'
-  let path = null // current path being edited (per instance)
+  /** @type {any} the `Path` being edited (per instance); its class is built in path-method.js's `init` */
+  let path = null
 
   /**
  * Convert a path to one with only absolute or relative values.
@@ -253,13 +254,17 @@ export const init = (canvas) => {
 */
   class PathActions {
     #subpath = false
+    /** @type {?number[]} */
     #newPoint = null
+    /** @type {?number[]} */
     #firstCtrl = null
+    /** @type {?Element|false} */
     #currentPath = null
     #hasMoved = false
     #downOnPath = false
     // The open path the Pen is carrying on (pressed at one of its ends): hidden while
     // the drawing stands in for it, then given the drawing's geometry on commit.
+    /** @type {?{elem: Element, display: ?string, count: number}} */
     #continued = null
     // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
     // applied at any point during the drag currently in progress — reset at
@@ -356,11 +361,15 @@ export const init = (canvas) => {
     #penEnd (x, y, drawnPath) {
       if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
       const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
-      const exclude = [drawnPath, this.#continued?.elem].filter(Boolean)
+      const exclude = /** @type {Element[]} */ ([drawnPath, this.#continued?.elem].filter(Boolean))
       return findPenEnd(layer, x, y, PEN_END_REACH / svgCanvas.getZoom(), exclude)
     }
 
-    /** Start a drawing that carries on `end`'s path from the pressed end. */
+    /**
+     * Start a drawing that carries on `end`'s path from the pressed end.
+     * @param {import('./pen-continue.js').PenEnd} end
+     * @param {Element} stretchy
+     */
     #carryOn (end, stretchy) {
       const zoom = svgCanvas.getZoom()
       this.#newPoint = null
@@ -383,13 +392,18 @@ export const init = (canvas) => {
       svgCanvas.addPointGrip(this.#continued.count - 1, x, y)
     }
 
-    /** Finish the drawing by joining it to `end`'s path. */
+    /**
+     * Finish the drawing by joining it to `end`'s path.
+     * @param {import('./pen-continue.js').PenEnd} end
+     * @param {Element} drawnPath
+     * @param {Element} stretchy
+     */
     #joinTo (end, drawnPath, stretchy) {
-      const drawn = drawnSubpath(drawnPath.getAttribute('d'))
+      const drawn = drawnSubpath(drawnPath.getAttribute('d') ?? '')
       this.#newPoint = null
       if (!drawn) return
       const { subpath, keepsDrawing } = joinDrawn(drawn, end, !!this.#continued)
-      const survivor = keepsDrawing ? this.#continued.elem : end.elem
+      const survivor = keepsDrawing && this.#continued ? this.#continued.elem : end.elem
       svgCanvas.removePath_(svgCanvas.getId())
       stretchy.remove()
       svgCanvas.setDrawnPath(null)
@@ -931,7 +945,7 @@ export const init = (canvas) => {
         }
       } else {
         path.selected_pts = []
-        path.eachSeg(/** @this {any} */ function (_i) {
+        path.eachSeg(/** @this {any} */ function (/** @type {number} */ _i) {
           const seg = this
           if (!seg.next && !seg.prev) return
 
@@ -1289,7 +1303,7 @@ export const init = (canvas) => {
     */
     resetOrientation (pth) {
       if (pth?.nodeName !== 'path') { return false }
-      const tlist = getTransformList(pth)
+      const tlist = /** @type {SVGTransformList} */ (getTransformList(pth))
       const m = transformListToTransform(tlist).matrix
       tlist.clear()
       pth.removeAttribute('transform')
@@ -1411,12 +1425,12 @@ export const init = (canvas) => {
       const index = selPts[0]
 
       /** @type {number|boolean|null} */
-      let openPt = null
+      let openPt = /** @type {?number|false} */ (null)
       /** @type {any} */
       let startItem = null
 
       // Check if subpath is already open
-      path.eachSeg(/** @this {any} */ function (i) {
+      path.eachSeg(/** @this {any} */ function (/** @type {number} */ i) {
         if (this.type === 2 && i <= index) {
           startItem = this.item
         }
@@ -1485,7 +1499,7 @@ export const init = (canvas) => {
         return
       }
 
-      let lastM; let zSeg
+      let lastM = 0; let zSeg
 
       // Find this sub-path's closing point and remove
       for (let i = 0; i < list.numberOfItems; i++) {
@@ -1599,6 +1613,8 @@ export const init = (canvas) => {
   * Smooth polyline into path.
   * @function module:path.pathActions.smoothPolylineIntoPath
   * @see module:path~smoothPolylineIntoPath
+  * @param {Element} element
+  * @returns {Element}
   */
     smoothPolylineIntoPath (element) {
       return this.#smoothPolylineIntoPath(element)
@@ -1635,6 +1651,7 @@ export const init = (canvas) => {
 
       // Get first selected point
       const seg = path.segs[selPts[0]]
+      /** @type {Record<string, number>} */
       const diff = { x: 0, y: 0 }
       diff[attr] = newValue - seg.item[attr]
 
@@ -1678,6 +1695,9 @@ export const init = (canvas) => {
   * Convert a path to one with only absolute or relative values.
   * @function module:path.pathActions.convertPath
   * @see module:path.convertPath
+  * @param {SVGPathElement} pth
+  * @param {boolean} toRel
+  * @returns {string}
   */
     convertPath (pth, toRel) {
       return convertPath(pth, toRel)

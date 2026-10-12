@@ -53,10 +53,18 @@ const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'ellipse'
 const GEOMETRY_ATTRS = ['d', 'x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2', 'points', 'id']
 
 const DIRS = ['ltr', 'rtl', 'ttb', 'btt']
+/**
+ * @param {number} v
+ * @param {number} lo
+ * @param {number} hi
+ */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+/** @param {unknown} v */
 const flag = (v) => (v === true || v === 1 || v === '1')
 
 /** @typedef {import('./art-brush.js').ArtPath} ArtPath */
+/** @typedef {{group: Element, spine: Element, src: Element, out: Element}} BrushParts */
+/** @typedef {import('./anchor-path.js').Pt} Pt */
 
 // ---------------------------------------------------------------------------
 // The `se:art-brush` attribute: `art(key=value,…)` / `pattern(key=value,…)`
@@ -69,6 +77,7 @@ const flag = (v) => (v === true || v === 1 || v === '1')
 export const parseBrush = (str) => {
   const m = /^\s*(art|pattern)\s*\(([^()]*)\)\s*$/.exec(str ?? '')
   if (!m) return null
+  /** @type {Object<string, string>} */
   const raw = {}
   for (const pair of m[2].split(',')) {
     const eq = pair.indexOf('=')
@@ -85,7 +94,7 @@ export const parseBrush = (str) => {
  * @returns {Object<string, any>}
  */
 export const sanitizeOptions = (type, raw = {}) => {
-  const num = (v, def, lo, hi) => (Number.isFinite(Number(v)) && v !== '' && v != null ? clamp(Number(v), lo, hi) : def)
+  const num = (/** @type {any} */ v, /** @type {number} */ def, /** @type {number} */ lo, /** @type {number} */ hi) => (Number.isFinite(Number(v)) && v !== '' && v != null ? clamp(Number(v), lo, hi) : def)
   if (type === 'art') {
     const d = ART_DEFAULTS
     return {
@@ -121,34 +130,44 @@ export const formatBrush = (type, opts = {}) => {
 // Artwork
 // ---------------------------------------------------------------------------
 
+/** @param {Element} el */
 export const localMatrix = (el) => {
   const list = getTransformList(el)
   return list && list.numberOfItems ? transformListToTransform(list).matrix : null
 }
 
-/** The matrix taking `el`'s own coordinates to the drawing's (its own transform and every ancestor's). */
+/**
+ * The matrix taking `el`'s own coordinates to the drawing's (its own transform and every ancestor's).
+ * @param {Element} el
+ */
 const matrixToContent = (el) => {
+  /** @type {?DOMMatrix} */
   let m = null
-  for (let n = el; n && n.id !== 'svgcontent' && n.tagName !== 'svg'; n = n.parentNode) {
+  for (let n = /** @type {any} */ (el); n && n.id !== 'svgcontent' && n.tagName !== 'svg'; n = n.parentNode) {
     const local = localMatrix(n)
     if (local) m = m ? matrixMultiply(local, m) : local
   }
   return m
 }
 
+/**
+ * @param {string} d
+ * @param {?{a: number, b: number, c: number, d: number, e: number, f: number}} m
+ */
 export const applyMatrix = (d, m) => {
   if (!m) return d
-  const map = (pt) => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
+  const map = (/** @type {Pt} */ pt) => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
   return anchorsToD(parseAnchors(d, 0.1).map((sp) => ({
     closed: sp.closed,
     anchors: sp.anchors.map((a) => ({ p: map(a.p), hIn: map(a.hIn), hOut: map(a.hOut) }))
   })))
 }
 
+/** @param {Element} el */
 const pickStyle = (el) => {
   /** @type {Object<string, string>} */
   const attrs = {}
-  for (const name of STYLE_ATTRS) if (el.hasAttribute(name)) attrs[name] = el.getAttribute(name)
+  for (const name of STYLE_ATTRS) if (el.hasAttribute(name)) attrs[name] = /** @type {string} */ (el.getAttribute(name))
   return attrs
 }
 
@@ -161,7 +180,7 @@ const pickStyle = (el) => {
 export const artPathsFromElements = (elems) => {
   /** @type {ArtPath[]} */
   const out = []
-  const visit = (el) => {
+  const visit = (/** @type {Element} */ el) => {
     if (el.getAttribute?.('display') === 'none') return
     if (el.tagName === 'g' || el.tagName === 'a') {
       for (const child of el.children) visit(child)
@@ -174,9 +193,16 @@ export const artPathsFromElements = (elems) => {
   return out
 }
 
+/**
+ * @param {Document} doc
+ * @param {string} tag
+ */
 const svgNS = (doc, tag) => doc.createElementNS(NS.SVG, tag)
 
-/** @returns {ArtPath[]} the `<path>` children of an artwork container */
+/**
+ * @param {Element} container
+ * @returns {ArtPath[]} the `<path>` children of an artwork container
+ */
 const readArtPaths = (container) => [...container.children]
   .filter((c) => c.tagName === 'path')
   .map((c) => ({ d: c.getAttribute('d') ?? '', attrs: pickStyle(c) }))
@@ -184,6 +210,10 @@ const readArtPaths = (container) => [...container.children]
 /**
  * Fill an artwork container with paths. With `newId`, each path keeps the id of the one that stood at its place
  * before (so regenerating the same art writes the same document), and new places get a fresh id.
+ * @param {Document} doc
+ * @param {Element} container
+ * @param {ArtPath[]} paths
+ * @param {?(() => string)} newId
  */
 const writeArtPaths = (doc, container, paths, newId) => {
   const ids = [...container.children].map((c) => c.getAttribute('id'))
@@ -199,6 +229,8 @@ const writeArtPaths = (doc, container, paths, newId) => {
 
 /**
  * Whether the paths in `container` are these paths (within the saver's rounding, which adds up along a long path).
+ * @param {Element} container
+ * @param {ArtPath[]} paths
  */
 const sameArt = (container, paths) => {
   const kids = [...container.children]
@@ -217,7 +249,7 @@ const sameArt = (container, paths) => {
 
 /**
  * @param {?Element} group
- * @returns {?{group: Element, spine: Element, src: Element, out: Element}} null when it is not a complete brushed group
+ * @returns {?BrushParts} null when it is not a complete brushed group
  */
 export const brushParts = (group) => {
   if (!group || group.tagName !== 'g' || !group.hasAttribute(BRUSH_ATTR)) return null
@@ -239,7 +271,10 @@ export const brushGroupOf = (elem) => {
   return brushParts(/** @type {Element} */ (group)) ? /** @type {Element} */ (group) : null
 }
 
-/** What the generated art for a group is made from: the spine, the options and the artwork. */
+/**
+ * What the generated art for a group is made from: the spine, the options and the artwork.
+ * @param {{group: Element, spine: Element, src: Element}} p
+ */
 const signature = (p) => `${p.spine.getAttribute('d')}|${p.group.getAttribute(BRUSH_ATTR)}|${p.src.innerHTML}`
 
 /**
@@ -267,13 +302,17 @@ const artFor = (p) => {
   return brush.type === 'art' ? artAlongPath(d, art, brush.opts) : patternAlongPath(d, art, brush.opts)
 }
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
   registerAttrValidator(BRUSH_ATTR, (value) => (parseBrush(value) ? true : 'is not art(…) or pattern(…)'))
   registerAttrValidator(LIB_ATTR, (value) => (value === 'art' || value === 'pattern' ? true : 'is not art or pattern'))
 
+  /** @returns {Element[]} */
   const getSelected = () => svgCanvas.getSelectedElements().filter(Boolean)
+  /** @returns {Element[]} the brushed groups among the selection */
+  const selectedBrushGroups = () => /** @type {Element[]} */ (getSelected().map(brushGroupOf).filter(Boolean))
   const newId = () => svgCanvas.getNextId()
 
   /**
@@ -289,7 +328,7 @@ export const init = (canvas) => {
     const kids = [...p.out.children]
     const was = kids.length ? madeFrom.get(kids[0]) : undefined
     if (!force && was === sig) return false
-    const mark = (nodes) => nodes.forEach((n) => madeFrom.set(n, sig))
+    const mark = (/** @type {Element[]} */ nodes) => nodes.forEach((n) => madeFrom.set(n, sig))
     const kept = earlier.get(group) ?? new Map()
     earlier.set(group, kept)
     const back = !force && kept.get(sig)
@@ -395,23 +434,32 @@ export const init = (canvas) => {
       !!getPathDFromElement(elem)
   }
 
-  /** The element as the spine path of a new brushed group: a copy that is a `<path>`, hidden. */
+  /**
+   * The element as the spine path of a new brushed group: a copy that is a `<path>`, hidden.
+   * @param {Element} elem
+   * @param {Document} doc
+   */
   const makeSpine = (elem, doc) => {
     const spine = svgNS(doc, 'path')
     for (const attr of elem.attributes) if (!GEOMETRY_ATTRS.includes(attr.name) && attr.name !== 'transform') spine.setAttribute(attr.name, attr.value)
-    spine.setAttribute('d', getPathDFromElement(elem))
+    spine.setAttribute('d', /** @type {string} */ (getPathDFromElement(elem)))
     spine.setAttribute('id', newId())
     spine.setAttribute(SPINE_ATTR, '1') // not empty: the saver drops empty attributes
-    if (spine.hasAttribute('opacity')) spine.setAttribute(SPINE_OPACITY_ATTR, spine.getAttribute('opacity'))
+    if (spine.hasAttribute('opacity')) spine.setAttribute(SPINE_OPACITY_ATTR, /** @type {string} */ (spine.getAttribute('opacity')))
     spine.setAttribute('opacity', '0')
     return spine
   }
 
+  /**
+   * @param {Element} elem
+   * @param {Element} def
+   * @param {'art'|'pattern'} type
+   */
   const buildGroup = (elem, def, type) => {
     const doc = elem.ownerDocument
     const g = svgNS(doc, 'g')
     g.setAttribute('id', elem.id)
-    if (elem.hasAttribute('transform')) g.setAttribute('transform', elem.getAttribute('transform'))
+    if (elem.hasAttribute('transform')) g.setAttribute('transform', /** @type {string} */ (elem.getAttribute('transform')))
     g.setAttribute(BRUSH_ATTR, formatBrush(type))
     const src = svgNS(doc, 'g')
     src.setAttribute(SRC_ATTR, '1')
@@ -434,12 +482,13 @@ export const init = (canvas) => {
     const targets = getSelected().filter(canApplyArtBrush)
     if (!def || !targets.length) return []
     const type = def.getAttribute(LIB_ATTR) === 'pattern' ? 'pattern' : 'art'
+    /** @type {Element[]} */
     const done = []
     svgCanvas.transact('Apply brush', () => {
       for (const elem of targets) {
         const existing = brushGroupOf(elem)
         if (existing) {
-          const p = brushParts(existing)
+          const p = /** @type {BrushParts} */ (brushParts(existing))
           writeArtPaths(existing.ownerDocument, p.src, readArtPaths(def), null)
           const was = parseBrush(existing.getAttribute(BRUSH_ATTR))
           existing.setAttribute(BRUSH_ATTR, formatBrush(type, was?.type === type ? was.opts : {}))
@@ -477,11 +526,12 @@ export const init = (canvas) => {
    * @returns {Element[]}
    */
   const setArtBrushOptions = (changes) => {
-    const groups = getSelected().map(brushGroupOf).filter(Boolean)
+    const groups = selectedBrushGroups()
     if (!groups.length) return []
     svgCanvas.transact('Brush options', () => {
       for (const g of groups) {
         const b = parseBrush(g.getAttribute(BRUSH_ATTR))
+        if (!b) continue
         g.setAttribute(BRUSH_ATTR, formatBrush(b.type, { ...b.opts, ...changes }))
         regenerate(g, true)
       }
@@ -495,11 +545,11 @@ export const init = (canvas) => {
    * @returns {Element[]}
    */
   const expandArtBrush = () => {
-    const groups = getSelected().map(brushGroupOf).filter(Boolean)
+    const groups = selectedBrushGroups()
     if (!groups.length) return []
     svgCanvas.transact('Expand brush', () => {
       for (const g of groups) {
-        const p = brushParts(g)
+        const p = /** @type {BrushParts} */ (brushParts(g))
         regenerate(g)
         g.append(...p.out.children)
         p.spine.remove()
@@ -518,21 +568,22 @@ export const init = (canvas) => {
    * @returns {Element[]}
    */
   const releaseArtBrush = () => {
-    const groups = getSelected().map(brushGroupOf).filter(Boolean)
+    const groups = selectedBrushGroups()
     if (!groups.length) return []
+    /** @type {Element[]} */
     const paths = []
     svgCanvas.transact('Release brush', () => {
       for (const g of groups) {
-        const { spine } = brushParts(g)
+        const { spine } = /** @type {BrushParts} */ (brushParts(g))
         spine.removeAttribute(SPINE_ATTR)
         if (spine.hasAttribute(SPINE_OPACITY_ATTR)) {
-          spine.setAttribute('opacity', spine.getAttribute(SPINE_OPACITY_ATTR))
+          spine.setAttribute('opacity', /** @type {string} */ (spine.getAttribute(SPINE_OPACITY_ATTR)))
           spine.removeAttribute(SPINE_OPACITY_ATTR)
         } else {
           spine.removeAttribute('opacity')
         }
         spine.setAttribute('id', g.id)
-        if (g.hasAttribute('transform')) spine.setAttribute('transform', g.getAttribute('transform'))
+        if (g.hasAttribute('transform')) spine.setAttribute('transform', /** @type {string} */ (g.getAttribute('transform')))
         g.before(spine)
         g.remove()
         paths.push(spine)

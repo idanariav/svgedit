@@ -57,6 +57,7 @@ const SAME_TOL = 0.05
  * end), `solid`/`hollow` the inset in box units. Anything not listed (box, circle,
  * star, slashes, X) has no tip and stays centred.
  */
+/** @type {Record<string, {tip: number|null, solid: number, hollow: number}>} */
 const HEADS = {
   leftarrow: { tip: 0, solid: 50, hollow: 70 }, // hollow: the notch of the dart
   rightarrow: { tip: 100, solid: 50, hollow: 70 },
@@ -85,11 +86,32 @@ export const headPlacement = (kind, pos, mode) => {
   return { refX: mode === 'extend' ? tip + (pos === 'end' ? -inset : inset) : tip, inset }
 }
 
+/** @typedef {import('./anchor-path.js').Pt} Pt */
+/** @typedef {import('./anchor-path.js').Anchor} Anchor */
+/** @typedef {import('./anchor-path.js').SubPath} SubPath */
+/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @returns {Pt}
+ */
 const pt = (x, y) => ({ x, y })
+/**
+ * @param {Pt} p
+ * @param {Pt} [hIn]
+ * @param {Pt} [hOut]
+ * @returns {Anchor}
+ */
 const anchor = (p, hIn = p, hOut = p) => ({ p, hIn, hOut })
+/** @param {number} n */
 const num = (n) => Math.round(n * 1e5) / 1e5
 
-/** The parameter of `c` at arc length `len` from its start. */
+/**
+ * The parameter of `c` at arc length `len` from its start.
+ * @param {Cubic} c
+ * @param {number} len
+ */
 const tAt = (c, len) => {
   const n = 40
   let prev = c.p0
@@ -126,6 +148,7 @@ export const trimSubpath = (sp, start, end) => {
   const k = want > room && want > 0 ? room / want : 1
   const from = start * k
   const to = total - end * k
+  /** @type {Array<Cubic & {straight: boolean}>} */
   const kept = []
   let at = 0
   for (const { c, len, straight } of segs) {
@@ -135,7 +158,7 @@ export const trimSubpath = (sp, start, end) => {
     const a = from > s0 ? from - s0 : 0
     const b = to < at ? to - s0 : len
     if (straight) {
-      const lerp = (u) => pt(c.p0.x + (c.p3.x - c.p0.x) * u, c.p0.y + (c.p3.y - c.p0.y) * u)
+      const lerp = (/** @type {number} */ u) => pt(c.p0.x + (c.p3.x - c.p0.x) * u, c.p0.y + (c.p3.y - c.p0.y) * u)
       const p0 = lerp(a / len)
       const p3 = lerp(b / len)
       kept.push({ p0, p1: p0, p2: p3, p3, straight })
@@ -152,17 +175,26 @@ export const trimSubpath = (sp, start, end) => {
   return { closed: false, anchors }
 }
 
+/** @param {?string|undefined} str */
 const parsePoints = (str) => {
   const n = (str || '').trim().split(/[\s,]+/).map(Number)
+  /** @type {Pt[]} */
   const out = []
   for (let i = 0; i + 1 < n.length; i += 2) out.push(pt(n[i], n[i + 1]))
   return out.length === n.length / 2 && out.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)) ? out : []
 }
+/** @param {Anchor[]} anchors */
 const pointsToStr = (anchors) => anchors.map((a) => `${num(a.p.x)},${num(a.p.y)}`).join(' ')
 
+/** @param {Element} elem */
 const isPathTag = (elem) => elem.tagName === 'path'
 
-/** The element's current geometry as one open subpath, or null. */
+/**
+ * The element's current geometry as one open subpath, or null.
+ * @param {Element} elem
+ * @param {?string} [attr]
+ * @returns {?SubPath}
+ */
 const readSubpath = (elem, attr) => {
   if (isPathTag(elem)) {
     const sps = parseAnchors(attr ?? elem.getAttribute('d') ?? '', 0.1)
@@ -175,39 +207,59 @@ const readSubpath = (elem, attr) => {
   return { closed: false, anchors: pts.map((p) => anchor(p)) }
 }
 
+/**
+ * @param {Element} elem
+ * @param {SubPath} sp
+ */
 const writeGeometry = (elem, sp) => {
   if (isPathTag(elem)) {
     elem.setAttribute('d', anchorsToD([sp]))
   } else if (elem.tagName === 'line') {
     const a = sp.anchors[0].p
     const b = sp.anchors[sp.anchors.length - 1].p
-    elem.setAttribute('x1', num(a.x)); elem.setAttribute('y1', num(a.y))
-    elem.setAttribute('x2', num(b.x)); elem.setAttribute('y2', num(b.y))
+    elem.setAttribute('x1', String(num(a.x))); elem.setAttribute('y1', String(num(a.y)))
+    elem.setAttribute('x2', String(num(b.x))); elem.setAttribute('y2', String(num(b.y)))
   } else {
     elem.setAttribute('points', pointsToStr(sp.anchors))
   }
 }
 
+/** @param {Element} elem */
 const sourceAttr = (elem) => (isPathTag(elem) ? ARROW_D_ATTR : ARROW_PTS_ATTR)
 
-/** A string that changes when the element's geometry does. */
+/**
+ * A string that changes when the element's geometry does.
+ * @param {Element} elem
+ */
 const geometryKey = (elem) => ['d', 'points', 'x1', 'y1', 'x2', 'y2'].map((a) => elem.getAttribute(a)).join('|')
 
+/**
+ * @param {SubPath} a
+ * @param {SubPath} b
+ */
 const sameGeometry = (a, b) => a.anchors.length === b.anchors.length && a.anchors.every((an, i) => {
   const bn = b.anchors[i]
-  return ['p', 'hIn', 'hOut'].every((k) => Math.abs(an[k].x - bn[k].x) <= SAME_TOL && Math.abs(an[k].y - bn[k].y) <= SAME_TOL)
+  return /** @type {const} */ (['p', 'hIn', 'hOut']).every((k) => Math.abs(an[k].x - bn[k].x) <= SAME_TOL && Math.abs(an[k].y - bn[k].y) <= SAME_TOL)
 })
 
-/** The element's untrimmed geometry: its stored source, or what it has now. */
+/**
+ * The element's untrimmed geometry: its stored source, or what it has now.
+ * @param {Element} elem
+ */
 const sourceOf = (elem) => {
   const attr = elem.getAttribute(sourceAttr(elem))
   return attr ? readSubpath(elem, attr) : readSubpath(elem)
 }
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
-  /** The `se_type` of the marker linked at `pos` (`marker-start`/`-end`), by marker element. */
+  /**
+   * The `se_type` of the marker linked at `pos` (`marker-start`/`-end`), by marker element.
+   * @param {Element} elem
+   * @param {string} pos
+   */
   const markerAt = (elem, pos) => {
     const m = /\(#(.+)\)/.exec(elem.getAttribute(`marker-${pos}`) || '')
     const marker = m && svgCanvas.getElement(m[1])
@@ -215,13 +267,18 @@ export const init = (canvas) => {
     return kind ? { marker, kind } : null
   }
 
+  /** @param {Element} elem */
   const strokeWidth = (elem) => {
-    const sw = parseFloat(elem.getAttribute('stroke-width'))
+    const sw = parseFloat(elem.getAttribute('stroke-width') ?? '')
     return Number.isFinite(sw) ? sw : 1
   }
 
-  /** The unit one box unit of the marker is worth, in the element's user units. */
-  const boxUnit = (elem, marker) => strokeWidth(elem) * (parseFloat(marker.getAttribute('markerWidth')) || DEFAULT_MARKER_SIZE) / BOX
+  /**
+   * The unit one box unit of the marker is worth, in the element's user units.
+   * @param {Element} elem
+   * @param {Element} marker
+   */
+  const boxUnit = (elem, marker) => strokeWidth(elem) * (parseFloat(marker.getAttribute('markerWidth') ?? '') || DEFAULT_MARKER_SIZE) / BOX
 
   /**
    * Whether the element's start and end can carry an aligned head: a line, a polyline or a path
@@ -236,7 +293,7 @@ export const init = (canvas) => {
   }
 
   /**
-   * @param {Element} elem
+   * @param {?Element} elem
    * @returns {'tip'|'extend'|null}
    */
   const getArrowAlign = (elem) => {
@@ -244,6 +301,7 @@ export const init = (canvas) => {
     return mode === 'tip' || mode === 'extend' ? mode : null
   }
 
+  /** @param {Element} elem */
   const restore = (elem) => {
     const src = elem.getAttribute(sourceAttr(elem))
     if (src) {
@@ -296,7 +354,7 @@ export const init = (canvas) => {
         restore(elem)
       }
       elem.removeAttribute(ARROW_ALIGN_ATTR)
-      for (const pos of ['start', 'end']) ends[pos]?.marker.setAttribute('refX', CENTRE)
+      for (const pos of /** @type {const} */ (['start', 'end'])) ends[pos]?.marker.setAttribute('refX', CENTRE)
       mode = null
       hasSource = false
     }
@@ -389,11 +447,15 @@ export const init = (canvas) => {
     return true
   }
 
-  // A transform baked into the element: its own geometry was remapped by coords.js, the source is ours.
+  /**
+   * A transform baked into the element: its own geometry was remapped by coords.js, the source is ours.
+   * @param {Element} elem
+   * @param {Function} remap
+   */
   const remapSource = (elem, remap) => {
     const sp = readSubpath(elem, elem.getAttribute(sourceAttr(elem)))
     if (!sp) return
-    const map = (p) => remap(p.x, p.y)
+    const map = (/** @type {Pt} */ p) => remap(p.x, p.y)
     const moved = { closed: false, anchors: sp.anchors.map((a) => anchor(map(a.p), map(a.hIn), map(a.hOut))) }
     elem.setAttribute(sourceAttr(elem), isPathTag(elem) ? anchorsToD([moved]) : pointsToStr(moved.anchors))
     syncArrowAlign(elem, true)

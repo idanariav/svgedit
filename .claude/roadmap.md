@@ -52,9 +52,8 @@ small items (S) fill gaps between large ones.
 
 **Background tracks (no phase)**
 - **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Every svgcanvas core module is `@ts-check`ed now; what is left
-  is tightening per file (`noImplicitAny` / `strictNullChecks`, starting with the leaf modules), then generating the declarations
-  from source and deleting the hand-written d.ts files (see the TypeScript section). Do it as phases touch files; no dedicated
-  conversion project.
+  is `svgcanvas.js` under `noImplicitAny` / `strictNullChecks` (every `core/`+`common/` module is strict already), then generating the
+  declarations from source and deleting the hand-written d.ts files (see the TypeScript section).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48) — one "Run editor command…" palette picker over
   `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette entries, by decision.
   Open: the picker doesn't ask for a command's `params` yet (plugin `.claude/techdebt.md`).
@@ -222,13 +221,14 @@ there; tighten per file). **All 107 `core/`+`common/` modules carry it** (2026-1
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
 checked by *both* configs, so a file the strict config reaches through an import must be strict-clean, and all of them are.
-What is left is tightening, not coverage: `tsconfig.strict.json` (`noImplicitAny` + `strictNullChecks`) now covers 86 of the 107
-modules; the other 21 pass only the lax config. Outside it, by remaining strict errors: `coords` (~123), `path-actions` (~119),
-`segment` (~88), `text-actions` (~81), `selected-elem` and `path-edit` (~67), `image-crop`, `art-brush-canvas` and `svg-exec` (~55),
-`path-seg-shim` (~51), `text-attrs` (~48), `recalculate` (~43), `arrow-align`, `corner-radius` and `path` (~36), `path-method` (~32),
-plus the few that only import those; then `svgcanvas.js` itself. Most errors are untyped parameters and `null`-initialised
-variables; the rest are nullable DOM links (`parentNode`, `firstChild`) and the legacy `pathSegList` API. A `/** @type {any} */`
-cast at a DOM-API seam is the accepted stopgap; shrinking those casts is the thing to do after the last module is in.
+What is left is tightening, not coverage: `tsconfig.strict.json` (`noImplicitAny` + `strictNullChecks`) now covers **all 107**
+`core/`+`common/` modules (2026-10-12; typing them turned up one real bug, `segment.js`'s `farthestPointFrom` measuring from a
+`{cx, cy}` centre with `.x/.y`, which made a radial divider line stop at the first crossing instead of the farthest). Still outside it:
+`svgcanvas.js` itself (~150 strict errors: untyped parameters, the `curStyles`/`cursorHint` literals, `never`-narrowed selection
+state), then generating the `svgcanvas.d.ts` from source. The accepted stopgaps to shrink after that: `/** @type {any} */` at DOM-API
+seams and on canvas-attached state whose class is built inside an `init` (the `Path` of `path-actions.js`/`path.js`, the `canvas`
+parameter of every `init`). Most errors were untyped parameters and `null`-initialised variables; the rest nullable DOM links
+(`parentNode`, `firstChild`) and the legacy `pathSegList` API.
 Writing a module: a stale `@param` name that is not a parameter, or a `module:…` typedef name, is an error under the checker,
 so write the real name.
 

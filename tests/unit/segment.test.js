@@ -9,7 +9,8 @@ import {
   computeSpokeAngles,
   computeGridStrips,
   computeGridDividerPositions,
-  farthestCornerDistance
+  farthestCornerDistance,
+  farthestPointFrom
 } from '../../packages/svgcanvas/core/segment.js'
 
 // segment.js's actual piece-cutting (buildWedgePolygon/splitRadial/splitGrid/
@@ -164,6 +165,21 @@ describe('segment', () => {
       const bounds = { x: 0, y: 0, width: 10, height: 10 }
       // Farthest x-corner from -50 is x=10 (distance 60), farthest y is 10.
       expect(farthestCornerDistance(center, bounds)).toBeCloseTo(2 * Math.hypot(60, 10), 5)
+    })
+  })
+  describe('farthestPointFrom', () => {
+    // A radial spoke through a concave shape crosses its outline several times; the divider
+    // line must run out to the farthest crossing, not the first one the intersection returns.
+    it('picks the crossing farthest from the centre, whatever the order', () => {
+      const center = { cx: 10, cy: 10 }
+      const crossings = [{ x: 12, y: 10 }, { x: 40, y: 10 }, { x: 25, y: 10 }]
+      expect(farthestPointFrom(center, crossings)).toEqual({ x: 40, y: 10 })
+      expect(farthestPointFrom(center, [...crossings].reverse())).toEqual({ x: 40, y: 10 })
+    })
+
+    it('measures from the centre, not the origin', () => {
+      const center = { cx: 100, cy: 0 }
+      expect(farthestPointFrom(center, [{ x: 0, y: 0 }, { x: 101, y: 0 }])).toEqual({ x: 0, y: 0 })
     })
   })
 })

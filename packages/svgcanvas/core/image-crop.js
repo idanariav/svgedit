@@ -23,6 +23,8 @@ import { NS } from './namespaces.js'
 
 const MIN_SIZE = 4
 const HANDLE_SCREEN_RADIUS = 5
+/** @typedef {{x: number, y: number, width: number, height: number}} Rect */
+
 const HANDLE_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
 /**
@@ -73,11 +75,16 @@ export const isCropEligible = (elem) =>
   !elem.hasAttribute('data-vault-link') &&
   !elem.hasAttribute('transform')
 
+/** @param {?string} href */
 const sniffMimeType = (href) => {
   const match = /^data:([^;,]+)/.exec(href || '')
   return match ? match[1] : 'image/png'
 }
 
+/**
+ * @param {Rect} rect
+ * @param {string} dir
+ */
 const handlePoint = (rect, dir) => {
   const { x, y, width, height } = rect
   switch (dir) {
@@ -94,22 +101,28 @@ const handlePoint = (rect, dir) => {
 }
 
 /**
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
-  /** @type {?{imageElem: Element, origBounds: object, cropRect: object, overlayGroup: SVGGElement, rectEl: SVGRectElement, handleEls: Record<string, SVGCircleElement>}} */
+  /** @type {?{imageElem: Element, origBounds: Rect, cropRect: Rect, overlayGroup: SVGGElement, rectEl: SVGRectElement, handleEls: Record<string, SVGCircleElement>}} */
   let session = null
 
+  /** The open crop session; the overlay's handlers only run while one is open. */
+  const live = () => {
+    if (!session) throw new Error('No image crop is in progress')
+    return session
+  }
+
   const renderOverlay = () => {
-    const { rectEl, handleEls, cropRect } = session
+    const { rectEl, handleEls, cropRect } = live()
     const zoom = svgCanvas.getZoom()
-    rectEl.setAttribute('x', cropRect.x)
-    rectEl.setAttribute('y', cropRect.y)
-    rectEl.setAttribute('width', cropRect.width)
-    rectEl.setAttribute('height', cropRect.height)
+    rectEl.setAttribute('x', String(cropRect.x))
+    rectEl.setAttribute('y', String(cropRect.y))
+    rectEl.setAttribute('width', String(cropRect.width))
+    rectEl.setAttribute('height', String(cropRect.height))
     rectEl.setAttribute('stroke-width', String(1.5 / zoom))
     rectEl.setAttribute('stroke-dasharray', `${6 / zoom},${4 / zoom}`)
     HANDLE_DIRS.forEach((dir) => {
@@ -122,26 +135,31 @@ export const init = (canvas) => {
     })
   }
 
-  /** Screen coords → the overlay's own local (= image's) coordinate space. */
+  /**
+   * Screen coords → the overlay's own local (= image's) coordinate space.
+   * @param {MouseEvent} evt
+   */
   const clientToLocal = (evt) => {
     const pt = svgCanvas.getSvgContent().createSVGPoint()
     pt.x = evt.clientX
     pt.y = evt.clientY
-    return pt.matrixTransform(session.overlayGroup.getScreenCTM().inverse())
+    return pt.matrixTransform(/** @type {DOMMatrix} */ (live().overlayGroup.getScreenCTM()).inverse())
   }
 
+  /** @param {string} dir */
   const startHandleDrag = (dir) => {
-    const startRect = { ...session.cropRect }
+    const startRect = { ...live().cropRect }
     const right = startRect.x + startRect.width
     const bottom = startRect.y + startRect.height
-    const onMove = (evt) => {
+    const onMove = (/** @type {MouseEvent} */ evt) => {
       const p = clientToLocal(evt)
       let { x, y, width, height } = startRect
       if (dir.includes('w')) { x = p.x; width = right - p.x }
       if (dir.includes('e')) { width = p.x - startRect.x }
       if (dir.includes('n')) { y = p.y; height = bottom - p.y }
       if (dir.includes('s')) { height = p.y - startRect.y }
-      session.cropRect = clampCropRect({ x, y, width, height }, session.origBounds)
+      const s = live()
+      s.cropRect = clampCropRect({ x, y, width, height }, s.origBounds)
       renderOverlay()
     }
     const onUp = () => {
@@ -152,17 +170,19 @@ export const init = (canvas) => {
     document.addEventListener('mouseup', onUp, true)
   }
 
+  /** @param {MouseEvent} evt0 */
   const startBodyDrag = (evt0) => {
-    const startRect = { ...session.cropRect }
+    const startRect = { ...live().cropRect }
     const startP = clientToLocal(evt0)
-    const onMove = (evt) => {
+    const onMove = (/** @type {MouseEvent} */ evt) => {
       const p = clientToLocal(evt)
-      session.cropRect = clampCropRect({
+      const s = live()
+      s.cropRect = clampCropRect({
         x: startRect.x + (p.x - startP.x),
         y: startRect.y + (p.y - startP.y),
         width: startRect.width,
         height: startRect.height
-      }, session.origBounds)
+      }, s.origBounds)
       renderOverlay()
     }
     const onUp = () => {
@@ -226,7 +246,7 @@ export const init = (canvas) => {
       overlayGroup.append(handle)
     })
 
-    imageElem.parentNode.insertBefore(overlayGroup, imageElem.nextSibling)
+    imageElem.parentNode?.insertBefore(overlayGroup, imageElem.nextSibling)
     svgCanvas.selectorManager.releaseSelector(imageElem)
 
     session = { imageElem, origBounds, cropRect: { ...origBounds }, overlayGroup, rectEl, handleEls }
@@ -265,7 +285,7 @@ export const init = (canvas) => {
     }
 
     const href = getHref(imageElem)
-    const img = await loadImage(href)
+    const img = await loadImage(/** @type {string} */ (href))
 
     // The crop may have been cancelled (Escape) or superseded by a new
     // startImageCrop() call while that load was pending -- baking the crop
@@ -281,6 +301,7 @@ export const init = (canvas) => {
     canvasEl.width = Math.max(1, Math.round(sw))
     canvasEl.height = Math.max(1, Math.round(sh))
     const ctx = canvasEl.getContext('2d')
+    if (!ctx) throw new Error('This image can\'t be cropped — no 2D canvas is available.')
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasEl.width, canvasEl.height)
 
     let newHref
@@ -299,10 +320,10 @@ export const init = (canvas) => {
       '#href': href
     }
     setHref(imageElem, newHref)
-    imageElem.setAttribute('x', cropRect.x)
-    imageElem.setAttribute('y', cropRect.y)
-    imageElem.setAttribute('width', cropRect.width)
-    imageElem.setAttribute('height', cropRect.height)
+    imageElem.setAttribute('x', String(cropRect.x))
+    imageElem.setAttribute('y', String(cropRect.y))
+    imageElem.setAttribute('width', String(cropRect.width))
+    imageElem.setAttribute('height', String(cropRect.height))
 
     const batchCmd = new BatchCommand('Crop Image')
     batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues))

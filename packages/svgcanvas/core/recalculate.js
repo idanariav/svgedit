@@ -24,6 +24,7 @@ import { remapSourceAttrs } from './geometry-remap-registry.js'
  * Attribute list to translate for each simple (non-points, non-path) tag
  * recalculateDimensions handles.
  */
+/** @type {Record<string, string[]>} */
 const TAG_RECALC_ATTRS = {
   line: ['x1', 'y1', 'x2', 'y2'],
   circle: ['cx', 'cy', 'r'],
@@ -54,7 +55,7 @@ const translatePoints = (pointsStr, tx, ty) => pointsStr
 /**
  * Initialize the recalculate module with the SVG canvas.
  * @function module:recalculate.init
- * @param {Object} canvas - The SVG canvas object
+ * @param {any} canvas - The SVG canvas object
  * @returns {void}
  */
 export const init = canvas => {
@@ -179,7 +180,7 @@ export const init = canvas => {
     const tlist = getTransformList(selected)
 
     // Remove any unnecessary transforms (identity matrices, zero-degree rotations)
-    if (tlist?.numberOfItems > 0) {
+    if (tlist && tlist.numberOfItems > 0) {
       let k = tlist.numberOfItems
       const noi = k
       while (k--) {
@@ -260,6 +261,7 @@ export const init = canvas => {
     let changes = {}
     /** @type {Record<string, any>|null} */
     let initial = null
+    /** @type {string[]} */
     let attrs = []
 
     // Determine which attributes to adjust based on element type
@@ -284,7 +286,7 @@ export const init = canvas => {
     // Collect initial attribute values
     if (attrs.length) {
       attrs.forEach(attr => {
-        changes[attr] = convertToNum(attr, selected.getAttribute(attr))
+        changes[attr] = convertToNum(attr, selected.getAttribute(attr) ?? 0)
       })
     } else if (gsvg) {
     // Special case for GSVG elements
@@ -296,7 +298,7 @@ export const init = canvas => {
 
     // If initial values were not set for polygon/polyline/path, create a copy
     if (!initial) {
-      initial = mergeDeep({}, changes)
+      initial = /** @type {Record<string, any>} */ (mergeDeep({}, changes))
       for (const [attr, val] of Object.entries(initial)) {
         initial[attr] = convertToNum(attr, val)
       }
@@ -312,7 +314,11 @@ export const init = canvas => {
       if (selected.hasAttribute(attr)) initial[attr] = selected.getAttribute(attr)
     }
 
-    let oldcenter, newcenter
+    // Both are set below whenever `angle` is, and only read then.
+    /** @type {{x: number, y: number}} */
+    let oldcenter = { x: 0, y: 0 }
+    /** @type {{x: number, y: number}} */
+    let newcenter = { x: 0, y: 0 }
 
     // Non-group elements
 

@@ -89,9 +89,9 @@ export const init = canvas => {
 
     try {
       // Keep SVG-Edit comment on top
-      const childNodesElems = svgCanvas.getSvgContent().childNodes
+      const childNodesElems = /** @type {NodeListOf<ChildNode>} */ (svgCanvas.getSvgContent().childNodes)
       childNodesElems.forEach((node, i) => {
-        if (i && node.nodeType === 8 && node.data.includes('Created with')) {
+        if (i && node.nodeType === 8 && /** @type {Comment} */ (node).data.includes('Created with')) {
           svgCanvas.getSvgContent().firstChild.before(node)
         }
       })
@@ -105,6 +105,7 @@ export const init = canvas => {
       // svgToString() call below (see withContextUndimmed()).
       const keepContext = !!svgCanvas.getCurrentGroup()
 
+      /** @type {Element[]} */
       const nakedSvgs = []
 
       // Unwrap gsvg if it has no special attributes (only id and style)
@@ -176,6 +177,7 @@ export const init = canvas => {
       if (fam) used.add(fam.replace(/^['"]|['"]$/g, ''))
     })
 
+    /** @type {string[]} */
     const faces = []
     used.forEach(family => {
       const base64 = fonts[family]
@@ -251,7 +253,7 @@ export const init = canvas => {
         //   res.h += unit;
         // }
         if (curConfig.dynamicOutput) {
-          vb = elem.getAttribute('viewBox')
+          vb = elem.getAttribute('viewBox') ?? ''
           if (!vb) {
             vb = [0, 0, res.w, res.h].join(' ')
           }
@@ -266,6 +268,7 @@ export const init = canvas => {
           )
         }
 
+        /** @type {Record<string, boolean>} */
         const nsuris = {}
 
         // Check elements for namespaces, add if found
@@ -424,7 +427,7 @@ export const init = canvas => {
               break
             case 3: {
             // text node
-              const str = child.nodeValue.replace(/^\s+|\s+$/g, '')
+              const str = (child.nodeValue ?? '').replace(/^\s+|\s+$/g, '')
               if (str !== '') {
                 bOneLine = true
                 out.push(String(toXml(str)))
@@ -591,6 +594,7 @@ export const init = canvas => {
       })
       // Duplicate id replace changes
       const nodes = content.querySelectorAll('[id]')
+      /** @type {Record<string, number>} */
       const ids = {}
       const totalNodes = nodes.length
 
@@ -650,6 +654,7 @@ export const init = canvas => {
       svgCanvas.convertGradients(content)
       svgCanvas.convertDropShadowFilters(content)
 
+      /** @type {Record<string, any>} */
       const attrs = {
         id: 'svgcontent',
         overflow: curConfig.show_outside_canvas ? 'visible' : 'hidden'
@@ -988,7 +993,8 @@ export const init = canvas => {
         cvs.width = imgI.width
         cvs.height = imgI.height
         // load the raster image into the canvas
-        cvs.getContext('2d').drawImage(imgI, 0, 0)
+        const cvsCtx = /** @type {CanvasRenderingContext2D} */ (cvs.getContext('2d'))
+        cvsCtx.drawImage(imgI, 0, 0)
         // retrieve the data: URL
         try {
           let urldata = ';svgedit_url=' + encodeURIComponent(src)
@@ -1031,6 +1037,7 @@ export const init = canvas => {
     const issueCodes = []
 
     // Selector and notice
+    /** @type {Record<string, string>} */
     const issueList = {
       feGaussianBlur: uiStrings.NoBlur,
       foreignObject: uiStrings.NoforeignObject,
@@ -1039,7 +1046,7 @@ export const init = canvas => {
     const content = svgCanvas.getSvgContent()
 
     // Add font/text check if Canvas Text API is not implemented
-    if (!('font' in /** @type {HTMLCanvasElement} */ (document.querySelector('CANVAS')).getContext('2d'))) {
+    if (!('font' in /** @type {CanvasRenderingContext2D} */ (/** @type {HTMLCanvasElement} */ (document.querySelector('CANVAS')).getContext('2d')))) {
       issueList.text = uiStrings.NoText
     }
 
@@ -1078,7 +1085,7 @@ export const init = canvas => {
           const response = await fetch(href)
           const blob = await response.blob()
           const reader = new FileReader()
-          return new Promise(resolve => {
+          return new Promise((/** @type {(value?: void) => void} */ resolve) => {
             reader.onload = () => {
               setHref(img, /** @type {string} */ (reader.result))
               resolve()
@@ -1098,7 +1105,7 @@ export const init = canvas => {
  * @param {string} [imgType='PNG'] - The image type to generate.
  * @param {number} [quality=1.0] - The image quality (for JPEG).
  * @param {string} [windowName='Exported Image'] - The window name.
- * @param {Object} [opts={}] - Additional options (`includeBg`, `bgcolor`, `crop`, `scale` — pixel multiplier, default 1).
+ * @param {{includeBg?: boolean, bgcolor?: string, crop?: {x: number, y: number, w: number, h: number}, scale?: number, avoidEvent?: boolean}} [opts={}] - Additional options (`includeBg`, `bgcolor`, `crop`, `scale` — pixel multiplier, default 1).
  * @returns {Promise<Object>} Resolves to an object containing export data.
  */
   const rasterExport = (
@@ -1113,7 +1120,7 @@ export const init = canvas => {
       const { issues, issueCodes } = getIssues()
       const svgElement = svgCanvas.getSvgContent()
 
-      const svgClone = svgElement.cloneNode(true)
+      const svgClone = /** @type {SVGSVGElement} */ (svgElement.cloneNode(true))
 
       // Frames mark export regions and must never appear in an exported image.
       svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
@@ -1137,8 +1144,8 @@ export const init = canvas => {
       if (opts.crop) {
         const { x, y, w, h } = opts.crop
         svgClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`)
-        svgClone.setAttribute('width', w)
-        svgClone.setAttribute('height', h)
+        svgClone.setAttribute('width', String(w))
+        svgClone.setAttribute('height', String(h))
         width = w
         height = h
       }
@@ -1200,9 +1207,7 @@ export const init = canvas => {
             URL.revokeObjectURL(url)
 
             const datauri = canvas.toDataURL(mimeType, quality)
-            let blobUrl
-
-            const onExportComplete = blobUrl => {
+            const onExportComplete = (/** @type {string} */ blobUrl) => {
               const exportObj = {
                 datauri,
                 bloburl: blobUrl,
@@ -1222,8 +1227,11 @@ export const init = canvas => {
 
             canvas.toBlob(
               blob => {
-                blobUrl = URL.createObjectURL(blob)
-                onExportComplete(blobUrl)
+                if (!blob) {
+                  reject(new Error('Could not encode the image'))
+                  return
+                }
+                onExportComplete(URL.createObjectURL(blob))
               },
               mimeType,
               quality

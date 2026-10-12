@@ -16,6 +16,7 @@ import {
   reflowAreaText, settleAreaText, isAreaText, getAreaBox, makeAreaText, makePointText, rowsOf, softCount, SOFT_ATTR, getValign
 } from './text-rows.js'
 
+/** @param {any} canvas */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
 
@@ -58,10 +59,16 @@ export const init = canvas => {
     reflowAreaText(elem)
   })
 
+  /** @returns {SVGTextElement[]} */
   const getSelectedTextElements = () => {
-    return svgCanvas.getSelectedElements().filter(el => el?.tagName === 'text')
+    return svgCanvas.getSelectedElements().filter((/** @type {Element} */ el) => el?.tagName === 'text')
   }
 
+  /**
+   * @param {Element[]} textElements
+   * @param {string} attr
+   * @param {*} newValue
+   */
   const getChangedTextElements = (textElements, attr, newValue) => {
     const normalizedValue = String(newValue)
     return textElements.filter((elem) => {
@@ -70,6 +77,7 @@ export const init = canvas => {
     })
   }
 
+  /** @param {Element[]} textElements */
   const notifyTextChange = (textElements) => {
     if (textElements.length > 0) {
       svgCanvas.call('changed', textElements)
@@ -109,7 +117,7 @@ export const init = canvas => {
  * Check if all selected text elements have the given text decoration value or not.
  * @returns {boolean} Indicates whether or not elements have the text decoration value
  */
-  const hasTextDecorationMethod = (value) => {
+  const hasTextDecorationMethod = (/** @type {string} */ value) => {
     const textElements = getSelectedTextElements()
     return textElements.every(el => (el.getAttribute('text-decoration') || '').includes(value))
   }
@@ -119,7 +127,7 @@ export const init = canvas => {
  * @param value The text decoration value
  * @returns {void}
  */
-  const addTextDecorationMethod = (value) => {
+  const addTextDecorationMethod = (/** @type {string} */ value) => {
     const textElements = getSelectedTextElements()
 
     // One transaction instead of a hand-built batch: the old code built each
@@ -145,7 +153,7 @@ export const init = canvas => {
  * @param value The text decoration value
  * @returns {void}
  */
-  const removeTextDecorationMethod = (value) => {
+  const removeTextDecorationMethod = (/** @type {string} */ value) => {
     const textElements = getSelectedTextElements()
 
     svgCanvas.transact('Remove text decoration', () => {
@@ -302,7 +310,7 @@ export const init = canvas => {
  *
  * The rotation axis is always perpendicular to the perspective direction.
  */
-  const buildPerspectiveTransform = (degX, degY, bbox) => {
+  const buildPerspectiveTransform = (/** @type {*} */ degX, /** @type {*} */ degY, /** @type {{width: number, height: number}} */ bbox) => {
     const x = Number(degX) || 0
     const y = Number(degY) || 0
     if (x === 0 && y === 0) return ''
@@ -334,10 +342,10 @@ export const init = canvas => {
  * an explicit `transform-origin` keeps the element anchored to its current
  * position regardless of browser handling of `transform-box`.
  */
-  const setTransformInStyle = (styleStr, transformValue, cx, cy) => {
+  const setTransformInStyle = (/** @type {?string} */ styleStr, /** @type {string} */ transformValue, /** @type {number} */ cx, /** @type {number} */ cy) => {
     const parts = (styleStr || '').split(';')
-      .map(s => s.trim())
-      .filter(s => s &&
+      .map((/** @type {string} */ s) => s.trim())
+      .filter((/** @type {string} */ s) => s &&
       !s.startsWith('transform:') &&
       !s.startsWith('transform-box:') &&
       !s.startsWith('transform-origin:') &&
@@ -379,7 +387,7 @@ export const init = canvas => {
       const cx = bbox.x + bbox.width / 2
       const cy = bbox.y + bbox.height / 2
 
-      elem.setAttribute(attrKey, val)
+      elem.setAttribute(attrKey, String(val))
       const newTransform = buildPerspectiveTransform(degX, degY, bbox)
       elem.setAttribute('style', setTransformInStyle(oldStyle, newTransform, cx, cy))
 

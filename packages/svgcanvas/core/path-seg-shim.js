@@ -21,6 +21,27 @@
 
 import SvgPath from 'svgpath'
 
+/**
+ * A segment as the old `SVGPathSeg` API had it: the type plus the coordinates its kind uses.
+ * @typedef {object} PathSeg
+ * @property {number} pathSegType
+ * @property {string} pathSegTypeAsLetter
+ * @property {string} [type] the command letter, when built from a path-data entry
+ * @property {number} [x]
+ * @property {number} [y]
+ * @property {number} [x1]
+ * @property {number} [y1]
+ * @property {number} [x2]
+ * @property {number} [y2]
+ * @property {number} [r1]
+ * @property {number} [r2]
+ * @property {number} [angle]
+ * @property {boolean|number} [largeArcFlag]
+ * @property {boolean|number} [sweepFlag]
+ */
+/** @typedef {{type: string, values: number[]}} PathEntry */
+
+/** @type {Record<number, string>} */
 const TYPE_TO_CMD = {
   1: 'Z',
   2: 'M',
@@ -43,6 +64,7 @@ const TYPE_TO_CMD = {
   19: 't'
 }
 
+/** @type {Record<string, number>} */
 const CMD_TO_TYPE = Object.fromEntries(
   Object.entries(TYPE_TO_CMD).map(([k, v]) => [v, Number(k)])
 )
@@ -50,6 +72,7 @@ const CMD_TO_TYPE = Object.fromEntries(
 // Argument order for each `createSVGPathSeg*` factory, matching the
 // `pathseg` polyfill's constructors (e.g. `createSVGPathSegArcAbs(x, y, r1,
 // r2, angle, largeArcFlag, sweepFlag)`), keyed by numeric segment type.
+/** @type {Record<number, string[]>} */
 const FACTORY_PROPS = {
   1: [],
   2: ['x', 'y'],
@@ -72,6 +95,7 @@ const FACTORY_PROPS = {
   19: ['x', 'y']
 }
 
+/** @type {Record<number, string>} */
 const TYPE_TO_SUFFIX = {
   1: 'ClosePath',
   2: 'MovetoAbs',
@@ -95,9 +119,12 @@ const TYPE_TO_SUFFIX = {
 }
 
 class PathSegListShim {
+  /** @param {Element} elem */
   constructor (elem) {
     this.elem = elem
+    /** @type {?string} */
     this._cachedD = null
+    /** @type {?PathEntry[]} */
     this._cachedEntries = null
   }
 
@@ -106,18 +133,20 @@ class PathSegListShim {
   // is why `_entryToSeg`/`_segToEntry` below need no knowledge of `svgpath`.
   // Cached on the last-seen `d` string so a loop of `getItem()` calls (every
   // call site iterates the whole list) doesn't re-parse per item.
+  /** @returns {PathEntry[]} */
   _getData () {
     const d = this.elem.getAttribute('d') || ''
     if (d === this._cachedD && this._cachedEntries) {
       return this._cachedEntries
     }
     const { segments } = /** @type {any} */ (new SvgPath(d))
-    const entries = (segments || []).map(([type, ...values]) => ({ type, values }))
+    const entries = (segments || []).map((/** @type {[string, ...number[]]} */ [type, ...values]) => ({ type, values }))
     this._cachedD = d
     this._cachedEntries = entries
     return entries
   }
 
+  /** @param {PathEntry[]} entries */
   _setData (entries) {
     const d = entries.map(({ type, values }) => [type, ...values].join(' ')).join(' ')
     this._cachedEntries = entries
@@ -125,9 +154,14 @@ class PathSegListShim {
     this.elem.setAttribute('d', d)
   }
 
+  /**
+   * @param {PathEntry} entry
+   * @returns {PathSeg}
+   */
   _entryToSeg (entry) {
     const { type, values = [] } = entry
     const cmd = CMD_TO_TYPE[type] || CMD_TO_TYPE[type?.toUpperCase?.()]
+    /** @type {PathSeg} */
     const seg = { pathSegType: cmd, pathSegTypeAsLetter: TYPE_TO_CMD[cmd] || type }
     const U = String(type).toUpperCase()
     switch (U) {
@@ -168,12 +202,17 @@ class PathSegListShim {
     return seg
   }
 
+  /**
+   * @param {PathSeg} seg
+   * @returns {PathEntry}
+   */
   _segToEntry (seg) {
     const type = TYPE_TO_CMD[seg.pathSegType] || seg.type
     if (!type) {
       return { type: 'Z', values: [] }
     }
     const U = String(type).toUpperCase()
+    /** @type {Array<number|undefined>} */
     let values = []
     switch (U) {
       case 'H':
@@ -210,18 +249,24 @@ class PathSegListShim {
       default:
         values = []
     }
-    return { type, values }
+    const cleaned = /** @type {number[]} */ (values)
+    return { type, values: cleaned }
   }
 
   get numberOfItems () {
     return this._getData().length
   }
 
+  /** @param {number} index */
   getItem (index) {
     const entry = this._getData()[index]
     return entry ? this._entryToSeg(entry) : null
   }
 
+  /**
+   * @param {PathSeg} seg
+   * @param {number} index
+   */
   replaceItem (seg, index) {
     const data = this._getData()
     data[index] = this._segToEntry(seg)
@@ -229,6 +274,10 @@ class PathSegListShim {
     return seg
   }
 
+  /**
+   * @param {PathSeg} seg
+   * @param {number} index
+   */
   insertItemBefore (seg, index) {
     const data = this._getData()
     data.splice(index, 0, this._segToEntry(seg))
@@ -236,6 +285,7 @@ class PathSegListShim {
     return seg
   }
 
+  /** @param {PathSeg} seg */
   appendItem (seg) {
     const data = this._getData()
     data.push(this._segToEntry(seg))
@@ -243,6 +293,7 @@ class PathSegListShim {
     return seg
   }
 
+  /** @param {number} index */
   removeItem (index) {
     const data = this._getData()
     data.splice(index, 1)
@@ -293,11 +344,13 @@ if (
     }
   })
 
+  const proto = /** @type {any} */ (SVGPathElement.prototype)
   Object.entries(TYPE_TO_SUFFIX).forEach(([typeStr, suffix]) => {
     const type = Number(typeStr)
     const props = FACTORY_PROPS[type]
     const letter = TYPE_TO_CMD[type]
-    SVGPathElement.prototype['createSVGPathSeg' + suffix] = function (...args) {
+    proto['createSVGPathSeg' + suffix] = function (/** @type {any[]} */ ...args) {
+      /** @type {Record<string, any>} */
       const seg = { pathSegType: type, pathSegTypeAsLetter: letter }
       props.forEach((prop, i) => { seg[prop] = args[i] })
       return seg

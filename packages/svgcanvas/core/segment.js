@@ -47,6 +47,11 @@ export const canSegment = elem => !!elem && !NON_PATH_TAGS.has(elem.tagName)
 
 // ── Pure param (de)serialization — mirrors ext-repeat's se:repeat stamp ────
 
+/** @typedef {{mode: string, count: number, split?: boolean, startAngle?: number, axis?: string}} SegmentParams */
+/** @typedef {{cx: number, cy: number}} Center */
+/** @typedef {{x1: number, y1: number, x2: number, y2: number}} LineSpec */
+
+/** @param {SegmentParams} p */
 export const serializeParams = p => {
   if (p.mode === 'radial') {
     return `radial;count=${p.count};split=${p.split ? 1 : 0};startAngle=${p.startAngle ?? -90}`
@@ -54,10 +59,14 @@ export const serializeParams = p => {
   return `grid;count=${p.count};split=${p.split ? 1 : 0};axis=${p.axis || 'vertical'}`
 }
 
+/**
+ * @param {?string} str
+ * @returns {?SegmentParams}
+ */
 export const parseParams = str => {
   if (!str) return null
   const [mode, ...pairs] = str.split(';')
-  const vals = Object.fromEntries(pairs.map(kv => kv.split('=')))
+  const vals = Object.fromEntries(pairs.map((/** @type {string} */ kv) => kv.split('=')))
   if (mode === 'radial') {
     return {
       mode,
@@ -91,7 +100,7 @@ export const parseParams = str => {
 export const resolveCenter = (elem, svgCanvas) => {
   const hasTransform = /** @type {SVGGraphicsElement} */ (elem).transform?.baseVal?.numberOfItems > 0
   if (!hasTransform && (elem.tagName === 'circle' || elem.tagName === 'ellipse')) {
-    return { cx: parseFloat(elem.getAttribute('cx')) || 0, cy: parseFloat(elem.getAttribute('cy')) || 0 }
+    return { cx: parseFloat(elem.getAttribute('cx') ?? '') || 0, cy: parseFloat(elem.getAttribute('cy') ?? '') || 0 }
   }
   const bb = svgCanvas.getStrokedBBox([elem])
   return { cx: bb.x + bb.width / 2, cy: bb.y + bb.height / 2 }
@@ -147,6 +156,10 @@ export const computeGridDividerPositions = (count, start, extent) => {
   return Array.from({ length: n }, (_, i) => start + (i + 1) * step)
 }
 
+/**
+ * @param {{x: number, y: number}} a
+ * @param {{x: number, y: number}} b
+ */
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 
 /**
@@ -164,6 +177,10 @@ export const farthestCornerDistance = (center, bounds) => {
 
 // ── paper.js-dependent geometry ────────────────────────────────────────────
 
+/**
+ * @param {Element} elem
+ * @param {any} scope - the paper.js scope
+ */
 const getElemAsPath = (elem, scope) => {
   const item = svgToPaper(elem, scope, { asCompoundPath: true })
   if (!item) return null
@@ -176,6 +193,7 @@ const getElemAsPath = (elem, scope) => {
   return item
 }
 
+/** @param {any} p */
 const hasValidPiece = p => p && p.pathData && p.pathData.length > 4
 
 /**
@@ -183,6 +201,11 @@ const hasValidPiece = p => p && p.pathData && p.pathData.length > 4
  * `[a0, a1]` degrees — deliberately not a true arc sector (paper.js curve
  * booleans are the fragile case) and not a 3-point triangle (degenerates at
  * or above 180°). Sampled at <=4° per straight segment.
+ * @param {any} scope
+ * @param {Center} center
+ * @param {number} bigR
+ * @param {number} a0
+ * @param {number} a1
  */
 const buildWedgePolygon = (scope, center, bigR, a0, a1) => {
   const step = a1 - a0
@@ -196,11 +219,28 @@ const buildWedgePolygon = (scope, center, bigR, a0, a1) => {
   return new scope.Path({ segments: points, closed: true, insert: false })
 }
 
+/**
+ * @param {any} scope
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ */
 const buildStripPolygon = (scope, x1, y1, x2, y2) =>
   new scope.Path.Rectangle({ from: new scope.Point(x1, y1), to: new scope.Point(x2, y2), insert: false })
 
+/**
+ * @param {any} piece
+ * @param {Element} elem
+ * @param {Record<string, any>} styleAttrs
+ * @param {?DOMMatrix} compensation
+ * @param {any} canvas
+ * @param {any} batchCmd
+ * @param {Element[]} newPaths
+ */
 const createResultPath = (piece, elem, styleAttrs, compensation, canvas, batchCmd, newPaths) => {
   if (!hasValidPiece(piece)) return
+  /** @type {Record<string, any>} */
   const attr = {
     id: canvas.getNextId(),
     d: toAbsolutePathData(piece.pathData, canvas),
@@ -215,6 +255,15 @@ const createResultPath = (piece, elem, styleAttrs, compensation, canvas, batchCm
   batchCmd.addSubCommand(new canvas.history.InsertElementCommand(newPath))
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {SegmentParams} params
+ * @param {any} scope
+ * @param {any} shapePath
+ * @param {any} batchCmd
+ * @param {Element[]} newPaths
+ */
 const splitRadial = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) => {
   const center = resolveCenter(elem, canvas)
   const bigR = farthestCornerDistance(center, shapePath.bounds)
@@ -232,6 +281,15 @@ const splitRadial = (canvas, elem, params, scope, shapePath, batchCmd, newPaths)
   }
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {SegmentParams} params
+ * @param {any} scope
+ * @param {any} shapePath
+ * @param {any} batchCmd
+ * @param {Element[]} newPaths
+ */
 const splitGrid = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) => {
   const bounds = shapePath.bounds
   const axis = params.axis === 'horizontal' ? 'horizontal' : 'vertical'
@@ -254,9 +312,24 @@ const splitGrid = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) =
   }
 }
 
-const farthestPointFrom = (center, points) =>
-  points.reduce((best, p) => (distance(center, p) > distance(center, best) ? p : best))
+/**
+ * The point of `points` farthest from `center`.
+ * @param {Center} center
+ * @param {Array<{x: number, y: number}>} points
+ */
+export const farthestPointFrom = (center, points) => {
+  const from = { x: center.cx, y: center.cy }
+  return points.reduce((best, p) => (distance(from, p) > distance(from, best) ? p : best))
+}
 
+/**
+ * @param {any} scope
+ * @param {any} shapePath
+ * @param {Center} center
+ * @param {number} angleDeg
+ * @param {number} bigR
+ * @returns {?LineSpec}
+ */
 const clipRadialSpoke = (scope, shapePath, center, angleDeg, bigR) => {
   const a = angleDeg * Math.PI / 180
   const far = { x: center.cx + bigR * Math.cos(a), y: center.cy + bigR * Math.sin(a) }
@@ -268,31 +341,49 @@ const clipRadialSpoke = (scope, shapePath, center, angleDeg, bigR) => {
   const crossings = shapePath.getIntersections(ray)
   ray.remove()
   if (!crossings.length) return null
-  const exit = farthestPointFrom(center, crossings.map(c => ({ x: c.point.x, y: c.point.y })))
+  const exit = farthestPointFrom(center, crossings.map((/** @type {any} */ c) => ({ x: c.point.x, y: c.point.y })))
   return { x1: center.cx, y1: center.cy, x2: exit.x, y2: exit.y }
 }
 
+/**
+ * @param {any} scope
+ * @param {any} shapePath
+ * @param {string} axis
+ * @param {number} coord
+ * @param {{x: number, y: number, width: number, height: number}} bounds
+ * @param {number} pad
+ * @returns {?LineSpec}
+ */
 const clipGridDivider = (scope, shapePath, axis, coord, bounds, pad) => {
   const seg = axis === 'vertical'
     ? [{ x: coord, y: bounds.y - pad }, { x: coord, y: bounds.y + bounds.height + pad }]
     : [{ x: bounds.x - pad, y: coord }, { x: bounds.x + bounds.width + pad, y: coord }]
   const line = new scope.Path({
-    segments: seg.map(p => new scope.Point(p.x, p.y)),
+    segments: seg.map((/** @type {{x: number, y: number}} */ p) => new scope.Point(p.x, p.y)),
     closed: false,
     insert: false
   })
   const crossings = shapePath.getIntersections(line)
   line.remove()
   if (crossings.length < 2) return null
-  const along = axis === 'vertical' ? p => p.y : p => p.x
-  const vals = crossings.map(c => along(c.point))
+  const along = axis === 'vertical' ? (/** @type {any} */ p) => p.y : (/** @type {any} */ p) => p.x
+  const vals = crossings.map((/** @type {any} */ c) => along(c.point))
   const lo = Math.min(...vals)
   const hi = Math.max(...vals)
   return axis === 'vertical' ? { x1: coord, y1: lo, x2: coord, y2: hi } : { x1: lo, y1: coord, x2: hi, y2: coord }
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {SegmentParams} params
+ * @param {any} scope
+ * @param {any} shapePath
+ * @returns {LineSpec[]}
+ */
 const buildDividerLines = (canvas, elem, params, scope, shapePath) => {
   const bounds = shapePath.bounds
+  /** @type {LineSpec[]} */
   const lines = []
   if (params.mode === 'radial') {
     const center = resolveCenter(elem, canvas)
@@ -322,10 +413,13 @@ const buildDividerLines = (canvas, elem, params, scope, shapePath) => {
  * non-split result), remove the old divider lines and unwrap `elem` back to
  * a plain shape before splitting — otherwise a stale empty group (or stale
  * lines) would be left behind.
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {any} batchCmd
  * @returns {Element} elem, possibly re-parented
  */
 const unwrapSegmentGroup = (canvas, elem, batchCmd) => {
-  const g = elem.parentNode
+  const g = /** @type {?Element} */ (elem.parentNode)
   if (!g || g.tagName !== 'g' || !g.hasAttribute(SEGMENT_ATTR)) return elem
   const { RemoveElementCommand, MoveElementCommand } = canvas.history
 
@@ -347,6 +441,12 @@ const unwrapSegmentGroup = (canvas, elem, batchCmd) => {
   return elem
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {Element[]} lineElems
+ * @param {any} batchCmd
+ */
 const wrapInGroup = (canvas, elem, lineElems, batchCmd) => {
   const g = canvas.addSVGElementsFromJson({ element: 'g', attr: { id: canvas.getNextId() } })
   elem.before(g)
@@ -360,6 +460,11 @@ const wrapInGroup = (canvas, elem, lineElems, batchCmd) => {
   return g
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {SegmentParams} params
+ */
 const segmentSplit = (canvas, elem, params) => {
   const { BatchCommand, RemoveElementCommand } = canvas.history
   const batchCmd = new BatchCommand('Segment shape')
@@ -368,6 +473,7 @@ const segmentSplit = (canvas, elem, params) => {
   const scope = getPaperScope()
   const shapePath = getElemAsPath(elem, scope)
   if (!shapePath) return
+  /** @type {Element[]} */
   const newPaths = []
 
   if (params.mode === 'radial') {
@@ -393,6 +499,11 @@ const segmentSplit = (canvas, elem, params) => {
   canvas.call('changed', newPaths)
 }
 
+/**
+ * @param {any} canvas
+ * @param {Element} elem
+ * @param {SegmentParams} params
+ */
 const segmentNonSplit = (canvas, elem, params) => {
   const scope = getPaperScope()
   const shapePath = getElemAsPath(elem, scope)
@@ -420,8 +531,9 @@ const segmentNonSplit = (canvas, elem, params) => {
     }
   }))
 
-  const existingGroup = elem.parentNode?.tagName === 'g' && elem.parentNode.hasAttribute(SEGMENT_ATTR)
-    ? elem.parentNode
+  const parent = /** @type {?Element} */ (elem.parentNode)
+  const existingGroup = parent?.tagName === 'g' && parent.hasAttribute(SEGMENT_ATTR)
+    ? parent
     : null
 
   let g
@@ -452,7 +564,10 @@ const segmentNonSplit = (canvas, elem, params) => {
   canvas.call('changed', [g])
 }
 
-/** Resolve a `<g se:segment>` wrapper selection down to its wrapped shape. */
+/**
+ * Resolve a `<g se:segment>` wrapper selection down to its wrapped shape.
+ * @param {?Element} elem
+ */
 const resolveTarget = elem => {
   if (elem?.tagName === 'g' && elem.hasAttribute(SEGMENT_ATTR)) {
     return Array.from(elem.children).find(c => !c.hasAttribute(SEGMENT_LINE_ATTR)) || null
@@ -460,6 +575,10 @@ const resolveTarget = elem => {
   return elem
 }
 
+/**
+ * @param {any} canvas
+ * @param {SegmentParams} params
+ */
 const segmentSelection = (canvas, params) => {
   const selected = canvas.getSelectedElements().filter(Boolean)
   if (selected.length !== 1) return
@@ -473,6 +592,7 @@ const segmentSelection = (canvas, params) => {
   }
 }
 
+/** @param {any} canvas */
 const getSegmentParams = canvas => {
   const selected = canvas.getSelectedElements().filter(Boolean)
   if (selected.length !== 1) return null
@@ -488,11 +608,11 @@ const getSegmentParams = canvas => {
 
 /**
  * @function module:segment.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = canvas => {
   canvas.canSegment = canSegment
-  canvas.segmentSelection = params => segmentSelection(canvas, params)
+  canvas.segmentSelection = (/** @type {SegmentParams} */ params) => segmentSelection(canvas, params)
   canvas.getSegmentParams = () => getSegmentParams(canvas)
 }

@@ -17,6 +17,8 @@ import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'
 import { isAreaText, rowsOf, softCount } from './text-rows.js'
 
+/** @typedef {{x: number, y: number, height: number}} CharBox */
+
 /**
  * @function module:text-actions.init
  * @param {any} canvas
@@ -32,15 +34,25 @@ export const init = canvas => {
  * @memberof module:svgcanvas.SvgCanvas#
  */
   class TextActions {
+    /** @type {?SVGTextElement} */
     #curtext = null
+    /** @type {?HTMLTextAreaElement} */
     #textinput = null
+    /** @type {?SVGLineElement} */
     #cursor = null
+    /** @type {?SVGPathElement} */
     #selblock = null
+    /** @type {?ReturnType<typeof setInterval>} */
     #blinker = null
+    /** @type {CharBox[]} */
     #chardata = [] // per textarea-caret-position: { x, y(row top), height }
+    /** @type {?{x: number, y: number, width: number, height: number}} */
     #textbb = null // , transbb;
+    /** @type {?SVGMatrix} */
     #matrix = null
+    /** @type {?number} */
     #lastX = null
+    /** @type {?number} */
     #lastY = null
     #allowDbl = false
 
@@ -53,6 +65,7 @@ export const init = canvas => {
    */
     #getAccumulatedMatrix = (elem) => {
       const svgContent = svgCanvas.getSvgContent()
+      /** @type {SVGMatrix[]} */
       const matrices = []
 
       let current = elem
@@ -79,50 +92,55 @@ export const init = canvas => {
 
     /**
    *
-   * @param {number} index
+   * @param {number} [index]
    * @returns {void}
    */
     #setCursor = (index = undefined) => {
-      const empty = this.#textinput.value === ''
-      this.#textinput.focus()
+      const input = this.#textinput
+      if (!input) return
+      const empty = input.value === ''
+      input.focus()
 
       if (index === undefined) {
         if (empty) {
           index = 0
         } else {
-          if (this.#textinput.selectionEnd !== this.#textinput.selectionStart) {
+          if (input.selectionEnd !== input.selectionStart) {
             return
           }
-          index = this.#textinput.selectionEnd
+          index = input.selectionEnd
         }
       }
 
       const charbb = this.#chardata[index] ?? this.#chardata[this.#chardata.length - 1]
       if (!empty) {
-        this.#textinput.setSelectionRange(index, index)
+        input.setSelectionRange(index, index)
       }
-      this.#cursor = svgCanvas.getElement('text_cursor')
-      if (!this.#cursor) {
-        this.#cursor = document.createElementNS(NS.SVG, 'line')
-        assignAttributes(this.#cursor, {
+      let cursor = /** @type {?SVGLineElement} */ (svgCanvas.getElement('text_cursor'))
+      if (!cursor) {
+        cursor = document.createElementNS(NS.SVG, 'line')
+        assignAttributes(cursor, {
           id: 'text_cursor',
           stroke: '#333',
           'stroke-width': 1
         })
-        svgCanvas.getElement('selectorParentGroup').append(this.#cursor)
+        svgCanvas.getElement('selectorParentGroup').append(cursor)
       }
+      this.#cursor = cursor
 
       if (!this.#blinker) {
         this.#blinker = setInterval(() => {
-          const show = this.#cursor.getAttribute('display') === 'none'
-          this.#cursor.setAttribute('display', show ? 'inline' : 'none')
+          const line = this.#cursor
+          if (!line) return
+          const show = line.getAttribute('display') === 'none'
+          line.setAttribute('display', show ? 'inline' : 'none')
         }, 600)
       }
 
       const startPt = this.#ptToScreen(charbb.x, charbb.y)
       const endPt = this.#ptToScreen(charbb.x, charbb.y + charbb.height)
 
-      assignAttributes(this.#cursor, {
+      assignAttributes(cursor, {
         x1: startPt.x,
         y1: startPt.y,
         x2: endPt.x,
@@ -150,27 +168,28 @@ export const init = canvas => {
       }
 
       if (!skipInput) {
-        this.#textinput.setSelectionRange(start, end)
+        this.#textinput?.setSelectionRange(start, end)
       }
 
-      this.#selblock = svgCanvas.getElement('text_selectblock')
-      if (!this.#selblock) {
-        this.#selblock = document.createElementNS(NS.SVG, 'path')
-        assignAttributes(this.#selblock, {
+      let selblock = /** @type {?SVGPathElement} */ (svgCanvas.getElement('text_selectblock'))
+      if (!selblock) {
+        selblock = document.createElementNS(NS.SVG, 'path')
+        assignAttributes(selblock, {
           id: 'text_selectblock',
           fill: 'green',
           opacity: 0.5,
           style: 'pointer-events:none'
         })
-        svgCanvas.getElement('selectorParentGroup').append(this.#selblock)
+        svgCanvas.getElement('selectorParentGroup').append(selblock)
       }
+      this.#selblock = selblock
 
-      this.#cursor.setAttribute('visibility', 'hidden')
+      this.#cursor?.setAttribute('visibility', 'hidden')
 
       // Highlight the selection as one quad per row it spans. Consecutive caret
       // positions on the same row share a `y`; a change in `y` marks a row break.
       const cd = this.#chardata
-      const quad = (e0, e1) => {
+      const quad = (/** @type {CharBox} */ e0, /** @type {CharBox} */ e1) => {
         const tl = this.#ptToScreen(e0.x, e0.y)
         const tr = this.#ptToScreen(e1.x, e1.y)
         const bl = this.#ptToScreen(e0.x, e0.y + e0.height)
@@ -188,7 +207,7 @@ export const init = canvas => {
         }
       }
 
-      assignAttributes(this.#selblock, {
+      assignAttributes(selblock, {
         d: dstr,
         display: 'inline'
       })
@@ -243,7 +262,7 @@ export const init = canvas => {
    * @returns {void}
    */
     #setEndSelectionFromPoint = (x, y, apply) => {
-      const i1 = this.#textinput.selectionStart
+      const i1 = this.#textinput?.selectionStart ?? 0
       const i2 = this.#getIndexFromPoint(x, y)
 
       const start = Math.min(i1, i2)
@@ -304,14 +323,14 @@ export const init = canvas => {
    * @returns {void}
    */
     #selectAll = () => {
-      if (!this.#allowDbl || !this.#curtext) {
+      if (!this.#allowDbl || !this.#curtext || !this.#textinput) {
         return
       }
       this.#setSelection(0, this.#textinput.value.length)
     }
 
     /**
-   * @param {Element} target
+   * @param {SVGTextElement} target
    * @param {number} x
    * @param {number} y
    * @returns {void}
@@ -322,7 +341,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Element} elem
+   * @param {SVGTextElement} elem
    * @returns {void}
    */
     start (elem) {
@@ -340,7 +359,7 @@ export const init = canvas => {
     mouseDown (evt, mouseTarget, startX, startY) {
       const pt = this.#screenToPt(startX, startY)
 
-      this.#textinput.focus()
+      this.#textinput?.focus()
       this.#setCursorFromPoint(pt.x, pt.y)
       this.#lastX = startX
       this.#lastY = startY
@@ -377,10 +396,10 @@ export const init = canvas => {
 
       if (
         evt.target !== this.#curtext &&
-      mouseX < this.#lastX + 2 &&
-      mouseX > this.#lastX - 2 &&
-      mouseY < this.#lastY + 2 &&
-      mouseY > this.#lastY - 2
+      mouseX < (this.#lastX ?? 0) + 2 &&
+      mouseX > (this.#lastX ?? 0) - 2 &&
+      mouseY < (this.#lastY ?? 0) + 2 &&
+      mouseY > (this.#lastY ?? 0) - 2
       ) {
         svgCanvas.textActions.toSelectMode(true)
       }
@@ -397,7 +416,7 @@ export const init = canvas => {
     verticalMove (dir, extend = false) {
       const text = this.#curtext
       const input = this.#textinput
-      if (!text || !isAreaText(text) || !this.#chardata.length) { return false }
+      if (!text || !input || !isAreaText(text) || !this.#chardata.length) { return false }
       const cd = this.#chardata
       const backward = input.selectionDirection === 'backward'
       const head = Math.min(backward ? input.selectionStart : input.selectionEnd, cd.length - 1)
@@ -429,7 +448,7 @@ export const init = canvas => {
     lineEdge (edge, extend = false) {
       const text = this.#curtext
       const input = this.#textinput
-      if (!text || !isAreaText(text) || !this.#chardata.length) { return false }
+      if (!text || !input || !isAreaText(text) || !this.#chardata.length) { return false }
       const cd = this.#chardata
       const backward = input.selectionDirection === 'backward'
       const head = Math.min(backward ? input.selectionStart : input.selectionEnd, cd.length - 1)
@@ -452,7 +471,7 @@ export const init = canvas => {
    */
     #moveCaret (target, anchor, extend) {
       const from = extend ? anchor : target
-      this.#textinput.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
+      this.#textinput?.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
       this.init()
     }
 
@@ -479,7 +498,7 @@ export const init = canvas => {
 
       svgCanvas.textActions.init()
 
-      this.#curtext.style.cursor = 'text'
+      if (this.#curtext) this.#curtext.style.cursor = 'text'
 
       // if (supportsEditableText()) {
       //   curtext.setAttribute('editable', 'simple');
@@ -522,7 +541,7 @@ export const init = canvas => {
         svgCanvas.leaveContext()
       }
 
-      clearInterval(this.#blinker)
+      clearInterval(this.#blinker ?? undefined)
       this.#blinker = null
       if (this.#selblock) {
         this.#selblock.setAttribute('display', 'none')
@@ -530,11 +549,11 @@ export const init = canvas => {
       if (this.#cursor) {
         this.#cursor.setAttribute('visibility', 'hidden')
       }
-      this.#curtext.style.cursor = 'move'
+      if (this.#curtext) this.#curtext.style.cursor = 'move'
 
       if (selectElem && !relock) {
         svgCanvas.clearSelection()
-        this.#curtext.style.cursor = 'move'
+        if (this.#curtext) this.#curtext.style.cursor = 'move'
 
         svgCanvas.call('selected', [this.#curtext])
         svgCanvas.addToSelection([this.#curtext], true)
@@ -544,9 +563,9 @@ export const init = canvas => {
         svgCanvas.deleteSelectedElements()
       }
 
-      this.#textinput.blur()
+      this.#textinput?.blur()
 
-      this.#curtext = false
+      this.#curtext = null
       svgCanvas.setTextFreshCreate(false)
 
     // if (supportsEditableText()) {
@@ -555,7 +574,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Element} elem
+   * @param {HTMLTextAreaElement} elem
    * @returns {void}
    */
     setInputElem (elem) {
@@ -576,66 +595,69 @@ export const init = canvas => {
    * @returns {void}
    */
     init (_inputElem) {
-      if (!this.#curtext) {
+      let text = this.#curtext
+      const input = this.#textinput
+      if (!text || !input) {
         return
       }
 
-      if (!this.#curtext.parentNode) {
+      if (!text.parentNode) {
       // Result of the ffClone, need to get correct element
         const selectedElements = svgCanvas.getSelectedElements()
-        this.#curtext = selectedElements[0]
-        svgCanvas.selectorManager.requestSelector(this.#curtext).showGrips(false)
+        text = /** @type {SVGTextElement} */ (selectedElements[0])
+        this.#curtext = text
+        svgCanvas.selectorManager.requestSelector(text).showGrips(false)
       }
 
       // The edit buffer (a <textarea>) is the source of truth for line breaks —
       // its value carries the `\n`s that the rendered SVG (one <tspan> per row)
       // does not. `chardata` is therefore indexed by *textarea caret position*.
-      const value = this.#textinput.value
+      const value = input.value
       const len = value.length
 
-      this.#textbb = utilsGetBBox(this.#curtext)
+      const textbb = this.#textbb = utilsGetBBox(text)
 
       // Calculate accumulated transform matrix including all parent groups
       // This fixes the issue where text cursor appears in wrong position
       // when editing text inside a group with transforms
-      this.#matrix = this.#getAccumulatedMatrix(this.#curtext)
+      this.#matrix = this.#getAccumulatedMatrix(text)
 
-      this.#textinput.focus()
+      input.focus()
 
-      this.#curtext.removeEventListener('dblclick', this.#selectAll)
-      this.#curtext.addEventListener('dblclick', this.#selectAll)
+      text.removeEventListener('dblclick', this.#selectAll)
+      text.addEventListener('dblclick', this.#selectAll)
 
       // Row geometry. tspans are positioned at absolute `y = textY + row*lineH`
       // (see utilities.setMultilineText) so per-row baselines are exactly
       // computable — no need to read each rendered glyph's y.
-      const fontSize = parseFloat(window.getComputedStyle(this.#curtext).fontSize) ||
-      parseFloat(this.#curtext.getAttribute('font-size')) || 16
+      const fontSize = parseFloat(window.getComputedStyle(text).fontSize) ||
+      parseFloat(text.getAttribute('font-size') ?? '') || 16
       const lineHeight = fontSize * TEXT_LINE_HEIGHT
       const ascent = fontSize * 0.8
       const cursorHeight = fontSize
-      let row0Baseline = parseFloat(this.#curtext.getAttribute('y'))
+      let row0Baseline = parseFloat(text.getAttribute('y') ?? '')
       if (isNaN(row0Baseline)) {
-        row0Baseline = this.#textbb.y + ascent
+        row0Baseline = (textbb?.y ?? 0) + ascent
       }
-      const rowTop = (row) => row0Baseline + row * lineHeight - ascent
+      const rowTop = (/** @type {number} */ row) => row0Baseline + row * lineHeight - ascent
 
       // Anchor x for blank rows / empty text — the row's reference point, which
       // is the (shared) tspan x = text x attribute.
-      let anchorX = parseFloat(this.#curtext.getAttribute('x'))
+      let anchorX = parseFloat(text.getAttribute('x') ?? '')
       if (isNaN(anchorX)) {
-        anchorX = this.#textbb.x + this.#textbb.width / 2
+        anchorX = (textbb?.x ?? 0) + (textbb?.width ?? 0) / 2
       }
 
       // Phase 1: gather rendered glyph x-extents (no newlines in this index space).
-      const renderedLen = this.#curtext.getNumberOfChars
-        ? this.#curtext.getNumberOfChars()
-        : this.#curtext.textContent.length
+      const renderedLen = text.getNumberOfChars
+        ? text.getNumberOfChars()
+        : (text.textContent ?? '').length
       const goodPos = supportsGoodTextCharPos()
       const zoom = svgCanvas.getZoom()
       const glyph = new Array(renderedLen)
       for (let s = 0; s < renderedLen; s++) {
-        const start = this.#curtext.getStartPositionOfChar(s)
-        const end = this.#curtext.getEndPositionOfChar(s)
+        const start = text.getStartPositionOfChar(s)
+        const end = text.getEndPositionOfChar(s)
         let x0 = start.x
         let x1 = end.x
         if (!goodPos) {
@@ -646,10 +668,10 @@ export const init = canvas => {
         glyph[s] = { x0, x1 }
       }
 
-      if (isAreaText(this.#curtext)) {
+      if (isAreaText(text)) {
         // Wrapped rows: each row is a tspan with its own baseline; a soft break stands for the spaces it swallowed.
         const chardata = new Array(len + 1)
-        const rows = rowsOf(this.#curtext)
+        const rows = rowsOf(text)
         let k = 0
         let s = 0
         let lastX = anchorX
@@ -657,7 +679,7 @@ export const init = canvas => {
           const text = tspan.textContent ?? ''
           const top = (parseFloat(tspan.getAttribute('y') ?? '') || row0Baseline) - ascent
           const rowX = parseFloat(tspan.getAttribute('x') ?? '')
-          const box = (x) => ({ x, y: top, height: cursorHeight })
+          const box = (/** @type {number} */ x) => ({ x, y: top, height: cursorHeight })
           for (let j = 0; j < text.length; j++) {
             lastX = glyph[s + j] ? glyph[s + j].x0 : lastX
             chardata[k + j] = box(lastX)
@@ -680,7 +702,7 @@ export const init = canvas => {
           if (!chardata[i]) chardata[i] = chardata[i - 1] ?? { x: anchorX, y: rowTop(0), height: cursorHeight }
         }
         this.#chardata = chardata
-        this.#setSelection(this.#textinput.selectionStart, this.#textinput.selectionEnd, true)
+        this.#setSelection(input.selectionStart, input.selectionEnd, true)
         return
       }
 
@@ -713,7 +735,7 @@ export const init = canvas => {
       }
       this.#chardata = chardata
 
-      this.#setSelection(this.#textinput.selectionStart, this.#textinput.selectionEnd, true)
+      this.#setSelection(input.selectionStart, input.selectionEnd, true)
     }
   }
 
