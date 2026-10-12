@@ -83,6 +83,15 @@ describe('se-palette', () => {
     expect(handler.mock.calls[0][0].detail).toEqual({ picker: 'fill', color: 'none' })
   })
 
+  it('draws the "none" slash inline in a themable colour', () => {
+    const el = mountElement('se-palette')
+    const swatch = el.shadowRoot.querySelector('.palette_item[data-index="0"]')
+    expect(swatch.querySelector('img')).toBeNull()
+    const slash = swatch.querySelector('svg path')
+    expect(slash.getAttribute('style')).toContain('var(--none-slash')
+    expect(swatch.querySelector('svg').getAttribute('aria-label')).toBe('No color')
+  })
+
   it('cycles the color target through fill -> stroke -> fill on target button click', () => {
     const el = mountElement('se-palette')
     expect(el.$targetBtn.dataset.target).toBe('fill')

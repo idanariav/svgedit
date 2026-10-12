@@ -90,6 +90,7 @@ instead of redrawing the SVG.
 | Variable | Purpose |
 |----------|---------|
 | `--swatch-bg/border/border-hover` | Paint swatch appearance |
+| `--none-slash` | Colour of the red slash on the palette's "none" swatch (lighter in the dark theme) |
 | `--cp-*` | Color picker modal internal tokens (modal-bg, head-bg, stage-bg, etc.) |
 | `--sl-*` | Shape library modal internal tokens |
 

@@ -130,7 +130,8 @@ const paintFromOverride = (val) => {
   })
 }
 
-const NONE_SWATCH_SVG = 'data:image/svg+xml;charset=utf-8;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgY2xhc3M9InN2Z19pY29uIj48c3ZnIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+CiAgICA8bGluZSBmaWxsPSJub25lIiBzdHJva2U9IiNkNDAwMDAiIGlkPSJzdmdfOTAiIHkyPSIyNCIgeDI9IjI0IiB5MT0iMCIgeDE9IjAiLz4KICAgIDxsaW5lIGlkPSJzdmdfOTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0MDAwMCIgeTI9IjI0IiB4Mj0iMCIgeTE9IjAiIHgxPSIyNCIvPgogIDwvc3ZnPjwvc3ZnPg=='
+// The "none" slash: inline so its colour follows the theme (`--none-slash`: dark red on light, a lighter red on dark).
+const NONE_SWATCH_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" aria-label="No color" role="img"><path d="M0 0L24 24M24 0L0 24" fill="none" stroke-width="2" style="stroke: var(--none-slash, #d40000)"/></svg>'
 
 const PENCIL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l11-11-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>'
 
@@ -230,7 +231,7 @@ template.innerHTML = `
     align-items: center;
     justify-content: center;
   }
-  div.palette_item img {
+  div.palette_item img, div.palette_item svg {
     width: 14px;
     height: 14px;
     display: block;
@@ -553,12 +554,7 @@ export class SEPalette extends HTMLElement {
       if (cssGrad) swatch.style.backgroundImage = cssGrad
       swatch.dataset.rgb = 'gradient'
     } else if (color === 'none') {
-      const img = document.createElement('img')
-      img.src = NONE_SWATCH_SVG
-      img.style.width = '15px'
-      img.style.height = '15px'
-      img.alt = 'No color'
-      swatch.append(img)
+      swatch.insertAdjacentHTML('beforeend', NONE_SWATCH_SVG)
       swatch.dataset.rgb = color
     } else {
       swatch.style.backgroundColor = color

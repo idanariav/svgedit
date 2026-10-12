@@ -90,6 +90,7 @@ se-command-search-dialog {
   --swatch-border:       #C3C8D1;
   --swatch-border-hover: #2962FF;
   --swatch-inset:        rgba(0,0,0,0.18);
+  --none-slash:          #D40000;
   --swatch-shadow:       0 1px 2px rgba(20,25,35,0.08);
   --checker:             rgba(0,0,0,0.07);
 
@@ -219,6 +220,7 @@ se-command-search-dialog.theme-dark {
   --swatch-border:       #6A7180;
   --swatch-border-hover: #F6B23A;
   --swatch-inset:        rgba(255,255,255,0.22);
+  --none-slash:          #FF6B6B;
   --swatch-shadow:
     0 1px 0 rgba(255,255,255,0.05) inset,
     0 1px 2px rgba(0,0,0,0.5),

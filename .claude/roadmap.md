@@ -571,4 +571,3 @@ plus a "colours in this drawing" row, larger selection handles on coarse pointer
 tooltips shortened to the name. Remaining:
 - The Cutter icon (a marker over a dotted line) doesn't suggest cutting — a redraw.
 - Shapes shows doubled lines where its artwork has holes.
-- The "none" swatch is still faint in the dark theme. Small.
