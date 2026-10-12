@@ -4,9 +4,13 @@
  * nine points of its own bounding box), optionally with a random amount per object and optionally on copies.
  * One undo step.
  *
- * Like Flip, the result is one `matrix()` on each element, laid on top of what it already had (no
- * `recalculateDimensions`, which would decompose a rotated or skewed element and relocate it). Live-geometry
- * sources (taper, corner radius, `se:fx`) live in the element's own coordinates, so they stay in sync.
+ * The result is written the way the editor's own resize leaves an element: the scale (and reflection) is baked
+ * into the geometry of a rect / ellipse / line / polyline / polygon / path (`recalculateDimensions`, so live
+ * sources such as a taper follow through the remap hooks) and a rotation stays a `rotate(angle, cx, cy)`, so the
+ * rotation field reads it and repeated use does not pile up transforms. That needs the combined matrix to be a
+ * rotation times an axis scale (orthogonal columns); an element that would be skewed (a rotated element scaled
+ * unevenly in the parent's axes) keeps one `matrix()` instead, as Flip does. Other elements (circle, text, image,
+ * group, clipped / masked) get the same `rotate` plus one scale / translate `matrix()` without the bake.
  *
  * Inspired by VectorCraft (https://github.com/storytold/vectorcraft), `transformEach` in
  * `crates/engine/src/cmd/menucmds.rs` (MIT OR Apache-2.0).
@@ -47,6 +51,32 @@ export const multiply = (m, n) => [
   m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
   m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]
 ]
+
+/** What `recalculateDimensions` can absorb exactly (a circle would stay round, text and images do not stretch). */
+const BAKEABLE = new Set(['rect', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
+
+/**
+ * Read a matrix as `rotate(angle) · scale(sx, sy)` (then a translation, which the caller derives).
+ * @param {Affine} m
+ * @returns {{angle: number, sx: number, sy: number}|null} `null` when the matrix skews (its columns are not
+ *   perpendicular) or collapses an axis. A reflection takes the reading with the smaller rotation.
+ */
+export const decompose = (m) => {
+  const [a, b, c, d] = m
+  const l1 = Math.hypot(a, b)
+  const l2 = Math.hypot(c, d)
+  if (l1 < 1e-9 || l2 < 1e-9) return null
+  if (Math.abs(a * c + b * d) > 1e-6 * l1 * l2) return null
+  let angle = Math.atan2(b, a) * 180 / Math.PI
+  let sx = l1
+  let sy = a * d - b * c < 0 ? -l2 : l2
+  if (sy < 0) {
+    const other = angle > 0 ? angle - 180 : angle + 180
+    if (Math.abs(other) < Math.abs(angle)) { angle = other; sx = -l1; sy = l2 }
+  }
+  if (Math.abs(angle) < 1e-7) angle = 0
+  return { angle, sx, sy }
+}
 
 /**
  * @param {string|undefined} origin
@@ -109,6 +139,25 @@ export const eachMatrix = (amounts, px, py) => {
 }
 
 /**
+ * @param {Affine} m
+ * @returns {boolean} whether `m` is the identity (to rounding)
+ */
+const isIdentityAffine = (m) => [1, 0, 0, 1, 0, 0].every((v, i) => Math.abs(m[i] - v) < 1e-9)
+
+/**
+ * @param {SVGSVGElement} svgRoot
+ * @param {Affine} m
+ * @returns {SVGTransform}
+ */
+const toTransform = (svgRoot, m) => {
+  const matrix = svgRoot.createSVGMatrix()
+  Object.assign(matrix, { a: m[0], b: m[1], c: m[2], d: m[3], e: m[4], f: m[5] })
+  const transform = svgRoot.createSVGTransform()
+  transform.setMatrix(matrix)
+  return transform
+}
+
+/**
  * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
@@ -149,13 +198,26 @@ export const init = (canvas) => {
         const top = Math.min(...ys)
         const px = left + at.x * (Math.max(...xs) - left)
         const py = top + at.y * (Math.max(...ys) - top)
-        const [a, b, c, d, e, f] = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
-        const matrix = svgRoot.createSVGMatrix()
-        Object.assign(matrix, { a, b, c, d, e, f })
-        const transform = svgRoot.createSVGTransform()
-        transform.setMatrix(matrix)
+        const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
+        const parts = decompose(result)
         tlist.clear()
-        tlist.appendItem(transform)
+        if (parts) {
+          // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
+          const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+          const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
+          const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
+          /** @type {Affine} */
+          const scale = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
+          if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
+          if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
+          if (parts.angle) {
+            const rotation = svgRoot.createSVGTransform()
+            rotation.setRotate(parts.angle, c1x, c1y)
+            tlist.insertItemBefore(rotation, 0)
+          }
+        } else {
+          tlist.appendItem(toTransform(svgRoot, result))
+        }
         svgCanvas.selectorManager.requestSelector(el).resize()
       }
     })

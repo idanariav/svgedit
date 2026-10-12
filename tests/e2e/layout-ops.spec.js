@@ -178,12 +178,37 @@ test.describe('Layout tools', () => {
     expect(union.w).toBeCloseTo(r0.w, 1)
   })
 
-  test('Transform Each leaves a live-geometry element in sync (a tapered path keeps its source and outline)', async ({ page }) => {
+  test('Transform Each bakes the scale into a tapered path, keeps its source in sync and leaves the rotation a rotate()', async ({ page }) => {
     await setSvgSource(page, fs.readFileSync(path.join(process.cwd(), 'tests/e2e/fixtures/roundtrip/taper.svg'), 'utf8'))
     const state = (id) => page.evaluate((i) => {
       const p = document.getElementById(i)
       return { d: p.getAttribute('d'), se: [...p.attributes].filter((a) => a.name.startsWith('se:')).map((a) => [a.name, a.value]), transform: p.getAttribute('transform') }
     }, id)
+    // the extent of the outline on the page: sampled points mapped through the element's CTM into document units
+    const extent = (id, expect) => page.evaluate(({ i, expect }) => {
+      const p = document.getElementById(i)
+      const toDoc = document.getElementById('svgcontent').getCTM().inverse().multiply(p.getCTM())
+      const n = 400
+      const total = p.getTotalLength()
+      let pts = []
+      for (let k = 0; k <= n; k++) { const q = p.getPointAtLength(total * k / n); pts.push([q.x, q.y]) }
+      if (expect) {
+        // what scale 250% + rotate 20° about the old centre does to the old outline
+        const [cx, cy, s, a] = expect
+        const r = a * Math.PI / 180
+        pts = pts.map(([x, y]) => {
+          const px = cx + (x - cx) * s; const py = cy + (y - cy) * s
+          return [cx + (px - cx) * Math.cos(r) - (py - cy) * Math.sin(r), cy + (px - cx) * Math.sin(r) + (py - cy) * Math.cos(r)]
+        })
+        return ext(pts, null)
+      }
+      return ext(pts, toDoc)
+      function ext (list, m) {
+        const out = list.map(([x, y]) => (m ? (({ x: X, y: Y }) => [X, Y])(new DOMPoint(x, y).matrixTransform(m)) : [x, y]))
+        const xs = out.map((q) => q[0]); const ys = out.map((q) => q[1])
+        return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }
+      }
+    }, { i: id, expect })
     const id = await page.evaluate(() => {
       const p = document.querySelector('#svgcontent path')
       window.svgEditor.svgCanvas.selectOnly([p], true)
@@ -191,14 +216,78 @@ test.describe('Layout tools', () => {
     })
     const before = await state(id)
     expect(before.se.length).toBeGreaterThan(0)
+    // the centre of the old geometry, in the path's parent
+    const c = await page.evaluate((i) => { const b = document.getElementById(i).getBBox(); return [b.x + b.width / 2, b.y + b.height / 2] }, id)
+    const expected = await extent(id, [...c, 2.5, 20])
     await run(page, 'tool_transform_each')
     await setField(page, 'scaleH', 250)
+    await setField(page, 'scaleV', 250)
     await setField(page, 'rotate', 20)
     await press(page, 'pd_ok')
     const after = await state(id)
-    expect(after.transform).toContain('matrix')
-    expect(after.d).toBe(before.d)
-    expect(after.se).toEqual(before.se)
+    expect(after.transform).toMatch(/^rotate\(20 /)
+    expect(after.d).not.toBe(before.d) // the scale is in the geometry
+    expect(after.se.map(([n]) => n)).toEqual(before.se.map(([n]) => n))
+    expect(after.se).not.toEqual(before.se) // and the cached source followed it
+    const got = await extent(id)
+    for (const k of ['x0', 'x1', 'y0', 'y1']) expect(got[k]).toBeCloseTo(expected[k], 0)
+    // a second pass does not pile transforms up: still one rotate, now 40°
+    await run(page, 'tool_transform_each')
+    await setField(page, 'rotate', 20)
+    await press(page, 'pd_ok')
+    expect((await state(id)).transform).toMatch(/^rotate\(40(\.\d+)? [^)]*\)$/)
+  })
+
+  test('Transform Each leaves a plain rect with baked geometry and a rotate(); a reflection is not a half turn', async ({ page }) => {
+    const attrs = (id) => page.evaluate((i) => { const r = document.getElementById(i); return { x: +r.getAttribute('x'), y: +r.getAttribute('y'), w: +r.getAttribute('width'), h: +r.getAttribute('height'), t: r.getAttribute('transform') } }, id)
+    await select(page, 'a')
+    const a0 = await attrs('a')
+    await run(page, 'tool_transform_each')
+    await setField(page, 'scaleH', 200)
+    await press(page, 'pd_ok')
+    const a1 = await attrs('a')
+    expect(a1.t).toBeNull()
+    expect(a1.w).toBeCloseTo(a0.w * 2, 3)
+    expect(a1.h).toBeCloseTo(a0.h, 3)
+    expect(a1.x + a1.w / 2).toBeCloseTo(a0.x + a0.w / 2, 3) // about its centre
+    // rotation stays a rotate(), the rotation field can read it
+    await run(page, 'tool_transform_each')
+    await setField(page, 'rotate', 25)
+    await press(page, 'pd_ok')
+    expect((await attrs('a')).t).toMatch(/^rotate\(25 /)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getRotationAngle())).toBeCloseTo(25, 3)
+    // reflecting a rotated rect keeps it a (small) rotate + baked flip, not a 180° turn
+    await run(page, 'tool_transform_each')
+    await setField(page, 'reflectX', true)
+    await press(page, 'pd_ok')
+    const a3 = await attrs('a')
+    const turn = Math.abs(Number(/rotate\((-?[\d.]+)/.exec(a3.t ?? '')?.[1] ?? 0))
+    expect(turn).toBeLessThanOrEqual(90)
+  })
+
+  test('what cannot be baked stays exact: a skewing scale keeps one matrix(), a circle gets rotate() plus a scale matrix()', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas.addSVGElementsFromJson({ element: 'circle', curStyles: true, attr: { cx: 300, cy: 350, r: 30, id: 'circ', fill: '#ff00ff' } })
+      c.parentNode.append(c)
+    })
+    const xf = (id) => page.evaluate((i) => document.getElementById(i).getAttribute('transform'), id)
+    // a 30° rect stretched along the page's x axis would need a skew: one matrix, geometry untouched
+    const before = await page.evaluate(() => ['x', 'y', 'width', 'height'].map((n) => document.getElementById('r').getAttribute(n)))
+    await select(page, 'r')
+    await run(page, 'tool_transform_each')
+    await setField(page, 'scaleH', 200)
+    await press(page, 'pd_ok')
+    expect(await xf('r')).toMatch(/^matrix\(/)
+    expect(await page.evaluate(() => ['x', 'y', 'width', 'height'].map((n) => document.getElementById('r').getAttribute(n)))).toEqual(before)
+    // a circle cannot stretch in its attributes: rotate() on the outside, the scale as a matrix inside
+    await select(page, 'circ')
+    await run(page, 'tool_transform_each')
+    await setField(page, 'scaleH', 200)
+    await setField(page, 'rotate', 15)
+    await press(page, 'pd_ok')
+    expect(await xf('circ')).toMatch(/^rotate\(15 .*\) matrix\(/)
+    const w = (await box(page, 'circ')).w
+    expect(w).toBeGreaterThan(60) // wider than the 60-unit circle it was
   })
 
   test('the commands say why they are unavailable', async ({ page }) => {

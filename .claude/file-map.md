@@ -243,7 +243,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/sanitize.js` | SVG security sanitization |
 | `core/text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
 | `core/text-rows.js` | How a `<text>`'s rows are stored and laid out: `getTextWithNewlines` / `setMultilineText` (re-exported by `dom-utils.js`), **area text** (`se:wrap-width` / `-height` / `se:valign`, soft rows `se:soft`): `isAreaText`, `getAreaBox`, `areaAttrsForBox`, `reflowAreaText`, `settleAreaText`, `makeAreaText` / `makePointText`, the hidden-probe measurer `withMeasure` |
-| `core/transform-each.js` | `svgCanvas.transformEach(params, rng?)` — Transform Each: scale / move / rotate / reflect each selected object about its own reference point (`eachMatrix`, `resolveAmounts`, `referenceFraction`), Random, Copy; one `matrix()` per element, one undo step |
+| `core/transform-each.js` | `svgCanvas.transformEach(params, rng?)` — Transform Each: scale / move / rotate / reflect each selected object about its own reference point (`eachMatrix`, `resolveAmounts`, `referenceFraction`), Random, Copy; the scale is baked into rect / ellipse / line / polyline / polygon / path geometry and a rotation stays `rotate()` (`decompose`), a skewing or unbakeable case keeps a `matrix()`; one undo step |
 | `core/split-grid.js` | `svgCanvas.splitIntoGrid({rows, cols, gutter})` / `canSplitIntoGrid` — replace a shape with a group of rows × cols rects over its bounding box (`gridCells`) |
 | `core/measure.js` | Pure Measure-tool maths: `measureSegment`, `constrainAngle` (45°), `readoutLines` |
 | `core/text-wrap.js` | Pure greedy line breaking for area text (`wrapText(value, width, measure)`; spaces, long words, CJK) |

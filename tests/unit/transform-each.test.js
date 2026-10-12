@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  multiply, referenceFraction, resolveAmounts, eachMatrix, REFERENCE_POINTS
+  multiply, referenceFraction, resolveAmounts, eachMatrix, decompose, REFERENCE_POINTS
 } from '../../packages/svgcanvas/core/transform-each.js'
 
 const apply = (m, x, y) => ({ x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] })
@@ -96,5 +96,44 @@ describe('multiply', () => {
     const move = [1, 0, 0, 1, 5, 0]
     expect(apply(multiply(move, scale), 1, 1)).toEqual({ x: 7, y: 2 })
     expect(apply(multiply(scale, move), 1, 1)).toEqual({ x: 12, y: 2 })
+  })
+})
+
+describe('decompose', () => {
+  /** rotate(angle) · scale(sx, sy) as a linear [a b c d 0 0] */
+  const compose = ({ angle, sx, sy }) => {
+    const r = angle * Math.PI / 180
+    return multiply([Math.cos(r), Math.sin(r), -Math.sin(r), Math.cos(r), 0, 0], [sx, 0, 0, sy, 0, 0])
+  }
+  const close = (m, n) => m.forEach((v, i) => expect(v).toBeCloseTo(n[i], 9))
+
+  it('reads a plain scale as no rotation', () => {
+    expect(decompose([2, 0, 0, 3, 5, 7])).toEqual({ angle: 0, sx: 2, sy: 3 })
+  })
+  it('reads a rotation and an axis scale back, whatever the angle', () => {
+    for (const angle of [-170, -90, -30, 0.5, 45, 90, 135, 180]) {
+      const parts = { angle, sx: 1.5, sy: 0.4 }
+      const got = decompose(compose(parts))
+      expect(got.sx).toBeGreaterThan(0)
+      expect(got.sy).toBeGreaterThan(0)
+      close(compose(got), compose(parts))
+      expect(got.angle).toBeCloseTo(angle, 6)
+    }
+  })
+  it('reads a mirror as a negative scale, not a half turn', () => {
+    expect(decompose([-1, 0, 0, 1, 0, 0])).toEqual({ angle: 0, sx: -1, sy: 1 })
+    expect(decompose([1, 0, 0, -1, 0, 0])).toEqual({ angle: 0, sx: 1, sy: -1 })
+  })
+  it('keeps a rotated mirror reconstructable with the smaller rotation', () => {
+    const m = compose({ angle: 30, sx: 1, sy: -2 })
+    const got = decompose(m)
+    close(compose(got), m)
+    expect(Math.abs(got.angle)).toBeLessThanOrEqual(90)
+  })
+  it('refuses a skew and a collapsed axis', () => {
+    expect(decompose([1, 0, 1, 1, 0, 0])).toBeNull() // shear
+    expect(decompose(multiply(compose({ angle: 30, sx: 1, sy: 1 }), [2, 0, 0, 1, 0, 0]).map((v, i) => (i < 4 ? v : 0)))).not.toBeNull() // rotate after stretch is fine
+    expect(decompose(multiply([2, 0, 0, 1, 0, 0], compose({ angle: 30, sx: 1, sy: 1 })))).toBeNull() // stretch after rotate skews
+    expect(decompose([0, 0, 0, 1, 0, 0])).toBeNull()
   })
 })
