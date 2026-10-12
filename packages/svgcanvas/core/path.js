@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path functionality.
  * @module path
@@ -41,14 +42,14 @@ export const init = (canvas) => {
   const svgCanvas = canvas
   /**
  * @tutorial LocaleDocs
- * @typedef {module:locale.LocaleStrings|PlainObject} module:path.uiStrings
+ * @typedef {PlainObject} uiStrings
  * @property {PlainObject<string, string>} ui
 */
 
   const uiStrings = {}
   /**
 * @function module:path.setUiStrings
-* @param {module:path.uiStrings} strs
+* @param {uiStrings} strs
 * @returns {void}
 */
   const setUiStrings = (strs) => {
@@ -74,7 +75,7 @@ export const init = (canvas) => {
 
   /**
  * @name module:path.path
- * @type {null|module:path.Path}
+ * @type {null|object}
  * @memberof module:path
 */
   let path = null
@@ -85,12 +86,12 @@ export const init = (canvas) => {
 
   /**
 * Object with the following keys/values.
-* @typedef {PlainObject} module:path.SVGElementJSON
+* @typedef {PlainObject} PathSVGElementJSON
 * @property {string} element - Tag name of the SVG element to create
 * @property {PlainObject<string, string>} attr - Has key-value attributes to assign to the new element.
 *   An `id` should be set so that {@link module:utilities.EditorContext#addSVGElementsFromJson} can later re-identify the element for modification or replacement.
 * @property {boolean} [curStyles=false] - Indicates whether current style attributes should be applied first
-* @property {module:path.SVGElementJSON[]} [children] - Data objects to be added recursively as children
+* @property {PathSVGElementJSON[]} [children] - Data objects to be added recursively as children
 * @property {string} [namespace="http://www.w3.org/2000/svg"] - Indicate a (non-SVG) namespace
 */
   /**
@@ -124,7 +125,7 @@ export const init = (canvas) => {
 */
   /**
  * @function module:path.EditorContext#addCommandToHistory
- * @param {Command} cmd
+ * @param {import('./history.js').Command} cmd
  * @returns {void}
  */
   /**
@@ -136,7 +137,7 @@ export const init = (canvas) => {
  */
   /**
  * @function module:path.EditorContext#addSVGElementsFromJson
- * @param {module:path.SVGElementJSON} data
+ * @param {PathSVGElementJSON} data
  * @returns {Element} The new element
 */
   /**
@@ -200,7 +201,7 @@ export const init = (canvas) => {
   /**
  * Gets the desired element from a mouse event.
  * @function module:path.EditorContext#getMouseTarget
- * @param {external:MouseEvent} evt - Event object from the mouse event
+ * @param {MouseEvent} evt - Event object from the mouse event
  * @returns {Element} DOM element we want
  */
   /**
@@ -234,14 +235,14 @@ export const init = (canvas) => {
 * @function module:path.ptObjToArr
 * @todo See if this should just live in `replacePathSeg`
 * @param {string} type
-* @param {SVGPathSegMovetoAbs|SVGPathSegLinetoAbs|SVGPathSegCurvetoCubicAbs|SVGPathSegCurvetoQuadraticAbs|SVGPathSegArcAbs|SVGPathSegLinetoHorizontalAbs|SVGPathSegLinetoVerticalAbs|SVGPathSegCurvetoCubicSmoothAbs|SVGPathSegCurvetoQuadraticSmoothAbs} segItem
-* @returns {ArgumentsArray}
+* @param {any} segItem
+* @returns {any[]}
 */
   /* eslint-enable max-len */
 
   /**
 * @function module:path.getGripPt
-* @param {Segment} seg
+* @param {any} seg
 * @param {module:math.XYObject} altPt
 * @returns {module:math.XYObject}
 */
@@ -284,14 +285,14 @@ export const init = (canvas) => {
 
   /**
 * @function module:path.getPointGrip
-* @param {Segment} seg
+* @param {any} seg
 * @param {boolean} update
 * @returns {SVGCircleElement}
 */
 
   /**
 * @function module:path.getControlPoints
-* @param {Segment} seg
+* @param {any} seg
 * @returns {PlainObject<string, SVGLineElement|SVGCircleElement>}
 */
 
@@ -300,14 +301,14 @@ export const init = (canvas) => {
 * @function module:path.replacePathSeg
 * @param {number} type Possible values set during {@link module:path.init}
 * @param {number} index
-* @param {ArgumentsArray} pts
+* @param {any[]} pts
 * @param {SVGPathElement} elem
 * @returns {void}
 */
 
   /**
 * @function module:path.getSegSelector
-* @param {Segment} seg
+* @param {any} seg
 * @param {boolean} update
 * @returns {SVGPathElement}
 */

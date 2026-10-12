@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @module text-actions Tools for Text edit functions
  * @license MIT
@@ -18,7 +19,7 @@ import { isAreaText, rowsOf, softCount } from './text-rows.js'
 
 /**
  * @function module:text-actions.init
- * @param {module:text-actions.svgCanvas} textActionsContext
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = canvas => {
@@ -49,7 +50,6 @@ export const init = canvas => {
    * appears in the wrong position when editing text inside a transformed group.
    * @param {Element} elem - The element to get the accumulated matrix for
    * @returns {SVGMatrix|null} The accumulated transformation matrix, or null if none
-   * @private
    */
     #getAccumulatedMatrix = (elem) => {
       const svgContent = svgCanvas.getSvgContent()
@@ -62,7 +62,7 @@ export const init = canvas => {
           const matrix = transformListToTransform(tlist).matrix
           matrices.unshift(matrix) // Add to beginning to maintain correct order
         }
-        current = current.parentNode
+        current = /** @type {Element} */ (current.parentNode)
       }
 
       if (matrices.length === 0) {
@@ -81,7 +81,6 @@ export const init = canvas => {
    *
    * @param {number} index
    * @returns {void}
-   * @private
    */
     #setCursor = (index = undefined) => {
       const empty = this.#textinput.value === ''
@@ -141,9 +140,8 @@ export const init = canvas => {
    *
    * @param {number} start
    * @param {number} end
-   * @param {boolean} skipInput
+   * @param {boolean} [skipInput]
    * @returns {void}
-   * @private
    */
     #setSelection = (start, end, skipInput) => {
       if (start === end) {
@@ -201,7 +199,6 @@ export const init = canvas => {
    * @param {number} mouseX
    * @param {number} mouseY
    * @returns {number}
-   * @private
    */
     #getIndexFromPoint = (mouseX, mouseY) => {
       const cd = this.#chardata
@@ -233,7 +230,6 @@ export const init = canvas => {
    * @param {number} mouseX
    * @param {number} mouseY
    * @returns {void}
-   * @private
    */
     #setCursorFromPoint = (mouseX, mouseY) => {
       this.#setCursor(this.#getIndexFromPoint(mouseX, mouseY))
@@ -243,9 +239,8 @@ export const init = canvas => {
    *
    * @param {number} x
    * @param {number} y
-   * @param {boolean} apply
+   * @param {boolean} [apply]
    * @returns {void}
-   * @private
    */
     #setEndSelectionFromPoint = (x, y, apply) => {
       const i1 = this.#textinput.selectionStart
@@ -261,7 +256,6 @@ export const init = canvas => {
    * @param {number} xIn
    * @param {number} yIn
    * @returns {module:math.XYObject}
-   * @private
    */
     #screenToPt = (xIn, yIn) => {
       const out = {
@@ -286,7 +280,6 @@ export const init = canvas => {
    * @param {number} xIn
    * @param {number} yIn
    * @returns {module:math.XYObject}
-   * @private
    */
     #ptToScreen = (xIn, yIn) => {
       const out = {
@@ -308,9 +301,7 @@ export const init = canvas => {
 
     /**
    *
-   * @param {Event} evt
    * @returns {void}
-   * @private
    */
     #selectAll = () => {
       if (!this.#allowDbl || !this.#curtext) {
@@ -340,7 +331,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {external:MouseEvent} evt
+   * @param {MouseEvent} evt
    * @param {Element} mouseTarget
    * @param {number} startX
    * @param {number} startY
@@ -368,7 +359,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {external:MouseEvent} evt
+   * @param {MouseEvent} evt
    * @param {number} mouseX
    * @param {number} mouseY
    * @returns {void}
@@ -581,7 +572,7 @@ export const init = canvas => {
     }
 
     /**
-   * @param {Element} _inputElem Not in use
+   * @param {Element} [_inputElem] Not in use
    * @returns {void}
    */
     init (_inputElem) {

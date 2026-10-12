@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Manipulating coordinates.
  * @module coords
@@ -73,7 +74,7 @@ export const init = canvas => {
     const scaleh = (h) => m.d * h
     const doSnapping =
     svgCanvas.getGridSnapping?.() &&
-    selected?.parentNode?.parentNode?.localName === 'svg'
+    /** @type {Element|null|undefined} */ (selected?.parentNode?.parentNode)?.localName === 'svg'
 
     const finishUp = () => {
       if (doSnapping) {
@@ -238,8 +239,9 @@ export const init = canvas => {
         // Handle child 'tspan' elements
         const childNodes = selected.childNodes
         for (let i = 0; i < childNodes.length; i++) {
-          const child = childNodes[i]
+          const child = /** @type {Element} */ (childNodes[i])
           if (child.nodeType === 1 && child.tagName === 'tspan') {
+            /** @type {Record<string, string|number>} */
             const childChanges = {}
             const hasX = child.hasAttribute('x')
             const hasY = child.hasAttribute('y')
@@ -310,17 +312,17 @@ export const init = canvas => {
       }
       case 'path': {
         const supportsPathData =
-        typeof selected.getPathData === 'function' &&
-        typeof selected.setPathData === 'function'
+        typeof /** @type {any} */ (selected).getPathData === 'function' &&
+        typeof /** @type {any} */ (selected).setPathData === 'function'
 
         // Handle path segments
-        const segList = supportsPathData ? null : selected.pathSegList
-        const len = supportsPathData ? selected.getPathData().length : segList.numberOfItems
+        const segList = supportsPathData ? null : /** @type {any} */ (selected).pathSegList
+        const len = supportsPathData ? /** @type {any} */ (selected).getPathData().length : segList.numberOfItems
         const det = m.a * m.d - m.b * m.c
         const shouldToggleArcSweep = det < 0
         changes.d = []
         if (supportsPathData) {
-          const pathDataSegments = selected.getPathData()
+          const pathDataSegments = /** @type {any} */ (selected).getPathData()
           for (let i = 0; i < len; ++i) {
             const seg = pathDataSegments[i]
             const t = seg.type
@@ -526,7 +528,7 @@ export const init = canvas => {
         selected.setAttribute('d', d)
         if (supportsPathData) {
           try {
-            selected.setPathData(newPathData)
+            /** @type {any} */ (selected).setPathData(newPathData)
           } catch (e) {
           // Fallback to 'd' attribute if setPathData is unavailable or throws.
           }

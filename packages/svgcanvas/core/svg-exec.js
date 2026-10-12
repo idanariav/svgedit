@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for svg.
  * @module svg
@@ -29,7 +30,7 @@ const {
 
 /**
  * @function module:svg-exec.init
- * @param {module:svg-exec.SvgCanvas#init} svgContext
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = canvas => {
@@ -171,7 +172,7 @@ export const init = canvas => {
     // Collect the set of font-family values referenced by text/tspan elements
     const used = new Set()
     svgContent.querySelectorAll('text, tspan').forEach(el => {
-      const fam = el.getAttribute('font-family') || el.style.fontFamily
+      const fam = el.getAttribute('font-family') || /** @type {SVGElement} */ (el).style.fontFamily
       if (fam) used.add(fam.replace(/^['"]|['"]$/g, ''))
     })
 
@@ -355,7 +356,7 @@ export const init = canvas => {
             const styleName = attr.localName.replace(/-[a-z]/g, s =>
               s[1].toUpperCase()
             )
-            if (Object.prototype.hasOwnProperty.call(elem.style, styleName)) {
+            if (Object.prototype.hasOwnProperty.call(/** @type {SVGElement} */ (elem).style, styleName)) {
               continue
             }
           }
@@ -370,7 +371,7 @@ export const init = canvas => {
             if (attr.localName === 'd') {
               attrVal = svgCanvas.pathActions.convertPath(elem, true)
             }
-            if (!isNaN(attrVal)) {
+            if (!isNaN(Number(attrVal))) {
               attrVal = shortFloat(attrVal)
             } else if (unitRe.test(attrVal)) {
               attrVal = shortFloat(attrVal) + unit
@@ -441,7 +442,7 @@ export const init = canvas => {
               out.push('\n')
               out.push(new Array(indent + 1).join(' '))
               out.push('<!--')
-              out.push(child.data)
+              out.push(/** @type {CharacterData} */ (child).data)
               out.push('-->')
               break
           } // switch on node type
@@ -966,7 +967,7 @@ export const init = canvas => {
 
   /**
  * Function to run when image data is found.
- * @callback module:svgcanvas.ImageEmbeddedCallback
+ * @callback ImageEmbeddedCallback
  * @param {string|false} result Data URL
  * @returns {void}
  */
@@ -984,10 +985,10 @@ export const init = canvas => {
       imgI.addEventListener('load', e => {
       // create a canvas the same size as the raster image
         const cvs = document.createElement('canvas')
-        cvs.width = e.currentTarget.width
-        cvs.height = e.currentTarget.height
+        cvs.width = imgI.width
+        cvs.height = imgI.height
         // load the raster image into the canvas
-        cvs.getContext('2d').drawImage(e.currentTarget, 0, 0)
+        cvs.getContext('2d').drawImage(imgI, 0, 0)
         // retrieve the data: URL
         try {
           let urldata = ';svgedit_url=' + encodeURIComponent(src)
@@ -1002,7 +1003,7 @@ export const init = canvas => {
       imgI.addEventListener('error', e => {
         reject(
           new Error(
-          `error loading image: ${e.currentTarget.attributes.src.value}`
+          `error loading image: ${imgI.getAttribute('src')}`
           )
         )
       })
@@ -1011,14 +1012,14 @@ export const init = canvas => {
   }
 
   /**
- * @typedef {PlainObject} module:svgcanvas.IssuesAndCodes
+ * @typedef {PlainObject} IssuesAndCodes
  * @property {string[]} issueCodes The locale-independent code names
  * @property {string[]} issues The localized descriptions
  */
 
   /**
  * Codes only is useful for locale-independent detection.
- * @returns {module:svgcanvas.IssuesAndCodes}
+ * @returns {IssuesAndCodes}
  */
   const getIssues = () => {
     const uiStrings = svgCanvas.getUIStrings()
@@ -1038,7 +1039,7 @@ export const init = canvas => {
     const content = svgCanvas.getSvgContent()
 
     // Add font/text check if Canvas Text API is not implemented
-    if (!('font' in document.querySelector('CANVAS').getContext('2d'))) {
+    if (!('font' in /** @type {HTMLCanvasElement} */ (document.querySelector('CANVAS')).getContext('2d'))) {
       issueList.text = uiStrings.NoText
     }
 
@@ -1051,7 +1052,7 @@ export const init = canvas => {
     return { issues, issueCodes }
   }
   /**
- * @typedef {PlainObject} module:svgcanvas.ImageedResults
+ * @typedef {PlainObject} ImageedResults
  * @property {string} datauri Contents as a Data URL
  * @property {string} bloburl May be the empty string
  * @property {string} svg The SVG contents as a string
@@ -1079,7 +1080,7 @@ export const init = canvas => {
           const reader = new FileReader()
           return new Promise(resolve => {
             reader.onload = () => {
-              setHref(img, reader.result)
+              setHref(img, /** @type {string} */ (reader.result))
               resolve()
             }
             reader.readAsDataURL(blob)

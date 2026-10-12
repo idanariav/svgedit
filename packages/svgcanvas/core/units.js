@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for working with units.
  * @module units
@@ -46,7 +47,7 @@ let typeMap_ = null
  */
 
 /**
- * @typedef {PlainObject} module:units.TypeMap
+ * @typedef {PlainObject} TypeMap
  * @property {number} em
  * @property {number} ex
  * @property {number} in
@@ -60,7 +61,7 @@ let typeMap_ = null
 
 /**
  * Measure em/ex/in once via a temporary SVG and derive the unit table.
- * @returns {module:units.TypeMap}
+ * @returns {TypeMap}
  */
 const computeTypeMap = () => {
   // Get correct em/ex values by creating a temporary SVG.
@@ -94,7 +95,7 @@ const computeTypeMap = () => {
 
 /**
  * @function module:units.getTypeMap
- * @returns {module:units.TypeMap} The unit object with values for each unit
+ * @returns {TypeMap} The unit object with values for each unit
 */
 export const getTypeMap = () => {
   typeMap_ ??= computeTypeMap()
@@ -102,7 +103,7 @@ export const getTypeMap = () => {
 }
 
 /**
-* @typedef {GenericArray} module:units.CompareNumbers
+* @typedef {GenericArray} CompareNumbers
 * @property {number} length 2
 * @property {number} 0
 * @property {number} 1
@@ -121,6 +122,7 @@ export const setUnitAttr = (elem, attr, val) => {
   elem.setAttribute(attr, String(val))
 }
 
+/** @type {Record<string, string[]>} */
 const attrsToConvert = {
   line: ['x1', 'x2', 'y1', 'y2'],
   circle: ['cx', 'cy', 'r'],
@@ -146,31 +148,31 @@ export const createUnits = (elementContainer) => {
   * `round_digits` of `saveOptions`
   *
   * @function module:units.shortFloat
-  * @param {string|number|module:units.CompareNumbers} val - The value (or Array of two numbers) to be rounded
+  * @param {string|number|CompareNumbers} val - The value (or Array of two numbers) to be rounded
   * @returns {number|string} If a string/number was given, returns a number. If an array, return a string
   * with comma-separated floats
   */
   const shortFloat = (val) => {
     const digits = elementContainer.getRoundDigits()
-    if (!isNaN(val)) {
+    if (!isNaN(Number(val))) {
       return Number(Number(val).toFixed(digits))
     }
     if (Array.isArray(val)) {
       return `${shortFloat(val[0])},${shortFloat(val[1])}`
     }
-    return Number.parseFloat(val).toFixed(digits) - 0
+    return Number(Number.parseFloat(String(val)).toFixed(digits))
   }
 
   /**
   * Converts the number to given unit or baseUnit.
   * @function module:units.convertUnit
   * @param {string|number} val
-  * @param {"em"|"ex"|"in"|"cm"|"mm"|"pt"|"pc"|"px"|"%"} [unit]
+  * @param {string} [unit]
   * @returns {number}
   */
   const convertUnit = (val, unit) => {
-    unit = unit || elementContainer.getBaseUnit()
-    return shortFloat(val / getTypeMap()[unit])
+    const key = unit || elementContainer.getBaseUnit()
+    return /** @type {number} */ (shortFloat(Number(val) / getTypeMap()[key]))
   }
 
   /**
@@ -187,8 +189,8 @@ export const createUnits = (elementContainer) => {
 
     attrs.forEach((attr) => {
       const cur = element.getAttribute(attr)
-      if (cur && !isNaN(cur)) {
-        element.setAttribute(attr, (cur / getTypeMap()[unit]) + unit)
+      if (cur && !isNaN(Number(cur))) {
+        element.setAttribute(attr, (Number(cur) / getTypeMap()[unit]) + unit)
       }
     })
   }
@@ -204,10 +206,11 @@ export const createUnits = (elementContainer) => {
   */
   const convertToNum = (attr, val) => {
     // Return a number if that's what it already is
-    if (!isNaN(val)) { return val - 0 }
-    if (val.substr(-1) === '%') {
+    if (!isNaN(Number(val))) { return Number(val) }
+    const str = /** @type {string} */ (val)
+    if (str.substr(-1) === '%') {
       // Deal with percentage, depends on attribute
-      const num = val.substr(0, val.length - 1) / 100
+      const num = Number(str.substr(0, str.length - 1)) / 100
       const width = elementContainer.getWidth()
       const height = elementContainer.getHeight()
 
@@ -219,10 +222,10 @@ export const createUnits = (elementContainer) => {
       }
       return num * Math.sqrt((width * width) + (height * height)) / Math.sqrt(2)
     }
-    const unit = val.slice(-2)
-    const num = val.slice(0, -2)
+    const unit = str.slice(-2)
+    const num = str.slice(0, -2)
     // Note that this multiplication turns the string into a number
-    return num * getTypeMap()[unit]
+    return Number(num) * getTypeMap()[unit]
   }
 
   /**
@@ -230,13 +233,13 @@ export const createUnits = (elementContainer) => {
   * @function module:units.isValidUnit
   * @param {string} attr - The name of the attribute associated with the value
   * @param {string} val - The attribute value to check
-  * @param {Element} selectedElement
+  * @param {Element} [selectedElement]
   * @returns {boolean} Whether the unit is valid
   */
   const isValidUnit = (attr, val, selectedElement) => {
     if (unitAttrs.includes(attr)) {
       // True if it's just a number
-      if (!isNaN(val)) {
+      if (!isNaN(Number(val))) {
         return true
       }
       // Not a number, check if it has a valid unit
@@ -274,5 +277,5 @@ export const createUnits = (elementContainer) => {
  */
 export const getUnits = (canvas) => {
   if (!canvas?.units) throw new Error('getUnits: canvas has no `units` (create it with createUnits(canvas))')
-  return canvas.units
+  return /** @type {ReturnType<typeof createUnits>} */ (canvas.units)
 }

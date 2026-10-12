@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * DOM element selection box tools.
  * @module select
@@ -129,7 +130,7 @@ export const init = (canvas) => {
       // A missing stroke-width means the SVG initial value of 1, not 0 —
       // cleanupElement strips the attribute at that value.
       const swAttr = selected.getAttribute('stroke-width')
-      const sw = swAttr === null ? 1 : swAttr
+      const sw = swAttr === null ? 1 : Number(swAttr)
       if (selected.getAttribute('stroke') !== 'none' && !isNaN(sw)) {
         offset += (sw / 2)
       }
@@ -142,7 +143,7 @@ export const init = (canvas) => {
       // find the transformations applied to the parent of the selected element
       const svg = document.createElementNS(NS.SVG, 'svg')
       let parentTransformationMatrix = svg.createSVGMatrix()
-      let currentElt = selected
+      let currentElt = /** @type {any} */ (selected)
       while (currentElt.parentNode) {
         if (currentElt.parentNode && currentElt.parentNode.tagName === 'g' && currentElt.parentNode.transform) {
           if (currentElt.parentNode.transform.baseVal.numberOfItems) {
@@ -171,7 +172,7 @@ export const init = (canvas) => {
       if (tagName === 'g' && !dataStorage.has(selected, 'gsvg')) {
       // The bbox for a group does not include stroke vals, so we
       // get the bbox based on its children.
-        const strokedBbox = getStrokedBBox([selected.childNodes])
+        const strokedBbox = /** @type {any} */ (getStrokedBBox)([selected.childNodes])
         if (strokedBbox) {
           bbox = strokedBbox
         }
@@ -652,15 +653,15 @@ export const init = (canvas) => {
  */
 
   /**
- * @typedef {GenericArray} module:select.Dimensions
+ * @typedef {GenericArray} Dimensions
  * @property {number} length 2
  * @property {number} 0 Width
  * @property {number} 1 Height
  */
   /**
- * @typedef {PlainObject} module:select.Config
+ * @typedef {PlainObject} Config
  * @property {string} imgPath
- * @property {module:select.Dimensions} dimensions
+ * @property {Dimensions} dimensions
  */
 
   // Per-instance selector manager + class, attached for consumers (svgcanvas.js

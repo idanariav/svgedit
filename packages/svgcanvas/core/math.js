@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Mathematical utilities.
  * @module math
@@ -28,7 +29,9 @@ const NEAR_ZERO = 1e-10
 // Create a throwaway SVG element for matrix operations
 const svg = document.createElementNS(NS.SVG, 'svg')
 
+/** @param {SVGMatrix} m */
 const createTransformFromMatrix = (m) => {
+  /** @param {SVGMatrix} matrix */
   const createFallback = (matrix) => {
     const fallback = svg.createSVGMatrix()
     Object.assign(fallback, {
@@ -119,8 +122,9 @@ export const matrixMultiply = (...args) => {
     return svg.createSVGMatrix()
   }
 
+  /** @param {SVGMatrix} matrix */
   const normalizeNearZero = (matrix) => {
-    const props = ['a', 'b', 'c', 'd', 'e', 'f']
+    const props = /** @type {const} */ (['a', 'b', 'c', 'd', 'e', 'f'])
     for (const prop of props) {
       if (Math.abs(matrix[prop]) < NEAR_ZERO) {
         matrix[prop] = 0
@@ -236,7 +240,7 @@ export const transformBox = (l, t, w, h, m) => {
 /**
  * Consolidates a transform list into a single matrix transform without modifying the original list.
  * @function transformListToTransform
- * @param {SVGTransformList} tlist - The transform list
+ * @param {SVGTransformList|undefined|null} tlist - The transform list
  * @param {number} [min=0] - Optional start index
  * @param {number|null} [max] - Optional end index, defaults to tlist length-1
  * @returns {SVGTransform} A single transform from the combined matrices

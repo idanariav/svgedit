@@ -217,17 +217,15 @@ extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
 `svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there; tighten per file). 87 of the 107 `core/`+`common/` modules now carry it (2026-10-12: 37 added in one pass; JSDoc
+there; tighten per file). 105 of the 107 `core/`+`common/` modules now carry it (2026-10-12: 70 added in two passes; JSDoc
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
-checked by *both* configs, so a file the strict config reaches through an import must be strict-clean: that is why
-`common/util.js`, `core/dom-utils.js`, `core/math.js` and `core/path-utils.js` are clean under the lax config but still
-carry no pragma. The 20 left without it: `bbox-utils` (~34 errors), `clip-mask` (~19), `coords` (~14), `dom-utils`, `draw` (~24),
-`group-ops` (~26), `history` (~25), `math`, `path-actions` (~30), `path-method` (~52), `path-utils`, `path` (~19), `sanitize` (~30), `select` (~10),
-`selected-elem` (~22), `selection` (~19), `svg-exec` (~14), `text-actions` (~19), `units` (~18), `common/util.js`. The errors are
-mostly `ChildNode`/`ParentNode`/`Element` vs `SVGGraphicsElement` casts, `string | number` attribute values, and stale JSDoc
-(`@param` names that are not parameters, `module:…` typedef names); add the pragma one at a time as a phase touches the file,
-declaring what it attaches in `AttachedMembers` as you go.
+checked by *both* configs, so a file the strict config reaches through an import must be strict-clean; all 105 are (that
+includes `history`, `draw`, `units`, `math`, `dom-utils`, `common/util.js`, `bbox-utils`). The two left without it are
+`core/path-actions.js` (~30 errors: `this` inside callbacks needs `@this`, the legacy `pathSegList` API, `GenericArray<…>`,
+`@private` on `#private` members) and `core/path-method.js` (~52: the same legacy path-segment API and its `Segment` types).
+Add the pragma when a phase touches them. Typing new code: a stale `@param` name that is not a parameter, or a `module:…`
+typedef name, is an error under the checker — write the real name.
 
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
@@ -251,7 +249,7 @@ type safety in the canvas engine, not a rewrite.
 passes (that is step 2 below, done for these four). Editor-layer Tier 0
 modules (`commands.js`, `coreCommands.js`, `automation.js`,
 `components/commandBinding.js`) are `// @ts-check` too, checked through
-`src/editor/tsconfig.hostapi.json`. Everything else: 87 of the 107 `core/` +
+`src/editor/tsconfig.hostapi.json`. Everything else: 105 of the 107 `core/` +
 `common/` modules carry `// @ts-check` (JSDoc types), checked with
 `noImplicitAny` and `strictNullChecks` **off**
 (`packages/svgcanvas/tsconfig.json`). Decision so far: strict JSDoc, no `.ts`
@@ -266,7 +264,7 @@ files are terser and let `tsc --emitDeclarationOnly` generate the d.ts.
 Either way, do steps 1–2 first, since they pay off immediately and are
 needed by both.
 
-1. **Finish `@ts-check`** on the remaining 20 modules (entry above).
+1. **Finish `@ts-check`** on the last 2 modules (entry above).
 2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
    (globally they give ~150 errors in `svgcanvas.js` alone, so use a
    per-file opt-in, e.g. a second tsconfig listing the files already clean).
@@ -301,7 +299,7 @@ plugin only sees built JS, so it is unaffected as long as those hold.
 full JSDoc types (or as `.ts` if the decision above has been made), so they
 don't add to this backlog.
 
-Effort: large in total (the 20 modules still unchecked, then strictness) but small per module; risky only in the
+Effort: small for the last 2 `@ts-check` modules, then large for strictness and the `.ts` question, but small per module; risky only in the
 toolchain step.
 
 ## Live effects (`se:fx`): follow-ups from T1.0 / T1.1

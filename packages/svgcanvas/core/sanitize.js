@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for SVG sanitization.
  * @module sanitize
@@ -17,10 +18,11 @@ const FONT_ATTRIBUTES = ['font-family', 'font-size', 'font-stretch', 'font-style
 /**
  * This defines which elements and attributes that we support (or at least
  * don't remove).
- * @type {PlainObject}
+ * @type {string[]}
  */
 /* eslint-disable max-len */
 const svgGenericWhiteList = ['class', 'id', 'display', 'transform', 'style', 'paint-order']
+/** @type {Record<string, string[]>} */
 const svgWhiteList_ = {
   // SVG Elements
   a: ['clip-path', 'clip-rule', 'fill', 'fill-opacity', 'fill-rule', 'filter', 'href', 'mask', 'opacity', 'stroke', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'systemLanguage', 'xlink:href', 'xlink:title'],
@@ -138,8 +140,10 @@ for (const [element, attrs] of Object.entries(svgWhiteList_)) {
 }
 
 // Produce a Namespace-aware version of svgWhitelist
+/** @type {Record<string, Record<string, string|null>>} */
 const svgWhiteListNS_ = {}
 for (const [elt, atts] of Object.entries(svgWhiteList_)) {
+  /** @type {Record<string, string|null>} */
   const attNS = {}
   for (const att of atts) {
     if (att.includes(':')) {
@@ -168,7 +172,7 @@ export const init = canvas => {
   * Sanitizes the input node and its children.
   * It only keeps what is allowed from our whitelist defined above.
   * @function module:sanitize.EditorContext#sanitizeSvg
-  * @param {Text|Element} node - The DOM element to be checked (we'll also check its children) or text node to be cleaned up
+  * @param {Element} node - The DOM element to be checked (we'll also check its children) or text node to be cleaned up
   * @returns {void}
   */
   const sanitizeSvg = (node) => {
@@ -310,7 +314,7 @@ export const init = canvas => {
 
       // recurse to children
       i = node.childNodes.length
-      while (i--) { sanitizeSvg(node.childNodes.item(i)) }
+      while (i--) { sanitizeSvg(/** @type {Element} */ (node.childNodes.item(i))) }
     // else (element not supported), remove it
     } else {
       // remove all children from this node and insert them before this node
@@ -326,7 +330,7 @@ export const init = canvas => {
 
       // call sanitizeSvg on each of those children
       let i = children.length
-      while (i--) { sanitizeSvg(children[i]) }
+      while (i--) { sanitizeSvg(/** @type {Element} */ (children[i])) }
     }
   }
 

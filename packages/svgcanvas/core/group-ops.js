@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Grouping operations (group, ungroup, convert-to-group, push group properties
  * down to children), split out of selected-elem.js. Created per SvgCanvas
@@ -112,7 +113,7 @@ export const init = canvas => {
  * @function module:selected-elem.SvgCanvas#pushGroupProperty
  * @param {SVGAElement|SVGGElement} g
  * @param {boolean} undoable
- * @returns {BatchCommand|void}
+ * @returns {import('./history.js').BatchCommand|void}
  */
   const pushGroupProperty = (g, undoable) => {
     const children = g.childNodes
@@ -133,17 +134,19 @@ export const init = canvas => {
 
     const gangle = getRotationAngle(g)
 
+    /** @type {{filter: string|null, opacity: any}} */
     const gattrs = {
       filter: g.getAttribute('filter'),
       opacity: g.getAttribute('opacity')
     }
     let gfilter
     let gblur
+    /** @type {Record<string, any>} */
     let changes
     const drawing = svgCanvas.getDrawing()
 
     for (let i = 0; i < len; i++) {
-      const elem = children[i]
+      const elem = /** @type {Element} */ (children[i])
 
       if (elem.nodeType !== 1) {
         continue
@@ -152,7 +155,7 @@ export const init = canvas => {
       if (gattrs.opacity !== null && gattrs.opacity !== 1) {
       // const c_opac = elem.getAttribute('opacity') || 1;
         const newOpac =
-        Math.round((elem.getAttribute('opacity') || 1) * gattrs.opacity * 100) /
+        Math.round(Number(elem.getAttribute('opacity') || 1) * gattrs.opacity * 100) /
         100
         svgCanvas.changeSelectedAttribute('opacity', newOpac, [elem])
       }
@@ -377,14 +380,14 @@ export const init = canvas => {
     const dataStorage = svgCanvas.getDataStorage()
     if (dataStorage.has($elem, 'gsvg')) {
     // Use the gsvg as the new group
-      const svg = elem.firstChild
+      const svg = /** @type {Element} */ (elem.firstChild)
       const pt = {
         x: Number(svg.getAttribute('x')),
         y: Number(svg.getAttribute('y'))
       }
 
       // $(elem.firstChild.firstChild).unwrap();
-      const firstChild = elem.firstChild.firstChild
+      const firstChild = /** @type {any} */ (elem.firstChild.firstChild)
       if (firstChild) {
         const container = svg
         // Snapshot before/after as detached clones (rather than innerHTML
@@ -399,7 +402,7 @@ export const init = canvas => {
           nodes.forEach(n => container.appendChild(n.cloneNode(true)))
         }
         const unwrapCmd = new Command()
-        unwrapCmd.text = 'Unwrap SVG'
+        ;/** @type {any} */ (unwrapCmd).text = 'Unwrap SVG'
         unwrapCmd.elements = () => [elem]
         unwrapCmd.apply = handler => {
           Command.prototype.apply.call(unwrapCmd, handler, () => {
@@ -453,7 +456,7 @@ export const init = canvas => {
       // Not ideal, but works
       ts += ' translate(' + (pos.x || 0) + ',' + (pos.y || 0) + ')'
 
-      const useParent = $elem.parentNode
+      const useParent = /** @type {Element} */ ($elem.parentNode)
       const useNextSibling = $elem.nextSibling
 
       // Remove <use> element
@@ -495,7 +498,7 @@ export const init = canvas => {
         g.setAttribute('transform', ts)
       }
 
-      const parent = elem.parentNode
+      const parent = /** @type {Element} */ (elem.parentNode)
 
       svgCanvas.uniquifyElems(g)
 

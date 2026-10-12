@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-console */
 /**
  * For command history tracking and undo functionality.
@@ -35,7 +36,8 @@ function relocateRotationCenter (elem, changedAttrs) {
   const angle = getRotationAngle(elem)
   if (!angle) return
 
-  const tlist = getTransformList(elem)
+  const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+  const owner = /** @type {SVGSVGElement} */ (/** @type {SVGElement} */ (elem).ownerSVGElement)
   let n = tlist.numberOfItems
   while (n--) {
     const xform = tlist.getItem(n)
@@ -53,13 +55,13 @@ function relocateRotationCenter (elem, changedAttrs) {
       if (n < tlist.numberOfItems) {
         centerMatrix = transformListToTransform(tlist, n, tlist.numberOfItems - 1).matrix
       } else {
-        centerMatrix = elem.ownerSVGElement.createSVGMatrix() // identity
+        centerMatrix = owner.createSVGMatrix() // identity
       }
       const center = transformPoint(
         box.x + box.width / 2, box.y + box.height / 2, centerMatrix
       )
 
-      const newrot = elem.ownerSVGElement.createSVGTransform()
+      const newrot = owner.createSVGTransform()
       newrot.setRotate(angle, center.x, center.y)
       tlist.insertItemBefore(newrot, n)
       break
@@ -85,12 +87,12 @@ export class Command {
   * @returns {string}
   */
   getText () {
-    return this.text
+    return /** @type {any} */ (this).text
   }
 
   /**
    * @param {module:history.HistoryEventHandler} handler
-   * @param {callback} applyFunction
+   * @param {(handler?: any) => void} applyFunction
    * @returns {void}
   */
   apply (handler, applyFunction) {
@@ -101,7 +103,7 @@ export class Command {
 
   /**
    * @param {module:history.HistoryEventHandler} handler
-   * @param {callback} unapplyFunction
+   * @param {() => void} unapplyFunction
    * @returns {void}
   */
   unapply (handler, unapplyFunction) {
@@ -115,7 +117,7 @@ export class Command {
    * This function needs to be surcharged if multiple elements are returned.
   */
   elements () {
-    return [this.elem]
+    return [/** @type {any} */ (this).elem]
   }
 
   /**
@@ -187,7 +189,6 @@ export class Command {
 
 /**
  * History command for an element that had its DOM position changed.
- * @implements {module:history.HistoryCommand}
 */
 export class MoveElementCommand extends Command {
   /**
@@ -218,7 +219,7 @@ export class MoveElementCommand extends Command {
         this.newNextSibling && this.newNextSibling.parentNode === this.newParent
           ? this.newNextSibling
           : null
-      this.elem = this.newParent.insertBefore(this.elem, reference)
+      this.elem = /** @type {Element} */ (this.newParent).insertBefore(this.elem, reference)
     })
   }
 
@@ -241,7 +242,6 @@ export class MoveElementCommand extends Command {
 
 /**
 * History command for an element that was added to the DOM.
-* @implements {module:history.HistoryCommand}
 */
 export class InsertElementCommand extends Command {
   /**
@@ -268,7 +268,7 @@ export class InsertElementCommand extends Command {
         this.nextSibling && this.nextSibling.parentNode === this.parent
           ? this.nextSibling
           : null
-      this.elem = this.parent.insertBefore(this.elem, reference)
+      this.elem = /** @type {Element} */ (this.parent).insertBefore(this.elem, reference)
     })
   }
 
@@ -280,7 +280,7 @@ export class InsertElementCommand extends Command {
   */
   unapply (handler) {
     super.unapply(handler, () => {
-      this.parent = this.elem.parentNode
+      this.parent = /** @type {Element} */ (this.elem.parentNode)
       this.elem.remove()
     })
   }
@@ -288,7 +288,6 @@ export class InsertElementCommand extends Command {
 
 /**
 * History command for an element removed from the DOM.
-* @implements {module:history.HistoryCommand}
 */
 export class RemoveElementCommand extends Command {
   /**
@@ -313,7 +312,7 @@ export class RemoveElementCommand extends Command {
   */
   apply (handler) {
     super.apply(handler, () => {
-      this.parent = this.elem.parentNode
+      this.parent = /** @type {Element} */ (this.elem.parentNode)
       this.elem.remove()
     })
   }
@@ -336,28 +335,27 @@ export class RemoveElementCommand extends Command {
 }
 
 /**
-* @typedef {"#text"|"#href"|string} module:history.CommandAttributeName
+* @typedef {"#text"|"#href"|string} CommandAttributeName
 */
 /**
-* @typedef {PlainObject<module:history.CommandAttributeName, string>} module:history.CommandAttributes
+* @typedef {Record<string, string|null>} CommandAttributes
 */
 
 /**
 * History command to make a change to an element.
 * Usually an attribute change, but can also be textcontent.
-* @implements {module:history.HistoryCommand}
 */
 export class ChangeElementCommand extends Command {
   /**
   * @param {Element} elem - The DOM element that was changed
-  * @param {module:history.CommandAttributes} attrs - Attributes to be changed with the values they had *before* the change
+  * @param {CommandAttributes} attrs - Attributes to be changed with the values they had *before* the change
   * @param {string} [text] - An optional string visible to user related to this change
    */
   constructor (elem, attrs, text) {
     super()
     this.elem = elem
     this.text = text ? `Change ${elem.tagName} ${text}` : `Change ${elem.tagName}`
-    this.newValues = {}
+    this.newValues = /** @type {Record<string, any>} */ ({})
     this.oldValues = attrs
     for (const attr in attrs) {
       if (attr === '#text') {
@@ -382,7 +380,7 @@ export class ChangeElementCommand extends Command {
       Object.entries(this.newValues).forEach(([attr, value]) => {
         const isNullishOrEmpty = value === null || value === undefined || value === ''
         if (attr === '#text') {
-          setMultilineText(this.elem, value)
+          setMultilineText(this.elem, /** @type {string} */ (value))
         } else if (attr === '#href') {
           if (isNullishOrEmpty) {
             this.elem.removeAttribute('href')
@@ -419,7 +417,7 @@ export class ChangeElementCommand extends Command {
       Object.entries(this.oldValues).forEach(([attr, value]) => {
         const isNullishOrEmpty = value === null || value === undefined || value === ''
         if (attr === '#text') {
-          setMultilineText(this.elem, value)
+          setMultilineText(this.elem, /** @type {string} */ (value))
         } else if (attr === '#href') {
           if (isNullishOrEmpty) {
             this.elem.removeAttribute('href')
@@ -448,7 +446,6 @@ export class ChangeElementCommand extends Command {
 
 /**
 * History command that can contain/execute multiple other commands.
-* @implements {module:history.HistoryCommand}
 */
 export class BatchCommand extends Command {
   /**
@@ -457,6 +454,7 @@ export class BatchCommand extends Command {
   constructor (text) {
     super()
     this.text = text || 'Batch Command'
+    /** @type {any[]} */
     this.stack = []
   }
 
@@ -529,6 +527,7 @@ export class BatchCommand extends Command {
   * @returns {Element[]} All the elements we are changing
   */
   elements () {
+    /** @type {Element[]} */
     const elems = []
     let cmd = this.stack.length
     while (cmd--) {
@@ -583,6 +582,11 @@ export const isEphemeral = (node) => {
   return Boolean(el?.closest(`[${EPHEMERAL_ATTR}]`))
 }
 
+/**
+ * @param {Node[]} a
+ * @param {Node[]} b
+ * @returns {boolean}
+ */
 const sameNodes = (a, b) => a.length === b.length && a.every((n, i) => n === b[i])
 
 /**
@@ -600,7 +604,7 @@ const setChildLists = (changes, key) => {
   for (const change of changes) {
     const keep = new Set(change[key])
     for (const child of [...change.parent.childNodes]) {
-      if (!keep.has(child) && !isEphemeral(child)) child.parentNode.removeChild(child)
+      if (!keep.has(child) && !isEphemeral(child)) /** @type {Node} */ (child.parentNode).removeChild(child)
     }
   }
   for (const change of changes) {
@@ -617,7 +621,6 @@ const setChildLists = (changes, key) => {
  * before/after child lists. Produced by `transaction.js`, which reconstructs
  * the lists from MutationObserver records; hand-written code should keep
  * using Insert/Remove/MoveElementCommand.
- * @implements {module:history.HistoryCommand}
  */
 export class ChildListCommand extends Command {
   /**
@@ -658,7 +661,7 @@ export class ChildListCommand extends Command {
    * @returns {Element[]}
    */
   attachedElements (isApply) {
-    return (isApply ? this.entering : this.leaving).filter((n) => n.nodeType === 1)
+    return /** @type {Element[]} */ ((isApply ? this.entering : this.leaving).filter((n) => n.nodeType === 1))
   }
 
   /**
@@ -682,7 +685,6 @@ export class ChildListCommand extends Command {
 /**
  * History command for editing a text node's data in place (typing inside a
  * `<text>`/`<tspan>`/`<title>`). Produced by `transaction.js`.
- * @implements {module:history.HistoryCommand}
  */
 export class CharacterDataCommand extends Command {
   /**
@@ -747,12 +749,12 @@ export class UndoManager {
   constructor (historyEventHandler) {
     this.handler_ = historyEventHandler || null
     this.undoStackPointer = 0
-    this.undoStack = []
+    this.undoStack = /** @type {any[]} */ ([])
 
     // this is the stack that stores the original values, the elements and
     // the attribute name for begin/finish
     this.undoChangeStackPointer = -1
-    this.undoableChangeStack = []
+    this.undoableChangeStack = /** @type {any[]} */ ([])
   }
 
   /**
@@ -760,7 +762,7 @@ export class UndoManager {
   * @returns {void}
   */
   resetUndoStack () {
-    this.undoStack = []
+    this.undoStack = /** @type {any[]} */ ([])
     this.undoStackPointer = 0
   }
 
@@ -876,6 +878,7 @@ export class UndoManager {
     while (i--) {
       const elem = changeset.elements[i]
       if (!elem) { continue }
+      /** @type {Record<string, any>} */
       const changes = {}
       changes[attrName] = changeset.oldValues[i]
       if (changes[attrName] !== elem.getAttribute(attrName)) {

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for drawing.
  * @module draw
@@ -230,8 +231,8 @@ export class Drawing {
    */
   setNonce (n) {
     this.svgElem_.setAttributeNS(NS.XMLNS, 'xmlns:se', NS.SE)
-    this.svgElem_.setAttributeNS(NS.SE, 'se:nonce', n)
-    this.nonce_ = n
+    this.svgElem_.setAttributeNS(NS.SE, 'se:nonce', String(n))
+    this.nonce_ = String(n)
   }
 
   /**
@@ -436,7 +437,7 @@ export class Drawing {
   /**
    * Set the current layer's position.
    * @param {number} newpos - The zero-based index of the new position of the layer. Range should be 0 to layers-1
-   * @returns {{title: SVGGElement, previousName: string}|null} If the name was changed, returns {title:SVGGElement, previousName:string}; otherwise null.
+   * @returns {{currentGroup: SVGGElement, oldNextSibling: ChildNode|null}|null} The moved layer's group and the sibling it had before; null when nothing moved.
    */
   setCurrentLayerPosition (newpos) {
     const layerCount = this.getNumLayers()
@@ -490,7 +491,7 @@ export class Drawing {
     hrService.removeElement(currentGroup, layerNextSibling, this.svgElem_)
 
     while (currentGroup.firstChild) {
-      const child = currentGroup.firstChild
+      const child = /** @type {Element} */ (currentGroup.firstChild)
       if (child.localName === 'title') {
         hrService.removeElement(child, child.nextSibling, currentGroup)
         child.remove()
@@ -593,11 +594,7 @@ export class Drawing {
   }
 
   /**
-   * Sets the current layer. If the name is not a valid layer name, then this
-   * function returns `false`. Otherwise it returns `true`. This is not an
-   * undo-able action.
-   * @param {string} name - The name of the layer you want to switch to.
-   * @returns {boolean} `true` if the current layer was switched, otherwise `false`
+   * @returns {number} Position of the current layer among all layers (-1 when there is none)
    */
   indexCurrentLayer () {
     return this.all_layers.indexOf(this.current_layer)
@@ -633,7 +630,7 @@ export class Drawing {
     let layer = null
     let childgroups = false
     for (let i = 0; i < numchildren; ++i) {
-      const child = this.svgElem_.childNodes.item(i)
+      const child = /** @type {Element} */ (this.svgElem_.childNodes.item(i))
       // for each g, find its layer name
       if (child?.nodeType === 1) {
         if (child.tagName === 'g') {
@@ -641,7 +638,7 @@ export class Drawing {
           if (isLayerElement(child)) {
             const name = findLayerNameInGroup(child)
             layernames.push(name)
-            layer = new Layer(name, child)
+            layer = new Layer(name, /** @type {SVGGElement} */ (/** @type {unknown} */ (child)))
             this.all_layers.push(layer)
             this.layer_map[name] = layer
           } else {
@@ -729,7 +726,7 @@ export class Drawing {
     const group = layer.getGroup()
 
     // Clone children
-    const children = [...currentGroup.childNodes]
+    const children = /** @type {Element[]} */ ([...currentGroup.childNodes])
     children.forEach(child => {
       if (child.nodeType !== 1) {
         group.append(child.cloneNode(true))
@@ -978,7 +975,7 @@ export class Drawing {
  * The currentDrawing will have its nonce set if it doesn't already.
  * @function module:draw.randomizeIds
  * @param {boolean} enableRandomization - flag indicating if documents should have randomized ids
- * @param {draw.Drawing} currentDrawing
+ * @param {Drawing} currentDrawing
  * @returns {number} The resulting `RandomizeModes` value; the canvas stores it and hands it to every
  *   `Drawing` it creates afterwards (the mode is per canvas, not shared).
  */
@@ -1055,7 +1052,7 @@ export const randomizeIds = (enableRandomization, currentDrawing) => {
  */
 /**
  * @function module:draw.DrawCanvasInit#addCommandToHistory
- * @param {Command} cmd
+ * @param {import('./history.js').Command} cmd
  * @returns {void}
  */
 /**

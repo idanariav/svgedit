@@ -193,7 +193,7 @@ export interface AttachedMembers {
   // Element creation / lookup
   addSVGElementsFromJson(data: SVGElementJSON): Element
   getStrokedBBox(elems?: Element[]): BBox | null
-  insertChildAtIndex(parent: Element, child: Node, index?: number): void
+  insertChildAtIndex(parent: Element, child: string, index?: number): void
   findDefs(): Element
   setColor(type: 'fill' | 'stroke' | string, val: string, preventUndo?: boolean): void
   setStrokeWidth(val: number): void

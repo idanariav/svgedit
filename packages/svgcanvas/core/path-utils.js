@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path `d`-attribute construction and element-to-path conversion utilities.
  * @module path-utils
@@ -23,7 +24,7 @@ import { mergeDeep } from '../common/util.js'
  * Create a path 'd' attribute from path segments.
  * Each segment is an array of the form: `[singleChar, [x,y, x,y, ...]]`
  * @function module:path-utils.getPathDFromSegments
- * @param {module:path-utils.PathSegmentArray[]} pathSegments - An array of path segments to be converted
+ * @param {Array<[string, number[]]>} pathSegments - An array of path segments to be converted
  * @returns {string} The converted path d attribute.
  */
 export const getPathDFromSegments = (pathSegments) => {
@@ -40,7 +41,7 @@ export const getPathDFromSegments = (pathSegments) => {
  * Make a path 'd' attribute from a simple SVG element shape.
  * @function module:path-utils.getPathDFromElement
  * @param {Element} elem - The element to be converted
- * @returns {string|undefined} The path d attribute or `undefined` if the element type is unknown.
+ * @returns {string|null|undefined} The path d attribute or `undefined` if the element type is unknown.
  */
 export const getPathDFromElement = (elem) => {
   // Possibly the cubed root of 6, but 1.81 works best
@@ -183,7 +184,7 @@ export const convertToPath = (elem, attrs, svgCanvas) => {
   if (elem.nextSibling) {
     elem.before(path)
   } else {
-    parentNode.append(path)
+    /** @type {ParentNode} */ (parentNode).append(path)
   }
 
   const d = getPathDFromElement(elem)

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for selection.
  * @module selection
@@ -29,7 +30,7 @@ const { BatchCommand } = hstry
 
 /**
  * @function module:selection.init
- * @param {module:selection.selectionContext} selectionContext
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
@@ -185,7 +186,7 @@ export const init = (canvas) => {
     if (!node) {
       return null
     }
-    let mouseTarget = node
+    let mouseTarget = /** @type {any} */ (node)
 
     // if it was a <use>, Opera and WebKit return the SVGElementInstance
     if (mouseTarget.correspondingUseElement) {
@@ -251,16 +252,16 @@ export const init = (canvas) => {
     return mouseTarget
   }
   /**
- * @typedef {module:svgcanvas.ExtensionMouseDownStatus|module:svgcanvas.ExtensionMouseUpStatus|module:svgcanvas.ExtensionIDsUpdatedStatus|module:locale.ExtensionLocaleData[]|void} module:svgcanvas.ExtensionStatus
+ * @typedef {any} ExtensionStatus
  * @tutorial ExtensionDocs
  */
   /**
- * @callback module:svgcanvas.ExtensionVarBuilder
+ * @callback ExtensionVarBuilder
  * @param {string} name The name of the extension
  * @returns {module:svgcanvas.SvgCanvas#event:ext_addLangData}
  */
   /**
- * @callback module:svgcanvas.ExtensionNameFilter
+ * @callback ExtensionNameFilter
  * @param {string} name
  * @returns {boolean}
  */
@@ -269,10 +270,10 @@ export const init = (canvas) => {
  * @todo Consider: Should this return an array by default, so extension results aren't overwritten?
  * @todo Would be easier to document if passing in object with key of action and vars as value; could then define an interface which tied both together
  * @function module:svgcanvas.SvgCanvas#runExtensions
- * @param {keyof module:extension-hooks.ExtensionHookPayloads} action - A registered hook name (see core/extension-hooks.js)
+ * @param {keyof import('./extension-hooks.js').ExtensionHookPayloads} action - A registered hook name (see core/extension-hooks.js)
  * @param {*} [vars] - The hook's payload, typed by `ExtensionHookPayloads` (or a function of the extension name returning it)
  * @param {boolean} [returnArray]
- * @returns {GenericArray<module:svgcanvas.ExtensionStatus>|module:svgcanvas.ExtensionStatus|false} See {@tutorial ExtensionDocs} on the ExtensionStatus.
+ * @returns {ExtensionStatus[]|ExtensionStatus|false} See {@tutorial ExtensionDocs} on the ExtensionStatus.
  */
   /* eslint-enable max-len */
   const runExtensionsMethod = (
@@ -283,6 +284,7 @@ export const init = (canvas) => {
     if (!isExtensionHook(action)) {
       warn(`runExtensions: unknown hook "${action}"; add it to extension-hooks.js`, undefined, 'extensions')
     }
+    /** @type {any} */
     let result = returnArray ? [] : false
     for (const [name, ext] of Object.entries(svgCanvas.getExtensions())) {
       if (typeof vars === 'function') {
@@ -337,7 +339,7 @@ export const init = (canvas) => {
       return transformBox(bb.x, bb.y, bb.width, bb.height, toContent).aabox
     }
     Array.from(elements).forEach((elem) => {
-      if (elem.getBBox && !isObjectLocked(elem) && !isObjectHidden(elem)) {
+      if (/** @type {SVGGraphicsElement} */ (elem).getBBox && !isObjectLocked(elem) && !isObjectHidden(elem)) {
         contentElems.push({ elem, bbox: mapBox(svgCanvas.getStrokedBBoxDefaultVisible([elem])) })
       }
     })
@@ -471,7 +473,7 @@ export const init = (canvas) => {
   const setRotationAngle = (val, preventUndo) => {
     const selectedElements = svgCanvas.getSelectedElements()
     // ensure val is the proper type
-    val = Number.parseFloat(val)
+    val = Number.parseFloat(String(val))
     const elem = selectedElements[0]
     const oldTransform = elem.getAttribute('transform')
     const bbox = getBBox(elem)

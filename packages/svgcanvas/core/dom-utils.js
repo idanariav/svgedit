@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * DOM/element manipulation, lookup, and misc canvas-state utilities.
  * @module dom-utils
@@ -115,7 +116,7 @@ export const init = canvas => {
    * Get the reference element associated with the given attribute value.
    * @function module:dom-utils.EditorContext#getRefElem
    * @param {string} attrVal - The attribute value as a string
-   * @returns {Element} Reference element
+   * @returns {Element|null} Reference element
    */
   const getRefElem = attrVal => {
     if (!attrVal) return null
@@ -136,8 +137,11 @@ export const init = canvas => {
    */
   const getReferencedDefElements = (elems) => {
     const seen = new Set()
+    /** @type {Element[]} */
     const ordered = []
+    /** @param {any} el */
     const idsOf = (el) => {
+      /** @type {string[]} */
       const ids = []
       REF_ATTRS.forEach((name) => {
         const url = getUrlFromAttr(el.getAttribute?.(name))
@@ -147,6 +151,7 @@ export const init = canvas => {
       if (href?.startsWith('#')) ids.push(href.slice(1))
       return ids
     }
+    /** @param {any} el */
     const visit = (el) => {
       idsOf(el).forEach((id) => {
         const ref = getElement(id)
@@ -236,7 +241,7 @@ export const init = canvas => {
   // getRotationAngle stays a bare, pure (elem-required) export below — every
   // call site already passes an elem — but the public per-instance API keeps
   // the "default to current selection" convenience, correctly scoped now.
-  canvas.getRotationAngle = (elem, toRad) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
+  canvas.getRotationAngle = /** @param {Element} [elem] @param {boolean} [toRad] */ (elem, toRad) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
 }
 
 // Row storage and area-text layout live in text-rows.js; re-exported so existing imports keep working.
@@ -315,7 +320,7 @@ export const getUrlFromAttr = (attrVal) => {
 /**
  * @function module:dom-utils.getHref
  * @param {Element} elem
- * @returns {string} The given element's `href` value
+ * @returns {string|null} The given element's `href` value
  */
 export let getHref = (elem) =>
   elem.getAttribute('href') ?? elem.getAttributeNS(NS.XLINK, 'href')
@@ -335,7 +340,7 @@ export let setHref = (elem, val) => {
  * Get the rotation angle of the given transform list.
  * @function module:dom-utils.getRotationAngleFromTransformList
  * @param {SVGTransformList} tlist - List of transforms
- * @param {boolean} toRad - When true returns the value in radians rather than degrees
+ * @param {boolean} [toRad] - When true returns the value in radians rather than degrees
  * @returns {number} The angle in degrees or radians
  */
 export const getRotationAngleFromTransformList = (tlist, toRad) => {
@@ -363,7 +368,7 @@ export const getRotationAngleFromTransformList = (tlist, toRad) => {
  * @returns {number} The angle in degrees or radians
  */
 export let getRotationAngle = (elem, toRad) => {
-  const tlist = getTransformList(elem)
+  const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
   return getRotationAngleFromTransformList(tlist, toRad)
 }
 
@@ -390,6 +395,7 @@ const REF_ATTRS = [
 export const remapElementIdsAndRefs = (rootEls, getNewId) => {
   /** @type {Record<string, string>} */
   const idMap = {}
+  /** @type {Element[]} */
   const allEls = []
   rootEls.forEach((root) => {
     if (!root) return
@@ -408,7 +414,7 @@ export const remapElementIdsAndRefs = (rootEls, getNewId) => {
   // Second pass: rewrite references to the renamed ids.
   allEls.forEach((el) => {
     REF_ATTRS.forEach((name) => {
-      const val = el.getAttribute?.(name)
+      const val = /** @type {string} */ (el.getAttribute?.(name))
       const url = getUrlFromAttr(val)
       if (!url) return
       const refId = url[0] === '#' ? url.slice(1) : url
@@ -488,6 +494,7 @@ export const assignAttributes = (elem, attrs, suspendLength, unitCheck) => {
  * @returns {void}
  */
 export const cleanupElement = element => {
+  /** @type {Record<string, any>} */
   const defaults = {
     'fill-opacity': 1,
     'stop-opacity': 1,
@@ -522,7 +529,7 @@ export const cleanupElement = element => {
  * @returns {void}
  */
 export const preventClickDefault = img => {
-  $click(img, e => {
+  $click(img, /** @param {Event} e */ e => {
     e.preventDefault()
   })
 }
@@ -560,14 +567,24 @@ export const mock = ({
   getRotationAngle = getRotationAngleUser
 }
 
+/**
+ * @param {string} str
+ * @returns {ChildNode|null}
+ */
 export const stringToHTML = str => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(str, 'text/html')
   return doc.body.firstChild
 }
 
+/**
+ * @param {Element} parent
+ * @param {string} child - HTML string
+ * @param {number} [index]
+ * @returns {void}
+ */
 export const insertChildAtIndex = (parent, child, index = 0) => {
-  const doc = stringToHTML(child)
+  const doc = /** @type {Node} */ (stringToHTML(child))
   if (index >= parent.children.length) {
     parent.appendChild(doc)
   } else {
@@ -576,8 +593,11 @@ export const insertChildAtIndex = (parent, child, index = 0) => {
 }
 
 // shortcuts to common DOM functions
+/** @param {string} id */
 export const $id = id => document.getElementById(id)
+/** @param {string} sel */
 export const $qq = sel => document.querySelector(sel)
+/** @param {string} sel */
 export const $qa = sel => [...document.querySelectorAll(sel)]
 // Scoped variants: resolve within a given root element instead of the whole
 // document. svgedit's chrome uses fixed element IDs (svgcanvas, workarea, …),
@@ -585,9 +605,17 @@ export const $qa = sel => [...document.querySelectorAll(sel)]
 // getElementById returns the first instance's element. Binding $id/$qq/$qa to
 // the owning editor's container lets multiple editors coexist (see svgcanvas.js
 // and the editor's per-instance $id).
-export const scopedId = root => id => root.querySelector(`[id="${CSS.escape(id)}"]`)
-export const scopedQq = root => sel => root.querySelector(sel)
-export const scopedQa = root => sel => [...root.querySelectorAll(sel)]
+/** @param {ParentNode} root */
+export const scopedId = root => /** @param {string} id */ id => root.querySelector(`[id="${CSS.escape(id)}"]`)
+/** @param {ParentNode} root */
+export const scopedQq = root => /** @param {string} sel */ sel => root.querySelector(sel)
+/** @param {ParentNode} root */
+export const scopedQa = root => /** @param {string} sel */ sel => [...root.querySelectorAll(sel)]
+/**
+ * @param {EventTarget} element
+ * @param {EventListener} handler
+ * @returns {void}
+ */
 export const $click = (element, handler) => {
   element.addEventListener('click', handler)
   element.addEventListener('touchend', handler)

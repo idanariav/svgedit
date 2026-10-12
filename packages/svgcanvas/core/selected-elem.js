@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for SVG selected element operation.
  * @module selected-elem
@@ -22,7 +23,7 @@ const {
 
 /**
  * @function module:selected-elem.init
- * @param {module:selected-elem.elementContext} elementContext
+ * @param {any} canvas
  * @returns {void}
  */
 export const init = canvas => {
@@ -93,7 +94,7 @@ export const init = canvas => {
         // event handler.
         if (oldNextSibling !== t.nextSibling) {
           batchCmd.addSubCommand(
-            new MoveElementCommand(t, oldNextSibling, oldParent, 'top')
+            new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), 'top')
           )
           changedEls.push(t)
         }
@@ -146,7 +147,7 @@ export const init = canvas => {
         // event handler.
         if (oldNextSibling !== t.nextSibling) {
           batchCmd.addSubCommand(
-            new MoveElementCommand(t, oldNextSibling, oldParent, 'bottom')
+            new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), 'bottom')
           )
           changedEls.push(t)
         }
@@ -163,10 +164,11 @@ export const init = canvas => {
  * on the visibly intersecting elements.
  * @param {Element} selected
  * @param {"Up"|"Down"} dir - String that's either 'Up' or 'Down'
- * @returns {MoveElementCommand|void}
+ * @returns {import('./history.js').MoveElementCommand|void}
  */
   const _moveUpDownOne = (selected, dir) => {
     svgCanvas.setCurBBoxes([])
+    /** @type {Element|undefined} */
     let closest
     let foundCur
     // jQuery sorts this list
@@ -204,7 +206,7 @@ export const init = canvas => {
     // If the element actually moved position, return the command so the caller
     // can add it to history and report it as changed.
     if (oldNextSibling !== t.nextSibling) {
-      return new MoveElementCommand(t, oldNextSibling, oldParent, `Move ${dir}`)
+      return new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), `Move ${dir}`)
     }
     return undefined
   }
@@ -284,11 +286,11 @@ export const init = canvas => {
   /**
  * Moves selected elements on the X/Y axis.
  * @function module:selected-elem.SvgCanvas#moveSelectedElements
- * @param {number} dx - number with the distance to move on the x-axis
- * @param {number} dy - number with the distance to move on the y-axis
- * @param {boolean} undoable - Boolean indicating whether or not the action should be undoable
+ * @param {number|number[]} dx - number with the distance to move on the x-axis (or one distance per selected element)
+ * @param {number|number[]} dy - number with the distance to move on the y-axis (or one distance per selected element)
+ * @param {boolean} [undoable] - Boolean indicating whether or not the action should be undoable
  * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {BatchCommand|void} Batch command for the move
+ * @returns {import('./history.js').BatchCommand|void} Batch command for the move
  */
 
   const moveSelectedElements = (dx, dy, undoable = true) => {
@@ -297,8 +299,8 @@ export const init = canvas => {
     // if undoable is not sent, default to true
     // if single values, scale them to the zoom
     if (!Array.isArray(dx)) {
-      dx /= zoom
-      dy /= zoom
+      dx = /** @type {number} */ (dx) / zoom
+      dy = /** @type {number} */ (dy) / zoom
       // Remember the delta (content units) so transformAgain can repeat it.
       if (undoable && (dx || dy)) svgCanvas.lastMoveDelta = { dx, dy }
     }
@@ -665,7 +667,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {number[]} x and y distances array
+ * @returns {number[][]} x and y distances array, one distance per selected element each
  * @private
  */
   const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -726,7 +728,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {number[]} x and y distances array
+ * @returns {number[][]} x and y distances array, one distance per selected element each
  * @private
  */
   const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -787,7 +789,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {number[]} x and y distances array
+ * @returns {number[][]} x and y distances array, one distance per selected element each
  * @private
  */
   const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {

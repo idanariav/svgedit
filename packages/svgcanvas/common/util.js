@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @param {any} obj
  * @returns {any}
@@ -18,9 +19,20 @@ export const findPos = (obj) => {
   return { left, top }
 }
 
+/** @typedef {Record<string, (el: any, sel: string) => boolean>} Matchers */
+
+/**
+ * @param {any} item
+ * @returns {boolean}
+ */
 export const isObject = (item) =>
   item && typeof item === 'object' && !Array.isArray(item)
 
+/**
+ * @param {any} target
+ * @param {any} source
+ * @returns {any}
+ */
 export const mergeDeep = (target, source) => {
   const output = { ...target }
 
@@ -57,6 +69,7 @@ export const getClosest = (elem, selector) => {
   }
 
   // Fallback implementation for edge cases
+  /** @type {Matchers} */
   const selectorMatcher = {
     '.': (el, sel) => el.classList?.contains(sel.slice(1)),
     '#': (el, sel) => el.id === sel.slice(1),
@@ -81,10 +94,11 @@ export const getClosest = (elem, selector) => {
  * Get all DOM elements up the tree that match a selector
  * @param  {Node} elem The base element
  * @param  {String} selector The class, id, data attribute, or tag to look for
- * @return {Array|null} Array of matching elements or null if no match
+ * @return {any[]|null} Array of matching elements or null if no match
  */
 export const getParents = (elem, selector) => {
   const parents = []
+  /** @type {Matchers} */
   const matchers = {
     '.': (el, sel) => el.classList?.contains(sel.slice(1)),
     '#': (el, sel) => el.id === sel.slice(1),
@@ -95,8 +109,8 @@ export const getParents = (elem, selector) => {
   const firstChar = selector?.charAt(0)
   const matcher = selector ? (matchers[firstChar] || matchers.tag) : null
 
-  for (let current = elem; current && current !== document; current = current.parentNode) {
-    if (!selector || matcher(current, selector)) {
+  for (let current = /** @type {any} */ (elem); current && current !== document; current = current.parentNode) {
+    if (!selector || matcher?.(current, selector)) {
       parents.push(current)
     }
   }
@@ -104,9 +118,16 @@ export const getParents = (elem, selector) => {
   return parents.length > 0 ? parents : null
 }
 
+/**
+ * @param {any} elem
+ * @param {any} parent
+ * @param {any} [selector]
+ * @returns {any[]|null}
+ */
 export const getParentsUntil = (elem, parent, selector) => {
   const parents = []
 
+  /** @type {Matchers} */
   const matchers = {
     '.': (el, sel) => el.classList?.contains(sel.slice(1)),
     '#': (el, sel) => el.id === sel.slice(1),
@@ -114,6 +135,7 @@ export const getParentsUntil = (elem, parent, selector) => {
     tag: (el, sel) => el.tagName?.toLowerCase() === sel
   }
 
+  /** @param {string} [selectorStr] */
   const getMatcherFn = (selectorStr) => {
     if (!selectorStr) return null
     const firstChar = selectorStr.charAt(0)
@@ -123,7 +145,7 @@ export const getParentsUntil = (elem, parent, selector) => {
   const parentMatcher = getMatcherFn(parent)
   const selectorMatcher = getMatcherFn(selector)
 
-  for (let current = elem; current && current !== document; current = current.parentNode) {
+  for (let current = /** @type {any} */ (elem); current && current !== document; current = current.parentNode) {
     // Check if we've reached the parent boundary
     if (parent && parentMatcher?.(current, parent)) {
       break

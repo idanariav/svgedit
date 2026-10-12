@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Clip & mask creation: confine the top selected object to the silhouette of the
  * object below it, and release an existing clip/mask.
@@ -26,9 +27,9 @@ import { getTransformList, transformListToTransform } from './math.js'
  * @returns {[Element, Element]} [bottomElem, topElem]
  */
 const sortByDomOrder = (elems) => {
-  return [...elems].sort((a, b) =>
+  return /** @type {[Element, Element]} */ ([...elems].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-  )
+  ))
 }
 
 /**
@@ -48,7 +49,7 @@ const refId = (val) => val.replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
  * Paint an element fully opaque white so it reads as a full-strength silhouette
  * inside a mask. Forced via inline style so it wins over the element's own paint
  * (attribute or style) and any host CSS.
- * @param {Element} el
+ * @param {SVGElement} el
  * @returns {void}
  */
 const whiten = (el) => {
@@ -91,7 +92,7 @@ const INVERSE_INTERIOR = '#666666'
  *   px > 0 : soft edge — solid white silhouette, blurred so it fades out at the rim.
  *   px < 0 : inverse rim — grey interior (soft) with a blurred white edge band (strong).
  *   px = 0 : plain hard-edged white silhouette.
- * @param {Element} child
+ * @param {SVGElement} child
  * @param {number} px
  * @returns {void}
  */
@@ -137,7 +138,7 @@ export const init = (canvas) => {
   /**
    * The silhouette children of the element's mask, or [] if it has no mask.
    * @param {Element} elem
-   * @returns {Element[]}
+   * @returns {SVGElement[]}
    */
   const maskChildrenOf = (elem) => {
     const ref = elem.getAttribute('mask')
@@ -186,7 +187,7 @@ export const init = (canvas) => {
     }
 
     // Clone the bottom shape as the silhouette; it stays visible on the canvas
-    const clone = bottomElem.cloneNode(true)
+    const clone = /** @type {SVGElement} */ (bottomElem.cloneNode(true))
     stripIds(clone)
     if (type === 'mask') {
       // A mask uses luminance: paint the silhouette white so the overlay shows at

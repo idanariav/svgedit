@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Bounding-box computation utilities.
  * @module bbox-utils
@@ -65,12 +66,13 @@ export const init = canvas => {
       }
     }
 
+    /** @type {Element[]} */
     const contentElems = []
     if (parentElement) {
       const children = parentElement.children
       // eslint-disable-next-line array-callback-return
       Array.from(children, elem => {
-        if (elem.getBBox) {
+        if (/** @type {SVGGraphicsElement} */ (elem).getBBox) {
           contentElems.push(elem)
         }
       })
@@ -92,7 +94,7 @@ export const init = canvas => {
       elems,
       svgCanvas.addSVGElementsFromJson,
       svgCanvas.pathActions,
-      getUnits(svgCanvas).shortFloat
+      /** @type {(n: number) => number} */ (getUnits(svgCanvas).shortFloat)
     )
   }
 
@@ -103,7 +105,7 @@ export const init = canvas => {
   // getBBox stays a bare, pure (elem-required) export below — every call site
   // already passes an elem — but the public per-instance API keeps the
   // "default to current selection" convenience, correctly scoped now.
-  canvas.getBBox = elem => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
+  canvas.getBBox = /** @param {Element} [elem] */ elem => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
 }
 
 /**
@@ -134,13 +136,21 @@ export const bboxToObj = ({ x, y, width, height }) => {
  * @returns {module:bbox-utils.BBoxObject} A BBox-like object
  */
 export const getPathBBox = (path) => {
-  const seglist = path.pathSegList
+  const seglist = /** @type {any} */ (path).pathSegList
   const totalSegments = seglist.numberOfItems
 
+  /** @type {number[][]} */
   const bounds = [[], []]
   const start = seglist.getItem(0)
   let P0 = [start.x, start.y]
 
+  /**
+   * @param {number} j
+   * @param {number[]} P1
+   * @param {number[]} P2
+   * @param {number[]} P3
+   * @returns {(t: number) => number}
+   */
   const getCalc = (j, P1, P2, P3) => (t) => {
     const oneMinusT = 1 - t
     return (
@@ -225,7 +235,7 @@ export const getPathBBox = (path) => {
  * @returns {module:bbox-utils.BBoxObject|null} Bounding box object
  */
 export const getBBox = (elem) => {
-  const selected = elem
+  const selected = /** @type {SVGTextContentElement} */ (elem)
   if (elem.nodeType !== 1) return null
 
   const elname = selected.nodeName
@@ -272,7 +282,7 @@ export const getBBox = (elem) => {
           }
         } else {
           // Check if element is child of a foreignObject
-          const fo = getClosest(selected.parentNode, 'foreignObject')
+          const fo = /** @type {any} */ (getClosest(/** @type {Element} */ (/** @type {Node} */ (/** @type {unknown} */ (selected)).parentNode), 'foreignObject'))
           if (fo.length && fo[0].getBBox) {
             ret = fo[0].getBBox()
           }
@@ -283,8 +293,9 @@ export const getBBox = (elem) => {
     // JSDOM lacks SVG geometry; fall back to simple attribute-based bbox when native values are empty.
     if (ret.width === 0 && ret.height === 0) {
       const tag = elname.toLowerCase()
+      /** @type {(name: string, fallback?: number) => number} */
       const num = (name, fallback = 0) =>
-        Number.parseFloat(selected.getAttribute(name) ?? fallback)
+        Number.parseFloat(String(selected.getAttribute(name) ?? fallback))
       const fromAttrs = (() => {
         switch (tag) {
           case 'path': {
@@ -360,7 +371,7 @@ export const getBBoxOfElementAsPath = (
   }
 
   const { parentNode } = elem
-  elem.nextSibling ? elem.before(path) : parentNode.append(path)
+  elem.nextSibling ? elem.before(path) : /** @type {ParentNode} */ (parentNode).append(path)
 
   const d = getPathDFromElement(elem)
   if (d) {
@@ -371,6 +382,7 @@ export const getBBoxOfElementAsPath = (
 
   // Get the correct BBox of the new path, then discard it
   pathActions.resetOrientation(path)
+  /** @type {any} */
   let bb = false
   try {
     bb = path.getBBox()
@@ -379,7 +391,7 @@ export const getBBoxOfElementAsPath = (
   }
   if (bb && bb.width === 0 && bb.height === 0) {
     const dAttr = path.getAttribute('d') || ''
-    const nums = (dAttr.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
+    const nums = /** @type {string[]} */ (dAttr.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
     if (nums.length >= 2) {
       const xs = nums.filter((_, i) => i % 2 === 0)
       const ys = nums.filter((_, i) => i % 2 === 1)
@@ -451,6 +463,7 @@ export const getBBoxWithTransform = (
     const cos = Math.cos(rad)
     const sin = Math.sin(rad)
     const tag = elem.tagName?.toLowerCase()
+    /** @type {any[]} */
     let points = []
     if (tag === 'path') {
       const d = elem.getAttribute('d') || ''
@@ -502,7 +515,7 @@ export const getBBoxWithTransform = (
     }
   }
 
-  const tlist = getTransformList(elem)
+  const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
   const angle = getRotationAngleFromTransformList(tlist)
   const hasMatrixXForm = hasMatrixTransform(tlist)
   const { matrix } = transformListToTransform(tlist)
@@ -514,6 +527,7 @@ export const getBBoxWithTransform = (
   // (this is what produced blank shape-library thumbnails for translate-only
   // imported content, e.g. pasted/vault SVGs that were never dragged).
   if (angle || hasMatrixXForm || !isIdentity(matrix)) {
+    /** @type {any} */
     let goodBb = false
     if (bBoxCanBeOptimizedOverNativeGetBBox(angle, hasMatrixXForm)) {
       // Get the BBox from the raw path for these elements
@@ -566,7 +580,7 @@ const getStrokeOffsetForBBox = elem => {
   // A missing stroke-width means the SVG initial value of 1 — cleanupElement
   // strips the attribute at that value — but only matters when there's an
   // actual visible stroke to draw with it.
-  const sw = (swAttr === null && stroke && stroke !== 'none') ? 1 : swAttr
+  const sw = (swAttr === null && stroke && stroke !== 'none') ? 1 : Number(swAttr)
   return !isNaN(sw) && stroke !== 'none' ? sw / 2 : 0
 }
 
@@ -592,6 +606,7 @@ export const getStrokedBBox = (elems, addSVGElementsFromJson, pathActions, short
     return false
   }
 
+  /** @type {any} */
   let fullBb
   elems.forEach(elem => {
     if (fullBb) {
