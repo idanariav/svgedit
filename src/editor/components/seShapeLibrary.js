@@ -91,7 +91,20 @@ export class SeShapeLibrary extends HTMLElement {
     }
   }
 
+  /** The action behind the Hotkey Manager / command registry (a real click lands on the inner tool button). */
+  click () {
+    this._togglePopover()
+  }
+
   connectedCallback () {
+    if (this.id) {
+      ownerEditor(this)?.hotkeys?.registerEl({
+        id: this.id,
+        el: this,
+        label: this.getAttribute('title'),
+        rawKey: this.getAttribute('shortcut')
+      })
+    }
     this._renderShell()
     this._syncTheme()
     this._observeTheme()

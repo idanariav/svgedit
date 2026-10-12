@@ -536,4 +536,17 @@ describe('se-shape-library', () => {
       expect(el._categories).toContain('user:my_stuff')
     })
   })
+
+  describe('hotkey registration', () => {
+    it('registers with the hotkey manager, and click() (what the registry runs) toggles the popover', () => {
+      let registered = null
+      installMockSvgEditor({ hotkeys: { registerEl: (opts) => { registered = opts } } })
+      const el = mountElement('se-shape-library', { id: 'tool_shapelib', title: 'shapelib', shortcut: 'alt+2' })
+      expect(registered).toMatchObject({ id: 'tool_shapelib', rawKey: 'alt+2' })
+      expect(registered.el).toBe(el)
+      const toggle = vi.spyOn(el, '_togglePopover').mockResolvedValue()
+      el.click()
+      expect(toggle).toHaveBeenCalledTimes(1)
+    })
+  })
 })

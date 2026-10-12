@@ -322,6 +322,15 @@ export class FlyingButton extends HTMLElement {
   }
 
   connectedCallback () {
+    // Like se-button: a hotkey-able action (clicking the flyout re-arms its last tool), so the Hotkey Manager can bind it.
+    if (this.id) {
+      ownerEditor(this)?.hotkeys?.registerEl({
+        id: this.id,
+        el: this,
+        label: this.getAttribute('title'),
+        rawKey: this.getAttribute('shortcut')
+      })
+    }
     // Closes opened menu on click
     this._globalAbort = new AbortController()
     document.addEventListener('click', e => {

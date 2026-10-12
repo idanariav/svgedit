@@ -552,10 +552,7 @@ Small.
 Done: Tab/Shift+Tab cycle, `V` select, Duplicate `D`, platform-formatted tooltips, default
 keys for Image (M), Brush (W), Cutter (C), Curvature (Y), Puppet warp (X). Tab / Shift+Tab
 cycle the drawing's elements only when the canvas has the keyboard; on a focused toolbar
-control (`isFocusControl` in `Hotkeys.js`) they move focus normally. Remaining:
-- The Shapes flyout and Shape library are not `se-button`s, so they can't take a
-  `shortcut` attribute yet (`seFlyingButton`/`seShapeLibrary` don't register with the
-  hotkey manager). Small.
+control (`isFocusControl` in `Hotkeys.js`) they move focus normally. The Shapes flyout (`tools_shapes`) and the Shape library (`tool_shapelib`) register with the hotkey manager like `se-button`s, so both can be bound (no default keys). Nothing further planned.
 
 ### Side panel and top bar: remaining polish
 

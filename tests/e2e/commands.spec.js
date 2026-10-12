@@ -155,4 +155,20 @@ test.describe('command registry', () => {
     await page.keyboard.press('Shift+D')
     expect(await rectCount(page)).toBe(3)
   })
+
+  test('the Shapes flyout and the Shape library are bindable commands', async ({ page }) => {
+    const known = await page.evaluate(() => ['tools_shapes', 'tool_shapelib'].map((id) => !!window.svgEditor.commands.get(id)))
+    expect(known).toEqual([true, true])
+    // bind a key to each; the key does what a click on the control does
+    await page.evaluate(() => {
+      const hk = window.svgEditor.hotkeys
+      hk.addKey('tools_shapes', 'alt+1')
+      hk.addKey('tool_shapelib', 'alt+2')
+    })
+    await page.evaluate(() => window.svgEditor.commands.run('tool_select'))
+    await page.keyboard.press('Alt+1')
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).not.toBe('select') // the flyout's tool is armed
+    await page.keyboard.press('Alt+2')
+    await expect.poll(() => page.evaluate(() => document.getElementById('tool_shapelib').shadowRoot.querySelector('.sl-popover')?.style.display)).toBe('')
+  })
 })

@@ -197,4 +197,23 @@ describe('se-flyingbutton', () => {
       expect(loadIconSpy).not.toHaveBeenCalledWith('square.svg')
     })
   })
+
+  it('registers itself with the hotkey manager on connect when it has an id, and its click arms the last tool', () => {
+    const all = []
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => { all.push(opts) } } })
+    const el = mountFlyingButton('id="tools_shapes" title="tools.shapes_tool" shortcut="alt+1"')
+    const registered = all.find((r) => r.id === 'tools_shapes') // the slotted se-buttons register too
+    expect(registered).toMatchObject({ id: 'tools_shapes', rawKey: 'alt+1', label: 'tools.shapes_tool' })
+    expect(registered.el).toBe(el)
+    const armed = vi.fn()
+    el.activeSlot.addEventListener('click', armed)
+    registered.el.click() // what the registry's run() does
+    expect(armed).toHaveBeenCalledTimes(1)
+  })
+  it('stays unregistered without an id', () => {
+    const ids = []
+    installMockSvgEditor({ hotkeys: { registerEl: (opts) => ids.push(opts.id) } })
+    mountFlyingButton()
+    expect(ids).toEqual(['tool_rect', 'tool_square']) // only the slotted buttons
+  })
 })

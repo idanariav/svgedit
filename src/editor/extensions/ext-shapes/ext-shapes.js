@@ -251,7 +251,7 @@ export default {
         if ($id('tool_shapelib') === null) {
           const extPath = svgEditor.configObj.curConfig.extPath
           const buttonTemplate = `
-          <se-shape-library id="tool_shapelib"
+          <se-shape-library id="tool_shapelib" interactive
             title="${svgEditor.i18next.t(`${name}:buttons.0.title`)}"
             lib="${extPath}/ext-shapes/shapelib/"
             src="shapelib.svg"></se-shape-library>
