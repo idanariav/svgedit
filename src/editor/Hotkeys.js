@@ -141,6 +141,23 @@ export const formatHotkey = (canonical) => {
   }).join(' + ')
 }
 
+// A badge on a tool icon is a few pixels wide: modifiers are symbols on every platform.
+const BADGE_MODS = { meta: '⌘', ctrl: '⌃', alt: '⌥', shift: '⇧' }
+
+/**
+ * A canonical key as short text for a tool badge: `v` → `V`, `shift+n` → `⇧N`, `meta+i` → `⌘I`.
+ * @param {?string} canonical
+ * @returns {string} '' when there is no key
+ */
+export const formatBadgeKey = (canonical) => {
+  if (!canonical) return ''
+  return canonical.split('+').map((tok) => {
+    if (BADGE_MODS[tok]) return BADGE_MODS[tok]
+    if (KEY_LABELS[tok]) return KEY_LABELS[tok]
+    return tok.length === 1 ? tok.toUpperCase() : tok.charAt(0).toUpperCase() + tok.slice(1)
+  }).join('')
+}
+
 /**
  * Format a component's raw `shortcut` attribute for tooltips/menus, per
  * platform: `ctrl+Z` → `⌘Z` (Mac) / `Ctrl+Z`. Decorative multi-token strings
@@ -276,6 +293,18 @@ export default class HotkeyManager {
     this.overrides = {}
     this._loaded = false
     this._handler = null
+    /** @type {Set<() => void>} called after a binding changed (see `onChange`) */
+    this._listeners = new Set()
+  }
+
+  /**
+   * Be told when bindings change (a key added / removed, an action or all reset).
+   * @param {() => void} fn
+   * @returns {() => void} unsubscribe
+   */
+  onChange (fn) {
+    this._listeners.add(fn)
+    return () => this._listeners.delete(fn)
   }
 
   /* ----------------------------------------------------------------- ingest */
@@ -574,6 +603,9 @@ export default class HotkeyManager {
       if (a && sameKeys(this.overrides[id], a.defaultKeys)) delete this.overrides[id]
     }
     this._persist()
+    for (const fn of this._listeners) {
+      try { fn() } catch (err) { logError('A hotkey change listener failed', err, 'Hotkeys') }
+    }
   }
 
   /** Persist overrides via the host adapter or localStorage. */

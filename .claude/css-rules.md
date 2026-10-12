@@ -308,6 +308,12 @@ Drag-to-reorder indicators (`toolDragReorder.js`) apply to a tool wherever it
 currently lives — the main row or inside the "Additional tools" overflow
 popover (`<se-tool-overflow>`) — since the classes are set on the actual
 light-DOM tool element, unaffected by shadow boundaries:
+A tool's activating key is drawn on the host with `::after` (text from `data-shortcut`, set by
+`toolShortcutBadges.js`; `--muted` text on a `--chrome-bg` pill, `--accent` while pressed, absolute at the bottom right):
+```css
+#tools_left [data-shortcut] { position: relative; }
+#tools_left [data-shortcut]::after { content: attr(data-shortcut); position: absolute; right: 3px; bottom: 2px; }
+```
 ```css
 #tools_left > [draggable]:hover { cursor: grab; }
 #tools_left .se-dragging { opacity: 0.4; cursor: grabbing; }

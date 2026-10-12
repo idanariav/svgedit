@@ -3,6 +3,7 @@ import {
 } from './locale.js'
 import { createContextMenu } from './contextmenu.js'
 import { addSelectedToShapeLibrary } from './addToShapeLibrary.js'
+import { initToolShortcutBadges } from './toolShortcutBadges.js'
 import { setUserDataAdapter } from './userDataAdapter.js'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
@@ -1013,6 +1014,9 @@ class EditorStartup {
         (_win, _data) => {
           this.extensionsAdded = true
           this.setAll()
+          // the key of each tool, drawn on its icon (all tools exist now; later ones are picked up by the observer)
+          const toolColumn = this.$id('tools_left')
+          if (toolColumn) this.toolShortcutBadges ??= initToolShortcutBadges(toolColumn, this.hotkeys)
           this.updateCanvas(true)
 
           this.messageQueue.forEach(

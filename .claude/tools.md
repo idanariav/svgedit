@@ -135,6 +135,16 @@ extension has inserted its own button, via `LeftPanel.finalizeToolOrder()`
 bound to the canvas `extensions_added` event; both the drag and keyboard
 mechanics live in `toolDragReorder.js`.
 
+**Shortcut badges.** Each tool in the left column shows the key that activates it at the bottom right of its icon
+(`V` on Select, `⇧N` on Shaper, `⌘I` on Eyedropper); a tool without a key shows nothing (Panning, Shape library, the
+newer tools). `toolShortcutBadges.js` sets `data-shortcut` on every `se-button` / `se-flyingbutton` / `se-shape-library`
+with an id under `#tools_left` from the hotkey manager's **effective** keys (the first one), so rebinding, removing or
+resetting a key in the Hotkey Manager shows at once (`HotkeyManager.onChange`); a MutationObserver picks up tools added
+later and a flyout whose last-picked tool changed. The Shapes flyout has no key of its own by default: it shows the key
+of the tool its face will activate (R for Rect) until it is bound itself. The badge is painted by CSS `::after` on the
+host (`svgedit.css`), so it works for every icon without touching the artwork; hidden with the column in tablet mode.
+A new tool gets a badge simply by having a key (`shortcut="…"` on its `se-button`, or a binding).
+
 ---
 
 ## Adding or changing a toolbar control

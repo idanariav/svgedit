@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import HotkeyManager from '../../src/editor/Hotkeys.js'
+import HotkeyManager, { formatBadgeKey } from '../../src/editor/Hotkeys.js'
 import { CommandRegistry } from '../../src/editor/commands.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { registerCoreCommands } from '../../src/editor/coreCommands.js'
@@ -165,5 +165,41 @@ describe('HotkeyManager over the command registry', () => {
 
   it('every editor shortcut ingests without a duplicate-id error', () => {
     expect(() => hk.ingestEditorShortcuts(buildEditorShortcuts(editor))).not.toThrow()
+  })
+
+  describe('change notifications and badge text', () => {
+    it('onChange fires after a key is added, removed or reset, and stops after unsubscribing', () => {
+      hk.ingestEditorShortcuts([{ id: 'sc', group: 'Edit', label: 'l', key: 'x', fn () {} }])
+      const seen = vi.fn()
+      const off = hk.onChange(seen)
+      hk.addKey('sc', 'y')
+      hk.removeKey('sc', 'x')
+      hk.resetAction('sc')
+      hk.resetAll()
+      expect(seen).toHaveBeenCalledTimes(4)
+      off()
+      hk.addKey('sc', 'z')
+      expect(seen).toHaveBeenCalledTimes(4)
+    })
+
+    it('a throwing listener neither stops the others nor the change', () => {
+      hk.ingestEditorShortcuts([{ id: 'sc', group: 'Edit', label: 'l', key: 'x', fn () {} }])
+      const after = vi.fn()
+      hk.onChange(() => { throw new Error('boom') })
+      hk.onChange(after)
+      expect(() => hk.addKey('sc', 'y')).not.toThrow()
+      expect(after).toHaveBeenCalledTimes(1)
+      expect(hk.effectiveKeys('sc')).toContain('y')
+    })
+
+    it('formatBadgeKey is short: letters upper-case, modifiers as symbols, nothing for no key', () => {
+      expect(formatBadgeKey('v')).toBe('V')
+      expect(formatBadgeKey('shift+n')).toBe('⇧N')
+      expect(formatBadgeKey('meta+i')).toBe('⌘I')
+      expect(formatBadgeKey('ctrl+alt+1')).toBe('⌃⌥1')
+      expect(formatBadgeKey('arrowup')).toBe('↑')
+      expect(formatBadgeKey('')).toBe('')
+      expect(formatBadgeKey(undefined)).toBe('')
+    })
   })
 })

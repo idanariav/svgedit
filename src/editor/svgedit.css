@@ -1408,6 +1408,28 @@ hr {
   gap: 4px;
 }
 
+/* The key that activates a tool, at the bottom right of its icon. `data-shortcut` is set by toolShortcutBadges.js
+   from the effective hotkeys; no key, no badge. Painted on the host so the icon artwork stays the same. */
+#tools_left [data-shortcut] {
+  position: relative;
+}
+#tools_left [data-shortcut]::after {
+  content: attr(data-shortcut);
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  padding: 0 1px;
+  border-radius: 3px;
+  font: 600 9px/10px var(--ui-font, system-ui, -apple-system, 'Segoe UI', sans-serif);
+  color: var(--muted);
+  background: var(--chrome-bg);
+  pointer-events: none;
+}
+#tools_left [data-shortcut][pressed]::after {
+  color: var(--accent);
+  background: transparent;
+}
+
 /* Divider above the first tool of each group (class set by markToolGroups) */
 #tools_left > .tool-group-start {
   position: relative;
