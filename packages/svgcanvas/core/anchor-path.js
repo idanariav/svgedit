@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Anchor-based path model — a small, DOM-free representation of a path as
  * subpaths of anchors with in/out Bézier handles, plus the geometry helpers
@@ -56,11 +57,12 @@ const makeAnchor = (x, y) => ({ p: { x, y }, hIn: { x, y }, hOut: { x, y } })
 export const parseAnchors = (d, closeTol = EPS) => {
   let segments
   try {
-    segments = new SvgPath(d || '').abs().unarc().unshort().segments
+    segments = /** @type {any} */ (new SvgPath(d || '').abs().unarc().unshort()).segments
   } catch (_err) {
     return []
   }
   const out = []
+  /** @type {SubPath|null} */
   let cur = null
   let cx = 0
   let cy = 0

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Width profiles: the data behind variable-width strokes (the Width tool and the presets).
  *
@@ -55,7 +56,7 @@ export const isProfile = (points) => Array.isArray(points) && points.length >= 2
 export const parseProfile = (str) => {
   if (!str) return null
   const points = str.split(';').map((p) => p.split(':').map(Number))
-  return points.every((p) => p.length === 3) && isProfile(points) ? /** @type {WidthPoint[]} */ (points) : null
+  return points.every((p) => p.length === 3) && isProfile(/** @type {any} */ (points)) ? /** @type {WidthPoint[]} */ (points) : null
 }
 
 /**

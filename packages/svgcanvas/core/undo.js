@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for undo.
  * @module undo
@@ -24,7 +25,7 @@ const {
 
 /**
 * @function module:undo.init
-* @param {module:undo.undoContext} undoContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -217,7 +218,7 @@ export const init = (canvas) => {
 */
   const ffClone = (elem) => {
     if (!isGecko()) { return elem }
-    const clone = elem.cloneNode(true)
+    const clone = /** @type {Element} */ (elem.cloneNode(true))
     elem.before(clone)
     elem.remove()
     svgCanvas.selectorManager.releaseSelector(elem)
@@ -243,7 +244,7 @@ export const init = (canvas) => {
       const oldId = elem.id
       if (oldId !== newValue) {
         svgCanvas.clearSelection()
-        elem.id = newValue
+        elem.id = String(newValue)
         svgCanvas.addToSelection([elem], true)
         svgCanvas.call('elementRenamed', { elem, oldId, newId: newValue })
       }
@@ -266,8 +267,8 @@ export const init = (canvas) => {
       // Set x,y vals on elements that don't have them
       if ((attr === 'x' || attr === 'y') && noXYElems.includes(elem.tagName)) {
         const bbox = svgCanvas.getStrokedBBoxDefaultVisible([elem])
-        const diffX = attr === 'x' ? parseFloat(newValue) - bbox.x : 0
-        const diffY = attr === 'y' ? parseFloat(newValue) - bbox.y : 0
+        const diffX = attr === 'x' ? parseFloat(String(newValue)) - bbox.x : 0
+        const diffY = attr === 'y' ? parseFloat(String(newValue)) - bbox.y : 0
         svgCanvas.moveSelectedElements(diffX * zoom, diffY * zoom, true)
         continue
       }
@@ -287,11 +288,11 @@ export const init = (canvas) => {
         // Hoped to solve the issue of moving text with text-anchor="start",
         // but this doesn't actually fix it. Hopefully on the right track, though. -Fyrd
         } else if (attr === '#href') {
-          setHref(elem, newValue)
+          setHref(elem, String(newValue))
         } else if (newValue) {
-          elem.setAttribute(attr, isNaN(parseFloat(newValue)) ? newValue : parseFloat(newValue))
+          elem.setAttribute(attr, String(isNaN(parseFloat(String(newValue))) ? newValue : parseFloat(String(newValue))))
         } else if (typeof newValue === 'number') {
-          elem.setAttribute(attr, newValue)
+          elem.setAttribute(attr, String(newValue))
         } else {
           elem.removeAttribute(attr)
         }

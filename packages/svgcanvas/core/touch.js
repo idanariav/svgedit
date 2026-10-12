@@ -1,3 +1,4 @@
+// @ts-check
 // http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 
 /**
@@ -9,7 +10,7 @@
 const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
 
 /**
- * @param {SvgCanvas} svgCanvas
+ * @param {import('../svgcanvas.js').default} svgCanvas
  * @returns {boolean} whether the editor is currently in tablet mode
  */
 const isTabletMode = (svgCanvas) =>
@@ -23,7 +24,7 @@ export const init = (svgCanvas) => {
   let pinchRaf = 0
 
   /**
-   * @param {Event} ev
+   * @param {TouchEvent} ev
    * @returns {void}
    */
   const touchHandler = (ev) => {

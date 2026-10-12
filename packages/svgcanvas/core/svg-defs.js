@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Defs / reference maintenance for the document: id uniquification, `<use>`
  * wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter
@@ -131,6 +132,7 @@ export const init = canvas => {
  * @returns {void}
  */
   const setUseDataMethod = parent => {
+    /** @type {any} */
     let elems = parent
 
     if (parent.tagName !== 'use') {
@@ -230,6 +232,7 @@ export const init = canvas => {
  * @returns {void}
  */
   const convertGradientsMethod = elem => {
+    /** @type {any} */
     let elems = elem.querySelectorAll('linearGradient, radialGradient')
     if (!elems.length && isWebkit()) {
     // Bug in webkit prevents regular *Gradient selector search

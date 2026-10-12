@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Variable-width strokes: the filled outline of a path stroked with a width profile.
  *

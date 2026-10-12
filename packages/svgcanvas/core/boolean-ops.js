@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Boolean path operations: union, intersect, subtract, exclude, divide.
  * Requires exactly 2 selected shapes; a shape may be a `<g>`/`<a>` group, in
@@ -56,7 +57,7 @@ export const collectLeaves = elem => {
  */
 export const getAncestorMatrix = (elem, stopElem) => {
   let m = matrixMultiply()
-  let el = elem
+  let el = /** @type {any} */ (elem)
   while (el && el !== stopElem && el.tagName !== 'svg') {
     if ((el.tagName === 'g' || el.tagName === 'a') && el.transform?.baseVal?.numberOfItems) {
       m = matrixMultiply(transformListToTransform(getTransformList(el)).matrix, m)
@@ -221,7 +222,7 @@ const performBooleanOp = (type, canvas) => {
     // paper.js divide() returns a Group of two children (subtract + intersect
     // pieces); when the shapes don't overlap it collapses to a single path.
     const divided = bottomPath.divide(topPath)
-    const pieces = divided.children ? [...divided.children] : [divided]
+    const pieces = /** @type {paper.PathItem[]} */ (divided.children ? [...divided.children] : [divided])
     pieces.forEach(piece =>
       createResultPath(piece, bottomElem, styleAttrs, canvas, newPaths, batchCmd)
     )

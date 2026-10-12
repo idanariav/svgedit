@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API,
  * removed from browsers around 2016 and previously restored here via the
@@ -110,7 +111,7 @@ class PathSegListShim {
     if (d === this._cachedD && this._cachedEntries) {
       return this._cachedEntries
     }
-    const { segments } = new SvgPath(d)
+    const { segments } = /** @type {any} */ (new SvgPath(d))
     const entries = (segments || []).map(([type, ...values]) => ({ type, values }))
     this._cachedD = d
     this._cachedEntries = entries
@@ -259,7 +260,7 @@ if (
   !('pathSegList' in SVGPathElement.prototype)
 ) {
   if (!('SVGPathSeg' in window)) {
-    window.SVGPathSeg = {
+    /** @type {any} */ (window).SVGPathSeg = {
       PATHSEG_UNKNOWN: 0,
       PATHSEG_CLOSEPATH: 1,
       PATHSEG_MOVETO_ABS: 2,

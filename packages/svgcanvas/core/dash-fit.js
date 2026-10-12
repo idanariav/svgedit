@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the
  * stroke's length, with a dash centred on both ends of an open path. One `stroke-dasharray`

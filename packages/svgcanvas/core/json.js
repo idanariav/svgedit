@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for SVG handle on JSON format.
  * @module svgcanvas
@@ -19,7 +20,7 @@ import { NS } from './namespaces.js'
 
 /**
 * @function module:json.init
-* @param {module:json.jsonContext} jsonContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -27,8 +28,8 @@ export const init = (canvas) => {
   const svgdoc_ = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
   /**
 * @function module:json.getJsonFromSvgElements Iterate element and return json format
-* @param {ArgumentsArray} data - element
-* @returns {svgRootElement}
+* @param {any} data - element
+* @returns {any}
 */
   const getJsonFromSvgElements = (data) => {
     if (!data) return null

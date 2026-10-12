@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Warp live effect: 15 envelope styles plus horizontal/vertical
  * perspective-like distortion. Each style is a closed-form map on normalised

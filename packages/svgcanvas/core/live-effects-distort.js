@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist,
  * Tweak, Round Corners and Scribble. Each is a pure function over anchor

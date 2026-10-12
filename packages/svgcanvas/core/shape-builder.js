@@ -101,7 +101,7 @@ export const init = (canvas) => {
           else inter.remove()
           if (areaOf(diff) > AREA_EPS) next.push({ geom: diff, sources: r.sources })
           else diff.remove()
-          remainder = remainder.subtract(r.geom, { insert: false })
+          remainder = /** @type {paper.Path|paper.CompoundPath} */ (remainder.subtract(r.geom, { insert: false }))
           r.geom.remove()
         }
         if (areaOf(remainder) > AREA_EPS) next.push({ geom: remainder, sources: [entry.elem] })

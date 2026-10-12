@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tapered strokes — turn a stroked open path into a filled outline whose
  * width follows a start/middle/end profile (paper.js-assisted).
@@ -133,8 +134,8 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
  * @returns {import('./width-outline.js').OutlineOptions}
  */
 const outlineOptions = (elem) => ({
-  cap: ['round', 'square'].includes(elem.getAttribute('stroke-linecap')) ? elem.getAttribute('stroke-linecap') : 'butt',
-  join: ['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin')) ? elem.getAttribute('stroke-linejoin') : 'miter',
+  cap: /** @type {'round'|'square'|'butt'} */ (['round', 'square'].includes(elem.getAttribute('stroke-linecap')) ? elem.getAttribute('stroke-linecap') : 'butt'),
+  join: /** @type {'round'|'bevel'|'miter'} */ (['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin')) ? elem.getAttribute('stroke-linejoin') : 'miter'),
   miterLimit: parseFloat(elem.getAttribute('stroke-miterlimit')) || 4
 })
 
@@ -205,7 +206,7 @@ registerLiveStage({
   run: (view, inputD, canvas) => {
     const style = view.getAttribute(TAPER_STYLE_ATTR)
     if (!style) return null
-    const outline = outlineOf(view, inputD, parseFloat(style) || 1)
+    const outline = outlineOf(/** @type {any} */ (view), inputD, parseFloat(style) || 1)
     if (!outline) return null
     return view.hasAttribute(WIDTH_PROFILE_ATTR) || !canvas ? outline : toAbsolutePathData(outline, canvas)
   }
@@ -255,7 +256,7 @@ export const init = (canvas) => {
   /**
    * Apply (or re-apply) a taper to the selected stroked path as one undo
    * step. Lines/polylines are swapped for a `<path>` in the same batch.
-   * @param {{start: number, end: number}} params - Tip widths, % of full.
+   * @param {{start?: number, end?: number}} [params] - Tip widths, % of full.
    * @returns {?Element}
    */
   const applyTaperStroke = ({ start = 100, end = 0 } = {}) => {

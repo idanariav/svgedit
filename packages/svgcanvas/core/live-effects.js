@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Live (re-editable) path-geometry effects — the shared foundation for
  * Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor

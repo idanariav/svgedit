@@ -70,7 +70,7 @@ export const getClosest = (elem, selector) => {
   const firstChar = selector.charAt(0)
   const matcher = selectorMatcher[firstChar] || selectorMatcher.tag
 
-  for (let current = elem; current && current !== document && current.nodeType === 1; current = current.parentNode) {
+  for (let current = /** @type {any} */ (elem); current && current !== document && current.nodeType === 1; current = current.parentNode) {
     if (matcher(current, selector)) return current
   }
 

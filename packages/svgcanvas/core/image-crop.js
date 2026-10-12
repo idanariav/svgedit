@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Destructive crop for imported raster `<image>` elements.
  *
@@ -109,15 +110,15 @@ export const init = (canvas) => {
     rectEl.setAttribute('y', cropRect.y)
     rectEl.setAttribute('width', cropRect.width)
     rectEl.setAttribute('height', cropRect.height)
-    rectEl.setAttribute('stroke-width', 1.5 / zoom)
+    rectEl.setAttribute('stroke-width', String(1.5 / zoom))
     rectEl.setAttribute('stroke-dasharray', `${6 / zoom},${4 / zoom}`)
     HANDLE_DIRS.forEach((dir) => {
       const p = handlePoint(cropRect, dir)
       const handle = handleEls[dir]
-      handle.setAttribute('cx', p.x)
-      handle.setAttribute('cy', p.y)
-      handle.setAttribute('r', HANDLE_SCREEN_RADIUS / zoom)
-      handle.setAttribute('stroke-width', 1 / zoom)
+      handle.setAttribute('cx', String(p.x))
+      handle.setAttribute('cy', String(p.y))
+      handle.setAttribute('r', String(HANDLE_SCREEN_RADIUS / zoom))
+      handle.setAttribute('stroke-width', String(1 / zoom))
     })
   }
 
@@ -208,6 +209,7 @@ export const init = (canvas) => {
     })
     overlayGroup.append(rectEl)
 
+    /** @type {Record<string, SVGCircleElement>} */
     const handleEls = {}
     HANDLE_DIRS.forEach((dir) => {
       const handle = document.createElementNS(NS.SVG, 'circle')

@@ -217,11 +217,17 @@ extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
 `svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there; tighten per file). 32 of the 73 `core/`+`common/` modules now carry it too (all
-those that type-checked with no, or only trivial, errors; JSDoc `{Float}`/`{Integer}`
-became `{number}`). The other 41 each have 2–14 errors, mostly `ChildNode`/`Element`
-vs `SVGGraphicsElement` casts and Paper.js item types — add the pragma to them one at a
-time, declaring what they attach in `AttachedMembers` as you go.
+there; tighten per file). 87 of the 107 `core/`+`common/` modules now carry it (2026-10-12: 37 added in one pass; JSDoc
+`{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
+`legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
+checked by *both* configs, so a file the strict config reaches through an import must be strict-clean: that is why
+`common/util.js`, `core/dom-utils.js`, `core/math.js` and `core/path-utils.js` are clean under the lax config but still
+carry no pragma. The 20 left without it: `bbox-utils` (~34 errors), `clip-mask` (~19), `coords` (~14), `dom-utils`, `draw` (~24),
+`group-ops` (~26), `history` (~25), `math`, `path-actions` (~30), `path-method` (~52), `path-utils`, `path` (~19), `sanitize` (~30), `select` (~10),
+`selected-elem` (~22), `selection` (~19), `svg-exec` (~14), `text-actions` (~19), `units` (~18), `common/util.js`. The errors are
+mostly `ChildNode`/`ParentNode`/`Element` vs `SVGGraphicsElement` casts, `string | number` attribute values, and stale JSDoc
+(`@param` names that are not parameters, `module:…` typedef names); add the pragma one at a time as a phase touches the file,
+declaring what it attaches in `AttachedMembers` as you go.
 
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
@@ -245,7 +251,7 @@ type safety in the canvas engine, not a rewrite.
 passes (that is step 2 below, done for these four). Editor-layer Tier 0
 modules (`commands.js`, `coreCommands.js`, `automation.js`,
 `components/commandBinding.js`) are `// @ts-check` too, checked through
-`src/editor/tsconfig.hostapi.json`. Everything else: 34 of the ~76 `core/` +
+`src/editor/tsconfig.hostapi.json`. Everything else: 87 of the 107 `core/` +
 `common/` modules carry `// @ts-check` (JSDoc types), checked with
 `noImplicitAny` and `strictNullChecks` **off**
 (`packages/svgcanvas/tsconfig.json`). Decision so far: strict JSDoc, no `.ts`
@@ -260,7 +266,7 @@ files are terser and let `tsc --emitDeclarationOnly` generate the d.ts.
 Either way, do steps 1–2 first, since they pay off immediately and are
 needed by both.
 
-1. **Finish `@ts-check`** on the remaining 42 modules (entry above).
+1. **Finish `@ts-check`** on the remaining 20 modules (entry above).
 2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
    (globally they give ~150 errors in `svgcanvas.js` alone, so use a
    per-file opt-in, e.g. a second tsconfig listing the files already clean).
@@ -295,7 +301,7 @@ plugin only sees built JS, so it is unaffected as long as those hold.
 full JSDoc types (or as `.ts` if the decision above has been made), so they
 don't add to this backlog.
 
-Effort: large in total (69+ files) but small per module; risky only in the
+Effort: large in total (the 20 modules still unchecked, then strictness) but small per module; risky only in the
 toolchain step.
 
 ## Live effects (`se:fx`): follow-ups from T1.0 / T1.1

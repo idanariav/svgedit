@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @module elem-get-set get and set methods.
  * @license MIT
@@ -15,7 +16,7 @@ import { getParents } from '../common/util.js'
 
 /**
 * @function module:elem-get-set.init
-* @param {module:elem-get-set.elemContext} elemContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -32,7 +33,7 @@ export const init = (canvas) => {
 
   /**
 * @function module:elem-get-set.SvgCanvas#getResolution
-* @returns {DimensionsAndZoom} The current dimensions and zoom level in an object
+* @returns {{w: number, h: number, zoom: number}} The current dimensions and zoom level in an object
 */
   const getResolutionMethod = () => {
     const zoom = svgCanvas.getZoom()
@@ -263,7 +264,7 @@ export const init = (canvas) => {
   /**
 * Sets the zoom level on the canvas-side based on the given value.
 * @function module:elem-get-set.SvgCanvas#setBBoxZoom
-* @param {"selection"|"canvas"|"content"|"layer"|module:SVGEditor.BBoxObjectWithFactor} val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
+* @param {"selection"|"canvas"|"content"|"layer"|object} val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
 * @param {number} editorW - The editor's workarea box's width
 * @param {number} editorH - The editor's workarea box's height
 * @returns {module:elem-get-set.ZoomAndBBox|void}
@@ -517,8 +518,8 @@ export const init = (canvas) => {
       while (j--) {
         const stop = stops[j]
         const ostop = ostops[j]
-        const sVals = readStop(stop)
-        const oVals = readStop(ostop)
+        const sVals = readStop(/** @type {SVGStopElement} */ (stop))
+        const oVals = readStop(/** @type {SVGStopElement} */ (ostop))
 
         if (stop.getAttribute('offset') !== ostop.getAttribute('offset') ||
         sVals.opacity !== oVals.opacity ||
@@ -539,7 +540,7 @@ export const init = (canvas) => {
 * Set a color/gradient to a fill/stroke.
 * @function module:elem-get-set.SvgCanvas#setPaint
 * @param {"fill"|"stroke"} type - String with "fill" or "stroke"
-* @param {} paint - The paint object to apply
+* @param {Object<string, any>} paint - The paint object to apply
 * @returns {void}
 */
   const setPaintMethod = (type, paint) => {

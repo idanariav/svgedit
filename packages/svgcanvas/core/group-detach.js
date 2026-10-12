@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Helpers for detaching content from group nesting so it becomes independent
  * top-level content (used by Duplicate and Paste) while staying in the same
@@ -24,7 +25,7 @@ import {
  */
 export const getGroupDetachTarget = parent => {
   let matrix = transformListToTransform(null).matrix
-  let el = parent
+  let el = /** @type {any} */ (parent)
   while (el && (el.tagName === 'g' || el.tagName === 'a') && !Layer.isLayer(el)) {
     const tlist = getTransformList(el)
     if (tlist?.numberOfItems) {

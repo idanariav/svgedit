@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Generators for the "Line Segment family" shape tools: Spiral, Arc,
  * Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes,

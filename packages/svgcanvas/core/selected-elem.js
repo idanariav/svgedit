@@ -665,7 +665,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {Array.number[]} x and y distances array
+ * @returns {number[]} x and y distances array
  * @private
  */
   const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -726,7 +726,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {Array.number[]}} x and y distances array
+ * @returns {number[]} x and y distances array
  * @private
  */
   const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
@@ -787,7 +787,7 @@ export const init = canvas => {
  * @param {number} maxx - selected area max-x
  * @param {number} miny - selected area min-y
  * @param {number} maxy - selected area max-y
- * @returns {Array.number[]} x and y distances array
+ * @returns {number[]} x and y distances array
  * @private
  */
   const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {

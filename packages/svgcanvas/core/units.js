@@ -114,11 +114,11 @@ export const getTypeMap = () => {
 * @function module:units.setUnitAttr
 * @param {Element} elem - DOM element to be changed
 * @param {string} attr - Name of the attribute associated with the value
-* @param {string} val - Attribute value to convert
+* @param {string|number} val - Attribute value to convert
 * @returns {void}
 */
 export const setUnitAttr = (elem, attr, val) => {
-  elem.setAttribute(attr, val)
+  elem.setAttribute(attr, String(val))
 }
 
 const attrsToConvert = {
@@ -138,7 +138,7 @@ const attrsToConvert = {
  * from that container, so two editors in one page never read each other's.
  * @function module:units.createUnits
  * @param {module:units.ElementContainer} elementContainer
- * @returns {{shortFloat: Function, convertUnit: (val: number, unit?: string) => number, convertAttrs: Function, convertToNum: (attr: string, val: string) => number, isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean, getTypeMap: () => Record<string, number>, setUnitAttr: Function}}
+ * @returns {{shortFloat: Function, convertUnit: (val: number, unit?: string) => number, convertAttrs: Function, convertToNum: (attr: string, val: string|number) => number, isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean, getTypeMap: () => Record<string, number>, setUnitAttr: Function}}
  */
 export const createUnits = (elementContainer) => {
   /**
@@ -199,7 +199,7 @@ export const createUnits = (elementContainer) => {
   *
   * @function module:units.convertToNum
   * @param {string} attr - Name of the attribute associated with the value
-  * @param {string} val - Attribute value to convert
+  * @param {string|number} val - Attribute value to convert
   * @returns {number} The converted number
   */
   const convertToNum = (attr, val) => {

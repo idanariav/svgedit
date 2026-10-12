@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path offset / inset and stroke-to-path operations.
  *
@@ -64,7 +65,7 @@ export const init = (canvas) => {
  * @returns {{poly: Array<{X:number,Y:number}>, closed: boolean}[]}
  */
   const itemToPolys = (item) => {
-    const children = item.children?.length ? item.children : [item]
+    const children = /** @type {paper.Path[]} */ (item.children?.length ? item.children : [item])
     return children
       .filter(child => child.segments?.length)
       .map(child => ({

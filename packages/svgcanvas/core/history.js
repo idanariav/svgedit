@@ -246,7 +246,7 @@ export class MoveElementCommand extends Command {
 export class InsertElementCommand extends Command {
   /**
    * @param {Element} elem - The newly added DOM element
-   * @param {string} text - An optional string visible to user related to this change
+   * @param {string} [text] - An optional string visible to user related to this change
   */
   constructor (elem, text) {
     super()

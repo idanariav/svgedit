@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Join for the select tool: two selected open paths become one (the upper one is
  * merged into the lower one, which keeps its id and style), or one open path is

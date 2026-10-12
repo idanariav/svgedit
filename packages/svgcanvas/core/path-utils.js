@@ -89,7 +89,7 @@ export const getPathDFromElement = (elem) => {
     case 'rect': {
       rx = Number(elem.getAttribute('rx'))
       ry = Number(elem.getAttribute('ry'))
-      const b = elem.getBBox()
+      const b = /** @type {SVGGraphicsElement} */ (elem).getBBox()
       const { x, y } = b
       const w = b.width
       const h = b.height
@@ -140,7 +140,7 @@ export const getPathDFromElement = (elem) => {
  * Get a set of attributes from an element that is useful for convertToPath.
  * @function module:path-utils.getExtraAttributesForConvertToPath
  * @param {Element} elem - The element to be probed
- * @returns {PlainObject<"marker-start"|"marker-end"|"marker-mid"|"filter"|"clip-path", string>} An object with attributes.
+ * @returns {Object<string, string>} An object with attributes (marker-start / -mid / -end, filter, clip-path).
  */
 export const getExtraAttributesForConvertToPath = (elem) => {
   // TODO: make this list global so that we can properly maintain it
@@ -151,20 +151,15 @@ export const getExtraAttributesForConvertToPath = (elem) => {
     const value = elem.getAttribute(name)
     if (value) attrs[name] = value
     return attrs
-  }, {})
+  }, /** @type {Object<string, string>} */ ({}))
 }
 
 /**
  * Convert selected element to a path.
  * @function module:path-utils.convertToPath
  * @param {Element} elem - The DOM element to be converted
- * @param {module:utilities.SVGElementJSON} attrs - Apply attributes to new path. see canvas.convertToPath
- * @param {module:utilities.EditorContext#addSVGElementsFromJson} addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
- * @param {module:path.pathActions} pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
- * @param {module:draw.DrawCanvasInit#clearSelection|module:path.EditorContext#clearSelection} clearSelection - see [canvas.clearSelection]{@link module:svgcanvas.SvgCanvas#clearSelection}
- * @param {module:path.EditorContext#addToSelection} addToSelection - see [canvas.addToSelection]{@link module:svgcanvas.SvgCanvas#addToSelection}
- * @param {module:history} hstry - see history module
- * @param {module:path.EditorContext#addCommandToHistory|module:draw.DrawCanvasInit#addCommandToHistory} addCommandToHistory - see [canvas.addCommandToHistory]{@link module:svgcanvas~addCommandToHistory}
+ * @param {Object<string, any>} attrs - Apply attributes to new path. see canvas.convertToPath
+ * @param {any} svgCanvas - the canvas: `history`, `addSVGElementsFromJson`, `pathActions`, `clearSelection`, `addToSelection`, `addCommandToHistory`
  * @returns {SVGPathElement|null} The converted path element or null if the DOM element was not recognized.
  */
 export const convertToPath = (elem, attrs, svgCanvas) => {

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Arrowhead alignment: where a marker head sits on the end of its line.
  *
@@ -302,7 +303,7 @@ export const init = (canvas) => {
 
     // Heads: refX, and the trims they ask for.
     const trims = { start: 0, end: 0 }
-    for (const pos of ['start', 'end']) {
+    for (const pos of /** @type {const} */ (['start', 'end'])) {
       const e = ends[pos]
       if (!e) continue
       const { refX, inset } = headPlacement(e.kind, pos, mode)

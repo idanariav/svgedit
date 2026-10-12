@@ -80,14 +80,15 @@ export const transformPoint = (x, y, m) => ({
  * @returns {SVGTransformList|undefined} The transform list, if any
  */
 export const getTransformList = elem => {
-  if (elem.transform?.baseVal) {
-    return elem.transform.baseVal
+  const e = /** @type {any} */ (elem)
+  if (e.transform?.baseVal) {
+    return e.transform.baseVal
   }
-  if (elem.gradientTransform?.baseVal) {
-    return elem.gradientTransform.baseVal
+  if (e.gradientTransform?.baseVal) {
+    return e.gradientTransform.baseVal
   }
-  if (elem.patternTransform?.baseVal) {
-    return elem.patternTransform.baseVal
+  if (e.patternTransform?.baseVal) {
+    return e.patternTransform.baseVal
   }
   warn('No transform list found. Check browser compatibility.', elem, 'math')
 }
@@ -237,7 +238,7 @@ export const transformBox = (l, t, w, h, m) => {
  * @function transformListToTransform
  * @param {SVGTransformList} tlist - The transform list
  * @param {number} [min=0] - Optional start index
- * @param {number} [max] - Optional end index, defaults to tlist length-1
+ * @param {number|null} [max] - Optional end index, defaults to tlist length-1
  * @returns {SVGTransform} A single transform from the combined matrices
  */
 export const transformListToTransform = (tlist, min = 0, max = null) => {
@@ -245,8 +246,8 @@ export const transformListToTransform = (tlist, min = 0, max = null) => {
     return createTransformFromMatrix(svg.createSVGMatrix())
   }
 
-  const start = Number.parseInt(min, 10)
-  const end = Number.parseInt(max ?? tlist.numberOfItems - 1, 10)
+  const start = Number.parseInt(String(min), 10)
+  const end = Number.parseInt(String(max ?? tlist.numberOfItems - 1), 10)
   const [low, high] = [Math.min(start, end), Math.max(start, end)]
 
   const matrices = []
@@ -298,7 +299,7 @@ export const getMatrix = elem => {
  */
 export const getMatrixToContent = (elem, stopId = 'svgcontent') => {
   let m = svg.createSVGMatrix() // identity
-  let el = elem
+  let el = /** @type {any} */ (elem)
   while (el && el.id !== stopId && el.tagName !== 'svg') {
     if ((el.tagName === 'g' || el.tagName === 'a') &&
         el.transform?.baseVal?.numberOfItems) {

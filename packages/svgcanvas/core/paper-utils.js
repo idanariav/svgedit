@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared paper.js helpers for the boolean/geometry tools (boolean-ops,
  * cutter, path-offset, shape-builder, taper-stroke, path-simplify).
@@ -6,7 +7,7 @@
  * @license MIT
  */
 
-import paper from 'paper/dist/paper-core.js'
+import paperCore from 'paper/dist/paper-core.js'
 import { getPathDFromElement } from './path-utils.js'
 import { getMatrix, getTransformList, transformListToTransform } from './math.js'
 
@@ -20,7 +21,7 @@ const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', '
 let paperScope = null
 export const getPaperScope = () => {
   if (!paperScope) {
-    paperScope = new paper.PaperScope()
+    paperScope = new (/** @type {typeof paper} */ (paperCore).PaperScope)()
     paperScope.setup(document.createElement('canvas'))
   }
   return paperScope

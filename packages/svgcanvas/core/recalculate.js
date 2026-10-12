@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Recalculate dimensions and transformations of SVG elements.
  * @module recalculate
@@ -66,7 +67,7 @@ export const init = canvas => {
  * @param {string} attr - The clip-path attribute value containing the clipPath's ID
  * @param {number} tx - The translation's x value
  * @param {number} ty - The translation's y value
- * @param {Element} elem - The element referencing the clipPath
+ * @param {Element} [elem] - The element referencing the clipPath
  * @returns {string|undefined} The clip-path attribute used after updates.
  */
   const updateClipPath = (attr, tx, ty, elem) => {
@@ -147,7 +148,7 @@ export const init = canvas => {
  * Recalculates the dimensions and transformations of a selected element.
  * @function module:recalculate.recalculateDimensions
  * @param {Element} selected - The DOM element to recalculate
- * @returns {Command|null} Undo command object with the resulting change, or null if no change
+ * @returns {import('./history.js').Command|null} Undo command object with the resulting change, or null if no change
  */
   const recalculateDimensions = selected => {
     if (!selected) return null
@@ -255,7 +256,9 @@ export const init = canvas => {
       : undefined
 
     // Store initial values affected by reducing the transform list
+    /** @type {Record<string, any>} */
     let changes = {}
+    /** @type {Record<string, any>|null} */
     let initial = null
     let attrs = []
 
@@ -263,7 +266,7 @@ export const init = canvas => {
     if (selected.tagName === 'polygon' || selected.tagName === 'polyline') {
       initial = {}
       initial.points = selected.getAttribute('points')
-      const list = selected.points
+      const list = /** @type {SVGPolygonElement} */ (selected).points
       const len = list.numberOfItems
       changes.points = new Array(len)
       for (let i = 0; i < len; ++i) {

@@ -12,7 +12,7 @@ import { getTransformList } from './math.js'
 
 /**
  * Object with the following keys/values.
- * @typedef {PlainObject} module:utilities.SVGElementJSON
+ * @typedef {object} SVGElementJSON
  * @property {string} element - Tag name of the SVG element to create
  * @property {PlainObject<string, string>} attr - Has key-value attributes to assign to the new element.
  *   An `id` should be set so that {@link module:utilities.EditorContext#addSVGElementsFromJson} can later re-identify the element for modification or replacement.
@@ -243,8 +243,8 @@ export const init = canvas => {
 export { TEXT_LINE_HEIGHT, getTextWithNewlines, setMultilineText } from './text-rows.js'
 
 /**
- * @callback module:utilities.TreeWalker
- * @param {Element} elem - DOM element being traversed
+ * @callback TreeWalker
+ * @param {SVGElement} elem - DOM element being traversed
  * @returns {void}
  */
 
@@ -252,15 +252,15 @@ export { TEXT_LINE_HEIGHT, getTextWithNewlines, setMultilineText } from './text-
  * Walks the tree and executes the callback on each element in a top-down fashion.
  * @function module:dom-utils.walkTree
  * @param {Element} elem - DOM element to traverse
- * @param {module:utilities.TreeWalker} cbFn - Callback function to run on each element
+ * @param {TreeWalker} cbFn - Callback function to run on each element
  * @returns {void}
  */
 export const walkTree = (elem, cbFn) => {
   if (elem?.nodeType === 1) {
-    cbFn(elem)
+    cbFn(/** @type {SVGElement} */ (elem))
     let i = elem.childNodes.length
     while (i--) {
-      walkTree(elem.childNodes.item(i), cbFn)
+      walkTree(/** @type {Element} */ (elem.childNodes.item(i)), cbFn)
     }
   }
 }
@@ -270,16 +270,16 @@ export const walkTree = (elem, cbFn) => {
  * @function module:dom-utils.walkTreePost
  * @todo Shouldn't this be calling walkTreePost?
  * @param {Element} elem - DOM element to traverse
- * @param {module:utilities.TreeWalker} cbFn - Callback function to run on each element
+ * @param {TreeWalker} cbFn - Callback function to run on each element
  * @returns {void}
  */
 export const walkTreePost = (elem, cbFn) => {
   if (elem?.nodeType === 1) {
     let i = elem.childNodes.length
     while (i--) {
-      walkTree(elem.childNodes.item(i), cbFn)
+      walkTree(/** @type {Element} */ (elem.childNodes.item(i)), cbFn)
     }
-    cbFn(elem)
+    cbFn(/** @type {SVGElement} */ (elem))
   }
 }
 
@@ -388,6 +388,7 @@ const REF_ATTRS = [
  * @returns {PlainObject<string, string>} map of old id → new id
  */
 export const remapElementIdsAndRefs = (rootEls, getNewId) => {
+  /** @type {Record<string, string>} */
   const idMap = {}
   const allEls = []
   rootEls.forEach((root) => {
@@ -427,7 +428,7 @@ export const remapElementIdsAndRefs = (rootEls, getNewId) => {
 /**
  * Get the reference element associated with the given attribute value.
  * @function module:dom-utils.getFeGaussianBlur
- * @param {any} Element
+ * @param {any} ele
  * @returns {any} Reference element
  */
 export const getFeGaussianBlur = ele => {
@@ -449,7 +450,7 @@ export const getFeGaussianBlur = ele => {
  * Assigns multiple attributes to an element.
  * @function module:dom-utils.assignAttributes
  * @param {Element} elem - DOM element to apply new attribute values to
- * @param {PlainObject<string, string>} attrs - Object with attribute keys/values
+ * @param {Record<string, string|number>} attrs - Object with attribute keys/values
  * @param {number} [suspendLength] - Milliseconds to suspend redraw
  * @param {boolean} [unitCheck=false] - Boolean to indicate the need to use units.setUnitAttr
  * @returns {void}
@@ -471,9 +472,9 @@ export const assignAttributes = (elem, attrs, suspendLength, unitCheck) => {
       continue
     }
     if (ns) {
-      elem.setAttributeNS(ns, key, value)
+      elem.setAttributeNS(ns, key, String(value))
     } else if (!unitCheck) {
-      elem.setAttribute(key, value)
+      elem.setAttribute(key, String(value))
     } else {
       setUnitAttr(elem, key, value)
     }
@@ -527,7 +528,7 @@ export const preventClickDefault = img => {
 }
 
 /**
- * @callback module:utilities.GetNextID
+ * @callback GetNextID
  * @returns {string} The ID
  */
 
@@ -543,10 +544,10 @@ export const isNullish = val => {
 /**
  * Overwrite methods for unit testing.
  * @function module:dom-utils.mock
- * @param {PlainObject} mockMethods
- * @param {module:dom-utils.getHref} mockMethods.getHref
- * @param {module:dom-utils.setHref} mockMethods.setHref
- * @param {module:dom-utils.getRotationAngle} mockMethods.getRotationAngle
+ * @param {object} mockMethods
+ * @param {typeof getHref} mockMethods.getHref
+ * @param {typeof setHref} mockMethods.setHref
+ * @param {typeof getRotationAngle} mockMethods.getRotationAngle
  * @returns {void}
  */
 export const mock = ({

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Selection mode (`select`/`multiselect`) mouse handlers, extracted from the
  * `select`/`multiselect` cases of `event.js`'s mouseDown/mouseMove/mouseUp

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Art and pattern brushes on the canvas: the elements, the brush library and the canvas API.
  * The geometry (artwork bent along a path) is in `art-brush.js`.

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * String/XML/base64 encoding utilities.
  * @module encoding-utils
@@ -164,7 +165,7 @@ export const blankPageObjectURL = (() => {
 export const convertToXMLReferences = input => {
   let output = ''
   ;[...input].forEach(ch => {
-    const c = ch.charCodeAt()
+    const c = ch.charCodeAt(0)
     output += c <= 127 ? ch : `&#${c};`
   })
   return output
@@ -190,7 +191,7 @@ export const text2xml = (sXML) => {
   let parser
   try {
     parser = new DOMParser()
-    parser.async = false
+    ;/** @type {any} */ (parser).async = false
   } catch (e) {
     throw new Error('XML Parser could not be instantiated')
   }
@@ -198,6 +199,6 @@ export const text2xml = (sXML) => {
   try {
     return parser.parseFromString(xmlString, 'text/xml')
   } catch (e) {
-    throw new Error(`Error parsing XML string: ${e.message}`)
+    throw new Error(`Error parsing XML string: ${/** @type {Error} */ (e).message}`)
   }
 }

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Least-squares cubic Bézier fitting of point sequences: fit a cubic with
  * fixed end tangents, reparameterise with Newton steps, and split at the worst

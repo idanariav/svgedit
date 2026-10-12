@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * HistoryRecordingService component of history.
  * @module history
@@ -44,7 +45,7 @@ import {
  */
 class HistoryRecordingService {
   /**
-  * @param {history.UndoManager|null} undoManager - The undo manager.
+  * @param {import('./history.js').UndoManager|null} undoManager - The undo manager.
   *     A value of `null` is valid for cases where no history recording is required.
   *     See singleton: {@link module:history.HistoryRecordingService.HistoryRecordingService.NO_HISTORY}
   */
@@ -142,7 +143,7 @@ class HistoryRecordingService {
   /**
    * Private function to add a command to the history or current batch command.
    * @private
-   * @param {Command} cmd
+   * @param {import('./history.js').Command} cmd
    * @returns {module:history.HistoryRecordingService|void}
    */
   addCommand_ (cmd) {

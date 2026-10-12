@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Cutter (knife) tool: splits selected shapes along a cutting line, which may
  * be a single straight segment or an arbitrary open polyline (zigzag).
@@ -143,20 +144,20 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // next). Each chord's own two crossings can land in either order on the
   // *shape's* boundary though, independent of this cutter-side order.
   const byCutter = crossings.slice()
-    .sort((a, b) => a.getIntersection().getOffset() - b.getIntersection().getOffset())
+    .sort((a, b) => a.intersection.offset - b.intersection.offset)
   const chords = []
   for (let i = 0; i < m; i++) chords.push({ a: byCutter[2 * i], b: byCutter[2 * i + 1] })
   // Whether `a` (the cutter-earlier crossing) is also the shape-earlier
   // ("open") one — the per-chord generalization of the single-pair case's
   // `chordEndsAtB` comparison.
-  const chordOpenIsA = chords.map(({ a, b }) => a.getOffset() < b.getOffset())
+  const chordOpenIsA = chords.map(({ a, b }) => a.offset < b.offset)
 
   // Slice each chord's own straight polyline stretch out of the cutter, in
   // the cutter's natural (a -> b) direction, then precompute both directed
   // copies: "open -> close" (used when a chord is referenced by the region
   // *around* it) and "close -> open" (used by the bite region it encloses).
   const cutterClone = cutterPath.clone({ insert: false })
-  const cutterSegAt = byCutter.map((loc) => divideOrGetSegment(cutterClone, loc.getIntersection().getOffset()))
+  const cutterSegAt = byCutter.map((loc) => divideOrGetSegment(cutterClone, loc.intersection.offset))
   const chordAtoB = chords.map((_, i) => cutterClone.segments
     .slice(cutterSegAt[2 * i].index, cutterSegAt[2 * i + 1].index + 1).map((s) => s.clone()))
   const chordOpenToClose = chordAtoB.map((segs, i) => (chordOpenIsA[i] ? segs : reverseArc(segs)))
@@ -166,11 +167,11 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // in ascending shape-offset order (wrapping once back to the start) — the
   // arcAB/arcBA construction from the single-pair case, generalized from 2
   // stretches to 2m.
-  const byShape = crossings.slice().sort((a, b) => a.getOffset() - b.getOffset())
+  const byShape = crossings.slice().sort((a, b) => a.offset - b.offset)
   const chordIdOf = new Map()
   chords.forEach((c, i) => { chordIdOf.set(c.a, i); chordIdOf.set(c.b, i) })
   const shapeClone = contourPath.clone({ insert: false })
-  const shapeSegAt = byShape.map((loc) => divideOrGetSegment(shapeClone, loc.getOffset()))
+  const shapeSegAt = byShape.map((loc) => divideOrGetSegment(shapeClone, loc.offset))
   const shapeSegs = shapeClone.segments
   const gapSegs = byShape.map((_, i) => (i < byShape.length - 1
     ? shapeSegs.slice(shapeSegAt[i].index, shapeSegAt[i + 1].index + 1)
@@ -285,7 +286,7 @@ const cutShapePath = (scope, shapePath, points) => {
   const coreChildren = []
   const bitePieces = []
   for (const child of shapePath.children) {
-    const result = cutContour(scope, child, cutterPath)
+    const result = cutContour(scope, /** @type {paper.Path} */ (child), cutterPath)
     if (!result) {
       untouchedChildren.push(child.clone({ insert: false }))
     } else {

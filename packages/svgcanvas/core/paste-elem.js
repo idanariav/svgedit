@@ -1,3 +1,4 @@
+// @ts-check
 import { getUrlFromAttr } from './dom-utils.js'
 import * as hstry from './history.js'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'
@@ -64,7 +65,7 @@ export const init = (canvas) => {
     const batchCmd = new BatchCommand('Paste elements')
     // const drawing = getCurrentDrawing();
     /**
-* @typedef {PlainObject<string, string>} module:svgcanvas.ChangedIDs
+* @typedef {Object<string, string>} module:svgcanvas.ChangedIDs
 */
     /**
 * @type {module:svgcanvas.ChangedIDs}
@@ -123,7 +124,7 @@ export const init = (canvas) => {
     /**
 * Triggered when `pasteElements` is called from a paste action (context menu or key).
 * @event module:svgcanvas.SvgCanvas#event:ext_IDsUpdated
-* @type {PlainObject}
+* @type {Object<string, any>}
 * @property {module:svgcanvas.SVGAsJSON[]} elems
 * @property {module:svgcanvas.ChangedIDs} changes Maps past ID (on attribute) to current ID
 */

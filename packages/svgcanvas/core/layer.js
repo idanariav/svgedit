@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Provides tools for the layer concept.
  * @module layer
@@ -198,13 +199,13 @@ class Layer {
    */
   setOpacity (opacity) {
     if (typeof opacity === 'number' && opacity >= 0.0 && opacity <= 1.0) {
-      this.group_.setAttribute('opacity', opacity)
+      this.group_.setAttribute('opacity', String(opacity))
     }
   }
 
   /**
    * Append children to this layer.
-   * @param {SVGGElement} children - The children to append to this layer.
+   * @param {Iterable<Node>} children - The children to append to this layer.
    * @returns {void}
    */
   appendChildren (children) {
@@ -219,9 +220,9 @@ class Layer {
   getTitleElement () {
     const len = this.group_.childNodes.length
     for (let i = 0; i < len; ++i) {
-      const child = this.group_.childNodes.item(i)
+      const child = /** @type {Element|null} */ (this.group_.childNodes.item(i))
       if (child?.tagName === 'title') {
-        return child
+        return /** @type {SVGTitleElement} */ (child)
       }
     }
     return null

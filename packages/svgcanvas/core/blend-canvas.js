@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Blends on the canvas: the group, its keys and generated steps, and the canvas API. The geometry and the paint
  * interpolation are in `blend.js`.

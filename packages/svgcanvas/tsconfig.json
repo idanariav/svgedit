@@ -11,5 +11,5 @@
     "allowJs": true,
     "noEmit": true
   },
-  "files": ["svgcanvas.d.ts", "svgcanvas.js"]
+  "files": ["legacy-jsdoc-types.d.ts", "svgcanvas.d.ts", "svgcanvas.js"]
 }

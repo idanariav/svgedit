@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor
  * (keeps the shape by refitting the neighbours' handles), Add Anchor Points,

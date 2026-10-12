@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The Pen's "continue" and "join" gestures: pressing on an end of an existing
  * open path carries that path on (or, while drawing, joins the drawing to it).

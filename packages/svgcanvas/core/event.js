@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tools for event.
  * @module event
@@ -31,7 +32,7 @@ const {
 
 /**
 * @function module:undo.init
-* @param {module:undo.eventContext} eventContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -958,7 +959,7 @@ export const init = (canvas) => {
     })
   }
   /**
- * @param {Event} e
+ * @param {WheelEvent & {wheelDelta?: number}} e
  * @fires module:event.SvgCanvas#event:updateCanvas
  * @fires module:event.SvgCanvas#event:zoomDone
  * @returns {void}

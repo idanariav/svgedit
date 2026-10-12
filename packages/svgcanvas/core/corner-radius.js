@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Live Corners: per-corner radius and kind (round, inverted round, chamfer)
  * on the corners of any path — the anchors where two straight sides meet.
