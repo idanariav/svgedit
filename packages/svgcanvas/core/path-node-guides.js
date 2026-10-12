@@ -31,9 +31,10 @@
  * @returns {{x: number, y: number, index: number}[]}
  */
 export const collectPathNodeTargets = (path, excludeIndices) => {
+  /** @type {{x: number, y: number, index: number}[]} */
   const targets = []
   if (!path?.segs) return targets
-  path.segs.forEach((seg, index) => {
+  path.segs.forEach((/** @type {any} */ seg, /** @type {number} */ index) => {
     if (excludeIndices.includes(index)) return
     const pt = seg?.item
     if (!pt || typeof pt.x !== 'number' || typeof pt.y !== 'number') return

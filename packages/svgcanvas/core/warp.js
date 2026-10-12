@@ -112,6 +112,7 @@ export const warpSubpaths = (subpaths, bbox, p) => {
   // A flat box has no extent on one axis: borrow the other one's.
   if (hw < 1e-6) hw = Math.max(hh, 1e-9)
   if (hh < 1e-6) hh = Math.max(hw, 1e-9)
+  /** @param {{x: number, y: number}} q */
   const f = (q) => {
     const x = (q.x - cx) / hw
     const y = (q.y - cy) / hh

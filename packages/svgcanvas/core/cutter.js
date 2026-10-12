@@ -338,6 +338,7 @@ const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
   const compensation = isIdentity(ancestorMatrix) ? null : ancestorMatrix.inverse()
 
   for (const piece of pieces) {
+    /** @type {Record<string, any>} */
     const attr = {
       id: svgCanvas.getNextId(),
       d: toAbsolutePathData(piece.pathData, svgCanvas),

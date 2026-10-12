@@ -21,6 +21,7 @@ export const init = (canvas) => {
   // Ctrl/Cmd+V presses cascade down-right like the Duplicate button instead
   // of stacking every copy on the exact same point. Reset whenever the
   // clipboard content changes (a fresh copy) or a "paste in place" occurs.
+  /** @type {string|null} */
   let lastPasteSignature = null
   let pasteStreak = 0
   const PASTE_STREAK_STEP = 20
@@ -44,7 +45,7 @@ export const init = (canvas) => {
     if (!Array.isArray(clipb)) {
       const rawClipboard = sessionStorage.getItem(svgCanvas.getClipboardID())
       try {
-        clipb = JSON.parse(rawClipboard)
+        clipb = JSON.parse(/** @type {string} */ (rawClipboard))
       } catch {
         return
       }
@@ -87,7 +88,7 @@ export const init = (canvas) => {
         changedIDs[elem.attr.id] = svgCanvas.getNextIdWithPrefix(prefix)
         elem.attr.id = changedIDs[elem.attr.id]
       }
-      if (elem.children) elem.children.forEach((child) => checkIDs(child))
+      if (elem.children) elem.children.forEach((/** @type {any} */ child) => checkIDs(child))
     }
     clipb.forEach((elem) => checkIDs(elem))
 
@@ -116,7 +117,7 @@ export const init = (canvas) => {
           }
         }
       }
-      if (elem.children) elem.children.forEach((child) => remapReferences(child))
+      if (elem.children) elem.children.forEach((/** @type {any} */ child) => remapReferences(child))
     }
     clipb.forEach((elem) => remapReferences(elem))
 
@@ -133,11 +134,11 @@ export const init = (canvas) => {
       /** @type {module:svgcanvas.SvgCanvas#event:ext_IDsUpdated} */
       { elems: clipb, changes: changedIDs },
       true
-    ).forEach(function (extChanges) {
+    ).forEach(function (/** @type {any} */ extChanges) {
       if (!extChanges || !('remove' in extChanges)) return
 
-      extChanges.remove.forEach(function (removeID) {
-        clipb = clipb.filter(function (clipBoardItem) {
+      extChanges.remove.forEach(function (/** @type {string} */ removeID) {
+        clipb = clipb.filter(function (/** @type {any} */ clipBoardItem) {
           return clipBoardItem?.attr?.id !== removeID
         })
       })
@@ -202,7 +203,9 @@ export const init = (canvas) => {
         const streakOffset = pasteStreak * PASTE_STREAK_STEP
         const cx = ctrX - (bbox.x + bbox.width / 2) + streakOffset
         const cy = ctrY - (bbox.y + bbox.height / 2) + streakOffset
+        /** @type {number[]} */
         const dx = []
+        /** @type {number[]} */
         const dy = []
 
         pasted.forEach(function (_item) {

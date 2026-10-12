@@ -38,15 +38,26 @@ const PRESSURE_MIN_FACTOR = 0.35
 
 const CAP_ANGLES = [30, 60, 90, 120, 150]
 
+/** @typedef {{x: number, y: number}} Vec */
+/** @type {(a: Vec, b: Vec) => Vec} */
 const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
+/** @type {(a: Vec, b: Vec) => Vec} */
 const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
+/** @type {(a: Vec, k: number) => Vec} */
 const scale = (a, k) => ({ x: a.x * k, y: a.y * k })
+/** @type {(a: Vec) => number} */
 const len = (a) => Math.hypot(a.x, a.y)
+/** @type {(a: Vec) => Vec} */
 const normalize = (a) => {
   const l = len(a)
   return l > 1e-6 ? scale(a, 1 / l) : { x: 1, y: 0 }
 }
-/** Rotate a vector by `deg` degrees counter-clockwise. */
+/**
+ * Rotate a vector by `deg` degrees counter-clockwise.
+ * @param {Vec} v
+ * @param {number} deg
+ * @returns {Vec}
+ */
 const rotate = (v, deg) => {
   const rad = (deg * Math.PI) / 180
   const c = Math.cos(rad)
@@ -85,6 +96,7 @@ const nibFactor = (travelRad, angleRad, roundness01) => {
 const pressureFactor = (pressure = 1) =>
   PRESSURE_MIN_FACTOR + (1 - PRESSURE_MIN_FACTOR) * Math.max(0, Math.min(1, pressure))
 
+/** @param {Vec[]} points */
 const pathFromLoop = (points) => {
   if (!points.length) return ''
   const d = ['M', points[0].x, points[0].y]
@@ -98,7 +110,7 @@ const pathFromLoop = (points) => {
  * footprint as a small ellipse — a thin dash along the nib angle for a
  * chiseled brush, a circle for a round one.
  * @param {{x:number,y:number}} center
- * @param {{thickness:number, angle:number, roundness:number, pressure:number}} p
+ * @param {{thickness:number, angle:number, roundness:number, pressure?:number}} p
  * @returns {string}
  */
 const buildDab = (center, { thickness, angle, roundness, pressure }) => {
@@ -207,6 +219,7 @@ export const finalizeBrushOutline = (d, svgCanvas) => {
 export const createSmoother = (smoothness) => {
   // Cap below 1 so the filter can never fully lock and stop following input.
   const k = Math.max(0, Math.min(0.92, smoothness))
+  /** @type {{x: number, y: number, pressure?: number}|null} */
   let prev = null
   return {
     push (raw) {

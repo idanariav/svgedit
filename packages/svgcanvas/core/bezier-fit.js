@@ -19,13 +19,21 @@
 
 import { evalCubic } from './anchor-path.js'
 
+/** @typedef {{x: number, y: number}} Pt */
+/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+
 /** Maximum Newton reparameterisation rounds per fit. */
 const MAX_REPARAM = 6
 
+/** @type {(a: Pt, b: Pt) => Pt} */
 const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
+/** @type {(a: Pt, b: Pt) => Pt} */
 const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
+/** @type {(a: Pt, k: number) => Pt} */
 const mul = (a, k) => ({ x: a.x * k, y: a.y * k })
+/** @type {(a: Pt, b: Pt) => number} */
 const dot = (a, b) => a.x * b.x + a.y * b.y
+/** @type {(a: Pt, b: Pt) => number} */
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 
 /**
@@ -66,7 +74,9 @@ export const sampleCubic = (c, n, out, includeStart = true) => {
   for (let i = includeStart ? 0 : 1; i <= n; i++) out.push(evalCubic(c, i / n))
 }
 
+/** @param {Pt[]} pts */
 const dedup = (pts) => {
+  /** @type {Pt[]} */
   const v = []
   for (const p of pts) {
     if (!v.length || dist(v[v.length - 1], p) > 1e-12) v.push(p)
@@ -74,6 +84,7 @@ const dedup = (pts) => {
   return v
 }
 
+/** @param {Pt[]} pts */
 const chordParams = (pts) => {
   const u = [0]
   let acc = 0
@@ -84,12 +95,20 @@ const chordParams = (pts) => {
   return acc > 0 ? u.map((x) => x / acc) : u
 }
 
+/** @param {number} t */
 const bern = (t) => {
   const s = 1 - t
   return [s * s * s, 3 * s * s * t, 3 * s * t * t, t * t * t]
 }
 
-/** Solve the 2x2 normal equations for the handle lengths along the fixed tangents. */
+/**
+ * Solve the 2x2 normal equations for the handle lengths along the fixed tangents.
+ * @param {Pt[]} pts
+ * @param {number[]} u
+ * @param {Pt} t0
+ * @param {Pt} t1
+ * @returns {Cubic}
+ */
 const generate = (pts, u, t0, t1) => {
   const p0 = pts[0]
   const p3 = pts[pts.length - 1]
@@ -133,6 +152,12 @@ const generate = (pts, u, t0, t1) => {
   return { p0, p1: add(p0, mul(t0, al)), p2: add(p3, mul(dirIn, ar)), p3 }
 }
 
+/**
+ * @param {Pt[]} pts
+ * @param {Cubic} c
+ * @param {number[]} u
+ * @returns {[number, number]}
+ */
 const maxError = (pts, c, u) => {
   let e = 0
   let idx = Math.floor(pts.length / 2)
@@ -146,7 +171,13 @@ const maxError = (pts, c, u) => {
   return [e, idx]
 }
 
-/** One Newton step moving parameter `t` towards the point on `c` closest to `p`. */
+/**
+ * One Newton step moving parameter `t` towards the point on `c` closest to `p`.
+ * @param {Cubic} c
+ * @param {Pt} p
+ * @param {number} t
+ * @returns {number}
+ */
 const newton = (c, p, t) => {
   const s = 1 - t
   const q = sub(evalCubic(c, t), p)
@@ -203,6 +234,15 @@ export const fitSingleFrom = (pts, u, t0, t1) => {
  */
 export const fitSingle = (pts, t0, t1) => fitSingleFrom(pts, chordParams(pts), t0, t1)
 
+/**
+ * @param {Pt[]} pts
+ * @param {Pt} t0
+ * @param {Pt} t1
+ * @param {number} tol
+ * @param {Cubic[]} out
+ * @param {number} depth
+ * @returns {void}
+ */
 const fitRec = (pts, t0, t1, tol, out, depth) => {
   const n = pts.length
   if (n === 2) {
@@ -232,6 +272,7 @@ const fitRec = (pts, t0, t1, tol, out, depth) => {
  * @returns {import('./anchor-path.js').Cubic[]}
  */
 export const fitCubics = (pts, t0, t1, tol) => {
+  /** @type {Cubic[]} */
   const out = []
   const clean = dedup(pts)
   if (clean.length < 2) return out

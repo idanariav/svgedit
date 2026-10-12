@@ -38,6 +38,7 @@ export const PRESETS = [
   { id: 'wave', label: 'Wave', points: [[0, 0.3, 0.3], [0.25, 1, 1], [0.5, 0.3, 0.3], [0.75, 1, 1], [1, 0.3, 0.3]] }
 ]
 
+/** @param {number} n */
 const num = (n) => Math.round(n * 1e5) / 1e5
 
 /**
@@ -118,6 +119,7 @@ export const profileAround = (points, t) => {
  */
 export const presetId = (points) => {
   if (!points) return 'uniform'
+  /** @type {(a: readonly (readonly number[])[], b: readonly (readonly number[])[]) => boolean} */
   const same = (a, b) => a.length === b.length && a.every((p, i) => p.every((v, k) => Math.abs(v - b[i][k]) < 1e-6))
   return PRESETS.find((p) => same(p.points, points))?.id ?? 'custom'
 }
@@ -187,6 +189,7 @@ export const movedPoint = (points, index, t) => {
  * @returns {[number, number]}
  */
 export const endPercents = (points) => {
+  /** @param {number[]} p */
   const mean = (p) => Math.round(((p[1] + p[2]) / 2) * 100)
   return [mean(points[0]), mean(points[points.length - 1])]
 }

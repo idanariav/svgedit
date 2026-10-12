@@ -32,6 +32,7 @@ const {
   ChangeElementCommand
 } = hstry
 
+/** @param {any} canvas */
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
@@ -73,7 +74,7 @@ export const init = canvas => {
       }
     })
     if (type === 'a') {
-      setHref(g, url)
+      setHref(g, /** @type {string} */ (url))
     }
     batchCmd.addSubCommand(new InsertElementCommand(g))
 
@@ -120,7 +121,7 @@ export const init = canvas => {
     const len = children.length
     const xform = g.getAttribute('transform')
 
-    const glist = getTransformList(g)
+    const glist = /** @type {SVGTransformList} */ (getTransformList(g))
     const m = transformListToTransform(glist).matrix
 
     const batchCmd = new BatchCommand('Push group properties')
@@ -219,6 +220,7 @@ export const init = canvas => {
         }
       }
 
+      /** @type {SVGTransformList|null|undefined} */
       let chtlist = getTransformList(elem)
 
       // Don't process gradient transforms
@@ -387,7 +389,7 @@ export const init = canvas => {
       }
 
       // $(elem.firstChild.firstChild).unwrap();
-      const firstChild = /** @type {any} */ (elem.firstChild.firstChild)
+      const firstChild = /** @type {any} */ (/** @type {ChildNode} */ (elem.firstChild).firstChild)
       if (firstChild) {
         const container = svg
         // Snapshot before/after as detached clones (rather than innerHTML
@@ -397,6 +399,7 @@ export const init = canvas => {
         const beforeNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
         firstChild.outerHTML = firstChild.innerHTML
         const afterNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
+        /** @param {Node[]} nodes */
         const replaceChildren = nodes => {
           while (container.firstChild) { container.removeChild(container.firstChild) }
           nodes.forEach(n => container.appendChild(n.cloneNode(true)))
@@ -419,7 +422,7 @@ export const init = canvas => {
       dataStorage.remove(elem, 'gsvg')
 
       const oldTransform = elem.getAttribute('transform') || ''
-      const tlist = getTransformList(elem)
+      const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
       const xform = svgCanvas.getSvgRoot().createSVGTransform()
       xform.setTranslate(pt.x, pt.y)
       tlist.appendItem(xform)

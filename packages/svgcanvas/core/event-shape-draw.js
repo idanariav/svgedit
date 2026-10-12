@@ -70,14 +70,18 @@ export const init = (canvas) => {
   // Real-time jitter stabilization for the freehand pencil tool (EMA low-pass
   // filter on raw pointer coordinates, applied before the B-spline capture
   // below). Reset per-stroke in the fhpath mousedown case.
+  /** @type {number|null} */
   let pencilStabX = null
+  /** @type {number|null} */
   let pencilStabY = null
   // The end of the selected open path the current pencil stroke started on (it carries that path on).
+  /** @type {any} */
   let pencilEnd = null
   // The Text tool press has been dragged into a box: it makes area text instead of point text.
   let textBoxDrag = false
   let textBoxEnd = { x: 0, y: 0 }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { x, y, curShape } = ctx
     let { realX, realY } = ctx
@@ -264,6 +268,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { shape } = ctx
     let { x, y, realX, realY } = ctx
@@ -430,6 +435,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     let { element, keep } = ctx
     switch (svgCanvas.getCurrentMode()) {

@@ -17,6 +17,7 @@
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { mouseTarget, zoom } = ctx
     svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
@@ -25,11 +26,13 @@ export const init = (canvas) => {
     svgCanvas.setStarted(true)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { mouseX, mouseY } = ctx
     svgCanvas.textActions.mouseMove(mouseX, mouseY)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     const { mouseX, mouseY } = ctx
     svgCanvas.textActions.mouseUp(evt, mouseX, mouseY)

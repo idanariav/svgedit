@@ -29,6 +29,7 @@ const MERGE_TOLERANCE = 0.5
 /** Parsed open single-subpath paths, by element (a mouse move asks about every path in the layer). */
 const parsed = new WeakMap()
 
+/** @param {Element} elem */
 const openSubpath = (elem) => {
   const d = elem.getAttribute('d') || ''
   let hit = parsed.get(elem)
@@ -40,6 +41,7 @@ const openSubpath = (elem) => {
   return hit.subpath
 }
 
+/** @param {Element} elem */
 const isPlain = (elem) => {
   if (LIVE_ATTRS.some((a) => elem.hasAttribute(a))) return false
   const tlist = getTransformList(elem)
@@ -84,6 +86,7 @@ export const findPenEnd = (container, x, y, tolerance, exclude = []) => {
 export const continuationD = (end) =>
   anchorsToD([end.atEnd ? end.subpath : reversedSubpath(end.subpath)])
 
+/** @param {{x: number, y: number}} p */
 const lone = (p) => ({ closed: false, anchors: [{ p, hIn: { ...p }, hOut: { ...p } }] })
 
 /**

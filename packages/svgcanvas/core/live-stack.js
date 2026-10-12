@@ -268,11 +268,12 @@ export const rebuildAfterRemap = (elem, canvas) => {
   if (plan) commitPlan(elem, plan)
 }
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   registerElementCheck('se-stack', stackProblems)
   Object.assign(canvas, {
     /** @see module:live-stack.reconcileStack */
-    reconcileLiveStack: (elem) => reconcileStack(elem, canvas),
+    reconcileLiveStack: (/** @type {Element} */ elem) => reconcileStack(elem, canvas),
     isLiveStacked: isStacked
   })
 }

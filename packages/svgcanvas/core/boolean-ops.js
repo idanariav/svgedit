@@ -215,6 +215,7 @@ const performBooleanOp = (type, canvas) => {
   const { BatchCommand, RemoveElementCommand } = canvas.history
   const batchCmd = new BatchCommand(`Boolean ${type}`)
 
+  /** @type {Element[]} */
   const newPaths = []
 
   if (type === 'divide') {

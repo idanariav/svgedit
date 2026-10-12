@@ -47,6 +47,7 @@ export const hasVisibleStroke = (elem) => {
 // Reentrant init: the offset operations are created per SvgCanvas instance
 // (closed over `svgCanvas` below) so several editors can coexist in one
 // realm. Stateless helpers above stay shared.
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -167,6 +168,7 @@ export const init = (canvas) => {
   /**
  * Map an element's stroke-linejoin to a Clipper JoinType.
  */
+  /** @param {Element} elem */
   const joinTypeFor = (elem) => {
     switch (elem.getAttribute('stroke-linejoin')) {
       case 'round': return ClipperLib.JoinType.jtRound
@@ -178,6 +180,7 @@ export const init = (canvas) => {
   /**
  * Map an element's stroke-linecap to a Clipper open EndType.
  */
+  /** @param {Element} elem */
   const openEndTypeFor = (elem) => {
     switch (elem.getAttribute('stroke-linecap')) {
       case 'round': return ClipperLib.EndType.etOpenRound

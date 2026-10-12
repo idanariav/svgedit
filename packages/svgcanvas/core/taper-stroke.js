@@ -75,7 +75,7 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
   const sc = getPaperScope()
   const compound = new sc.CompoundPath(d)
   try {
-    const child = compound.children?.length ? compound.children[0] : compound
+    const child = /** @type {paper.Path} */ (compound.children?.length ? compound.children[0] : compound)
     if (!child.length || child.closed || !(width > 0)) return null
     const s = Math.max(0, Math.min(1, startPct / 100))
     const e = Math.max(0, Math.min(1, endPct / 100))
@@ -97,12 +97,12 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
 
     // Round caps at tips that still have width. The sweep sign is chosen so
     // rotating the normal passes through the outward tangent direction.
-    const n0 = child.getNormalAt(0)
-    const t0 = child.getTangentAt(0)
-    const nE = child.getNormalAt(total)
+    const n0 = /** @type {any} */ (child.getNormalAt(0))
+    const t0 = /** @type {any} */ (child.getTangentAt(0))
+    const nE = /** @type {any} */ (child.getNormalAt(total))
     const sign = n0.rotate(90).subtract(t0).length < n0.rotate(-90).subtract(t0).length ? 1 : -1
-    const p0 = child.getPointAt(0)
-    const pE = child.getPointAt(total)
+    const p0 = /** @type {any} */ (child.getPointAt(0))
+    const pE = /** @type {any} */ (child.getPointAt(total))
     const hw0 = Math.max(0.01, width * profile(0, s, e)) / 2
     const hwE = Math.max(0.01, width * profile(1, s, e)) / 2
     const endCap = e > 0.02

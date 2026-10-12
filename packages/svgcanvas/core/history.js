@@ -117,7 +117,8 @@ export class Command {
    * This function needs to be surcharged if multiple elements are returned.
   */
   elements () {
-    return [/** @type {any} */ (this).elem]
+    const { elem } = /** @type {any} */ (this)
+    return [elem]
   }
 
   /**
@@ -193,7 +194,7 @@ export class Command {
 export class MoveElementCommand extends Command {
   /**
   * @param {Element} elem - The DOM element that was moved
-  * @param {Element} oldNextSibling - The element's next sibling before it was moved
+  * @param {Element|null} oldNextSibling - The element's next sibling before it was moved
   * @param {Element} oldParent - The element's parent before it was moved
   * @param {string} [text] - An optional string visible to user related to this change
   */
@@ -292,7 +293,7 @@ export class InsertElementCommand extends Command {
 export class RemoveElementCommand extends Command {
   /**
   * @param {Element} elem - The removed DOM element
-  * @param {Node} oldNextSibling - The DOM element's nextSibling when it was in the DOM
+  * @param {Node|null} oldNextSibling - The DOM element's nextSibling when it was in the DOM
   * @param {Element} oldParent - The DOM element's parent
   * @param {string} [text] - An optional string visible to user related to this change
   */

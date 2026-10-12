@@ -16,6 +16,7 @@ const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clie
 const isTabletMode = (svgCanvas) =>
   Boolean(svgCanvas.svgroot.closest('.svg_editor')?.classList.contains('ui-tablet'))
 
+/** @param {import('../svgcanvas.js').default} svgCanvas */
 export const init = (svgCanvas) => {
   // Pinch-to-zoom (tablet mode) state, per canvas.
   let pinching = false

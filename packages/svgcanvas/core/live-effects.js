@@ -92,7 +92,7 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6
  *   their defaults; the default's type is the param's type.
  * @property {(subpaths: import('./anchor-path.js').SubPath[],
  *   bbox: {x: number, y: number, width: number, height: number},
- *   params: Object) => import('./anchor-path.js').SubPath[]} apply
+ *   params: any) => import('./anchor-path.js').SubPath[]} apply
  * @property {Object<string, string[]>} [choices] - Allowed values for string params.
  * @property {Object<string, {min?: number, max?: number, step?: number}>} [ranges]
  *   - Suggested bounds for number params (UI hints only).

@@ -148,7 +148,7 @@ for (const [elt, atts] of Object.entries(svgWhiteList_)) {
   for (const att of atts) {
     if (att.includes(':')) {
       const [prefix, localName] = att.split(':')
-      attNS[localName] = NS[prefix.toUpperCase()]
+      attNS[localName] = NS[/** @type {keyof typeof NS} */ (prefix.toUpperCase())]
     } else {
       attNS[att] = att === 'xmlns' ? NS.XMLNS : null
     }
@@ -179,7 +179,7 @@ export const init = canvas => {
     // Cleanup text nodes
     if (node.nodeType === 3) { // 3 === TEXT_NODE
       // Trim whitespace
-      node.nodeValue = node.nodeValue.trim()
+      node.nodeValue = /** @type {string} */ (node.nodeValue).trim()
       // Remove if empty
       if (!node.nodeValue.length) {
         node.remove()
@@ -203,11 +203,12 @@ export const init = canvas => {
     const allowedAttrsNS = svgWhiteListNS_[node.nodeName]
     // if this element is supported, sanitize it
     if (typeof allowedAttrs !== 'undefined') {
+      /** @type {Array<[string, string, string|null]>} */
       const seAttrs = []
       let i = node.attributes.length
       while (i--) {
         // if the attribute is not in our whitelist, then remove it
-        const attr = node.attributes.item(i)
+        const attr = /** @type {Attr} */ (node.attributes.item(i))
         const attrName = attr.nodeName
         const attrLocalName = attr.localName
         const attrNsURI = attr.namespaceURI
@@ -322,7 +323,7 @@ export const init = canvas => {
       warn(`element ${node.nodeName} not supported is removed: ${node.outerHTML}`, null, 'sanitize')
       const children = []
       while (node.hasChildNodes()) {
-        children.push(parent.insertBefore(node.firstChild, node))
+        children.push(parent.insertBefore(/** @type {ChildNode} */ (node.firstChild), node))
       }
 
       // remove this node from the document altogether

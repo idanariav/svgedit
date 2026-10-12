@@ -5,3 +5,9 @@
  */
 type PlainObject<K extends string = string, V = any> = Record<K, V>
 type GenericArray = any[]
+
+/** culori ships no types for its tree-shakeable `culori/fn` entry; the modules that use it wrap what they need. */
+declare module 'culori/fn'
+
+/** clipper-lib ships no types; path-offset and the boolean tools drive it through its untyped API. */
+declare module 'clipper-lib'

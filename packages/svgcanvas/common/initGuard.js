@@ -18,7 +18,7 @@ import { warn } from './logger.js'
  * properties before and after to detect any property a previous guarded
  * call already claimed. Overwrites by the *same* label (e.g. a legitimate
  * re-init) are not flagged.
- * @param {object} canvas - The SvgCanvas instance being initialized.
+ * @param {Record<string, any>} canvas - The SvgCanvas instance being initialized.
  * @param {string} label - Identifies the module for warning messages (e.g. `'selection'`).
  * @param {Function} initFn - The module's `init(canvas)` function.
  * @param {Map<string, string>} registry - Shared `propName -> owning label` map, one per SvgCanvas instance.

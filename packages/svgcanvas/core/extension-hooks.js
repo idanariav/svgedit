@@ -139,7 +139,8 @@ export const EXTENSION_HOOKS = Object.freeze([
   'afterClear', 'beforeClear', 'onOpenedDocument', 'onSavedDocument'
 ])
 
-export const isExtensionHook = (name) => EXTENSION_HOOKS.includes(name)
+/** @param {string} name */
+export const isExtensionHook = (name) => /** @type {readonly string[]} */ (EXTENSION_HOOKS).includes(name)
 
 /** Non-hook functions an extension object may legitimately expose. */
 export const EXTENSION_LIFECYCLE_METHODS = Object.freeze(['callback'])

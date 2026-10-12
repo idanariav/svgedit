@@ -17,6 +17,7 @@ import { assignAttributes } from './dom-utils.js'
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { realX, realY, zoom } = ctx
     svgCanvas.setStarted(true)
@@ -32,6 +33,7 @@ export const init = (canvas) => {
     }, 100)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { zoom } = ctx
     let { realX, realY } = ctx
@@ -47,6 +49,7 @@ export const init = (canvas) => {
 
   // Mirrors the original switch: the 'zoom' mouseUp case returns immediately,
   // skipping the shared ext_mouseUp/keep-discard epilogue entirely.
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     const { realX, realY } = ctx
     svgCanvas.getRubberBox()?.setAttribute('display', 'none')

@@ -22,6 +22,7 @@ const historyRecordingService = (svgCanvas, hrService) => {
   return hrService || new HistoryRecordingService(svgCanvas.undoMgr)
 }
 
+/** @param {any} canvas */
 export const init = canvas => {
   const svgCanvas = canvas
 

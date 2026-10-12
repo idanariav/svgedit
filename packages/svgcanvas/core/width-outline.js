@@ -21,32 +21,47 @@ import { parseAnchors, segCubic, segmentCount, isLineSegment } from './anchor-pa
 import { profileAround } from './width-profile.js'
 
 /** @typedef {{x: number, y: number}} Pt */
+/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+/** @typedef {{p: Pt, a: Pt, b: Pt, la: number, lb: number, corner: boolean}} Vertex */
 
 const EPS = 1e-9
 /** Two segments meeting at more than about a degree are a corner of the path, not a smooth point. */
 const KINK_COS = 0.9998
 
+/** @type {(a: Pt, b: Pt) => Pt} */
 const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
+/** @type {(a: Pt, b: Pt) => Pt} */
 const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
+/** @type {(a: Pt, k: number) => Pt} */
 const mul = (a, k) => ({ x: a.x * k, y: a.y * k })
+/** @type {(a: Pt, b: Pt) => number} */
 const dot = (a, b) => a.x * b.x + a.y * b.y
+/** @type {(a: Pt, b: Pt) => number} */
 const cross = (a, b) => a.x * b.y - a.y * b.x
+/** @type {(a: Pt) => number} */
 const hypot = (a) => Math.hypot(a.x, a.y)
+/** @type {(a: Pt, b: Pt) => number} */
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+/** @type {(a: Pt) => Pt} */
 const unit = (a) => {
   const l = hypot(a)
   return l < EPS ? { x: 1, y: 0 } : { x: a.x / l, y: a.y / l }
 }
 /** Left normal in y-down space (left of the direction of travel). */
+/** @type {(t: Pt) => Pt} */
 const left = (t) => ({ x: t.y, y: -t.x })
 
 /** The first non-zero of the vectors, as a direction. */
+/** @type {(...vs: Pt[]) => Pt} */
 const firstDir = (...vs) => unit(vs.find((v) => hypot(v) > EPS) ?? { x: 1, y: 0 })
 
 /** Direction a cubic leaves its start / arrives at its end. */
+/** @type {(c: Cubic) => Pt} */
 const startDir = (c) => firstDir(sub(c.p1, c.p0), sub(c.p2, c.p0), sub(c.p3, c.p0))
+/** @type {(c: Cubic) => Pt} */
 const endDir = (c) => firstDir(sub(c.p3, c.p2), sub(c.p3, c.p1), sub(c.p3, c.p0))
 
+/** @type {(c: Cubic, t: number) => Pt} */
 const cubicAt = (c, t) => {
   const u = 1 - t
   const w0 = u * u * u
@@ -76,6 +91,7 @@ export const flatten = (sp, tol) => {
     const b = sp.anchors[(i + 1) % sp.anchors.length]
     const c = segCubic(sp, i)
     const at = pts.length - 1
+    /** @param {Pt} p */
     const push = (p) => {
       if (dist(pts[pts.length - 1], p) > EPS) {
         pts.push(p)
@@ -105,6 +121,11 @@ export const flatten = (sp, tol) => {
   return { pts, corner }
 }
 
+/**
+ * @param {Pt[]} pts
+ * @param {boolean} closed
+ * @returns {number}
+ */
 const length = (pts, closed) => {
   const n = pts.length
   let len = 0
@@ -115,6 +136,11 @@ const length = (pts, closed) => {
 /**
  * Insert samples where the profile has width points, so the piecewise-linear profile is exact along straight
  * runs (the two points of a discontinuous point share one sample).
+ * @param {Pt[]} pts
+ * @param {boolean[]} corner
+ * @param {boolean} closed
+ * @param {number[][]} profile
+ * @returns {{pts: Pt[], corner: boolean[]}}
  */
 const densify = (pts, corner, closed, profile) => {
   const total = length(pts, closed)
@@ -157,6 +183,12 @@ const densify = (pts, corner, closed, profile) => {
  * The offset points at a vertex on one side (`side` 1: left, −1: right), `w` from the path: the join on the
  * outer side of a turn, the inner miter point (or a detour through the vertex when that would overshoot a
  * segment) on the inner side.
+ * @param {Pt[]} out
+ * @param {Vertex} v
+ * @param {number} w
+ * @param {number} side
+ * @param {Required<OutlineOptions>} o
+ * @returns {void}
  */
 const joinPoints = (out, v, w, side, o) => {
   const na = mul(left(v.a), side)
@@ -181,7 +213,16 @@ const joinPoints = (out, v, w, side, o) => {
   }
 }
 
-/** A round join from `na` to `nb` (unit normals) at radius `w` around the vertex; a full reversal rounds through the direction of travel. */
+/**
+ * A round join from `na` to `nb` (unit normals) at radius `w` around the vertex; a full reversal rounds through the direction of travel.
+ * @param {Pt[]} out
+ * @param {Vertex} v
+ * @param {Pt} na
+ * @param {Pt} nb
+ * @param {number} w
+ * @param {Required<OutlineOptions>} o
+ * @returns {void}
+ */
 const arc = (out, v, na, nb, w, o) => {
   const phi = hypot(add(na, nb)) < EPS
     ? (dot({ x: -na.y, y: na.x }, v.a) > 0 ? Math.PI : -Math.PI)
@@ -195,7 +236,17 @@ const arc = (out, v, na, nb, w, o) => {
   }
 }
 
-/** Cap points between `c + u·r0` and `c − u·r1`, bulging towards `v`. */
+/**
+ * Cap points between `c + u·r0` and `c − u·r1`, bulging towards `v`.
+ * @param {Pt[]} ring
+ * @param {Pt} c
+ * @param {Pt} u
+ * @param {Pt} v
+ * @param {number} r0
+ * @param {number} r1
+ * @param {'butt'|'round'|'square'} cap
+ * @returns {void}
+ */
 const capPoints = (ring, c, u, v, r0, r1, cap) => {
   if (cap === 'square') {
     const h = (r0 + r1) / 2
@@ -235,12 +286,16 @@ const outlineSubpath = (sp, width, profile, o) => {
   if (total <= 1e-12) return []
   const half = width / 2
   // Left and right offsets just before and just after `d` along the subpath (they differ at a discontinuous point).
+  /** @param {number} d */
   const widthAt = (d) => {
     const [b, a] = profileAround(profile, d / total)
+    /** @type {(lr: number[]) => number[]} */
     const side = ([l, r]) => [half * Math.max(l, 0), half * Math.max(r, 0)]
     return { before: side(b), after: side(a) }
   }
+  /** @type {Pt[]} */
   const lpts = []
+  /** @type {Pt[]} */
   const rpts = []
   for (let i = 0; i < n; i++) {
     const p = pts[i]
@@ -276,6 +331,7 @@ const outlineSubpath = (sp, width, profile, o) => {
   return [ring]
 }
 
+/** @param {number} n */
 const f = (n) => String(Math.round(n * 1000) / 1000)
 
 /**

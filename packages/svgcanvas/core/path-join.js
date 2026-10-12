@@ -19,14 +19,17 @@ const JOIN_TOLERANCE = 0.5
 /** Source-geometry attributes of the live features: a path carrying one is not plain path data. */
 export const LIVE_ATTRS = ['se:fx-d', 'se:orig-d', 'se:taper-d', 'se:arrow-d']
 
+/** @param {Element|null|undefined} elem */
 const isPlainPath = (elem) =>
   !!elem && elem.tagName === 'path' && !LIVE_ATTRS.some((a) => elem.hasAttribute(a))
 
+/** @param {Element} elem */
 const matrixOf = (elem) => {
   const tlist = getTransformList(elem)
   return tlist ? transformListToTransform(tlist).matrix : null
 }
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -49,7 +52,7 @@ export const init = (canvas) => {
    */
   const joinSelectedPaths = () => {
     // The lower element in the document keeps its id and style.
-    const selected = svgCanvas.getSelectedElements().filter(Boolean).sort((a, b) =>
+    const selected = svgCanvas.getSelectedElements().filter(Boolean).sort((/** @type {Element} */ a, /** @type {Element} */ b) =>
       (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
     if (!canJoinPaths(selected)) return null
     const { BatchCommand, ChangeElementCommand, RemoveElementCommand } = svgCanvas.history
@@ -60,6 +63,7 @@ export const init = (canvas) => {
       const m1 = matrixOf(first)
       const m2 = matrixOf(second)
       const toFirst = m1 && m2 ? matrixMultiply(m1.inverse(), m2) : (m2 || (m1 ? m1.inverse() : null))
+      /** @param {{x: number, y: number}} pt */
       const map = (pt) => (toFirst ? transformPoint(pt.x, pt.y, toFirst) : pt)
       for (const sp of parseAnchors(second.getAttribute('d') || '', 0.1)) {
         subpaths.push({

@@ -185,7 +185,7 @@ export const init = (canvas) => {
    */
   svgCanvas.setDashPattern = (value) => {
     const list = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!list.some((el) => el.hasAttribute(DASH_FIT_ATTR))) return false
+    if (!list.some((/** @type {Element} */ el) => el.hasAttribute(DASH_FIT_ATTR))) return false
     const pattern = parseDashes(value)
     svgCanvas.transact('Change dash', () => {
       for (const el of list) {

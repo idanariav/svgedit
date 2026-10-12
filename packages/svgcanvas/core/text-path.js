@@ -28,6 +28,7 @@ import { warn } from '../common/logger.js'
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
 const SHAPE_GEOM_ATTRS = ['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points', 'x1', 'y1', 'x2', 'y2', 'd']
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -35,8 +36,8 @@ export const init = (canvas) => {
   const findPair = () => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     if (elems.length !== 2) return null
-    const text = elems.find((el) => el.tagName === 'text')
-    const rail = elems.find((el) => el !== text)
+    const text = elems.find((/** @type {Element} */ el) => el.tagName === 'text')
+    const rail = elems.find((/** @type {Element} */ el) => el !== text)
     if (!text || !rail || text.querySelector('textPath')) return null
     if (rail.tagName !== 'path' && !getPathDFromElement(rail)) return null
     if (['text', 'image', 'g', 'use'].includes(rail.tagName)) return null

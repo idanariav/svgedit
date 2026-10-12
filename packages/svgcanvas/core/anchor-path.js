@@ -28,10 +28,14 @@ import SvgPath from 'svgpath'
 /** @typedef {{p0: Pt, p1: Pt, p2: Pt, p3: Pt}} Cubic */
 
 const EPS = 1e-9
+/** @type {(n: number) => number} */
 const round6 = (n) => Math.round(n * 1e6) / 1e6
 
+/** @type {(a: Pt, b: Pt) => boolean} */
 const same = (a, b) => Math.abs(a.x - b.x) < EPS && Math.abs(a.y - b.y) < EPS
+/** @type {(a: Pt, b: Pt, t: number) => Pt} */
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t })
+/** @type {(a: Pt, b: Pt) => number} */
 const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y)
 
 /**
@@ -61,30 +65,34 @@ export const parseAnchors = (d, closeTol = EPS) => {
   } catch (_err) {
     return []
   }
+  /** @type {SubPath[]} */
   const out = []
-  /** @type {SubPath|null} */
-  let cur = null
+  // the cast keeps TS from narrowing `cur` to null: it is assigned inside the closures below
+  let cur = /** @type {SubPath|null} */ (null)
   let cx = 0
   let cy = 0
   let sx = 0
   let sy = 0
+  /** @type {(x: number, y: number) => void} */
   const begin = (x, y) => {
     cur = { closed: false, anchors: [makeAnchor(x, y)] }
     out.push(cur)
   }
-  const last = () => cur.anchors[cur.anchors.length - 1]
+  const last = () => /** @type {SubPath} */ (cur).anchors[/** @type {SubPath} */ (cur).anchors.length - 1]
+  /** @type {(x: number, y: number) => void} */
   const lineTo = (x, y) => {
     if (!cur) begin(cx, cy)
-    cur.anchors.push(makeAnchor(x, y))
+    ;/** @type {SubPath} */ (cur).anchors.push(makeAnchor(x, y))
     cx = x
     cy = y
   }
+  /** @type {(x1: number, y1: number, x2: number, y2: number, x: number, y: number) => void} */
   const cubicTo = (x1, y1, x2, y2, x, y) => {
     if (!cur) begin(cx, cy)
     last().hOut = { x: x1, y: y1 }
     const a = makeAnchor(x, y)
     a.hIn = { x: x2, y: y2 }
-    cur.anchors.push(a)
+    ;/** @type {SubPath} */ (cur).anchors.push(a)
     cx = x
     cy = y
   }
@@ -128,10 +136,11 @@ export const parseAnchors = (d, closeTol = EPS) => {
           // tiny closing `L` (what the saver writes) folds too; the incoming
           // handle comes from the curve.
           const first = cur.anchors[0]
+          /** @type {Pt|null} */
           let handle = null
           while (cur.anchors.length > 1 &&
             Math.abs(first.p.x - last().p.x) <= closeTol && Math.abs(first.p.y - last().p.y) <= closeTol) {
-            const a = cur.anchors.pop()
+            const a = /** @type {Anchor} */ (cur.anchors.pop())
             if (!handle && !same(a.hIn, a.p)) handle = a.hIn
           }
           if (handle) first.hIn = handle
@@ -161,6 +170,10 @@ export const isLineSegment = (a, b) => same(a.hOut, a.p) && same(b.hIn, b.p)
  * @returns {boolean}
  */
 export const hasIn = (a) => !same(a.hIn, a.p)
+/**
+ * @param {Anchor} a
+ * @returns {boolean}
+ */
 export const hasOut = (a) => !same(a.hOut, a.p)
 
 /**
@@ -206,6 +219,7 @@ export const segCubic = (sp, i) => {
  * @returns {string}
  */
 export const anchorsToD = (subpaths) => {
+  /** @param {Pt} pt */
   const f = (pt) => `${round6(pt.x)},${round6(pt.y)}`
   return subpaths.map((sp) => {
     const n = sp.anchors.length
@@ -250,6 +264,7 @@ export const evalCubic = (c, t) => {
  * @returns {Cubic}
  */
 export const splitCubic = (c, t0, t1) => {
+  /** @type {(q: Cubic, t: number) => Cubic} */
   const right = (q, t) => { // keep [t, 1]
     const a = lerp(q.p0, q.p1, t)
     const b = lerp(q.p1, q.p2, t)
@@ -259,6 +274,7 @@ export const splitCubic = (c, t0, t1) => {
     const m = lerp(ab, bc, t)
     return { p0: m, p1: bc, p2: cc, p3: q.p3 }
   }
+  /** @type {(q: Cubic, t: number) => Cubic} */
   const left = (q, t) => { // keep [0, t]
     const a = lerp(q.p0, q.p1, t)
     const b = lerp(q.p1, q.p2, t)
@@ -331,6 +347,7 @@ export const flattenSubpaths = (subpaths) => subpaths.map((sp) => {
   return { closed: sp.closed, pts }
 })
 
+/** @param {Cubic} c */
 const polyLen = (c) => dist(c.p0, c.p1) + dist(c.p1, c.p2) + dist(c.p2, c.p3)
 
 /**
@@ -433,6 +450,7 @@ export const anchorBBox = (subpaths) => {
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
+  /** @param {Pt} pt */
   const add = (pt) => {
     if (pt.x < minX) minX = pt.x
     if (pt.x > maxX) maxX = pt.x
@@ -464,6 +482,7 @@ export const anchorBBox = (subpaths) => {
  */
 export const sameAnchorGeometry = (a, b, tol = 0.1) => {
   if (a.length !== b.length) return false
+  /** @type {(p: Pt, q: Pt) => boolean} */
   const near = (p, q) => Math.abs(p.x - q.x) <= tol && Math.abs(p.y - q.y) <= tol
   return a.every((sp, i) => {
     const other = b[i]

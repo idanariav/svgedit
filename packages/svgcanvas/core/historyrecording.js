@@ -52,6 +52,7 @@ class HistoryRecordingService {
   constructor (undoManager) {
     this.undoManager_ = undoManager
     this.currentBatchCommand_ = null
+    /** @type {any[]} */
     this.batchCommandStack_ = []
   }
 

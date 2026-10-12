@@ -49,6 +49,7 @@ const updateTransformList = (svgRoot, element, dx, dy) => {
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { mouseTarget, svgRoot, rightClick, selectedElements, zoom } = ctx
     svgCanvas.setStarted(true)
@@ -104,6 +105,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { selectedElements, selected, zoom, svgRoot } = ctx
     const { x, y } = ctx
@@ -254,6 +256,7 @@ export const init = (canvas) => {
     }
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const multiselectMove = (evt, ctx) => {
     const { selectedElements, zoom } = ctx
     let { realX, realY } = ctx
@@ -303,6 +306,7 @@ export const init = (canvas) => {
   // fallthrough). Always returns without a result — the orchestrator's
   // mouseUpEvent returns immediately after calling this, skipping the
   // ext_mouseUp/keep-discard epilogue, exactly as the original switch did.
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected } = ctx
     const mode = svgCanvas.getCurrentMode()

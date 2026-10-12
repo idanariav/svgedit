@@ -43,6 +43,7 @@ const stripIds = (el) => {
 }
 
 /** Extract the id from a `url(#id)` reference string. */
+/** @param {string} val */
 const refId = (val) => val.replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
 
 /**
@@ -275,7 +276,7 @@ export const init = (canvas) => {
   const convertClipToMask = (elem, batchCmd) => {
     const { InsertElementCommand, RemoveElementCommand, MoveElementCommand, ChangeElementCommand } =
       svgCanvas.history
-    const clipEl = svgCanvas.getElement(refId(elem.getAttribute('clip-path')))
+    const clipEl = svgCanvas.getElement(refId(/** @type {string} */ (elem.getAttribute('clip-path'))))
 
     const maskId = svgCanvas.getNextId()
     const mask = svgCanvas.addSVGElementsFromJson({ element: 'mask', attr: { id: maskId } })

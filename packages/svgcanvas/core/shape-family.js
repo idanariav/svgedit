@@ -31,8 +31,11 @@ export const MIN_SEGMENTS = 2
 export const MAX_SEGMENTS = 1000
 export const MAX_DIVIDERS = 200
 
+/** @type {(n: number, lo: number, hi: number) => number} */
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
+/** @param {number} n */
 const round3 = (n) => Math.round(n * 1000) / 1000
+/** @type {(x: number, y: number) => {x: number, y: number}} */
 const pt = (x, y) => ({ x, y })
 
 /**
@@ -116,6 +119,7 @@ export const arcD = ({ x1, y1, x2, y2, slope = 0, closed = false }) => {
   const a = pt(x1, y1)
   const b = pt(x2, y2)
   const corner = pt(x2, y1)
+  /** @param {{x: number, y: number}} from */
   const toward = (from) => pt(from.x + (corner.x - from.x) * k, from.y + (corner.y - from.y) * k)
   const anchors = [
     { p: a, hIn: { ...a }, hOut: toward(a) },
@@ -178,6 +182,7 @@ export const arcDragEnds = (start, p, { shift = false, alt = false } = {}) => {
     : { x1: start.x, y1: start.y, x2: start.x + d.x, y2: start.y + d.y }
 }
 
+/** @type {(x1: number, y1: number, x2: number, y2: number) => string} */
 const lineD = (x1, y1, x2, y2) => `M${round3(x1)},${round3(y1)} L${round3(x2)},${round3(y2)}`
 
 /**

@@ -39,6 +39,7 @@ export const init = (canvas) => {
     // Ignore non-element nodes (e.g., comments)
     if (data.nodeType !== 1) return null
 
+    /** @type {{element: string, attr: Record<string, string>, children: any[]}} */
     const retval = {
       element: data.tagName,
       // namespace: nsMap[data.namespaceURI],
@@ -77,6 +78,7 @@ export const init = (canvas) => {
 * @type {module:utilities.EditorContext#addSVGElementsFromJson|module:path.EditorContext#addSVGElementsFromJson}
 */
 
+  /** @param {any} data */
   const addSVGElementsFromJson = (data) => {
     if (!svgdoc_) { return null }
     if (data === null || data === undefined) return svgdoc_.createTextNode('')
@@ -142,7 +144,7 @@ export const init = (canvas) => {
       while (shape.firstChild) {
         shape.firstChild.remove()
       }
-      data.children.forEach((child) => {
+      data.children.forEach((/** @type {any} */ child) => {
         const childNode = addSVGElementsFromJson(child)
         if (childNode) {
           shape.append(childNode)

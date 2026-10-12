@@ -18,6 +18,7 @@ const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', '
 // stateless reusable compute scope — each operation clears the items it
 // creates — so sharing it across editor instances (and across modules) is
 // safe; no per-instance state lives here.
+/** @type {paper.PaperScope|null} */
 let paperScope = null
 export const getPaperScope = () => {
   if (!paperScope) {
@@ -35,9 +36,10 @@ const BASE_STYLE_ATTRS = ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke
  * Collect inheritable style attributes from an element.
  * @param {Element} elem
  * @param {string[]} [extraAttrs] - Additional attribute names to collect.
- * @returns {Object}
+ * @returns {Record<string, string>}
  */
 export const getStyleAttrs = (elem, extraAttrs = []) => {
+  /** @type {Record<string, string>} */
   const styleAttrs = {}
   for (const attr of [...BASE_STYLE_ATTRS, ...extraAttrs]) {
     const val = elem.getAttribute(attr)
@@ -76,7 +78,7 @@ export const getOwnTransformScale = (elem) => getMatrixScale(getMatrix(elem))
 /**
  * Scale `styleAttrs['stroke-width']` in place by `scale`, if present.
  * No-op when there's no stroke-width or the scale is ~1 (the common case).
- * @param {Object} styleAttrs
+ * @param {Record<string, string>} styleAttrs
  * @param {number} scale
  */
 export const scaleStrokeWidth = (styleAttrs, scale) => {
@@ -86,6 +88,7 @@ export const scaleStrokeWidth = (styleAttrs, scale) => {
 
 // Scratch element reused to run path data through pathActions.convertPath
 // (never inserted into the document).
+/** @type {SVGPathElement|null} */
 let normalizeScratch = null
 
 /**

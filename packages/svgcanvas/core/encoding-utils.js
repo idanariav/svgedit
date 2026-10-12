@@ -27,6 +27,7 @@ export const dropXMLInternalSubset = str => {
  * @returns {string} The converted string
  */
 export const toXml = (str) => {
+  /** @type {Record<string, string>} */
   const xmlEntities = {
     '&': '&amp;',
     '<': '&lt;',

@@ -115,7 +115,7 @@ export const init = (canvas) => {
             direction: isApply ? 'redo' : 'undo',
             cmdType,
             text: cmd.getText?.(),
-            elemIds: elems.map((el) => el?.id ?? null),
+            elemIds: elems.map((/** @type {Element|null} */ el) => el?.id ?? null),
             mode: svgCanvas.getCurrentMode(),
             refreshedInPlace
           })
@@ -132,7 +132,7 @@ export const init = (canvas) => {
           } else if (cmdType === 'ChildListCommand') {
             // Same side effects as Insert/Remove/Move, for a transaction's
             // before/after child lists.
-            if (cmd.changes.some((c) => c.parent === svgCanvas.getSvgContent())) {
+            if (cmd.changes.some((/** @type {{parent: Node}} */ c) => c.parent === svgCanvas.getSvgContent())) {
               svgCanvas.identifyLayers()
             }
             for (const el of cmd.attachedElements(isApply)) {
@@ -179,6 +179,7 @@ export const init = (canvas) => {
               // Only an x/y change moves the tspans. A command that touched
               // neither (fill, font-size, …) used to compute NaN here and
               // write x="NaN" y="NaN" into every tspan on undo/redo.
+              /** @param {string} k */
               const delta = (k) => {
                 const d = (k in cmd.newValues && k in cmd.oldValues) ? cmd.newValues[k] - cmd.oldValues[k] : 0
                 return Number.isFinite(d) ? d : 0
@@ -282,7 +283,7 @@ export const init = (canvas) => {
           svgCanvas.setMultilineText(elem, newValue)
 
           // FF bug occurs on on rotated elements
-          if ((/rotate/).test(elem.getAttribute('transform'))) {
+          if ((/rotate/).test(elem.getAttribute('transform') ?? '')) {
             elem = ffClone(elem)
           }
         // Hoped to solve the issue of moving text with text-anchor="start",
@@ -312,7 +313,7 @@ export const init = (canvas) => {
         // where other text attributes are changed.
         if (isGecko() &&
         elem.nodeName === 'text' &&
-        (/rotate/).test(elem.getAttribute('transform')) &&
+        (/rotate/).test(elem.getAttribute('transform') ?? '') &&
         (String(newValue).startsWith('url') || (['font-size', 'font-family', 'x', 'y'].includes(attr) && elem.textContent))) {
           elem = ffClone(elem)
         }
@@ -341,7 +342,7 @@ export const init = (canvas) => {
         // BBOX_AFFECTING_ATTRS is imported from history.js to keep the list in one place.
         const angle = getRotationAngle(elem)
         if (angle !== 0 && attr !== 'transform' && BBOX_AFFECTING_ATTRS.has(attr)) {
-          const tlist = getTransformList(elem)
+          const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
           let n = tlist.numberOfItems
           while (n--) {
             const xform = tlist.getItem(n)

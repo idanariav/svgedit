@@ -27,9 +27,9 @@ const rotateGroup = (svgCanvas, angle) => {
   rot.setRotate(angle, cx, cy)
   const rm = rot.matrix
 
-  svgCanvas.groupRotateStart.forEach((startMatrix, elem) => {
+  svgCanvas.groupRotateStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
     const newM = matrixMultiply(rm, startMatrix)
-    const tlist = getTransformList(elem)
+    const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
     const t = svgRoot.createSVGTransform()
     t.setMatrix(newM)
@@ -52,6 +52,7 @@ const rotateGroup = (svgCanvas, angle) => {
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { selectedElements } = ctx
     svgCanvas.setStarted(true)
@@ -65,12 +66,13 @@ export const init = (canvas) => {
       svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
       svgCanvas.groupRotateBBox = ubb
       svgCanvas.groupRotateStart = new Map()
-      rotElems.forEach((elem) => {
+      rotElems.forEach((/** @type {Element} */ elem) => {
         svgCanvas.groupRotateStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
       })
     }
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { selected, x, y, selectedElements } = ctx
     // multi-selection: rotate the whole group rigidly about the union center
@@ -103,6 +105,7 @@ export const init = (canvas) => {
     svgCanvas.call('transition', selectedElements)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     const { selectedElements } = ctx
     svgCanvas.hasDragStartTransform = false
@@ -120,7 +123,7 @@ export const init = (canvas) => {
       svgCanvas.groupRotateStart = null
       svgCanvas.groupRotateCenter = null
       svgCanvas.groupRotateBBox = null
-      selectedElements.filter(Boolean).forEach((elem) => {
+      selectedElements.filter(Boolean).forEach((/** @type {Element} */ elem) => {
         svgCanvas.selectorManager.requestSelector(elem).resize()
       })
       svgCanvas.updateGroupSelector()

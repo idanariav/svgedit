@@ -59,9 +59,9 @@ const resizeGroup = (svgCanvas, x, y) => {
   // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
   const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
 
-  svgCanvas.groupResizeStart.forEach((startMatrix, elem) => {
+  svgCanvas.groupResizeStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
     const newM = matrixMultiply(gm, startMatrix)
-    const tlist = getTransformList(elem)
+    const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
     const t = svgRoot.createSVGTransform()
     t.setMatrix(newM)
@@ -139,6 +139,7 @@ const resizeAreaText = (svgCanvas, elem, x, y) => {
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { x, y, zoom, selectedElements, mouseTarget } = ctx
     // A box drag whose mouse-up never arrived must not hijack this one.
@@ -165,7 +166,7 @@ export const init = (canvas) => {
       svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
       svgCanvas.groupResizeStart = new Map()
       svgCanvas.dragStartTransforms = new Map()
-      groupElems.forEach((elem) => {
+      groupElems.forEach((/** @type {Element} */ elem) => {
         svgCanvas.groupResizeStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
         svgCanvas.dragStartTransforms.set(elem, elem.getAttribute('transform') || '')
       })
@@ -175,6 +176,7 @@ export const init = (canvas) => {
     // Getting the BBox from the selection box, since we know we
     // want to orient around it
     svgCanvas.setInitBbox(getBBox(svgCanvas.$id('selectedBox0')))
+    /** @type {Record<string, number>} */
     const bb = {}
     for (const [key, val] of Object.entries(svgCanvas.getInitBbox())) {
       bb[key] = val / zoom
@@ -182,6 +184,7 @@ export const init = (canvas) => {
     svgCanvas.setInitBbox(bb)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { selected, x, y, svgRoot, selectedElements } = ctx
     // multi-selection: uniform group scale (no per-element distortion)

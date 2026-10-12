@@ -38,9 +38,11 @@ const SMOOTH_CORNER_ANGLE = 30
 const CONTINUE_REACH = 6
 
 // Exported for direct unit testing — pure math, no paper.js dependency.
+/** @type {(strength: number) => number} */
 export const strengthToTolerance = (strength) =>
   MIN_TOLERANCE + Math.max(0, Math.min(1, strength)) * (MAX_TOLERANCE - MIN_TOLERANCE)
 
+/** @param {any} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -102,8 +104,11 @@ export const init = (canvas) => {
   // always re-fit from the same untouched shape instead of compounding.
   // `previewLastD` is the most recent previewed result, needed so
   // commitSmoothPath can record a single undo step from baseline -> final.
+  /** @type {Element|null} */
   let previewElem = null
+  /** @type {string|null} */
   let previewBaseline = null
+  /** @type {string|null} */
   let previewLastD = null
 
   const getSelectedPath = () => {
@@ -111,6 +116,7 @@ export const init = (canvas) => {
     return (elem && elem.tagName === 'path') ? elem : null
   }
 
+  /** @param {Element} elem */
   const refreshSelector = (elem) => {
     svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
     svgCanvas.call('changed', [elem])
@@ -135,7 +141,7 @@ export const init = (canvas) => {
 
     let d
     try {
-      d = smoothPathD(previewBaseline, strengthToTolerance(strength))
+      d = smoothPathD(/** @type {string} */ (previewBaseline), strengthToTolerance(strength))
     } catch (err) {
       warn('Smooth path preview failed', err, 'path-simplify')
       return
@@ -161,7 +167,7 @@ export const init = (canvas) => {
     previewLastD = null
     if (!elem || !finalD || finalD === baseline) return
 
-    elem.setAttribute('d', baseline)
+    elem.setAttribute('d', /** @type {string} */ (baseline))
     svgCanvas.undoMgr.beginUndoableChange('d', [elem])
     elem.setAttribute('d', finalD)
     const cmd = svgCanvas.undoMgr.finishUndoableChange()
@@ -185,7 +191,7 @@ export const init = (canvas) => {
     previewLastD = null
     if (!elem) return
 
-    elem.setAttribute('d', baseline)
+    elem.setAttribute('d', /** @type {string} */ (baseline))
     refreshSelector(elem)
   }
 

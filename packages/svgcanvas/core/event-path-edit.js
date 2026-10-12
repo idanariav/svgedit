@@ -21,6 +21,7 @@ import { snapToAngle, transformPoint } from './math.js'
 export const init = (canvas) => {
   const svgCanvas = canvas
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const down = (evt, ctx) => {
     const { mouseTarget, zoom } = ctx
     svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
@@ -29,6 +30,7 @@ export const init = (canvas) => {
     svgCanvas.setStarted(true)
   }
 
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const move = (evt, ctx) => {
     const { zoom } = ctx
     let { x, y, realX, realY } = ctx
@@ -74,6 +76,7 @@ export const init = (canvas) => {
 
   // The pointer moving over the canvas with no button down in `path` / `fhpath` mode: the Pen (or the pencil, for
   // the selected path) marks the open end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
+  /** @param {MouseEvent} evt */
   const hover = (evt) => {
     const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
     if (!ctm) return
@@ -84,6 +87,7 @@ export const init = (canvas) => {
 
   // 'path': element is nulled here so it is not removed nor finalized by the
   // shared epilogue; started stays true so mouseMove keeps running.
+  /** @type {(evt: MouseEvent, ctx: any) => any} */
   const upPath = (evt, ctx) => {
     const { mouseX, mouseY } = ctx
     svgCanvas.setStarted(true)
@@ -91,6 +95,7 @@ export const init = (canvas) => {
     return { element: res.element, keep: res.keep }
   }
 
+  /** @param {MouseEvent} evt */
   const upPathEdit = (evt) => {
     svgCanvas.pathActions.mouseUp(evt)
     return { element: null, keep: true }

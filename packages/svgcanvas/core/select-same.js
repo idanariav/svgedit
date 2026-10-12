@@ -124,6 +124,7 @@ export const init = (canvas) => {
     const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
     if (!ref) return
     const tolerance = Math.max(0, Number(options.tolerance) || 0)
+    /** @type {Element[]} */
     const found = []
     /** @param {Element} parent */
     const scan = (parent) => {
