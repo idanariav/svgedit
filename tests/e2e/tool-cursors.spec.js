@@ -32,6 +32,24 @@ test.describe('Tool cursors', () => {
     expect(rect).toMatch(/\) 8(px)? 8(px)?, crosshair$/)
   })
 
+  test('select mode: the move cursor shows over a shape and goes back to the default elsewhere', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.addSVGElementsFromJson({ element: 'rect', curStyles: true, attr: { x: 100, y: 100, width: 80, height: 60, id: c.getNextId() } })
+      c.setMode('select')
+    })
+    const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py }]), [x, y])
+    const state = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
+    await move(400, 400)
+    expect(await state()).toEqual({ hint: null, cursor: 'auto' })
+    await move(140, 130)
+    const over = await state()
+    expect(over.hint).toBe('move')
+    expect(over.cursor).toMatch(/^url\(.*\) 16(px)? 16(px)?, crosshair$/)
+    await move(400, 400)
+    expect(await state()).toEqual({ hint: null, cursor: 'auto' })
+  })
+
   test('a different glyph per tool', async ({ page }) => {
     const seen = new Set()
     for (const mode of ['fhpath', 'path', 'line', 'brush']) seen.add(await cursorIn(page, mode))

@@ -55,15 +55,24 @@ describe('tool cursors (cursorForMode)', () => {
   })
 
   it('a hint swaps in the cursor of <mode>_<hint>, with the tool tip as hotspot; no hint, or an unknown one, is the mode\'s own', () => {
-    expect(hinted.sort()).toEqual(['fhpath_continue', 'path_continue', 'path_join', 'width_add'])
+    expect(hinted.sort()).toEqual(['fhpath_continue', 'path_continue', 'path_join', 'select_move', 'width_add'])
     for (const name of hinted) {
       const [mode, hint] = name.split('_')
       expect(cursorOf(mode, hint), name).not.toBe(cursorOf(mode))
       expect(cursorOf(mode, hint), name).toBe(cursorOf(name))
-      expect(hotspotOf(cursorOf(mode, hint)), name).toEqual(hotspotOf(cursorOf(mode)))
+      // a tool's variants keep its working tip; the select tool's move cursor has the default arrow to replace
+      if (mode !== 'select') expect(hotspotOf(cursorOf(mode, hint)), name).toEqual(hotspotOf(cursorOf(mode)))
     }
     expect(cursorOf('path', 'nonsense')).toBe(cursorOf('path'))
     expect(cursorOf('path', null)).toBe(cursorOf('path'))
+  })
+
+  it('the select tool\'s move cursor is four arrows centred on the pointer, in the same family as the others', () => {
+    expect(hotspotOf(cursorOf('select', 'move'))).toEqual([16, 16])
+    const svg = read('select_move')
+    expect(svg).toMatch(/width="32" height="32"/)
+    expect(svg).toContain('stroke="#ffffff"') // the halo that keeps it visible on the dark canvas
+    expect(cursorOf('select')).toBe('auto')
   })
 
   it('a hint can name a system cursor (the Width tool\'s grab)', () => {

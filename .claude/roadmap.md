@@ -579,9 +579,10 @@ change clears it; the `cursorHint` event fires on change), and the editor picks 
 cursor for the hint (`SYSTEM_HINT_CURSORS` in `toolCursors.js`). Used by the Pen (`path_continue`: an open end a press would carry on;
 `path_join`: the same end while a drawing is under way), the Pencil (`fhpath_continue`) and the Width tool (`width_add` on the
 stroke, `grab` on a diamond, `grabbing` while dragging it, a pointer on a side handle). Core never touches artwork (layering guard).
-Remaining: other tools could opt in (Corners widgets, Distort / Gradient handles: a `move` or `grab` over a handle); the select
-tool's move cursor is its own mousemove code in `EditorStartup`, not a hint; Image has no mode, so no cursor; cursors are not
-shown on touch (tablet) anyway.
+The select tool's move cursor is a hint too: `EditorStartup`'s select-mode mousemove sets `move` over a selectable shape or inside
+the selection's box, and `select_move_cursor.svg` (four arrows, hotspot at the centre) replaces the old `move.svg`.
+Remaining: other tools could opt in (Corners widgets, Distort / Gradient handles: a `move` or `grab` over a handle); Image has no
+mode, so no cursor; cursors are not shown on touch (tablet) anyway.
 
 ### Icons and palette
 

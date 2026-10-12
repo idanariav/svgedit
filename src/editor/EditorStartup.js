@@ -10,7 +10,6 @@ import SvgCanvas from '@svgedit/svgcanvas'
 import Rulers from './Rulers.js'
 import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
-import { getIconDataUri } from './images/iconRegistry.js'
 import { cursorForMode } from './toolCursors.js'
 import { getExtension } from './extensions/extensionRegistry.js'
 import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.js'
@@ -290,10 +289,6 @@ class EditorStartup {
     this.defaultImageURL = `${this.configObj.curConfig.imgPath}/logo.svg`
     const zoomInIcon = 'crosshair'
     const zoomOutIcon = 'crosshair'
-    // Cursor shown over a movable target in select mode (a selectable element or
-    // anywhere inside the current selection's bbox). Hotspot centered (12 12).
-    const moveCursorUri = getIconDataUri('move.svg')
-    const moveCursor = moveCursorUri ? `url("${moveCursorUri}") 12 12, move` : 'move'
     this.uiContext = 'toolbars'
 
     // For external openers
@@ -505,7 +500,8 @@ class EditorStartup {
             evt.clientY >= t && evt.clientY <= b
         }
       }
-      this.workarea.style.cursor = movable ? moveCursor : 'auto'
+      // The 'move' hint swaps in the select tool's move cursor (cursors/select_move_cursor.svg, see toolCursors.js).
+      this.svgCanvas.setCursorHint(movable ? 'move' : null)
     })
     $id('svgcanvas').addEventListener('mousedown', (evt) => {
       this.enableToolCancel = false
