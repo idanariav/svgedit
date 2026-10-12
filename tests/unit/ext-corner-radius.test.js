@@ -4,6 +4,7 @@ import '../../src/editor/components/seSpinInput.js'
 import extCornerRadius from '../../src/editor/extensions/ext-corner-radius/ext-corner-radius.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import { mockCommands } from './helpers/commands.js'
+import en from '../../src/editor/extensions/ext-corner-radius/locale/en.js'
 
 vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -74,6 +75,13 @@ describe('ext-corner-radius', function () {
     assert.equal($('corner_panel').nextElementSibling.className, 'selected_panel')
     assert.equal($('corner_panel').style.display, 'none')
     for (const k of ['r', 'i', 'c']) assert.ok($(`corner_kind_${k}`))
+  })
+
+  it('is named so it is not mistaken for the rect Dimensions "Corner radius": a style section whose radius says it makes a path', function () {
+    assert.equal($('corner_panel').querySelector('.sidepanel_section_label').textContent, 'corner-radius:label')
+    assert.equal($('corner_radius_value').getAttribute('title'), 'corner-radius:radius_hint')
+    assert.equal(en.label, 'Corner style')
+    assert.match(en.radius_hint, /becomes a path/)
   })
 
   it('shows for a rect or a path with a corner, hides for an ellipse', function () {

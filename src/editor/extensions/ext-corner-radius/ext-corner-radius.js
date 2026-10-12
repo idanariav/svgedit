@@ -109,7 +109,7 @@ export default {
             <div class="sidepanel_section_label">${svgEditor.i18next.t(`${name}:label`)}</div>
             <div class="sidepanel_btn_row">
               <se-spin-input id="corner_radius_value" label="${svgEditor.i18next.t(`${name}:radius`)}"
-                min="0" max="500" step="1" value="0" title="${name}:label"></se-spin-input>
+                min="0" max="500" step="1" value="0" title="${name}:radius_hint"></se-spin-input>
             </div>
             <div class="sidepanel_btn_row" id="corner_kind_row">
               ${CORNER_KINDS.map((k) => `<se-button id="corner_kind_${k}" command="corner_kind_${k}" title="${svgEditor.i18next.t(`${name}:kind_${k}`)}"

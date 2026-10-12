@@ -63,6 +63,26 @@ test.describe('Right panel selection sync', () => {
     await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements()[0].getAttribute('stroke-linejoin'))).toBe('round')
   })
 
+  test('the two corner controls of a rect are told apart: Dimensions "Corner radius" vs the "Corner style" section', async ({ page }) => {
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      const rect = canv.addSVGElementsFromJson({
+        element: 'rect',
+        curStyles: true,
+        attr: { x: 10, y: 10, width: 80, height: 40, id: canv.getNextId() }
+      })
+      canv.selectOnly([rect], true)
+    })
+    const names = await page.evaluate(() => ({
+      dimensions: document.getElementById('rect_rx').getAttribute('label'),
+      section: document.querySelector('#corner_panel .sidepanel_section_label').textContent.trim(),
+      hint: document.getElementById('corner_radius_value').shadowRoot.querySelector('[title]').getAttribute('title')
+    }))
+    expect(names.dimensions).toBe('Corner radius')
+    expect(names.section).toBe('Corner style')
+    expect(names.hint).toMatch(/becomes a path/)
+  })
+
   test('selecting a different rect re-syncs the right panel fields (not stale from prior selection)', async ({ page }) => {
     await page.evaluate(() => {
       const canv = window.svgEditor.svgCanvas

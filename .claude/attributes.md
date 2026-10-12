@@ -17,7 +17,7 @@
 |------------|-------------|---------------|---------------|
 | `rect_width` | `width` | `width` | Numeric, px |
 | `rect_height` | `height` | `height` | Numeric, px |
-| `rect_rx` | `Corner Radius` | `rx` | 0–1000, step 1 |
+| `rect_rx` | `Corner Radius` | `rx` | 0–1000, step 1; label "Corner radius" (the Corner style section is a different, path-making control) |
 
 Plus [common attributes](#common-attributes-all-shapes) including **x/y position**.
 
