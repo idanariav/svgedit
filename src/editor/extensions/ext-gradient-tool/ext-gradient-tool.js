@@ -425,6 +425,7 @@ export default {
         }
         if (svgCanvas.getSelectedElements().filter(Boolean)[0] !== t.el) svgCanvas.selectOnly([t.el], true)
         if (part) {
+          svgCanvas.setCursorHint(part.kind === 'bar' ? 'add' : 'grabbing')
           const press = docPoint(ev)
           const m = t.model
           const handle = part.kind === 'end' ? parts(t).end : part.kind === 'focal' ? parts(t).focal : press
@@ -448,6 +449,8 @@ export default {
         if (!drag) {
           const part = target ? hit(target, docPoint(ev), ctx.zoom) : null
           const key = part ? (part.kind === 'stop' ? `stop${part.index}` : part.kind) : null
+          // On the bar a press adds a stop; on a stop or a handle a drag moves it.
+          svgCanvas.setCursorHint(part ? (part.kind === 'bar' ? 'add' : 'grab') : null)
           if (key !== hover) {
             hover = key
             draw(ctx)
@@ -469,6 +472,7 @@ export default {
       pointerUp (ctx, ev) {
         const d = drag
         drag = null
+        svgCanvas.setCursorHint(null) // the pointer moves again before it needs a hint
         const t = target
         if (!d || !t) {
           draw(ctx)

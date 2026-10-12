@@ -575,14 +575,17 @@ Cutter); shape and effect tools are a crosshair (hotspot at its centre) with a s
 circle/polygon/star, line, arc, spiral, rect/polar grid, shape builder, gradient, distort, corners, width, blend, shaper). Zoom, shape
 library, puppet warp and repeat-pick-center keep a crosshair, text its I-beam, pan a hand; Measure's `ToolDef.cursor` is a crosshair.
 Cursors by position: a tool says what the pointer is over with `svgCanvas.setCursorHint(hint)` (a short name, `null` for none; a mode
-change clears it; the `cursorHint` event fires on change), and the editor picks `cursors/<mode>_<hint>_cursor.svg` or a system
-cursor for the hint (`SYSTEM_HINT_CURSORS` in `toolCursors.js`). Used by the Pen (`path_continue`: an open end a press would carry on;
-`path_join`: the same end while a drawing is under way), the Pencil (`fhpath_continue`) and the Width tool (`width_add` on the
-stroke, `grab` on a diamond, `grabbing` while dragging it, a pointer on a side handle). Core never touches artwork (layering guard).
-The select tool's move cursor is a hint too: `EditorStartup`'s select-mode mousemove sets `move` over a selectable shape or inside
-the selection's box, and `select_move_cursor.svg` (four arrows, hotspot at the centre) replaces the old `move.svg`.
-Remaining: other tools could opt in (Corners widgets, Distort / Gradient handles: a `move` or `grab` over a handle); Image has no
-mode, so no cursor; cursors are not shown on touch (tablet) anyway.
+change clears it; the `cursorHint` event fires on change). The editor turns the hint into a cursor (`toolCursors.js`): `grab`,
+`grabbing` and `pointer` are system cursors in every tool, anything else is `cursors/<mode>_<hint>_cursor.svg`, else the mode's own.
+Used by: the Pen (`path_continue`: an open end a press would carry on; `path_join`: the same end while a drawing is under way), the
+Pencil (`fhpath_continue`), the Width tool (`width_add` on the stroke, `grab` on a diamond, `grabbing` while dragging it, `pointer` on
+a side handle), the Corners widgets and the Distort corner handles (`grab`, `grabbing` while dragging), the Gradient tool (`grab` on a
+stop or handle, `gradient_add` on the bar where a press adds a stop, `grabbing` while dragging), Blend (`pointer` over a shape or
+blend a click picks), Puppet warp (`grabbing` while a pin is dragged; the legacy hook has no hover, so no `grab` before the press),
+and the select tool's move cursor (`select_move_cursor.svg`: `EditorStartup`'s select-mode mousemove sets `move` over a selectable
+shape or inside the selection's box). Core never touches artwork (layering guard).
+Remaining: Puppet warp's `grab` over a pin needs a hover hook in the legacy extension path; Shape builder (regions under the pointer)
+and the Cutter / Smooth / Eyedropper have no hover hint; Image has no mode, so no cursor; cursors are not shown on touch (tablet) anyway.
 
 ### Icons and palette
 

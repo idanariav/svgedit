@@ -248,6 +248,7 @@ export default {
           return
         }
         if (svgCanvas.getSelectedElements().filter(Boolean)[0] !== t.el) svgCanvas.selectOnly([t.el], true)
+        if (i >= 0) svgCanvas.setCursorHint('grabbing')
         if (i >= 0) drag = { i, corners0: t.corners.map((c) => ({ ...c })), press: { x: ev.screenX, y: ev.screenY }, moved: false }
         draw(ctx)
       },
@@ -255,6 +256,7 @@ export default {
       pointerMove (ctx, ev) {
         if (!drag) {
           const i = target ? hitCorner(target, ev, ctx.zoom) : -1
+          svgCanvas.setCursorHint(i >= 0 ? 'grab' : null) // a drag on the handle moves the corner
           if (i !== hover) {
             hover = i
             draw(ctx)
@@ -280,6 +282,7 @@ export default {
       pointerUp (ctx) {
         const d = drag
         drag = null
+        svgCanvas.setCursorHint(null) // the pointer moves again before it needs a hint
         if (!d || !target || !d.moved) {
           // A click: it may have selected a shape (a rollback would undo that) and changes no drawing.
           draw(ctx)

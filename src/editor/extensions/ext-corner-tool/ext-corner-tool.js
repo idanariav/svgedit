@@ -272,6 +272,7 @@ export default {
           picked = new Set()
         } else {
           const targets = picked.has(w.index) ? targetsOf(t) : (picked.size ? [w.index] : targetsOf(t))
+          svgCanvas.setCursorHint('grabbing')
           drag = {
             w,
             press: { x: ev.screenX, y: ev.screenY },
@@ -293,6 +294,7 @@ export default {
         if (!drag) {
           const w = target ? hit(target, ev, ctx.zoom) : null
           const i = w ? w.index : -1
+          svgCanvas.setCursorHint(w ? 'grab' : null) // a drag on the widget rounds the corner
           if (i !== hover) {
             hover = i
             draw(ctx)
@@ -323,6 +325,7 @@ export default {
       pointerUp () {
         const d = drag
         drag = null
+        svgCanvas.setCursorHint(null) // the pointer moves again before it needs a hint
         // The registry clears the overlays, then commits (which does not report a shape it replaced, nor a
         // click that changed nothing): draw again once it is done.
         queueMicrotask(redrawIdle)
@@ -346,6 +349,7 @@ export default {
 
       cancel () {
         drag = null
+        svgCanvas.setCursorHint(null)
         redrawIdle()
       },
 

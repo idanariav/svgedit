@@ -64,6 +64,19 @@ test.describe('puppet warp session', () => {
     expect(await page.evaluate(() => document.getElementById('a').getAttribute('width'))).toBe('200')
   })
 
+  test('a closed hand shows while a pin is dragged, and goes when it is let go', async ({ page }) => {
+    await warp(page)
+    const cursor = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
+    expect(await cursor()).toEqual({ hint: null, cursor: 'crosshair' })
+    await page.evaluate(() => window.svgEditor.automation.pointer([
+      { kind: 'down', x: 340, y: 120 }, // the dragged pin
+      { kind: 'move', x: 350, y: 130 }
+    ]))
+    expect(await cursor()).toEqual({ hint: 'grabbing', cursor: 'grabbing' })
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'up', x: 350, y: 130 }]))
+    expect(await cursor()).toEqual({ hint: null, cursor: 'crosshair' })
+  })
+
   test('Escape cancels the session: the rect is back, nothing to undo, selection restored', async ({ page }) => {
     await warp(page)
     await page.evaluate(() => window.svgEditor.automation.key('escape'))

@@ -628,6 +628,7 @@ export default {
         const hit = hitTestPin(x, y)
         if (hit !== -1) {
           dragIndex = hit
+          svgCanvas.setCursorHint('grabbing')
           redrawPins()
           return { started: true }
         }
@@ -664,6 +665,7 @@ export default {
 
       mouseUp () {
         if (svgCanvas.getMode() !== name) return undefined
+        svgCanvas.setCursorHint(null)
         if (dragIndex < 0) return { keep: false, started: false }
         dragIndex = -1
         redrawPins()

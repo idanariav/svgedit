@@ -117,8 +117,9 @@ export default {
         pending = pick(ev)
       },
 
-      pointerMove (ctx) {
+      pointerMove (ctx, ev) {
         mark(ctx)
+        svgCanvas.setCursorHint(pick(ev) ? 'pointer' : null) // a click picks this shape or blend
       },
 
       pointerUp (ctx) {

@@ -293,7 +293,7 @@ export default {
           const over = t ? hit(t, toLocal(t, ev), ctx.zoom) : null
           hover = t ? hoverAt(t, over) : null
           // The cursor says what a press would do: add a point, grab a point, or take a side handle.
-          svgCanvas.setCursorHint(over ? { stroke: 'add', center: 'grab', handle: 'handle' }[over.kind] : null)
+          svgCanvas.setCursorHint(over ? { stroke: 'add', center: 'grab', handle: 'pointer' }[over.kind] : null)
           draw(ctx)
           return
         }
@@ -309,6 +309,7 @@ export default {
       pointerUp (ctx) {
         const d = drag
         drag = null
+        svgCanvas.setCursorHint(null) // the pointer moves again before it needs a hint
         if (!d || !target || !d.moved) {
           // A click: it selected a width point (or nothing) and changes no drawing.
           if (target) draw(ctx)

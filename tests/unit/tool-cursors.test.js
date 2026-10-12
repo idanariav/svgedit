@@ -55,7 +55,7 @@ describe('tool cursors (cursorForMode)', () => {
   })
 
   it('a hint swaps in the cursor of <mode>_<hint>, with the tool tip as hotspot; no hint, or an unknown one, is the mode\'s own', () => {
-    expect(hinted.sort()).toEqual(['fhpath_continue', 'path_continue', 'path_join', 'select_move', 'width_add'])
+    expect(hinted.sort()).toEqual(['fhpath_continue', 'gradient_add', 'path_continue', 'path_join', 'select_move', 'width_add'])
     for (const name of hinted) {
       const [mode, hint] = name.split('_')
       expect(cursorOf(mode, hint), name).not.toBe(cursorOf(mode))
@@ -75,10 +75,12 @@ describe('tool cursors (cursorForMode)', () => {
     expect(cursorOf('select')).toBe('auto')
   })
 
-  it('a hint can name a system cursor (the Width tool\'s grab)', () => {
-    expect(cursorOf('width', 'grab')).toBe('grab')
-    expect(cursorOf('width', 'grabbing')).toBe('grabbing')
-    expect(cursorOf('width', 'handle')).toBe('pointer')
+  it('a hint can name a system cursor, the same in every tool (a handle to grab, a thing a click picks)', () => {
+    for (const mode of ['width', 'corners', 'distort', 'gradient', 'blend', 'puppetwarp']) {
+      expect(cursorOf(mode, 'grab'), mode).toBe('grab')
+      expect(cursorOf(mode, 'grabbing'), mode).toBe('grabbing')
+      expect(cursorOf(mode, 'pointer'), mode).toBe('pointer')
+    }
   })
 
   it('keeps the system cursors and the default for the select mode', () => {
