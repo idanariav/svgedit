@@ -22,6 +22,7 @@
 
 import { NS } from './namespaces.js'
 import { getPathDFromElement } from './path-utils.js'
+import { getTextWithNewlines } from './text-rows.js'
 import { warn } from '../common/logger.js'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
@@ -85,13 +86,12 @@ export const init = (canvas) => {
 
     // Rebuild the text with a textPath child. Multi-line rows flatten to one
     // line, joined by spaces.
-    const rows = text.querySelectorAll('tspan')
-    const content = rows.length
-      ? Array.from(rows).map((t) => t.textContent).join(' ')
-      : text.textContent
+    const content = getTextWithNewlines(text).replace(/\n/g, ' ')
     const newText = doc.createElementNS(NS.SVG, 'text')
     for (const attr of text.attributes) {
       if (['x', 'y'].includes(attr.name)) continue
+      // The box of an area text means nothing along a path.
+      if (attr.name.startsWith('se:wrap-') || attr.name === 'se:valign') continue
       newText.setAttribute(attr.name, attr.value)
     }
     newText.id = svgCanvas.getNextId()

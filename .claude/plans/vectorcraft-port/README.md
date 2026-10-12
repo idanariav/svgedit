@@ -58,10 +58,10 @@ is in [tier-0.md](tier-0.md).
 | T2.16 | Smooth tool (brush to smooth part of a path) | T2.15 (T0.3 helps) | done — see git log (live per-move refit; ring brush; see roadmap.md) |
 | T2.17 | Layers panel: object rows (tree, hide/lock per object, drag, Locate Object) | — | done — see git log (rows capped at 200 per parent instead of virtualized; not in the tablet shell; no keyboard navigation; see roadmap.md) |
 | T3.1 | Scrubby labels + wheel stepping on numeric fields | — (T0.2 helps: one undo step per scrub) | done — see git log |
-| T3.2 | Measure tool | — (T0.3 helps) | todo |
-| T3.3 | Transform Each | — | todo |
-| T3.4 | Split Into Grid | — | todo |
-| T3.5 | Area text with wrapping | — | todo |
+| T3.2 | Measure tool | — (T0.3 helps) | done — see git log |
+| T3.3 | Transform Each | — | done — see git log |
+| T3.4 | Split Into Grid | — | done — see git log |
+| T3.5 | Area text with wrapping | — | done — see git log (follow-ups in roadmap.md) |
 | T3.6 | Layers panel extras (Alt-click hide/lock others, column drag, row drag reorder, template comment layers) | — | **done** |
 | T3.7 | Pencil continues a selected path + visible smoothing settings | — (T2.15 helps) | done — see git log (seam not tangent-continuous; settings are Preferences fields, see roadmap.md) |
 

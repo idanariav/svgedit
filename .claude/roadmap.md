@@ -44,9 +44,11 @@ small items (S) fill gaps between large ones.
 
 **Phase 6 — panels and text**
 21. ~~**T2.17 Layers panel: object rows**~~ done (follow-ups, below) → 22. ~~**T3.6 Layers extras**~~ done (follow-ups, below).
-23. **T3.5 Area text** (M–L) — do the text-command `enabled` pass with it.
-24. **T3.3 Transform Each**, **T3.4 Split Into Grid**, **T3.2 Measure tool** — S; slot them between large items
-    (Measure is the first consumer for `cursor()`).
+23. ~~**T3.5 Area text**~~ done (follow-ups, below); the text commands' `enabled` pass was already in place (bold, italic, decorations, text on path / release), and the new `tool_text_area` has it.
+24. ~~**T3.3 Transform Each**, **T3.4 Split Into Grid**, **T3.2 Measure tool**~~ done (follow-ups, below). The Measure tool
+    was the first consumer of the tool contract's `cursor` (a static CSS cursor) and `keepOverlays` (a readout that outlives its gesture).
+
+**Phase 6 is done: every item of the sequence is built.** What is left is the background tracks and the follow-ups below.
 
 **Background tracks (no phase)**
 - **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Finish the remaining `@ts-check` modules in
@@ -63,9 +65,11 @@ small items (S) fill gaps between large ones.
 
 Not started. Each is scheduled with the first feature that needs it (see *Implementation order*); do not build them standalone.
 
-- **Tool hook `cursor()`** from the tool-contract plan. Implement with the first tool that has to change the cursor
-  over the plain canvas (T3.2 Measure is the likely one; shape-family's "no custom cursor" is the other).
-  `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
+- **Tool hook `cursor()` by position.** `ToolDef.cursor` (a CSS cursor, or a function of the context) is built, applied on
+  activate and removed on deactivate (Measure uses `crosshair`); no tool yet changes it with the pointer's position (a
+  cursor that depends on what is under the pointer: a continue / join pen cursor, a width-tool hover). Do that with the
+  first tool that needs it; most newer tools (shape-family, Distort, Gradient, Corners, Width, Shaper, Smooth) still show
+  the default cursor and could take a static one now. `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
   the wand's tolerance and the smooth tool's radius are candidates, below.)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
@@ -78,7 +82,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   previews: ext-curvature, ext-cutter (both already ephemeral).
 - **Precise `enabled` on commands.** Most commands are still "always" (what the buttons were). Gate them on selection
   type (path, text, group, ≥2 shapes, …), with a reason string; the command sweep and `list()` get more truthful and
-  the tooltips explain themselves. Done for the path commands (node tray, Convert to Path, Stroke to Path, Join/Close, the keyless `path_*` entries); *Scheduled:* text in Phase 6; new commands get it from day one.
+  the tooltips explain themselves. Done for the path commands (node tray, Convert to Path, Stroke to Path, Join/Close, the keyless `path_*` entries); Text is done too (see `panelCommands.js`); new commands get it from day one.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
   appears; then give the registry a session concept instead of special-casing. *Scheduled:* T2.7 and T2.8 did not need it (one undo step per drag); the next candidate is T2.11, if it becomes a tool at all.
@@ -86,6 +90,24 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   per pointer-move. *Not scheduled:* no known consumer (T3.1's scrub is one transaction around a drag, which is cheap).
 - **Plugin side:** expose `editor.commands.list()/run()` as Obsidian palette entries and hotkeys. Tracked in the
   plugin repo (`../obsidian-svgedit-plugin/.claude/techdebt.md`, "Expose the editor's command registry…"). *Scheduled:* a background track, best before Phase 3.
+
+## Layout tools (`core/transform-each.js`, `core/split-grid.js`, `ext-layout-ops`, `se-params-dialog`): follow-ups from T3.3 / T3.4
+
+Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %, move, rotate, reflect X / Y about each object's own reference point (a 3 × 3 locator of its bounding box, in parent coordinates), Random (each amount a random fraction of the entered one, per object; a checked reflection hits about half) and Copy (works on duplicates); one `matrix()` laid over the element's own transform, so live-geometry sources (taper, corner radius, `se:fx`) stay in sync. **Split Into Grid** (`tool_split_grid`): one plain shape → a group of rows × columns rects over its bounding box with a gutter, same look (live-feature `se:` / `data-` attributes are not copied), the shape's transform kept on the group. Both preview live inside an undo transaction (OK = one step, Cancel / Escape = nothing), shared form `se-params-dialog` (number / checkbox / select / origin fields), a Layout section in the Design tab. Remaining:
+- **The result is a `matrix()`**, not baked into geometry and not a `rotate()`: the rotation field reads 0 afterwards and the matrix piles up on repeated use (as with Flip). Baking the move / scale through `recalculateDimensions` (and leaving a rotation as `rotate()`) is the follow-up; it has to avoid the decomposition problems Flip documents.
+- **No Transform Each for groups' children as a unit,** and no "transform each" of a clipped / masked object's clip (the clip follows the element's transform, as for any transform).
+- **Random is per amount, not per object seed:** the preview uses one seed per dialog so it does not jump; the committed amounts are those of the last preview. Reflect-when-random is a coin flip, not a fraction.
+- **Split Into Grid takes plain shapes only** (rect, circle, ellipse, line, polyline, polygon, path; not groups, text or images) and splits the *bounding box*, not the outline: a circle becomes a grid of rects, not of clipped pieces. No explicit cell width / height (rows and columns only), no row / column sizes that differ, at most 2,500 cells.
+- **A path's cells carry its fill / stroke but not its markers**, rounded corners are kept for rects only.
+- Not in the tablet shell; the dialog is modal (the canvas cannot be panned while it is open).
+
+## Measure tool (`core/measure.js`, `ext-measure`): follow-ups from T3.2
+
+Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedropper, no shortcut): drag to read distance, angle (counter-clockwise, as on paper), Δx and Δy in the editor's base unit; the end points snap like the drawing tools' (`snap: true`); Shift constrains to 45° steps; the readout (cyan line, end dots, label box) stays until the next press, Escape or leaving the tool; the drawing is never changed and nothing is recorded. Remaining:
+- **The readout does not follow the zoom** after the gesture (the label is sized for the zoom it was drawn at; it scales with the drawing). Redrawing on a zoom event would fix it.
+- **The start point only snaps with `snap: true`'s targets** (no guides while hovering before the press, as in "Snapping while drawing"); no measuring of an object's own size on click, no persistent rulers or multiple measurements.
+- **The unit comes from Editor Options `baseUnit`;** there is no unit switch on the tool, and areas / perimeters are not measured.
+- Not in the tablet shell (the command bar is full at 768 px); no keyboard shortcut.
 
 ## Distort tool (`core/distort.js`, `ext-distort-tool`): follow-ups from T2.7
 
@@ -159,13 +181,27 @@ Done: Alt-click an eye / padlock (others, or an object's siblings), drag down a 
 - **Templates**: no UI beyond the Alt-click and the command (no context-menu entry, no dim level setting; `0.35` is a CSS rule in `svgedit.css`). Un-templating unlocks the layer even if it was locked before. Exports leave out *every* comment layer (`rasterExport`, per the `Layer#setCommentLayer` contract), not only templates; saving keeps them.
 - Reordering rebuilds the layer rows (`populateLayers`, which clears the selection), as the Move Up / Down buttons do.
 
+## Area text (`core/text-rows.js`, `core/text-wrap.js`): follow-ups from T3.5
+
+Done: a drag with the Text tool draws a box (a click still places point text); the text wraps to it (`se:wrap-width`, optional `se:wrap-height` + `se:valign`); the rows the wrapping adds are soft (`se:soft="<n>"`, n = the spaces the break swallowed) and are never part of the content (`getTextWithNewlines`), so every consumer of the content string is unchanged. `x` / `y` stay the anchor and the first baseline, so moves, nudges and the position fields keep working; the box is derived from them (`getAreaBox`, which is also what `getBBox` returns for an area text: the selection box is the box, not the ink). Resizing a box (single, untransformed text) changes the box and re-wraps live, one undo step, the type keeps its size; font size and alignment changes keep the box where it is. **Area text** button + vertical-align select in the Text tab, `tool_text_area` command, ArrowUp / ArrowDown move by drawn row, a re-wrap when a web font finishes loading, `checkDrawing` rule `area-text`, round-trip fixture `area-text.svg`. Remaining:
+- **Clicking the empty part of an unselected box does not select it** (only the glyphs are hit); a selected one is moved and resized from its box as usual. A transparent hit rect per area text would fix it.
+- **A rotated or otherwise transformed area text scales its type with the box** when resized (the legacy path, `coords.js` remap hooks scale `se:wrap-width` / `-height` with the font); the box-only resize needs the grips mapped through the element's transform. A group scale does the same, on purpose.
+- **Home / End / Shift-arrows / double-click word select** still work on the edit buffer's lines, i.e. per paragraph, not per drawn row (ArrowUp / ArrowDown were done because they jumped a whole paragraph).
+- **No overflow indicator, no auto-grow, no "fit box to text"**: a fixed-height box lets the text run out of it (and aligns to the top then); without a height the box is as tall as its rows.
+- **Line breaking is greedy and simple:** break at spaces, inside a word wider than the box, and between any two CJK characters (no kinsoku, no hyphenation, no justification, no hanging punctuation); a break swallows the spaces it lands on, so a run of spaces at a wrap point is kept in the content, not drawn. Tabs are not special.
+- **Measured with a hidden `<text>` probe** in the outer `<svg>` (computed font, letter and word spacing), so a font the browser substitutes is measured as drawn; under jsdom a character-count estimate stands in. `textLength` / `lengthAdjust` on an area text are not handled (they apply to each row).
+- **One style per text** (as everywhere in this editor): no mixed styles inside a box, no text threading between boxes.
+- **Point → area** takes the current width (+ 2) as the box width and keeps the rows as hard rows; **area → point** turns the rows as drawn into hard rows. The only way to get back the wrap is to convert again.
+- **Not in the tablet shell**, no options bar, no custom cursor for the box drag (waits for `cursor()`); the box while dragging is the select tool's rubber band.
+- The re-wrap on `document.fonts` `loadingdone` is not an undo step and does not refresh an open caret.
+
 ## Round-trip corpus: keep adding drawings
 
 `tests/e2e/roundtrip.spec.js` loads/saves/loads every drawing in
 `tests/e2e/fixtures/roundtrip/` and asserts the output stabilises after one
 pass. Covered: frames, corner radius, taper, shadow/outline, text-on-path,
 groups/layers/gradients, markers, clip-path/mask, `<use>`/symbols, embedded
-images, repeat (radial + grid), mirror, puppet-warp and free/perspective distort. Corner-radius and taper
+images, repeat (radial + grid), mirror, puppet-warp, free/perspective distort and area text. Corner-radius and taper
 predate the `xmlns:se` fix and double as legacy-file coverage. Not covered:
 repeat's *path* mode, and real drawings from the plugin. Each new corruption bug
 should add the file that exhibited it. Small per fixture.

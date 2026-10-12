@@ -8,9 +8,55 @@
  */
 
 import { getTextWithNewlines, setMultilineText } from './dom-utils.js'
+import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { registerAttrValidator, registerElementCheck } from './drawing-invariants.js'
+import { getBBox } from './bbox-utils.js'
+import {
+  WRAP_WIDTH_ATTR, WRAP_HEIGHT_ATTR, VALIGN_ATTR, TEXT_ASCENT, getWrapWidth, getWrapHeight, writeAreaAttrs,
+  reflowAreaText, settleAreaText, isAreaText, getAreaBox, makeAreaText, makePointText, rowsOf, softCount, SOFT_ATTR, getValign
+} from './text-rows.js'
 
 export const init = canvas => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
+
+  // A transform bake that scales the type (a group scale, a rotated resize) scales an area text's box with
+  // it. Both attributes are registered so the bake records them for undo; the width hook runs last and
+  // lays the rows out again.
+  registerGeometryRemap(WRAP_HEIGHT_ATTR, (elem, _remap, _scalew, scaleh) => {
+    const h = getWrapHeight(elem)
+    if (h) writeAreaAttrs(elem, { [WRAP_HEIGHT_ATTR]: Math.abs(scaleh(h)) })
+  })
+  // A web font that finishes loading after the first layout changes every measurement: wrap the area texts
+  // again (not an undo step; the rows are derived).
+  if (typeof document !== 'undefined' && document.fonts?.addEventListener) {
+    document.fonts.addEventListener('loadingdone', () => {
+      for (const el of svgCanvas.getSvgContent()?.getElementsByTagName('text') ?? []) settleAreaText(el)
+    }, { signal: svgCanvas.destroyAbort?.signal })
+  }
+
+  const positive = (/** @type {string} */ value) => (parseFloat(value) > 0 ? true : 'is not a positive number')
+  registerAttrValidator(WRAP_WIDTH_ATTR, positive)
+  registerAttrValidator(WRAP_HEIGHT_ATTR, positive)
+  registerAttrValidator(VALIGN_ATTR, (value) => (['top', 'middle', 'bottom'].includes(value) ? true : 'is not top, middle or bottom'))
+  registerAttrValidator(SOFT_ATTR, (value) => (/^\d+$/.test(value) ? true : 'is not a count of spaces'))
+  // Soft rows only make sense inside a box, and never start a text. (The checks run on elements that carry
+  // `se:` state: a soft row is the tspan, the box is the text.)
+  registerElementCheck('area-text', (elem) => {
+    const problems = []
+    if (elem.localName === 'tspan' && softCount(elem) !== null) {
+      const parent = elem.parentElement
+      if (!parent || !isAreaText(parent)) problems.push('is a soft row of a text that has no se:wrap-width')
+      else if (rowsOf(parent)[0] === elem) problems.push('is a soft row but starts the text')
+    }
+    if (elem.localName === 'text' && getWrapWidth(elem) > 0 && elem.getElementsByTagName('textPath').length) {
+      problems.push('is area text on a path')
+    }
+    return problems
+  })
+  registerGeometryRemap(WRAP_WIDTH_ATTR, (elem, _remap, scalew) => {
+    writeAreaAttrs(elem, { [WRAP_WIDTH_ATTR]: Math.abs(scalew(getWrapWidth(elem))) })
+    reflowAreaText(elem)
+  })
 
   const getSelectedTextElements = () => {
     return svgCanvas.getSelectedElements().filter(el => el?.tagName === 'text')
@@ -152,7 +198,20 @@ export const init = canvas => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'text-anchor', value)
     if (changedTextElements.length > 0) {
-      svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
+      const areas = changedTextElements.filter(isAreaText)
+      if (areas.length) {
+        // The box stays where it is: `x` is the anchor, so it moves with the alignment.
+        const lefts = areas.map((el) => getAreaBox(el).x)
+        const factor = { start: 0, middle: 0.5, end: 1 }[value] ?? 0
+        svgCanvas.transact('Text alignment', () => {
+          areas.forEach((el, i) => {
+            svgCanvas.changeSelectedAttributeNoUndo('x', lefts[i] + factor * getWrapWidth(el), [el])
+          })
+          svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
+        })
+      } else {
+        svgCanvas.changeSelectedAttribute('text-anchor', value, changedTextElements)
+      }
     }
     // Alignment shifts every glyph's x, so re-measure the caret while editing.
     if (svgCanvas.getCurrentMode() === 'textedit') {
@@ -433,7 +492,19 @@ export const init = canvas => {
     const changedTextElements = getChangedTextElements(textElements, 'font-size', val)
     svgCanvas.setCurText('font_size', val)
     if (changedTextElements.length > 0) {
-      svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
+      const areas = changedTextElements.filter(isAreaText)
+      if (areas.length) {
+        // The box stays where it is: the first baseline sits an ascent below its top.
+        const tops = areas.map((el) => getAreaBox(el).y)
+        svgCanvas.transact('Font size', () => {
+          areas.forEach((el, i) => {
+            svgCanvas.changeSelectedAttributeNoUndo('y', tops[i] + TEXT_ASCENT * parseFloat(String(val)), [el])
+          })
+          svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
+        })
+      } else {
+        svgCanvas.changeSelectedAttribute('font-size', val, changedTextElements)
+      }
     }
     // Re-flow multiline rows so line spacing tracks the new font size.
     changedTextElements.forEach((el) => {
@@ -496,6 +567,62 @@ export const init = canvas => {
     svgCanvas.textActions.setCursor()
   }
 
+  /**
+ * Vertical alignment of the selected area texts inside their box.
+ * @function module:svgcanvas.SvgCanvas#setTextValign
+ * @param {'top'|'middle'|'bottom'} value
+ * @returns {void}
+ */
+  const setTextValignMethod = (value) => {
+    const areas = getSelectedTextElements().filter(isAreaText)
+    const changed = areas.filter((el) => getValign(el) !== value)
+    if (changed.length) {
+      svgCanvas.transact('Vertical alignment', () => {
+        changed.forEach((el) => {
+          writeAreaAttrs(el, { [VALIGN_ATTR]: value === 'top' ? null : value })
+          reflowAreaText(el)
+        })
+      })
+      notifyTextChange(changed)
+    }
+  }
+
+  /**
+ * Turn the selected point texts into area texts of the width they have now (nothing moves).
+ * @function module:svgcanvas.SvgCanvas#makeAreaText
+ * @returns {boolean} Whether anything changed
+ */
+  const makeAreaTextMethod = () => {
+    const elems = getSelectedTextElements().filter((el) => !isAreaText(el))
+    if (!elems.length) { return false }
+    let changed = false
+    svgCanvas.transact('Area text', () => {
+      elems.forEach((el) => { changed = makeAreaText(el, getBBox(el)?.width ?? 0) || changed })
+    })
+    elems.forEach((el) => svgCanvas.selectorManager.requestSelector(el).resize())
+    notifyTextChange(elems)
+    return changed
+  }
+
+  /**
+ * Turn the selected area texts back into point texts; the rows as drawn become hard rows.
+ * @function module:svgcanvas.SvgCanvas#makePointText
+ * @returns {boolean} Whether anything changed
+ */
+  const makePointTextMethod = () => {
+    const elems = getSelectedTextElements().filter(isAreaText)
+    if (!elems.length) { return false }
+    svgCanvas.transact('Point text', () => elems.forEach(makePointText))
+    elems.forEach((el) => svgCanvas.selectorManager.requestSelector(el).resize())
+    notifyTextChange(elems)
+    return true
+  }
+
+  svgCanvas.setTextValign = setTextValignMethod
+  svgCanvas.getTextValign = getValign
+  svgCanvas.isAreaText = isAreaText // whether a `<text>` wraps to a box (`se:wrap-width`)
+  svgCanvas.makeAreaText = makeAreaTextMethod
+  svgCanvas.makePointText = makePointTextMethod
   svgCanvas.getBold = getBoldMethod // Check whether selected element is bold or not.
   svgCanvas.setBold = setBoldMethod // Make the selected element bold or normal.
   svgCanvas.getItalic = getItalicMethod // Check whether selected element is in italics or not.

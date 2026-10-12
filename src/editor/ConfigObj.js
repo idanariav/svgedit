@@ -267,8 +267,10 @@ export default class ConfigObj {
       'ext-path-edit',
       'ext-color-shift',
       'ext-recolor',
+      'ext-layout-ops',
       'ext-fonts',
-      'ext-eyedropper'
+      'ext-eyedropper',
+      'ext-measure'
     ]
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying

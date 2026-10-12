@@ -416,6 +416,9 @@ class EditorStartup {
       if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault()
         this.svgCanvas.textActions.toSelectMode(true)
+      } else if ((evt.key === 'ArrowUp' || evt.key === 'ArrowDown') && !evt.altKey && !evt.metaKey && !evt.ctrlKey) {
+        // area text wraps where the edit buffer cannot see: move by drawn row
+        if (this.svgCanvas.textActions.verticalMove(evt.key === 'ArrowUp' ? -1 : 1, evt.shiftKey)) evt.preventDefault()
       }
     })
 

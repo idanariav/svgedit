@@ -16,7 +16,9 @@ import { getTransformList, transformListToTransform, transformPoint } from './ma
 export const BBOX_AFFECTING_ATTRS = new Set([
   'x', 'y', 'x1', 'y1', 'x2', 'y2',
   'cx', 'cy', 'r', 'rx', 'ry',
-  'width', 'height', 'd', 'points'
+  'width', 'height', 'd', 'points',
+  // the box of an area text (core/text-rows.js)
+  'se:wrap-width', 'se:wrap-height'
 ])
 
 /**
@@ -718,6 +720,21 @@ export class CharacterDataCommand extends Command {
   elements () {
     return this.node.parentElement ? [this.node.parentElement] : []
   }
+}
+
+// `Command#type()` reads `constructor.name`, and `undo.js` branches on it. A minifier renames classes
+// (the production bundle turned `ChangeElementCommand` into `Ao`), which made every one of those branches dead
+// code in the built editor. Pin the names so the build and the source agree.
+for (const [name, cls] of [
+  ['MoveElementCommand', MoveElementCommand],
+  ['InsertElementCommand', InsertElementCommand],
+  ['RemoveElementCommand', RemoveElementCommand],
+  ['ChangeElementCommand', ChangeElementCommand],
+  ['BatchCommand', BatchCommand],
+  ['ChildListCommand', ChildListCommand],
+  ['CharacterDataCommand', CharacterDataCommand]
+]) {
+  Object.defineProperty(cls, 'name', { value: name, configurable: true })
 }
 
 /**

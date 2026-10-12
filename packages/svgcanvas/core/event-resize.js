@@ -14,6 +14,9 @@
 import { getBBox } from './bbox-utils.js'
 import { getRotationAngle } from './dom-utils.js'
 import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.js'
+import {
+  isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
+} from './text-rows.js'
 
 /**
  * Uniform group scale for a multi-element selection. Scales every selected
@@ -77,6 +80,56 @@ const resizeGroup = (svgCanvas, x, y) => {
 }
 
 /**
+ * Resize an area text by its box: the grips move the box's edges, the type keeps its size and
+ * the rows wrap again to the new width. The whole drag is one undo step (a transaction held
+ * from the first movement until the mouse goes up; `event-select.js` commits it).
+ * @param {module:svgcanvas.SvgCanvas} svgCanvas
+ * @param {Element} elem An unrotated, untransformed area text
+ * @param {number} x
+ * @param {number} y
+ * @returns {void}
+ */
+const resizeAreaText = (svgCanvas, elem, x, y) => {
+  let state = svgCanvas.areaResize
+  if (!state) {
+    const box = getAreaBox(elem)
+    state = {
+      elem,
+      box,
+      fixedHeight: getWrapHeight(elem) > 0,
+      anchor: elem.getAttribute('text-anchor') ?? 'start',
+      tx: svgCanvas.beginTransaction('Resize text box', { onAbort: () => { svgCanvas.areaResize = null } })
+    }
+    svgCanvas.areaResize = state
+  }
+  const { box } = state
+  const mode = svgCanvas.getCurrentResizeMode()
+  const size = parseFloat(elem.getAttribute('font-size') ?? '') || 16
+  let dx = x - svgCanvas.getStartX()
+  let dy = y - svgCanvas.getStartY()
+  if (svgCanvas.getCurConfig().gridSnapping) {
+    dx = svgCanvas.snapToGrid(dx)
+    dy = svgCanvas.snapToGrid(dy)
+  }
+  let left = box.x
+  let top = box.y
+  let right = box.x + box.width
+  let bottom = box.y + box.height
+  const minWidth = size
+  const minHeight = size * TEXT_LINE_HEIGHT
+  if (mode.includes('e')) { right = Math.max(right + dx, left + minWidth) }
+  if (mode.includes('w')) { left = Math.min(left + dx, right - minWidth) }
+  if (mode.includes('s')) { bottom = Math.max(bottom + dy, top + minHeight) }
+  if (mode.includes('n')) { top = Math.min(top + dy, bottom - minHeight) }
+  // A box that grew with its text keeps doing so unless a top or bottom grip fixes its height.
+  const height = state.fixedHeight || mode.includes('n') || mode.includes('s') ? bottom - top : 0
+  writeAreaAttrs(elem, areaAttrsForBox({ x: left, y: top, width: right - left, height }, state.anchor, size))
+  reflowAreaText(elem)
+  svgCanvas.selectorManager.requestSelector(elem).resize()
+  svgCanvas.call('transition', [elem])
+}
+
+/**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-resize.init
@@ -88,6 +141,11 @@ export const init = (canvas) => {
 
   const down = (evt, ctx) => {
     const { x, y, zoom, selectedElements, mouseTarget } = ctx
+    // A box drag whose mouse-up never arrived must not hijack this one.
+    if (svgCanvas.areaResize) {
+      svgCanvas.areaResize.tx.commit()
+      svgCanvas.areaResize = null
+    }
     const tlist = getTransformList(mouseTarget)
     if (!tlist) { return }
     svgCanvas.setStarted(true)
@@ -129,6 +187,13 @@ export const init = (canvas) => {
     // multi-selection: uniform group scale (no per-element distortion)
     if (svgCanvas.groupResizeStart) {
       resizeGroup(svgCanvas, x, y)
+      return
+    }
+    // an area text keeps its type and changes its box (rotated or transformed ones scale like any text)
+    const only = selectedElements.filter(Boolean)
+    if (svgCanvas.areaResize || (only.length === 1 && isAreaText(selected) &&
+        !getTransformList(selected)?.numberOfItems)) {
+      resizeAreaText(svgCanvas, svgCanvas.areaResize?.elem ?? selected, x, y)
       return
     }
     // we track the resize bounding box and translate/scale the selected element

@@ -834,6 +834,28 @@ class TopPanel {
   }
 
   /**
+   * Area text on / off for the selected texts: a box the text wraps to, or plain point text.
+   * @returns {false}
+   */
+  clickTextArea () {
+    if (this.anyTextSelected) {
+      const { svgCanvas } = this.editor
+      if (!svgCanvas.makeAreaText()) svgCanvas.makePointText()
+      this.updateContextPanel()
+      return false
+    }
+  }
+
+  /**
+   * Vertical alignment of the selected area texts inside their box.
+   * @param {CustomEvent} evt the `se-select` change event
+   * @returns {void}
+   */
+  changeTextValign (evt) {
+    this.editor.svgCanvas.setTextValign(evt.detail.value)
+  }
+
+  /**
    * Handles the click on the text decoration buttons
    *
    * @param value The text decoration value
@@ -1073,6 +1095,9 @@ class TopPanel {
     $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
     $id('tool_text_anchor').addEventListener('change', evt =>
       this.clickTextAnchor.bind(this)(evt)
+    )
+    $id('tool_text_valign').addEventListener('change', evt =>
+      this.changeTextValign(evt)
     )
     $id('tool_letter_spacing').addEventListener(
       'change',

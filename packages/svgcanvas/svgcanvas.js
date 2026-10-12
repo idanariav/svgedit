@@ -75,6 +75,8 @@ import { init as pathSimplifyInit } from './core/path-simplify.js'
 import { init as cornerRadiusInit } from './core/corner-radius.js'
 import { init as taperStrokeInit } from './core/taper-stroke.js'
 import { init as selectSameInit } from './core/select-same.js'
+import { init as splitGridInit } from './core/split-grid.js'
+import { init as transformEachInit } from './core/transform-each.js'
 import { init as objectStateInit } from './core/object-state.js'
 import { init as drawSnapInit } from './core/draw-snap.js'
 import { init as guidesInit } from './core/guides.js'
@@ -365,6 +367,8 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'artBrush', artBrushInit, initGuardRegistry)
     runGuardedInit(this, 'blend', blendInit, initGuardRegistry)
     runGuardedInit(this, 'selectSame', selectSameInit, initGuardRegistry)
+    runGuardedInit(this, 'splitGrid', splitGridInit, initGuardRegistry)
+    runGuardedInit(this, 'transformEach', transformEachInit, initGuardRegistry)
     runGuardedInit(this, 'objectState', objectStateInit, initGuardRegistry)
     runGuardedInit(this, 'drawSnap', drawSnapInit, initGuardRegistry)
     runGuardedInit(this, 'guides', guidesInit, initGuardRegistry)

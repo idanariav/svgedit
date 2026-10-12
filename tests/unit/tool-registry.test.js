@@ -456,4 +456,60 @@ describe('tool registry (registerTool)', () => {
       expect(canvas.setToolOption('size', 1)).toBe(false)
     })
   })
+
+  describe('cursor and keepOverlays', () => {
+    const cursorOf = () => canvas.getSvgRoot().style.cursor
+
+    it('a tool\'s cursor shows while it is the mode and goes with it', () => {
+      canvas.registerTool(makeTool({ cursor: 'crosshair' }).tool)
+      canvas.registerTool({ id: 'plain', pointerDown () {} })
+      canvas.setMode('dragrect')
+      expect(cursorOf()).toBe('crosshair')
+      canvas.setMode('plain')
+      expect(cursorOf()).toBe('')
+    })
+
+    it('a cursor can be a function of the context', () => {
+      canvas.registerTool(makeTool({ cursor: (ctx) => (ctx.canvas === canvas ? 'copy' : 'default') }).tool)
+      canvas.setMode('dragrect')
+      expect(cursorOf()).toBe('copy')
+    })
+
+    it('a tool without a cursor leaves the canvas cursor alone', () => {
+      canvas.getSvgRoot().style.cursor = 'grab'
+      canvas.registerTool(makeTool().tool)
+      canvas.setMode('dragrect')
+      canvas.setMode('select')
+      expect(cursorOf()).toBe('grab')
+    })
+
+    it('the overlay is emptied when a gesture ends, unless the tool keeps it', () => {
+      const addLine = (ctx) => ctx.addOverlay(document.createElementNS(NS.SVG, 'line'))
+      const overlayCount = () => document.getElementById('toolOverlay')?.children.length ?? 0
+      canvas.registerTool(makeTool({ id: 'forgets', pointerMove: addLine }).tool)
+      canvas.registerTool(makeTool({ id: 'keeps', keepOverlays: true, pointerMove: addLine }).tool)
+      canvas.setMode('forgets')
+      gesture([5, 5], [20, 20])
+      release(20, 20)
+      expect(overlayCount()).toBe(0)
+      canvas.setMode('keeps')
+      gesture([5, 5], [20, 20])
+      release(20, 20)
+      expect(overlayCount()).toBe(1)
+    })
+
+    it('a cancelled gesture clears the overlay even for a tool that keeps it', () => {
+      const overlayCount = () => document.getElementById('toolOverlay')?.children.length ?? 0
+      canvas.registerTool(makeTool({
+        id: 'keeps',
+        keepOverlays: true,
+        pointerMove: (ctx) => ctx.addOverlay(document.createElementNS(NS.SVG, 'line')),
+        pointerUp: () => 'cancel'
+      }).tool)
+      canvas.setMode('keeps')
+      gesture([5, 5], [20, 20])
+      release(20, 20)
+      expect(overlayCount()).toBe(0)
+    })
+  })
 })

@@ -112,6 +112,10 @@ const LOG = 'tool-registry'
  *   read again after every `setOption` and mode change, so `value` / `hidden` may depend on the tool's state
  * @property {(id: string, value: number|string|boolean) => void} [setOption] the user changed a control of `options()`
  * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
+ * @property {string|((ctx: ToolContext) => string)} [cursor] the CSS cursor of the canvas while the tool is the mode
+ *   (set on activate, removed on deactivate); a tool that changes it by position is still to come
+ * @property {boolean} [keepOverlays] a finished gesture leaves its overlay on show (a readout); the tool clears it
+ *   itself on the next press and in `deactivate`
  * @property {boolean} [wantsHover] receive `pointerMove` with no button down
  * @property {boolean} [keepOpacity] created elements keep the `opacity` the tool stamped (the brush has its own)
  * @property {boolean} [snap] `ev.x` / `ev.y` also snap to other objects' anchors, bounding boxes and the page (with guides),
@@ -344,7 +348,7 @@ export const init = (canvas) => {
     } finally {
       endingStart = null
     }
-    clearOverlays()
+    if (!tool.keepOverlays || result === 'cancel') clearOverlays()
     if (result === 'cancel') {
       tx.cancel()
       try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
@@ -394,6 +398,8 @@ export const init = (canvas) => {
     const out = tools.get(prev)
     const into = tools.get(next)
     try { out?.deactivate?.(ctx) } catch (err) { logError(`Tool "${prev}" deactivate() failed`, err, LOG) }
+    if (out?.cursor) svgCanvas.getSvgRoot().style.removeProperty('cursor')
+    if (into?.cursor) svgCanvas.getSvgRoot().style.cursor = typeof into.cursor === 'function' ? into.cursor(ctx) : into.cursor
     try { into?.activate?.(ctx) } catch (err) { logError(`Tool "${next}" activate() failed`, err, LOG) }
   }
 

@@ -250,6 +250,11 @@ export const updateContextPanel = (topPanel) => {
               topPanel.editor.svgCanvas.hasTextDecoration('line-through')
             $id('tool_text_decoration_overline').pressed =
               topPanel.editor.svgCanvas.hasTextDecoration('overline')
+            // Area text: the box button is pressed and the vertical alignment shows
+            const areaTexts = topPanel.editor.svgCanvas.getSelectedElements().filter((el) => el?.tagName === 'text' && topPanel.editor.svgCanvas.isAreaText(el))
+            $id('tool_text_area').pressed = areaTexts.length > 0
+            $id('tool_text_valign').style.display = areaTexts.length ? '' : 'none'
+            if (areaTexts.length) $id('tool_text_valign').value = topPanel.editor.svgCanvas.getTextValign(areaTexts[0])
             $id('tool_font_family').value = elem.getAttribute('font-family')
             $id('tool_text_anchor').setAttribute(
               'value',

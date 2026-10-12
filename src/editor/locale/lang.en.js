@@ -87,6 +87,11 @@ export default {
     text_length_adjust: 'Length adjust',
     text_length_adjust_spacing: 'Spacing',
     text_length_adjust_spacing_and_glyphs: 'Spacing & Glyphs',
+    text_area: 'Area text',
+    text_valign: 'Vertical alignment in the box',
+    text_valign_top: 'Top',
+    text_valign_middle: 'Middle',
+    text_valign_bottom: 'Bottom',
     text_perspective_x: 'Horizontal perspective — positive tilts the right side toward you',
     text_perspective_y: 'Vertical perspective — positive tilts the bottom toward you',
     frame_name: 'Frame name',
@@ -525,6 +530,7 @@ export default {
     stroke_width: 'Stroke Width',
     style: 'Style',
     text: 'Text',
+    text_box: 'Text box',
     word_spacing: 'Word Spacing'
   }
 }

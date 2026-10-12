@@ -206,6 +206,7 @@ const GROUP_BY_ID = {
   // Text
   tool_bold: 'Text',
   tool_italic: 'Text',
+  tool_text_area: 'Text',
   tool_text_decoration_underline: 'Text',
   tool_text_decoration_linethrough: 'Text',
   tool_text_decoration_overline: 'Text',

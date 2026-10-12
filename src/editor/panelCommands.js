@@ -102,6 +102,7 @@ const LABELS = {
   tool_select: 'tools.mode_select',
   tool_stroke_to_path: 'tools.stroke_to_path',
   tool_text: 'tools.mode_text',
+  tool_text_area: 'properties.text_area',
   tool_text_decoration_linethrough: 'properties.text_decoration_linethrough',
   tool_text_decoration_overline: 'properties.text_decoration_overline',
   tool_text_decoration_underline: 'properties.text_decoration_underline',
@@ -150,6 +151,7 @@ const TOP_PANEL = [
   ['tool_node_link', 'Path', 'linkControlPoints', { enabled: inPathEdit }],
   ['tool_bold', 'Text', 'clickBold', { enabled: textSelected }],
   ['tool_italic', 'Text', 'clickItalic', { enabled: textSelected }],
+  ['tool_text_area', 'Text', 'clickTextArea', { enabled: textSelected }],
   ['tool_unlink_use', 'Group', 'clickGroup'],
   ['tool_image_crop', 'Tools', 'clickImageCrop', { interactive: true }],
   ['tool_image_crop_apply', 'Tools', 'applyImageCrop']

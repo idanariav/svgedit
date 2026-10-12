@@ -254,11 +254,9 @@ export const init = canvas => {
               childChanges.y = childPtY
             }
 
-            let tspanFS = child.getAttribute('font-size')
-            if (!tspanFS) {
-              tspanFS = window.getComputedStyle(child).fontSize
-            }
-            const tspanFSNum = parseFloat(tspanFS)
+            // Only a size of its own is scaled: one it inherits follows the text's (writing the computed
+            // size onto every row on each move, as this used to, left it behind after an undo).
+            const tspanFSNum = parseFloat(child.getAttribute('font-size'))
             if (!isNaN(tspanFSNum)) {
               childChanges['font-size'] = tspanFSNum * Math.abs(m.a)
             }
@@ -268,6 +266,8 @@ export const init = canvas => {
             }
           }
         }
+        // An area text scales its box with the type (see text-attrs.js) and lays its rows out again.
+        runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
         break
       }
       case 'tspan': {

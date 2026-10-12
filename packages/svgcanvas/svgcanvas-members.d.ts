@@ -217,6 +217,15 @@ export interface AttachedMembers {
   getItalic(): boolean
   hasTextDecoration(value: string): boolean
   setTextAnchor(value: string): void
+  /** Vertical alignment of the selected area texts inside their box (`se:valign`). */
+  setTextValign(value: 'top' | 'middle' | 'bottom'): void
+  /** Selected point texts become area texts of their current width (one undo step); false when nothing changed. */
+  /** Whether a `<text>` wraps to a box (`se:wrap-width`). */
+  isAreaText(elem: Element | null | undefined): boolean
+  getTextValign(elem: Element): 'top' | 'middle' | 'bottom'
+  makeAreaText(): boolean
+  /** Selected area texts become point texts, the rows as drawn turning into hard rows (one undo step). */
+  makePointText(): boolean
   setWordSpacing(value: number | string): void
   setTextLength(value: number | string): void
   setTextContent(val: string): void
@@ -259,6 +268,12 @@ export interface AttachedMembers {
   detachTextFromPath(): void
   releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
   selectSameAs(criterion: string, options?: { tolerance?: number }): void
+  /** Replace the selected shape with a group of rows × cols rects over its bounding box (one undo step); null when nothing was done. */
+  splitIntoGrid(params: { rows: number, cols: number, gutter?: number }, elem?: Element): Element | null
+  /** Whether `elem` is a plain shape that Split Into Grid can take. */
+  canSplitIntoGrid(elem: Element | null | undefined): boolean
+  /** Scale / move / rotate / reflect every selected object about its own reference point (one undo step); returns the transformed elements. */
+  transformEach(params: import('./core/transform-each.js').EachParams, rng?: () => number): Element[]
   /** Hide (`display="none"`) or show objects as one undo step; hidden objects leave the selection. False when nothing changed. */
   setObjectsHidden(elems: Element[], hidden: boolean): boolean
   /** Lock (`se:locked`) or unlock objects as one undo step; locked objects (and what is inside a locked group) cannot be selected. False when nothing changed. */

@@ -334,6 +334,8 @@ test.describe('Layers panel', () => {
       expect(await hidden()).toEqual(['r1', 'grp'])
       await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
       expect(await hidden()).toEqual([])
+      // The panel rebuilds its rows (rAF-throttled) after an undo: let that settle before grabbing a row handle.
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
       await (await (await rowFor(page, 'r2')).$('td.objlock')).click({ modifiers: ['Alt'] })
       expect(await locked()).toEqual(['r1', 'grp'])
       await (await (await rowFor(page, 'r2')).$('td.objlock')).click({ modifiers: ['Alt'] })

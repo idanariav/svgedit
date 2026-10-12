@@ -10,6 +10,10 @@
  */
 import { assignAttributes, preventClickDefault, setHref } from './dom-utils.js'
 import { snapToAngle } from './math.js'
+import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.js'
+
+/** Screen pixels the pointer must travel with the Text tool before the press becomes a box (area text). */
+const TEXT_DRAG_PX = 5
 
 /**
  * Cubic B-spline point used to smooth the freehand pencil stroke as it's
@@ -70,6 +74,9 @@ export const init = (canvas) => {
   let pencilStabY = null
   // The end of the selected open path the current pencil stroke started on (it carries that path on).
   let pencilEnd = null
+  // The Text tool press has been dragged into a box: it makes area text instead of point text.
+  let textBoxDrag = false
+  let textBoxEnd = { x: 0, y: 0 }
 
   const down = (evt, ctx) => {
     const { x, y, curShape } = ctx
@@ -231,6 +238,7 @@ export const init = (canvas) => {
         })
         break
       case 'text':
+        textBoxDrag = false
         svgCanvas.setStarted(true)
         /* const newText = */ svgCanvas.addSVGElementsFromJson({
           element: 'text',
@@ -262,10 +270,23 @@ export const init = (canvas) => {
     let cx, cy, i
     switch (svgCanvas.getCurrentMode()) {
       case 'text': {
-        assignAttributes(shape, {
-          x,
-          y
-        }, 1000)
+        // A click places point text where it was pressed; a drag draws the box of an area text.
+        const sx = svgCanvas.getStartX()
+        const sy = svgCanvas.getStartY()
+        const zoom = svgCanvas.getZoom()
+        if (!textBoxDrag && Math.hypot(x - sx, y - sy) * zoom < TEXT_DRAG_PX) { break }
+        textBoxDrag = true
+        textBoxEnd = { x, y }
+        if (!svgCanvas.getRubberBox()) {
+          svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())
+        }
+        assignAttributes(svgCanvas.getRubberBox(), {
+          x: Math.min(sx, x) * zoom,
+          y: Math.min(sy, y) * zoom,
+          width: Math.abs(x - sx) * zoom,
+          height: Math.abs(y - sy) * zoom,
+          display: 'inline'
+        }, 100)
         break
       }
       case 'line': {
@@ -512,6 +533,23 @@ export const init = (canvas) => {
         break
       case 'text':
         keep = true
+        if (textBoxDrag) {
+          textBoxDrag = false
+          svgCanvas.getRubberBox()?.setAttribute('display', 'none')
+          const size = parseFloat(element.getAttribute('font-size')) || 16
+          const sx = svgCanvas.getStartX()
+          const sy = svgCanvas.getStartY()
+          const end = textBoxEnd
+          const dragged = Math.abs(end.y - sy)
+          const box = {
+            x: Math.min(sx, end.x),
+            y: Math.min(sy, end.y),
+            width: Math.max(Math.abs(end.x - sx), size),
+            // A box shorter than a row grows with its text instead of fixing the height.
+            height: dragged >= size * TEXT_LINE_HEIGHT ? dragged : 0
+          }
+          writeAreaAttrs(element, { ...areaAttrsForBox(box, 'start', size), 'text-anchor': 'start' })
+        }
         // Mark this as a freshly-placed text so lock mode can re-arm the text tool
         svgCanvas.setTextFreshCreate(true)
         svgCanvas.selectOnly([element])

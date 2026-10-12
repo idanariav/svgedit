@@ -10,6 +10,7 @@ import {
   getRotationAngle, setHref
 } from './dom-utils.js'
 import { getBBox as utilsGetBBox } from './bbox-utils.js'
+import { isAreaText, reflowAreaText, settleAreaText, LAYOUT_ATTRS } from './text-rows.js'
 import {
   isGecko
 } from '../common/browser.js'
@@ -35,6 +36,13 @@ export const init = (canvas) => {
   let batchDepth = 0
   let batchCleared = false
   const batchChanged = new Set()
+  // Area texts whose attributes an undo/redo changed. Their rows are settled once the whole batch has been
+  // (un)applied: in between, a batch can hold the new attributes next to the old rows (or the reverse).
+  const batchAreaTexts = new Set()
+  const settleAreaTexts = () => {
+    for (const el of batchAreaTexts) settleAreaText(el)
+    batchAreaTexts.clear()
+  }
 
   const getUndoManager = () => {
     return new UndoManager({
@@ -44,6 +52,7 @@ export const init = (canvas) => {
       endBatch () {
         if (--batchDepth > 0) return
         batchCleared = false
+        settleAreaTexts()
         const elems = [...batchChanged]
         batchChanged.clear()
         if (elems.length) svgCanvas.call('changed', elems)
@@ -158,7 +167,14 @@ export const init = (canvas) => {
             if (values.stdDeviation) {
               svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)
             }
-            if (cmd.elem.tagName === 'text') {
+            if (isAreaText(cmd.elem)) {
+              // The rows of an area text are derived from its attributes (box, font,
+              // anchor, position) and its content: lay them out again rather than shift them.
+              if (Object.keys(values).some((k) => LAYOUT_ATTRS.has(k))) {
+                batchAreaTexts.add(cmd.elem)
+                if (batchDepth === 0) settleAreaTexts()
+              }
+            } else if (cmd.elem.tagName === 'text') {
               // Only an x/y change moves the tspans. A command that touched
               // neither (fill, font-size, …) used to compute NaN here and
               // write x="NaN" y="NaN" into every tspan on undo/redo.
@@ -168,7 +184,8 @@ export const init = (canvas) => {
               }
               const [dx, dy] = [delta('x'), delta('y')]
 
-              const tspans = (dx || dy) ? cmd.elem.children : []
+              // (only the rows: a `<textPath>` child has no x / y of its own to shift)
+              const tspans = (dx || dy) ? Array.from(cmd.elem.children).filter((c) => c.tagName === 'tspan') : []
 
               for (let i = 0; i < tspans.length; i++) {
                 let x = Number(tspans[i].getAttribute('x'))
@@ -278,6 +295,9 @@ export const init = (canvas) => {
         } else {
           elem.removeAttribute(attr)
         }
+
+        // An area text wraps to its box: any attribute that changes the measure re-wraps it.
+        if (attr !== '#text' && LAYOUT_ATTRS.has(attr)) reflowAreaText(elem)
 
         // Go into "select" mode for text changes
         // NOTE: Important that this happens AFTER elem.setAttribute() or else attributes like

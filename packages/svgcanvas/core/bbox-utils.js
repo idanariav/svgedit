@@ -17,6 +17,7 @@ import {
 import { getClosest } from '../common/util.js'
 import { getRotationAngleFromTransformList } from './dom-utils.js'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.js'
+import { isAreaText, getAreaBox } from './text-rows.js'
 
 // Much faster than running getBBox() every time
 const visElems =
@@ -232,7 +233,10 @@ export const getBBox = (elem) => {
   let ret = null
   switch (elname) {
     case 'text':
-      if (selected.textContent === '') {
+      if (isAreaText(selected)) {
+        // The box is the object (what the selection shows and resizes), not the ink inside it.
+        ret = getAreaBox(selected)
+      } else if (selected.textContent === '') {
         selected.textContent = 'a' // Some character needed for the selector to use.
         ret = selected.getBBox()
         selected.textContent = ''

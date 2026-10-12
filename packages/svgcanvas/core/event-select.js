@@ -305,6 +305,12 @@ export const init = (canvas) => {
   const up = (evt, ctx) => {
     const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected } = ctx
     const mode = svgCanvas.getCurrentMode()
+    if (mode === 'resize' && svgCanvas.areaResize) {
+      // an area text's box drag: its transaction is the undo step
+      svgCanvas.areaResize.tx.commit()
+      svgCanvas.areaResize = null
+      svgCanvas.call('changed', selectedElements.filter(Boolean))
+    }
     if (mode === 'resize' || mode === 'multiselect') {
       if (svgCanvas.getRubberBox()) {
         svgCanvas.getRubberBox().setAttribute('display', 'none')

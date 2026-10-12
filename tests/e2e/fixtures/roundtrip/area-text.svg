@@ -1,0 +1,23 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <text fill="#000000" font-family="Serif" font-size="24" id="text_2" paint-order="stroke" se:wrap-height="140" se:wrap-width="200" stroke="#000000" stroke-width="0" text-anchor="start" x="60" xml:space="preserve" y="79.2">
+   <tspan x="60" y="79.2">The quick brown</tspan>
+   <tspan se:soft="1" x="60" y="108">fox jumps over the</tspan>
+   <tspan se:soft="1" x="60" y="136.8">lazy dog and keeps</tspan>
+   <tspan se:soft="1" x="60" y="165.6">on running far away</tspan>
+  </text>
+  <text fill="#000000" font-family="Serif" font-size="24" id="text_3" paint-order="stroke" se:valign="middle" se:wrap-height="160" se:wrap-width="220" stroke="#000000" stroke-width="0" text-anchor="middle" x="410" xml:space="preserve" y="79.2">
+   <tspan x="410" y="87.2">Title</tspan>
+   <tspan x="410" y="116">A longer second</tspan>
+   <tspan se:soft="1" x="410" y="144.8">paragraph that needs</tspan>
+   <tspan se:soft="1" x="410" y="173.6">several rows to fit in</tspan>
+   <tspan se:soft="1" x="410" y="202.4">the box</tspan>
+  </text>
+  <text fill="#000000" font-family="Serif" font-size="24" id="text_4" paint-order="stroke" se:wrap-width="279" stroke="#000000" stroke-width="0" text-anchor="middle" x="150" xml:space="preserve" y="300">
+   <tspan x="150" y="300">point text turned into an area</tspan>
+  </text>
+ </g>
+</svg>

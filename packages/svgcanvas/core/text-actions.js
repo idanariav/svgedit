@@ -14,6 +14,7 @@ import {
 } from './dom-utils.js'
 import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import { supportsGoodTextCharPos } from '../common/browser.js'
+import { isAreaText, rowsOf, softCount } from './text-rows.js'
 
 /**
  * @function module:text-actions.init
@@ -395,6 +396,41 @@ export const init = canvas => {
     }
 
     /**
+   * Move the caret one drawn row up (-1) or down (1). The edit buffer has no idea where an area text wraps, so
+   * the textarea's own ArrowUp / ArrowDown would jump a whole paragraph; this picks the caret position nearest
+   * the same x in the neighbouring row instead (past the first / last row it goes to the start / end).
+   * @param {-1|1} dir
+   * @param {boolean} [extend] Shift: grow the selection from its anchor
+   * @returns {boolean} Whether the key was handled (only area text is)
+   */
+    verticalMove (dir, extend = false) {
+      const text = this.#curtext
+      const input = this.#textinput
+      if (!text || !isAreaText(text) || !this.#chardata.length) { return false }
+      const cd = this.#chardata
+      const backward = input.selectionDirection === 'backward'
+      const head = Math.min(backward ? input.selectionStart : input.selectionEnd, cd.length - 1)
+      const anchor = backward ? input.selectionEnd : input.selectionStart
+      const ys = [...new Set(cd.map((c) => c.y))]
+      const row = ys.indexOf(cd[head].y) + dir
+      let target
+      if (row < 0) {
+        target = 0
+      } else if (row >= ys.length) {
+        target = cd.length - 1
+      } else {
+        target = cd.findIndex((c) => c.y === ys[row])
+        for (let i = target; i < cd.length && cd[i].y === ys[row]; i++) {
+          if (Math.abs(cd[i].x - cd[head].x) < Math.abs(cd[target].x - cd[head].x)) { target = i }
+        }
+      }
+      const from = extend ? anchor : target
+      input.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
+      this.init()
+      return true
+    }
+
+    /**
    * @param {number} index
    * @returns {void}
    */
@@ -582,6 +618,44 @@ export const init = canvas => {
           x1 = (x1 - offset) / zoom
         }
         glyph[s] = { x0, x1 }
+      }
+
+      if (isAreaText(this.#curtext)) {
+        // Wrapped rows: each row is a tspan with its own baseline; a soft break stands for the spaces it swallowed.
+        const chardata = new Array(len + 1)
+        const rows = rowsOf(this.#curtext)
+        let k = 0
+        let s = 0
+        let lastX = anchorX
+        rows.forEach((tspan, r) => {
+          const text = tspan.textContent ?? ''
+          const top = (parseFloat(tspan.getAttribute('y') ?? '') || row0Baseline) - ascent
+          const rowX = parseFloat(tspan.getAttribute('x') ?? '')
+          const box = (x) => ({ x, y: top, height: cursorHeight })
+          for (let j = 0; j < text.length; j++) {
+            lastX = glyph[s + j] ? glyph[s + j].x0 : lastX
+            chardata[k + j] = box(lastX)
+          }
+          const endX = text.length && glyph[s + text.length - 1]
+            ? glyph[s + text.length - 1].x1
+            : (isNaN(rowX) ? anchorX : rowX)
+          chardata[k + text.length] = box(endX)
+          lastX = endX
+          const next = rows[r + 1]
+          if (next) {
+            const swallowed = softCount(next) ?? 1 // a hard break swallows the newline
+            for (let j = 1; j < swallowed; j++) chardata[k + text.length + j] = box(endX)
+            k += text.length + swallowed
+          }
+          s += text.length
+        })
+        if (!rows.length) chardata[0] = { x: anchorX, y: rowTop(0), height: cursorHeight }
+        for (let i = 0; i <= len; i++) {
+          if (!chardata[i]) chardata[i] = chardata[i - 1] ?? { x: anchorX, y: rowTop(0), height: cursorHeight }
+        }
+        this.#chardata = chardata
+        this.#setSelection(this.#textinput.selectionStart, this.#textinput.selectionEnd, true)
+        return
       }
 
       // Phase 2: walk the textarea value, producing a caret box per position.

@@ -63,6 +63,14 @@ What is recorded here is what was found on the way and the compromises that rema
 - **NaN tspans in saved drawings.** Undoing/redoing *any* attribute change on a `<text>` with tspans
   wrote `x="NaN" y="NaN"` into them (`undo.js`). Prevention is fixed and tested; already-saved drawings
   are repaired in the files. Done 2026-10-10: Obsidian_Vault and Documents/test_vault scanned (found none).
+- **Every `cmd.type()` branch of `undo.js` was dead code in the built editor.** `Command#type()` returned
+  `constructor.name`, which the minifier renames (`ChangeElementCommand` → `Ao`), so after any undo/redo none of the
+  side effects keyed on it ran in the shipped bundle (nor in the plugin): `identifyLayers`, `restoreRefElements`, the
+  `<use>` data refresh, the text tspan shift. Source / unit tests were fine, which hid it. The class names are now
+  pinned in `history.js` (`tests/unit/history-command-types.test.js`); the command sweep runs on the build, so it catches it.
+  Fixing it exposed two latent bugs the dead code had been hiding: the tspan shift also wrote `x` / `y` onto a `<textPath>`
+  child (moving then undoing a text on a path corrupted it), and a transform bake wrote the computed font size onto every
+  tspan on each move (undo left it behind). Both fixed.
 - **Deleting / Stroke-to-Path / Offset on a path left the `<textPath>` that runs along it dangling.**
   `releaseTextOnPath` (`text-path.js`) now turns that text into plain text in the same undo step
   (`tests/unit/text-path-rail-removal.test.js`).
