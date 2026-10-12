@@ -11,6 +11,7 @@ import Rulers from './Rulers.js'
 import { applyTheme } from './themeUtil.js'
 import { applyUiMode } from './uiMode.js'
 import { getIconDataUri } from './images/iconRegistry.js'
+import { cursorForMode } from './toolCursors.js'
 import { getExtension } from './extensions/extensionRegistry.js'
 import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.js'
 import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
@@ -1065,41 +1066,7 @@ class EditorStartup {
     // workarea; bail rather than throw on `this.workarea.style` (defence in
     // depth — destroy() should already have removed those listeners).
     if (!this.workarea) return
-    let cs = 'auto'
-    switch (mode) {
-      case 'ext-panning':
-        cs = 'grab'
-        break
-      case 'zoom':
-      case 'shapelib':
-      case 'repeat-pick-center':
-      case 'puppetwarp':
-      case 'spiral':
-      case 'arc':
-      case 'rectgrid':
-      case 'polargrid':
-        cs = 'crosshair'
-        break
-      case 'circle':
-      case 'ellipse':
-      case 'rect':
-      case 'square':
-      case 'star':
-      case 'polygon':
-        {
-          const cur = getIconDataUri(`cursors/${mode}_cursor.svg`)
-          cs = cur ? `url("${cur}"), crosshair` : 'crosshair'
-        }
-        break
-      case 'text':
-        // #TODO: Cursor should be changed back to default after text element was created
-        cs = 'text'
-        break
-      default:
-        cs = 'auto'
-    }
-
-    this.workarea.style.cursor = cs
+    this.workarea.style.cursor = cursorForMode(mode)
   }
 
   /**

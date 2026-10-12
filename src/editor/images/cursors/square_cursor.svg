@@ -1,13 +1,4 @@
-<?xml version="1.0"?>
-<svg width="20" height="16" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" version="1.1">
- <title>circle_cursor</title>
- <g class="layer">
-  <title>Layer 1</title>
-  <g class="layer" id="svg_2">
-   <g id="layer2">
-    <path d="m0.1,6.37l6.3,-6.27l-6.3,0l0,6.27z" fill="#2b3c45" id="path9" stroke="#2b3c45" stroke-dashoffset="0" stroke-width="0.2"/>
-   </g>
-  </g>
-  <rect fill="#ffffff" height="8" id="svg_3" stroke="#2b3c45" width="8" x="5.04" y="4.43"/>
- </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" data-hotspot="8 8">
+  <title>square cursor</title>
+  <path d="M1 8 H6 M10 8 H15 M8 1 V6 M8 10 V15" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" fill="none"/><path d="M1 8 H6 M10 8 H15 M8 1 V6 M8 10 V15" stroke="#2b3c45" stroke-width="1.4" stroke-linecap="round" fill="none"/><g transform="translate(4 4)"><rect x="10.4" y="10.4" width="11.6" height="11.6" fill="#ffffff" stroke="#2b3c45" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></g>
 </svg>

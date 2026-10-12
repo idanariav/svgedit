@@ -54,8 +54,9 @@ small items (S) fill gaps between large ones.
 - **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Finish the remaining `@ts-check` modules in
   small batches whenever a phase touches them; once most are checked, generate the declarations from source and delete
   the hand-written d.ts files (see the TypeScript section). Do not start a dedicated conversion project.
-- **Plugin command palette** (plugin repo): independent and high leverage, since every command added in the phases above
-  appears there for free. Best done before Phase 3, whenever the plugin is next touched.
+- **Plugin command access** (plugin repo): decided 2026-10-12 *not* to add one Obsidian palette entry per editor command (~150
+  would bury the plugin's own). Instead one "SVG: run editor command…" picker over `commands.list()` plus the registry exposed on
+  the plugin object for a future CLI / MCP bridge; recorded in the plugin's `.claude/techdebt.md`. Not built yet.
 - **UI/UX polish** (the six icon-only top-bar toggles stay icon-only by decision; left-column fold, flyout shortcuts, Cutter icon and "none" swatch are done): one batched pass
   after Phase 2, or opportunistically when a feature touches that toolbar.
 - **Translations:** wait until a second locale is wanted; the guideline (all new strings via `t()`) keeps the cost down.
@@ -68,8 +69,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
 - **Tool hook `cursor()` by position.** `ToolDef.cursor` (a CSS cursor, or a function of the context) is built, applied on
   activate and removed on deactivate (Measure uses `crosshair`); no tool yet changes it with the pointer's position (a
   cursor that depends on what is under the pointer: a continue / join pen cursor, a width-tool hover). Do that with the
-  first tool that needs it; most newer tools (shape-family, Distort, Gradient, Corners, Width, Shaper, Smooth) still show
-  the default cursor and could take a static one now. `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
+  first tool that needs it. Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
   the wand's tolerance and the smooth tool's radius are candidates, below.)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
@@ -114,7 +114,7 @@ Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedroppe
 Done: `freeDistort` (bilinear) and `perspective` (projective, Heckbert's square-to-quad) live effects on eight unit-box corner params; the Distort tool (`tool_distort`, mode `distort`): four grips on the selected shape's source box, drag one (Shift = one axis) for one undo step, Free / Perspective on the options bar (converts a distorted selection), a press on another shape selects it. The effect stacks with the others (the corners edit the first distort entry; the unit box is the source box, whatever comes before it). Remaining:
 - **Shapes only, no groups.** A group (or text, image, compound selection) is skipped; the plan's alternative was an effect per child. Distorting several selected shapes with one set of corners (their common box) is not offered either.
 - **Perspective is the free-corner homography.** VectorCraft's "Perspective" *mode* is a drag constraint (the corner and its partner move symmetrically) on top of the bilinear effect; here each corner is free and the map is truly projective, so a quad that stops being convex is refused while dragging (the last valid corner stays) and falls back to bilinear if it arrives from the panel's numbers.
-- **No snapping** to other objects or guides (`snap: true` on the tool def needs the corner to follow the pointer by an offset, not jump to it; with grid snapping on, the grid is used). No custom cursor (waits for `cursor()`), no measurement label.
+- **No snapping** to other objects or guides (`snap: true` on the tool def needs the corner to follow the pointer by an offset, not jump to it; with grid snapping on, the grid is used). No measurement label.
 - **A corner jumps to the pointer** by up to the grab radius (10 px) on the first move; the grab offset is not kept.
 - **Reset** is the ✕ on the effect's row in the Effects panel; there is no double-click-a-grip or Enter-to-reset gesture.
 - **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
@@ -129,7 +129,7 @@ Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's li
 - **A linear gradient's bar sits where its attributes put it.** The default `x1=0 y1=0 x2=1 y2=0` is the shape's top edge (the gradient is constant along y, so it looks the same mid-shape); drag the start handle to move it.
 - **The editor normalises user-space gradients on load** (`convertGradients` turns a `userSpaceOnUse` gradient referenced by a `fill` / `stroke` attribute into box units and drops its `gradientTransform`), so they rarely reach the tool. It handles them anyway (unit-tested, and e2e by switching the units after load).
 - **No midpoint diamonds** (SVG has no midpoints), no spread-method UI, no stop-opacity beyond what the colour dialog's alpha sets; a stop dragged past a neighbour swaps places in the DOM (SVG would clamp it).
-- **No snapping** (to anchors, boxes, guides or the grid) and no custom cursor (waits for `cursor()`); the handle follows the pointer with the grab offset kept.
+- **No snapping** (to anchors, boxes, guides or the grid) (the tool has its static cursor); the handle follows the pointer with the grab offset kept.
 - **Single element, plain shapes and text only** (path, rect, ellipse, circle, line, polyline, polygon, text). A group, or several selected shapes with one shared gradient, is not edited; shapes in a taper / width stack keep their gradient on the generated outline and are treated like any path.
 - **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
 - A freshly double-clicked stop opens the *modal* colour dialog (Apply / Cancel); the popover mode used by the swatches needs an anchor element, which a canvas chip does not have.
@@ -190,7 +190,7 @@ Done: a drag with the Text tool draws a box (a click still places point text); t
 - **Measured with a hidden `<text>` probe** in the outer `<svg>` (computed font, letter and word spacing), so a font the browser substitutes is measured as drawn; under jsdom a character-count estimate stands in. `textLength` / `lengthAdjust` on an area text are not handled (they apply to each row).
 - **One style per text** (as everywhere in this editor): no mixed styles inside a box, no text threading between boxes.
 - **Point → area** takes the current width (+ 2) as the box width and keeps the rows as hard rows; **area → point** turns the rows as drawn into hard rows. The only way to get back the wrap is to convert again.
-- **Not in the tablet shell**, no options bar, no custom cursor for the box drag (waits for `cursor()`); the box while dragging is the select tool's rubber band.
+- **Not in the tablet shell**, no options bar; the box while dragging is the select tool's rubber band.
 - The re-wrap on `document.fonts` `loadingdone` is not an undo step and does not refresh an open caret.
 
 ## Round-trip corpus: keep adding drawings
@@ -333,7 +333,7 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
   - **Double-click for a Corners dialog**, the "Hide Corner Widget for angles greater than" preference and the red outline of corners at their largest radius while dragging.
   - **Only the element's own transform** maps the widgets (as in the Width and Distort tools); a shape inside a transformed group that was entered misplaces them.
   - **A drag sets one radius for every targeted corner** (the dragged corner's), as VectorCraft does; corners that had different radii are levelled. Per-corner radii come from picking corners first.
-  - **No cursor and no tablet-shell button**, like the other newer tools.
+  - **No tablet-shell button**, like the other newer tools.
   - **Corner widgets are circles for every kind**; the kind is read off the options bar or the shape.
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
@@ -382,7 +382,7 @@ Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-dele
 - **Polygons are plain `<polygon>`s**, not polystar polygons. Making them editable with the polystar sides field means teaching `ext-polystar` to keep an orientation instead of rebuilding from angle 0.
 - **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
 - **Scribble hit-testing is sample-based** (`strokeTouches`): spacing is ≥ 0.5 document units and at most 2,000 samples, so a hairline crossed by a very long scribble at very low zoom can be missed. Text and images are tested by their bounding box.
-- No custom cursor and no options bar (waits for the `cursor()` / `options()` tool hooks).
+- No options bar (waits for the `options()` tool hook).
 
 ## Scrubby labels (`seSpinInput.js`): follow-ups from T3.1
 
@@ -459,7 +459,7 @@ Done: **Line art (centerlines)** in Convert to editable SVG traces thin strokes 
 Done: a pencil stroke that starts on an end of the single selected open path extends it (one `Continue path` step) or closes it; Stabilisation and Fidelity are in Editor Preferences. Remaining:
 - **The seam is not tangent-continuous.** The stroke is fitted on its own and its first anchor merged into the path's end, so the old path's last handle and the new first handle can differ. VectorCraft refits with the old end tangent fixed; `fitFreehand` has no start-tangent option yet. A stroke that sets off in the path's direction is visually fine.
 - **Only the selected path, plain and untransformed, in the current layer**, same limits as the Pen (see "Pen continue / join"). With the pencil tool armed the selection has to be made first, then the tool picked (the selection survives the switch).
-- **The ring** marks the end like the Pen's; there is no distinct cursor.
+- **The ring** marks the end like the Pen's; the cursor is the tool's static one, not a continue/join variant.
 - **Closing is judged on the stroke's last captured point**, which trails the pointer (stabiliser and spline capture): finish with a short pause, or lower the stabilisation. The closing distance is `max(4 × fidelity, 6 screen px)`.
 - **Preferences are plain number fields** (stabilisation %, fidelity in user units), not a popover on the tool; double-click on a tool button means lock mode, so VectorCraft's "double-click opens Tool Options" is not available.
 - Stroke continued from a path's start comes back running the way the path ran; a path that gets closed keeps the stroke's direction.
@@ -522,7 +522,7 @@ Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt /
 - **Shapes are plain paths / groups, not re-editable.** VectorCraft keeps no parameters either, but the plan floated `se:shape="spiral(decay=80,segments=10)"` so the popover could regenerate a selected shape; not stored. Changing a count means redrawing (undo, then arrow keys while dragging).
 - **No measurement label while drawing** (VectorCraft shows one next to the snapped corner). Snapping itself is done (T2.1).
 - **Not in the tablet shell** (`TabletShell.js` `SHAPES`): the four tools are only in the desktop shapes flyout.
-- **No keyboard shortcuts / no custom cursor** (they use the plain crosshair).
+- **No keyboard shortcuts** (their cursors are the static arrow-plus-glyph ones).
 - **Alt held at release keeps the tool** — core `mouseUpEvent` skips `setMode('select')` when `evt.altKey` is set for every shape tool; with Alt now meaning "from the centre" for arc/grids, releasing the mouse before Alt leaves the tool active (the shape is still selected). Pre-existing core rule, only more visible here.
 
 ## Missing translations: extension-injected strings
@@ -566,6 +566,17 @@ remembered, `sidePanelManual` pref); Path actions carry captions (`data-caption`
 theme toggle is no longer a default extension (Preferences has theme). The six top-bar toggles (frame,
 wireframe, canvas settings, grid, smart snap, layer view) stay icon-only with tooltips (decided: labels
 don't fit the tight bar). Nothing further planned.
+
+### Tool cursors
+
+Done: `toolCursors.js` `cursorForMode(mode)` — a mode has a cursor when `images/cursors/<mode>_cursor.svg` exists (32px, white
+halo for the dark canvas; the file names its hotspot in `data-hotspot="x y"`). The cursor *replaces* the pointer: tools with a
+working tip are drawn as the tool with its tip at the hotspot (Pencil `fhpath`, Pen `path`, Curvature, Brush, Smooth, Eyedropper,
+Cutter); shape and effect tools are a crosshair (hotspot at its centre) with a small glyph of the tool beside it (rect/square/ellipse/
+circle/polygon/star, line, arc, spiral, rect/polar grid, shape builder, gradient, distort, corners, width, blend, shaper). Zoom, shape
+library, puppet warp and repeat-pick-center keep a crosshair, text its I-beam, pan a hand; Measure's `ToolDef.cursor` is a crosshair.
+Remaining: a cursor that changes with the pointer position (continue / join pen, width-tool hover) still needs the tool-level
+`cursor()` by position (see "Tool hooks"); Image has no mode, so no cursor; cursors are not shown on touch (tablet) anyway.
 
 ### Icons and palette
 
