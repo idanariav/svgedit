@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path functionality.
  * @module path
@@ -17,7 +18,7 @@ import {
 
 /**
 * @function module:path-actions.init
-* @param {module:path-actions.svgCanvas} pathMethodsContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -28,8 +29,8 @@ export const init = (canvas) => {
 * @function module:path.ptObjToArr
 * @todo See if this should just live in `replacePathSeg`
 * @param {string} type
-* @param {SVGPathSegMovetoAbs|SVGPathSegLinetoAbs|SVGPathSegCurvetoCubicAbs|SVGPathSegCurvetoQuadraticAbs|SVGPathSegArcAbs|SVGPathSegLinetoHorizontalAbs|SVGPathSegLinetoVerticalAbs|SVGPathSegCurvetoCubicSmoothAbs|SVGPathSegCurvetoQuadraticSmoothAbs} segItem
-* @returns {ArgumentsArray}
+* @param {any} segItem
+* @returns {any[]}
 */
   /* eslint-enable max-len */
   const ptObjToArrMethod = (type, segItem) => {
@@ -244,6 +245,7 @@ export const init = (canvas) => {
   const getControlPointsMethod = (seg) => {
     const { item, index } = seg
     if (!('x1' in item) || !('x2' in item)) { return null }
+    /** @type {Record<string, any>} */
     const cpt = {}
     /* const pointGripContainer = */ getGripContainerMethod()
 
@@ -288,8 +290,8 @@ export const init = (canvas) => {
 * @function module:path.replacePathSeg
 * @param {number} type Possible values set during {@link module:path.init}
 * @param {number} index
-* @param {ArgumentsArray} pts
-* @param {SVGPathElement} elem
+* @param {any[]} pts
+* @param {SVGPathElement} [elem]
 * @returns {void}
 */
   const replacePathSegMethod = (type, index, pts, elem) => {
@@ -371,7 +373,7 @@ export const init = (canvas) => {
   class Segment {
   /**
   * @param {number} index
-  * @param {SVGPathSeg} item
+  * @param {any} item
   * @todo Is `item` be more constrained here?
   */
     constructor (index, item) {
@@ -383,6 +385,15 @@ export const init = (canvas) => {
       this.ctrlpts = null
       this.ptgrip = null
       this.segsel = null
+      // Linked up by Path#init()
+      /** @type {Path|null} */
+      this.path = null
+      /** @type {Segment|null} */
+      this.prev = null
+      /** @type {Segment|null} */
+      this.next = null
+      /** @type {Segment|null} */
+      this.mate = null
     }
 
     /**
@@ -463,7 +474,7 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {boolean} full
+   * @param {boolean} [full]
    * @returns {void}
    */
     update (full) {
@@ -584,7 +595,7 @@ export const init = (canvas) => {
 
     /**
    * @param {number} newType Possible values set during {@link module:path.init}
-   * @param {ArgumentsArray} pts
+   * @param {any[]} pts
    * @returns {void}
    */
     setType (newType, pts) {
@@ -612,7 +623,7 @@ export const init = (canvas) => {
  * @returns {void}
  */
   const ensureExplicitClosingSegments = (elem) => {
-    const segList = elem.pathSegList
+    const segList = /** @type {any} */ (elem).pathSegList
     let mx = null
     let my = null
     for (let i = 0; i < segList.numberOfItems; i++) {
@@ -630,7 +641,7 @@ export const init = (canvas) => {
         typeof prev.x !== 'number' || typeof prev.y !== 'number'
       ) continue
       if (Math.abs(prev.x - mx) < 1e-6 && Math.abs(prev.y - my) < 1e-6) continue
-      segList.insertItemBefore(elem.createSVGPathSegLinetoAbs(mx, my), i)
+      segList.insertItemBefore(/** @type {any} */ (elem).createSVGPathSegLinetoAbs(mx, my), i)
       i++ // step past the inserted lineto onto the Z again
     }
   }
@@ -676,7 +687,7 @@ export const init = (canvas) => {
       })
 
       ensureExplicitClosingSegments(this.elem)
-      const segList = this.elem.pathSegList
+      const segList = /** @type {any} */ (this.elem).pathSegList
       const len = segList.numberOfItems
       this.segs = []
       this.selected_pts = []
@@ -756,7 +767,7 @@ export const init = (canvas) => {
   * @returns {boolean|void} Will stop execution of `eachSeg` if returns `false`
   */
     /**
-  * @param {module:path.PathEachSegCallback} fn
+  * @param {function(this: Segment, number): (boolean|void)} fn
   * @returns {void}
   */
     eachSeg (fn) {
@@ -782,7 +793,7 @@ export const init = (canvas) => {
         case 4: {
           newX = (seg.item.x + prev.item.x) / 2
           newY = (seg.item.y + prev.item.y) / 2
-          newseg = this.elem.createSVGPathSegLinetoAbs(newX, newY)
+          newseg = /** @type {any} */ (this.elem).createSVGPathSegLinetoAbs(newX, newY)
           break
         } case 6: { // make it a curved segment to preserve the shape (WRS)
           // https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm#Geometric_interpretation
@@ -798,13 +809,13 @@ export const init = (canvas) => {
           const p01y = (p0y + p1y) / 2
           const p12y = (p1y + p2y) / 2
           newY = (p01y + p12y) / 2
-          newseg = this.elem.createSVGPathSegCurvetoCubicAbs(newX, newY, p0x, p0y, p01x, p01y)
+          newseg = /** @type {any} */ (this.elem).createSVGPathSegCurvetoCubicAbs(newX, newY, p0x, p0y, p01x, p01y)
           const pts = [seg.item.x, seg.item.y, p12x, p12y, p2x, p2y]
           replacePathSegMethod(seg.type, index, pts)
           break
         }
       }
-      const list = this.elem.pathSegList
+      const list = /** @type {any} */ (this.elem).pathSegList
       list.insertItemBefore(newseg, index)
     }
 
@@ -826,7 +837,7 @@ export const init = (canvas) => {
   * @returns {void}
   */
     clearSelection () {
-      this.eachSeg(function () {
+      this.eachSeg(/** @this {Segment} */ function () {
       // 'this' is the segment here
         this.select(false)
       })
@@ -841,7 +852,7 @@ export const init = (canvas) => {
   * @returns {void}
   */
     refreshCtrlPtDisplay () {
-      this.eachSeg(function () {
+      this.eachSeg(/** @this {Segment} */ function () {
       // 'this' is the segment here
         this.showCtrlPts(false)
       })
@@ -861,12 +872,12 @@ export const init = (canvas) => {
     }
 
     /**
-  * @param {number} y
+  * @param {boolean} y
   * @returns {Path}
   */
     show (y) {
     // Shows this path's segment grips
-      this.eachSeg(function () {
+      this.eachSeg(/** @this {Segment} */ function () {
       // 'this' is the segment here
         this.show(y)
       })
@@ -1030,7 +1041,7 @@ export const init = (canvas) => {
 
     /**
   * @param {number} pt
-  * @param {number} ctrlNum
+  * @param {number} [ctrlNum]
   * @returns {void}
   */
     selectPt (pt, ctrlNum) {
@@ -1038,7 +1049,7 @@ export const init = (canvas) => {
       // `pt == null` means "no point given"; index 0 is a valid node and must
       // not fall through to auto-selecting the last node.
       if (pt == null) {
-        this.eachSeg(function (i) {
+        this.eachSeg(/** @this {Segment} */ function (i) {
         // 'this' is the segment here.
           if (this.prev) {
             pt = i
@@ -1080,9 +1091,10 @@ export const init = (canvas) => {
         this.imatrix = null
       }
 
-      this.eachSeg(function (i) {
-        this.item = elem.pathSegList.getItem(i)
-        this.update()
+      this.eachSeg(/** @this {Segment} */ function (i) {
+        const seg = /** @type {Segment} */ (this)
+        seg.item = /** @type {any} */ (elem).pathSegList.getItem(i)
+        seg.update()
       })
 
       return this
@@ -1150,7 +1162,7 @@ export const init = (canvas) => {
       let clsd = false
       // Check if subpath is already open
       const path = svgCanvas.getPathObj()
-      path.eachSeg(function (i) {
+      path.eachSeg(/** @this {Segment} */ function (i) {
         if (i <= index) { return true }
         if (this.type === 2) {
         // Found M first, so open

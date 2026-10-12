@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Path functionality.
  * @module path
@@ -24,7 +25,7 @@ import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-contin
 
 /**
 * @function module:path-actions.init
-* @param {module:path-actions.svgCanvas} pathActionsContext
+* @param {any} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -44,7 +45,7 @@ export const init = (canvas) => {
  * @returns {string}
  */
   const convertPath = (pth, toRel) => {
-    const { pathSegList } = pth
+    const { pathSegList } = /** @type {any} */ (pth)
     const len = pathSegList.numberOfItems
     let curx = 0; let cury = 0
     let d = ''
@@ -217,8 +218,8 @@ export const init = (canvas) => {
  * TODO: refactor callers in `convertPath` to use `getPathDFromSegments` instead of this function.
  * Legacy code refactored from `svgcanvas.pathActions.convertPath`.
  * @param {string} letter - path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
- * @param {GenericArray<GenericArray<number>>} points - x,y points
- * @param {GenericArray<GenericArray<number>>} [morePoints] - x,y points
+ * @param {number[][]} points - x,y points
+ * @param {number[][]} [morePoints] - x,y points
  * @param {number[]} [lastPoint] - x,y point
  * @returns {string}
  */
@@ -273,10 +274,9 @@ export const init = (canvas) => {
   * @function smoothPolylineIntoPath
   * @param {Element} element
   * @returns {Element}
-  * @private
   */
     #smoothPolylineIntoPath = (element) => {
-      const { points } = element
+      const { points } = /** @type {SVGPolylineElement} */ (element)
       const N = points.numberOfItems
       if (N >= 4) {
       // loop through every 3 points and convert to a cubic bezier curve segment
@@ -294,6 +294,7 @@ export const init = (canvas) => {
       // - https://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/Bezier/bezier-der.html
         let curpos = points.getItem(0)
         let prevCtlPt = null
+        /** @type {any} */
         let d = []
         d.push(`M${curpos.x},${curpos.y} C`)
         let i
@@ -350,7 +351,7 @@ export const init = (canvas) => {
      * @param {number} x
      * @param {number} y
      * @param {?Element} drawnPath
-     * @returns {?module:pen-continue.PenEnd}
+     * @returns {?import('./pen-continue.js').PenEnd}
      */
     #penEnd (x, y, drawnPath) {
       if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
@@ -455,7 +456,7 @@ export const init = (canvas) => {
      */
     #showEndHint (mouseX, mouseY, mode = 'path') {
       const zoom = svgCanvas.getZoom()
-      const at = [mouseX / zoom, mouseY / zoom]
+      const at = /** @type {[number, number]} */ ([mouseX / zoom, mouseY / zoom])
       const end = this.#subpath
         ? null
         : mode === 'fhpath' ? svgCanvas.pencilEnd?.(...at) : this.#penEnd(...at, svgCanvas.getDrawnPath())
@@ -729,7 +730,7 @@ export const init = (canvas) => {
 
       path.storeD();
 
-      ({ id } = evt.target)
+      ({ id } = /** @type {Element} */ (evt.target))
       this.#downOnPath = false
       let curPt
       if (id.startsWith('pathpointgrip_')) {
@@ -930,7 +931,7 @@ export const init = (canvas) => {
         }
       } else {
         path.selected_pts = []
-        path.eachSeg(function (_i) {
+        path.eachSeg(/** @this {any} */ function (_i) {
           const seg = this
           if (!seg.next && !seg.prev) return
 
@@ -957,17 +958,17 @@ export const init = (canvas) => {
     }
 
     /**
-     * @typedef module:path.keepElement
+     * @typedef KeepElement
      * @type {PlainObject}
      * @property {boolean} keep
      * @property {Element} element
      */
     /**
-    * @param {Event} evt
+    * @param {MouseEvent} evt
     * @param {Element} element
     * @param {number} mouseX
     * @param {number} mouseY
-    * @returns {module:path.keepElement|void}
+    * @returns {KeepElement|void}
     */
     mouseUp (evt, element, mouseX, mouseY) {
       const drawnPath = svgCanvas.getDrawnPath()
@@ -1092,7 +1093,7 @@ export const init = (canvas) => {
     }
 
     /**
-    * @param {Element} elem
+    * @param {Element} [elem]
     * @fires module:svgcanvas.SvgCanvas#event:selected
     * @returns {void}
     */
@@ -1187,7 +1188,6 @@ export const init = (canvas) => {
     }
 
     /**
-    * @param {boolean} remove Not in use
     * @returns {void}
     */
     clear () {
@@ -1293,7 +1293,7 @@ export const init = (canvas) => {
       const m = transformListToTransform(tlist).matrix
       tlist.clear()
       pth.removeAttribute('transform')
-      const segList = pth.pathSegList
+      const segList = /** @type {any} */ (pth).pathSegList
 
       // Opera/win/non-EN throws an error here.
       // TODO: Find out why!
@@ -1304,7 +1304,7 @@ export const init = (canvas) => {
       // } catch(err) {
       //   const fixed_d = pathActions.convertPath(pth);
       //   pth.setAttribute('d', fixed_d);
-      //   segList = pth.pathSegList;
+      //   segList = /** @type {any} */ (pth).pathSegList;
       //   const len = segList.numberOfItems;
       // }
       // let lastX, lastY;
@@ -1338,7 +1338,7 @@ export const init = (canvas) => {
     }
 
     /**
-    * @typedef {PlainObject} module:path.NodePoint
+    * @typedef {PlainObject} NodePoint
     * @property {number} x
     * @property {number} y
     * @property {number} type
@@ -1398,7 +1398,7 @@ export const init = (canvas) => {
       if (selPts.length !== 1) { return }
 
       const { elem } = path
-      const list = elem.pathSegList
+      const list = /** @type {any} */ (elem).pathSegList
       // Like every other pathedit action (move/clone/delete/toggle-seg-type/
       // smooth), bracket the direct pathSegList mutation below with
       // storeD()/endChanges() so an open/close toggle gets a real undo-history
@@ -1410,11 +1410,13 @@ export const init = (canvas) => {
 
       const index = selPts[0]
 
+      /** @type {number|boolean|null} */
       let openPt = null
+      /** @type {any} */
       let startItem = null
 
       // Check if subpath is already open
-      path.eachSeg(function (i) {
+      path.eachSeg(/** @this {any} */ function (i) {
         if (this.type === 2 && i <= index) {
           startItem = this.item
         }
@@ -1445,9 +1447,9 @@ export const init = (canvas) => {
       // Close this path
 
         // Create a line going to the previous "M"
-        const newseg = elem.createSVGPathSegLinetoAbs(startItem.x, startItem.y)
+        const newseg = /** @type {any} */ (elem).createSVGPathSegLinetoAbs(startItem.x, startItem.y)
 
-        const closer = elem.createSVGPathSegClosePath()
+        const closer = /** @type {any} */ (elem).createSVGPathSegClosePath()
         if (openPt === path.segs.length - 1) {
           list.appendItem(newseg)
           list.appendItem(closer)
@@ -1459,7 +1461,7 @@ export const init = (canvas) => {
         svgCanvas.logDebugEvent?.('path-open-close', {
           elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
         })
-        path.init().selectPt(openPt + 1)
+        path.init().selectPt(/** @type {number} */ (openPt) + 1)
         path.endChanges('Close subpath', { index })
         return
       }
@@ -1552,7 +1554,7 @@ export const init = (canvas) => {
       path.init()
       path.clearSelection()
 
-      if (window.opera) { // Opera repaints incorrectly
+      if (/** @type {any} */ (window).opera) { // Opera repaints incorrectly
         path.elem.setAttribute('d', path.elem.getAttribute('d'))
       }
       path.endChanges('Delete path node(s)', { deletedIndexes })
@@ -1648,7 +1650,7 @@ export const init = (canvas) => {
     // Adds an extra segment if the last seg before a Z doesn't end
     // at its M point
     // M0,0 L0,100 L100,100 z
-      const segList = elem.pathSegList
+      const segList = /** @type {any} */ (elem).pathSegList
       const len = segList.numberOfItems
       let lastM
       for (let i = 0; i < len; ++i) {
@@ -1661,7 +1663,7 @@ export const init = (canvas) => {
           const prev = segList.getItem(i - 1)
           if (prev.x !== lastM.x || prev.y !== lastM.y) {
           // Add an L segment here
-            const newseg = elem.createSVGPathSegLinetoAbs(lastM.x, lastM.y)
+            const newseg = /** @type {any} */ (elem).createSVGPathSegLinetoAbs(lastM.x, lastM.y)
             segList.insertItemBefore(newseg, i)
             // Can this be done better?
             svgCanvas.pathActions.fixEnd(elem)

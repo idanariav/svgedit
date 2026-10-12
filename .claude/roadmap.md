@@ -51,9 +51,10 @@ small items (S) fill gaps between large ones.
 **Phase 6 is done: every item of the sequence is built.** What is left is the background tracks and the follow-ups below.
 
 **Background tracks (no phase)**
-- **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Finish the remaining `@ts-check` modules in
-  small batches whenever a phase touches them; once most are checked, generate the declarations from source and delete
-  the hand-written d.ts files (see the TypeScript section). Do not start a dedicated conversion project.
+- **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Every svgcanvas core module is `@ts-check`ed now; what is left
+  is tightening per file (`noImplicitAny` / `strictNullChecks`, starting with the leaf modules), then generating the declarations
+  from source and deleting the hand-written d.ts files (see the TypeScript section). Do it as phases touch files; no dedicated
+  conversion project.
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48) — one "Run editor command…" palette picker over
   `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette entries, by decision.
   Open: the picker doesn't ask for a command's `params` yet (plugin `.claude/techdebt.md`).
@@ -217,15 +218,14 @@ extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
 `svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
 but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there; tighten per file). 105 of the 107 `core/`+`common/` modules now carry it (2026-10-12: 70 added in two passes; JSDoc
+there; tighten per file). **All 107 `core/`+`common/` modules carry it** (2026-10-12: 72 added in three passes; JSDoc
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
-checked by *both* configs, so a file the strict config reaches through an import must be strict-clean; all 105 are (that
-includes `history`, `draw`, `units`, `math`, `dom-utils`, `common/util.js`, `bbox-utils`). The two left without it are
-`core/path-actions.js` (~30 errors: `this` inside callbacks needs `@this`, the legacy `pathSegList` API, `GenericArray<…>`,
-`@private` on `#private` members) and `core/path-method.js` (~52: the same legacy path-segment API and its `Segment` types).
-Add the pragma when a phase touches them. Typing new code: a stale `@param` name that is not a parameter, or a `module:…`
-typedef name, is an error under the checker — write the real name.
+checked by *both* configs, so a file the strict config reaches through an import must be strict-clean, and all of them are.
+What is left is tightening, not coverage: `svgcanvas.js` itself under `noImplicitAny`/`strictNullChecks`, and the many
+`/** @type {any} */` casts these passes left at DOM-API seams (legacy `pathSegList`, `Segment` links, `this` in callbacks).
+Writing a module: a stale `@param` name that is not a parameter, or a `module:…` typedef name, is an error under the checker,
+so write the real name.
 
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
@@ -249,7 +249,7 @@ type safety in the canvas engine, not a rewrite.
 passes (that is step 2 below, done for these four). Editor-layer Tier 0
 modules (`commands.js`, `coreCommands.js`, `automation.js`,
 `components/commandBinding.js`) are `// @ts-check` too, checked through
-`src/editor/tsconfig.hostapi.json`. Everything else: 105 of the 107 `core/` +
+`src/editor/tsconfig.hostapi.json`. Everything else: all 107 `core/` +
 `common/` modules carry `// @ts-check` (JSDoc types), checked with
 `noImplicitAny` and `strictNullChecks` **off**
 (`packages/svgcanvas/tsconfig.json`). Decision so far: strict JSDoc, no `.ts`
@@ -264,7 +264,7 @@ files are terser and let `tsc --emitDeclarationOnly` generate the d.ts.
 Either way, do steps 1–2 first, since they pay off immediately and are
 needed by both.
 
-1. **Finish `@ts-check`** on the last 2 modules (entry above).
+1. ~~**Finish `@ts-check`**~~ done (entry above).
 2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
    (globally they give ~150 errors in `svgcanvas.js` alone, so use a
    per-file opt-in, e.g. a second tsconfig listing the files already clean).
@@ -299,7 +299,7 @@ plugin only sees built JS, so it is unaffected as long as those hold.
 full JSDoc types (or as `.ts` if the decision above has been made), so they
 don't add to this backlog.
 
-Effort: small for the last 2 `@ts-check` modules, then large for strictness and the `.ts` question, but small per module; risky only in the
+Effort: the `@ts-check` rollout is done; what remains is large for strictness and the `.ts` question, but small per module; risky only in the
 toolchain step.
 
 ## Live effects (`se:fx`): follow-ups from T1.0 / T1.1

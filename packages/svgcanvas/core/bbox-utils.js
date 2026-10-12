@@ -118,7 +118,7 @@ export const init = canvas => {
 /**
  * Converts a `SVGRect` into an object.
  * @function module:bbox-utils.bboxToObj
- * @param {SVGRect} bbox - a SVGRect
+ * @param {{x: number, y: number, width: number, height: number}} bbox - a SVGRect (or any box with those four numbers)
  * @returns {module:bbox-utils.BBoxObject} An object with properties names x, y, width, height.
  */
 export const bboxToObj = ({ x, y, width, height }) => {
