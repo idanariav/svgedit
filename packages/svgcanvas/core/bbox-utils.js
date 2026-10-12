@@ -15,7 +15,6 @@ import {
   getTransformList,
   isIdentity
 } from './math.js'
-import { getClosest } from '../common/util.js'
 import { getRotationAngleFromTransformList } from './dom-utils.js'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.js'
 import { isAreaText, getAreaBox } from './text-rows.js'
@@ -265,26 +264,18 @@ export const getBBox = (elem) => {
       if (elname === 'use') {
         ret = selected.getBBox() // , true);
       } else if (visElemsArr.includes(elname)) {
-        if (selected) {
-          try {
-            ret = selected.getBBox()
-          } catch (err) {
-            // tspan (and textPath apparently) have no `getBBox` in Firefox: https://bugzilla.mozilla.org/show_bug.cgi?id=937268
-            // Re: Chrome returning bbox for containing text element, see: https://bugs.chromium.org/p/chromium/issues/detail?id=349835
-            const extent = selected.getExtentOfChar(0) // pos+dimensions of the first glyph
-            const width = selected.getComputedTextLength() // width of the tspan
-            ret = {
-              x: extent.x,
-              y: extent.y,
-              width,
-              height: extent.height
-            }
-          }
-        } else {
-          // Check if element is child of a foreignObject
-          const fo = /** @type {any} */ (getClosest(/** @type {Element} */ (/** @type {Node} */ (/** @type {unknown} */ (selected)).parentNode), 'foreignObject'))
-          if (fo.length && fo[0].getBBox) {
-            ret = fo[0].getBBox()
+        try {
+          ret = selected.getBBox()
+        } catch (err) {
+          // tspan (and textPath apparently) have no `getBBox` in Firefox: https://bugzilla.mozilla.org/show_bug.cgi?id=937268
+          // Re: Chrome returning bbox for containing text element, see: https://bugs.chromium.org/p/chromium/issues/detail?id=349835
+          const extent = selected.getExtentOfChar(0) // pos+dimensions of the first glyph
+          const width = selected.getComputedTextLength() // width of the tspan
+          ret = {
+            x: extent.x,
+            y: extent.y,
+            width,
+            height: extent.height
           }
         }
       }

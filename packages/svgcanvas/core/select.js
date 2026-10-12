@@ -9,7 +9,7 @@
 
 import { isWebkit } from '../common/browser.js'
 import { getRotationAngle } from './dom-utils.js'
-import { getBBox, getStrokedBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.js'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.js'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.js'
@@ -120,7 +120,6 @@ export const init = (canvas) => {
   * @returns {void}
   */
     resize (bbox) {
-      const dataStorage = svgCanvas.getDataStorage()
       const selectedBox = this.selectorRect
       const mgr = selectorManager
       const selectedGrips = mgr.selectorGrips
@@ -167,16 +166,7 @@ export const init = (canvas) => {
       if (!bbox) {
         bbox = getBBox(selected)
       }
-      // TODO: getBBox (previous line) already knows to call getStrokedBBox when tagName === 'g'. Remove this?
-      // TODO: getBBox doesn't exclude 'gsvg' and calls getStrokedBBox for any 'g'. Should getBBox be updated?
-      if (tagName === 'g' && !dataStorage.has(selected, 'gsvg')) {
-      // The bbox for a group does not include stroke vals, so we
-      // get the bbox based on its children.
-        const strokedBbox = /** @type {any} */ (getStrokedBBox)([selected.childNodes])
-        if (strokedBbox) {
-          bbox = strokedBbox
-        }
-      }
+      // A group is boxed by its geometry (the native getBBox), not by the strokes of its children.
 
       if (bbox) {
       // apply the transforms
