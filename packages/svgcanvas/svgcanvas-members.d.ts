@@ -267,6 +267,8 @@ export interface AttachedMembers {
   getTextPerspectiveY(elem: Element): number
   detachTextFromPath(): void
   releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
+  /** Every element (current group, else visible layers) sharing the criterion with `ref`, `ref` included; selects nothing. */
+  findSameAs(ref: Element, criterion: string, options?: { tolerance?: number }): Element[]
   selectSameAs(criterion: string, options?: { tolerance?: number }): void
   /** Replace the selected shape with a group of rows × cols rects over its bounding box (one undo step); null when nothing was done. */
   splitIntoGrid(params: { rows: number, cols: number, gutter?: number }, elem?: Element): Element | null

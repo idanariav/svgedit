@@ -105,6 +105,22 @@ export const matchesSame = (criterion, ref, el, tolerance = 0) => {
   }
 }
 
+/** @typedef {'replace'|'add'|'subtract'} SelectionOp */
+
+/**
+ * How a click of the Magic Wand combines what it found with the current selection (Shift adds, Alt subtracts).
+ * Order is kept: the current selection first, then what was added.
+ * @param {SelectionOp} op
+ * @param {Element[]} current
+ * @param {Element[]} found
+ * @returns {Element[]}
+ */
+export const combineSelection = (op, current, found) => {
+  if (op === 'add') return [...current, ...found.filter((el) => !current.includes(el))]
+  if (op === 'subtract') return current.filter((el) => !found.includes(el))
+  return [...found]
+}
+
 /**
  * @param {any} canvas
  * @returns {void}
@@ -113,16 +129,15 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   /**
-   * Extend the selection to every element (in the current group context, or on
-   * any visible layer) that shares a property with the primary selected element.
-   * @function module:select-same.SvgCanvas#selectSameAs
+   * Every element (in the current group context, or on any visible layer) that shares a property with `ref`,
+   * `ref` included. Nothing is selected.
+   * @function module:select-same.SvgCanvas#findSameAs
+   * @param {Element} ref
    * @param {SelectSameCriterion|string} criterion
    * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
-   * @returns {void}
+   * @returns {Element[]}
    */
-  const selectSameAs = (criterion, options = {}) => {
-    const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!ref) return
+  const findSameAs = (ref, criterion, options = {}) => {
     const tolerance = Math.max(0, Number(options.tolerance) || 0)
     /** @type {Element[]} */
     const found = []
@@ -143,8 +158,24 @@ export const init = (canvas) => {
         scan(layer)
       }
     }
+    return found
+  }
+
+  /**
+   * Extend the selection to every element (in the current group context, or on
+   * any visible layer) that shares a property with the primary selected element.
+   * @function module:select-same.SvgCanvas#selectSameAs
+   * @param {SelectSameCriterion|string} criterion
+   * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
+   * @returns {void}
+   */
+  const selectSameAs = (criterion, options = {}) => {
+    const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
+    if (!ref) return
+    const found = findSameAs(ref, criterion, options)
     if (found.length) svgCanvas.selectOnly(found, true)
   }
 
+  svgCanvas.findSameAs = findSameAs
   svgCanvas.selectSameAs = selectSameAs
 }

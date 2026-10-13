@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import {
-  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, init
+  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, init
 } from '../../packages/svgcanvas/core/select-same.js'
 
 const make = (tag, attrs = {}, parent = document.body) => {
@@ -200,5 +200,76 @@ describe('svgCanvas.selectSameAs', () => {
     selected = [layer.querySelector('#a')]
     canvas.selectSameAs('fillstroke', { tolerance: 20 })
     expect(picked()).toEqual(['a', 'c'])
+  })
+})
+
+describe('svgCanvas.findSameAs', () => {
+  let canvas
+  let content
+  let layer
+  let group
+
+  const item = (tag, id, attrs = {}, parent = layer) => make(tag, { id, ...attrs }, parent)
+  const ids = (els) => els.map((el) => el.id)
+
+  beforeEach(() => {
+    content = make('svg')
+    layer = make('g', { class: 'layer' }, content)
+    make('title', {}, layer)
+    group = null
+    canvas = { getCurrentGroup: () => group, getSvgContent: () => content, getSelectedElements: () => [], selectOnly: vi.fn() }
+    init(canvas)
+  })
+  afterEach(() => { document.body.textContent = '' })
+
+  it('lists the matches without selecting anything, the reference included', () => {
+    const ref = item('rect', 'a', { fill: '#ff0000' })
+    item('circle', 'b', { fill: '#ff0000' })
+    item('rect', 'c', { fill: '#00ff00' })
+    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a', 'b'])
+    expect(canvas.selectOnly).not.toHaveBeenCalled()
+  })
+
+  it('works for a reference that is not selected, skips hidden layers, titles and frames', () => {
+    const ref = item('rect', 'a', { fill: '#ff0000' })
+    item('rect', 'frame', { fill: '#ff0000', 'data-frame': '1' })
+    const hidden = make('g', { class: 'layer', display: 'none' }, content)
+    item('rect', 'd', { fill: '#ff0000' }, hidden)
+    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a'])
+  })
+
+  it('applies the tolerance, and an open group limits the scan to the group', () => {
+    const ref = item('rect', 'a', { fill: '#336699' })
+    item('rect', 'b', { fill: '#346a9b' })
+    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a'])
+    expect(ids(canvas.findSameAs(ref, 'fill', { tolerance: 3 }))).toEqual(['a', 'b'])
+    group = item('g', 'grp')
+    const inner = item('rect', 'inner', { fill: '#336699' }, group)
+    expect(ids(canvas.findSameAs(inner, 'fill'))).toEqual(['inner'])
+  })
+})
+
+describe('combineSelection (Magic Wand: replace, Shift adds, Alt subtracts)', () => {
+  const [a, b, c] = ['a', 'b', 'c'].map((id) => ({ id }))
+
+  it('replace takes what was found', () => {
+    expect(combineSelection('replace', [a], [b, c])).toEqual([b, c])
+  })
+
+  it('add keeps the current selection first and does not repeat an element', () => {
+    expect(combineSelection('add', [a, b], [b, c])).toEqual([a, b, c])
+  })
+
+  it('subtract removes what was found and keeps the rest in order', () => {
+    expect(combineSelection('subtract', [a, b, c], [b])).toEqual([a, c])
+    expect(combineSelection('subtract', [a], [b])).toEqual([a])
+  })
+
+  it('does not change its inputs', () => {
+    const current = [a]
+    const found = [b]
+    combineSelection('add', current, found)
+    expect(current).toEqual([a])
+    expect(found).toEqual([b])
   })
 })

@@ -270,7 +270,8 @@ export default class ConfigObj {
       'ext-layout-ops',
       'ext-fonts',
       'ext-eyedropper',
-      'ext-measure'
+      'ext-measure',
+      'ext-magic-wand'
     ]
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying

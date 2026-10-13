@@ -69,7 +69,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   position; `ToolDef.cursor` (a CSS cursor, or a function of the context) is still applied on activate and removed on
   deactivate (Measure uses `crosshair`). Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
-  the wand's tolerance and the smooth tool's radius are candidates, below.)
+  the Magic Wand has one too (Match, Tolerance); the smooth tool's radius is the remaining candidate, below.)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
   for the Distort tool, which mutates the real element on every pointer move inside its gesture's transaction). What is
   left is the Effects *panel's* preview: `live-effects.js` still hides the original and shows a throwaway clone
@@ -386,7 +386,7 @@ Done: blends of two or more key shapes (path, line, polyline, polygon, rect, ell
 - **Steps are generated content.** Anything added to or edited inside a `se:blend-steps` group is overwritten by the next regeneration; a group that lost a part (or whose parts no longer alternate key / steps / key) simply stops being a blend. The command sweep does not target generated paths for that reason.
 - **The step count is capped at 200 per pair** (every step is a DOM element, and each transaction snapshots the drawing).
 - **The options bar shows the selected blend's values, else the defaults new blends start with;** defaults live in memory (a reload resets them).
-- **Tool hooks.** Only the Blend tool has `options()` so far. The wand's tolerance and the smooth tool's radius / tolerance are the obvious next consumers.
+- **Tool hooks.** Only the Blend tool and the Magic Wand have `options()` so far. The smooth tool's radius / tolerance are the obvious next consumers.
 
 ## The live stack (`core/live-stack.js`): follow-ups from item 15
 
@@ -521,9 +521,11 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
 
 ## Select Same (`core/select-same.js`): follow-ups from T2.10
 
-Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands. Remaining:
-- **Magic Wand tool** (the plan's optional part: click an object to select similar, Shift adds, Alt subtracts) is not built. It would be a `registerTool` tool calling `selectSameAs('fillstroke', …)`; the criteria, tolerance and commands are in place.
-- **Tolerance is a preference, not a control next to the menu**, so changing it means opening Editor Preferences. A small field in the Select & Link cluster (or on the wand's options bar: `options()` exists now, see `panels/toolOptionsBar.js`) would be quicker.
+Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands, and the **Magic Wand tool** (`ext-magic-wand`, `tool_wand`: click a shape to select what matches it, Shift adds, Alt subtracts, empty canvas clears; Match and Tolerance on its options bar, the tolerance being the same preference). Remaining:
+- **The wand takes one criterion at a time** (Illustrator's panel ticks several at once: fill colour + stroke weight …); `fillstroke` is the only combination. Stroke weight and opacity have no tolerance (Illustrator's are in points / percent). The criterion lives in memory (a reload resets it to fill colour).
+- **The wand is not in the tablet shell** (the command bar is full at 768 px) and has no keyboard shortcut (Illustrator's Y is the Curvature tool here).
+- **The tolerance outside the wand is still a preference only**: the Select Same menu has no field next to it, so changing it there means opening Editor Preferences.
+- **A click picks the top-level shape under the pointer** (the open group's child, else the layer's child); it does not select inside closed groups.
 - Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
 
 ## Eyedropper Copy style (`styleCopy.js`): follow-ups from T2.9

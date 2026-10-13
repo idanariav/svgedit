@@ -25,7 +25,7 @@ describe('tool cursors (cursorForMode)', () => {
   it('covers the drawing tools, old and new', () => {
     for (const mode of ['rect', 'ellipse', 'circle', 'square', 'star', 'polygon', 'fhpath', 'path', 'line', 'curvature', 'brush',
       'cutter', 'eyedropper', 'gradient', 'distort', 'corners', 'width', 'blend', 'shaper', 'smooth', 'shapebuilder',
-      'arc', 'spiral', 'rectgrid', 'polargrid']) {
+      'arc', 'spiral', 'rectgrid', 'polargrid', 'wand']) {
       expect(modes, mode).toContain(mode)
     }
   })
