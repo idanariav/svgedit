@@ -1,5 +1,5 @@
 /**
- * The options bar of the current tool: a tray in the top panel drawn from the tool's `options()` descriptors
+ * The options bar of the current tool: a tray in the top panel (and, in tablet mode, a strip in the shell) drawn from the tool's `options()` descriptors
  * (`ToolDef.options` / `setOption`, core/tool-registry.js). A tool never builds UI of its own for these.
  *
  * The controls are kept while the set of visible options stays the same (so a field being typed in keeps its
@@ -7,7 +7,8 @@
  * because one option may show or hide another.
  */
 
-const TRAY = 'tool_options_panel'
+/** The desktop top panel's tray, and the tablet shell's strip under its command bar. Each one that exists is filled. */
+const TRAYS = ['tool_options_panel', 'ts_tool_options']
 
 /**
  * @param {any} editor
@@ -15,16 +16,28 @@ const TRAY = 'tool_options_panel'
  */
 export const refreshToolOptions = (editor) => {
   const { $id, svgCanvas } = editor
-  const tray = $id(TRAY)
-  if (!tray) return
   const options = svgCanvas.getToolOptions().filter((o) => !o.hidden)
+  const signature = `${svgCanvas.getMode()}|${options.map((o) => `${o.id}:${o.type}:${(o.choices ?? []).map((c) => c.value).join('/')}`).join(',')}`
+  for (const id of TRAYS) {
+    const tray = $id(id)
+    if (tray) fillTray(editor, tray, options, signature)
+  }
+}
+
+/**
+ * @param {any} editor
+ * @param {HTMLElement} tray
+ * @param {import('@svgedit/svgcanvas/svgcanvas-members.js').ToolOption[]} options the visible options
+ * @param {string} signature changes when the set of controls has to be rebuilt
+ * @returns {void}
+ */
+const fillTray = (editor, tray, options, signature) => {
   if (!options.length) {
     tray.style.display = 'none'
     tray.replaceChildren()
     tray.dataset.signature = ''
     return
   }
-  const signature = `${svgCanvas.getMode()}|${options.map((o) => `${o.id}:${o.type}:${(o.choices ?? []).map((c) => c.value).join('/')}`).join(',')}`
   if (tray.dataset.signature !== signature) {
     tray.replaceChildren(...options.map((o) => buildControl(editor, o)))
     tray.dataset.signature = signature

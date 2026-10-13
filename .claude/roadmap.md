@@ -359,7 +359,7 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
   - **Double-click for a Corners dialog**, the "Hide Corner Widget for angles greater than" preference and the red outline of corners at their largest radius while dragging.
   - **Only the element's own transform** maps the widgets (as in the Width and Distort tools); a shape inside a transformed group that was entered misplaces them.
   - **A drag sets one radius for every targeted corner** (the dragged corner's), as VectorCraft does; corners that had different radii are levelled. Per-corner radii come from picking corners first.
-  - **In the tablet shell's More tools flyout**, without its Radius / Kind options bar and the Alt-click that cycles the kind (a tap picks corners, a drag rounds them).
+  - **In the tablet shell's More tools flyout**, with Radius / Kind in the options strip but without the Alt-click that cycles the kind.
   - **Corner widgets are circles for every kind**; the kind is read off the options bar or the shape.
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
@@ -523,7 +523,7 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
 
 Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands, and the **Magic Wand tool** (`ext-magic-wand`, `tool_wand`: click a shape to select what matches it, Shift adds, Alt subtracts, empty canvas clears; Match and Tolerance on its options bar, the tolerance being the same preference). Remaining:
 - **The wand takes one criterion at a time** (Illustrator's panel ticks several at once: fill colour + stroke weight …); `fillstroke` is the only combination. Stroke weight and opacity have no tolerance (Illustrator's are in points / percent). The criterion lives in memory (a reload resets it to fill colour).
-- **The wand is in the tablet shell's More tools flyout, without its options bar and without Shift / Alt** (add / subtract), so there it only replaces the selection, by fill colour. It has no keyboard shortcut (Illustrator's Y is the Curvature tool here).
+- **The wand is in the tablet shell's More tools flyout with its options (Match, Tolerance) in the strip, but without Shift / Alt** (add / subtract), so there it only replaces the selection. It has no keyboard shortcut (Illustrator's Y is the Curvature tool here).
 - **The tolerance outside the wand is still a preference only**: the Select Same menu has no field next to it, so changing it there means opening Editor Preferences.
 - **A click picks the top-level shape under the pointer** (the open group's child, else the layer's child); it does not select inside closed groups.
 - Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
@@ -572,8 +572,8 @@ Small.
 
 ### Tablet shell: the newer tools
 
-Done: the Shapes flyout (now a grid, with the shape-family tools) and a **More tools** flyout (Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand), a width tier at 800px to keep Undo / Redo on the bar at 768px. Remaining:
-- **No options bar on touch.** Blend (spacing), the Magic Wand (Match, Tolerance) and Corners (Radius, Kind) run on their defaults. The bottom sheet could show `svgCanvas.getToolOptions()` while such a tool is the mode (the descriptors are already UI-neutral; `panels/toolOptionsBar.js` draws them for the desktop).
+Done: the tool options bar on touch (a strip under the command bar: Blend, Magic Wand, Corners), the Shapes flyout (now a grid, with the shape-family tools) and a **More tools** flyout (Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand), a width tier at 800px to keep Undo / Redo on the bar at 768px. Remaining:
+- **The options strip floats over the top of the canvas** (`#ts_tool_options`, 44px controls, centred under the command bar), covering the page's top edge while a tool with options is active; moving the canvas down for it would make the page jump on every tool change.
 - **No modifier keys on touch**: the wand's Shift (add) / Alt (subtract), Measure's Shift (45°) and the Corners tool's Alt-click have no substitute. A sticky "+ / −" toggle next to the flyout would cover the wand.
 - **Tools that need hover** (the Width tool's diamonds, the pen-end ring) show nothing on touch before the press.
 - **Tool buttons are 35px at ≤800px** (below the 44px touch guideline); dropping the zoom label or folding the freehand tools into one flyout would give the room back.

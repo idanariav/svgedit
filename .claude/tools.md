@@ -314,7 +314,7 @@ leaving the crop session open. Image loading (with the `crossOrigin` CORS dance)
 
 ### Tool options bar (`#tool_options_panel`, shown while a tool with `options()` is the mode)
 
-A drawing tool that registers `options()` / `setOption(id, value)` (`core/tool-registry.js`) gets this tray; nothing else is needed in the markup. `src/editor/panels/toolOptionsBar.js` draws one control per descriptor (`number` → `se-spin-input`, `select` → `se-select`, `checkbox`), sends a change to `svgCanvas.setToolOption`, then reads `options()` again (a descriptor may be `hidden` depending on another option). It refreshes on `modeChange` and from `updateContextPanel` (selection and undo), and hides when the tool has no options. Labels in the descriptors are already translated. First consumer: the Blend tool (spacing mode, steps, distance).
+A drawing tool that registers `options()` / `setOption(id, value)` (`core/tool-registry.js`) gets this tray; nothing else is needed in the markup. In tablet mode the same controls fill `#ts_tool_options`, a pill under the command bar (`TabletShell.html`, `.ts-tooloptions` in `tablet.css`): `refreshToolOptions` fills every tray that exists. `src/editor/panels/toolOptionsBar.js` draws one control per descriptor (`number` → `se-spin-input`, `select` → `se-select`, `checkbox`), sends a change to `svgCanvas.setToolOption`, then reads `options()` again (a descriptor may be `hidden` depending on another option). It refreshes on `modeChange` and from `updateContextPanel` (selection and undo), and hides when the tool has no options. Labels in the descriptors are already translated. First consumer: the Blend tool (spacing mode, steps, distance).
 
 ### Path Node Editing Tools (`.path_node_panel`, shown in pathedit mode)
 
@@ -573,7 +573,7 @@ boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 The **Shapes** flyout (a 5-wide grid) holds rect / square / ellipse / circle / star / polygon and, when `ext-shape-family` is
 loaded, spiral / arc / rectangular grid / polar grid. **More tools** (a two-column menu) lists Shaper, Smooth, Width, Blend,
 Distort, Gradient, Corners, Measure and Magic Wand, each only when its `tool_<mode>` command exists, and runs it through
-`commands.tryRun`. Their options bars (Blend, Wand, Corners) and Shift / Alt modifiers are not on touch: they run on defaults.
+`commands.tryRun`. Their options (Blend, Wand, Corners) show in the strip under the bar (`#ts_tool_options`); Shift / Alt modifiers have no touch substitute.
 `tests/e2e/tablet-shell-tools.spec.js` covers both flyouts; the bar's fit at 1024 / 900 / 768px is in `top-bar-layout.spec.js`.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a

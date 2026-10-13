@@ -84,6 +84,24 @@ describe('tool options bar', () => {
     expect(changes).toHaveLength(2) // not a number: ignored
   })
 
+  it('fills every tray that exists: the desktop panel and the tablet shell strip', () => {
+    document.body.insertAdjacentHTML('beforeend', '<div id="ts_tool_options" style="display:none"></div>')
+    const strip = document.getElementById('ts_tool_options')
+    refreshToolOptions(editor)
+    expect([...tray.children].map((c) => c.dataset.option)).toEqual(['mode', 'steps', 'flag'])
+    expect([...strip.children].map((c) => c.dataset.option)).toEqual(['mode', 'steps', 'flag'])
+    expect(strip.style.display).toBe('')
+    // a change made in the strip reaches the tool, and both trays are read again
+    const flag = strip.querySelector('[data-option="flag"] input')
+    flag.checked = false
+    flag.dispatchEvent(new Event('change'))
+    expect(changes).toEqual([['flag', false]])
+    options = []
+    refreshToolOptions(editor)
+    expect(strip.style.display).toBe('none')
+    expect(tray.style.display).toBe('none')
+  })
+
   it('does nothing without the tray (a host that dropped it)', () => {
     tray.remove()
     expect(() => refreshToolOptions(editor)).not.toThrow()

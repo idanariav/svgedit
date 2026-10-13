@@ -67,4 +67,56 @@ test.describe('Tablet shell tools', () => {
       await bar(page, title).click()
     }
   })
+
+  // The current tool's options bar (panels/toolOptionsBar.js) also fills a strip under the command bar.
+  const strip = (page) => page.locator('#ts_tool_options')
+  const stripOption = (page, id, value) => page.evaluate((a) => {
+    const el = document.querySelector(`#ts_tool_options [data-option="${a.id}"]`)
+    el.value = a.value
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  }, { id, value })
+  const toolOptions = (page) => page.evaluate(() => Object.fromEntries(window.svgEditor.svgCanvas.getToolOptions().map((o) => [o.id, o.value])))
+  const runTool = async (page, label) => {
+    await bar(page, 'More tools').click()
+    await page.locator('.ts-pop .menu-item', { hasText: label }).click()
+  }
+
+  test('a tool with options shows them in the strip, and a change reaches the tool', async ({ page }) => {
+    await expect(strip(page)).toBeHidden()
+    await runTool(page, 'Magic Wand')
+    await expect(strip(page)).toBeVisible()
+    expect(await strip(page).locator('[data-option]').evaluateAll((els) => els.map((e) => e.dataset.option))).toEqual(['criterion', 'tolerance'])
+    await stripOption(page, 'criterion', 'stroke')
+    expect((await toolOptions(page)).criterion).toBe('stroke')
+    // the tolerance only applies to colours: it goes with a non-colour criterion
+    await stripOption(page, 'criterion', 'strokeweight')
+    await expect(strip(page).locator('[data-option="tolerance"]')).toHaveCount(0)
+    await stripOption(page, 'criterion', 'fill')
+    await expect(strip(page).locator('[data-option="tolerance"]')).toHaveCount(1)
+    await stripOption(page, 'tolerance', 4)
+    expect(await page.evaluate(() => window.svgEditor.configObj.pref('select_same_tolerance'))).toBe(4)
+  })
+
+  test('the strip follows the tool: Blend has its own options, a tool without any hides it', async ({ page }) => {
+    await runTool(page, 'Blend')
+    expect(await strip(page).locator('[data-option]').evaluateAll((els) => els.map((e) => e.dataset.option))).toEqual(['mode', 'steps'])
+    await runTool(page, 'Measure')
+    await expect(strip(page)).toBeHidden()
+    await runTool(page, 'Magic Wand')
+    await expect(strip(page)).toBeVisible()
+    await page.evaluate(() => window.svgEditor.commands.run('tool_select'))
+    await expect(strip(page)).toBeHidden()
+  })
+
+  test('the strip stays inside the shell at 768px', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 700 })
+    await runTool(page, 'Blend')
+    const r = await page.evaluate(() => {
+      const el = document.querySelector('#ts_tool_options').getBoundingClientRect()
+      return { left: el.left, right: window.innerWidth - el.right, top: el.top }
+    })
+    expect(r.left).toBeGreaterThanOrEqual(0)
+    expect(r.right).toBeGreaterThanOrEqual(0)
+    expect(r.top).toBeGreaterThanOrEqual(62) // below the command bar
+  })
 })
