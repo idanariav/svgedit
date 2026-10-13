@@ -369,6 +369,36 @@ describe('tool registry (registerTool)', () => {
     })
   })
 
+  describe('hover with snap', () => {
+    const hoverTool = (opts) => {
+      const hover = []
+      canvas.registerTool(makeTool({ wantsHover: true, pointerMove: (ctx, ev) => hover.push([ev.x, ev.y]), ...opts }).tool)
+      canvas.setMode('dragrect')
+      canvas.getSvgContent().querySelector('g').getScreenCTM = () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) })
+      return hover
+    }
+
+    it('a tool that opted in with snap sees the snapped point', () => {
+      const hover = hoverTool({ snap: true })
+      vi.spyOn(canvas, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      canvas.toolHover(mouse('mousemove', 7, 8))
+      expect(hover).toEqual([[107, 108]])
+    })
+
+    it('a tool that did not opt in, or grid snapping, keeps the raw point', () => {
+      const spy = vi.spyOn(canvas, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      const hover = hoverTool({})
+      canvas.toolHover(mouse('mousemove', 7, 8))
+      canvas.unregisterTool('dragrect')
+      const gridHover = hoverTool({ snap: true })
+      canvas.getCurConfig().gridSnapping = true
+      canvas.toolHover(mouse('mousemove', 7, 8))
+      expect(hover).toEqual([[7, 8]])
+      expect(gridHover).toHaveLength(1) // the grid owns the point (no object snapping)
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
+
   describe('lifecycle hooks', () => {
     it('activate / deactivate fire on mode changes', () => {
       const t = makeTool()

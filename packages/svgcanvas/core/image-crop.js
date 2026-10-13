@@ -344,4 +344,5 @@ export const init = (canvas) => {
   svgCanvas.applyImageCrop = applyImageCrop
   svgCanvas.cancelImageCrop = cancelImageCrop
   svgCanvas.isImageCropEligible = isCropEligible
+  svgCanvas.isImageCropping = () => session !== null
 }

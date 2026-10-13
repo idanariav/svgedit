@@ -19,7 +19,8 @@ describe('panel commands', () => {
         cancelImageCrop: vi.fn(),
         getCurrentDrawing: () => ({ getNumLayers: () => state.layers }),
         indexCurrentLayer: () => state.layer,
-        isImageCropEligible: (el) => el.tagName === 'image'
+        isImageCropEligible: (el) => el.tagName === 'image',
+        isImageCropping: () => state.cropping
       },
       leftPanel: spyOn('clickSelect', 'clickFHPath', 'clickText', 'clickPath', 'clickLine', 'clickRect', 'clickEllipse', 'clickImage'),
       topPanel: {
@@ -193,6 +194,14 @@ describe('panel commands', () => {
       state.selected = [el('image')]
       expect(commands.isEnabled('tool_image_crop')).toBe(true)
       expect(commands.isEnabled('tool_trace_image')).toBe(true)
+    })
+
+    it('crop Apply / Cancel exist only while a crop session is open', () => {
+      expect(commands.isEnabled('tool_image_crop_apply')).toBe('Start cropping an image first')
+      expect(commands.isEnabled('tool_image_crop_cancel')).not.toBe(true)
+      state.cropping = true
+      expect(commands.isEnabled('tool_image_crop_apply')).toBe(true)
+      expect(commands.isEnabled('tool_image_crop_cancel')).toBe(true)
     })
 
     it('layer commands follow the current layer’s place in the stack', () => {

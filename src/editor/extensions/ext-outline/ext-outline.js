@@ -101,6 +101,7 @@ export default {
       if (!batchCmd.isEmpty()) {
         svgCanvas.addCommandToHistory(batchCmd)
       }
+      svgEditor.commands.refreshEnablement() // Remove follows whether an outline is left
     }
 
     // Expose a minimal outline API so other subsystems (e.g. the class library)
@@ -169,6 +170,7 @@ export default {
           label: `${name}:contextTools.remove.title`,
           group: 'Tools',
           pd: true,
+          enabled: () => getOutlineFromElement(svgCanvas.getSelectedElements()[0]) ? true : 'The selection has no outline',
           run: () => setOutline({ remove: true })
         })
       },

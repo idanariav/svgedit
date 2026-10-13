@@ -111,6 +111,7 @@ export default {
       applyGlowToElement(elem, params, batchCmd)
       if (!batchCmd.isEmpty()) svgCanvas.addCommandToHistory(batchCmd)
       showPanel(true, elem)
+      svgEditor.commands.refreshEnablement() // Remove follows whether a glow is left
     }
 
     // Minimal API so other subsystems (the class library) can read an
@@ -221,6 +222,7 @@ export default {
           label: t('contextTools.remove.title'),
           group: 'Tools',
           pd: true,
+          enabled: () => getGlowFromElement(svgCanvas.getSelectedElements()[0]) ? true : 'The selection has no glow',
           run: () => setGlow({ remove: true })
         })
       },

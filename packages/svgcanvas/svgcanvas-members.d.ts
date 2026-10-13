@@ -494,4 +494,5 @@ export interface AttachedMembers {
   cutShapes(points: Array<{ x: number, y: number }>): any
   startImageCrop(imageElem: Element): any
   isImageCropEligible(elem: Element): boolean
+  isImageCropping(): boolean
 }

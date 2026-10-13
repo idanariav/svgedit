@@ -79,6 +79,9 @@ const croppable = (editor) => {
   return list.length === 1 && editor.svgCanvas.isImageCropEligible(list[0]) ? true : 'Select one image'
 }
 
+/** @param {any} editor @returns {true|string} Apply / Cancel exist only while a crop session is open */
+const cropping = (editor) => editor.svgCanvas.isImageCropping() ? true : 'Start cropping an image first'
+
 /** @param {any} editor @returns {true|string} Trace needs one selected image */
 const traceable = (editor) => {
   const list = selectedOf(editor)
@@ -177,7 +180,7 @@ const TOP_PANEL = [
   ['tool_text_area', 'Text', 'clickTextArea', { enabled: textSelected }],
   ['tool_unlink_use', 'Group', 'clickGroup', { enabled: unlinkable }],
   ['tool_image_crop', 'Tools', 'clickImageCrop', { interactive: true, enabled: croppable }],
-  ['tool_image_crop_apply', 'Tools', 'applyImageCrop']
+  ['tool_image_crop_apply', 'Tools', 'applyImageCrop', { enabled: cropping }]
 ]
 
 /** Text-decoration toggles: [id, CSS value]. */
@@ -262,6 +265,7 @@ export const registerPanelCommands = (commands) => {
     label: LABELS.tool_image_crop_cancel,
     group: 'Tools',
     pd: true,
+    enabled: cropping,
     run: (editor) => editor.svgCanvas.cancelImageCrop()
   })
   for (const [id, value] of TEXT_DECORATIONS) {

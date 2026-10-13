@@ -141,6 +141,10 @@ export default {
             label: `${name}:kind_${k}`,
             group: 'Tools',
             pd: true,
+            enabled: () => {
+              const sel = svgCanvas.getSelectedElements().filter(Boolean)
+              return sel.length === 1 && svgCanvas.canRoundCorners(sel[0]) ? true : 'Select a shape with corners'
+            },
             run: () => {
               curKind = k
               const [elem] = svgCanvas.getSelectedElements().filter(Boolean)

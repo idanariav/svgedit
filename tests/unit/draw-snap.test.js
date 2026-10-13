@@ -220,8 +220,9 @@ describe('svgCanvas.snapDrawPoint', () => {
     expect(collected).toBe(2)
   })
   describe('hover (no button down)', () => {
-    it('shows the guide a press would snap to, and returns nothing to record', () => {
-      expect(canvas.hoverDrawSnap(103, 98)).toBeUndefined()
+    it('shows the guide a press would snap to, and returns the snapped point', () => {
+      expect(canvas.hoverDrawSnap(103, 98)).toEqual({ x: 100, y: 100 })
+      expect(canvas.hoverDrawSnap(300, 300)).toEqual({ x: 300, y: 300 })
       expect(canvas.showDrawGuides.mock.calls[0][0]).toMatchObject({ at: { x: 100, y: 100 }, point: { x: 100, y: 100 } })
     })
 

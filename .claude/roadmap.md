@@ -80,10 +80,10 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   previews: ext-curvature, ext-cutter (both already ephemeral).
 - **Precise `enabled` on commands.** Done for everything with a selection, clipboard or layer precondition
   (`commandGates.js`: the shortcut table, the panel commands, paste, the layer buttons; path, text and Convert to Path
-  had theirs earlier); new commands get a gate from day one. Left "always": the **image-crop Apply / Cancel** pair (the
-  canvas has no "a crop session is open" getter yet), **`glow_remove` / `outline_remove`** (could read "has a glow /
-  outline"), **`corner_kind_*`** (needs a path with corners), the drawing-tool mode commands (switching tools is always
-  allowed) and the extension commands that register without a check. A hotkey on a gated command is inert and no longer
+  had theirs earlier; crop Apply / Cancel follow `svgCanvas.isImageCropping()`, Remove glow / outline the selection's
+  effects, `corner_kind_*` a shape with corners); new commands get a gate from day one. Left "always": the
+  drawing-tool mode commands (switching tools is always allowed) and extension commands that register without a
+  check. A hotkey on a gated command is inert and no longer
   `preventDefault`s: arrow keys scroll the canvas with nothing selected, Tab moves focus in an empty layer.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
@@ -523,8 +523,8 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
   down, for the built-in drawing modes and any tool with `snap: true`): the same ring / guide lines, its own target cache
   (rebuilt when the mode or the undo history changes), cleared on leaving the canvas or the snapping modes. A change that
   is not an undo step (a layer shown / hidden, a live preview) leaves the cache stale until the next one. Not on touch
-  (no hover), and a tool with `wantsHover` still gets raw positions in its own hover (`toolHover`), so a tool-drawn
-  preview before the press doesn't land on the snapped point; the cutter / pen rubber band are the candidates.
+  (no hover). A `wantsHover` tool with `snap: true` gets the snapped point in its own hover too (`toolHover`); none
+  combines the two yet (Measure is `snap` only); the cutter / pen rubber band are the candidates.
 - **Tools that did not opt in** (`snap: true`): curvature (its anchors use `rawX`), shape library placement, cutter, brush, shaper and eyedropper. Curvature and the shape library mix `x` and `rawX` per event; fixing that is the work.
 - **Not inside a group context** (the children's boxes are in the group's local space; same limit as object-to-object snapping), and targets are only the top level of each layer: shapes nested in closed groups contribute their group's box.
 - **The pen's own earlier anchors are targets** (targets are collected on each press, and the path being drawn is part of the drawing then), so a click near one lands exactly on it. Not checked beyond that; if the in-progress segment ever turns out to snap to itself, exclude the pen's element in `event.js`'s `snapDraw` call.

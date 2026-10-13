@@ -96,14 +96,14 @@ export const init = (canvas) => {
 
   /**
    * The pointer moves over the canvas with no button down: show where a press would snap.
-   * Nothing is returned or recorded; the press snaps again on its own.
+   * Nothing is recorded; the press snaps again on its own.
    * @param {number} x document units
    * @param {number} y
    * @param {{tool?: boolean, exclude?: Element[]}} [opts] as `snapDrawPoint`; `exclude` is only read when the targets are rebuilt
-   * @returns {void}
+   * @returns {{x: number, y: number}} the snapped point, or the input when nothing applies
    */
   const hoverDrawSnap = (x, y, opts = {}) => {
-    if (!snapsHere(opts)) { clearDrawHover(); return }
+    if (!snapsHere(opts)) { clearDrawHover(); return { x, y } }
     // A new shape (a pen path in progress is not an undo step yet) changes the layer's child count.
     const key = [svgCanvas.getCurrentMode(), svgCanvas.undoMgr?.getUndoStackSize(), svgCanvas.undoMgr?.getRedoStackSize(),
       svgCanvas.getCurrentDrawing?.().getCurrentLayer?.()?.childElementCount].join('|')
@@ -111,8 +111,9 @@ export const init = (canvas) => {
       hoverTargets = collectPointTargets(svgCanvas, opts.exclude ?? [])
       hoverKey = key
     }
-    snapAndShow({ x, y }, hoverTargets)
+    const snapped = snapAndShow({ x, y }, hoverTargets)
     hovering = true
+    return snapped
   }
 
   /** End of a gesture: forget the targets (the drawing has changed) and clear the guides. */

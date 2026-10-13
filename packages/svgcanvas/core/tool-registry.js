@@ -321,7 +321,12 @@ export const init = (canvas) => {
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool?.wantsHover || gesture || !refreshRootSctm()) return
     try {
-      tool.pointerMove?.(ctx, toToolEvent(evt))
+      const ev = toToolEvent(evt)
+      // A tool that opted in with `snap` sees the point a press would land on, as the guides show.
+      if (tool.snap && !svgCanvas.getCurConfig().gridSnapping) {
+        ({ x: ev.x, y: ev.y } = svgCanvas.hoverDrawSnap?.(ev.x, ev.y, { tool: true }) ?? ev)
+      }
+      tool.pointerMove?.(ctx, ev)
     } catch (err) {
       logError(`Tool "${tool.id}" hover failed`, err, LOG)
     }
