@@ -43,6 +43,9 @@ export default {
 
     /** The line being measured, or the last one (it stays until the next press). */
     let line = null
+    /** The "45° steps" option: Shift held for good, for a screen with no Shift key. In memory until reload. */
+    let angleSnap = false
+    const stepped = (ev) => ev.mods.shift || angleSnap
     /** The tool context of the last gesture, to redraw the readout when the zoom changes. */
     let toolCtx = null
 
@@ -97,13 +100,13 @@ export default {
 
       pointerMove (ctx, ev) {
         if (!line) return
-        line.b = ev.mods.shift ? constrainAngle(line.a, { x: ev.rawX, y: ev.rawY }) : { x: ev.x, y: ev.y }
+        line.b = stepped(ev) ? constrainAngle(line.a, { x: ev.rawX, y: ev.rawY }) : { x: ev.x, y: ev.y }
         draw(ctx)
       },
 
       pointerUp (ctx, ev) {
         if (!line) return 'cancel'
-        line.b = ev.mods.shift ? constrainAngle(line.a, { x: ev.rawX, y: ev.rawY }) : { x: ev.x, y: ev.y }
+        line.b = stepped(ev) ? constrainAngle(line.a, { x: ev.rawX, y: ev.rawY }) : { x: ev.x, y: ev.y }
         draw(ctx)
         // Nothing in the document changed: the registry commits an empty transaction (no undo step).
         return undefined
@@ -112,6 +115,17 @@ export default {
       cancel (ctx) {
         line = null
         ctx.clearOverlays()
+      },
+
+      options: () => [{
+        id: 'angleSnap',
+        type: 'checkbox',
+        label: svgEditor.i18next.t(`${name}:angleSnap`),
+        title: svgEditor.i18next.t(`${name}:angleSnapTitle`),
+        value: angleSnap
+      }],
+      setOption: (id, value) => {
+        if (id === 'angleSnap') angleSnap = Boolean(value)
       }
     })
 

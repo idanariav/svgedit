@@ -61,6 +61,22 @@ test.describe('Measure tool', () => {
     expect((await readout(page))[1]).toBe('Angle: 0°')
   })
 
+  test('the 45° steps option does what Shift does, for a screen with no Shift key', async ({ page }) => {
+    await tool(page)
+    await expect(page.locator('#tool_options_panel [data-option="angleSnap"]')).toHaveCount(1)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('angleSnap', true))
+    await drag(page, { x: 100, y: 100 }, { x: 140, y: 112 })
+    const [x1, y1, x2, y2] = await lineOf(page)
+    expect([x1, y1]).toEqual([100, 100])
+    expect(y2).toBeCloseTo(100, 3)
+    expect(x2).toBeCloseTo(100 + Math.hypot(40, 12), 3)
+    expect((await readout(page))[1]).toBe('Angle: 0°')
+    // switched off, the line goes where the pointer does
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('angleSnap', false))
+    await drag(page, { x: 100, y: 100 }, { x: 140, y: 112 })
+    expect(await lineOf(page)).toEqual([100, 100, 140, 112])
+  })
+
   test('the next press replaces the readout; a click without a drag clears it', async ({ page }) => {
     await tool(page)
     await drag(page, { x: 100, y: 100 }, { x: 160, y: 100 })

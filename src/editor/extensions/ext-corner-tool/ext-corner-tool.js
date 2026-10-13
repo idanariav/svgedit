@@ -4,7 +4,7 @@
  * The Corners tool (`tool_corners`, mode `corners`): a widget inside each corner of the selected shape. Drag one
  * and the radius follows the pointer along the corner's bisector, from square to fully round (one undo step per
  * drag); Alt-click cycles the kind (round, inverted round, chamfer). A click picks a widget (Shift-click adds or
- * removes one): with some picked, a drag, the Radius field and the Kind choice of the options bar edit those
+ * removes one; the *Pick several* option is that Shift for touch, and the Corner choice does what Alt-click does): with some picked, a drag, the Radius field and the Kind choice of the options bar edit those
  * corners only; with none picked they edit every corner that shows a widget, as the panel does. The maths is
  * `core/corner-radius.js` (the cuts are `svgCanvas.applyCornerRadius`, which runs inside the gesture's
  * transaction); this file is the gesture and its overlay.
@@ -98,6 +98,8 @@ export default {
 
     /** The kind a corner gets when it is first cut. */
     let preferredKind = 'r'
+    /** The "Pick several" option: Shift held for good, for a screen with no Shift key (the Corner choice stands in for Alt-click). */
+    let pickMore = false
     /** @type {?Target} */
     let target = null
     /** Picked corners (anchor indices) of `target.el`; empty = every corner that shows a widget. */
@@ -281,7 +283,7 @@ export default {
             targets,
             fresh: isFresh(t, targets),
             alt: ev.mods.alt,
-            shift: ev.mods.shift,
+            shift: ev.mods.shift || pickMore,
             moved: false,
             radius: w.radius,
             at: { x: ev.rawX, y: ev.rawY }
@@ -374,10 +376,20 @@ export default {
           title: tr('kindTitle'),
           value: kinds.size === 1 ? [...kinds][0] : preferredKind,
           choices: CORNER_KINDS.map((k) => ({ value: k, label: tr(`kind_${k}`) }))
+        }, {
+          id: 'pickMore',
+          type: 'checkbox',
+          label: tr('pickMore'),
+          title: tr('pickMoreTitle'),
+          value: pickMore
         }]
       },
 
       setOption (id, value) {
+        if (id === 'pickMore') {
+          pickMore = Boolean(value)
+          return
+        }
         if (id === 'kind' && CORNER_KINDS.includes(String(value))) preferredKind = String(value)
         const t = selectedTarget()
         if (!t) return

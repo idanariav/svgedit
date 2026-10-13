@@ -111,6 +111,25 @@ test.describe('Corners tool', () => {
     expect(r[1] || 0).toBe(0)
   })
 
+  test('the Pick several option does what Shift does, for a screen with no Shift key', async ({ page }) => {
+    await select(page, 'box')
+    await tool(page)
+    await expect(page.locator('#tool_options_panel [data-option="pickMore"]')).toHaveCount(1)
+    const [tl, tr] = await widgets(page)
+    await click(page, tl)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('pickMore', true))
+    await click(page, tr)
+    const filled = (await widgets(page)).map((w) => w.fill !== '#fff')
+    expect(filled.slice(0, 2)).toEqual([true, true]) // both picked
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('radius', 9))
+    expect(await radii(page)).toEqual([9, 9])
+    // a click on a picked one takes it off, as Shift-click does
+    await click(page, tl)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('radius', 4))
+    expect([...(await radii(page))].sort()).toEqual([4, 9]) // only the one still picked changed
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('pickMore', false))
+  })
+
   test('dragging an unpicked widget when others are picked edits only that corner', async ({ page }) => {
     await select(page, 'box')
     await tool(page)
