@@ -64,7 +64,7 @@
 | `layerTree.js` | The Layers panel's object tree (`LayerTree`): `tr.object` rows after each layer row in `#layerlist`, eye / lock / rename / select / drag-to-move / Locate; `objectRows()` is the pure row model |
 | `layerGestures.js` | Layers panel gestures (`LayerGestures`): Alt-click eye / padlock / comment icon, drag down the eye or lock column, drag a layer row to reorder; `planOthers()` and `layerDropIndex()` are the pure parts |
 | `RightPanel.html` | Right panel markup: tab bar + Design/Text/Effects/Layers tab contents |
-| `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native `EventTarget`, so multiple handlers per event coexist), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. Shown only while `.svg_editor.ui-tablet` is set |
+| `TabletShell.js` | **Tablet mode** shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native `EventTarget`, so multiple handlers per event coexist), and resolves every control to an existing `svgCanvas.*`/`editor.*` call. The Shapes and More tools flyouts are driven by the `SHAPES` / `MORE_TOOLS` tables at the top. Shown only while `.svg_editor.ui-tablet` is set |
 | `TabletShell.html` | Tablet shell skeleton (`.tablet-shell` overlay: `.ts-topbar` command bar + `.ts-sheet` bottom sheet) |
 
 ---

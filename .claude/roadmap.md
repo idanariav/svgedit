@@ -105,7 +105,7 @@ Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %
 Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedropper, no shortcut): drag to read distance, angle (counter-clockwise, as on paper), Δx and Δy in the editor's base unit; the end points snap like the drawing tools' (`snap: true`); Shift constrains to 45° steps; the readout (cyan line, end dots, label box) stays until the next press, Escape or leaving the tool (and is redrawn at the new zoom, via the extension `zoomChanged` hook); the drawing is never changed and nothing is recorded. Remaining:
 - **The start point only snaps with `snap: true`'s targets** (no guides while hovering before the press, as in "Snapping while drawing"); no measuring of an object's own size on click, no persistent rulers or multiple measurements.
 - **The unit comes from Editor Options `baseUnit`;** there is no unit switch on the tool, and areas / perimeters are not measured.
-- Not in the tablet shell (the command bar is full at 768 px); no keyboard shortcut.
+- In the tablet shell's More tools flyout; no keyboard shortcut.
 
 ## Distort tool (`core/distort.js`, `ext-distort-tool`): follow-ups from T2.7
 
@@ -115,7 +115,7 @@ Done: `freeDistort` (bilinear) and `perspective` (projective, Heckbert's square-
 - **No snapping** to other objects or guides (`snap: true` on the tool def needs the corner to follow the pointer by an offset, not jump to it; with grid snapping on, the grid is used). No measurement label.
 - **A corner jumps to the pointer** by up to the grab radius (10 px) on the first move; the grab offset is not kept.
 - **Reset** is the ✕ on the effect's row in the Effects panel; there is no double-click-a-grip or Enter-to-reset gesture.
-- **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
+- **In the tablet shell's More tools flyout** (touch only: the Shift constraint is not available there).
 - **The element's own transform only.** The grips and the pointer are mapped through the element's `transform`, not those of the groups above it (as in the Width tool); a shape inside a transformed group that is entered misplaces the grips.
 - A pathological stack (a distort entry before another effect that changes the anchor count a lot) can hit `MAX_FX_ANCHORS`; the drag then stops updating, it does not corrupt the shape.
 
@@ -129,7 +129,7 @@ Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's li
 - **No midpoint diamonds** (SVG has no midpoints), no spread-method UI, no stop-opacity beyond what the colour dialog's alpha sets; a stop dragged past a neighbour swaps places in the DOM (SVG would clamp it).
 - **No snapping** (to anchors, boxes, guides or the grid) (the tool has its static cursor); the handle follows the pointer with the grab offset kept.
 - **Single element, plain shapes and text only** (path, rect, ellipse, circle, line, polyline, polygon, text). A group, or several selected shapes with one shared gradient, is not edited; shapes in a taper / width stack keep their gradient on the generated outline and are treated like any path.
-- **Not in the tablet shell** (`TabletShell.js`), like the other newer tools; the command bar is full at 768 px.
+- **In the tablet shell's More tools flyout.**
 - A freshly double-clicked stop opens the *modal* colour dialog (Apply / Cancel); the popover mode used by the swatches needs an anchor element, which a canvas chip does not have.
 
 ## Recolor Artwork (`core/recolor.js`, `ext-recolor`, `se-recolor-dialog`): follow-ups from T2.11
@@ -359,7 +359,7 @@ Done: per-corner radius + kind (round / inverted / chamfer) on any path's straig
   - **Double-click for a Corners dialog**, the "Hide Corner Widget for angles greater than" preference and the red outline of corners at their largest radius while dragging.
   - **Only the element's own transform** maps the widgets (as in the Width and Distort tools); a shape inside a transformed group that was entered misplaces them.
   - **A drag sets one radius for every targeted corner** (the dragged corner's), as VectorCraft does; corners that had different radii are levelled. Per-corner radii come from picking corners first.
-  - **No tablet-shell button**, like the other newer tools.
+  - **In the tablet shell's More tools flyout**, without its Radius / Kind options bar and the Alt-click that cycles the kind (a tap picks corners, a drag rounds them).
   - **Corner widgets are circles for every kind**; the kind is read off the options bar or the shape.
 - **Corner cuts are SVG arcs.** Exact, but anything that only understands M/L/C (boolean ops, Round Corners effect on an already-cut path) goes through `parseAnchors`' arc→cubic conversion. Not a problem today because `se:orig-d` and `se:fx-d` are exclusive.
 - **Rect `rx`/`ry` are dropped** when a rect is first cut (the panel shows `rx` as the starting radius, but a rect with different `rx`/`ry` loses the elliptical rounding).
@@ -403,7 +403,7 @@ Done: corners → effects → width as one chain with a root source and mirrored
 ## Shaper (ext-shaper): follow-ups from T1.6
 
 Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-delete, one undo step per stroke (`core/shape-recognize.js`, `ext-shaper`). Remaining:
-- **Not in the tablet shell** (`TabletShell.js` `TOOLS`), though pen/tablet users are the target. A ninth button overflows the command bar at 768px (`tests/e2e/top-bar-layout.spec.js` "tablet command bar fits"); add the button together with another width tier in `tablet.css` (or fold the freehand tools into one flyout). Small.
+- **In the tablet shell's More tools flyout** (`TabletShell.js` `MORE_TOOLS`).
 - **Shaper Groups** (VectorCraft's live compound results that re-recognise when a stroke is added) are deliberately skipped; results are plain shapes.
 - **Polygons are plain `<polygon>`s**, not polystar polygons. Making them editable with the polystar sides field means teaching `ext-polystar` to keep an orientation instead of rebuilding from angle 0.
 - **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
@@ -498,7 +498,7 @@ Done: the brush smooths the anchors it passes over, live, in one undo step. Rema
 - **A closed path whose first anchor is smoothed starts at a different anchor afterwards** (it is opened at the first unmarked anchor), which moves the dash pattern's phase.
 - **Targets are the selected paths, else the one under the press**: pressing a few pixels beside a thin path with nothing selected does nothing (no nearest-path search).
 - **No options UI**: the radius (18 px) and tolerance (2.5 px) are constants. VectorCraft defaults to a 12 pt radius and 2.5 pt fidelity; the radius here is 18 px, a guess for a mouse, so judge it by hand and a tablet may want a smaller one.
-- Not in the tablet shell (same reason as the Shaper: the command bar is full at 768 px).
+- In the tablet shell's More tools flyout; no options UI there either.
 
 ## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
 
@@ -523,7 +523,7 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
 
 Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour tolerance preference, keyless commands, and the **Magic Wand tool** (`ext-magic-wand`, `tool_wand`: click a shape to select what matches it, Shift adds, Alt subtracts, empty canvas clears; Match and Tolerance on its options bar, the tolerance being the same preference). Remaining:
 - **The wand takes one criterion at a time** (Illustrator's panel ticks several at once: fill colour + stroke weight …); `fillstroke` is the only combination. Stroke weight and opacity have no tolerance (Illustrator's are in points / percent). The criterion lives in memory (a reload resets it to fill colour).
-- **The wand is not in the tablet shell** (the command bar is full at 768 px) and has no keyboard shortcut (Illustrator's Y is the Curvature tool here).
+- **The wand is in the tablet shell's More tools flyout, without its options bar and without Shift / Alt** (add / subtract), so there it only replaces the selection, by fill colour. It has no keyboard shortcut (Illustrator's Y is the Curvature tool here).
 - **The tolerance outside the wand is still a preference only**: the Select Same menu has no field next to it, so changing it there means opening Editor Preferences.
 - **A click picks the top-level shape under the pointer** (the open group's child, else the layer's child); it does not select inside closed groups.
 - Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
@@ -549,7 +549,7 @@ Done: outer and inner (edge / centre) glow and feather in the shared composer, o
 Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt / Space / arrow-key modifiers and a click-for-options popover. Remaining:
 - **Shapes are plain paths / groups, not re-editable.** VectorCraft keeps no parameters either, but the plan floated `se:shape="spiral(decay=80,segments=10)"` so the popover could regenerate a selected shape; not stored. Changing a count means redrawing (undo, then arrow keys while dragging).
 - **No measurement label while drawing** (VectorCraft shows one next to the snapped corner). Snapping itself is done (T2.1).
-- **Not in the tablet shell** (`TabletShell.js` `SHAPES`): the four tools are only in the desktop shapes flyout.
+- **In the tablet shell's Shapes flyout** (`TabletShell.js` `SHAPES`, shown when `ext-shape-family` is loaded).
 - **No keyboard shortcuts** (their cursors are the static arrow-plus-glyph ones).
 - **Alt held at release keeps the tool** — core `mouseUpEvent` skips `setMode('select')` when `evt.altKey` is set for every shape tool; with Alt now meaning "from the centre" for arc/grids, releasing the mouse before Alt leaves the tool active (the shape is still selected). Pre-existing core rule, only more visible here.
 
@@ -569,6 +569,14 @@ the saved order never records the fold. Covered by `tests/e2e/top-bar-layout.spe
   "6 more".
 - A folded tool the user drags *within* the drawer is still treated as folded (saved as main).
 Small.
+
+### Tablet shell: the newer tools
+
+Done: the Shapes flyout (now a grid, with the shape-family tools) and a **More tools** flyout (Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand), a width tier at 800px to keep Undo / Redo on the bar at 768px. Remaining:
+- **No options bar on touch.** Blend (spacing), the Magic Wand (Match, Tolerance) and Corners (Radius, Kind) run on their defaults. The bottom sheet could show `svgCanvas.getToolOptions()` while such a tool is the mode (the descriptors are already UI-neutral; `panels/toolOptionsBar.js` draws them for the desktop).
+- **No modifier keys on touch**: the wand's Shift (add) / Alt (subtract), Measure's Shift (45°) and the Corners tool's Alt-click have no substitute. A sticky "+ / −" toggle next to the flyout would cover the wand.
+- **Tools that need hover** (the Width tool's diamonds, the pen-end ring) show nothing on touch before the press.
+- **Tool buttons are 35px at ≤800px** (below the 44px touch guideline); dropping the zoom label or folding the freehand tools into one flyout would give the room back.
 
 ### Keyboard shortcuts
 

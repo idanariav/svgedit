@@ -559,7 +559,7 @@ onChange }`.
 persists the `tabletMode` pref. While on, `.svg_editor` carries the `ui-tablet`
 class — `tablet.css` hides the four desktop panels and shows `TabletShell`
 (`panels/TabletShell.js`): a slim top **command bar** (Select / Pan / Draw / Pen /
-Curvature / Line / Shapes ▾ / Text / Cutter / Shape library · default-style chip ·
+Curvature / Line / Shapes ▾ / Text / Cutter / More tools ▾ / Shape library · default-style chip ·
 zoom · undo/redo · Done) and a contextual **bottom sheet** (Fill / Stroke swatches
 with a "More…" → `seColorPicker` entry, Stroke-width + Opacity sliders, Arrange
 align/layer/flip, Object duplicate/delete) that rises on selection. The Shape
@@ -570,6 +570,11 @@ ext-shapes in extensions.md). Every control resolves to an existing
 tool drives `setMode('ext-panning')` (same flow as the desktop
 pan button) so touch-drag scrolls the workarea via the ext-panning hooks. Layers,
 boolean ops, effects, full text typography, etc. are intentionally desktop-only.
+The **Shapes** flyout (a 5-wide grid) holds rect / square / ellipse / circle / star / polygon and, when `ext-shape-family` is
+loaded, spiral / arc / rectangular grid / polar grid. **More tools** (a two-column menu) lists Shaper, Smooth, Width, Blend,
+Distort, Gradient, Corners, Measure and Magic Wand, each only when its `tool_<mode>` command exists, and runs it through
+`commands.tryRun`. Their options bars (Blend, Wand, Corners) and Shift / Alt modifiers are not on touch: they run on defaults.
+`tests/e2e/tablet-shell-tools.spec.js` covers both flyouts; the bar's fit at 1024 / 900 / 768px is in `top-bar-layout.spec.js`.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a
 `#se-export-region` `<se-select>`, rebuilt each time it opens from the canvas'
@@ -641,7 +646,7 @@ Four more variants in the `tools_shapes` flyout (`tool_spiral`, `tool_arc`, `too
 - **Shaper** (`tool_shaper`, mode `shaper`, Shift+N, button right after the pencil): draw a rough shape with the pen / mouse / finger. On release the stroke is classified by `core/shape-recognize.js` (DOM-free, VectorCraft `recognize.rs` port) and replaced by a native element in the current paint: **line** → `<line>` (fill none; keeps its free angle), **rectangle** → `<rect>`, **ellipse** → `<ellipse>`, **regular polygon** (3–8 sides) → plain `<polygon>`. Near-squares and near-circles snap to equal sides (within 10%); rectangles and ellipses snap to 45° steps (a `rotate(a cx cy)` transform when ≠ 0); a triangle points up or down, a hexagon sits on a flat or pointy side.
 - **Scribble** (a zig-zag with several sharp reversals) **deletes** the objects it touches instead: children of the current layer / group whose painted fill or stroke a sample of the scribble lands on (browser `isPointInFill` / `isPointInStroke`, only for paint the element has, so a scribble inside an unfilled outline leaves it; groups recurse; text/images use their bbox; frames are skipped). Deletion goes through `deleteSelectedElements`, so mirror twins and text-on-path behave as for Delete. A scribble that touches nothing is cancelled.
 - A stroke that is none of these is **discarded**: no freehand path is left, no undo step. The tool stays active after a discard or a scribble; after a created shape it returns to Select like every drawing tool (tool lock keeps it).
-- One undo step per stroke (`registerTool`, undo label "Shape stroke"); the live ink is a `<polyline>` in the tool overlay (`vector-effect: non-scaling-stroke`), never saved. Not in the tablet shell yet (the bar has no room at 768px; see `roadmap.md`).
+- One undo step per stroke (`registerTool`, undo label "Shape stroke"); the live ink is a `<polyline>` in the tool overlay (`vector-effect: non-scaling-stroke`), never saved. In the tablet shell's More tools flyout.
 
 ### ext-cutter — Knife/Cut Tool (`extensions/ext-cutter/`)
 - **Cutter** (`tool_cutter`): affects selected shapes only (or all shapes if nothing selected). Two ways to cut:

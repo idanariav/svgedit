@@ -123,6 +123,12 @@
 @container (max-width: 840px) {
   .svg_editor.ui-tablet .ts-done { display: none; }
 }
+@container (max-width: 800px) {
+  /* the More tools button made the bar 18px too wide at 768px */
+  .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 35px; height: 35px; }
+  .svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 21px !important; height: 21px !important; }
+  .svg_editor.ui-tablet .ts-toolgroup se-shape-library { --sl-tool-size: 35px; --sl-tool-icon-size: 21px; }
+}
 
 /* The select cursor's filled mass sits toward the top-left of its viewBox, so
    geometric centering reads as off-centre inside the active blue circle. Nudge
@@ -230,6 +236,8 @@
 /* button row helper */
 .svg_editor.ui-tablet .ts-row { display: flex; align-items: center; gap: 4px; }
 .svg_editor.ui-tablet .ts-row.gap8 { gap: 8px; }
+/* the Shapes flyout: ten shapes, five to a row */
+.svg_editor.ui-tablet .ts-grid { display: grid; grid-template-columns: repeat(5, 46px); gap: 8px; }
 
 /* ---------- Swatches ---------- */
 .svg_editor.ui-tablet .swatch {
@@ -306,6 +314,8 @@
 
 /* dropdown menu list */
 .svg_editor.ui-tablet .menu { display: flex; flex-direction: column; min-width: 188px; }
+/* the More tools flyout: two columns, so nine tools stay short enough for a short pane */
+.svg_editor.ui-tablet .menu.menu-2col { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); column-gap: 4px; }
 .svg_editor.ui-tablet .menu-item {
   appearance: none;
   border: none;
@@ -323,6 +333,8 @@
   text-align: left;
 }
 .svg_editor.ui-tablet .menu-item:hover { background: var(--icon-hover-bg); }
+.svg_editor.ui-tablet .menu-item.is-active { background: var(--accent-soft); color: var(--accent); }
+.svg_editor.ui-tablet .menu-item.is-active .mi-ic { color: var(--accent); }
 .svg_editor.ui-tablet .menu-item .mi-ic {
   width: 22px; height: 22px; display: grid; place-items: center;
   color: var(--icon); flex: 0 0 auto;

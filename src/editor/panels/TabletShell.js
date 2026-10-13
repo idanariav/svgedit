@@ -30,9 +30,33 @@ const SHAPES = [
   ['ellipse', 'ellipse.svg', 'Ellipse'],
   ['circle', 'circle.svg', 'Circle'],
   ['star', 'star.svg', 'Star'],
-  ['polygon', 'polygon.svg', 'Polygon']
+  ['polygon', 'polygon.svg', 'Polygon'],
+  // From ext-shape-family; an entry is left out when its extension is not loaded.
+  ['spiral', 'spiral.svg', 'Spiral'],
+  ['arc', 'arc.svg', 'Arc'],
+  ['rectgrid', 'grid_rect.svg', 'Rectangular grid'],
+  ['polargrid', 'grid_polar.svg', 'Polar grid']
 ]
 const SHAPE_MODES = new Set(SHAPES.map((s) => s[0]))
+
+// The "More tools" flyout: the editing tools that have no button of their own on the bar. Each is a default
+// extension's mode; [mode, iconFile, label]. A tool is listed only when its `tool_<mode>` command exists, so a
+// build without that extension just has a shorter menu. Tools with an options bar on the desktop (Blend, Magic
+// Wand) run on their defaults here, and Shift / Alt (the wand's add / subtract) are not available on touch.
+const MORE_TOOLS = [
+  ['shaper', 'shaper.svg', 'Shaper'],
+  ['smooth', 'smooth-tool.svg', 'Smooth'],
+  ['width', 'width-tool.svg', 'Width'],
+  ['blend', 'blend-tool.svg', 'Blend'],
+  ['distort', 'distort-tool.svg', 'Distort'],
+  ['gradient', 'gradient-tool.svg', 'Gradient'],
+  ['corners', 'corner-tool.svg', 'Corners'],
+  ['measure', 'measure.svg', 'Measure'],
+  ['wand', 'magic-wand.svg', 'Magic Wand']
+]
+const MORE_MODES = new Set(MORE_TOOLS.map((t) => t[0]))
+// Modes that come from an extension, so their `tool_<mode>` command may be missing.
+const EXTENSION_MODES = new Set(['spiral', 'arc', 'rectgrid', 'polargrid', ...MORE_MODES])
 
 /**
  * The touch-first tablet shell: a slim command bar + a contextual bottom sheet
@@ -121,8 +145,8 @@ class TabletShell {
     this.shapesBtn.classList.add('has-caret')
     this.shapesBtn.addEventListener('click', (e) => {
       e.stopPropagation()
-      const row = this.el('div', 'ts-row gap8')
-      SHAPES.forEach(([mode, icon, label]) => {
+      const row = this.el('div', 'ts-grid')
+      this.available(SHAPES).forEach(([mode, icon, label]) => {
         const b = this.makeBtn(icon, {
           title: label,
           tap: () => {
@@ -148,6 +172,20 @@ class TabletShell {
     this.toolBtns.cutter = cut
     tg.append(cut)
 
+    // More tools: Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand
+    this.moreBtn = this.makeBtn('more_tools.svg', { title: 'More tools' })
+    this.moreBtn.classList.add('has-caret')
+    this.moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const mode = this.svgCanvas.getMode()
+      const tools = this.available(MORE_TOOLS)
+      const menu = this.menuList(tools.map(([m, icon, label]) => [icon, label, () => this.editor.commands.tryRun(`tool_${m}`)]))
+      menu.classList.add('menu-2col')
+      tools.forEach(([m], i) => menu.children[i].classList.toggle('is-active', m === mode))
+      this.popover(this.moreBtn, menu, { title: 'More tools', place: 'bottom' })
+    })
+    tg.append(this.moreBtn)
+
     // Shape library — reuse the real <se-shape-library> component. ext-shapes
     // handles its `shape-insert` event via a document-level listener (decoupled
     // from the desktop #tool_shapelib element), so this instance drives the same
@@ -159,6 +197,15 @@ class TabletShell {
     this.shapeLib.setAttribute('lib', `${extPath}/ext-shapes/shapelib/`)
     this.shapeLib.setAttribute('src', 'shapelib.svg')
     tg.append(this.shapeLib)
+  }
+
+  /**
+   * The entries whose `tool_<mode>` command exists (their extension is loaded).
+   * @param {Array<[string, string, string]>} list `[mode, iconFile, label]`
+   * @returns {Array<[string, string, string]>}
+   */
+  available (list) {
+    return list.filter(([mode]) => !EXTENSION_MODES.has(mode) || this.editor.commands.get(`tool_${mode}`))
   }
 
   // Activate a command-bar tool.
@@ -454,6 +501,7 @@ class TabletShell {
 
   syncTools (mode) {
     Object.entries(this.toolBtns).forEach(([k, b]) => b.classList.toggle('is-active', k === mode))
+    if (this.moreBtn) this.moreBtn.classList.toggle('is-active', MORE_MODES.has(mode))
     const inShapes = SHAPE_MODES.has(mode)
     if (this.shapesBtn) {
       this.shapesBtn.classList.toggle('is-active', inShapes)

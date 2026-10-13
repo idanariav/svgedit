@@ -180,7 +180,7 @@ top-left-weighted shape reads as centred in the active blue circle.
 
 **Tablet narrow panes:** `.tablet-shell` is a size container (`container-type: inline-size`);
 `@container` rules near the end of the command-bar section hide the zoom row (≤1160px), slim
-the tool buttons (≤900px) and hide Done (≤840px) so Undo/Redo stay on screen. Add new tiers
+the tool buttons (≤900px), hide Done (≤840px) and slim them again (≤800px, for the More tools button) so Undo/Redo stay on screen. Add new tiers
 there, not as viewport `@media` (hosts embed the editor in panes).
 
 > **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline
