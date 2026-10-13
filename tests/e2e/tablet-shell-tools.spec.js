@@ -85,7 +85,9 @@ test.describe('Tablet shell tools', () => {
     await expect(strip(page)).toBeHidden()
     await runTool(page, 'Magic Wand')
     await expect(strip(page)).toBeVisible()
-    expect(await strip(page).locator('[data-option]').evaluateAll((els) => els.map((e) => e.dataset.option))).toEqual(['criterion', 'tolerance'])
+    expect(await strip(page).locator('[data-option]').evaluateAll((els) => els.map((e) => e.dataset.option))).toEqual(['criterion', 'click', 'tolerance'])
+    await stripOption(page, 'click', 'add') // the touch stand-in for Shift
+    await stripOption(page, 'click', 'replace')
     await stripOption(page, 'criterion', 'stroke')
     expect((await toolOptions(page)).criterion).toBe('stroke')
     // the tolerance only applies to colours: it goes with a non-colour criterion

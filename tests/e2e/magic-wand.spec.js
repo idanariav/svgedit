@@ -65,6 +65,24 @@ test.describe('Magic Wand', () => {
     expect(await selectedIds(page)).toEqual(['blue1'])
   })
 
+  test('the Click option adds or subtracts with no modifier (touch), and the modifiers still win', async ({ page }) => {
+    await tool(page)
+    await click(page, 40, 40)
+    await setOption(page, 'click', 'add')
+    await click(page, 200, 40)
+    expect(await selectedIds(page)).toEqual(['blue1', 'red1', 'red2'])
+    await click(page, 400, 300) // empty canvas keeps what is selected while adding
+    expect(await selectedIds(page)).toEqual(['blue1', 'red1', 'red2'])
+    await setOption(page, 'click', 'subtract')
+    await click(page, 120, 40)
+    expect(await selectedIds(page)).toEqual(['blue1'])
+    await click(page, 120, 40, { shift: true })
+    expect(await selectedIds(page)).toEqual(['blue1', 'red1', 'red2'])
+    await setOption(page, 'click', 'replace')
+    await click(page, 300, 40)
+    expect(await selectedIds(page)).toEqual(['green'])
+  })
+
   test('a click on empty canvas clears the selection, a Shift-click on it keeps it', async ({ page }) => {
     await tool(page)
     await click(page, 40, 40)

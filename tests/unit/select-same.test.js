@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.js'
 import {
-  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, init
+  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, selectionOpFor, init
 } from '../../packages/svgcanvas/core/select-same.js'
 
 const make = (tag, attrs = {}, parent = document.body) => {
@@ -246,6 +246,21 @@ describe('svgCanvas.findSameAs', () => {
     group = item('g', 'grp')
     const inner = item('rect', 'inner', { fill: '#336699' }, group)
     expect(ids(canvas.findSameAs(inner, 'fill'))).toEqual(['inner'])
+  })
+})
+
+describe('selectionOpFor (the click mode, with Shift and Alt on top)', () => {
+  it('is the set mode with no modifier, replace by default', () => {
+    expect(selectionOpFor({})).toBe('replace')
+    expect(selectionOpFor({}, 'add')).toBe('add')
+    expect(selectionOpFor({}, 'subtract')).toBe('subtract')
+    expect(selectionOpFor({}, 'bogus')).toBe('replace')
+  })
+
+  it('Shift adds and Alt subtracts whatever the mode, Shift first', () => {
+    expect(selectionOpFor({ shift: true }, 'subtract')).toBe('add')
+    expect(selectionOpFor({ alt: true }, 'add')).toBe('subtract')
+    expect(selectionOpFor({ shift: true, alt: true })).toBe('add')
   })
 })
 

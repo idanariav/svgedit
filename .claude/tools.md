@@ -57,7 +57,7 @@ position, surviving move/delete) after the path is done.
 - `tool_gradient` — Gradient tool (ext-gradient-tool, no shortcut) — inserted after the Distort tool; edit the selected shape's linear / radial gradient on the canvas (see `extensions.md`); Fill / Stroke on the options bar
 - `tool_corners` — Corners tool (ext-corner-tool, no shortcut) — inserted after the Gradient tool; a widget inside each corner of the selected shape: drag to round (all corners, or the picked ones), Alt-click cycles round / inverted / chamfer, click or Shift-click picks widgets; Radius and Kind on the options bar (see `extensions.md`). The Design-tab Corners panel (ext-corner-radius) still edits every corner
 - `tool_recolor` — Recolor Artwork (ext-recolor, no shortcut; command in group Edit, button in the Effects tab) — opens `se-recolor-dialog` for the selection (see `extensions.md`)
-- `tool_wand` — Magic Wand (ext-magic-wand, no shortcut) — after the Measure tool; click a shape to select every shape that shares fill / stroke / fill & stroke / stroke weight / opacity / type with it (colour tolerance), Shift adds, Alt subtracts, empty canvas clears; Match + Tolerance on the options bar; records no undo step (see `extensions.md`)
+- `tool_wand` — Magic Wand (ext-magic-wand, no shortcut) — after the Measure tool; click a shape to select every shape that shares fill / stroke / fill & stroke / stroke weight / opacity / type with it (colour tolerance), Shift adds, Alt subtracts, empty canvas clears; Match + Click (Select / Add / Subtract, for touch) + Tolerance on the options bar; records no undo step (see `extensions.md`)
 - `tool_measure` — Measure tool (ext-measure, no shortcut) — after the Eyedropper; drag between two points to read distance / angle / Δx / Δy (base unit; Shift = 45°; the readout stays until the next press); changes nothing (see `extensions.md`)
 - `tool_transform_each` / `tool_split_grid` — Transform Each and Split Into Grid (ext-layout-ops; Layout section at the end of the Design tab, shown with a selection; commands in groups Transform / Tools) — `se-params-dialog` with a live preview (see `extensions.md`)
 - `tool_smooth` — Smooth tool (ext-smooth-tool, no shortcut) — inserted after the Shaper; brush over part of a path to smooth just that part (see `extensions.md`)
@@ -573,7 +573,7 @@ boolean ops, effects, full text typography, etc. are intentionally desktop-only.
 The **Shapes** flyout (a 5-wide grid) holds rect / square / ellipse / circle / star / polygon and, when `ext-shape-family` is
 loaded, spiral / arc / rectangular grid / polar grid. **More tools** (a two-column menu) lists Shaper, Smooth, Width, Blend,
 Distort, Gradient, Corners, Measure and Magic Wand, each only when its `tool_<mode>` command exists, and runs it through
-`commands.tryRun`. Their options (Blend, Wand, Corners) show in the strip under the bar (`#ts_tool_options`); Shift / Alt modifiers have no touch substitute.
+`commands.tryRun`. Their options (Blend, Wand, Corners) show in the strip under the bar (`#ts_tool_options`); Shift / Alt modifiers have no touch substitute except the wand's Click option.
 `tests/e2e/tablet-shell-tools.spec.js` covers both flyouts; the bar's fit at 1024 / 900 / 768px is in `top-bar-layout.spec.js`.
 
 **Export region (frames):** the export dialog (`dialogs/exportDialog.js`) has a

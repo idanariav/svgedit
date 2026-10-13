@@ -3,18 +3,19 @@
  *
  * Magic Wand tool: click a shape to select every shape that shares something with it (fill, stroke, both, stroke
  * weight, opacity or shape type, optionally within a colour tolerance). Shift adds what the click finds to the
- * selection, Alt takes it out, a click on empty canvas clears the selection. The matching is the same as Select
+ * selection, Alt takes it out (the *Click* option on the options bar sets the same for a screen with no Shift or Alt: Replace /
+ * Add / Subtract; the modifiers still win), a click on empty canvas clears the selection. The matching is the same as Select
  * Same (`@svgedit/svgcanvas/core/select-same.js`, `svgCanvas.findSameAs`): the current group, else the visible
  * layers; locked shapes are not targets.
  *
  * What the shapes have to share is on the options bar. The tolerance is the Editor Preferences' "Select Same"
- * tolerance (one setting for both); the criterion lives in memory until reload.
+ * tolerance (one setting for both); the criterion and the click mode live in memory until reload.
  *
  * Selecting is not an undoable edit, so a click records no undo step.
  *
  * @license MIT
  */
-import { combineSelection } from '@svgedit/svgcanvas/core/select-same.js'
+import { combineSelection, selectionOpFor } from '@svgedit/svgcanvas/core/select-same.js'
 
 const name = 'magic-wand'
 const MODE = 'wand'
@@ -40,6 +41,7 @@ export default {
     const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
 
     let criterion = 'fill'
+    let clickMode = 'replace'
 
     const tolerance = () => Math.max(0, parseFloat(svgEditor.configObj.pref(TOLERANCE_PREF)) || 0)
 
@@ -58,9 +60,6 @@ export default {
       return null
     }
 
-    /** Shift adds, Alt subtracts, neither replaces. */
-    const opOf = (mods) => (mods.shift ? 'add' : mods.alt ? 'subtract' : 'replace')
-
     svgCanvas.registerTool({
       id: MODE,
       undoLabel: 'Magic Wand',
@@ -76,7 +75,7 @@ export default {
       pointerUp (ctx, ev) {
         const current = svgCanvas.getSelectedElements().filter(Boolean)
         const target = targetOf(ev)
-        const op = opOf(ev.mods)
+        const op = selectionOpFor(ev.mods, clickMode)
         if (!target) {
           // Empty canvas: clear, unless the user is building a selection with a modifier.
           if (op === 'replace' && current.length) svgCanvas.clearSelection()
@@ -98,6 +97,14 @@ export default {
           choices: ['fill', 'stroke', 'fillstroke', 'strokeweight', 'opacity', 'type'].map((value) => ({ value, label: tr(value) }))
         },
         {
+          id: 'click',
+          type: 'select',
+          label: tr('click'),
+          title: tr('clickTitle'),
+          value: clickMode,
+          choices: ['replace', 'add', 'subtract'].map((value) => ({ value, label: tr(`click_${value}`) }))
+        },
+        {
           id: 'tolerance',
           type: 'number',
           label: tr('tolerance'),
@@ -111,6 +118,7 @@ export default {
       ],
       setOption: (id, value) => {
         if (id === 'criterion') criterion = String(value)
+        else if (id === 'click') clickMode = selectionOpFor({}, String(value))
         else if (id === 'tolerance') svgEditor.configObj.pref(TOLERANCE_PREF, Math.max(0, Number(value) || 0), true)
       }
     })

@@ -108,6 +108,19 @@ export const matchesSame = (criterion, ref, el, tolerance = 0) => {
 /** @typedef {'replace'|'add'|'subtract'} SelectionOp */
 
 /**
+ * What a click of the Magic Wand does: Shift adds and Alt subtracts whatever the tool is set to, otherwise it is the set
+ * mode (what a touch screen, with no Shift or Alt, uses).
+ * @param {{shift?: boolean, alt?: boolean}} mods
+ * @param {SelectionOp|string} [mode] the mode set on the options bar
+ * @returns {SelectionOp}
+ */
+export const selectionOpFor = (mods, mode = 'replace') => {
+  if (mods.shift) return 'add'
+  if (mods.alt) return 'subtract'
+  return mode === 'add' || mode === 'subtract' ? mode : 'replace'
+}
+
+/**
  * How a click of the Magic Wand combines what it found with the current selection (Shift adds, Alt subtracts).
  * Order is kept: the current selection first, then what was added.
  * @param {SelectionOp} op
