@@ -23,6 +23,7 @@ import {
   isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark
 } from '@svgedit/svgcanvas/core/object-state.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
+import { LayerKeyboard } from './layerKeyboard.js'
 
 /** Children listed per parent before "N more…". */
 export const ROW_LIMIT = 200
@@ -73,6 +74,7 @@ export class LayerTree {
     /** @type {Element|null} the last plainly clicked object, the anchor of a Shift range */
     this.anchor = null
     this.drag = null
+    this.keyboard = new LayerKeyboard(this)
     this.observer = typeof MutationObserver === 'function' ? new MutationObserver(() => this.schedule()) : null
   }
 
@@ -86,6 +88,7 @@ export class LayerTree {
     table.addEventListener('click', (evt) => this.onClick(evt))
     table.addEventListener('dblclick', (evt) => this.onDblClick(evt))
     table.addEventListener('pointerdown', (evt) => this.onPointerDown(evt))
+    this.keyboard.attach()
     this.observe()
   }
 
@@ -175,6 +178,7 @@ export class LayerTree {
     this.table.querySelectorAll('tr.object').forEach((tr) => {
       tr.classList.toggle('objsel', selected.has(tr._el))
     })
+    this.keyboard.mark()
   }
 
   label (el) {
@@ -196,6 +200,7 @@ export class LayerTree {
   objectRow ({ el, depth, group, expanded }) {
     const tr = document.createElement('tr')
     tr._el = el
+    tr._depth = depth
     const hidden = isObjectHidden(el)
     const locked = hasLockMark(el)
     tr.className = 'object' + (isObjectLocked(el) ? ' objlockedtree' : '') + (hidden ? ' objhidden' : '')
@@ -235,6 +240,7 @@ export class LayerTree {
     const tr = document.createElement('tr')
     tr.className = 'objmore'
     tr._more = more
+    tr._depth = depth
     const td = document.createElement('td')
     td.colSpan = 6
     td.style.paddingLeft = `${30 + depth * 14}px`
