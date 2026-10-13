@@ -51,9 +51,9 @@ small items (S) fill gaps between large ones.
 **Phase 6 is done: every item of the sequence is built.** What is left is the background tracks and the follow-ups below.
 
 **Background tracks (no phase)**
-- **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Every svgcanvas core module is `@ts-check`ed now; what is left
-  is generating the declarations from source and deleting the hand-written d.ts files (see the TypeScript section); every
-  `core/`+`common/` module and `svgcanvas.js` itself are strict.
+- **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Every svgcanvas core module is `@ts-check`ed and strict, and so is
+  `svgcanvas.js`. What is left is opportunistic: when you touch a `core/` module's `init`, type its `canvas` parameter as the real class
+  (see "Typing the `init` modules"). Generating the d.ts from source was looked at and dropped (2026-10-13, same section).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48) — one "Run editor command…" palette picker over
   `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette entries, by decision.
   Open: the picker doesn't ask for a command's `params` yet (plugin `.claude/techdebt.md`).
@@ -226,8 +226,7 @@ What is left is tightening, not coverage: `tsconfig.strict.json` (`noImplicitAny
 itself joined it on 2026-10-13 (147 errors: untyped accessor parameters, the `state` literal whose `[]`/`null` fields narrowed to `never`, and
 a few null cases; the state is now the `CanvasState` / `StyleProps` / `BrushParams` typedefs at the top of the file, and a few
 guards that were silent bugs got explicit handling: `flashStorage` no longer copies a missing clipboard as the string `"null"`,
-`restoreRefElements` skips a malformed `url(`, and `getParents` is declared `Element[] | null` as it really is). What is left is
-generating the `svgcanvas.d.ts` from source. The accepted stopgaps to shrink after that: `/** @type {any} */` at DOM-API
+`restoreRefElements` skips a malformed `url(`, and `getParents` is declared `Element[] | null` as it really is). The accepted stopgaps to shrink: `/** @type {any} */` at DOM-API
 seams and on canvas-attached state whose class is built inside an `init` (the `Path` of `path-actions.js`/`path.js`, the `canvas`
 parameter of every `init`). Most errors were untyped parameters and `null`-initialised variables; the rest nullable DOM links
 (`parentNode`, `firstChild`) and the legacy `pathSegList` API.
@@ -237,8 +236,27 @@ so write the real name.
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
 `dist/editor/hostApi.d.ts`; the plugin consumes it.
-Also open: generate the `svgcanvas.d.ts` from JSDoc instead of hand-writing it,
-and the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
+Also open: the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
+
+## Typing the `init` modules (decided 2026-10-13: no d.ts generation)
+
+Generating `svgcanvas.d.ts` (and deleting `svgcanvas-members.d.ts` / `svgcanvas-internal.d.ts`) was tried on three modules and
+dropped. `tsc --declaration` works on `svgcanvas.js`, but the ~540 members the `core/*` `init`s attach (`canvas.foo = …`) cannot be
+inferred, and deriving them as `ReturnType<typeof init>` is a type cycle (the class's base type would depend on `init`'s signature,
+whose parameter is the class: TS2506 / TS2456). What it would take is a hand-written API `@typedef` plus `@returns` per module,
+`init` returning it, `runGuardedInit` assigning it, and `svgcanvas.d.ts` split into an interface-only file (TS resolves
+`./svgcanvas.js` to the sibling `.d.ts` first, so modules never see the source class): about 62 modules and a change to the
+published types layout, for a generated file that is the weakest benefit. Not worth it; the d.ts files stay hand-written and the drift
+test guards them. (Side note: the d.ts re-exports `NS`, `logger`, `math`, `units` and `dataStorage` by name, which the built entry
+does not export; only the default export exists at runtime.)
+
+What is worth having, without a deadline: **when you touch a module's `init`, type its `canvas` parameter as
+`import('../svgcanvas.js').default`** instead of `any` or a `module:…` name (which resolves to `any`). Then
+(1) `svgCanvas.foo = foo` is checked against the signature declared in `svgcanvas-members.d.ts`, so a mismatch fails `npm run
+typecheck`, and (2) every `svgCanvas.method()` call inside the module is checked against the real class, which is how typing the
+`core/` modules found the `segment.js` bug. Only `object-state`, `split-grid`, `touch`, `transaction` and `transform-each` do it
+now; about 35 `init`s take `any`. Expect new errors when a module is switched (members still typed `any` in `InternalMembers`,
+members missing from the d.ts): fix them by declaring the member properly and deleting it from `InternalMembers`.
 
 ## Convert `packages/svgcanvas` core modules to TypeScript
 
@@ -291,9 +309,8 @@ needed by both.
    `geometry-remap-registry.js`, `common/util.js`. Then upward through the
    import graph; `svgcanvas.js` last. One module per commit, tests green
    after each.
-5. **Generate the declarations** from source and delete the hand-written
-   d.ts files (and probably the drift test, or point it at the generated
-   output). This also closes the "generate `svgcanvas.d.ts`" item above.
+5. ~~**Generate the declarations** from source~~ dropped 2026-10-13: see "Typing the `init` modules" below. The hand-written d.ts
+   files and the drift test stay.
 
 **Don't break:** the published package shape (`main: dist/svgcanvas.js`,
 `types: svgcanvas.d.ts`), `src/editor/hostApi.d.ts`, which the Obsidian
