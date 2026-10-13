@@ -1,0 +1,25 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <g id="svg_2" se:blend="blend(mode=steps,steps=5,distance=20)" se:blend-pins="0,2,3" se:blend-spine="M80,400 L80,100 L200,220 L540,100">
+   <rect fill="#e53e3e" height="40" id="ra" se:blend-key="1" stroke="#742a2a" stroke-width="2" width="40" x="60" y="380"/>
+   <g id="svg_3" se:blend-steps="1">
+    <path d="m58.33,305.05c0,-2.76 35.57,-5 38.33,-5c2.76,0 5,35.57 5,38.33c0,2.76 -35.57,5 -38.33,5c-2.76,0 -5,-35.57 -5,-38.33z" fill="#cf565d" id="svg_5" stroke="#6a3135" stroke-width="3"/>
+    <path d="m56.67,230.1c0,-5.52 31.14,-10 36.67,-10c5.52,0 10,31.14 10,36.67c0,5.52 -31.14,10 -36.67,10c-5.52,0 -10,-31.14 -10,-36.67z" fill="#b96576" id="svg_6" stroke="#603740" stroke-width="4"/>
+    <path d="m55,155.15c0,-8.29 26.71,-15 35,-15c8.29,0 15,26.71 15,35c0,8.29 -26.71,15 -35,15c-8.29,0 -15,-26.71 -15,-35z" fill="#a0708d" id="svg_7" stroke="#543b4a" stroke-width="5"/>
+    <path d="m62.62,102.62c0,-11.05 22.28,-20 33.33,-20c11.05,0 20,22.28 20,33.33c0,11.05 -22.28,20 -33.33,20c-11.05,0 -20,-22.28 -20,-33.33z" fill="#8478a3" id="svg_8" stroke="#483f53" stroke-width="6"/>
+    <path d="m116.31,161.31c0,-13.81 17.85,-25 31.67,-25c13.81,0 25,17.85 25,31.67c0,13.81 -17.85,25 -31.67,25c-13.81,0 -25,-17.85 -25,-31.67z" fill="#637eb9" id="svg_10" stroke="#3b415c" stroke-width="7"/>
+   </g>
+   <circle cx="200" cy="220" fill="#3182ce" id="cb" r="30" se:blend-key="1" stroke="#2a4365" stroke-width="8"/>
+   <g id="svg_4" se:blend-steps="1">
+    <path d="m227.5,197.5c0,-13.81 19.52,-25 33.33,-25c13.81,0 25,16.19 25,30c0,13.81 -19.52,25 -33.33,25c-13.81,0 -25,-16.19 -25,-30z" fill="#2f89bf" id="svg_11" stroke="#28465f" stroke-width="7"/>
+    <path d="m285,175c0,-11.05 25.62,-20 36.67,-20c11.05,0 20,18.95 20,30c0,11.05 -25.62,20 -36.67,20c-11.05,0 -20,-18.95 -20,-30z" fill="#2e8faf" id="svg_12" stroke="#274959" stroke-width="6"/>
+    <path d="m342.5,152.5c0,-8.29 31.71,-15 40,-15c8.29,0 15,21.71 15,30c0,8.29 -31.71,15 -40,15c-8.29,0 -15,-21.71 -15,-30z" fill="#2f949f" id="svg_13" stroke="#264c52" stroke-width="5"/>
+    <path d="m400,130c0,-5.52 37.81,-10 43.33,-10c5.52,0 10,24.48 10,30c0,5.52 -37.81,10 -43.33,10c-5.52,0 -10,-24.48 -10,-30z" fill="#31998f" id="svg_14" stroke="#244f4c" stroke-width="4"/>
+    <path d="m457.5,107.5c0,-2.76 43.9,-5 46.67,-5c2.76,0 5,27.24 5,30c0,2.76 -43.9,5 -46.67,5c-2.76,0 -5,-27.24 -5,-30z" fill="#349d7d" id="svg_15" stroke="#235245" stroke-width="3"/>
+   </g>
+   <rect fill="#38a169" height="30" id="rc" se:blend-key="1" stroke="#22543d" stroke-width="2" width="50" x="515" y="85"/>
+  </g>
+ </g>
+
+</svg>

@@ -373,6 +373,130 @@ describe('blends on the canvas', () => {
       expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse')).toBe(true)
     })
 
+    describe('pinned to the keys', () => {
+      // Four keys on the 600-long L: their anchors are at 0, 200, 400 and 600 along it.
+      let four
+      const pinsOf = (group) => group.getAttribute('se:blend-pins')
+      const anchorsOf = (group) => parseAnchors(svgCanvas.getBlendSpine(group), 0.1)[0].anchors
+      beforeEach(() => {
+        four = svgCanvas.makeBlend([square(0), square(100), square(200), square(300)], { steps: 3 })
+        svgCanvas.replaceBlendSpine([four, spinePath()])
+        svgCanvas.selectOnly([four], true)
+      })
+      const moveKey = (key, dx, dy) => {
+        svgCanvas.selectOnly([key], true)
+        svgCanvas.moveSelectedElements(dx, dy, true)
+        svgCanvas.refreshBlend(key)
+      }
+
+      it('replacing the spine puts an anchor under every key and says which', () => {
+        expect(pinsOf(four)).toBe('0,1,3,4')
+        const anchors = anchorsOf(four)
+        expect(anchors).toHaveLength(5)
+        keysOf(four).forEach((key, i) => {
+          const c = centre(key)
+          const a = anchors[[0, 1, 3, 4][i]].p
+          expect(c.x).toBeCloseTo(a.x, 2)
+          expect(c.y).toBeCloseTo(a.y, 2)
+        })
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+      })
+
+      it('a key that moves takes its anchor with it, handles too; the others stay', () => {
+        const [, second] = keysOf(four)
+        const before = anchorsOf(four)
+        moveKey(second, 0, -60)
+        const after = anchorsOf(four)
+        expect(after[1].p.y).toBeCloseTo(before[1].p.y - 60, 1)
+        expect(after[1].p.x).toBeCloseTo(before[1].p.x, 1)
+        for (const i of [0, 2, 3, 4]) expect(after[i].p).toEqual(before[i].p)
+        // the steps ride the reshaped spine: the ones between the first two keys now rise to the second
+        const firstGap = steps(four)[0].map(stepCentre)
+        expect(firstGap[2].y).toBeLessThan(firstGap[0].y)
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+      })
+
+      it('undoing the move puts the spine back', () => {
+        const [, second] = keysOf(four)
+        const before = svgCanvas.getBlendSpine(four)
+        moveKey(second, 40, -60)
+        expect(svgCanvas.getBlendSpine(four)).not.toBe(before)
+        svgCanvas.undoMgr.undo()
+        svgCanvas.refreshBlend(second)
+        const back = anchorsOf(four)
+        const was = parseAnchors(before, 0.1)[0].anchors
+        back.forEach((a, i) => {
+          expect(a.p.x).toBeCloseTo(was[i].p.x, 1)
+          expect(a.p.y).toBeCloseTo(was[i].p.y, 1)
+        })
+      })
+
+      it('a nudge below the saver\'s rounding leaves the spine alone', () => {
+        const before = svgCanvas.getBlendSpine(four)
+        moveKey(keysOf(four)[2], 0.01, 0)
+        expect(svgCanvas.getBlendSpine(four)).toBe(before)
+      })
+
+      it('reversing keeps the reshaped spine and puts the first key where the last was', () => {
+        const [first, , , last] = keysOf(four)
+        moveKey(keysOf(four)[1], 0, -60)
+        const was = { first: centre(first), last: centre(last) }
+        svgCanvas.selectOnly([four], true)
+        svgCanvas.reverseBlendSpine()
+        expect(pinsOf(four)).toBe('0,1,3,4')
+        near(centre(first), was.last.x, was.last.y)
+        near(centre(last), was.first.x, was.first.y)
+        // the second key went to where the third was, and the bend of the spine is where it was drawn, mirrored
+        const anchors = anchorsOf(four)
+        expect(anchors).toHaveLength(5)
+        near(anchors[3].p, 200, 240) // the moved anchor (200, 240), now fourth from the start
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+      })
+
+      it('detach and expand drop the pins; another key makes them unfit and they go', () => {
+        svgCanvas.detachBlendSpine()
+        expect(four.hasAttribute('se:blend-pins')).toBe(false)
+        svgCanvas.selectOnly([four], true)
+        svgCanvas.replaceBlendSpine([four, spinePath()])
+        expect(pinsOf(four)).toBe('0,1,3,4')
+        svgCanvas.makeBlend([four, square(450)])
+        expect(four.hasAttribute('se:blend-pins')).toBe(false)
+        expect(svgCanvas.getBlendSpine(four)).not.toBeNull() // still on its spine, evenly spread again
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+        svgCanvas.replaceBlendSpine([four, spinePath()])
+        expect(pinsOf(four).split(',')).toHaveLength(5) // pinned again, now for five keys
+        svgCanvas.expandBlend()
+        expect(four.hasAttribute('se:blend-pins')).toBe(false)
+      })
+
+      it('a closed spine is not pinned: the keys spread evenly', () => {
+        const ring = make('path', { d: 'M100,300 C100,200 300,200 300,300 C300,400 100,400 100,300 Z', fill: 'none', stroke: '#000' })
+        const g = svgCanvas.makeBlend([square(0), square(100), square(200)], { steps: 2 })
+        svgCanvas.replaceBlendSpine([g, ring])
+        expect(g.hasAttribute('se:blend-pins')).toBe(false)
+        expect(svgCanvas.getBlendSpine(g)).not.toBeNull()
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+      })
+
+      it('pins that do not fit the spine or the keys are reported', () => {
+        four.setAttribute('se:blend-pins', '0,1,3')
+        expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse' && f.id === four.id)).toBe(true)
+        four.setAttribute('se:blend-pins', '0,3,1,4')
+        expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse' && f.id === four.id)).toBe(true)
+        four.setAttribute('se:blend-pins', '0,1,3,9')
+        expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse' && f.id === four.id)).toBe(true)
+        four.setAttribute('se:blend-pins', '0,1,3,4')
+        expect(svgCanvas.checkDrawing().filter((f) => f.id === four.id)).toEqual([])
+      })
+
+      it('moving a key of an aligned blend still reshapes the spine, and the drawing stays healthy', () => {
+        svgCanvas.alignBlendToPath()
+        moveKey(keysOf(four)[1], 0, -40)
+        expect(anchorsOf(four)[1].p.y).toBeCloseTo(260, 0)
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+      })
+    })
+
     describe('align to path', () => {
       // Two wide bars on the L spine: the second ends up at the end of it, where the spine heads up (-90°).
       const bar = (x) => make('rect', { x, y: 100, width: 40, height: 10, fill: '#ff0000', stroke: '#000000', 'stroke-width': 2 })

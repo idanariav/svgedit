@@ -21,7 +21,7 @@
  */
 
 import { useMode, useParser, parse, modeRgb, modeOklab, parseHex, parseNamed, parseRgb, parseHsl, modeHsl, parseTransparent, formatHex } from 'culori/fn'
-import { segCubic, splitCubic, evalCubic, isLineSegment, anchorBBox } from './anchor-path.js'
+import { segCubic, splitCubic, evalCubic, isLineSegment, anchorBBox, cubicLength } from './anchor-path.js'
 
 /** @typedef {import('./anchor-path.js').Anchor} Anchor */
 /** @typedef {import('./anchor-path.js').SubPath} SubPath */
@@ -46,19 +46,20 @@ const cloneAnchor = (a) => ({ p: { ...a.p }, hIn: { ...a.hIn }, hOut: { ...a.hOu
 const cloneSub = (sp) => ({ closed: sp.closed, anchors: sp.anchors.map(cloneAnchor) })
 
 /**
- * Split segment `i` of `sp` at its middle, adding an anchor.
+ * Split segment `i` of `sp` at parameter `t` (its middle by default), adding an anchor.
  * @param {SubPath} sp edited in place
  * @param {number} i
+ * @param {number} [t]
  */
-const splitSegment = (sp, i) => {
+const splitSegment = (sp, i, t = 0.5) => {
   const n = sp.anchors.length
   const a = sp.anchors[i]
   const j = (i + 1) % n
   const b = sp.anchors[j]
   const straight = isLineSegment(a, b)
   const c = segCubic(sp, i)
-  const left = splitCubic(c, 0, 0.5)
-  const right = splitCubic(c, 0.5, 1)
+  const left = splitCubic(c, 0, t)
+  const right = splitCubic(c, t, 1)
   const mid = left.p3
   if (!straight) {
     a.hOut = left.p1
@@ -148,6 +149,69 @@ export const reverseSubpath = (sp) => {
  * @returns {number[]}
  */
 export const spineStops = (length, count) => Array.from({ length: count }, (_, i) => (length * i) / Math.max(1, count - 1))
+
+/**
+ * The index of the anchor of an open subpath that sits `s` along it, adding one (splitting a segment) when none does.
+ * Lengths are those of the cubics, scaled so that the whole is `total` (the length the caller measured the stop by).
+ * @param {SubPath} sp edited in place
+ * @param {number} s arc length from the start
+ * @param {number} total the subpath's length
+ * @returns {number}
+ */
+export const splitAtLength = (sp, s, total) => {
+  const segs = sp.anchors.length - 1
+  const lens = Array.from({ length: segs }, (_, i) => cubicLength(segCubic(sp, i)))
+  const sum = lens.reduce((a, b) => a + b, 0)
+  if (segs < 1 || sum < 1e-9 || total < 1e-9) return 0
+  const target = Math.min(1, Math.max(0, s / total)) * sum
+  let before = 0
+  for (let i = 0; i < segs; i++) {
+    if (target <= before + lens[i] + 1e-9) {
+      const u = lens[i] > 1e-12 ? (target - before) / lens[i] : 0
+      if (u < 1e-4) return i
+      if (u > 1 - 1e-4) return i + 1
+      const c = segCubic(sp, i)
+      let lo = 0
+      let hi = 1
+      for (let k = 0; k < 30; k++) {
+        const mid = (lo + hi) / 2
+        if (cubicLength(splitCubic(c, 0, mid)) < u * lens[i]) lo = mid
+        else hi = mid
+      }
+      splitSegment(sp, i, (lo + hi) / 2)
+      return i + 1
+    }
+    before += lens[i]
+  }
+  return sp.anchors.length - 1
+}
+
+/**
+ * A copy of an open subpath with an anchor under each of `count` keys spread evenly along it (the stops of `spineStops`),
+ * and the anchors' indices: those are the pins, the places a key holds the spine by.
+ * @param {SubPath} sp
+ * @param {number} count
+ * @param {number} total the subpath's length
+ * @returns {{sp: SubPath, pins: ?number[]}} `pins` is null when two keys would share an anchor
+ */
+export const pinSpine = (sp, count, total) => {
+  const out = cloneSub(sp)
+  const stops = spineStops(total, count)
+  /** @type {Anchor[]} */
+  const marks = []
+  // From the far end back: a split further along does not move the indices of the stops before it.
+  for (let k = count - 1; k >= 0; k--) marks[k] = out.anchors[splitAtLength(out, stops[k], total)]
+  const pins = marks.map((a) => out.anchors.indexOf(a))
+  return { sp: out, pins: pins.every((v, i) => i === 0 || v > pins[i - 1]) ? pins : null }
+}
+
+/**
+ * The pins of a spine run the other way, for the keys in the same order (the first key now holds where the last did).
+ * @param {number[]} pins
+ * @param {number} anchors how many anchors the spine has
+ * @returns {number[]}
+ */
+export const reversePins = (pins, anchors) => pins.map((i) => anchors - 1 - i).reverse()
 
 /**
  * `subpaths` moved so that the centre of their bounding box is at `to`.

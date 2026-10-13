@@ -263,6 +263,83 @@ test.describe('Blend', () => {
       expect(await healthy(page)).toEqual([])
     })
 
+    test.describe('pinned to the keys', () => {
+      const setup = async (page) => {
+        await select(page, ['ra', 'cb', 'rc'])
+        await run(page, 'blend_make')
+        const group = await page.evaluate(() => [...document.querySelectorAll('g')].find((g) => g.hasAttribute('se:blend')).id)
+        await addSpine(page)
+        await select(page, [group, 'spine'])
+        await run(page, 'blend_replace_spine')
+        return group
+      }
+      const attr = (page, name) => page.evaluate((n) => [...document.querySelectorAll('g')].find((g) => g.hasAttribute('se:blend')).getAttribute(n), name)
+      // hasAttribute, not a selector (a loaded drawing's namespaced attributes do not match one)
+      const stepsD = (page) => page.evaluate(() => [...document.querySelectorAll('g')].filter((g) => g.hasAttribute('se:blend-steps')).flatMap((g) => [...g.children]).map((p) => p.getAttribute('d')).join('|'))
+
+      test('Replace spine pins an anchor under every key', async ({ page }) => {
+        await setup(page)
+        // L of 300 + 460: three keys at 0, 380 and 760 along it; the middle one is 80 past the corner
+        expect(await attr(page, 'se:blend-pins')).toBe('0,2,3')
+        expect(await centre(page, 'cb')).toEqual([160, 100])
+        expect(await healthy(page)).toEqual([])
+      })
+
+      test('dragging a key reshapes the spine under it, undo and redo follow', async ({ page }) => {
+        const group = await setup(page)
+        const spine0 = await attr(page, 'se:blend-spine')
+        const steps0 = await stepsD(page)
+        await page.evaluate(() => window.svgEditor.svgCanvas.selectOnly([document.getElementById('cb')], true))
+        await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 160, y: 100, to: { x: 160, y: 250 }, steps: 8 }]))
+        const spine1 = await attr(page, 'se:blend-spine')
+        expect(spine1).not.toBe(spine0)
+        expect(await attr(page, 'se:blend-pins')).toBe('0,2,3')
+        // the anchor under the key is where the key now is
+        const [kx, ky] = await centre(page, 'cb')
+        expect(ky).toBe(250)
+        const anchor = await page.evaluate(() => {
+          const d = [...document.querySelectorAll('g')].find((g) => g.hasAttribute('se:blend')).getAttribute('se:blend-spine')
+          const nums = [...d.matchAll(/-?\d+(\.\d+)?/g)].map((m) => parseFloat(m[0]))
+          return nums
+        })
+        expect(anchor.join(',')).toContain(`${kx},250`)
+        const steps1 = await stepsD(page)
+        expect(steps1).not.toBe(steps0)
+        expect(await healthy(page)).toEqual([])
+        await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+        expect(await attr(page, 'se:blend-spine')).toBe(spine0)
+        expect(await stepsD(page)).toBe(steps0)
+        await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+        expect(await attr(page, 'se:blend-spine')).toBe(spine1)
+        expect(await stepsD(page)).toBe(steps1)
+        expect(await healthy(page)).toEqual([])
+        expect(group).toBeTruthy()
+      })
+
+      test('a pinned, reshaped spine survives saving and loading, and nothing is rewritten', async ({ page }) => {
+        await setup(page)
+        await page.evaluate(() => window.svgEditor.svgCanvas.selectOnly([document.getElementById('cb')], true))
+        await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 160, y: 100, to: { x: 200, y: 220 }, steps: 8 }]))
+        const svg = await page.evaluate(() => window.svgEditor.svgCanvas.getSvgString())
+        if (process.env.WRITE_FIXTURES) {
+          fs.writeFileSync(path.join(process.cwd(), 'tests/e2e/fixtures/roundtrip/blend-pinned.svg'), svg)
+        }
+        const spine = await attr(page, 'se:blend-spine')
+        const steps = await stepsD(page)
+        await setSvgSource(page, svg)
+        expect(await attr(page, 'se:blend-pins')).toBe('0,2,3')
+        expect(await attr(page, 'se:blend-spine')).toBe(spine)
+        expect(await page.evaluate(() => {
+          const g = [...document.querySelectorAll('g')].find((e) => e.hasAttribute('se:blend'))
+          return window.svgEditor.svgCanvas.refreshBlend(g)
+        })).toBe(false)
+        expect(await attr(page, 'se:blend-spine')).toBe(spine)
+        // (the saver rounds the steps' coordinates, so only their number is compared)
+        expect((await stepsD(page)).split('|')).toHaveLength(steps.split('|').length)
+        expect(await healthy(page)).toEqual([])
+      })
+    })
+
     test.describe('align to path', () => {
       // Two wide bars on the L-shaped spine (80,400) → (80,100) → (540,100): the first heads up, the end heads right.
       const bars = (page) => page.evaluate(() => {

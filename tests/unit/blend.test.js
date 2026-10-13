@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseAnchors, anchorsToD, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
-import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn, rotateSubpaths } from '../../packages/svgcanvas/core/blend.js'
+import { parseAnchors, anchorsToD, anchorBBox, segCubic, cubicLength } from '../../packages/svgcanvas/core/anchor-path.js'
+import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn, rotateSubpaths, splitAtLength, pinSpine, reversePins } from '../../packages/svgcanvas/core/blend.js'
 
 const subs = (d) => parseAnchors(d)
 const rect = (x, y, w, h) => `M${x},${y} L${x + w},${y} L${x + w},${y + h} L${x},${y + h} Z`
@@ -188,5 +188,55 @@ describe('blend: spine helpers', () => {
     expect(back[0].anchors[0].hOut.x).toBeCloseTo(curve[0].anchors[0].hOut.x, 6)
     expect(back[0].anchors[1].hIn.y).toBeCloseTo(curve[0].anchors[1].hIn.y, 6)
     expect(rotateSubpaths(wide, 0)[0].anchors[2].p).toEqual(wide[0].anchors[2].p)
+  })
+
+  describe('pinning a spine', () => {
+    const open = (d) => subs(d)[0]
+
+    it('splitAtLength finds the anchor at a length, adding one where there is none', () => {
+      const line = open('M0,0 L100,0')
+      expect(splitAtLength(line, 0, 100)).toBe(0)
+      expect(splitAtLength(line, 100, 100)).toBe(1)
+      expect(line.anchors).toHaveLength(2)
+      expect(splitAtLength(line, 25, 100)).toBe(1)
+      expect(line.anchors).toHaveLength(3)
+      expect(line.anchors[1].p.x).toBeCloseTo(25, 4)
+      expect(splitAtLength(line, 25, 100)).toBe(1) // now it is there: no second anchor
+      expect(line.anchors).toHaveLength(3)
+    })
+
+    it('splits a curve at half its length and keeps its shape', () => {
+      const arch = open('M0,0 C0,50 100,50 100,0')
+      const length = cubicLength(segCubic(arch, 0))
+      const idx = splitAtLength(arch, length / 2, length)
+      expect(idx).toBe(1)
+      expect(arch.anchors).toHaveLength(3)
+      expect(arch.anchors[1].p.x).toBeCloseTo(50, 0) // symmetric: half way is the middle (to the 20-sample length)
+      expect(arch.anchors[1].p.y).toBeCloseTo(37.5, 0)
+      // both halves still reach the ends
+      expect(arch.anchors[2].p).toEqual({ x: 100, y: 0 })
+    })
+
+    it('pinSpine puts an anchor under each key, evenly, and says which', () => {
+      const l = open('M0,300 L300,300 L300,0')
+      const four = pinSpine(l, 4, 600)
+      expect(four.pins).toEqual([0, 1, 3, 4])
+      expect(four.sp.anchors).toHaveLength(5)
+      expect(four.sp.anchors[1].p.x).toBeCloseTo(200, 4)
+      expect(four.sp.anchors[3].p.y).toBeCloseTo(200, 4)
+      expect(l.anchors).toHaveLength(3) // the input is left alone
+      expect(pinSpine(l, 2, 600).pins).toEqual([0, 2])
+      expect(pinSpine(l, 3, 600).pins).toEqual([0, 1, 2]) // the middle key sits on the corner
+    })
+
+    it('a spine of no length cannot be pinned (the keys would share its one anchor)', () => {
+      expect(pinSpine(open('M5,5 L5,5'), 3, 0).pins).toBeNull()
+    })
+
+    it('reversePins mirrors them and keeps the keys in order', () => {
+      expect(reversePins([0, 2, 5], 6)).toEqual([0, 3, 5])
+      expect(reversePins([0, 1, 3, 4], 5)).toEqual([0, 1, 3, 4])
+      expect(reversePins([1, 2], 6)).toEqual([3, 4])
+    })
   })
 })

@@ -19,6 +19,12 @@
  * Spine takes a path (selected with the blend) and moves the keys onto it; Reverse Spine runs the keys the other way;
  * Detach Spine gives the path back and the blend goes straight again.
  *
+ * The spine is pinned to the keys: `se:blend-pins="0,3,7"` lists, for each key in order, the index of the spine's anchor that
+ * sits under it. Replace Spine puts an anchor under each key (splitting segments where there is none), and from then on the
+ * keys *hold* the spine: a key that moved or changed size drags its anchor (handles with it) to its new centre, and the
+ * steps ride the reshaped spine; a key sits at the arc length of its anchor, not at an even share. A spine without pins (a
+ * closed one, one from before pins, one with pins that no longer fit the keys) is not held and spreads the keys evenly.
+ *
  * With `se:blend-align="1"` (needs a spine) the shapes turn to the spine's direction: the first key is the reference
  * and keeps its orientation; every other key is turned by how much the spine has turned since the first key's stop (they
  * are the user's elements, turned as a rotation would; switching the option off turns them back), and a generated step
@@ -41,13 +47,14 @@ import { registerAttrValidator } from './drawing-invariants.js'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
 import { tracksOf, frameAt } from './art-brush.js'
 import { getTransformList, matrixMultiply } from './math.js'
-import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths } from './blend.js'
+import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.js'
 
 export const BLEND_ATTR = 'se:blend'
 export const KEY_ATTR = 'se:blend-key'
 export const STEPS_ATTR = 'se:blend-steps'
 export const SPINE_ATTR = 'se:blend-spine'
 export const ALIGN_ATTR = 'se:blend-align'
+export const PINS_ATTR = 'se:blend-pins'
 
 /** Shapes that can be a key (they have a path form). */
 const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'ellipse', 'circle'])
@@ -128,27 +135,55 @@ export const formatBlend = (opts = {}) => {
 // ---------------------------------------------------------------------------
 
 /** @typedef {import('./art-brush.js').Track} Track */
+/** @typedef {import('./anchor-path.js').Pt} Pt */
+
+/** @typedef {{d: string, track: Track, sub: import('./anchor-path.js').SubPath}} Spine */
 
 /**
- * The first subpath of path data as a spine: its path data (as stored) and the polyline to measure and walk it by.
+ * The first subpath of path data as a spine: its path data (as stored), the polyline to measure and walk it by, and its
+ * anchors.
  * @param {?string} d
- * @returns {?{d: string, track: Track}} null when it has no drawable first subpath
+ * @returns {?Spine} null when it has no drawable first subpath
  */
 export const parseSpine = (d) => {
   if (!d) return null
   const [first] = parseAnchors(d, 0.1)
   if (!first || first.anchors.length < 2) return null
   const [track] = tracksOf(anchorsToD([first]))
-  return track && track.length > 1e-9 ? { d: anchorsToD([first]), track } : null
+  return track && track.length > 1e-9 ? { d: anchorsToD([first]), track, sub: first } : null
 }
 
 /**
- * Where the keys of a blend sit along a spine, and the arc length between neighbours.
- * @param {Track} track
- * @param {number} keys
- * @returns {number[]}
+ * The pins in an `se:blend-pins` value that fit a spine and keys: whole numbers, increasing, each an anchor of the spine.
+ * @param {?string} str
+ * @param {number} anchors how many anchors the spine has
+ * @param {number} [keys] how many keys the blend has (not checked when unknown)
+ * @returns {?number[]}
  */
-const stopsFor = (track, keys) => spineStops(track.length, keys)
+export const parsePins = (str, anchors, keys) => {
+  if (!str || !/^\d+(,\d+)*$/.test(str.trim())) return null
+  const pins = str.trim().split(',').map(Number)
+  if (keys !== undefined && pins.length !== keys) return null
+  return pins.every((v, i) => v < anchors && (i === 0 || v > pins[i - 1])) ? pins : null
+}
+
+/**
+ * Where the keys of a blend sit on its spine: arc length and point for each. Held by their anchors when the blend has
+ * valid pins on an open spine, else evenly spread by arc length.
+ * @param {Element} group
+ * @param {Spine} spine
+ * @param {number} keys
+ * @returns {{pins: ?number[], stops: number[], points: Pt[]}}
+ */
+const layoutOf = (group, spine, keys) => {
+  const pins = spine.sub.closed ? null : parsePins(group.getAttribute(PINS_ATTR), spine.sub.anchors.length, keys)
+  if (pins) {
+    const stops = pins.map((k) => (k === 0 ? 0 : (tracksOf(anchorsToD([{ closed: false, anchors: spine.sub.anchors.slice(0, k + 1) }]))[0]?.length ?? 0)))
+    return { pins, stops, points: pins.map((k) => spine.sub.anchors[k].p) }
+  }
+  const stops = spineStops(spine.track.length, keys)
+  return { pins: null, stops, points: stops.map((s) => frameAt(spine.track, s).p) }
+}
 
 // ---------------------------------------------------------------------------
 // A blend group
@@ -203,6 +238,7 @@ const keyStyle = (key) => {
  * @property {number} from arc length of the first key
  * @property {number} to arc length of the second
  * @property {boolean} [align] the shapes turn to the direction of the spine
+ * @property {number} [base] the direction of the spine at the first key (what the shapes are turned from)
  */
 
 /**
@@ -229,7 +265,7 @@ const stepsBetween = (a, b, spacing, rail = null) => {
   let gb = keyGeometry(b)
   if (!ga.length || !gb.length) return []
   // Aligned keys were turned when the option was switched on: the steps are made from the keys as they were drawn.
-  const base = rail?.align ? angleAt(rail.track, 0) : 0
+  const base = rail?.align ? (rail.base ?? 0) : 0
   if (rail?.align) {
     ga = rotateSubpaths(ga, base - angleAt(rail.track, rail.from))
     gb = rotateSubpaths(gb, base - angleAt(rail.track, rail.to))
@@ -307,6 +343,12 @@ export const init = (canvas) => {
 
   registerAttrValidator(BLEND_ATTR, (value) => (parseBlend(value) ? true : 'is not blend(…)'))
   registerAttrValidator(SPINE_ATTR, (value) => (parseSpine(value) ? true : 'is not usable path data'))
+  registerAttrValidator(PINS_ATTR, (value, el) => {
+    const spine = parseSpine(el?.getAttribute(SPINE_ATTR) ?? null)
+    if (!spine) return 'is on a blend that has no spine'
+    const keys = el ? blendParts(el)?.keys.length : undefined
+    return parsePins(value, spine.sub.anchors.length, keys) ? true : 'does not fit the spine and its keys'
+  })
   registerAttrValidator(ALIGN_ATTR, (value, el) => {
     if (value !== '1') return 'is not 1'
     return parseSpine(el?.getAttribute(SPINE_ATTR) ?? null) ? true : 'is on a blend that has no spine'
@@ -375,6 +417,41 @@ export const init = (canvas) => {
   }
 
   /**
+   * Keep a pinned spine under its keys: an anchor whose key's centre has moved goes after it (its handles with it). Not
+   * recorded in history: the spine under the keys is as much a function of them as the steps are, so an undo of the key
+   * edit puts it back the same way. Moves smaller than a saved drawing's rounding are left alone.
+   * @param {Element} group
+   * @param {Spine} spine
+   * @param {Element[]} keys
+   * @returns {?Spine} the spine as it now is, null when nothing moved
+   */
+  const holdSpine = (group, spine, keys) => {
+    const { pins } = layoutOf(group, spine, keys.length)
+    if (!pins) return null
+    const sub = { closed: false, anchors: spine.sub.anchors.map((a) => ({ p: { ...a.p }, hIn: { ...a.hIn }, hOut: { ...a.hOut } })) }
+    let moved = false
+    keys.forEach((key, i) => {
+      const geometry = keyGeometry(key)
+      if (!geometry.length) return
+      const box = anchorBBox(geometry)
+      const a = sub.anchors[pins[i]]
+      const dx = box.x + box.width / 2 - a.p.x
+      const dy = box.y + box.height / 2 - a.p.y
+      if (Math.hypot(dx, dy) < 0.05) return
+      for (const pt of [a.p, a.hIn, a.hOut]) {
+        pt.x += dx
+        pt.y += dy
+      }
+      moved = true
+    })
+    if (!moved) return null
+    const held = parseSpine(anchorsToD([sub]))
+    if (!held) return null
+    group.setAttribute(SPINE_ATTR, held.d)
+    return held
+  }
+
+  /**
    * Regenerate the steps of a blend from its keys. No history.
    * @param {Element} group
    * @returns {boolean} whether any steps were rewritten
@@ -383,12 +460,14 @@ export const init = (canvas) => {
     const p = blendParts(group)
     if (!p) return false
     const spacing = /** @type {BlendSpacing} */ (parseBlend(group.getAttribute(BLEND_ATTR)))
-    const spine = parseSpine(group.getAttribute(SPINE_ATTR))
-    const stops = spine ? stopsFor(spine.track, p.keys.length) : []
+    let spine = parseSpine(group.getAttribute(SPINE_ATTR))
+    if (spine) spine = holdSpine(group, spine, p.keys) ?? spine
+    const { stops } = spine ? layoutOf(group, spine, p.keys.length) : { stops: [] }
     const align = !!spine && group.getAttribute(ALIGN_ATTR) === '1'
+    const base = spine ? angleAt(spine.track, stops[0]) : 0
     let rewritten = false
     p.gaps.forEach((gap, i) => {
-      const rail = spine ? { track: spine.track, from: stops[i], to: stops[i + 1], align } : null
+      const rail = spine ? { track: spine.track, from: stops[i], to: stops[i + 1], align, base } : null
       if (regenerateGap(gap, p.keys[i], p.keys[i + 1], spacing, spine?.d ?? null, rail)) rewritten = true
     })
     return rewritten
@@ -467,6 +546,7 @@ export const init = (canvas) => {
         g.setAttribute(BLEND_ATTR, formatBlend({ ...defaults, ...options }))
         p.shapes[0].before(g)
       }
+      g.removeAttribute(PINS_ATTR) // a key more than the pins were made for: the spine spreads them evenly again
       for (const key of p.shapes) {
         key.setAttribute(KEY_ATTR, '1')
         if (g.children.length) g.append(newSteps(doc))
@@ -586,14 +666,14 @@ export const init = (canvas) => {
   }
 
   /**
-   * Put the keys of a blend on its spine, evenly spread by arc length.
+   * Put the keys of a blend on its spine: on their anchors when it is pinned, else evenly spread by arc length.
    * @param {Element} group
-   * @param {Track} track
+   * @param {Spine} spine
    */
-  const placeKeys = (group, track) => {
+  const placeKeys = (group, spine) => {
     const p = /** @type {NonNullable<ReturnType<typeof blendParts>>} */ (blendParts(group))
-    const stops = stopsFor(track, p.keys.length)
-    p.keys.forEach((key, i) => moveKeyTo(key, frameAt(track, stops[i]).p))
+    const { points } = layoutOf(group, spine, p.keys.length)
+    p.keys.forEach((key, i) => moveKeyTo(key, points[i]))
   }
 
   /** @param {Element} group @returns {boolean} whether the shapes of the blend are turned to its spine */
@@ -603,12 +683,13 @@ export const init = (canvas) => {
    * Turn every key but the first by how far the spine has turned since the first key's stop (`direction` -1 turns them back).
    * Each key keeps the centre of its box.
    * @param {Element} group
-   * @param {Track} track
+   * @param {Spine} spine
    * @param {1|-1} direction
    */
-  const turnKeys = (group, track, direction) => {
+  const turnKeys = (group, spine, direction) => {
     const p = /** @type {NonNullable<ReturnType<typeof blendParts>>} */ (blendParts(group))
-    const stops = stopsFor(track, p.keys.length)
+    const { stops } = layoutOf(group, spine, p.keys.length)
+    const { track } = spine
     const base = angleAt(track, stops[0])
     p.keys.forEach((key, i) => {
       const turn = (angleAt(track, stops[i]) - base) * direction
@@ -623,17 +704,32 @@ export const init = (canvas) => {
   }
 
   /**
-   * Put a blend on a (new) spine: its keys are unturned from the old one, placed along the new one and turned to it.
+   * Put a blend on a (new) spine: its keys are unturned from the old one, the spine gets an anchor under each key (unless
+   * `pins` say which anchors already are), the keys are placed on those and turned to the new direction.
    * @param {Element} group
-   * @param {NonNullable<ReturnType<typeof parseSpine>>} spine
+   * @param {Spine} spine
+   * @param {?number[]} [pins] pins that fit `spine` (a reversed pinned spine keeps its own), else they are made
    */
-  const reseat = (group, spine) => {
+  const reseat = (group, spine, pins) => {
     const old = parseSpine(group.getAttribute(SPINE_ATTR))
     const aligned = isAligned(group) && !!old
-    if (aligned && old) turnKeys(group, old.track, -1)
-    group.setAttribute(SPINE_ATTR, spine.d)
-    placeKeys(group, spine.track)
-    if (aligned) turnKeys(group, spine.track, 1)
+    if (aligned && old) turnKeys(group, old, -1)
+    const count = /** @type {NonNullable<ReturnType<typeof blendParts>>} */ (blendParts(group)).keys.length
+    let pinned = spine
+    let held = pins ?? null
+    if (!held && !spine.sub.closed) {
+      const made = pinSpine(spine.sub, count, spine.track.length)
+      const next = made.pins ? parseSpine(anchorsToD([made.sp])) : null
+      if (next && made.pins && next.sub.anchors.length === made.sp.anchors.length) {
+        pinned = next
+        held = made.pins
+      }
+    }
+    group.setAttribute(SPINE_ATTR, pinned.d)
+    if (held) group.setAttribute(PINS_ATTR, held.join(','))
+    else group.removeAttribute(PINS_ATTR)
+    placeKeys(group, pinned)
+    if (aligned) turnKeys(group, pinned, 1)
   }
 
   /**
@@ -666,9 +762,10 @@ export const init = (canvas) => {
     if (!groups.length) return []
     svgCanvas.transact('Reverse blend spine', () => {
       for (const g of groups) {
-        const [first] = parseAnchors(/** @type {string} */ (parseSpine(g.getAttribute(SPINE_ATTR))?.d), 0.1)
-        const spine = /** @type {NonNullable<ReturnType<typeof parseSpine>>} */ (parseSpine(anchorsToD([reverseSubpath(first)])))
-        reseat(g, spine)
+        const old = /** @type {Spine} */ (parseSpine(g.getAttribute(SPINE_ATTR)))
+        const spine = /** @type {Spine} */ (parseSpine(anchorsToD([reverseSubpath(old.sub)])))
+        const { pins } = layoutOf(g, old, /** @type {NonNullable<ReturnType<typeof blendParts>>} */ (blendParts(g)).keys.length)
+        reseat(g, spine, pins && spine.sub.anchors.length === old.sub.anchors.length ? reversePins(pins, old.sub.anchors.length) : null)
         regenerate(g)
       }
     })
@@ -693,8 +790,9 @@ export const init = (canvas) => {
     path.setAttribute('stroke-width', '1')
     svgCanvas.transact('Detach blend spine', () => {
       group.after(path)
-      if (isAligned(group)) turnKeys(group, spine.track, -1)
+      if (isAligned(group)) turnKeys(group, spine, -1)
       group.removeAttribute(ALIGN_ATTR)
+      group.removeAttribute(PINS_ATTR)
       group.removeAttribute(SPINE_ATTR)
       regenerate(group)
     })
@@ -727,7 +825,7 @@ export const init = (canvas) => {
       for (const g of groups) {
         const spine = /** @type {NonNullable<ReturnType<typeof parseSpine>>} */ (parseSpine(g.getAttribute(SPINE_ATTR)))
         if (on) g.setAttribute(ALIGN_ATTR, '1')
-        turnKeys(g, spine.track, on ? 1 : -1)
+        turnKeys(g, spine, on ? 1 : -1)
         if (!on) g.removeAttribute(ALIGN_ATTR)
         regenerate(g)
       }
@@ -754,6 +852,7 @@ export const init = (canvas) => {
         g.removeAttribute(BLEND_ATTR)
         g.removeAttribute(SPINE_ATTR)
         g.removeAttribute(ALIGN_ATTR)
+        g.removeAttribute(PINS_ATTR)
       }
     })
     svgCanvas.selectOnly(groups, true)
