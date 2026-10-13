@@ -435,4 +435,16 @@ test.describe('Layers panel', () => {
     await page.evaluate(() => window.svgEditor.commands.run('tool_undo'))
     expect(await enabled('object_unlock_all')).toBe(true) // the unlock was one undo step
   })
+  test('selecting an object inside a closed group on the canvas opens its rows', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.svgCanvas.setSvgString(`<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title><g id="grp"><rect id="inner" x="10" y="10" width="20" height="20"/></g></g></svg>`))
+    await expect(page.locator('#layerlist tr.object')).toHaveCount(1) // the group, closed
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      canv.setContext(document.getElementById('grp'))
+      canv.selectOnly([document.getElementById('inner')], true)
+    })
+    await expect(page.locator('#layerlist tr.object')).toHaveCount(2)
+    await expect(page.locator('#layerlist tr.object.objsel')).toHaveCount(1)
+  })
 })

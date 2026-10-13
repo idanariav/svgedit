@@ -89,6 +89,7 @@ export class LayerTree {
     table.addEventListener('dblclick', (evt) => this.onDblClick(evt))
     table.addEventListener('pointerdown', (evt) => this.onPointerDown(evt))
     this.keyboard.attach()
+    this.canvas.bind('selected', (_win, elems) => this.reveal(elems))
     this.observe()
   }
 
@@ -388,6 +389,46 @@ export class LayerTree {
   }
 
   /**
+   * Open the layer and the groups above `el`, and widen a "N more…" cut that hides it.
+   * @param {Element} el
+   * @returns {boolean|null} whether anything changed; null when `el` is in no layer
+   */
+  expandTo (el) {
+    let changed = false
+    const open = (/** @type {Element} */ node) => {
+      if (this.expanded.get(node) !== true) { this.expanded.set(node, true); changed = true }
+    }
+    let p = el.parentNode
+    while (p && !this.canvas.isLayer(p)) {
+      open(p)
+      p = p.parentNode
+    }
+    if (!p) return null
+    if (!this.isOpen(p)) open(p) // a layer is open unless it was closed
+    // A deep object may sit past a "N more…" cut.
+    const parent = el.parentNode
+    const kids = Array.from(parent.children).filter(isPanelObject)
+    const fromTop = kids.length - kids.indexOf(el)
+    if (fromTop > (this.limits.get(parent) ?? ROW_LIMIT)) { this.limits.set(parent, fromTop); changed = true }
+    return changed
+  }
+
+  /**
+   * An object was selected on the canvas: open the rows above it and scroll its row into view.
+   * Does nothing while the Layers tab is hidden (Locate Object switches to it on request).
+   * @param {Element[]} elems
+   * @returns {void}
+   */
+  reveal (elems) {
+    const el = (elems ?? []).filter(Boolean)[0]
+    if (!el || !isPanelObject(el) || this.table.offsetParent === null) return
+    if (this.expandTo(el)) this.invalidate()
+    else this.markSelection()
+    const tr = Array.from(this.table.querySelectorAll('tr.object')).find((r) => r._el === el)
+    tr?.scrollIntoView?.({ block: 'nearest' })
+  }
+
+  /**
    * Show the row of `el`: open the layer and groups above it, switch to the
    * Layers tab, scroll the row into view and flash it.
    * @param {Element} el
@@ -395,18 +436,7 @@ export class LayerTree {
    */
   locate (el) {
     if (!el || !isPanelObject(el)) return false
-    let p = el.parentNode
-    while (p && !this.canvas.isLayer(p)) {
-      this.expanded.set(p, true)
-      p = p.parentNode
-    }
-    if (!p) return false
-    this.expanded.set(p, true)
-    // A deep object may sit past a "N more…" cut.
-    const parent = el.parentNode
-    const kids = Array.from(parent.children).filter(isPanelObject)
-    const fromTop = kids.length - kids.indexOf(el)
-    if (fromTop > (this.limits.get(parent) ?? ROW_LIMIT)) this.limits.set(parent, fromTop)
+    if (this.expandTo(el) === null) return false
     this.editor.rightPanel.activateTab('layers')
     this.dirty = true
     this.refresh()

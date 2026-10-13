@@ -387,7 +387,7 @@ export default {
     scrub_fields: 'Drag labels to change numbers',
     select_same_tolerance: 'Select same: colour tolerance (0 = exact)',
     pencil_stabilization: 'Pencil: stabilisation (%)',
-    pencil_fidelity: 'Pencil: fidelity, max distance from stroke',
+    pencil_fidelity: 'Pencil: fidelity, max distance from stroke (px)',
     grid: 'Grid',
     snapping_onoff: 'Snapping on/off',
     snapping_stepsize: 'Snapping Step-Size:',

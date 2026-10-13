@@ -69,7 +69,7 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   position; `ToolDef.cursor` (a CSS cursor, or a function of the context) is still applied on activate and removed on
   deactivate (Measure uses `crosshair`). Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
   editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
-  the Magic Wand has one too (Match, Tolerance); the smooth tool's radius is the remaining candidate, below.)
+  the Magic Wand has one too (Match, Tolerance), and so has the Smooth tool (Radius, Tolerance).)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
   for the Distort tool, which mutates the real element on every pointer move inside its gesture's transaction). What is
   left is the Effects *panel's* preview: `live-effects.js` still hides the original and shows a throwaway clone
@@ -392,7 +392,7 @@ Done: blends of two or more key shapes (path, line, polyline, polygon, rect, ell
 - **Steps are generated content.** Anything added to or edited inside a `se:blend-steps` group is overwritten by the next regeneration; a group that lost a part (or whose parts no longer alternate key / steps / key) simply stops being a blend. The command sweep does not target generated paths for that reason.
 - **The step count is capped at 200 per pair** (every step is a DOM element, and each transaction snapshots the drawing).
 - **The options bar shows the selected blend's values, else the defaults new blends start with;** defaults live in memory (a reload resets them).
-- **Tool hooks.** Only the Blend tool and the Magic Wand have `options()` so far. The smooth tool's radius / tolerance are the obvious next consumers.
+- **Tool hooks.** The Blend tool, the Magic Wand and the Smooth tool have `options()` so far.
 
 ## The live stack (`core/live-stack.js`): follow-ups from item 15
 
@@ -428,7 +428,7 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 Done: the pencil commit and Smooth Path run on the corner-keeping fit (no paper.js left in `path-simplify.js`); Smooth Path is offered on any plain path. Remaining:
 - **Corners are only turns of more than about 100°** (VectorCraft's threshold), so a 90° elbow (an L, a rectangle corner) is held to `pencilFidelity` rather than kept razor sharp. The window that measures the turn (`CORNER_REACH`, 6 tolerances) is also why a smooth curve tighter than about 6 units of radius reads as a corner. Both are tuning, not structure; judge them on real pen strokes and adjust.
 - **The editor's own stabiliser** (`pencilStabilization`, an EMA) and B-spline capture round a corner before the fit sees it; the fit recovers the vertex from the two legs, but a tight hairpin loses a little more than a gentle turn. Lowering the stabilisation keeps corners truer.
-- **`pencilFidelity` is in screen pixels** (the fit gets `fidelity / zoom`; the same as user units at 100%), so a stroke fits the same way at any zoom. The preferences field still says "max distance from stroke" without naming the unit.
+- **`pencilFidelity` is in screen pixels** (the fit gets `fidelity / zoom`; the same as user units at 100%), so a stroke fits the same way at any zoom. The preferences field says so ("px").
 - **Closed pencil strokes** (a loop closed onto its start) are not recognised as closed; the fit is always an open path. VectorCraft's `closed` flag was not ported.
 - `simplifyWith` has no "straight lines only" mode (VectorCraft's Convert to Straight Lines); add it with the first caller.
 
@@ -503,8 +503,8 @@ Done: the brush smooths the anchors it passes over, live, in one undo step. Rema
 - **The neighbouring unmarked anchors keep their handle directions**, so a fit that has to leave an anchor at a steep angle (a jittery stroke right at the edge of the brush) keeps some wiggle there: the edge of the brush is smoothed less than the middle. Freeing the end tangents would smooth more but break the join.
 - **A closed path whose first anchor is smoothed starts at a different anchor afterwards** (it is opened at the first unmarked anchor), which moves the dash pattern's phase.
 - **Targets are the selected paths, else the one under the press**: pressing a few pixels beside a thin path with nothing selected does nothing (no nearest-path search).
-- **No options UI**: the radius (18 px) and tolerance (2.5 px) are constants. VectorCraft defaults to a 12 pt radius and 2.5 pt fidelity; the radius here is 18 px, a guess for a mouse, so judge it by hand and a tablet may want a smaller one.
-- In the tablet shell's More tools flyout; no options UI there either.
+- **Radius and Tolerance are on the options bar** (screen px, stored as the `smooth_radius` / `smooth_tolerance` preferences; defaults 18 and 2.5). VectorCraft defaults to a 12 pt radius and 2.5 pt fidelity; 18 px is a guess for a mouse, so judge it by hand and a tablet may want a smaller one.
+- In the tablet shell's More tools flyout; the options strip draws Radius and Tolerance there too.
 
 ## Ruler guides (`core/guides.js`, ext-ruler-guides): follow-ups from T2.2
 
@@ -631,3 +631,31 @@ and the Cutter / Smooth / Eyedropper have no hover hint; Image has no mode, so n
 Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default palette
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
 tooltips shortened to the name and following a rebinding (`boundTooltipText`; `se-button` only — the flyout, spin-input and explorer-button tooltips still read the authored `shortcut`), Brush settings carries its text next to the gear, the Cutter icon is a shape cut along its diagonal (two pieces with a gap; stroke-drawn, so no longer in `OUTLINE_ICONS`). Remaining: the flyout, spin-input and explorer-button tooltips (above) still show the authored key.
+
+## Last priority: command-driven debug log and an LLM drawing CLI
+
+Both come after everything above and every phase of the plans. They rest on the same fact: since the command registry, every
+user-visible action is a documented command with a stable id, typed params, an `enabled` reason and one undo step, so what
+happened in a session can be *named* rather than guessed from DOM snapshots.
+
+1. **Command-based debug log.** The log the Obsidian plugin uses today (`DebugSnapshotLogger.js` polling
+   `svgCanvas.getDebugSnapshot()` every 400 ms and forwarding changes to the host sink; plugin side `src/debug/`) records *state*, so a
+   bug report says what the drawing looked like, not how it got there. Make it record *actions*: every `commands.run` / `tryRun`
+   (id, params, outcome: ran / disabled with its reason / `badParams` / `internal` with the error), its source (hotkey, button,
+   palette, automation, host), the undo-stack size before and after, a `checkDrawing()` result after each step, and the tool
+   gestures (`registerTool` begin / commit / cancel). The registry is the one choke point, so the hook is a small `onRun`
+   listener on `CommandRegistry`; the plugin sink keeps its format and gains an `action` event. Open questions to settle first:
+   what to redact (text content, image data URIs, file paths), a size cap for the ring buffer, and whether the existing snapshot
+   polling stays as a periodic checkpoint. A log that can replay (`automation` + `commands.run` over a starting SVG) would double
+   as a bug-repro script and as a test fixture generator.
+2. **A CLI for LLMs to work on drawings, including the ones embedded in Obsidian notes.** Follows the technical guidelines of the
+   sibling tools (CLI-compatible package, local only, front-loaded reasoning): `svgedit-cli list` (commands with their params and
+   enabled state, from `commands.list()`), `inspect` (what `automation.inspect()` returns: layers, selection, undo state, plus a
+   compact structural summary of the drawing), `run <command> --param k=v` (through `commands.run`, so gates and undo behave as
+   in the editor), `check` (`checkDrawing` findings), `read` / `write` for `.svg` files and for the drawings an Obsidian note
+   holds (the plugin's `.md` drawings, raw or compressed, and embedded ones: the same reader `scripts/repair-drawings.mjs` already
+   has), and JSON output on every verb. The engine needs a **headless host**: today `commands.run` needs the whole editor DOM, so
+   the first piece of work is either running the editor in headless Chromium (Playwright is already a dependency, cheap but
+   heavy) or splitting the canvas-level commands from the panel-level ones so the former run under jsdom. Decide that before
+   anything else; start with the Playwright route. The plugin already exposes `editorCommands` for a future CLI / MCP bridge
+   (see "Plugin command access" above), so an MCP server over the same verbs is the natural second front end.

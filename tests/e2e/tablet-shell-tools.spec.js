@@ -102,7 +102,7 @@ test.describe('Tablet shell tools', () => {
   test('the strip follows the tool: Blend has its own options, a tool without any hides it', async ({ page }) => {
     await runTool(page, 'Blend')
     expect(await strip(page).locator('[data-option]').evaluateAll((els) => els.map((e) => e.dataset.option))).toEqual(['mode', 'steps'])
-    await runTool(page, 'Smooth')
+    await runTool(page, 'Shaper')
     await expect(strip(page)).toBeHidden()
     // Measure and Corners have the touch stand-ins for Shift (45° steps, Pick several)
     await runTool(page, 'Measure')

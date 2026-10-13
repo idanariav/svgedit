@@ -25,10 +25,13 @@ import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
 
 const name = 'smooth-tool'
 
-/** Brush radius: anchors this close (screen px) to the drag are smoothed. */
+/** Brush radius: anchors this close (screen px) to the drag are smoothed (the default; the options bar changes it). */
 export const BRUSH_RADIUS_PX = 18
-/** How far (screen px) the smoothed part may stray from the original. */
+/** How far (screen px) the smoothed part may stray from the original (the default; the options bar changes it). */
 export const TOLERANCE_PX = 2.5
+/** Preference keys of the options bar's two fields. */
+const RADIUS_PREF = 'smooth_radius'
+const TOLERANCE_PREF = 'smooth_tolerance'
 /** The brush ring's ink; the overlay is never saved. */
 const RING_STROKE = '#2b7fff'
 
@@ -57,6 +60,14 @@ export default {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
+    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    /** @param {string} key @param {number} fallback @param {number} min @returns {number} */
+    const numberPref = (key, fallback, min) => {
+      const v = parseFloat(svgEditor.configObj.pref(key))
+      return Number.isFinite(v) && v >= min ? v : fallback
+    }
+    const radius = () => numberPref(RADIUS_PREF, BRUSH_RADIUS_PX, 1)
+    const tolerance = () => numberPref(TOLERANCE_PREF, TOLERANCE_PX, 0.5)
 
     /**
      * The paths being brushed, each with its state at the press and its screen → local mapping.
@@ -97,9 +108,9 @@ export default {
       for (const t of targets) {
         const a = new DOMPoint(from.x, from.y).matrixTransform(t.inverse)
         const b = new DOMPoint(to.x, to.y).matrixTransform(t.inverse)
-        if (!markAnchorsNear(t.subpaths, t.marks, a, b, BRUSH_RADIUS_PX / t.scale)) continue
+        if (!markAnchorsNear(t.subpaths, t.marks, a, b, radius() / t.scale)) continue
         t.touched = true
-        t.el.setAttribute('d', anchorsToD(smoothRegion(t.subpaths, t.marks, TOLERANCE_PX / t.scale)))
+        t.el.setAttribute('d', anchorsToD(smoothRegion(t.subpaths, t.marks, tolerance() / t.scale)))
       }
     }
 
@@ -116,7 +127,7 @@ export default {
       if (!ring.isConnected) ctx.addOverlay(ring)
       ring.setAttribute('cx', ev.rawX)
       ring.setAttribute('cy', ev.rawY)
-      ring.setAttribute('r', BRUSH_RADIUS_PX / ctx.zoom)
+      ring.setAttribute('r', radius() / ctx.zoom)
     }
 
     const reset = () => {
@@ -167,7 +178,18 @@ export default {
         return undefined
       },
 
-      cancel () { reset() }
+      cancel () { reset() },
+
+      options: () => [
+        { id: 'radius', type: 'number', label: tr('radius'), title: tr('radiusTitle'), value: radius(), min: 1, max: 200, step: 1 },
+        { id: 'tolerance', type: 'number', label: tr('tolerance'), title: tr('toleranceTitle'), value: tolerance(), min: 0.5, max: 20, step: 0.5 }
+      ],
+      setOption: (id, value) => {
+        const n = Number(value)
+        if (!Number.isFinite(n)) return
+        if (id === 'radius') svgEditor.configObj.pref(RADIUS_PREF, Math.min(200, Math.max(1, n)), true)
+        else if (id === 'tolerance') svgEditor.configObj.pref(TOLERANCE_PREF, Math.min(20, Math.max(0.5, n)), true)
+      }
     })
 
     return {

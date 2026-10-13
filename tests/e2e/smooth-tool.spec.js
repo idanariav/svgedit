@@ -39,6 +39,28 @@ test.describe('Smooth tool', () => {
     expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('smooth')
   })
 
+  test('Radius and Tolerance are on the options bar, and the radius changes the brush', async ({ page }) => {
+    await tool(page)
+    await expect(page.locator('#tool_options_panel [data-option="radius"]')).toHaveCount(1)
+    await expect(page.locator('#tool_options_panel [data-option="tolerance"]')).toHaveCount(1)
+    const ringRadius = async () => {
+      await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 200, y: 100 }]))
+      return page.evaluate(() => Number(document.querySelector('#toolOverlay circle')?.getAttribute('r')))
+    }
+    expect(await ringRadius()).toBe(18)
+    await page.evaluate(() => {
+      const el = document.querySelector('#tool_options_panel [data-option="radius"]')
+      el.value = 40
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(await ringRadius()).toBe(40)
+    // a wider brush reaches the neighbours a narrow one leaves alone
+    const before = (await xs(page, 'a')).length
+    await select(page, 'a')
+    await brush(page, { x: 200, y: 100 }, { x: 300, y: 100 })
+    expect((await xs(page, 'a')).length).toBeLessThan(before - 8)
+  })
+
   test('brushing a selected path smooths only the part under the brush, in one undo step', async ({ page }) => {
     const before = await xs(page, 'a')
     const undo0 = await undoSize(page)
