@@ -45,6 +45,8 @@ export interface InternalMembers {
   /** @internal */
   current_drawing_: any
   /** @internal */
+  cursorHintValue: any
+  /** @internal */
   decode64: any
   /** @internal */
   destroy(...args: any[]): any

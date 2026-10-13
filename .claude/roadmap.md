@@ -52,8 +52,8 @@ small items (S) fill gaps between large ones.
 
 **Background tracks (no phase)**
 - **Typing:** stay on strict JSDoc (no `.ts`, no toolchain change). Every svgcanvas core module is `@ts-check`ed now; what is left
-  is `svgcanvas.js` under `noImplicitAny` / `strictNullChecks` (every `core/`+`common/` module is strict already), then generating the
-  declarations from source and deleting the hand-written d.ts files (see the TypeScript section).
+  is generating the declarations from source and deleting the hand-written d.ts files (see the TypeScript section); every
+  `core/`+`common/` module and `svgcanvas.js` itself are strict.
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48) — one "Run editor command…" palette picker over
   `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette entries, by decision.
   Open: the picker doesn't ask for a command's `params` yet (plugin `.claude/techdebt.md`).
@@ -215,17 +215,19 @@ API by declaring it properly and deleting it from `InternalMembers`. Runtime-att
 (`AttachedMembers`): `svgcanvas.d.ts` merges it into the class, and `svgcanvas.js`
 extends it through a JSDoc cast on its base class (augmenting the JS module
 doesn't work — TS ignores `declare module` merges into a JS-declared class).
-`svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict,
-but `noImplicitAny`/`strictNullChecks` off — turning those on gives ~150 errors
-there: that is the next step, below). **All 107 `core/`+`common/` modules carry it** (2026-10-12: 72 added in three passes; JSDoc
+`svgcanvas.js` carries `// @ts-check` and is part of `npm run typecheck` (strict
+since 2026-10-13, see below). **All 107 `core/`+`common/` modules carry it** (2026-10-12: 72 added in three passes; JSDoc
 `{Float}`/`{Integer}` became `{number}`, leftover `{PlainObject}`/`{GenericArray}` resolve through
 `legacy-jsdoc-types.d.ts`, and `NS` is `as const` so `createElementNS(NS.SVG, 'g')` returns the right element type). A pragma is
 checked by *both* configs, so a file the strict config reaches through an import must be strict-clean, and all of them are.
 What is left is tightening, not coverage: `tsconfig.strict.json` (`noImplicitAny` + `strictNullChecks`) now covers **all 107**
 `core/`+`common/` modules (2026-10-12; typing them turned up one real bug, `segment.js`'s `farthestPointFrom` measuring from a
-`{cx, cy}` centre with `.x/.y`, which made a radial divider line stop at the first crossing instead of the farthest). Still outside it:
-`svgcanvas.js` itself (~150 strict errors: untyped parameters, the `curStyles`/`cursorHint` literals, `never`-narrowed selection
-state), then generating the `svgcanvas.d.ts` from source. The accepted stopgaps to shrink after that: `/** @type {any} */` at DOM-API
+`{cx, cy}` centre with `.x/.y`, which made a radial divider line stop at the first crossing instead of the farthest). `svgcanvas.js`
+itself joined it on 2026-10-13 (147 errors: untyped accessor parameters, the `state` literal whose `[]`/`null` fields narrowed to `never`, and
+a few null cases; the state is now the `CanvasState` / `StyleProps` / `BrushParams` typedefs at the top of the file, and a few
+guards that were silent bugs got explicit handling: `flashStorage` no longer copies a missing clipboard as the string `"null"`,
+`restoreRefElements` skips a malformed `url(`, and `getParents` is declared `Element[] | null` as it really is). What is left is
+generating the `svgcanvas.d.ts` from source. The accepted stopgaps to shrink after that: `/** @type {any} */` at DOM-API
 seams and on canvas-attached state whose class is built inside an `init` (the `Path` of `path-actions.js`/`path.js`, the `canvas`
 parameter of every `init`). Most errors were untyped parameters and `null`-initialised variables; the rest nullable DOM links
 (`parentNode`, `firstChild`) and the legacy `pathSegList` API.
@@ -271,9 +273,8 @@ needed by both.
 
 1. ~~**Finish `@ts-check`**~~ done (entry above).
 2. **Tighten per file:** turn on `noImplicitAny` and `strictNullChecks`
-   (globally they give ~150 errors in `svgcanvas.js` alone, so use a
-   per-file opt-in, e.g. a second tsconfig listing the files already clean).
-   **Done for all 107 `core/`+`common/` modules** (`tsconfig.strict.json`, 2026-10-12); only `svgcanvas.js` itself is left.
+   (a second tsconfig, `tsconfig.strict.json`, lists the files already clean).
+   **Done for all 107 `core/`+`common/` modules** (2026-10-12) **and for `svgcanvas.js`** (2026-10-13).
 3. **Only if `.ts` was chosen — toolchain:**
    - Vite and Vitest already transpile `.ts` (no type checking at build
      time; `npm run typecheck` stays the gate).

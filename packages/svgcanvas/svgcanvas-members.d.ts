@@ -440,7 +440,7 @@ export interface AttachedMembers {
   getTypeMap(): Record<string, number>
   convertToNum(attr: string, val: string): number
   getReferencedDefElements(elem: Element): Element[]
-  getParents(node: Node, selector?: string): Element[]
+  getParents(node: Node, selector?: string): Element[] | null
   isLayer(elem: Element): boolean
   hasVisibleStroke(elem: Element): boolean
   mergeDeep(target: any, source: any): any
