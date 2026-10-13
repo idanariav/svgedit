@@ -256,6 +256,12 @@ class EditorStartup {
       this.$container // scope canvas element lookups to this editor's container
     )
 
+    // The path editor's grips are hover-explained (core has no locale: the translated texts are handed in).
+    this.svgCanvas.setPathGripTitles({
+      node: this.i18next.t('ui.pathNodeTooltip'),
+      ctrl: this.i18next.t('ui.pathCtrlPtTooltip')
+    })
+
     // once svgCanvas is init - adding listener to the changes of the current mode
     this.modeEvent = this.svgCanvas.modeEvent
     document.addEventListener('modeChange', (evt) => this.modeListener(evt), { signal: this.listenerAbort.signal })

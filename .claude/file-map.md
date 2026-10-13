@@ -230,6 +230,7 @@ WCAG contrast (`converter`, `clampChroma`, `wcagContrast`, `formatHex`).
 | `core/select.js` | Rubber-band selector + resize handles UI |
 | `core/path.js` | Path state and node data |
 | `core/path-actions.js` | Add/delete/move path nodes |
+| `core/path-method.js` | Path class, node / control-point grips (`addPointGrip`, `addCtrlGrip`) and their hover tooltips: a `<title>` child set by `svgCanvas.setPathGripTitles({node, ctrl})`, which `EditorStartup.js` calls with the `ui.pathNodeTooltip` / `ui.pathCtrlPtTooltip` strings (core has no locale); grips are editor chrome, never saved |
 | `core/path-seg-shim.js` | Self-installing replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API (`pathSegList`, `createSVGPathSeg*`, `SVGPathSeg.PATHSEG_*`), backed by the `svgpath` package's `d`-string parser/serializer instead of any native/polyfilled browser API |
 | `core/elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
 | `core/history.js` | Undo/redo stack: command types incl. `ChildListCommand`/`CharacterDataCommand`, `BatchCommand` with begin/end-batch coalescing, `UndoManager`, `EPHEMERAL_ATTR`/`isEphemeral` |

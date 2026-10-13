@@ -63,6 +63,58 @@ describe('path-method addPointGrip', () => {
   })
 })
 
+describe('path-method grip tooltips', () => {
+  // A canvas whose getElement finds what is in the document, as the real one does (the grip container is found again).
+  const makeLiveCanvas = () => {
+    document.body.textContent = ''
+    const parentGroup = createSvgElement('g')
+    parentGroup.id = 'selectorParentGroup'
+    document.body.append(parentGroup)
+    const svgCanvas = {
+      getElement: (id) => document.getElementById(id),
+      getPathObj: () => null
+    }
+    pathMethodInit(svgCanvas)
+    return svgCanvas
+  }
+  const titleOf = (el) => [...el.children].filter((c) => c.localName === 'title').map((c) => c.textContent)
+
+  it('a grip made before the texts are set has none, and gets them when they are', () => {
+    const svgCanvas = makeLiveCanvas()
+    const node = svgCanvas.addPointGrip(0, 10, 10)
+    const ctrl = svgCanvas.addCtrlGrip('1c1')
+    expect(titleOf(node)).toEqual([])
+    svgCanvas.setPathGripTitles({ node: 'Drag node', ctrl: 'Drag handle' })
+    expect(titleOf(node)).toEqual(['Drag node'])
+    expect(titleOf(ctrl)).toEqual(['Drag handle'])
+  })
+
+  it('grips made afterwards have them, once, as the first child', () => {
+    const svgCanvas = makeLiveCanvas()
+    svgCanvas.setPathGripTitles({ node: 'Drag node', ctrl: 'Drag handle' })
+    const node = svgCanvas.addPointGrip(0, 10, 10)
+    svgCanvas.addPointGrip(0, 20, 20) // placing it again does not add a second title
+    const ctrl = svgCanvas.addCtrlGrip('0c1')
+    expect(titleOf(node)).toEqual(['Drag node'])
+    expect(node.firstElementChild.localName).toBe('title')
+    expect(titleOf(ctrl)).toEqual(['Drag handle'])
+    expect(node.namespaceURI).toBe(NS.SVG)
+    expect(node.firstElementChild.namespaceURI).toBe(NS.SVG)
+  })
+
+  it('new texts replace the old ones, and an empty text takes the tooltip away; a text left out stays', () => {
+    const svgCanvas = makeLiveCanvas()
+    const node = svgCanvas.addPointGrip(0, 10, 10)
+    const ctrl = svgCanvas.addCtrlGrip('0c1')
+    svgCanvas.setPathGripTitles({ node: 'one', ctrl: 'two' })
+    svgCanvas.setPathGripTitles({ node: 'three' })
+    expect(titleOf(node)).toEqual(['three'])
+    expect(titleOf(ctrl)).toEqual(['two'])
+    svgCanvas.setPathGripTitles({ node: '' })
+    expect(titleOf(node)).toEqual([])
+  })
+})
+
 describe('path-method Path#addPtsToSelection', () => {
   it('keeps selected_pts in numeric order past index 9', () => {
     // Regression guard: the default Array#sort comparator is lexicographic,

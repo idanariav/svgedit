@@ -244,6 +244,8 @@ export interface AttachedMembers {
   setSegType(newType: number): void
   isValidUnit(attr: string, val: string, selectedElement?: Element): boolean
   getElement(id: string): Element | null | undefined
+  /** Hover tooltips of the path editor's node and control-point grips (a `<title>` child; the editor passes translated text). */
+  setPathGripTitles(titles: { node?: string, ctrl?: string }): void
 
   // Layers / content
   createLayer(name?: string, hrService?: unknown): unknown

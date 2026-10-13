@@ -101,6 +101,39 @@ export const init = (canvas) => {
     }
     return c
   }
+  // The hover texts of the grips (the editor passes the translated strings in: core has no locale). A `<title>` child
+  // is the SVG tooltip; grips made before the texts arrive are given theirs by `setPathGripTitles`.
+  const gripTitles = { node: '', ctrl: '' }
+  /**
+   * @param {Element} grip
+   * @param {string} text
+   */
+  const titleGrip = (grip, text) => {
+    let title = [...grip.children].find((c) => c.localName === 'title')
+    if (!text) {
+      title?.remove()
+      return
+    }
+    if (!title) {
+      title = document.createElementNS(NS.SVG, 'title')
+      grip.prepend(title)
+    }
+    if (title.textContent !== text) title.textContent = text
+  }
+  /**
+   * Set the hover tooltips of the path editor's node and control-point grips.
+   * @param {{node?: string, ctrl?: string}} titles
+   * @returns {void}
+   */
+  const setPathGripTitlesMethod = (titles) => {
+    gripTitles.node = titles.node ?? gripTitles.node
+    gripTitles.ctrl = titles.ctrl ?? gripTitles.ctrl
+    const container = svgCanvas.getElement('pathpointgrip_container')
+    for (const grip of container?.children ?? []) {
+      if (grip.id.startsWith('pathpointgrip_')) titleGrip(grip, gripTitles.node)
+      else if (grip.id.startsWith('ctrlpointgrip_')) titleGrip(grip, gripTitles.ctrl)
+    }
+  }
   // Side length of the square anchor-node grips. Larger than the round
   // control-point handles (r: 3) so the node reads as the primary target.
   const NODE_GRIP_SIZE = 9
@@ -135,6 +168,7 @@ export const init = (canvas) => {
         style: 'pointer-events:all'
       }
       assignAttributes(pointGrip, atts)
+      titleGrip(pointGrip, gripTitles.node)
       pointGripContainer.append(pointGrip)
 
       // Use the grip we just created rather than re-looking it up by id: a
@@ -183,6 +217,7 @@ export const init = (canvas) => {
       style: 'pointer-events:all'
     }
     assignAttributes(pointGrip, atts)
+    titleGrip(pointGrip, gripTitles.ctrl)
     getGripContainerMethod().append(pointGrip)
     return pointGrip
   }
@@ -1185,6 +1220,7 @@ export const init = (canvas) => {
   svgCanvas.replacePathSeg = replacePathSegMethod
   svgCanvas.addPointGrip = addPointGripMethod
   svgCanvas.addCtrlGrip = addCtrlGripMethod
+  svgCanvas.setPathGripTitles = setPathGripTitlesMethod
   svgCanvas.getCtrlLine = getCtrlLineMethod
   svgCanvas.getGripPt = getGripPtMethod
   svgCanvas.getPointFromGrip = getPointFromGripMethod
