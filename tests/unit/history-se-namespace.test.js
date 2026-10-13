@@ -31,4 +31,13 @@ describe('ChangeElementCommand and se: attributes', () => {
     expect(el.getAttributeNS(NS.SE, 'locked')).toBe('true')
     expect(el.getAttributeNS(null, 'fill')).toBe('#f00')
   })
+  it('updates an attribute the element already holds in place: never a second node with the same name', () => {
+    const el = rect()
+    el.setAttribute('se:arrow-align', 'extend') // written without the namespace, as much feature code does
+    const cmd = new history.ChangeElementCommand(el, { 'se:arrow-align': 'tip' })
+    cmd.newValues = { 'se:arrow-align': 'extend' }
+    cmd.unapply(handler)
+    expect(el.getAttribute('se:arrow-align')).toBe('tip')
+    expect(Array.from(el.attributes).filter((a) => a.name === 'se:arrow-align')).toHaveLength(1)
+  })
 })

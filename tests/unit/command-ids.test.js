@@ -71,10 +71,11 @@ describe('command id stability', () => {
     expect(corners).toContain('id="corner_kind_$' + '{k}"')
   })
 
-  it('the core (pilot) command ids are exactly the ids buttons / favorites already used', () => {
+  it('the core (pilot) command ids are exactly the ids buttons / favorites already used, plus the object-state commands', () => {
     const reg = new CommandRegistry({})
     registerCoreCommands(reg)
     expect([...reg.table.keys()].sort()).toEqual([
+      'object_hide_selection', 'object_lock_selection', 'object_show_all', 'object_unlock_all',
       'paste', 'paste_in_place', 'tool_clone', 'tool_delete', 'tool_group_elements',
       'tool_redo', 'tool_undo', 'tool_ungroup', 'zoom_fit'
     ])

@@ -134,6 +134,15 @@ all 55 verified to load identically. The two load-time sanitizers it replaced ar
 `stacked-translate` rule joined `stray-text-in-defs` in `checkDrawing`). `REPAIRS` is empty again;
 `git log -- scripts/repair-drawings.mjs` has the three entries as templates.
 
+## Hiding an object that others are generated from: redo does not regenerate them
+
+`object_hide_selection` (and `object_lock_selection` on a mirror source; also the Layers panel's eye, which uses the same `setObjectsHidden`) on a **blend key, a mirror
+source or a connector end** is one undo step whose undo restores the drawing, but whose **redo** re-hides the object without
+reproducing the regeneration the original run triggered (steps / twin / route come out in a different state). The command
+sweep tolerates it (`KNOWN_ISSUES` in `tests/e2e/command-sweep.spec.js`, five fixtures); delete the entries once redo
+re-runs the dependents' refresh (`undo.js` already does it for undo). Medium: the dependents refresh on `changed`, which a redo
+of a plain attribute change does not fire for them.
+
 ## Oversized modules (remaining)
 
 All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,

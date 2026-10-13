@@ -343,15 +343,17 @@ export class RemoveElementCommand extends Command {
 */
 
 /**
- * Write an attribute by its qualified name, keeping the editor's own `se:` attributes in their namespace: a plain
- * `setAttribute('se:locked', …)` makes a no-namespace attribute that `getAttributeNS(NS.SE, 'locked')` cannot see.
+ * Write an attribute by its qualified name. An existing attribute is updated in place (the element may hold it
+ * with or without the namespace, and a second node with the same qualified name must never appear); one that is
+ * absent (an undo restoring a removal) comes back in the `se` namespace for the editor's own `se:` attributes,
+ * because a plain `setAttribute('se:locked', …)` is invisible to `getAttributeNS(NS.SE, 'locked')`.
  * @param {Element} elem
  * @param {string} attr qualified name
  * @param {*} value
  * @returns {void}
  */
 const setAttributeKeepingNamespace = (elem, attr, value) => {
-  if (attr.startsWith('se:')) elem.setAttributeNS(NS.SE, attr, value)
+  if (attr.startsWith('se:') && !elem.hasAttribute(attr)) elem.setAttributeNS(NS.SE, attr, value)
   else elem.setAttribute(attr, value)
 }
 
