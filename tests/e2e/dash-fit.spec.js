@@ -77,14 +77,56 @@ test.describe('Fitted dashes', () => {
     expect(Math.abs(a.length / period - Math.round(a.length / period))).toBeLessThan(0.005)
   })
 
-  test('is unavailable, with the reason, for a shape with corners and for a solid stroke', async ({ page }) => {
-    await select(page, 'box')
-    await expect(fitButton(page)).toHaveAttribute('disabled', /.*/)
-    await expect(fitButton(page)).toHaveAttribute('disabled-reason', /line, a circle|corners/)
+  test('is unavailable, with the reason, for a solid stroke and for a shape that is not an outline', async ({ page }) => {
     await select(page, 'plain')
     await expect(fitButton(page)).toHaveAttribute('disabled', /.*/)
     await expect(fitButton(page)).toHaveAttribute('disabled-reason', /dash pattern/)
     expect(await page.evaluate(() => { try { window.svgEditor.commands.run('tool_dash_fit'); return 'ran' } catch (e) { return e.message } })).toMatch(/dash pattern/)
+    // a path of several pieces cannot be fitted
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      const two = c.addSVGElementsFromJson({ element: 'path', attr: { id: 'two', d: 'M0,0 L50,0 M0,10 L50,10', fill: 'none', stroke: '#000', 'stroke-dasharray': '5,5' } })
+      c.selectOnly([two], true)
+    })
+    await expect(fitButton(page)).toHaveAttribute('disabled-reason', /one piece/)
+  })
+
+  test('fits a rectangle round its corners: a dash bent round every corner, the start corner too', async ({ page }) => {
+    await select(page, 'box')
+    await expect(fitButton(page)).not.toHaveAttribute('disabled', /.*/)
+    await fitButton(page).click()
+    const fit = await attrs(page, 'box')
+    expect(fit.marker).toBe('5,5')
+    expect(fit.array.reduce((a, b) => a + b, 0)).toBeCloseTo(360, 2) // the perimeter, 2 × (100 + 80)
+    expect(fit.array.length).toBeGreaterThan(2) // one list for the whole outline, not a periodic pattern
+  })
+
+  test('the corners of a fitted rectangle are painted, those of the plain dashes are not all', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      for (const [id, x] of [['plain-rect', 50], ['fit-rect', 250]]) {
+        c.addSVGElementsFromJson({ element: 'rect', attr: { id, x, y: 50, width: 110, height: 70, fill: 'none', stroke: '#000000', 'stroke-width': 6, 'stroke-dasharray': '14,10' } })
+      }
+      c.selectOnly([document.getElementById('fit-rect')], true)
+      c.setDashFit(true)
+      c.clearSelection()
+    })
+    // the outer corner pixels of each rectangle, from the exported PNG: the miter of a corner only paints when a dash is on it
+    const painted = await page.evaluate(async () => {
+      const { datauri } = await window.svgEditor.svgCanvas.rasterExport('PNG', 1, 'x', { avoidEvent: true })
+      const img = new Image()
+      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = datauri })
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      const at = (x, y) => ctx.getImageData(x, y, 1, 1).data[3] > 0
+      const corners = (x) => [[x - 2, 48], [x + 112, 48], [x + 112, 122], [x - 2, 122]].map(([px, py]) => at(px, py))
+      return { plain: corners(50), fit: corners(250) }
+    })
+    expect(painted.fit).toEqual([true, true, true, true])
+    expect(painted.plain).toContain(false)
   })
 
   test('the fit survives save and reload of the drawing', async ({ page }) => {
