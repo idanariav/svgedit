@@ -133,7 +133,8 @@ test.describe('Palette and tablet bar in narrow panes', () => {
     expect(r.scrolls).toBe(true)
   })
 
-  for (const width of [1024, 900, 768]) {
+  // Dense on purpose: the bar overflowed just above each width tier (1161-1235px, 901-970px) while 1024 / 900 / 768 passed.
+  for (const width of [1366, 1280, 1240, 1200, 1180, 1160, 1100, 1024, 980, 960, 940, 900, 840, 800, 768]) {
     test(`tablet command bar fits at ${width}px (Undo/Redo stay visible)`, async ({ page }) => {
       await page.setViewportSize({ width, height: 700 })
       await visitAndApproveStorage(page)

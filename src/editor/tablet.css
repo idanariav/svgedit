@@ -106,15 +106,15 @@
 
 /* Narrow panes (container width, so a small host pane behaves like a small
    screen). The bar sheds in tiers so Undo/Redo never get pushed off the right
-   edge: drop the zoom -/+ row (pinch zooms on touch); then slim the tool
+   edge: drop the zoom -/+ row (pinch zooms on touch, ≤1240px); then slim the tool
    buttons; then drop Done (the sheet's close button does the same). */
 .svg_editor.ui-tablet .tablet-shell { container-type: inline-size; }
-@container (max-width: 1160px) {
+@container (max-width: 1240px) {
   .svg_editor.ui-tablet .ts-topbar { gap: 6px; padding-right: 10px; }
   .svg_editor.ui-tablet #ts_zoom,
   .svg_editor.ui-tablet .ts-sep { display: none; }
 }
-@container (max-width: 900px) {
+@container (max-width: 980px) {
   .svg_editor.ui-tablet .ts-topbar { padding-left: 130px; }
   .svg_editor.ui-tablet .ts-toolgroup .tbtn { width: 38px; height: 38px; }
   .svg_editor.ui-tablet .ts-toolgroup .tbtn svg { width: 22px !important; height: 22px !important; }
@@ -122,6 +122,11 @@
 }
 @container (max-width: 840px) {
   .svg_editor.ui-tablet .ts-done { display: none; }
+}
+@container (max-width: 960px) {
+  /* The sheet's columns wrap in a narrow pane; a divider would be left hanging at the end of a line. */
+  .svg_editor.ui-tablet .sheet-sep { display: none; }
+  .svg_editor.ui-tablet .ts-sheet-row { column-gap: 32px; }
 }
 @container (max-width: 800px) {
   /* the More tools button made the bar 18px too wide at 768px */
@@ -241,8 +246,8 @@
 
 /* ---------- Swatches ---------- */
 .svg_editor.ui-tablet .swatch {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px; /* a touch target */
   border-radius: var(--r-pill);
   cursor: pointer;
   position: relative;
@@ -273,16 +278,37 @@
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
+  min-width: 0; /* a range input is ~130px wide by default: let it shrink into its column, or the value spills out of it */
+  height: 32px; /* the finger's target is the input: the 6px track is drawn inside it */
+  margin: 0;
+  background: transparent;
+  outline: none;
+}
+.svg_editor.ui-tablet input[type=range].te-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
   background: var(--icon-hover-bg);
-  outline: none;
+}
+.svg_editor.ui-tablet input[type=range].te-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--icon-hover-bg);
 }
 .svg_editor.ui-tablet input[type=range].te-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 28px;
   height: 28px;
+  margin-top: -11px; /* centred on the 6px track */
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--accent-border);
+  box-shadow: 0 2px 6px rgba(20, 25, 35, .2);
+  cursor: pointer;
+}
+.svg_editor.ui-tablet input[type=range].te-range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #fff;
   border: 1.5px solid var(--accent-border);
@@ -397,7 +423,7 @@
   border: 1px solid var(--chrome-border);
   border-radius: var(--r-lg);
   box-shadow: 0 18px 50px rgba(20, 25, 35, .2), 0 2px 8px rgba(20, 25, 35, .1);
-  padding: 12px 22px 20px;
+  padding: 34px 22px 20px; /* the top row holds the kind label and the close button */
   transform: translateY(calc(100% + 28px));
   transition: transform .28s cubic-bezier(.2, .8, .25, 1);
 }
@@ -419,7 +445,12 @@
   left: 22px;
 }
 .svg_editor.ui-tablet .ts-sheet .closeb { position: absolute; top: 12px; right: 16px; }
-.svg_editor.ui-tablet .ts-sheet-row { display: flex; align-items: flex-end; gap: 22px; }
+.svg_editor.ui-tablet .ts-sheet-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap; /* in a narrow pane the last column drops to a second line instead of running off the sheet */
+  gap: 14px 22px;
+}
 .svg_editor.ui-tablet .sheet-col { display: flex; flex-direction: column; gap: 9px; }
 .svg_editor.ui-tablet .sheet-sep {
   width: 1px;
@@ -427,5 +458,5 @@
   background: var(--chrome-border);
   margin: 2px;
 }
-.svg_editor.ui-tablet .slider-mini { width: 170px; }
+.svg_editor.ui-tablet .slider-mini { width: 230px; } /* a track of about 110px next to its label and value */
 .svg_editor.ui-tablet .ts-actions { display: flex; gap: 6px; }

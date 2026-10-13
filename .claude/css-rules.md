@@ -179,9 +179,19 @@ cursor icon gets a small `translate(2px,1px)` nudge (`.ts-tool-select svg`) so i
 top-left-weighted shape reads as centred in the active blue circle.
 
 **Tablet narrow panes:** `.tablet-shell` is a size container (`container-type: inline-size`);
-`@container` rules near the end of the command-bar section hide the zoom row (≤1160px), slim
-the tool buttons (≤900px), hide Done (≤840px) and slim them again (≤800px, for the More tools button) so Undo/Redo stay on screen. Add new tiers
+`@container` rules near the end of the command-bar section hide the zoom row (≤1240px), slim
+the tool buttons (≤980px), hide Done (≤840px) and slim them again (≤800px) so Undo/Redo stay on screen; ≤960px also drops the
+bottom sheet's column dividers (its columns wrap there). Each tier sits a little *above* the width where the bar would overflow, and
+`top-bar-layout.spec.js` checks a dense list of widths (the bar overflowed in the bands just above 1160px and 900px while the
+three widths first tested passed): when a button is added to the bar, re-measure and move the tiers. Add new tiers
 there, not as viewport `@media` (hosts embed the editor in panes).
+
+The **bottom sheet** (`.ts-sheet`) holds its columns in a wrapping flex row, so in a narrow pane the last column drops to a second line
+instead of running off the sheet; its top band (34px) holds the kind label and the close button. A range input has an intrinsic
+width: `.te-range` needs `min-width: 0` or its value label spills into the next column, and the input is 32px tall (the 6px
+track is drawn inside it) so the finger's target is the input, not the track. Swatches and flyout rows are 44px; the command bar's
+tool buttons are 46px, then 38px and 35px in the narrow tiers (the bar has no room for more).
+`tests/e2e/tablet-shell-layout.spec.js` guards all of this.
 
 > **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline
 > `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves

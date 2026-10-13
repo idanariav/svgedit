@@ -574,11 +574,12 @@ Small.
 
 ### Tablet shell: the newer tools
 
-Done: the tool options bar on touch (a strip under the command bar: Blend, Magic Wand, Corners), the Shapes flyout (now a grid, with the shape-family tools) and a **More tools** flyout (Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand), a width tier at 800px to keep Undo / Redo on the bar at 768px. Remaining:
+Done: a polish sweep (2026-10-13: the bar's width tiers moved up so Done is no longer clipped at 1161-1235px, the sheet's sliders no longer spill into the next column, the sheet wraps instead of running off a narrow pane, 32px slider targets and 44px swatches; `tablet-shell-layout.spec.js`), the tool options bar on touch (a strip under the command bar: Blend, Magic Wand, Corners), the Shapes flyout (now a grid, with the shape-family tools) and a **More tools** flyout (Shaper, Smooth, Width, Blend, Distort, Gradient, Corners, Measure, Magic Wand), a width tier at 800px to keep Undo / Redo on the bar at 768px. Remaining:
 - **The options strip floats over the top of the canvas** (`#ts_tool_options`, 44px controls, centred under the command bar), covering the page's top edge while a tool with options is active; moving the canvas down for it would make the page jump on every tool change.
 - **No modifier keys on touch**: the wand's Shift (add) / Alt (subtract), Measure's Shift (45°) and the Corners tool's Alt-click have no substitute. A sticky "+ / −" toggle next to the flyout would cover the wand.
 - **Tools that need hover** (the Width tool's diamonds, the pen-end ring) show nothing on touch before the press.
-- **Tool buttons are 35px at ≤800px** (below the 44px touch guideline); dropping the zoom label or folding the freehand tools into one flyout would give the room back.
+- **Tool buttons are 46px above 980px, 38px down to 801px and 35px below** (under the 44px touch guideline in a narrow pane: the bar is full, with the menu button on the left reserving 130px); folding the freehand tools into one flyout, or a two-row bar in portrait, would give the room back.
+- **The sheet's columns wrap in a narrow pane** (Object drops to a second line below about 900px; the dividers are hidden there). A swipeable single row, or collapsing Arrange into a flyout, would keep it one line.
 
 ### Keyboard shortcuts
 
