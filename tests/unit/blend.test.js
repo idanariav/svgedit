@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseAnchors, anchorsToD, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
-import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf } from '../../packages/svgcanvas/core/blend.js'
+import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn } from '../../packages/svgcanvas/core/blend.js'
 
 const subs = (d) => parseAnchors(d)
 const rect = (x, y, w, h) => `M${x},${y} L${x + w},${y} L${x + w},${y + h} L${x},${y + h} Z`
@@ -133,5 +133,43 @@ describe('blend: step counts', () => {
     expect(stepCount(smooth, look('#000000'), look('#ff0000'), 100)).toBe(128)
     expect(stepCount(smooth, look('#102030'), look('#102030', 40), 100)).toBe(20)
     expect(stepCount(smooth, look('#102030'), look('#102030'), 100)).toBe(1)
+  })
+})
+
+describe('blend: spine helpers', () => {
+  it('spineStops spreads the keys evenly, first at the start and last at the end', () => {
+    expect(spineStops(100, 2)).toEqual([0, 100])
+    expect(spineStops(100, 3)).toEqual([0, 50, 100])
+    expect(spineStops(90, 4)).toEqual([0, 30, 60, 90])
+    expect(spineStops(10, 1)).toEqual([0]) // a lone key: no division by zero
+  })
+
+  it('reverseSubpath runs an open path the other way, swapping the handles', () => {
+    const [sp] = subs('M0,0 C10,0 20,10 30,10 L50,10')
+    const back = reverseSubpath(sp)
+    expect(back.closed).toBe(false)
+    expect(back.anchors.map((a) => a.p)).toEqual([{ x: 50, y: 10 }, { x: 30, y: 10 }, { x: 0, y: 0 }])
+    // the curve between (30,10) and (0,0) is the old one: its handles trade places
+    expect(back.anchors[1].hOut).toEqual(sp.anchors[1].hIn)
+    expect(back.anchors[2].hIn).toEqual(sp.anchors[0].hOut)
+    expect(anchorsToD([reverseSubpath(back)])).toBe(anchorsToD([sp]))
+    expect(sp.anchors[0].p).toEqual({ x: 0, y: 0 }) // the input is left alone
+  })
+
+  it('reverseSubpath keeps the first anchor of a closed path first', () => {
+    const [sp] = subs(rect(0, 0, 10, 10))
+    const back = reverseSubpath(sp)
+    expect(back.closed).toBe(true)
+    expect(back.anchors[0].p).toEqual(sp.anchors[0].p)
+    expect(back.anchors).toHaveLength(sp.anchors.length)
+    expect(back.anchors[1].p).toEqual(sp.anchors[sp.anchors.length - 1].p)
+  })
+
+  it('centreOn moves paths, handles included, so the box centre is at the point', () => {
+    const moved = centreOn(subs('M0,0 C10,0 20,10 30,10'), { x: 100, y: 200 })
+    const box = anchorBBox(moved)
+    expect(box.x + box.width / 2).toBeCloseTo(100, 6)
+    expect(box.y + box.height / 2).toBeCloseTo(200, 6)
+    expect(moved[0].anchors[0].hOut.x - moved[0].anchors[0].p.x).toBe(10) // the handle kept its offset
   })
 })

@@ -11,8 +11,11 @@
  * give the spacing (a number of steps, a distance, or smooth colour). With a blend selected the bar shows and
  * changes that blend's; the values are also what new blends start with. The same fields are in the Design tab.
  *
- * Not in v1: a spine (the steps follow the straight line between the keys), blending groups, text or gradients,
- * choosing the start anchor, live preview while a key is dragged — see `roadmap.md`.
+ * Spine: the steps follow the straight line between the keys until a path is made the spine (select the blend and the
+ * path, "Replace spine"): the keys move onto it, evenly spread by length, and the steps ride it. "Reverse spine" runs
+ * the keys the other way, "Detach spine" gives the path back. Not yet: Align to Path (turning the steps to the spine's
+ * direction), keeping the spine pinned to a key that is dragged away, blending groups, text or gradients, choosing the
+ * start anchor, live preview while a key is dragged — see `roadmap.md`.
  *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/tools/src/meshblend.rs` and
  * `crates/doc/src/blend.rs`, MIT OR Apache-2.0.
@@ -162,7 +165,12 @@ export default {
       const panel = $id(`${P}-panel`)
       if (!panel) return
       const group = blendedSelection()
-      panel.style.display = (group || svgCanvas.canBlend()) && svgCanvas.getMode() !== 'pathedit' ? '' : 'none'
+      panel.style.display = (group || svgCanvas.canBlend() || svgCanvas.canReplaceBlendSpine()) && svgCanvas.getMode() !== 'pathedit' ? '' : 'none'
+      // The spine buttons show for a blend; Replace needs a path selected with it (a disabled button says so in its command).
+      $id(`${P}-spine-actions`).style.display = group || svgCanvas.canReplaceBlendSpine() ? '' : 'none'
+      for (const [id, ok] of [['replace-spine', svgCanvas.canReplaceBlendSpine()], ['reverse-spine', !!group && !!svgCanvas.getBlendSpine()], ['detach-spine', !!group && !!svgCanvas.getBlendSpine()]]) {
+        $id(`${P}-${id}`).disabled = !ok
+      }
       $id(`${P}-blended`).style.display = group ? '' : 'none'
       if (!group) return
       const o = current()
@@ -174,6 +182,7 @@ export default {
     }
 
     const needBlend = () => (blendedSelection() ? true : tr('needBlend'))
+    const needSpine = () => (blendedSelection() && svgCanvas.getBlendSpine() ? true : tr('needSpine'))
 
     return {
       name: tr('name'),
@@ -195,6 +204,11 @@ export default {
               <button type="button" id="${P}-make" class="ext-live-effects-btn" title="${tr('makeTitle')}">${tr('make')}</button>
               <button type="button" id="${P}-expand" class="ext-live-effects-btn" title="${tr('expandTitle')}">${tr('expand')}</button>
               <button type="button" id="${P}-release" class="ext-live-effects-btn" title="${tr('releaseTitle')}">${tr('release')}</button>
+            </div>
+            <div class="${P}-actions ext-live-effects-actions" id="${P}-spine-actions" style="display:none">
+              <button type="button" id="${P}-replace-spine" class="ext-live-effects-btn" title="${tr('replaceSpineTitle')}">${tr('replaceSpine')}</button>
+              <button type="button" id="${P}-reverse-spine" class="ext-live-effects-btn" title="${tr('reverseSpineTitle')}">${tr('reverseSpine')}</button>
+              <button type="button" id="${P}-detach-spine" class="ext-live-effects-btn" title="${tr('detachSpineTitle')}">${tr('detachSpine')}</button>
             </div>
             <div id="${P}-blended" style="display:none">
               <div class="sidepanel_btn_row"><se-select id="${P}-mode" label="${tr('spacing')}"></se-select></div>
@@ -221,6 +235,9 @@ export default {
         $id(`${P}-make`).addEventListener('click', () => run('blend_make'))
         $id(`${P}-expand`).addEventListener('click', () => run('blend_expand'))
         $id(`${P}-release`).addEventListener('click', () => run('blend_release'))
+        $id(`${P}-replace-spine`).addEventListener('click', () => run('blend_replace_spine'))
+        $id(`${P}-reverse-spine`).addEventListener('click', () => run('blend_reverse_spine'))
+        $id(`${P}-detach-spine`).addEventListener('click', () => run('blend_detach_spine'))
 
         const reg = (id, label, spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
         reg('blend_make', 'make', {
@@ -229,6 +246,12 @@ export default {
         })
         reg('blend_expand', 'expand', { enabled: needBlend, run: () => { svgCanvas.expandBlend(); refresh() } })
         reg('blend_release', 'release', { enabled: needBlend, run: () => { svgCanvas.releaseBlend(); refresh() } })
+        reg('blend_replace_spine', 'replaceSpine', {
+          enabled: () => (svgCanvas.canReplaceBlendSpine() ? true : tr('needBlendAndPath')),
+          run: () => { svgCanvas.replaceBlendSpine(); refresh() }
+        })
+        reg('blend_reverse_spine', 'reverseSpine', { enabled: needSpine, run: () => { svgCanvas.reverseBlendSpine(); refresh() } })
+        reg('blend_detach_spine', 'detachSpine', { enabled: needSpine, run: () => { svgCanvas.detachBlendSpine(); refresh() } })
       },
       selectedChanged () {
         for (const el of selected()) svgCanvas.refreshBlend(el)

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../../packages/svgcanvas/core/blend-canvas.js'
+import { getTransformList } from '../../packages/svgcanvas/core/math.js'
 
 describe('blend attribute', () => {
   it('parses and formats, filling defaults and clamping', () => {
@@ -218,5 +219,155 @@ describe('blends on the canvas', () => {
     expect(svgCanvas.getBlendDefaults().steps).toBe(2)
     const g = svgCanvas.makeBlend([square(0), square(100)])
     expect(steps(g)[0]).toHaveLength(2)
+  })
+
+  describe('spine', () => {
+    // An L-shaped spine, 300 + 300 long, and keys whose centres are at 100,110 / 200,110 / …
+    const SPINE = 'M0,300 L300,300 L300,0'
+    const spinePath = () => make('path', { d: SPINE, fill: 'none', stroke: '#000000' })
+    const centre = (el) => {
+      const b = el.getBBox()
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+    }
+    /** The centre of a step, from its path data. */
+    const stepCentre = (el) => {
+      const nums = [...el.getAttribute('d').matchAll(/-?\d+(\.\d+)?/g)].map((m) => parseFloat(m[0]))
+      const xs = nums.filter((_, i) => i % 2 === 0)
+      const ys = nums.filter((_, i) => i % 2 === 1)
+      return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 }
+    }
+    const keysOf = (g) => blendParts(g).keys
+    const near = (p, x, y) => {
+      expect(p.x).toBeCloseTo(x, 1)
+      expect(p.y).toBeCloseTo(y, 1)
+    }
+    let g
+    let path
+    beforeEach(() => {
+      g = svgCanvas.makeBlend([square(0), disc(200)], { steps: 5 })
+      path = spinePath()
+    })
+
+    it('a blend and a path can be a spine, nothing else can', () => {
+      expect(svgCanvas.canReplaceBlendSpine([g, path])).toBe(true)
+      expect(svgCanvas.canReplaceBlendSpine([g])).toBe(false)
+      expect(svgCanvas.canReplaceBlendSpine([path])).toBe(false)
+      expect(svgCanvas.canReplaceBlendSpine([g, path, square(500)])).toBe(false)
+      expect(svgCanvas.getBlendSpine(g)).toBeNull()
+    })
+
+    it('replacing the spine moves the keys onto it and the steps follow it, in one undo step', () => {
+      const undo = svgCanvas.undoMgr.getUndoStackSize()
+      expect(svgCanvas.replaceBlendSpine([g, path])).toBe(g)
+      expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+      expect(path.isConnected).toBe(false) // used up
+      expect(g.getAttribute('se:blend-spine')).toBe(svgCanvas.getBlendSpine(g))
+      const [a, b] = keysOf(g)
+      near(centre(a), 0, 300) // the first key at the start, the last at the end
+      near(centre(b), 300, 0)
+      // 5 steps between the keys, 600 along: one every 100, round the corner at (300, 300)
+      const mids = steps(g)[0].map(stepCentre)
+      near(mids[0], 100, 300)
+      near(mids[1], 200, 300)
+      near(mids[2], 300, 300)
+      near(mids[3], 300, 200)
+      near(mids[4], 300, 100)
+      expect(checks()).toEqual([])
+    })
+
+    it('undo takes the keys and the path back, redo does it again', () => {
+      const [a, b] = keysOf(g)
+      const startA = centre(a)
+      const startB = centre(b)
+      const was = steps(g)[0].map((s) => s.getAttribute('d'))
+      svgCanvas.replaceBlendSpine([g, path])
+      svgCanvas.undoMgr.undo()
+      expect(path.isConnected).toBe(true)
+      expect(g.hasAttribute('se:blend-spine')).toBe(false)
+      near(centre(a), startA.x, startA.y)
+      near(centre(b), startB.x, startB.y)
+      expect(steps(g)[0].map((s) => s.getAttribute('d'))).toEqual(was)
+      svgCanvas.undoMgr.redo()
+      expect(g.hasAttribute('se:blend-spine')).toBe(true)
+      near(centre(keysOf(g)[1]), 300, 0)
+    })
+
+    it('three keys are spread evenly along the spine', () => {
+      const three = svgCanvas.makeBlend([square(0), square(100), square(200)], { steps: 1 })
+      svgCanvas.replaceBlendSpine([three, spinePath()])
+      const [k0, k1, k2] = keysOf(three)
+      near(centre(k0), 0, 300)
+      near(centre(k1), 300, 300) // 300 along: the corner
+      near(centre(k2), 300, 0)
+    })
+
+    it('distance spacing counts along the spine, not the straight line', () => {
+      svgCanvas.selectOnly([g], true)
+      svgCanvas.setBlendOptions({ mode: 'distance', distance: 50 })
+      const straight = steps(g)[0].length
+      svgCanvas.replaceBlendSpine([g, path])
+      expect(steps(g)[0].length).toBeGreaterThan(straight) // 600 / 50 - 1 = 11, against about 4 straight
+      expect(steps(g)[0]).toHaveLength(11)
+    })
+
+    it('reversing the spine swaps the ends the keys sit on, in one undo step', () => {
+      svgCanvas.replaceBlendSpine([g, path])
+      svgCanvas.selectOnly([g], true)
+      const [a, b] = keysOf(g)
+      const undo = svgCanvas.undoMgr.getUndoStackSize()
+      expect(svgCanvas.reverseBlendSpine()).toEqual([g])
+      expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+      near(centre(a), 300, 0)
+      near(centre(b), 0, 300)
+      near(steps(g)[0].map(stepCentre)[0], 300, 100) // the first step is now next to the first key's new place
+      svgCanvas.undoMgr.undo()
+      near(centre(a), 0, 300)
+    })
+
+    it('reverse does nothing for a blend that goes straight', () => {
+      svgCanvas.selectOnly([g], true)
+      expect(svgCanvas.reverseBlendSpine()).toEqual([])
+    })
+
+    it('detaching gives the spine back as a path and the steps go straight again', () => {
+      svgCanvas.replaceBlendSpine([g, path])
+      svgCanvas.selectOnly([g], true)
+      const undo = svgCanvas.undoMgr.getUndoStackSize()
+      const out = svgCanvas.detachBlendSpine()
+      expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+      expect(out.tagName).toBe('path')
+      expect(out.previousElementSibling).toBe(g)
+      expect(g.hasAttribute('se:blend-spine')).toBe(false)
+      expect(out.getAttribute('d')).toMatch(/^M\s*0[ ,]300/)
+      // straight between the keys (0,300) and (300,0): the middle step is at (150, 150)
+      near(stepCentre(steps(g)[0][2]), 150, 150)
+      svgCanvas.undoMgr.undo()
+      expect(g.hasAttribute('se:blend-spine')).toBe(true)
+    })
+
+    it('a spine is carried by expand (the attributes go) and release (the group goes)', () => {
+      svgCanvas.replaceBlendSpine([g, path])
+      svgCanvas.selectOnly([g], true)
+      svgCanvas.expandBlend()
+      expect(g.hasAttribute('se:blend')).toBe(false)
+      expect(g.hasAttribute('se:blend-spine')).toBe(false)
+    })
+
+    it('a spine of a blend in a transformed group is kept in the group\'s own coordinates', () => {
+      // through the transform list: jsdom does not keep it in step with a setAttribute
+      const move = svgCanvas.getSvgRoot().createSVGTransform()
+      move.setTranslate(50, 20)
+      getTransformList(g).appendItem(move)
+      svgCanvas.selectOnly([g], true)
+      const onPage = make('path', { d: 'M50,320 L350,320', fill: 'none', stroke: '#000' }) // 300 long, in the page's
+      svgCanvas.replaceBlendSpine([g, onPage])
+      expect(svgCanvas.getBlendSpine(g)).toMatch(/^M\s*0[ ,]300/)
+    })
+
+    it('an unusable se:blend-spine is reported and ignored: the steps stay straight', () => {
+      g.setAttribute('se:blend-spine', 'not a path')
+      expect(svgCanvas.getBlendSpine(g)).toBeNull()
+      expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse')).toBe(true)
+    })
   })
 })

@@ -1,0 +1,21 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <g id="svg_2" se:blend="blend(mode=steps,steps=3,distance=20)" se:blend-spine="M80,400 C80,100 545,100 545,395">
+   <rect fill="#e53e3e" height="40" id="ra" se:blend-key="1" stroke="#742a2a" stroke-width="2" width="40" x="60" y="380"/>
+   <g id="svg_3" se:blend-steps="1">
+    <path d="m74.78,296.59c0,-3.31 32.69,-6 36,-6c3.31,0 6,32.69 6,36c0,3.31 -32.69,6 -36,6c-3.31,0 -6,-32.69 -6,-36z" fill="#c45e6a" id="svg_5" stroke="#65343b" stroke-width="3"/>
+    <path d="m123.86,227.32c0,-6.63 25.37,-12 32,-12c6.63,0 12,25.37 12,32c0,6.63 -25.37,12 -32,12c-6.63,0 -12,-25.37 -12,-32z" fill="#a0708d" id="svg_6" stroke="#543b4a" stroke-width="4"/>
+    <path d="m199.4,185.51c0,-9.94 18.06,-18 28,-18c9.94,0 18,18.06 18,28c0,9.94 -18.06,18 -28,18c-9.94,0 -18,-18.06 -18,-28z" fill="#757cae" id="svg_7" stroke="#424058" stroke-width="5"/>
+   </g>
+   <circle cx="310.83" cy="174.41" fill="#3182ce" id="cb" r="24" se:blend-key="1" stroke="#2a4365" stroke-width="6"/>
+   <g id="svg_4" se:blend-steps="1">
+    <path d="m375.36,184.71c0,-9.94 20.56,-18 30.5,-18c9.94,0 18,15.56 18,25.5c0,9.94 -20.56,18 -30.5,18c-9.94,0 -18,-15.56 -18,-25.5z" fill="#2e8cb7" id="svg_8" stroke="#28485c" stroke-width="5"/>
+    <path d="m452.74,225.93c0,-6.63 30.37,-12 37,-12c6.63,0 12,20.37 12,27c0,6.63 -30.37,12 -37,12c-6.63,0 -12,-20.37 -12,-27z" fill="#2f949f" id="svg_10" stroke="#264c52" stroke-width="4"/>
+    <path d="m503.92,295.49c0,-3.31 40.19,-6 43.5,-6c3.31,0 6,25.19 6,28.5c0,3.31 -40.19,6 -43.5,6c-3.31,0 -6,-25.19 -6,-28.5z" fill="#329b86" id="svg_11" stroke="#245048" stroke-width="3"/>
+   </g>
+   <rect fill="#38a169" height="30" id="rc" se:blend-key="1" stroke="#22543d" stroke-width="2" width="50" x="520" y="380"/>
+  </g>
+ </g>
+
+</svg>

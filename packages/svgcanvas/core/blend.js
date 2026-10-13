@@ -13,7 +13,8 @@
  *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/doc/src/blend.rs`
  * (`PathPair`, `lerp_paint`, `lerp_dash`, `blend_step_count`), MIT OR Apache-2.0. Colours go through OKLab (VectorCraft
- * interpolates in the document's colour model); spines, groups, text and gradient stop resampling are not ported.
+ * interpolates in the document's colour model); groups, text and gradient stop resampling are not ported. Spines
+ * (`reverseSubpath`, `spineStops`, `centreOn`) are in `blend-canvas.js`: steps ride the spine by arc length.
  *
  * @module blend
  * @license MIT
@@ -125,6 +126,42 @@ const reverseClosed = (sp) => {
   const flipped = sp.anchors.map((a) => ({ p: a.p, hIn: a.hOut, hOut: a.hIn })).reverse()
   flipped.unshift(/** @type {Anchor} */ (flipped.pop())) // the old first anchor stays first
   sp.anchors = flipped
+}
+
+/**
+ * `sp` backwards: the same curve, run the other way (an open subpath's ends swap; a closed one keeps its first anchor).
+ * @param {SubPath} sp
+ * @returns {SubPath} a new subpath
+ */
+export const reverseSubpath = (sp) => {
+  const out = cloneSub(sp)
+  if (sp.closed) reverseClosed(out)
+  else out.anchors = out.anchors.map((x) => ({ p: x.p, hIn: x.hOut, hOut: x.hIn })).reverse()
+  return out
+}
+
+/**
+ * The arc lengths at which `count` keys sit along a spine of `length`, evenly spread, the first at the start and the
+ * last at the end.
+ * @param {number} length
+ * @param {number} count
+ * @returns {number[]}
+ */
+export const spineStops = (length, count) => Array.from({ length: count }, (_, i) => (length * i) / Math.max(1, count - 1))
+
+/**
+ * `subpaths` moved so that the centre of their bounding box is at `to`.
+ * @param {SubPath[]} subpaths
+ * @param {Pt} to
+ * @returns {SubPath[]} new subpaths
+ */
+export const centreOn = (subpaths, to) => {
+  const box = anchorBBox(subpaths)
+  const dx = to.x - (box.x + box.width / 2)
+  const dy = to.y - (box.y + box.height / 2)
+  /** @param {Pt} pt */
+  const move = (pt) => ({ x: pt.x + dx, y: pt.y + dy })
+  return subpaths.map((sp) => ({ closed: sp.closed, anchors: sp.anchors.map((x) => ({ p: move(x.p), hIn: move(x.hIn), hOut: move(x.hOut) })) }))
 }
 
 /**

@@ -8,6 +8,12 @@ export default {
   expandTitle: 'Turn the blend into plain shapes (the keys and the steps)',
   release: 'Release',
   releaseTitle: 'Take the blend apart: the steps go, the original shapes stay',
+  replaceSpine: 'Replace spine',
+  replaceSpineTitle: 'Select the blend and a path: the keys move onto the path and the steps follow it',
+  reverseSpine: 'Reverse spine',
+  reverseSpineTitle: 'Run the keys the other way along the spine',
+  detachSpine: 'Detach spine',
+  detachSpineTitle: 'Give the spine back as a path; the steps go straight between the keys again',
   spacing: 'Spacing',
   modeSteps: 'Specified steps',
   modeDistance: 'Specified distance',
@@ -15,5 +21,7 @@ export default {
   steps: 'Steps',
   distance: 'Distance',
   needShapes: 'Select two or more shapes in the same group or layer',
-  needBlend: 'Select a blend'
+  needBlend: 'Select a blend',
+  needSpine: 'Select a blend that has a spine',
+  needBlendAndPath: 'Select a blend and a path'
 }

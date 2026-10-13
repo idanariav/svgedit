@@ -383,6 +383,16 @@ export interface AttachedMembers {
   setBlendOptions(changes: Record<string, any>, elems?: Element[]): Element[]
   expandBlend(): Element[]
   releaseBlend(): Element[]
+  /** One blend and one path of the same parent (the selection by default): the path can become the blend's spine. */
+  canReplaceBlendSpine(elems?: Element[]): boolean
+  /** The spine of a blend (path data in the group's coordinates), null when it goes straight. */
+  getBlendSpine(elem?: Element): string | null
+  /** Make the path selected with a blend its spine; the keys move onto it. One undo step. */
+  replaceBlendSpine(elems?: Element[]): Element | null
+  /** Run the selected blends' keys the other way along their spines. */
+  reverseBlendSpine(): Element[]
+  /** Turn the selected blend's spine back into a path; the blend goes straight. */
+  detachBlendSpine(): Element | null
   refreshBlend(elem: Element | null): boolean
   getBlendGroup(elem: Element | null): Element | null
   isBlendKeyCandidate(elem: Element | null): boolean

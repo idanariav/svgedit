@@ -159,4 +159,108 @@ test.describe('Blend', () => {
     })).toBe(false)
     expect(await healthy(page)).toEqual([])
   })
+
+  test.describe('spine', () => {
+    const addSpine = (page) => page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      return c.addSVGElementsFromJson({ element: 'path', attr: { id: 'spine', d: 'M80,400 L80,100 L540,100', fill: 'none', stroke: '#000000' } }).id
+    })
+    const centre = (page, id) => page.evaluate((i) => {
+      const b = document.getElementById(i).getBBox()
+      return [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]
+    }, id)
+    // hasAttribute, not a selector: a loaded drawing has namespaced attributes that `[se\\:blend]` does not match
+    const spineOf = (page) => page.evaluate(() => [...document.querySelectorAll('g')].find((g) => g.hasAttribute('se:blend'))?.getAttribute('se:blend-spine') ?? null)
+
+    test('the commands follow the selection', async ({ page }) => {
+      await select(page, ['ra', 'cb'])
+      await run(page, 'blend_make')
+      await addSpine(page)
+      const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+      await select(page, [group])
+      expect(await enabled(page, 'blend_replace_spine')).not.toBe(true)
+      expect(await enabled(page, 'blend_reverse_spine')).not.toBe(true)
+      expect(await enabled(page, 'blend_detach_spine')).not.toBe(true)
+      await select(page, [group, 'spine'])
+      expect(await enabled(page, 'blend_replace_spine')).toBe(true)
+    })
+
+    test('Replace spine: the keys move onto the path, the steps follow it, one undo step; undo puts it all back', async ({ page }) => {
+      await select(page, ['ra', 'cb'])
+      await run(page, 'blend_make')
+      const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+      await addSpine(page)
+      await select(page, [group, 'spine'])
+      const undo0 = await undoSize(page)
+      await run(page, 'blend_replace_spine')
+      expect(await undoSize(page)).toBe(undo0 + 1)
+      expect(await spineOf(page)).toMatch(/^M\s*80[ ,]400/)
+      expect(await page.evaluate(() => !!document.getElementById('spine'))).toBe(false)
+      expect(await centre(page, 'ra')).toEqual([80, 400])
+      expect(await centre(page, 'cb')).toEqual([540, 100])
+      expect(await healthy(page)).toEqual([])
+      // 5 steps between the keys, 300 + 460 along the path: the third is half way, at the corner (80, 100)... a step apart
+      const mid = await page.evaluate(() => {
+        const step = document.querySelectorAll('[se\\:blend-steps] > path')[2]
+        const b = step.getBBox()
+        return [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]
+      })
+      expect(mid[1]).toBe(100) // on the top run of the L, level with the corner
+      await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+      expect(await spineOf(page)).toBeNull()
+      expect(await page.evaluate(() => !!document.getElementById('spine'))).toBe(true)
+      expect(await centre(page, 'cb')).toEqual([320, 120])
+    })
+
+    test('the Design tab buttons: Replace is enabled with a path selected, Reverse and Detach with a spine', async ({ page }) => {
+      await select(page, ['ra', 'cb'])
+      await run(page, 'blend_make')
+      const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+      await addSpine(page)
+      const state = () => page.evaluate(() => ['replace', 'reverse', 'detach'].map((n) => document.getElementById(`ext-blend-${n}-spine`).disabled))
+      await select(page, [group])
+      expect(await state(page)).toEqual([true, true, true])
+      await select(page, [group, 'spine'])
+      expect(await state(page)).toEqual([false, true, true])
+      await page.evaluate(() => document.getElementById('ext-blend-replace-spine').click())
+      expect(await spineOf(page)).not.toBeNull()
+      expect(await state(page)).toEqual([true, false, false])
+    })
+
+    test('Reverse spine swaps the ends; Detach spine gives the path back and the steps go straight', async ({ page }) => {
+      await select(page, ['ra', 'cb'])
+      await run(page, 'blend_make')
+      const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+      await addSpine(page)
+      await select(page, [group, 'spine'])
+      await run(page, 'blend_replace_spine')
+      await run(page, 'blend_reverse_spine')
+      expect(await centre(page, 'ra')).toEqual([540, 100])
+      expect(await centre(page, 'cb')).toEqual([80, 400])
+      await run(page, 'blend_detach_spine')
+      expect(await spineOf(page)).toBeNull()
+      expect(await page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean)[0].tagName)).toBe('path')
+      expect(await healthy(page)).toEqual([])
+      // straight again, between the keys' centres (540,100) and (80,400): the middle step is half way
+      const mid = await page.evaluate(() => {
+        const b = document.querySelectorAll('[se\\:blend-steps] > path')[2].getBBox()
+        return [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]
+      })
+      expect(mid[0]).toBeGreaterThan(280)
+      expect(mid[0]).toBeLessThan(340)
+    })
+
+    test('the spine survives saving and loading the drawing', async ({ page }) => {
+      await select(page, ['ra', 'cb'])
+      await run(page, 'blend_make')
+      const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+      await addSpine(page)
+      await select(page, [group, 'spine'])
+      await run(page, 'blend_replace_spine')
+      const svg = await page.evaluate(() => window.svgEditor.svgCanvas.getSvgString())
+      await setSvgSource(page, svg)
+      expect(await spineOf(page)).toMatch(/^M\s*80[ ,]400/)
+      expect(await healthy(page)).toEqual([])
+    })
+  })
 })

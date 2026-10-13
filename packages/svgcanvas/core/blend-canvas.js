@@ -13,7 +13,13 @@
  *     <path id="keyC" se:blend-key="1" …/>
  *   </g>
  *
- * The steps are a pure function of the keys and the options, so they are not recorded in history when a key is
+ * A blend can have a spine, a path the steps ride along instead of the straight line between the keys. It is kept on the
+ * group as `se:blend-spine="<path data>"` (in the group's coordinates, the keys' too): the keys sit on it evenly spread by
+ * arc length, and each step's centre is the point of the spine at its share of the length between its two keys. Replace
+ * Spine takes a path (selected with the blend) and moves the keys onto it; Reverse Spine runs the keys the other way;
+ * Detach Spine gives the path back and the blend goes straight again.
+ *
+ * The steps are a pure function of the keys, the spine and the options, so they are not recorded in history when a key is
  * edited: `refreshBlend` (run on every change of a key) regenerates them, and an undo of the key edit does the same
  * (the art brush and ext-mirror precedent). Making, changing the options of, expanding and releasing a blend are
  * undoable steps (`transact`). Regeneration compares what it would write with what is there and leaves the steps
@@ -28,17 +34,39 @@ import { getPathDFromElement } from './path-utils.js'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
 import { registerAttrValidator } from './drawing-invariants.js'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
-import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount } from './blend.js'
+import { tracksOf, frameAt } from './art-brush.js'
+import { getTransformList } from './math.js'
+import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn } from './blend.js'
 
 export const BLEND_ATTR = 'se:blend'
 export const KEY_ATTR = 'se:blend-key'
 export const STEPS_ATTR = 'se:blend-steps'
+export const SPINE_ATTR = 'se:blend-spine'
 
 /** Shapes that can be a key (they have a path form). */
 const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'ellipse', 'circle'])
 const MODES = ['steps', 'distance', 'smooth']
 
 /** @typedef {import('./blend.js').BlendSpacing} BlendSpacing */
+
+/**
+ * The inverse of an affine matrix (null stays null: no transform).
+ * @param {?{a: number, b: number, c: number, d: number, e: number, f: number}} m
+ * @returns {?{a: number, b: number, c: number, d: number, e: number, f: number}}
+ */
+const inverse = (m) => {
+  if (!m) return null
+  const det = m.a * m.d - m.b * m.c
+  if (Math.abs(det) < 1e-12) return null
+  return {
+    a: m.d / det,
+    b: -m.b / det,
+    c: -m.c / det,
+    d: m.a / det,
+    e: (m.c * m.f - m.d * m.e) / det,
+    f: (m.b * m.e - m.a * m.f) / det
+  }
+}
 
 /** @type {(v: number, lo: number, hi: number) => number} */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
@@ -90,6 +118,33 @@ export const formatBlend = (opts = {}) => {
 }
 
 // ---------------------------------------------------------------------------
+// The spine
+// ---------------------------------------------------------------------------
+
+/** @typedef {import('./art-brush.js').Track} Track */
+
+/**
+ * The first subpath of path data as a spine: its path data (as stored) and the polyline to measure and walk it by.
+ * @param {?string} d
+ * @returns {?{d: string, track: Track}} null when it has no drawable first subpath
+ */
+export const parseSpine = (d) => {
+  if (!d) return null
+  const [first] = parseAnchors(d, 0.1)
+  if (!first || first.anchors.length < 2) return null
+  const [track] = tracksOf(anchorsToD([first]))
+  return track && track.length > 1e-9 ? { d: anchorsToD([first]), track } : null
+}
+
+/**
+ * Where the keys of a blend sit along a spine, and the arc length between neighbours.
+ * @param {Track} track
+ * @param {number} keys
+ * @returns {number[]}
+ */
+const stopsFor = (track, keys) => spineStops(track.length, keys)
+
+// ---------------------------------------------------------------------------
 // A blend group
 // ---------------------------------------------------------------------------
 
@@ -137,13 +192,21 @@ const keyStyle = (key) => {
 }
 
 /**
+ * @typedef {object} Rail the stretch of a spine between two keys
+ * @property {Track} track
+ * @property {number} from arc length of the first key
+ * @property {number} to arc length of the second
+ */
+
+/**
  * The steps between two keys.
  * @param {Element} a
  * @param {Element} b
  * @param {BlendSpacing} spacing
+ * @param {?Rail} [rail] the spine between them, else the straight line
  * @returns {Array<{d: string, attrs: Object<string, string>}>}
  */
-const stepsBetween = (a, b, spacing) => {
+const stepsBetween = (a, b, spacing, rail = null) => {
   const ga = keyGeometry(a)
   const gb = keyGeometry(b)
   if (!ga.length || !gb.length) return []
@@ -159,12 +222,15 @@ const stepsBetween = (a, b, spacing) => {
     spacing,
     { fill: sa.fill ?? 'black', stroke: sa.stroke ?? null, box: boxA },
     { fill: sb.fill ?? 'black', stroke: sb.stroke ?? null, box: boxB },
-    Math.hypot(cb.x - ca.x, cb.y - ca.y)
+    rail ? Math.abs(rail.to - rail.from) : Math.hypot(cb.x - ca.x, cb.y - ca.y)
   )
   const pair = pairPaths(ga, gb)
   return Array.from({ length: n }, (_, i) => {
     const t = (i + 1) / (n + 1)
-    return { d: anchorsToD(pathAt(pair, t)), attrs: lerpStyle(sa, sb, t) }
+    let shape = pathAt(pair, t)
+    // On a spine each step is centred on its point of it.
+    if (rail) shape = centreOn(shape, frameAt(rail.track, rail.from + (rail.to - rail.from) * t).p)
+    return { d: anchorsToD(shape), attrs: lerpStyle(sa, sb, t) }
   })
 }
 
@@ -186,12 +252,13 @@ const sameSteps = (container, steps) => {
   })
 }
 
-/** What the steps of a gap are made from: both keys (shape, transform, paint) and the spacing. */
-/** @type {(a: Element, b: Element, spacing: any) => string} */
-const signature = (a, b, spacing) => {
+/** What the steps of a gap are made from: both keys (shape, transform, paint), the spacing and the spine stretch. */
+/** @type {(a: Element, b: Element, spacing: any, spine: ?string, rail: ?Rail) => string} */
+const signature = (a, b, spacing, spine, rail) => {
   /** @param {Element} el */
   const key = (el) => `${getPathDFromElement(el)}~${el.getAttribute('transform') ?? ''}~${JSON.stringify(keyStyle(el))}`
-  return `${key(a)}|${key(b)}|${spacing.mode},${spacing.steps},${spacing.distance}`
+  const along = rail ? `${spine}@${rail.from.toFixed(3)},${rail.to.toFixed(3)}` : ''
+  return `${key(a)}|${key(b)}|${spacing.mode},${spacing.steps},${spacing.distance}|${along}`
 }
 
 /**
@@ -211,6 +278,7 @@ export const init = (canvas) => {
   const svgCanvas = canvas
 
   registerAttrValidator(BLEND_ATTR, (value) => (parseBlend(value) ? true : 'is not blend(…)'))
+  registerAttrValidator(SPINE_ATTR, (value) => (parseSpine(value) ? true : 'is not usable path data'))
 
   const getSelected = () => svgCanvas.getSelectedElements().filter(Boolean)
   const newId = () => svgCanvas.getNextId()
@@ -230,10 +298,12 @@ export const init = (canvas) => {
    * @param {Element} a
    * @param {Element} b
    * @param {BlendSpacing} spacing
+   * @param {?string} [spine] the blend's spine path data
+   * @param {?Rail} [rail] the stretch of the spine between the keys
    * @returns {boolean} whether the steps were rewritten
    */
-  const regenerateGap = (gap, a, b, spacing) => {
-    const sig = signature(a, b, spacing)
+  const regenerateGap = (gap, a, b, spacing, spine = null, rail = null) => {
+    const sig = signature(a, b, spacing, spine, rail)
     const kids = [...gap.children]
     const was = kids.length ? madeFrom.get(kids[0]) : undefined
     if (was === sig) return false
@@ -248,7 +318,7 @@ export const init = (canvas) => {
       gap.replaceChildren(...back)
       return true
     }
-    const steps = stepsBetween(a, b, spacing)
+    const steps = stepsBetween(a, b, spacing, rail)
     // A drawing just loaded has no record of what its steps were made from: when they are what the keys give, leave them be.
     if (was === undefined && sameSteps(gap, steps)) {
       mark(kids)
@@ -281,9 +351,12 @@ export const init = (canvas) => {
     const p = blendParts(group)
     if (!p) return false
     const spacing = /** @type {BlendSpacing} */ (parseBlend(group.getAttribute(BLEND_ATTR)))
+    const spine = parseSpine(group.getAttribute(SPINE_ATTR))
+    const stops = spine ? stopsFor(spine.track, p.keys.length) : []
     let rewritten = false
     p.gaps.forEach((gap, i) => {
-      if (regenerateGap(gap, p.keys[i], p.keys[i + 1], spacing)) rewritten = true
+      const rail = spine ? { track: spine.track, from: stops[i], to: stops[i + 1] } : null
+      if (regenerateGap(gap, p.keys[i], p.keys[i + 1], spacing, spine?.d ?? null, rail)) rewritten = true
     })
     return rewritten
   }
@@ -403,6 +476,138 @@ export const init = (canvas) => {
     return groups
   }
 
+  // --- the spine -------------------------------------------------------
+
+  /**
+   * The blend and the path of a selection that can replace its spine: one blend and one shape of the same parent.
+   * @param {Element[]} elems
+   * @returns {?{group: Element, path: Element, spine: NonNullable<ReturnType<typeof parseSpine>>}}
+   */
+  const spinePlan = (elems) => {
+    const blends = elems.filter((e) => blendParts(e))
+    const others = elems.filter((e) => !blendParts(e))
+    if (blends.length !== 1 || others.length !== 1) return null
+    const [group] = blends
+    const [path] = others
+    if (path.parentNode !== group.parentNode || !SHAPES.has(path.tagName)) return null
+    const d = getPathDFromElement(path)
+    if (!d) return null
+    // The path's own coordinates → the parent's → the group's (the keys' too).
+    const inGroup = applyMatrix(applyMatrix(d, localMatrix(path)), inverse(localMatrix(group)))
+    const spine = parseSpine(inGroup)
+    return spine ? { group, path, spine } : null
+  }
+
+  /**
+   * Whether the elements (the selection by default) are a blend and a path that can become its spine.
+   * @param {Element[]} [elems]
+   * @returns {boolean}
+   */
+  const canReplaceBlendSpine = (elems = getSelected()) => !!spinePlan(elems)
+
+  /**
+   * The spine of a blend (path data in the group's coordinates), or null when it goes straight.
+   * @param {Element} [elem] the blend or one of its keys (the selection's first by default)
+   * @returns {?string}
+   */
+  const getBlendSpine = (elem = getSelected()[0]) => parseSpine(blendGroupOf(elem)?.getAttribute(SPINE_ATTR) ?? null)?.d ?? null
+
+  /**
+   * Move `key` so that the centre of its box is at `to` (the group's coordinates), as a move would.
+   * @param {Element} key
+   * @param {{x: number, y: number}} to
+   */
+  const moveKeyTo = (key, to) => {
+    const box = anchorBBox(keyGeometry(key))
+    const dx = to.x - (box.x + box.width / 2)
+    const dy = to.y - (box.y + box.height / 2)
+    if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return
+    const list = getTransformList(key)
+    if (!list) return
+    const move = svgCanvas.getSvgRoot().createSVGTransform()
+    move.setTranslate(dx, dy)
+    list.insertItemBefore(move, 0)
+    svgCanvas.recalculateDimensions(key)
+  }
+
+  /**
+   * Put the keys of a blend on its spine, evenly spread by arc length.
+   * @param {Element} group
+   * @param {Track} track
+   */
+  const placeKeys = (group, track) => {
+    const p = /** @type {NonNullable<ReturnType<typeof blendParts>>} */ (blendParts(group))
+    const stops = stopsFor(track, p.keys.length)
+    p.keys.forEach((key, i) => moveKeyTo(key, frameAt(track, stops[i]).p))
+  }
+
+  /**
+   * Make the path selected with a blend its spine (one undo step): the keys move onto it, spread evenly along its length,
+   * the steps follow, and the path is used up.
+   * @param {Element[]} [elems]
+   * @returns {?Element} the blend, or null when the elements are not a blend and a path
+   */
+  const replaceBlendSpine = (elems = getSelected()) => {
+    const plan = spinePlan(elems)
+    if (!plan) return null
+    svgCanvas.clearSelection()
+    svgCanvas.transact('Replace blend spine', () => {
+      plan.group.setAttribute(SPINE_ATTR, plan.spine.d)
+      placeKeys(plan.group, plan.spine.track)
+      plan.path.remove()
+      regenerate(plan.group)
+    })
+    svgCanvas.selectOnly([plan.group], true)
+    svgCanvas.call('changed', [plan.group])
+    return plan.group
+  }
+
+  /**
+   * Run the keys of the selected blends the other way along their spines (one undo step): the first key goes to the far end.
+   * @returns {Element[]} the blends changed
+   */
+  const reverseBlendSpine = () => {
+    const groups = /** @type {Element[]} */ ([...new Set(getSelected().map(blendGroupOf).filter(Boolean))])
+      .filter((g) => parseSpine(g.getAttribute(SPINE_ATTR)))
+    if (!groups.length) return []
+    svgCanvas.transact('Reverse blend spine', () => {
+      for (const g of groups) {
+        const [first] = parseAnchors(/** @type {string} */ (parseSpine(g.getAttribute(SPINE_ATTR))?.d), 0.1)
+        const spine = /** @type {NonNullable<ReturnType<typeof parseSpine>>} */ (parseSpine(anchorsToD([reverseSubpath(first)])))
+        g.setAttribute(SPINE_ATTR, spine.d)
+        placeKeys(g, spine.track)
+        regenerate(g)
+      }
+    })
+    svgCanvas.call('changed', groups)
+    return groups
+  }
+
+  /**
+   * Take the spine off the selected blend (one undo step): it becomes a path next to the blend and the steps go back to
+   * the straight line between the keys, which stay where they are.
+   * @returns {?Element} the path
+   */
+  const detachBlendSpine = () => {
+    const group = blendGroupOf(getSelected()[0])
+    const spine = parseSpine(group?.getAttribute(SPINE_ATTR) ?? null)
+    if (!group || !spine) return null
+    const path = svgNS(group.ownerDocument, 'path')
+    path.setAttribute('id', newId())
+    path.setAttribute('d', applyMatrix(spine.d, localMatrix(group)))
+    path.setAttribute('fill', 'none')
+    path.setAttribute('stroke', '#000000')
+    path.setAttribute('stroke-width', '1')
+    svgCanvas.transact('Detach blend spine', () => {
+      group.after(path)
+      group.removeAttribute(SPINE_ATTR)
+      regenerate(group)
+    })
+    svgCanvas.selectOnly([path], true)
+    svgCanvas.call('changed', [group])
+    return path
+  }
+
   /**
    * Turn the selected blends into plain groups of paths (one undo step): the keys and steps stay, the blend goes.
    * @returns {Element[]}
@@ -419,6 +624,7 @@ export const init = (canvas) => {
         }
         for (const key of p.keys) key.removeAttribute(KEY_ATTR)
         g.removeAttribute(BLEND_ATTR)
+        g.removeAttribute(SPINE_ATTR)
       }
     })
     svgCanvas.selectOnly(groups, true)
@@ -458,6 +664,11 @@ export const init = (canvas) => {
     setBlendOptions,
     expandBlend,
     releaseBlend,
+    canReplaceBlendSpine,
+    getBlendSpine,
+    replaceBlendSpine,
+    reverseBlendSpine,
+    detachBlendSpine,
     refreshBlend,
     getBlendGroup: blendGroupOf,
     isBlendKeyCandidate: isKeyCandidate,
