@@ -9,7 +9,7 @@
  * @module coreCommands
  */
 
-import { canPaste } from './commandGates.js'
+import { canPaste, needsSelection } from './commandGates.js'
 
 /** @param {any} editor @returns {true|string} */
 const hasSelection = (editor) => (editor.selectedElement || editor.multiselected) ? true : 'No selection'
@@ -53,6 +53,23 @@ export const registerCoreCommands = (commands) => {
     atomic: true,
     run: (editor) => editor.svgCanvas.ungroupSelectedElement()
   })
+  // Layers-panel object state, from the canvas (Illustrator's Cmd+2 / Cmd+3 family).
+  /** @type {Array<[string, string, string, (editor: any) => true|string, (editor: any) => any]>} */
+  const objectState = [
+    ['object_lock_selection', 'mod+2', 'tools.lock_selection', needsSelection,
+      (editor) => editor.svgCanvas.setObjectsLocked(editor.svgCanvas.getSelectedElements().filter(Boolean), true)],
+    ['object_unlock_all', 'mod+alt+2', 'tools.unlock_all',
+      (editor) => editor.svgCanvas.hasLockedObjects() ? true : 'Nothing is locked',
+      (editor) => editor.svgCanvas.unlockAllObjects()],
+    ['object_hide_selection', 'mod+3', 'tools.hide_selection', needsSelection,
+      (editor) => editor.svgCanvas.setObjectsHidden(editor.svgCanvas.getSelectedElements().filter(Boolean), true)],
+    ['object_show_all', 'mod+alt+3', 'tools.show_all',
+      (editor) => editor.svgCanvas.hasHiddenObjects() ? true : 'Nothing is hidden',
+      (editor) => editor.svgCanvas.showAllObjects()]
+  ]
+  for (const [id, keys, label, enabled, run] of objectState) {
+    commands.register({ id, label, group: 'Edit', keys, enabled, run })
+  }
   commands.register({
     id: 'tool_undo',
     label: 'tools.undo',

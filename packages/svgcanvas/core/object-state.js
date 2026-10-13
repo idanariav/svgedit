@@ -177,6 +177,62 @@ export const init = (canvas) => {
   }
 
   /**
+   * The objects the Layers panel lists, at any depth (layers themselves excluded; a generated group is one object),
+   * that satisfy `test`.
+   * @param {(el: Element) => boolean} test
+   * @param {boolean} [firstOnly] stop at the first match
+   * @returns {Element[]}
+   */
+  const collectObjects = (test, firstOnly = false) => {
+    /** @type {Element[]} */
+    const found = []
+    /** @param {Element} parent @returns {boolean} true to stop */
+    const walk = (parent) => {
+      for (const el of parent.children) {
+        if (!isPanelObject(el)) continue
+        if (test(el)) {
+          found.push(el)
+          if (firstOnly) return true
+        }
+        if (isExpandableGroup(el) && walk(el)) return true
+      }
+      return false
+    }
+    for (const layer of svgCanvas.getSvgContent().children) {
+      if (isLayer(layer) && walk(layer)) break
+    }
+    return found
+  }
+
+  /**
+   * Is any object locked? (Cheap: stops at the first.)
+   * @function module:object-state.SvgCanvas#hasLockedObjects
+   * @returns {boolean}
+   */
+  svgCanvas.hasLockedObjects = () => collectObjects(hasLockMark, true).length > 0
+
+  /**
+   * Is any object hidden? (Cheap: stops at the first.)
+   * @function module:object-state.SvgCanvas#hasHiddenObjects
+   * @returns {boolean}
+   */
+  svgCanvas.hasHiddenObjects = () => collectObjects(isObjectHidden, true).length > 0
+
+  /**
+   * Unlock every locked object as one undo step.
+   * @function module:object-state.SvgCanvas#unlockAllObjects
+   * @returns {boolean} false when nothing was locked
+   */
+  svgCanvas.unlockAllObjects = () => svgCanvas.setObjectsLocked(collectObjects(hasLockMark), false)
+
+  /**
+   * Show every hidden object as one undo step.
+   * @function module:object-state.SvgCanvas#showAllObjects
+   * @returns {boolean} false when nothing was hidden
+   */
+  svgCanvas.showAllObjects = () => svgCanvas.setObjectsHidden(collectObjects(isObjectHidden), false)
+
+  /**
    * Give an object a name (`data-name`, what group names already use) as one undo step.
    * An empty name removes it.
    * @function module:object-state.SvgCanvas#setObjectName

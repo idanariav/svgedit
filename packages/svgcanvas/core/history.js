@@ -343,6 +343,19 @@ export class RemoveElementCommand extends Command {
 */
 
 /**
+ * Write an attribute by its qualified name, keeping the editor's own `se:` attributes in their namespace: a plain
+ * `setAttribute('se:locked', …)` makes a no-namespace attribute that `getAttributeNS(NS.SE, 'locked')` cannot see.
+ * @param {Element} elem
+ * @param {string} attr qualified name
+ * @param {*} value
+ * @returns {void}
+ */
+const setAttributeKeepingNamespace = (elem, attr, value) => {
+  if (attr.startsWith('se:')) elem.setAttributeNS(NS.SE, attr, value)
+  else elem.setAttribute(attr, value)
+}
+
+/**
 * History command to make a change to an element.
 * Usually an attribute change, but can also be textcontent.
 */
@@ -393,7 +406,7 @@ export class ChangeElementCommand extends Command {
           this.elem.setAttribute(attr, '')
           this.elem.removeAttribute(attr)
         } else {
-          this.elem.setAttribute(attr, value)
+          setAttributeKeepingNamespace(this.elem, attr, value)
         }
 
         if (attr === 'transform') { bChangedTransform = true }
@@ -429,7 +442,7 @@ export class ChangeElementCommand extends Command {
         } else if (isNullishOrEmpty) {
           this.elem.removeAttribute(attr)
         } else {
-          this.elem.setAttribute(attr, value)
+          setAttributeKeepingNamespace(this.elem, attr, value)
         }
         if (attr === 'transform') { bChangedTransform = true }
       })

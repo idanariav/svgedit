@@ -282,6 +282,10 @@ export interface AttachedMembers {
   setObjectsHidden(elems: Element[], hidden: boolean): boolean
   /** Lock (`se:locked`) or unlock objects as one undo step; locked objects (and what is inside a locked group) cannot be selected. False when nothing changed. */
   setObjectsLocked(elems: Element[], locked: boolean): boolean
+  hasLockedObjects(): boolean
+  hasHiddenObjects(): boolean
+  unlockAllObjects(): boolean
+  showAllObjects(): boolean
   /** Set or clear an object's `data-name` as one undo step. */
   setObjectName(el: Element, name: string): boolean
   /** Why the objects cannot be moved into `parent` (a layer or plain group) in front of `before`, or null. */

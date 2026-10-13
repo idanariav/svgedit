@@ -85,6 +85,7 @@ describe('canvas methods', () => {
     selected = []
     canvas = {
       transact: vi.fn((label, fn) => fn()),
+      getSvgContent: () => document.body,
       getSelectedElements: () => selected,
       selectOnly: vi.fn((els) => { selected = els })
     }
@@ -149,5 +150,35 @@ describe('canvas methods', () => {
     expect(canvas.moveObjects([grp], other)).toBe(true)
     expect(other.firstElementChild).toBe(grp)
     expect(canvas.transact).toHaveBeenCalledTimes(2)
+  })
+  describe('all-objects state', () => {
+    it('finds locked and hidden objects at any depth, but never a hidden layer or a generated group\'s parts', () => {
+      expect(canvas.hasLockedObjects()).toBe(false)
+      expect(canvas.hasHiddenObjects()).toBe(false)
+      lay.setAttribute('display', 'none') // layer visibility is not an object's
+      expect(canvas.hasHiddenObjects()).toBe(false)
+      const deep = make('rect', { 'se:locked': 'true' }, grp)
+      expect(canvas.hasLockedObjects()).toBe(true)
+      const blend = make('g', { 'se:blend': '1' }, lay)
+      make('rect', { display: 'none' }, blend)
+      expect(canvas.hasHiddenObjects()).toBe(false)
+      b.setAttribute('display', 'none')
+      expect(canvas.hasHiddenObjects()).toBe(true)
+      expect(deep.isConnected).toBe(true)
+    })
+
+    it('unlocks and shows everything in one undo step each', () => {
+      const deep = make('rect', { 'se:locked': 'true', display: 'none' }, grp)
+      a.setAttributeNS(NS.SE, 'se:locked', 'true')
+      canvas.transact.mockClear()
+      expect(canvas.unlockAllObjects()).toBe(true)
+      expect(canvas.transact).toHaveBeenCalledTimes(1)
+      expect(hasLockMark(a)).toBe(false)
+      expect(hasLockMark(deep)).toBe(false)
+      expect(canvas.unlockAllObjects()).toBe(false)
+      expect(canvas.showAllObjects()).toBe(true)
+      expect(deep.hasAttribute('display')).toBe(false)
+      expect(canvas.showAllObjects()).toBe(false)
+    })
   })
 })

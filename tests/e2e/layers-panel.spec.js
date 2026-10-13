@@ -402,4 +402,37 @@ test.describe('Layers panel', () => {
       expect(await (await rowFor(page, 'inner')).getAttribute('class')).toContain('objsel')
     })
   })
+  test('Lock / Hide Selection and Unlock / Show All are commands with their own gates', async ({ page }) => {
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      const mk = (id, x) => canv.addSVGElementsFromJson({ element: 'rect', curStyles: true, attr: { id, x, y: 10, width: 20, height: 20 } })
+      mk('r1', 10)
+      mk('r2', 50)
+    })
+    const enabled = (id) => page.evaluate((i) => window.svgEditor.commands.isEnabled(i), id)
+    expect(await enabled('object_unlock_all')).not.toBe(true)
+    expect(await enabled('object_show_all')).not.toBe(true)
+    expect(await enabled('object_lock_selection')).not.toBe(true) // nothing selected
+
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      canv.selectOnly([document.getElementById('r1')], true)
+      window.svgEditor.commands.run('object_hide_selection')
+      canv.selectOnly([document.getElementById('r2')], true)
+      window.svgEditor.commands.run('object_lock_selection')
+    })
+    await expect(page.locator('#r1')).toHaveAttribute('display', 'none')
+    expect(await enabled('object_show_all')).toBe(true)
+    expect(await enabled('object_unlock_all')).toBe(true)
+
+    await page.evaluate(() => {
+      window.svgEditor.commands.run('object_show_all')
+      window.svgEditor.commands.run('object_unlock_all')
+    })
+    await expect(page.locator('#r1')).not.toHaveAttribute('display', 'none')
+    expect(await enabled('object_show_all')).not.toBe(true)
+    expect(await enabled('object_unlock_all')).not.toBe(true)
+    await page.evaluate(() => window.svgEditor.commands.run('tool_undo'))
+    expect(await enabled('object_unlock_all')).toBe(true) // the unlock was one undo step
+  })
 })
