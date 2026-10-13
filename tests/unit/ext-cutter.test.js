@@ -210,6 +210,7 @@ describe('ext-cutter', () => {
   it('registers as the cutter tool and follows the pointer between clicks', () => {
     expect(tool.id).toBe('cutter')
     expect(tool.wantsHover).toBe(true)
+    expect(tool.snap).toBe(true)
     click(100, 100)
     tool.pointerMove(ctx, ev(180, 90)) // hover: no button down
     expect(previewD()).toBe('M100,100 L180,90')

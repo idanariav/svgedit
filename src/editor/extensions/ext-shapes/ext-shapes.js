@@ -59,6 +59,7 @@ export default {
     canv.registerTool({
       id: modeId,
       undoLabel: 'Insert shape',
+      snap: true, // the press and the dragged corner snap to other objects
       pointerDown (ctx, ev) {
         startX = ev.x
         const x = startX
@@ -147,8 +148,8 @@ export default {
         if (!curShape) return
         const evt = { shiftKey: ev.mods.shift }
 
-        const x = ev.rawX
-        const y = ev.rawY
+        const x = ev.x
+        const y = ev.y
 
         if (_userShapeData) {
         // ── User shape: size deterministically from the saved bbox ──────────

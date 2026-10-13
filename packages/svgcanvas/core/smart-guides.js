@@ -292,7 +292,7 @@ export const collectPointTargets = (svgCanvas, excludeElems = []) => {
     if (layer.tagName !== 'g') continue
     if (layer.getAttribute('display') === 'none' || layer.style.display === 'none') continue
     for (const el of layer.children) {
-      if (el.tagName === 'title' || el.hasAttribute('data-frame') || isExcluded(el)) continue
+      if (el.tagName === 'title' || el.hasAttribute('data-frame') || el.hasAttribute('data-se-ephemeral') || isExcluded(el)) continue
       if (elements >= MAX_DRAW_ELEMENTS) break
       let bb
       try {

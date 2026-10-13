@@ -159,11 +159,9 @@ export default {
 
     // ── The tool ─────────────────────────────────────────────────────────────
 
-    const point = (ev, snapped) => (snapped ? { x: ev.x, y: ev.y } : { x: ev.rawX, y: ev.rawY })
-
     const rubberBand = (ev) => {
       if (!active) return
-      let { x, y } = point(ev, false)
+      let { x, y } = ev
       const anchor = drawing ? points[points.length - 1] : pendingStart
       if (ev.mods.shift) ({ x, y } = snapToAngle(anchor.x, anchor.y, x, y))
       updateRubberBand(x, y)
@@ -173,6 +171,7 @@ export default {
       id: 'cutter',
       undoLabel: 'Cut shapes',
       wantsHover: true, // the rubber band follows the pointer between clicks
+      snap: true, // vertices and the rubber band snap to other objects
 
       // Leaving cutter mode by any route (Escape, switching tools) tears down an
       // in-progress line so no stale state or preview lingers.
@@ -180,7 +179,7 @@ export default {
       cancel () { if (active) cancel() },
 
       pointerDown (ctx, ev) {
-        const { x, y } = point(ev, true)
+        const { x, y } = ev
 
         if (!active) {
           active = true
@@ -214,7 +213,7 @@ export default {
         if (!active) return
         if (drawing) return // vertices commit on mouseDown; nothing more to do per click
 
-        let { x, y } = point(ev, false)
+        let { x, y } = ev
         if (ev.mods.shift) ({ x, y } = snapToAngle(pendingStart.x, pendingStart.y, x, y))
         const dx = x - pendingStart.x
         const dy = y - pendingStart.y

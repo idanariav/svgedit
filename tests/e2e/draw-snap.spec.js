@@ -77,6 +77,29 @@ test.describe('Snapping while drawing', () => {
     expect(nums.slice(0, 4)).toEqual([100, 400, 200, 300])
   })
 
+  test('the curvature tool\'s anchors land on other objects\' anchors, and its preview does not snap to itself', async ({ page }) => {
+    await tool(page, 'tool_curvature')
+    await page.evaluate(() => window.svgEditor.automation.pointer([
+      { kind: 'click', x: 100, y: 400 },
+      { kind: 'click', x: 203, y: 297 },
+      { kind: 'dblclick', x: 500, y: 420 }
+    ]))
+    const d = await page.locator('#svgcontent g.layer > path').last().getAttribute('d')
+    expect(d).toMatch(/^M\s*100[ ,]+400/)
+    expect(d).toMatch(/\b200[ ,]+300\b/) // the second anchor, snapped to the reference's bottom-left corner
+  })
+
+  test('the cutter\'s first vertex and its rubber band snap', async ({ page }) => {
+    await tool(page, 'tool_cutter')
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 197, y: 198 }]))
+    const start = await page.evaluate(() => document.querySelector('[data-se-ephemeral]')?.getAttribute('d'))
+    expect(start).toMatch(/200[ ,]+200/)
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'up', x: 197, y: 198 }, { kind: 'move', x: 303, y: 302 }]))
+    const band = await page.evaluate(() => document.querySelector('[data-se-ephemeral]')?.getAttribute('d'))
+    expect(band).toMatch(/300[ ,]+300/)
+    await tool(page, 'tool_select') // leaving the tool tears the half-made cut down
+  })
+
   test('a star\'s centre snaps (polystar tool)', async ({ page }) => {
     await tool(page, 'tool_polygon')
     await drag(page, { x: 252, y: 247 }, { x: 330, y: 330 })

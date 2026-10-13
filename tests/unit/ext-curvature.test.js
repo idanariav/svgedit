@@ -93,6 +93,7 @@ describe('ext-curvature', () => {
   it('hovers: the tentative segment follows the pointer between clicks', () => {
     expect(tool.id).toBe('curvature')
     expect(tool.wantsHover).toBe(true)
+    expect(tool.snap).toBe(true)
     click(10, 10)
     tool.pointerMove(ctx, ev(80, 40))
     expect(layer.querySelector('#curvature_preview').getAttribute('d')).toContain('80,40')

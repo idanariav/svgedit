@@ -422,6 +422,7 @@ export default {
       id: 'curvature',
       undoLabel: 'Draw curvature path',
       wantsHover: true, // the tentative segment follows the pointer between clicks
+      snap: true, // anchors, the tentative segment and dragged anchors snap to other objects
 
       pointerDown (ctx, ev) {
         const isDoubleClick = ev.event.detail >= 2
@@ -469,8 +470,8 @@ export default {
       pointerMove (ctx, ev) {
         if (!isDrawing || finalizeOnRelease) return
 
-        const mx = ev.rawX
-        const my = ev.rawY
+        const mx = ev.x
+        const my = ev.y
 
         if (draggingIndex >= 0) {
           // Leave the anchor untouched until the pointer clears the

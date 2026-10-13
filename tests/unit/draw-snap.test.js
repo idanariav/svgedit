@@ -124,6 +124,11 @@ describe('collectPointTargets', () => {
     expect(has(t, 4000, 4000)).toBe(false)
   })
 
+  it('leaves out ephemeral scaffolding (a tool\'s own preview)', () => {
+    make('rect', { x: 500, y: 500, width: 5, height: 5, 'data-se-ephemeral': '' }, layer)
+    expect(has(collectPointTargets(canvas), 500, 500)).toBe(false)
+  })
+
   it('an element whose geometry cannot be read still contributes its box', () => {
     make('path', { d: 'not a path', x: 7, y: 8 }, layer)
     expect(has(collectPointTargets(canvas), 7, 8)).toBe(true)
