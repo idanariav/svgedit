@@ -8,7 +8,7 @@ describe('panel commands', () => {
   let state
 
   beforeEach(() => {
-    state = { mode: 'select', stroke: '#000', fill: '#f00', text: false, canDeleteNodes: true, selected: [] }
+    state = { mode: 'select', stroke: '#000', fill: '#f00', text: false, canDeleteNodes: true, selected: [], layers: 3, layer: 1 }
     const spyOn = (...names) => Object.fromEntries(names.map((n) => [n, vi.fn()]))
     editor = {
       svgCanvas: {
@@ -16,7 +16,10 @@ describe('panel commands', () => {
         getColor: (k) => state[k],
         getSelectedElements: () => state.selected,
         hasVisibleStroke: (el) => el.getAttribute('stroke') !== 'none',
-        cancelImageCrop: vi.fn()
+        cancelImageCrop: vi.fn(),
+        getCurrentDrawing: () => ({ getNumLayers: () => state.layers }),
+        indexCurrentLayer: () => state.layer,
+        isImageCropEligible: (el) => el.tagName === 'image'
       },
       leftPanel: spyOn('clickSelect', 'clickFHPath', 'clickText', 'clickPath', 'clickLine', 'clickRect', 'clickEllipse', 'clickImage'),
       topPanel: {
@@ -142,5 +145,66 @@ describe('panel commands', () => {
     commands.register({ id: 'tool_clone', label: 'x', run: vi.fn() })
     commands.run('tool_clone_multi')
     expect(commands.get('tool_clone').run).toHaveBeenCalledTimes(1)
+  })
+  describe('selection and layer gates', () => {
+    const el = (tag, attrs = {}) => {
+      const e = document.createElementNS('http://www.w3.org/2000/svg', tag)
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v)
+      return e
+    }
+
+    it('selection commands say what to select', () => {
+      for (const id of ['tool_flip_h', 'tool_flip_v', 'tool_match_strokes', 'tool_make_link']) {
+        expect(commands.isEnabled(id), id).toBe('Select something first')
+      }
+      state.selected = [el('rect')]
+      for (const id of ['tool_flip_h', 'tool_flip_v', 'tool_match_strokes', 'tool_make_link']) {
+        expect(commands.isEnabled(id), id).toBe(true)
+      }
+    })
+
+    it('Clip and Mask need exactly two shapes; Release needs a clipped or masked one', () => {
+      state.selected = [el('rect')]
+      expect(commands.isEnabled('tool_clip_set')).not.toBe(true)
+      expect(commands.isEnabled('tool_mask_set')).not.toBe(true)
+      state.selected = [el('rect'), el('circle')]
+      expect(commands.isEnabled('tool_clip_set')).toBe(true)
+      expect(commands.isEnabled('tool_mask_set')).toBe(true)
+      expect(commands.isEnabled('clipmask_release')).not.toBe(true)
+      state.selected = [el('rect', { 'clip-path': 'url(#c)' })]
+      expect(commands.isEnabled('clipmask_release')).toBe(true)
+      state.selected = [el('rect', { mask: 'url(#m)' })]
+      expect(commands.isEnabled('clipmask_release')).toBe(true)
+    })
+
+    it('Unlink needs one group, hyperlink or linked copy', () => {
+      state.selected = [el('rect')]
+      expect(commands.isEnabled('tool_unlink_use')).not.toBe(true)
+      state.selected = [el('use')]
+      expect(commands.isEnabled('tool_unlink_use')).toBe(true)
+      state.selected = [el('g'), el('g')]
+      expect(commands.isEnabled('tool_unlink_use')).not.toBe(true)
+    })
+
+    it('Crop and Trace need one image', () => {
+      state.selected = [el('rect')]
+      expect(commands.isEnabled('tool_image_crop')).not.toBe(true)
+      expect(commands.isEnabled('tool_trace_image')).not.toBe(true)
+      state.selected = [el('image')]
+      expect(commands.isEnabled('tool_image_crop')).toBe(true)
+      expect(commands.isEnabled('tool_trace_image')).toBe(true)
+    })
+
+    it('layer commands follow the current layer’s place in the stack', () => {
+      expect(commands.isEnabled('layer_delete')).toBe(true)
+      expect(commands.isEnabled('layer_up')).toBe(true)
+      expect(commands.isEnabled('layer_down')).toBe(true)
+      state.layer = 2
+      expect(commands.isEnabled('layer_up')).toBe('Already the top layer')
+      state.layer = 0
+      expect(commands.isEnabled('layer_down')).toBe('Already the bottom layer')
+      state.layers = 1
+      expect(commands.isEnabled('layer_delete')).not.toBe(true)
+    })
   })
 })

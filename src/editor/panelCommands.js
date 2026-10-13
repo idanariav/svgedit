@@ -15,6 +15,8 @@
  * @module panelCommands
  */
 
+import { canDeleteLayer, canMoveLayerDown, canMoveLayerUp, hasClipOrMask, needsSelection, needsTwo, selectedOf } from './commandGates.js'
+
 /** @typedef {import('./commands.js').CommandRegistry} CommandRegistry */
 
 /** @param {any} editor @returns {true|string} node editing needs the path editor open */
@@ -65,6 +67,24 @@ const textSelected = (editor) => editor.topPanel.anyTextSelected ? true : 'Selec
 const bareFillAndStroke = (editor) =>
   editor.svgCanvas.getColor('fill') === 'none' && editor.svgCanvas.getColor('stroke') === 'none'
 
+/** @param {any} editor @returns {true|string} Unlink works on a group, a hyperlink or a linked copy */
+const unlinkable = (editor) => {
+  const list = selectedOf(editor)
+  return list.length === 1 && ['use', 'g', 'a'].includes(list[0].tagName.toLowerCase()) ? true : 'Select a group or a linked copy'
+}
+
+/** @param {any} editor @returns {true|string} Crop needs one image the canvas can crop */
+const croppable = (editor) => {
+  const list = selectedOf(editor)
+  return list.length === 1 && editor.svgCanvas.isImageCropEligible(list[0]) ? true : 'Select one image'
+}
+
+/** @param {any} editor @returns {true|string} Trace needs one selected image */
+const traceable = (editor) => {
+  const list = selectedOf(editor)
+  return list.length === 1 && list[0].tagName === 'image' ? true : 'Select one image'
+}
+
 /** i18n keys of the buttons' titles (the live `title` of the button wins once it is rendered). */
 const LABELS = {
   clipmask_release: 'tools.clip_release',
@@ -111,6 +131,9 @@ const LABELS = {
   tool_wireframe: 'tools.wireframe_mode'
 }
 
+/** @type {Object<string, (editor: any) => true|string>} the layer buttons that depend on where the current layer sits */
+const LAYER_GATES = { layer_delete: canDeleteLayer, layer_up: canMoveLayerUp, layer_down: canMoveLayerDown }
+
 /** Mode buttons: pressing one highlights it in the left panel and switches the canvas mode. */
 const MODE_BUTTONS = [
   ['tool_select', 'clickSelect'],
@@ -128,15 +151,15 @@ const TOP_PANEL = [
   ['tool_wireframe', 'View', 'clickWireframe'],
   ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
   ['tool_stroke_to_path', 'Path', 'strokeToPath', { enabled: strokeToPathable }],
-  ['tool_match_strokes', 'Tools', 'clickMatchStrokes'],
+  ['tool_match_strokes', 'Tools', 'clickMatchStrokes', { enabled: needsSelection }],
   ['tool_dash_fit', 'Tools', 'clickDashFit', { enabled: dashFittable }],
-  ['tool_make_link', 'Group', 'makeHyperlink'],
-  ['tool_make_link_multi', 'Group', 'makeHyperlink'],
-  ['tool_flip_h', 'Transform', 'clickFlipHorizontal'],
-  ['tool_flip_v', 'Transform', 'clickFlipVertical'],
-  ['tool_clip_set', 'Mask', 'clickClipSet'],
-  ['tool_mask_set', 'Mask', 'clickMaskSet'],
-  ['clipmask_release', 'Mask', 'clickClipRelease'],
+  ['tool_make_link', 'Group', 'makeHyperlink', { enabled: needsSelection }],
+  ['tool_make_link_multi', 'Group', 'makeHyperlink', { enabled: needsSelection }],
+  ['tool_flip_h', 'Transform', 'clickFlipHorizontal', { enabled: needsSelection }],
+  ['tool_flip_v', 'Transform', 'clickFlipVertical', { enabled: needsSelection }],
+  ['tool_clip_set', 'Mask', 'clickClipSet', { enabled: needsTwo }],
+  ['tool_mask_set', 'Mask', 'clickMaskSet', { enabled: needsTwo }],
+  ['clipmask_release', 'Mask', 'clickClipRelease', { enabled: hasClipOrMask }],
   ['tool_node_smooth', 'Path', 'smoothPathNode', { enabled: inPathEdit }],
   ['tool_node_clone', 'Path', 'clonePathNode', { enabled: inPathEdit }],
   ['tool_node_delete', 'Path', 'deletePathNode', {
@@ -152,8 +175,8 @@ const TOP_PANEL = [
   ['tool_bold', 'Text', 'clickBold', { enabled: textSelected }],
   ['tool_italic', 'Text', 'clickItalic', { enabled: textSelected }],
   ['tool_text_area', 'Text', 'clickTextArea', { enabled: textSelected }],
-  ['tool_unlink_use', 'Group', 'clickGroup'],
-  ['tool_image_crop', 'Tools', 'clickImageCrop', { interactive: true }],
+  ['tool_unlink_use', 'Group', 'clickGroup', { enabled: unlinkable }],
+  ['tool_image_crop', 'Tools', 'clickImageCrop', { interactive: true, enabled: croppable }],
   ['tool_image_crop_apply', 'Tools', 'applyImageCrop']
 ]
 
@@ -274,7 +297,7 @@ export const registerPanelCommands = (commands) => {
     ['layer_down', (editor) => editor.rightPanel.moveLayer(1)],
     ['layer_rename', (editor) => editor.rightPanel.layerRename()]
   ])) {
-    commands.register({ id, label: LABELS[id] ?? id, group: 'Layers', pd: true, run })
+    commands.register({ id, label: LABELS[id] ?? id, group: 'Layers', pd: true, enabled: LAYER_GATES[id], run })
   }
   commands.register({
     id: 'layer_template',
@@ -357,6 +380,7 @@ export const registerPanelCommands = (commands) => {
     group: 'Tools',
     pd: true,
     interactive: true,
+    enabled: traceable,
     run: (editor) => editor.rightPanel.openTraceDialog()
   })
 }

@@ -9,6 +9,8 @@
  * @module coreCommands
  */
 
+import { canPaste } from './commandGates.js'
+
 /** @param {any} editor @returns {true|string} */
 const hasSelection = (editor) => (editor.selectedElement || editor.multiselected) ? true : 'No selection'
 
@@ -72,6 +74,7 @@ export const registerCoreCommands = (commands) => {
     label: 'tools.paste',
     group: 'Edit',
     icon: 'paste.svg',
+    enabled: canPaste,
     run: (editor) => editor.svgCanvas.pasteElements()
   })
   commands.register({
@@ -79,6 +82,7 @@ export const registerCoreCommands = (commands) => {
     label: 'tools.paste_in_place',
     group: 'Edit',
     icon: 'paste_in_place.svg',
+    enabled: canPaste,
     run: (editor) => editor.svgCanvas.pasteElements('in_place')
   })
   commands.register({

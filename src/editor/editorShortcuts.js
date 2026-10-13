@@ -10,8 +10,33 @@
  * every handler acts on the given editor instance.
  */
 
+import { canAlign, canDelete, canRotate, hasObjects, needsSelection, needsTwoShapes, needsTwoSiblings } from './commandGates.js'
+
 /** @param {any} editor @returns {true|string} node editing needs the path editor open */
 const inPathEdit = (editor) => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
+
+/**
+ * `enabled` gates by command id (see commandGates.js): the precondition each handler
+ * below would otherwise silently ignore. Applied at the end of `buildEditorShortcuts`
+ * to every entry that doesn't declare its own.
+ */
+const GATES = {
+  ...Object.fromEntries(['rotate_ccw_fine', 'rotate_cw_fine', 'rotate_ccw', 'rotate_cw'].map((id) => [id, canRotate])),
+  ...Object.fromEntries(['raise', 'lower', 'move_to_front', 'move_to_back',
+    'move_up', 'move_down', 'move_left', 'move_right', 'move_up_big', 'move_down_big', 'move_left_big', 'move_right_big',
+    'clone_up', 'clone_down', 'clone_left', 'clone_right', 'clone_up_big', 'clone_down_big', 'clone_left_big', 'clone_right_big',
+    'flip_horizontal', 'flip_vertical', 'cut', 'copy', 'transform_again', 'add_to_shape_library']
+    .map((id) => [id, needsSelection])),
+  ...Object.fromEntries(['align_left', 'align_center', 'align_right', 'align_top', 'align_middle', 'align_bottom']
+    .map((id) => [id, canAlign])),
+  ...Object.fromEntries(['bool_union', 'bool_intersect', 'bool_subtract', 'bool_exclude', 'bool_divide']
+    .map((id) => [id, needsTwoShapes])),
+  delete_selected: canDelete,
+  switch_zorder: needsTwoSiblings,
+  select_all: hasObjects,
+  cycle_prev: hasObjects,
+  cycle_next: hasObjects
+}
 
 export const buildEditorShortcuts = (editor) => [
   {
@@ -524,4 +549,4 @@ export const buildEditorShortcuts = (editor) => [
       editor._addSelectedToShapeLibrary()
     }
   }
-]
+].map((sc) => (sc.enabled || !GATES[sc.id] ? sc : { ...sc, enabled: GATES[sc.id] }))

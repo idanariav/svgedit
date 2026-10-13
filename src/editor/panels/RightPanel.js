@@ -592,6 +592,8 @@ class RightPanel {
     self.editor.svgCanvas.runExtensions(
       'layersChanged'
     )
+    // Layer commands (delete, move up / down) depend on where the current layer sits.
+    self.editor.commands?.refreshEnablement()
   }
 
   /**

@@ -1193,6 +1193,8 @@ class Editor extends EditorStartup {
       (svgeditClipboard ? 'en' : 'dis') + 'ablemenuitems',
       '#paste,#paste_in_place'
     )
+    // Paste follows the clipboard: refresh every `command=` control (paste commands are gated on it).
+    this.commands?.refreshEnablement()
   }
 
   /**
