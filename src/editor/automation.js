@@ -219,6 +219,8 @@ export class Automation {
     let held = false
     const fire = (/** @type {string} */ type, /** @type {Mods|undefined} */ mods, /** @type {{x: number, y: number}} */ client, detail = 1) => {
       const target = document.elementFromPoint(client.x, client.y) ?? this.editor.$id('svgcanvas')
+      // An array would pass silently: `['alt'].shift` is the (truthy) Array method, i.e. Shift held.
+      if (Array.isArray(mods)) throw new TypeError('pointer mods is an object like { shift: true }, not an array')
       const m = mods ?? {}
       const mac = isMac()
       target.dispatchEvent(new MouseEvent(type, {

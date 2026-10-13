@@ -146,6 +146,8 @@ describe('Automation', () => {
   it('a drag without a target and an unknown kind are errors', () => {
     expect(() => auto.pointer([{ kind: 'drag', x: 0, y: 0 }])).toThrow(/"to"/)
     expect(() => auto.pointer([{ kind: 'wiggle', x: 0, y: 0 }])).toThrow(/Unknown pointer/)
+    // mods is an object: an array would read `['alt'].shift` (a truthy method) as Shift held
+    expect(() => auto.pointer([{ kind: 'click', x: 0, y: 0, mods: ['alt'] }])).toThrow(/object/)
   })
 
   it('scrolls the workarea so an off-screen document point becomes visible', () => {

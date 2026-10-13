@@ -53,7 +53,7 @@ test.describe('Measure tool', () => {
 
   test('Shift constrains the line to 45° steps', async ({ page }) => {
     await tool(page)
-    await drag(page, { x: 100, y: 100 }, { x: 140, y: 112 }, ['shift'])
+    await drag(page, { x: 100, y: 100 }, { x: 140, y: 112 }, { shift: true })
     const [x1, y1, x2, y2] = await lineOf(page)
     expect([x1, y1]).toEqual([100, 100])
     expect(y2).toBeCloseTo(100, 3)
