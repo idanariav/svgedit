@@ -209,10 +209,3 @@ declare class SvgCanvas {
 
 interface SvgCanvas extends AttachedMembers, InternalMembers {}
 export default SvgCanvas
-
-// Export additional utilities
-export * from './common/logger.js'
-export { NS } from './core/namespaces.js'
-export * from './core/math.js'
-export * from './core/units.js'
-export { default as dataStorage } from './core/dataStorage.js'
