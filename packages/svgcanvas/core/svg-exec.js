@@ -1018,47 +1018,6 @@ export const init = canvas => {
   }
 
   /**
- * @typedef {PlainObject} IssuesAndCodes
- * @property {string[]} issueCodes The locale-independent code names
- * @property {string[]} issues The localized descriptions
- */
-
-  /**
- * Codes only is useful for locale-independent detection.
- * @returns {IssuesAndCodes}
- */
-  const getIssues = () => {
-    const uiStrings = svgCanvas.getUIStrings()
-    // remove the selected outline before serializing
-    svgCanvas.clearSelection()
-
-    // Check for known CanVG issues
-    const issues = []
-    const issueCodes = []
-
-    // Selector and notice
-    /** @type {Record<string, string>} */
-    const issueList = {
-      feGaussianBlur: uiStrings.NoBlur,
-      foreignObject: uiStrings.NoforeignObject,
-      '[stroke-dasharray]': uiStrings.NoDashArray
-    }
-    const content = svgCanvas.getSvgContent()
-
-    // Add font/text check if Canvas Text API is not implemented
-    if (!('font' in /** @type {CanvasRenderingContext2D} */ (/** @type {HTMLCanvasElement} */ (document.querySelector('CANVAS')).getContext('2d')))) {
-      issueList.text = uiStrings.NoText
-    }
-
-    for (const [sel, descr] of Object.entries(issueList)) {
-      if (content.querySelectorAll(sel).length) {
-        issueCodes.push(sel)
-        issues.push(descr)
-      }
-    }
-    return { issues, issueCodes }
-  }
-  /**
  * @typedef {PlainObject} ImageedResults
  * @property {string} datauri Contents as a Data URL
  * @property {string} bloburl May be the empty string
@@ -1117,7 +1076,14 @@ export const init = canvas => {
     return new Promise((resolve, reject) => {
       const type = imgType === 'ICO' ? 'BMP' : imgType
       const mimeType = `image/${type.toLowerCase()}`
-      const { issues, issueCodes } = getIssues()
+      // Remove the selection outline before serializing.
+      svgCanvas.clearSelection()
+      // The export is rendered by the browser, so none of the CanVG-era limits (blur, dash arrays,
+      // foreignObject, canvas text) apply any more; the fields stay on the event for hosts that read them.
+      /** @type {string[]} */
+      const issues = []
+      /** @type {string[]} */
+      const issueCodes = []
       const svgElement = svgCanvas.getSvgContent()
 
       const svgClone = /** @type {SVGSVGElement} */ (svgElement.cloneNode(true))

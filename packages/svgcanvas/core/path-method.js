@@ -105,8 +105,6 @@ export const init = (canvas) => {
   // control-point handles (r: 3) so the node reads as the primary target.
   const NODE_GRIP_SIZE = 9
   /**
-* Requires prior call to `setUiStrings` if `xlink:title`
-*    to be set on the grip.
 * @function module:path.addPointGrip
 * @param {number} index
 * @param {number} [x]
@@ -136,10 +134,6 @@ export const init = (canvas) => {
         cursor: 'move',
         style: 'pointer-events:all'
       }
-      const uiStrings = svgCanvas.getUIStrings()
-      if ('pathNodeTooltip' in uiStrings) { // May be empty if running path.js without svg-editor
-        atts['xlink:title'] = uiStrings.pathNodeTooltip
-      }
       assignAttributes(pointGrip, atts)
       pointGripContainer.append(pointGrip)
 
@@ -168,8 +162,6 @@ export const init = (canvas) => {
     return pointGrip
   }
   /**
-* Requires prior call to `setUiStrings` if `xlink:title`
-*    to be set on the grip.
 * @function module:path.addCtrlGrip
 * @param {string} id
 * @returns {SVGCircleElement}
@@ -189,10 +181,6 @@ export const init = (canvas) => {
       'stroke-width': 1,
       cursor: 'move',
       style: 'pointer-events:all'
-    }
-    const uiStrings = svgCanvas.getUIStrings()
-    if ('pathCtrlPtTooltip' in uiStrings) { // May be empty if running path.js without svg-editor
-      atts['xlink:title'] = uiStrings.pathCtrlPtTooltip
     }
     assignAttributes(pointGrip, atts)
     getGripContainerMethod().append(pointGrip)

@@ -380,8 +380,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
     // this.pathActions is attached per-instance by pathActionsInit() (run inside pathModule.init)
     runGuardedInit(this, 'path', pathModule.init, initGuardRegistry)
-    // Interface strings, usually for title elements
-    this.uiStrings = {}
 
     // Animation element to change the opacity of any newly created element
     this.opacAni = document.createElementNS(NS.SVG, 'animate')
@@ -1194,10 +1192,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     return this.getCurrentDrawing().getId()
   }
 
-  getUIStrings () {
-    return this.uiStrings
-  }
-
   getNsMap () {
     return this.nsMap
   }
@@ -1677,17 +1671,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    */
   getVersion () {
     return 'svgcanvas.js ($Rev$)'
-  }
-
-  /**
-   * Update interface strings with given values.
-   * @function module:svgcanvas.SvgCanvas#setUiStrings
-   * @param {module:path.uiStrings} strs - Object with strings (see the [locales API]{@link module:locale.LocaleStrings} and the [tutorial]{@tutorial LocaleDocs})
-   * @returns {void}
-   */
-  setUiStrings (strs) {
-    Object.assign(this.uiStrings, strs.notification)
-    this.setUiStrings(strs)
   }
 
   /**

@@ -229,8 +229,6 @@ export interface InternalMembers {
   /** @internal */
   getThreSholdDist(...args: any[]): any
   /** @internal */
-  getUIStrings(...args: any[]): any
-  /** @internal */
   getUrlFromAttr: any
   /** @internal */
   getVersion(...args: any[]): any
@@ -415,8 +413,6 @@ export interface InternalMembers {
   /** @internal */
   setTextFreshCreate(...args: any[]): any
   /** @internal */
-  setUiStrings(...args: any[]): any
-  /** @internal */
   setUseData: any
   /** @internal */
   setbSpline(...args: any[]): any
@@ -442,8 +438,6 @@ export interface InternalMembers {
   svgdoc: any
   /** @internal */
   transformListToTransform: any
-  /** @internal */
-  uiStrings: any
   /** @internal */
   units: any
   /** @internal */

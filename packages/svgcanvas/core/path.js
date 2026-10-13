@@ -33,7 +33,7 @@ const segData = {
 
 /**
  * Reentrant init: all path state (current path, pathData, pathFuncs,
- * linkControlPts, uiStrings) and the helpers/classes below are created per
+ * linkControlPts) and the helpers/classes below are created per
  * SvgCanvas instance, closed over `svgCanvas`, so several editors coexist in one
  * realm. The init body (attachments + sub-inits) is at the end of this closure.
  * @function module:path.init
@@ -41,22 +41,6 @@ const segData = {
  */
 export const init = (canvas) => {
   const svgCanvas = canvas
-  /**
- * @tutorial LocaleDocs
- * @typedef {PlainObject} uiStrings
- * @property {PlainObject<string, string>} ui
-*/
-
-  const uiStrings = {}
-  /**
-* @function module:path.setUiStrings
-* @param {uiStrings} strs
-* @returns {void}
-*/
-  const setUiStrings = (strs) => {
-    Object.assign(uiStrings, strs.ui)
-  }
-
   /** @type {Array<string|number>} */
   let pathFuncs = []
 
@@ -259,8 +243,6 @@ export const init = (canvas) => {
 */
 
   /**
-* Requires prior call to `setUiStrings` if `xlink:title`
-*    to be set on the grip.
 * @function module:path.addPointGrip
 * @param {number} index
 * @param {number} x
@@ -274,8 +256,6 @@ export const init = (canvas) => {
 */
 
   /**
-* Requires prior call to `setUiStrings` if `xlink:title`
-*    to be set on the grip.
 * @function module:path.addCtrlGrip
 * @param {string} id
 * @returns {SVGCircleElement}
@@ -589,14 +569,12 @@ export const init = (canvas) => {
   // ── init body (relocated here so it runs after the declarations above) ──
   svgCanvas.removePath_ = removePath_
   svgCanvas.getPath_ = getPath_
-  svgCanvas.setUiStrings = setUiStrings
   svgCanvas.setLinkControlPoints = setLinkControlPoints
   svgCanvas.smoothControlPoints = smoothControlPoints
   svgCanvas.reorientGrads = reorientGrads
   svgCanvas.recalcRotatedPath = recalcRotatedPath
   svgCanvas.clearData = clearData
   svgCanvas.getSegData = () => { return segData }
-  svgCanvas.getUIStrings = () => { return uiStrings }
   svgCanvas.getPathObj = () => { return path }
   svgCanvas.setPathObj = (/** @type {any} */ obj) => { path = obj }
   svgCanvas.getPathFuncs = () => { return pathFuncs }

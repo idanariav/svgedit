@@ -19,6 +19,22 @@ test.describe('Export', () => {
     await expect(page.locator('#se-export-region select')).toBeVisible()
   })
 
+  test('PNG export of a dashed, blurred drawing reports no issues (no "undefined" notice)', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const canv = window.svgEditor.svgCanvas
+      const rect = canv.addSVGElementsFromJson({
+        element: 'rect',
+        attr: { x: 10, y: 10, width: 60, height: 40, fill: 'none', stroke: '#000', 'stroke-width': 4, 'stroke-dasharray': '6 4', id: canv.getNextId() }
+      })
+      canv.selectOnly([rect])
+      canv.setBlur(1, true)
+      const { issues, issueCodes } = await canv.rasterExport('PNG', 1, 'test', { avoidEvent: true })
+      return { issues, issueCodes }
+    })
+    expect(result.issues).toEqual([])
+    expect(result.issueCodes).toEqual([])
+  })
+
   test('PNG export omits hidden layers while SVG export retains them', async ({ page }) => {
     const result = await page.evaluate(async () => {
       const canv = window.svgEditor.svgCanvas
