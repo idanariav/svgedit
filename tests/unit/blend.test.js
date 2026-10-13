@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseAnchors, anchorsToD, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
-import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn } from '../../packages/svgcanvas/core/blend.js'
+import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn, rotateSubpaths } from '../../packages/svgcanvas/core/blend.js'
 
 const subs = (d) => parseAnchors(d)
 const rect = (x, y, w, h) => `M${x},${y} L${x + w},${y} L${x + w},${y + h} L${x},${y + h} Z`
@@ -171,5 +171,22 @@ describe('blend: spine helpers', () => {
     expect(box.x + box.width / 2).toBeCloseTo(100, 6)
     expect(box.y + box.height / 2).toBeCloseTo(200, 6)
     expect(moved[0].anchors[0].hOut.x - moved[0].anchors[0].p.x).toBe(10) // the handle kept its offset
+  })
+
+  it('rotateSubpaths turns about the box centre, handles included', () => {
+    const wide = subs(rect(0, 0, 40, 10))
+    const turned = rotateSubpaths(wide, Math.PI / 2)
+    const box = anchorBBox(turned)
+    expect(box.width).toBeCloseTo(10, 6)
+    expect(box.height).toBeCloseTo(40, 6)
+    expect(box.x + box.width / 2).toBeCloseTo(20, 6)
+    expect(box.y + box.height / 2).toBeCloseTo(5, 6)
+    // clockwise on screen: the right end goes down
+    expect(turned[0].anchors[1].p.y).toBeGreaterThan(turned[0].anchors[0].p.y)
+    const curve = subs('M0,0 C10,0 20,10 30,10')
+    const back = rotateSubpaths(rotateSubpaths(curve, 1.1), -1.1)
+    expect(back[0].anchors[0].hOut.x).toBeCloseTo(curve[0].anchors[0].hOut.x, 6)
+    expect(back[0].anchors[1].hIn.y).toBeCloseTo(curve[0].anchors[1].hIn.y, 6)
+    expect(rotateSubpaths(wide, 0)[0].anchors[2].p).toEqual(wide[0].anchors[2].p)
   })
 })

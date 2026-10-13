@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../../packages/svgcanvas/core/blend-canvas.js'
+import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
+import { getPathDFromElement } from '../../packages/svgcanvas/core/path-utils.js'
+import { localMatrix, applyMatrix } from '../../packages/svgcanvas/core/art-brush-canvas.js'
 import { getTransformList } from '../../packages/svgcanvas/core/math.js'
 
 describe('blend attribute', () => {
@@ -368,6 +371,128 @@ describe('blends on the canvas', () => {
       g.setAttribute('se:blend-spine', 'not a path')
       expect(svgCanvas.getBlendSpine(g)).toBeNull()
       expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse')).toBe(true)
+    })
+
+    describe('align to path', () => {
+      // Two wide bars on the L spine: the second ends up at the end of it, where the spine heads up (-90°).
+      const bar = (x) => make('rect', { x, y: 100, width: 40, height: 10, fill: '#ff0000', stroke: '#000000', 'stroke-width': 2 })
+      /** The box of a key as drawn: its path data with its transform applied (the jsdom getBBox ignores transforms). */
+      const placed = (el) => {
+        const box = anchorBBox(parseAnchors(applyMatrix(getPathDFromElement(el), localMatrix(el)), 0.1))
+        return { w: box.width, h: box.height, x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      }
+      const stepBox = (el) => {
+        const box = anchorBBox(parseAnchors(el.getAttribute('d'), 0.1))
+        return { w: box.width, h: box.height, x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      }
+      let b
+      beforeEach(() => {
+        b = svgCanvas.makeBlend([bar(0), bar(200)], { steps: 5 })
+        svgCanvas.replaceBlendSpine([b, spinePath()])
+        svgCanvas.selectOnly([b], true)
+      })
+
+      it('needs a spine', () => {
+        const plain = svgCanvas.makeBlend([bar(0), bar(300)])
+        svgCanvas.selectOnly([plain], true)
+        expect(svgCanvas.getBlendAlign(plain)).toBeNull()
+        expect(svgCanvas.alignBlendToPath()).toEqual([])
+        expect(plain.hasAttribute('se:blend-align')).toBe(false)
+        expect(svgCanvas.getBlendAlign(b)).toBe(false)
+      })
+
+      it('turns the other keys and the steps to the spine, in one undo step; the first key stays', () => {
+        const [first, last] = keysOf(b)
+        const undo = svgCanvas.undoMgr.getUndoStackSize()
+        expect(svgCanvas.alignBlendToPath()).toEqual([b])
+        expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+        expect(b.getAttribute('se:blend-align')).toBe('1')
+        expect(svgCanvas.getBlendAlign(b)).toBe(true)
+        expect(first.hasAttribute('transform')).toBe(false)
+        expect(placed(first)).toMatchObject({ w: 40, h: 10 })
+        // the last key was turned a quarter: it stands where the spine goes up, centred on the end of it
+        const k = placed(last)
+        expect(k.w).toBeCloseTo(10, 4)
+        expect(k.h).toBeCloseTo(40, 4)
+        near(k, 300, 0)
+        const row = steps(b)[0].map(stepBox)
+        expect(row[0].w).toBeGreaterThan(row[0].h) // on the run to the right: as drawn
+        expect(row[4].h).toBeGreaterThan(row[4].w) // on the run up: standing
+        near(row[4], 300, 300 - (5 / 6) * 600 + 300) // 500 along the spine = 200 up the second run
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+        svgCanvas.undoMgr.undo()
+        expect(b.hasAttribute('se:blend-align')).toBe(false)
+        expect(last.hasAttribute('transform')).toBe(false) // (the jsdom transform list is not re-read after an undo)
+        svgCanvas.undoMgr.redo()
+        expect(b.getAttribute('se:blend-align')).toBe('1')
+      })
+
+      it('switching it off turns the keys back and the steps go upright', () => {
+        svgCanvas.alignBlendToPath()
+        const undo = svgCanvas.undoMgr.getUndoStackSize()
+        expect(svgCanvas.alignBlendToPath(false)).toEqual([b])
+        expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+        const [, last] = keysOf(b)
+        expect(b.hasAttribute('se:blend-align')).toBe(false)
+        expect(placed(last).w).toBeCloseTo(40, 4)
+        near(placed(last), 300, 0)
+        const lastStep = stepBox(steps(b)[0][4])
+        expect(lastStep.w).toBeGreaterThan(lastStep.h)
+        expect(svgCanvas.alignBlendToPath(false)).toEqual([]) // already off
+      })
+
+      it('reversing keeps it aligned to the new direction, and one undo puts it all back', () => {
+        svgCanvas.alignBlendToPath()
+        const undo = svgCanvas.undoMgr.getUndoStackSize()
+        svgCanvas.reverseBlendSpine()
+        expect(svgCanvas.undoMgr.getUndoStackSize()).toBe(undo + 1)
+        expect(b.getAttribute('se:blend-align')).toBe('1')
+        const [first, last] = keysOf(b)
+        near(placed(first), 300, 0)
+        near(placed(last), 0, 300)
+        // reversed, the spine heads down from the first key and left at the end: a quarter turn on from it
+        expect(placed(first)).toMatchObject({ w: 40, h: 10 })
+        expect(placed(last).h).toBeCloseTo(40, 4) // down (+90°) to left (180°): a quarter turn, standing again
+        expect(last.getAttribute('transform')).toBe('matrix(0 1 -1 0 300 300)')
+        expect(svgCanvas.checkDrawing().filter((f) => /blend|se-/.test(f.code))).toEqual([])
+        svgCanvas.undoMgr.undo()
+        expect(last.getAttribute('transform')).toBe('matrix(0 -1 1 0 300 300)')
+      })
+
+      it('replacing the spine re-aims the keys at the new one', () => {
+        const straight = make('path', { d: 'M0,200 L400,200', fill: 'none', stroke: '#000000' })
+        svgCanvas.replaceBlendSpine([b, straight])
+        expect(b.getAttribute('se:blend-align')).toBeNull() // not aligned before: still not
+        svgCanvas.alignBlendToPath()
+        const flat = make('path', { d: 'M0,200 L400,200', fill: 'none', stroke: '#000000' })
+        svgCanvas.replaceBlendSpine([b, flat])
+        expect(b.getAttribute('se:blend-align')).toBe('1')
+        const [, last] = keysOf(b)
+        expect(placed(last).w).toBeCloseTo(40, 4) // a straight spine turns nobody
+        near(placed(last), 400, 200)
+      })
+
+      it('detaching turns the keys back and drops the option; expand drops it too', () => {
+        svgCanvas.alignBlendToPath()
+        svgCanvas.detachBlendSpine()
+        expect(b.hasAttribute('se:blend-align')).toBe(false)
+        expect(b.hasAttribute('se:blend-spine')).toBe(false)
+        expect(placed(keysOf(b)[1]).w).toBeCloseTo(40, 4)
+        svgCanvas.selectOnly([b], true)
+        svgCanvas.replaceBlendSpine([b, spinePath()])
+        svgCanvas.alignBlendToPath()
+        svgCanvas.expandBlend()
+        expect(b.hasAttribute('se:blend-align')).toBe(false)
+      })
+
+      it('se:blend-align without a spine is reported', () => {
+        const plain = svgCanvas.makeBlend([bar(0), bar(300)])
+        plain.setAttribute('se:blend-align', '1')
+        expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse' && f.id === plain.id)).toBe(true)
+        plain.setAttribute('se:blend-align', 'yes')
+        expect(svgCanvas.checkDrawing().some((f) => f.code === 'se-attr-parse' && f.id === plain.id)).toBe(true)
+        plain.removeAttribute('se:blend-align')
+      })
     })
   })
 })

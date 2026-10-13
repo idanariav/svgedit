@@ -393,6 +393,10 @@ export interface AttachedMembers {
   reverseBlendSpine(): Element[]
   /** Turn the selected blend's spine back into a path; the blend goes straight. */
   detachBlendSpine(): Element | null
+  /** Whether the selected blend is turned to its spine's direction (null: it has no spine). */
+  getBlendAlign(elem?: Element): boolean | null
+  /** Turn the selected blends' shapes to the direction of their spines, or back. One undo step. */
+  alignBlendToPath(on?: boolean): Element[]
   refreshBlend(elem: Element | null): boolean
   getBlendGroup(elem: Element | null): Element | null
   isBlendKeyCandidate(elem: Element | null): boolean

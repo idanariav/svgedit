@@ -262,5 +262,105 @@ test.describe('Blend', () => {
       expect(await spineOf(page)).toMatch(/^M\s*80[ ,]400/)
       expect(await healthy(page)).toEqual([])
     })
+
+    test.describe('align to path', () => {
+      // Two wide bars on the L-shaped spine (80,400) → (80,100) → (540,100): the first heads up, the end heads right.
+      const bars = (page) => page.evaluate(() => {
+        const c = window.svgEditor.svgCanvas
+        const bar = (id, x) => c.addSVGElementsFromJson({ element: 'rect', attr: { id, x, y: 20, width: 40, height: 10, fill: '#e53e3e', stroke: '#742a2a', 'stroke-width': 2 } })
+        bar('ba', 20)
+        bar('bb', 200)
+      })
+      const setup = async (page) => {
+        await bars(page)
+        await select(page, ['ba', 'bb'])
+        await run(page, 'blend_make')
+        const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+        await addSpine(page)
+        await select(page, [group, 'spine'])
+        await run(page, 'blend_replace_spine')
+        await select(page, [group])
+        return group
+      }
+      test('the checkbox shows for a blend with a spine; checking it turns the keys and steps, in one undo step', async ({ page }) => {
+        await bars(page)
+        await select(page, ['ba', 'bb'])
+        await run(page, 'blend_make')
+        const group = await page.evaluate(() => document.querySelector('[se\\:blend]').id)
+        await select(page, [group])
+        expect(await page.evaluate(() => getComputedStyle(document.getElementById('ext-blend-align-row')).display)).toBe('none')
+        await select(page, [group])
+        await addSpine(page)
+        await select(page, [group, 'spine'])
+        await run(page, 'blend_replace_spine')
+        await select(page, [group])
+        expect(await page.evaluate(() => getComputedStyle(document.getElementById('ext-blend-align-row')).display)).not.toBe('none')
+        const box = (sel, n) => page.evaluate(([q, i]) => {
+          const r = document.querySelectorAll(q)[i].getBoundingClientRect()
+          return { w: Math.round(r.width), h: Math.round(r.height) }
+        }, [sel, n])
+        const steps = '[se\\:blend-steps] > path'
+        const undo0 = await undoSize(page)
+        await page.evaluate(() => document.getElementById('ext-blend-align').click())
+        expect(await undoSize(page)).toBe(undo0 + 1)
+        expect(await page.evaluate(() => document.getElementById('ext-blend-align').checked)).toBe(true)
+        // the first key is the reference and keeps lying; the spine ends heading right, a quarter turn from where it began
+        // (up), so the last key and the steps on the last run stand
+        expect(await box('#ba', 0)).toEqual({ w: 40, h: 10 })
+        const near = await box(steps, 0)
+        const far = await box(steps, 4)
+        expect(near.w).toBeGreaterThan(near.h)
+        expect(far.h).toBeGreaterThan(far.w)
+        const last = await box('#bb', 0)
+        expect(last.h).toBeGreaterThan(last.w)
+        expect(await healthy(page)).toEqual([])
+        await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+        expect(await page.evaluate(() => document.querySelector('[se\\:blend]').hasAttribute('se:blend-align'))).toBe(false)
+        expect(await page.evaluate(() => document.getElementById('bb').hasAttribute('transform'))).toBe(false)
+        const back = await box(steps, 4)
+        expect(back.w).toBeGreaterThan(back.h)
+        await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+        expect(await box(steps, 4)).toEqual(far)
+        expect(await healthy(page)).toEqual([])
+      })
+
+      test('unchecking turns the keys back; Reverse and Detach keep working while aligned', async ({ page }) => {
+        const group = await setup(page)
+        await run(page, 'blend_align_path')
+        const turned = await page.evaluate(() => document.getElementById('bb').getAttribute('transform'))
+        expect(turned).toMatch(/^matrix\(/)
+        await run(page, 'blend_reverse_spine')
+        expect(await page.evaluate(() => document.querySelector('[se\\:blend]').getAttribute('se:blend-align'))).toBe('1')
+        expect(await healthy(page)).toEqual([])
+        await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+        expect(await page.evaluate(() => document.getElementById('bb').getAttribute('transform'))).toBe(turned)
+        await select(page, [group])
+        await run(page, 'blend_align_path') // toggles off
+        expect(await page.evaluate(() => document.getElementById('bb').hasAttribute('transform'))).toBe(false)
+        await run(page, 'blend_align_path')
+        await select(page, [group])
+        await run(page, 'blend_detach_spine')
+        expect(await page.evaluate(() => document.querySelector('[se\\:blend]').hasAttribute('se:blend-align'))).toBe(false)
+        expect(await page.evaluate(() => document.getElementById('bb').hasAttribute('transform'))).toBe(false)
+        expect(await healthy(page)).toEqual([])
+      })
+
+      test('save → load keeps it aligned and rewrites nothing', async ({ page }) => {
+        await setup(page)
+        await run(page, 'blend_align_path')
+        const svg = await page.evaluate(() => window.svgEditor.svgCanvas.getSvgString())
+        if (process.env.WRITE_FIXTURES) {
+          fs.writeFileSync(path.join(process.cwd(), 'tests/e2e/fixtures/roundtrip/blend-align.svg'), svg)
+        }
+        await setSvgSource(page, svg)
+        // hasAttribute, not a selector: a loaded drawing has namespaced attributes that `[se\\:blend]` does not match
+        expect(await page.evaluate(() => [...document.querySelectorAll('g')].find((g) => g.hasAttribute('se:blend')).getAttribute('se:blend-align'))).toBe('1')
+        expect(await page.evaluate(() => {
+          const g = [...document.querySelectorAll('g')].find((e) => e.hasAttribute('se:blend'))
+          return window.svgEditor.svgCanvas.refreshBlend(g)
+        })).toBe(false)
+        expect(await healthy(page)).toEqual([])
+      })
+    })
   })
 })

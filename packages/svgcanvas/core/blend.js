@@ -165,6 +165,23 @@ export const centreOn = (subpaths, to) => {
 }
 
 /**
+ * `subpaths` turned by `angle` (radians, clockwise on screen) about the centre of their bounding box.
+ * @param {SubPath[]} subpaths
+ * @param {number} angle
+ * @returns {SubPath[]} new subpaths
+ */
+export const rotateSubpaths = (subpaths, angle) => {
+  const box = anchorBBox(subpaths)
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  /** @param {Pt} pt */
+  const turn = (pt) => ({ x: cx + (pt.x - cx) * cos - (pt.y - cy) * sin, y: cy + (pt.x - cx) * sin + (pt.y - cy) * cos })
+  return subpaths.map((sp) => ({ closed: sp.closed, anchors: sp.anchors.map((x) => ({ p: turn(x.p), hIn: turn(x.hIn), hOut: turn(x.hOut) })) }))
+}
+
+/**
  * Anchor positions relative to their box centre, scaled to unit size.
  * @param {SubPath} sp
  * @returns {Pt[]}

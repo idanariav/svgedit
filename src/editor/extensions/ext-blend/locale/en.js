@@ -14,6 +14,8 @@ export default {
   reverseSpineTitle: 'Run the keys the other way along the spine',
   detachSpine: 'Detach spine',
   detachSpineTitle: 'Give the spine back as a path; the steps go straight between the keys again',
+  alignPath: 'Align to path',
+  alignPathTitle: 'Turn the shapes to the direction of the spine (the first key stays as it is; switching it off turns the others back)',
   spacing: 'Spacing',
   modeSteps: 'Specified steps',
   modeDistance: 'Specified distance',

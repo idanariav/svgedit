@@ -1,0 +1,20 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer" id="svg_1">
+  <title>Layer 1</title>
+  <rect fill="#e53e3e" height="40" id="ra" stroke="#742a2a" stroke-width="2" width="40" x="60" y="100"/>
+  <circle cx="320" cy="120" fill="#3182ce" id="cb" r="30" stroke="#2a4365" stroke-width="8"/>
+  <rect fill="#38a169" height="30" id="rc" stroke="#22543d" stroke-width="2" width="50" x="520" y="300"/>
+  <g id="svg_2" se:blend="blend(mode=steps,steps=5,distance=20)" se:blend-align="1" se:blend-spine="M80,400 L80,100 L540,100">
+   <rect fill="#e53e3e" height="10" id="ba" se:blend-key="1" stroke="#742a2a" stroke-width="2" width="40" x="60" y="395"/>
+   <g id="svg_3" se:blend-steps="1">
+    <path d="m60,268.33l40,0l0,10l-40,0l0,-10z" fill="#e53e3e" id="svg_4" stroke="#742a2a" stroke-width="2"/>
+    <path d="m60,141.67l40,0l0,10l-40,0l0,-10z" fill="#e53e3e" id="svg_5" stroke="#742a2a" stroke-width="2"/>
+    <path d="m165,80l0,40l-10,0l0,-40l10,0z" fill="#e53e3e" id="svg_6" stroke="#742a2a" stroke-width="2"/>
+    <path d="m291.67,80l0,40l-10,0l0,-40l10,0z" fill="#e53e3e" id="svg_7" stroke="#742a2a" stroke-width="2"/>
+    <path d="m418.33,80l0,40l-10,0l0,-40l10,0z" fill="#e53e3e" id="svg_8" stroke="#742a2a" stroke-width="2"/>
+   </g>
+   <rect fill="#e53e3e" height="10" id="bb" se:blend-key="1" stroke="#742a2a" stroke-width="2" transform="matrix(0 1 -1 0 640 -440)" width="40" x="520" y="95"/>
+  </g>
+ </g>
+
+</svg>
