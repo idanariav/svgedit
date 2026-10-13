@@ -78,9 +78,13 @@ Not started. Each is scheduled with the first feature that needs it (see *Implem
   swap re-selects, which the panel treats as "selection changed, cancel the edit". Do it only if the clone preview
   causes a real problem (a selection box that keeps the original's bbox is the known cosmetic one). Other hand-rolled
   previews: ext-curvature, ext-cutter (both already ephemeral).
-- **Precise `enabled` on commands.** Most commands are still "always" (what the buttons were). Gate them on selection
-  type (path, text, group, ≥2 shapes, …), with a reason string; the command sweep and `list()` get more truthful and
-  the tooltips explain themselves. Done for the path commands (node tray, Convert to Path, Stroke to Path, Join/Close, the keyless `path_*` entries); Text is done too (see `panelCommands.js`); new commands get it from day one.
+- **Precise `enabled` on commands.** Done for everything with a selection, clipboard or layer precondition
+  (`commandGates.js`: the shortcut table, the panel commands, paste, the layer buttons; path, text and Convert to Path
+  had theirs earlier); new commands get a gate from day one. Left "always": the **image-crop Apply / Cancel** pair (the
+  canvas has no "a crop session is open" getter yet), **`glow_remove` / `outline_remove`** (could read "has a glow /
+  outline"), **`corner_kind_*`** (needs a path with corners), the drawing-tool mode commands (switching tools is always
+  allowed) and the extension commands that register without a check. A hotkey on a gated command is inert and no longer
+  `preventDefault`s: arrow keys scroll the canvas with nothing selected, Tab moves focus in an empty layer.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
   appears; then give the registry a session concept instead of special-casing. *Scheduled:* T2.7 and T2.8 did not need it (one undo step per drag); the next candidate is T2.11, if it becomes a tool at all.
@@ -103,7 +107,7 @@ Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %
 ## Measure tool (`core/measure.js`, `ext-measure`): follow-ups from T3.2
 
 Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedropper, no shortcut): drag to read distance, angle (counter-clockwise, as on paper), Δx and Δy in the editor's base unit; the end points snap like the drawing tools' (`snap: true`); Shift constrains to 45° steps; the readout (cyan line, end dots, label box) stays until the next press, Escape or leaving the tool (and is redrawn at the new zoom, via the extension `zoomChanged` hook); the drawing is never changed and nothing is recorded. Remaining:
-- **The start point only snaps with `snap: true`'s targets** (no guides while hovering before the press, as in "Snapping while drawing"); no measuring of an object's own size on click, no persistent rulers or multiple measurements.
+- **The start point only snaps with `snap: true`'s targets** (the hover ring shows before the press, as in "Snapping while drawing"); no measuring of an object's own size on click, no persistent rulers or multiple measurements.
 - **The unit comes from Editor Options `baseUnit`;** there is no unit switch on the tool, and areas / perimeters are not measured.
 - In the tablet shell's More tools flyout; no keyboard shortcut.
 
@@ -515,7 +519,12 @@ Done: guides dragged out of both rulers, moved (Alt copies), deleted by dragging
 ## Snapping while drawing (`core/draw-snap.js`): follow-ups from T2.1
 
 Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-family and polystar points snap to anchors, box corners / midpoints / centres, edge lines and the page, with guides. Remaining:
-- **No guides while hovering before the press**: the pointer prelude ignores moves with no button down, so a snap is only shown from the press on. Hover snapping needs a per-move target cache that survives mouse-ups (and the cutter/pen rubber band as consumers).
+- **Hover shows the snap before the press** (`svgCanvas.hoverDrawSnap`, called from the mouse-move branch with no button
+  down, for the built-in drawing modes and any tool with `snap: true`): the same ring / guide lines, its own target cache
+  (rebuilt when the mode or the undo history changes), cleared on leaving the canvas or the snapping modes. A change that
+  is not an undo step (a layer shown / hidden, a live preview) leaves the cache stale until the next one. Not on touch
+  (no hover), and a tool with `wantsHover` still gets raw positions in its own hover (`toolHover`), so a tool-drawn
+  preview before the press doesn't land on the snapped point; the cutter / pen rubber band are the candidates.
 - **Tools that did not opt in** (`snap: true`): curvature (its anchors use `rawX`), shape library placement, cutter, brush, shaper and eyedropper. Curvature and the shape library mix `x` and `rawX` per event; fixing that is the work.
 - **Not inside a group context** (the children's boxes are in the group's local space; same limit as object-to-object snapping), and targets are only the top level of each layer: shapes nested in closed groups contribute their group's box.
 - **The pen's own earlier anchors are targets** (targets are collected on each press, and the path being drawn is part of the drawing then), so a click near one lands exactly on it. Not checked beyond that; if the in-progress segment ever turns out to snap to itself, exclude the pen's element in `event.js`'s `snapDraw` call.

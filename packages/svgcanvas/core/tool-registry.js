@@ -475,6 +475,7 @@ export const init = (canvas) => {
   svgCanvas.toolPointerMove = toolPointerMove
   svgCanvas.toolPointerUp = toolPointerUp
   svgCanvas.toolHover = toolHover
+  svgCanvas.activeToolSnaps = () => Boolean(tools.get(svgCanvas.getCurrentMode())?.snap)
   svgCanvas.toolKeyDown = toolKeyDown
   svgCanvas.toolModeChanged = toolModeChanged
   svgCanvas.cancelToolGesture = cancelGesture

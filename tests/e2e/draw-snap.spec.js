@@ -124,4 +124,46 @@ test.describe('Snapping while drawing', () => {
     expect(await num(rect, 'x')).toBe(200)
     expect(await num(rect, 'y')).toBe(200)
   })
+  test.describe('hovering before the press', () => {
+    const hover = (page, x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py }]), [x, y])
+
+    test('shows where a press would land, and nothing else changes', async ({ page }) => {
+      await tool(page, 'tool_rect')
+      expect(await guideCount(page)).toBe(0)
+      await hover(page, 197, 198) // 3px off the reference's corner
+      expect(await guideCount(page)).toBeGreaterThan(0)
+      await hover(page, 60, 20) // nothing near
+      expect(await guideCount(page)).toBe(0)
+      await expect(page.locator('#svgcontent g.layer > *')).toHaveCount(3) // title, ref, tri: nothing was drawn
+    })
+
+    test('a tool that opted in with snap: true hovers too; select and the pencil do not', async ({ page }) => {
+      await tool(page, 'tool_polygon')
+      await hover(page, 252, 247)
+      expect(await guideCount(page)).toBeGreaterThan(0)
+      await tool(page, 'tool_fhpath')
+      await hover(page, 197, 198)
+      expect(await guideCount(page)).toBe(0)
+      await tool(page, 'tool_select')
+      await hover(page, 197, 198)
+      expect(await guideCount(page)).toBe(0)
+    })
+
+    test('leaving the snapping modes or the canvas takes the guide away', async ({ page }) => {
+      await tool(page, 'tool_rect')
+      await hover(page, 197, 198)
+      expect(await guideCount(page)).toBeGreaterThan(0)
+      await page.evaluate(() => window.svgEditor.svgCanvas.mouseOutEvent())
+      expect(await guideCount(page)).toBe(0)
+    })
+
+    test('follows the drawing: a shape drawn after a hover is a target for the next one', async ({ page }) => {
+      await tool(page, 'tool_rect')
+      await hover(page, 60, 20)
+      await drag(page, { x: 20, y: 20 }, { x: 120, y: 80 })
+      await tool(page, 'tool_rect')
+      await hover(page, 122, 82) // 2px off the new rectangle's far corner
+      expect(await guideCount(page)).toBeGreaterThan(0)
+    })
+  })
 })

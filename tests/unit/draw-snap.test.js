@@ -136,8 +136,10 @@ describe('svgCanvas.snapDrawPoint', () => {
   let mode
   let group
   let collected
+  let undo
 
   beforeEach(() => {
+    undo = 0
     config = { gridSnapping: false, smartSnapping: true }
     mode = 'rect'
     group = null
@@ -153,7 +155,9 @@ describe('svgCanvas.snapDrawPoint', () => {
       getSvgContent: () => content,
       getResolution: () => ({ w: 640, h: 480 }),
       getStrokedBBoxDefaultVisible: () => { collected++; return { x: 100, y: 100, width: 50, height: 50 } },
-      showDrawGuides: vi.fn()
+      showDrawGuides: vi.fn(),
+      undoMgr: { getUndoStackSize: () => undo, getRedoStackSize: () => 0 },
+      getCurrentDrawing: () => ({ getCurrentLayer: () => layer })
     }
     init(canvas)
   })
@@ -214,5 +218,78 @@ describe('svgCanvas.snapDrawPoint', () => {
     canvas.clearDrawSnap()
     canvas.snapDrawPoint(103, 98)
     expect(collected).toBe(2)
+  })
+  describe('hover (no button down)', () => {
+    it('shows the guide a press would snap to, and returns nothing to record', () => {
+      expect(canvas.hoverDrawSnap(103, 98)).toBeUndefined()
+      expect(canvas.showDrawGuides.mock.calls[0][0]).toMatchObject({ at: { x: 100, y: 100 }, point: { x: 100, y: 100 } })
+    })
+
+    it('collects the targets once while the pointer roams, and again when the drawing changes', () => {
+      canvas.hoverDrawSnap(103, 98)
+      canvas.hoverDrawSnap(300, 300)
+      canvas.hoverDrawSnap(120, 120)
+      expect(collected).toBe(1)
+      undo = 1 // an edit landed on the undo stack
+      canvas.hoverDrawSnap(103, 98)
+      expect(collected).toBe(2)
+    })
+
+    it('rebuilds the targets when a shape appears that is not an undo step yet (a pen path in progress)', () => {
+      canvas.hoverDrawSnap(103, 98)
+      expect(collected).toBe(1)
+      make('path', { d: 'M 0 0' }, document.querySelector('g.layer'))
+      canvas.hoverDrawSnap(103, 98)
+      expect(collected).toBeGreaterThan(1)
+    })
+
+    it('does not share its targets with a gesture, and a gesture end drops them', () => {
+      canvas.hoverDrawSnap(103, 98)
+      canvas.snapDrawPoint(103, 98)
+      expect(collected).toBe(2)
+      canvas.clearDrawSnap()
+      canvas.hoverDrawSnap(103, 98)
+      expect(collected).toBe(3)
+    })
+
+    it('clears its guide when the pointer leaves or the mode stops snapping, and never touches a press\'s guide', () => {
+      canvas.hoverDrawSnap(103, 98)
+      canvas.showDrawGuides.mockClear()
+      canvas.clearDrawHover()
+      expect(canvas.showDrawGuides).toHaveBeenCalledWith(null)
+      canvas.showDrawGuides.mockClear()
+      canvas.clearDrawHover() // nothing shown any more
+      expect(canvas.showDrawGuides).not.toHaveBeenCalled()
+
+      canvas.hoverDrawSnap(103, 98)
+      canvas.showDrawGuides.mockClear()
+      mode = 'select'
+      canvas.hoverDrawSnap(103, 98)
+      expect(canvas.showDrawGuides).toHaveBeenCalledWith(null)
+
+      mode = 'rect'
+      canvas.hoverDrawSnap(103, 98) // a hover is up...
+      canvas.snapDrawPoint(103, 98) // ...then a press takes the overlay over
+      canvas.showDrawGuides.mockClear()
+      canvas.clearDrawHover()
+      expect(canvas.showDrawGuides).not.toHaveBeenCalled()
+    })
+
+    it('obeys the same switches as a press: grid, smart snapping off, group context, tools that did not opt in', () => {
+      config.gridSnapping = true
+      canvas.hoverDrawSnap(103, 98)
+      config.gridSnapping = false
+      config.smartSnapping = false
+      canvas.hoverDrawSnap(103, 98)
+      config.smartSnapping = true
+      group = {}
+      canvas.hoverDrawSnap(103, 98)
+      group = null
+      mode = 'spiral'
+      canvas.hoverDrawSnap(103, 98)
+      expect(canvas.showDrawGuides).not.toHaveBeenCalled()
+      canvas.hoverDrawSnap(103, 98, { tool: true })
+      expect(canvas.showDrawGuides).toHaveBeenCalledTimes(1)
+    })
   })
 })

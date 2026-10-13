@@ -15,6 +15,7 @@ import {
 import * as hstry from './history.js'
 import { error as logError, warn as logWarn } from '../common/logger.js'
 import { findPos } from '../../svgcanvas/common/util.js'
+import { isDrawSnapMode } from './draw-snap.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
 import { areaTextAtPoint } from './text-rows.js'
@@ -50,6 +51,25 @@ export const init = (canvas) => {
   const snapDraw = (x, y, opts) => svgCanvas.snapDrawPoint?.(x, y, opts) ?? { x, y }
 
   /**
+   * Show where a press would snap while the pointer only hovers (core/draw-snap.js).
+   * @param {MouseEvent} evt
+   * @returns {void}
+   */
+  const hoverSnap = (evt) => {
+    if (!svgCanvas.hoverDrawSnap) return
+    const tool = Boolean(svgCanvas.activeToolSnaps?.())
+    if (!tool && !isDrawSnapMode(svgCanvas.getCurrentMode())) {
+      svgCanvas.clearDrawHover?.()
+      return
+    }
+    // The root matrix is only kept fresh by a press; a hover reads it from the document (it may have scrolled or zoomed since).
+    const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
+    if (!ctm) return
+    const { x, y } = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
+    svgCanvas.hoverDrawSnap(x, y, { tool }) // nothing is being drawn, so nothing is left out (getId() is the last id assigned, not a shape in progress)
+  }
+
+  /**
  *
  * @param {MouseEvent} evt
  * @fires module:svgcanvas.SvgCanvas#event:transition
@@ -61,6 +81,7 @@ export const init = (canvas) => {
     if (!svgCanvas.getStarted()) {
       svgCanvas.toolHover?.(evt) // registered tools that asked for hover (core/tool-registry.js)
       if (['path', 'fhpath'].includes(svgCanvas.getCurrentMode())) eventPathEdit.hover(evt)
+      hoverSnap(evt)
       return
     }
     if (evt.button === 1 || svgCanvas.spaceKey) { return }
@@ -177,6 +198,7 @@ export const init = (canvas) => {
   /** @param {MouseEvent} evt */
   const mouseOutEvent = (evt) => {
     const { $id } = svgCanvas
+    svgCanvas.clearDrawHover?.()
     if (svgCanvas.getCurrentMode() !== 'select' && svgCanvas.getStarted()) {
       const event = new MouseEvent('mouseup', {
         bubbles: true,
