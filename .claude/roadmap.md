@@ -428,7 +428,7 @@ Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wh
 Done: the pencil commit and Smooth Path run on the corner-keeping fit (no paper.js left in `path-simplify.js`); Smooth Path is offered on any plain path. Remaining:
 - **Corners are only turns of more than about 100°** (VectorCraft's threshold), so a 90° elbow (an L, a rectangle corner) is held to `pencilFidelity` rather than kept razor sharp. The window that measures the turn (`CORNER_REACH`, 6 tolerances) is also why a smooth curve tighter than about 6 units of radius reads as a corner. Both are tuning, not structure; judge them on real pen strokes and adjust.
 - **The editor's own stabiliser** (`pencilStabilization`, an EMA) and B-spline capture round a corner before the fit sees it; the fit recovers the vertex from the two legs, but a tight hairpin loses a little more than a gentle turn. Lowering the stabilisation keeps corners truer.
-- **`pencilFidelity` is in user units, not screen pixels**: drawing zoomed in commits as coarsely (in screen terms) as a stroke drawn zoomed out. Dividing by the zoom would make the pencil zoom-independent; not done, to keep the commit what it was.
+- **`pencilFidelity` is in screen pixels** (the fit gets `fidelity / zoom`; the same as user units at 100%), so a stroke fits the same way at any zoom. The preferences field still says "max distance from stroke" without naming the unit.
 - **Closed pencil strokes** (a loop closed onto its start) are not recognised as closed; the fit is always an open path. VectorCraft's `closed` flag was not ported.
 - `simplifyWith` has no "straight lines only" mode (VectorCraft's Convert to Straight Lines); add it with the first caller.
 

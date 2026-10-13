@@ -68,7 +68,7 @@ export default class ConfigObj {
       select_same_tolerance: 0,
       /** Pencil stabilisation, 0-95 (%): how much the pen trails the pointer to damp tremor (mirrors `curConfig.pencilStabilization`, 0-0.95) */
       pencil_stabilization: 30,
-      /** Pencil fidelity, 0.5-10 user units: the most the committed curve may stray from the stroke (mirrors `curConfig.pencilFidelity`) */
+      /** Pencil fidelity, 0.5-10 screen pixels (user units at 100% zoom): the most the committed curve may stray from the stroke (mirrors `curConfig.pencilFidelity`) */
       pencil_fidelity: 2,
       // DOCUMENT PROPERTIES (DIALOG)
       img_save: 'embed',

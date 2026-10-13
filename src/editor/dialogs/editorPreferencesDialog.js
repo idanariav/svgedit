@@ -224,7 +224,7 @@ export class SeEditPrefsDialog extends HTMLElement {
   }
 
   /**
-   * Pencil fidelity shown in the field, in user units (0.5-10).
+   * Pencil fidelity shown in the field, in screen pixels, which are user units at 100% zoom (0.5-10).
    * @param {number} value
    * @returns {void}
    */

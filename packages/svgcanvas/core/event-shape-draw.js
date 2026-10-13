@@ -459,14 +459,16 @@ export const init = (canvas) => {
           // Fit smooth cubics through the raw points (sharp turns stay corners; see
           // core/path-fit.js) unless disabled; falls back to the legacy
           // every-3-points smoothing inside.
+          // Fidelity is screen pixels: the same stroke fits the same way at any zoom.
+          const fidelity = svgCanvas.getCurConfig().pencilFidelity / (svgCanvas.getZoom() || 1)
           if (pencilEnd) {
             // Added to the path the stroke started on; nothing new is inserted.
-            svgCanvas.continueFreehand(element, pencilEnd, svgCanvas.getCurConfig().pencilFidelity)
+            svgCanvas.continueFreehand(element, pencilEnd, fidelity)
             element = null
           } else {
             element = svgCanvas.getCurConfig().pencilSimplify === false
               ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
-              : svgCanvas.simplifyFreehand(element, svgCanvas.getCurConfig().pencilFidelity)
+              : svgCanvas.simplifyFreehand(element, fidelity)
           }
         }
         pencilEnd = null
