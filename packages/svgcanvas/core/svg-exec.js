@@ -1088,6 +1088,11 @@ export const init = canvas => {
 
       const svgClone = /** @type {SVGSVGElement} */ (svgElement.cloneNode(true))
 
+      // The editor's own `se:` attributes need their prefix declared, or the serialised XML is not well formed and the
+      // image fails to load. The live root only has it when the drawing came with it (a file from another tool does
+      // not); the saver adds it for the same reason.
+      svgClone.setAttribute('xmlns:se', NS.SE)
+
       // Frames mark export regions and must never appear in an exported image.
       svgClone.querySelectorAll('[data-frame]').forEach(f => f.remove())
 

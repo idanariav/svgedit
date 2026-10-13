@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures.js'
-import { openMainMenu, visitAndApproveStorage } from './helpers.js'
+import { openMainMenu, setSvgSource, visitAndApproveStorage } from './helpers.js'
 
 test.describe('Export', () => {
   test.beforeEach(async ({ page }) => {
@@ -83,5 +83,22 @@ test.describe('Export', () => {
     expect(result.visiblePixel).toEqual([0, 255, 0, 255])
     // ...but not the hidden one - that area stays fully transparent.
     expect(result.hiddenPixel).toEqual([0, 0, 0, 0])
+  })
+
+  test('PNG export works for a drawing from another tool that uses editor features (no xmlns:se in its root)', async ({ page }) => {
+    // A file that does not declare the editor's namespace, then a feature that writes an `se:` attribute.
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title>
+        <circle id="c" cx="100" cy="100" r="40" fill="none" stroke="#000" stroke-width="6" stroke-dasharray="14,10"/>
+      </g></svg>`)
+    const result = await page.evaluate(async () => {
+      const canv = window.svgEditor.svgCanvas
+      canv.selectOnly([document.getElementById('c')], true)
+      canv.setDashFit(true) // writes se:dash-fit
+      canv.clearSelection()
+      const { datauri, svg } = await canv.rasterExport('PNG', 1, 'test', { avoidEvent: true })
+      return { ok: datauri.startsWith('data:image/png'), fitted: svg.includes('se:dash-fit') }
+    })
+    expect(result).toEqual({ ok: true, fitted: true })
   })
 })
