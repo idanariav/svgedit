@@ -299,3 +299,21 @@ describe('fitFreehand: closed strokes', () => {
     expect(fitFreehand(circle(300, 1), 2).closed).toBe(false)
   })
 })
+
+describe('fitFreehand: start direction', () => {
+  // leaves (0,0) heading about 20 degrees off the x axis, along a gentle arc
+  const arc = Array.from({ length: 100 }, (_, i) => P(i * 2, i * i * 0.01 + i * 0.7))
+
+  it('leaves the first point in the direction asked for when the stroke sets off roughly that way', () => {
+    const out = fitFreehand(arc, 2, { startDirection: P(1, 0) })
+    const h = out.anchors[0].hOut
+    expect(Math.abs(h.y - out.anchors[0].p.y)).toBeLessThan(1e-9)
+    expect(h.x).toBeGreaterThan(0)
+  })
+
+  it('ignores it when the stroke sets off against it', () => {
+    const free = fitFreehand(arc, 2)
+    const out = fitFreehand(arc, 2, { startDirection: P(-1, 0) })
+    expect(out.anchors[0].hOut).toEqual(free.anchors[0].hOut)
+  })
+})

@@ -86,6 +86,25 @@ export const findPenEnd = (container, x, y, tolerance, exclude = []) => {
 export const continuationD = (end) =>
   anchorsToD([end.atEnd ? end.subpath : reversedSubpath(end.subpath)])
 
+/**
+ * The unit direction the path was travelling when it reached the pressed end, or null when it has no
+ * direction there (a single anchor).
+ * @param {PenEnd} end
+ * @returns {?{x: number, y: number}}
+ */
+export const endDirection = (end) => {
+  const { anchors } = end.atEnd ? end.subpath : reversedSubpath(end.subpath)
+  const last = anchors[anchors.length - 1]
+  const prev = anchors[anchors.length - 2]
+  const same = (/** @type {{x: number, y: number}} */ a, /** @type {{x: number, y: number}} */ b) => a.x === b.x && a.y === b.y
+  const from = !same(last.hIn, last.p) ? last.hIn : prev && (!same(prev.hOut, prev.p) ? prev.hOut : prev.p)
+  if (!from) return null
+  const dx = last.p.x - from.x
+  const dy = last.p.y - from.y
+  const len = Math.hypot(dx, dy)
+  return len > 1e-9 ? { x: dx / len, y: dy / len } : null
+}
+
 /** @param {{x: number, y: number}} p */
 const lone = (p) => ({ closed: false, anchors: [{ p, hIn: { ...p }, hOut: { ...p } }] })
 

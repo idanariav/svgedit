@@ -489,7 +489,7 @@ Done: **Line art (centerlines)** in Convert to editable SVG traces thin strokes 
 ## Pencil continue and settings (`pen-continue.js` `extendWith`): follow-ups from T3.7
 
 Done: a pencil stroke that starts on an end of the single selected open path extends it (one `Continue path` step) or closes it; Stabilisation and Fidelity are in Editor Preferences. Remaining:
-- **The seam is not tangent-continuous.** The stroke is fitted on its own and its first anchor merged into the path's end, so the old path's last handle and the new first handle can differ. VectorCraft refits with the old end tangent fixed; `fitFreehand` has no start-tangent option yet. A stroke that sets off in the path's direction is visually fine.
+- **The seam is tangent-continuous when the stroke sets off roughly the way the path arrives** (within the corner angle): `fitFreehand` takes `startDirection` (`endDirection(end)` in `pen-continue.js`) and the first handle lies on the old leg. A stroke that sets off at more than about 100° to it keeps a corner. Only the new stroke's handle moves; the old path's last handle is left as it was.
 - **Only the selected path, plain and untransformed, in the current layer**, same limits as the Pen (see "Pen continue / join"). With the pencil tool armed the selection has to be made first, then the tool picked (the selection survives the switch).
 - **The ring** marks the end like the Pen's, and the cursor turns into `fhpath_continue`.
 - **Closing is judged on the stroke's last captured point**, which trails the pointer (stabiliser and spline capture): finish with a short pause, or lower the stabilisation. The closing distance is `max(4 × fidelity, 6 screen px)`.

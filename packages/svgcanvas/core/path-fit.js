@@ -293,12 +293,14 @@ const isLoop = (pts, tolerance) => {
  * seam is smooth unless the stroke turns by more than a corner there.
  * @param {Pt[]} pts the stroke's points, in order
  * @param {number} tolerance the pencil's fidelity, in user units
- * @param {{closeLoops?: boolean}} [opts] `closeLoops`: return a stroke that ends on its start as a closed
- *   subpath (default: always open)
+ * @param {{closeLoops?: boolean, startDirection?: ?Pt}} [opts] `closeLoops`: return a stroke that ends on its
+ *   start as a closed subpath (default: always open); `startDirection`: a unit direction the stroke should leave
+ *   its first point in, so it joins a path arriving that way without a kink (ignored when the stroke itself sets
+ *   off at a corner's angle to it)
  * @returns {SubPath}
  */
 export const fitFreehand = (pts, tolerance, opts = {}) => {
-  const { closeLoops = false } = opts
+  const { closeLoops = false, startDirection = null } = opts
   if (!pts.length) return { closed: false, anchors: [] }
   const min = Math.max(tolerance * 0.3, 0.05)
   const last = pts[pts.length - 1]
@@ -326,6 +328,8 @@ export const fitFreehand = (pts, tolerance, opts = {}) => {
   // Tangents of every run end, before any corner moves: along the legs, skipping the rounding at a corner.
   const outDir = runs.map((run, k) => legDirection(run, k === 0 ? 0 : reach / 3, reach, false))
   const inDir = runs.map((run, k) => legDirection(run, k === runs.length - 1 ? 0 : reach / 3, reach, true))
+  // A stroke that sets off roughly the way a path arrives carries on in exactly that direction.
+  if (startDirection && dot(outDir[0], startDirection) > CORNER_COS) outDir[0] = startDirection
   // The seam of a closed stroke is smooth (one shared tangent) unless the turn there is a corner.
   if (closed && dot(inDir[runs.length - 1], outDir[0]) > CORNER_COS) {
     const seam = unit({ x: inDir[runs.length - 1].x + outDir[0].x, y: inDir[runs.length - 1].y + outDir[0].y })

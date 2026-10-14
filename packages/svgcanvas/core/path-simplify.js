@@ -22,7 +22,7 @@
 import { warn } from '../common/logger.js'
 import { parseAnchors, anchorsToD } from './anchor-path.js'
 import { simplifyWith, fitFreehand } from './path-fit.js'
-import { findPenEnd, extendWith } from './pen-continue.js'
+import { findPenEnd, extendWith, endDirection } from './pen-continue.js'
 
 // The pencil's default fidelity: the most the committed curve may stray from
 // the drawn stroke, in user units (about 2 px at 100% zoom).
@@ -225,7 +225,7 @@ export const init = (canvas) => {
     svgCanvas.getCurrentDrawing().releaseId(svgCanvas.getId())
     polyline.remove()
     const tolerance = Number.isFinite(fidelity) && fidelity > 0 ? fidelity : DEFAULT_FIDELITY
-    const fitted = fitFreehand(stroke, tolerance)
+    const fitted = fitFreehand(stroke, tolerance, { startDirection: endDirection(end) })
     if (fitted.anchors.length >= 2) {
       const closeTol = Math.max(4 * tolerance, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
       const d = anchorsToD([extendWith(end, fitted, closeTol)])

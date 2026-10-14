@@ -67,6 +67,16 @@ test.describe('Pencil continues the selected open path', () => {
     expect(await pairs(page, 'a')).toEqual([[100, 200], [200, 200], [300, 200]])
   })
 
+  test('a stroke that sets off roughly the way the path arrives leaves the seam without a kink', async ({ page }) => {
+    await select(page, 'a')
+    await pencil(page)
+    await draw(page, settle(strokeOf([{ x: 300, y: 200 }, { x: 400, y: 188 }, { x: 500, y: 150 }, { x: 560, y: 90 }])))
+    await expect(paths(page)).toHaveCount(2)
+    const d = await page.locator('#svgcontent #a').getAttribute('d')
+    // the first handle of the new segment lies on the old leg (y = 200)
+    expect(d).toMatch(/L300,200 C\d+(?:\.\d+)?,200 /)
+  })
+
   test('a stroke from the first point extends it from that side, keeping the direction', async ({ page }) => {
     await select(page, 'a')
     await pencil(page)

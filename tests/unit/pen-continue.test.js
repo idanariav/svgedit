@@ -1,7 +1,7 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { joinEnds, reversedSubpath } from '../../packages/svgcanvas/core/path-edit.js'
 import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.js'
-import { findPenEnd, continuationD, drawnSubpath, joinDrawn, extendWith } from '../../packages/svgcanvas/core/pen-continue.js'
+import { findPenEnd, continuationD, drawnSubpath, joinDrawn, extendWith, endDirection } from '../../packages/svgcanvas/core/pen-continue.js'
 
 const sub = (d) => parseAnchors(d)[0]
 const NS = 'http://www.w3.org/2000/svg'
@@ -179,6 +179,15 @@ describe('Pen continue and join', () => {
       const out = extendWith(endOf('M0,0 L50,0 L50,50', 50, 50), sub('M50,50 L0,50 L2,20'), 6)
       assert.equal(out.closed, false)
       assert.equal(out.anchors.length, 5)
+    })
+
+    it('endDirection is the direction the path arrives at the pressed end', () => {
+      const e = endOf('M0,0 L50,0', 50, 0)
+      assert.deepEqual(endDirection(e), { x: 1, y: 0 })
+      const s = endOf('M0,200 L0,250', 0, 200)
+      assert.deepEqual(endDirection(s), { x: 0, y: -1 })
+      const c = endOf('M100,0 C100,20 130,20 130,0', 130, 0)
+      assert.deepEqual(endDirection(c), { x: 0, y: -1 })
     })
 
     it('keeps curve handles of the old path', () => {
