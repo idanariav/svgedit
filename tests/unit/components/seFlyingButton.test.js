@@ -58,6 +58,27 @@ describe('se-flyingbutton', () => {
     expect(el.$button.getAttribute('title')).toBe('tools.square_rect_tool [R]')
   })
 
+  it('names the key the flyout is bound to now, and follows a rebinding', () => {
+    const listeners = []
+    let keys = ['r']
+    const unsubscribe = vi.fn()
+    installMockSvgEditor({
+      hotkeys: {
+        registerEl: () => {},
+        getAction: () => ({ id: 'tools_rect' }),
+        effectiveKeys: () => keys,
+        onChange: (fn) => { listeners.push(fn); return unsubscribe }
+      }
+    })
+    const el = mountFlyingButton('id="tools_rect" title="tools.square_rect_tool" shortcut="r"')
+    expect(el.$button.getAttribute('title')).toBe('tools.square_rect_tool [R]')
+    keys = ['w']
+    listeners.forEach((fn) => fn())
+    expect(el.$button.getAttribute('title')).toBe('tools.square_rect_tool [W]')
+    el.remove()
+    expect(unsubscribe).toHaveBeenCalled()
+  })
+
   it('reflects the title attribute without a shortcut', () => {
     const el = mountFlyingButton()
     el.setAttribute('title', 'tools.square_rect_tool')

@@ -1,4 +1,4 @@
-import { tooltipText } from '../Hotkeys.js'
+import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
@@ -171,10 +171,7 @@ export class FlyingButton extends HTMLElement {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
-        {
-          const shortcut = this.getAttribute('shortcut')
-          this.$button.setAttribute('title', tooltipText(t(newValue), shortcut))
-        }
+        this._syncTooltip()
         break
       case 'pressed':
         if (newValue) {
@@ -317,8 +314,20 @@ export class FlyingButton extends HTMLElement {
     }
   }
 
+  /**
+   * The tooltip: name + the key the action is bound to now (the authored `shortcut` until the Hotkey Manager knows it).
+   * @returns {void}
+   */
+  _syncTooltip () {
+    const title = this.getAttribute('title')
+    if (title === null) return
+    this.$button.setAttribute('title', boundTooltipText(t(title), this.getAttribute('shortcut'), ownerEditor(this)?.hotkeys, this.id))
+  }
+
   disconnectedCallback () {
     this._globalAbort?.abort()
+    this._unsubscribeHotkeys?.()
+    this._unsubscribeHotkeys = undefined
   }
 
   connectedCallback () {
@@ -330,6 +339,8 @@ export class FlyingButton extends HTMLElement {
         label: this.getAttribute('title'),
         rawKey: this.getAttribute('shortcut')
       })
+      this._unsubscribeHotkeys ??= ownerEditor(this)?.hotkeys?.onChange(() => this._syncTooltip())
+      this._syncTooltip()
     }
     // Closes opened menu on click
     this._globalAbort = new AbortController()

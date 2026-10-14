@@ -629,7 +629,7 @@ and the Cutter / Smooth / Eyedropper have no hover hint; Image has no mode, so n
 
 Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default palette
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
-tooltips shortened to the name and following a rebinding (`boundTooltipText`; `se-button` only — the flyout, spin-input and explorer-button tooltips still read the authored `shortcut`), Brush settings carries its text next to the gear, the Cutter icon is a shape cut along its diagonal (two pieces with a gap; stroke-drawn, so no longer in `OUTLINE_ICONS`). Remaining: the flyout, spin-input and explorer-button tooltips (above) still show the authored key.
+tooltips shortened to the name and following a rebinding (`boundTooltipText`: `se-button` and `se-flyingbutton`; spin-input and explorer-button are not registered with the hotkey manager, so the authored `shortcut` is all they have), Brush settings carries its text next to the gear, the Cutter icon is a shape cut along its diagonal (two pieces with a gap; stroke-drawn, so no longer in `OUTLINE_ICONS`). Nothing further planned.
 
 ## Last priority: command-driven debug log and an LLM drawing CLI
 
