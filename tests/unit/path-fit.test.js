@@ -263,3 +263,39 @@ describe('fitFreehand', () => {
     expect(anchorsToD([fitFreehand(stroke, 1.5)])).toBe(anchorsToD([fitFreehand(stroke, 1.5)]))
   })
 })
+
+describe('fitFreehand: closed strokes', () => {
+  const circle = (n, turns, r = 40) => Array.from({ length: n }, (_, i) => P(100 + r * Math.cos(i / (n - 1) * 2 * Math.PI * turns), 100 + r * Math.sin(i / (n - 1) * 2 * Math.PI * turns)))
+
+  it('a loop that ends near its start comes back closed, with a smooth seam', () => {
+    const stroke = circle(300, 1).map((p, i) => (i === 299 ? P(p.x + 2, p.y + 1) : p))
+    const out = fitFreehand(stroke, 2, { closeLoops: true })
+    expect(out.closed).toBe(true)
+    expect(deviation(stroke, [out])).toBeLessThan(2.5)
+    const seam = out.anchors[0]
+    // one tangent through the seam: hIn and hOut are opposite sides of the anchor
+    const a = P(seam.hIn.x - seam.p.x, seam.hIn.y - seam.p.y)
+    const b = P(seam.hOut.x - seam.p.x, seam.hOut.y - seam.p.y)
+    expect((a.x * b.x + a.y * b.y) / Math.hypot(a.x, a.y) / Math.hypot(b.x, b.y)).toBeLessThan(-0.99)
+  })
+
+  it('a triangle closed on its start keeps its corners, the start one included', () => {
+    const stroke = polyOf([P(0, 0), P(100, 0), P(50, 90), P(0, 0)])
+    const out = fitFreehand(stroke, 2, { closeLoops: true })
+    expect(out.closed).toBe(true)
+    expect(anchorsToD([out])).toBe('M0,0 L100,0 L50,90 L0,0 Z')
+  })
+
+  it('an arc that stops short of its start stays open', () => {
+    expect(fitFreehand(circle(300, 0.9), 2, { closeLoops: true }).closed).toBe(false)
+  })
+
+  it('a stroke that goes out and comes back along itself stays open', () => {
+    const stroke = [...dense(P(0, 0), P(100, 0), 1), ...dense(P(100, 0), P(0, 0), 1)]
+    expect(fitFreehand(stroke, 2, { closeLoops: true }).closed).toBe(false)
+  })
+
+  it('stays open unless closing is asked for', () => {
+    expect(fitFreehand(circle(300, 1), 2).closed).toBe(false)
+  })
+})

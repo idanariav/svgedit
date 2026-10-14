@@ -66,7 +66,7 @@ export const init = (canvas) => {
         const pt = points.getItem(i)
         stroke.push({ x: pt.x, y: pt.y })
       }
-      const fitted = fitFreehand(stroke, Number.isFinite(fidelity) && fidelity > 0 ? fidelity : DEFAULT_FIDELITY)
+      const fitted = fitFreehand(stroke, Number.isFinite(fidelity) && fidelity > 0 ? fidelity : DEFAULT_FIDELITY, { closeLoops: true })
       if (fitted.anchors.length < 2) return element
 
       return svgCanvas.addSVGElementsFromJson({

@@ -254,6 +254,31 @@ const vertexOf = (corner, arriveFrom, arriveDir, leaveTo, leaveDir, reach) => {
   return dist(vertex, corner) <= reach ? vertex : corner
 }
 
+/** A stroke ends "on its start" when the last sample is within this many tolerances of the first. */
+const CLOSE_REACH = 2
+/** A loop has to enclose at least this much area, relative to its length squared (a circle is 0.08), or it is a stroke that went back over itself. */
+const MIN_LOOP_AREA = 0.01
+
+/**
+ * Whether a stroke is a loop drawn back onto its start: ends within `CLOSE_REACH` tolerances of each other
+ * and encloses a real area.
+ * @param {Pt[]} pts
+ * @param {number} tolerance
+ * @returns {boolean}
+ */
+const isLoop = (pts, tolerance) => {
+  if (pts.length < 4 || dist(pts[0], pts[pts.length - 1]) > CLOSE_REACH * tolerance) return false
+  let length = 0
+  let area2 = 0
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]
+    const b = pts[(i + 1) % pts.length]
+    if (i + 1 < pts.length) length += dist(a, b)
+    area2 += a.x * b.y - b.x * a.y
+  }
+  return length > 0 && Math.abs(area2) / 2 >= MIN_LOOP_AREA * length * length
+}
+
 /**
  * Fit a freehand stroke: drop jitter closer than a third of the tolerance, find the corners (a turn of
  * more than about 100°, measured over a few tolerances of stroke), put each corner where the two legs
@@ -263,11 +288,17 @@ const vertexOf = (corner, arriveFrom, arriveDir, leaveTo, leaveDir, reach) => {
  * suits the sparse samples of a pen, but takes the end tangent at a corner from the local neighbours,
  * which on points an editor has already smoothed is the rounded bit, not the leg. Fitting the runs
  * straight from the points with leg tangents keeps the corner crisp.
+ *
+ * With `closeLoops`, a stroke that ends on its start (see `isLoop`) comes back closed: its end is joined to its start, and the
+ * seam is smooth unless the stroke turns by more than a corner there.
  * @param {Pt[]} pts the stroke's points, in order
  * @param {number} tolerance the pencil's fidelity, in user units
+ * @param {{closeLoops?: boolean}} [opts] `closeLoops`: return a stroke that ends on its start as a closed
+ *   subpath (default: always open)
  * @returns {SubPath}
  */
-export const fitFreehand = (pts, tolerance) => {
+export const fitFreehand = (pts, tolerance, opts = {}) => {
+  const { closeLoops = false } = opts
   if (!pts.length) return { closed: false, anchors: [] }
   const min = Math.max(tolerance * 0.3, 0.05)
   const last = pts[pts.length - 1]
@@ -279,6 +310,9 @@ export const fitFreehand = (pts, tolerance) => {
   if (kept.length > 1) kept[kept.length - 1] = last
   else if (pts.length > 1) kept.push(last)
   if (kept.length < 3) return { closed: false, anchors: kept.map(cornerAnchor) }
+
+  const closed = closeLoops && isLoop(kept, tolerance)
+  if (closed) kept[kept.length - 1] = { x: kept[0].x, y: kept[0].y }
 
   const reach = tolerance * CORNER_REACH
   const flags = markCorners(kept, reach)
@@ -292,6 +326,11 @@ export const fitFreehand = (pts, tolerance) => {
   // Tangents of every run end, before any corner moves: along the legs, skipping the rounding at a corner.
   const outDir = runs.map((run, k) => legDirection(run, k === 0 ? 0 : reach / 3, reach, false))
   const inDir = runs.map((run, k) => legDirection(run, k === runs.length - 1 ? 0 : reach / 3, reach, true))
+  // The seam of a closed stroke is smooth (one shared tangent) unless the turn there is a corner.
+  if (closed && dot(inDir[runs.length - 1], outDir[0]) > CORNER_COS) {
+    const seam = unit({ x: inDir[runs.length - 1].x + outDir[0].x, y: inDir[runs.length - 1].y + outDir[0].y })
+    if (seam) { inDir[runs.length - 1] = seam; outDir[0] = seam }
+  }
   // A corner sits where the leg before it and the leg after it meet.
   for (let k = 0; k + 1 < runs.length; k++) {
     const arrive = runs[k]
@@ -313,7 +352,7 @@ export const fitFreehand = (pts, tolerance) => {
   runs.forEach((run, k) => {
     for (const c of fitCubics(run, outDir[k], inDir[k], tolerance)) segs.push({ c, line: isStraight(c, tolerance * 0.02) })
   })
-  return segsToSubpath(segs, false) ?? { closed: false, anchors: kept.map(cornerAnchor) }
+  return segsToSubpath(segs, closed) ?? { closed: false, anchors: kept.map(cornerAnchor) }
 }
 
 /** Turns up to this are smoothed away by the Smooth tool: only a path that doubles back on itself keeps a corner. */

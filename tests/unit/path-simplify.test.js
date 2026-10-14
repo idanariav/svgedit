@@ -172,6 +172,15 @@ describe('simplifyFreehand (the pencil commit)', () => {
     expect(anchors[0].p).toEqual({ x: 0, y: 0 })
   })
 
+  it('a loop drawn back onto its start is committed as a closed path', () => {
+    const canvas = makeCanvas()
+    pathSimplifyInit(canvas)
+    const ring = Array.from({ length: 200 }, (_, i) => [100 + 40 * Math.cos(i / 199 * 2 * Math.PI), 100 + 40 * Math.sin(i / 199 * 2 * Math.PI)])
+    const path = canvas.simplifyFreehand(polyline(ring), 2)
+    expect(parseAnchors(path.getAttribute('d'))[0].closed).toBe(true)
+    expect(path.getAttribute('d')).toMatch(/Z$/)
+  })
+
   it('a bigger fidelity gives a coarser curve', () => {
     const canvas = makeCanvas()
     pathSimplifyInit(canvas)

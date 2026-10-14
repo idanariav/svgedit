@@ -54,6 +54,14 @@ test.describe('Pencil and Smooth Path fit', () => {
     expect(pairs.some(([x, y]) => Math.hypot(x - 220, y - 100) < 6)).toBe(true)
   })
 
+  test('a loop drawn back onto its start commits as a closed path', async ({ page }) => {
+    const ring = Array.from({ length: 80 }, (_, i) => ({ x: 300 + 80 * Math.cos(i / 79 * 2 * Math.PI), y: 240 + 80 * Math.sin(i / 79 * 2 * Math.PI) }))
+    // the stabiliser trails the pointer: finish with a short pause on the start, as a person closing a loop does
+    await draw(page, [...ring, ...Array(12).fill(ring[0])])
+    const d = await path(page).getAttribute('d')
+    expect(d).toMatch(/Z$/)
+  })
+
   test('the committed path opens in the node editor with its anchors', async ({ page }) => {
     await draw(page, strokeOf([{ x: 100, y: 300 }, { x: 220, y: 100 }, { x: 340, y: 300 }]))
     const grips = await page.evaluate(() => {
