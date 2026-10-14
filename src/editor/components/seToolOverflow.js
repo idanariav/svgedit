@@ -30,6 +30,18 @@ export class ToolOverflow extends HTMLElement {
     this.$overall = this._shadowRoot.querySelector('.overall')
     this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
     this.$menu = this._shadowRoot.querySelector('.menu')
+    this.$badge = this._shadowRoot.querySelector('.badge')
+    this._shadowRoot.querySelector('slot').addEventListener('slotchange', () => this._updateBadge())
+  }
+
+  /**
+   * Show how many tools the drawer holds on its button.
+   * @returns {void}
+   */
+  _updateBadge () {
+    const count = this.children.length
+    this.$badge.textContent = String(count)
+    this.$badge.hidden = count === 0
   }
 
   /**
@@ -89,6 +101,24 @@ export class ToolOverflow extends HTMLElement {
           height: 22px;
           display: block;
         }
+        .badge {
+          position: absolute;
+          top: -3px;
+          right: -3px;
+          min-width: 14px;
+          height: 14px;
+          padding: 0 3px;
+          box-sizing: border-box;
+          border-radius: 7px;
+          background: var(--accent, #2962FF);
+          color: var(--chrome-bg, #fff);
+          font: 600 9px/14px sans-serif;
+          text-align: center;
+          pointer-events: none;
+        }
+        .badge[hidden] {
+          display: none;
+        }
         .menu {
           position: fixed;
           background: var(--chrome-bg, #fff);
@@ -113,6 +143,7 @@ export class ToolOverflow extends HTMLElement {
         </div>
         <div class="menu-button" title="">
           <span class="icon-wrap"></span>
+          <span class="badge" hidden></span>
         </div>
       </div>`
     return template

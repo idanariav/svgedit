@@ -118,4 +118,20 @@ describe('se-tool-overflow', () => {
 
     expect(el.opened).toBe(false)
   })
+
+  it('shows a badge with the number of tools it holds, updated as tools come and go', async () => {
+    const el = mountToolOverflow()
+    const badge = el.shadowRoot.querySelector('.badge')
+    await Promise.resolve()
+    expect(badge.hidden).toBe(false)
+    expect(badge.textContent).toBe('1')
+
+    el.append(document.createElement('se-button'))
+    await Promise.resolve()
+    expect(badge.textContent).toBe('2')
+
+    el.replaceChildren()
+    await Promise.resolve()
+    expect(badge.hidden).toBe(true)
+  })
 })

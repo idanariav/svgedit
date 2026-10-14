@@ -169,7 +169,7 @@ Done: a tree under each layer (objects and plain groups, front to back; layers o
 - Object thumbnails: rows have none.
 - **Moving between parents folds the parents' transforms into the object's own `transform`** (as one matrix). A `clip-path` / `mask` or a `userSpaceOnUse` gradient on the moved object is not compensated, and a rotation held as `rotate()` becomes part of the matrix.
 - **Shift-range and Cmd-toggle work among siblings only** (the selection cannot span two parents); a row click in another parent starts a new selection.
-- **The canvas selection does not auto-open its row**; the highlight shows only when the row is visible. Use Locate Object.
+- **The canvas selection opens its row** (its layer and groups) and scrolls it into view; Locate Object stays for a row hidden by the 200-row cap.
 - **A generated group (blend, brushed path, repeat) is one row** and cannot be opened; its parts are edited by entering it on the canvas as before.
 - **The layer context menu** (right-click in the list) acts on layers and also opens on object rows.
 - The group-name field in `#objects_panel` (shown when a group is selected) stays; it duplicates the row rename.
@@ -576,8 +576,7 @@ column's last tools fold into "Additional tools" (`toolAutoFold.js`) and return 
 the saved order never records the fold. Covered by `tests/e2e/top-bar-layout.spec.js`,
 `tests/e2e/tool-auto-fold.spec.js`, `tests/unit/toolAutoFold.test.js`. Remaining:
 - Folding is strictly from the end of the main list: the user cannot say which tools matter most
-  (they can reorder, so the tail is theirs to choose). A count badge on the drawer button would say
-  "6 more".
+  (they can reorder, so the tail is theirs to choose). The drawer button shows a count badge of the tools it holds.
 - A folded tool the user drags *within* the drawer is still treated as folded (saved as main).
 Small.
 
