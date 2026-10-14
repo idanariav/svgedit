@@ -146,8 +146,8 @@ export const simplifyWith = (subpaths, opts) => {
   return subpaths.map((sp) => simplifySubpath(sp, tol, angle))
 }
 
-/** cos of the sharpest turn that is still smooth: a turn of more than about 100° is a corner. */
-const CORNER_COS = -0.2
+/** cos of the sharpest turn that is still smooth: a turn of more than about 84° is a corner, so a right angle stays crisp. */
+const CORNER_COS = 0.1
 /**
  * How far (in tolerances) each side of a sample the turn is measured. It has to be several times the length a
  * stabilised or captured corner is rounded over, or the chords on both sides lean towards each other and a
@@ -158,7 +158,7 @@ const CORNER_REACH = 6
 
 /**
  * Which samples are corners: the sharpest sample of each stretch where the stroke
- * turns by more than about 100°, the turn measured between the chords to the
+ * turns by more than about 84°, the turn measured between the chords to the
  * samples `reach` of stroke length before and after (at least the neighbours).
  * @param {Pt[]} pts
  * @param {number} reach arc length each side of a sample the chords span
@@ -281,7 +281,7 @@ const isLoop = (pts, tolerance) => {
 
 /**
  * Fit a freehand stroke: drop jitter closer than a third of the tolerance, find the corners (a turn of
- * more than about 100°, measured over a few tolerances of stroke), put each corner where the two legs
+ * more than about 84°, measured over a few tolerances of stroke), put each corner where the two legs
  * meet, and fit the runs between corners with as few cubics as stay within `tolerance`.
  *
  * VectorCraft builds a Catmull-Rom spline through the samples and then runs `simplifyWith` on it; that

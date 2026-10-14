@@ -317,3 +317,26 @@ describe('fitFreehand: start direction', () => {
     expect(out.anchors[0].hOut).toEqual(free.anchors[0].hOut)
   })
 })
+
+describe('fitFreehand: right angles', () => {
+  it('keeps a 90 degree turn of the pen as a corner', () => {
+    const stroke = polyOf([P(0, 0), P(120, 0), P(120, 120)]).map((p, i) => P(p.x + Math.sin(i * 1.7) * 0.2, p.y + Math.cos(i * 2.3) * 0.2))
+    const out = fitFreehand(stroke, 2)
+    const at = out.anchors.findIndex((a) => dist(a.p, P(120, 0)) < 3)
+    expect(at).toBeGreaterThan(0)
+    expect(turnAt(out, at)).toBeGreaterThan(80)
+  })
+
+  it('a loop of four right angles closes into four corners', () => {
+    const out = fitFreehand(polyOf([P(0, 0), P(100, 0), P(100, 100), P(0, 100), P(0, 0)]), 2, { closeLoops: true })
+    expect(out.closed).toBe(true)
+    expect(anchorsToD([out])).toBe('M0,0 L100,0 L100,100 L0,100 L0,0 Z')
+  })
+
+  it('a quarter circle of a generous radius stays smooth', () => {
+    const arc = Array.from({ length: 200 }, (_, i) => P(60 * Math.cos(i / 199 * Math.PI / 2), 60 * Math.sin(i / 199 * Math.PI / 2)))
+    const out = fitFreehand(arc, 2)
+    expect(out.anchors.length).toBeLessThanOrEqual(3)
+    expect(deviation(arc, [out])).toBeLessThan(2.5)
+  })
+})
