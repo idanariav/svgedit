@@ -157,6 +157,13 @@ test.describe('Layers panel', () => {
       await layerRow(page, 'L2').locator('td.layerlock').click({ modifiers: ['Alt'] })
       await expect.poll(() => lockedLayers(page).then((l) => l.sort())).toEqual(['L1', 'L3', 'Trace'])
       await expect(layerRow(page, 'L1').locator('td.layerlock')).toHaveClass(/locked/)
+      // the whole Alt-click is one undo step, and the rows follow undo and redo
+      await undo(page)
+      expect(await lockedLayers(page)).toEqual([])
+      await expect(layerRow(page, 'L1').locator('td.layerlock')).not.toHaveClass(/locked/)
+      await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+      expect((await lockedLayers(page)).length).toBe(3)
+      await expect(layerRow(page, 'L1').locator('td.layerlock')).toHaveClass(/locked/)
       await layerRow(page, 'L2').locator('td.layerlock').click({ modifiers: ['Alt'] })
       expect(await lockedLayers(page)).toEqual([])
     })

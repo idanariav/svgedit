@@ -295,20 +295,22 @@ export const init = canvas => {
   }
 
   /**
- * Locks or unlocks several layers (an Alt-click on a padlock, a drag down the
- * lock column). Not undo-able, like `setLayerLocked`.
+ * Locks or unlocks several layers as ONE undo step (a click on a padlock, an Alt-click, a drag down the
+ * lock column). Layers already in the requested state are skipped. (`setLayerLocked` itself stays out of
+ * the history: Focus mode and templates lock layers as a view state.)
  * @function module:draw.setLayersLocked
  * @param {Object<string, boolean>} states - layer name → locked
  * @returns {boolean} true if any layer changed
  */
   const setLayersLocked = (states) => {
     const drawing = svgCanvas.getCurrentDrawing()
-    let changed = false
-    for (const [name, locked] of Object.entries(states)) {
-      if (!drawing.getLayerByName(name) || drawing.getLayerLocked(name) === locked) continue
-      changed = setLayerLocked(name, locked) || changed
-    }
-    return changed
+    const todo = Object.entries(states).filter(([name, locked]) =>
+      drawing.getLayerByName(name) && drawing.getLayerLocked(name) !== locked)
+    if (!todo.length) return false
+    svgCanvas.transact('Lock Layer', () => {
+      for (const [name, locked] of todo) setLayerLocked(name, locked)
+    })
+    return true
   }
 
   /**
