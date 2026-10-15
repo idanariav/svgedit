@@ -606,6 +606,8 @@ export default {
         for (let i = 0; i < 2; i++) {
           const cElem = parts[i]
           if (!cElem || !cElem.parentNode) continue // free or removed end
+          // A hidden shape has no box (getBBox is all zeros): the connector stays where it is until it is shown.
+          if (cElem.getAttribute('display') === 'none') continue
 
           let addThis = false
           const parents = svgCanvas.getParents(cElem.parentNode)

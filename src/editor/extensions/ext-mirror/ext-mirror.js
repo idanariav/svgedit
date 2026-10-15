@@ -179,7 +179,9 @@ export default {
       try {
         const fresh = makeTwin(src, ax)
         if (!fresh) return
-        const keep = new Set([MIRROR_OF_ATTR, AXIS_ATTR, 'id'])
+        // Hidden / locked is per object (the Layers panel lists the twin on its own row): hiding or locking the
+        // source must not reach the twin on whichever sync happens to come next (a redo, an edit).
+        const keep = new Set([MIRROR_OF_ATTR, AXIS_ATTR, 'id', 'display', 'se:locked'])
         for (const attr of Array.from(twin.attributes)) {
           if (!keep.has(attr.name) && !fresh.hasAttribute(attr.name)) {
             twin.removeAttribute(attr.name)

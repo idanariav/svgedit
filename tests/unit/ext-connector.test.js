@@ -80,6 +80,35 @@ describe('ext-connector', () => {
     expect(lineB.getAttribute('x1')).toBeTruthy()
   })
 
+  it('leaves a connector alone while the shape it is bound to is hidden', async () => {
+    // A display:none shape has an all-zero box: re-routing to it threw the connector to the origin, and a redo of
+    // the hide did that where the original hide had not.
+    const seNs = 'http://svg-edit.googlecode.com'
+    const boxA = document.createElementNS(NS.SVG, 'rect')
+    boxA.id = 'boxA'
+    boxA.setAttribute('display', 'none')
+    const lineA = document.createElementNS(NS.SVG, 'line')
+    lineA.id = 'lineA'
+    lineA.setAttributeNS(seNs, 'se:bind-start', 'boxA')
+    svgContent.append(boxA, lineA)
+
+    svgCanvas.getElement = vi.fn((id) => svgContent.querySelector(`#${id}`))
+    svgCanvas.$id = vi.fn((id) => svgContent.querySelector(`#${id}`))
+    svgCanvas.getParents = vi.fn(() => [])
+    svgCanvas.getStrokedBBox = vi.fn(() => ({ x: 0, y: 0, width: 0, height: 0 }))
+    const store = new Map()
+    svgCanvas.getDataStorage = () => ({
+      put: (el, key, val) => store.set(`${el.id}:${key}`, val),
+      get: (el, key) => store.get(`${el.id}:${key}`),
+      has: (el, key) => store.has(`${el.id}:${key}`)
+    })
+
+    const ext = await extConnector.init.call(svgEditor, { svgroot, selectorManager: {} })
+    ext.elementChanged({ elems: [boxA] })
+
+    expect(lineA.hasAttribute('x1')).toBe(false)
+  })
+
   it('wires the idle-hover listener to the scoped workarea, not the first #workarea in the document', async () => {
     // Simulate a second, unrelated mounted editor whose #workarea is already
     // in the document -- a bare document.querySelector('#workarea') resolves

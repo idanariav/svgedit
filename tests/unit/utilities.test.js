@@ -251,6 +251,16 @@ describe('utilities', function () {
     assert.equal(getPathDFromElement(elem), 'M0,1 L5,1 L5,11 L0,11 L0,1 Z')
     elem.remove()
 
+    // Read from the attributes, not getBBox (which is all zeros once the rect is display:none)
+    elem = mockCreateSVGElement({
+      element: 'rect',
+      attr: { id: 'hiddenrect', x: '0', y: '1', width: '5', height: '10', display: 'none' }
+    })
+    elem.getBBox = () => ({ x: 0, y: 0, width: 0, height: 0 })
+    svgroot.append(elem)
+    assert.equal(getPathDFromElement(elem), 'M0,1 L5,1 L5,11 L0,11 L0,1 Z')
+    elem.remove()
+
     elem = mockCreateSVGElement({
       element: 'rect',
       attr: { id: 'roundrect', x: '0', y: '1', rx: '2', ry: '3', width: '10', height: '11' }

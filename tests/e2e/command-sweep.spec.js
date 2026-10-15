@@ -24,10 +24,7 @@ const VIEW_STATE = new Set(['tool_layerView', 'layer_template'])
 const FILE_PICKER = ['tool_save', 'tool_save_as']
 // Problems the sweep found that are real but not fixed yet (each is in techdebt.md).
 // A listed problem is tolerated; one that stops reproducing fails the run so the entry gets deleted.
-const WHY_HIDE_REDO = 'hiding (or, for a mirror source, locking) an object that others are generated from (a blend key, a mirror source, a connector end) regenerates them, and redo re-hides without reproducing that regeneration'
-const KNOWN_ISSUES = ['blend-pinned.svg', 'blend-spine.svg', 'blend.svg', 'connectors.svg', 'mirror.svg'].map((file) => ({
-  file, commands: file === 'mirror.svg' ? ['object_hide_selection', 'object_lock_selection'] : ['object_hide_selection'], match: /redo did not reproduce the edit/, why: WHY_HIDE_REDO
-}))
+const KNOWN_ISSUES = []
 const MAX_ELEMENTS = process.env.SWEEP === 'full' ? 8 : 2
 
 test.describe.configure({ mode: 'parallel' })

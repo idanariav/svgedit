@@ -90,10 +90,12 @@ export const getPathDFromElement = (elem) => {
     case 'rect': {
       rx = Number(elem.getAttribute('rx'))
       ry = Number(elem.getAttribute('ry'))
-      const b = /** @type {SVGGraphicsElement} */ (elem).getBBox()
-      const { x, y } = b
-      const w = b.width
-      const h = b.height
+      // From the attributes: getBBox() of a hidden (display:none) rect is all zeros, which collapsed a hidden
+      // blend key (and any hidden rect converted to a path) to a point. A non-numeric value (a percentage) still
+      // asks the browser.
+      const box = ['x', 'y', 'width', 'height'].map((n) => Number(elem.getAttribute(n) || 0))
+      const b = box.every(Number.isFinite) ? null : /** @type {SVGGraphicsElement} */ (elem).getBBox()
+      const [x, y, w, h] = b ? [b.x, b.y, b.width, b.height] : box
       num = 4 - num // Why? Because!
 
       d =
