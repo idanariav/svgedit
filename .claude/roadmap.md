@@ -240,7 +240,9 @@ so write the real name.
 The host API is `src/editor/hostApi.d.ts` (`EditorHostApi`, `HostCanvas`),
 typechecked against `Editor` by `npm run typecheck` and copied to
 `dist/editor/hostApi.d.ts`; the plugin consumes it.
-Also open: the root `tsconfig.json` is `module: commonjs` and unused by any script. Medium.
+The root `tsconfig.json` (what editors and the LSP read, no script uses it) is `module: ESNext` / `moduleResolution: Bundler` since 2026-10-15, so
+`@svgedit/svgcanvas/core/*` imports resolve instead of reporting missing declaration files; `tsc -p tsconfig.json` still reports 19 real strict-mode
+errors in `src/` (untyped parameters, index signatures), not a gate.
 
 ## Typing the `init` modules (decided 2026-10-13: no d.ts generation)
 
