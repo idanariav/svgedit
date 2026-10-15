@@ -224,7 +224,7 @@ code exploration.
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
 | [`debug-log.md`](.claude/debug-log.md) | Reading or extending the host debug log (event vocabulary, how to retrace a bug from it) |
 | [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
-| [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes) and unscheduled planned work (tool hooks, typing rollout, live effects / corners / glow follow-ups, UI polish). Apply the guidelines while you work; fold an item in when your task touches its area |
+| [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes), the re-architecture track (R1–R7: document model, canvas composition, TypeScript, features vs extensions…) and an index of per-area follow-up files in [`roadmap/`](.claude/roadmap/). Apply the guidelines while you work; read an area file and fold its items in when your task touches that area |
 
 ### Keeping the docs fresh
 
@@ -238,7 +238,7 @@ the relevant doc(s) to reflect the change. Specifically:
 - Created or changed an extension → update `extensions.md`
 - Deferred a proper fix in favor of a quick one → add an entry to `techdebt.md`;
   deferred a feature, or left a planned refactor/follow-up undone → add it to
-  `roadmap.md`. Remove the entry once addressed
+  its area file under `roadmap/` (indexed in `roadmap.md`). Remove the entry once addressed
 
 ---
 
@@ -292,15 +292,10 @@ npm start   # serves on http://localhost:8000/src/editor/index.html
 npm start -- --port 8001
 ```
 
-> ⚠️ **The dev server does NOT serve `packages/svgcanvas` from source.**
-> `@svgedit/svgcanvas` resolves through the workspace symlink to the package's
-> `main`: `packages/svgcanvas/dist/svgcanvas.js` — a **built artifact**. After
-> any change under `packages/svgcanvas/`, rebuild it before testing:
-> ```bash
-> npx vite build packages/svgcanvas
-> ```
-> then reload the page (no server restart needed). Editor-side files
-> (`src/editor/**`) are served from source as usual.
+Both `src/editor/**` and `packages/svgcanvas/**` are served from source
+(`vite.config.mjs` aliases `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.js`
+for the dev server, vitest and the editor build alike), so a core change needs
+only a page reload. `packages/svgcanvas/dist/` is no longer used by anything here.
 
 ### Prefer the automation API
 

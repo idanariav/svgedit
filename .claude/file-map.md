@@ -341,7 +341,8 @@ of `ext-*/ext-*.js`, bundled into `Editor.js`).
 
 | Path | Audience | Purpose |
 |------|----------|---------|
-| `docs/tutorials/` | Developers | API/config reference (CanvasAPI, EditorAPI, Events, etc.) + `tutorials.json` manifest |
+| `docs/tutorials/` | Developers | API/config reference (CanvasAPI, EditorAPI, Events, etc.; upstream, partly dated) |
+| `docs/Development.md` | Developers | npm scripts, tests, coverage, dev server |
 | `docs/user-tutorials/` | End users | Short promo-style how-to guides, one per tool/feature (Use case / Relevant for / How to test it / Related properties); `README.md` is the index |
 
 ---
@@ -350,14 +351,16 @@ of `ext-*/ext-*.js`, bundled into `Editor.js`).
 
 | File | Purpose |
 |------|---------|
-| `vite.config.mjs` | Vite build config (ES + IIFE outputs, plugins, entry points) |
+| `vite.config.mjs` | Vite config for dev, build (one ES `Editor.js`) and vitest: the `@svgedit/svgcanvas` → source alias, the HTML template plugin, istanbul instrumentation for e2e coverage |
+| `scripts/html-template.mjs` | `compactHtmlTemplate()` — what the template plugin does to an imported `.html` (drops indentation between tags, nothing else); `tests/unit/html-template.test.js` |
 | `src/vite-env.d.ts` | Ambient TS declarations for Vite imports (`vite/client` + `*.html` as string) so the IDE resolves template/`?inline` imports |
 | `scripts/copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are **not** copied) |
 | `scripts/check-layers.mjs` | `pretest` gate: fails when `packages/svgcanvas/**` imports from `src/editor`, reads `window.svgEditor`/`svgEditor.` (comments excluded) or defines custom elements. Exports `findLayerViolations()` (unit-tested); allowlist starts empty |
 | `packages/svgcanvas/legacy-jsdoc-types.d.ts` | Global `PlainObject` / `GenericArray` aliases for the upstream JSDoc still in `// @ts-check` modules (listed first in both svgcanvas tsconfigs). New code writes the real type |
 | `packages/svgcanvas/tsconfig.strict.json` | Strict (`noImplicitAny` + `strictNullChecks`) typecheck, part of `npm run typecheck`. Lists every `// @ts-check` module that is strict-clean **together with everything it imports** (all 107 `core/`+`common/` modules on 2026-10-12, and `svgcanvas.js` itself on 2026-10-13); a module outside the list is only checked by the lax `tsconfig.json`. To add one: fix its strict errors (and its imports'), then add it. A pragma'd file reached by a listed one is checked strictly whether listed or not |
 | `scripts/check-dom-scope.mjs` | `pretest` gate: fails on new bare `document.querySelector`/`getElementById` calls, `window.svgEditor` reads and `/* globals svgEditor */` headers under `src/editor/` outside a small reviewed allowlist — enforces the multi-instance scoping in `src/editor/domScope.js` |
-| `package.json` | Scripts: `build`, `start` (dev server :8000), `build-docs`. Dependencies include `culori` (OKLCH color math, used by `src/editor/palette/`) |
+| `package.json` | Scripts: `build`, `start` (dev server :8000), `test` (+ `pretest` gates), `typecheck`, `version-bump`, `publish`. Dependencies include `culori` (OKLCH color math, used by `src/editor/palette/`) |
+| `nyc.config.js` | Merges the vitest (istanbul provider) and e2e (vite-plugin-istanbul) coverage in `scripts/run-e2e.mjs` |
 | `packages/svgcanvas/package.json` | svgcanvas workspace package |
 | `CLAUDE.md` | This repo's coding guidelines for AI agents |
 | `.claude/` | Agent documentation (this folder) |

@@ -16,9 +16,9 @@ memory of the survey session can pick it up, implement it, and verify it.
 ## Status board
 
 Update the row when you start (`in progress — <agent/session>, <date>`) and
-when you finish (`done — <commit sha>`). Pick items in the order decided in
-[`../../roadmap.md`](../../roadmap.md) › *Implementation order* (it supersedes the ID order below) unless
-the user says otherwise; the **Depends on** column is a hard prerequisite.
+when you finish (`done — <commit sha>`). Every phase of the port sequence is done (2026-10-15); its
+follow-ups are the per-area files indexed in [`../../roadmap.md`](../../roadmap.md). For a new item, pick
+the order with the user; the **Depends on** column is a hard prerequisite.
 "(T0.x helps)" is soft: the item can ship without it but gets smaller with
 it. Tier 0's own suggested order (T0.6 → T0.2 → T0.1 → T0.4 → T0.3 → T0.5)
 is in [tier-0.md](tier-0.md).
@@ -87,9 +87,8 @@ is in [tier-0.md](tier-0.md).
    change requires. A deferred feature goes in `.claude/roadmap.md`, a shortcut taken in `.claude/techdebt.md`.
 7. **Repo boundary:** everything here is generic svgedit work (belongs in this
    repo). Nothing in these plans is Obsidian-specific.
-8. **Testing in the browser:** `packages/svgcanvas` is served from its built
-   `dist/` — after any change under `packages/svgcanvas/`, run
-   `npx vite build packages/svgcanvas` before reloading. Force desktop mode
+8. **Testing in the browser:** `packages/svgcanvas` is served from source, so a
+   reload picks up a core change. Force desktop mode
    (`tabletMode` off, remove `.ui-tablet`) before driving the UI.
 9. **Don't commit unless the user asks.** One feature per commit when they do.
 

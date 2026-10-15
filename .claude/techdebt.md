@@ -159,9 +159,3 @@ host that overrides tokens there reaches the dialogs too — a token added to th
 must be added to that list. The ~50 remaining hard-coded hex values in components/dialogs are
 deliberate: text on accent buttons, colour-picker maths, danger red, grid default. The
 `--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
-
-## Repo hygiene leftovers
-
-- Two coverage systems remain: nyc (`nyc.config.js`, used by
-  `scripts/run-e2e.mjs` to merge e2e + vitest coverage), `vite-plugin-istanbul`
-  for e2e, and v8 for unit tests. Consolidating means reworking the merge step.
