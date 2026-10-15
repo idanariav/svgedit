@@ -2,7 +2,8 @@
  "extends": "./tsconfig.json",
  "compilerOptions": {
   "noImplicitAny": true,
-  "strictNullChecks": true
+  "strictNullChecks": true,
+  "skipLibCheck": true
  },
  "files": [
   "legacy-jsdoc-types.d.ts",
@@ -65,6 +66,11 @@
   "core/load-image.js",
   "core/math.js",
   "core/measure.js",
+  "core/model/drawing.js",
+  "core/model/index.js",
+  "core/model/node.js",
+  "core/model/parse.js",
+  "core/model/serialize.js",
   "core/namespaces.js",
   "core/object-state.js",
   "core/paint.js",

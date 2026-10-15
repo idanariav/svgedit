@@ -50,5 +50,8 @@
     "build": "vite build",
     "prebuild": "standard .",
     "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "saxes": "^6.0.0"
   }
 }

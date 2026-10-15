@@ -90,6 +90,25 @@ export const repairMarkdown = (content, repairs = REPAIRS) => {
   return { source, applied: [...applied] }
 }
 
+/**
+ * Every SVG a plugin note holds: the ```svg / ```compressed-svg block and the "## Versions" snapshots.
+ * Read-only counterpart of `repairMarkdown` (same blocks), for tools that check drawings.
+ * @param {string} content
+ * @returns {{where: string, svg: string}[]}
+ */
+export const drawingsIn = (content) => {
+  const found = []
+  for (const [, , compressed, kind, body] of content.matchAll(/^(```(compressed-)?(svg|versions-json)\r?\n)([\s\S]*?)(\r?\n```)/gm)) {
+    const raw = compressed ? fromBase64(body) : body
+    if (!raw) continue
+    if (kind === 'svg') { found.push({ where: 'drawing', svg: raw }); continue }
+    let list
+    try { list = JSON.parse(raw) } catch { continue }
+    if (Array.isArray(list)) list.forEach((snap, i) => { if (typeof snap?.svg === 'string') found.push({ where: `version ${i}`, svg: snap.svg }) })
+  }
+  return found
+}
+
 const repairFile = (file, text) => (file.endsWith('.md') ? repairMarkdown(text) : repairSvg(text))
 
 const walk = async function * (target) {

@@ -56,7 +56,7 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 
 | # | Change | Size | Depends on |
 |---|---|---|---|
-| R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo | XL | R2, R3 helpful |
+| R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo (step a started 2026-10-15: `core/model/`) | XL | R2, R3 helpful |
 | R2 | Canvas composition: modules export functions over an explicit context instead of attaching ~540 members to one object | L | — |
 | R3 | TypeScript (`.ts`) for the engine, then the editor | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |

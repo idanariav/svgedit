@@ -53,7 +53,21 @@ enforce them).
 - **Performance:** reconciliation at 5,000+ elements needs a cost budget like VectorCraft's `vectorcraft-cli perf`.
 
 **Path (strangler, not big bang):**
-1. **(a) Model + lossless SVG parse / serialize, no editor change.** Types for the model, `parseSvg(string) → Document`,
+1. **(a) Model + lossless SVG parse / serialize, no editor change.**
+   *Started 2026-10-15. Done in `packages/svgcanvas/core/model/`: the persistent tree (`parseSvg`, `serializeSvg`,
+   path-copy edits) and a typed read-only view over it (`readDrawing`: layers, items, defs, orphans, guides, every
+   `se:*` attribute verbatim). The oracle is `node scripts/check-model-roundtrip.mjs [--typed] <dir>`: over the vault
+   (447 drawings: about 160 `.svg` files, the rest the drawings and saved versions of the plugin's notes) 436 write back byte-identical, 11 differ only in spelling
+   (other tools' output: `<x></x>`, a space inside a tag, a newline before a doctype), 0 lossy, 0 fail to parse, 0 fail
+   to read. At 5,000 elements parse ≈ 36 ms, serialize ≈ 8 ms, one edit ≈ 0.07 ms (a transaction commit is ≈ 22 ms).
+   The typed view agrees with the editor's own helpers (`isPanelObject`, `hasLockMark`, `isObjectHidden`) on every
+   round-trip fixture; the repeat copies the Layers panel hides are kept and flagged `generated`.
+   Left in (a): typed fields for the `se:` features (each when its owning module has a DOM-free parser: live effects,
+   corner radius, taper / width profile, arrowheads, dash fit, blend, art brush, repeat, mirror, puppet pins, connector
+   binding, area text; today a caller reads them from `item.se`), a policy for unknown elements and foreign `<style>`,
+   and an `inspect` / `check` entry point for the LLM CLI. The tree keeps whitespace text nodes, so child indexes
+   interleave with them; use `item.path`, never an element position.*
+   Types for the model, `parseSvg(string) → Document`,
    `serialize(Document) → string`, tested by round-tripping the e2e round-trip corpus and the vault's drawings
    (`repair-drawings.mjs`'s reader finds them) to byte-stable output. Useful on its own: it is the headless engine the
    [LLM CLI](llm-cli.md) needs (`inspect`, `check`, simple edits without a browser).
