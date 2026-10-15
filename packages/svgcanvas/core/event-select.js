@@ -50,7 +50,7 @@ const updateTransformList = (svgRoot, element, dx, dy) => {
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-select.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function, multiselectMove: Function, up: Function}}
  */
 export const init = (canvas) => {

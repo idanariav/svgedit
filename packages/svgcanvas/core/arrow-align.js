@@ -251,7 +251,7 @@ const sourceOf = (elem) => {
   return attr ? readSubpath(elem, attr) : readSubpath(elem)
 }
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -264,7 +264,7 @@ export const init = (canvas) => {
     const m = /\(#(.+)\)/.exec(elem.getAttribute(`marker-${pos}`) || '')
     const marker = m && svgCanvas.getElement(m[1])
     const kind = marker?.getAttribute('se_type')
-    return kind ? { marker, kind } : null
+    return marker && kind ? { marker, kind } : null
   }
 
   /** @param {Element} elem */
@@ -354,7 +354,7 @@ export const init = (canvas) => {
         restore(elem)
       }
       elem.removeAttribute(ARROW_ALIGN_ATTR)
-      for (const pos of /** @type {const} */ (['start', 'end'])) ends[pos]?.marker.setAttribute('refX', CENTRE)
+      for (const pos of /** @type {const} */ (['start', 'end'])) ends[pos]?.marker.setAttribute('refX', String(CENTRE))
       mode = null
       hasSource = false
     }
@@ -365,8 +365,8 @@ export const init = (canvas) => {
       const e = ends[pos]
       if (!e) continue
       const { refX, inset } = headPlacement(e.kind, pos, mode)
-      e.marker.setAttribute('refX', refX)
-      e.marker.setAttribute('refY', CENTRE)
+      e.marker.setAttribute('refX', String(refX))
+      e.marker.setAttribute('refY', String(CENTRE))
       if (mode === 'tip') trims[pos] = inset * boxUnit(elem, e.marker)
     }
 
@@ -399,7 +399,7 @@ export const init = (canvas) => {
       if (!elem?.hasAttribute(ARROW_ALIGN_ATTR)) return true
       restore(elem)
       elem.removeAttribute(ARROW_ALIGN_ATTR)
-      for (const pos of ['start', 'end']) markerAt(elem, pos)?.marker.setAttribute('refX', CENTRE)
+      for (const pos of ['start', 'end']) markerAt(elem, pos)?.marker.setAttribute('refX', String(CENTRE))
       return true
     }
     if (!canAlignArrows(elem)) return false

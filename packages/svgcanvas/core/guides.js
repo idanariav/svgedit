@@ -71,14 +71,14 @@ export const validateGuides = (value) => {
 
 /**
  * Guides that count right now: none while the user hides them.
- * @param {any} svgCanvas
+ * @param {import('../svgcanvas.js').default} svgCanvas
  * @returns {Guides}
  */
 export const visibleGuides = (svgCanvas) =>
   svgCanvas.getCurConfig?.().showGuides === false ? { v: [], h: [] } : (svgCanvas.getGuides?.() ?? { v: [], h: [] })
 
 /**
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {

@@ -20,7 +20,7 @@ import { NS } from './namespaces.js'
 
 /**
 * @function module:json.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -156,5 +156,6 @@ export const init = (canvas) => {
   }
 
   svgCanvas.getJsonFromSvgElements = getJsonFromSvgElements
-  svgCanvas.addSVGElementsFromJson = addSVGElementsFromJson
+  // (declared as Element; a string or null argument yields a text node / null, which no caller relies on)
+  svgCanvas.addSVGElementsFromJson = /** @type {(data: any) => Element} */ (addSVGElementsFromJson)
 }

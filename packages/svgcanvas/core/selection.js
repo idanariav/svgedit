@@ -30,7 +30,7 @@ const { BatchCommand } = hstry
 
 /**
  * @function module:selection.init
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
@@ -158,7 +158,7 @@ export const init = (canvas) => {
 
     // Make sure first elements are not null
     while (!selectedElements[0]) {
-      selectedElements.shift(0)
+      selectedElements.shift()
     }
 
     // draw/refresh the group box when 2+ elements are selected
@@ -327,7 +327,7 @@ export const init = (canvas) => {
   const getVisibleElementsAndBBoxes = (parent) => {
     if (!parent) {
       const svgContent = svgCanvas.getSvgContent()
-      parent = svgContent.children // Prevent layers from being included
+      parent = svgContent
     }
     /** @type {Array<{elem: Element, bbox: any}>} */
     const contentElems = []
@@ -377,6 +377,7 @@ export const init = (canvas) => {
     let rubberBBox
     if (!rect) {
       rubberBBox = getBBox(svgCanvas.getRubberBox())
+      /** @type {any} */
       const bb = svgCanvas.getSvgContent().createSVGRect();
 
       ['x', 'y', 'width', 'height', 'top', 'right', 'bottom', 'left'].forEach(
@@ -462,7 +463,7 @@ export const init = (canvas) => {
     // convert paths into absolute commands
     const paths = [...newDoc.getElementsByTagNameNS(NS.SVG, 'path')]
     paths.forEach((path) => {
-      const convertedPath = svgCanvas.pathActions.convertPath(path)
+      const convertedPath = svgCanvas.pathActions.convertPath(/** @type {SVGPathElement} */ (path), false)
       path.setAttribute('d', convertedPath)
       svgCanvas.pathActions.fixEnd(path)
     })
@@ -544,7 +545,7 @@ export const init = (canvas) => {
       }
       svgCanvas.changeSelectedAttribute(
         'transform',
-        newTransform,
+        /** @type {string} */ (newTransform),
         selectedElements
       )
       svgCanvas.call('changed', selectedElements)

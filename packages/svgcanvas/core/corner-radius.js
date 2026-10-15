@@ -472,7 +472,7 @@ registerLiveStage({
   }
 })
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -500,7 +500,7 @@ export const init = (canvas) => {
   /**
    * The corners of the selected element and their current radius / kind.
    * @param {Element} [elem] - Defaults to the selected element.
-   * @returns {Array<{index: number, radius: number, kind: string, max: number, corner: Corner}>}
+   * @returns {Array<{index: number, radius: number, kind: 'r' | 'i' | 'c', max: number, corner: Corner}>}
    */
   const getCornerSettings = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) => {
     if (!elem) return []
@@ -512,7 +512,7 @@ export const init = (canvas) => {
     return pathCorners(parseSource(d)).map((c) => ({
       index: c.index,
       radius: specRadius(spec, c.index),
-      kind: specKind(spec, c.index),
+      kind: /** @type {'r' | 'i' | 'c'} */ (specKind(spec, c.index)),
       max: maxCornerRadius(c),
       corner: c
     }))
@@ -565,7 +565,7 @@ export const init = (canvas) => {
         if (['points', 'x', 'y', 'width', 'height', 'rx', 'ry'].includes(attr.name)) continue
         path.setAttribute(attr.name, attr.value)
       }
-      path.setAttribute('d', srcD)
+      path.setAttribute('d', /** @type {string} */ (srcD))
       path.id = svgCanvas.getNextId()
       elem.before(path)
       batchCmd.addSubCommand(new InsertElementCommand(path))

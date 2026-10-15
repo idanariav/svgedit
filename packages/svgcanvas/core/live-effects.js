@@ -177,7 +177,7 @@ export const resolveParams = (def, raw = {}) => {
  * Parse an `se:fx` string. Returns the recognised stack plus how many entries
  * were dropped for naming an unregistered effect (or being malformed).
  * @param {?string} str
- * @returns {{stack: Array<{name: string, params: Object}>, unknown: number}}
+ * @returns {{stack: Array<{name: string, params: Record<string, any>}>, unknown: number}}
  */
 const parseFxRaw = (str) => {
   const stack = []
@@ -207,7 +207,7 @@ const parseFxRaw = (str) => {
  * Parse an `se:fx` attribute value into a stack of registered effects.
  * @function module:live-effects.parseFxStack
  * @param {?string} str
- * @returns {Array<{name: string, params: Object}>}
+ * @returns {Array<{name: string, params: Record<string, any>}>}
  */
 export const parseFxStack = (str) => parseFxRaw(str).stack
 
@@ -228,7 +228,7 @@ export const serializeFxStack = (stack) => sanitizeFxStack(stack).map(({ name, p
 /**
  * Drop unregistered effects and resolve every param against its defaults.
  * @param {Array<{name: string, params?: Object}>} stack
- * @returns {Array<{name: string, params: Object}>}
+ * @returns {Array<{name: string, params: Record<string, any>}>}
  */
 export const sanitizeFxStack = (stack) => (Array.isArray(stack) ? stack : [])
   .filter((e) => e && registry.has(e.name))
@@ -408,7 +408,7 @@ registerLiveStage({
   stackable: (view) => !strokeOutputOf(parseFxStack(view.getAttribute(FX_ATTR)))
 })
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -419,6 +419,7 @@ export const init = (canvas) => {
     return parseFxRaw(value).unknown === 0 && named > 0 ? true : 'names an unknown or malformed effect'
   })
 
+  /** @returns {?Element} */
   const getSelected = () => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     return elems.length === 1 ? elems[0] : null
@@ -426,8 +427,8 @@ export const init = (canvas) => {
 
   /**
    * Whether live effects can apply to this element right now.
-   * @param {Element} elem
-   * @returns {boolean}
+   * @param {?Element} [elem]
+   * @returns {elem is Element}
    */
   const canApplyLiveEffect = (elem) => {
     if (!elem || !SUPPORTED_TAGS.has(elem.tagName)) return false
@@ -452,7 +453,7 @@ export const init = (canvas) => {
 
   /**
    * Effect stack of the selected element (empty when none).
-   * @returns {Array<{name: string, params: Object}>}
+   * @returns {Array<{name: string, params: Record<string, number | boolean | string>}>}
    */
   const getLiveEffects = (elem = getSelected()) =>
     elem?.hasAttribute(FX_SOURCE_ATTR) ? parseFxStack(elem.getAttribute(FX_ATTR)) : []
@@ -626,7 +627,8 @@ export const init = (canvas) => {
   const removeLiveEffects = () => {
     endPreview()
     const elem = getSelected()
-    const src = elem?.getAttribute(FX_SOURCE_ATTR)
+    if (!elem) return null
+    const src = elem.getAttribute(FX_SOURCE_ATTR)
     if (!src) return null
     const plan = planStack(elem, removalSet(elem, 'fx'), svgCanvas)
     if (!plan) return null

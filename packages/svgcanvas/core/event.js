@@ -33,7 +33,7 @@ const {
 
 /**
 * @function module:undo.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -212,7 +212,8 @@ export const init = (canvas) => {
         metaKey: evt?.metaKey ?? false,
         shiftKey: evt?.shiftKey ?? false
       })
-      $id('svgcanvas').dispatchEvent(event)
+      const target = $id('svgcanvas')
+      if (target) target.dispatchEvent(event)
     }
   }
 
@@ -452,7 +453,7 @@ export const init = (canvas) => {
       let cAni
       const curShape = svgCanvas.getStyle()
       const opacAni = svgCanvas.getOpacAni()
-      if (opacAni.beginElement && Number.parseFloat(element.getAttribute('opacity')) !== curShape.opacity) {
+      if (opacAni.beginElement && Number.parseFloat(element.getAttribute('opacity') ?? '') !== curShape.opacity) {
         cAni = opacAni.cloneNode(true)
         cAni.setAttribute('to', curShape.opacity)
         cAni.setAttribute('dur', aniDur)
@@ -469,6 +470,7 @@ export const init = (canvas) => {
 
       // Ideally this would be done on the endEvent of the animation,
       // but that doesn't seem to be supported in Webkit
+      const created = element // the closure below runs later; `element` is reassigned by then
       setTimeout(() => {
         if (cAni) { cAni.remove() }
         // The brush tool stamps its own per-stroke opacity (from the brush
@@ -476,10 +478,10 @@ export const init = (canvas) => {
         // time — don't clobber it with curShape.opacity like every other tool,
         // which has no opacity concept of its own outside curShape.
         if (svgCanvas.getCurrentMode() !== 'brush') {
-          element.setAttribute('opacity', curShape.opacity)
+          created.setAttribute('opacity', curShape.opacity)
         }
-        element.setAttribute('style', 'pointer-events:inherit')
-        cleanupElement(element)
+        created.setAttribute('style', 'pointer-events:inherit')
+        cleanupElement(created)
         // This callback is scheduled aniDur (up to 200ms) in the future. A fast
         // double-click-to-finish workflow routinely starts and finishes the
         // NEXT shape well inside that window — by the time this fires, `element`
@@ -489,7 +491,7 @@ export const init = (canvas) => {
         // this stale one (symptom: finishing a path selects/edits an unrelated
         // earlier path). Only touch mode/selection if nothing has been created
         // since — i.e. this is still the most recent element.
-        if (svgCanvas.getCurConfig().selectNew && svgCanvas.pendingNewElement === element) {
+        if (svgCanvas.getCurConfig().selectNew && svgCanvas.pendingNewElement === created) {
           const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'spiral', 'arc', 'rectgrid', 'polargrid', 'shapelib', 'frame', 'brush']
           if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
             svgCanvas.setMode('select')
@@ -497,7 +499,7 @@ export const init = (canvas) => {
           // Lock mode: skip selecting the newly created shape so its selection
           // bbox/grips don't overlap the area where the next shape is drawn.
           if (!svgCanvas.getToolLocked()) {
-            svgCanvas.selectOnly([element], true)
+            svgCanvas.selectOnly([created], true)
           }
         }
         // A precise "this element was just created" signal, distinct from the
@@ -505,12 +507,12 @@ export const init = (canvas) => {
         // moves/resizes/attribute edits on existing elements). The editor layer
         // uses it to stamp an object type's configured default class — see
         // Editor.js#elementInserted / classLibrary.js#getDefaultClassForTag.
-        svgCanvas.call('elementInserted', [element])
+        svgCanvas.call('elementInserted', [created])
 
         // we create the insert command that is stored on the stack
         // undo means to call cmd.unapply(), redo means to call cmd.apply()
-        svgCanvas.addCommandToHistory(new InsertElementCommand(element))
-        svgCanvas.call('changed', [element])
+        svgCanvas.addCommandToHistory(new InsertElementCommand(created))
+        svgCanvas.call('changed', [created])
       }, aniDur * 1000)
     }
     svgCanvas.setStartTransform(null)
@@ -888,7 +890,7 @@ export const init = (canvas) => {
       svgCanvas.getCurrentMode() === 'select' &&
     mouseTarget === svgCanvas.selectorManager.selectorParentGroup && selectedElements[0]
     ) {
-      const grip = evt.target
+      const grip = /** @type {Element} */ (evt.target)
       const griptype = dataStorage.get(grip, 'type')
       // rotating
       if (griptype === 'rotate') {
@@ -1009,7 +1011,7 @@ export const init = (canvas) => {
     if (!screenCTM) { return }
     svgCanvas.setRootSctm(screenCTM.inverse())
 
-    const workarea = svgCanvas.$id('workarea')
+    const workarea = /** @type {Element} */ (svgCanvas.$id('workarea'))
     const scrbar = 15
     const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
@@ -1068,7 +1070,7 @@ export const init = (canvas) => {
     if (zoomlevel === zoom) { return }
     const factor = zoomlevel / zoom
 
-    const workarea = svgCanvas.$id('workarea')
+    const workarea = /** @type {Element} */ (svgCanvas.$id('workarea'))
     const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
     // full work area size in screen pixels
@@ -1105,7 +1107,8 @@ export const init = (canvas) => {
     }
 
     svgCanvas.setZoom(zoomlevel)
-    svgCanvas.$id('zoom').value = ((zoomlevel * 100).toFixed(1))
+    const zoomField = /** @type {HTMLInputElement} */ (svgCanvas.$id('zoom'))
+    zoomField.value = ((zoomlevel * 100).toFixed(1))
 
     svgCanvas.call('updateCanvas', { center: false, newCtr })
     svgCanvas.call('zoomDone')

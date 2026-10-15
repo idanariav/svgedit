@@ -23,10 +23,10 @@ const {
 
 /**
  * @function module:selected-elem.init
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   groupOpsInit(canvas)
 
@@ -264,12 +264,12 @@ export const init = canvas => {
       return
     }
     const [a, b] = selected
-    const parent = a.parentNode
+    const parent = /** @type {Element} */ (a.parentNode)
     if (parent !== b.parentNode) {
       return
     }
-    const aOldNext = a.nextSibling
-    const bOldNext = b.nextSibling
+    const aOldNext = /** @type {Element|null} */ (a.nextSibling)
+    const bOldNext = /** @type {Element|null} */ (b.nextSibling)
     // Swap the two siblings' DOM positions via a placeholder
     const tmp = document.createComment('swap')
     parent.replaceChild(tmp, a)
@@ -321,7 +321,7 @@ export const init = canvas => {
         if (Array.isArray(dx)) {
           xform.setTranslate(dx[i], /** @type {number[]} */ (dy)[i])
         } else {
-          xform.setTranslate(dx, dy)
+          xform.setTranslate(dx, /** @type {number} */ (dy))
         }
 
         if (tlist.numberOfItems) {
@@ -491,7 +491,7 @@ export const init = canvas => {
       const original = copiedElements[i]
       elem = copiedElements[i] = drawing.copyElem(original)
       if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
-      const { targetParent, matrix } = getGroupDetachTarget(original.parentNode)
+      const { targetParent, matrix } = getGroupDetachTarget(/** @type {Element} */ (original.parentNode))
       if (targetParent !== original.parentNode) {
         applyGroupDetachTransform(elem, matrix)
         targetParent.append(elem)
@@ -907,7 +907,7 @@ export const init = canvas => {
     const batchCmd = new BatchCommand('Flip Elements')
     const svgRoot = svgCanvas.getSvgRoot()
 
-    selectedElements.forEach((/** @type {?SVGGraphicsElement} */ selected) => {
+    ;/** @type {Array<?SVGGraphicsElement>} */ (selectedElements).forEach((selected) => {
       if (!selected) return
 
       const localBBox = selected.getBBox()
@@ -1025,10 +1025,10 @@ export const init = canvas => {
  * @returns {module:svgcanvas.CanvasInfo}
  */
   const updateCanvas = (w, h) => {
-    svgCanvas.getSvgRoot().setAttribute('width', w)
-    svgCanvas.getSvgRoot().setAttribute('height', h)
+    svgCanvas.getSvgRoot().setAttribute('width', String(w))
+    svgCanvas.getSvgRoot().setAttribute('height', String(h))
     const zoom = svgCanvas.getZoom()
-    const bg = svgCanvas.$id('canvasBackground')
+    const bg = /** @type {Element} */ (svgCanvas.$id('canvasBackground'))
     const oldX = Number(svgCanvas.getSvgContent().getAttribute('x'))
     const oldY = Number(svgCanvas.getSvgContent().getAttribute('y'))
     const x = (w - svgCanvas.contentW * zoom) / 2
@@ -1043,8 +1043,8 @@ export const init = canvas => {
     })
 
     assignAttributes(bg, {
-      width: svgCanvas.getSvgContent().getAttribute('width'),
-      height: svgCanvas.getSvgContent().getAttribute('height'),
+      width: svgCanvas.getSvgContent().getAttribute('width') ?? '',
+      height: svgCanvas.getSvgContent().getAttribute('height') ?? '',
       x,
       y
     })
@@ -1101,7 +1101,8 @@ export const init = canvas => {
     const currentGroup = svgCanvas.getCurrentGroup()
     let num
     const curElem = selectedElements[0]
-    let elem = false
+    /** @type {Element|undefined} */
+    let elem
     const allElems = svgCanvas.getVisibleElements(
       currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
     )
@@ -1126,7 +1127,7 @@ export const init = canvas => {
         }
       }
     }
-    svgCanvas.selectOnly([elem], true)
+    svgCanvas.selectOnly([(/** @type {Element} */ (elem))], true)
     svgCanvas.call('selected', selectedElements)
   }
 

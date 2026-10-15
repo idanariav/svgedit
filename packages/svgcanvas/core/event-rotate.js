@@ -16,18 +16,19 @@ import { transformPoint, getMatrix, getTransformList, transformListToTransform, 
  * rotation matrix R(angle, cx, cy) pre-multiplied onto the matrix it had when
  * the drag began (svgCanvas.groupRotateStart), so the relative layout is
  * preserved and no shape is individually re-centered. Mirrors resizeGroup.
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
+ * @param {import('../svgcanvas.js').default} svgCanvas
  * @param {number} angle
  * @returns {void}
  */
 const rotateGroup = (svgCanvas, angle) => {
   const svgRoot = svgCanvas.getSvgRoot()
-  const { x: cx, y: cy } = svgCanvas.groupRotateCenter
+  const { x: cx, y: cy } = /** @type {{x: number, y: number}} */ (svgCanvas.groupRotateCenter)
   const rot = svgRoot.createSVGTransform()
   rot.setRotate(angle, cx, cy)
   const rm = rot.matrix
 
-  svgCanvas.groupRotateStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
+  const starts = /** @type {Map<Element, SVGMatrix>} */ (svgCanvas.groupRotateStart)
+  starts.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
     const newM = matrixMultiply(rm, startMatrix)
     const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
@@ -46,7 +47,7 @@ const rotateGroup = (svgCanvas, angle) => {
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-rotate.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function, up: Function}}
  */
 export const init = (canvas) => {
@@ -65,9 +66,10 @@ export const init = (canvas) => {
       const ubb = svgCanvas.getStrokedBBoxDefaultVisible(rotElems)
       svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
       svgCanvas.groupRotateBBox = ubb
-      svgCanvas.groupRotateStart = new Map()
+      const start = new Map()
+      svgCanvas.groupRotateStart = start
       rotElems.forEach((/** @type {Element} */ elem) => {
-        svgCanvas.groupRotateStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
+        start.set(elem, transformListToTransform(getTransformList(elem)).matrix)
       })
     }
   }
@@ -76,9 +78,8 @@ export const init = (canvas) => {
   const move = (evt, ctx) => {
     const { selected, x, y, selectedElements } = ctx
     // multi-selection: rotate the whole group rigidly about the union center
-    if (svgCanvas.groupRotateStart) {
-      const cx = svgCanvas.groupRotateCenter.x
-      const cy = svgCanvas.groupRotateCenter.y
+    if (svgCanvas.groupRotateStart && svgCanvas.groupRotateCenter) {
+      const { x: cx, y: cy } = svgCanvas.groupRotateCenter
       let angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
       if (svgCanvas.getCurConfig().gridSnapping) { angle = svgCanvas.snapToGrid(angle) }
       if (evt.shiftKey) { angle = Math.round(angle / 15) * 15 }

@@ -18,8 +18,8 @@ import {
 import { isWebkit } from '../common/browser.js'
 import { NS } from './namespaces.js'
 
-/** @param {any} canvas */
-export const init = canvas => {
+/** @param {import('../svgcanvas.js').default} canvas */
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**

@@ -420,10 +420,10 @@ const cutShapes = (svgCanvas, points) => {
 
 /**
  * @function module:cutter.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas
   svgCanvas.cutShapes = (/** @type {any} */ points) => cutShapes(svgCanvas, points)
 }

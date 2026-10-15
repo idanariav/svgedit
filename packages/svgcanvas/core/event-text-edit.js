@@ -11,7 +11,7 @@
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-text-edit.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function, up: Function}}
  */
 export const init = (canvas) => {

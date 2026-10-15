@@ -11,7 +11,7 @@ import { NS } from './namespaces.js'
 * Reentrant init: attaches a per-instance `clearSvgContentElement` closed over
 * this canvas, so several editors can coexist in one realm.
 * @function module:clear.init
-* @param {module:clear.SvgCanvas#init} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -19,7 +19,7 @@ export const init = (canvas) => {
 
   const clearSvgContentElement = () => {
     const curConfig = svgCanvas.getCurConfig()
-    const { dimensions } = curConfig
+    const dimensions = /** @type {[number, number]} */ (curConfig.dimensions) // always set: the config default
     const el = svgCanvas.getSvgContent()
     // empty
     while (el.firstChild) { el.removeChild(el.firstChild) }
@@ -35,10 +35,10 @@ export const init = (canvas) => {
 
     const pel = svgCanvas.getSvgRoot()
     el.setAttribute('id', 'svgcontent')
-    el.setAttribute('width', dimensions[0])
-    el.setAttribute('height', dimensions[1])
-    el.setAttribute('x', dimensions[0])
-    el.setAttribute('y', dimensions[1])
+    el.setAttribute('width', String(dimensions[0]))
+    el.setAttribute('height', String(dimensions[1]))
+    el.setAttribute('x', String(dimensions[0]))
+    el.setAttribute('y', String(dimensions[1]))
     el.setAttribute('overflow', curConfig.show_outside_canvas ? 'visible' : 'hidden')
     el.setAttribute('xmlns', NS.SVG)
     el.setAttribute('xmlns:se', NS.SE)

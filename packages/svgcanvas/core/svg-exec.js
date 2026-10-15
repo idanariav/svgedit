@@ -30,10 +30,10 @@ const {
 
 /**
  * @function module:svg-exec.init
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const { convertUnit, shortFloat, convertToNum } = getUnits(canvas)
 
@@ -92,7 +92,7 @@ export const init = canvas => {
       const childNodesElems = /** @type {NodeListOf<ChildNode>} */ (svgCanvas.getSvgContent().childNodes)
       childNodesElems.forEach((node, i) => {
         if (i && node.nodeType === 8 && /** @type {Comment} */ (node).data.includes('Created with')) {
-          svgCanvas.getSvgContent().firstChild.before(node)
+          /** @type {ChildNode} */ (svgCanvas.getSvgContent().firstChild).before(node)
         }
       })
 
@@ -220,7 +220,7 @@ export const init = canvas => {
     const curConfig = svgCanvas.getCurConfig()
     const nsMap = svgCanvas.getNsMap()
     const out = []
-    const unit = curConfig.baseUnit
+    const unit = /** @type {string} */ (curConfig.baseUnit)
     const unitRe = new RegExp(`^-?[\\d\\.]+${unit}$`)
 
     if (elem) {
@@ -238,7 +238,8 @@ export const init = canvas => {
       out.push(elem.localName)
       if (elem.id === 'svgcontent') {
       // Process root element separately
-        const res = svgCanvas.getResolution()
+        // (w / h become strings with a unit below)
+        const res = /** @type {any} */ (svgCanvas.getResolution())
 
         let vb = ''
         // TODO: Allow this by dividing all values by current baseVal
@@ -372,7 +373,7 @@ export const init = canvas => {
             }
             out.push(' ')
             if (attr.localName === 'd') {
-              attrVal = svgCanvas.pathActions.convertPath(elem, true)
+              attrVal = svgCanvas.pathActions.convertPath(/** @type {SVGPathElement} */ (elem), true)
             }
             if (!isNaN(Number(attrVal))) {
               attrVal = shortFloat(attrVal)
@@ -665,7 +666,7 @@ export const init = canvas => {
       // determine proper size
       if (content.getAttribute('viewBox')) {
         const viBox = content.getAttribute('viewBox')
-        const vb = viBox.split(/[ ,]+/)
+        const vb = /** @type {string} */ (viBox).split(/[ ,]+/)
         const vbWidth = Number(vb[2])
         const vbHeight = Number(vb[3])
         if (Number.isFinite(vbWidth)) {
@@ -817,10 +818,11 @@ export const init = canvas => {
 
         svgCanvas.uniquifyElems(svg)
 
-        const innerw = convertToNum('width', svg.getAttribute('width'))
-        const innerh = convertToNum('height', svg.getAttribute('height'))
+        const innerw = convertToNum('width', /** @type {string} */ (svg.getAttribute('width')))
+        const innerh = convertToNum('height', /** @type {string} */ (svg.getAttribute('height')))
         const innervb = svg.getAttribute('viewBox')
         // if no explicit viewbox, create one out of the width and height
+        /** @type {any[]} */
         const vb = innervb ? innervb.split(/[ ,]+/) : [0, 0, innerw, innerh]
         for (j = 0; j < 4; ++j) {
           vb[j] = Number(vb[j])
@@ -1135,7 +1137,7 @@ export const init = canvas => {
             defs = svgClone.ownerDocument.createElementNS(NS.SVG, 'defs')
             svgClone.insertBefore(defs, svgClone.firstChild)
           }
-          const gradClone = gradEl.cloneNode(true)
+          const gradClone = /** @type {Element} */ (gradEl.cloneNode(true))
           gradClone.id = 'export_bg_gradient'
           defs.appendChild(gradClone)
           const bgRect = svgClone.ownerDocument.createElementNS(NS.SVG, 'rect')

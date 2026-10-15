@@ -47,7 +47,7 @@ export const hasVisibleStroke = (elem) => {
 // Reentrant init: the offset operations are created per SvgCanvas instance
 // (closed over `svgCanvas` below) so several editors can coexist in one
 // realm. Stateless helpers above stay shared.
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -95,7 +95,7 @@ export const init = (canvas) => {
  * Replace `elem` with a freshly created `<path>` (d + style), recording undo/redo.
  * @param {Element} elem
  * @param {string} d
- * @param {Object} styleAttrs
+ * @param {Record<string, string>} styleAttrs
  */
   const replaceWithPath = (elem, d, styleAttrs) => {
     const newPath = svgCanvas.addSVGElementsFromJson({
@@ -262,7 +262,7 @@ export const init = (canvas) => {
 
     // The outline is a filled region painted with the former stroke colour.
     const styleAttrs = getStyleAttrs(elem)
-    styleAttrs.fill = hasFill ? fill : stroke
+    styleAttrs.fill = /** @type {string} */ (hasFill ? fill : stroke)
     styleAttrs.stroke = 'none'
     delete styleAttrs['stroke-width']
 

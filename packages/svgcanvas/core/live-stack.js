@@ -268,7 +268,7 @@ export const rebuildAfterRemap = (elem, canvas) => {
   if (plan) commitPlan(elem, plan)
 }
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   registerElementCheck('se-stack', stackProblems)
   Object.assign(canvas, {

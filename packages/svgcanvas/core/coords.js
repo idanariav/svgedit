@@ -53,10 +53,10 @@ const flipAttributeInBoxUnits = (elem, attr) => {
 /**
  * Initialize the coords module with the SVG canvas.
  * @function module:coords.init
- * @param {any} canvas - The SVG canvas object
+ * @param {import('../svgcanvas.js').default} canvas - The SVG canvas object
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; remapElement below is closed over it
   const { convertToNum } = getUnits(canvas)
 
@@ -120,7 +120,7 @@ export const init = canvas => {
         // userSpaceOnUse gradients do not need object-bounding-box correction.
         if (grad.getAttribute('gradientUnits') === 'userSpaceOnUse') return
 
-        const newgrad = grad.cloneNode(true)
+        const newgrad = /** @type {Element} */ (grad.cloneNode(true))
         if (m.a < 0) {
         // Flip x
           if (tagName === 'lineargradient') {

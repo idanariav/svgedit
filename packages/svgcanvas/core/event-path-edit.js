@@ -15,7 +15,7 @@ import { snapToAngle, transformPoint } from './math.js'
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-path-edit.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function, hover: Function, upPath: Function, upPathEdit: Function}}
  */
 export const init = (canvas) => {

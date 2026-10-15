@@ -18,7 +18,7 @@ import {
 
 /**
 * @function module:path-actions.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -94,7 +94,7 @@ export const init = (canvas) => {
   const getGripContainerMethod = () => {
     let c = svgCanvas.getElement('pathpointgrip_container')
     if (!c) {
-      const parentElement = svgCanvas.getElement('selectorParentGroup')
+      const parentElement = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
       c = document.createElementNS(NS.SVG, 'g')
       parentElement.append(c)
       c.id = 'pathpointgrip_container'
@@ -148,7 +148,8 @@ export const init = (canvas) => {
   // create the container of all the point grips
     const pointGripContainer = getGripContainerMethod()
 
-    let pointGrip = svgCanvas.getElement(`pathpointgrip_${index}`)
+    /** @type {SVGRectElement|null|undefined} */
+    let pointGrip = /** @type {SVGRectElement|null|undefined} */ (svgCanvas.getElement(`pathpointgrip_${index}`))
     // create it
     if (!pointGrip) {
     // Anchor nodes are drawn as squares (vs. round control-point handles)
@@ -201,7 +202,8 @@ export const init = (canvas) => {
 * @returns {SVGCircleElement}
 */
   const addCtrlGripMethod = (id) => {
-    let pointGrip = svgCanvas.getElement('ctrlpointgrip_' + id)
+    /** @type {SVGCircleElement|null|undefined} */
+    let pointGrip = /** @type {SVGCircleElement|null|undefined} */ (svgCanvas.getElement('ctrlpointgrip_' + id))
     if (pointGrip) { return pointGrip }
 
     pointGrip = document.createElementNS(NS.SVG, 'circle')
@@ -227,7 +229,8 @@ export const init = (canvas) => {
 * @returns {SVGLineElement}
 */
   const getCtrlLineMethod = (id) => {
-    let ctrlLine = svgCanvas.getElement('ctrlLine_' + id)
+    /** @type {SVGLineElement|null|undefined} */
+    let ctrlLine = /** @type {SVGLineElement|null|undefined} */ (svgCanvas.getElement('ctrlLine_' + id))
     if (ctrlLine) { return ctrlLine }
 
     ctrlLine = document.createElementNS(NS.SVG, 'line')
@@ -354,7 +357,8 @@ export const init = (canvas) => {
 */
   const getSegSelectorMethod = (seg, update) => {
     const { index } = seg
-    let segLine = svgCanvas.getElement(`segline_${index}`)
+    /** @type {SVGPathElement|null|undefined} */
+    let segLine = /** @type {SVGPathElement|null|undefined} */ (svgCanvas.getElement(`segline_${index}`))
     if (!segLine) {
       const pointGripContainer = getGripContainerMethod()
       // create segline

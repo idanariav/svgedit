@@ -71,22 +71,63 @@ export interface AttachedMembers {
   setResolution(width: number | string, height: number | string): boolean
   
   // Element manipulation
-  moveSelectedElements(dx: number, dy: number, undoable?: boolean): void
+  moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): HistoryCommand | void
   deleteSelectedElements(): void
   copySelectedElements(): void
   pasteElements(type?: string, x?: number, y?: number, data?: unknown[]): void
-  groupSelectedElements(type?: string, urlArg?: string): Element | null
+  groupSelectedElements(type?: string, urlArg?: string): void
   ungroupSelectedElement(): void
   moveToTopSelectedElement(): void
   moveToBottomSelectedElement(): void
   moveUpDownSelected(dir: 'Up' | 'Down'): void
   
+  // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
+  groupRotateCenter: { x: number, y: number } | null
+  groupRotateStart: Map<Element, SVGMatrix> | null
+  groupRotateBBox: BBox | null
+  hasDragStartTransform: boolean
+  dragStartTransforms: Map<Element, string> | null
+  /** Set by the editor's snapping overlay; absent in a bare canvas. */
+  showDrawGuides?: (hit: any) => void
+
+  // Resize gesture state
+  hasResizeStartTransform: boolean
+  groupResizeStart: Map<Element, SVGMatrix> | null
+  /** The text-box resize in progress (its transaction stays open until mouse-up). */
+  areaResize: { elem: Element, box: BBox, fixedHeight: boolean, anchor: string, tx: { commit: () => any, cancel: () => any } } | null
+  /** The live scale of a resize, for panels that show the in-progress size. */
+  dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
+
+  // Move gesture state (select mode)
+  altCloneArmed: boolean
+  dragStartBBox: BBox | null
+  smartSnapTargets?: any
+  moveSelectionThresholdReached: boolean
+  pendingMoveDelta?: { dx: number, dy: number } | null
+  dragLiveMoveDelta?: { dx: number, dy: number } | null
+  /** The repeatable delta for transformAgain. */
+  lastMoveDelta?: { dx: number, dy: number }
+  /** Set by the editor's guide overlays; absent in a bare canvas. */
+  showSnapGuides?: (snap: { x: any, y: any } | null) => void
+  showSmartGuides?: (guides: any) => void
+  /** Set by the editor's overlay while a path node is dragged. */
+  showPathNodeGuides?: (guides: any) => void
+  /** Space is held (pan). */
+  spaceKey: boolean
+  /** A tool just created an element (select it on mouse-up when `selectNew`). */
+  addedNew: boolean
+  pendingNewElement: Element | null
+
   // Path operations
   pathActions: {
+    select: (target: Element) => void
+    mouseDown: (evt: MouseEvent, target: Element, startX: number, startY: number) => void
+    mouseMove: (mouseX: number, mouseY: number) => void
+    mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => any
     clear: (keepSelection?: boolean) => void
     canDeleteNodes?: boolean
     closed_subpath?: boolean
-    resetOrientation: (path: SVGPathElement) => boolean
+    resetOrientation: (path: Element | null) => false | void
     zoomChange: () => void
     getNodePoint: () => {x: number, y: number}
     linkControlPoints: (linkPoints: boolean) => void
@@ -94,10 +135,13 @@ export interface AttachedMembers {
     deletePathNode: () => void
     averageSelectedNodes: (axis?: 'h' | 'v' | 'both') => void
     addAnchorPoints: () => void
-    smoothPolylineIntoPath: () => void
+    smoothPolylineIntoPath: (element: Element) => Element
     setSegType: (type: number) => void
     moveNode: (attr: string, newValue: number) => void
-    selectNode: (node?: Element) => void
+    toEditMode: (element: Element) => void
+    toSelectMode: (elem?: Element | null) => void
+    fixEnd: (elem: Element) => void
+    convertPath: (pth: SVGPathElement, toRel: boolean) => string
     opencloseSubPath: () => void
     hover: (mouseX: number | null, mouseY: number | null, mode?: string) => void
   }
@@ -109,7 +153,7 @@ export interface AttachedMembers {
   setCurrentLayerPosition(newPos: number): boolean
   setLayerVisibility(name: string, bVisible: boolean): void
   moveSelectedToLayer(layerName: string): void
-  cloneLayer(name?: string): void
+  cloneLayer(name?: string, hrService?: unknown): void
   deleteCurrentLayer(): boolean
   
   // Undo/Redo
@@ -151,7 +195,7 @@ export interface AttachedMembers {
   
   // Text operations
   textActions: any
-  embedImage(dataURI: string): Promise<Element>
+  embedImage(src: string): Promise<string | false>
   
   // Other utilities
   getPrivateMethods(): any
@@ -461,7 +505,7 @@ export interface AttachedMembers {
   getEditorNS(add?: boolean): string
   getTypeMap(): Record<string, number>
   convertToNum(attr: string, val: string): number
-  getReferencedDefElements(elem: Element): Element[]
+  getReferencedDefElements(elems: Element[]): Element[]
   getParents(node: Node, selector?: string): Element[] | null
   isLayer(elem: Element): boolean
   hasVisibleStroke(elem: Element): boolean
@@ -494,7 +538,7 @@ export interface AttachedMembers {
   canTaperStroke(elem: Element): boolean
   getTaperParams(): any
   canTextOnPath(): boolean
-  simplifyPathD(d: string, tolerance?: number): string
+  simplifyPathD(d: string, tolerance?: number): string | null
   cutShapes(points: Array<{ x: number, y: number }>): any
   startImageCrop(imageElem: Element): any
   isImageCropEligible(elem: Element): boolean

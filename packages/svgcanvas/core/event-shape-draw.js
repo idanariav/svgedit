@@ -62,7 +62,7 @@ const getBsplinePoint = (svgCanvas, t) => {
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-shape-draw.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function, up: Function}}
  */
 export const init = (canvas) => {
@@ -460,7 +460,7 @@ export const init = (canvas) => {
           // core/path-fit.js) unless disabled; falls back to the legacy
           // every-3-points smoothing inside.
           // Fidelity is screen pixels: the same stroke fits the same way at any zoom.
-          const fidelity = svgCanvas.getCurConfig().pencilFidelity / (svgCanvas.getZoom() || 1)
+          const fidelity = /** @type {number} */ (svgCanvas.getCurConfig().pencilFidelity) / (svgCanvas.getZoom() || 1)
           if (pencilEnd) {
             // Added to the path the stroke started on; nothing new is inserted.
             svgCanvas.continueFreehand(element, pencilEnd, fidelity)

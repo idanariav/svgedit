@@ -16,7 +16,7 @@ import { getParents } from '../common/util.js'
 
 /**
 * @function module:elem-get-set.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -37,8 +37,8 @@ export const init = (canvas) => {
 */
   const getResolutionMethod = () => {
     const zoom = svgCanvas.getZoom()
-    const w = svgCanvas.getSvgContent().getAttribute('width') / zoom
-    const h = svgCanvas.getSvgContent().getAttribute('height') / zoom
+    const w = Number(svgCanvas.getSvgContent().getAttribute('width')) / zoom
+    const h = Number(svgCanvas.getSvgContent().getAttribute('height')) / zoom
 
     return {
       w,
@@ -234,8 +234,8 @@ export const init = (canvas) => {
       const svgContent = svgCanvas.getSvgContent()
       const oldViewBox = svgContent.getAttribute('viewBox')
 
-      svgContent.setAttribute('width', newW)
-      svgContent.setAttribute('height', newH)
+      svgContent.setAttribute('width', String(newW))
+      svgContent.setAttribute('height', String(newH))
 
       svgCanvas.contentW = newW
       svgCanvas.contentH = newH
@@ -426,7 +426,7 @@ export const init = (canvas) => {
     if (!svgCanvas.getCurProperties(`${type}_paint`) ||
     svgCanvas.getCurProperties(`${type}_paint`).type === 'solidColor') { return }
     const canvas = svgCanvas
-    let grad = canvas[type + 'Grad']
+    let grad = /** @type {any} */ (canvas)[type + 'Grad']
     if (!grad) { return }
     // find out if there is a duplicate gradient already in the defs
     const duplicateGrad = findDuplicateGradient(grad)
@@ -477,7 +477,7 @@ export const init = (canvas) => {
     let i = existingGrads.length
     const radAttrs = ['r', 'cx', 'cy', 'fx', 'fy']
     while (i--) {
-      const og = existingGrads[i]
+      const og = /** @type {SVGGradientElement} */ (existingGrads[i])
       if (og.tagName !== grad.tagName) {
         continue
       }
@@ -698,8 +698,8 @@ export const init = (canvas) => {
         width: elem.getAttribute('width'),
         height: elem.getAttribute('height')
       }
-      elem.setAttribute('width', img.width)
-      elem.setAttribute('height', img.height)
+      elem.setAttribute('width', String(img.width))
+      elem.setAttribute('height', String(img.height))
 
       const selector = svgCanvas.selectorManager.requestSelector(elem)
       selector && selector.resize()
@@ -726,7 +726,7 @@ export const init = (canvas) => {
     if (!elem) { return }
     if (elem.tagName !== 'a') {
     // See if parent is an anchor
-      const parentsA = getParents(elem.parentNode, 'a')
+      const parentsA = getParents(/** @type {Node} */ (elem.parentNode), 'a')
       if (parentsA?.length) {
         elem = parentsA[0]
       } else {
@@ -777,8 +777,8 @@ export const init = (canvas) => {
     (hasCurrentRx && hasCurrentRy && currentRx === radius && currentRy === radius)
     if (already) { return }
 
-    selected.setAttribute('rx', radius)
-    selected.setAttribute('ry', radius)
+    selected.setAttribute('rx', String(radius))
+    selected.setAttribute('ry', String(radius))
     svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
     svgCanvas.call('changed', [selected])
   }
@@ -1042,7 +1042,7 @@ export const init = (canvas) => {
       const oldArc = selected.getAttribute('data-arc')
       const oldD = selected.getAttribute('d')
       const newD = computeArcPathD(cx, cy, rx, ry, arc)
-      selected.setAttribute('data-arc', arc)
+      selected.setAttribute('data-arc', String(arc))
       selected.setAttribute('d', newD)
       svgCanvas.addCommandToHistory(
         new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
@@ -1087,7 +1087,7 @@ export const init = (canvas) => {
 
     const arc = Number(selected.getAttribute('data-arc')) || 360
     const newD = computeArcPathD(geom.cx, geom.cy, geom.rx, geom.ry, arc)
-    changedAttrs.forEach(a => selected.setAttribute(a, attr === 'r' ? val : geom[attr]))
+    changedAttrs.forEach(a => selected.setAttribute(a, String(attr === 'r' ? val : geom[attr])))
     selected.setAttribute('d', newD)
     const { ChangeElementCommand } = svgCanvas.history
     svgCanvas.addCommandToHistory(

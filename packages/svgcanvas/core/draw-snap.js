@@ -34,7 +34,7 @@ const SNAP_PIXELS = 8
 export const isDrawSnapMode = (/** @type {string} */ mode) => DRAW_SNAP_MODES.has(mode)
 
 /**
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {

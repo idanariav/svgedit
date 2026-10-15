@@ -8,14 +8,29 @@ import type { InternalMembers } from './svgcanvas-internal.js'
 
 // Core types
 export interface SVGElementJSON {
+  /** Set on the clipboard's copies of referenced defs (gradients, filters, …). */
+  _defs?: boolean
   element: string
-  attr: Record<string, string>
+  attr: Record<string, string | number>
   curStyles?: boolean
   children?: SVGElementJSON[]
   namespace?: string
 }
 
 export interface Config {
+  /** Object-to-object / drawing snapping guides; only `false` turns them off. */
+  smartSnapping?: boolean
+  /** Ruler guides are drawn; only `false` hides them. */
+  showGuides?: boolean
+  showRulers?: boolean
+  /** Output viewBox + xmlns instead of fixed width / height. */
+  dynamicOutput?: boolean
+  /** Snap a dragged selection's bbox to the grid in wireframe mode. */
+  wireframeSnapping?: boolean
+  pencilStabilization?: number
+  pencilFidelity?: number
+  /** Only `false` keeps the legacy every-3-points smoothing. */
+  pencilSimplify?: boolean
   canvasName?: string
   canvas_expansion?: number
   initFill?: {
@@ -90,7 +105,7 @@ export interface HistoryCommand {
   unapply(handler: HistoryEventHandler): void | true
   elements(): Element[]
   type(): string
-  getText?(): string
+  getText(): string
 }
 
 export interface HistoryEventHandler {
@@ -109,6 +124,8 @@ export interface UndoManager {
   getNextUndoCommandText(): string
   getNextRedoCommandText(): string
   resetUndoStack(): void
+  beginUndoableChange(attrName: string, elems: Element[]): void
+  finishUndoableChange(): HistoryCommand & { isEmpty(): boolean }
 }
 
 // Logger types
@@ -153,7 +170,7 @@ declare class SvgCanvas {
   getMode(): string
   
   // Events
-  call(event: string, args?: any[]): void
+  call(event: string, args?: any): void
   bind(event: string, callback: Function): void
   
   // Extensions
@@ -170,7 +187,7 @@ declare class SvgCanvas {
   removeFromSelection(elemsToRemove: Element[]): void
   getNextId(elemType?: Element | string | null): string
   addCommandToHistory(cmd: HistoryCommand): void
-  getDataStorage(): unknown
+  getDataStorage(): typeof import('./core/dataStorage.js').default
 
   // Paint
   getColor(type: 'fill' | 'stroke' | string): any

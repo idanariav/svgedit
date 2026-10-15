@@ -101,7 +101,7 @@ const handlePoint = (rect, dir) => {
 }
 
 /**
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {

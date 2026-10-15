@@ -608,10 +608,10 @@ const getSegmentParams = canvas => {
 
 /**
  * @function module:segment.init
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   canvas.canSegment = canSegment
   canvas.segmentSelection = (/** @type {SegmentParams} */ params) => segmentSelection(canvas, params)
   canvas.getSegmentParams = () => getSegmentParams(canvas)

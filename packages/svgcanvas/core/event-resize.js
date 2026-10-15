@@ -133,7 +133,7 @@ const resizeAreaText = (svgCanvas, elem, x, y) => {
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
  * @function module:event-resize.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {{down: Function, move: Function}}
  */
 export const init = (canvas) => {
@@ -164,18 +164,20 @@ export const init = (canvas) => {
     const groupElems = selectedElements.filter(Boolean)
     if (groupElems.length > 1) {
       svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
-      svgCanvas.groupResizeStart = new Map()
-      svgCanvas.dragStartTransforms = new Map()
+      const starts = new Map()
+      const transforms = new Map()
+      svgCanvas.groupResizeStart = starts
+      svgCanvas.dragStartTransforms = transforms
       groupElems.forEach((/** @type {Element} */ elem) => {
-        svgCanvas.groupResizeStart.set(elem, transformListToTransform(getTransformList(elem)).matrix)
-        svgCanvas.dragStartTransforms.set(elem, elem.getAttribute('transform') || '')
+        starts.set(elem, transformListToTransform(getTransformList(elem)).matrix)
+        transforms.set(elem, elem.getAttribute('transform') || '')
       })
       return
     }
 
     // Getting the BBox from the selection box, since we know we
     // want to orient around it
-    svgCanvas.setInitBbox(getBBox(svgCanvas.$id('selectedBox0')))
+    svgCanvas.setInitBbox(getBBox(/** @type {Element} */ (svgCanvas.$id('selectedBox0'))))
     /** @type {Record<string, number>} */
     const bb = {}
     for (const [key, val] of Object.entries(svgCanvas.getInitBbox())) {

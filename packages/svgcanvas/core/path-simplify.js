@@ -42,7 +42,7 @@ const CONTINUE_REACH = 6
 export const strengthToTolerance = (strength) =>
   MIN_TOLERANCE + Math.max(0, Math.min(1, strength)) * (MAX_TOLERANCE - MIN_TOLERANCE)
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 

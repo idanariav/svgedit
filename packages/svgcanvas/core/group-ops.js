@@ -32,8 +32,8 @@ const {
   ChangeElementCommand
 } = hstry
 
-/** @param {any} canvas */
-export const init = canvas => {
+/** @param {import('../svgcanvas.js').default} canvas */
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -86,18 +86,16 @@ export const init = canvas => {
         continue
       }
 
-      if (
-        elem.parentNode.tagName === 'a' &&
-      elem.parentNode.childNodes.length === 1
-      ) {
-        elem = elem.parentNode
+      const elemParent = /** @type {Element} */ (elem.parentNode)
+      if (elemParent.tagName === 'a' && elemParent.childNodes.length === 1) {
+        elem = elemParent
       }
 
-      const oldNextSibling = elem.nextSibling
+      const oldNextSibling = /** @type {Element|null} */ (elem.nextSibling)
       const oldParent = elem.parentNode
       g.append(elem)
       batchCmd.addSubCommand(
-        new MoveElementCommand(elem, oldNextSibling, oldParent)
+        new MoveElementCommand(elem, oldNextSibling, /** @type {Element} */ (oldParent))
       )
     }
     if (!batchCmd.isEmpty()) {
@@ -609,7 +607,7 @@ export const init = canvas => {
       convertToGroup(g)
       return
     }
-    const parentsA = getParents(g.parentNode, 'a')
+    const parentsA = getParents(/** @type {Node} */ (g.parentNode), 'a')
     if (parentsA?.length) {
       g = parentsA[0]
     }
@@ -617,20 +615,20 @@ export const init = canvas => {
     // Look for parent "a"
     if (g.tagName === 'g' || g.tagName === 'a') {
       const batchCmd = new BatchCommand('Ungroup Elements')
-      const cmd = pushGroupProperty(g, true)
+      const cmd = pushGroupProperty(/** @type {SVGGElement} */ (g), true)
       if (cmd) {
         batchCmd.addSubCommand(cmd)
       }
 
-      const parent = g.parentNode
+      const parent = /** @type {Element} */ (g.parentNode)
       const anchor = g.nextSibling
       const children = new Array(g.childNodes.length)
 
       let i = 0
       while (g.firstChild) {
-        const elem = g.firstChild
-        const oldNextSibling = elem.nextSibling
-        const oldParent = elem.parentNode
+        const elem = /** @type {Element} */ (g.firstChild)
+        const oldNextSibling = /** @type {Element|null} */ (elem.nextSibling)
+        const oldParent = /** @type {Element} */ (elem.parentNode)
 
         // Remove child title elements
         if (elem.tagName === 'title') {

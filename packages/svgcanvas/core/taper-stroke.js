@@ -212,7 +212,7 @@ registerLiveStage({
   }
 })
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -311,7 +311,7 @@ export const init = (canvas) => {
       width = parseFloat(elem.getAttribute('stroke-width') ?? '') || 1
       paint = elem.getAttribute('stroke')
     }
-    const srcD = elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d')
+    const srcD = /** @type {string} */ (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d'))
     const outline = buildTaperOutline(srcD, width, start, end)
     if (!outline) {
       warn('Selection is not taperable (needs a single open stroked subpath)', null, 'taper-stroke')
@@ -371,7 +371,7 @@ export const init = (canvas) => {
     elem.setAttribute('d', srcD)
     elem.setAttribute('fill', 'none')
     elem.setAttribute('stroke', paint)
-    elem.setAttribute('stroke-width', width)
+    elem.setAttribute('stroke-width', String(width))
     elem.removeAttribute(TAPER_ATTR)
     elem.removeAttribute(TAPER_SOURCE_ATTR)
     elem.removeAttribute(TAPER_STYLE_ATTR)

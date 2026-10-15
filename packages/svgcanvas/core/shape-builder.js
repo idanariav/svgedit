@@ -47,7 +47,7 @@ const elemToItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: tr
 /** @param {Element} elem */
 const getStyleAttrs = (elem) => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 

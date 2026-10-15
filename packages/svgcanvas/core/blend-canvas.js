@@ -337,7 +337,7 @@ const madeFrom = new WeakMap()
 const earlier = new WeakMap()
 const KEEP_EARLIER = 4
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -839,7 +839,7 @@ export const init = (canvas) => {
    * @returns {Element[]}
    */
   const expandBlend = () => {
-    const groups = [...new Set(getSelected().map(blendGroupOf).filter(Boolean))]
+    const groups = /** @type {Element[]} */ ([...new Set(getSelected().map(blendGroupOf).filter(Boolean))])
     if (!groups.length) return []
     svgCanvas.transact('Expand blend', () => {
       for (const g of groups) {

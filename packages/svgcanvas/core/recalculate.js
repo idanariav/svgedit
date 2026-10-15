@@ -55,10 +55,10 @@ const translatePoints = (pointsStr, tx, ty) => pointsStr
 /**
  * Initialize the recalculate module with the SVG canvas.
  * @function module:recalculate.init
- * @param {any} canvas - The SVG canvas object
+ * @param {import('../svgcanvas.js').default} canvas - The SVG canvas object
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const { convertToNum } = getUnits(canvas)
 
@@ -80,7 +80,7 @@ export const init = canvas => {
         const refSelector = `[clip-path="url(#${clipPath.id})"]`
         const users = svgContent.querySelectorAll(refSelector)
         if (users.length > 1) {
-          const newClipPath = clipPath.cloneNode(true)
+          const newClipPath = /** @type {Element} */ (clipPath.cloneNode(true))
           newClipPath.id = svgCanvas.getNextId()
           svgCanvas.findDefs().append(newClipPath)
           elem.setAttribute('clip-path', `url(#${newClipPath.id})`)
@@ -96,18 +96,18 @@ export const init = canvas => {
       if (tag === 'rect') {
         const x = convertToNum('x', path.getAttribute('x') || 0) + tx
         const y = convertToNum('y', path.getAttribute('y') || 0) + ty
-        path.setAttribute('x', x)
-        path.setAttribute('y', y)
+        path.setAttribute('x', String(x))
+        path.setAttribute('y', String(y))
       } else if (tag === 'circle' || tag === 'ellipse') {
         const cx = convertToNum('cx', path.getAttribute('cx') || 0) + tx
         const cy = convertToNum('cy', path.getAttribute('cy') || 0) + ty
-        path.setAttribute('cx', cx)
-        path.setAttribute('cy', cy)
+        path.setAttribute('cx', String(cx))
+        path.setAttribute('cy', String(cy))
       } else if (tag === 'line') {
-        path.setAttribute('x1', convertToNum('x1', path.getAttribute('x1') || 0) + tx)
-        path.setAttribute('y1', convertToNum('y1', path.getAttribute('y1') || 0) + ty)
-        path.setAttribute('x2', convertToNum('x2', path.getAttribute('x2') || 0) + tx)
-        path.setAttribute('y2', convertToNum('y2', path.getAttribute('y2') || 0) + ty)
+        path.setAttribute('x1', String(convertToNum('x1', path.getAttribute('x1') || 0) + tx))
+        path.setAttribute('y1', String(convertToNum('y1', path.getAttribute('y1') || 0) + ty))
+        path.setAttribute('x2', String(convertToNum('x2', path.getAttribute('x2') || 0) + tx))
+        path.setAttribute('y2', String(convertToNum('y2', path.getAttribute('y2') || 0) + ty))
       } else if (tag === 'polyline' || tag === 'polygon') {
         const points = (path.getAttribute('points') || '').trim()
         if (points) {
@@ -130,7 +130,7 @@ export const init = canvas => {
       return attr
     }
     const tag = (path.tagName || '').toLowerCase()
-    if ((tag === 'polyline' || tag === 'polygon') && !path.points?.numberOfItems) {
+    if ((tag === 'polyline' || tag === 'polygon') && !(/** @type {any} */ (path).points?.numberOfItems)) {
       const points = (path.getAttribute('points') || '').trim()
       if (points) {
         path.setAttribute('points', translatePoints(points, tx, ty))

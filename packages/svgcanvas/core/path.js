@@ -37,7 +37,7 @@ const segData = {
  * SvgCanvas instance, closed over `svgCanvas`, so several editors coexist in one
  * realm. The init body (attachments + sub-inits) is at the end of this closure.
  * @function module:path.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  */
 export const init = (canvas) => {
   const svgCanvas = canvas
@@ -523,12 +523,12 @@ export const init = (canvas) => {
       const type = i === 0 ? 'fill' : 'stroke'
       const attrVal = elem.getAttribute(type)
       if (attrVal && attrVal.startsWith('url(')) {
-        const grad = svgCanvas.getRefElem(attrVal)
+        const grad = /** @type {Element} */ (svgCanvas.getRefElem(attrVal))
         if (grad.tagName === 'linearGradient') {
-          let x1 = grad.getAttribute('x1') || 0
-          let y1 = grad.getAttribute('y1') || 0
-          let x2 = grad.getAttribute('x2') || 1
-          let y2 = grad.getAttribute('y2') || 0
+          let x1 = Number(grad.getAttribute('x1') || 0)
+          let y1 = Number(grad.getAttribute('y1') || 0)
+          let x2 = Number(grad.getAttribute('x2') || 1)
+          let y2 = Number(grad.getAttribute('y2') || 0)
 
           // Convert to USOU points
           x1 = (bb.width * x1) + bb.x
@@ -548,9 +548,9 @@ export const init = (canvas) => {
             y2: (pt2.y - bb.y) / bb.height
           }
 
-          const newgrad = grad.cloneNode(true)
+          const newgrad = /** @type {Element} */ (grad.cloneNode(true))
           for (const [key, value] of Object.entries(gCoords)) {
-            newgrad.setAttribute(key, value)
+            newgrad.setAttribute(key, String(value))
           }
           newgrad.id = svgCanvas.getNextId()
           svgCanvas.findDefs().append(newgrad)

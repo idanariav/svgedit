@@ -24,7 +24,7 @@ export const gripRadius = (window.ontouchstart || window.matchMedia?.('(pointer:
  * `selectorManager` created at the end of init), so several editors can coexist
  * in one realm. The manager + Selector class are attached to the canvas.
  * @function module:select.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
@@ -404,7 +404,7 @@ export const init = (canvas) => {
 
       if (svgCanvas.$id('canvasBackground')) { return } // scoped: each editor gets its own
 
-      const [width, height] = svgCanvas.curConfig.dimensions
+      const [width, height] = /** @type {[number, number]} */ (svgCanvas.curConfig.dimensions)
       const canvasbg = svgCanvas.createSVGElement({
         element: 'svg',
         attr: {

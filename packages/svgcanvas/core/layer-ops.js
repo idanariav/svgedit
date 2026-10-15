@@ -22,8 +22,8 @@ const historyRecordingService = (svgCanvas, hrService) => {
   return hrService || new HistoryRecordingService(svgCanvas.undoMgr)
 }
 
-/** @param {any} canvas */
-export const init = canvas => {
+/** @param {import('../svgcanvas.js').default} canvas */
+export const init = (canvas) => {
   const svgCanvas = canvas
 
   /**
@@ -39,7 +39,7 @@ export const init = canvas => {
   /**
  * get current index
  * @function module:draw.identifyLayers
- * @returns {void}
+ * @returns {number}
  */
   const indexCurrentLayer = () => {
     return svgCanvas.getCurrentDrawing().indexCurrentLayer()

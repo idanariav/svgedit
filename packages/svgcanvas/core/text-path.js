@@ -28,7 +28,7 @@ import { warn } from '../common/logger.js'
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
 const SHAPE_GEOM_ATTRS = ['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points', 'x1', 'y1', 'x2', 'y2', 'd']
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 
@@ -76,7 +76,7 @@ export const init = (canvas) => {
         if (SHAPE_GEOM_ATTRS.includes(attr.name)) continue
         path.setAttribute(attr.name, attr.value)
       }
-      path.setAttribute('d', d)
+      path.setAttribute('d', /** @type {string} */ (d))
       path.id = svgCanvas.getNextId()
       rail.before(path)
       batchCmd.addSubCommand(new InsertElementCommand(path))
@@ -210,11 +210,11 @@ export const init = (canvas) => {
     const tp = getTextPath()
     if (!tp) return null
     if (pct === undefined) {
-      return parseFloat(tp.getAttribute('startOffset')) || 0
+      return parseFloat(tp.getAttribute('startOffset') ?? '') || 0
     }
     const clamped = Math.max(0, Math.min(100, pct))
     const old = tp.getAttribute('startOffset')
-    if (clamped === (parseFloat(old) || 0)) return clamped
+    if (clamped === (parseFloat(old ?? '') || 0)) return clamped
     tp.setAttribute('startOffset', `${clamped}%`)
     svgCanvas.addCommandToHistory(
       new svgCanvas.history.ChangeElementCommand(tp, { startOffset: old })

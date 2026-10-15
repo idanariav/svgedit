@@ -25,7 +25,7 @@ const {
 
 /**
 * @function module:undo.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -255,7 +255,7 @@ export const init = (canvas) => {
     const zoom = svgCanvas.getZoom()
     if (svgCanvas.getCurrentMode() === 'pathedit') {
     // Editing node
-      svgCanvas.pathActions.moveNode(attr, newValue)
+      svgCanvas.pathActions.moveNode(attr, Number(newValue))
     }
     elems = elems ?? selectedElements
     let i = elems.length

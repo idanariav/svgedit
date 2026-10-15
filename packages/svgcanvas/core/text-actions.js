@@ -21,10 +21,10 @@ import { isAreaText, rowsOf, softCount } from './text-rows.js'
 
 /**
  * @function module:text-actions.init
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; the TextActions class below closes over it
 
   /**
@@ -124,7 +124,8 @@ export const init = canvas => {
           stroke: '#333',
           'stroke-width': 1
         })
-        svgCanvas.getElement('selectorParentGroup').append(cursor)
+        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        parentGroup.append(cursor)
       }
       this.#cursor = cursor
 
@@ -180,7 +181,8 @@ export const init = canvas => {
           opacity: 0.5,
           style: 'pointer-events:none'
         })
-        svgCanvas.getElement('selectorParentGroup').append(selblock)
+        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        parentGroup.append(selblock)
       }
       this.#selblock = selblock
 
@@ -555,8 +557,9 @@ export const init = canvas => {
         svgCanvas.clearSelection()
         if (this.#curtext) this.#curtext.style.cursor = 'move'
 
-        svgCanvas.call('selected', [this.#curtext])
-        svgCanvas.addToSelection([this.#curtext], true)
+        const curtext = /** @type {Element} */ (this.#curtext)
+        svgCanvas.call('selected', [curtext])
+        svgCanvas.addToSelection([curtext], true)
       }
       if (this.#curtext && !getTextWithNewlines(this.#curtext).length) {
       // No content (not even blank rows), so delete

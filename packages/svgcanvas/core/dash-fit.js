@@ -242,7 +242,7 @@ export const dashFitIssue = (elem) => {
 }
 
 /**
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {

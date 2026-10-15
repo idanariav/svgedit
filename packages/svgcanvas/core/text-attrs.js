@@ -16,8 +16,8 @@ import {
   reflowAreaText, settleAreaText, isAreaText, getAreaBox, makeAreaText, makePointText, rowsOf, softCount, SOFT_ATTR, getValign
 } from './text-rows.js'
 
-/** @param {any} canvas */
-export const init = canvas => {
+/** @param {import('../svgcanvas.js').default} canvas */
+export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
 
   // A transform bake that scales the type (a group scale, a rotated resize) scales an area text's box with
@@ -61,7 +61,7 @@ export const init = canvas => {
 
   /** @returns {SVGTextElement[]} */
   const getSelectedTextElements = () => {
-    return svgCanvas.getSelectedElements().filter((/** @type {Element} */ el) => el?.tagName === 'text')
+    return /** @type {SVGTextElement[]} */ (svgCanvas.getSelectedElements().filter((/** @type {Element} */ el) => el?.tagName === 'text'))
   }
 
   /**

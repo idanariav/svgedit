@@ -29,7 +29,7 @@ const matrixOf = (elem) => {
   return tlist ? transformListToTransform(tlist).matrix : null
 }
 
-/** @param {any} canvas */
+/** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {
   const svgCanvas = canvas
 

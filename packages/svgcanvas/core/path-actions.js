@@ -25,7 +25,7 @@ import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-contin
 
 /**
 * @function module:path-actions.init
-* @param {any} canvas
+* @param {import('../svgcanvas.js').default} canvas
 * @returns {void}
 */
 export const init = (canvas) => {
@@ -384,7 +384,7 @@ export const init = (canvas) => {
         }
       })
       svgCanvas.setDrawnPath(drawn)
-      this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: drawn.pathSegList.numberOfItems }
+      this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: /** @type {any} */ (drawn).pathSegList.numberOfItems }
       end.elem.setAttribute('display', 'none')
       const x = end.point.x * zoom
       const y = end.point.y * zoom
@@ -486,7 +486,8 @@ export const init = (canvas) => {
         assignAttributes(ring, {
           id: END_HINT_ID, r: 7, fill: 'none', stroke: '#22C', 'stroke-width': 1.5, 'pointer-events': 'none'
         })
-        svgCanvas.getElement('selectorParentGroup').append(ring)
+        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        parentGroup.append(ring)
       }
       assignAttributes(ring, { cx: end.point.x * zoom, cy: end.point.y * zoom, display: 'inline' })
     }
@@ -533,7 +534,8 @@ export const init = (canvas) => {
             'stroke-width': '0.5',
             fill: 'none'
           })
-          svgCanvas.getElement('selectorParentGroup').append(stretchy)
+          const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+          parentGroup.append(stretchy)
         }
         stretchy.setAttribute('display', 'inline')
 
@@ -610,7 +612,7 @@ export const init = (canvas) => {
           // Remove previous path object if previously created
           svgCanvas.removePath_(id)
 
-          const newpath = svgCanvas.getElement(id)
+          const newpath = /** @type {Element} */ (svgCanvas.getElement(id))
           let newseg
           let sSeg
           const len = seglist.numberOfItems
@@ -626,7 +628,7 @@ export const init = (canvas) => {
               const absX = seglist.getItem(0).x
               const absY = seglist.getItem(0).y
 
-              sSeg = stretchy.pathSegList.getItem(1)
+              sSeg = /** @type {any} */ (stretchy).pathSegList.getItem(1)
               newseg = sSeg.pathSegType === 4
                 ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
                 : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
@@ -654,7 +656,7 @@ export const init = (canvas) => {
             svgCanvas.setStarted(false)
 
             if (this.#continued) {
-              this.#commitInto(this.#continued.elem, newpath.getAttribute('d'), [], newpath)
+              this.#commitInto(this.#continued.elem, /** @type {string} */ (newpath.getAttribute('d')), [], newpath)
               return false
             }
 
@@ -666,7 +668,7 @@ export const init = (canvas) => {
               const newD = newpath.getAttribute('d')
               const origD = path.elem.getAttribute('d')
               path.elem.setAttribute('d', origD + newD)
-              newpath.parentNode.removeChild(newpath)
+              newpath.remove()
               if (path.matrix) {
                 svgCanvas.recalcRotatedPath()
               }
@@ -710,7 +712,7 @@ export const init = (canvas) => {
             }
 
             // Use the segment defined by stretchy
-            sSeg = stretchy.pathSegList.getItem(1)
+            sSeg = /** @type {any} */ (stretchy).pathSegList.getItem(1)
             newseg = sSeg.pathSegType === 4
               ? drawnPath.createSVGPathSegLinetoAbs(svgCanvas.round(x), svgCanvas.round(y))
               : drawnPath.createSVGPathSegCurvetoCubicAbs(
@@ -842,8 +844,8 @@ export const init = (canvas) => {
 
           // set curve
           // const seg = seglist.getItem(index);
-          const curX = mouseX / zoom
-          const curY = mouseY / zoom
+          const curX = /** @type {number} */ (mouseX) / zoom
+          const curY = /** @type {number} */ (mouseY) / zoom
           const altX = (ptX + (ptX - curX))
           const altY = (ptY + (ptY - curY))
 
@@ -979,9 +981,9 @@ export const init = (canvas) => {
      */
     /**
     * @param {MouseEvent} evt
-    * @param {Element} element
-    * @param {number} mouseX
-    * @param {number} mouseY
+    * @param {?Element} [element]
+    * @param {number} [mouseX]
+    * @param {number} [mouseY]
     * @returns {KeepElement|void}
     */
     mouseUp (evt, element, mouseX, mouseY) {
@@ -1000,8 +1002,8 @@ export const init = (canvas) => {
           const zoom = svgCanvas.getZoom()
           const ptX = this.#newPoint[0]
           const ptY = this.#newPoint[1]
-          const curX = mouseX / zoom
-          const curY = mouseY / zoom
+          const curX = /** @type {number} */ (mouseX) / zoom
+          const curY = /** @type {number} */ (mouseY) / zoom
           // Matches the FUZZ tolerance mouseDown uses to detect "clicked on an
           // existing point" (below) — real click imprecision (mouse/trackpad
           // hand tremor) commonly runs several CSS px, well past a stricter
@@ -1070,12 +1072,12 @@ export const init = (canvas) => {
         rubberBox.setAttribute('display', 'none')
 
         if (rubberBox.getAttribute('width') <= 2 && rubberBox.getAttribute('height') <= 2) {
-          svgCanvas.pathActions.toSelectMode(evt.target)
+          svgCanvas.pathActions.toSelectMode(/** @type {Element} */ (evt.target))
         }
 
       // else, move back to select mode
       } else {
-        svgCanvas.pathActions.toSelectMode(evt.target)
+        svgCanvas.pathActions.toSelectMode(/** @type {Element} */ (evt.target))
       }
       this.#hasMoved = false
       return undefined
@@ -1107,7 +1109,7 @@ export const init = (canvas) => {
     }
 
     /**
-    * @param {Element} [elem]
+    * @param {?Element} [elem]
     * @fires module:svgcanvas.SvgCanvas#event:selected
     * @returns {void}
     */
@@ -1148,8 +1150,8 @@ export const init = (canvas) => {
       }
 
       if (selPath) {
-        svgCanvas.call('selected', [elem])
-        svgCanvas.addToSelection([elem], true)
+        svgCanvas.call('selected', [path.elem])
+        svgCanvas.addToSelection([path.elem], true)
       } else if (target && target !== svgCanvas.getSvgRoot()) {
         svgCanvas.call('selected', [target])
         svgCanvas.addToSelection([target], true)

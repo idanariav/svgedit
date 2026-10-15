@@ -274,10 +274,10 @@ const performBooleanOp = (type, canvas) => {
 
 /**
  * @function module:boolean-ops.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas) => {
   const svgCanvas = canvas
   svgCanvas.booleanUnion = () => performBooleanOp('union', svgCanvas)
   svgCanvas.booleanIntersect = () => performBooleanOp('intersect', svgCanvas)

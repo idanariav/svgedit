@@ -130,7 +130,7 @@ const getFeather = (elem) => {
  * instance, closed over its own `svgCanvas`, so several editors can coexist in
  * one realm. The stateless helpers above are shared.
  * @function module:clip-mask.init
- * @param {module:svgcanvas.SvgCanvas} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
@@ -145,7 +145,7 @@ export const init = (canvas) => {
     const ref = elem.getAttribute('mask')
     if (!ref) return []
     const mask = svgCanvas.getElement(refId(ref))
-    return mask ? [...mask.children] : []
+    return mask ? /** @type {SVGElement[]} */ ([...mask.children]) : []
   }
 
   /**
@@ -237,7 +237,7 @@ export const init = (canvas) => {
     }
 
     const refValue = elem.getAttribute(refAttr)
-    const id = refValue.replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
+    const id = /** @type {string} */ (refValue).replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
     const container = svgCanvas.getElement(id)
 
     const { BatchCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
@@ -291,7 +291,7 @@ export const init = (canvas) => {
     batchCmd.addSubCommand(new InsertElementCommand(mask))
 
     if (clipEl) {
-      [...clipEl.children].forEach((child) => {
+      ;/** @type {SVGElement[]} */ ([...clipEl.children]).forEach((child) => {
         const oldNext = child.nextSibling
         const oldParent = child.parentNode
         const oldPaint = {

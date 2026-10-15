@@ -124,7 +124,7 @@ const LOG = 'tool-registry'
  */
 
 /**
- * @param {any} canvas
+ * @param {import('../svgcanvas.js').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {
