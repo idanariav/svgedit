@@ -73,4 +73,14 @@ export const registerCanvasCommands = (commands) => {
       saveLayouts(layouts)
     }
   })
+  commands.register({
+    id: 'canvas_delete_layout',
+    label: 'Delete canvas layout',
+    group: 'Canvas',
+    enabled: () => loadLayouts().length ? true : 'No saved layouts',
+    params: {
+      name: { type: 'enum', required: true, values: () => loadLayouts().map((l) => l.name) }
+    },
+    run: (editor, { name }) => saveLayouts(loadLayouts().filter((l) => l.name !== name))
+  })
 }

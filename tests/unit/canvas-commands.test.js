@@ -27,7 +27,7 @@ describe('canvas commands', () => {
     const list = makeEditor().commands.list()
     const byId = Object.fromEntries(list.map((c) => [c.id, c]))
     expect(Object.keys(byId).filter((id) => id.startsWith('canvas_')).sort()).toEqual([
-      'canvas_apply_layout', 'canvas_save_layout', 'canvas_set_background', 'canvas_set_size'
+      'canvas_apply_layout', 'canvas_delete_layout', 'canvas_save_layout', 'canvas_set_background', 'canvas_set_size'
     ])
     expect(byId.canvas_set_size).toMatchObject({ group: 'Canvas', params: { width: { type: 'number', required: true } } })
   })
@@ -75,5 +75,14 @@ describe('canvas commands', () => {
     editor.commands.run('canvas_save_layout', { name: 'A' })
     expect(JSON.parse(localStorage.getItem(LAYOUTS_KEY))).toMatchObject([{ name: 'A', w: 10, h: 20 }])
     expect(() => editor.commands.run('canvas_save_layout', { name: '   ' })).toThrow(/must not be empty/)
+  })
+
+  it('canvas_delete_layout removes only the named layout', () => {
+    const editor = makeEditor()
+    editor.commands.run('canvas_save_layout', { name: 'A' })
+    editor.commands.run('canvas_save_layout', { name: 'B' })
+    editor.commands.run('canvas_delete_layout', { name: 'A' })
+    expect(JSON.parse(localStorage.getItem(LAYOUTS_KEY)).map((l) => l.name)).toEqual(['B'])
+    expect(() => editor.commands.run('canvas_delete_layout', { name: 'A' })).toThrow(/one of \["B"\]/)
   })
 })

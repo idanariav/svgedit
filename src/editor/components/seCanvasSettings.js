@@ -1,7 +1,7 @@
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
-import { loadLayouts, saveLayouts, captureCurrentLayout } from '../canvasLayouts.js'
+import { loadLayouts } from '../canvasLayouts.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
@@ -671,15 +671,17 @@ class SeCanvasSettings extends SeSettingsPopover {
   overwriteLayout (index) {
     const existing = this.layouts[index]
     if (!existing) return
-    this.layouts[index] = captureCurrentLayout(ownerEditor(this), existing.name)
-    saveLayouts(this.layouts)
+    ownerEditor(this).commands.tryRun('canvas_save_layout', { name: existing.name }, 'popover')
+    this.layouts = loadLayouts()
     this.renderLayouts()
   }
 
   /** Delete a saved layout. */
   removeLayout (index) {
-    this.layouts.splice(index, 1)
-    saveLayouts(this.layouts)
+    const existing = this.layouts[index]
+    if (!existing) return
+    ownerEditor(this).commands.tryRun('canvas_delete_layout', { name: existing.name }, 'popover')
+    this.layouts = loadLayouts()
     this.renderLayouts()
     this.positionPopup()
   }
