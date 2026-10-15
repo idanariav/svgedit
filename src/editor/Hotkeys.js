@@ -268,7 +268,7 @@ const GROUP_BY_ID = {
 }
 // Stable display order for groups; unknown groups are appended alphabetically.
 export const GROUP_ORDER = [
-  'Tools', 'View', 'Edit', 'Group', 'Transform', 'Arrange', 'Align',
+  'Tools', 'View', 'Canvas', 'Edit', 'Group', 'Transform', 'Arrange', 'Align',
   'Path', 'Boolean', 'Mask', 'Text', 'Layers', 'Connector', 'File',
   'Move', 'Clone', 'Rotate', 'Zoom', 'Selection', 'Navigate'
 ]

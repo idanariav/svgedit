@@ -803,3 +803,7 @@ beside it). Without an on-screen anchor — the tablet shell, command search, a 
 stays the centred modal (the palette's swatch editor also uses the modal). The dialog's screen
 eyedropper hides the dialog and calls `svgCanvas.suspendContextDimming()` so group-context dimming
 does not distort the sampled pixels. Layout lives under `:host(.popover)` in `ColorDialog.css.js`.
+
+## Canvas page commands
+
+`canvasCommands.js` registers size / background / layout as commands with typed params (`canvas_set_size`, `canvas_set_background`, `canvas_apply_layout`, `canvas_save_layout`). The Canvas Settings popover (`seCanvasSettings.js`) and the bottom panel's solid background colour run them via `commands.tryRun(id, params, source)`, so they appear as `action` entries in the debug log. Gradient backgrounds still call `editor.setBackground(…, true)` directly (a gradient element is not a command param); layout overwrite / delete in the popover are also still direct. A `ParamSpec.values` may be a function (read on every `list()` / validation).

@@ -1,7 +1,7 @@
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
-import { loadLayouts, saveLayouts, captureCurrentLayout, applyLayout } from '../canvasLayouts.js'
+import { loadLayouts, saveLayouts, captureCurrentLayout } from '../canvasLayouts.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
@@ -632,7 +632,7 @@ class SeCanvasSettings extends SeSettingsPopover {
       applyBtn.textContent = 'Apply'
       applyBtn.title = 'Apply this layout'
       applyBtn.addEventListener('click', () => {
-        applyLayout(ownerEditor(this), layout)
+        ownerEditor(this).commands.tryRun('canvas_apply_layout', { name: layout.name }, 'popover')
         this.close()
       })
 
@@ -659,15 +659,9 @@ class SeCanvasSettings extends SeSettingsPopover {
   saveCurrentLayout () {
     const name = this.$layoutName.value.trim()
     if (!name) return
-    // Overwrite in place if the name already exists, else append.
-    const layout = captureCurrentLayout(ownerEditor(this), name)
-    const existing = this.layouts.findIndex(l => l.name === name)
-    if (existing >= 0) {
-      this.layouts[existing] = layout
-    } else {
-      this.layouts.push(layout)
-    }
-    saveLayouts(this.layouts)
+    // Overwrites in place if the name already exists, else appends.
+    if (!ownerEditor(this).commands.tryRun('canvas_save_layout', { name }, 'popover')) return
+    this.layouts = loadLayouts()
     this.$layoutName.value = ''
     this.renderLayouts()
     this.positionPopup()
@@ -696,8 +690,7 @@ class SeCanvasSettings extends SeSettingsPopover {
     if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
       return
     }
-    ownerEditor(this).svgCanvas.setResolution(w, h)
-    ownerEditor(this).updateCanvas()
+    ownerEditor(this).commands.tryRun('canvas_set_size', { width: w, height: h }, 'popover')
     this.close()
   }
 

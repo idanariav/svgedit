@@ -148,7 +148,7 @@ class BottomPanel {
     const { paint } = evt.detail
     if (paint.type === 'solidColor') {
       const color = paint.solidColor === 'none' ? 'none' : '#' + paint.solidColor
-      this.editor.setBackground(color, '', undefined, true)
+      this.editor.commands.tryRun('canvas_set_background', { color }, 'bg-picker')
     } else if (paint.type === 'linearGradient' || paint.type === 'radialGradient') {
       this.editor.setBackground('gradient', '', paint[paint.type], true)
     }
@@ -200,7 +200,7 @@ class BottomPanel {
         : new Paint({ alpha: 100, solidColor: color.substr(1) })
     if (picker === 'background') {
       $id('bg_color').setPaint(paint)
-      this.editor.setBackground(color, '', undefined, true)
+      this.editor.commands.tryRun('canvas_set_background', { color }, 'palette')
       return
     }
     if (picker === 'fill') {

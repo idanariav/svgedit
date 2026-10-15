@@ -32,7 +32,7 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
  * @property {*} [default]
  * @property {number} [min]
  * @property {number} [max]
- * @property {string[]} [values] allowed values for `enum`
+ * @property {string[]|(() => string[])} [values] allowed values for `enum`; a function is read each time (saved layouts, say)
  * @property {boolean} [required]
  */
 
@@ -94,6 +94,9 @@ export class CommandError extends Error {
  * @param {*} value
  * @returns {*}
  */
+/** @param {ParamSpec} spec @returns {string[]|undefined} */
+const valuesOf = (spec) => typeof spec.values === 'function' ? spec.values() : spec.values
+
 const coerceParam = (id, name, spec, value) => {
   const bad = (/** @type {string} */ why) => new CommandError('badParams', id, `${id}: parameter "${name}" ${why}`)
   switch (spec.type) {
@@ -107,7 +110,7 @@ const coerceParam = (id, name, spec, value) => {
       if (value === false || value === 'false' || value === 0) return false
       throw bad('must be a boolean')
     case 'enum':
-      if (!spec.values?.includes(value)) throw bad(`must be one of ${JSON.stringify(spec.values)}`)
+      if (!valuesOf(spec)?.includes(value)) throw bad(`must be one of ${JSON.stringify(valuesOf(spec))}`)
       return value
     default:
       if (value === null || typeof value === 'object') throw bad('must be a string')
@@ -128,6 +131,15 @@ const coerceParam = (id, name, spec, value) => {
  * @property {number} [undoAfter]
  * @property {number} ms
  */
+
+/**
+ * A copy of the specs with function-valued `values` read, so a listing is plain data.
+ * @param {Object<string, ParamSpec>} params
+ * @returns {Object<string, ParamSpec>}
+ */
+const resolveParams = (params) => Object.fromEntries(
+  Object.entries(params).map(([name, spec]) => [name, typeof spec.values === 'function' ? { ...spec, values: spec.values() } : spec])
+)
 
 export class CommandRegistry {
   /**
@@ -303,7 +315,7 @@ export class CommandRegistry {
         keys: this.keysOf(rec.id),
         enabled: state === true,
         ...(state === true ? {} : { disabledReason: state }),
-        ...(rec.params ? { params: rec.params } : {}),
+        ...(rec.params ? { params: resolveParams(rec.params) } : {}),
         interactive: Boolean(rec.interactive)
       })
     }

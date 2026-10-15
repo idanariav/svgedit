@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
 import '../../../src/editor/components/seCanvasSettings.js'
+import { CommandRegistry } from '../../../src/editor/commands.js'
+import { registerCanvasCommands } from '../../../src/editor/canvasCommands.js'
+
+// The popover's Apply / layout buttons run canvas commands, so the mock editor carries a real registry.
+const install = (overrides) => {
+  const mock = installMockSvgEditor(overrides)
+  mock.commands = new CommandRegistry(mock)
+  registerCanvasCommands(mock.commands)
+  return mock
+}
 
 vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
 
@@ -15,7 +25,7 @@ describe('se-canvas-settings', () => {
     localStorage.clear()
     setResolution = vi.fn()
     updateCanvas = vi.fn()
-    installMockSvgEditor({
+    install({
       svgCanvas: {
         getResolution: () => ({ w: 800, h: 600 }),
         setResolution
@@ -56,7 +66,7 @@ describe('se-canvas-settings', () => {
     })
 
     it('rounds non-integer resolution values', () => {
-      installMockSvgEditor({
+      install({
         svgCanvas: { getResolution: () => ({ w: 800.6, h: 599.4 }), setResolution },
         updateCanvas
       })
@@ -334,7 +344,7 @@ describe('se-canvas-settings', () => {
         setResolution,
         getSvgString: () => '<svg></svg>'
       }
-      installMockSvgEditor({
+      install({
         svgCanvas,
         updateCanvas,
         configObj: { curConfig: { imgPath: 'images' }, pref: () => '#FFFFFF' }
@@ -368,7 +378,7 @@ describe('se-canvas-settings', () => {
         setResolution,
         getSvgString: () => '<svg></svg>'
       }
-      installMockSvgEditor({
+      install({
         svgCanvas,
         updateCanvas,
         configObj: { curConfig: { imgPath: 'images' }, pref: () => '#FFFFFF' }
@@ -389,7 +399,7 @@ describe('se-canvas-settings', () => {
         setResolution,
         getSvgString: () => '<svg></svg>'
       }
-      installMockSvgEditor({
+      install({
         svgCanvas,
         updateCanvas,
         configObj: { curConfig: { imgPath: 'images' }, pref: () => '#FFFFFF' }
