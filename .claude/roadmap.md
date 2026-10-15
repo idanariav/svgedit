@@ -56,7 +56,7 @@ small items (S) fill gaps between large ones.
   (see "Typing the `init` modules"). Generating the d.ts from source was looked at and dropped (2026-10-13, same section).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48) — one "Run editor command…" palette picker over
   `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette entries, by decision.
-  Open: the picker doesn't ask for a command's `params` yet (plugin `.claude/techdebt.md`).
+  The picker now asks for a command's `params` (2026-10-15); no editor command declares any yet.
 - **UI/UX polish** (the six icon-only top-bar toggles stay icon-only by decision; left-column fold, flyout shortcuts, Cutter icon and "none" swatch are done): one batched pass
   after Phase 2, or opportunistically when a feature touches that toolbar.
 - **Round-trip corpus, `checkDrawing` rules, command sweep:** every phase adds its fixtures and keeps the sweep green. The sweep picks one element per kind (tag + which `se:` features it carries), then runs the commands that need several shapes on two and on up to four of them together; it compares numbers at the saver's 2-decimal precision and skips the file-picker commands (`tool_save`, `tool_save_as`: they need a fresh user gesture). A feature that persists `se:` state needs a fixture saved by the real tool (the corpus covers connectors, fitted dashes, ruler guides, locked and comment layers, segments, tipped arrows…); `SWEEP=full` before closing a phase.
