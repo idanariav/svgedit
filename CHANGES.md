@@ -1,5 +1,11 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.7
+- Debug log: an action stream records what the user did (commands with source, pointer, keys, selection, mode, tool gestures, history pushes) so a bug can be retraced; see `.claude/debug-log.md`.
+- Commands: `canvas_set_size`, `canvas_set_background`, `canvas_apply_layout`, `canvas_save_layout`, `canvas_delete_layout`; command params may declare `values` as a function; `commands.onRun` listeners and a `source` argument on `run`.
+- Fix: redo of hiding/locking a blend key, mirror source or connector end regenerates the dependants.
+- Types: the `canvas` argument of the core init modules is typed; root tsconfig resolves modules like the bundler.
+
 ## 7.4.1-fork.6
 - UI: the fill/stroke/background colour picker opens as a popover anchored to its swatch (outside click applies, Escape cancels); the tablet shell, command search and hidden swatches keep the centred modal. The screen eyedropper ignores in-group dimming.
 - UI: the shape-library toolbar icon is now a bookmark; narrow-pane cut-offs fixed and toolbar icons restyled as solid outlines.
