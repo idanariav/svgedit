@@ -136,6 +136,7 @@ describe('undo', () => {
     const batch = new history.BatchCommand('Delete Elements')
     batch.addSubCommand(new history.ChangeElementCommand(rectElem, { width: '5' }))
     canvas.undoMgr.addCommandToHistory(batch)
+    logDebugEvent.mockClear() // the push above logs a history-push
 
     canvas.undoMgr.undo()
     expect(logDebugEvent).toHaveBeenCalledTimes(1)

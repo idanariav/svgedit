@@ -404,6 +404,13 @@ export const init = (canvas) => {
   }
 
   svgCanvas.undoMgr = getUndoManager()
+  svgCanvas.undoMgr.onPush = (/** @type {any} */ cmd) => {
+    svgCanvas.logDebugEvent?.('history-push', {
+      text: cmd.getText?.(),
+      type: cmd.type?.() ?? cmd.constructor?.name,
+      undoSize: svgCanvas.undoMgr.getUndoStackSize()
+    })
+  }
   svgCanvas.changeSelectedAttributeNoUndo = changeSelectedAttributeNoUndoMethod
   svgCanvas.changeSelectedAttribute = changeSelectedAttributeMethod
 }

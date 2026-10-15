@@ -260,6 +260,7 @@ export const init = (canvas) => {
     if (!gesture) return
     const { tool, tx } = gesture
     gesture = null
+    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'cancel', why: 'rolled back (Escape, mode switch, new press or error)' })
     clearOverlays()
     try {
       tx.cancel()
@@ -293,6 +294,7 @@ export const init = (canvas) => {
       return false
     }
     svgCanvas.setStarted(true)
+    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'begin', at: [start.x, start.y] })
     return true
   }
 
@@ -357,10 +359,12 @@ export const init = (canvas) => {
     if (!tool.keepOverlays || result === 'cancel') clearOverlays()
     if (result === 'cancel') {
       tx.cancel()
+      svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'cancel', why: 'the tool declined on release' })
       try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
       return true
     }
     tx.commit()
+    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'commit', created: result && typeof result === 'object' ? result.created?.id : undefined })
     if (result && typeof result === 'object' && result.created) finishCreated(result.created, evt, { keepOpacity: tool.keepOpacity })
     return true
   }

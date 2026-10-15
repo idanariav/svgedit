@@ -19,7 +19,9 @@ buttons, undo) hides them correctly, so the trigger is unknown. The debug
 snapshot now includes `pathEditing.mode`, flags any visible grip outside
 `path`/`pathedit` as stale, and records grip x/y; freehand closes log a
 `path-draw-commit` event. Next time it shows up, the log should identify the
-sequence. Don't add speculative hide-all calls before then.
+sequence. Since 2026-10-15 the log also records every key, pointer press / release, command, tool
+gesture and history push in order (`.claude/debug-log.md`): when a `stale: true` grip appears, read the entries before it.
+Don't add speculative hide-all calls before then.
 
 ## Closed subpaths must carry an explicit closing lineto
 

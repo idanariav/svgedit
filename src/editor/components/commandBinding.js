@@ -19,5 +19,5 @@ export const onCommandClick = (el) => {
   const rec = commands?.get(id)
   // Never dispatch an adapter back to its own element (would loop).
   if (!rec || (rec.adapter && rec.el === el)) return
-  commands.tryRun(id)
+  commands.tryRun(id, {}, 'button')
 }

@@ -766,6 +766,8 @@ export class UndoManager {
     this.handler_ = historyEventHandler || null
     this.undoStackPointer = 0
     this.undoStack = /** @type {any[]} */ ([])
+    /** Debug hook: called after every command lands on the stack (see undo.js). @type {?((cmd: any) => void)} */
+    this.onPush = null
 
     // this is the stack that stores the original values, the elements and
     // the attribute name for begin/finish
@@ -850,6 +852,7 @@ export class UndoManager {
     }
     this.undoStack.push(cmd)
     this.undoStackPointer = this.undoStack.length
+    this.onPush?.(cmd)
   }
 
   /**

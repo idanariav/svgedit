@@ -147,7 +147,7 @@ describe('se-button', () => {
       withCommands({ get: () => ({ adapter: false }), tryRun: run })
       const el = mountElement('se-button', { id: 'tool_clone', command: 'tool_clone' })
       el.click()
-      expect(run).toHaveBeenCalledWith('tool_clone')
+      expect(run).toHaveBeenCalledWith('tool_clone', {}, 'button')
     })
 
     it('does nothing while disabled', () => {

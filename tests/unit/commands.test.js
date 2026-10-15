@@ -283,4 +283,52 @@ describe('CommandRegistry', () => {
       expect(reg.list({ includeHidden: true }).map((c) => c.id)).toContain('twin')
     })
   })
+
+  describe('onRun (debug log)', () => {
+    const undo = (n) => ({ svgCanvas: { undoMgr: { getUndoStackSize: () => n.value } } })
+
+    it('reports each run with its source, outcome and undo-stack size before / after', () => {
+      const n = { value: 2 }
+      reg = new CommandRegistry(undo(n))
+      reg.register({ id: 'a', label: 'A', run: () => { n.value++ } })
+      reg.register({ id: 'off', label: 'Off', enabled: () => 'nothing selected', run: () => {} })
+      reg.register({ id: 'boom', label: 'Boom', run: () => { throw new Error('bang') } })
+      const seen = []
+      reg.onRun((e) => seen.push(e))
+
+      reg.run('a')
+      reg.tryRun('a', {}, 'hotkey')
+      reg.tryRun('off', {}, 'button')
+      expect(codeOf(() => reg.run('boom'))).toBe('internal')
+      expect(codeOf(() => reg.run('nope'))).toBe('unknown')
+
+      expect(seen.map((e) => [e.id, e.source, e.outcome, e.undoBefore, e.undoAfter])).toEqual([
+        ['a', 'api', 'ran', 2, 3],
+        ['a', 'hotkey', 'ran', 3, 4],
+        ['off', 'button', 'disabled', 4, 4],
+        ['boom', 'api', 'internal', 4, 4],
+        ['nope', 'api', 'unknown', 4, 4]
+      ])
+      expect(seen[2].error).toBe('nothing selected')
+      expect(seen[0].ms).toBeGreaterThanOrEqual(0)
+    })
+
+    it('marks a command run inside another as nested, and stops after unsubscribe', () => {
+      reg.register({ id: 'inner', label: 'I', run: () => {} })
+      reg.register({ id: 'outer', label: 'O', run: () => reg.run('inner') })
+      const seen = []
+      const off = reg.onRun((e) => seen.push([e.id, e.depth]))
+      reg.run('outer')
+      expect(seen).toEqual([['inner', 1], ['outer', 0]])
+      off()
+      reg.run('outer')
+      expect(seen).toHaveLength(2)
+    })
+
+    it('ignores a throwing listener', () => {
+      reg.register({ id: 'a', label: 'A', run: () => 7 })
+      reg.onRun(() => { throw new Error('logger bug') })
+      expect(reg.run('a')).toBe(7)
+    })
+  })
 })

@@ -26,6 +26,7 @@ import { init as eventShapeDrawInit } from './event-shape-draw.js'
 import { init as eventResizeInit } from './event-resize.js'
 import { init as eventRotateInit } from './event-rotate.js'
 import { init as eventSelectInit } from './event-select.js'
+import { describeElement, describePointer } from './debug-events.js'
 
 const {
   InsertElementCommand
@@ -38,6 +39,42 @@ const {
 */
 export const init = (canvas) => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
+
+  /**
+   * Debug log: one entry per press and release (what was hit, in which mode, with which
+   * modifiers, where in the document, and what the release committed). A no-op unless a
+   * host turned the debug log on.
+   * @type {?{down: object, moves: number, undoSize: number}}
+   */
+  let press = null
+
+  /**
+   * @param {'pointer-down'|'pointer-up'} kind
+   * @param {MouseEvent} evt
+   * @returns {void}
+   */
+  const logPress = (kind, evt) => {
+    if (!svgCanvas._debugEventSink) return
+    try {
+      // the root matrix is refreshed by a press itself, so the first press falls back to the document's
+      const matrix = svgCanvas.getrootSctm() ?? svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()?.inverse()
+      const pt = matrix ? transformPoint(evt.clientX, evt.clientY, matrix) : null
+      const detail = {
+        mode: svgCanvas.getCurrentMode(),
+        ...describePointer(evt),
+        doc: pt ? [Math.round(pt.x * 100) / 100, Math.round(pt.y * 100) / 100] : null,
+        selected: svgCanvas.getSelectedElements().filter(Boolean).map(describeElement),
+        undoSize: svgCanvas.undoMgr.getUndoStackSize()
+      }
+      if (kind === 'pointer-down') {
+        press = { down: detail, moves: 0, undoSize: detail.undoSize }
+        svgCanvas.logDebugEvent(kind, detail)
+      } else {
+        svgCanvas.logDebugEvent(kind, { ...detail, moves: press?.moves ?? 0, undoSizeAtDown: press?.undoSize })
+        press = null
+      }
+    } catch { /* logging must never break input */ }
+  }
   const { convertAttrs } = getUnits(canvas)
   const eventZoom = eventZoomInit(svgCanvas)
   const eventTextEdit = eventTextEditInit(svgCanvas)
@@ -77,7 +114,8 @@ export const init = (canvas) => {
  * @returns {void}
  */
   const mouseMoveEvent = (evt) => {
-  // if the mouse is move without dragging an element, just return.
+    if (press) press.moves++
+    // if the mouse is move without dragging an element, just return.
     if (!svgCanvas.getStarted()) {
       svgCanvas.toolHover?.(evt) // registered tools that asked for hover (core/tool-registry.js)
       if (['path', 'fhpath'].includes(svgCanvas.getCurrentMode())) eventPathEdit.hover(evt)
@@ -239,7 +277,9 @@ export const init = (canvas) => {
   const mouseUpEvent = (evt) => {
     try {
       mouseUpEventImpl(evt)
+      logPress('pointer-up', evt) // after the release ran, so `undoSize` shows what it committed
     } catch (err) {
+      logPress('pointer-up', evt)
       logError('mouseUpEvent failed; resetting drag state', err, 'event')
       svgCanvas.setStarted(false)
       svgCanvas.hasDragStartTransform = false
@@ -680,6 +720,7 @@ export const init = (canvas) => {
  * @returns {void}
  */
   const mouseDownEvent = (evt) => {
+    logPress('pointer-down', evt)
     try {
       mouseDownEventImpl(evt)
     } catch (err) {

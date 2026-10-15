@@ -179,7 +179,7 @@ class TabletShell {
       e.stopPropagation()
       const mode = this.svgCanvas.getMode()
       const tools = this.available(MORE_TOOLS)
-      const menu = this.menuList(tools.map(([m, icon, label]) => [icon, label, () => this.editor.commands.tryRun(`tool_${m}`)]))
+      const menu = this.menuList(tools.map(([m, icon, label]) => [icon, label, () => this.editor.commands.tryRun(`tool_${m}`, {}, 'tablet')]))
       menu.classList.add('menu-2col')
       tools.forEach(([m], i) => menu.children[i].classList.toggle('is-active', m === mode))
       this.popover(this.moreBtn, menu, { title: 'More tools', place: 'bottom' })
@@ -263,7 +263,7 @@ class TabletShell {
 
   /** Run a registry command, then refresh the history buttons. */
   run (id) {
-    this.editor.commands.tryRun(id)
+    this.editor.commands.tryRun(id, {}, 'tablet')
     this.syncHistory()
   }
 
@@ -405,8 +405,8 @@ class TabletShell {
     // Object: Duplicate · Delete
     const acts = this.el('div', 'ts-actions')
     acts.append(
-      this.makeBtn('clone.svg', { cls: 'sm', title: 'Duplicate', tap: () => this.editor.commands.tryRun('tool_clone') }),
-      this.makeBtn('delete.svg', { cls: 'sm', title: 'Delete', tap: () => this.editor.commands.tryRun('tool_delete') }))
+      this.makeBtn('clone.svg', { cls: 'sm', title: 'Duplicate', tap: () => this.editor.commands.tryRun('tool_clone', {}, 'tablet') }),
+      this.makeBtn('delete.svg', { cls: 'sm', title: 'Delete', tap: () => this.editor.commands.tryRun('tool_delete', {}, 'tablet') }))
     row.append(this.col('Object', acts))
   }
 

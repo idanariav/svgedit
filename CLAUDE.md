@@ -222,6 +222,7 @@ code exploration.
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
 | [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
+| [`debug-log.md`](.claude/debug-log.md) | Reading or extending the host debug log (event vocabulary, how to retrace a bug from it) |
 | [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
 | [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes) and unscheduled planned work (tool hooks, typing rollout, live effects / corners / glow follow-ups, UI polish). Apply the guidelines while you work; fold an item in when your task touches its area |
 

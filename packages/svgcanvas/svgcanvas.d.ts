@@ -117,6 +117,8 @@ export interface HistoryEventHandler {
 
 export interface UndoManager {
   addCommandToHistory(cmd: HistoryCommand): void
+  /** Debug hook, called after every command lands on the stack. */
+  onPush: ((cmd: HistoryCommand) => void) | null
   undo(): void
   redo(): void
   getUndoStackSize(): number
@@ -220,6 +222,8 @@ declare class SvgCanvas {
   /** Forward discrete debug events `(event, detail)` to a host; null stops. */
   setDebugEventSink(sink: ((event: string, detail?: object) => void) | null): void
   logDebugEvent(event: string, detail?: object): void
+  /** The host's debug-event sink, or null while the debug log is off. */
+  _debugEventSink: ((event: string, detail?: object) => void) | null
   /** Read-only snapshot of visibility state that can desync from the model. */
   getDebugSnapshot(): object
 }

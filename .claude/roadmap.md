@@ -632,22 +632,17 @@ Done: solid silhouettes are outlined at load (`OUTLINE_ICONS`), curated default 
 plus a "colours in this drawing" row, larger selection handles on coarse pointers,
 tooltips shortened to the name and following a rebinding (`boundTooltipText`: `se-button` and `se-flyingbutton`; spin-input and explorer-button are not registered with the hotkey manager, so the authored `shortcut` is all they have), Brush settings carries its text next to the gear, the Cutter icon is a shape cut along its diagonal (two pieces with a gap; stroke-drawn, so no longer in `OUTLINE_ICONS`). Nothing further planned.
 
-## Last priority: command-driven debug log and an LLM drawing CLI
+## Last priority: log replay and an LLM drawing CLI
 
 Both come after everything above and every phase of the plans. They rest on the same fact: since the command registry, every
 user-visible action is a documented command with a stable id, typed params, an `enabled` reason and one undo step, so what
 happened in a session can be *named* rather than guessed from DOM snapshots.
 
-1. **Command-based debug log.** The log the Obsidian plugin uses today (`DebugSnapshotLogger.js` polling
-   `svgCanvas.getDebugSnapshot()` every 400 ms and forwarding changes to the host sink; plugin side `src/debug/`) records *state*, so a
-   bug report says what the drawing looked like, not how it got there. Make it record *actions*: every `commands.run` / `tryRun`
-   (id, params, outcome: ran / disabled with its reason / `badParams` / `internal` with the error), its source (hotkey, button,
-   palette, automation, host), the undo-stack size before and after, a `checkDrawing()` result after each step, and the tool
-   gestures (`registerTool` begin / commit / cancel). The registry is the one choke point, so the hook is a small `onRun`
-   listener on `CommandRegistry`; the plugin sink keeps its format and gains an `action` event. Open questions to settle first:
-   what to redact (text content, image data URIs, file paths), a size cap for the ring buffer, and whether the existing snapshot
-   polling stays as a periodic checkpoint. A log that can replay (`automation` + `commands.run` over a starting SVG) would double
-   as a bug-repro script and as a test fixture generator.
+1. **Command-based debug log:** done 2026-10-15 (`.claude/debug-log.md`): every command run (id, params, source, outcome, undo
+   size before / after, `checkDrawing` after), keys, pointer press / release, tool gestures, selection and history pushes, all
+   numbered; the snapshot polling stays as the periodic checkpoint. Open: replay — a log that re-runs (`automation` +
+   `commands.run`) over a starting SVG would double as a bug-repro script and a fixture generator; the log would need to store
+   the starting drawing.
 2. **A CLI for LLMs to work on drawings, including the ones embedded in Obsidian notes.** Follows the technical guidelines of the
    sibling tools (CLI-compatible package, local only, front-loaded reasoning): `svgedit-cli list` (commands with their params and
    enabled state, from `commands.list()`), `inspect` (what `automation.inspect()` returns: layers, selection, undo state, plus a

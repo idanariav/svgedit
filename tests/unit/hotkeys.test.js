@@ -112,7 +112,7 @@ describe('HotkeyManager over the command registry', () => {
       hk.register()
       const run = vi.spyOn(editor.commands, 'run')
       const e = press('x')
-      expect(run).toHaveBeenCalledWith('sc', {})
+      expect(run).toHaveBeenCalledWith('sc', {}, 'hotkey')
       expect(fn).toHaveBeenCalledTimes(1)
       expect(e.defaultPrevented).toBe(true)
     })

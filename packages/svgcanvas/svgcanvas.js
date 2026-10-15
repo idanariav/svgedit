@@ -20,6 +20,7 @@ import { svgRootElement } from './core/svgroot.js'
 import { init as undoInit } from './core/undo.js'
 import { init as transactionInit } from './core/transaction.js'
 import { checkDrawing } from './core/drawing-invariants.js'
+import { describeElement } from './core/debug-events.js'
 import { init as toolRegistryInit } from './core/tool-registry.js'
 import { init as selectionInit } from './core/selection.js'
 import { init as textActionsInit } from './core/text-actions.js'
@@ -1431,6 +1432,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
         ? this.state.style.text
         : this.state.style.shape
     this.state.drawing.currentMode = name
+    if (previousMode !== name) this.logDebugEvent('set-mode', { from: previousMode, to: name })
     this.setCursorHint(null)
     this.toolModeChanged?.(previousMode, name)
 
@@ -1555,6 +1557,12 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    * @param {*} [arg]
    */
   call (ev, arg) {
+    if (ev === 'selected' && this._debugEventSink) {
+      this.logDebugEvent('selection', {
+        elems: (arg ?? []).filter(Boolean).map(describeElement),
+        mode: this.getMode?.()
+      })
+    }
     const evt = new CustomEvent(ev, { detail: /** @type {any} */ ({ arg }) })
     this.dispatchEvent(evt)
     return evt.detail.result

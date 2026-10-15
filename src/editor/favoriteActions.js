@@ -152,5 +152,5 @@ export const buildFavoritesCatalog = (editor) => {
  * @returns {void}
  */
 export const runFavoriteTrigger = (editor, id) => {
-  editor.commands.tryRun(id)
+  editor.commands.tryRun(id, {}, 'favorites')
 }

@@ -566,22 +566,25 @@ export default class HotkeyManager {
       if (!ownsKeyEvent(this.editor?.$container, e.target)) return
       // A registered tool (core/tool-registry.js) sees the key before any shortcut, so that a tool's own
       // Delete (a width point, say) is not also "delete the selected shape".
-      if (this.editor.svgCanvas?.toolKeyDown?.(e)) {
+      const combo = pressedCombo(e)
+      const canvas = this.editor.svgCanvas
+      if (canvas?.toolKeyDown?.(e)) {
+        if (combo) canvas.logDebugEvent?.('key', { combo, handledBy: 'tool', mode: canvas.getMode() })
         e.preventDefault()
         return
       }
-      const combo = pressedCombo(e)
       if (!combo) return
       // Tab / Shift+Tab cycle the drawing's elements only while the canvas has the
       // keyboard; on a focused toolbar control they keep moving focus as usual.
       if ((combo === 'tab' || combo === 'shift+tab') && isFocusControl(e.target)) return
       const id = this.reverseMap().get(combo)
+      canvas?.logDebugEvent?.('key', { combo, command: id ?? null, mode: canvas.getMode() })
       if (!id) return
       const a = this.actions.get(id)
       if (!a) return
       // A disabled command does nothing and leaves the key to the browser.
       if (this.editor.commands.isEnabled(id) !== true) return
-      this.editor.commands.tryRun(id)
+      this.editor.commands.tryRun(id, {}, 'hotkey')
       if (a.pd) e.preventDefault()
     }
     // An already-aborted signal makes this a no-op, so a late register() on a

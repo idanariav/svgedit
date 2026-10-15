@@ -21,6 +21,7 @@ import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { Command } from '@svgedit/svgcanvas/core/history.js'
 import ConfigObj from './ConfigObj.js'
 import DebugSnapshotLogger from './DebugSnapshotLogger.js'
+import { attachDebugActionStream } from './DebugActionStream.js'
 import EditorStartup from './EditorStartup.js'
 import { clearActiveEditor } from './domScope.js'
 import LeftPanel from './panels/LeftPanel.js'
@@ -247,7 +248,9 @@ class Editor extends EditorStartup {
    *    polled and diffed by DebugSnapshotLogger — selection boxes, path-node
    *    grips, or group-context dimming that are still rendered but no longer
    *    backed by the model (state with a history of desyncing silently).
-   * 2. Discrete debug events (`svgCanvas.logDebugEvent()`) fired at the
+   * 2. Actions and discrete debug events (see DebugActionStream.js and
+   *    `.claude/debug-log.md`): every command run, key, pointer press/release, tool
+   *    gesture, selection and history change, plus the following, fired at the
    *    moment they happen — node selection, a path-edit commit, an
    *    open/close-subpath mutation, an undo/redo. The snapshot above only
    *    ever sees the *result* of a gesture; this is the gesture itself, and
@@ -260,8 +263,16 @@ class Editor extends EditorStartup {
     if (!this._debugSnapshotLogger) {
       this._debugSnapshotLogger = new DebugSnapshotLogger(() => this.svgCanvas.getDebugSnapshot())
     }
-    this._debugSnapshotLogger.start(sink)
-    this.svgCanvas.setDebugEventSink(sink)
+    this._stopDebugActions?.()
+    this._stopDebugActions = null
+    if (typeof sink !== 'function') {
+      this._debugSnapshotLogger.start(null)
+      return
+    }
+    // One sequenced sink for all three channels (actions + gestures, state snapshots).
+    const { emit, stop } = attachDebugActionStream(this, sink)
+    this._stopDebugActions = stop
+    this._debugSnapshotLogger.start(emit)
   }
 
   /**

@@ -115,6 +115,20 @@ const coerceParam = (id, name, spec, value) => {
   }
 }
 
+/**
+ * One finished `run`, as `onRun` listeners see it.
+ * @typedef {object} RunEntry
+ * @property {string} id
+ * @property {Object<string, any>} params as given (not yet validated)
+ * @property {string} source
+ * @property {number} depth 0, or higher when a command ran inside another
+ * @property {string} outcome `ran`, or the `CommandError` code (`unknown` | `disabled` | `badParams` | `internal`)
+ * @property {string} [error]
+ * @property {number} [undoBefore] undo stack size before / after
+ * @property {number} [undoAfter]
+ * @property {number} ms
+ */
+
 export class CommandRegistry {
   /**
    * @param {any} editor the owning editor instance (one registry per editor)
@@ -123,6 +137,21 @@ export class CommandRegistry {
     this.editor = editor
     /** @type {Map<string, CommandRecord>} */
     this.table = new Map()
+    /** @type {Set<(entry: RunEntry) => void>} */
+    this.runListeners = new Set()
+    this.runDepth = 0
+  }
+
+  /**
+   * Observe every `run` / `tryRun` (the debug log's action channel). The listener
+   * is called once per run, after it ended, whatever the outcome; a throwing
+   * listener is ignored. Returns the unsubscribe function.
+   * @param {(entry: RunEntry) => void} listener
+   * @returns {() => void}
+   */
+  onRun (listener) {
+    this.runListeners.add(listener)
+    return () => { this.runListeners.delete(listener) }
   }
 
   /**
@@ -313,9 +342,42 @@ export class CommandRegistry {
    * is logged; atomic commands have already rolled the drawing back).
    * @param {string} id
    * @param {Object<string, any>} [params]
+   * @param {string} [source] who asked, for the debug log: `hotkey`, `button`, `favorites`,
+   *   `tablet`, or `api` (host / extension / automation code)
    * @returns {*} whatever the command returns
    */
-  run (id, params = {}) {
+  run (id, params = {}, source = 'api') {
+    if (!this.runListeners.size) return this.runCommand(id, params)
+    const canvas = this.editor?.svgCanvas
+    const undoBefore = canvas?.undoMgr?.getUndoStackSize()
+    const started = Date.now()
+    const depth = this.runDepth++
+    /** @type {RunEntry} */
+    const entry = { id, params, source, depth, outcome: 'ran', undoBefore, undoAfter: undoBefore, ms: 0 }
+    try {
+      return this.runCommand(id, params)
+    } catch (err) {
+      if (err instanceof CommandError) {
+        entry.outcome = err.code
+        entry.error = err.message
+      }
+      throw err
+    } finally {
+      this.runDepth--
+      entry.undoAfter = canvas?.undoMgr?.getUndoStackSize()
+      entry.ms = Date.now() - started
+      for (const fn of this.runListeners) {
+        try { fn(entry) } catch { /* a logger must never break a command */ }
+      }
+    }
+  }
+
+  /**
+   * @param {string} id
+   * @param {Object<string, any>} params
+   * @returns {*}
+   */
+  runCommand (id, params) {
     const rec = this.table.get(id)
     if (!rec) throw new CommandError('unknown', id, `Unknown command "${id}"`)
     const state = this.isEnabled(id)
@@ -342,11 +404,12 @@ export class CommandRegistry {
    * (failures were already logged).
    * @param {string} id
    * @param {Object<string, any>} [params]
+   * @param {string} [source] see `run`
    * @returns {boolean} whether the command ran
    */
-  tryRun (id, params = {}) {
+  tryRun (id, params = {}, source = 'api') {
     try {
-      this.run(id, params)
+      this.run(id, params, source)
       return true
     } catch (err) {
       if (!(err instanceof CommandError)) throw err
