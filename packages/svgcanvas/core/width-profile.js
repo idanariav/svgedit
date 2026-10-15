@@ -17,6 +17,33 @@
 
 export const WIDTH_PROFILE_ATTR = 'se:width-profile'
 
+// The tapered-stroke attributes live here, with the rest of the DOM-free width-stroke code, so a module that only
+// needs a name or a parser (dash-fit.js, the document model) does not import taper-stroke.js and paper.js with it.
+/** `se:taper="start,end"`: the widths, in percent of the stroke width, at the two ends. */
+export const TAPER_ATTR = 'se:taper'
+/** `se:taper-d`: the centerline the outline was made from. */
+export const TAPER_SOURCE_ATTR = 'se:taper-d'
+/** `se:taper-style="width|paint"`: the stroke width and paint the outline stands for. */
+export const TAPER_STYLE_ATTR = 'se:taper-style'
+
+/**
+ * @param {?string} str an `se:taper` value
+ * @returns {?{start: number, end: number}} null when it is not `start,end`
+ */
+export const parseTaper = (str) => {
+  const parts = String(str ?? '').split(',').map(Number)
+  return parts.length === 2 && parts.every(Number.isFinite) ? { start: parts[0], end: parts[1] } : null
+}
+
+/**
+ * @param {?string} str an `se:taper-style` value
+ * @returns {?{width: number, paint: string}} null when it is not `width|paint`
+ */
+export const parseTaperStyle = (str) => {
+  const m = /^([\d.]+)\|(.+)$/.exec(str ?? '')
+  return m && Number.isFinite(Number(m[1])) ? { width: Number(m[1]), paint: m[2] } : null
+}
+
 /** Points this close in `t` are at the same place (the two sides of a discontinuous point). */
 export const SAME_T = 1e-6
 

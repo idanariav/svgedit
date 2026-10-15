@@ -56,7 +56,7 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 
 | # | Change | Size | Depends on |
 |---|---|---|---|
-| R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo (step a started 2026-10-15: `core/model/`) | XL | R2, R3 helpful |
+| R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo (step a mostly done 2026-10-15: `core/model/`, see its status in the re-architecture file) | XL | R2, R3 helpful |
 | R2 | Canvas composition: modules export functions over an explicit context instead of attaching ~540 members to one object | L | — |
 | R3 | TypeScript (`.ts`) for the engine, then the editor | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
@@ -65,7 +65,8 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 | R7 | Agent docs diet (generated file map / tool list, no changelog prose) | M | — |
 
 Suggested order: R5 and R7 (small, independent) → R3 toolchain → R2 → R1 step (a) (which also gives the
-[LLM CLI](roadmap/llm-cli.md) its headless engine) → decide on the rest of R1 with that in hand. R4 and R6 run alongside.
+[LLM CLI](roadmap/llm-cli.md) its headless engine) → decide on the rest of R1 with that in hand. Step (a) was done first, out of
+this order, because it needed neither: what it learned about R2 and R3 is in the re-architecture file. R4 and R6 run alongside.
 
 ## Follow-ups by area
 

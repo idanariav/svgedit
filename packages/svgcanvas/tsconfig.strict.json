@@ -67,6 +67,7 @@
   "core/math.js",
   "core/measure.js",
   "core/model/drawing.js",
+  "core/model/features.js",
   "core/model/index.js",
   "core/model/node.js",
   "core/model/parse.js",

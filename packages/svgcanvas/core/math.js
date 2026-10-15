@@ -26,14 +26,16 @@ import { warn } from '../common/logger.js'
 // Constants
 const NEAR_ZERO = 1e-10
 
-// Create a throwaway SVG element for matrix operations
-const svg = document.createElementNS(NS.SVG, 'svg')
+// A throwaway SVG element for matrix operations, made on first use so that importing this module needs no DOM
+/** @type {SVGSVGElement | undefined} */
+let scratchSvg
+const getScratchSvg = () => (scratchSvg ??= /** @type {SVGSVGElement} */ (document.createElementNS(NS.SVG, 'svg')))
 
 /** @param {SVGMatrix} m */
 const createTransformFromMatrix = (m) => {
   /** @param {SVGMatrix} matrix */
   const createFallback = (matrix) => {
-    const fallback = svg.createSVGMatrix()
+    const fallback = getScratchSvg().createSVGMatrix()
     Object.assign(fallback, {
       a: matrix.a,
       b: matrix.b,
@@ -46,15 +48,15 @@ const createTransformFromMatrix = (m) => {
   }
 
   try {
-    return svg.createSVGTransformFromMatrix(m)
+    return getScratchSvg().createSVGTransformFromMatrix(m)
   } catch (e) {
-    const t = svg.createSVGTransform()
+    const t = getScratchSvg().createSVGTransform()
     try {
       t.setMatrix(m)
       return t
     } catch (err) {
       try {
-        return svg.createSVGTransformFromMatrix(createFallback(m))
+        return getScratchSvg().createSVGTransformFromMatrix(createFallback(m))
       } catch (e2) {
         t.setMatrix(createFallback(m))
         return t
@@ -119,7 +121,7 @@ export const isIdentity = m =>
  */
 export const matrixMultiply = (...args) => {
   if (args.length === 0) {
-    return svg.createSVGMatrix()
+    return getScratchSvg().createSVGMatrix()
   }
 
   /** @param {SVGMatrix} matrix */
@@ -139,7 +141,7 @@ export const matrixMultiply = (...args) => {
       new DOMMatrix()
     )
 
-    const out = svg.createSVGMatrix()
+    const out = getScratchSvg().createSVGMatrix()
     Object.assign(out, {
       a: result.a,
       b: result.b,
@@ -152,9 +154,9 @@ export const matrixMultiply = (...args) => {
     return normalizeNearZero(out)
   }
 
-  let m = svg.createSVGMatrix()
+  let m = getScratchSvg().createSVGMatrix()
   for (const curr of args) {
-    const next = svg.createSVGMatrix()
+    const next = getScratchSvg().createSVGMatrix()
     Object.assign(next, {
       a: m.a * curr.a + m.c * curr.b,
       b: m.b * curr.a + m.d * curr.b,
@@ -247,7 +249,7 @@ export const transformBox = (l, t, w, h, m) => {
  */
 export const transformListToTransform = (tlist, min = 0, max = null) => {
   if (!tlist) {
-    return createTransformFromMatrix(svg.createSVGMatrix())
+    return createTransformFromMatrix(getScratchSvg().createSVGMatrix())
   }
 
   const start = Number.parseInt(String(min), 10)
@@ -258,13 +260,13 @@ export const transformListToTransform = (tlist, min = 0, max = null) => {
   for (let i = low; i <= high; i++) {
     const matrix = (i >= 0 && i < tlist.numberOfItems)
       ? tlist.getItem(i).matrix
-      : svg.createSVGMatrix()
+      : getScratchSvg().createSVGMatrix()
     matrices.push(matrix)
   }
 
   const combinedMatrix = matrixMultiply(...matrices)
 
-  const out = svg.createSVGMatrix()
+  const out = getScratchSvg().createSVGMatrix()
   Object.assign(out, {
     a: combinedMatrix.a,
     b: combinedMatrix.b,
@@ -302,7 +304,7 @@ export const getMatrix = elem => {
  * @returns {SVGMatrix} Matrix mapping `elem`-local coords to content coords
  */
 export const getMatrixToContent = (elem, stopId = 'svgcontent') => {
-  let m = svg.createSVGMatrix() // identity
+  let m = getScratchSvg().createSVGMatrix() // identity
   let el = /** @type {any} */ (elem)
   while (el && el.id !== stopId && el.tagName !== 'svg') {
     if ((el.tagName === 'g' || el.tagName === 'a') &&

@@ -16,11 +16,13 @@
 import { parseAnchors } from '../anchor-path.js'
 import { parseGuides } from '../guides.js'
 import { getAttr } from './node.js'
+import { readFeatures } from './features.js'
 
 /** @typedef {import('./node.js').ModelNode} ModelNode */
 /** @typedef {import('./node.js').ModelElement} ModelElement */
 /** @typedef {import('./node.js').ModelDocument} ModelDocument */
 /** @typedef {import('./node.js').NodePath} NodePath */
+/** @typedef {import('./features.js').Features} Features */
 
 /**
  * @typedef {object} ItemBase
@@ -33,6 +35,7 @@ import { getAttr } from './node.js'
  * @property {boolean} locked `se:locked="true"` on the object itself (a locked group above it is not looked at)
  * @property {boolean} generated a copy made by a repeat (`se:repeat-copy`), rebuilt from its source
  * @property {Readonly<Record<string, string>>} se every `se:*` attribute, verbatim
+ * @property {Features} features the `se:*` attributes that have a typed reader (see `features.js`)
  */
 /** @typedef {ItemBase & {kind: 'group', role: 'group' | 'blend' | 'art-brush' | 'repeat', children: Item[]}} GroupItem */
 /** @typedef {ItemBase & {kind: 'shape', tag: 'rect' | 'circle' | 'ellipse' | 'line' | 'polyline' | 'polygon', geometry: Readonly<Record<string, number>>, points?: [number, number][]}} ShapeItem */
@@ -62,6 +65,7 @@ import { getAttr } from './node.js'
  * @property {string} tag
  * @property {string} [id]
  * @property {Readonly<Record<string, string>>} se
+ * @property {Features} features
  */
 /**
  * @typedef {object} Drawing
@@ -146,6 +150,7 @@ const parsePoints = (value) => {
  * @returns {ItemBase}
  */
 const base = (el, path) => {
+  const se = seAttrs(el)
   const id = getAttr(el, 'id')
   const name = getAttr(el, 'data-name')
   const transform = getAttr(el, 'transform')
@@ -158,7 +163,8 @@ const base = (el, path) => {
     hidden: getAttr(el, 'display') === 'none',
     locked: getAttr(el, 'se:locked') === 'true',
     generated: getAttr(el, 'se:repeat-copy') !== undefined,
-    se: seAttrs(el)
+    se,
+    features: readFeatures(se)
   }
 }
 
@@ -234,7 +240,8 @@ export const readDrawing = (doc) => {
       child.children.forEach((d, k) => {
         if (!isElement(d)) return
         const id = getAttr(d, 'id')
-        defs.push({ path: [i, k], tag: d.name, ...(id === undefined ? {} : { id }), se: seAttrs(d) })
+        const se = seAttrs(d)
+        defs.push({ path: [i, k], tag: d.name, ...(id === undefined ? {} : { id }), se, features: readFeatures(se) })
       })
     } else if (child.name === 'g' && hasClass(child, 'layer')) {
       const title = child.children.find((c) => isElement(c) && c.name === 'title')

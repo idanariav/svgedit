@@ -24,3 +24,10 @@ happened in a session can be *named* rather than guessed from DOM snapshots.
    heavy) or splitting the canvas-level commands from the panel-level ones so the former run under jsdom. Decide that before
    anything else; start with the Playwright route. The plugin already exposes `editorCommands` for a future CLI / MCP bridge
    (see "Plugin command access" in [`../roadmap.md`](../roadmap.md)), so an MCP server over the same verbs is the natural second front end.
+
+   *Update 2026-10-15 ([R1](rearchitecture.md#step-a-status) step a):* the read side no longer needs a browser. `core/model/`
+   parses a drawing in plain Node (`readDrawing`: layers, objects with ids, transforms, hidden / locked state, typed `se:`
+   features) and `scripts/check-model-roundtrip.mjs` already reads `.svg` files and the plugin's `.md` drawings, so `inspect`,
+   `read` and a structural summary can ship without Chromium. `run <command>` and `check` still need the editor (commands
+   run on the DOM; `checkDrawing` is DOM-based) until R1 step (c) ports commands to `(doc, params) → doc'`, so keep the
+   Playwright route for those and do not duplicate `checkDrawing` on the model.

@@ -44,11 +44,9 @@ import { registerGeometryRemap } from './geometry-remap-registry.js'
 import { registerLiveStage, canAddStage } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { widthOutline } from './width-outline.js'
-import { WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.js'
+import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.js'
 
-export const TAPER_ATTR = 'se:taper'
-export const TAPER_SOURCE_ATTR = 'se:taper-d'
-export const TAPER_STYLE_ATTR = 'se:taper-style'
+export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile.js'
 
 /**
  * Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e): full width
