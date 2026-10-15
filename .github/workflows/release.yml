@@ -30,7 +30,6 @@ jobs:
           fi
       - run: |
           npm ci
-          npm run build --workspace=packages/svgcanvas
           npm run lint
           npx vitest run
           npm run build

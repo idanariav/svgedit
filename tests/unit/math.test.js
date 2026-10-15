@@ -4,12 +4,12 @@ import * as math from '../../packages/svgcanvas/core/math.js'
 describe('math', function () {
   const svg = document.createElementNS(NS.SVG, 'svg')
 
-  before(() => {
+  beforeAll(() => {
     // Ensure the SVG element is attached to the document for transform list tests
     document.body.appendChild(svg)
   })
 
-  after(() => {
+  afterAll(() => {
     // Cleanup
     document.body.removeChild(svg)
   })

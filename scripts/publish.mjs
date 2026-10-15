@@ -101,7 +101,7 @@ async function main () {
     process.exit(1)
   }
 
-  console.log('\nRunning tests, docs, and builds (test-build)...')
+  console.log('\nRunning tests and build (test-build)...')
   try {
     run('npm run test-build')
   } catch (error) {

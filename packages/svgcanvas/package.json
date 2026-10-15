@@ -42,12 +42,7 @@
     "ignore": [
       "dist"
     ],
-    "globals": [
-      "cy",
-      "assert"
-    ],
     "env": [
-      "mocha",
       "browser"
     ]
   },

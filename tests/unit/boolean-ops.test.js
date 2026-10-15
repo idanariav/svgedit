@@ -4,11 +4,11 @@ import { collectLeaves, getAncestorMatrix, getStyleSourceElem } from '../../pack
 describe('boolean-ops', function () {
   const svg = document.createElementNS(NS.SVG, 'svg')
 
-  before(() => {
+  beforeAll(() => {
     document.body.appendChild(svg)
   })
 
-  after(() => {
+  afterAll(() => {
     document.body.removeChild(svg)
   })
 

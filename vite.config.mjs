@@ -1,49 +1,53 @@
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+import { createFilter, defineConfig } from 'vite'
 import dynamicImportVars from '@rollup/plugin-dynamic-import-vars'
-import string, { defaultCompress } from 'vite-plugin-string'
 import istanbul from 'vite-plugin-istanbul'
+import { compactHtmlTemplate } from './scripts/html-template.mjs'
 
 const editorEntries = [
   resolve(__dirname, 'src/editor/index.html')
 ]
 
-const coverageEnabled = process.env.COVERAGE === 'true' || process.env.NODE_ENV === 'test'
+// Instrument the e2e build for coverage. Not under vitest (which also sets
+// NODE_ENV=test): its own istanbul provider instruments the unit tests, and a
+// second instrumentation pass leaves its report empty.
+const coverageEnabled = !process.env.VITEST &&
+  (process.env.COVERAGE === 'true' || process.env.NODE_ENV === 'test')
 
-// vite-plugin-string's default compressor treats `&` and `;` as operators
-// (meant for shader source like `a && b;`) and strips whitespace around
-// them, which mangles HTML entities: "Stroke &amp; Opacity" collapses to
-// "Stroke &amp;Opacity", rendering as "Stroke&Opacity". Swap each whole
-// entity for an alphanumeric-only placeholder before compression (so none
-// of its whitespace-adjacent symbols can trigger the stripping) and restore
-// the original entity text after.
-function compressHtmlPreservingEntities (code) {
-  const entities = []
-  const shielded = code.replace(/&[a-zA-Z#][a-zA-Z0-9]*;/g, (entity) => {
-    entities.push(entity)
-    return `ENTITYPLACEHOLDER${entities.length - 1}END`
-  })
-  return defaultCompress(shielded).replace(
-    /ENTITYPLACEHOLDER(\d+)END/g,
-    (_match, index) => entities[Number(index)]
-  )
+// Panel, dialog and editor templates are imported as strings
+// (`import html from './X.html'`). See scripts/html-template.mjs for what the
+// compaction does and does not touch.
+const isHtmlTemplate = createFilter([
+  'src/editor/dialogs/**/*.html',
+  'src/editor/panels/*.html',
+  'src/editor/templates/*.html',
+  'src/editor/extensions/*/*.html'
+])
+const htmlTemplatePlugin = {
+  name: 'svgedit-html-templates',
+  enforce: 'post',
+  transform (code, id) {
+    if (!isHtmlTemplate(id)) return
+    return { code: `export default ${JSON.stringify(compactHtmlTemplate(code))}`, map: null }
+  }
 }
-
-const htmlStringPlugin = string({
-  include: [
-    'src/editor/dialogs/**/*.html',
-    'src/editor/panels/*.html',
-    'src/editor/templates/*.html',
-    'src/editor/extensions/*/*.html'
-  ],
-  compress: compressHtmlPreservingEntities
-})
-htmlStringPlugin.enforce = 'post'
 
 export default defineConfig({
   root: '.',
   appType: 'mpa',
   base: './',
+  resolve: {
+    // The package's `main` is its built `dist/svgcanvas.js`, but subpath
+    // imports (`@svgedit/svgcanvas/core/*.js`) resolve to source. Resolving the
+    // bare name to source too means the dev server, vitest and the editor
+    // bundle all load ONE copy of each core module (the bundle used to carry
+    // the built package plus source duplicates of every subpath-imported
+    // module, each with its own module state), and a core change needs no
+    // `vite build packages/svgcanvas` before it shows up.
+    alias: [
+      { find: /^@svgedit\/svgcanvas$/, replacement: resolve(__dirname, 'packages/svgcanvas/svgcanvas.js') }
+    ]
+  },
   server: {
     host: '0.0.0.0',
     port: 8000,
@@ -63,7 +67,7 @@ export default defineConfig({
         config.plugins = config.plugins.filter(plugin => plugin.name !== 'vite:build-html')
       }
     },
-    htmlStringPlugin,
+    htmlTemplatePlugin,
     {
       ...dynamicImportVars({
         include: ['src/editor/locale.js', 'src/editor/extensions/*/*.js']
@@ -119,7 +123,9 @@ export default defineConfig({
     include: ['tests/**/*.test.{js,ts}'],
     exclude: ['tests/e2e/**'],
     coverage: {
-      provider: 'v8',
+      // istanbul, like the e2e build's instrumentation (vite-plugin-istanbul),
+      // so `scripts/run-e2e.mjs` merges two reports with the same statement maps.
+      provider: 'istanbul',
       include: ['src/editor/**/*.js', 'packages/svgcanvas/**/*.js'],
       exclude: ['**/dist/**', '**/node_modules/**', 'tests/**']
     }

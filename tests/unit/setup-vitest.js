@@ -113,10 +113,6 @@ assert.closeTo = function (actual, expected, delta, message) {
   }
 }
 
-// Mocha-style aliases expected by legacy tests.
-globalThis.before = globalThis.beforeAll
-globalThis.after = globalThis.afterAll
-
 // JSDOM lacks many SVG APIs; provide minimal stubs used in tests.
 const win = globalThis.window || globalThis
 

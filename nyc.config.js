@@ -4,12 +4,7 @@ module.exports = {
   lines: 46,
   functions: 45,
   excludeNodeModules: true,
-  extension: ['.js', '.html', '.json', '.css', '.svg', '.png', '.gif'],
-  exclude: [
-    'editor/jquery.min.js',
-    'editor/jgraduate/**',
-    'src/editor/components/jgraduate/**'
-  ],
+  extension: ['.js'],
   include: [
     'src/**',
     'packages/svgcanvas/**'

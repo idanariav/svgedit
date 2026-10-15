@@ -35,7 +35,7 @@ The upstream npm-based instructions below are kept for reference only.
 1. From the repo root, run `npm run publish`. The script will:
     - Confirm the version bump is already done.
     - Confirm `CHANGES.md` has been updated.
-    - Run the full release checks (`npm run test-build` → tests, docs, and build); it exits on failure.
+    - Run the full release checks (`npm run test-build` → tests and build); it exits on failure.
     - Ask before creating a release commit and tag (defaults to `v<version>`); declining aborts the publish.
     - Publish all workspaces first, then the root package.
 
