@@ -19,7 +19,7 @@
  */
 
 import '../../components/seBrushSettings.js'
-import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.js'
+import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.ts'
 
 const name = 'brush'
 

@@ -85,15 +85,15 @@ import { init as liveStackInit } from './core/live-stack.ts'
 import { init as artBrushInit } from './core/art-brush-canvas.js'
 import { init as blendInit } from './core/blend-canvas.js'
 import { init as liveEffectsInit } from './core/live-effects.ts'
-import { init as liveEffectsDistortInit } from './core/live-effects-distort.js'
+import { init as liveEffectsDistortInit } from './core/live-effects-distort.ts'
 import { init as warpInit } from './core/warp.ts'
 import { init as distortInit } from './core/distort.ts'
 import { init as textPathInit } from './core/text-path.js'
 import { init as shapeBuilderInit } from './core/shape-builder.ts'
-import { init as clipMaskInit } from './core/clip-mask.js'
+import { init as clipMaskInit } from './core/clip-mask.ts'
 import { init as cutterInit } from './core/cutter.ts'
 import { init as segmentInit } from './core/segment.ts'
-import { init as imageCropInit } from './core/image-crop.js'
+import { init as imageCropInit } from './core/image-crop.ts'
 import {
   getClosest,
   getParents,

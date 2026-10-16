@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of
  * nine points of its own bounding box), optionally with a random amount per object and optionally on copies.
@@ -18,35 +17,41 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { getBBox } from './bbox-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
 /** Reference points, row by row: top left … bottom right. */
 export const REFERENCE_POINTS = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br']
 
-/**
- * @typedef {object} EachParams
- * @property {number} [scaleH] horizontal scale in percent (100 = unchanged)
- * @property {number} [scaleV] vertical scale in percent
- * @property {number} [moveH] horizontal move, in user units
- * @property {number} [moveV] vertical move
- * @property {number} [rotate] rotation in degrees (clockwise, as on screen)
- * @property {boolean} [reflectX] mirror left ↔ right
- * @property {boolean} [reflectY] mirror top ↔ bottom
- * @property {string} [origin] one of {@link REFERENCE_POINTS}, default `c`
- * @property {boolean} [random] each amount is a random fraction (0..1) of the entered one, per object; a
- *   checked reflection applies to about half of the objects
- * @property {boolean} [copy] work on copies of the selection
- */
+export interface EachParams {
+  /** horizontal scale in percent (100 = unchanged) */
+  scaleH?: number
+  /** vertical scale in percent */
+  scaleV?: number
+  /** horizontal move, in user units */
+  moveH?: number
+  /** vertical move */
+  moveV?: number
+  /** rotation in degrees (clockwise, as on screen) */
+  rotate?: number
+  /** mirror left ↔ right */
+  reflectX?: boolean
+  /** mirror top ↔ bottom */
+  reflectY?: boolean
+  /** one of {@link REFERENCE_POINTS}, default `c` */
+  origin?: string
+  /** each amount is a random fraction (0..1) of the entered one, per object; a checked reflection applies to about half of the objects */
+  random?: boolean
+  /** work on copies of the selection */
+  copy?: boolean
+}
 
-/** @typedef {[number, number, number, number, number, number]} Affine `[a, b, c, d, e, f]` as in `matrix()` */
+/** `[a, b, c, d, e, f]` as in `matrix()` */
+export type Affine = [number, number, number, number, number, number]
 
-/**
- * @param {Affine} m
- * @param {Affine} n
- * @returns {Affine} `m · n` (n is applied first)
- */
-export const multiply = (m, n) => [
+/** @returns `m · n` (n is applied first) */
+export const multiply = (m: Affine, n: Affine): Affine => [
   m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
   m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
   m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]
@@ -57,11 +62,10 @@ const BAKEABLE = new Set(['rect', 'ellipse', 'line', 'polyline', 'polygon', 'pat
 
 /**
  * Read a matrix as `rotate(angle) · scale(sx, sy)` (then a translation, which the caller derives).
- * @param {Affine} m
- * @returns {{angle: number, sx: number, sy: number}|null} `null` when the matrix skews (its columns are not
+ * @returns `null` when the matrix skews (its columns are not
  *   perpendicular) or collapses an axis. A reflection takes the reading with the smaller rotation.
  */
-export const decompose = (m) => {
+export const decompose = (m: Affine): { angle: number, sx: number, sy: number } | null => {
   const [a, b, c, d] = m
   const l1 = Math.hypot(a, b)
   const l2 = Math.hypot(c, d)
@@ -78,30 +82,28 @@ export const decompose = (m) => {
   return { angle, sx, sy }
 }
 
-/**
- * @param {string|undefined} origin
- * @returns {{x: number, y: number}} the reference point as fractions of a box (0, 0.5 or 1)
- */
-export const referenceFraction = (origin) => {
+/** @returns the reference point as fractions of a box (0, 0.5 or 1) */
+export const referenceFraction = (origin: string | undefined): { x: number, y: number } => {
   const found = REFERENCE_POINTS.indexOf(origin ?? 'c')
   const index = found < 0 ? 4 : found
   return { x: (index % 3) / 2, y: Math.floor(index / 3) / 2 }
 }
 
+/** The amounts one object gets. */
+export interface Amounts { sx: number, sy: number, dx: number, dy: number, angle: number, flipX: boolean, flipY: boolean }
+
 /**
  * The amounts one object gets: the entered ones, or a random fraction of them.
- * @param {EachParams} params
- * @param {() => number} [rng] in [0, 1)
- * @returns {{sx: number, sy: number, dx: number, dy: number, angle: number, flipX: boolean, flipY: boolean}}
+ * @param rng in [0, 1)
  */
-export const resolveAmounts = (params, rng = Math.random) => {
-  const num = (/** @type {number|undefined} */ v, /** @type {number} */ neutral) => (Number.isFinite(v) ? /** @type {number} */ (v) : neutral)
+export const resolveAmounts = (params: EachParams, rng: () => number = Math.random): Amounts => {
+  const num = (v: number | undefined, neutral: number): number => (Number.isFinite(v) ? v as number : neutral)
   /** Neutral + t × (entered − neutral), t random when asked for. */
-  const amount = (/** @type {number|undefined} */ v, /** @type {number} */ neutral) => {
+  const amount = (v: number | undefined, neutral: number): number => {
     const entered = num(v, neutral)
     return neutral + (params.random ? rng() : 1) * (entered - neutral)
   }
-  const flip = (/** @type {boolean|undefined} */ on) => !!on && (!params.random || rng() < 0.5)
+  const flip = (on: boolean | undefined): boolean => !!on && (!params.random || rng() < 0.5)
   return {
     sx: amount(params.scaleH, 100) / 100,
     sy: amount(params.scaleV, 100) / 100,
@@ -116,40 +118,23 @@ export const resolveAmounts = (params, rng = Math.random) => {
 /**
  * The transform of one object, in its parent's coordinates: scale and reflect, then rotate, both about
  * `(px, py)`, then move.
- * @param {ReturnType<typeof resolveAmounts>} amounts
- * @param {number} px
- * @param {number} py
- * @returns {Affine}
  */
-export const eachMatrix = (amounts, px, py) => {
+export const eachMatrix = (amounts: Amounts, px: number, py: number): Affine => {
   const rad = amounts.angle * Math.PI / 180
   const cos = Math.cos(rad)
   const sin = Math.sin(rad)
-  /** @type {Affine} */
-  const about = [1, 0, 0, 1, px, py]
-  /** @type {Affine} */
-  const back = [1, 0, 0, 1, -px, -py]
-  /** @type {Affine} */
-  const scale = [amounts.sx * (amounts.flipX ? -1 : 1), 0, 0, amounts.sy * (amounts.flipY ? -1 : 1), 0, 0]
-  /** @type {Affine} */
-  const rotate = [cos, sin, -sin, cos, 0, 0]
-  /** @type {Affine} */
-  const move = [1, 0, 0, 1, amounts.dx, amounts.dy]
+  const about: Affine = [1, 0, 0, 1, px, py]
+  const back: Affine = [1, 0, 0, 1, -px, -py]
+  const scale: Affine = [amounts.sx * (amounts.flipX ? -1 : 1), 0, 0, amounts.sy * (amounts.flipY ? -1 : 1), 0, 0]
+  const rotate: Affine = [cos, sin, -sin, cos, 0, 0]
+  const move: Affine = [1, 0, 0, 1, amounts.dx, amounts.dy]
   return multiply(move, multiply(about, multiply(rotate, multiply(scale, back))))
 }
 
-/**
- * @param {Affine} m
- * @returns {boolean} whether `m` is the identity (to rounding)
- */
-const isIdentityAffine = (m) => [1, 0, 0, 1, 0, 0].every((v, i) => Math.abs(m[i] - v) < 1e-9)
+/** whether `m` is the identity (to rounding) */
+const isIdentityAffine = (m: Affine): boolean => [1, 0, 0, 1, 0, 0].every((v, i) => Math.abs(m[i] - v) < 1e-9)
 
-/**
- * @param {SVGSVGElement} svgRoot
- * @param {Affine} m
- * @returns {SVGTransform}
- */
-const toTransform = (svgRoot, m) => {
+const toTransform = (svgRoot: SVGSVGElement, m: Affine): SVGTransform => {
   const matrix = svgRoot.createSVGMatrix()
   Object.assign(matrix, { a: m[0], b: m[1], c: m[2], d: m[3], e: m[4], f: m[5] })
   const transform = svgRoot.createSVGTransform()
@@ -159,18 +144,18 @@ const toTransform = (svgRoot, m) => {
 
 /**
  * Apply Transform Each to the selection (or to copies of it).
- * @function module:transform-each.SvgCanvas#transformEach
- * @param {Pick<import('../svgcanvas.js').default, 'getSelectedElements' | 'getSvgRoot' | 'transact' | 'cloneSelectedElements' | 'recalculateDimensions' | 'selectorManager' | 'call'>} svgCanvas
- * @param {EachParams} params
- * @param {() => number} [rng] random source for `random` (tests pass a seeded one)
- * @returns {Element[]} the elements that were transformed
+ * @param rng random source for `random` (tests pass a seeded one)
+ * @returns the elements that were transformed
  */
-export const transformEach = (svgCanvas, params, rng = Math.random) => {
+export const transformEach = (
+  svgCanvas: Pick<SvgCanvas, 'getSelectedElements' | 'getSvgRoot' | 'transact' | 'cloneSelectedElements' | 'recalculateDimensions' | 'selectorManager' | 'call'>,
+  params: EachParams,
+  rng: () => number = Math.random
+): Element[] => {
   if (!svgCanvas.getSelectedElements().filter(Boolean).length) return []
   const svgRoot = svgCanvas.getSvgRoot()
   const at = referenceFraction(params.origin)
-  /** @type {Element[]} */
-  let done = []
+  let done: Element[] = []
   svgCanvas.transact('Transform each', () => {
     if (params.copy) svgCanvas.cloneSelectedElements(0, 0)
     done = svgCanvas.getSelectedElements().filter(Boolean)
@@ -179,11 +164,10 @@ export const transformEach = (svgCanvas, params, rng = Math.random) => {
       const box = getBBox(el)
       if (!tlist || !box) continue
       const current = transformListToTransform(tlist).matrix
-      /** @type {Affine} */
-      const own = [current.a, current.b, current.c, current.d, current.e, current.f]
+      const own: Affine = [current.a, current.b, current.c, current.d, current.e, current.f]
       // The reference point on the box's axis-aligned extent in the parent's coordinates (as Flip does).
-      const xs = []
-      const ys = []
+      const xs: number[] = []
+      const ys: number[] = []
       for (const [x, y] of [[box.x, box.y], [box.x + box.width, box.y], [box.x, box.y + box.height], [box.x + box.width, box.y + box.height]]) {
         xs.push(own[0] * x + own[2] * y + own[4])
         ys.push(own[1] * x + own[3] * y + own[5])
@@ -200,8 +184,7 @@ export const transformEach = (svgCanvas, params, rng = Math.random) => {
         const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
         const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
         const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
-        /** @type {Affine} */
-        const scale = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
+        const scale: Affine = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
         if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
         if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
         if (parts.angle) {

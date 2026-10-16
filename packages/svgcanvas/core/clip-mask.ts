@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Clip & mask creation: confine the top selected object to the silhouette of the
  * object below it, and release an existing clip/mask.
@@ -16,44 +15,34 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { warn } from '../common/logger.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
 // Stateless helpers (no per-instance state) stay at module scope and are shared.
 
-/**
- * Sort two selected elements by DOM order: earlier = bottom, later = top.
- * @param {Element[]} elems
- * @returns {[Element, Element]} [bottomElem, topElem]
- */
-const sortByDomOrder = (elems) => {
-  return /** @type {[Element, Element]} */ ([...elems].sort((a, b) =>
+/** Sort two selected elements by DOM order: earlier = bottom, later = top. */
+const sortByDomOrder = (elems: Element[]): [bottomElem: Element, topElem: Element] => {
+  return [...elems].sort((a, b) =>
     a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-  ))
+  ) as [Element, Element]
 }
 
-/**
- * Strip ids from a cloned subtree so it never collides with live canvas ids.
- * @param {Element} el
- * @returns {void}
- */
-const stripIds = (el) => {
+/** Strip ids from a cloned subtree so it never collides with live canvas ids. */
+const stripIds = (el: Element): void => {
   el.removeAttribute('id')
   el.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'))
 }
 
 /** Extract the id from a `url(#id)` reference string. */
-/** @param {string} val */
-const refId = (val) => val.replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
+const refId = (val: string): string => val.replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
 
 /**
  * Paint an element fully opaque white so it reads as a full-strength silhouette
  * inside a mask. Forced via inline style so it wins over the element's own paint
  * (attribute or style) and any host CSS.
- * @param {SVGElement} el
- * @returns {void}
  */
-const whiten = (el) => {
+const whiten = (el: SVGElement): void => {
   el.removeAttribute('fill-opacity')
   el.removeAttribute('opacity')
   el.setAttribute('fill', '#ffffff')
@@ -71,12 +60,8 @@ const whiten = (el) => {
  * carries the bottom element's transform (parent/layer space), so when the top
  * element has its own transform we pre-multiply by its inverse to keep the
  * silhouette where the bottom shape visually sits.
- * @param {Element} clone
- * @param {Element} topElem
- * @param {Element} bottomElem
- * @returns {void}
  */
-const compensateTransform = (clone, topElem, bottomElem) => {
+const compensateTransform = (clone: Element, topElem: Element, bottomElem: Element): void => {
   if (!topElem.getAttribute('transform')) return // top in layer space — clone already correct
   const tTop = transformListToTransform(getTransformList(topElem)).matrix
   const tBottom = transformListToTransform(getTransformList(bottomElem)).matrix
@@ -93,11 +78,8 @@ const INVERSE_INTERIOR = '#666666'
  *   px > 0 : soft edge — solid white silhouette, blurred so it fades out at the rim.
  *   px < 0 : inverse rim — grey interior (soft) with a blurred white edge band (strong).
  *   px = 0 : plain hard-edged white silhouette.
- * @param {SVGElement} child
- * @param {number} px
- * @returns {void}
  */
-const applyFeatherTo = (child, px) => {
+const applyFeatherTo = (child: SVGElement, px: number): void => {
   child.style.setProperty('fill-opacity', '1', 'important')
   child.style.setProperty('opacity', '1', 'important')
   if (px < 0) {
@@ -115,12 +97,8 @@ const applyFeatherTo = (child, px) => {
   }
 }
 
-/**
- * Current (signed) feather amount of the selected clipped/masked element, or 0.
- * @param {Element} elem
- * @returns {number}
- */
-const getFeather = (elem) => {
+/** Current (signed) feather amount of the selected clipped/masked element, or 0. */
+const getFeather = (elem: Element | null | undefined): number => {
   const v = elem && elem.getAttribute('data-feather')
   return v ? Number(v) : 0
 }
@@ -129,32 +107,25 @@ const getFeather = (elem) => {
  * Reentrant init: the canvas-dependent operations are created per SvgCanvas
  * instance, closed over its own `svgCanvas`, so several editors can coexist in
  * one realm. The stateless helpers above are shared.
- * @function module:clip-mask.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
    * The silhouette children of the element's mask, or [] if it has no mask.
-   * @param {Element} elem
-   * @returns {SVGElement[]}
    */
-  const maskChildrenOf = (elem) => {
+  const maskChildrenOf = (elem: Element): SVGElement[] => {
     const ref = elem.getAttribute('mask')
     if (!ref) return []
     const mask = svgCanvas.getElement(refId(ref))
-    return mask ? /** @type {SVGElement[]} */ ([...mask.children]) : []
+    return mask ? [...mask.children] as SVGElement[] : []
   }
 
   /**
    * Confine the top of exactly two selected shapes to the silhouette of the bottom
    * shape, via a clip path or mask. Both originals remain visible.
-   * @param {'clip'|'mask'} type
-   * @returns {void}
    */
-  const performSet = (type) => {
+  const performSet = (type: 'clip' | 'mask'): void => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
 
     if (elems.length !== 2) {
@@ -188,7 +159,7 @@ export const init = (canvas) => {
     }
 
     // Clone the bottom shape as the silhouette; it stays visible on the canvas
-    const clone = /** @type {SVGElement} */ (bottomElem.cloneNode(true))
+    const clone = bottomElem.cloneNode(true) as SVGElement
     stripIds(clone)
     if (type === 'mask') {
       // A mask uses luminance: paint the silhouette white so the overlay shows at
@@ -217,9 +188,8 @@ export const init = (canvas) => {
    * Release the clip path or mask from the single selected element. The silhouette
    * was a throwaway clone, so the definition is simply discarded — nothing is
    * restored to the canvas (the original silhouette shape was never consumed).
-   * @returns {void}
    */
-  const releaseClipMask = () => {
+  const releaseClipMask = (): void => {
     const elem = svgCanvas.getSelectedElements().filter(Boolean)[0]
     if (!elem) {
       warn('Release requires a selected element', null, 'clip-mask')
@@ -237,7 +207,7 @@ export const init = (canvas) => {
     }
 
     const refValue = elem.getAttribute(refAttr)
-    const id = /** @type {string} */ (refValue).replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
+    const id = (refValue as string).replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
     const container = svgCanvas.getElement(id)
 
     const { BatchCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
@@ -269,14 +239,11 @@ export const init = (canvas) => {
   /**
    * Convert a hard clip on `elem` into an equivalent mask, so it can be feathered.
    * The clip's silhouette children are whitened and moved into a new `<mask>`.
-   * @param {Element} elem
-   * @param {module:history.BatchCommand} batchCmd
-   * @returns {void}
    */
-  const convertClipToMask = (elem, batchCmd) => {
+  const convertClipToMask = (elem: Element, batchCmd: { addSubCommand: (cmd: unknown) => void }): void => {
     const { InsertElementCommand, RemoveElementCommand, MoveElementCommand, ChangeElementCommand } =
       svgCanvas.history
-    const clipEl = svgCanvas.getElement(refId(/** @type {string} */ (elem.getAttribute('clip-path'))))
+    const clipEl = svgCanvas.getElement(refId(elem.getAttribute('clip-path') as string))
 
     const maskId = svgCanvas.getNextId()
     const mask = svgCanvas.addSVGElementsFromJson({ element: 'mask', attr: { id: maskId } })
@@ -291,7 +258,7 @@ export const init = (canvas) => {
     batchCmd.addSubCommand(new InsertElementCommand(mask))
 
     if (clipEl) {
-      ;/** @type {SVGElement[]} */ ([...clipEl.children]).forEach((child) => {
+      ;([...clipEl.children] as SVGElement[]).forEach((child) => {
         const oldNext = child.nextSibling
         const oldParent = child.parentNode
         const oldPaint = {
@@ -326,10 +293,8 @@ export const init = (canvas) => {
    * its mask silhouette. Positive softens the edge; negative gives a strong rim
    * with a soft interior. A hard clip is auto-converted to a mask first. 0 removes
    * the feather.
-   * @param {number} px
-   * @returns {void}
    */
-  const setFeather = (px) => {
+  const setFeather = (px: number): void => {
     const elem = svgCanvas.getSelectedElements().filter(Boolean)[0]
     if (!elem) return
 

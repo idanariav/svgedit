@@ -12,8 +12,8 @@
  * @license Apache-2.0
  */
 import '../../dialogs/seParamsDialog.js'
-import { splitIntoGrid as splitGrid, canSplitIntoGrid } from '@svgedit/svgcanvas/core/split-grid.js'
-import { transformEach as transformEachOf } from '@svgedit/svgcanvas/core/transform-each.js'
+import { splitIntoGrid as splitGrid, canSplitIntoGrid } from '@svgedit/svgcanvas/core/split-grid.ts'
+import { transformEach as transformEachOf } from '@svgedit/svgcanvas/core/transform-each.ts'
 
 const name = 'layout-ops'
 

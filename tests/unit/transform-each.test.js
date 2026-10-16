@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   multiply, referenceFraction, resolveAmounts, eachMatrix, decompose, REFERENCE_POINTS
-} from '../../packages/svgcanvas/core/transform-each.js'
+} from '../../packages/svgcanvas/core/transform-each.ts'
 
 const apply = (m, x, y) => ({ x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] })
 const neutral = { sx: 1, sy: 1, dx: 0, dy: 0, angle: 0, flipX: false, flipY: false }

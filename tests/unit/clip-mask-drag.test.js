@@ -1,6 +1,6 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.js'
-import { init as initClipMask } from '../../packages/svgcanvas/core/clip-mask.js'
+import { init as initClipMask } from '../../packages/svgcanvas/core/clip-mask.ts'
 
 // Regression test for a bug where dragging an element with a clip-path (or
 // mask) baked the move into its x/y geometry via recalculateDimensions() ->

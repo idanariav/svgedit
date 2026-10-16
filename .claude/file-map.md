@@ -37,9 +37,9 @@
 | `blend.ts` | Blends: the geometry and paint of the steps between two key shapes |
 | `blur-event.js` | Tools for blur event |
 | `boolean-ops.ts` | Boolean path operations: union, intersect, subtract, exclude, divide |
-| `brush-stroke.js` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
+| `brush-stroke.ts` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
 | `clear.ts` | Resets the `#svgcontent` element to a blank document |
-| `clip-mask.js` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
+| `clip-mask.ts` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |
 | `copy-elem.js` | Copy handler |
 | `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
@@ -72,11 +72,11 @@
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
 | `history.js` | For command history tracking and undo functionality |
 | `historyrecording.js` | HistoryRecordingService component of history |
-| `image-crop.js` | Destructive crop for imported raster `<image>` elements |
+| `image-crop.ts` | Destructive crop for imported raster `<image>` elements |
 | `json.js` | Tools for SVG handle on JSON format |
 | `layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of draw.js |
 | `layer.js` | Provides tools for the layer concept |
-| `live-effects-distort.js` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
+| `live-effects-distort.ts` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
 | `live-effects.ts` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
 | `live-stack.ts` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
@@ -113,7 +113,7 @@
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
-| `split-grid.js` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
+| `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.js` | Tools for svg |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
@@ -126,7 +126,7 @@
 | `tool-registry.js` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
 | `touch.ts` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
 | `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
-| `transform-each.js` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
+| `transform-each.ts` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
 | `undo.js` | Tools for undo |
 | `units.ts` | Tools for working with units |
 | `warp.ts` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |

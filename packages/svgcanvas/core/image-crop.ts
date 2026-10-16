@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Destructive crop for imported raster `<image>` elements.
  *
@@ -17,25 +16,22 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { getHref, setHref } from './dom-utils.ts'
 import { loadImage } from './load-image.ts'
 import { NS } from './namespaces.ts'
 
 const MIN_SIZE = 4
 const HANDLE_SCREEN_RADIUS = 5
-/** @typedef {{x: number, y: number, width: number, height: number}} Rect */
+interface Rect { x: number, y: number, width: number, height: number }
 
 const HANDLE_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
 /**
  * Clamp a candidate crop rect so it never exceeds the image's original bounds,
  * enforcing a minimum size.
- * @param {{x: number, y: number, width: number, height: number}} candidate
- * @param {{x: number, y: number, width: number, height: number}} origBounds
- * @param {number} [minSize]
- * @returns {{x: number, y: number, width: number, height: number}}
  */
-export const clampCropRect = (candidate, origBounds, minSize = MIN_SIZE) => {
+export const clampCropRect = (candidate: Rect, origBounds: Rect, minSize = MIN_SIZE): Rect => {
   const width = Math.max(minSize, Math.min(candidate.width, origBounds.width))
   const height = Math.max(minSize, Math.min(candidate.height, origBounds.height))
   const x = Math.min(Math.max(candidate.x, origBounds.x), origBounds.x + origBounds.width - width)
@@ -46,13 +42,8 @@ export const clampCropRect = (candidate, origBounds, minSize = MIN_SIZE) => {
 /**
  * Map a crop rect (in the image's display/user space) into its natural pixel
  * space, given the source bitmap's natural size.
- * @param {{x: number, y: number, width: number, height: number}} origBounds
- * @param {{x: number, y: number, width: number, height: number}} cropRect
- * @param {number} naturalWidth
- * @param {number} naturalHeight
- * @returns {{sx: number, sy: number, sw: number, sh: number}}
  */
-export const computeSourceRect = (origBounds, cropRect, naturalWidth, naturalHeight) => {
+export const computeSourceRect = (origBounds: Rect, cropRect: Rect, naturalWidth: number, naturalHeight: number): { sx: number, sy: number, sw: number, sh: number } => {
   const scaleX = naturalWidth / origBounds.width
   const scaleY = naturalHeight / origBounds.height
   return {
@@ -66,26 +57,19 @@ export const computeSourceRect = (origBounds, cropRect, naturalWidth, naturalHei
 /**
  * Whether an `<image>` element is eligible for cropping in v1: a plain raster
  * import (not vault-linked, not transformed/rotated).
- * @param {Element} elem
- * @returns {boolean}
  */
-export const isCropEligible = (elem) =>
+export const isCropEligible = (elem: Element): boolean =>
   Boolean(elem) &&
   elem.tagName === 'image' &&
   !elem.hasAttribute('data-vault-link') &&
   !elem.hasAttribute('transform')
 
-/** @param {?string} href */
-const sniffMimeType = (href) => {
+const sniffMimeType = (href: string | null): string => {
   const match = /^data:([^;,]+)/.exec(href || '')
   return match ? match[1] : 'image/png'
 }
 
-/**
- * @param {Rect} rect
- * @param {string} dir
- */
-const handlePoint = (rect, dir) => {
+const handlePoint = (rect: Rect, dir: string): { x: number, y: number } => {
   const { x, y, width, height } = rect
   switch (dir) {
     case 'nw': return { x, y }
@@ -100,23 +84,26 @@ const handlePoint = (rect, dir) => {
   }
 }
 
-/**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
-  /** @type {?{imageElem: Element, origBounds: Rect, cropRect: Rect, overlayGroup: SVGGElement, rectEl: SVGRectElement, handleEls: Record<string, SVGCircleElement>}} */
-  let session = null
+  interface Session {
+    imageElem: Element
+    origBounds: Rect
+    cropRect: Rect
+    overlayGroup: SVGGElement
+    rectEl: SVGRectElement
+    handleEls: Record<string, SVGCircleElement>
+  }
+  let session: Session | null = null
 
   /** The open crop session; the overlay's handlers only run while one is open. */
-  const live = () => {
+  const live = (): Session => {
     if (!session) throw new Error('No image crop is in progress')
     return session
   }
 
-  const renderOverlay = () => {
+  const renderOverlay = (): void => {
     const { rectEl, handleEls, cropRect } = live()
     const zoom = svgCanvas.getZoom()
     rectEl.setAttribute('x', String(cropRect.x))
@@ -135,23 +122,19 @@ export const init = (canvas) => {
     })
   }
 
-  /**
-   * Screen coords → the overlay's own local (= image's) coordinate space.
-   * @param {MouseEvent} evt
-   */
-  const clientToLocal = (evt) => {
+  /** Screen coords → the overlay's own local (= image's) coordinate space. */
+  const clientToLocal = (evt: MouseEvent): DOMPoint => {
     const pt = svgCanvas.getSvgContent().createSVGPoint()
     pt.x = evt.clientX
     pt.y = evt.clientY
-    return pt.matrixTransform(/** @type {DOMMatrix} */ (live().overlayGroup.getScreenCTM()).inverse())
+    return pt.matrixTransform((live().overlayGroup.getScreenCTM() as DOMMatrix).inverse())
   }
 
-  /** @param {string} dir */
-  const startHandleDrag = (dir) => {
+  const startHandleDrag = (dir: string): void => {
     const startRect = { ...live().cropRect }
     const right = startRect.x + startRect.width
     const bottom = startRect.y + startRect.height
-    const onMove = (/** @type {MouseEvent} */ evt) => {
+    const onMove = (evt: MouseEvent): void => {
       const p = clientToLocal(evt)
       let { x, y, width, height } = startRect
       if (dir.includes('w')) { x = p.x; width = right - p.x }
@@ -170,11 +153,10 @@ export const init = (canvas) => {
     document.addEventListener('mouseup', onUp, true)
   }
 
-  /** @param {MouseEvent} evt0 */
-  const startBodyDrag = (evt0) => {
+  const startBodyDrag = (evt0: MouseEvent): void => {
     const startRect = { ...live().cropRect }
     const startP = clientToLocal(evt0)
-    const onMove = (/** @type {MouseEvent} */ evt) => {
+    const onMove = (evt: MouseEvent): void => {
       const p = clientToLocal(evt)
       const s = live()
       s.cropRect = clampCropRect({
@@ -197,12 +179,8 @@ export const init = (canvas) => {
     session?.overlayGroup.remove()
   }
 
-  /**
-   * Enter crop mode for the given `<image>` element.
-   * @param {Element} imageElem
-   * @returns {void}
-   */
-  const startImageCrop = (imageElem) => {
+  /** Enter crop mode for the given `<image>` element. */
+  const startImageCrop = (imageElem: Element): void => {
     if (!isCropEligible(imageElem)) return
     if (session) removeOverlay()
 
@@ -229,8 +207,7 @@ export const init = (canvas) => {
     })
     overlayGroup.append(rectEl)
 
-    /** @type {Record<string, SVGCircleElement>} */
-    const handleEls = {}
+    const handleEls: Record<string, SVGCircleElement> = {}
     HANDLE_DIRS.forEach((dir) => {
       const handle = document.createElementNS(NS.SVG, 'circle')
       handle.setAttribute('fill', '#3b82f6')
@@ -254,11 +231,8 @@ export const init = (canvas) => {
     svgCanvas.setMode('imagecrop')
   }
 
-  /**
-   * Exit crop mode without applying any change.
-   * @returns {void}
-   */
-  const cancelImageCrop = () => {
+  /** Exit crop mode without applying any change. */
+  const cancelImageCrop = (): void => {
     if (!session) return
     const { imageElem } = session
     removeOverlay()
@@ -271,9 +245,8 @@ export const init = (canvas) => {
    * Bake the current crop rect into the image: resample the source pixels to
    * just the cropped region and rewrite href/x/y/width/height as one undoable
    * `BatchCommand`.
-   * @returns {Promise<void>}
    */
-  const applyImageCrop = async () => {
+  const applyImageCrop = async (): Promise<void> => {
     if (!session) return
     const activeSession = session
     const { imageElem, origBounds, cropRect } = activeSession
@@ -285,7 +258,7 @@ export const init = (canvas) => {
     }
 
     const href = getHref(imageElem)
-    const img = await loadImage(/** @type {string} */ (href))
+    const img = await loadImage(href as string)
 
     // The crop may have been cancelled (Escape) or superseded by a new
     // startImageCrop() call while that load was pending -- baking the crop
@@ -304,7 +277,7 @@ export const init = (canvas) => {
     if (!ctx) throw new Error('This image can\'t be cropped — no 2D canvas is available.')
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasEl.width, canvasEl.height)
 
-    let newHref
+    let newHref: string
     try {
       newHref = canvasEl.toDataURL(sniffMimeType(href))
     } catch {

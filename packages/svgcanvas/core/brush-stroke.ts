@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Custom brush geometry: centerline smoothing + a nib-based variable-width
  * outline generator for the freehand "brush" tool (see `ext-brush`).
@@ -22,6 +21,7 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { profile as taperProfile } from './taper-stroke.ts'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.ts'
 
@@ -38,27 +38,19 @@ const PRESSURE_MIN_FACTOR = 0.35
 
 const CAP_ANGLES = [30, 60, 90, 120, 150]
 
-/** @typedef {{x: number, y: number}} Vec */
-/** @type {(a: Vec, b: Vec) => Vec} */
-const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
-/** @type {(a: Vec, b: Vec) => Vec} */
-const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
-/** @type {(a: Vec, k: number) => Vec} */
-const scale = (a, k) => ({ x: a.x * k, y: a.y * k })
-/** @type {(a: Vec) => number} */
-const len = (a) => Math.hypot(a.x, a.y)
-/** @type {(a: Vec) => Vec} */
-const normalize = (a) => {
+interface Vec { x: number, y: number }
+/** A centerline sample, with the pen pressure (0-1) when the device reports one. */
+export interface BrushPoint extends Vec { pressure?: number }
+const sub = (a: Vec, b: Vec): Vec => ({ x: a.x - b.x, y: a.y - b.y })
+const add = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y })
+const scale = (a: Vec, k: number): Vec => ({ x: a.x * k, y: a.y * k })
+const len = (a: Vec): number => Math.hypot(a.x, a.y)
+const normalize = (a: Vec): Vec => {
   const l = len(a)
   return l > 1e-6 ? scale(a, 1 / l) : { x: 1, y: 0 }
 }
-/**
- * Rotate a vector by `deg` degrees counter-clockwise.
- * @param {Vec} v
- * @param {number} deg
- * @returns {Vec}
- */
-const rotate = (v, deg) => {
+/** Rotate a vector by `deg` degrees counter-clockwise. */
+const rotate = (v: Vec, deg: number): Vec => {
   const rad = (deg * Math.PI) / 180
   const c = Math.cos(rad)
   const s = Math.sin(rad)
@@ -68,13 +60,10 @@ const rotate = (v, deg) => {
 /**
  * Five points sweeping a 180° arc of radius `halfWidth` around `center`, from
  * `+normal` through the outward tangent (`normal` rotated -90°) to `-normal`.
- * Mirrors `taper-stroke.js`'s `CAP_ANGLES` fan, in plain vector math.
- * @param {{x:number,y:number}} center
- * @param {{x:number,y:number}} normal - Unit vector.
- * @param {number} halfWidth
- * @returns {Array<{x:number,y:number}>}
+ * Mirrors `taper-stroke.ts`'s `CAP_ANGLES` fan, in plain vector math.
+ * @param normal - Unit vector.
  */
-const capFan = (center, normal, halfWidth) =>
+const capFan = (center: Vec, normal: Vec, halfWidth: number): Vec[] =>
   CAP_ANGLES.map((a) => add(center, rotate(scale(normal, halfWidth), -a)))
 
 /**
@@ -83,23 +72,20 @@ const capFan = (center, normal, halfWidth) =>
  * parallel to the nib angle, maxing out perpendicular to it (the classic
  * calligraphy effect) — while `roundness` 100 holds a constant half-width
  * regardless of direction or angle.
- * @param {number} travelRad
- * @param {number} angleRad
- * @param {number} roundness01 - 0-1.
- * @returns {number} 0-1 factor to scale the full half-width by.
+ * @param roundness01 - 0-1.
+ * @returns 0-1 factor to scale the full half-width by.
  */
-const nibFactor = (travelRad, angleRad, roundness01) => {
+const nibFactor = (travelRad: number, angleRad: number, roundness01: number): number => {
   const chisel = Math.max(MIN_NIB, Math.abs(Math.sin(travelRad - angleRad)))
   return chisel + (1 - chisel) * roundness01
 }
 
-const pressureFactor = (pressure = 1) =>
+const pressureFactor = (pressure = 1): number =>
   PRESSURE_MIN_FACTOR + (1 - PRESSURE_MIN_FACTOR) * Math.max(0, Math.min(1, pressure))
 
-/** @param {Vec[]} points */
-const pathFromLoop = (points) => {
+const pathFromLoop = (points: Vec[]): string => {
   if (!points.length) return ''
-  const d = ['M', points[0].x, points[0].y]
+  const d: Array<string | number> = ['M', points[0].x, points[0].y]
   for (let i = 1; i < points.length; i++) d.push('L', points[i].x, points[i].y)
   d.push('Z')
   return d.join(' ')
@@ -109,17 +95,14 @@ const pathFromLoop = (points) => {
  * A zero-length stroke (a tap/click without dragging): render the nib's own
  * footprint as a small ellipse — a thin dash along the nib angle for a
  * chiseled brush, a circle for a round one.
- * @param {{x:number,y:number}} center
- * @param {{thickness:number, angle:number, roundness:number, pressure?:number}} p
- * @returns {string}
  */
-const buildDab = (center, { thickness, angle, roundness, pressure }) => {
+const buildDab = (center: Vec, { thickness, angle, roundness, pressure }: { thickness: number, angle: number, roundness: number, pressure?: number }): string => {
   const roundness01 = Math.max(0, Math.min(100, roundness)) / 100
   const hw = (thickness / 2) * pressureFactor(pressure)
   const along = rotate({ x: 1, y: 0 }, angle) // nib-length direction
   const across = rotate(along, 90)
   const steps = 16
-  const pts = []
+  const pts: Vec[] = []
   for (let i = 0; i < steps; i++) {
     const t = (i / steps) * Math.PI * 2
     const rx = hw
@@ -131,14 +114,15 @@ const buildDab = (center, { thickness, angle, roundness, pressure }) => {
 
 /**
  * Build a filled outline `d` string for a brush stroke.
- * @param {Array<{x:number,y:number,pressure?:number}>} points - Centerline
- *  samples (already smoothed), each with optional real pen pressure (0-1,
+ * @param points - Centerline samples (already smoothed), each with optional real pen pressure (0-1,
  *  defaults to 1 — full width — for mouse/touch input).
- * @param {{thickness:number, angle:number, roundness:number, taperStart:number, taperEnd:number}} params
- *  `angle` in degrees; `roundness`/`taperStart`/`taperEnd` are 0-100.
- * @returns {string} SVG path `d`, or `''` for fewer than 1 point.
+ * @param params `angle` in degrees; `roundness`/`taperStart`/`taperEnd` are 0-100.
+ * @returns SVG path `d`, or `''` for fewer than 1 point.
  */
-export const buildBrushOutline = (points, params) => {
+export const buildBrushOutline = (
+  points: BrushPoint[],
+  params: { thickness: number, angle: number, roundness: number, taperStart: number, taperEnd: number }
+): string => {
   if (!points.length) return ''
   const { thickness, angle, roundness, taperStart, taperEnd } = params
   if (points.length < 2 || len(sub(points[points.length - 1], points[0])) < 1e-3) {
@@ -151,20 +135,20 @@ export const buildBrushOutline = (points, params) => {
   const eFrac = Math.max(0, Math.min(100, taperEnd)) / 100
 
   const n = points.length
-  const dist = new Array(n).fill(0)
+  const dist: number[] = new Array(n).fill(0)
   for (let i = 1; i < n; i++) dist[i] = dist[i - 1] + len(sub(points[i], points[i - 1]))
   const total = dist[n - 1] || 1
 
-  const tangents = new Array(n)
+  const tangents: Vec[] = new Array(n)
   for (let i = 0; i < n; i++) {
     const prev = points[Math.max(0, i - 1)]
     const next = points[Math.min(n - 1, i + 1)]
     tangents[i] = normalize(sub(next, prev))
   }
 
-  const left = new Array(n)
-  const right = new Array(n)
-  const halfWidths = new Array(n)
+  const left: Vec[] = new Array(n)
+  const right: Vec[] = new Array(n)
+  const halfWidths: number[] = new Array(n)
   for (let i = 0; i < n; i++) {
     const t = dist[i] / total
     const travelRad = Math.atan2(tangents[i].y, tangents[i].x)
@@ -189,11 +173,9 @@ export const buildBrushOutline = (points, params) => {
 /**
  * Compact a live-drawn outline's `d` into a smaller set of cubics via
  * paper.js `simplify()`. Run once at `mouseUp`, never during live drawing.
- * @param {string} d
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @returns {string} The simplified `d`, or the input unchanged on failure.
+ * @returns The simplified `d`, or the input unchanged on failure.
  */
-export const finalizeBrushOutline = (d, svgCanvas) => {
+export const finalizeBrushOutline = (d: string, svgCanvas: Pick<SvgCanvas, 'pathActions'>): string => {
   if (!d) return d
   const scope = getPaperScope()
   try {
@@ -213,14 +195,12 @@ export const finalizeBrushOutline = (d, svgCanvas) => {
  * pencil tool's `pencilStabX/Y` (`event-shape-draw.js`), reimplemented here
  * as self-contained state so the brush and pencil tools never share mutable
  * fields.
- * @param {number} smoothness - 0 (no smoothing, raw input) to 1 (heavy lag).
- * @returns {{push: function({x:number,y:number,pressure?:number}): {x:number,y:number,pressure?:number}}}
+ * @param smoothness - 0 (no smoothing, raw input) to 1 (heavy lag).
  */
-export const createSmoother = (smoothness) => {
+export const createSmoother = (smoothness: number): { push: (raw: BrushPoint) => BrushPoint } => {
   // Cap below 1 so the filter can never fully lock and stop following input.
   const k = Math.max(0, Math.min(0.92, smoothness))
-  /** @type {{x: number, y: number, pressure?: number}|null} */
-  let prev = null
+  let prev: BrushPoint | null = null
   return {
     push (raw) {
       if (!prev) {

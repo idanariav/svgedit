@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildBrushOutline, createSmoother, finalizeBrushOutline } from '../../packages/svgcanvas/core/brush-stroke.js'
+import { buildBrushOutline, createSmoother, finalizeBrushOutline } from '../../packages/svgcanvas/core/brush-stroke.ts'
 
 // Outline `d` strings from this module are plain 'M x y L x y ... Z' (no
 // curve commands), so parsing them back into points for geometric

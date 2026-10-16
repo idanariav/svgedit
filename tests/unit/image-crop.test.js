@@ -9,7 +9,7 @@ import {
   clampCropRect,
   computeSourceRect,
   isCropEligible
-} from '../../packages/svgcanvas/core/image-crop.js'
+} from '../../packages/svgcanvas/core/image-crop.ts'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 

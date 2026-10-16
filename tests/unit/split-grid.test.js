@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { gridCells, canSplitIntoGrid, MAX_CELLS, splitIntoGrid } from '../../packages/svgcanvas/core/split-grid.js'
+import { gridCells, canSplitIntoGrid, MAX_CELLS, splitIntoGrid } from '../../packages/svgcanvas/core/split-grid.ts'
 
 describe('gridCells', () => {
   const box = { x: 10, y: 20, width: 100, height: 60 }
