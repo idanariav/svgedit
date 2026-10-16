@@ -1,6 +1,6 @@
 # SVGedit User-Facing Tools
 
-> **How to use this doc:** Look up tools by panel location (the full list of command ids, labels and keys is the generated [`commands.md`](commands.md), the authority for keys). Each entry gives the element ID, what the control does and what is not obvious about it; the how is in the code headers (`file-map.md`). Extension-provided tools are in a separate section at the bottom.
+> **How to use this doc:** Look up tools by panel location (the full list of command ids, labels and keys is the generated [`commands.md`](commands.md), the authority for keys; these tables do not repeat the keys). Each entry gives the element ID, what the control does and what is not obvious about it; the how is in the code headers (`file-map.md`). Extension-provided tools are in a separate section at the bottom.
 
 ---
 
@@ -8,16 +8,16 @@
 
 The left panel is a vertical column of tool buttons. Some are "flying buttons" (`se-flying-button`) with several variants in a flyout.
 
-| ID | Tool | Shortcut | Notes |
-|----|------|----------|-------|
-| `tool_select` | Select / pointer | V | Select, move, resize. With 2+ selected, one union box with 8 grips (rotate grip hidden) applies a **uniform group scale** about the opposite corner / edge (`select.js` `showGroupSelector`, `event.js` `resizeGroup`). Shift+drag locks the dominant axis; Shift+drag the rotate grip snaps to 15°. A click on stacked shapes **prefers an already-selected one** over the topmost. The move cursor shows wherever a press would move something (`svgCanvas.setCursorHint('move')`, `toolCursors.js`). |
-| `tool_fhpath` | Freehand pencil | Q | Pointer coordinates pass through an EMA low-pass filter (`pencilStabilization`, 0–1, default 0.3) to damp tremor. On commit the points are fitted to cubics by the corner-keeping fit (`core/path-fit.js`, `core/path-simplify.js`): a turn sharper than ~100° stays an exact corner, the rest becomes as few cubics as stay within `pencilFidelity` (user units, default 2). `pencilSimplify: false` restores the legacy smoothing. Both settings are in Editor Preferences. **Continue:** a stroke that starts within 6 screen px of an end of the one selected plain, untransformed, single-subpath open `<path>` extends it (one `Continue path` undo step; Alt = new path; ending near the other end closes it; `core/pen-continue.js`). |
-| `tool_brush` | Custom brush | W | Variable-width freehand brush (nib roundness, thickness, angle, taper, opacity, smoothness, up to 5 presets) set in the `<se-brush-settings>` popover. Pen pressure modulates thickness; mouse and touch draw at constant width. Renders a filled `<path>` outline (`core/brush-stroke.js`); provided by `ext-brush`. |
-| `tool_line` | Line / arrow | L | A straight two-point `<line>`. Releasing an endpoint over (or within ~12 px of) a shape **binds** it: it snaps to the shape's edge and follows the shape as it moves or resizes; **Alt** keeps it free. Binding is `ext-connector`; arrowheads come from the markers panel (`ext-markers`). |
-| `tool_path` | Bezier path | P | Point-by-point path. **Continue / join** (`core/pen-continue.js`): pressing within 6 screen px of an end of an open, plain, untransformed single-subpath `<path>` in the current layer carries that path on (one `Continue path` step); pressing another such end while drawing joins the two (`Join paths`; the carried-on path survives). A `pen_end_hint` ring marks an end a press would use; Alt starts a new path. Paths with `se:taper-d` / `se:orig-d` / `se:fx-d`, closed and multi-subpath paths are never offered. |
-| `tools_shapes` *(flying)* | Shapes (Rect / Ellipse / Star / Polygon …) | — (a key re-arms the last-picked shape) | Combined flyout with a **fixed trigger icon** (`shapes.svg`; `se-flyingbutton`'s static-icon `src` mode) that does not follow the last-picked variant. Only the primary variant of each shape is here (square, circle, free-hand rect / ellipse are reachable through `svgCanvas.setMode`, not the UI). `tool_rect` (R) and `tool_ellipse` (E) are built in `LeftPanel.html`; the extensions append their tools into this same host at runtime. |
-| `tool_text` | Text | T | Add / edit text. **Multiline:** the edit buffer `#text` is a `<textarea>`; **Shift+Enter** adds a row, **Enter** commits. SVG has no newline, so each row is a `<tspan>` with a shared `x` and `y` stepped by `font-size × 1.2` (`setMultilineText` / `getTextWithNewlines`, `core/dom-utils.js`; every `#text` read and write goes through them). The caret engine (`core/text-actions.js`) indexes `#chardata` by textarea caret position and is row-aware. **Area text:** a drag of ≥ 5 screen px draws a box and wraps the text to it (`se:wrap-width` / `se:wrap-height` / `se:valign`, soft rows are tspans with `se:soft`; `core/text-rows.js`, `core/text-wrap.js`); its grips resize the box and re-wrap live, and ArrowUp / Down / Home / End move by drawn row. |
-| `tool_image` | Image | M | Opens the **Insert image** dialog (`se-image-import-dialog`): file upload, URL, or **Import from vault** (only when the host provides `window.svgEditHost.pickVaultImage`; see `architecture.md` › Host bridge). An SVG file, or an unlocked vault drawing, imports as editable shapes through `insertSvgElements` (several elements are wrapped in one `<g>`); **Import as editable paths** (off by default) also turns basic shapes into `<path>`. Anything else is embedded as an `<image>` by `insertImageFromHref` (`dialogs/insertImage.js`), stamping `data-vault-link` / `data-vault-locked`. Flow: `LeftPanel.clickImage` → dialog → `handleImageImport`. |
+| ID | Tool | Notes |
+|----|------|-------|
+| `tool_select` | Select / pointer | Select, move, resize. With 2+ selected, one union box with 8 grips (rotate grip hidden) applies a **uniform group scale** about the opposite corner / edge (`select.js` `showGroupSelector`, `event.js` `resizeGroup`). Shift+drag locks the dominant axis; Shift+drag the rotate grip snaps to 15°. A click on stacked shapes **prefers an already-selected one** over the topmost. The move cursor shows wherever a press would move something (`svgCanvas.setCursorHint('move')`, `toolCursors.js`). |
+| `tool_fhpath` | Freehand pencil | Pointer coordinates pass through an EMA low-pass filter (`pencilStabilization`, 0–1, default 0.3) to damp tremor. On commit the points are fitted to cubics by the corner-keeping fit (`core/path-fit.js`, `core/path-simplify.js`): a turn sharper than ~100° stays an exact corner, the rest becomes as few cubics as stay within `pencilFidelity` (user units, default 2). `pencilSimplify: false` restores the legacy smoothing. Both settings are in Editor Preferences. **Continue:** a stroke that starts within 6 screen px of an end of the one selected plain, untransformed, single-subpath open `<path>` extends it (one `Continue path` undo step; Alt = new path; ending near the other end closes it; `core/pen-continue.js`). |
+| `tool_brush` | Custom brush | Variable-width freehand brush (nib roundness, thickness, angle, taper, opacity, smoothness, up to 5 presets) set in the `<se-brush-settings>` popover. Pen pressure modulates thickness; mouse and touch draw at constant width. Renders a filled `<path>` outline (`core/brush-stroke.js`); provided by `ext-brush`. |
+| `tool_line` | Line / arrow | A straight two-point `<line>`. Releasing an endpoint over (or within ~12 px of) a shape **binds** it: it snaps to the shape's edge and follows the shape as it moves or resizes; **Alt** keeps it free. Binding is `ext-connector`; arrowheads come from the markers panel (`ext-markers`). |
+| `tool_path` | Bezier path | Point-by-point path. **Continue / join** (`core/pen-continue.js`): pressing within 6 screen px of an end of an open, plain, untransformed single-subpath `<path>` in the current layer carries that path on (one `Continue path` step); pressing another such end while drawing joins the two (`Join paths`; the carried-on path survives). A `pen_end_hint` ring marks an end a press would use; Alt starts a new path. Paths with `se:taper-d` / `se:orig-d` / `se:fx-d`, closed and multi-subpath paths are never offered. |
+| `tools_shapes` *(flying)* | Shapes (Rect / Ellipse / Star / Polygon …) | Combined flyout with a **fixed trigger icon** (`shapes.svg`; `se-flyingbutton`'s static-icon `src` mode) that does not follow the last-picked variant. Only the primary variant of each shape is here (square, circle, free-hand rect / ellipse are reachable through `svgCanvas.setMode`, not the UI). `tool_rect` (R) and `tool_ellipse` (E) are built in `LeftPanel.html`; the extensions append their tools into this same host at runtime. A key re-arms the last-picked shape. |
+| `tool_text` | Text | Add / edit text. **Multiline:** the edit buffer `#text` is a `<textarea>`; **Shift+Enter** adds a row, **Enter** commits. SVG has no newline, so each row is a `<tspan>` with a shared `x` and `y` stepped by `font-size × 1.2` (`setMultilineText` / `getTextWithNewlines`, `core/dom-utils.js`; every `#text` read and write goes through them). The caret engine (`core/text-actions.js`) indexes `#chardata` by textarea caret position and is row-aware. **Area text:** a drag of ≥ 5 screen px draws a box and wraps the text to it (`se:wrap-width` / `se:wrap-height` / `se:valign`, soft rows are tspans with `se:soft`; `core/text-rows.js`, `core/text-wrap.js`); its grips resize the box and re-wrap live, and ArrowUp / Down / Home / End move by drawn row. |
+| `tool_image` | Image | Opens the **Insert image** dialog (`se-image-import-dialog`): file upload, URL, or **Import from vault** (only when the host provides `window.svgEditHost.pickVaultImage`; see `architecture.md` › Host bridge). An SVG file, or an unlocked vault drawing, imports as editable shapes through `insertSvgElements` (several elements are wrapped in one `<g>`); **Import as editable paths** (off by default) also turns basic shapes into `<path>`. Anything else is embedded as an `<image>` by `insertImageFromHref` (`dialogs/insertImage.js`), stamping `data-vault-link` / `data-vault-locked`. Flow: `LeftPanel.clickImage` → dialog → `handleImageImport`. |
 
 **Lock mode.** A tool normally reverts to Select after one object. **Double-click** a drawing tool (or **Shift+Enter** while it is focused) *locks* it for drawing many objects; switching tools exits it. A locked tool shows an accent outline ring (`.locked` in `seButton.js` / `seFlyingButton.js`). Lockable: `tool_fhpath`, `tool_line`, `tool_path`, `tool_text` and the shapes flyout (the dblclick binds on the flyout host and locks the active variant). State is `svgCanvas.getToolLocked()` / `setToolLocked()`; `LeftPanel.lockTool` sets it and `updateLeftPanel` clears it on a tool switch. The reset is gated in `event.js` `mouseUpEvent` and in `text-actions.js` `toSelectMode`. An unlocked path switches straight to Select with the new path selected (click it again to edit nodes); `event.js` hides the in-progress node grips first (`getPath_(element).show(false)`) because that switch bypasses `pathActions.toEditMode()`.
 
@@ -59,17 +59,17 @@ A horizontal flex bar of rounded **trays** (shared `.quick_tray` style) that hol
 
 ### Always-visible
 
-| ID | Tool | Shortcut | Notes |
-|----|------|----------|-------|
-| `tool_frame` | Frame (export region) | U | In `#editor_panel` (view tray). Sets mode `'frame'`; its pressed state follows the canvas mode (`EditorStartup.modeListener`). A frame is a normal selectable `<rect data-frame="1">` with a `<title>` name (default `Frame N`) and a dashed-accent, transparent style, drawn by the `'frame'` case of `core/event.js`. Frames mark export regions (see Export). `showSourceEditor()` and `se-svg-editor-dialog` remain (ext-opensave uses them), but there is no Edit-source button. |
-| `tool_wireframe` | Wireframe mode | F | In `#editor_panel`. Toggles `.wireframe` + `#wireframe_rules`, sets `wireframeSnapping` and calls `updateProportionMarkers()`. While on, ext-proportion-markers draws edge proportion ticks and a select-mode drag snaps edges / centre to the canvas proportion lines (`core/event.js`). |
-| `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | — | W / H spin-inputs, size presets (label + ratio + size; aspect presets 4:5, 5:4, 16:9, 1:1 at base 1000 px plus the 4:3 sizes) and Apply / Reset. **Manage presets** makes the list editable (label auto-fills from the W:H GCD until overridden); it persists through `userDataAdapter` (`getCanvasPresets` / `setCanvasPresets`) else `localStorage` `svg-edit-canvas-presets`, and `DEFAULT_PRESETS` seed an empty or invalid list. **Layouts** (saved canvas templates, `canvasLayouts.js`; `getCanvasLayouts` / `setCanvasLayouts`, else `svg-edit-canvas-layouts`): *Save current* stores size, `bkgd_color` and the SVG under a name; each row offers **Apply**, **Overwrite**, **Remove**. Applying sets only size and background and re-injects the saved objects (fresh ids) onto an inactive `Layout: <name>` layer whose placeholders are locked (`pointer-events: none`) until that layer is selected; existing objects stay. The same actions are the `canvas_*` commands. |
-| `grid_settings` *(`<se-grid-settings>`)* | Grid settings popover | — | Added to `#editor_panel` by ext-grid. Show / snap toggles, shape (square, isometric, triangle, 1-/2-point perspective, and the composition guides **thirds**, **golden ratio**, **centre cross**: fixed fractional lines, not a repeating pattern), colour, snapping step. |
-| `guides_toggle_show` / `guides_toggle_lock` / `guides_clear` | Ruler guide commands | mod+; (show / hide) | Registry commands only (Command Search, Hotkey Manager, Favorites); no button. See `ext-ruler-guides` in `extensions.md`. |
-| `tool_smart_snap` | Smart snapping toggle | — | Added by ext-smart-guides. Object-to-object alignment snapping while dragging (edge / centre lines, equal-spacing hints, page edges and centre). Default **on**; pref `smart_snapping`, config `smartSnapping`. Math in `core/smart-guides.js` (select-move branch of `event.js`), overlay `#smartGuides` (last in `svgroot`). Same-kind matches (edge↔edge, centre↔centre) beat equal spacing beats mixed (edge↔centre, reduced tolerance). **The toggle also governs snapping while drawing** (`core/draw-snap.js`): the point a drawing tool places (rect / ellipse / line / frame / image / text corners, **pen anchors**, and tools that opt in with `snap: true`: shape-family, polystar) snaps within 8 screen px to other objects' anchors, bbox corners / edge midpoints / centres and the page's, else per axis to an edge or centre line (`showDrawGuides` draws a ring or a line). Grid snapping wins when on; the pencil never snaps; nothing snaps inside a group context. |
-| *(theme)* | Light / dark toggle | — | Added to `#theme_panel` by ext-theme-toggle (opt-in, not a default extension). |
-| `tool_undo` / `tool_redo` | Undo / Redo | Ctrl+Z / Ctrl+Y | `#history_panel`; disabled until there is something to undo / redo. |
-| `zoom` *(`<se-zoom>`)* | Zoom dropdown | — | In `#zoom_panel`: 25–1000 %, Fit to Canvas / Selection / Layer / All. Its `change` is bound in `TopPanel.init` and delegates to `bottomPanel.changeZoom`. |
+| ID | Tool | Notes |
+|----|------|-------|
+| `tool_frame` | Frame (export region) | In `#editor_panel` (view tray). Sets mode `'frame'`; its pressed state follows the canvas mode (`EditorStartup.modeListener`). A frame is a normal selectable `<rect data-frame="1">` with a `<title>` name (default `Frame N`) and a dashed-accent, transparent style, drawn by the `'frame'` case of `core/event.js`. Frames mark export regions (see Export). `showSourceEditor()` and `se-svg-editor-dialog` remain (ext-opensave uses them), but there is no Edit-source button. |
+| `tool_wireframe` | Wireframe mode | In `#editor_panel`. Toggles `.wireframe` + `#wireframe_rules`, sets `wireframeSnapping` and calls `updateProportionMarkers()`. While on, ext-proportion-markers draws edge proportion ticks and a select-mode drag snaps edges / centre to the canvas proportion lines (`core/event.js`). |
+| `tool_canvas_settings` *(`<se-canvas-settings>`)* | Canvas resize popover | W / H spin-inputs, size presets (label + ratio + size; aspect presets 4:5, 5:4, 16:9, 1:1 at base 1000 px plus the 4:3 sizes) and Apply / Reset. **Manage presets** makes the list editable (label auto-fills from the W:H GCD until overridden); it persists through `userDataAdapter` (`getCanvasPresets` / `setCanvasPresets`) else `localStorage` `svg-edit-canvas-presets`, and `DEFAULT_PRESETS` seed an empty or invalid list. **Layouts** (saved canvas templates, `canvasLayouts.js`; `getCanvasLayouts` / `setCanvasLayouts`, else `svg-edit-canvas-layouts`): *Save current* stores size, `bkgd_color` and the SVG under a name; each row offers **Apply**, **Overwrite**, **Remove**. Applying sets only size and background and re-injects the saved objects (fresh ids) onto an inactive `Layout: <name>` layer whose placeholders are locked (`pointer-events: none`) until that layer is selected; existing objects stay. The same actions are the `canvas_*` commands. |
+| `grid_settings` *(`<se-grid-settings>`)* | Grid settings popover | Added to `#editor_panel` by ext-grid. Show / snap toggles, shape (square, isometric, triangle, 1-/2-point perspective, and the composition guides **thirds**, **golden ratio**, **centre cross**: fixed fractional lines, not a repeating pattern), colour, snapping step. |
+| `guides_toggle_show` / `guides_toggle_lock` / `guides_clear` | Ruler guide commands | Registry commands only (Command Search, Hotkey Manager, Favorites); no button. See `ext-ruler-guides` in `extensions.md`. |
+| `tool_smart_snap` | Smart snapping toggle | Added by ext-smart-guides. Object-to-object alignment snapping while dragging (edge / centre lines, equal-spacing hints, page edges and centre). Default **on**; pref `smart_snapping`, config `smartSnapping`. Math in `core/smart-guides.js` (select-move branch of `event.js`), overlay `#smartGuides` (last in `svgroot`). Same-kind matches (edge↔edge, centre↔centre) beat equal spacing beats mixed (edge↔centre, reduced tolerance). **The toggle also governs snapping while drawing** (`core/draw-snap.js`): the point a drawing tool places (rect / ellipse / line / frame / image / text corners, **pen anchors**, and tools that opt in with `snap: true`: shape-family, polystar) snaps within 8 screen px to other objects' anchors, bbox corners / edge midpoints / centres and the page's, else per axis to an edge or centre line (`showDrawGuides` draws a ring or a line). Grid snapping wins when on; the pencil never snaps; nothing snaps inside a group context. |
+| *(theme)* | Light / dark toggle | Added to `#theme_panel` by ext-theme-toggle (opt-in, not a default extension). |
+| `tool_undo` / `tool_redo` | Undo / Redo | `#history_panel`; disabled until there is something to undo / redo. |
+| `zoom` *(`<se-zoom>`)* | Zoom dropdown | In `#zoom_panel`: 25–1000 %, Fit to Canvas / Selection / Layer / All. Its `change` is bound in `TopPanel.init` and delegates to `bottomPanel.changeZoom`. |
 
 The live-symmetry drawing mode (`svgCanvas.setMirrorAxis('v'|'h'|null)` / `getMirrorAxis()`, `ext-mirror.js`) is API-only, with no toolbar button. The one-shot "Mirror-copy selection" buttons (`tool_mirror_copy` / `_multi`) are in the Design tab.
 
@@ -77,35 +77,35 @@ The live-symmetry drawing mode (`svgCanvas.setMirrorAxis('v'|'h'|null)` / `getMi
 
 One `.quick_tray` pill of object actions:
 
-| ID | Tool | Shortcut |
-|----|------|----------|
-| `tool_clone` | Clone element | D |
-| `tool_delete` | Delete element | Delete / Backspace |
-| `tool_arrange` *(list)* | Arrange / z-order (below) | — |
-| `tool_flip_h` / `tool_flip_v` | Flip horizontal / vertical | Shift+H / Shift+V (`flipSelectedElements(-1, 1)` / `(1, -1)`) |
-| `tool_position` *(list)* | Align to page | — (L / C / R / T / M / B + distribute H / V) |
+| ID | Tool |
+|----|------|
+| `tool_clone` | Clone element |
+| `tool_delete` | Delete element |
+| `tool_arrange` *(list)* | Arrange / z-order (below) |
+| `tool_flip_h` / `tool_flip_v` | Flip horizontal / vertical (`flipSelectedElements(-1, 1)` / `(1, -1)`) |
+| `tool_position` *(list)* | Align to page (L / C / R / T / M / B + distribute H / V) |
 
 ### Multiple elements selected (`.multiselected_panel` tray)
 
-| ID | Tool | Shortcut |
-|----|------|----------|
-| `tool_clone_multi` / `tool_delete_multi` | Clone all / Delete all | D / Delete / Backspace |
-| `tool_group_elements` | Group | G |
-| `tool_arrange_multi` *(list)* | Arrange / z-order (adds Switch Layers) | — |
-| `tool_align_multi` *(list)* | Align edges / centres + distribute H / V | — |
-| `tool_align_relative` *(list)* | Alignment reference | selected / largest / smallest / page |
+| ID | Tool |
+|----|------|
+| `tool_clone_multi` / `tool_delete_multi` | Clone all / Delete all |
+| `tool_group_elements` | Group |
+| `tool_arrange_multi` *(list)* | Arrange / z-order (adds Switch Layers) |
+| `tool_align_multi` *(list)* | Align edges / centres + distribute H / V |
+| `tool_align_relative` *(list)* | Alignment reference: selected / largest / smallest / page |
 
 ### Arrange / z-order dropdown (`tool_arrange` / `tool_arrange_multi`)
 
 An `se-list` with a **fixed** trigger icon (`move_top.svg`; static-icon mode, set by `src` on the `<se-list>`), one copy per tray; both dispatch `change` to `TopPanel.clickArrange`:
 
-| Item | Action | Canvas call | Shortcut |
-|------|--------|-------------|----------|
-| `front` | Bring to Front | `moveToTopSelectedElement()` | Ctrl+Shift+] |
-| `forward` | Bring Forward | `moveUpDownSelected('Up')` | — |
-| `backward` | Send Backward | `moveUpDownSelected('Down')` | — |
-| `back` | Send to Back | `moveToBottomSelectedElement()` | Ctrl+Shift+[ |
-| `switch` *(`arrange_switch`, multi list only)* | Switch Layers (swap the z-order of 2) | `switchSelectedZorder()` | — |
+| Item | Action | Canvas call |
+|------|--------|-------------|
+| `front` | Bring to Front | `moveToTopSelectedElement()` |
+| `forward` | Bring Forward | `moveUpDownSelected('Up')` |
+| `backward` | Send Backward | `moveUpDownSelected('Down')` |
+| `back` | Send to Back | `moveToBottomSelectedElement()` |
+| `switch` *(`arrange_switch`, multi list only)* | Switch Layers (swap the z-order of 2) | `switchSelectedZorder()` |
 
 `arrange_switch` shows only when **exactly two** elements are selected. The other items act on **every** selected element and keep their relative stacking order (a multi-selection moves to the top as a block); a selected `<g>` moves as one unit. `selected-elem.js` groups the elements by parent and records one batched undo step.
 
@@ -229,14 +229,14 @@ ext-shadow, ext-outline, ext-glow, ext-live-effects and ext-color-shift inject h
 
 ## Main Menu (`src/editor/MainMenu.js`)
 
-| ID | Item | Shortcut |
-|----|------|----------|
-| `tool_export` | Export (PNG / JPG / BMP / WebP) | — |
-| `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) | — |
-| `tool_command_search` | **Command Search** (`se-command-search-dialog`) | Ctrl/Cmd+K |
-| `tool_hotkeys` | **Hotkey Manager** (`se-hotkey-dialog`) | — |
-| `tool_favorites` | **Favorites** manager (`se-favorites-dialog`) | — |
-| `tool_editor_prefs` | Editor Preferences: rulers, base unit, theme, **Pencil stabilisation (%)** and **fidelity** (prefs `pencil_stabilization` / `pencil_fidelity`, mirrored into `curConfig.pencilStabilization` (÷100) / `pencilFidelity` at startup by `ConfigObj.seedPencilConfigFromPrefs` and on save), **Drag labels to change numbers** (pref `scrub_numeric_fields`, `css-rules.md` › `se-spin-input`) | — |
+| ID | Item |
+|----|------|
+| `tool_export` | Export (PNG / JPG / BMP / WebP) |
+| `tool_tablet_mode` | Toggle **Tablet mode** (touch-first shell) |
+| `tool_command_search` | **Command Search** (`se-command-search-dialog`) |
+| `tool_hotkeys` | **Hotkey Manager** (`se-hotkey-dialog`) |
+| `tool_favorites` | **Favorites** manager (`se-favorites-dialog`) |
+| `tool_editor_prefs` | Editor Preferences: rulers, base unit, theme, **Pencil stabilisation (%)** and **fidelity** (prefs `pencil_stabilization` / `pencil_fidelity`, mirrored into `curConfig.pencilStabilization` (÷100) / `pencilFidelity` at startup by `ConfigObj.seedPencilConfigFromPrefs` and on save), **Drag labels to change numbers** (pref `scrub_numeric_fields`, `css-rules.md` › `se-spin-input`) |
 
 **Command Search** (`dialogs/commandSearchDialog.js`): a searchable palette over every action and setting, built on the Favorites / Hotkey catalog (`buildFavoritesCatalog` via `commandSearch.js`). Type to filter (label substring), arrows move, Enter or click activates. A *trigger action* calls `runFavoriteTrigger` (`el.click()` / `run()`), like the real control. A *value control* (`stroke_width`, `fill_color`, `stroke_color`) *reveals* the setting instead: the colour ones call the real `se-colorpicker`'s `openColorDialog()`, `stroke_width` is scrolled into view, flashed (`.cmd-search-flash`) and focused. `activateCommandSearchResult` first switches to the Right Panel tab that holds the target (`closest('.sidepanel_tabpanel')`, then `rightPanel.activateTab` / `toggleSidePanel`), generically, with no per-setting tab map. Opened with `open()` / `close()`, not the `dialog="open"` attribute gate the older dialogs use (a stale attribute bug on Escape / backdrop close).
 
@@ -356,7 +356,7 @@ Adds the `<se-font-library>` button (`tool_font_library`) beside the font-family
 
 ## Keyboard shortcuts
 
-Every command's id, label and default keys are in [`commands.md`](commands.md), generated from the command registry (the authority for keys; the Shortcut columns above are hand-written and can lag). Typing-time keys are not commands: **Shift+Enter** inserts a new row in the text being edited and **Enter** commits it and leaves edit mode.
+Every command's id, label and default keys are in [`commands.md`](commands.md), generated from the command registry (the authority for keys; the tables above no longer repeat them). Typing-time keys are not commands: **Shift+Enter** inserts a new row in the text being edited and **Enter** commits it and leaves edit mode.
 
 **Paste sources.** Paste is one native `paste` listener (`EditorStartup.js`), not the `v` shortcut. It accepts svgedit's own internal clipboard (pasted via `pasteInCenter`) and an external **SVG document** from another app (e.g. Excalidraw's "Copy as SVG"), which is imported through `importSvgString` and then `ungroupSelectedElement`ed into a real, editable group (otherwise it lands as one opaque `<use>`). See "System-clipboard paste" in `architecture.md`.
 

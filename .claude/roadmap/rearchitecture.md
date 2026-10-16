@@ -1,4 +1,4 @@
-# Re-architecture (R1–R4, R6, R7)
+# Re-architecture (R1–R4, R6)
 
 Part of the roadmap (index: [`../roadmap.md`](../roadmap.md)). Raised 2026-10-15 from a "what would we build
 differently from scratch" review, with everything on the table, including a rewrite of the canvas engine. Nothing here
@@ -241,31 +241,3 @@ source before minification; minified size not measured). The browser's `DOMParse
 build, keeping `saxes` for Node only (the model's infoset tests show the two agree on the corpus).
 
 Size: M.
-
-## R7. Agent docs diet
-
-**Today.** `tools.md` 116 KB, `file-map.md` 74 KB, `extensions.md` 56 KB, `css-rules.md` 34 KB, `attributes.md` 28 KB:
-many rows have grown into changelogs (how a bug was found, what used to be there). The roadmap was split into area
-files on 2026-10-15 for the same reason.
-
-**Target.** Docs say what a thing is and why it is that way; history lives in git. Generate what can be generated:
-the file map from each file's header comment (a script, plus a check that every file has one), the tool and shortcut
-lists from `commands.list()` (ids, labels, groups, default keys); keep hand-written prose for behaviour that is not
-obvious from code.
-
-**Done (2026-10-16): the file map and the command list.** `scripts/file-map.mjs` writes the source-file tables of
-`file-map.md` from each file's header comment (first sentence) and `--check` (a `pretest` gate) fails on a missing header
-or a stale map; the map went from 75 KB to 46 KB. Some headers inherited from upstream are vague ("Tools for blur
-event"); improve them in the file when you touch it. `commands.md` (194 commands: id, label, default keys, params) is
-generated from `commands.list({ includeHidden: true })` by `tests/e2e/commands-doc.spec.js` (needs a running editor, so
-it is an e2e that fails when stale; the page is pinned to a Mac user agent because default keys differ by platform);
-`tools.md`'s stale shortcut table was replaced by a pointer to it. **Prose trimmed (2026-10-16):** `tools.md` 116 → 82 KB,
-`extensions.md` 55 → 44 KB, `css-rules.md` 33 → 22 KB (pasted CSS and hex tables gone), `attributes.md` 28 → 27 KB (it was
-already mostly normative). Checking the two overlapping docs against the code found stale claims in both (grid snapping,
-shape-family's hooks, the `keyDown` hook, the shadow panel, puppet-warp persistence), which is the argument for one fact in
-one place. `architecture.md` 63 → 34 KB (the directory tree and per-module table, which duplicated the generated
-file map, became a layout table and a list of cross-file contracts). **Left:** `tools.md`'s per-panel Shortcut columns still
-duplicate `commands.md` by hand; where `tools.md` and `extensions.md` describe the same extension, the user-facing part
-belongs in `tools.md` only (the table in `extensions.md` now points there, but the two are not generated).
-
-Size: M, can be done one doc at a time.
