@@ -13,7 +13,7 @@
  * @module layerKeyboard
  */
 
-import { isPanelObject } from '@svgedit/svgcanvas/core/object-state.js'
+import { isPanelObject } from '@svgedit/svgcanvas/core/object-state.ts'
 
 /**
  * @typedef {object} NavRow

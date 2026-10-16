@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
   isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark, canHoldObjects, init
-} from '../../packages/svgcanvas/core/object-state.js'
+} from '../../packages/svgcanvas/core/object-state.ts'
 
 const make = (tag, attrs = {}, parent = document.body) => {
   const el = document.createElementNS(NS.SVG, tag)

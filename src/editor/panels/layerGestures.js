@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { isPanelObject, isObjectHidden, hasLockMark } from '@svgedit/svgcanvas/core/object-state.js'
+import { isPanelObject, isObjectHidden, hasLockMark } from '@svgedit/svgcanvas/core/object-state.ts'
 
 const DRAG_THRESHOLD = 4
 const CELLS = 'td.layervis, td.layerlock, td.objvis, td.objlock'

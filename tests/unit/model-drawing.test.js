@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   findItem, getAt, getAttr, parseSvg, pathAnchors, readDrawing, serializeSvg, setAttr, updateAt, walkItems
 } from '../../packages/svgcanvas/core/model/index.ts'
-import { hasLockMark, isObjectHidden, isPanelObject } from '../../packages/svgcanvas/core/object-state.js'
+import { hasLockMark, isObjectHidden, isPanelObject } from '../../packages/svgcanvas/core/object-state.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 const SE = NS.SE

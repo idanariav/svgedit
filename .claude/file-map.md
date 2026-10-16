@@ -73,9 +73,9 @@
 | `history.js` | For command history tracking and undo functionality |
 | `historyrecording.js` | HistoryRecordingService component of history |
 | `image-crop.ts` | Destructive crop for imported raster `<image>` elements |
-| `json.js` | Tools for SVG handle on JSON format |
-| `layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of draw.js |
-| `layer.js` | Provides tools for the layer concept |
+| `json.ts` | Tools for SVG handle on JSON format |
+| `layer-ops.ts` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of draw.js |
+| `layer.ts` | Provides tools for the layer concept |
 | `live-effects-distort.ts` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
 | `live-effects.ts` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
 | `live-stack.ts` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
@@ -83,7 +83,7 @@
 | `math.ts` | Mathematical utilities |
 | `measure.ts` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
 | `namespaces.ts` | Namespaces or tools therefor |
-| `object-state.js` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
+| `object-state.ts` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
 | `paint.ts` | Fill, stroke, color management |
 | `paper-utils.ts` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
 | `paste-elem.js` | Paste handler |
@@ -102,7 +102,7 @@
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.js` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
-| `sanitize.js` | Tools for SVG sanitization |
+| `sanitize.ts` | Tools for SVG sanitization |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.ts` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |
@@ -114,7 +114,7 @@
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
-| `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
+| `svg-defs.ts` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.js` | Tools for svg |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
@@ -123,7 +123,7 @@
 | `text-path.js` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |
-| `tool-registry.js` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
+| `tool-registry.ts` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
 | `touch.ts` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
 | `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
 | `transform-each.ts` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |

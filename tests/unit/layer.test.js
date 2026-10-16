@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import Layer from '../../packages/svgcanvas/core/layer.js'
+import Layer from '../../packages/svgcanvas/core/layer.ts'
 
 describe('Layer', function () {
   it('preserves inline styles while applying pointer-events', function () {

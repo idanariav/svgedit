@@ -22,10 +22,10 @@ import {
 } from './math.ts'
 import * as hstry from './history.js'
 import { getClosest } from '../common/util.ts'
-import Layer from './layer.js'
-import { isObjectLocked, isObjectHidden } from './object-state.js'
+import Layer from './layer.ts'
+import { isObjectLocked, isObjectHidden } from './object-state.ts'
 import { isExtensionHook } from './extension-hooks.ts'
-import { sanitizeSvg } from './sanitize.js'
+import { sanitizeSvg } from './sanitize.ts'
 import { warn, error as logError } from '../common/logger.ts'
 
 const { BatchCommand } = hstry

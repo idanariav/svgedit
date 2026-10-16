@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Per-object state for the Layers panel's object rows: hidden (`display="none"`,
  * the same mechanism as a hidden layer), locked (`se:locked="true"`, the same
@@ -17,14 +16,14 @@
  * @license MIT
  */
 
-import Layer from './layer.js'
+import type SvgCanvas from '../svgcanvas.js'
+import Layer from './layer.ts'
 import { NS } from './namespaces.ts'
 import {
   getMatrixToContent, getTransformList, isIdentity, matrixMultiply, transformListToTransform
 } from './math.ts'
 
-/** @param {any} el @returns {boolean} */
-const isLayer = (el) => !!Layer.isLayer(el)
+const isLayer = (el: Element | null | undefined): boolean => Layer.isLayer(el)
 
 /** Tags that are never user objects. */
 const NON_OBJECT_TAGS = new Set(['title', 'defs', 'desc', 'metadata', 'style', 'script', 'linearGradient', 'radialGradient', 'pattern', 'filter', 'marker', 'clipPath', 'mask', 'symbol'])
@@ -35,10 +34,8 @@ const LEAF_GROUP_ATTRS = ['se:blend', 'se:art-brush', 'se:repeat']
 /**
  * Is `el` something the Layers panel lists as an object row? Excludes
  * non-rendering tags, `data-se-ephemeral` overlays and generated repeat copies.
- * @param {Element} el
- * @returns {boolean}
  */
-export const isPanelObject = (el) => {
+export const isPanelObject = (el: Element | null | undefined): boolean => {
   if (!el || el.nodeType !== 1) return false
   if (NON_OBJECT_TAGS.has(el.tagName)) return false
   if (el.hasAttribute('data-se-ephemeral') || el.hasAttribute('se:repeat-copy')) return false
@@ -48,37 +45,27 @@ export const isPanelObject = (el) => {
 /**
  * Does the group list its children as rows? (A plain `<g>`/`<a>`; not a blend,
  * brushed path or repeat, whose children are generated.)
- * @param {Element} el
- * @returns {boolean}
  */
-export const isExpandableGroup = (el) =>
+export const isExpandableGroup = (el: Element): boolean =>
   (el.tagName === 'g' || el.tagName === 'a') && !isLayer(el) &&
   !LEAF_GROUP_ATTRS.some((a) => el.hasAttribute(a))
 
 /**
  * Is the object itself marked locked? (Layers carry the same attribute; this
  * looks at the element only.)
- * @param {Element} el
- * @returns {boolean}
  */
-export const hasLockMark = (el) => el.getAttributeNS(NS.SE, 'locked') === 'true'
+export const hasLockMark = (el: Element): boolean => el.getAttributeNS(NS.SE, 'locked') === 'true'
 
-/**
- * Is the layer a tracing template (`se:template`)? Its objects cannot be selected.
- * @param {Element} el
- * @returns {boolean}
- */
-const isTemplateLayer = (el) => el.getAttributeNS(NS.SE, 'template') === 'true'
+/** Is the layer a tracing template (`se:template`)? Its objects cannot be selected. */
+const isTemplateLayer = (el: Element): boolean => el.getAttributeNS(NS.SE, 'template') === 'true'
 
 /**
  * Is the object, or a group above it (up to the layer), locked? A locked
  * *layer* does not make its objects unselectable (a layer lock only redirects
  * newly drawn objects), but a tracing-template layer does.
- * @param {Element|null|undefined} el
- * @returns {boolean}
  */
-export const isObjectLocked = (el) => {
-  let cur = el
+export const isObjectLocked = (el: Element | null | undefined): boolean => {
+  let cur: Element | null | undefined = el
   while (cur && cur.nodeType === 1 && !isLayer(cur) && cur.tagName !== 'svg') {
     if (hasLockMark(cur)) return true
     cur = cur.parentNode instanceof Element ? cur.parentNode : null
@@ -86,62 +73,39 @@ export const isObjectLocked = (el) => {
   return !!cur && isLayer(cur) && isTemplateLayer(cur)
 }
 
-/**
- * Is the object itself hidden?
- * @param {Element} el
- * @returns {boolean}
- */
-export const isObjectHidden = (el) => el.getAttribute('display') === 'none'
+/** Is the object itself hidden? */
+export const isObjectHidden = (el: Element): boolean => el.getAttribute('display') === 'none'
 
-/**
- * Can `parent` receive moved objects? A layer, or a plain group.
- * @param {Element|null} parent
- * @returns {boolean}
- */
-export const canHoldObjects = (parent) => !!parent && (isLayer(parent) || isExpandableGroup(parent))
+/** Can `parent` receive moved objects? A layer, or a plain group. */
+export const canHoldObjects = (parent: Element | null): boolean => !!parent && (isLayer(parent) || isExpandableGroup(parent))
 
 /**
  * Re-express `el`'s transform so that it stays where it is on screen after it
  * moves from `oldParent` to `newParent`: `new⁻¹ · old · own`.
- * @param {Element} el
- * @param {Element} oldParent
- * @param {Element} newParent
- * @returns {void}
  */
-const keepPosition = (el, oldParent, newParent) => {
-  const oldM = getMatrixToContent(/** @type {any} */ (oldParent))
-  const newM = getMatrixToContent(/** @type {any} */ (newParent))
+const keepPosition = (el: Element, oldParent: Element, newParent: Element): void => {
+  const oldM = getMatrixToContent(oldParent)
+  const newM = getMatrixToContent(newParent)
   if (isIdentity(oldM) && isIdentity(newM)) return
-  const own = transformListToTransform(/** @type {any} */ (getTransformList(el))).matrix
+  const own = transformListToTransform(getTransformList(el)).matrix
   const m = matrixMultiply(newM.inverse(), oldM, own)
   if (isIdentity(m)) el.removeAttribute('transform')
   else el.setAttribute('transform', `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`)
 }
 
-/**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
-  const svgCanvas = /** @type {any} */ (canvas)
+export const init = (canvas: SvgCanvas): void => {
+  const svgCanvas = canvas
 
-  /**
-   * Drop `elems` (and anything inside them) from the selection.
-   * @param {Element[]} elems
-   * @returns {void}
-   */
-  const unselect = (elems) => {
+  /** Drop `elems` (and anything inside them) from the selection. */
+  const unselect = (elems: Element[]): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!selected.some((/** @type {Element} */ s) => elems.some((e) => e === s || e.contains(s)))) return
-    svgCanvas.selectOnly(selected.filter((/** @type {Element} */ s) => !elems.some((e) => e === s || e.contains(s))))
+    if (!selected.some((s) => elems.some((e) => e === s || e.contains(s)))) return
+    svgCanvas.selectOnly(selected.filter((s) => !elems.some((e) => e === s || e.contains(s))))
   }
 
   /**
    * Hide or show objects as one undo step. Hidden objects leave the selection.
-   * @function module:object-state.SvgCanvas#setObjectsHidden
-   * @param {Element[]} elems
-   * @param {boolean} hidden
-   * @returns {boolean} false when nothing changed
+   * @returns false when nothing changed
    */
   svgCanvas.setObjectsHidden = (elems, hidden) => {
     const todo = elems.filter((e) => isPanelObject(e) && isObjectHidden(e) !== hidden)
@@ -158,10 +122,7 @@ export const init = (canvas) => {
 
   /**
    * Lock or unlock objects as one undo step. Locked objects leave the selection.
-   * @function module:object-state.SvgCanvas#setObjectsLocked
-   * @param {Element[]} elems
-   * @param {boolean} locked
-   * @returns {boolean} false when nothing changed
+   * @returns false when nothing changed
    */
   svgCanvas.setObjectsLocked = (elems, locked) => {
     const todo = elems.filter((e) => isPanelObject(e) && hasLockMark(e) !== locked)
@@ -179,15 +140,12 @@ export const init = (canvas) => {
   /**
    * The objects the Layers panel lists, at any depth (layers themselves excluded; a generated group is one object),
    * that satisfy `test`.
-   * @param {(el: Element) => boolean} test
-   * @param {boolean} [firstOnly] stop at the first match
-   * @returns {Element[]}
+   * @param firstOnly stop at the first match
    */
-  const collectObjects = (test, firstOnly = false) => {
-    /** @type {Element[]} */
-    const found = []
-    /** @param {Element} parent @returns {boolean} true to stop */
-    const walk = (parent) => {
+  const collectObjects = (test: (el: Element) => boolean, firstOnly = false): Element[] => {
+    const found: Element[] = []
+    /** @returns true to stop */
+    const walk = (parent: Element): boolean => {
       for (const el of parent.children) {
         if (!isPanelObject(el)) continue
         if (test(el)) {
@@ -206,39 +164,30 @@ export const init = (canvas) => {
 
   /**
    * Is any object locked? (Cheap: stops at the first.)
-   * @function module:object-state.SvgCanvas#hasLockedObjects
-   * @returns {boolean}
    */
   svgCanvas.hasLockedObjects = () => collectObjects(hasLockMark, true).length > 0
 
   /**
    * Is any object hidden? (Cheap: stops at the first.)
-   * @function module:object-state.SvgCanvas#hasHiddenObjects
-   * @returns {boolean}
    */
   svgCanvas.hasHiddenObjects = () => collectObjects(isObjectHidden, true).length > 0
 
   /**
    * Unlock every locked object as one undo step.
-   * @function module:object-state.SvgCanvas#unlockAllObjects
-   * @returns {boolean} false when nothing was locked
+   * @returns false when nothing was locked
    */
   svgCanvas.unlockAllObjects = () => svgCanvas.setObjectsLocked(collectObjects(hasLockMark), false)
 
   /**
    * Show every hidden object as one undo step.
-   * @function module:object-state.SvgCanvas#showAllObjects
-   * @returns {boolean} false when nothing was hidden
+   * @returns false when nothing was hidden
    */
   svgCanvas.showAllObjects = () => svgCanvas.setObjectsHidden(collectObjects(isObjectHidden), false)
 
   /**
    * Give an object a name (`data-name`, what group names already use) as one undo step.
    * An empty name removes it.
-   * @function module:object-state.SvgCanvas#setObjectName
-   * @param {Element} el
-   * @param {string} name
-   * @returns {boolean} false when nothing changed
+   * @returns false when nothing changed
    */
   svgCanvas.setObjectName = (el, name) => {
     const clean = String(name ?? '').trim()
@@ -254,11 +203,6 @@ export const init = (canvas) => {
    * Why `elems` cannot be moved into `parent` (before `before`), or null when
    * they can. A target must be a layer or plain group that is not one of the
    * moved objects or inside one.
-   * @function module:object-state.SvgCanvas#objectMoveIssue
-   * @param {Element[]} elems
-   * @param {Element} parent
-   * @param {Node|null} [before]
-   * @returns {string|null}
    */
   svgCanvas.objectMoveIssue = (elems, parent, before = null) => {
     if (!elems.length) return 'nothing to move'
@@ -272,11 +216,8 @@ export const init = (canvas) => {
    * Move objects into `parent`, in front of `before` (the end when null), as one
    * undo step, keeping their place on the page (the parents' transforms are
    * folded into each object's own). The order among `elems` is the document order.
-   * @function module:object-state.SvgCanvas#moveObjects
-   * @param {Element[]} elems
-   * @param {Element} parent a layer or plain group
-   * @param {Node|null} [before]
-   * @returns {boolean} false when refused or nothing moved
+   * @param parent a layer or plain group
+   * @returns false when refused or nothing moved
    */
   svgCanvas.moveObjects = (elems, parent, before = null) => {
     if (svgCanvas.objectMoveIssue(elems, parent, before)) return false
@@ -284,13 +225,13 @@ export const init = (canvas) => {
       (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)
     // Moving a node in front of itself is a no-op insertion point.
     let anchor = before
-    while (anchor && ordered.includes(/** @type {Element} */ (anchor))) anchor = anchor.nextSibling
+    while (anchor && ordered.includes(anchor as Element)) anchor = anchor.nextSibling
     const unchanged = ordered.every((e, i) => e.parentNode === parent &&
       e.nextSibling === (ordered[i + 1] ?? anchor))
     if (unchanged) return false
     svgCanvas.transact('Move', () => {
       for (const el of ordered) {
-        const oldParent = /** @type {Element} */ (el.parentNode)
+        const oldParent = el.parentNode as Element
         parent.insertBefore(el, anchor)
         if (oldParent !== parent) keepPosition(el, oldParent, parent)
       }

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Defs / reference maintenance for the document: id uniquification, `<use>`
  * wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter
@@ -8,6 +7,7 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { getHref, walkTree } from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import {
@@ -18,19 +18,15 @@ import {
 import { isWebkit } from '../common/browser.ts'
 import { NS } from './namespaces.ts'
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
- * Ensure each element has a unique ID.
- * @function module:svgcanvas.SvgCanvas#uniquifyElems
- * @param {Element} g - The parent element of the tree to give unique IDs
- * @returns {void}
- */
-  const uniquifyElemsMethod = g => {
-    /** @type {Record<string, {elem: Element|null, attrs: Attr[], hrefs: Element[]}>} */
-    const ids = {}
+   * Ensure each element has a unique ID.
+   * @param g - The parent element of the tree to give unique IDs
+   */
+  const uniquifyElemsMethod = (g: Element): void => {
+    const ids: Record<string, { elem: Element | null, attrs: Attr[], hrefs: Element[] }> = {}
     // TODO: Handle markers and connectors. These are not yet re-identified properly
     // as their referring elements do not get remapped.
     //
@@ -64,7 +60,7 @@ export const init = (canvas) => {
 
         // now search for all attributes on this element that might refer
         // to other elements
-        svgCanvas.getrefAttrs().forEach((/** @type {string} */ attr) => {
+        svgCanvas.getrefAttrs().forEach((attr: string) => {
           const attrnode = n.getAttributeNode(attr)
           if (attrnode) {
           // the incoming file has been sanitized, so we should be able to safely just strip off the leading #
@@ -113,7 +109,7 @@ export const init = (canvas) => {
         let j = attrs.length
         while (j--) {
           const attr = attrs[j]
-          ;/** @type {Element} */ (attr.ownerElement).setAttribute(attr.name, `url(#${newid})`)
+          ;(attr.ownerElement as Element).setAttribute(attr.name, `url(#${newid})`)
         }
 
         // remap all href attributes
@@ -127,22 +123,12 @@ export const init = (canvas) => {
     }
   }
 
-  /**
- * Assigns reference data for each use element.
- * @function module:svgcanvas.SvgCanvas#setUseData
- * @param {Element} parent
- * @returns {void}
- */
-  const setUseDataMethod = parent => {
-    /** @type {any} */
-    let elems = parent
+  /** Assigns reference data for each use element. */
+  const setUseDataMethod = (parent: Element): void => {
+    // (A `<use>` passed directly was never processed: the old code iterated the element itself, which has no length.)
+    const elems: Element[] = parent.tagName === 'use' ? [] : Array.from(parent.querySelectorAll('use'))
 
-    if (parent.tagName !== 'use') {
-    // elems = elems.find('use');
-      elems = elems.querySelectorAll('use')
-    }
-
-    Array.prototype.forEach.call(elems, (el, _) => {
+    elems.forEach((el) => {
       const dataStorage = svgCanvas.getDataStorage()
       const href = svgCanvas.getHref(el)
       if (!href || !href.startsWith('#')) {
@@ -162,12 +148,11 @@ export const init = (canvas) => {
   }
 
   /**
- * Looks at DOM elements inside the `<defs>` to see if they are referred to,
- * removes them from the DOM if they are not.
- * @function module:svgcanvas.SvgCanvas#removeUnusedDefElems
- * @returns {number} The number of elements that were removed
- */
-  const removeUnusedDefElemsMethod = () => {
+   * Looks at DOM elements inside the `<defs>` to see if they are referred to,
+   * removes them from the DOM if they are not.
+   * @returns The number of elements that were removed
+   */
+  const removeUnusedDefElemsMethod = (): number => {
     const defs = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, 'defs')
     if (!defs || !defs.length) {
       return 0
@@ -175,8 +160,7 @@ export const init = (canvas) => {
 
     // if (!defs.firstChild) { return; }
 
-    /** @type {string[]} */
-    const defelemUses = []
+    const defelemUses: string[] = []
     let numRemoved = 0
     const attrs = [
       'fill',
@@ -191,8 +175,8 @@ export const init = (canvas) => {
     const allEls = svgCanvas.getSvgContent().getElementsByTagNameNS(NS.SVG, '*')
     const allLen = allEls.length
 
-    let i
-    let j
+    let i: number
+    let j: number
     for (i = 0; i < allLen; i++) {
       const el = allEls[i]
       for (j = 0; j < alen; j++) {
@@ -209,11 +193,11 @@ export const init = (canvas) => {
       }
     }
 
-    Array.prototype.forEach.call(defs, (def, i) => {
+    Array.from(defs).forEach((def) => {
       const defelems = def.querySelectorAll(
         'linearGradient, radialGradient, filter, marker, svg, symbol'
       )
-      i = defelems.length
+      let i = defelems.length
       while (i--) {
         const defelem = defelems[i]
         const { id } = defelem
@@ -228,22 +212,16 @@ export const init = (canvas) => {
 
     return numRemoved
   }
-  /**
- * Converts gradients from userSpaceOnUse to objectBoundingBox.
- * @function module:svgcanvas.SvgCanvas#convertGradients
- * @param {Element} elem
- * @returns {void}
- */
-  const convertGradientsMethod = elem => {
-    /** @type {any} */
-    let elems = elem.querySelectorAll('linearGradient, radialGradient')
+  /** Converts gradients from userSpaceOnUse to objectBoundingBox. */
+  const convertGradientsMethod = (elem: Element): void => {
+    let elems: Element[] = Array.from(elem.querySelectorAll('linearGradient, radialGradient'))
     if (!elems.length && isWebkit()) {
     // Bug in webkit prevents regular *Gradient selector search
-      elems = Array.prototype.filter.call(elem.querySelectorAll('*'), curThis => {
+      elems = Array.from(elem.querySelectorAll('*')).filter(curThis => {
         return curThis.tagName.includes('Gradient')
       })
     }
-    Array.prototype.forEach.call(elems, grad => {
+    elems.forEach(grad => {
       if (grad.getAttribute('gradientUnits') === 'userSpaceOnUse') {
         const svgContent = svgCanvas.getSvgContent()
         // TODO: Support more than one element with this ref by duplicating parent grad
@@ -285,10 +263,10 @@ export const init = (canvas) => {
         }
         if (grad.tagName === 'linearGradient') {
           const gCoords = {
-            x1: grad.getAttribute('x1'),
-            y1: grad.getAttribute('y1'),
-            x2: grad.getAttribute('x2'),
-            y2: grad.getAttribute('y2')
+            x1: Number(grad.getAttribute('x1')),
+            y1: Number(grad.getAttribute('y1')),
+            x2: Number(grad.getAttribute('x2')),
+            y2: Number(grad.getAttribute('y2'))
           }
 
           // If has transform, convert
@@ -304,14 +282,13 @@ export const init = (canvas) => {
             gCoords.y2 = pt2.y
             grad.removeAttribute('gradientTransform')
           }
-          grad.setAttribute('x1', (gCoords.x1 - bb.x) / bb.width)
-          grad.setAttribute('y1', (gCoords.y1 - bb.y) / bb.height)
-          grad.setAttribute('x2', (gCoords.x2 - bb.x) / bb.width)
-          grad.setAttribute('y2', (gCoords.y2 - bb.y) / bb.height)
+          grad.setAttribute('x1', String((gCoords.x1 - bb.x) / bb.width))
+          grad.setAttribute('y1', String((gCoords.y1 - bb.y) / bb.height))
+          grad.setAttribute('x2', String((gCoords.x2 - bb.x) / bb.width))
+          grad.setAttribute('y2', String((gCoords.y2 - bb.y) / bb.height))
           grad.removeAttribute('gradientUnits')
         } else if (grad.tagName === 'radialGradient') {
-          /** @type {(value: string|null, fallback: number) => number} */
-          const getNum = (value, fallback) => {
+          const getNum = (value: string | null, fallback: number): number => {
             const num = Number(value)
             return Number.isFinite(num) ? num : fallback
           }
@@ -339,11 +316,11 @@ export const init = (canvas) => {
           if (!bb.width || !bb.height) {
             return
           }
-          grad.setAttribute('cx', (cx - bb.x) / bb.width)
-          grad.setAttribute('cy', (cy - bb.y) / bb.height)
-          grad.setAttribute('fx', (fx - bb.x) / bb.width)
-          grad.setAttribute('fy', (fy - bb.y) / bb.height)
-          grad.setAttribute('r', r / Math.max(bb.width, bb.height))
+          grad.setAttribute('cx', String((cx - bb.x) / bb.width))
+          grad.setAttribute('cy', String((cy - bb.y) / bb.height))
+          grad.setAttribute('fx', String((fx - bb.x) / bb.width))
+          grad.setAttribute('fy', String((fy - bb.y) / bb.height))
+          grad.setAttribute('r', String(r / Math.max(bb.width, bb.height)))
           grad.removeAttribute('gradientUnits')
         }
       }
@@ -360,13 +337,10 @@ export const init = (canvas) => {
  * `objectBoundingBox` shadow filter to the absolute scheme. Padding mirrors
  * fx-filter's setRegion (half the stroke plus whichever effect reaches
  * furthest).
- * @function module:svgcanvas.SvgCanvas#convertDropShadowFilters
- * @param {Element} elem
- * @returns {void}
  */
-  const convertDropShadowFiltersMethod = elem => {
+  const convertDropShadowFiltersMethod = (elem: Element): void => {
     const filters = elem.querySelectorAll('filter')
-    Array.prototype.forEach.call(filters, filter => {
+    filters.forEach(filter => {
       const ds = filter.querySelector('feDropShadow')
       const morph = filter.querySelector('feMorphology')
       if (!ds && !morph) {

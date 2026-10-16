@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tools for SVG sanitization.
  * @module sanitize
@@ -7,6 +6,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { getReverseNS, NS } from './namespaces.ts'
 import { getHref, setHref, getUrlFromAttr } from './dom-utils.ts'
 import { warn } from '../common/logger.ts'
@@ -18,12 +18,10 @@ const FONT_ATTRIBUTES = ['font-family', 'font-size', 'font-stretch', 'font-style
 /**
  * This defines which elements and attributes that we support (or at least
  * don't remove).
- * @type {string[]}
  */
 /* eslint-disable max-len */
-const svgGenericWhiteList = ['class', 'id', 'display', 'transform', 'style', 'paint-order']
-/** @type {Record<string, string[]>} */
-const svgWhiteList_ = {
+const svgGenericWhiteList: string[] = ['class', 'id', 'display', 'transform', 'style', 'paint-order']
+const svgWhiteList_: Record<string, string[]> = {
   // SVG Elements
   a: ['clip-path', 'clip-rule', 'fill', 'fill-opacity', 'fill-rule', 'filter', 'href', 'mask', 'opacity', 'stroke', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'systemLanguage', 'xlink:href', 'xlink:title'],
   circle: ['clip-path', 'clip-rule', 'cx', 'cy', 'enable-background', 'fill', 'fill-opacity', 'fill-rule', 'filter', 'mask', 'opacity', 'r', 'requiredFeatures', 'stroke', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'systemLanguage'],
@@ -140,15 +138,13 @@ for (const [element, attrs] of Object.entries(svgWhiteList_)) {
 }
 
 // Produce a Namespace-aware version of svgWhitelist
-/** @type {Record<string, Record<string, string|null>>} */
-const svgWhiteListNS_ = {}
+const svgWhiteListNS_: Record<string, Record<string, string | null>> = {}
 for (const [elt, atts] of Object.entries(svgWhiteList_)) {
-  /** @type {Record<string, string|null>} */
-  const attNS = {}
+  const attNS: Record<string, string | null> = {}
   for (const att of atts) {
     if (att.includes(':')) {
       const [prefix, localName] = att.split(':')
-      attNS[localName] = NS[/** @type {keyof typeof NS} */ (prefix.toUpperCase())]
+      attNS[localName] = NS[prefix.toUpperCase() as keyof typeof NS]
     } else {
       attNS[att] = att === 'xmlns' ? NS.XMLNS : null
     }
@@ -159,15 +155,14 @@ for (const [elt, atts] of Object.entries(svgWhiteList_)) {
 /**
  * Sanitizes the input node and its children.
  * It only keeps what is allowed from our whitelist defined above.
- * @param {Pick<import('../svgcanvas.js').default, 'getRefElem'>} svgCanvas - What the sanitizer reads: an element-by-id lookup, which has no canvas-free form
- * @param {Element} node - The DOM element to be checked (we'll also check its children) or text node to be cleaned up
- * @returns {void}
+ * @param svgCanvas - What the sanitizer reads: an element-by-id lookup, which has no canvas-free form
+ * @param node - The DOM element to be checked (we'll also check its children) or text node to be cleaned up
  */
-export const sanitizeSvg = (svgCanvas, node) => {
+export const sanitizeSvg = (svgCanvas: Pick<SvgCanvas, 'getRefElem'>, node: Element): void => {
   // Cleanup text nodes
   if (node.nodeType === 3) { // 3 === TEXT_NODE
     // Trim whitespace
-    node.nodeValue = /** @type {string} */ (node.nodeValue).trim()
+    node.nodeValue = (node.nodeValue as string).trim()
     // Remove if empty
     if (!node.nodeValue.length) {
       node.remove()
@@ -191,12 +186,11 @@ export const sanitizeSvg = (svgCanvas, node) => {
   const allowedAttrsNS = svgWhiteListNS_[node.nodeName]
   // if this element is supported, sanitize it
   if (typeof allowedAttrs !== 'undefined') {
-    /** @type {Array<[string, string, string|null]>} */
-    const seAttrs = []
+    const seAttrs: Array<[string, string, string | null]> = []
     let i = node.attributes.length
     while (i--) {
       // if the attribute is not in our whitelist, then remove it
-      const attr = /** @type {Attr} */ (node.attributes.item(i))
+      const attr = node.attributes.item(i) as Attr
       const attrName = attr.nodeName
       const attrLocalName = attr.localName
       const attrNsURI = attr.namespaceURI
@@ -303,15 +297,15 @@ export const sanitizeSvg = (svgCanvas, node) => {
 
     // recurse to children
     i = node.childNodes.length
-    while (i--) { sanitizeSvg(svgCanvas, /** @type {Element} */ (node.childNodes.item(i))) }
+    while (i--) { sanitizeSvg(svgCanvas, node.childNodes.item(i) as Element) }
   // else (element not supported), remove it
   } else {
     // remove all children from this node and insert them before this node
     // TODO: in the case of animation elements this will hardly ever be correct
     warn(`element ${node.nodeName} not supported is removed: ${node.outerHTML}`, null, 'sanitize')
-    const children = []
+    const children: Node[] = []
     while (node.hasChildNodes()) {
-      children.push(parent.insertBefore(/** @type {ChildNode} */ (node.firstChild), node))
+      children.push(parent.insertBefore(node.firstChild as ChildNode, node))
     }
 
     // remove this node from the document altogether
@@ -319,6 +313,6 @@ export const sanitizeSvg = (svgCanvas, node) => {
 
     // call sanitizeSvg on each of those children
     let i = children.length
-    while (i--) { sanitizeSvg(svgCanvas, /** @type {Element} */ (children[i])) }
+    while (i--) { sanitizeSvg(svgCanvas, children[i] as Element) }
   }
 }

@@ -21,7 +21,7 @@
 
 import {
   isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark
-} from '@svgedit/svgcanvas/core/object-state.js'
+} from '@svgedit/svgcanvas/core/object-state.ts'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { LayerKeyboard } from './layerKeyboard.js'
 

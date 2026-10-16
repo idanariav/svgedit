@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tools for SVG handle on JSON format.
  * @module svgcanvas
@@ -6,32 +5,20 @@
  *
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
+import type SvgCanvas from '../svgcanvas.js'
+import type { SVGElementJSON } from '../svgcanvas.js'
 import { assignAttributes, cleanupElement } from './dom-utils.ts'
 import { NS } from './namespaces.ts'
 
-/**
- * @function module:json.jsonContext#getSelectedElements
- * @returns {Element[]} the array with selected DOM elements
-*/
-/**
- * @function module:json.jsonContext#getDOMDocument
- * @returns {HTMLDocument}
-*/
+/** An element as JSON (children may be text), or the text of a text node. */
+type JsonElement = Omit<SVGElementJSON, 'children'> & { children?: JsonNode[] }
+type JsonNode = JsonElement | string
 
-/**
-* @function module:json.init
-* @param {import('../svgcanvas.js').default} canvas
-* @returns {void}
-*/
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
-  const svgdoc_ = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
-  /**
-* @function module:json.getJsonFromSvgElements Iterate element and return json format
-* @param {any} data - element
-* @returns {any}
-*/
-  const getJsonFromSvgElements = (data) => {
+  const svgdoc_: Document | null = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
+  /** Iterate an element and return its JSON format (text nodes become strings; comments and the like are dropped). */
+  const getJsonFromSvgElements = (data: Node | null | undefined): JsonNode | null => {
     if (!data) return null
 
     // Text node
@@ -39,16 +26,15 @@ export const init = (canvas) => {
     // Ignore non-element nodes (e.g., comments)
     if (data.nodeType !== 1) return null
 
-    /** @type {{element: string, attr: Record<string, string>, children: any[]}} */
-    const retval = {
-      element: data.tagName,
+    const retval: JsonElement & { attr: Record<string, string>, children: JsonNode[] } = {
+      element: (data as Element).tagName,
       // namespace: nsMap[data.namespaceURI],
       attr: {},
       children: []
     }
 
     // Iterate attributes
-    const attributes = data.attributes
+    const attributes = (data as Element).attributes
     if (attributes) {
       for (let i = 0; i < attributes.length; i++) {
         const attr = attributes[i]
@@ -72,21 +58,14 @@ export const init = (canvas) => {
     return retval
   }
 
-  /**
-* This should really be an intersection implementing all rather than a union.
-* @name module:json.addSVGElementsFromJson
-* @type {module:utilities.EditorContext#addSVGElementsFromJson|module:path.EditorContext#addSVGElementsFromJson}
-*/
-
-  /** @param {any} data */
-  const addSVGElementsFromJson = (data) => {
+  const addSVGElementsFromJson = (data: JsonNode | null | undefined): Node | null => {
     if (!svgdoc_) { return null }
     if (data === null || data === undefined) return svgdoc_.createTextNode('')
     if (typeof data === 'string') return svgdoc_.createTextNode(data)
 
     const attrs = data.attr || {}
     const id = attrs.id
-    let shape = null
+    let shape: Element | null | undefined = null
     if (typeof id === 'string' && id) {
       try {
         shape = svgCanvas.getElement(id)
@@ -144,7 +123,7 @@ export const init = (canvas) => {
       while (shape.firstChild) {
         shape.firstChild.remove()
       }
-      data.children.forEach((/** @type {any} */ child) => {
+      data.children.forEach((child) => {
         const childNode = addSVGElementsFromJson(child)
         if (childNode) {
           shape.append(childNode)
@@ -155,7 +134,8 @@ export const init = (canvas) => {
     return shape
   }
 
-  svgCanvas.getJsonFromSvgElements = getJsonFromSvgElements
+  // The canvas types promise element-only JSON (`SVGElementJSON`); text children are strings here, which no caller relies on.
+  svgCanvas.getJsonFromSvgElements = getJsonFromSvgElements as unknown as SvgCanvas['getJsonFromSvgElements']
   // (declared as Element; a string or null argument yields a text node / null, which no caller relies on)
-  svgCanvas.addSVGElementsFromJson = /** @type {(data: any) => Element} */ (addSVGElementsFromJson)
+  svgCanvas.addSVGElementsFromJson = addSVGElementsFromJson as unknown as SvgCanvas['addSVGElementsFromJson']
 }

@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import Layer from './layer.js'
+import Layer from './layer.ts'
 import {
   getTransformList,
   matrixMultiply,

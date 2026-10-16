@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Provides tools for the layer concept.
  * @module layer
@@ -22,24 +21,32 @@ import { walkTree } from './dom-utils.ts'
  * @memberof module:layer
  */
 class Layer {
+  /** class attribute assigned to all layer groups. */
+  static CLASS_NAME = 'layer'
+  /** Used to test presence of class `Layer.CLASS_NAME`. */
+  static CLASS_REGEX = new RegExp(`(\\s|^)${Layer.CLASS_NAME}(\\s|$)`)
+
+  name_: string
+  group_: SVGGElement
+
   /**
-  * @param {string} name - Layer name
-  * @param {SVGGElement|null} group - An existing SVG group element or null.
-  *     If group and no svgElem, use group for this layer.
-  *     If group and svgElem, create a new group element and insert it in the DOM after group.
-  *     If no group and svgElem, create a new group element and insert it in the DOM as the last layer.
-  * @param {SVGGElement} [svgElem] - The SVG DOM element. If defined, use this to add
-  *     a new layer to the document.
-  */
-  constructor (name, group, svgElem) {
+   * @param name - Layer name
+   * @param group - An existing SVG group element or null.
+   *     If group and no svgElem, use group for this layer.
+   *     If group and svgElem, create a new group element and insert it in the DOM after group.
+   *     If no group and svgElem, create a new group element and insert it in the DOM as the last layer.
+   * @param svgElem - The SVG DOM element. If defined, use this to add
+   *     a new layer to the document.
+   */
+  constructor (name: string, group: SVGGElement | null, svgElem?: SVGGElement) {
     this.name_ = name
     // (null only until the branch below creates the group)
-    this.group_ = /** @type {SVGGElement} */ (svgElem ? null : group)
+    this.group_ = (svgElem ? null : group) as SVGGElement
 
     if (svgElem) {
       // Create a group element with title and add it to the DOM.
       const svgdoc = svgElem.ownerDocument
-      this.group_ = svgdoc.createElementNS(NS.SVG, 'g')
+      this.group_ = svgdoc.createElementNS(NS.SVG, 'g') as SVGGElement
       const layerTitle = svgdoc.createElementNS(NS.SVG, 'title')
       layerTitle.textContent = name
       this.group_.append(layerTitle)
@@ -55,44 +62,31 @@ class Layer {
     this.group_.style.pointerEvents = svgElem ? 'all' : 'none'
   }
 
-  /**
-   * Get the layer's name.
-   * @returns {string} The layer name
-   */
-  getName () {
+  /** Get the layer's name. */
+  getName (): string {
     return this.name_
   }
 
-  /**
-   * Get the group element for this layer.
-   * @returns {SVGGElement} The layer SVG group
-   */
-  getGroup () {
+  /** Get the group element for this layer. */
+  getGroup (): SVGGElement {
     return this.group_
   }
 
-  /**
-   * Active this layer so it takes pointer events.
-   * @returns {void}
-   */
-  activate () {
+  /** Active this layer so it takes pointer events. */
+  activate (): void {
     this.group_.style.pointerEvents = 'all'
   }
 
-  /**
-   * Deactive this layer so it does NOT take pointer events.
-   * @returns {void}
-   */
-  deactivate () {
+  /** Deactive this layer so it does NOT take pointer events. */
+  deactivate (): void {
     this.group_.style.pointerEvents = 'none'
   }
 
   /**
    * Set this layer visible or hidden based on 'visible' parameter.
-   * @param {boolean} visible - If true, make visible; otherwise, hide it.
-   * @returns {void}
+   * @param visible - If true, make visible; otherwise, hide it.
    */
-  setVisible (visible) {
+  setVisible (visible: boolean): void {
     const expected = (visible === undefined || visible) ? 'inline' : 'none'
     const oldDisplay = this.group_.getAttribute('display')
     if (oldDisplay !== expected) {
@@ -100,11 +94,8 @@ class Layer {
     }
   }
 
-  /**
-   * Is this layer visible?
-   * @returns {boolean} True if visible.
-   */
-  isVisible () {
+  /** Is this layer visible? */
+  isVisible (): boolean {
     return this.group_.getAttribute('display') !== 'none'
   }
 
@@ -113,10 +104,9 @@ class Layer {
    * does not receive newly drawn/pasted objects (they go to the next unlocked
    * layer). Persisted as the namespaced `se:locked` attribute so it survives
    * save/load.
-   * @param {boolean} locked - If true, lock the layer; otherwise unlock it.
-   * @returns {void}
+   * @param locked - If true, lock the layer; otherwise unlock it.
    */
-  setLocked (locked) {
+  setLocked (locked: boolean): void {
     if (locked) {
       this.group_.setAttributeNS(NS.SE, 'se:locked', 'true')
     } else {
@@ -124,11 +114,8 @@ class Layer {
     }
   }
 
-  /**
-   * Is this layer locked?
-   * @returns {boolean} True if locked.
-   */
-  isLocked () {
+  /** Is this layer locked? */
+  isLocked (): boolean {
     return this.group_.getAttributeNS(NS.SE, 'locked') === 'true'
   }
 
@@ -139,10 +126,9 @@ class Layer {
    * their output, regardless of the layer's own visibility state. Persisted
    * as the namespaced `se:comment` attribute so it survives save/load, and —
    * like locking — is a meta-action on the layer, not an undo-able edit.
-   * @param {boolean} isComment - If true, mark as a comment layer; otherwise unmark.
-   * @returns {void}
+   * @param isComment - If true, mark as a comment layer; otherwise unmark.
    */
-  setCommentLayer (isComment) {
+  setCommentLayer (isComment: boolean): void {
     if (isComment) {
       this.group_.setAttributeNS(NS.SE, 'se:comment', 'true')
     } else {
@@ -150,11 +136,8 @@ class Layer {
     }
   }
 
-  /**
-   * Is this layer a comment layer?
-   * @returns {boolean} True if this is a comment layer.
-   */
-  isCommentLayer () {
+  /** Is this layer a comment layer? */
+  isCommentLayer (): boolean {
     return this.group_.getAttributeNS(NS.SE, 'comment') === 'true'
   }
 
@@ -164,10 +147,8 @@ class Layer {
    * `[se:template]`, so no saved opacity changes) and its objects cannot be
    * selected (`object-state.js`); it is never exported. Persisted as the
    * namespaced `se:template` attribute; a meta-action like locking.
-   * @param {boolean} isTemplate
-   * @returns {void}
    */
-  setTemplate (isTemplate) {
+  setTemplate (isTemplate: boolean): void {
     if (isTemplate) {
       this.group_.setAttributeNS(NS.SE, 'se:template', 'true')
     } else {
@@ -175,19 +156,13 @@ class Layer {
     }
   }
 
-  /**
-   * Is this layer a tracing template?
-   * @returns {boolean}
-   */
-  isTemplate () {
+  /** Is this layer a tracing template? */
+  isTemplate (): boolean {
     return this.group_.getAttributeNS(NS.SE, 'template') === 'true'
   }
 
-  /**
-   * Get layer opacity.
-   * @returns {number} Opacity value.
-   */
-  getOpacity () {
+  /** Get layer opacity. */
+  getOpacity (): number {
     const opacity = this.group_.getAttribute('opacity')
     return opacity ? Number.parseFloat(opacity) : 1
   }
@@ -195,10 +170,9 @@ class Layer {
   /**
    * Sets the opacity of this layer. If opacity is not a value between 0.0 and 1.0,
    * nothing happens.
-   * @param {number} opacity - A float value in the range 0.0-1.0
-   * @returns {void}
+   * @param opacity - A float value in the range 0.0-1.0
    */
-  setOpacity (opacity) {
+  setOpacity (opacity: number): void {
     if (typeof opacity === 'number' && opacity >= 0.0 && opacity <= 1.0) {
       this.group_.setAttribute('opacity', String(opacity))
     }
@@ -206,24 +180,20 @@ class Layer {
 
   /**
    * Append children to this layer.
-   * @param {Iterable<Node>} children - The children to append to this layer.
-   * @returns {void}
+   * @param children - The children to append to this layer.
    */
-  appendChildren (children) {
+  appendChildren (children: Iterable<Node>): void {
     for (const child of children) {
       this.group_.append(child)
     }
   }
 
-  /**
-  * @returns {SVGTitleElement|null}
-  */
-  getTitleElement () {
+  getTitleElement (): SVGTitleElement | null {
     const len = this.group_.childNodes.length
     for (let i = 0; i < len; ++i) {
-      const child = /** @type {Element|null} */ (this.group_.childNodes.item(i))
+      const child = this.group_.childNodes.item(i) as Element | null
       if (child?.tagName === 'title') {
-        return /** @type {SVGTitleElement} */ (child)
+        return child as SVGTitleElement
       }
     }
     return null
@@ -231,11 +201,11 @@ class Layer {
 
   /**
    * Set the name of this layer.
-   * @param {string} name - The new name.
-   * @param {module:history.HistoryRecordingService} hrService - History recording service
-   * @returns {string|null} The new name if changed; otherwise, null.
+   * @param name - The new name.
+   * @param hrService - History recording service
+   * @returns The new name if changed; otherwise, null.
    */
-  setName (name, hrService) {
+  setName (name: string, hrService?: { changeElement: (elem: Element, attrs: Record<string, unknown>) => unknown }): string | null {
     const previousName = this.name_
     name = toXml(name)
     // now change the underlying title element contents
@@ -254,41 +224,30 @@ class Layer {
 
   /**
    * Remove this layer's group from the DOM. No more functions on group can be called after this.
-   * @returns {SVGGElement} The layer SVG group that was just removed.
+   * @returns The layer SVG group that was just removed.
    */
-  removeGroup () {
+  removeGroup (): SVGGElement {
     const group = this.group_
     this.group_.remove()
-    this.group_ = /** @type {any} */ (undefined)
+    this.group_ = undefined as unknown as SVGGElement
     return group
   }
 
   /**
    * Test whether an element is a layer or not.
-   * @param {SVGGElement} elem - The SVGGElement to test.
-   * @returns {boolean} True if the element is a layer
+   * @param elem - The SVGGElement to test.
+   * @returns True if the element is a layer
    */
-  static isLayer (elem) {
-    return elem && elem.tagName === 'g' && Layer.CLASS_REGEX.test(elem.getAttribute('class') ?? '')
+  static isLayer (elem: Element | null | undefined): boolean {
+    return !!elem && elem.tagName === 'g' && Layer.CLASS_REGEX.test(elem.getAttribute('class') ?? '')
   }
 }
 /**
- * @property {string} CLASS_NAME - class attribute assigned to all layer groups.
- */
-Layer.CLASS_NAME = 'layer'
-
-/**
- * @property {RegExp} CLASS_REGEX - Used to test presence of class Layer.CLASS_NAME
- */
-Layer.CLASS_REGEX = new RegExp(`(\\s|^)${Layer.CLASS_NAME}(\\s|$)`)
-
-/**
  * Add class `Layer.CLASS_NAME` to the element (usually `class='layer'`).
  *
- * @param {SVGGElement} elem - The SVG element to update
- * @returns {void}
+ * @param elem - The SVG element to update
  */
-const addLayerClass = (elem) => {
+const addLayerClass = (elem: SVGGElement): void => {
   const classes = elem.getAttribute('class')
   if (!classes || !classes.length) {
     elem.setAttribute('class', Layer.CLASS_NAME)

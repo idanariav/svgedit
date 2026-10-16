@@ -6,8 +6,8 @@
  * @copyright 2011 Jeff Schiller
  */
 
-import Layer from './layer.js'
-import { init as layerOpsInit } from './layer-ops.js'
+import Layer from './layer.ts'
+import { init as layerOpsInit } from './layer-ops.ts'
 
 import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.js'

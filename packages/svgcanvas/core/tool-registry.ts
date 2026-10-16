@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })`.
  *
@@ -35,6 +34,7 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
@@ -44,103 +44,135 @@ import { error as logError, warn } from '../common/logger.ts'
 
 const LOG = 'tool-registry'
 
-/**
- * @typedef {object} ToolMods
- * @property {boolean} shift
- * @property {boolean} alt
- * @property {boolean} ctrl
- * @property {boolean} meta
- * @property {boolean} mod the platform command key (Cmd on macOS, Ctrl elsewhere)
- */
+export interface ToolMods {
+  shift: boolean
+  alt: boolean
+  ctrl: boolean
+  meta: boolean
+  /** the platform command key (Cmd on macOS, Ctrl elsewhere) */
+  mod: boolean
+}
 
-/**
- * @typedef {object} ToolEvent
- * @property {number} x document units, unzoomed, grid-snapped, group-local
- * @property {number} y
- * @property {number} rawX same, before grid snapping
- * @property {number} rawY
- * @property {number} screenX client coordinates
- * @property {number} screenY
- * @property {number} dragDistance screen pixels moved since the press (0 on the press itself)
- * @property {ToolMods} mods
- * @property {number} button
- * @property {MouseEvent} event the original event, for edge cases
- */
+export interface ToolEvent {
+  /** document units, unzoomed, grid-snapped, group-local */
+  x: number
+  y: number
+  /** same, before grid snapping */
+  rawX: number
+  rawY: number
+  /** client coordinates */
+  screenX: number
+  screenY: number
+  /** screen pixels moved since the press (0 on the press itself) */
+  dragDistance: number
+  mods: ToolMods
+  button: number
+  /** the original event, for edge cases */
+  event: MouseEvent
+}
 
-/**
- * @typedef {object} ToolContext
- * @property {any} canvas the SvgCanvas
- * @property {number} zoom current zoom
- * @property {ToolEvent} [start] the press that began the current gesture
- * @property {(pt: {x: number, y: number}) => {x: number, y: number}} snap the canvas's snapping, in document units
- * @property {(el: Element) => void} addOverlay add a preview/guide element (document units; never recorded)
- * @property {() => void} clearOverlays
- * @property {(el: Element, evt?: {altKey?: boolean}) => void} finishCreated treat `el` as a newly created element
- */
+export interface ToolContext {
+  /** the SvgCanvas */
+  canvas: SvgCanvas
+  /** current zoom */
+  zoom: number
+  /** the press that began the current gesture */
+  start?: ToolEvent
+  /** the canvas's snapping, in document units */
+  snap: (pt: { x: number, y: number }) => { x: number, y: number }
+  /** add a preview/guide element (document units; never recorded) */
+  addOverlay: (el: Element) => void
+  clearOverlays: () => void
+  /** treat `el` as a newly created element */
+  finishCreated: (el: Element, evt?: { altKey?: boolean }) => void
+}
 
 /**
  * One control of a tool's options bar (`ToolDef.options`). The editor draws the bar from these, so a tool
  * never builds UI of its own for them.
- * @typedef {object} ToolOption
- * @property {string} id passed back to `setOption`
- * @property {string} label already translated
- * @property {'number'|'select'|'checkbox'} type
- * @property {number|string|boolean} value the current value
- * @property {number} [min] number
- * @property {number} [max] number
- * @property {number} [step] number
- * @property {Array<{value: string, label: string}>} [choices] select; labels already translated
- * @property {string} [title] tooltip
- * @property {boolean} [hidden] the control is not relevant right now (e.g. the distance while spacing is by step count)
  */
+export interface ToolOption {
+  /** passed back to `setOption` */
+  id: string
+  /** already translated */
+  label: string
+  type: 'number' | 'select' | 'checkbox'
+  /** the current value */
+  value: number | string | boolean
+  /** number */
+  min?: number
+  /** number */
+  max?: number
+  /** number */
+  step?: number
+  /** select; labels already translated */
+  choices?: Array<{ value: string, label: string }>
+  /** tooltip */
+  title?: string
+  /** the control is not relevant right now (e.g. the distance while spacing is by step count) */
+  hidden?: boolean
+}
 
-/**
- * @typedef {object} ToolDef
- * @property {string} id the mode name passed to `setMode()`
- * @property {(ctx: ToolContext) => void} [activate] the mode became current
- * @property {(ctx: ToolContext) => void} [deactivate] the mode is being left
- * @property {(ctx: ToolContext, ev: ToolEvent) => (void|false)} pointerDown return `false` to decline (legacy pipeline handles it)
- * @property {(ctx: ToolContext, ev: ToolEvent) => void} [pointerMove] during a press; also on hover when `wantsHover`
- * @property {(ctx: ToolContext, ev: ToolEvent) => (void|'cancel'|{created?: Element})} [pointerUp]
- *   return `'cancel'` to roll the gesture back instead of committing, or
- *   `{ created }` for a new element to finish (opacity, events, select it, …)
- * @property {(ctx: ToolContext, ev: KeyboardEvent) => boolean} [keyDown] return true when handled.
- *   Escape never reaches this: the registry cancels the gesture and lets the editor leave the tool.
- * @property {(ctx: ToolContext) => void} [cancel] the gesture was rolled back (Escape, mode switch,
- *   `'cancel'`, an error): reset the tool's own state
- * @property {() => ToolOption[]} [options] the controls of the tool's options bar, shown while the tool is the mode;
- *   read again after every `setOption` and mode change, so `value` / `hidden` may depend on the tool's state
- * @property {(id: string, value: number|string|boolean) => void} [setOption] the user changed a control of `options()`
- * @property {string} [undoLabel] undo-menu text of the gesture (default: the id)
- * @property {string|((ctx: ToolContext) => string)} [cursor] the CSS cursor of the canvas while the tool is the mode
- *   (set on activate, removed on deactivate). A cursor that follows what is under the pointer goes through
- *   `svgCanvas.setCursorHint(name)`: the editor picks the artwork (core never does)
- * @property {boolean} [keepOverlays] a finished gesture leaves its overlay on show (a readout); the tool clears it
- *   itself on the next press and in `deactivate`
- * @property {boolean} [wantsHover] receive `pointerMove` with no button down
- * @property {boolean} [keepOpacity] created elements keep the `opacity` the tool stamped (the brush has its own)
- * @property {boolean} [snap] `ev.x` / `ev.y` also snap to other objects' anchors, bounding boxes and the page (with guides),
- *   when grid snapping is off. Opt in only if the tool places points with `x` / `y` (not `rawX` / `rawY`) on press AND drag.
- */
+export interface ToolDef {
+  /** the mode name passed to `setMode()` */
+  id: string
+  /** the mode became current */
+  activate?: (ctx: ToolContext) => void
+  /** the mode is being left */
+  deactivate?: (ctx: ToolContext) => void
+  /** return `false` to decline (legacy pipeline handles it) */
+  pointerDown: (ctx: ToolContext, ev: ToolEvent) => void | false
+  /** during a press; also on hover when `wantsHover` */
+  pointerMove?: (ctx: ToolContext, ev: ToolEvent) => void
+  /**
+   * return `'cancel'` to roll the gesture back instead of committing, or
+   * `{ created }` for a new element to finish (opacity, events, select it, …)
+   */
+  pointerUp?: (ctx: ToolContext, ev: ToolEvent) => void | 'cancel' | { created?: Element }
+  /**
+   * return true when handled.
+   * Escape never reaches this: the registry cancels the gesture and lets the editor leave the tool.
+   */
+  keyDown?: (ctx: ToolContext, ev: KeyboardEvent) => boolean
+  /** the gesture was rolled back (Escape, mode switch, `'cancel'`, an error): reset the tool's own state */
+  cancel?: (ctx: ToolContext) => void
+  /**
+   * the controls of the tool's options bar, shown while the tool is the mode;
+   * read again after every `setOption` and mode change, so `value` / `hidden` may depend on the tool's state
+   */
+  options?: () => ToolOption[]
+  /** the user changed a control of `options()` */
+  setOption?: (id: string, value: number | string | boolean) => void
+  /** undo-menu text of the gesture (default: the id) */
+  undoLabel?: string
+  /**
+   * the CSS cursor of the canvas while the tool is the mode
+   * (set on activate, removed on deactivate). A cursor that follows what is under the pointer goes through
+   * `svgCanvas.setCursorHint(name)`: the editor picks the artwork (core never does)
+   */
+  cursor?: string | ((ctx: ToolContext) => string)
+  /** a finished gesture leaves its overlay on show (a readout); the tool clears it itself on the next press and in `deactivate` */
+  keepOverlays?: boolean
+  /** receive `pointerMove` with no button down */
+  wantsHover?: boolean
+  /** created elements keep the `opacity` the tool stamped (the brush has its own) */
+  keepOpacity?: boolean
+  /**
+   * `ev.x` / `ev.y` also snap to other objects' anchors, bounding boxes and the page (with guides),
+   * when grid snapping is off. Opt in only if the tool places points with `x` / `y` (not `rawX` / `rawY`) on press AND drag.
+   */
+  snap?: boolean
+}
 
-/**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
-  /** @type {Map<string, ToolDef>} */
-  const tools = new Map()
+  const tools = new Map<string, ToolDef>()
 
-  /**
-   * @type {?{tool: ToolDef, tx: {commit: () => any, cancel: () => void}, start: ToolEvent}}
-   */
-  let gesture = null
-  /** @type {?SVGSVGElement} */
-  let overlay = null
-  /** The press of the gesture whose `pointerUp` is running (the gesture itself is already closed). @type {?ToolEvent} */
-  let endingStart = null
+  let gesture: { tool: ToolDef, tx: { commit: () => unknown, cancel: () => void }, start: ToolEvent } | null = null
+  let overlay: SVGSVGElement | null = null
+  /** The press of the gesture whose `pointerUp` is running (the gesture itself is already closed). */
+  let endingStart: ToolEvent | null = null
 
   // ---- coordinates --------------------------------------------------------
 
@@ -148,12 +180,9 @@ export const init = (canvas) => {
    * Map a mouse event to the tool coordinate convention. Uses the root CTM the
    * last mouseDown stored (like every other handler), refreshed on demand for
    * hover.
-   * @param {MouseEvent} evt
-   * @param {{x: number, y: number}} [downClient]
-   * @param {ToolDef} [tool] the tool the event is for; one with `snap` gets object snapping
-   * @returns {ToolEvent}
+   * @param tool the tool the event is for; one with `snap` gets object snapping
    */
-  const toToolEvent = (evt, downClient, tool) => {
+  const toToolEvent = (evt: MouseEvent, downClient?: { x: number, y: number }, tool?: ToolDef): ToolEvent => {
     const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
     let { x, y } = pt
     if (isCreateInCurrentGroup(svgCanvas)) ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
@@ -181,7 +210,7 @@ export const init = (canvas) => {
     }
   }
 
-  const refreshRootSctm = () => {
+  const refreshRootSctm = (): boolean => {
     const rootGroup = svgCanvas.$id('svgcontent')?.querySelector('g')
     const ctm = rootGroup?.getScreenCTM?.()
     if (ctm) svgCanvas.setRootSctm(ctm.inverse())
@@ -191,10 +220,10 @@ export const init = (canvas) => {
   // ---- overlays -------------------------------------------------------------
 
   /** An `<svg>` in `#svgroot` sharing `#svgcontent`'s box and viewBox, so overlay children use document units. */
-  const ensureOverlay = () => {
+  const ensureOverlay = (): SVGSVGElement => {
     const content = svgCanvas.getSvgContent()
     if (!overlay) {
-      overlay = /** @type {SVGSVGElement} */ (svgCanvas.getSvgRoot().ownerDocument.createElementNS(NS.SVG, 'svg'))
+      overlay = svgCanvas.getSvgRoot().ownerDocument.createElementNS(NS.SVG, 'svg') as SVGSVGElement
       overlay.setAttribute('id', 'toolOverlay')
       overlay.setAttribute('overflow', 'visible')
       overlay.setAttribute('style', 'pointer-events: none;')
@@ -208,7 +237,7 @@ export const init = (canvas) => {
     return overlay
   }
 
-  const clearOverlays = () => {
+  const clearOverlays = (): void => {
     if (overlay) overlay.replaceChildren()
   }
 
@@ -217,12 +246,9 @@ export const init = (canvas) => {
   /**
    * Finish a newly created element the way the legacy mouse-up does, minus the
    * history entry (the gesture's transaction already records the insertion).
-   * @param {Element} el
-   * @param {{altKey?: boolean}} [evt]
-   * @param {{keepOpacity?: boolean}} [opts] `keepOpacity`: leave the element's own `opacity` alone
-   * @returns {void}
+   * @param opts `keepOpacity`: leave the element's own `opacity` alone
    */
-  const finishCreated = (el, evt, opts) => {
+  const finishCreated = (el: Element, evt?: { altKey?: boolean }, opts?: { keepOpacity?: boolean }): void => {
     const style = svgCanvas.getStyle()
     svgCanvas.gesture.addedNew = true
     svgCanvas.gesture.pendingNewElement = el
@@ -239,8 +265,7 @@ export const init = (canvas) => {
     svgCanvas.call('changed', [el])
   }
 
-  /** @type {ToolContext} */
-  const ctx = {
+  const ctx: ToolContext = {
     canvas: svgCanvas,
     get zoom () { return svgCanvas.getZoom() },
     get start () { return gesture?.start ?? endingStart ?? undefined },
@@ -252,11 +277,8 @@ export const init = (canvas) => {
 
   // ---- gesture lifecycle ----------------------------------------------------
 
-  /**
-   * Roll the open gesture back (no-op without one).
-   * @returns {void}
-   */
-  const cancelGesture = () => {
+  /** Roll the open gesture back (no-op without one). */
+  const cancelGesture = (): void => {
     if (!gesture) return
     const { tool, tx } = gesture
     gesture = null
@@ -270,18 +292,15 @@ export const init = (canvas) => {
     }
   }
 
-  /**
-   * @param {MouseEvent} evt
-   * @returns {boolean} whether a registered tool handled the press
-   */
-  const toolPointerDown = (evt) => {
+  /** @returns whether a registered tool handled the press */
+  const toolPointerDown = (evt: MouseEvent): boolean => {
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool) return false
     cancelGesture() // a previous press that never saw its mouseup
     const start = toToolEvent(evt, undefined, tool)
     const tx = svgCanvas.beginTransaction(tool.undoLabel ?? tool.id)
     gesture = { tool, tx, start }
-    let declined
+    let declined: boolean
     try {
       declined = tool.pointerDown(ctx, start) === false
     } catch (err) {
@@ -298,11 +317,8 @@ export const init = (canvas) => {
     return true
   }
 
-  /**
-   * @param {MouseEvent} evt
-   * @returns {boolean} whether a registered tool handled the move
-   */
-  const toolPointerMove = (evt) => {
+  /** @returns whether a registered tool handled the move */
+  const toolPointerMove = (evt: MouseEvent): boolean => {
     if (!gesture) return false
     const { tool, start } = gesture
     try {
@@ -314,12 +330,8 @@ export const init = (canvas) => {
     return true
   }
 
-  /**
-   * Hover (no press): only tools that asked for it.
-   * @param {MouseEvent} evt
-   * @returns {void}
-   */
-  const toolHover = (evt) => {
+  /** Hover (no press): only tools that asked for it. */
+  const toolHover = (evt: MouseEvent): void => {
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool?.wantsHover || gesture || !refreshRootSctm()) return
     try {
@@ -334,16 +346,13 @@ export const init = (canvas) => {
     }
   }
 
-  /**
-   * @param {MouseEvent} evt
-   * @returns {boolean} whether a registered tool handled the release
-   */
-  const toolPointerUp = (evt) => {
+  /** @returns whether a registered tool handled the release */
+  const toolPointerUp = (evt: MouseEvent): boolean => {
     if (!gesture) return false
     const { tool, tx, start } = gesture
     gesture = null // closed before anything below can call setMode()
     svgCanvas.setStarted(false)
-    let result
+    let result: ReturnType<NonNullable<ToolDef['pointerUp']>>
     endingStart = start
     try {
       result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
@@ -369,14 +378,11 @@ export const init = (canvas) => {
     return true
   }
 
-  /** Key events a tool has handled. @type {WeakSet<KeyboardEvent>} */
-  const handledKeys = new WeakSet()
+  /** Key events a tool has handled. */
+  const handledKeys = new WeakSet<KeyboardEvent>()
 
-  /**
-   * @param {KeyboardEvent} evt
-   * @returns {boolean} whether the key was handled (the caller should preventDefault)
-   */
-  const toolKeyDown = (evt) => {
+  /** @returns whether the key was handled (the caller should preventDefault) */
+  const toolKeyDown = (evt: KeyboardEvent): boolean => {
     if (evt.key === 'Escape') {
       cancelGesture()
       return false
@@ -396,13 +402,8 @@ export const init = (canvas) => {
     }
   }
 
-  /**
-   * Called by `setMode()`.
-   * @param {string} prev
-   * @param {string} next
-   * @returns {void}
-   */
-  const toolModeChanged = (prev, next) => {
+  /** Called by `setMode()`. */
+  const toolModeChanged = (prev: string, next: string): void => {
     if (prev === next) return
     cancelGesture()
     const out = tools.get(prev)
@@ -415,12 +416,8 @@ export const init = (canvas) => {
 
   // ---- public API ---------------------------------------------------------------
 
-  /**
-   * Register a tool. Its id is the mode name `setMode(id)` switches to.
-   * @param {ToolDef} def
-   * @returns {void}
-   */
-  const registerTool = (def) => {
+  /** Register a tool. Its id is the mode name `setMode(id)` switches to. */
+  const registerTool = (def: ToolDef): void => {
     if (!def || typeof def.id !== 'string' || !def.id || typeof def.pointerDown !== 'function') {
       throw new TypeError('A tool needs an id and a pointerDown function')
     }
@@ -431,21 +428,14 @@ export const init = (canvas) => {
     tools.set(def.id, def)
   }
 
-  /**
-   * @param {string} id
-   * @returns {boolean} whether a tool was removed
-   */
-  const unregisterTool = (id) => {
+  /** @returns whether a tool was removed */
+  const unregisterTool = (id: string): boolean => {
     if (gesture?.tool.id === id) cancelGesture()
     return tools.delete(id)
   }
 
-  /**
-   * The options bar of the current tool (or of tool `id`): empty when it has none.
-   * @param {string} [id]
-   * @returns {ToolOption[]}
-   */
-  const getToolOptions = (id = svgCanvas.getMode()) => {
+  /** The options bar of the current tool (or of tool `id`): empty when it has none. */
+  const getToolOptions = (id: string = svgCanvas.getMode()): ToolOption[] => {
     try {
       return tools.get(id)?.options?.() ?? []
     } catch (err) {
@@ -456,12 +446,9 @@ export const init = (canvas) => {
 
   /**
    * Change one control of the current tool's (or tool `id`'s) options bar.
-   * @param {string} optionId
-   * @param {number|string|boolean} value
-   * @param {string} [id]
-   * @returns {boolean} whether the tool took it
+   * @returns whether the tool took it
    */
-  const setToolOption = (optionId, value, id = svgCanvas.getMode()) => {
+  const setToolOption = (optionId: string, value: number | string | boolean, id: string = svgCanvas.getMode()): boolean => {
     const tool = tools.get(id)
     if (!tool?.setOption) return false
     try {
@@ -477,7 +464,7 @@ export const init = (canvas) => {
   svgCanvas.getToolOptions = getToolOptions
   svgCanvas.setToolOption = setToolOption
   svgCanvas.unregisterTool = unregisterTool
-  svgCanvas.hasTool = (/** @type {string} */ id) => tools.has(id)
+  svgCanvas.hasTool = (id: string) => tools.has(id)
   svgCanvas.finishCreatedElement = finishCreated
   // Called from event.js / setMode / the editor's key handler.
   svgCanvas.toolPointerDown = toolPointerDown
@@ -492,6 +479,6 @@ export const init = (canvas) => {
   // A release outside the window / an alt-tab mid-drag never delivers a mouseup:
   // roll the gesture back instead of leaving its transaction open (which would
   // silently swallow every other edit's undo step).
-  const signal = /** @type {any} */ (svgCanvas).destroyAbort?.signal
+  const signal = svgCanvas.destroyAbort?.signal
   window.addEventListener('blur', cancelGesture, signal ? { signal } : undefined)
 }
