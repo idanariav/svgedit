@@ -372,7 +372,7 @@ export const init = (canvas) => {
   /**
 * Change the current stroke/fill color/gradient value.
 * @function module:elem-get-set.SvgCanvas#setColor
-* @param {string} type - String indicating fill or stroke
+* @param {'fill'|'stroke'} type - String indicating fill or stroke
 * @param {string} val - The value to set the stroke attribute to
 * @param {boolean} preventUndo - Boolean indicating whether or not svgCanvas should be an undoable option
 * @fires module:elem-get-set.SvgCanvas#event:changed
@@ -424,8 +424,8 @@ export const init = (canvas) => {
 * @returns {void}
 */
   const setGradientMethod = (type) => {
-    if (!svgCanvas.getCurProperties(`${type}_paint`) ||
-    svgCanvas.getCurProperties(`${type}_paint`).type === 'solidColor') { return }
+    const curPaint = svgCanvas.getCurProperties(`${type}_paint`)
+    if (!curPaint || curPaint.type === 'solidColor') { return }
     const canvas = svgCanvas
     let grad = /** @type {any} */ (canvas)[type + 'Grad']
     if (!grad) { return }
@@ -627,7 +627,7 @@ export const init = (canvas) => {
 */
   const setStrokeAttrMethod = (attr, val) => {
     const selectedElements = svgCanvas.getSelectedElements()
-    svgCanvas.setCurShape(attr.replace('-', '_'), val)
+    svgCanvas.setCurShape(/** @type {'stroke_width'} */ (attr.replace('-', '_')), /** @type {number} */ (val))
     const elems = []
 
     let i = selectedElements.length

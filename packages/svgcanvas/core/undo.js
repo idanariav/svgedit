@@ -280,7 +280,7 @@ export const init = (canvas) => {
         if (attr === '#text') {
         // const oldW = utilsGetBBox(elem).width;
         // Multiline values (with `\n`) become tspans; single-line stays plain text.
-          svgCanvas.setMultilineText(elem, newValue)
+          svgCanvas.setMultilineText(elem, String(newValue))
 
           // FF bug occurs on on rotated elements
           if ((/rotate/).test(elem.getAttribute('transform') ?? '')) {

@@ -362,8 +362,8 @@ export const init = (canvas) => {
  * Reference:
  * Firefox does not implement `getIntersectionList()`, see {@link https://bugzilla.mozilla.org/show_bug.cgi?id=501421}.
  * @function module:svgcanvas.SvgCanvas#getIntersectionList
- * @param {SVGRect} rect
- * @returns {Element[]|NodeList|null} Bbox elements
+ * @param {import('../svgcanvas.js').BBox} [rect]
+ * @returns {Element[]|null} Bbox elements
  */
   const getIntersectionListMethod = (rect) => {
     const zoom = svgCanvas.getZoom()
@@ -421,8 +421,9 @@ export const init = (canvas) => {
       if (!rubberBBox.width) {
         continue
       }
-      if (curBBoxes[i].bbox && rectsIntersect(rubberBBox, curBBoxes[i].bbox)) {
-        resultList.push(curBBoxes[i].elem)
+      const { bbox, elem } = curBBoxes[i]
+      if (bbox && rectsIntersect(rubberBBox, bbox)) {
+        resultList.push(elem)
       }
     }
 
@@ -432,11 +433,7 @@ export const init = (canvas) => {
     return resultList
   }
 
-  /**
- * @typedef {PlainObject} ElementAndBBox
- * @property {Element} elem - The element
- * @property {module:utilities.BBoxObject} bbox - The element's BBox as retrieved from `getStrokedBBoxDefaultVisible`
- */
+  /** @typedef {import('./canvas-state.ts').ElementAndBBox} ElementAndBBox The element and its BBox as retrieved from `getStrokedBBoxDefaultVisible` */
 
   /**
  * Wrap an SVG element into a group element, mark the group as 'gsvg'.

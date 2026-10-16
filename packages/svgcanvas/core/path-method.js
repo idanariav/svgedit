@@ -28,7 +28,7 @@ export const init = (canvas) => {
   /**
 * @function module:path.ptObjToArr
 * @todo See if this should just live in `replacePathSeg`
-* @param {string} type
+* @param {number} type
 * @param {any} segItem
 * @returns {any[]}
 */

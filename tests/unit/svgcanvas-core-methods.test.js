@@ -88,6 +88,12 @@ describe('SvgCanvas strict-typing guards', function () {
     expect(canvas.getParents(el, '.nope')).toBeNull()
   })
 
+  it('the gesture scalars are numbers at rest, never null (readers do arithmetic on them)', () => {
+    expect([canvas.getStartX(), canvas.getStartY(), canvas.getRStartX(), canvas.getRStartY()]).toEqual([0, 0, 0, 0])
+    expect(['minx', 'miny', 'maxx', 'maxy'].map((k) => canvas.getFreehand(k))).toEqual([0, 0, 0, 0])
+    expect(canvas.getInitBbox()).toEqual({ x: 0, y: 0, width: 0, height: 0 })
+  })
+
   it('typed state accessors round-trip', () => {
     canvas.setStartX(12)
     canvas.setEnd('x', 3)

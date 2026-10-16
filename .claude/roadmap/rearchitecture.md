@@ -150,7 +150,7 @@ parser, serializer, typed view); the typed features and the headless fixes follo
 **Today.** `svgcanvas.js` runs 50 `init(canvas)` functions (`runGuardedInit`), each attaching functions and state to
 the one `SvgCanvas` instance (`svgCanvas.findSameAs = findSameAs`): about 540 members, with an `initGuardRegistry` to
 log name collisions. The shape cannot be inferred, so it is described by hand: `svgcanvas-members.d.ts`,
-`svgcanvas-internal.d.ts` (~217 members typed `any`), `svgcanvas.d.ts`, kept honest by
+`svgcanvas-internal.d.ts` (the plumbing members; typed since 2026-10-16), `svgcanvas.d.ts`, kept honest by
 `tests/unit/svgcanvas-dts-drift.test.js`. Generating them was tried and dropped: deriving the members from `init` is a
 type cycle (see [infrastructure](infrastructure.md) › "Typing the `init` modules").
 
@@ -198,7 +198,7 @@ down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentEl
 constructor, so no reader sees `undefined`); unit-test canvases that run the event modules get
 `gesture: createGestureState()`.
 **The facade, as it stands (2026-10-16).** `svgcanvas.d.ts` (the class), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
-~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: `any`, ~195 members core modules share) are the facade
+~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: ~205 members core modules share, all typed except eleven that wait for their module's conversion) are the facade
 and its plumbing. Three tests keep them honest: `svgcanvas-dts-drift.test.js` (every runtime member is declared as public
 or internal, none is both, no internal one is stale, and now **no required public member is missing at runtime**: the
 phantoms `undo`, `redo`, `getLayer`, `getNumLayers`, `getCurrentLayerName`, `unbind`, `getPrivateMethods` were removed and
@@ -208,6 +208,15 @@ extensions never call an `any` member**: ten that they did were typed and promot
 `getFontFamily` / `getFontColor` / `getFontSize`) were deleted. What a deeper facade would add (types derived from source,
 the d.ts files deleted) needs the members to leave the canvas, module by module as above; until then a new member is
 declared in `svgcanvas-members.d.ts` if the editor calls it, else in `svgcanvas-internal.d.ts`.
+**Internal members typed (2026-10-16).** The ~195 `any` members of `svgcanvas-internal.d.ts` now have real types: the state
+accessors from the class's own JSDoc, the module-attached ones from the assignment (`svgCanvas.x = fn`), and `core/canvas-state.ts`
+holds the `CanvasState` / `StyleProps` / `BrushParams` shapes the constructor fills in. `tsc` checks each class method and
+each `svgCanvas.x = fn` against the declaration, so a module that drifts from its facade type no longer compiles. Typing them
+surfaced about 160 strict-null errors in the event modules; they were fixed at the source: the gesture scalars (`startX`,
+`rStartX`, the freehand extremes, `initBbox`) are numbers at rest instead of `null`, and `getRubberBox()` / `getrootSctm()` are
+typed non-null (set when a gesture starts; see techdebt). Eleven members stay `any` until their module is converted (`Path`,
+`Segment`, `SelectorManager` are defined inside `init`; the drawn path still uses the `pathSegList` shim API);
+`tests/unit/svgcanvas-facade.test.js` lists them and fails if another appears.
 Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the other state the canvas carries as loose members (`selectorManager`, `pathActions`, the cursor hint, the drawing handles), then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
 
 Size: L, fully incremental, low risk per module.

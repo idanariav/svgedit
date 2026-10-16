@@ -283,7 +283,7 @@ export const init = (canvas) => {
     // - if newList doesn't contain selected, remove it from selected
     // - for any newList that was not in selectedElements, add it to selected
     const elemsToRemove = selectedElements.slice(); const elemsToAdd = []
-    const newList = svgCanvas.getIntersectionList()
+    const newList = svgCanvas.getIntersectionList() ?? []
 
     // For every element in the intersection, add if not present in selectedElements.
     const len = newList.length

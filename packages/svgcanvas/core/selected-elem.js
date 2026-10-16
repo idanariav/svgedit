@@ -174,9 +174,9 @@ export const init = (canvas) => {
     let closest
     let foundCur = false
     // jQuery sorts this list
-    const list = svgCanvas.getIntersectionList(
+    const list = /** @type {Element[]} */ (svgCanvas.getIntersectionList(
       svgCanvas.getStrokedBBoxDefaultVisible([selected])
-    )
+    ))
     if (dir === 'Down') {
       list.reverse()
     }

@@ -38,6 +38,7 @@
 | `blur-event.js` | Tools for blur event |
 | `boolean-ops.ts` | Boolean path operations: union, intersect, subtract, exclude, divide |
 | `brush-stroke.ts` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
+| `canvas-state.ts` | The session/UI state of one canvas (`svgCanvas.state`), grouped by concern: zoom, selection, current styles, history scratch and the drawing gesture's working values |
 | `clear.ts` | Resets the `#svgcontent` element to a blank document |
 | `clip-mask.ts` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |

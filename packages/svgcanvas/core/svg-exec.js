@@ -424,7 +424,7 @@ export const init = (canvas) => {
               // preview clone) must never reach a save, even mid-preview.
               if (history.isEphemeral(child)) break
               out.push('\n')
-              out.push(svgCanvas.svgToString(child, indent))
+              out.push(svgCanvas.svgToString(/** @type {Element} */ (child), indent))
               break
             case 3: {
             // text node
@@ -478,7 +478,7 @@ export const init = (canvas) => {
     try {
       const failed = svgCanvas.getSvgContent()
       if (failed !== previous.content) failed.remove()
-      svgCanvas.setSvgContent(previous.content)
+      svgCanvas.setSvgContent(/** @type {SVGSVGElement} */ (previous.content))
       svgCanvas.getSvgRoot().insertBefore(previous.content, previous.nextSibling)
       svgCanvas.current_drawing_ = previous.drawing
       svgCanvas.contentW = previous.contentW
@@ -543,11 +543,11 @@ export const init = (canvas) => {
       // If DOM3 adoptNode() available, use it. Otherwise fall back to DOM2 importNode()
       if (svgCanvas.getDOMDocument().adoptNode) {
         svgCanvas.setSvgContent(
-          svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)
+          /** @type {SVGSVGElement} */ (/** @type {unknown} */ (svgCanvas.getDOMDocument().adoptNode(newDoc.documentElement)))
         )
       } else {
         svgCanvas.setSvgContent(
-          svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
+          /** @type {SVGSVGElement} */ (/** @type {unknown} */ (svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)))
         )
       }
 
@@ -792,8 +792,9 @@ export const init = (canvas) => {
 
       let useExisting = false
       // Look for symbol and make sure symbol exists in image
-      if (svgCanvas.getImportIds(uid) && svgCanvas.getImportIds(uid).symbol) {
-        const parents = getParents(svgCanvas.getImportIds(uid).symbol, '#svgroot')
+      const imported = svgCanvas.getImportIds(uid)
+      if (imported?.symbol) {
+        const parents = getParents(imported.symbol, '#svgroot')
         if (parents?.length) {
           useExisting = true
         }
@@ -802,8 +803,8 @@ export const init = (canvas) => {
       const batchCmd = new BatchCommand('Import Image')
       let symbol
       if (useExisting) {
-        symbol = svgCanvas.getImportIds(uid).symbol
-        ts = svgCanvas.getImportIds(uid).xform
+        symbol = /** @type {import('../svgcanvas-internal.js').ImportEntry} */ (imported).symbol
+        ts = /** @type {import('../svgcanvas-internal.js').ImportEntry} */ (imported).xform
       } else {
       // convert string into XML document
         const newDoc = text2xml(xmlString)
@@ -1006,7 +1007,7 @@ export const init = (canvas) => {
           svgCanvas.setEncodableImages(src, false)
         }
         svgCanvas.setGoodImage(src)
-        resolve(svgCanvas.getEncodableImages(src))
+        resolve(/** @type {string|false} */ (svgCanvas.getEncodableImages(src)))
       })
       imgI.addEventListener('error', e => {
         reject(

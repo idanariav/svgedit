@@ -11,7 +11,7 @@
  * @module event-resize
  * @license MIT
  */
-import { getBBox } from './bbox-utils.ts'
+import { requireBBox } from './bbox-utils.ts'
 import { getRotationAngle } from './dom-utils.ts'
 import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 import {
@@ -163,7 +163,7 @@ export const init = (canvas) => {
     // then let mouseMove apply a single uniform group-scale matrix to each.
     const groupElems = selectedElements.filter(Boolean)
     if (groupElems.length > 1) {
-      svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
+      svgCanvas.setInitBbox(/** @type {import('./bbox-utils.ts').BBoxObject} */ (svgCanvas.getStrokedBBoxDefaultVisible(groupElems)))
       const starts = new Map()
       const transforms = new Map()
       svgCanvas.gesture.groupResizeStart = starts
@@ -177,13 +177,13 @@ export const init = (canvas) => {
 
     // Getting the BBox from the selection box, since we know we
     // want to orient around it
-    svgCanvas.setInitBbox(getBBox(/** @type {Element} */ (svgCanvas.$id('selectedBox0'))))
-    /** @type {Record<string, number>} */
-    const bb = {}
-    for (const [key, val] of Object.entries(svgCanvas.getInitBbox())) {
-      bb[key] = val / zoom
-    }
-    svgCanvas.setInitBbox(bb)
+    const selectedBox = requireBBox(/** @type {Element} */ (svgCanvas.$id('selectedBox0')))
+    svgCanvas.setInitBbox({
+      x: selectedBox.x / zoom,
+      y: selectedBox.y / zoom,
+      width: selectedBox.width / zoom,
+      height: selectedBox.height / zoom
+    })
   }
 
   /** @type {(evt: MouseEvent, ctx: any) => any} */
@@ -224,7 +224,7 @@ export const init = (canvas) => {
       }
       svgCanvas.gesture.hasResizeStartTransform = true
     }
-    const box = hasMatrix ? svgCanvas.getInitBbox() : getBBox(selected)
+    const box = hasMatrix ? svgCanvas.getInitBbox() : requireBBox(selected)
     let left = box.x
     let top = box.y
     let { width, height } = box

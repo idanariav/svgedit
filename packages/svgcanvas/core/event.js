@@ -496,7 +496,7 @@ export const init = (canvas) => {
       let cAni
       const curShape = svgCanvas.getStyle()
       const opacAni = svgCanvas.getOpacAni()
-      if (opacAni.beginElement && Number.parseFloat(element.getAttribute('opacity') ?? '') !== curShape.opacity) {
+      if (typeof opacAni.beginElement === 'function' && Number.parseFloat(element.getAttribute('opacity') ?? '') !== curShape.opacity) {
         cAni = opacAni.cloneNode(true)
         cAni.setAttribute('to', curShape.opacity)
         cAni.setAttribute('dur', aniDur)
@@ -521,7 +521,7 @@ export const init = (canvas) => {
         // time — don't clobber it with curShape.opacity like every other tool,
         // which has no opacity concept of its own outside curShape.
         if (svgCanvas.getCurrentMode() !== 'brush') {
-          created.setAttribute('opacity', curShape.opacity)
+          created.setAttribute('opacity', String(curShape.opacity))
         }
         created.setAttribute('style', 'pointer-events:inherit')
         cleanupElement(created)

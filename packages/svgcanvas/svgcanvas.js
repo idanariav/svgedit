@@ -120,54 +120,10 @@ const THRESHOLD_DIST = 0.8
 const STEP_COUNT = 10
 const CLIPBOARD_ID = 'svgedit_clipboard'
 
-/**
- * The current fill/stroke/text style (snake_case keys, as the editor's panels read them).
- * @typedef {object} StyleProps
- * @property {string} fill
- * @property {?*} fill_paint
- * @property {number} fill_opacity
- * @property {string} stroke
- * @property {?*} stroke_paint
- * @property {number} stroke_opacity
- * @property {number|string} stroke_width
- * @property {string} stroke_dasharray
- * @property {string} stroke_linejoin
- * @property {string} stroke_linecap
- * @property {number|string} opacity
- * @property {number|string} [font_size]
- * @property {string} [font_family]
- */
-
-/**
- * Active brush-tool settings (session state, not persisted).
- * @typedef {object} BrushParams
- * @property {number} thickness
- * @property {number} angle
- * @property {number} roundness
- * @property {number} taperStart
- * @property {number} taperEnd
- * @property {number} opacity
- * @property {number} smoothness
- */
-
-/** @typedef {{x: number, y: number}} XY */
-
-/**
- * Session/UI state of one canvas, grouped by concern (see the constructor).
- * @typedef {object} CanvasState
- * @property {{value: number, rootSctm: ?DOMMatrix}} zoom
- * @property {{elements: Element[], currentGroup: ?Element, justSelected: ?Element, rubberBox: ?Element, bboxes: any[]}} selection
- * @property {{shape: StyleProps, text: StyleProps, brush: BrushParams, properties: StyleProps}} style
- * @property {{curCommand: ?*}} history
- * @property {{
- *   started: boolean, startTransform: ?string, currentMode: string, toolLocked: boolean,
- *   textFreshCreate: boolean, currentResizeMode: string, lastClickPoint: ?XY, drawnPath: ?SVGPathElement,
- *   freehand: {minx: ?number, miny: ?number, maxx: ?number, maxy: ?number},
- *   dAttr: ?string, startX: ?number, startY: ?number, rStartX: ?number, rStartY: ?number,
- *   initBbox: Object<string, any>, sumDistance: number, controllPoint1: XY, controllPoint2: XY,
- *   start: XY, end: XY, bSpline: XY, nextPos: XY, filter: ?Element, filterHidden: boolean
- * }} drawing
- */
+/** @typedef {import('./core/canvas-state.ts').StyleProps} StyleProps */
+/** @typedef {import('./core/canvas-state.ts').BrushParams} BrushParams */
+/** @typedef {import('./core/canvas-state.ts').XY} XY */
+/** @typedef {import('./core/canvas-state.ts').CanvasState} CanvasState */
 
 /**
  * The main SvgCanvas class that manages all SVG-related functions.
@@ -178,6 +134,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   /**
    * @param {HTMLElement} container - The container HTML element that should hold the SVG root element
    * @param {module:SVGeditor.configObj.curConfig} config - An object that contains configuration data
+   * @param {?ParentNode} [scopeRoot] - Look elements up inside this root rather than the whole document
    */
   constructor (container, config, scopeRoot = null) {
     super()
@@ -303,18 +260,18 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
         lastClickPoint: null, // Canvas point for the most recent right click
         drawnPath: null,
         freehand: {
-          // Mouse events
-          minx: null,
-          miny: null,
-          maxx: null,
-          maxy: null
+          // Mouse events (at rest 0, like the gesture state: readers never see null)
+          minx: 0,
+          miny: 0,
+          maxx: 0,
+          maxy: 0
         },
         dAttr: null,
-        startX: null,
-        startY: null,
-        rStartX: null,
-        rStartY: null,
-        initBbox: {},
+        startX: 0,
+        startY: 0,
+        rStartX: 0,
+        rStartY: 0,
+        initBbox: { x: 0, y: 0, width: 0, height: 0 },
         sumDistance: 0,
         controllPoint1: { x: 0, y: 0 },
         controllPoint2: { x: 0, y: 0 },
@@ -782,8 +739,13 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     return this.cursorHintValue ?? null
   }
 
+  /**
+   * The rubber-band rectangle. Typed non-null: the selector manager creates it when a rubber-band gesture starts and
+   * the handlers that read it only run inside one.
+   * @returns {Element}
+   */
   getRubberBox () {
-    return this.state.selection.rubberBox
+    return /** @type {Element} */ (this.state.selection.rubberBox)
   }
 
   /**
@@ -879,15 +841,19 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     return this.state.drawing.started
   }
 
+  /**
+   * The root's current transformation matrix. Typed non-null: the mouse handlers set it before they read it.
+   * @returns {DOMMatrix}
+   */
   getrootSctm () {
-    return this.state.zoom.rootSctm
+    return /** @type {DOMMatrix} */ (this.state.zoom.rootSctm)
   }
 
   getStartX () {
     return this.state.drawing.startX
   }
 
-  /** @param {?number} value */
+  /** @param {number} value */
   setStartX (value) {
     this.state.drawing.startX = value
   }
@@ -896,7 +862,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     return this.state.drawing.startY
   }
 
-  /** @param {?number} value */
+  /** @param {number} value */
   setStartY (value) {
     this.state.drawing.startY = value
   }
@@ -1066,14 +1032,14 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   }
 
   /**
-   * @param {?number} value
+   * @param {number} value
    */
   setRStartX (value) {
     this.state.drawing.rStartX = value
   }
 
   /**
-   * @param {?number} value
+   * @param {number} value
    */
   setRStartY (value) {
     this.state.drawing.rStartY = value
@@ -1117,7 +1083,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   /**
    * @param {'minx'|'miny'|'maxx'|'maxy'} key
-   * @param {?number} value
+   * @param {number} value
    */
   setFreehand (key, value) {
     this.state.drawing.freehand[key] = value
@@ -1135,7 +1101,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   }
 
   /**
-   * @param {Object<string, any>} value
+   * @param {import('./core/bbox-utils.ts').BBoxObject} value
    */
   setInitBbox (value) {
     this.state.drawing.initBbox = value

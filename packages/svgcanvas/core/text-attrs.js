@@ -526,7 +526,7 @@ export const init = (canvas) => {
 * @returns {void}
 */
   const setMultilineTextMethod = (elem, value) => {
-    setMultilineText(elem, value, parseFloat(svgCanvas.getCurText('font_size')) || 16)
+    setMultilineText(elem, value, parseFloat(String(svgCanvas.getCurText('font_size'))) || 16)
   }
 
   /**

@@ -304,7 +304,7 @@ export const init = (canvas) => {
         d.push(`M${curpos.x},${curpos.y} C`)
         let i
         for (i = 1; i <= (N - 4); i += 3) {
-          let ct1 = points.getItem(i)
+          let ct1 = /** @type {import('./canvas-state.ts').XY} */ (points.getItem(i))
           const ct2 = points.getItem(i + 1)
           const end = points.getItem(i + 2)
 
@@ -795,9 +795,9 @@ export const init = (canvas) => {
       if (!path.dragging) {
         let rubberBox = svgCanvas.getRubberBox()
         if (!rubberBox) {
-          rubberBox = svgCanvas.setRubberBox(
+          rubberBox = /** @type {Element} */ (svgCanvas.setRubberBox(
             svgCanvas.selectorManager.getRubberBandBox()
-          )
+          ))
         }
         const zoom = svgCanvas.getZoom()
         assignAttributes(rubberBox, {
@@ -835,8 +835,8 @@ export const init = (canvas) => {
           const pointGrip2 = svgCanvas.addCtrlGrip('0c2')
 
           // dragging pointGrip1
-          pointGrip1.setAttribute('cx', mouseX)
-          pointGrip1.setAttribute('cy', mouseY)
+          pointGrip1.setAttribute('cx', String(mouseX))
+          pointGrip1.setAttribute('cy', String(mouseY))
           pointGrip1.setAttribute('display', 'inline')
 
           const ptX = this.#newPoint[0]
@@ -849,8 +849,8 @@ export const init = (canvas) => {
           const altX = (ptX + (ptX - curX))
           const altY = (ptY + (ptY - curY))
 
-          pointGrip2.setAttribute('cx', altX * zoom)
-          pointGrip2.setAttribute('cy', altY * zoom)
+          pointGrip2.setAttribute('cx', String(altX * zoom))
+          pointGrip2.setAttribute('cy', String(altY * zoom))
           pointGrip2.setAttribute('display', 'inline')
 
           const ctrlLine = svgCanvas.getCtrlLine(1)
@@ -1071,7 +1071,7 @@ export const init = (canvas) => {
       // Done with multi-node-select
         rubberBox.setAttribute('display', 'none')
 
-        if (rubberBox.getAttribute('width') <= 2 && rubberBox.getAttribute('height') <= 2) {
+        if (Number(rubberBox.getAttribute('width')) <= 2 && Number(rubberBox.getAttribute('height')) <= 2) {
           svgCanvas.pathActions.toSelectMode(/** @type {Element} */ (evt.target))
         }
 

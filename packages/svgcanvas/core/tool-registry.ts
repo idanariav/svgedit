@@ -252,7 +252,7 @@ export const init = (canvas: SvgCanvas): void => {
     const style = svgCanvas.getStyle()
     svgCanvas.gesture.addedNew = true
     svgCanvas.gesture.pendingNewElement = el
-    if (!opts?.keepOpacity) el.setAttribute('opacity', style.opacity)
+    if (!opts?.keepOpacity) el.setAttribute('opacity', String(style.opacity))
     el.setAttribute('style', 'pointer-events:inherit')
     cleanupElement(el)
     if (svgCanvas.getCurConfig().selectNew) {

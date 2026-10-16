@@ -214,7 +214,7 @@ export const init = (canvas) => {
         // Update blur value
         if (cblur) {
           svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [(/** @type {Element} */ (blurElem))])
-          svgCanvas.setBlurOffsets(gfilter, cblur)
+          svgCanvas.setBlurOffsets(/** @type {Element} */ (gfilter), Number(cblur))
         }
       }
 

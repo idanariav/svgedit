@@ -52,9 +52,9 @@ should add the file that exhibited it. Small per fixture.
 via `packages/svgcanvas/tsconfig.json`, which catches broken re-exports (it found a
 stale `sanitizeSvg` export). `tests/unit/svgcanvas-dts-drift.test.js` compares a live
 `SvgCanvas` instance with the d.ts class and fails on any runtime member that is
-neither declared nor listed on `InternalMembers` (`svgcanvas-internal.d.ts`: ~217
-names typed `any` and tagged `@internal` — state accessors and module plumbing
-that nothing in the editor or extensions calls). Promote a member to the public
+neither declared nor listed on `InternalMembers` (`svgcanvas-internal.d.ts`: ~205
+typed state accessors and module plumbing that nothing in the editor or
+extensions calls). Promote a member to the public
 API by declaring it properly and deleting it from `InternalMembers`. Runtime-attached members now live in `packages/svgcanvas/svgcanvas-members.d.ts`
 (`AttachedMembers`): `svgcanvas.d.ts` merges it into the class, and `svgcanvas.js`
 extends it through a JSDoc cast on its base class (augmenting the JS module

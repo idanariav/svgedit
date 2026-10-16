@@ -108,7 +108,7 @@ export const init = (canvas) => {
           element: 'polyline',
           curStyles: true,
           attr: {
-            points: svgCanvas.getDAttr(),
+            points: /** @type {string} */ (svgCanvas.getDAttr()),
             id: svgCanvas.getNextId('polyline'),
             fill: 'none',
             opacity: curShape.opacity / 2,
@@ -253,8 +253,8 @@ export const init = (canvas) => {
             id: svgCanvas.getNextId('text'),
             fill: svgCanvas.getCurText('fill'),
             'stroke-width': svgCanvas.getCurText('stroke_width'),
-            'font-size': svgCanvas.getCurText('font_size'),
-            'font-family': svgCanvas.getCurText('font_family'),
+            'font-size': /** @type {string|number} */ (svgCanvas.getCurText('font_size')),
+            'font-family': /** @type {string} */ (svgCanvas.getCurText('font_family')),
             'text-anchor': 'middle',
             'xml:space': 'preserve',
             opacity: curShape.opacity

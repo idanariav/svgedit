@@ -297,11 +297,7 @@ export const init = (canvas) => {
 * @returns {SVGPathElement}
 */
 
-  /**
- * @typedef {PlainObject} Point
- * @property {number} x The x value
- * @property {number} y The y value
- */
+  /** @typedef {import('./canvas-state.ts').XY} Point */
 
   /**
 * Takes three points and creates a smoother line based on them.

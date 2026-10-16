@@ -167,3 +167,11 @@ host that overrides tokens there reaches the dialogs too — a token added to th
 must be added to that list. The ~50 remaining hard-coded hex values in components/dialogs are
 deliberate: text on accent buttons, colour-picker maths, danger red, grid default. The
 `--cp-*` / `--pd-*` modal tokens are intentional named component tokens.
+
+## Facade state accessors typed non-null where they are set late (2026-10-16)
+
+`getRubberBox()` and `getrootSctm()` (`svgcanvas.js`) return `Element` / `DOMMatrix`, not `| null`: the selector manager
+creates the rubber band and the mouse handlers set the root matrix before anything reads them, and typing them nullable put
+~25 casts into the event modules. They really are `null` before the first gesture. Make them honest (a `requireRubberBox()`
+that throws, or narrowing in the converted event modules) when `event*.js` move to `.ts`. Related: three names reach the
+selector manager (`selectorManager`, `getSelectorManager()`, and the misspelt `gettingSelectorManager()`); keep one.

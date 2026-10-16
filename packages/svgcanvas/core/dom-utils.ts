@@ -102,7 +102,7 @@ export const init = (canvas: SvgCanvas): void => {
 
   /** Snapping step size in px (snappingStep converted from the current base unit). */
   const getSnapStepSize = (): number => {
-    const unit = svgCanvas.getBaseUnit()
+    const unit = svgCanvas.getBaseUnit() ?? 'px'
     let stepSize = Number(svgCanvas.getSnappingStep())
     if (unit !== 'px') {
       stepSize *= getTypeMap()[unit]

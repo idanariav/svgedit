@@ -245,13 +245,13 @@ export const init = (canvas) => {
         })
 
         // we want to go 20 pixels in the negative transformed y direction, ignoring scale
-        mgr.rotateGripConnector.setAttribute('x1', nbax + (nbaw) / 2)
-        mgr.rotateGripConnector.setAttribute('y1', nbay)
-        mgr.rotateGripConnector.setAttribute('x2', nbax + (nbaw) / 2)
-        mgr.rotateGripConnector.setAttribute('y2', nbay - (gripRadius * 5))
+        mgr.rotateGripConnector.setAttribute('x1', String(nbax + (nbaw) / 2))
+        mgr.rotateGripConnector.setAttribute('y1', String(nbay))
+        mgr.rotateGripConnector.setAttribute('x2', String(nbax + (nbaw) / 2))
+        mgr.rotateGripConnector.setAttribute('y2', String(nbay - (gripRadius * 5)))
 
-        mgr.rotateGrip.setAttribute('cx', nbax + (nbaw) / 2)
-        mgr.rotateGrip.setAttribute('cy', nbay - (gripRadius * 5))
+        mgr.rotateGrip.setAttribute('cx', String(nbax + (nbaw) / 2))
+        mgr.rotateGrip.setAttribute('cy', String(nbay - (gripRadius * 5)))
       }
     }
 
@@ -284,7 +284,7 @@ export const init = (canvas) => {
    */
     constructor () {
     // this will hold the <g> element that contains all selector rects/grips
-      this.selectorParentGroup = null
+      this.selectorParentGroup = /** @type {Element} */ (/** @type {unknown} */ (null))
 
       // this is a special rect that is used for multi-select
       this.rubberBandBox = null
@@ -310,9 +310,10 @@ export const init = (canvas) => {
         w: null
       })
 
-      this.selectorGripsGroup = null
-      this.rotateGripConnector = null
-      this.rotateGrip = null
+      // (created by `initGroup()` below, so typed as present)
+      this.selectorGripsGroup = /** @type {Element} */ (/** @type {unknown} */ (null))
+      this.rotateGripConnector = /** @type {Element} */ (/** @type {unknown} */ (null))
+      this.rotateGrip = /** @type {Element} */ (/** @type {unknown} */ (null))
 
       // dashed box drawn around a multi-element selection (uniform group scale)
       this.groupSelectorRect = null
@@ -371,7 +372,7 @@ export const init = (canvas) => {
 
         dataStorage.put(grip, 'dir', dir)
         dataStorage.put(grip, 'type', 'resize')
-        this.selectorGrips[dir] = grip
+        this.selectorGrips[dir] = /** @type {SVGElement} */ (grip)
         this.selectorGripsGroup.append(grip)
       })
 
@@ -530,7 +531,7 @@ export const init = (canvas) => {
         })
         this.selectorParentGroup.append(this.rubberBandBox)
       }
-      return this.rubberBandBox
+      return /** @type {SVGRectElement} */ (this.rubberBandBox)
     }
 
     /**
@@ -585,12 +586,12 @@ export const init = (canvas) => {
 
       // position the rotate grip + its connector at the top-center of the box
       // (mirrors the single-element selector in resize())
-      this.rotateGripConnector.setAttribute('x1', x + w / 2)
-      this.rotateGripConnector.setAttribute('y1', y)
-      this.rotateGripConnector.setAttribute('x2', x + w / 2)
-      this.rotateGripConnector.setAttribute('y2', y - gripRadius * 5)
-      this.rotateGrip.setAttribute('cx', x + w / 2)
-      this.rotateGrip.setAttribute('cy', y - gripRadius * 5)
+      this.rotateGripConnector.setAttribute('x1', String(x + w / 2))
+      this.rotateGripConnector.setAttribute('y1', String(y))
+      this.rotateGripConnector.setAttribute('x2', String(x + w / 2))
+      this.rotateGripConnector.setAttribute('y2', String(y - gripRadius * 5))
+      this.rotateGrip.setAttribute('cx', String(x + w / 2))
+      this.rotateGrip.setAttribute('cy', String(y - gripRadius * 5))
       this.rotateGrip.setAttribute('display', 'inline')
       this.rotateGripConnector.setAttribute('display', 'inline')
 
