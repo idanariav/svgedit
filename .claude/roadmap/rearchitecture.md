@@ -1,4 +1,4 @@
-# Re-architecture (R1–R7)
+# Re-architecture (R1–R4, R6, R7)
 
 Part of the roadmap (index: [`../roadmap.md`](../roadmap.md)). Raised 2026-10-15 from a "what would we build
 differently from scratch" review, with everything on the table, including a rewrite of the canvas engine. Nothing here
@@ -215,21 +215,10 @@ third-party add-ons (none exist today, so it could also go).
 features one at a time, deleting extension hooks as their last user goes; puppet warp after the `registerTool` session
 concept ([infrastructure](infrastructure.md) › Tier 0 follow-ups).
 
+`userExtensions` (a dynamic `import()` of a host-given path, consumed in `EditorStartup.extAndLocaleFunc`; no host uses it)
+goes with the extension API if that is dropped.
+
 Size: L, incremental, low risk per feature.
-
-## R5. Drop URL configuration
-
-**Today.** `ConfigObj` parses the page URL into config (`initStroke[color]`, `bkgd_color`, `dimensions`, `extensions`
-by name, any pref) and loads drawing content from `source` / `url` parameters unless `preventURLContentLoading` is set.
-`userExtensions` and `imgPath` are already refused from the URL, and cross-folder extension names rejected. The only
-consumer, the plugin, configures through `setConfig`; the URL path is unused surface (and `lockExtensions`,
-`preventAllURLConfig`, `allowedOrigins` exist only to fence it in).
-
-**Target.** Config only through `setConfig` / the host API. Remove the URL parsing, `source` / `url` loading and the
-fencing options (no e2e spec navigates with a query string as of 2026-10-15). Also review `userExtensions` (URL-free but still a dynamic `import()` of a host-given path; drop
-it if R4 removes the extension API).
-
-Size: S–M. Check the plugin for query parameters before removing.
 
 ## R6. Bundle size and startup
 

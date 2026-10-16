@@ -1,7 +1,8 @@
 # Introduction
 
-SVG-edit has several options that can be overridden either by adding URL
-parameters or by setting the options in JavaScript (since v2.5).
+SVG-edit has several options that are set in JavaScript with
+`svgEditor.setConfig()`. (The page URL's query string no longer configures
+the editor or loads content; pass options and drawings programmatically.)
 
 Options may be divided into "config" (which is not meant to be customized
 via UI by the user) and "preferences" (which are meant to be customized
@@ -13,11 +14,6 @@ for the allowable values, defaults, and uses of config.
 
 See the API definition of [Preferences]{@link module:SVGEditor.Prefs}
 for their information.
-
-A few among these options related to paths are disallowed via URL though
-they can still be set by `svgEditor.setConfig()` (since v2.7).
-
-These are covered in the sections below.
 
 One may preload a file. See "Preloading a file" below.
 
@@ -54,39 +50,16 @@ svgEditor.setConfig({
 This will set the default width/height of the image, the size of the outside
 canvas, and the default "fill" color.
 
-#### Overwrite configuration
+#### Letting stored preferences win
 
 For programmatic config setting, one may optionally pass (another)
-object to `.setConfig()` as the second argument to further adjust
-configuration behavior.
+object to `.setConfig()` as the second argument.
 
-If an `overwrite` boolean is set to `false` on this additional object,
-it will, as occurs with all URL type configurations, prevent the current
-configuration from overwriting any explicitly set previous configurations.
-The default is `true` except for URLs which always are `false`.
-
-If an `allowInitialUserOverride` boolean is set to `true`, this will allow
-subsequent configuration overwriting via URL (e.g., if you want the
-user to have the option to override certain of your (`svgedit-config-iife.js`)
-`.setConfig()` directives via URL while still providing them with
+If an `allowInitialUserOverride` boolean is set to `true`, the value you
+supply becomes a default that previously stored user preferences can
+override (e.g., if you want the user to have the option to change one of
+your `.setConfig()` values via the UI while still providing them with
 your own default value, you should add this property).
-
-### Setting options via URL
-
-The same options from the "Setting options programmatically" section can be
-set in the URL as follows:
-
-```
-.../svg-editor.html?dimensions=300,240&canvas_expansion=5&initFill[color]=0000FF
-```
-
-## Priority of programmatically-set config vs. URL config
-
-If options are set both using `.setConfig()` as well as in the URL, the
-`.setConfig()` value will be used (as of v2.7). (The reverse was true in
-  previous versions but was changed for security reasons.)
-
-See section "Overwrite configuration" above on changing this behavior.
 
 ## Note to developers of SVGEdit on preferences vs. configuration
 
@@ -101,10 +74,7 @@ by the user. A future version may adjust these types.
 
 ## Preloading a file
 
-It is possible to start the editor with preloaded SVG file, using either
-of the following approahces.
-
-### Preload a file (Programmatically)
+It is possible to start the editor with a preloaded SVG file.
 
 One should bear in mind that if one wishes to immediately set a
 particular string regardless of previous saves by the user, especially when
@@ -129,26 +99,6 @@ svgEditor.loadFromDataURI('data:image/svg+xml;base64,...')
 // Local URL:
 svgEditor.loadFromURL('images/logo.svg')
 ```
-
-### Preload a file (by URL)
-
-As a URL parameter, one can pre-load an SVG file in the following manner:
-
-```js
-// Data URI
-location.href += '?source=' + encodeURIComponent('data:image/svg+xml;utf8,' + svgText)
-
-// Data URI (base 64):
-location.href += '?source=' + encodeURIComponent('data:image/svg+xml;base64,' + svgTextAsBase64) // data%3Aimage%2Fsvg%2Bxml%3Bbase64%2C ...
-
-// Local URL:
-location.href += '?url=' + encodeURIComponent('images/logo.svg') // images%2Flogo.svg
-```
-
-**Note:** There is currently a bug that prevents data URIs ending with
-equals (=) characters from being parsed. Removing these characters seem
-to allow the import to work as expected.
-<!-- Todo: Is this still occurring? -->
 
 ## Persisting user data in a host store (`userDataAdapter`)
 

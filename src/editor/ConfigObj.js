@@ -88,24 +88,16 @@ export default class ConfigObj {
       * @interface module:SVGEditor.Config
       * @property {string} [canvasName="default"] Used to namespace storage provided via `ext-storage.js`; you can use this if you wish to have multiple independent instances of SVG Edit on the same domain
       * @property {boolean} [no_save_warning=false] If `true`, prevents the warning dialog box from appearing when closing/reloading the page. Mostly useful for testing.
-      * @property {string} [imgPath="images/"] The path where the SVG icons are located, with trailing slash. Note that as of version 2.7, this is not configurable by URL for security reasons.
-      * @property {boolean} [preventAllURLConfig=false] Set to `true` to override the ability for URLs to set non-content configuration (including extension config).
-      *   Must be set early, i.e., in `svgedit-config-iife.js`; extension loading is too late!
-      * @property {boolean} [preventURLContentLoading=false] Set to `true` to override the ability for URLs to set URL-based SVG content.
-      *   Must be set early, i.e., in `svgedit-config-iife.js`; extension loading is too late!
-      * @property {boolean} [lockExtensions=false] Set to `true` to override the ability for URLs to set their own extensions; disallowed in URL setting. There is no need for this when `preventAllURLConfig` is used.
-      *   Must be set early, i.e., in `svgedit-config-iife.js`; extension loading is too late!
+      * @property {string} [imgPath="images/"] The path where the SVG icons are located, with trailing slash.
       * @property {boolean} [noDefaultExtensions=false] If set to `true`, prohibits automatic inclusion of default extensions (though "extensions" can still be used to add back any desired default extensions along with any other extensions).
-      *   This can only be meaningfully used in `svgedit-config-iife.js` or in the URL
+      *   This can only be meaningfully used before `init()`.
       * @property {boolean} [avoidClientSide=false] DEPRECATED (use `avoidClientSideDownload` instead); Used by `ext-server_opensave.js`; set to `true` if you wish to always save to server and not only as fallback when client support is lacking
       * @property {boolean} [avoidClientSideDownload=false] Used by `ext-server_opensave.js`; set to `true` if you wish to always save to server and not only as fallback when client support is lacking
       * @property {boolean} [avoidClientSideOpen=false] Used by `ext-server_opensave.js`; set to `true` if you wish to always open from the server and not only as fallback when FileReader client support is lacking
-      * @property {string[]} [extensions=[]] Extensions to load on startup. Use an array in `setConfig` and comma separated file names in the URL.Extension names must begin with "ext-".
+      * @property {string[]} [extensions=[]] Extensions to load on startup. Use an array in `setConfig`. Extension names must begin with "ext-".
       *   Note that as of version 2.7, paths containing "/", "\", or ":", are disallowed for security reasons.
       *   Although previous versions of this list would entirely override the default list, as of version 2.7, the defaults will always be added to this explicit list unless the configuration `noDefaultExtensions` is included.
       *   See {@link module:SVGEditor~defaultExtensions}.
-      * @property {string[]} [allowedOrigins=[]] Origins permitted for cross-domain messaging (e.g., between an embedded editor and its parent). Currently inert in this fork — no cross-domain-messaging extension is included — kept for API compatibility with hosts that may still set it.
-      * @property {string} [paramurl] This was available via URL only. Allowed an un-encoded URL within the query string (use "url" or "source" with a data: URI instead)
       * @property {Float} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
       * @property {PlainObject} [initFill] Init fill properties
       * @property {string} [initFill.color="FFFFFF"] The initial fill color. Must be a hex code string. Defaults to solid white.
@@ -119,7 +111,7 @@ export default class ConfigObj {
       * @property {Float} [text.font_size=24] Text font size
       * @property {string} [text.font_family="serif"] Text font family
       * @property {Float} [initOpacity=1] Initial opacity (multiplied by 100)
-      * @property {module:SVGEditor.XYDimensions} [dimensions=[640, 480]] The default width/height of a new document. Use an array in `setConfig` (e.g., `[800, 600]`) and comma separated numbers in the URL.
+      * @property {module:SVGEditor.XYDimensions} [dimensions=[640, 480]] The default width/height of a new document. Use an array in `setConfig` (e.g., `[800, 600]`).
       * @property {boolean} [gridSnapping=false] Enable snap to grid by default. Set in Editor Options.
       * @property {string} [gridColor="#000"] Accepts hex, e.g., '#000'. Set in Editor Options. Defaults to black.
       * @property {string} [baseUnit="px"] Set in Editor Options.
@@ -171,7 +163,6 @@ export default class ConfigObj {
       showlayers: false,
       no_save_warning: false,
       // PATH CONFIGURATION
-      // The following path configuration items are disallowed in the URL (as should any future path configurations)
       imgPath: './images',
       // Resolve relative to current base URI so deployments outside dist/editor still find extensions.
       extPath: defaultExtPath,
@@ -191,12 +182,8 @@ export default class ConfigObj {
 
       // SOURCE OUTPUT BEHAVIOR
       dynamicOutput: false,
-      // URL BEHAVIOR CONFIGURATION
-      preventAllURLConfig: false,
-      preventURLContentLoading: false,
-      // EXTENSION CONFIGURATION (see also preventAllURLConfig)
-      lockExtensions: false, // Disallowed in URL setting
-      noDefaultExtensions: false, // noDefaultExtensions can only be meaningfully used in `svgedit-config-iife.js` or in the URL
+      // EXTENSION CONFIGURATION
+      noDefaultExtensions: false, // can only be meaningfully set before `init()`
       // EXTENSION-RELATED (GRID)
       showGrid: false, // Set by ext-grid.js
       gridShape: 'square', // 'square' | 'isometric' | 'triangle' | 'perspective1' | 'perspective2'. Set via the grid settings popover.
@@ -222,7 +209,6 @@ export default class ConfigObj {
     // Note: The difference between Prefs and Config is that Prefs
     //   can be changed in the UI and are stored in the browser,
     //   while config cannot
-    this.urldata = {}
     /**
       * @name module:SVGEditor~defaultExtensions
       * @type {string[]}
@@ -277,17 +263,7 @@ export default class ConfigObj {
       // We do not put on defaultConfig to simplify object copying
       //   procedures (we obtain instead from defaultExtensions)
       extensions: [],
-      userExtensions: [],
-      /**
-      * Can use `location.origin` to indicate the current
-      * origin. Can contain a '*' to allow all domains or 'null' (as
-      * a string) to support all `file:///` URLs. Cannot be set by
-      * URL for security reasons (not safe, at least for
-      * privacy or data integrity of SVG content).
-      * Currently inert in this fork — no cross-domain-messaging extension
-      * is included — kept for API compatibility with hosts that may still set it.
-      */
-      allowedOrigins: []
+      userExtensions: []
     }
     this.editor = editor
   }
@@ -318,91 +294,8 @@ export default class ConfigObj {
   }
 
   /**
-   * @function loadFromURL Load config/data from URL if given
-   * @returns {void}
-   */
-  loadFromURL () {
-    const self = this
-    const { search, searchParams } = new URL(location)
-    if (search) {
-      this.urldata = {}
-      const entries = searchParams.entries()
-      for (const entry of entries) {
-        this.urldata[entry[0]] = entry[1]
-      }
-
-      ['initStroke', 'initFill'].forEach((prop) => {
-        if (searchParams.has(`${prop}[color]`)) {
-          // Restore back to original non-deparamed value to avoid color
-          //  strings being converted to numbers
-          if (this.urldata[prop] === undefined) { this.urldata[prop] = {} }
-          this.urldata[prop].color = searchParams.get(`${prop}[color]`)
-        }
-      })
-
-      if (searchParams.has('bkgd_color')) {
-        this.urldata.bkgd_color = '#' + searchParams.get('bkgd_color')
-      }
-
-      if (this.urldata.dimensions) {
-        this.urldata.dimensions = this.urldata.dimensions.split(',')
-      }
-
-      if (this.urldata.extensions) {
-        // For security reasons, disallow cross-domain or cross-folder
-        //  extensions via URL
-        this.urldata.extensions = (/[:/\\]/).test(this.urldata.extensions)
-          ? ''
-          : this.urldata.extensions.split(',')
-      }
-
-      // Disallowing extension paths via URL for
-      // security reasons, even for same-domain
-      // ones given potential to interact in undesirable
-      // ways with other script resources
-      ['userExtensions', 'imgPath']
-        .forEach(function (pathConfig) {
-          if (self.urldata[pathConfig]) {
-            delete self.urldata[pathConfig]
-          }
-        })
-
-      // Note: `source` and `url` are not set on config but are used below
-      this.setConfig(this.urldata, { overwrite: false })
-      this.setupCurConfig()
-
-      if (!this.curConfig.preventURLContentLoading) {
-        let { source } = this.urldata
-        if (!source) { // urldata.source may have been null if it ended with '='
-          const src = searchParams.get('source')
-          if (src?.startsWith('data:')) {
-            source = src
-          }
-        }
-        if (source) {
-          if (source.startsWith('data:')) {
-            this.editor.loadFromDataURI(source)
-          } else {
-            this.editor.loadFromString(source)
-          }
-          return
-        }
-        if (this.urldata.url) {
-          this.editor.loadFromURL(this.urldata.url)
-          return
-        }
-      }
-      this.loadContentAndPrefs()
-    } else {
-      this.setupCurConfig()
-      this.loadContentAndPrefs()
-    }
-  }
-
-  /**
     * Sets `configObj.defaultPrefs` based on previously persisted storage.
-    *  This will override URL settings (for security reasons) but
-    *  not `svgedit-config-iife.js` configuration (unless initial user
+    *  This will not override `setConfig` configuration (unless initial user
     *  overriding is explicitly permitted there via `allowInitialUserOverride`).
     * @function module:SVGEditor.loadContentAndPrefs
     * @returns {void}
@@ -430,18 +323,10 @@ export default class ConfigObj {
   * @param {PlainObject} [cfgCfg] Describes configuration which applies to the
   *    particular batch of supplied options
   * @param {boolean} [cfgCfg.allowInitialUserOverride=false] Set to true if you wish
-  *  to allow initial overriding of settings by the user via the URL
-  *  (if permitted) or previously stored preferences (if permitted);
-  *  note that it will be too late if you make such calls in extension
-  *  code because the URL or preference storage settings will
-  *   have already taken place.
-  * @param {boolean} [cfgCfg.overwrite=true] Set to false if you wish to
-  *  prevent the overwriting of prior-set preferences or configuration
-  *  (URL settings will always follow this requirement for security
-  *  reasons, so `svgedit-config-iife.js` settings cannot be overridden unless it
-  *  explicitly permits via `allowInitialUserOverride` but extension config
-  *  can be overridden as they will run after URL settings). Should
-  *   not be needed in `svgedit-config-iife.js`.
+  *  to let previously stored preferences (and the user) override the value
+  *  you supply as the default; note that it will be too late if you make
+  *  such calls in extension code because preference storage will already
+  *  have been read.
   * @returns {void}
 */
   setConfig (opts, cfgCfg = {}) {
@@ -464,12 +349,6 @@ export default class ConfigObj {
       // Membership test (`key in`), not truthiness: prefs whose default is falsy
       // (e.g. `tabletMode: false`, `bkgd_url: ''`) must still be settable here.
       if (key in this.defaultPrefs) {
-        if (cfgCfg.overwrite === false && (
-          this.curConfig.preventAllURLConfig ||
-          this.curPrefs[key])
-        ) {
-          return
-        }
         if (cfgCfg.allowInitialUserOverride === true) {
           this.defaultPrefs[key] = val
         } else {
@@ -477,30 +356,12 @@ export default class ConfigObj {
           // rather than treated as a getter (see pref()).
           this.pref(key, val, true)
         }
-      } else if (['extensions', 'userExtensions', 'allowedOrigins'].includes(key)) {
-        if (cfgCfg.overwrite === false &&
-          (
-            this.curConfig.preventAllURLConfig ||
-            ['allowedOrigins'].includes(key) ||
-            (key === 'extensions' && this.curConfig.lockExtensions)
-          )
-        ) {
-          return
-        }
+      } else if (['extensions', 'userExtensions'].includes(key)) {
         this.curConfig[key] = this.curConfig[key].concat(val) // We will handle any dupes later
       // Only allow other configObj.curConfig if defined in configObj.defaultConfig
       } else if ({}.hasOwnProperty.call(this.defaultConfig, key)) {
-        if (cfgCfg.overwrite === false && (
-          this.curConfig.preventAllURLConfig ||
-          {}.hasOwnProperty.call(this.curConfig, key)
-        )) {
-          return
-        }
         // Potentially overwriting of previously set config
         if ({}.hasOwnProperty.call(this.curConfig, key)) {
-          if (cfgCfg.overwrite === false) {
-            return
-          }
           extendOrAdd(this.curConfig, key, val)
         } else if (cfgCfg.allowInitialUserOverride === true) {
           extendOrAdd(this.defaultConfig, key, val)
@@ -546,7 +407,8 @@ export default class ConfigObj {
    * @returns {void}
    */
   load () {
-    this.loadFromURL(this.editor)
+    this.setupCurConfig()
+    this.loadContentAndPrefs()
     this.setupCurPrefs(this.editor)
     this.seedGridConfigFromPrefs()
     this.seedPencilConfigFromPrefs()

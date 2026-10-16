@@ -26,8 +26,6 @@
   -->
   <div id="container" style="width:100%;height:100vh"></div>
 </body>
-<!-- If you do not wish to add extensions by URL, you can add calls
-      within the following file to svgEditor.setConfig -->
 <script type="module">
   import Editor from './Editor.js'
   /* for available options see the file `docs/tutorials/ConfigOptions.md */
@@ -39,13 +37,6 @@
     userExtensions: [/* { pathName: '/packages/react-test/dist/react-test.js' } */]
   })
   svgEditor.init()
-  if (typeof XDOMAIN !== 'undefined' && XDOMAIN) {
-    svgEditor.setConfig({
-      canvasName: 'xdomain', // Namespace this
-      allowedOrigins: ['*']
-    })
-    console.info('xdomain config activated')
-  }
 </script>
 
 </html>

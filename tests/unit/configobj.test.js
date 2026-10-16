@@ -7,9 +7,9 @@ describe('ConfigObj', () => {
       getItem (k) { return this.map.get(k) },
       setItem (k, v) { this.map.set(k, v) }
     },
-    loadFromDataURI: () => { stubEditor.loaded = 'data' },
-    loadFromString: () => { stubEditor.loaded = 'string' },
-    loadFromURL: () => { stubEditor.loaded = 'url' }
+    loadFromDataURI: vi.fn(),
+    loadFromString: vi.fn(),
+    loadFromURL: vi.fn()
   })
 
   it('escapes regex characters', () => {
@@ -50,15 +50,29 @@ describe('ConfigObj', () => {
     expect(cfg.defaultPrefs.lang).toBe('fr')
   })
 
-  it('prefers existing values when overwrite is false', () => {
+  it('does not read configuration or content from the page URL', () => {
     const editor = stubEditor()
     const cfg = new ConfigObj(editor)
-    cfg.curConfig.preventAllURLConfig = true
-    cfg.curPrefs.lang = 'es'
+    const before = window.location.href
+    window.history.replaceState({}, '', '/?extensions=ext-x&dimensions=1,2&bkgd_color=ff0000&source=%3Csvg%2F%3E&url=a.svg')
+    try {
+      cfg.load()
+    } finally {
+      window.history.replaceState({}, '', before)
+    }
+    expect(cfg.curConfig.extensions).not.toContain('ext-x')
+    expect(cfg.curConfig.dimensions).toEqual([640, 480])
+    expect(cfg.pref('bkgd_color')).not.toBe('#ff0000')
+    expect(editor.loadFromString).not.toHaveBeenCalled()
+    expect(editor.loadFromDataURI).not.toHaveBeenCalled()
+    expect(editor.loadFromURL).not.toHaveBeenCalled()
+  })
 
-    cfg.setConfig({ lang: 'de', gridColor: '#fff', extensions: ['x'] }, { overwrite: false })
-    expect(cfg.curPrefs.lang).toBe('es')
-    expect(cfg.curConfig.gridColor).toBeUndefined()
-    expect(cfg.curConfig.extensions).toEqual([])
+  it('ignores the retired URL-fencing options', () => {
+    const cfg = new ConfigObj(stubEditor())
+    cfg.setConfig({ preventAllURLConfig: true, lockExtensions: true, allowedOrigins: ['*'] })
+    expect(cfg.curConfig).not.toHaveProperty('preventAllURLConfig')
+    expect(cfg.curConfig).not.toHaveProperty('lockExtensions')
+    expect(cfg.curConfig).not.toHaveProperty('allowedOrigins')
   })
 })

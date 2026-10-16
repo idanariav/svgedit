@@ -60,11 +60,10 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 | R2 | Canvas composition: modules export functions over an explicit context instead of attaching ~540 members to one object | L | — |
 | R3 | TypeScript (`.ts`) for the engine, then the editor | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
-| R5 | Drop URL configuration and URL-loaded user extensions | S–M | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 | R7 | Agent docs diet (generated file map / tool list, no changelog prose) | M | — |
 
-Suggested order: R5 and R7 (small, independent) → R3 toolchain → R2 → R1 step (a) (which also gives the
+Suggested order: R7 (small, independent) → R3 toolchain → R2 → R1 step (a) (which also gives the
 [LLM CLI](roadmap/llm-cli.md) its headless engine) → decide on the rest of R1 with that in hand. Step (a) was done first, out of
 this order, because it needed neither: what it learned about R2 and R3 is in the re-architecture file. R4 and R6 run alongside.
 
@@ -72,7 +71,7 @@ this order, because it needed neither: what it learned about R2 and R3 is in the
 
 | File | Covers |
 |---|---|
-| [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md) | R1–R7 above |
+| [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md) | R1–R4, R6, R7 above (R5 is done) |
 | [`roadmap/infrastructure.md`](roadmap/infrastructure.md) | Tier 0 follow-ups (tool cursors, live-effects preview on transactions, precise `enabled`, puppet warp on `registerTool`, lazy transaction snapshot), round-trip corpus, `svgcanvas.d.ts` / host API, typing the `init` modules, TypeScript conversion steps |
 | [`roadmap/drawing-tools.md`](roadmap/drawing-tools.md) | Measure, Distort, Gradient, Shaper, Pencil / Smooth Path fit, Pen continue / join, centerline tracing, Pencil continue, Smooth tool, ruler guides, snapping while drawing, shape-family tools |
 | [`roadmap/appearance.md`](roadmap/appearance.md) | Recolor Artwork, live effects, Live Corners, art / pattern brushes, Blend, the live stack, width profiles, arrowheads, fitted dashes, Eyedropper Copy style, glow |
