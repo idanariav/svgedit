@@ -106,7 +106,7 @@ Done: guides dragged out of both rulers, moved (Alt copies), deleted by dragging
 ## Snapping while drawing (`core/draw-snap.js`): follow-ups from T2.1
 
 Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-family and polystar points snap to anchors, box corners / midpoints / centres, edge lines and the page, with guides. Remaining:
-- **Hover shows the snap before the press** (`svgCanvas.hoverDrawSnap`, called from the mouse-move branch with no button
+- **Hover shows the snap before the press** (`svgCanvas.drawSnap.hoverDrawSnap`, called from the mouse-move branch with no button
   down, for the built-in drawing modes and any tool with `snap: true`): the same ring / guide lines, its own target cache
   (rebuilt when the mode or the undo history changes), cleared on leaving the canvas or the snapping modes. A change that
   is not an undo step (a layer shown / hidden, a live preview) leaves the cache stale until the next one. Not on touch

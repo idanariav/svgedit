@@ -445,14 +445,6 @@ export interface InternalMembers {
   /** @internal */
   withContextUndimmed: any
   /** @internal */
-  clearDrawSnap(...args: any[]): any
-  /** @internal */
-  snapDrawPoint(...args: any[]): any
-  /** @internal */
-  hoverDrawSnap(...args: any[]): any
-  /** @internal */
-  clearDrawHover(...args: any[]): any
-  /** @internal */
   activeToolSnaps(...args: any[]): any
   /** @internal */
   cancelToolGesture(...args: any[]): any

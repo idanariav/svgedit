@@ -49,7 +49,7 @@
 | `debug-events.js` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
 | `distort.js` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
 | `dom-utils.js` | DOM/element manipulation, lookup, and misc canvas-state utilities |
-| `draw-snap.js` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
+| `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
 | `draw.js` | Tools for drawing |
 | `drawing-invariants.js` | Structural invariants of a healthy drawing, as a pure DOM check |
 | `elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |

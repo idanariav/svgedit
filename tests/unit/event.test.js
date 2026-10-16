@@ -56,6 +56,7 @@ describe('event', () => {
     rubberBox = /** @type {SVGRectElement} */ (createSvgElement('rect'))
 
     canvas = {
+      drawSnap: { snapDrawPoint: (x, y) => ({ x, y }), hoverDrawSnap: (x, y) => ({ x, y }), clearDrawHover () {}, clearDrawSnap () {} },
       spaceKey: false,
       started: false,
       rootSctm: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },

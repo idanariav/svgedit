@@ -159,7 +159,7 @@ export const init = (canvas) => {
     if (isCreateInCurrentGroup(svgCanvas)) ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
     const raw = { x, y }
     if (svgCanvas.getCurConfig().gridSnapping) ({ x, y } = svgCanvas.snapPointToGrid(x, y))
-    else if (tool?.snap) ({ x, y } = svgCanvas.snapDrawPoint?.(x, y, { tool: true }) ?? { x, y })
+    else if (tool?.snap) ({ x, y } = svgCanvas.drawSnap.snapDrawPoint(x, y, { tool: true }))
     const mac = isMac()
     return {
       x,
@@ -326,7 +326,7 @@ export const init = (canvas) => {
       const ev = toToolEvent(evt)
       // A tool that opted in with `snap` sees the point a press would land on, as the guides show.
       if (tool.snap && !svgCanvas.getCurConfig().gridSnapping) {
-        ({ x: ev.x, y: ev.y } = svgCanvas.hoverDrawSnap?.(ev.x, ev.y, { tool: true }) ?? ev)
+        ({ x: ev.x, y: ev.y } = svgCanvas.drawSnap.hoverDrawSnap(ev.x, ev.y, { tool: true }))
       }
       tool.pointerMove?.(ctx, ev)
     } catch (err) {

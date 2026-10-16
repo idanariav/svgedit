@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.js'
-import { init, isDrawSnapMode } from '../../packages/svgcanvas/core/draw-snap.js'
+import { createDrawSnap, isDrawSnapMode } from '../../packages/svgcanvas/core/draw-snap.ts'
 
 const make = (tag, attrs = {}, parent) => {
   const el = document.createElementNS(NS.SVG, tag)
@@ -135,8 +135,9 @@ describe('collectPointTargets', () => {
   })
 })
 
-describe('svgCanvas.snapDrawPoint', () => {
+describe('svgCanvas.drawSnap', () => {
   let canvas
+  let drawSnap
   let config
   let mode
   let group
@@ -164,7 +165,7 @@ describe('svgCanvas.snapDrawPoint', () => {
       undoMgr: { getUndoStackSize: () => undo, getRedoStackSize: () => 0 },
       getCurrentDrawing: () => ({ getCurrentLayer: () => layer })
     }
-    init(canvas)
+    drawSnap = createDrawSnap(canvas)
   })
   afterEach(() => { document.body.textContent = '' })
 
@@ -174,127 +175,127 @@ describe('svgCanvas.snapDrawPoint', () => {
   })
 
   it('snaps to a nearby corner and shows the guide', () => {
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 100, y: 100 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 100, y: 100 })
     expect(canvas.showDrawGuides).toHaveBeenCalledTimes(1)
     expect(canvas.showDrawGuides.mock.calls[0][0]).toMatchObject({ at: { x: 100, y: 100 }, point: { x: 100, y: 100 } })
   })
 
   it('clears the guide (null) when nothing is near', () => {
-    canvas.snapDrawPoint(300, 300)
+    drawSnap.snapDrawPoint(300, 300)
     expect(canvas.showDrawGuides).toHaveBeenLastCalledWith(null)
   })
 
   it('the tolerance is eight screen pixels, so it shrinks as you zoom in', () => {
-    expect(canvas.snapDrawPoint(107, 100).x).toBe(100)
+    expect(drawSnap.snapDrawPoint(107, 100).x).toBe(100)
     canvas.getZoom = () => 4
-    canvas.clearDrawSnap()
-    expect(canvas.snapDrawPoint(107, 100).x).toBe(107) // 7 content units = 28 px away
-    expect(canvas.snapDrawPoint(101, 100).x).toBe(100)
+    drawSnap.clearDrawSnap()
+    expect(drawSnap.snapDrawPoint(107, 100).x).toBe(107) // 7 content units = 28 px away
+    expect(drawSnap.snapDrawPoint(101, 100).x).toBe(100)
   })
 
   it('does nothing when grid snapping is on, when smart snapping is off, in group context or in other modes', () => {
     config.gridSnapping = true
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
     config.gridSnapping = false
     config.smartSnapping = false
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
     config.smartSnapping = true
     group = {}
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
     group = null
     mode = 'fhpath'
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
     mode = 'select'
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
     expect(canvas.showDrawGuides).not.toHaveBeenCalled()
   })
 
   it('a registered tool that opted in snaps in any mode', () => {
     mode = 'spiral'
-    expect(canvas.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
-    expect(canvas.snapDrawPoint(103, 98, { tool: true })).toEqual({ x: 100, y: 100 })
+    expect(drawSnap.snapDrawPoint(103, 98)).toEqual({ x: 103, y: 98 })
+    expect(drawSnap.snapDrawPoint(103, 98, { tool: true })).toEqual({ x: 100, y: 100 })
   })
 
   it('collects the targets once per gesture and again after clearDrawSnap', () => {
-    canvas.snapDrawPoint(103, 98)
-    canvas.snapDrawPoint(120, 120)
-    canvas.snapDrawPoint(400, 400)
+    drawSnap.snapDrawPoint(103, 98)
+    drawSnap.snapDrawPoint(120, 120)
+    drawSnap.snapDrawPoint(400, 400)
     expect(collected).toBe(1)
-    canvas.clearDrawSnap()
-    canvas.snapDrawPoint(103, 98)
+    drawSnap.clearDrawSnap()
+    drawSnap.snapDrawPoint(103, 98)
     expect(collected).toBe(2)
   })
   describe('hover (no button down)', () => {
     it('shows the guide a press would snap to, and returns the snapped point', () => {
-      expect(canvas.hoverDrawSnap(103, 98)).toEqual({ x: 100, y: 100 })
-      expect(canvas.hoverDrawSnap(300, 300)).toEqual({ x: 300, y: 300 })
+      expect(drawSnap.hoverDrawSnap(103, 98)).toEqual({ x: 100, y: 100 })
+      expect(drawSnap.hoverDrawSnap(300, 300)).toEqual({ x: 300, y: 300 })
       expect(canvas.showDrawGuides.mock.calls[0][0]).toMatchObject({ at: { x: 100, y: 100 }, point: { x: 100, y: 100 } })
     })
 
     it('collects the targets once while the pointer roams, and again when the drawing changes', () => {
-      canvas.hoverDrawSnap(103, 98)
-      canvas.hoverDrawSnap(300, 300)
-      canvas.hoverDrawSnap(120, 120)
+      drawSnap.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(300, 300)
+      drawSnap.hoverDrawSnap(120, 120)
       expect(collected).toBe(1)
       undo = 1 // an edit landed on the undo stack
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       expect(collected).toBe(2)
     })
 
     it('rebuilds the targets when a shape appears that is not an undo step yet (a pen path in progress)', () => {
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       expect(collected).toBe(1)
       make('path', { d: 'M 0 0' }, document.querySelector('g.layer'))
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       expect(collected).toBeGreaterThan(1)
     })
 
     it('does not share its targets with a gesture, and a gesture end drops them', () => {
-      canvas.hoverDrawSnap(103, 98)
-      canvas.snapDrawPoint(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
+      drawSnap.snapDrawPoint(103, 98)
       expect(collected).toBe(2)
-      canvas.clearDrawSnap()
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.clearDrawSnap()
+      drawSnap.hoverDrawSnap(103, 98)
       expect(collected).toBe(3)
     })
 
     it('clears its guide when the pointer leaves or the mode stops snapping, and never touches a press\'s guide', () => {
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       canvas.showDrawGuides.mockClear()
-      canvas.clearDrawHover()
+      drawSnap.clearDrawHover()
       expect(canvas.showDrawGuides).toHaveBeenCalledWith(null)
       canvas.showDrawGuides.mockClear()
-      canvas.clearDrawHover() // nothing shown any more
+      drawSnap.clearDrawHover() // nothing shown any more
       expect(canvas.showDrawGuides).not.toHaveBeenCalled()
 
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       canvas.showDrawGuides.mockClear()
       mode = 'select'
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       expect(canvas.showDrawGuides).toHaveBeenCalledWith(null)
 
       mode = 'rect'
-      canvas.hoverDrawSnap(103, 98) // a hover is up...
-      canvas.snapDrawPoint(103, 98) // ...then a press takes the overlay over
+      drawSnap.hoverDrawSnap(103, 98) // a hover is up...
+      drawSnap.snapDrawPoint(103, 98) // ...then a press takes the overlay over
       canvas.showDrawGuides.mockClear()
-      canvas.clearDrawHover()
+      drawSnap.clearDrawHover()
       expect(canvas.showDrawGuides).not.toHaveBeenCalled()
     })
 
     it('obeys the same switches as a press: grid, smart snapping off, group context, tools that did not opt in', () => {
       config.gridSnapping = true
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       config.gridSnapping = false
       config.smartSnapping = false
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       config.smartSnapping = true
       group = {}
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       group = null
       mode = 'spiral'
-      canvas.hoverDrawSnap(103, 98)
+      drawSnap.hoverDrawSnap(103, 98)
       expect(canvas.showDrawGuides).not.toHaveBeenCalled()
-      canvas.hoverDrawSnap(103, 98, { tool: true })
+      drawSnap.hoverDrawSnap(103, 98, { tool: true })
       expect(canvas.showDrawGuides).toHaveBeenCalledTimes(1)
     })
   })

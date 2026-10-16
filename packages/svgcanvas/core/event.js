@@ -15,7 +15,7 @@ import {
 import * as hstry from './history.js'
 import { error as logError, warn as logWarn } from '../common/logger.ts'
 import { findPos } from '../../svgcanvas/common/util.ts'
-import { isDrawSnapMode } from './draw-snap.js'
+import { isDrawSnapMode } from './draw-snap.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
 import { areaTextAtPoint } from './text-rows.js'
@@ -83,27 +83,30 @@ export const init = (canvas) => {
   const eventResize = eventResizeInit(svgCanvas)
   const eventRotate = eventRotateInit(svgCanvas)
   const eventSelect = eventSelectInit(svgCanvas)
-  // Snap a point being drawn to other objects (core/draw-snap.js); a no-op where that module is absent.
-  /** @type {(x: number, y: number, opts?: any) => {x: number, y: number}} */
-  const snapDraw = (x, y, opts) => svgCanvas.snapDrawPoint?.(x, y, opts) ?? { x, y }
+  // Snap a point being drawn to other objects (core/draw-snap.ts).
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {import('./draw-snap.ts').DrawSnapOptions} [opts]
+   */
+  const snapDraw = (x, y, opts) => svgCanvas.drawSnap.snapDrawPoint(x, y, opts)
 
   /**
-   * Show where a press would snap while the pointer only hovers (core/draw-snap.js).
+   * Show where a press would snap while the pointer only hovers (core/draw-snap.ts).
    * @param {MouseEvent} evt
    * @returns {void}
    */
   const hoverSnap = (evt) => {
-    if (!svgCanvas.hoverDrawSnap) return
     const tool = Boolean(svgCanvas.activeToolSnaps?.())
     if (!tool && !isDrawSnapMode(svgCanvas.getCurrentMode())) {
-      svgCanvas.clearDrawHover?.()
+      svgCanvas.drawSnap.clearDrawHover()
       return
     }
     // The root matrix is only kept fresh by a press; a hover reads it from the document (it may have scrolled or zoomed since).
     const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
     if (!ctm) return
     const { x, y } = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
-    svgCanvas.hoverDrawSnap(x, y, { tool }) // nothing is being drawn, so nothing is left out (getId() is the last id assigned, not a shape in progress)
+    svgCanvas.drawSnap.hoverDrawSnap(x, y, { tool }) // nothing is being drawn, so nothing is left out (getId() is the last id assigned, not a shape in progress)
   }
 
   /**
@@ -154,8 +157,8 @@ export const init = (canvas) => {
     if (svgCanvas.getCurConfig().gridSnapping) {
       ({ x, y } = svgCanvas.snapPointToGrid(x, y))
     } else {
-      // Drawing modes also snap to other objects (core/draw-snap.js); the shape being drawn is not a target.
-      ({ x, y } = snapDraw(x, y, { exclude: [shape] }))
+      // Drawing modes also snap to other objects (core/draw-snap.ts); the shape being drawn is not a target.
+      ({ x, y } = snapDraw(x, y, { exclude: shape ? [shape] : [] }))
     }
 
     // A registered tool (core/tool-registry.js) owns the gesture: it gets normalised
@@ -236,7 +239,7 @@ export const init = (canvas) => {
   /** @param {MouseEvent} evt */
   const mouseOutEvent = (evt) => {
     const { $id } = svgCanvas
-    svgCanvas.clearDrawHover?.()
+    svgCanvas.drawSnap.clearDrawHover()
     if (svgCanvas.getCurrentMode() !== 'select' && svgCanvas.getStarted()) {
       const event = new MouseEvent('mouseup', {
         bubbles: true,
@@ -300,7 +303,7 @@ export const init = (canvas) => {
     svgCanvas.dragStartBBox = null
     svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
     svgCanvas.smartSnapTargets = null
-    svgCanvas.clearDrawSnap?.()
+    svgCanvas.drawSnap.clearDrawSnap()
     svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines (the drawing-time ones share the overlay)
     const pendingMove = svgCanvas.pendingMoveDelta
     svgCanvas.pendingMoveDelta = null

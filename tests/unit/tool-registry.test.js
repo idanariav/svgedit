@@ -118,7 +118,7 @@ describe('tool registry (registerTool)', () => {
     })
 
     it('a tool with snap: true gets x/y snapped to other objects (rawX/rawY stay raw); one without does not', () => {
-      const snapped = vi.spyOn(canvas, 'snapDrawPoint').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      const snapped = vi.spyOn(canvas.drawSnap, 'snapDrawPoint').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
       const plain = makeTool({ id: 'plain' })
       const snapping = makeTool({ id: 'snappy', snap: true })
       canvas.registerTool(plain.tool)
@@ -138,7 +138,7 @@ describe('tool registry (registerTool)', () => {
     })
 
     it('grid snapping wins over object snapping', () => {
-      const snapped = vi.spyOn(canvas, 'snapDrawPoint')
+      const snapped = vi.spyOn(canvas.drawSnap, 'snapDrawPoint')
       canvas.getCurConfig().gridSnapping = true
       const t = makeTool({ snap: true })
       canvas.registerTool(t.tool)
@@ -380,13 +380,13 @@ describe('tool registry (registerTool)', () => {
 
     it('a tool that opted in with snap sees the snapped point', () => {
       const hover = hoverTool({ snap: true })
-      vi.spyOn(canvas, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      vi.spyOn(canvas.drawSnap, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
       canvas.toolHover(mouse('mousemove', 7, 8))
       expect(hover).toEqual([[107, 108]])
     })
 
     it('a tool that did not opt in, or grid snapping, keeps the raw point', () => {
-      const spy = vi.spyOn(canvas, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
+      const spy = vi.spyOn(canvas.drawSnap, 'hoverDrawSnap').mockImplementation((x, y) => ({ x: x + 100, y: y + 100 }))
       const hover = hoverTool({})
       canvas.toolHover(mouse('mousemove', 7, 8))
       canvas.unregisterTool('dragrect')

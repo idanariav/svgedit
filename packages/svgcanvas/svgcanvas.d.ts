@@ -176,7 +176,7 @@ declare class SvgCanvas {
   bind (event: string, callback: Function): void
 
   // Extensions
-  addExtension (name: string, extFunc: Function): void
+  addExtension (name: string, extInitFunc: (arg: any) => any, options: { importLocale: any }): Promise<any>
 
   // Export
   getSvgString (): string

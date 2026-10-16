@@ -34,7 +34,7 @@
   "core/dataStorage.ts",
   "core/distort.js",
   "core/dom-utils.js",
-  "core/draw-snap.js",
+  "core/draw-snap.ts",
   "core/draw.js",
   "core/drawing-invariants.js",
   "core/elem-get-set.js",

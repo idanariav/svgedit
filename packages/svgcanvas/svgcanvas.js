@@ -79,7 +79,7 @@ import { init as selectSameInit } from './core/select-same.js'
 import { init as splitGridInit } from './core/split-grid.js'
 import { init as transformEachInit } from './core/transform-each.js'
 import { init as objectStateInit } from './core/object-state.js'
-import { init as drawSnapInit } from './core/draw-snap.js'
+import { createDrawSnap } from './core/draw-snap.ts'
 import { init as guidesInit } from './core/guides.js'
 import { init as dashFitInit } from './core/dash-fit.js'
 import { init as arrowAlignInit } from './core/arrow-align.js'
@@ -428,7 +428,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'splitGrid', splitGridInit, initGuardRegistry)
     runGuardedInit(this, 'transformEach', transformEachInit, initGuardRegistry)
     runGuardedInit(this, 'objectState', objectStateInit, initGuardRegistry)
-    runGuardedInit(this, 'drawSnap', drawSnapInit, initGuardRegistry)
+    this.drawSnap = createDrawSnap(this)
     runGuardedInit(this, 'guides', guidesInit, initGuardRegistry)
     runGuardedInit(this, 'dashFit', dashFitInit, initGuardRegistry)
     runGuardedInit(this, 'arrowAlign', arrowAlignInit, initGuardRegistry)

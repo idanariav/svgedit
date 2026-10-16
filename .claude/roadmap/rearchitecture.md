@@ -169,6 +169,23 @@ generate the attachment as a thin compatibility shim (`canvas.foo = (...a) => fo
 move callers to the import, delete the shim when nothing calls it through `svgCanvas`. The context object is where R1's
 document and services later live.
 
+**Pattern, settled by the pilot (`core/draw-snap.ts`, 2026-10-16).** A module with per-canvas state becomes a service:
+`export interface DrawSnap {…}` plus `createDrawSnap(host): DrawSnap`, and the canvas holds it as one member
+(`this.drawSnap = createDrawSnap(this)`; one line in `svgcanvas-members.d.ts`, the four `any` lines in
+`svgcanvas-internal.d.ts` deleted). Callers say `svgCanvas.drawSnap.snapDrawPoint(…)`; there is no flat compatibility
+member, because the callers were few and all in the repo (a module with outside callers would keep a generated shim for
+a while). Rules that made it work:
+- **The explicit interface breaks the type cycle**: the factory's return type is written down, so the class's type does
+  not depend on inferring the body.
+- **`host` is `Pick<SvgCanvas, …>` of what the module reads**, not the whole canvas. Passing the JS class `this` to a
+  function typed with the whole d.ts canvas fails on unrelated drift (`addExtension`, `getStrokeWidth` disagree between
+  the class and the d.ts); the subset checks only what the module uses, and says what it needs.
+- **No optional chaining for "the module may be absent"**: the service is always there. Unit-test canvases that call
+  through `event.js` get a `drawSnap` stub.
+- A stateless module needs no service: export the functions, take `host` as the first argument.
+Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next pilots by size: `sanitize.js`, `clear.js`,
+`layer.js`, `event-rotate.js`, then the 5–10-member modules (`select-same`, `split-grid`, `boolean-ops`, `clip-mask`).
+
 Size: L, fully incremental, low risk per module.
 
 ## R3. TypeScript
@@ -203,7 +220,7 @@ opportunistic and small per module.
 - **Gates and docs tools:** `check-dom-scope`, `check-layers` and the file map see `.ts` (not `.d.ts`).
 
 **Converted:** `proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`, `math`, `units`, `common/util`,
-`dataStorage`, `extension-hooks`, `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
+`dataStorage`, `extension-hooks`, `draw-snap` (also the R2 pilot), `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
 `text-wrap` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 

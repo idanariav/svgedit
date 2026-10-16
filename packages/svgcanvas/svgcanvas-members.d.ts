@@ -65,6 +65,8 @@ export interface ToolDef {
 }
 
 export interface AttachedMembers {
+  /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
+  drawSnap: import('./core/draw-snap.ts').DrawSnap
   setSvgString(xmlString: string, preventUndo?: boolean): boolean
   clearSelection(noCall?: boolean): void
   getResolution(): Resolution
