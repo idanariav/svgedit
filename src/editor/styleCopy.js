@@ -15,7 +15,7 @@
  * @module styleCopy
  */
 
-import { TAPER_ATTR, TAPER_STYLE_ATTR } from '@svgedit/svgcanvas/core/taper-stroke.js'
+import { TAPER_ATTR, TAPER_STYLE_ATTR } from '@svgedit/svgcanvas/core/taper-stroke.ts'
 
 /** Paint and stroke attributes copied between any two shapes. */
 export const PAINT_ATTRS = [

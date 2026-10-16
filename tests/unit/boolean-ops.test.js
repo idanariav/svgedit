@@ -1,5 +1,5 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { collectLeaves, getAncestorMatrix, getStyleSourceElem } from '../../packages/svgcanvas/core/boolean-ops.js'
+import { collectLeaves, getAncestorMatrix, getStyleSourceElem } from '../../packages/svgcanvas/core/boolean-ops.ts'
 
 describe('boolean-ops', function () {
   const svg = document.createElementNS(NS.SVG, 'svg')

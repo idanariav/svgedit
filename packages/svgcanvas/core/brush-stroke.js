@@ -22,8 +22,8 @@
  * @license MIT
  */
 
-import { profile as taperProfile } from './taper-stroke.js'
-import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
+import { profile as taperProfile } from './taper-stroke.ts'
+import { getPaperScope, toAbsolutePathData } from './paper-utils.ts'
 
 // Half-width never drops fully to zero on a fully chiseled (roundness=0) nib
 // swept parallel to its own angle — that would collapse the outline to a

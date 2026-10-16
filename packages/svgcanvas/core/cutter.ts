@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Cutter (knife) tool: splits selected shapes along a cutting line, which may
  * be a single straight segment or an arbitrary open polyline (zigzag).
@@ -26,7 +25,8 @@
  * @license MIT
  */
 
-import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import type SvgCanvas from '../svgcanvas.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
 
@@ -38,18 +38,21 @@ const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', '
 // directly (groups and, per svgedit convention, hyperlink wrappers).
 const CONTAINER_TAGS = new Set(['g', 'a'])
 
+type Pt = { x: number, y: number }
+/** A stretch of the shape's boundary between two crossings. */
+type GapEdge = { type: 'gap', segs: paper.Segment[] }
+/** A cutter stretch, by index (in a region's item list) or with its segments (once resolved). */
+type ChordRef = { type: 'chord', chordId: number }
+type ChordEdge = { type: 'chord', segs: paper.Segment[] }
+
 /**
  * Expand a selection into the leaf shapes that can actually be cut, walking
  * into `<g>`/`<a>` containers (including nested groups) so a selected group
  * is cut piece-by-piece rather than skipped outright.
- * @param {Element[]} elems
- * @returns {Element[]}
  */
-const collectCuttableElements = (elems) => {
-  /** @type {Element[]} */
-  const result = []
-  /** @param {Element} el */
-  const visit = (el) => {
+const collectCuttableElements = (elems: Element[]): Element[] => {
+  const result: Element[] = []
+  const visit = (el: Element): void => {
     if (el.tagName === 'title') return
     if (CONTAINER_TAGS.has(el.tagName)) {
       Array.from(el.children).forEach(visit)
@@ -74,11 +77,8 @@ const collectCuttableElements = (elems) => {
  * 1-child one) so multi-subpath `d` data — several disjoint closed loops in
  * one element — is preserved as separate loops instead of being silently
  * welded together by `Path`'s single-contour parsing.
- * @param {Element} elem
- * @param {paper.PaperScope} scope
- * @returns {paper.CompoundPath|null}
  */
-const getElemAsPath = (elem, scope) => {
+const getElemAsPath = (elem: Element, scope: paper.PaperScope): paper.CompoundPath | null => {
   const item = svgToPaper(elem, scope, { asCompoundPath: true })
   if (!item) return null
   const ancestorMatrix = getMatrixToContent(elem)
@@ -93,8 +93,7 @@ const getElemAsPath = (elem, scope) => {
 }
 
 // A valid piece has non-trivial path data (more than a lone "M x,y")
-/** @param {{pathData?: string}|null|undefined} p */
-const hasValidPiece = (p) => p && p.pathData && p.pathData.length > 4
+const hasValidPiece = (p: { pathData?: string } | null | undefined): boolean => Boolean(p && p.pathData && p.pathData.length > 4)
 
 /**
  * Cut one simple closed contour along an open cutter polyline (2+ points,
@@ -114,14 +113,12 @@ const hasValidPiece = (p) => p && p.pathData && p.pathData.length > 4
  * (plus any bites nested fully inside it) is that chord's own piece, and a
  * single chord edge is spliced into the *parent* region in its place. Bites
  * are guaranteed non-overlapping because the cutter doesn't self-intersect.
- * @param {paper.PaperScope} scope
- * @param {paper.Path} contourPath - One simple closed contour (a
+ * @param contourPath - One simple closed contour (a
  *  CompoundPath child, or a whole single-loop shape).
- * @param {paper.Path} cutterPath - The (already-built, not-yet-removed)
+ * @param cutterPath - The (already-built, not-yet-removed)
  *  open cutter polyline — owned by the caller, not removed here.
- * @returns {{core: paper.Path, bites: paper.Path[]}|null}
  */
-const cutContour = (scope, contourPath, cutterPath) => {
+const cutContour = (scope: paper.PaperScope, contourPath: paper.Path, cutterPath: paper.Path): { core: paper.Path, bites: paper.Path[] } | null => {
   const crossings = contourPath.getIntersections(cutterPath)
   if (crossings.length < 2 || crossings.length % 2 !== 0) return null
   const m = crossings.length / 2
@@ -132,15 +129,13 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // cutting straight across an ellipse's left/right/top/bottom), in which
   // case divideAt() has nothing to split and returns null; fall back to the
   // segment already there.
-  /** @type {(path: paper.Path, offset: number) => paper.Segment} */
-  const divideOrGetSegment = (path, offset) => {
-    const loc = path.getLocationAt(offset)
+  const divideOrGetSegment = (path: paper.Path, offset: number): paper.Segment => {
+    const loc = path.getLocationAt(offset) as paper.CurveLocation
     return path.divideAt(loc) || loc.segment
   }
   // Reverse a segment chain while keeping its curvature: flip the segment
   // order AND swap each segment's handleIn/handleOut (mirrors Path#reverse()).
-  /** @param {paper.Segment[]} arc */
-  const reverseArc = (arc) => arc.slice().reverse().map((s) => s.reversed())
+  const reverseArc = (arc: paper.Segment[]): paper.Segment[] => arc.slice().reverse().map((s) => s.reversed())
 
   // Pair crossings into m chords by cutter order: consecutive pairs along
   // the cutter are exactly its "inside" stretches (the polyline starts and
@@ -150,7 +145,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // *shape's* boundary though, independent of this cutter-side order.
   const byCutter = crossings.slice()
     .sort((a, b) => a.intersection.offset - b.intersection.offset)
-  const chords = []
+  const chords: Array<{ a: paper.CurveLocation, b: paper.CurveLocation }> = []
   for (let i = 0; i < m; i++) chords.push({ a: byCutter[2 * i], b: byCutter[2 * i + 1] })
   // Whether `a` (the cutter-earlier crossing) is also the shape-earlier
   // ("open") one — the per-chord generalization of the single-pair case's
@@ -173,7 +168,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // arcAB/arcBA construction from the single-pair case, generalized from 2
   // stretches to 2m.
   const byShape = crossings.slice().sort((a, b) => a.offset - b.offset)
-  const chordIdOf = new Map()
+  const chordIdOf = new Map<paper.CurveLocation, number>()
   chords.forEach((c, i) => { chordIdOf.set(c.a, i); chordIdOf.set(c.b, i) })
   const shapeClone = contourPath.clone({ insert: false })
   const shapeSegAt = byShape.map((loc) => divideOrGetSegment(shapeClone, loc.offset))
@@ -188,12 +183,12 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // Walk the crossings in shape-boundary order with an explicit stack
   // (bottom frame = the surviving "core" region) to decompose the boundary
   // into m+1 regions — see the function doc comment for the algorithm.
-  /** @type {Array<{chordId: any, items: any[]}>} */
-  const stack = [{ chordId: null, items: [] }]
-  const seen = new Set()
-  const biteItems = new Array(m)
+  type Item = GapEdge | ChordRef
+  const stack: Array<{ chordId: number | null, items: Item[] }> = [{ chordId: null, items: [] }]
+  const seen = new Set<number>()
+  const biteItems: Item[][] = new Array(m)
   for (let i = 0; i < byShape.length; i++) {
-    const cid = chordIdOf.get(byShape[i])
+    const cid = chordIdOf.get(byShape[i]) as number
     if (!seen.has(cid)) {
       seen.add(cid)
       stack.push({ chordId: cid, items: [] })
@@ -219,8 +214,7 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // Resolve a region's item list (gaps + nested-chord markers) into
   // directed edges: nested chords are always referenced by their *parent*
   // region here, so always in "open -> close" direction.
-  /** @param {any[]} items */
-  const resolveItems = (items) => items.map((item) => (item.type === 'gap'
+  const resolveItems = (items: Item[]): Array<GapEdge | ChordEdge> => items.map((item): GapEdge | ChordEdge => (item.type === 'gap'
     ? item
     : { type: 'chord', segs: chordOpenToClose[item.chordId] }))
 
@@ -232,11 +226,9 @@ const cutContour = (scope, contourPath, cutterPath) => {
   // boundary instead of following its curve); an arc edge contributes only
   // its interior points (both its endpoints are already covered by the
   // neighboring chords).
-  /** @param {any[]} edges */
-  const buildLoopSegments = (edges) => {
+  const buildLoopSegments = (edges: Array<GapEdge | ChordEdge>): paper.Segment[] => {
     const n = edges.length
-    /** @type {paper.Segment[]} */
-    const out = []
+    const out: paper.Segment[] = []
     edges.forEach((edge, i) => {
       if (edge.type === 'gap') {
         out.push(...edge.segs.slice(1, -1))
@@ -252,12 +244,11 @@ const cutContour = (scope, contourPath, cutterPath) => {
     })
     return out
   }
-  /** @param {any[]} edges */
-  const makePiece = (edges) => new scope.Path({ segments: buildLoopSegments(edges), closed: true, insert: false })
+  const makePiece = (edges: Array<GapEdge | ChordEdge>): paper.Path => new scope.Path({ segments: buildLoopSegments(edges), closed: true, insert: false })
 
   const core = makePiece(resolveItems(stack[0].items))
   const bites = biteItems.map((items, cid) =>
-    makePiece([{ type: 'chord', segs: chordCloseToOpen[cid] }, ...resolveItems(items)]))
+    makePiece([{ type: 'chord', segs: chordCloseToOpen[cid] } as ChordEdge, ...resolveItems(items)]))
 
   cleanup()
   return { core, bites }
@@ -272,12 +263,8 @@ const cutContour = (scope, contourPath, cutterPath) => {
  * result completely unchanged, alongside whichever loops it does cross.
  * Both cutter endpoints must lie outside `shapePath` as a whole, checked
  * once up front.
- * @param {paper.PaperScope} scope
- * @param {paper.CompoundPath} shapePath
- * @param {Array<{x:number,y:number}>} points
- * @returns {paper.PathItem[]|null}
  */
-const cutShapePath = (scope, shapePath, points) => {
+const cutShapePath = (scope: paper.PaperScope, shapePath: paper.CompoundPath, points: Pt[]): paper.PathItem[] | null => {
   const cutterPath = new scope.Path({
     segments: points.map((p) => new scope.Point(p.x, p.y)),
     closed: false,
@@ -292,11 +279,11 @@ const cutShapePath = (scope, shapePath, points) => {
     return null
   }
 
-  const untouchedChildren = []
-  const coreChildren = []
-  const bitePieces = []
+  const untouchedChildren: paper.Item[] = []
+  const coreChildren: paper.Path[] = []
+  const bitePieces: paper.Path[] = []
   for (const child of shapePath.children) {
-    const result = cutContour(scope, /** @type {paper.Path} */ (child), cutterPath)
+    const result = cutContour(scope, child as paper.Path, cutterPath)
     if (!result) {
       untouchedChildren.push(child.clone({ insert: false }))
     } else {
@@ -313,7 +300,7 @@ const cutShapePath = (scope, shapePath, points) => {
   }
 
   const corePiece = new scope.CompoundPath({ children: [...untouchedChildren, ...coreChildren], insert: false })
-  const pieces = [corePiece, ...bitePieces]
+  const pieces: paper.PathItem[] = [corePiece, ...bitePieces]
 
   if (pieces.some((p) => !hasValidPiece(p))) {
     pieces.forEach((p) => p.remove())
@@ -324,13 +311,10 @@ const cutShapePath = (scope, shapePath, points) => {
 
 /**
  * Replace `elem` with the cut pieces (2 or more), batched into `batchCmd`.
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Element} elem
- * @param {paper.PathItem[]} pieces
- * @param {*} batchCmd
- * @param {Element[]} resultElems
  */
-const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
+const replaceWithPieces = (
+  svgCanvas: SvgCanvas, elem: Element, pieces: paper.PathItem[], batchCmd: { addSubCommand: (cmd: unknown) => void }, resultElems: Element[]
+): void => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)
   // Only elem's own transform needs correcting (see getOwnTransformScale):
@@ -348,8 +332,7 @@ const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
   const compensation = isIdentity(ancestorMatrix) ? null : ancestorMatrix.inverse()
 
   for (const piece of pieces) {
-    /** @type {Record<string, any>} */
-    const attr = {
+    const attr: Record<string, string> = {
       id: svgCanvas.getNextId(),
       d: toAbsolutePathData(piece.pathData, svgCanvas),
       ...styleAttrs
@@ -372,12 +355,11 @@ const replaceWithPieces = (svgCanvas, elem, pieces, batchCmd, resultElems) => {
 /**
  * Cut all selected elements along the given cutting line.
  *
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Array<{x:number,y:number}>} points - 2+ points (SVG coordinates).
+ * @param points - 2+ points (SVG coordinates).
  *  Exactly 2 points cuts along a straight line; more points cut along the
  *  polyline they describe (straight segments, no curves).
  */
-const cutShapes = (svgCanvas, points) => {
+const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
   // Prefer selected elements; fall back to all shapes in the current layer
   // (mirrors Illustrator knife tool: selection scopes the cut, but is optional)
   let elems = svgCanvas.getSelectedElements().filter(Boolean)
@@ -391,8 +373,7 @@ const cutShapes = (svgCanvas, points) => {
   const scope = getPaperScope()
   const { BatchCommand } = svgCanvas.history
   const batchCmd = new BatchCommand('Cut shapes')
-  /** @type {Element[]} */
-  const resultElems = []
+  const resultElems: Element[] = []
 
   for (const elem of elems) {
     const shapePath = getElemAsPath(elem, scope)
@@ -418,12 +399,7 @@ const cutShapes = (svgCanvas, points) => {
   }
 }
 
-/**
- * @function module:cutter.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
-  svgCanvas.cutShapes = (/** @type {any} */ points) => cutShapes(svgCanvas, points)
+  svgCanvas.cutShapes = (points: Pt[]) => cutShapes(svgCanvas, points)
 }

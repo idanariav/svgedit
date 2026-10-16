@@ -36,14 +36,14 @@
 | `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
 | `blend.ts` | Blends: the geometry and paint of the steps between two key shapes |
 | `blur-event.js` | Tools for blur event |
-| `boolean-ops.js` | Boolean path operations: union, intersect, subtract, exclude, divide |
+| `boolean-ops.ts` | Boolean path operations: union, intersect, subtract, exclude, divide |
 | `brush-stroke.js` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
 | `clear.ts` | Resets the `#svgcontent` element to a blank document |
 | `clip-mask.js` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |
 | `copy-elem.js` | Copy handler |
 | `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
-| `cutter.js` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
+| `cutter.ts` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
 | `dash-fit.ts` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
@@ -85,7 +85,7 @@
 | `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.js` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
 | `paint.ts` | Fill, stroke, color management |
-| `paper-utils.js` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
+| `paper-utils.ts` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
 | `paste-elem.js` | Paste handler |
 | `path-actions.js` | Path functionality |
 | `path-edit.ts` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
@@ -93,7 +93,7 @@
 | `path-join.ts` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |
 | `path-method.js` | Path functionality |
 | `path-node-guides.ts` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
-| `path-offset.js` | Path offset / inset and stroke-to-path operations |
+| `path-offset.ts` | Path offset / inset and stroke-to-path operations |
 | `path-seg-shim.js` | Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API, removed from browsers around 2016 and previously restored here via the `pathseg` npm polyfill |
 | `path-simplify.ts` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
 | `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
@@ -104,12 +104,12 @@
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
 | `sanitize.js` | Tools for SVG sanitization |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
-| `segment.js` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
+| `segment.ts` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |
 | `select.js` | DOM element selection box tools |
 | `selected-elem.js` | Tools for SVG selected element operation |
 | `selection.js` | Tools for selection |
-| `shape-builder.js` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
+| `shape-builder.ts` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
@@ -117,7 +117,7 @@
 | `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.js` | Tools for svg |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
-| `taper-stroke.js` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
+| `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
 | `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
 | `text-path.js` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |

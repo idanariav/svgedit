@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Segment tool: divides a single selected shape into symmetric pieces using
  * evenly-spaced dividing lines, in two generator modes:
@@ -26,7 +25,8 @@
  * @license MIT
  */
 
-import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import type SvgCanvas from '../svgcanvas.js'
+import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
 
@@ -36,37 +36,35 @@ const SEGMENT_LINE_ATTR = 'se:segment-line'
 // Element types that cannot be converted to a path.
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
+type Scope = paper.PaperScope
+type Batch = { addSubCommand: (cmd: unknown) => void }
+
 /**
  * Whether `elem` is eligible for the Segment tool — used as the toolbar
  * button's visibility gate. Deliberately tag-only (no paper.js conversion)
  * so it's cheap to call on every selection change.
- * @param {Element} elem
- * @returns {boolean}
  */
-export const canSegment = elem => !!elem && !NON_PATH_TAGS.has(elem.tagName)
+export const canSegment = (elem: Element | null | undefined): boolean => !!elem && !NON_PATH_TAGS.has(elem.tagName)
 
 // ── Pure param (de)serialization — mirrors ext-repeat's se:repeat stamp ────
 
-/** @typedef {{mode: string, count: number, split?: boolean, startAngle?: number, axis?: string}} SegmentParams */
-/** @typedef {{cx: number, cy: number}} Center */
-/** @typedef {{x1: number, y1: number, x2: number, y2: number}} LineSpec */
+export interface SegmentParams { mode: string, count: number, split?: boolean, startAngle?: number, axis?: string }
+interface Center { cx: number, cy: number }
+interface LineSpec { x1: number, y1: number, x2: number, y2: number }
+interface Pt { x: number, y: number }
+interface Box { x: number, y: number, width: number, height: number }
 
-/** @param {SegmentParams} p */
-export const serializeParams = p => {
+export const serializeParams = (p: SegmentParams): string => {
   if (p.mode === 'radial') {
     return `radial;count=${p.count};split=${p.split ? 1 : 0};startAngle=${p.startAngle ?? -90}`
   }
   return `grid;count=${p.count};split=${p.split ? 1 : 0};axis=${p.axis || 'vertical'}`
 }
 
-/**
- * @param {?string} str
- * @returns {?SegmentParams}
- */
-export const parseParams = str => {
+export const parseParams = (str: string | null | undefined): SegmentParams | null => {
   if (!str) return null
   const [mode, ...pairs] = str.split(';')
-  const vals = Object.fromEntries(pairs.map((/** @type {string} */ kv) => kv.split('=')))
+  const vals = Object.fromEntries(pairs.map((kv: string) => kv.split('=')))
   if (mode === 'radial') {
     return {
       mode,
@@ -93,83 +91,54 @@ export const parseParams = str => {
  * untransformed circle/ellipse via its own cx/cy; bbox-center otherwise
  * (exact for axis-aligned rect/polygon, approximate for skewed/irregular
  * paths).
- * @param {Element} elem
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @returns {{cx: number, cy: number}}
  */
-export const resolveCenter = (elem, svgCanvas) => {
-  const hasTransform = /** @type {SVGGraphicsElement} */ (elem).transform?.baseVal?.numberOfItems > 0
+export const resolveCenter = (elem: Element, svgCanvas: Pick<SvgCanvas, 'getStrokedBBox'>): Center => {
+  const hasTransform = ((elem as SVGGraphicsElement).transform?.baseVal?.numberOfItems ?? 0) > 0
   if (!hasTransform && (elem.tagName === 'circle' || elem.tagName === 'ellipse')) {
     return { cx: parseFloat(elem.getAttribute('cx') ?? '') || 0, cy: parseFloat(elem.getAttribute('cy') ?? '') || 0 }
   }
-  const bb = svgCanvas.getStrokedBBox([elem])
+  const bb = svgCanvas.getStrokedBBox([elem]) as Box
   return { cx: bb.x + bb.width / 2, cy: bb.y + bb.height / 2 }
 }
 
 /**
  * The N wedge angle ranges for radial mode, sweeping 360/N apart.
- * @param {number} count
- * @param {number} [startAngle] - degrees, -90 = first spoke pointing up
- * @returns {Array<{a0: number, a1: number}>}
+ * @param startAngle - degrees, -90 = first spoke pointing up
  */
-export const computeWedgeAngles = (count, startAngle = -90) => {
+export const computeWedgeAngles = (count: number, startAngle = -90): Array<{ a0: number, a1: number }> => {
   const n = Math.max(2, Math.round(count))
   const step = 360 / n
   return Array.from({ length: n }, (_, k) => ({ a0: startAngle + k * step, a1: startAngle + (k + 1) * step }))
 }
 
-/**
- * The N spoke angles for radial non-split lines.
- * @param {number} count
- * @param {number} [startAngle]
- * @returns {number[]}
- */
-export const computeSpokeAngles = (count, startAngle = -90) => {
+/** The N spoke angles for radial non-split lines. */
+export const computeSpokeAngles = (count: number, startAngle = -90): number[] => {
   const n = Math.max(2, Math.round(count))
   const step = 360 / n
   return Array.from({ length: n }, (_, k) => startAngle + k * step)
 }
 
-/**
- * The N+1 strip ranges for grid mode, evenly spaced across `[start, start+extent]`.
- * @param {number} count
- * @param {number} start
- * @param {number} extent
- * @returns {Array<{from: number, to: number}>}
- */
-export const computeGridStrips = (count, start, extent) => {
+/** The N+1 strip ranges for grid mode, evenly spaced across `[start, start+extent]`. */
+export const computeGridStrips = (count: number, start: number, extent: number): Array<{ from: number, to: number }> => {
   const n = Math.max(1, Math.round(count))
   const step = extent / (n + 1)
   return Array.from({ length: n + 1 }, (_, i) => ({ from: start + i * step, to: start + (i + 1) * step }))
 }
 
-/**
- * The N divider positions for grid non-split lines.
- * @param {number} count
- * @param {number} start
- * @param {number} extent
- * @returns {number[]}
- */
-export const computeGridDividerPositions = (count, start, extent) => {
+/** The N divider positions for grid non-split lines. */
+export const computeGridDividerPositions = (count: number, start: number, extent: number): number[] => {
   const n = Math.max(1, Math.round(count))
   const step = extent / (n + 1)
   return Array.from({ length: n }, (_, i) => start + (i + 1) * step)
 }
 
-/**
- * @param {{x: number, y: number}} a
- * @param {{x: number, y: number}} b
- */
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+const distance = (a: Pt, b: Pt): number => Math.hypot(a.x - b.x, a.y - b.y)
 
 /**
  * Radius that safely exceeds `bounds` from `center` in every direction,
  * regardless of where center sits relative to the shape.
- * @param {{cx: number, cy: number}} center
- * @param {{x: number, y: number, width: number, height: number}} bounds
- * @returns {number}
  */
-export const farthestCornerDistance = (center, bounds) => {
+export const farthestCornerDistance = (center: Center, bounds: Box): number => {
   const dx = Math.max(Math.abs(bounds.x - center.cx), Math.abs(bounds.x + bounds.width - center.cx))
   const dy = Math.max(Math.abs(bounds.y - center.cy), Math.abs(bounds.y + bounds.height - center.cy))
   return Math.hypot(dx, dy) * 2
@@ -177,11 +146,7 @@ export const farthestCornerDistance = (center, bounds) => {
 
 // ── paper.js-dependent geometry ────────────────────────────────────────────
 
-/**
- * @param {Element} elem
- * @param {any} scope - the paper.js scope
- */
-const getElemAsPath = (elem, scope) => {
+const getElemAsPath = (elem: Element, scope: Scope): paper.Path | paper.CompoundPath | null => {
   const item = svgToPaper(elem, scope, { asCompoundPath: true })
   if (!item) return null
   const ancestorMatrix = getMatrixToContent(elem)
@@ -193,21 +158,15 @@ const getElemAsPath = (elem, scope) => {
   return item
 }
 
-/** @param {any} p */
-const hasValidPiece = p => p && p.pathData && p.pathData.length > 4
+const hasValidPiece = (p: { pathData?: string } | null | undefined): boolean => Boolean(p && p.pathData && p.pathData.length > 4)
 
 /**
  * A straight-edged polygon fan from `center` out to `bigR`, spanning
  * `[a0, a1]` degrees — deliberately not a true arc sector (paper.js curve
  * booleans are the fragile case) and not a 3-point triangle (degenerates at
  * or above 180°). Sampled at <=4° per straight segment.
- * @param {any} scope
- * @param {Center} center
- * @param {number} bigR
- * @param {number} a0
- * @param {number} a1
  */
-const buildWedgePolygon = (scope, center, bigR, a0, a1) => {
+const buildWedgePolygon = (scope: Scope, center: Center, bigR: number, a0: number, a1: number): paper.Path => {
   const step = a1 - a0
   const sampleCount = Math.max(2, Math.ceil(Math.abs(step) / 4))
   const points = [new scope.Point(center.cx, center.cy)]
@@ -219,29 +178,15 @@ const buildWedgePolygon = (scope, center, bigR, a0, a1) => {
   return new scope.Path({ segments: points, closed: true, insert: false })
 }
 
-/**
- * @param {any} scope
- * @param {number} x1
- * @param {number} y1
- * @param {number} x2
- * @param {number} y2
- */
-const buildStripPolygon = (scope, x1, y1, x2, y2) =>
+const buildStripPolygon = (scope: Scope, x1: number, y1: number, x2: number, y2: number): paper.Path =>
   new scope.Path.Rectangle({ from: new scope.Point(x1, y1), to: new scope.Point(x2, y2), insert: false })
 
-/**
- * @param {any} piece
- * @param {Element} elem
- * @param {Record<string, any>} styleAttrs
- * @param {?DOMMatrix} compensation
- * @param {any} canvas
- * @param {any} batchCmd
- * @param {Element[]} newPaths
- */
-const createResultPath = (piece, elem, styleAttrs, compensation, canvas, batchCmd, newPaths) => {
+const createResultPath = (
+  piece: paper.PathItem, elem: Element, styleAttrs: Record<string, string>, compensation: SVGMatrix | null,
+  canvas: SvgCanvas, batchCmd: Batch, newPaths: Element[]
+): void => {
   if (!hasValidPiece(piece)) return
-  /** @type {Record<string, any>} */
-  const attr = {
+  const attr: Record<string, string> = {
     id: canvas.getNextId(),
     d: toAbsolutePathData(piece.pathData, canvas),
     ...styleAttrs
@@ -255,16 +200,9 @@ const createResultPath = (piece, elem, styleAttrs, compensation, canvas, batchCm
   batchCmd.addSubCommand(new canvas.history.InsertElementCommand(newPath))
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {SegmentParams} params
- * @param {any} scope
- * @param {any} shapePath
- * @param {any} batchCmd
- * @param {Element[]} newPaths
- */
-const splitRadial = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) => {
+const splitRadial = (
+  canvas: SvgCanvas, elem: Element, params: SegmentParams, scope: Scope, shapePath: paper.Path | paper.CompoundPath, batchCmd: Batch, newPaths: Element[]
+): void => {
   const center = resolveCenter(elem, canvas)
   const bigR = farthestCornerDistance(center, shapePath.bounds)
   const wedges = computeWedgeAngles(params.count, params.startAngle ?? -90)
@@ -281,16 +219,9 @@ const splitRadial = (canvas, elem, params, scope, shapePath, batchCmd, newPaths)
   }
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {SegmentParams} params
- * @param {any} scope
- * @param {any} shapePath
- * @param {any} batchCmd
- * @param {Element[]} newPaths
- */
-const splitGrid = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) => {
+const splitGrid = (
+  canvas: SvgCanvas, elem: Element, params: SegmentParams, scope: Scope, shapePath: paper.Path | paper.CompoundPath, batchCmd: Batch, newPaths: Element[]
+): void => {
   const bounds = shapePath.bounds
   const axis = params.axis === 'horizontal' ? 'horizontal' : 'vertical'
   const pad = Math.max(1, (axis === 'vertical' ? bounds.height : bounds.width) * 0.001)
@@ -312,25 +243,13 @@ const splitGrid = (canvas, elem, params, scope, shapePath, batchCmd, newPaths) =
   }
 }
 
-/**
- * The point of `points` farthest from `center`.
- * @param {Center} center
- * @param {Array<{x: number, y: number}>} points
- */
-export const farthestPointFrom = (center, points) => {
+/** The point of `points` farthest from `center`. */
+export const farthestPointFrom = (center: Center, points: Pt[]): Pt => {
   const from = { x: center.cx, y: center.cy }
   return points.reduce((best, p) => (distance(from, p) > distance(from, best) ? p : best))
 }
 
-/**
- * @param {any} scope
- * @param {any} shapePath
- * @param {Center} center
- * @param {number} angleDeg
- * @param {number} bigR
- * @returns {?LineSpec}
- */
-const clipRadialSpoke = (scope, shapePath, center, angleDeg, bigR) => {
+const clipRadialSpoke = (scope: Scope, shapePath: paper.Path | paper.CompoundPath, center: Center, angleDeg: number, bigR: number): LineSpec | null => {
   const a = angleDeg * Math.PI / 180
   const far = { x: center.cx + bigR * Math.cos(a), y: center.cy + bigR * Math.sin(a) }
   const ray = new scope.Path({
@@ -341,50 +260,32 @@ const clipRadialSpoke = (scope, shapePath, center, angleDeg, bigR) => {
   const crossings = shapePath.getIntersections(ray)
   ray.remove()
   if (!crossings.length) return null
-  const exit = farthestPointFrom(center, crossings.map((/** @type {any} */ c) => ({ x: c.point.x, y: c.point.y })))
+  const exit = farthestPointFrom(center, crossings.map((c) => ({ x: c.point.x, y: c.point.y })))
   return { x1: center.cx, y1: center.cy, x2: exit.x, y2: exit.y }
 }
 
-/**
- * @param {any} scope
- * @param {any} shapePath
- * @param {string} axis
- * @param {number} coord
- * @param {{x: number, y: number, width: number, height: number}} bounds
- * @param {number} pad
- * @returns {?LineSpec}
- */
-const clipGridDivider = (scope, shapePath, axis, coord, bounds, pad) => {
+const clipGridDivider = (scope: Scope, shapePath: paper.Path | paper.CompoundPath, axis: string, coord: number, bounds: Box, pad: number): LineSpec | null => {
   const seg = axis === 'vertical'
     ? [{ x: coord, y: bounds.y - pad }, { x: coord, y: bounds.y + bounds.height + pad }]
     : [{ x: bounds.x - pad, y: coord }, { x: bounds.x + bounds.width + pad, y: coord }]
   const line = new scope.Path({
-    segments: seg.map((/** @type {{x: number, y: number}} */ p) => new scope.Point(p.x, p.y)),
+    segments: seg.map((p: Pt) => new scope.Point(p.x, p.y)),
     closed: false,
     insert: false
   })
   const crossings = shapePath.getIntersections(line)
   line.remove()
   if (crossings.length < 2) return null
-  const along = axis === 'vertical' ? (/** @type {any} */ p) => p.y : (/** @type {any} */ p) => p.x
-  const vals = crossings.map((/** @type {any} */ c) => along(c.point))
+  const along = axis === 'vertical' ? (p: paper.Point) => p.y : (p: paper.Point) => p.x
+  const vals = crossings.map((c) => along(c.point))
   const lo = Math.min(...vals)
   const hi = Math.max(...vals)
   return axis === 'vertical' ? { x1: coord, y1: lo, x2: coord, y2: hi } : { x1: lo, y1: coord, x2: hi, y2: coord }
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {SegmentParams} params
- * @param {any} scope
- * @param {any} shapePath
- * @returns {LineSpec[]}
- */
-const buildDividerLines = (canvas, elem, params, scope, shapePath) => {
+const buildDividerLines = (canvas: SvgCanvas, elem: Element, params: SegmentParams, scope: Scope, shapePath: paper.Path | paper.CompoundPath): LineSpec[] => {
   const bounds = shapePath.bounds
-  /** @type {LineSpec[]} */
-  const lines = []
+  const lines: LineSpec[] = []
   if (params.mode === 'radial') {
     const center = resolveCenter(elem, canvas)
     const bigR = farthestCornerDistance(center, bounds)
@@ -413,13 +314,10 @@ const buildDividerLines = (canvas, elem, params, scope, shapePath) => {
  * non-split result), remove the old divider lines and unwrap `elem` back to
  * a plain shape before splitting — otherwise a stale empty group (or stale
  * lines) would be left behind.
- * @param {any} canvas
- * @param {Element} elem
- * @param {any} batchCmd
- * @returns {Element} elem, possibly re-parented
+ * @returns elem, possibly re-parented
  */
-const unwrapSegmentGroup = (canvas, elem, batchCmd) => {
-  const g = /** @type {?Element} */ (elem.parentNode)
+const unwrapSegmentGroup = (canvas: SvgCanvas, elem: Element, batchCmd: Batch): Element => {
+  const g = elem.parentNode as Element | null
   if (!g || g.tagName !== 'g' || !g.hasAttribute(SEGMENT_ATTR)) return elem
   const { RemoveElementCommand, MoveElementCommand } = canvas.history
 
@@ -441,13 +339,7 @@ const unwrapSegmentGroup = (canvas, elem, batchCmd) => {
   return elem
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {Element[]} lineElems
- * @param {any} batchCmd
- */
-const wrapInGroup = (canvas, elem, lineElems, batchCmd) => {
+const wrapInGroup = (canvas: SvgCanvas, elem: Element, lineElems: Element[], batchCmd: Batch): Element => {
   const g = canvas.addSVGElementsFromJson({ element: 'g', attr: { id: canvas.getNextId() } })
   elem.before(g)
   batchCmd.addSubCommand(new canvas.history.InsertElementCommand(g))
@@ -460,12 +352,7 @@ const wrapInGroup = (canvas, elem, lineElems, batchCmd) => {
   return g
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {SegmentParams} params
- */
-const segmentSplit = (canvas, elem, params) => {
+const segmentSplit = (canvas: SvgCanvas, elem: Element, params: SegmentParams): void => {
   const { BatchCommand, RemoveElementCommand } = canvas.history
   const batchCmd = new BatchCommand('Segment shape')
   elem = unwrapSegmentGroup(canvas, elem, batchCmd)
@@ -473,8 +360,7 @@ const segmentSplit = (canvas, elem, params) => {
   const scope = getPaperScope()
   const shapePath = getElemAsPath(elem, scope)
   if (!shapePath) return
-  /** @type {Element[]} */
-  const newPaths = []
+  const newPaths: Element[] = []
 
   if (params.mode === 'radial') {
     splitRadial(canvas, elem, params, scope, shapePath, batchCmd, newPaths)
@@ -499,12 +385,7 @@ const segmentSplit = (canvas, elem, params) => {
   canvas.call('changed', newPaths)
 }
 
-/**
- * @param {any} canvas
- * @param {Element} elem
- * @param {SegmentParams} params
- */
-const segmentNonSplit = (canvas, elem, params) => {
+const segmentNonSplit = (canvas: SvgCanvas, elem: Element, params: SegmentParams): void => {
   const scope = getPaperScope()
   const shapePath = getElemAsPath(elem, scope)
   if (!shapePath) return
@@ -515,7 +396,7 @@ const segmentNonSplit = (canvas, elem, params) => {
   const batchCmd = new BatchCommand('Segment shape (lines)')
 
   const lineStroke = elem.getAttribute('stroke') && elem.getAttribute('stroke') !== 'none'
-    ? elem.getAttribute('stroke')
+    ? elem.getAttribute('stroke') as string
     : '#000000'
   const lineElems = lineSpecs.map(seg => canvas.addSVGElementsFromJson({
     element: 'line',
@@ -531,12 +412,12 @@ const segmentNonSplit = (canvas, elem, params) => {
     }
   }))
 
-  const parent = /** @type {?Element} */ (elem.parentNode)
+  const parent = elem.parentNode as Element | null
   const existingGroup = parent?.tagName === 'g' && parent.hasAttribute(SEGMENT_ATTR)
     ? parent
     : null
 
-  let g
+  let g: Element
   if (existingGroup) {
     for (const line of Array.from(existingGroup.children).filter(c => c.hasAttribute(SEGMENT_LINE_ATTR))) {
       batchCmd.addSubCommand(new canvas.history.RemoveElementCommand(line, line.nextSibling, line.parentNode))
@@ -564,22 +445,15 @@ const segmentNonSplit = (canvas, elem, params) => {
   canvas.call('changed', [g])
 }
 
-/**
- * Resolve a `<g se:segment>` wrapper selection down to its wrapped shape.
- * @param {?Element} elem
- */
-const resolveTarget = elem => {
+/** Resolve a `<g se:segment>` wrapper selection down to its wrapped shape. */
+const resolveTarget = (elem: Element | null): Element | null => {
   if (elem?.tagName === 'g' && elem.hasAttribute(SEGMENT_ATTR)) {
     return Array.from(elem.children).find(c => !c.hasAttribute(SEGMENT_LINE_ATTR)) || null
   }
   return elem
 }
 
-/**
- * @param {any} canvas
- * @param {SegmentParams} params
- */
-const segmentSelection = (canvas, params) => {
+const segmentSelection = (canvas: SvgCanvas, params: SegmentParams): void => {
   const selected = canvas.getSelectedElements().filter(Boolean)
   if (selected.length !== 1) return
   const elem = resolveTarget(selected[0])
@@ -592,27 +466,22 @@ const segmentSelection = (canvas, params) => {
   }
 }
 
-/** @param {any} canvas */
-const getSegmentParams = canvas => {
+const getSegmentParams = (canvas: SvgCanvas): SegmentParams | null => {
   const selected = canvas.getSelectedElements().filter(Boolean)
   if (selected.length !== 1) return null
   const [sel] = selected
+  const parentEl = sel.parentNode as Element | null
   const g = sel.tagName === 'g' && sel.hasAttribute(SEGMENT_ATTR)
     ? sel
-    : sel.parentNode?.tagName === 'g' && sel.parentNode.hasAttribute(SEGMENT_ATTR)
-      ? sel.parentNode
+    : parentEl?.tagName === 'g' && parentEl.hasAttribute(SEGMENT_ATTR)
+      ? parentEl
       : null
   if (!g) return null
   return parseParams(g.getAttribute(SEGMENT_ATTR))
 }
 
-/**
- * @function module:segment.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   canvas.canSegment = canSegment
-  canvas.segmentSelection = (/** @type {SegmentParams} */ params) => segmentSelection(canvas, params)
+  canvas.segmentSelection = (params: SegmentParams) => segmentSelection(canvas, params)
   canvas.getSegmentParams = () => getSegmentParams(canvas)
 }

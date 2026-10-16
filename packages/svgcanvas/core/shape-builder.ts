@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Shape builder — region arithmetic for the interactive paint-to-merge tool
  * (UI/mode in ext-shape-builder; this module owns the paper.js math and the
@@ -24,7 +23,8 @@
  * @license MIT
  */
 
-import { getOwnTransformScale, getPaperScope, getStyleAttrs as getBaseStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import type SvgCanvas from '../svgcanvas.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs as getBaseStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { warn } from '../common/logger.ts'
 
 // Ignore slivers below this absolute area (user units²).
@@ -32,29 +32,27 @@ const AREA_EPS = 0.5
 // Region decomposition is O(n²) boolean ops — keep sessions sane.
 const MAX_SHAPES = 12
 
-/** @param {paper.Item|null|undefined} item */
-const areaOf = (item) => {
+type Geometry = paper.Path | paper.CompoundPath
+/** A face of the arrangement and the elements that cover it. */
+interface Region { geom: paper.PathItem, sources: Element[] }
+
+const areaOf = (item: paper.PathItem | null | undefined): number => {
   if (!item) return 0
-  /** @type {any[]} */
-  const kids = item.children?.length ? item.children : [item]
-  return kids.reduce((/** @type {number} */ sum, /** @type {any} */ k) => sum + Math.abs(k.area || 0), 0)
+  const kids = (item.children?.length ? item.children : [item]) as Geometry[]
+  return kids.reduce((sum, k) => sum + Math.abs(k.area || 0), 0)
 }
 
 /** Element → paper item in content space (own transform applied). */
-/** @type {(elem: Element, scope: paper.PaperScope) => paper.Path|paper.CompoundPath|null} */
-const elemToItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: true })
+const elemToItem = (elem: Element, scope: paper.PaperScope): Geometry | null => svgToPaper(elem, scope, { asCompoundPath: true })
 
-/** @param {Element} elem */
-const getStyleAttrs = (elem) => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
+const getStyleAttrs = (elem: Element): Record<string, string> => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
-  /** @type {{entries: Array<{elem: Element, item: any}>, regions: Array<{geom: any, sources: Element[]}>}|null} */
-  let session = null
+  let session: { entries: Array<{ elem: Element, item: Geometry }>, regions: Region[] } | null = null
 
-  const disposeSession = () => {
+  const disposeSession = (): void => {
     if (!session) return
     for (const e of session.entries) e.item.remove()
     for (const r of session.regions) r.geom.remove()
@@ -63,15 +61,13 @@ export const init = (canvas) => {
 
   /**
    * Start a session from the given elements (defaults to the selection).
-   * @param {Element[]} [elems]
-   * @returns {?Array<{index: number, d: string}>} Region outlines for the
-   *   overlay, or null when the selection can't be decomposed.
+   * @returns Region outlines for the overlay, or null when the selection can't be decomposed.
    */
-  const begin = (elems) => {
+  const begin = (elems?: Element[]): Array<{ index: number, d: string }> | null => {
     disposeSession()
     const scope = getPaperScope()
     const source = (elems || svgCanvas.getSelectedElements()).filter(Boolean)
-      .filter((/** @type {Element} */ el) => !el.hasAttribute('data-frame'))
+      .filter((el: Element) => !el.hasAttribute('data-frame'))
     if (source.length < 2) {
       warn('Shape builder needs at least 2 shapes', null, 'shape-builder')
       return null
@@ -80,7 +76,7 @@ export const init = (canvas) => {
       warn(`Shape builder supports up to ${MAX_SHAPES} shapes`, null, 'shape-builder')
       return null
     }
-    const entries = []
+    const entries: Array<{ elem: Element, item: Geometry }> = []
     for (const elem of source) {
       const item = elemToItem(elem, scope)
       if (!item || areaOf(item) < AREA_EPS) {
@@ -95,13 +91,11 @@ export const init = (canvas) => {
     }
 
     // Planar arrangement: fold each shape into the region set.
-    /** @type {Array<{geom: any, sources: Element[]}>} */
-    let regions = []
+    let regions: Region[] = []
     try {
       for (const entry of entries) {
-        /** @type {Array<{geom: any, sources: Element[]}>} */
-        const next = []
-        let remainder = entry.item.clone({ insert: false })
+        const next: Region[] = []
+        let remainder: paper.PathItem = entry.item.clone({ insert: false })
         for (const r of regions) {
           const inter = r.geom.intersect(entry.item, { insert: false })
           const diff = r.geom.subtract(entry.item, { insert: false })
@@ -109,7 +103,7 @@ export const init = (canvas) => {
           else inter.remove()
           if (areaOf(diff) > AREA_EPS) next.push({ geom: diff, sources: r.sources })
           else diff.remove()
-          remainder = /** @type {paper.Path|paper.CompoundPath} */ (remainder.subtract(r.geom, { insert: false }))
+          remainder = remainder.subtract(r.geom, { insert: false })
           r.geom.remove()
         }
         if (areaOf(remainder) > AREA_EPS) next.push({ geom: remainder, sources: [entry.elem] })
@@ -129,11 +123,8 @@ export const init = (canvas) => {
 
   /**
    * Topmost region containing the point, or -1.
-   * @param {number} x
-   * @param {number} y
-   * @returns {number}
    */
-  const hitTest = (x, y) => {
+  const hitTest = (x: number, y: number): number => {
     if (!session) return -1
     const scope = getPaperScope()
     const pt = new scope.Point(x, y)
@@ -146,12 +137,11 @@ export const init = (canvas) => {
 
   /**
    * Apply a gesture: merge (or delete) the picked regions, as one undo step.
-   * @param {number[]} indices - Picked region indices.
-   * @param {'merge'|'delete'} mode
-   * @returns {?Element[]} The elements now making up the arrangement (input
+   * @param indices - Picked region indices.
+   * @returns The elements now making up the arrangement (input
    *   for the next `begin`), or null when nothing changed.
    */
-  const apply = (indices, mode = 'merge') => {
+  const apply = (indices: number[], mode: 'merge' | 'delete' = 'merge'): Element[] | null => {
     if (!session || !indices.length) return null
     const live = session
     const picked = indices.map((i) => live.regions[i]).filter(Boolean)
@@ -162,16 +152,15 @@ export const init = (canvas) => {
     const NSSVG = 'http://www.w3.org/2000/svg'
     const layer = session.entries[0].elem.parentNode
 
-    let union = picked[0].geom.clone({ insert: false })
+    let union: paper.PathItem = picked[0].geom.clone({ insert: false })
     for (const r of picked.slice(1)) {
       union = union.unite(r.geom, { insert: false })
     }
 
-    const resultElems = []
+    const resultElems: Element[] = []
     // `place(path)` must put the node in the DOM before the command is
     // recorded — InsertElementCommand snapshots the position on construction.
-    /** @type {(d: string, styleSrc: Element, place: (p: Element) => void) => Element} */
-    const makePath = (d, styleSrc, place) => {
+    const makePath = (d: string, styleSrc: Element, place: (p: Element) => void): Element => {
       const path = doc.createElementNS(NSSVG, 'path')
       const style = getStyleAttrs(styleSrc)
       // styleSrc's own transform is baked into the source item's geometry
@@ -212,7 +201,7 @@ export const init = (canvas) => {
       const styleSrc = picked[0].sources[picked[0].sources.length - 1]
       const last = resultElems[resultElems.length - 1]
       const merged = makePath(union.pathData, styleSrc,
-        (p) => { if (last) last.after(p); else /** @type {Element} */ (layer).append(p) })
+        (p) => { if (last) last.after(p); else (layer as Element).append(p) })
       resultElems.push(merged)
     }
     union.remove()

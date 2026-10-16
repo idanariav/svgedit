@@ -11,7 +11,7 @@ vi.mock('@svgedit/svgcanvas', () => ({
 }))
 
 const { default: TopPanel } = await import('../../../src/editor/panels/TopPanel.js')
-const { hasVisibleStroke } = await import('../../../packages/svgcanvas/core/path-offset.js')
+const { hasVisibleStroke } = await import('../../../packages/svgcanvas/core/path-offset.ts')
 
 /**
  * Builds the minimal DOM `TopPanel#updateContextPanel()` touches for a

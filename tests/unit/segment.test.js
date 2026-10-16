@@ -11,7 +11,7 @@ import {
   computeGridDividerPositions,
   farthestCornerDistance,
   farthestPointFrom
-} from '../../packages/svgcanvas/core/segment.js'
+} from '../../packages/svgcanvas/core/segment.ts'
 
 // segment.js's actual piece-cutting (buildWedgePolygon/splitRadial/splitGrid/
 // clipRadialSpoke/clipGridDivider) calls into paper.js's `intersect()`/

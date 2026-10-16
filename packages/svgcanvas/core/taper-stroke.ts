@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tapered strokes — turn a stroked open path into a filled outline whose
  * width follows a start/middle/end profile (paper.js-assisted).
@@ -37,14 +36,19 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { NS } from './namespaces.ts'
 import { warn } from '../common/logger.ts'
-import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
+import { getPaperScope, toAbsolutePathData } from './paper-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
+import type { RemapPoint, RemapScale } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.ts'
+import type { AttrView } from './live-stack.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 import { widthOutline } from './width-outline.ts'
+import type { OutlineOptions } from './width-outline.ts'
 import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.ts'
+import type { WidthPoint } from './width-profile.ts'
 
 export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile.ts'
 
@@ -52,35 +56,35 @@ export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile
  * Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e): full width
  * mid-stroke, the given fractions at the tips. Shared with `brush-stroke.js`,
  * which applies the same tip-taper shape to its nib-based outline.
- * @param {number} t - Position along the stroke, 0–1.
- * @param {number} s - Start-tip width fraction, 0–1.
- * @param {number} e - End-tip width fraction, 0–1.
- * @returns {number}
+ * @param t - Position along the stroke, 0–1.
+ * @param s - Start-tip width fraction, 0–1.
+ * @param e - End-tip width fraction, 0–1.
  */
-export const profile = (t, s, e) => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
+export const profile = (t: number, s: number, e: number): number => (1 - t) * (1 - t) * s + 2 * t * (1 - t) + t * t * e
 
 const CAP_ANGLES = [30, 60, 90, 120, 150]
 
 /**
  * Build the filled-outline `d` for a centerline with a tapered width.
- * @param {string} d - Centerline path data (single open subpath).
- * @param {number} width - Full stroke width.
- * @param {number} startPct - Tip width at the start, % of full (0–100).
- * @param {number} endPct - Tip width at the end, % of full (0–100).
- * @returns {?string} Outline path data, or null when not taperable.
+ * @param d - Centerline path data (single open subpath).
+ * @param width - Full stroke width.
+ * @param startPct - Tip width at the start, % of full (0–100).
+ * @param endPct - Tip width at the end, % of full (0–100).
+ * @returns Outline path data, or null when not taperable.
  */
-export const buildTaperOutline = (d, width, startPct, endPct) => {
+export const buildTaperOutline = (d: string, width: number, startPct: number, endPct: number): string | null => {
   const sc = getPaperScope()
+  const origin = new sc.Point(0, 0) // paper's `rotate` takes its centre; the origin is what it defaults to
   const compound = new sc.CompoundPath(d)
   try {
-    const child = /** @type {paper.Path} */ (compound.children?.length ? compound.children[0] : compound)
+    const child = (compound.children?.length ? compound.children[0] : compound) as paper.Path
     if (!child.length || child.closed || !(width > 0)) return null
     const s = Math.max(0, Math.min(1, startPct / 100))
     const e = Math.max(0, Math.min(1, endPct / 100))
     const total = child.length
     const steps = Math.max(48, Math.min(220, Math.round(total / 3)))
-    const left = []
-    const right = []
+    const left: paper.Point[] = []
+    const right: paper.Point[] = []
     for (let i = 0; i <= steps; i++) {
       const t = i / steps
       const off = Math.min(total, total * t)
@@ -95,19 +99,19 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
 
     // Round caps at tips that still have width. The sweep sign is chosen so
     // rotating the normal passes through the outward tangent direction.
-    const n0 = /** @type {any} */ (child.getNormalAt(0))
-    const t0 = /** @type {any} */ (child.getTangentAt(0))
-    const nE = /** @type {any} */ (child.getNormalAt(total))
-    const sign = n0.rotate(90).subtract(t0).length < n0.rotate(-90).subtract(t0).length ? 1 : -1
-    const p0 = /** @type {any} */ (child.getPointAt(0))
-    const pE = /** @type {any} */ (child.getPointAt(total))
+    const n0 = child.getNormalAt(0)
+    const t0 = child.getTangentAt(0)
+    const nE = child.getNormalAt(total)
+    const sign = n0.rotate(90, origin).subtract(t0).length < n0.rotate(-90, origin).subtract(t0).length ? 1 : -1
+    const p0 = child.getPointAt(0)
+    const pE = child.getPointAt(total)
     const hw0 = Math.max(0.01, width * profile(0, s, e)) / 2
     const hwE = Math.max(0.01, width * profile(1, s, e)) / 2
     const endCap = e > 0.02
-      ? CAP_ANGLES.map((a) => pE.add(nE.multiply(hwE).rotate(sign * a)))
+      ? CAP_ANGLES.map((a) => pE.add(nE.multiply(hwE).rotate(sign * a, origin)))
       : []
     const startCap = s > 0.02
-      ? CAP_ANGLES.map((a) => p0.add(n0.multiply(-hw0).rotate(sign * a)))
+      ? CAP_ANGLES.map((a) => p0.add(n0.multiply(-hw0).rotate(sign * a, origin)))
       : []
 
     const outline = new sc.Path({
@@ -126,25 +130,19 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
   }
 }
 
-/**
- * The caps and joins a width outline takes from the element's stroke attributes.
- * @param {Element} elem
- * @returns {import('./width-outline.ts').OutlineOptions}
- */
-const outlineOptions = (elem) => ({
-  cap: /** @type {'round'|'square'|'butt'} */ (['round', 'square'].includes(elem.getAttribute('stroke-linecap') ?? '') ? elem.getAttribute('stroke-linecap') : 'butt'),
-  join: /** @type {'round'|'bevel'|'miter'} */ (['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin') ?? '') ? elem.getAttribute('stroke-linejoin') : 'miter'),
+/** The caps and joins a width outline takes from the element's stroke attributes. */
+const outlineOptions = (elem: AttrView): OutlineOptions => ({
+  cap: (['round', 'square'].includes(elem.getAttribute('stroke-linecap') ?? '') ? elem.getAttribute('stroke-linecap') : 'butt') as 'round' | 'square' | 'butt',
+  join: (['round', 'bevel'].includes(elem.getAttribute('stroke-linejoin') ?? '') ? elem.getAttribute('stroke-linejoin') : 'miter') as 'round' | 'bevel' | 'miter',
   miterLimit: parseFloat(elem.getAttribute('stroke-miterlimit') ?? '') || 4
 })
 
 /**
  * The outline of `elem`'s stored centerline: from its width profile when it has one, else from its taper.
- * @param {Element} elem
- * @param {string} srcD the centerline
- * @param {number} width the full stroke width
- * @returns {?string}
+ * @param srcD the centerline
+ * @param width the full stroke width
  */
-const outlineOf = (elem, srcD, width) => {
+const outlineOf = (elem: AttrView, srcD: string, width: number): string | null => {
   const profile = parseProfile(elem.getAttribute(WIDTH_PROFILE_ATTR))
   if (profile) return widthOutline(srcD, width, profile, outlineOptions(elem))
   const [start = 100, end = 0] = (elem.getAttribute(TAPER_ATTR) || '').split(',').map(Number)
@@ -155,14 +153,11 @@ const outlineOf = (elem, srcD, width) => {
  * Called from `remapElement` (coords.js) when a transform is baked into a
  * tapered path: apply the affine map to the stored centerline, scale the
  * stored width, regenerate the outline `d`.
- * @param {Element} elem
- * @param {Function} remap - `(x, y) → {x, y}` from remapElement.
- * @param {Function} scalew
- * @param {Function} scaleh
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @returns {void}
+ * @param remap - `(x, y) → {x, y}` from remapElement.
  */
-export const remapTaperSource = (elem, remap, scalew, scaleh, svgCanvas) => {
+export const remapTaperSource = (
+  elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale, svgCanvas: SvgCanvas
+): void => {
   const src = elem.getAttribute(TAPER_SOURCE_ATTR)
   const style = elem.getAttribute(TAPER_STYLE_ATTR)
   if (!src || !style) return
@@ -204,14 +199,13 @@ registerLiveStage({
   run: (view, inputD, canvas) => {
     const style = view.getAttribute(TAPER_STYLE_ATTR)
     if (!style) return null
-    const outline = outlineOf(/** @type {any} */ (view), inputD, parseFloat(style) || 1)
+    const outline = outlineOf(view, inputD, parseFloat(style) || 1)
     if (!outline) return null
-    return view.hasAttribute(WIDTH_PROFILE_ATTR) || !canvas ? outline : toAbsolutePathData(outline, canvas)
+    return view.hasAttribute(WIDTH_PROFILE_ATTR) || !canvas ? outline : toAbsolutePathData(outline, canvas as SvgCanvas)
   }
 })
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   registerGeometryRemap(TAPER_SOURCE_ATTR, remapTaperSource)
@@ -226,10 +220,8 @@ export const init = (canvas) => {
   /**
    * Whether the taper tool applies to this element right now: an already
    * tapered path, or an open stroked line/polyline/path without a fill.
-   * @param {Element} elem
-   * @returns {boolean}
    */
-  const canTaperStroke = (elem) => {
+  const canTaperStroke = (elem: Element | null | undefined): boolean => {
     if (!elem) return false
     if (!canAddStage(elem, 'width')) return false // live-stack.js: a width stroke shares an element with effects or corners only
     if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
@@ -242,9 +234,8 @@ export const init = (canvas) => {
 
   /**
    * Read the current taper profile off the selection for popover seeding.
-   * @returns {?{start: number, end: number}}
    */
-  const getTaperParams = () => {
+  const getTaperParams = (): { start: number, end: number } | null => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     const raw = elem?.getAttribute(TAPER_ATTR)
     if (!raw) return null
@@ -255,24 +246,23 @@ export const init = (canvas) => {
   /**
    * Apply (or re-apply) a taper to the selected stroked path as one undo
    * step. Lines/polylines are swapped for a `<path>` in the same batch.
-   * @param {{start?: number, end?: number}} [params] - Tip widths, % of full.
-   * @returns {?Element}
+   * @param params - Tip widths, % of full.
    */
-  const applyTaperStroke = ({ start = 100, end = 0 } = {}) => {
+  const applyTaperStroke = ({ start = 100, end = 0 }: { start?: number, end?: number } = {}): Element | null => {
     let [elem] = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!canTaperStroke(elem)) return null
+    if (!elem || !canTaperStroke(elem)) return null
     const { BatchCommand, ChangeElementCommand, InsertElementCommand, RemoveElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Taper stroke')
     const doc = elem.ownerDocument
 
     // line / polyline → equivalent <path> (they can't hold an outline `d`).
     if (elem.tagName === 'line' || elem.tagName === 'polyline') {
-      let d
+      let d: string
       // Arrowhead alignment belongs to the line: the tapered path starts from the real, untrimmed ends.
       const dropAttrs = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
       const real = svgCanvas.getArrowSourcePoints(elem)
       if (real) {
-        d = real.map((/** @type {{x: number, y: number}} */ p, /** @type {number} */ i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+        d = real.map((p: { x: number, y: number }, i: number) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
       } else if (elem.tagName === 'line') {
         d = `M${elem.getAttribute('x1')},${elem.getAttribute('y1')} L${elem.getAttribute('x2')},${elem.getAttribute('y2')}`
       } else {
@@ -298,8 +288,8 @@ export const init = (canvas) => {
       elem = path
     }
 
-    let width
-    let paint
+    let width: number
+    let paint: string | null
     const style = elem.getAttribute(TAPER_STYLE_ATTR)
     if (style) {
       const sep = style.indexOf('|')
@@ -309,7 +299,7 @@ export const init = (canvas) => {
       width = parseFloat(elem.getAttribute('stroke-width') ?? '') || 1
       paint = elem.getAttribute('stroke')
     }
-    const srcD = /** @type {string} */ (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d'))
+    const srcD = (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('se:arrow-d') || elem.getAttribute('d')) as string
     const outline = buildTaperOutline(srcD, width, start, end)
     if (!outline) {
       warn('Selection is not taperable (needs a single open stroked subpath)', null, 'taper-stroke')
@@ -327,7 +317,7 @@ export const init = (canvas) => {
     }
     elem.removeAttribute(WIDTH_PROFILE_ATTR) // the sliders replace a width profile
     elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
-    elem.setAttribute('fill', /** @type {string} */ (paint))
+    elem.setAttribute('fill', paint as string)
     elem.setAttribute('stroke', 'none')
     elem.setAttribute(TAPER_ATTR, `${start},${end}`)
     elem.setAttribute(TAPER_SOURCE_ATTR, srcD)
@@ -342,13 +332,12 @@ export const init = (canvas) => {
 
   /**
    * Restore the original stroked centerline, removing the taper.
-   * @returns {?Element}
    */
-  const removeTaperStroke = () => {
+  const removeTaperStroke = (): Element | null => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     const srcD = elem?.getAttribute(TAPER_SOURCE_ATTR)
     const style = elem?.getAttribute(TAPER_STYLE_ATTR)
-    if (!srcD || !style) return null
+    if (!elem || !srcD || !style) return null
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Remove taper')
     const sep = style.indexOf('|')
@@ -386,10 +375,8 @@ export const init = (canvas) => {
   /**
    * Whether a width profile can be put on this element now: an already profiled or tapered stroke, or a stroked
    * line, polyline or path without a fill. Unlike the taper, a closed path is fine.
-   * @param {?Element} elem
-   * @returns {boolean}
    */
-  const canWidthStroke = (elem) => {
+  const canWidthStroke = (elem: Element | null | undefined): boolean => {
     if (!elem) return false
     if (!canAddStage(elem, 'width')) return false // live-stack.js
     if (elem.hasAttribute(TAPER_SOURCE_ATTR)) return true
@@ -400,21 +387,17 @@ export const init = (canvas) => {
 
   /**
    * The width profile of an element (the selection's by default), or null for a plain or only-tapered stroke.
-   * @param {Element} [elem]
-   * @returns {?import('./width-profile.ts').WidthPoint[]}
    */
-  const getWidthProfile = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) =>
+  const getWidthProfile = (elem: Element | undefined = svgCanvas.getSelectedElements().filter(Boolean)[0]): WidthPoint[] | null =>
     parseProfile(elem?.getAttribute(WIDTH_PROFILE_ATTR))
 
   /**
    * A line or polyline as the equivalent `<path>` (keeping its id and attributes), in place and without
    * history: for use inside an open transaction. Any path is returned as it is.
-   * @param {Element} elem
-   * @returns {Element}
    */
-  const asPath = (elem) => {
+  const asPath = (elem: Element): Element => {
     if (elem.tagName === 'path') return elem
-    let pts = svgCanvas.getArrowSourcePoints(elem)
+    let pts: Array<{ x: number, y: number }> | null = svgCanvas.getArrowSourcePoints(elem)
     if (!pts && elem.tagName === 'line') {
       pts = [{ x: Number(elem.getAttribute('x1')), y: Number(elem.getAttribute('y1')) }, { x: Number(elem.getAttribute('x2')), y: Number(elem.getAttribute('y2')) }]
     } else if (!pts) {
@@ -425,7 +408,7 @@ export const init = (canvas) => {
     const path = elem.ownerDocument.createElementNS(NS.SVG, 'path')
     const drop = ['x1', 'y1', 'x2', 'y2', 'points', 'se:arrow-align', 'se:arrow-pts', 'se:arrow-trim']
     for (const attr of elem.attributes) if (!drop.includes(attr.name)) path.setAttribute(attr.name, attr.value)
-    path.setAttribute('d', pts.map((/** @type {{x: number, y: number}} */ p, /** @type {number} */ i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
+    path.setAttribute('d', pts.map((p: { x: number, y: number }, i: number) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '))
     elem.before(path)
     elem.remove()
     return path
@@ -434,16 +417,14 @@ export const init = (canvas) => {
   /**
    * Draw `elem` (a path that can take a width profile) with the profile, regenerating the outline from its stored
    * centerline. Records no history: use it inside `transact` or a tool gesture.
-   * @param {Element} elem
-   * @param {import('./width-profile.ts').WidthPoint[]} points
-   * @returns {boolean} false when nothing could be drawn (no width, no centerline).
+   * @returns false when nothing could be drawn (no width, no centerline).
    */
-  const drawWidthProfile = (elem, points) => {
+  const drawWidthProfile = (elem: Element, points: WidthPoint[]): boolean => {
     if (!isProfile(points)) return false
     if (svgCanvas.getArrowAlign(elem)) svgCanvas.setArrowAlign(elem, null) // the centerline is the real, untrimmed one
     const style = elem.getAttribute(TAPER_STYLE_ATTR)
-    let width
-    let paint
+    let width: number
+    let paint: string | null
     if (style) {
       const sep = style.indexOf('|')
       width = parseFloat(style.slice(0, sep)) || 1
@@ -452,11 +433,11 @@ export const init = (canvas) => {
       width = parseFloat(elem.getAttribute('stroke-width') ?? '') || 1
       paint = elem.getAttribute('stroke')
     }
-    const srcD = /** @type {string} */ (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d'))
+    const srcD = (elem.getAttribute(TAPER_SOURCE_ATTR) || elem.getAttribute('d')) as string
     const outline = widthOutline(srcD, width, points, outlineOptions(elem))
     if (!outline) return false
     elem.setAttribute('d', outline)
-    elem.setAttribute('fill', /** @type {string} */ (paint))
+    elem.setAttribute('fill', paint as string)
     elem.setAttribute('stroke', 'none')
     elem.setAttribute(WIDTH_PROFILE_ATTR, formatProfile(points))
     elem.setAttribute(TAPER_ATTR, endPercents(points).join(','))
@@ -467,14 +448,12 @@ export const init = (canvas) => {
 
   /**
    * Give the selected strokes a width profile as one undo step (lines and polylines become paths).
-   * @param {import('./width-profile.ts').WidthPoint[]} points
-   * @returns {Element[]} the elements that took it.
+   * @returns the elements that took it.
    */
-  const applyWidthProfile = (points) => {
+  const applyWidthProfile = (points: WidthPoint[]): Element[] => {
     const targets = svgCanvas.getSelectedElements().filter(canWidthStroke)
     if (!targets.length || !isProfile(points)) return []
-    /** @type {Element[]} */
-    const done = []
+    const done: Element[] = []
     svgCanvas.transact('Width profile', () => {
       for (const t of targets) {
         const el = asPath(t)

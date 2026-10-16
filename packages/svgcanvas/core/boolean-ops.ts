@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Boolean path operations: union, intersect, subtract, exclude, divide.
  * Requires exactly 2 selected shapes; a shape may be a `<g>`/`<a>` group, in
@@ -11,7 +10,8 @@
  * @license MIT
  */
 
-import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
+import type SvgCanvas from '../svgcanvas.js'
+import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
 
@@ -27,12 +27,10 @@ const CONTAINER_TAGS = new Set(['g', 'a'])
 /**
  * Recursively collect the leaf (path-convertible) shapes inside a `<g>`/`<a>`
  * container. Returns `[elem]` unchanged if it isn't a container.
- * @param {Element} elem
- * @returns {Element[]}
  */
-export const collectLeaves = elem => {
+export const collectLeaves = (elem: Element): Element[] => {
   if (!CONTAINER_TAGS.has(elem.tagName)) return [elem]
-  const leaves = []
+  const leaves: Element[] = []
   for (const child of elem.children) {
     if (child.tagName === 'title') continue
     if (CONTAINER_TAGS.has(child.tagName)) {
@@ -51,18 +49,15 @@ export const collectLeaves = elem => {
  * (exclusive) at `stopElem`. Mirrors `getMatrixToContent` in math.js, but
  * stops at a node reference rather than an id — the group being merged here
  * (`stopElem`) isn't necessarily the content root.
- * @param {Element} elem
- * @param {Element} stopElem
- * @returns {SVGMatrix}
  */
-export const getAncestorMatrix = (elem, stopElem) => {
+export const getAncestorMatrix = (elem: Element, stopElem: Element): SVGMatrix => {
   let m = matrixMultiply()
-  let el = /** @type {any} */ (elem)
+  let el: Element | null = elem
   while (el && el !== stopElem && el.tagName !== 'svg') {
-    if ((el.tagName === 'g' || el.tagName === 'a') && el.transform?.baseVal?.numberOfItems) {
+    if ((el.tagName === 'g' || el.tagName === 'a') && (el as SVGGraphicsElement).transform?.baseVal?.numberOfItems) {
       m = matrixMultiply(transformListToTransform(getTransformList(el)).matrix, m)
     }
-    el = el.parentNode
+    el = el.parentNode as Element | null
   }
   return m
 }
@@ -71,10 +66,8 @@ export const getAncestorMatrix = (elem, stopElem) => {
  * Pick the element whose style attributes should be inherited by the boolean
  * op's result — for a group, its bottom-most (first) leaf shape, matching
  * what's visually underneath.
- * @param {Element} elem
- * @returns {Element}
  */
-export const getStyleSourceElem = elem => {
+export const getStyleSourceElem = (elem: Element): Element => {
   if (!CONTAINER_TAGS.has(elem.tagName)) return elem
   const leaves = collectLeaves(elem)
   return leaves[0] || elem
@@ -87,11 +80,10 @@ export const getStyleSourceElem = elem => {
  * `styleElem`'s own transform, plus — when `elem` is a group, so `styleElem`
  * is one of its leaves — every transform between the two: the intermediate
  * ancestors and `elem`'s own transform.
- * @param {Element} styleElem - Element `getStyleAttrs` read stroke-width from.
- * @param {Element} elem - The (possibly a group) element passed to `getElemAsPath`.
- * @returns {number}
+ * @param styleElem - Element `getStyleAttrs` read stroke-width from.
+ * @param elem - The (possibly a group) element passed to `getElemAsPath`.
  */
-export const getBakedStyleScale = (styleElem, elem) => {
+export const getBakedStyleScale = (styleElem: Element, elem: Element): number => {
   let scale = getOwnTransformScale(styleElem)
   if (CONTAINER_TAGS.has(elem.tagName)) {
     scale *= getMatrixScale(getAncestorMatrix(styleElem, elem))
@@ -106,11 +98,8 @@ export const getBakedStyleScale = (styleElem, elem) => {
  * of its (recursive) leaf shapes, each positioned in the group's own local
  * space, with the group's own transform applied last.
  * Returns null if the element cannot be converted.
- * @param {Element} elem
- * @param {paper.PaperScope} scope
- * @returns {paper.Path|paper.CompoundPath|null}
  */
-const getElemAsPath = (elem, scope) => {
+const getElemAsPath = (elem: Element, scope: paper.PaperScope): paper.Path | paper.CompoundPath | null => {
   if (!CONTAINER_TAGS.has(elem.tagName)) return svgToPaper(elem, scope)
 
   const items = collectLeaves(elem)
@@ -127,7 +116,7 @@ const getElemAsPath = (elem, scope) => {
       }
       return item
     })
-    .filter(Boolean)
+    .filter((item): item is paper.Path | paper.CompoundPath => item !== null)
 
   if (items.length === 0) return null
 
@@ -148,15 +137,15 @@ const getElemAsPath = (elem, scope) => {
  * Create a styled `<path>` element from a paper.js result and place it at the
  * bottom element's original DOM position. The resulting element is appended to
  * `newPaths` and an InsertElementCommand is added to the batch.
- * @param {paper.PathItem} result - paper.js path/compound-path result
- * @param {Element} bottomElem - element whose style and DOM position are inherited
- * @param {Object} styleAttrs - pre-collected style attributes from the bottom element
- * @param {module:svgcanvas.SvgCanvas} canvas
- * @param {Element[]} newPaths - accumulator for created elements
- * @param {module:history.BatchCommand} batchCmd
- * @returns {void}
+ * @param result - paper.js path/compound-path result
+ * @param bottomElem - element whose style and DOM position are inherited
+ * @param styleAttrs - pre-collected style attributes from the bottom element
+ * @param newPaths - accumulator for created elements
  */
-const createResultPath = (result, bottomElem, styleAttrs, canvas, newPaths, batchCmd) => {
+const createResultPath = (
+  result: paper.PathItem, bottomElem: Element, styleAttrs: Record<string, string>, canvas: SvgCanvas,
+  newPaths: Element[], batchCmd: InstanceType<SvgCanvas['history']['BatchCommand']>
+): void => {
   if (!result || !result.pathData) return
 
   const newPath = canvas.addSVGElementsFromJson({
@@ -175,10 +164,8 @@ const createResultPath = (result, bottomElem, styleAttrs, canvas, newPaths, batc
 
 /**
  * Perform a boolean path operation on exactly 2 selected elements.
- * @param {'union'|'intersect'|'subtract'|'exclude'|'divide'} type
- * @param {module:svgcanvas.SvgCanvas} canvas
  */
-const performBooleanOp = (type, canvas) => {
+const performBooleanOp = (type: 'union' | 'intersect' | 'subtract' | 'exclude' | 'divide', canvas: SvgCanvas): void => {
   const elems = canvas.getSelectedElements().filter(Boolean)
 
   if (elems.length !== 2) {
@@ -215,20 +202,19 @@ const performBooleanOp = (type, canvas) => {
   const { BatchCommand, RemoveElementCommand } = canvas.history
   const batchCmd = new BatchCommand(`Boolean ${type}`)
 
-  /** @type {Element[]} */
-  const newPaths = []
+  const newPaths: Element[] = []
 
   if (type === 'divide') {
     // Split the bottom shape into pieces using the top shape as a knife.
     // paper.js divide() returns a Group of two children (subtract + intersect
     // pieces); when the shapes don't overlap it collapses to a single path.
     const divided = bottomPath.divide(topPath)
-    const pieces = /** @type {paper.PathItem[]} */ (divided.children ? [...divided.children] : [divided])
+    const pieces = (divided.children ? [...divided.children] : [divided]) as paper.PathItem[]
     pieces.forEach(piece =>
       createResultPath(piece, bottomElem, styleAttrs, canvas, newPaths, batchCmd)
     )
   } else {
-    let result
+    let result: paper.PathItem
     switch (type) {
       case 'union':
         result = bottomPath.unite(topPath)
@@ -272,12 +258,7 @@ const performBooleanOp = (type, canvas) => {
   canvas.selectOnly(newPaths, true)
 }
 
-/**
- * @function module:boolean-ops.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
   svgCanvas.booleanUnion = () => performBooleanOp('union', svgCanvas)
   svgCanvas.booleanIntersect = () => performBooleanOp('intersect', svgCanvas)

@@ -12,6 +12,7 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { rebuildAfterRemap } from './live-stack.ts'
 
 /** `coords.js`'s point map, and the scalers for a width and a height. */
@@ -19,7 +20,7 @@ export type RemapPoint = (x: number, y: number) => { x: number, y: number }
 export type RemapScale = (n: number) => number
 
 /** The hook signature: the element, `coords.js`'s remap helpers and the canvas. */
-export type GeometryRemapFn = (elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale, svgCanvas: object) => void
+export type GeometryRemapFn = (elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale, svgCanvas: SvgCanvas) => void
 
 const registry = new Map<string, GeometryRemapFn>()
 
@@ -36,7 +37,7 @@ export const registerGeometryRemap = (attrName: string, remapFn: GeometryRemapFn
  * Run every registered remap hook whose attribute is present on `elem`.
  * @function module:geometry-remap-registry.runGeometryRemaps
  */
-export const runGeometryRemaps = (elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale, svgCanvas: object): void => {
+export const runGeometryRemaps = (elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale, svgCanvas: SvgCanvas): void => {
   registry.forEach((remapFn, attrName) => {
     if (elem.hasAttribute(attrName)) {
       remapFn(elem, remap, scalew, scaleh, svgCanvas)

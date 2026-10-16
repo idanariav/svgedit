@@ -7,7 +7,7 @@ import { parseCornerSpec } from '../../packages/svgcanvas/core/corner-radius.ts'
 import { parseBrush } from '../../packages/svgcanvas/core/art-brush-canvas.js'
 import { parseBlend } from '../../packages/svgcanvas/core/blend-canvas.js'
 import { parseProfile, parseTaper, parseTaperStyle, TAPER_ATTR } from '../../packages/svgcanvas/core/width-profile.ts'
-import * as taperStroke from '../../packages/svgcanvas/core/taper-stroke.js'
+import * as taperStroke from '../../packages/svgcanvas/core/taper-stroke.ts'
 
 describe('readFeatures', () => {
   it('reads each typed feature with the parser its module owns', () => {

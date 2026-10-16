@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Path offset / inset and stroke-to-path operations.
  *
@@ -15,7 +14,8 @@
  */
 
 import ClipperLib from 'clipper-lib'
-import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper } from './paper-utils.js'
+import type SvgCanvas from '../svgcanvas.js'
+import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper } from './paper-utils.ts'
 import { warn } from '../common/logger.ts'
 
 // Clipper works on integers — scale coordinates up, then back down.
@@ -28,10 +28,8 @@ const FLATTEN_TOLERANCE = 0.25
  * converted: a non-'none' color, a positive width (the SVG initial value of
  * 1 applies when the attribute is absent — `cleanupElement` strips it at
  * that value), and neither stroke-opacity nor element opacity fully zeroed.
- * @param {Element} elem
- * @returns {boolean}
  */
-export const hasVisibleStroke = (elem) => {
+export const hasVisibleStroke = (elem: Element): boolean => {
   const stroke = elem.getAttribute('stroke')
   if (!stroke || stroke === 'none') return false
   const strokeWidthAttr = elem.getAttribute('stroke-width')
@@ -47,26 +45,19 @@ export const hasVisibleStroke = (elem) => {
 // Reentrant init: the offset operations are created per SvgCanvas instance
 // (closed over `svgCanvas` below) so several editors can coexist in one
 // realm. Stateless helpers above stay shared.
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
- * Build a paper.js CompoundPath for an element, with its transform applied and
- * curves flattened to line segments.
- * @param {Element} elem
- * @param {paper.PaperScope} scope
- * @returns {paper.CompoundPath|null}
- */
-  const getElemAsFlatItem = (elem, scope) => svgToPaper(elem, scope, { asCompoundPath: true, flatten: FLATTEN_TOLERANCE })
+   * Build a paper.js CompoundPath for an element, with its transform applied and
+   * curves flattened to line segments.
+   */
+  const getElemAsFlatItem = (elem: Element, scope: paper.PaperScope): paper.Path | paper.CompoundPath | null =>
+    svgToPaper(elem, scope, { asCompoundPath: true, flatten: FLATTEN_TOLERANCE })
 
-  /**
- * Convert a flattened paper item to Clipper polygons (scaled-up integer points).
- * @param {paper.CompoundPath} item
- * @returns {{poly: Array<{X:number,Y:number}>, closed: boolean}[]}
- */
-  const itemToPolys = (item) => {
-    const children = /** @type {paper.Path[]} */ (item.children?.length ? item.children : [item])
+  /** Convert a flattened paper item to Clipper polygons (scaled-up integer points). */
+  const itemToPolys = (item: paper.Path | paper.CompoundPath): Array<{ poly: Array<{ X: number, Y: number }>, closed: boolean }> => {
+    const children = (item.children?.length ? item.children : [item]) as paper.Path[]
     return children
       .filter(child => child.segments?.length)
       .map(child => ({
@@ -78,12 +69,8 @@ export const init = (canvas) => {
       }))
   }
 
-  /**
- * Serialise Clipper solution polygons (scaled-up integers) to an SVG `d` string.
- * @param {Array<Array<{X:number,Y:number}>>} solution
- * @returns {string}
- */
-  const solutionToD = (solution) => solution
+  /** Serialise Clipper solution polygons (scaled-up integers) to an SVG `d` string. */
+  const solutionToD = (solution: Array<Array<{ X: number, Y: number }>>): string => solution
     .filter(poly => poly.length >= 2)
     .map(poly => {
       const pts = poly.map(p => `${p.X / SCALE},${p.Y / SCALE}`)
@@ -91,13 +78,8 @@ export const init = (canvas) => {
     })
     .join('')
 
-  /**
- * Replace `elem` with a freshly created `<path>` (d + style), recording undo/redo.
- * @param {Element} elem
- * @param {string} d
- * @param {Record<string, string>} styleAttrs
- */
-  const replaceWithPath = (elem, d, styleAttrs) => {
+  /** Replace `elem` with a freshly created `<path>` (d + style), recording undo/redo. */
+  const replaceWithPath = (elem: Element, d: string, styleAttrs: Record<string, string>): void => {
     const newPath = svgCanvas.addSVGElementsFromJson({
       element: 'path',
       attr: { id: svgCanvas.getNextId(), d, ...styleAttrs }
@@ -120,10 +102,10 @@ export const init = (canvas) => {
   }
 
   /**
- * Grow (delta > 0) or shrink (delta < 0) the selected shape's outline.
- * @param {number} delta - Offset distance in user units.
- */
-  const offsetPath = (delta) => {
+   * Grow (delta > 0) or shrink (delta < 0) the selected shape's outline.
+   * @param delta - Offset distance in user units.
+   */
+  const offsetPath = (delta: number): void => {
     if (!delta) return
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elem) {
@@ -165,11 +147,8 @@ export const init = (canvas) => {
     replaceWithPath(elem, d, styleAttrs)
   }
 
-  /**
- * Map an element's stroke-linejoin to a Clipper JoinType.
- */
-  /** @param {Element} elem */
-  const joinTypeFor = (elem) => {
+  /** Map an element's stroke-linejoin to a Clipper JoinType. */
+  const joinTypeFor = (elem: Element): number => {
     switch (elem.getAttribute('stroke-linejoin')) {
       case 'round': return ClipperLib.JoinType.jtRound
       case 'bevel': return ClipperLib.JoinType.jtSquare
@@ -177,11 +156,8 @@ export const init = (canvas) => {
     }
   }
 
-  /**
- * Map an element's stroke-linecap to a Clipper open EndType.
- */
-  /** @param {Element} elem */
-  const openEndTypeFor = (elem) => {
+  /** Map an element's stroke-linecap to a Clipper open EndType. */
+  const openEndTypeFor = (elem: Element): number => {
     switch (elem.getAttribute('stroke-linecap')) {
       case 'round': return ClipperLib.EndType.etOpenRound
       case 'square': return ClipperLib.EndType.etOpenSquare
@@ -189,10 +165,8 @@ export const init = (canvas) => {
     }
   }
 
-  /**
- * Convert the selected element's stroke into a filled outline `<path>`.
- */
-  const strokeToPath = () => {
+  /** Convert the selected element's stroke into a filled outline `<path>`. */
+  const strokeToPath = (): void => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elem) {
       warn('Stroke to path requires a selected shape', null, 'path-offset')
@@ -262,7 +236,7 @@ export const init = (canvas) => {
 
     // The outline is a filled region painted with the former stroke colour.
     const styleAttrs = getStyleAttrs(elem)
-    styleAttrs.fill = /** @type {string} */ (hasFill ? fill : stroke)
+    styleAttrs.fill = (hasFill ? fill : stroke) as string
     styleAttrs.stroke = 'none'
     delete styleAttrs['stroke-width']
 
