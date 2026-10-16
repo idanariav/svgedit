@@ -259,8 +259,12 @@ or a stale map; the map went from 75 KB to 46 KB. Some headers inherited from up
 event"); improve them in the file when you touch it. `commands.md` (194 commands: id, label, default keys, params) is
 generated from `commands.list({ includeHidden: true })` by `tests/e2e/commands-doc.spec.js` (needs a running editor, so
 it is an e2e that fails when stale; the page is pinned to a Mac user agent because default keys differ by platform);
-`tools.md`'s stale shortcut table was replaced by a pointer to it. **Left:** the changelog prose in `tools.md`,
-`extensions.md`, `css-rules.md`, `attributes.md` (trim to what a thing is and why; history is in git), and the per-panel
-Shortcut columns of `tools.md`, which still duplicate `commands.md` by hand.
+`tools.md`'s stale shortcut table was replaced by a pointer to it. **Prose trimmed (2026-10-16):** `tools.md` 116 → 82 KB,
+`extensions.md` 55 → 44 KB, `css-rules.md` 33 → 22 KB (pasted CSS and hex tables gone), `attributes.md` 28 → 27 KB (it was
+already mostly normative). Checking the two overlapping docs against the code found stale claims in both (grid snapping,
+shape-family's hooks, the `keyDown` hook, the shadow panel, puppet-warp persistence), which is the argument for one fact in
+one place. **Left:** `architecture.md` (63 KB) has not had this pass; `tools.md`'s per-panel Shortcut columns still
+duplicate `commands.md` by hand; where `tools.md` and `extensions.md` describe the same extension, the user-facing part
+belongs in `tools.md` only (the table in `extensions.md` now points there, but the two are not generated).
 
 Size: M, can be done one doc at a time.

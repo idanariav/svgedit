@@ -4,7 +4,7 @@
 
 **Code references:**
 - Panel markup: [src/editor/panels/TopPanel.html](../src/editor/panels/TopPanel.html)
-- Attribute change handler: [src/editor/panels/TopPanel.js](../src/editor/panels/TopPanel.js) ~line 641 (`attrChanger`)
+- Attribute change handler: [src/editor/panels/TopPanel.js](../src/editor/panels/TopPanel.js) (`attrChanger`)
 - Paint / opacity: [src/editor/panels/BottomPanel.html](../src/editor/panels/BottomPanel.html)
 
 ---
@@ -141,7 +141,7 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (no po
 | `tool_length_adjust` | select | `lengthAdjust` | `spacing` / `spacingAndGlyphs` |
 | `tool_perspective_x` | spin | custom transform | −80 to 80, step 1 |
 | `tool_perspective_y` | spin | custom transform | −80 to 80, step 1 |
-| `#text` *(hidden textarea)* | textarea | text content (multiline) | Not shown in UI (offscreen via `#text` in svgedit.css); the text-edit key buffer wired by `textActions.setInputElem`. A **`<textarea>`** (was an `<input>`) so it holds newlines: **Shift+Enter** = new row, **plain Enter** = commit/exit (keydown handler in `EditorStartup.js`). Multiline content renders as one `<tspan>` per row via `setMultilineText`; reads via `getTextWithNewlines` (both in `core/dom-utils.js`). Lives at the **editor root** (`editorTemplate.html`), not inside a panel, so it stays focusable when a panel is hidden — e.g. tablet mode (`#tools_top` is `display:none`, and `focus()` on a `display:none` subtree is a no-op) |
+| `#text` *(hidden textarea)* | textarea | text content (multiline) | Not shown in UI (offscreen via `#text` in svgedit.css); the text-edit key buffer wired by `textActions.setInputElem`. A **`<textarea>`** so it holds newlines: **Shift+Enter** = new row, **plain Enter** = commit/exit (keydown handler in `EditorStartup.js`). Multiline content renders as one `<tspan>` per row via `setMultilineText`; reads via `getTextWithNewlines` (both in `core/dom-utils.js`). Lives at the **editor root** (`editorTemplate.html`), not inside a panel, so it stays focusable when a panel is hidden — e.g. tablet mode (`#tools_top` is `display:none`, and `focus()` on a `display:none` subtree is a no-op) |
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (text position handled internally).
 
@@ -180,11 +180,9 @@ In **pathedit mode** (double-click a path), the `.path_node_panel` appears:
 | `tool_add_subpath` | — | Add a new sub-path |
 
 `tool_add_subpath` also sets `fill-rule="evenodd"` on the path the first time
-it's turned on (see `PathActions.addSubPath` in
-`packages/svgcanvas/core/path-actions.js`) — under the default `nonzero`
-rule, a subpath drawn with the same winding as the outer contour renders
-with its own boundary invisible (paint-order:stroke lets the fill repaint
-over it) instead of as a hole.
+it's turned on (`PathActions.addSubPath`, `core/path-actions.js`): under the default
+`nonzero` rule a subpath wound like the outer contour renders with its own
+boundary invisible (`paint-order: stroke` lets the fill repaint over it) instead of as a hole.
 
 Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** in select mode.
 
@@ -268,7 +266,7 @@ Plus [common attributes](#common-attributes-all-shapes).
 
 ## `<polyline>` and `<polygon>`
 
-No dedicated panel — these shapes show only [common attributes](#common-attributes-all-shapes). **No x/y panel** (excluded in TopPanel.js ~line 235).
+No dedicated panel — these shapes show only [common attributes](#common-attributes-all-shapes). **No x/y panel** (excluded in `TopPanel.js`).
 
 **Extension:** `ext-markers` adds Marker Start / Middle / End controls and the **Head position** picker (`marker_align` → `se:arrow-align`: absent = centred, `tip`, `extend`). With Tip the real geometry is kept in `se:arrow-pts` (`x,y x,y …`, line/polyline) or `se:arrow-d` (path) and `se:arrow-trim` (`start,end` user units); `x1…y2` / `points` / `d` hold the trimmed stroke. Do not edit those by hand: `svgCanvas.syncArrowAlign` re-derives them.
 
@@ -323,7 +321,7 @@ These are **action buttons**, not `attrChanger`-driven inputs — they call `svg
 ## How Attribute Changes Are Applied
 
 All shape-specific spin/input controls carry a `data-attr` attribute on the element.
-The `attrChanger` function in `TopPanel.js` (~line 641):
+The `attrChanger` function in `TopPanel.js`:
 1. Reads `data-attr` from the fired input
 2. Validates the value with `isValidUnit()`
 3. Converts units if the canvas is not in px mode
@@ -331,16 +329,7 @@ The `attrChanger` function in `TopPanel.js` (~line 641):
 
 The `changeSelectedAttribute` method in `packages/svgcanvas/core/elem-get-set.js` applies the change to the live SVG DOM and records it in undo history.
 
-**Exception — `elem_class`:** the class control is the `<se-class-select>`
-component, which is intentionally **not** bound to `attrChanger`. Applying a class
-builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) to stamp
-the preset's saved attributes plus the `class` token, then refreshes the panels
-via `topPanel.update()` + `updateContextPanel()`. Storage/catalog logic lives in
-`src/editor/classLibrary.js`. A preset may also carry a `shadow` block
-(`{angle,length,blur,opacity,color}`) captured/re-applied via `svgEditor.shadowApi`
-(from ext-shadow) — a drop shadow can't be stamped as a flat attribute, so it is
-rebuilt per-element into the same undo batch on apply. Outline (`outlineApi`) and
-glow (`glowApi`, `glow: {outer, inner}`) presets are captured and re-applied the same way.
+**Exception — `elem_class`:** the `<se-class-select>` component is not bound to `attrChanger`. Applying a class builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) that stamps the preset's saved attributes plus the `class` token, then refreshes the panels (`topPanel.update()` + `updateContextPanel()`). Storage and catalog: `src/editor/classLibrary.js`. A drop shadow can't be stamped as a flat attribute, so a preset may also carry `shadow` (`{angle,length,blur,opacity,color}`), `outline` and `glow` (`{outer, inner, feather}`) blocks, captured and re-applied through `svgEditor.shadowApi` / `outlineApi` / `glowApi` (the effect extensions) and rebuilt per element in the same undo batch.
 
 **Exception — custom palette swatches (`se-palette` / `BottomPanel.handlePalette`):**
 a plain palette swatch has no alpha channel. Clicking one only changes
@@ -349,39 +338,9 @@ a plain palette swatch has no alpha channel. Clicking one only changes
 
 ### Live position/dimension readout while dragging (move/resize)
 
-While a select-mode move or resize drag is in progress, the geometry only
-exists as a temporary `transform` on the element — real x/y/width/height/etc.
-attributes aren't baked until mouseup (`recalculateDimensions`). To keep the
-General/Dimensions panel fields tracking the drag instead of showing the
-pre-drag values, `packages/svgcanvas/core/event.js`'s `mouseMoveEvent` stashes
-the live delta/scale on the canvas instance right before firing the
-`'transition'` event: `svgCanvas.dragLiveMoveDelta = {dx, dy}` (`'select'`
-case) or `svgCanvas.dragLiveResizeBox = {left, top, width, height, tx, ty, sx,
-sy}` (`'resize'` case, same anchor/scale values used to build the temporary
-translate-scale-translate transform). `Editor.js`'s `elementTransition` reads
-these (mirroring the existing `'rotate'` case) and calls
-`TopPanel.updateLiveMove(elem, dx, dy)` / `TopPanel.updateLiveResize(elem,
-box)`, which write directly into the relevant fields (not a full
-`updateContextPanel()` — those would re-read the still-unbaked attributes and
-show stale values).
+During a select-mode move or resize the geometry exists only as a temporary `transform`; the real x / y / width / height attributes are baked on mouseup (`recalculateDimensions`). So `mouseMoveEvent` (`core/event.js`) stashes the live delta or scale on the canvas just before firing `'transition'`: `svgCanvas.dragLiveMoveDelta = {dx, dy}` (`select`) or `svgCanvas.dragLiveResizeBox = {left, top, width, height, tx, ty, sx, sy}` (`resize`, the same anchor and scale values that build the temporary translate-scale-translate). `Editor.js` `elementTransition` reads them (as it does for `rotate`) and calls `TopPanel.updateLiveMove(elem, dx, dy)` / `updateLiveResize(elem, box)`, which write straight into the fields; a full `updateContextPanel()` would re-read the unbaked attributes and show stale values. `mouseUpEvent` fires `'changed'` after every committed move, so the panel refreshes with the baked values when the drag ends. Panel values are rounded to 1 decimal (`round1`, `TopPanel.js`, as for `font_size`) because resize math leaves long float tails; display only.
 
-`recalculateDimensions` (`packages/svgcanvas/core/recalculate.js`) has a
-`default:`-case guard that bails out (returns `null`, leaving the transform
-in place) when the tlist is a lone matrix+rotation (2 items) — this is
-intentional (rotation must stay a separate transform). It used to *also*
-bail out for a lone plain matrix (1 item, no rotation) — which is exactly
-what a consolidated drag-move's temporary translate turns into — silently
-leaving a `transform="matrix(...)"` on the element forever with `x`/`y`
-never updated. That single-item disjunct was removed; only the 2-item
-matrix+rotation combo still returns early. `event.js`'s `mouseUpEvent` also
-now fires `'changed'` after every committed move (previously only after
-resize), so `updateContextPanel()` refreshes with the newly baked values
-once the drag ends.
-
-Panel values are rounded to 1 decimal (`round1` helper in `TopPanel.js`, same
-convention as `font_size`) since resize/scale math can produce long float
-tails (e.g. `200.00000596046448`) — display only, not the underlying SVG
-attribute precision.
+`recalculateDimensions` (`core/recalculate.js`) deliberately returns `null` and leaves the transform in place only when the tlist is a lone matrix + rotation (2 items), since rotation must stay a separate transform. A lone plain matrix (1 item, what a consolidated drag-move's temporary translate becomes) must still be baked, or the element keeps a `transform="matrix(…)"` forever with `x` / `y` never updated.
 
 ### The live stack (`core/live-stack.js`)
 
