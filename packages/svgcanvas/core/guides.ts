@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Ruler guides: horizontal and vertical lines the user drags out of the rulers
  * to align things by. They are drawing data, not graphics: one attribute on the
@@ -15,42 +14,36 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { registerAttrValidator } from './drawing-invariants.ts'
 
 export const GUIDES_ATTR = 'se:guides'
 
-/** @typedef {{v: number[], h: number[]}} Guides */
+export interface Guides { v: number[], h: number[] }
 
-const round = (/** @type {number} */ n) => Math.round(n * 100) / 100
+const round = (n: number): number => Math.round(n * 100) / 100
 
-/**
- * @param {unknown} list
- * @returns {number[]} finite numbers, rounded to 0.01, ascending, no duplicates
- */
-const clean = (list) => {
+/** @returns finite numbers, rounded to 0.01, ascending, no duplicates */
+const clean = (list: unknown): number[] => {
   const nums = (Array.isArray(list) ? list : []).map(Number).filter(Number.isFinite).map(round)
   return [...new Set(nums)].sort((a, b) => a - b)
 }
 
 /**
- * @param {?string|undefined} text an `se:guides` value
- * @returns {Guides} what it holds; anything unreadable is dropped
+ * @param text an `se:guides` value
+ * @returns what it holds; anything unreadable is dropped
  */
-export const parseGuides = (text) => {
-  /** @type {Guides} */
-  const guides = { v: [], h: [] }
+export const parseGuides = (text: string | null | undefined): Guides => {
+  const guides: Guides = { v: [], h: [] }
   for (const part of String(text ?? '').split(';')) {
     const m = /^\s*([vh])\s*:\s*(.*)$/.exec(part)
-    if (m) guides[/** @type {'v'|'h'} */ (m[1])] = clean(guides[/** @type {'v'|'h'} */ (m[1])].concat(m[2].split(',').map((s) => (s.trim() === '' ? NaN : Number(s)))))
+    if (m) guides[m[1] as 'v' | 'h'] = clean(guides[m[1] as 'v' | 'h'].concat(m[2].split(',').map((s) => (s.trim() === '' ? NaN : Number(s)))))
   }
   return guides
 }
 
-/**
- * @param {Partial<Guides>} guides
- * @returns {string} the attribute value, '' when there are no guides
- */
-export const formatGuides = (guides) => {
+/** @returns the attribute value, '' when there are no guides */
+export const formatGuides = (guides: Partial<Guides>): string => {
   const v = clean(guides.v)
   const h = clean(guides.h)
   return [v.length ? `v:${v.join(',')}` : '', h.length ? `h:${h.join(',')}` : ''].filter(Boolean).join(';')
@@ -58,10 +51,8 @@ export const formatGuides = (guides) => {
 
 /**
  * Whether an `se:guides` value is well formed (for `checkDrawing`).
- * @param {string} value
- * @returns {true|string}
  */
-export const validateGuides = (value) => {
+export const validateGuides = (value: string): true | string => {
   if (value.trim() === '') return true
   for (const part of value.split(';')) {
     if (!/^\s*[vh]\s*:\s*-?\d+(\.\d+)?(\s*,\s*-?\d+(\.\d+)?)*\s*$/.test(part)) return `has a bad entry "${part.trim().slice(0, 30)}" (expected v:x,x;h:y,y)`
@@ -71,33 +62,23 @@ export const validateGuides = (value) => {
 
 /**
  * Guides that count right now: none while the user hides them.
- * @param {import('../svgcanvas.js').default} svgCanvas
- * @returns {Guides}
  */
-export const visibleGuides = (svgCanvas) =>
+export const visibleGuides = (svgCanvas: Pick<SvgCanvas, 'getCurConfig' | 'getGuides'>): Guides =>
   svgCanvas.getCurConfig?.().showGuides === false ? { v: [], h: [] } : (svgCanvas.getGuides?.() ?? { v: [], h: [] })
 
-/**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
   registerAttrValidator(GUIDES_ATTR, validateGuides)
 
   /**
    * The drawing's guides, hidden or not.
-   * @function module:guides.SvgCanvas#getGuides
-   * @returns {Guides}
    */
   svgCanvas.getGuides = () => parseGuides(svgCanvas.getSvgContent().getAttribute(GUIDES_ATTR))
 
   /**
    * Replace the drawing's guides as one undo step.
-   * @function module:guides.SvgCanvas#setGuides
-   * @param {Partial<Guides>} guides
-   * @param {string} [label] undo-menu text
-   * @returns {boolean} whether anything changed
+   * @param label undo-menu text
+   * @returns whether anything changed
    */
   svgCanvas.setGuides = (guides, label = 'Edit guides') => {
     const root = svgCanvas.getSvgContent()

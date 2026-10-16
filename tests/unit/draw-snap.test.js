@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.js'
+import { collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.ts'
 import { createDrawSnap, isDrawSnapMode } from '../../packages/svgcanvas/core/draw-snap.ts'
 
 const make = (tag, attrs = {}, parent) => {

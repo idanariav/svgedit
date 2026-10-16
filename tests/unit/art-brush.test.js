@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tracksOf, makeTrack, frameAt, mapOnTrack, orientArt, artAlongPath, patternAlongPath } from '../../packages/svgcanvas/core/art-brush.js'
+import { tracksOf, makeTrack, frameAt, mapOnTrack, orientArt, artAlongPath, patternAlongPath } from '../../packages/svgcanvas/core/art-brush.ts'
 
 const nums = (d) => [...d.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => ({ x: +m[1], y: +m[2] }))
 const xs = (out) => out.flatMap((o) => nums(o.d)).map((p) => p.x)

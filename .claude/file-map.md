@@ -30,7 +30,7 @@
 | `anchor-path.ts` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
 | `arrow-align.js` | Arrowhead alignment: where a marker head sits on the end of its line |
 | `art-brush-canvas.js` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
-| `art-brush.js` | Art and pattern brush geometry: artwork bent along a path by arc length |
+| `art-brush.ts` | Art and pattern brush geometry: artwork bent along a path by arc length |
 | `bbox-utils.ts` | Bounding-box computation utilities |
 | `bezier-fit.ts` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
 | `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
@@ -69,7 +69,7 @@
 | `gradient-edit.js` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
-| `guides.js` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
+| `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
 | `history.js` | For command history tracking and undo functionality |
 | `historyrecording.js` | HistoryRecordingService component of history |
 | `image-crop.js` | Destructive crop for imported raster `<image>` elements |
@@ -78,7 +78,7 @@
 | `layer.js` | Provides tools for the layer concept |
 | `live-effects-distort.js` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
 | `live-effects.js` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
-| `live-stack.js` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
+| `live-stack.ts` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |
 | `measure.ts` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
@@ -112,7 +112,7 @@
 | `shape-builder.js` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.js` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
-| `smart-guides.js` | Smart alignment guides — object-to-object snapping math |
+| `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `split-grid.js` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.js` | Tools for svg |

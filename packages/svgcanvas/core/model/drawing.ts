@@ -13,7 +13,7 @@
  * @license MIT
  */
 import { parseAnchors } from '../anchor-path.ts'
-import { parseGuides } from '../guides.js'
+import { parseGuides } from '../guides.ts'
 import { getAttr } from './node.ts'
 import { readFeatures } from './features.ts'
 

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * The live stack: how corner radius, live effects and a variable-width stroke combine on one element.
  *
@@ -24,27 +23,31 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { parseAnchors, sameAnchorGeometry } from './anchor-path.ts'
 import { registerElementCheck } from './drawing-invariants.ts'
 
-/**
- * @typedef {object} AttrView read-only attribute access: an element, or an element with some attributes overridden
- * @property {(name: string) => ?string} getAttribute
- * @property {(name: string) => boolean} hasAttribute
- */
+/** Read-only attribute access: an element, or an element with some attributes overridden. */
+export interface AttrView {
+  getAttribute: (name: string) => string | null
+  hasAttribute: (name: string) => boolean
+}
 
-/**
- * @typedef {object} LiveStageDef
- * @property {string} id
- * @property {number} order position in the chain, lowest first
- * @property {string} srcAttr the attribute holding the stage's source geometry (its presence = active)
- * @property {string[]} attrs every attribute the stage owns (removed with it)
- * @property {(view: AttrView, inputD: string, canvas?: object) => ?string} run the stage's output for its input
- * @property {(view: AttrView) => boolean} [stackable] false when this stage cannot share an element with another
- */
+export interface LiveStageDef {
+  id: string
+  /** position in the chain, lowest first */
+  order: number
+  /** the attribute holding the stage's source geometry (its presence = active) */
+  srcAttr: string
+  /** every attribute the stage owns (removed with it) */
+  attrs: string[]
+  /** the stage's output for its input */
+  run: (view: AttrView, inputD: string, canvas?: object) => string | null
+  /** false when this stage cannot share an element with another */
+  stackable?: (view: AttrView) => boolean
+}
 
-/** @type {Map<string, LiveStageDef>} */
-const stages = new Map()
+const stages = new Map<string, LiveStageDef>()
 
 /** The stage sets that may share an element (ids). A single stage, or none, is always fine. */
 const ALLOWED = [['corners', 'width'], ['fx', 'width']]
@@ -52,70 +55,41 @@ const ALLOWED = [['corners', 'width'], ['fx', 'width']]
 /** Slack (units) when comparing a stored mirror or `d` with a regenerated one: the saver rounds to 2 decimals. */
 const TOL = 0.1
 
-/**
- * @param {LiveStageDef} def
- * @returns {void}
- */
-export const registerLiveStage = (def) => {
+export const registerLiveStage = (def: LiveStageDef): void => {
   stages.set(def.id, def)
 }
 
-/**
- * @param {string} id
- * @returns {?LiveStageDef}
- */
-export const getLiveStage = (id) => stages.get(id) ?? null
+export const getLiveStage = (id: string): LiveStageDef | null => stages.get(id) ?? null
 
 /**
  * `elem` with some attributes read as other values (`null` = absent): what the element would be after a change.
- * @param {Element|AttrView} elem
- * @param {Object<string, ?string>} [set]
- * @returns {AttrView}
  */
-export const attrView = (elem, set = {}) => ({
-  getAttribute: (name) => (name in set ? set[name] : elem.getAttribute(name)),
-  hasAttribute: (name) => (name in set ? set[name] != null : elem.hasAttribute(name))
+export const attrView = (elem: AttrView, set: Record<string, string | null> = {}): AttrView => ({
+  getAttribute: (name: string) => (name in set ? set[name] : elem.getAttribute(name)),
+  hasAttribute: (name: string) => (name in set ? set[name] != null : elem.hasAttribute(name))
 })
 
-/**
- * The active stages of an element, in chain order.
- * @param {AttrView} view
- * @returns {LiveStageDef[]}
- */
-export const activeStages = (view) =>
+/** The active stages of an element, in chain order. */
+export const activeStages = (view: AttrView): LiveStageDef[] =>
   [...stages.values()].filter((s) => view.hasAttribute(s.srcAttr)).sort((a, b) => a.order - b.order)
 
-/**
- * Whether these stages may share an element.
- * @param {LiveStageDef[]} active
- * @param {AttrView} view
- * @returns {boolean}
- */
-const validStack = (active, view) => {
+/** Whether these stages may share an element. */
+const validStack = (active: LiveStageDef[], view: AttrView): boolean => {
   if (active.length <= 1) return true
   const ids = active.map((s) => s.id)
   return ALLOWED.some((set) => ids.length === set.length && ids.every((id) => set.includes(id))) &&
     active.every((s) => !s.stackable || s.stackable(view))
 }
 
-/**
- * Whether the element carries more than one stage.
- * @param {Element} elem
- * @returns {boolean}
- */
-export const isStacked = (elem) => activeStages(elem).length > 1
+/** Whether the element carries more than one stage. */
+export const isStacked = (elem: AttrView): boolean => activeStages(elem).length > 1
 
-/**
- * Whether stage `id` may be (or already is) on this element alongside what it has.
- * @param {Element} elem
- * @param {string} id
- * @returns {boolean}
- */
-export const canAddStage = (elem, id) => {
+/** Whether stage `id` may be (or already is) on this element alongside what it has. */
+export const canAddStage = (elem: AttrView, id: string): boolean => {
   const def = stages.get(id)
   if (!def) return false
   const ids = new Set([...activeStages(elem).map((s) => s.id), id])
-  const active = [...ids].map((i) => /** @type {LiveStageDef} */ (stages.get(i)))
+  const active = [...ids].map((i) => stages.get(i) as LiveStageDef)
     .sort((a, b) => a.order - b.order)
   if (active.length <= 1) return true
   return ALLOWED.some((set) => active.length === set.length && active.every((s) => set.includes(s.id))) &&
@@ -125,39 +99,34 @@ export const canAddStage = (elem, id) => {
 /**
  * The geometry stage `id` would take as its source when it is put on an element that has other stages: the root
  * source when `id` comes first, else what the chain draws now (`d`). Null when the element has no stage.
- * @param {Element} elem
- * @param {string} id
- * @returns {?string}
  */
-export const stackSource = (elem, id) => {
+export const stackSource = (elem: AttrView, id: string): string | null => {
   const def = stages.get(id)
   const active = activeStages(elem)
   if (!def || !active.length) return null
   return def.order < active[0].order ? elem.getAttribute(active[0].srcAttr) : elem.getAttribute('d')
 }
 
-/**
- * @typedef {object} StackPlan
- * @property {Object<string, ?string>} attrs every attribute to set (`null` = remove): the requested ones and the mirrors
- * @property {?string} d the element's `d`; null when no stage is left (the caller keeps or restores its geometry)
- */
+export interface StackPlan {
+  /** every attribute to set (`null` = remove): the requested ones and the mirrors */
+  attrs: Record<string, string | null>
+  /** the element's `d`; null when no stage is left (the caller keeps or restores its geometry) */
+  d: string | null
+}
 
 /**
  * What an element's stage attributes and `d` become when `set` is applied: the chain run from its root.
  * Nothing is written. Null when the combination is not supported or a stage cannot produce its output.
- * @param {Element|AttrView} elem
- * @param {Object<string, ?string>} [set] attribute changes (`null` = remove); include a new root's source
- * @param {object} [canvas] passed to the stages that need it
- * @returns {?StackPlan}
+ * @param set attribute changes (`null` = remove); include a new root's source
+ * @param canvas passed to the stages that need it
  */
-export const planStack = (elem, set = {}, canvas) => {
+export const planStack = (elem: AttrView, set: Record<string, string | null> = {}, canvas?: object): StackPlan | null => {
   const view = attrView(elem, set)
   const active = activeStages(view)
   if (!validStack(active, view)) return null
-  /** @type {Object<string, ?string>} */
-  const attrs = { ...set }
+  const attrs: Record<string, string | null> = { ...set }
   if (!active.length) return { attrs, d: null }
-  let d = /** @type {string} */ (view.getAttribute(active[0].srcAttr))
+  let d = view.getAttribute(active[0].srcAttr) as string
   for (let i = 0; i < active.length; i++) {
     if (i > 0) attrs[active[i].srcAttr] = d
     const out = active[i].run(view, d, canvas)
@@ -170,16 +139,12 @@ export const planStack = (elem, set = {}, canvas) => {
 /**
  * The attribute changes that take stage `id` off an element: its attributes go, and when it was the root the next
  * stage takes its source (the chain then starts from the sharp geometry again).
- * @param {Element} elem
- * @param {string} id
- * @returns {Object<string, ?string>}
  */
-export const removalSet = (elem, id) => {
+export const removalSet = (elem: AttrView, id: string): Record<string, string | null> => {
   const def = stages.get(id)
   if (!def) return {}
   const active = activeStages(elem)
-  /** @type {Object<string, ?string>} */
-  const set = {}
+  const set: Record<string, string | null> = {}
   for (const a of def.attrs) set[a] = null
   if (active[0]?.id === id && active[1]) set[active[1].srcAttr] = elem.getAttribute(def.srcAttr)
   return set
@@ -187,11 +152,8 @@ export const removalSet = (elem, id) => {
 
 /**
  * Write a plan to the element: the attribute changes and `d` (when the plan has one).
- * @param {Element} elem
- * @param {StackPlan} plan
- * @returns {void}
  */
-export const commitPlan = (elem, plan) => {
+export const commitPlan = (elem: Element, plan: StackPlan): void => {
   for (const [name, value] of Object.entries(plan.attrs)) {
     if (value == null) elem.removeAttribute(name)
     else elem.setAttribute(name, value)
@@ -203,11 +165,8 @@ export const commitPlan = (elem, plan) => {
  * Whether two path data strings are the same shape (within the saver's rounding). The saver writes relative
  * commands rounded to 2 decimals, so the error adds up along a long path (a dense outline drifts by about
  * 0.003 per point, as a random walk): the tolerance grows with the square root of the anchor count.
- * @param {string} a
- * @param {string} b
- * @returns {boolean}
  */
-const sameShape = (a, b) => {
+const sameShape = (a: string, b: string): boolean => {
   const pa = parseAnchors(a, TOL)
   const count = pa.reduce((n, sp) => n + sp.anchors.length, 0)
   const tol = TOL + 0.01 * Math.sqrt(count)
@@ -216,11 +175,8 @@ const sameShape = (a, b) => {
 
 /**
  * Whether the element's `d` is still what its chain produces. True for an element without a stage.
- * @param {Element} elem
- * @param {object} [canvas]
- * @returns {boolean}
  */
-export const isStackCurrent = (elem, canvas) => {
+export const isStackCurrent = (elem: Element, canvas?: object): boolean => {
   const plan = planStack(elem, {}, canvas)
   return !!plan && (plan.d == null || sameShape(plan.d, elem.getAttribute('d') || ''))
 }
@@ -228,11 +184,9 @@ export const isStackCurrent = (elem, canvas) => {
 /**
  * For a stacked element whose `d` was rewritten outside the chain (node editing, …): drop every stage's attributes
  * and keep the shape. A single-stage element is left to its own feature's reconcile.
- * @param {Element} elem
- * @param {object} [canvas]
- * @returns {?boolean} null when the element is not stacked; else whether it still carries a valid stack
+ * @returns null when the element is not stacked; else whether it still carries a valid stack
  */
-export const reconcileStack = (elem, canvas) => {
+export const reconcileStack = (elem: Element, canvas?: object): boolean | null => {
   if (!isStacked(elem)) return null
   if (isStackCurrent(elem, canvas)) return true
   for (const def of stages.values()) for (const a of def.attrs) elem.removeAttribute(a)
@@ -241,10 +195,8 @@ export const reconcileStack = (elem, canvas) => {
 
 /**
  * The mirrors that no longer match the chain, as `checkDrawing` findings' messages.
- * @param {Element} elem
- * @returns {string[]}
  */
-export const stackProblems = (elem) => {
+export const stackProblems = (elem: Element): string[] => {
   const active = activeStages(elem)
   if (active.length < 2) return []
   if (!validStack(active, elem)) return [`stages ${active.map((s) => s.id).join(' + ')} cannot be stacked`]
@@ -258,22 +210,18 @@ export const stackProblems = (elem) => {
 /**
  * Run after the per-feature remap hooks of a transform bake: they scaled each stage's size parameters and mapped
  * every source attribute, now the mirrors are regenerated from the root.
- * @param {Element} elem
- * @param {object} [canvas]
- * @returns {void}
  */
-export const rebuildAfterRemap = (elem, canvas) => {
+export const rebuildAfterRemap = (elem: Element, canvas?: object): void => {
   if (!isStacked(elem)) return
   const plan = planStack(elem, {}, canvas)
   if (plan) commitPlan(elem, plan)
 }
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   registerElementCheck('se-stack', stackProblems)
   Object.assign(canvas, {
     /** @see module:live-stack.reconcileStack */
-    reconcileLiveStack: (/** @type {Element} */ elem) => reconcileStack(elem, canvas),
+    reconcileLiveStack: (elem: Element) => reconcileStack(elem, canvas),
     isLiveStacked: isStacked
   })
 }

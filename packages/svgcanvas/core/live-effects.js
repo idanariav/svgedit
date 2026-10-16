@@ -49,7 +49,7 @@ import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
 import {
   registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked
-} from './live-stack.js'
+} from './live-stack.ts'
 
 export const FX_ATTR = 'se:fx'
 export const FX_SOURCE_ATTR = 'se:fx-d'

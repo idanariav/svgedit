@@ -245,10 +245,10 @@ opportunistic and small per module.
 
 **Converted:** `proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`, `math`, `units`, `common/util`,
 `dataStorage`, `extension-hooks`, `draw-snap` (also the R2 pilot), `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
-`text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `model/features`, `model/drawing`, `model/index`, `width-profile`, `measure`, `path-node-guides`, `debug-events`, `touch`, `path-utils`, `paint`, `dom-utils`, `text-rows`, `bbox-utils`, `anchor-path`, `shape-family`, `bezier-fit`, `width-outline`, `select-same`, `drawing-invariants`, `path-fit`, `path-edit`, `path-join`, `dash-fit`, `blend`, `pen-continue`, `path-simplify`, `warp` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
+`text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `model/features`, `model/drawing`, `model/index`, `width-profile`, `measure`, `path-node-guides`, `debug-events`, `touch`, `path-utils`, `paint`, `dom-utils`, `text-rows`, `bbox-utils`, `anchor-path`, `shape-family`, `bezier-fit`, `width-outline`, `select-same`, `drawing-invariants`, `path-fit`, `path-edit`, `path-join`, `dash-fit`, `blend`, `pen-continue`, `path-simplify`, `warp`, `guides`, `smart-guides`, `live-stack`, `art-brush` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
-**Left (the conversion):** up the import graph from the DOM-free leaves (`gradient-edit`, `shape-recognize`, then the `anchor-path` importers: `corner-radius`, `live-stack`, `live-effects`, `art-brush`, `smart-guides`, …); `history.js`, `transaction.js` and `undo.js` are not worth converting, R1 deletes them, `svgcanvas.js` last; the editor
+**Left (the conversion):** up the import graph from the DOM-free leaves (`gradient-edit`, `shape-recognize`, then the `anchor-path` importers: `corner-radius`, `live-effects`, `distort`, `art-brush-canvas`, `blend-canvas`, …); `history.js`, `transaction.js` and `undo.js` are not worth converting, R1 deletes them, `svgcanvas.js` last; the editor
 after the engine, with its own strict tsconfig.
 Per module: `git mv x.js x.ts`, move the JSDoc types into syntax, `node scripts/check-ts-imports.mjs --fix`, change the
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,

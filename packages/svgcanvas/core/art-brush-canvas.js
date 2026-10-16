@@ -31,7 +31,7 @@ import { getTransformList, transformListToTransform, matrixMultiply } from './ma
 import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { LIVE_ATTRS } from './path-join.ts'
-import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.js'
+import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.ts'
 
 export const BRUSH_ATTR = 'se:art-brush'
 export const SPINE_ATTR = 'se:art-spine'
@@ -62,7 +62,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 /** @param {unknown} v */
 const flag = (v) => (v === true || v === 1 || v === '1')
 
-/** @typedef {import('./art-brush.js').ArtPath} ArtPath */
+/** @typedef {import('./art-brush.ts').ArtPath} ArtPath */
 /** @typedef {{group: Element, spine: Element, src: Element, out: Element}} BrushParts */
 /** @typedef {import('./anchor-path.ts').Pt} Pt */
 

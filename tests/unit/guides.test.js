@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { GUIDES_ATTR, parseGuides, formatGuides, validateGuides, visibleGuides, init } from '../../packages/svgcanvas/core/guides.js'
+import { GUIDES_ATTR, parseGuides, formatGuides, validateGuides, visibleGuides, init } from '../../packages/svgcanvas/core/guides.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
-import { collectSnapTargets, snapMovingBBox, findEqualSpacing, collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.js'
+import { collectSnapTargets, snapMovingBBox, findEqualSpacing, collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.ts'
 
 describe('parseGuides / formatGuides', () => {
   it('reads vertical and horizontal lists, sorted and de-duplicated', () => {

@@ -45,7 +45,7 @@ import { getPathDFromElement } from './path-utils.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
-import { tracksOf, frameAt } from './art-brush.js'
+import { tracksOf, frameAt } from './art-brush.ts'
 import { getTransformList, matrixMultiply } from './math.ts'
 import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.ts'
 
@@ -134,7 +134,7 @@ export const formatBlend = (opts = {}) => {
 // The spine
 // ---------------------------------------------------------------------------
 
-/** @typedef {import('./art-brush.js').Track} Track */
+/** @typedef {import('./art-brush.ts').Track} Track */
 /** @typedef {import('./anchor-path.ts').Pt} Pt */
 
 /** @typedef {{d: string, track: Track, sub: import('./anchor-path.ts').SubPath}} Spine */

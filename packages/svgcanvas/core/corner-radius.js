@@ -44,7 +44,7 @@
 
 import { NS } from './namespaces.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
-import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.js'
+import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.ts'
 

@@ -12,7 +12,7 @@
  * @license MIT
  */
 
-import { rebuildAfterRemap } from './live-stack.js'
+import { rebuildAfterRemap } from './live-stack.ts'
 
 /** The hook signature: the element, `coords.js`'s remap helpers and the canvas. */
 export type GeometryRemapFn = (elem: Element, remap: Function, scalew: Function, scaleh: Function, svgCanvas: object) => void

@@ -21,8 +21,8 @@
  */
 
 import type SvgCanvas from '../svgcanvas.js'
-import { collectPointTargets, snapPoint } from './smart-guides.js'
-import type { DrawSnapTargets } from './smart-guides.js'
+import { collectPointTargets, snapPoint } from './smart-guides.ts'
+import type { DrawSnapTargets } from './smart-guides.ts'
 
 /** The built-in modes in which a press or drag places a point. The pencil (`fhpath`) is free-hand, so it never snaps. */
 const DRAW_SNAP_MODES = new Set([
@@ -37,7 +37,7 @@ export const isDrawSnapMode = (mode: string): boolean => DRAW_SNAP_MODES.has(mod
 interface Point { x: number, y: number }
 
 /** What the service reads from its canvas. */
-type Host = Pick<SvgCanvas, 'getCurConfig' | 'getCurrentMode' | 'getCurrentGroup' | 'getZoom' | 'showDrawGuides' | 'undoMgr' | 'getCurrentDrawing'>
+type Host = Pick<SvgCanvas, 'getCurConfig' | 'getCurrentMode' | 'getCurrentGroup' | 'getZoom' | 'showDrawGuides' | 'undoMgr' | 'getCurrentDrawing' | 'getGuides' | 'getSvgContent' | 'getStrokedBBoxDefaultVisible' | 'getResolution'>
 
 /**
  * `tool`: the caller is a registered tool that opted in (any mode);
