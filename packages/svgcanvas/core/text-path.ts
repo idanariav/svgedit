@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Text on path — attach a `<text>` element's content to a path so the text
  * flows along it, and detach it back to plain text.
@@ -24,20 +23,21 @@ import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getTextWithNewlines } from './text-rows.ts'
 import { warn } from '../common/logger.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BatchCommand } from './history.js'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
 const SHAPE_GEOM_ATTRS = ['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points', 'x1', 'y1', 'x2', 'y2', 'd']
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /** The selected text + rail pair, or null. */
-  const findPair = () => {
+  const findPair = (): { text: Element, rail: Element } | null => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     if (elems.length !== 2) return null
-    const text = elems.find((/** @type {Element} */ el) => el.tagName === 'text')
-    const rail = elems.find((/** @type {Element} */ el) => el !== text)
+    const text = elems.find((el) => el.tagName === 'text')
+    const rail = elems.find((el) => el !== text)
     if (!text || !rail || text.querySelector('textPath')) return null
     if (rail.tagName !== 'path' && !getPathDFromElement(rail)) return null
     if (['text', 'image', 'g', 'use'].includes(rail.tagName)) return null
@@ -45,19 +45,19 @@ export const init = (canvas) => {
   }
 
   /** Whether "put text on path" applies to the current selection. */
-  const canTextOnPath = () => !!findPair()
+  const canTextOnPath = (): boolean => !!findPair()
 
   /** The selected element's textPath child, or null. */
-  const getTextPath = () => {
+  const getTextPath = (): Element | null => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     return elem?.tagName === 'text' ? elem.querySelector('textPath') : null
   }
 
   /**
    * Attach the selected text to the selected shape as one undo step.
-   * @returns {?Element} The new text element.
+   * @returns The new text element.
    */
-  const attachTextToPath = () => {
+  const attachTextToPath = (): Element | null => {
     const pair = findPair()
     if (!pair) {
       warn('Text on path needs one text element and one shape selected', null, 'text-path')
@@ -76,7 +76,7 @@ export const init = (canvas) => {
         if (SHAPE_GEOM_ATTRS.includes(attr.name)) continue
         path.setAttribute(attr.name, attr.value)
       }
-      path.setAttribute('d', /** @type {string} */ (d))
+      path.setAttribute('d', d as string)
       path.id = svgCanvas.getNextId()
       rail.before(path)
       batchCmd.addSubCommand(new InsertElementCommand(path))
@@ -118,24 +118,23 @@ export const init = (canvas) => {
    * (baseline of the first glyph). Must run while the rail is still in the
    * document (the position is read from the laid-out glyphs). Records the
    * swap in `batchCmd`; does not touch history or the selection.
-   * @param {Element} elem the `<text>` holding a `<textPath>`
-   * @param {import('./history.js').BatchCommand} batchCmd
-   * @returns {Element} The new plain text element.
+   * @param elem the `<text>` holding a `<textPath>`
+   * @returns The new plain text element.
    */
-  const plainifyTextPath = (elem, batchCmd) => {
+  const plainifyTextPath = (elem: Element, batchCmd: BatchCommand): Element => {
     const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
-    const tp = /** @type {Element} */ (elem.querySelector('textPath'))
+    const tp = elem.querySelector('textPath') as Element
     const doc = elem.ownerDocument
 
     let x = 0
     let y = 0
     try {
-      const pt = /** @type {any} */ (elem).getStartPositionOfChar(0)
+      const pt = (elem as SVGTextContentElement).getStartPositionOfChar(0)
       x = pt.x
       y = pt.y
     } catch {
       try {
-        const bb = /** @type {any} */ (elem).getBBox()
+        const bb = (elem as SVGGraphicsElement).getBBox()
         x = bb.x
         y = bb.y + bb.height
       } catch { /* keep 0,0 */ }
@@ -159,9 +158,9 @@ export const init = (canvas) => {
   /**
    * Detach the selected text from its path, planting it as plain text at its
    * current rendered position (baseline of the first glyph).
-   * @returns {?Element} The new plain text element.
+   * @returns The new plain text element.
    */
-  const detachTextFromPath = () => {
+  const detachTextFromPath = (): Element | null => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elem?.querySelector?.('textPath')) return null
     const batchCmd = new svgCanvas.history.BatchCommand('Detach text from path')
@@ -177,19 +176,18 @@ export const init = (canvas) => {
    * of them (or a descendant of one) becomes plain text in the same undo step,
    * instead of being left on a rail that no longer exists (it would stop
    * rendering and could no longer be selected).
-   * @param {Element[]} removing the elements about to leave the document
-   * @param {import('./history.js').BatchCommand} batchCmd receives the swap commands
-   * @returns {Element[]} the new plain texts
+   * @param removing the elements about to leave the document
+   * @param batchCmd receives the swap commands
+   * @returns the new plain texts
    */
-  const releaseTextOnPath = (removing, batchCmd) => {
-    const ids = new Set()
+  const releaseTextOnPath = (removing: Element[], batchCmd: BatchCommand): Element[] => {
+    const ids = new Set<string>()
     for (const el of removing) {
       if (el.id) ids.add(el.id)
       for (const d of el.querySelectorAll('[id]')) ids.add(d.id)
     }
     if (!ids.size) return []
-    /** @type {Set<Element>} */
-    const texts = new Set()
+    const texts = new Set<Element>()
     for (const tp of svgCanvas.getSvgContent().querySelectorAll('textPath')) {
       const ref = svgCanvas.getHref(tp)
       const owner = tp.closest('text')
@@ -203,10 +201,9 @@ export const init = (canvas) => {
 
   /**
    * Read/write the startOffset (%) of the selected text-on-path.
-   * @param {number} [pct] - Omit to read.
-   * @returns {?number}
+   * @param pct - Omit to read.
    */
-  const textPathOffset = (pct) => {
+  const textPathOffset = (pct?: number): number | null => {
     const tp = getTextPath()
     if (!tp) return null
     if (pct === undefined) {

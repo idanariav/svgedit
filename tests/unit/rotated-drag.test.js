@@ -1,5 +1,5 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.js'
+import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
 
 // Regression test for a bug where dragging (translating) an already-rotated
 // element via the mouse would corrupt its geometry: event-select.js's mouseUp

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Resize mode (`resize`) mouse handlers, extracted from the `resize` case of
  * `event.js`'s mouseDown/mouseMove switches. Covers both single-element
@@ -17,18 +16,18 @@ import { hasMatrixTransform, getTransformList, transformListToTransform, matrixM
 import {
   isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
 } from './text-rows.ts'
+import type SvgCanvas from '../svgcanvas.js'
+
+interface DownContext { x: number, y: number, zoom: number, selectedElements: Element[], mouseTarget: Element }
+interface MoveContext { selected: Element, x: number, y: number, svgRoot: SVGSVGElement, selectedElements: Element[] }
 
 /**
  * Uniform group scale for a multi-element selection. Scales every selected
  * element by the SAME factor about a common pivot (the corner/edge opposite the
  * dragged grip), so no shape is distorted and the relative layout is preserved.
  * `x`,`y` are the current pointer position in content/user coords.
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {number} x
- * @param {number} y
- * @returns {void}
  */
-const resizeGroup = (svgCanvas, x, y) => {
+const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
   const svgRoot = svgCanvas.getSvgRoot()
   const initb = svgCanvas.getInitBbox()
   const bx = initb.x; const by = initb.y; const bw = initb.width; const bh = initb.height
@@ -59,9 +58,10 @@ const resizeGroup = (svgCanvas, x, y) => {
   // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
   const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
 
-  svgCanvas.gesture.groupResizeStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
+  const starts = svgCanvas.gesture.groupResizeStart as Map<Element, SVGMatrix>
+  starts.forEach((startMatrix, elem) => {
     const newM = matrixMultiply(gm, startMatrix)
-    const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+    const tlist = getTransformList(elem) as SVGTransformList
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
     const t = svgRoot.createSVGTransform()
     t.setMatrix(newM)
@@ -83,13 +83,9 @@ const resizeGroup = (svgCanvas, x, y) => {
  * Resize an area text by its box: the grips move the box's edges, the type keeps its size and
  * the rows wrap again to the new width. The whole drag is one undo step (a transaction held
  * from the first movement until the mouse goes up; `event-select.js` commits it).
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {Element} elem An unrotated, untransformed area text
- * @param {number} x
- * @param {number} y
- * @returns {void}
+ * @param elem An unrotated, untransformed area text
  */
-const resizeAreaText = (svgCanvas, elem, x, y) => {
+const resizeAreaText = (svgCanvas: SvgCanvas, elem: Element, x: number, y: number): void => {
   let state = svgCanvas.gesture.areaResize
   if (!state) {
     const box = getAreaBox(elem)
@@ -132,15 +128,14 @@ const resizeAreaText = (svgCanvas, elem, x, y) => {
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-resize.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: DownContext) => void
+  move: (evt: MouseEvent, ctx: MoveContext) => void
+} => {
   const svgCanvas = canvas
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (_evt: MouseEvent, ctx: DownContext): void => {
     const { x, y, zoom, selectedElements, mouseTarget } = ctx
     // A box drag whose mouse-up never arrived must not hijack this one.
     if (svgCanvas.gesture.areaResize) {
@@ -163,12 +158,12 @@ export const init = (canvas) => {
     // then let mouseMove apply a single uniform group-scale matrix to each.
     const groupElems = selectedElements.filter(Boolean)
     if (groupElems.length > 1) {
-      svgCanvas.setInitBbox(/** @type {import('./bbox-utils.ts').BBoxObject} */ (svgCanvas.getStrokedBBoxDefaultVisible(groupElems)))
-      const starts = new Map()
-      const transforms = new Map()
+      svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
+      const starts = new Map<Element, SVGMatrix>()
+      const transforms = new Map<Element, string>()
       svgCanvas.gesture.groupResizeStart = starts
       svgCanvas.gesture.dragStartTransforms = transforms
-      groupElems.forEach((/** @type {Element} */ elem) => {
+      groupElems.forEach((elem) => {
         starts.set(elem, transformListToTransform(getTransformList(elem)).matrix)
         transforms.set(elem, elem.getAttribute('transform') || '')
       })
@@ -177,7 +172,7 @@ export const init = (canvas) => {
 
     // Getting the BBox from the selection box, since we know we
     // want to orient around it
-    const selectedBox = requireBBox(/** @type {Element} */ (svgCanvas.$id('selectedBox0')))
+    const selectedBox = requireBBox(svgCanvas.$id('selectedBox0') as Element)
     svgCanvas.setInitBbox({
       x: selectedBox.x / zoom,
       y: selectedBox.y / zoom,
@@ -186,8 +181,7 @@ export const init = (canvas) => {
     })
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (evt: MouseEvent, ctx: MoveContext): void => {
     const { selected, x, y, svgRoot, selectedElements } = ctx
     // multi-selection: uniform group scale (no per-element distortion)
     if (svgCanvas.gesture.groupResizeStart) {

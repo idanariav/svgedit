@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { copyElem } from '../../packages/svgcanvas/core/copy-elem.js'
+import { copyElem } from '../../packages/svgcanvas/core/copy-elem.ts'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
 
 const NS_SVG = 'http://www.w3.org/2000/svg'

@@ -1,10 +1,10 @@
-// @ts-check
 /**
  * Tools for blur event.
  * @module blur
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
+import type SvgCanvas from '../svgcanvas.js'
 
 /**
 * Reentrant init: each SvgCanvas instance gets its own copy of these functions,
@@ -12,34 +12,25 @@
 * realm without the module-level state of one clobbering another. The functions
 * are attached to the instance (and cross-call each other through it), so
 * svgcanvas.js no longer imports them by name.
-* @function module:blur.init
-* @param {module:blur.blurContext} canvas
-* @returns {void}
 */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
-  /**
-   * @param {Element} filterElem
-   * @returns {?Element}
-   */
-  const getFeGaussianBlurElem = (filterElem) => {
+  const getFeGaussianBlurElem = (filterElem: Element): Element | null => {
     if (!filterElem || filterElem.nodeType !== 1) return null
     return filterElem.querySelector('feGaussianBlur') || filterElem.firstElementChild
   }
 
   /**
   * Sets the `stdDeviation` blur value on the selected element without being undoable.
-  * @function module:svgcanvas.SvgCanvas#setBlurNoUndo
-  * @param {number} val - The new `stdDeviation` value
-  * @returns {void}
+  * @param val - The new `stdDeviation` value
   */
-  const setBlurNoUndo = (val) => {
+  const setBlurNoUndo = (val: number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     const elem = selectedElements[0]
     if (!elem) return
 
-    let filter = svgCanvas.getFilter()
+    let filter: Element | null | undefined = svgCanvas.getFilter()
     if (!filter) {
       filter = svgCanvas.getElement(`${elem.id}_blur`)
     }
@@ -88,11 +79,8 @@ export const init = (canvas) => {
     }
   }
 
-  /**
-  * Finishes the blur change command and adds it to history if not empty.
-  * @returns {void}
-  */
-  const finishChange = () => {
+  /** Finishes the blur change command and adds it to history if not empty. */
+  const finishChange = (): void => {
     const curCommand = svgCanvas.getCurCommand()
     if (!curCommand) {
       svgCanvas.setCurCommand(null)
@@ -115,12 +103,10 @@ export const init = (canvas) => {
   /**
   * Sets the `x`, `y`, `width`, `height` values of the filter element in order to
   * make the blur not be clipped. Removes them if not neeeded.
-  * @function module:svgcanvas.SvgCanvas#setBlurOffsets
-  * @param {Element} filterElem - The filter DOM element to update
-  * @param {number} stdDev - The standard deviation value on which to base the offset size
-  * @returns {void}
+  * @param filterElem - The filter DOM element to update
+  * @param stdDev - The standard deviation value on which to base the offset size
   */
-  const setBlurOffsets = (filterElem, stdDev) => {
+  const setBlurOffsets = (filterElem: Element, stdDev: number): void => {
     if (!filterElem || filterElem.nodeType !== 1) {
       return
     }
@@ -145,12 +131,10 @@ export const init = (canvas) => {
 
   /**
   * Adds/updates the blur filter to the selected element.
-  * @function module:svgcanvas.SvgCanvas#setBlur
-  * @param {number} val - number with the new `stdDeviation` blur value
-  * @param {boolean} complete - Whether or not the action should be completed (to add to the undo manager)
-  * @returns {void}
+  * @param val - number with the new `stdDeviation` blur value
+  * @param complete - Whether or not the action should be completed (to add to the undo manager)
   */
-  const setBlur = (val, complete) => {
+  const setBlur = (val: number, complete: boolean): void => {
     const {
       InsertElementCommand, ChangeElementCommand, BatchCommand
     } = svgCanvas.history
@@ -168,7 +152,7 @@ export const init = (canvas) => {
     }
     const elemId = elem.id
     let filter = svgCanvas.getElement(`${elemId}_blur`)
-    svgCanvas.setFilter(filter)
+    svgCanvas.setFilter(filter ?? null)
 
     val = Number(val) || 0
 
@@ -224,7 +208,7 @@ export const init = (canvas) => {
     svgCanvas.setCurCommand(batchCmd)
 
     const blurElem = getFeGaussianBlurElem(filter)
-    svgCanvas.undoMgr.beginUndoableChange('stdDeviation', [blurElem])
+    svgCanvas.undoMgr.beginUndoableChange('stdDeviation', [blurElem as Element])
     if (complete) {
       svgCanvas.setBlurNoUndo(val)
       finishChange()

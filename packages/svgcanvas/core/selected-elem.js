@@ -10,7 +10,7 @@
 import * as hstry from './history.js'
 import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
-import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'
+import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import { init as groupOpsInit } from './group-ops.js'
 
 const {

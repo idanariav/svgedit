@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Rotate mode (`rotate`) mouse handlers, extracted from the `rotate` case of
  * `event.js`'s mouseDown/mouseMove/mouseUp switches. Covers both
@@ -9,6 +8,7 @@
  */
 import { requireBBox } from './bbox-utils.ts'
 import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
 /**
  * Rotate a multi-element selection rigidly about its union center by `angle`
@@ -16,21 +16,18 @@ import { transformPoint, getMatrix, getTransformList, transformListToTransform, 
  * rotation matrix R(angle, cx, cy) pre-multiplied onto the matrix it had when
  * the drag began (svgCanvas.gesture.groupRotateStart), so the relative layout is
  * preserved and no shape is individually re-centered. Mirrors resizeGroup.
- * @param {import('../svgcanvas.js').default} svgCanvas
- * @param {number} angle
- * @returns {void}
  */
-const rotateGroup = (svgCanvas, angle) => {
+const rotateGroup = (svgCanvas: SvgCanvas, angle: number): void => {
   const svgRoot = svgCanvas.getSvgRoot()
-  const { x: cx, y: cy } = /** @type {{x: number, y: number}} */ (svgCanvas.gesture.groupRotateCenter)
+  const { x: cx, y: cy } = svgCanvas.gesture.groupRotateCenter as { x: number, y: number }
   const rot = svgRoot.createSVGTransform()
   rot.setRotate(angle, cx, cy)
   const rm = rot.matrix
 
-  const starts = /** @type {Map<Element, SVGMatrix>} */ (svgCanvas.gesture.groupRotateStart)
-  starts.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
+  const starts = svgCanvas.gesture.groupRotateStart as Map<Element, SVGMatrix>
+  starts.forEach((startMatrix, elem) => {
     const newM = matrixMultiply(rm, startMatrix)
-    const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+    const tlist = getTransformList(elem) as SVGTransformList
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
     const t = svgRoot.createSVGTransform()
     t.setMatrix(newM)
@@ -46,15 +43,15 @@ const rotateGroup = (svgCanvas, angle) => {
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-rotate.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function, up: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: { selectedElements: Element[] }) => void
+  move: (evt: MouseEvent, ctx: { selected: Element, x: number, y: number, selectedElements: Element[] }) => void
+  up: (evt: MouseEvent, ctx: { selectedElements: Element[] }) => { element: null, keep: true }
+} => {
   const svgCanvas = canvas
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (_evt: MouseEvent, ctx: { selectedElements: Element[] }): void => {
     const { selectedElements } = ctx
     svgCanvas.setStarted(true)
     // we are starting an undoable change (a drag-rotation)
@@ -66,16 +63,15 @@ export const init = (canvas) => {
       const ubb = svgCanvas.getStrokedBBoxDefaultVisible(rotElems)
       svgCanvas.gesture.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
       svgCanvas.gesture.groupRotateBBox = ubb
-      const start = new Map()
+      const start = new Map<Element, SVGMatrix>()
       svgCanvas.gesture.groupRotateStart = start
-      rotElems.forEach((/** @type {Element} */ elem) => {
+      rotElems.forEach((elem) => {
         start.set(elem, transformListToTransform(getTransformList(elem)).matrix)
       })
     }
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (evt: MouseEvent, ctx: { selected: Element, x: number, y: number, selectedElements: Element[] }): void => {
     const { selected, x, y, selectedElements } = ctx
     // multi-selection: rotate the whole group rigidly about the union center
     if (svgCanvas.gesture.groupRotateStart && svgCanvas.gesture.groupRotateCenter) {
@@ -106,8 +102,7 @@ export const init = (canvas) => {
     svgCanvas.call('transition', selectedElements)
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const up = (evt, ctx) => {
+  const up = (_evt: MouseEvent, ctx: { selectedElements: Element[] }): { element: null, keep: true } => {
     const { selectedElements } = ctx
     svgCanvas.gesture.hasDragStartTransform = false
     svgCanvas.gesture.dragStartTransforms = null
@@ -124,7 +119,7 @@ export const init = (canvas) => {
       svgCanvas.gesture.groupRotateStart = null
       svgCanvas.gesture.groupRotateCenter = null
       svgCanvas.gesture.groupRotateBBox = null
-      selectedElements.filter(Boolean).forEach((/** @type {Element} */ elem) => {
+      selectedElements.filter(Boolean).forEach((elem) => {
         svgCanvas.selectorManager.requestSelector(elem).resize()
       })
       svgCanvas.updateGroupSelector()
@@ -133,7 +128,7 @@ export const init = (canvas) => {
       svgCanvas.recalculateAllSelectedDimensions()
     }
     svgCanvas.call('changed', selectedElements)
-    return { element: null, keep: true }
+    return { element: null, keep: true as const }
   }
 
   return { down, move, up }

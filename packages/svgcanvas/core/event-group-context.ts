@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove
  * preludes and the select/shape-draw mode handlers.
@@ -13,6 +12,7 @@
  * @license MIT
  */
 import { transformPoint, getMatrixToContent } from './math.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
 /**
  * Modes that operate on existing elements / the selection, working in content
@@ -21,20 +21,10 @@ import { transformPoint, getMatrixToContent } from './math.ts'
  */
 export const CONTENT_SPACE_MODES = ['select', 'multiselect', 'resize', 'rotate', 'pathedit', 'textedit', 'zoom', 'puppetwarp']
 
-/**
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @returns {boolean}
- */
-export const isCreateInCurrentGroup = (svgCanvas) =>
+export const isCreateInCurrentGroup = (svgCanvas: SvgCanvas): boolean =>
   !CONTENT_SPACE_MODES.includes(svgCanvas.getCurrentMode()) && !!svgCanvas.getCurrentGroup()
 
-/**
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {number} dx
- * @param {number} dy
- * @returns {{dx: number, dy: number}}
- */
-export const toCurrentGroupLocalDelta = (svgCanvas, dx, dy) => {
+export const toCurrentGroupLocalDelta = (svgCanvas: SvgCanvas, dx: number, dy: number): { dx: number, dy: number } => {
   const g = svgCanvas.getCurrentGroup()
   if (!g) { return { dx, dy } }
   const inv = getMatrixToContent(g).inverse()
@@ -42,13 +32,7 @@ export const toCurrentGroupLocalDelta = (svgCanvas, dx, dy) => {
   return { dx: inv.a * dx + inv.c * dy, dy: inv.b * dx + inv.d * dy }
 }
 
-/**
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {number} x
- * @param {number} y
- * @returns {{x: number, y: number}}
- */
-export const toCurrentGroupLocalPoint = (svgCanvas, x, y) => {
+export const toCurrentGroupLocalPoint = (svgCanvas: SvgCanvas, x: number, y: number): { x: number, y: number } => {
   const g = svgCanvas.getCurrentGroup()
   if (!g) { return { x, y } }
   const p = transformPoint(x, y, getMatrixToContent(g).inverse())

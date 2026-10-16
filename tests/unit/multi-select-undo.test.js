@@ -1,5 +1,5 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.js'
+import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
 
 // Regression test: undoing a drag of multiple ungrouped selected elements
 // used to distort every element except the one the mouse actually went down

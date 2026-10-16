@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Text-editing mode (`textedit`) mouse handlers, extracted from the
  * `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches.
@@ -6,19 +5,20 @@
  * @module event-text-edit
  * @license MIT
  */
+import type SvgCanvas from '../svgcanvas.js'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-text-edit.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function, up: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: { mouseTarget: Element, zoom: number }) => void
+  move: (evt: MouseEvent, ctx: { mouseX: number, mouseY: number }) => void
+  up: (evt: MouseEvent, ctx: { mouseX: number, mouseY: number }) => { element: null, keep: false }
+} => {
   const svgCanvas = canvas
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (evt: MouseEvent, ctx: { mouseTarget: Element, zoom: number }): void => {
     const { mouseTarget, zoom } = ctx
     svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
     svgCanvas.setStartY(svgCanvas.getStartY() * zoom)
@@ -26,17 +26,15 @@ export const init = (canvas) => {
     svgCanvas.setStarted(true)
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (_evt: MouseEvent, ctx: { mouseX: number, mouseY: number }): void => {
     const { mouseX, mouseY } = ctx
     svgCanvas.textActions.mouseMove(mouseX, mouseY)
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const up = (evt, ctx) => {
+  const up = (evt: MouseEvent, ctx: { mouseX: number, mouseY: number }): { element: null, keep: false } => {
     const { mouseX, mouseY } = ctx
     svgCanvas.textActions.mouseUp(evt, mouseX, mouseY)
-    return { element: null, keep: false }
+    return { element: null, keep: false as const }
   }
 
   return { down, move, up }

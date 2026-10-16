@@ -49,8 +49,9 @@ export interface InternalMembers {
   getControllPoint2(key: 'x' | 'y'): number
   getCurBBoxes(): ElementAndBBox[]
   getCurCommand(): BatchCommand | null
-  getCurProperties<K extends keyof StyleProps>(key: K): StyleProps[K]
-  getCurText<K extends keyof StyleProps>(key: K): StyleProps[K]
+  getCurProperties<K extends keyof StyleProps>(key: K): StyleProps[K] | null
+  /** An element without the attribute stores `null` (events copy the selection's style here). */
+  getCurText<K extends keyof StyleProps>(key: K): StyleProps[K] | null
   getCurrentMode(): string
   getCurrentResizeMode(): string
   getDAttr(): string | null
@@ -59,7 +60,7 @@ export interface InternalMembers {
   getEncodableFonts(): Record<string, string>
   getEncodableImages(key: string): string | false | undefined
   getEnd(key: 'x' | 'y'): number
-  getFillOpacity(): number
+  getFillOpacity(): number | string
   getFilter(): Element | null
   getFilterHidden(): boolean
   getFreehand(key: 'minx' | 'miny' | 'maxx' | 'maxy'): number
@@ -91,7 +92,7 @@ export interface InternalMembers {
   getStartY(): number
   getStarted(): boolean
   getStepCount(): number
-  getStrokeOpacity(): number
+  getStrokeOpacity(): number | string
   getStyle(): StyleProps
   getSumDistance(): number
   getSvgOptionApply(): boolean | undefined
@@ -125,9 +126,9 @@ export interface InternalMembers {
   setControllPoint2(key: 'x' | 'y', value: number): void
   setCurBBoxes(value: ElementAndBBox[]): void
   setCurCommand(value: BatchCommand | null): void
-  setCurProperties<K extends keyof StyleProps>(key: K, value: StyleProps[K]): void
-  setCurShape<K extends keyof StyleProps>(key: K, value: StyleProps[K]): void
-  setCurText<K extends keyof StyleProps>(key: K, value: StyleProps[K]): void
+  setCurProperties<K extends keyof StyleProps>(key: K, value: StyleProps[K] | null): void
+  setCurShape<K extends keyof StyleProps>(key: K, value: StyleProps[K] | null): void
+  setCurText<K extends keyof StyleProps>(key: K, value: StyleProps[K] | null): void
   setCurrentGroup(cg: Element | null): void
   setCurrentMode(cm: string): string
   setCurrentResizeMode(value: string): void

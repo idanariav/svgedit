@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   CONTENT_SPACE_MODES, isCreateInCurrentGroup, toCurrentGroupLocalDelta, toCurrentGroupLocalPoint
-} from '../../packages/svgcanvas/core/event-group-context.js'
-import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.js'
-import { init as initEventResize } from '../../packages/svgcanvas/core/event-resize.js'
-import { init as initEventRotate } from '../../packages/svgcanvas/core/event-rotate.js'
-import { init as initEventShapeDraw } from '../../packages/svgcanvas/core/event-shape-draw.js'
-import { init as initEventPathEdit } from '../../packages/svgcanvas/core/event-path-edit.js'
-import { init as initEventTextEdit } from '../../packages/svgcanvas/core/event-text-edit.js'
-import { init as initEventZoom } from '../../packages/svgcanvas/core/event-zoom.js'
+} from '../../packages/svgcanvas/core/event-group-context.ts'
+import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
+import { init as initEventResize } from '../../packages/svgcanvas/core/event-resize.ts'
+import { init as initEventRotate } from '../../packages/svgcanvas/core/event-rotate.ts'
+import { init as initEventShapeDraw } from '../../packages/svgcanvas/core/event-shape-draw.ts'
+import { init as initEventPathEdit } from '../../packages/svgcanvas/core/event-path-edit.ts'
+import { init as initEventTextEdit } from '../../packages/svgcanvas/core/event-text-edit.ts'
+import { init as initEventZoom } from '../../packages/svgcanvas/core/event-zoom.ts'
 
 // Each core/event-*.js mode-family module is a reentrant `init(canvas)`
 // factory (mirrors core/blur-event.js) called once per SvgCanvas instance

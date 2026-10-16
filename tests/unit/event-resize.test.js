@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { init as eventResizeInit } from '../../packages/svgcanvas/core/event-resize.js'
+import { init as eventResizeInit } from '../../packages/svgcanvas/core/event-resize.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 

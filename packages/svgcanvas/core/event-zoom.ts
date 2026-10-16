@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the
  * `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches.
@@ -6,19 +5,23 @@
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.ts'
+import type SvgCanvas from '../svgcanvas.js'
+
+/** The pointer position the dispatcher hands every zoom handler: unzoomed (`realX/Y`) and the zoom factor. */
+interface ZoomPointer { realX: number, realY: number, zoom: number }
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-zoom.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function, up: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: ZoomPointer) => void
+  move: (evt: MouseEvent, ctx: ZoomPointer) => void
+  up: (evt: MouseEvent, ctx: Pick<ZoomPointer, 'realX' | 'realY'>) => void
+} => {
   const svgCanvas = canvas
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (_evt: MouseEvent, ctx: ZoomPointer): void => {
     const { realX, realY, zoom } = ctx
     svgCanvas.setStarted(true)
     if (!svgCanvas.getRubberBox()) {
@@ -33,8 +36,7 @@ export const init = (canvas) => {
     }, 100)
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (_evt: MouseEvent, ctx: ZoomPointer): void => {
     const { zoom } = ctx
     let { realX, realY } = ctx
     realX *= zoom
@@ -49,8 +51,7 @@ export const init = (canvas) => {
 
   // Mirrors the original switch: the 'zoom' mouseUp case returns immediately,
   // skipping the shared ext_mouseUp/keep-discard epilogue entirely.
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const up = (evt, ctx) => {
+  const up = (evt: MouseEvent, ctx: Pick<ZoomPointer, 'realX' | 'realY'>): void => {
     const { realX, realY } = ctx
     svgCanvas.getRubberBox()?.setAttribute('display', 'none')
     const factor = evt.shiftKey ? 0.5 : 2

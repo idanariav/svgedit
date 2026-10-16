@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Shape-creation mode mouse handlers, extracted from the
  * rect/square/frame/foreignObject/image/circle/ellipse/line/text/
@@ -11,6 +10,13 @@
 import { assignAttributes, preventClickDefault, setHref } from './dom-utils.ts'
 import { snapToAngle } from './math.ts'
 import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { StyleProps } from './canvas-state.ts'
+import type { PenEnd } from './pen-continue.ts'
+
+interface DownContext { x: number, y: number, realX: number, realY: number, curShape: StyleProps }
+interface MoveContext { x: number, y: number, realX: number, realY: number, shape: SVGElement }
+interface UpContext { element: Element | null | undefined, keep: boolean }
 
 /** Screen pixels the pointer must travel with the Text tool before the press becomes a box (area text). */
 const TEXT_DRAG_PX = 5
@@ -18,11 +24,8 @@ const TEXT_DRAG_PX = 5
 /**
  * Cubic B-spline point used to smooth the freehand pencil stroke as it's
  * drawn (fhpath mouseMove).
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @param {number} t
- * @returns {{x: number, y: number}}
  */
-const getBsplinePoint = (svgCanvas, t) => {
+const getBsplinePoint = (svgCanvas: SvgCanvas, t: number): { x: number, y: number } => {
   const spline = { x: 0, y: 0 }
   const p0 = { x: svgCanvas.getControllPoint2('x'), y: svgCanvas.getControllPoint2('y') }
   const p1 = { x: svgCanvas.getControllPoint1('x'), y: svgCanvas.getControllPoint1('y') }
@@ -61,28 +64,25 @@ const getBsplinePoint = (svgCanvas, t) => {
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-shape-draw.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function, up: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: DownContext) => void
+  move: (evt: MouseEvent, ctx: MoveContext) => void
+  up: (evt: MouseEvent, ctx: UpContext) => UpContext
+} => {
   const svgCanvas = canvas
   // Real-time jitter stabilization for the freehand pencil tool (EMA low-pass
   // filter on raw pointer coordinates, applied before the B-spline capture
   // below). Reset per-stroke in the fhpath mousedown case.
-  /** @type {number|null} */
-  let pencilStabX = null
-  /** @type {number|null} */
-  let pencilStabY = null
+  let pencilStabX: number | null = null
+  let pencilStabY: number | null = null
   // The end of the selected open path the current pencil stroke started on (it carries that path on).
-  /** @type {any} */
-  let pencilEnd = null
+  let pencilEnd: PenEnd | null = null
   // The Text tool press has been dragged into a box: it makes area text instead of point text.
   let textBoxDrag = false
   let textBoxEnd = { x: 0, y: 0 }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (evt: MouseEvent, ctx: DownContext): void => {
     const { x, y, curShape } = ctx
     let { realX, realY } = ctx
     switch (svgCanvas.getCurrentMode()) {
@@ -108,10 +108,10 @@ export const init = (canvas) => {
           element: 'polyline',
           curStyles: true,
           attr: {
-            points: /** @type {string} */ (svgCanvas.getDAttr()),
+            points: svgCanvas.getDAttr() as string,
             id: svgCanvas.getNextId('polyline'),
             fill: 'none',
-            opacity: curShape.opacity / 2,
+            opacity: Number(curShape.opacity) / 2,
             'stroke-linecap': 'round',
             style: 'pointer-events:none'
           }
@@ -131,7 +131,7 @@ export const init = (canvas) => {
             width: 0,
             height: 0,
             id: svgCanvas.getNextId('image'),
-            opacity: curShape.opacity / 2,
+            opacity: Number(curShape.opacity) / 2,
             style: 'pointer-events:inherit'
           }
         })
@@ -184,7 +184,7 @@ export const init = (canvas) => {
             width: 0,
             height: 0,
             id: svgCanvas.getNextId('rect'),
-            opacity: curShape.opacity / 2
+            opacity: Number(curShape.opacity) / 2
           }
         })
         break
@@ -207,7 +207,7 @@ export const init = (canvas) => {
             'stroke-linecap': curShape.stroke_linecap,
             'stroke-opacity': curShape.stroke_opacity,
             fill: 'none',
-            opacity: curShape.opacity / 2,
+            opacity: Number(curShape.opacity) / 2,
             style: 'pointer-events:none'
           }
         })
@@ -222,7 +222,7 @@ export const init = (canvas) => {
             cy: y,
             r: 0,
             id: svgCanvas.getNextId('circle'),
-            opacity: curShape.opacity / 2
+            opacity: Number(curShape.opacity) / 2
           }
         })
         break
@@ -237,7 +237,7 @@ export const init = (canvas) => {
             rx: 0,
             ry: 0,
             id: svgCanvas.getNextId('ellipse'),
-            opacity: curShape.opacity / 2
+            opacity: Number(curShape.opacity) / 2
           }
         })
         break
@@ -251,10 +251,10 @@ export const init = (canvas) => {
             x,
             y,
             id: svgCanvas.getNextId('text'),
-            fill: svgCanvas.getCurText('fill'),
-            'stroke-width': svgCanvas.getCurText('stroke_width'),
-            'font-size': /** @type {string|number} */ (svgCanvas.getCurText('font_size')),
-            'font-family': /** @type {string} */ (svgCanvas.getCurText('font_family')),
+            fill: svgCanvas.getCurText('fill') as string,
+            'stroke-width': svgCanvas.getCurText('stroke_width') as string | number,
+            'font-size': svgCanvas.getCurText('font_size') as string | number,
+            'font-family': svgCanvas.getCurText('font_family') as string,
             'text-anchor': 'middle',
             'xml:space': 'preserve',
             opacity: curShape.opacity
@@ -268,11 +268,10 @@ export const init = (canvas) => {
     }
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (evt: MouseEvent, ctx: MoveContext): void => {
     const { shape } = ctx
     let { x, y, realX, realY } = ctx
-    let cx, cy, i
+    let cx: number, cy: number, i: number
     switch (svgCanvas.getCurrentMode()) {
       case 'text': {
         // A click places point text where it was pressed; a drag draws the box of an area text.
@@ -308,8 +307,8 @@ export const init = (canvas) => {
           y2 = xya.y
         }
 
-        shape.setAttribute('x2', x2)
-        shape.setAttribute('y2', y2)
+        shape.setAttribute('x2', String(x2))
+        shape.setAttribute('y2', String(y2))
         break
       }
       case 'foreignObject': // fall through
@@ -358,7 +357,7 @@ export const init = (canvas) => {
         if (svgCanvas.getCurConfig().gridSnapping) {
           rad = svgCanvas.snapToGrid(rad)
         }
-        shape.setAttribute('r', rad)
+        shape.setAttribute('r', String(rad))
         break
       }
       case 'ellipse': {
@@ -368,9 +367,9 @@ export const init = (canvas) => {
           ({ x, y } = svgCanvas.snapPointToGrid(x, y))
           ;({ x: cx, y: cy } = svgCanvas.snapPointToGrid(cx, cy))
         }
-        shape.setAttribute('rx', Math.abs(x - cx))
+        shape.setAttribute('rx', String(Math.abs(x - cx)))
         const ry = Math.abs(evt.shiftKey ? (x - cx) : (y - cy))
-        shape.setAttribute('ry', ry)
+        shape.setAttribute('ry', String(ry))
         break
       }
       case 'fhellipse':
@@ -417,7 +416,7 @@ export const init = (canvas) => {
               const point = svgCanvas.getSvgContent().createSVGPoint()
               point.x = svgCanvas.getbSpline('x')
               point.y = svgCanvas.getbSpline('y')
-              shape.points.appendItem(point)
+              ;(shape as SVGPolylineElement).points.appendItem(point)
             }
           }
         }
@@ -435,9 +434,10 @@ export const init = (canvas) => {
     }
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const up = (evt, ctx) => {
+  const up = (_evt: MouseEvent, ctx: UpContext): UpContext => {
     let { element, keep } = ctx
+    // the element the gesture drew (`element` is what we hand back, and may become another or null)
+    const source = ctx.element as Element
     switch (svgCanvas.getCurrentMode()) {
       case 'fhpath': {
         // Check that the path contains at least 2 points; a degenerate one-point path
@@ -452,7 +452,7 @@ export const init = (canvas) => {
         svgCanvas.setStart({ x: 0, y: 0 })
         svgCanvas.setEnd('x', 0)
         svgCanvas.setEnd('y', 0)
-        const coords = element.getAttribute('points')
+        const coords = source.getAttribute('points') as string
         const commaIndex = coords.indexOf(',')
         keep = commaIndex >= 0 ? coords.includes(',', commaIndex + 1) : coords.includes(' ', coords.indexOf(' ') + 1)
         if (keep) {
@@ -460,24 +460,24 @@ export const init = (canvas) => {
           // core/path-fit.js) unless disabled; falls back to the legacy
           // every-3-points smoothing inside.
           // Fidelity is screen pixels: the same stroke fits the same way at any zoom.
-          const fidelity = /** @type {number} */ (svgCanvas.getCurConfig().pencilFidelity) / (svgCanvas.getZoom() || 1)
+          const fidelity = (svgCanvas.getCurConfig().pencilFidelity as number) / (svgCanvas.getZoom() || 1)
           if (pencilEnd) {
             // Added to the path the stroke started on; nothing new is inserted.
-            svgCanvas.continueFreehand(element, pencilEnd, fidelity)
+            svgCanvas.continueFreehand(source, pencilEnd, fidelity)
             element = null
           } else {
             element = svgCanvas.getCurConfig().pencilSimplify === false
-              ? svgCanvas.pathActions.smoothPolylineIntoPath(element)
-              : svgCanvas.simplifyFreehand(element, fidelity)
+              ? svgCanvas.pathActions.smoothPolylineIntoPath(source)
+              : svgCanvas.simplifyFreehand(source, fidelity)
           }
         }
         pencilEnd = null
         break
       } case 'line': {
-        const x1 = element.getAttribute('x1')
-        const y1 = element.getAttribute('y1')
-        const x2 = element.getAttribute('x2')
-        const y2 = element.getAttribute('y2')
+        const x1 = source.getAttribute('x1')
+        const y1 = source.getAttribute('y1')
+        const x2 = source.getAttribute('x2')
+        const y2 = source.getAttribute('y2')
         keep = (x1 !== x2 || y1 !== y2)
       }
         break
@@ -486,8 +486,8 @@ export const init = (canvas) => {
       case 'square':
       case 'rect':
       case 'image': {
-        const width = element.getAttribute('width')
-        const height = element.getAttribute('height')
+        const width = source.getAttribute('width')
+        const height = source.getAttribute('height')
         // Image should be kept regardless of size (use inherit dimensions later)
         const widthNum = Number(width)
         const heightNum = Number(height)
@@ -495,12 +495,12 @@ export const init = (canvas) => {
       }
         break
       case 'circle':
-        keep = (element.getAttribute('r') !== '0')
+        keep = (source.getAttribute('r') !== '0')
         break
       case 'ellipse': {
-        const rx = Number(element.getAttribute('rx'))
-        const ry = Number(element.getAttribute('ry'))
-        keep = (rx || ry)
+        const rx = Number(source.getAttribute('rx'))
+        const ry = Number(source.getAttribute('ry'))
+        keep = Boolean(rx || ry)
       }
         break
       case 'fhellipse':
@@ -544,7 +544,7 @@ export const init = (canvas) => {
         if (textBoxDrag) {
           textBoxDrag = false
           svgCanvas.getRubberBox()?.setAttribute('display', 'none')
-          const size = parseFloat(element.getAttribute('font-size')) || 16
+          const size = parseFloat(source.getAttribute('font-size') ?? '') || 16
           const sx = svgCanvas.getStartX()
           const sy = svgCanvas.getStartY()
           const end = textBoxEnd
@@ -556,12 +556,12 @@ export const init = (canvas) => {
             // A box shorter than a row grows with its text instead of fixing the height.
             height: dragged >= size * TEXT_LINE_HEIGHT ? dragged : 0
           }
-          writeAreaAttrs(element, { ...areaAttrsForBox(box, 'start', size), 'text-anchor': 'start' })
+          writeAreaAttrs(source, { ...areaAttrsForBox(box, 'start', size), 'text-anchor': 'start' })
         }
         // Mark this as a freshly-placed text so lock mode can re-arm the text tool
         svgCanvas.setTextFreshCreate(true)
-        svgCanvas.selectOnly([element])
-        svgCanvas.textActions.start(element)
+        svgCanvas.selectOnly([source])
+        svgCanvas.textActions.start(source as SVGTextElement)
         break
       default:
         // This could occur in an extension

@@ -38,7 +38,7 @@ import type SvgCanvas from '../svgcanvas.js'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
-import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
+import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.ts'
 import { isMac } from '../common/browser.ts'
 import { error as logError, warn } from '../common/logger.ts'
 

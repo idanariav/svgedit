@@ -16,16 +16,16 @@ import * as hstry from './history.js'
 import { error as logError, warn as logWarn } from '../common/logger.ts'
 import { findPos } from '../../svgcanvas/common/util.ts'
 import { isDrawSnapMode } from './draw-snap.ts'
-import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
+import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.ts'
 import Layer from './layer.ts'
 import { areaTextAtPoint } from './text-rows.ts'
-import { init as eventZoomInit } from './event-zoom.js'
-import { init as eventTextEditInit } from './event-text-edit.js'
-import { init as eventPathEditInit } from './event-path-edit.js'
-import { init as eventShapeDrawInit } from './event-shape-draw.js'
-import { init as eventResizeInit } from './event-resize.js'
-import { init as eventRotateInit } from './event-rotate.js'
-import { init as eventSelectInit } from './event-select.js'
+import { init as eventZoomInit } from './event-zoom.ts'
+import { init as eventTextEditInit } from './event-text-edit.ts'
+import { init as eventPathEditInit } from './event-path-edit.ts'
+import { init as eventShapeDrawInit } from './event-shape-draw.ts'
+import { init as eventResizeInit } from './event-resize.ts'
+import { init as eventRotateInit } from './event-rotate.ts'
+import { init as eventSelectInit } from './event-select.ts'
 import { describeElement, describePointer } from './debug-events.ts'
 
 const {
@@ -194,7 +194,7 @@ export const init = (canvas) => {
       case 'fhellipse':
       case 'fhrect':
       case 'fhpath': {
-        eventShapeDraw.move(evt, { x, y, realX, realY, shape })
+        eventShapeDraw.move(evt, { x, y, realX, realY, shape: /** @type {SVGElement} */ (shape) })
         break
       }
       case 'path': // fall through
@@ -979,7 +979,7 @@ export const init = (canvas) => {
         eventZoom.down(evt, { realX, realY, zoom })
         break
       case 'resize': {
-        eventResize.down(evt, { x, y, zoom, selectedElements, svgRoot, mouseTarget })
+        eventResize.down(evt, { x, y, zoom, selectedElements, mouseTarget })
         break
       }
       case 'fhellipse':

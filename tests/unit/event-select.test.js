@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { init as eventSelectInit } from '../../packages/svgcanvas/core/event-select.js'
+import { init as eventSelectInit } from '../../packages/svgcanvas/core/event-select.ts'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 
 // Minimal svgCanvas mock: only what `move()` touches before/at the

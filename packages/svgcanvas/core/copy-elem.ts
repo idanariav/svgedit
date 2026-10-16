@@ -1,17 +1,14 @@
-// @ts-check
 // copy-elem.js — Copy handler
 import { preventClickDefault } from './dom-utils.ts'
 import dataStorage from './dataStorage.ts'
 
 /**
  * Create a clone of an element, updating its ID and its children's IDs when needed.
- * @function module:utilities.copyElem
- * @param {Element} el - DOM element to clone
- * @param {module:utilities.GetNextID} getNextId - The getter of the next unique
- *   ID. Receives the source element so callers can preserve its id prefix.
- * @returns {Element} The cloned element
+ * @param el - DOM element to clone
+ * @param getNextId - The getter of the next unique ID. Receives the source element so callers can preserve its id prefix.
+ * @returns The cloned element
  */
-export const copyElem = (el, getNextId) => {
+export const copyElem = (el: Element, getNextId: (el: Element) => string): Element => {
   const ownerDocument = el?.ownerDocument || document
   // manually create a copy of the element
   const newEl = ownerDocument.createElementNS(el.namespaceURI, el.nodeName)
@@ -30,7 +27,7 @@ export const copyElem = (el, getNextId) => {
   el.childNodes.forEach((child) => {
     switch (child.nodeType) {
       case 1: // element node
-        newEl.append(copyElem(/** @type {Element} */ (child), getNextId))
+        newEl.append(copyElem(child as Element, getNextId))
         break
       case 3: // text node
       case 4: // cdata section node

@@ -14,7 +14,7 @@ import Paint from './core/paint.ts'
 import * as pathModule from './core/path.js'
 import * as history from './core/history.js'
 import * as draw from './core/draw.js'
-import { init as pasteInit } from './core/paste-elem.js'
+import { init as pasteInit } from './core/paste-elem.ts'
 import { init as touchInit } from './core/touch.ts'
 import { svgRootElement } from './core/svgroot.ts'
 import { init as undoInit } from './core/undo.js'
@@ -28,7 +28,7 @@ import { init as eventInit } from './core/event.js'
 import { init as jsonInit } from './core/json.ts'
 import * as elemGetSet from './core/elem-get-set.js'
 import { init as selectedElemInit } from './core/selected-elem.js'
-import { init as blurInit } from './core/blur-event.js'
+import { init as blurInit } from './core/blur-event.ts'
 import { getReverseNS, NS } from './core/namespaces.ts'
 import {
   assignAttributes,
@@ -88,7 +88,7 @@ import { init as liveEffectsInit } from './core/live-effects.ts'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.ts'
 import { init as warpInit } from './core/warp.ts'
 import { init as distortInit } from './core/distort.ts'
-import { init as textPathInit } from './core/text-path.js'
+import { init as textPathInit } from './core/text-path.ts'
 import { init as shapeBuilderInit } from './core/shape-builder.ts'
 import { init as clipMaskInit } from './core/clip-mask.ts'
 import { init as cutterInit } from './core/cutter.ts'
@@ -1673,7 +1673,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   /**
    * @function module:svgcanvas.SvgCanvas#getFillOpacity
-   * @returns {number} the current fill opacity
+   * @returns {number|string} the current fill opacity (a string once read from an element)
    */
   getFillOpacity () {
     return this.state.style.shape.fill_opacity
@@ -1681,7 +1681,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   /**
    * @function module:svgcanvas.SvgCanvas#getStrokeOpacity
-   * @returns {number} the current stroke opacity
+   * @returns {number|string} the current stroke opacity (a string once read from an element)
    */
   getStrokeOpacity () {
     return this.state.style.shape.stroke_opacity

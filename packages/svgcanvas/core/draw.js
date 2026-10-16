@@ -10,7 +10,7 @@ import Layer from './layer.ts'
 import { init as layerOpsInit } from './layer-ops.ts'
 
 import { NS } from './namespaces.ts'
-import { copyElem as utilCopyElem } from './copy-elem.js'
+import { copyElem as utilCopyElem } from './copy-elem.ts'
 import { getParentsUntil } from '../common/util.ts'
 
 const visElems =

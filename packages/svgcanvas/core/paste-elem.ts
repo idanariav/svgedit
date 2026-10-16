@@ -1,8 +1,9 @@
-// @ts-check
 // paste-elem.js — Paste handler
 import { getUrlFromAttr } from './dom-utils.ts'
 import * as hstry from './history.js'
-import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'
+import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { SVGElementJSON } from '../svgcanvas.js'
 
 const {
   InsertElementCommand, BatchCommand
@@ -11,42 +12,32 @@ const {
 /**
 * Reentrant init: `pasteElements` is created per-instance, closed over this
 * canvas, so several editors can coexist in one realm.
-* @function module:paste-elem.init
-* @param {module:paste-elem.pasteContext} canvas
-* @returns {void}
 */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   // Tracks consecutive pastes of the same clipboard content so repeated
   // Ctrl/Cmd+V presses cascade down-right like the Duplicate button instead
   // of stacking every copy on the exact same point. Reset whenever the
   // clipboard content changes (a fresh copy) or a "paste in place" occurs.
-  /** @type {string|null} */
-  let lastPasteSignature = null
+  let lastPasteSignature: string | null = null
   let pasteStreak = 0
   const PASTE_STREAK_STEP = 20
 
   /**
-* @function module:svgcanvas.SvgCanvas#pasteElements
-* @param {"in_place"|"point"|void} type
-* @param {number|void} x Expected if type is "point"
-* @param {number|void} y Expected if type is "point"
-* @param {module:svgcanvas.SVGAsJSON[]|void} data Already-parsed clipboard
-*   contents (e.g. from a native `paste` event's `e.clipboardData`). When
-*   omitted, falls back to the sessionStorage snapshot written by the last
-*   `copySelectedElements()` call — used by paths with no `ClipboardEvent`
-*   in hand (context-menu Paste, favorite-action Paste).
-* @fires module:svgcanvas.SvgCanvas#event:changed
-* @fires module:svgcanvas.SvgCanvas#event:ext_IDsUpdated
-* @returns {void}
+* @param type `'point'` pastes at (`x`, `y`); `'in_place'` where it was copied; omitted at the last click
+* @param x Expected if type is "point"
+* @param y Expected if type is "point"
+* @param data Already-parsed clipboard contents (e.g. from a native `paste` event's `e.clipboardData`). When
+*   omitted, falls back to the sessionStorage snapshot written by the last `copySelectedElements()` call
+*   — used by paths with no `ClipboardEvent` in hand (context-menu Paste, favorite-action Paste).
 */
-  const pasteElementsMethod = (type, x, y, data) => {
-    let clipb = data
+  const pasteElementsMethod = (type?: string, x?: number, y?: number, data?: unknown[]): void => {
+    let clipb = data as SVGElementJSON[] | undefined
     if (!Array.isArray(clipb)) {
       const rawClipboard = sessionStorage.getItem(svgCanvas.getClipboardID())
       try {
-        clipb = JSON.parse(/** @type {string} */ (rawClipboard))
+        clipb = JSON.parse(rawClipboard as string)
       } catch {
         return
       }
@@ -63,24 +54,14 @@ export const init = (canvas) => {
     }
     lastPasteSignature = signature
 
-    const pasted = []
+    const pasted: Element[] = []
     const batchCmd = new BatchCommand('Paste elements')
     // const drawing = getCurrentDrawing();
-    /**
-* @typedef {Object<string, string>} module:svgcanvas.ChangedIDs
-*/
-    /**
-* @type {module:svgcanvas.ChangedIDs}
-*/
-    const changedIDs = {}
+    /** Maps past ID (on attribute) to current ID. */
+    const changedIDs: Record<string, string> = {}
 
     // Recursively replace IDs and record the changes
-    /**
-*
-* @param {module:svgcanvas.SVGAsJSON} elem
-* @returns {void}
-*/
-    const checkIDs = (elem) => {
+    const checkIDs = (elem: SVGElementJSON): void => {
       if (elem.attr?.id) {
       // Keep the copied element's own id prefix (e.g. `ellipse_1` → `ellipse_2`)
       // rather than forcing the default `svg_`; the trailing number is bumped to
@@ -89,16 +70,12 @@ export const init = (canvas) => {
         changedIDs[elem.attr.id] = svgCanvas.getNextIdWithPrefix(prefix)
         elem.attr.id = changedIDs[elem.attr.id]
       }
-      if (elem.children) elem.children.forEach((/** @type {any} */ child) => checkIDs(child))
+      if (elem.children) elem.children.forEach((child) => checkIDs(child))
     }
     clipb.forEach((elem) => checkIDs(elem))
 
     // Update any internal references in the clipboard to match the new IDs.
-    /**
-  * @param {module:svgcanvas.SVGAsJSON} elem
-  * @returns {void}
-  */
-    const remapReferences = (elem) => {
+    const remapReferences = (elem: SVGElementJSON): void => {
       const attrs = elem?.attr
       if (attrs) {
         for (const [attrName, attrVal] of Object.entries(attrs)) {
@@ -118,28 +95,21 @@ export const init = (canvas) => {
           }
         }
       }
-      if (elem.children) elem.children.forEach((/** @type {any} */ child) => remapReferences(child))
+      if (elem.children) elem.children.forEach((child) => remapReferences(child))
     }
     clipb.forEach((elem) => remapReferences(elem))
 
     // Give extensions like the connector extension a chance to reflect new IDs and remove invalid elements
-    /**
-* Triggered when `pasteElements` is called from a paste action (context menu or key).
-* @event module:svgcanvas.SvgCanvas#event:ext_IDsUpdated
-* @type {Object<string, any>}
-* @property {module:svgcanvas.SVGAsJSON[]} elems
-* @property {module:svgcanvas.ChangedIDs} changes Maps past ID (on attribute) to current ID
-*/
+    // Triggered when `pasteElements` is called from a paste action (context menu or key).
     svgCanvas.runExtensions(
       'IDsUpdated',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_IDsUpdated} */
       { elems: clipb, changes: changedIDs },
       true
-    ).forEach(function (/** @type {any} */ extChanges) {
+    ).forEach(function (extChanges) {
       if (!extChanges || !('remove' in extChanges)) return
 
-      extChanges.remove.forEach(function (/** @type {string} */ removeID) {
-        clipb = clipb.filter(function (/** @type {any} */ clipBoardItem) {
+      ;(extChanges.remove as string[]).forEach(function (removeID) {
+        clipb = (clipb as SVGElementJSON[]).filter(function (clipBoardItem) {
           return clipBoardItem?.attr?.id !== removeID
         })
       })
@@ -148,8 +118,8 @@ export const init = (canvas) => {
     // Referenced paint servers (gradients/filters/…) carried alongside the copy.
     // Recreate them in <defs> *first* so the pasted shapes' url(#…) references
     // resolve immediately (otherwise restoreRefElements would see them missing).
-    const defsEntries = clipb.filter(e => e?._defs)
-    const elemEntries = clipb.filter(e => e && !e._defs)
+    const defsEntries = clipb.filter((e) => e?._defs)
+    const elemEntries = clipb.filter((e) => e && !e._defs)
 
     defsEntries.forEach((elem) => {
       const defEl = svgCanvas.addSVGElementsFromJson(elem)
@@ -189,7 +159,8 @@ export const init = (canvas) => {
     svgCanvas.selectOnly(pasted, true) // show grips so the pasted element is ready to resize
 
     if (type !== 'in_place') {
-      let ctrX; let ctrY
+      let ctrX: number | undefined
+      let ctrY: number | undefined
 
       if (!type) {
         ctrX = svgCanvas.getLastClickPoint('x')
@@ -200,14 +171,12 @@ export const init = (canvas) => {
       }
 
       const bbox = svgCanvas.getStrokedBBoxDefaultVisible(pasted)
-      if (bbox && Number.isFinite(ctrX) && Number.isFinite(ctrY)) {
+      if (bbox && typeof ctrX === 'number' && Number.isFinite(ctrX) && typeof ctrY === 'number' && Number.isFinite(ctrY)) {
         const streakOffset = pasteStreak * PASTE_STREAK_STEP
         const cx = ctrX - (bbox.x + bbox.width / 2) + streakOffset
         const cy = ctrY - (bbox.y + bbox.height / 2) + streakOffset
-        /** @type {number[]} */
-        const dx = []
-        /** @type {number[]} */
-        const dy = []
+        const dx: number[] = []
+        const dy: number[] = []
 
         pasted.forEach(function (_item) {
           dx.push(cx)

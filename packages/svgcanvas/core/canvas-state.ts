@@ -20,10 +20,10 @@ export interface ElementAndBBox { elem: Element, bbox: BBox | null }
 export interface StyleProps {
   fill: string
   fill_paint: PaintState | null
-  fill_opacity: number
+  fill_opacity: number | string
   stroke: string
   stroke_paint: PaintState | null
-  stroke_opacity: number
+  stroke_opacity: number | string
   stroke_width: number | string
   stroke_dasharray: string
   stroke_linejoin: string

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Selection mode (`select`/`multiselect`) mouse handlers, extracted from the
  * `select`/`multiselect` cases of `event.js`'s mouseDown/mouseMove/mouseUp
@@ -14,22 +13,28 @@ import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
-import { toCurrentGroupLocalDelta } from './event-group-context.js'
+import { toCurrentGroupLocalDelta } from './event-group-context.ts'
 import * as hstry from './history.js'
+import type SvgCanvas from '../svgcanvas.js'
 
 const { BatchCommand, ChangeElementCommand } = hstry
+
+interface DownContext { mouseTarget: Element, svgRoot: SVGSVGElement, rightClick: boolean, selectedElements: Element[], zoom: number }
+interface MoveContext { selectedElements: Element[], selected: Element | null, x: number, y: number, zoom: number, svgRoot: SVGSVGElement }
+interface MultiselectContext { selectedElements: Element[], realX: number, realY: number, zoom: number }
+interface UpContext {
+  realX: number
+  realY: number
+  selectedElements: Element[]
+  operationMode: string
+  pendingMove: { dx: number, dy: number } | null | undefined
+  tempJustSelected: Element | null
+}
 
 // update the dummy transform in our transform list
 // to be a translate. We need to check if there was a transformation
 // to avoid loosing it
-/**
- * @param {SVGSVGElement} svgRoot
- * @param {Element} element
- * @param {number} dx
- * @param {number} dy
- * @returns {void}
- */
-const updateTransformList = (svgRoot, element, dx, dy) => {
+const updateTransformList = (svgRoot: SVGSVGElement, element: Element, dx: number, dy: number): void => {
   const xform = svgRoot.createSVGTransform()
   xform.setTranslate(dx, dy)
   const tlist = getTransformList(element)
@@ -49,15 +54,16 @@ const updateTransformList = (svgRoot, element, dx, dy) => {
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
  * handlers, closed over its own `svgCanvas`.
- * @function module:event-select.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {{down: Function, move: Function, multiselectMove: Function, up: Function}}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): {
+  down: (evt: MouseEvent, ctx: DownContext) => void
+  move: (evt: MouseEvent, ctx: MoveContext) => void
+  multiselectMove: (evt: MouseEvent, ctx: MultiselectContext) => void
+  up: (evt: MouseEvent, ctx: UpContext) => void
+} => {
   const svgCanvas = canvas
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const down = (evt, ctx) => {
+  const down = (evt: MouseEvent, ctx: DownContext): void => {
     const { mouseTarget, svgRoot, rightClick, selectedElements, zoom } = ctx
     svgCanvas.setStarted(true)
     svgCanvas.setCurrentResizeMode('none')
@@ -112,8 +118,7 @@ export const init = (canvas) => {
     }
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const move = (evt, ctx) => {
+  const move = (evt: MouseEvent, ctx: MoveContext): void => {
     const { selectedElements, selected, zoom, svgRoot } = ctx
     const { x, y } = ctx
     // Alt-drag-to-duplicate: only clone once the drag crosses the same "was
@@ -179,10 +184,8 @@ export const init = (canvas) => {
         const res = svgCanvas.getResolution()
         const tol = 8 / zoom // ~8 screen px
         const bb = svgCanvas.gesture.dragStartBBox
-        /** @type {(lines: Array<{pos: number, color: string}>, refs: number[]) => ({delta: number, pos: number, color: string}|null)} */
-        const snapAxis = (lines, refs) => {
-          /** @type {{delta: number, pos: number, color: string}|null} */
-          let best = null
+        const snapAxis = (lines: Array<{ pos: number, color: string }>, refs: number[]): { delta: number, pos: number, color: string } | null => {
+          let best: { delta: number, pos: number, color: string } | null = null
           for (const ln of lines) {
             for (const r of refs) {
               const d = ln.pos - r
@@ -217,8 +220,8 @@ export const init = (canvas) => {
         // > equal spacing > mixed alignment (edge↔center).
         const useSpacingX = spacing.x && !(snap.x?.same)
         const useSpacingY = spacing.y && !(snap.y?.same)
-        if (useSpacingX) { dx += /** @type {{delta: number}} */ (spacing.x).delta } else if (snap.x) { dx += snap.x.delta }
-        if (useSpacingY) { dy += /** @type {{delta: number}} */ (spacing.y).delta } else if (snap.y) { dy += snap.y.delta }
+        if (useSpacingX) { dx += (spacing.x as { delta: number }).delta } else if (snap.x) { dx += snap.x.delta }
+        if (useSpacingY) { dy += (spacing.y as { delta: number }).delta } else if (snap.y) { dy += snap.y.delta }
         svgCanvas.showSmartGuides?.({
           x: useSpacingX ? null : snap.x,
           y: useSpacingY ? null : snap.y,
@@ -249,7 +252,7 @@ export const init = (canvas) => {
         const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(svgCanvas, dx, dy)
         // Candidate delta for transformAgain — committed in mouseUp.
         svgCanvas.pendingMoveDelta = { dx, dy }
-        selectedElements.forEach((/** @type {Element} */ el) => {
+        selectedElements.forEach((el) => {
           if (el) {
             updateTransformList(svgRoot, el, ldx, ldy)
             // update our internal bbox that we're tracking while dragging
@@ -265,8 +268,7 @@ export const init = (canvas) => {
     }
   }
 
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const multiselectMove = (evt, ctx) => {
+  const multiselectMove = (evt: MouseEvent, ctx: MultiselectContext): void => {
     const { selectedElements, zoom } = ctx
     let { realX, realY } = ctx
     realX *= zoom
@@ -315,8 +317,7 @@ export const init = (canvas) => {
   // fallthrough). Always returns without a result — the orchestrator's
   // mouseUpEvent returns immediately after calling this, skipping the
   // ext_mouseUp/keep-discard epilogue, exactly as the original switch did.
-  /** @type {(evt: MouseEvent, ctx: any) => any} */
-  const up = (evt, ctx) => {
+  const up = (evt: MouseEvent, ctx: UpContext): void => {
     const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected } = ctx
     const mode = svgCanvas.getCurrentMode()
     if (mode === 'resize' && svgCanvas.gesture.areaResize) {
@@ -370,7 +371,7 @@ export const init = (canvas) => {
         // Create a single batch command for all moved elements
         const batchCmd = new BatchCommand('position')
 
-        selectedElements.forEach((/** @type {Element} */ elem) => {
+        selectedElements.forEach((elem) => {
           if (!elem) return
 
           const tlist = getTransformList(elem)
@@ -496,7 +497,7 @@ export const init = (canvas) => {
         // pointer. This takes priority over path-edit entry so a shift-click
         // always deselects rather than diving into a single selected path.
         const shiftHit = evt.shiftKey &&
-          selectedElements.find((/** @type {Element|null} */ s) => s && (s === t || s.contains(/** @type {Node|null} */ (t))))
+          selectedElements.find((s) => s && (s === t || s.contains(t as Node | null)))
         if (shiftHit && tempJustSelected !== shiftHit) {
           svgCanvas.removeFromSelection([shiftHit])
         } else if (!evt.shiftKey && selectedElements[0].nodeName === 'path' && !selectedElements[1]) {

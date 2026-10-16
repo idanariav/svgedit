@@ -35,14 +35,14 @@
 | `bezier-fit.ts` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
 | `blend-canvas.ts` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
 | `blend.ts` | Blends: the geometry and paint of the steps between two key shapes |
-| `blur-event.js` | Tools for blur event |
+| `blur-event.ts` | Tools for blur event |
 | `boolean-ops.ts` | Boolean path operations: union, intersect, subtract, exclude, divide |
 | `brush-stroke.ts` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
 | `canvas-state.ts` | The session/UI state of one canvas (`svgCanvas.state`), grouped by concern: zoom, selection, current styles, history scratch and the drawing gesture's working values |
 | `clear.ts` | Resets the `#svgcontent` element to a blank document |
 | `clip-mask.ts` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |
-| `copy-elem.js` | Copy handler |
+| `copy-elem.ts` | Copy handler |
 | `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
 | `cutter.ts` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
 | `dash-fit.ts` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
@@ -55,20 +55,20 @@
 | `drawing-invariants.ts` | Structural invariants of a healthy drawing, as a pure DOM check |
 | `elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
 | `encoding-utils.ts` | String/XML/base64 encoding utilities |
-| `event-group-context.js` | Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove preludes and the select/shape-draw mode handlers |
-| `event-path-edit.js` | Path drawing/editing mode (`path`/`pathedit`) mouse handlers, extracted from the `path`/`pathedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event-resize.js` | Resize mode (`resize`) mouse handlers, extracted from the `resize` case of `event.js`'s mouseDown/mouseMove switches |
-| `event-rotate.js` | Rotate mode (`rotate`) mouse handlers, extracted from the `rotate` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event-select.js` | Selection mode (`select`/`multiselect`) mouse handlers, extracted from the `select`/`multiselect` cases of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event-shape-draw.js` | Shape-creation mode mouse handlers, extracted from the rect/square/frame/foreignObject/image/circle/ellipse/line/text/ fhellipse/fhrect/fhpath cases of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event-text-edit.js` | Text-editing mode (`textedit`) mouse handlers, extracted from the `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event-zoom.js` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-group-context.ts` | Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove preludes and the select/shape-draw mode handlers |
+| `event-path-edit.ts` | Path drawing/editing mode (`path`/`pathedit`) mouse handlers, extracted from the `path`/`pathedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-resize.ts` | Resize mode (`resize`) mouse handlers, extracted from the `resize` case of `event.js`'s mouseDown/mouseMove switches |
+| `event-rotate.ts` | Rotate mode (`rotate`) mouse handlers, extracted from the `rotate` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-select.ts` | Selection mode (`select`/`multiselect`) mouse handlers, extracted from the `select`/`multiselect` cases of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-shape-draw.ts` | Shape-creation mode mouse handlers, extracted from the rect/square/frame/foreignObject/image/circle/ellipse/line/text/ fhellipse/fhrect/fhpath cases of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-text-edit.ts` | Text-editing mode (`textedit`) mouse handlers, extracted from the `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
+| `event-zoom.ts` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event.js` | Tools for event |
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
 | `gradient-edit.ts` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
-| `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
+| `group-detach.ts` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
 | `history.js` | For command history tracking and undo functionality |
@@ -87,7 +87,7 @@
 | `object-state.ts` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
 | `paint.ts` | Fill, stroke, color management |
 | `paper-utils.ts` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
-| `paste-elem.js` | Paste handler |
+| `paste-elem.ts` | Paste handler |
 | `path-actions.js` | Path functionality |
 | `path-edit.ts` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
 | `path-fit.ts` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
@@ -121,7 +121,7 @@
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
 | `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
-| `text-path.js` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
+| `text-path.ts` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |
 | `tool-registry.ts` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
