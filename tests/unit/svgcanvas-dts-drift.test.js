@@ -18,12 +18,18 @@ import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 const declaredMembers = () => {
   const names = new Set()
   const internal = new Set()
+  const required = new Set() // public members declared without `?`: the runtime must have them
   const read = (file, match, into = names) => {
     const text = fs.readFileSync(path.resolve(process.cwd(), 'packages/svgcanvas', file), 'utf8')
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2020, true)
     sf.forEachChild((node) => {
       if (!match(node)) return
-      for (const m of node.members) if (m.name) into.add(m.name.getText(sf).replace(/^['"]|['"]$/g, ''))
+      for (const m of node.members) {
+        if (!m.name) continue
+        const name = m.name.getText(sf).replace(/^['"]|['"]$/g, '')
+        into.add(name)
+        if (into === names && !m.questionToken && !(ts.isConstructorDeclaration(m))) required.add(name)
+      }
     })
   }
   // The class (methods defined in svgcanvas.js) plus AttachedMembers (members
@@ -31,7 +37,7 @@ const declaredMembers = () => {
   read('svgcanvas.d.ts', (n) => ts.isClassDeclaration(n) && n.name?.text === 'SvgCanvas')
   read('svgcanvas-members.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'AttachedMembers')
   read('svgcanvas-internal.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'InternalMembers', internal)
-  return { names, internal }
+  return { names, internal, required }
 }
 
 const liveMembers = () => {
@@ -63,7 +69,7 @@ const liveMembers = () => {
 }
 
 describe('svgcanvas.d.ts drift', () => {
-  const { names: declared, internal } = declaredMembers()
+  const { names: declared, internal, required } = declaredMembers()
   const live = liveMembers()
 
   it('declares the SvgCanvas class', () => {
@@ -76,6 +82,10 @@ describe('svgcanvas.d.ts drift', () => {
 
   it('does not list a member as both public and internal', () => {
     expect([...internal].filter((n) => declared.has(n))).toEqual([])
+  })
+
+  it('declares no required public member that the runtime does not have', () => {
+    expect([...required].filter((n) => !n.startsWith('_') && !live.has(n)).sort()).toEqual([])
   })
 
   it('lists no internal member that no longer exists', () => {

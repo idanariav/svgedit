@@ -524,13 +524,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     return this.curConfig
   }
 
-  /**
-   * @param {string} p
-   */
-  setIdPrefix (p) {
-    this.idprefix = p
-  }
-
   getCurrentDrawing () {
     return this.current_drawing_
   }
@@ -882,10 +875,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   getStarted () {
     return this.state.drawing.started
-  }
-
-  getCanvas () {
-    return this
   }
 
   getrootSctm () {
@@ -1656,22 +1645,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   }
 
   /**
-   * @function module:svgcanvas.SvgCanvas#getSnapToGrid
-   * @returns {boolean} The current snap to grid setting
-   */
-  getSnapToGrid () {
-    return this.curConfig.gridSnapping
-  }
-
-  /**
-   * @function module:svgcanvas.SvgCanvas#getVersion
-   * @returns {string} A string which describes the revision number of SvgCanvas.
-   */
-  getVersion () {
-    return 'svgcanvas.js ($Rev$)'
-  }
-
-  /**
    * Update configuration options with given values.
    * @function module:svgcanvas.SvgCanvas#setConfig
    * @param {module:SVGEditor.Config} opts - Object with options
@@ -1701,22 +1674,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    */
   getColor (type) {
     return /** @type {Object<string, any>} */ (this.state.style.properties)[type]
-  }
-
-  /**
-   * @param {*} paint
-   */
-  setStrokePaint (paint) {
-    this.setPaint('stroke', paint)
-  }
-
-  /**
-   * @function module:svgcanvas.SvgCanvas#setFillPaint
-   * @param {module:jGraduate~Paint} paint
-   * @returns {void}
-   */
-  setFillPaint (paint) {
-    this.setPaint('fill', paint)
   }
 
   /**
@@ -1777,16 +1734,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     } else {
       this.changeSelectedAttributeNoUndo(`${type}-opacity`, val)
     }
-  }
-
-  /**
-   * Gets the current fill/stroke opacity.
-   * @function module:svgcanvas.SvgCanvas#getPaintOpacity
-   * @param {"fill"|"stroke"} type - String with "fill" or "stroke"
-   * @returns {number} Fill/stroke opacity
-   */
-  getPaintOpacity (type) {
-    return type === 'fill' ? this.getFillOpacity() : this.getStrokeOpacity()
   }
 
   /**

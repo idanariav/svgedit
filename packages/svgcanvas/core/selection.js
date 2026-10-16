@@ -588,8 +588,9 @@ export const init = (canvas) => {
     }
   }
 
-  svgCanvas.getMouseTarget = getMouseTargetMethod
-  svgCanvas.getMouseTargetFromNode = getMouseTargetFromNode
+  // null only for a missing event / node; the declaration overloads that (members.d.ts)
+  svgCanvas.getMouseTarget = /** @type {*} */ (getMouseTargetMethod)
+  svgCanvas.getMouseTargetFromNode = /** @type {*} */ (getMouseTargetFromNode)
   svgCanvas.clearSelection = clearSelectionMethod
   svgCanvas.addToSelection = addToSelectionMethod
   svgCanvas.getIntersectionList = getIntersectionListMethod

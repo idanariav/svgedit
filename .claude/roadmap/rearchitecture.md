@@ -195,6 +195,17 @@ down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentEl
 `selectSameAs`, `splitIntoGrid`, `transformEach`. Gesture state that `event-*` modules park on the canvas
 (`groupRotateCenter`, `dragStartTransforms`, …) is a different job: it belongs in a state object owned by the gesture
 module, not in a function move.
+**The facade, as it stands (2026-10-16).** `svgcanvas.d.ts` (the class), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
+~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: `any`, ~195 members core modules share) are the facade
+and its plumbing. Three tests keep them honest: `svgcanvas-dts-drift.test.js` (every runtime member is declared as public
+or internal, none is both, no internal one is stale, and now **no required public member is missing at runtime**: the
+phantoms `undo`, `redo`, `getLayer`, `getNumLayers`, `getCurrentLayerName`, `unbind`, `getPrivateMethods` were removed and
+the gesture fields that only exist during a gesture are optional), and `svgcanvas-facade.test.js` (**the editor and the
+extensions never call an `any` member**: ten that they did were typed and promoted). Eleven members nothing called
+(`getCanvas`, `getVersion`, `getSnapToGrid`, `getPaintOpacity`, `setFillPaint`, `setStrokePaint`, `setIdPrefix`,
+`getFontFamily` / `getFontColor` / `getFontSize`) were deleted. What a deeper facade would add (types derived from source,
+the d.ts files deleted) needs the members to leave the canvas, module by module as above; until then a new member is
+declared in `svgcanvas-members.d.ts` if the editor calls it, else in `svgcanvas-internal.d.ts`.
 Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the gesture state of the `event-*` modules, then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
 
 Size: L, fully incremental, low risk per module.

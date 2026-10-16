@@ -67,6 +67,25 @@ export interface ToolDef {
 export interface AttachedMembers {
   /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
   drawSnap: import('./core/draw-snap.ts').DrawSnap
+  /** Remove the canvas's global listeners; call before discarding the instance. */
+  destroy(): void
+  /** The id of the `localStorage` entry that carries the clipboard between canvases. */
+  getClipboardID(): string
+  /** The element a pointer event is on, as the selection logic sees it (the svg root for "nothing"). */
+  getMouseTarget(evt: Event): Element
+  getMouseTarget(evt: Event | null | undefined): Element | null
+  getMouseTargetFromNode(node: Element): Element
+  getMouseTargetFromNode(node: Element | null | undefined): Element | null
+  /** The stroked, transformed bounding box of the elements (all visible ones when omitted). */
+  getStrokedBBoxDefaultVisible(elems?: Element[]): BBox
+  gettingSelectorManager(): any
+  /** Name the cursor hint a tool shows (`'add'`, `'pointer'`…), or `null` for none; only a change fires `cursorHint`. */
+  setCursorHint(hint: string | null): void
+  setEncodableFont(family: string, base64: string): void
+  /** Round a value to the grid step. */
+  snapToGrid(value: number): number
+  /** Offer a key to the active registered tool; true when it was handled (the caller should preventDefault). */
+  toolKeyDown(evt: KeyboardEvent): boolean
   setSvgString(xmlString: string, preventUndo?: boolean): boolean
   clearSelection(noCall?: boolean): void
   getResolution(): Resolution
@@ -84,27 +103,27 @@ export interface AttachedMembers {
   moveUpDownSelected(dir: 'Up' | 'Down'): void
 
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
-  groupRotateCenter: { x: number, y: number } | null
-  groupRotateStart: Map<Element, SVGMatrix> | null
-  groupRotateBBox: BBox | null
-  hasDragStartTransform: boolean
-  dragStartTransforms: Map<Element, string> | null
+  groupRotateCenter?: { x: number, y: number } | null
+  groupRotateStart?: Map<Element, SVGMatrix> | null
+  groupRotateBBox?: BBox | null
+  hasDragStartTransform?: boolean
+  dragStartTransforms?: Map<Element, string> | null
   /** Set by the editor's snapping overlay; absent in a bare canvas. */
   showDrawGuides?: (hit: any) => void
 
   // Resize gesture state
-  hasResizeStartTransform: boolean
-  groupResizeStart: Map<Element, SVGMatrix> | null
+  hasResizeStartTransform?: boolean
+  groupResizeStart?: Map<Element, SVGMatrix> | null
   /** The text-box resize in progress (its transaction stays open until mouse-up). */
-  areaResize: { elem: Element, box: BBox, fixedHeight: boolean, anchor: string, tx: { commit: () => any, cancel: () => any } } | null
+  areaResize?: { elem: Element, box: BBox, fixedHeight: boolean, anchor: string, tx: { commit: () => any, cancel: () => any } } | null
   /** The live scale of a resize, for panels that show the in-progress size. */
   dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
 
   // Move gesture state (select mode)
-  altCloneArmed: boolean
-  dragStartBBox: BBox | null
+  altCloneArmed?: boolean
+  dragStartBBox?: BBox | null
   smartSnapTargets?: any
-  moveSelectionThresholdReached: boolean
+  moveSelectionThresholdReached?: boolean
   pendingMoveDelta?: { dx: number, dy: number } | null
   dragLiveMoveDelta?: { dx: number, dy: number } | null
   /** The repeatable delta for transformAgain. */
@@ -115,10 +134,10 @@ export interface AttachedMembers {
   /** Set by the editor's overlay while a path node is dragged. */
   showPathNodeGuides?: (guides: any) => void
   /** Space is held (pan). */
-  spaceKey: boolean
+  spaceKey?: boolean
   /** A tool just created an element (select it on mouse-up when `selectNew`). */
-  addedNew: boolean
-  pendingNewElement: Element | null
+  addedNew?: boolean
+  pendingNewElement?: Element | null
 
   // Path operations
   pathActions: {
@@ -147,9 +166,6 @@ export interface AttachedMembers {
     opencloseSubPath: () => void
     hover: (mouseX: number | null, mouseY: number | null, mode?: string) => void
   }
-  getNumLayers(): number
-  getLayer(name: string): any
-  getCurrentLayerName(): string
   setCurrentLayer(name: string): boolean
   renameCurrentLayer(newName: string): boolean
   setCurrentLayerPosition(newPos: number): boolean
@@ -160,9 +176,6 @@ export interface AttachedMembers {
 
   // Undo/Redo
   undoMgr: UndoManager
-  undo(): void
-  redo(): void
-  unbind(event: string, callback: Function): void
   /**
    * Start recording every change to the drawing as ONE undo step (core/transaction.js).
    * Nested calls join the outermost transaction. `commit()` returns the pushed
@@ -200,7 +213,6 @@ export interface AttachedMembers {
   embedImage(src: string): Promise<string | false>
 
   // Other utilities
-  getPrivateMethods(): any
 
   // Layers
   /** Show/dim layers other than the current one (all-layers editing mode). */

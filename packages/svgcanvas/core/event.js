@@ -696,7 +696,7 @@ export const init = (canvas) => {
           const target = svgCanvas.getMouseTargetFromNode(node)
           if (
             target &&
-          (target.parentNode === parentContext || (anyLayer && Layer.isLayer(target.parentNode))) &&
+          (target.parentNode === parentContext || (anyLayer && Layer.isLayer(/** @type {SVGGElement} */ (target.parentNode)))) &&
           isStrokeOnlyElement(target)
           ) {
             return target
@@ -791,7 +791,7 @@ export const init = (canvas) => {
     let mouseTarget = svgCanvas.getMouseTarget(evt)
 
     if (mouseTarget.tagName === 'a' && mouseTarget.childNodes.length === 1) {
-      mouseTarget = mouseTarget.firstChild
+      mouseTarget = /** @type {Element} */ (mouseTarget.firstChild)
     }
 
     // Ctrl/Cmd-click drills straight into a group and selects the clicked child in

@@ -431,14 +431,6 @@ export const init = (canvas) => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-* @function module:svgcanvas.SvgCanvas#getFontFamily
-* @returns {string} The current font family
-*/
-  const getFontFamilyMethod = () => {
-    return svgCanvas.getCurText('font_family')
-  }
-
-  /**
 * Set the new font family.
 * @function module:svgcanvas.SvgCanvas#setFontFamily
 * @param {string} val - String with the new font family
@@ -471,22 +463,6 @@ export const init = (canvas) => {
       svgCanvas.changeSelectedAttribute('fill', val, changedTextElements)
     }
     notifyTextChange(changedTextElements)
-  }
-
-  /**
-* @function module:svgcanvas.SvgCanvas#getFontColor
-* @returns {string} The current font color
-*/
-  const getFontColorMethod = () => {
-    return svgCanvas.getCurText('fill')
-  }
-
-  /**
-* @function module:svgcanvas.SvgCanvas#getFontSize
-* @returns {number} The current font size
-*/
-  const getFontSizeMethod = () => {
-    return svgCanvas.getCurText('font_size')
   }
 
   /**
@@ -647,11 +623,8 @@ export const init = (canvas) => {
   svgCanvas.setTextPerspectiveY = setTextPerspectiveYMethod // Set vertical perspective on text.
   svgCanvas.getTextPerspectiveX = getTextPerspectiveXMethod // Get current horizontal perspective value.
   svgCanvas.getTextPerspectiveY = getTextPerspectiveYMethod // Get current vertical perspective value.
-  svgCanvas.getFontFamily = getFontFamilyMethod // The current font family
   svgCanvas.setFontFamily = setFontFamilyMethod // Set the new font family.
   svgCanvas.setFontColor = setFontColorMethod // Set the new font color.
-  svgCanvas.getFontColor = getFontColorMethod // The current font color
-  svgCanvas.getFontSize = getFontSizeMethod // The current font size
   svgCanvas.setFontSize = setFontSizeMethod // Applies the given font size to the selected element.
   svgCanvas.getText = getTextMethod // current text (newline-joined for multiline) of the selected element
   svgCanvas.getTextWithNewlines = getTextWithNewlinesMethod // newline-joined content of a `<text>` element

@@ -49,8 +49,6 @@ export interface InternalMembers {
   /** @internal */
   decode64: any
   /** @internal */
-  destroy(...args: any[]): any
-  /** @internal */
   destroyAbort: any
   /** @internal */
   dispatchEvent: any
@@ -70,10 +68,6 @@ export interface InternalMembers {
   getBBox: any
   /** @internal */
   getBaseUnit(...args: any[]): any
-  /** @internal */
-  getCanvas(...args: any[]): any
-  /** @internal */
-  getClipboardID(...args: any[]): any
   /** @internal */
   getClosest: any
   /** @internal */
@@ -117,12 +111,6 @@ export interface InternalMembers {
   /** @internal */
   getFilterHidden(...args: any[]): any
   /** @internal */
-  getFontColor: any
-  /** @internal */
-  getFontFamily: any
-  /** @internal */
-  getFontSize: any
-  /** @internal */
   getFreehand(...args: any[]): any
   /** @internal */
   getGridShape(...args: any[]): any
@@ -155,10 +143,6 @@ export interface InternalMembers {
   /** @internal */
   getLinkControlPts: any
   /** @internal */
-  getMouseTarget: any
-  /** @internal */
-  getMouseTargetFromNode: any
-  /** @internal */
   getNextIdWithPrefix(...args: any[]): any
   /** @internal */
   getNextParameter(...args: any[]): any
@@ -170,8 +154,6 @@ export interface InternalMembers {
   getOffset(...args: any[]): any
   /** @internal */
   getOpacAni(...args: any[]): any
-  /** @internal */
-  getPaintOpacity(...args: any[]): any
   /** @internal */
   getParameter(...args: any[]): any
   /** @internal */
@@ -195,8 +177,6 @@ export interface InternalMembers {
   /** @internal */
   getSelectorManager: any
   /** @internal */
-  getSnapToGrid(...args: any[]): any
-  /** @internal */
   getSnappingStep(...args: any[]): any
   /** @internal */
   getStart(...args: any[]): any
@@ -212,8 +192,6 @@ export interface InternalMembers {
   getStepCount(...args: any[]): any
   /** @internal */
   getStrokeOpacity(...args: any[]): any
-  /** @internal */
-  getStrokedBBoxDefaultVisible: any
   /** @internal */
   getStyle(...args: any[]): any
   /** @internal */
@@ -231,8 +209,6 @@ export interface InternalMembers {
   /** @internal */
   getUrlFromAttr: any
   /** @internal */
-  getVersion(...args: any[]): any
-  /** @internal */
   getVisElems(...args: any[]): any
   /** @internal */
   getWidth(...args: any[]): any
@@ -242,8 +218,6 @@ export interface InternalMembers {
   getrefAttrs(...args: any[]): any
   /** @internal */
   getrootSctm(...args: any[]): any
-  /** @internal */
-  gettingSelectorManager(...args: any[]): any
   /** @internal */
   groupSvgElem: any
   /** @internal */
@@ -335,13 +309,9 @@ export interface InternalMembers {
   /** @internal */
   setEmptySelectedElements(...args: any[]): any
   /** @internal */
-  setEncodableFont(...args: any[]): any
-  /** @internal */
   setEncodableImages(...args: any[]): any
   /** @internal */
   setEnd(...args: any[]): any
-  /** @internal */
-  setFillPaint(...args: any[]): any
   /** @internal */
   setFilter(...args: any[]): any
   /** @internal */
@@ -354,8 +324,6 @@ export interface InternalMembers {
   setGoodImage(...args: any[]): any
   /** @internal */
   setGradient: any
-  /** @internal */
-  setIdPrefix(...args: any[]): any
   /** @internal */
   setImportIds(...args: any[]): any
   /** @internal */
@@ -399,13 +367,9 @@ export interface InternalMembers {
   /** @internal */
   setStartY(...args: any[]): any
   /** @internal */
-  setCursorHint(...args: any[]): any
-  /** @internal */
   getCursorHint(...args: any[]): any
   /** @internal */
   setStarted(...args: any[]): any
-  /** @internal */
-  setStrokePaint(...args: any[]): any
   /** @internal */
   setSumDistance(...args: any[]): any
   /** @internal */
@@ -424,8 +388,6 @@ export interface InternalMembers {
   smoothControlPoints: any
   /** @internal */
   snapPointToGrid: any
-  /** @internal */
-  snapToGrid: any
   /** @internal */
   state: any
   /** @internal */
@@ -450,8 +412,6 @@ export interface InternalMembers {
   cancelToolGesture(...args: any[]): any
   /** @internal */
   toolHover(...args: any[]): any
-  /** @internal */
-  toolKeyDown(...args: any[]): any
   /** @internal */
   toolModeChanged(...args: any[]): any
   /** @internal */
