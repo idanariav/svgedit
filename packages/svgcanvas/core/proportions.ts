@@ -33,5 +33,11 @@ export const PROPORTION_POINTS = PROPORTION_TIERS.flatMap(
  * Proportion lines for one canvas dimension, in user units.
  * @param dim canvas width or height in user units
  */
+/** The proportion line a dragged selection snapped to on each axis (what `showSnapGuides` draws). */
+export interface ProportionSnapGuides {
+  x?: { pos: number, color: string } | null
+  y?: { pos: number, color: string } | null
+}
+
 export const proportionLines = (dim: number): Array<{ pos: number, color: string }> =>
   PROPORTION_POINTS.map(({ frac, color }) => ({ pos: dim * frac, color }))

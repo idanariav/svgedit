@@ -5,64 +5,58 @@
  * extends it through its base-class type so `@ts-check` knows the surface.
  */
 import type { Config, SVGElementJSON, Resolution, BBox, UndoManager, HistoryCommand } from './svgcanvas.js'
+import type { ToolDef, ToolOption } from './core/tool-registry.ts'
+import type { ExtensionHookPayloads } from './core/extension-hooks.ts'
+import type { BrushParams, StyleProps } from './core/canvas-state.ts'
+import type { Command } from './core/history.js'
+import type { SnapTarget, SmartGuidesPayload, DrawGuidesPayload } from './core/smart-guides.ts'
+import type { PathNodeGuidesPayload } from './core/path-node-guides.ts'
+import type { ProportionSnapGuides } from './core/proportions.ts'
+import type { SegmentParams } from './core/segment.ts'
 
-export interface ToolMods { shift: boolean, alt: boolean, ctrl: boolean, meta: boolean, mod: boolean }
-export interface ToolEvent {
-  /** Document units, unzoomed, grid-snapped, in the current group's local space. */
-  x: number
-  y: number
-  /** The same, before grid snapping. */
-  rawX: number
-  rawY: number
-  screenX: number
-  screenY: number
-  /** Screen pixels moved since the press. */
-  dragDistance: number
-  mods: ToolMods
-  button: number
-  event: MouseEvent
+/** The text-edit session (`core/text-actions.js`): the caret, the selection and the hidden textarea behind them. */
+export interface TextActionsApi {
+  select(target: SVGTextElement, x: number, y: number): void
+  start(elem: SVGTextElement): void
+  mouseDown(evt: MouseEvent, mouseTarget: Element, startX: number, startY: number): void
+  mouseMove(mouseX: number, mouseY: number): void
+  mouseUp(evt: MouseEvent, mouseX: number, mouseY: number): void
+  /** Whether the key was handled (only area text is). */
+  verticalMove(dir: -1 | 1, extend?: boolean): boolean
+  lineEdge(edge: 'start' | 'end', extend?: boolean): boolean
+  setCursor(index?: number): void
+  toEditMode(x?: number, y?: number): void
+  toSelectMode(selectElem?: boolean | Element): void
+  setInputElem(elem: HTMLTextAreaElement): void
+  clear(): void
+  init(inputElem?: Element): void
 }
-export interface ToolContext {
-  canvas: AttachedMembers & Record<string, any>
-  zoom: number
-  start?: ToolEvent
-  snap(pt: { x: number, y: number }): { x: number, y: number }
-  addOverlay(el: Element): void
-  clearOverlays(): void
-  finishCreated(el: Element, evt?: { altKey?: boolean }): void
+
+/** What an extension's hook returns (its shape is the extension's own). */
+export type ExtensionResult = Record<string, unknown>
+
+export interface RasterExportOptions {
+  includeBg?: boolean
+  bgcolor?: string
+  crop?: { x: number, y: number, w: number, h: number }
+  scale?: number
+  avoidEvent?: boolean
 }
-export interface ToolOption {
-  id: string
-  label: string
-  type: 'number' | 'select' | 'checkbox'
-  value: number | string | boolean
-  min?: number
-  max?: number
-  step?: number
-  choices?: Array<{ value: string, label: string }>
-  title?: string
-  hidden?: boolean
+
+/** What `rasterExport` resolves to (and the `exported` event carries). */
+export interface RasterExportResult {
+  datauri: string
+  bloburl: string
+  svg: string
+  issues: string[]
+  issueCodes: string[]
+  type: string
+  mimeType: string
+  quality: number
+  windowName: string
 }
-export interface ToolDef {
-  id: string
-  activate?(ctx: ToolContext): void
-  deactivate?(ctx: ToolContext): void
-  /** Return false to decline; the legacy pipeline then handles the press. */
-  pointerDown(ctx: ToolContext, ev: ToolEvent): void | false
-  pointerMove?(ctx: ToolContext, ev: ToolEvent): void
-  /** 'cancel' rolls the gesture back; `{ created }` finishes a new element. */
-  pointerUp?(ctx: ToolContext, ev: ToolEvent): void | 'cancel' | { created?: Element }
-  keyDown?(ctx: ToolContext, ev: KeyboardEvent): boolean
-  cancel?(ctx: ToolContext): void
-  /** The controls of the tool's options bar, shown while it is the mode; read again after every `setOption` and mode change. */
-  options?(): ToolOption[]
-  setOption?(id: string, value: number | string | boolean): void
-  undoLabel?: string
-  wantsHover?: boolean
-  /** Snap `ev.x` / `ev.y` to other objects' anchors, boxes and the page (default false). */
-  snap?: boolean
-  keepOpacity?: boolean
-}
+
+export type { ToolMods, ToolEvent, ToolContext, ToolOption, ToolDef } from './core/tool-registry.ts'
 
 export interface AttachedMembers {
   /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
@@ -106,7 +100,7 @@ export interface AttachedMembers {
 
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
   /** Set by the editor's snapping overlay; absent in a bare canvas. */
-  showDrawGuides?: (hit: any) => void
+  showDrawGuides?: (payload: DrawGuidesPayload | null) => void
 
   // Resize gesture state
   /** The text-box resize in progress (its transaction stays open until mouse-up). */
@@ -114,16 +108,16 @@ export interface AttachedMembers {
   dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
 
   // Move gesture state (select mode)
-  smartSnapTargets?: any
+  smartSnapTargets?: SnapTarget[] | null
   pendingMoveDelta?: { dx: number, dy: number } | null
   dragLiveMoveDelta?: { dx: number, dy: number } | null
   /** The repeatable delta for transformAgain. */
   lastMoveDelta?: { dx: number, dy: number }
   /** Set by the editor's guide overlays; absent in a bare canvas. */
-  showSnapGuides?: (snap: { x: any, y: any } | null) => void
-  showSmartGuides?: (guides: any) => void
+  showSnapGuides?: (snap: ProportionSnapGuides | null) => void
+  showSmartGuides?: (payload: SmartGuidesPayload | null) => void
   /** Set by the editor's overlay while a path node is dragged. */
-  showPathNodeGuides?: (guides: any) => void
+  showPathNodeGuides?: (payload: PathNodeGuidesPayload | null) => void
   /** Space is held (pan). */
   /** A tool just created an element (select it on mouse-up when `selectNew`). */
 
@@ -132,7 +126,7 @@ export interface AttachedMembers {
     select: (target: Element) => void
     mouseDown: (evt: MouseEvent, target: Element, startX: number, startY: number) => void
     mouseMove: (mouseX: number, mouseY: number) => void
-    mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => any
+    mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => { keep: boolean, element?: Element | null } | void
     clear: (keepSelection?: boolean) => void
     canDeleteNodes?: boolean
     closed_subpath?: boolean
@@ -197,7 +191,7 @@ export interface AttachedMembers {
   contentH: number
 
   // Text operations
-  textActions: any
+  textActions: TextActionsApi
   embedImage(src: string): Promise<string | false>
 
   // Other utilities
@@ -219,13 +213,14 @@ export interface AttachedMembers {
   offsetPath(delta: number): void
   /** Interactive region-merge session over the given (or selected) elements. */
   shapeBuilder: {
-    begin(elems?: Element[]): any
+    begin(elems?: Element[]): Array<{ index: number, d: string }> | null
     /** Index of the region under (x, y), or -1. */
     hitTest(x: number, y: number): number
     apply(indices: number[], mode?: 'merge' | string): Element[] | null
     end(): void
   }
-  runExtensions(action: string, vars?: any, returnArray?: boolean): any
+  runExtensions(action: keyof ExtensionHookPayloads, vars: unknown, returnArray: true): ExtensionResult[]
+  runExtensions(action: keyof ExtensionHookPayloads, vars?: unknown, returnArray?: false): ExtensionResult | false
 
   /** Strip disallowed elements/attributes from `node` in place (per-instance). */
   addToSelection(elemsToAdd: ArrayLike<Element>, showGrips?: boolean): void
@@ -374,7 +369,7 @@ export interface AttachedMembers {
   setRectRadius(val: number): void
   setCircleArc(arcDegrees: number): void
   setCircleArcAttr(attr: string, val: number): void
-  setBBoxZoom(val: 'selection' | 'canvas' | 'content' | 'layer' | object, editorW: number, editorH: number): any
+  setBBoxZoom(val: 'selection' | 'canvas' | 'content' | 'layer' | object, editorW: number, editorH: number): { zoom: number, bbox: BBox } | void
   getVisibleElements(parentElement?: Element): Element[]
   getRefElem(attrVal: string | null): Element | null
   setBlur(val: number, complete?: boolean): void
@@ -419,17 +414,17 @@ export interface AttachedMembers {
   deleteArtBrush(id: string): boolean
   canApplyArtBrush(elem: Element | null): boolean
   applyArtBrush(brushId: string): Element[]
-  getArtBrush(elem?: Element): { type: 'art' | 'pattern', opts: Record<string, any> } | null
-  setArtBrushOptions(changes: Record<string, any>): Element[]
+  getArtBrush(elem?: Element): { type: 'art' | 'pattern', opts: Record<string, unknown> } | null
+  setArtBrushOptions(changes: Record<string, unknown>): Element[]
   expandArtBrush(): Element[]
   releaseArtBrush(): Element[]
   refreshArtBrush(elem: Element | null): boolean
   getArtBrushGroup(elem: Element | null): Element | null
   /** Blends (`core/blend-canvas.js`). */
   canBlend(elems?: Element[]): boolean
-  makeBlend(elems?: Element[], options?: Record<string, any>): Element | null
+  makeBlend(elems?: Element[], options?: Record<string, unknown>): Element | null
   getBlend(elem?: Element): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number } | null
-  setBlendOptions(changes: Record<string, any>, elems?: Element[]): Element[]
+  setBlendOptions(changes: Record<string, unknown>, elems?: Element[]): Element[]
   expandBlend(): Element[]
   releaseBlend(): Element[]
   /** One blend and one path of the same parent (the selection by default): the path can become the blend's spine. */
@@ -450,7 +445,7 @@ export interface AttachedMembers {
   getBlendGroup(elem: Element | null): Element | null
   isBlendKeyCandidate(elem: Element | null): boolean
   getBlendDefaults(): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
-  setBlendDefaults(changes: Record<string, any>): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
+  setBlendDefaults(changes: Record<string, unknown>): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
   getLiveEffects(elem?: Element | null): Array<{ name: string, params: Record<string, number | boolean | string> }>
   /** The box the effects are computed against (the source geometry's), in the element's own coordinates. */
   getLiveEffectsBox(elem: Element): { x: number, y: number, width: number, height: number } | null
@@ -485,16 +480,16 @@ export interface AttachedMembers {
   getPathObj(): any
 
   // Host-facing helpers (called from the editor and extensions)
-  /** History helpers (`HistoryCommand` classes, `UndoManager`, …). */
+  /** History helpers (`HistoryCommand` classes, `UndoManager`, …). Untyped on purpose: R1 deletes `core/history.js`. */
   history: any
   NS: Record<string, string>
   svgroot: SVGSVGElement
   curConfig: Config
   $id: (id: string) => Element | null
   $qa: (selector: string) => Element[]
-  getBrushParams(): any
-  setBrushParams(params: object): any
-  getCurShape(): any
+  getBrushParams(): BrushParams
+  setBrushParams(params: Partial<BrushParams>): BrushParams
+  getCurShape(): StyleProps
   getContentH(): number
   getNonceId(base?: string): string
   getHref(elem: Element): string | null
@@ -507,19 +502,19 @@ export interface AttachedMembers {
   getParents(node: Node, selector?: string): Element[] | null
   isLayer(elem: Element): boolean
   hasVisibleStroke(elem: Element): boolean
-  mergeDeep(target: any, source: any): any
+  mergeDeep: typeof import('./common/util.ts').mergeDeep
   encode64(input: string): string
   registerGeometryRemap(attrName: string, remapFn: Function): void
   remapElementIdsAndRefs(rootEls: Element[], getNewId: () => string): Record<string, string>
   uniquifyElems(g: Element): void
-  recalculateDimensions(selected: Element): any
-  updateCanvas(w: number, h: number): any
+  recalculateDimensions(selected: Element): Command | null
+  updateCanvas(w: number, h: number): { x: number, y: number, old_x: number, old_y: number, d_x: number, d_y: number }
   setCurrentZoom(zoomLevel: number): void
   setContext(elem: Element | string): void
   leaveContext(): void
   /** Undo the in-group dimming; call the returned function to re-apply it. */
   suspendContextDimming(): () => void
-  rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: object): Promise<any>
+  rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: RasterExportOptions): Promise<RasterExportResult>
 
   // Clip / mask / boolean / segment / taper / crop
   setClip(): void
@@ -531,14 +526,14 @@ export interface AttachedMembers {
   booleanExclude(): void
   booleanDivide(): void
   canSegment(elem: Element): boolean
-  segmentSelection(params: object): any
-  getSegmentParams(): any
+  segmentSelection(params: SegmentParams): void
+  getSegmentParams(): SegmentParams | null
   canTaperStroke(elem: Element): boolean
-  getTaperParams(): any
+  getTaperParams(): { start: number, end: number } | null
   canTextOnPath(): boolean
   simplifyPathD(d: string, tolerance?: number): string | null
-  cutShapes(points: Array<{ x: number, y: number }>): any
-  startImageCrop(imageElem: Element): any
+  cutShapes(points: Array<{ x: number, y: number }>): void
+  startImageCrop(imageElem: Element): void
   isImageCropEligible(elem: Element): boolean
   isImageCropping(): boolean
 }

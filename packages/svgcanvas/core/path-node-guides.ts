@@ -29,6 +29,9 @@ export interface AxisSnap {
   target: NodeTarget
 }
 
+/** What `showPathNodeGuides` draws while a path node is dragged (`null` clears it). */
+export interface PathNodeGuidesPayload { x: AxisSnap | null, y: AxisSnap | null, from: { x: number, y: number } }
+
 /** The edited path: only the segment list is read. */
 interface EditedPath {
   segs?: Array<{ item?: { x?: unknown, y?: unknown } } | null | undefined>

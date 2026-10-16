@@ -34,11 +34,21 @@ export interface SnapTarget {
   axis?: 'x' | 'y'
 }
 export interface AlignSnap { delta: number, pos: number, target: SnapTarget, same: boolean }
+/** What `showSmartGuides` draws while a selection is dragged (`null` clears it). */
+export interface SmartGuidesPayload {
+  x: AlignSnap | null
+  y: AlignSnap | null
+  spacingX: SpacingSnap | null
+  spacingY: SpacingSnap | null
+  moving: Box
+}
 interface GapSegment { x1: number, y1: number, x2: number, y2: number }
 export interface SpacingSnap { delta: number, gap: number, segments: GapSegment[] }
-interface GuideLine { pos: number, lo: number, hi: number }
-interface Pt { x: number, y: number }
-interface Box { x: number, y: number, width: number, height: number }
+export interface GuideLine { pos: number, lo: number, hi: number }
+/** What `showDrawGuides` draws for the point a drawing tool is placing (`null` clears it). */
+export interface DrawGuidesPayload { at: Pt, point: Pt | null, xLine: GuideLine | null, yLine: GuideLine | null }
+export interface Pt { x: number, y: number }
+export interface Box { x: number, y: number, width: number, height: number }
 
 type SnapHost = Pick<SvgCanvas, 'getSvgContent' | 'getStrokedBBoxDefaultVisible' | 'getResolution' | 'getCurConfig' | 'getGuides'>
 

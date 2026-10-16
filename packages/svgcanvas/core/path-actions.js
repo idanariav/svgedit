@@ -973,12 +973,7 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-     * @typedef KeepElement
-     * @type {PlainObject}
-     * @property {boolean} keep
-     * @property {Element} element
-     */
+    /** @typedef {{keep: boolean, element?: ?Element}} KeepElement */
     /**
     * @param {MouseEvent} evt
     * @param {?Element} [element]

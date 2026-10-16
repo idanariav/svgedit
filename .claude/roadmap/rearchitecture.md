@@ -216,8 +216,13 @@ surfaced about 160 strict-null errors in the event modules; they were fixed at t
 `rStartX`, the freehand extremes, `initBbox`) are numbers at rest instead of `null`, and `getRubberBox()` / `getrootSctm()` are
 typed non-null (set when a gesture starts; see techdebt). Eleven members stay `any` until their module is converted (`Path`,
 `Segment`, `SelectorManager` are defined inside `init`; the drawn path still uses the `pathSegList` shim API);
-`tests/unit/svgcanvas-facade.test.js` lists them and fails if another appears.
-Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the other state the canvas carries as loose members (`selectorManager`, `pathActions`, the cursor hint, the drawing handles), then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
+`tests/unit/svgcanvas-facade.test.js` lists them and fails if another appears. `svgcanvas-members.d.ts` got the same
+pass: the guide hooks take payload types owned by the modules that produce them (`SmartGuidesPayload`, `DrawGuidesPayload`,
+`PathNodeGuidesPayload`, `ProportionSnapGuides`), `textActions` is a `TextActionsApi`, `runExtensions` is keyed by
+`ExtensionHookPayloads`, `rasterExport` resolves to a `RasterExportResult`, and the tool types are re-exported from
+`tool-registry.ts` instead of being declared twice. Five public members stay `any` (`selectorManager`, `SelectorClass`,
+`getPathObj`, `gettingSelectorManager`, and `history`, which R1 deletes).
+Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: convert the DOM-bound modules (R3 group 2) now that the facade is typed; their `any` members (`Path`, `Segment`, `SelectorManager`) get their types with `path-method`, `path` and `select`. Still open from the pattern: the loose state the canvas carries as members (`selectorManager`, `pathActions`, the drawing handles) as services, and the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`) as `createX(host)`.
 
 Size: L, fully incremental, low risk per module.
 
@@ -257,7 +262,7 @@ opportunistic and small per module.
 `text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `model/features`, `model/drawing`, `model/index`, `width-profile`, `measure`, `path-node-guides`, `debug-events`, `touch`, `path-utils`, `paint`, `dom-utils`, `text-rows`, `bbox-utils`, `anchor-path`, `shape-family`, `bezier-fit`, `width-outline`, `select-same`, `drawing-invariants`, `path-fit`, `path-edit`, `path-join`, `dash-fit`, `blend`, `pen-continue`, `path-simplify`, `warp`, `guides`, `smart-guides`, `live-stack`, `art-brush`, `live-effects`, `distort`, `corner-radius`, `gradient-edit`, `recolor`, `shape-recognize`, `arrow-align`, `paper-utils`, `taper-stroke`, `shape-builder`, `path-offset`, `boolean-ops`, `cutter`, `segment`, `split-grid`, `transform-each`, `clip-mask`, `image-crop`, `brush-stroke`, `live-effects-distort`, `json`, `layer`, `object-state`, `sanitize`, `svg-defs`, `layer-ops`, `tool-registry`, `art-brush-canvas`, `blend-canvas` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
-**Left (the conversion):** the self-contained modules are done. What is left is DOM-bound and talks to the canvas through the facade (`path-actions`, `path-method`, `event.js`, `selected-elem`, `elem-get-set`, `svg-exec`, `draw`, `text-actions`, `group-ops`, `selection`, `select`, `coords`, `recalculate`, `path`): convert those after R2 has typed the facade (about 195 members are still `any` in `svgcanvas-internal.d.ts`), or the conversion only moves the `any`. `history.js`, `transaction.js` and `undo.js` are not worth converting: R1 deletes them. `svgcanvas.js` last; the editor after the engine, with its own strict tsconfig.
+**Left (the conversion):** the self-contained modules are done and the facade is typed (2026-10-16, see R2). What is left is DOM-bound and talks to the canvas through the facade (`path-actions`, `path-method`, `event.js`, `event-*.js`, `selected-elem`, `elem-get-set`, `svg-exec`, `draw`, `text-actions`, `group-ops`, `selection`, `select`, `coords`, `recalculate`, `path`, `blur-event`, `copy-elem`, `paste-elem`, `text-attrs`, `text-path`, `group-detach`): convert them one at a time, smallest first; the `strictNullChecks` errors they hit are real ones (`getRubberBox()` and `getrootSctm()` are typed non-null, see techdebt). `history.js`, `transaction.js` and `undo.js` are not worth converting: R1 deletes them. `svgcanvas.js` last; the editor after the engine, with its own strict tsconfig.
 Per module: `git mv x.js x.ts`, move the JSDoc types into syntax, `node scripts/check-ts-imports.mjs --fix`, change the
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,
 no enums or parameter properties, and the hand-written d.ts files (`svgcanvas*.d.ts`) still describe the canvas until R2.

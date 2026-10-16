@@ -7,6 +7,7 @@
  */
 import type SvgCanvas from '../svgcanvas.js'
 import type { SVGElementJSON } from '../svgcanvas.js'
+import type { StyleProps } from './canvas-state.ts'
 import { assignAttributes, cleanupElement } from './dom-utils.ts'
 import { NS } from './namespaces.ts'
 
@@ -95,7 +96,7 @@ export const init = (canvas: SvgCanvas): void => {
         (svgCanvas.getCurrentGroup() || targetLayer).append(shape)
       }
     }
-    const curShape = svgCanvas.getCurShape?.() || {}
+    const curShape: Partial<StyleProps> = svgCanvas.getCurShape?.() || {}
     if (data.curStyles) {
       const curOpacity = Number(curShape.opacity)
       const opacity = Number.isFinite(curOpacity) ? (curOpacity / 2) : 0.5

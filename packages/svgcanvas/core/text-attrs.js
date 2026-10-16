@@ -547,7 +547,7 @@ export const init = (canvas) => {
 */
   const setTextContentMethod = (val) => {
     svgCanvas.changeSelectedAttribute('#text', val)
-    svgCanvas.textActions.init(val)
+    svgCanvas.textActions.init()
     svgCanvas.textActions.setCursor()
   }
 

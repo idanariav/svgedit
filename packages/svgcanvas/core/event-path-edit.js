@@ -91,7 +91,7 @@ export const init = (canvas) => {
   const upPath = (evt, ctx) => {
     const { mouseX, mouseY } = ctx
     svgCanvas.setStarted(true)
-    const res = svgCanvas.pathActions.mouseUp(evt, null, mouseX, mouseY)
+    const res = /** @type {{keep: boolean, element?: ?Element}} */ (svgCanvas.pathActions.mouseUp(evt, null, mouseX, mouseY))
     return { element: res.element, keep: res.keep }
   }
 

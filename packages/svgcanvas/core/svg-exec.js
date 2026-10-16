@@ -1068,7 +1068,7 @@ export const init = (canvas) => {
  * @param {number} [quality=1.0] - The image quality (for JPEG).
  * @param {string} [windowName='Exported Image'] - The window name.
  * @param {{includeBg?: boolean, bgcolor?: string, crop?: {x: number, y: number, w: number, h: number}, scale?: number, avoidEvent?: boolean}} [opts={}] - Additional options (`includeBg`, `bgcolor`, `crop`, `scale` — pixel multiplier, default 1).
- * @returns {Promise<Object>} Resolves to an object containing export data.
+ * @returns {Promise<import('../svgcanvas-members.js').RasterExportResult>} Resolves to an object containing export data.
  */
   const rasterExport = (
     imgType = 'PNG',

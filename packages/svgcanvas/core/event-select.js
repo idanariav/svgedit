@@ -179,9 +179,9 @@ export const init = (canvas) => {
         const res = svgCanvas.getResolution()
         const tol = 8 / zoom // ~8 screen px
         const bb = svgCanvas.gesture.dragStartBBox
-        /** @type {(lines: Array<{pos: number, color?: string}>, refs: number[]) => ({delta: number, pos: number, color?: string}|null)} */
+        /** @type {(lines: Array<{pos: number, color: string}>, refs: number[]) => ({delta: number, pos: number, color: string}|null)} */
         const snapAxis = (lines, refs) => {
-          /** @type {{delta: number, pos: number, color?: string}|null} */
+          /** @type {{delta: number, pos: number, color: string}|null} */
           let best = null
           for (const ln of lines) {
             for (const r of refs) {

@@ -31,22 +31,28 @@ const editorSources = () => {
   return out
 }
 
-// Waiting for the conversion of the module that owns the type (see the header of svgcanvas-internal.d.ts).
-const UNTYPED = [
-  'PathClass', 'SegmentClass', 'SelectorManagerClass', 'getSelector', 'getSelectorManager', 'getPath_', 'setPathObj',
-  'getGripPt', 'getPointFromGrip', 'getDrawnPath', 'setDrawnPath'
-]
+// Waiting for the conversion of the module that owns the type (see the header of svgcanvas-internal.d.ts), or for R1
+// to delete it (`history`).
+const UNTYPED = {
+  'packages/svgcanvas/svgcanvas-internal.d.ts': [
+    'PathClass', 'SegmentClass', 'SelectorManagerClass', 'getSelector', 'getSelectorManager', 'getPath_', 'setPathObj',
+    'getGripPt', 'getPointFromGrip', 'getDrawnPath', 'setDrawnPath'
+  ],
+  'packages/svgcanvas/svgcanvas-members.d.ts': ['gettingSelectorManager', 'selectorManager', 'SelectorClass', 'getPathObj', 'history']
+}
 
 describe('svgCanvas facade', () => {
-  it('no member is typed any except the listed ones, in either member file', () => {
-    const anyMembers = (file, from) => {
+  it('no member is typed any except the listed ones', () => {
+    const anyMembers = (file) => {
       const text = read(file)
-      const body = text.slice(text.indexOf(from))
-      return [...body.matchAll(/^ {2}(?:readonly )?([A-Za-z_$][\w$]*)\??(?:\(([^)]*)\))?:? ?([^\n]*)$/gm)]
-        .filter((m) => /\bany\b/.test(m[0]) && !/^ {2}\/?\*/.test(m[0]))
-        .map((m) => m[1])
+      const body = text.slice(text.indexOf('export interface ' + (file.includes('internal') ? 'InternalMembers' : 'AttachedMembers')))
+      return body.split('\n')
+        .filter((line) => /^ {2}[A-Za-z_$]/.test(line) && /(:|\)) ?any\b|any\[\]/.test(line))
+        .map((line) => /^ {2}([A-Za-z_$][\w$]*)/.exec(line)[1])
     }
-    expect(anyMembers('packages/svgcanvas/svgcanvas-internal.d.ts', 'export interface InternalMembers').sort()).toEqual([...UNTYPED].sort())
+    for (const [file, expected] of Object.entries(UNTYPED)) {
+      expect(anyMembers(file).sort(), file).toEqual([...expected].sort())
+    }
   })
 
   it('the editor and the extensions call no member that is declared internal (any)', () => {

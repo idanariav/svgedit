@@ -573,7 +573,7 @@ export const init = (canvas) => {
     // Editing an existing text (not a fresh placement) — don't let lock mode re-arm the text tool
       svgCanvas.setTextFreshCreate(false)
       const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
-      svgCanvas.textActions.select(mouseTarget, pt.x, pt.y)
+      svgCanvas.textActions.select(/** @type {SVGTextElement} */ (mouseTarget), pt.x, pt.y)
     }
 
     // getMouseTarget() falls back to the svg root as its "this click isn't
