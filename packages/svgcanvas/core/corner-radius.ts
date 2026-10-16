@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Live Corners: per-corner radius and kind (round, inverted round, chamfer)
  * on the corners of any path — the anchors where two straight sides meet.
@@ -42,40 +41,39 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { NS } from './namespaces.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
+import type { RemapPoint, RemapScale } from './geometry-remap-registry.ts'
 import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.ts'
+import type { Anchor, Pt, SubPath } from './anchor-path.ts'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
 export const CORNER_SOURCE_ATTR = 'se:orig-d'
 
 /** Corner kinds, in the order the UI cycles through them. */
-export const CORNER_KINDS = ['r', 'i', 'c']
+export type CornerKind = 'r' | 'i' | 'c'
+export const CORNER_KINDS: CornerKind[] = ['r', 'i', 'c']
 
 const EPS = 1e-9
-/** @typedef {import('./anchor-path.ts').Pt} Pt */
-/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
-/** @typedef {import('./anchor-path.ts').Anchor & {arc?: {r: number, sweep: 0|1}}} ArcAnchor */
-/** @typedef {{uniform: ?number, radii: number[], kinds: string[]}} CornerSpec */
+/** An anchor that may carry a round or inverted cut towards the next anchor. */
+export type ArcAnchor = Anchor & { arc?: { r: number, sweep: 0 | 1 } }
+export interface CornerSpec { uniform: number | null, radii: number[], kinds: string[] }
 
-/** @param {number} n */
-const round6 = (n) => Math.round(n * 1e6) / 1e6
-/** @param {Pt} p */
-const fmt = (p) => `${round6(p.x)},${round6(p.y)}`
+const round6 = (n: number): number => Math.round(n * 1e6) / 1e6
+const fmt = (p: Pt): string => `${round6(p.x)},${round6(p.y)}`
 
 /**
  * Parse path data into the anchor model, dropping a point that repeats its
  * predecessor (common in hand-built geometry) so the neighbouring vertex is a
  * proper corner.
- * @param {string} d
- * @returns {import('./anchor-path.ts').SubPath[]}
  */
-export const parseSource = (d) => {
+export const parseSource = (d: string): SubPath[] => {
   const subpaths = parseAnchors(d)
   for (const sp of subpaths) {
-    const kept = []
+    const kept: Anchor[] = []
     for (const a of sp.anchors) {
       const prev = kept[kept.length - 1]
       if (prev && Math.abs(a.p.x - prev.p.x) < EPS && Math.abs(a.p.y - prev.p.y) < EPS) {
@@ -93,10 +91,8 @@ export const parseSource = (d) => {
  * Serialise subpaths to path data: absolute `M/L/C`, `A` for an anchor carrying
  * an `arc` ({r, sweep}) towards the next one, and `Z` for closed subpaths. A
  * straight closing segment is left to `Z`.
- * @param {Array<{closed: boolean, anchors: ArcAnchor[]}>} subpaths
- * @returns {string}
  */
-export const subpathsToD = (subpaths) => subpaths.map((sp) => {
+export const subpathsToD = (subpaths: Array<{ closed: boolean, anchors: ArcAnchor[] }>): string => subpaths.map((sp) => {
   const { anchors, closed } = sp
   const n = anchors.length
   const parts = [`M${fmt(anchors[0].p)}`]
@@ -116,32 +112,33 @@ export const subpathsToD = (subpaths) => subpaths.map((sp) => {
   return parts.join(' ')
 }).join(' ')
 
-/**
- * A corner Live Corners can cut.
- * @typedef {object} Corner
- * @property {number} index - Anchor index counting every subpath's anchors in order.
- * @property {number} sub - Subpath index.
- * @property {number} i - Anchor index within its subpath.
- * @property {{x: number, y: number}} at
- * @property {{x: number, y: number}} u - Unit direction towards the previous anchor.
- * @property {{x: number, y: number}} v - Unit direction towards the next anchor.
- * @property {number} lu - Length of the arriving side.
- * @property {number} lv - Length of the leaving side.
- * @property {number} tanHalf - tan(θ/2), θ the angle between the sides.
- * @property {0|1} sweep - SVG sweep flag of the round arc.
- */
+/** A corner Live Corners can cut. */
+export interface Corner {
+  /** Anchor index counting every subpath's anchors in order. */
+  index: number
+  /** Subpath index. */
+  sub: number
+  /** Anchor index within its subpath. */
+  i: number
+  at: Pt
+  /** Unit direction towards the previous anchor. */
+  u: Pt
+  /** Unit direction towards the next anchor. */
+  v: Pt
+  /** Length of the arriving side. */
+  lu: number
+  /** Length of the leaving side. */
+  lv: number
+  /** tan(θ/2), θ the angle between the sides. */
+  tanHalf: number
+  /** SVG sweep flag of the round arc. */
+  sweep: 0 | 1
+}
 
-/**
- * @param {SubPath} sp
- * @param {number} i
- * @param {number} sub
- * @param {number} index
- * @returns {?Corner}
- */
-const cornerOf = (sp, i, sub, index) => {
+const cornerOf = (sp: SubPath, i: number, sub: number, index: number): Corner | null => {
   const n = sp.anchors.length
-  let prevI
-  let nextI
+  let prevI: number
+  let nextI: number
   if (sp.closed) {
     prevI = (i + n - 1) % n
     nextI = (i + 1) % n
@@ -180,14 +177,9 @@ const cornerOf = (sp, i, sub, index) => {
   }
 }
 
-/**
- * The corners of `subpaths` Live Corners can cut, in anchor order.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @returns {Corner[]}
- */
-export const pathCorners = (subpaths) => {
-  /** @type {Corner[]} */
-  const out = []
+/** The corners of `subpaths` Live Corners can cut, in anchor order. */
+export const pathCorners = (subpaths: SubPath[]): Corner[] => {
+  const out: Corner[] = []
   let first = 0
   subpaths.forEach((sp, sub) => {
     sp.anchors.forEach((_a, i) => {
@@ -203,44 +195,32 @@ export const pathCorners = (subpaths) => {
  * How far from the corner a cut of `radius` meets each side, no further than
  * halfway along the shorter side (so neighbouring corners at their largest
  * meet without overlapping).
- * @param {Corner} c
- * @param {number} radius
- * @returns {number}
  */
-export const cornerSetback = (c, radius) => Math.min(radius / c.tanHalf, c.lu / 2, c.lv / 2)
+export const cornerSetback = (c: Corner, radius: number): number => Math.min(radius / c.tanHalf, c.lu / 2, c.lv / 2)
 
 /**
  * The largest radius a corner draws: its cut then reaches halfway along the
  * shorter side (half the shorter side at a rectangle's corners).
- * @param {Corner} c
- * @returns {number}
  */
-export const maxCornerRadius = (c) => Math.min(c.lu, c.lv) / 2 * c.tanHalf
+export const maxCornerRadius = (c: Corner): number => Math.min(c.lu, c.lv) / 2 * c.tanHalf
 
 /**
  * The radius a corner draws for a stored `radius`: no larger than {@link maxCornerRadius}, 0 when negative or not
  * a number.
- * @param {Corner} c
- * @param {number} radius
- * @returns {number}
  */
-export const fittedCornerRadius = (c, radius) => Math.min(Math.max(radius, 0) || 0, maxCornerRadius(c))
+export const fittedCornerRadius = (c: Corner, radius: number): number => Math.min(Math.max(radius, 0) || 0, maxCornerRadius(c))
 
-/** @param {Corner} c */
-const cornerCos = (c) => c.u.x * c.v.x + c.u.y * c.v.y
-/** @param {Corner} c */
-const cornerSin = (c) => Math.abs(c.u.x * c.v.y - c.u.y * c.v.x)
+const cornerCos = (c: Corner): number => c.u.x * c.v.x + c.u.y * c.v.y
+const cornerSin = (c: Corner): number => Math.abs(c.u.x * c.v.y - c.u.y * c.v.x)
 
 /**
  * Where a corner's on-canvas widget sits (in the corner's own space): on the bisector at the centre of the arc
  * as drawn, at least `minInset` in from the corner along each side of a right angle (√2 times it along the
  * bisector, at any angle) and at most halfway along the shorter side.
- * @param {Corner} c
- * @param {number} radius - The stored radius.
- * @param {number} [minInset] - In the corner's units (a screen distance divided by the scale).
- * @returns {{x: number, y: number}}
+ * @param radius - The stored radius.
+ * @param minInset - In the corner's units (a screen distance divided by the scale).
  */
-export const cornerWidgetAt = (c, radius, minInset = 0) => {
+export const cornerWidgetAt = (c: Corner, radius: number, minInset = 0): Pt => {
   const k = Math.min(Math.max(fittedCornerRadius(c, radius) / cornerSin(c), minInset / Math.sqrt(1 + cornerCos(c))),
     Math.min(c.lu, c.lv) / 2)
   return { x: c.at.x + (c.u.x + c.v.x) * k, y: c.at.y + (c.u.y + c.v.y) * k }
@@ -249,79 +229,57 @@ export const cornerWidgetAt = (c, radius, minInset = 0) => {
 /**
  * How much a corner's round radius grows when the centre of its arc moves by `d` (in the corner's units): `d`'s
  * part along the bisector, in radius units. A widget dragged by `d` changes the radius by this.
- * @param {Corner} c
- * @param {{x: number, y: number}} d
- * @returns {number}
  */
-export const cornerRadiusChange = (c, d) =>
+export const cornerRadiusChange = (c: Corner, d: Pt): number =>
   ((d.x * (c.u.x + c.v.x) + d.y * (c.u.y + c.v.y)) * cornerSin(c)) / (2 + 2 * cornerCos(c))
 
 /**
  * The two anchors replacing a corner: where the cut meets the arriving side,
  * then the leaving one. The first carries the `arc` towards the second.
- * @param {Corner} c
- * @param {number} radius
- * @param {string} kind - `r`, `i` or `c`.
- * @returns {?ArcAnchor[]} null when the cut is too small to draw.
+ * @param kind - `r`, `i` or `c`.
+ * @returns null when the cut is too small to draw.
  */
-export const cutCorner = (c, radius, kind) => {
+export const cutCorner = (c: Corner, radius: number, kind: string): ArcAnchor[] | null => {
   const t = cornerSetback(c, radius)
   if (!(t >= 1e-6)) return null
   const entry = { x: c.at.x + c.u.x * t, y: c.at.y + c.u.y * t }
   const exit = { x: c.at.x + c.v.x * t, y: c.at.y + c.v.y * t }
-  /**
-   * @param {Pt} p
-   * @returns {ArcAnchor}
-   */
-  const mk = (p) => ({ p, hIn: { ...p }, hOut: { ...p } })
+  const mk = (p: Pt): ArcAnchor => ({ p, hIn: { ...p }, hOut: { ...p } })
   const a = mk(entry)
   if (kind === 'r') a.arc = { r: t * c.tanHalf, sweep: c.sweep }
-  else if (kind === 'i') a.arc = { r: t, sweep: /** @type {0|1} */ (1 - c.sweep) }
+  else if (kind === 'i') a.arc = { r: t, sweep: (1 - c.sweep) as 0 | 1 }
   return [a, mk(exit)]
 }
 
 /**
  * Parse `se:corner-radius`.
- * @param {?string} str
- * @returns {{uniform: ?number, radii: number[], kinds: string[]}} `uniform` is
- *   set for the single-number format (every corner round); otherwise the
+ * @returns `uniform` is set for the single-number format (every corner round); otherwise the
  *   per-anchor-index `radii` / `kinds`.
  */
-export const parseCornerSpec = (str) => {
+export const parseCornerSpec = (str: string | null | undefined): CornerSpec => {
   const s = String(str ?? '').trim()
-  const num = (/** @type {string} */ x) => Math.max(0, parseFloat(x) || 0)
+  const num = (x: string): number => Math.max(0, parseFloat(x) || 0)
   if (!/[,:]/.test(s)) return { uniform: num(s), radii: [], kinds: [] }
-  /** @type {number[]} */
-  const radii = []
-  /** @type {string[]} */
-  const kinds = []
+  const radii: number[] = []
+  const kinds: string[] = []
   for (const entry of s.split(',')) {
     const [r, k] = entry.split(':')
     radii.push(num(r))
-    kinds.push(CORNER_KINDS.includes((k || '').trim()) ? k.trim() : 'r')
+    kinds.push(CORNER_KINDS.includes((k || '').trim() as CornerKind) ? k.trim() : 'r')
   }
   return { uniform: null, radii, kinds }
 }
 
-/**
- * @param {CornerSpec} spec
- * @param {number} index
- */
-export const specRadius = (spec, index) => spec.uniform ?? spec.radii[index] ?? 0
-/**
- * @param {CornerSpec} spec
- * @param {number} index
- */
-export const specKind = (spec, index) => (spec.uniform != null ? 'r' : spec.kinds[index] || 'r')
+export const specRadius = (spec: CornerSpec, index: number): number => spec.uniform ?? spec.radii[index] ?? 0
+export const specKind = (spec: CornerSpec, index: number): string => (spec.uniform != null ? 'r' : spec.kinds[index] || 'r')
 
 /**
  * Serialise per-corner choices to `se:corner-radius`.
- * @param {Corner[]} corners
- * @param {Map<number, number>} radii - corner index → radius.
- * @param {Map<number, string>} kinds - corner index → kind.
- * @returns {?string} null when no corner is cut.
+ * @param radii - corner index → radius.
+ * @param kinds - corner index → kind.
+ * @returns null when no corner is cut.
  */
-export const formatCornerSpec = (corners, radii, kinds) => {
+export const formatCornerSpec = (corners: Corner[], radii: Map<number, number>, kinds: Map<number, string>): string | null => {
   const cut = corners.filter((c) => (radii.get(c.index) || 0) > 0)
   if (!cut.length) return null
   const r0 = radii.get(cut[0].index) ?? 0
@@ -329,8 +287,7 @@ export const formatCornerSpec = (corners, radii, kinds) => {
     cut.every((c) => radii.get(c.index) === r0 && (kinds.get(c.index) || 'r') === 'r')
   if (uniform) return String(round6(r0))
   const last = Math.max(...cut.map((c) => c.index))
-  /** @type {string[]} */
-  const entries = []
+  const entries: string[] = []
   for (let idx = 0; idx <= last; idx++) {
     const r = radii.get(idx) || 0
     const k = kinds.get(idx) || 'r'
@@ -342,16 +299,12 @@ export const formatCornerSpec = (corners, radii, kinds) => {
 
 /**
  * Generate the cut `d` from the source subpaths and a parsed spec.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @param {{uniform: ?number, radii: number[], kinds: string[]}} spec
- * @returns {string}
  */
-export const cornersD = (subpaths, spec) => {
+export const cornersD = (subpaths: SubPath[], spec: CornerSpec): string => {
   const byIndex = new Map(pathCorners(subpaths).map((c) => [c.index, c]))
   let first = 0
   const out = subpaths.map((sp) => {
-    /** @type {ArcAnchor[]} */
-    const anchors = []
+    const anchors: ArcAnchor[] = []
     sp.anchors.forEach((a, i) => {
       const index = first + i
       const c = byIndex.get(index)
@@ -368,10 +321,9 @@ export const cornersD = (subpaths, spec) => {
 
 /**
  * The `d` an element should carry given its stored source and radius spec.
- * @param {Element} elem
- * @returns {?string} null when the element has no (parseable) source.
+ * @returns null when the element has no (parseable) source.
  */
-export const expectedCornerD = (elem) => {
+export const expectedCornerD = (elem: Element): string | null => {
   const src = elem.getAttribute(CORNER_SOURCE_ATTR)
   if (!src) return null
   const subpaths = parseSource(src)
@@ -382,10 +334,8 @@ export const expectedCornerD = (elem) => {
 /**
  * Whether the element's `d` is still what the stored source + spec produce.
  * Tolerance-based: the saver rewrites `d` with rounded relative commands.
- * @param {Element} elem
- * @returns {boolean}
  */
-export const isCornerStateCurrent = (elem) => {
+export const isCornerStateCurrent = (elem: Element): boolean => {
   const expected = expectedCornerD(elem)
   if (expected == null) return false
   return sameAnchorGeometry(parseAnchors(expected, 0.1), parseAnchors(elem.getAttribute('d') || '', 0.1))
@@ -395,18 +345,14 @@ export const isCornerStateCurrent = (elem) => {
  * Called from `remapElement` (coords.js) when a transform is baked into a path
  * carrying corner attributes: remap the stored source, scale the radii by the
  * uniform scale factor, regenerate `d`.
- * @param {Element} elem
- * @param {Function} remap - `(x, y) → {x, y}` from remapElement.
- * @param {Function} scalew
- * @param {Function} scaleh
- * @returns {void}
+ * @param remap - `(x, y) → {x, y}` from remapElement.
  */
-export const remapCornerSource = (elem, remap, scalew, scaleh) => {
+export const remapCornerSource = (elem: Element, remap: RemapPoint, scalew: RemapScale, scaleh: RemapScale): void => {
   const src = elem.getAttribute(CORNER_SOURCE_ATTR)
   if (!src) return
   const subpaths = parseSource(src)
   if (!subpaths.length) return
-  const map = (/** @type {Pt} */ pt) => {
+  const map = (pt: Pt): Pt => {
     const q = remap(pt.x, pt.y)
     return { x: q.x, y: q.y }
   }
@@ -434,10 +380,8 @@ export const remapCornerSource = (elem, remap, scalew, scaleh) => {
 /**
  * The path data an element's corners would be cut from: a path's stored source
  * (or current `d`), or the outline of a polygon / polyline / rect.
- * @param {Element} elem
- * @returns {?string}
  */
-const cornerSourceD = (elem) => {
+const cornerSourceD = (elem: Element): string | null => {
   switch (elem.tagName) {
     case 'path':
       return elem.getAttribute(CORNER_SOURCE_ATTR) || stackSource(elem, 'corners') || elem.getAttribute('d')
@@ -472,8 +416,7 @@ registerLiveStage({
   }
 })
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   registerGeometryRemap(CORNER_SOURCE_ATTR, remapCornerSource)
@@ -485,10 +428,8 @@ export const init = (canvas) => {
 
   /**
    * Whether corner cutting can apply to this element right now.
-   * @param {Element} elem
-   * @returns {boolean}
    */
-  const canRoundCorners = (elem) => {
+  const canRoundCorners = (elem: Element | null | undefined): boolean => {
     if (!elem) return false
     if (!canAddStage(elem, 'corners')) return false // live-stack.js: only corners + width share an element
     if (elem.tagName === 'path' && elem.hasAttribute(CORNER_SOURCE_ATTR)) return true
@@ -499,20 +440,21 @@ export const init = (canvas) => {
 
   /**
    * The corners of the selected element and their current radius / kind.
-   * @param {Element} [elem] - Defaults to the selected element.
-   * @returns {Array<{index: number, radius: number, kind: 'r' | 'i' | 'c', max: number, corner: Corner}>}
+   * @param elem - Defaults to the selected element.
    */
-  const getCornerSettings = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) => {
+  const getCornerSettings = (
+    elem: Element | undefined = svgCanvas.getSelectedElements().filter(Boolean)[0]
+  ): Array<{ index: number, radius: number, kind: CornerKind, max: number, corner: Corner }> => {
     if (!elem) return []
     const d = cornerSourceD(elem)
     if (!d) return []
-    const spec = elem.hasAttribute(CORNER_SOURCE_ATTR)
+    const spec: CornerSpec = elem.hasAttribute(CORNER_SOURCE_ATTR)
       ? parseCornerSpec(elem.getAttribute(CORNER_RADIUS_ATTR))
       : { uniform: 0, radii: [], kinds: [] }
     return pathCorners(parseSource(d)).map((c) => ({
       index: c.index,
       radius: specRadius(spec, c.index),
-      kind: /** @type {'r' | 'i' | 'c'} */ (specKind(spec, c.index)),
+      kind: specKind(spec, c.index) as CornerKind,
       max: maxCornerRadius(c),
       corner: c
     }))
@@ -521,15 +463,12 @@ export const init = (canvas) => {
   /**
    * Cut the corners of the selected element, recording one undo step.
    * Polygons, polylines and rects are swapped for a `<path>` in the same batch.
-   * @param {number} [r] - Radius for the targeted corners (0 clears them);
-   *   omit to change only the kind.
-   * @param {object} [opts]
-   * @param {string} [opts.kind] - `r`, `i` or `c` for the targeted corners.
-   * @param {number[]} [opts.corners] - Corner (anchor) indices to change;
-   *   default all corners.
-   * @returns {?Element} The (possibly new) element, or null when nothing changed.
+   * @param r - Radius for the targeted corners (0 clears them); omit to change only the kind.
+   * @param opts.kind - `r`, `i` or `c` for the targeted corners.
+   * @param opts.corners - Corner (anchor) indices to change; default all corners.
+   * @returns The (possibly new) element, or null when nothing changed.
    */
-  const applyCornerRadius = (r, opts = {}) => {
+  const applyCornerRadius = (r?: number, opts: { kind?: string, corners?: number[] } = {}): Element | null => {
     let [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elem || !canRoundCorners(elem)) return null
     const { kind, corners: only } = opts
@@ -541,11 +480,11 @@ export const init = (canvas) => {
 
     // Current choices per corner, then overlay the request.
     const hadSource = elem.hasAttribute(CORNER_SOURCE_ATTR)
-    const spec = hadSource
+    const spec: CornerSpec = hadSource
       ? parseCornerSpec(elem.getAttribute(CORNER_RADIUS_ATTR))
       : { uniform: 0, radii: [], kinds: [] }
-    const radii = new Map()
-    const kinds = new Map()
+    const radii = new Map<number, number>()
+    const kinds = new Map<number, string>()
     for (const c of corners) {
       const targeted = !only || only.includes(c.index)
       const cur = specRadius(spec, c.index)
@@ -565,7 +504,7 @@ export const init = (canvas) => {
         if (['points', 'x', 'y', 'width', 'height', 'rx', 'ry'].includes(attr.name)) continue
         path.setAttribute(attr.name, attr.value)
       }
-      path.setAttribute('d', /** @type {string} */ (srcD))
+      path.setAttribute('d', srcD as string)
       path.id = svgCanvas.getNextId()
       elem.before(path)
       batchCmd.addSubCommand(new InsertElementCommand(path))
@@ -580,8 +519,7 @@ export const init = (canvas) => {
       ? { [CORNER_SOURCE_ATTR]: subpathsToD(subpaths), [CORNER_RADIUS_ATTR]: value }
       : removalSet(elem, 'corners'), svgCanvas)
     if (!plan) return null
-    /** @type {Record<string, ?string>} */
-    const oldValues = { d: elem.getAttribute('d') }
+    const oldValues: Record<string, string | null> = { d: elem.getAttribute('d') }
     for (const name of Object.keys(plan.attrs)) oldValues[name] = elem.getAttribute(name)
 
     commitPlan(elem, plan)

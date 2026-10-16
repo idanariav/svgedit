@@ -2,8 +2,8 @@ import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import {
   CORNER_KEYS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad,
   bilinearMap, homographyMap, distortMap, distortSubpaths, registerDistortEffects
-} from '../../packages/svgcanvas/core/distort.js'
-import { computeFxD, parseFxStack, getLiveEffectDef } from '../../packages/svgcanvas/core/live-effects.js'
+} from '../../packages/svgcanvas/core/distort.ts'
+import { computeFxD, parseFxStack, getLiveEffectDef } from '../../packages/svgcanvas/core/live-effects.ts'
 import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 registerDistortEffects()

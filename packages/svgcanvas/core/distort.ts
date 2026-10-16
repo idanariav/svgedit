@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places
  * and the geometry follows. `freeDistort` is a bilinear map of the box onto the quad (straight lines parallel
@@ -19,9 +18,11 @@
  */
 
 import { mapNonlinear } from './anchor-path.ts'
-import { registerLiveEffect } from './live-effects.js'
+import type { Pt, SubPath } from './anchor-path.ts'
+import { registerLiveEffect } from './live-effects.ts'
 
-/** @typedef {{x: number, y: number}} Pt */
+type Box = { x: number, y: number, width: number, height: number }
+type UnitMap = (u: number, v: number) => Pt
 
 /** Param names, corner by corner: top left, top right, bottom right, bottom left (each x then y). */
 export const CORNER_KEYS = [
@@ -34,20 +35,12 @@ export const IDENTITY_CORNERS = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 },
 
 export const DISTORT_EFFECTS = ['freeDistort', 'perspective']
 
-/**
- * @param {Object<string, number>} params
- * @returns {Pt[]} four corners
- */
-export const cornersFromParams = (params) =>
+/** @returns four corners */
+export const cornersFromParams = (params: Record<string, number>): Pt[] =>
   IDENTITY_CORNERS.map((c, i) => ({ x: params[CORNER_KEYS[2 * i]] ?? c.x, y: params[CORNER_KEYS[2 * i + 1]] ?? c.y }))
 
-/**
- * @param {Pt[]} corners
- * @returns {Object<string, number>}
- */
-export const paramsFromCorners = (corners) => {
-  /** @type {Object<string, number>} */
-  const out = {}
+export const paramsFromCorners = (corners: Pt[]): Record<string, number> => {
+  const out: Record<string, number> = {}
   corners.forEach((c, i) => {
     out[CORNER_KEYS[2 * i]] = c.x
     out[CORNER_KEYS[2 * i + 1]] = c.y
@@ -58,10 +51,8 @@ export const paramsFromCorners = (corners) => {
 /**
  * The box the unit coordinates refer to. A box with no extent on one axis borrows the other axis' size,
  * centred, so the corners of a straight line can still be told apart.
- * @param {{x: number, y: number, width: number, height: number}} bbox
- * @returns {{x: number, y: number, w: number, h: number}}
  */
-export const distortFrame = (bbox) => {
+export const distortFrame = (bbox: Box): { x: number, y: number, w: number, h: number } => {
   let { width: w, height: h } = bbox
   let { x, y } = bbox
   if (w < 1e-6 && h < 1e-6) {
@@ -81,10 +72,8 @@ export const distortFrame = (bbox) => {
 /**
  * Whether the quad is strictly convex (all turns the same way): a projective map of the box onto it has no
  * point at infinity inside the box exactly then.
- * @param {Pt[]} q
- * @returns {boolean}
  */
-export const isConvexQuad = (q) => {
+export const isConvexQuad = (q: Pt[]): boolean => {
   let sign = 0
   for (let i = 0; i < 4; i++) {
     const a = q[i]
@@ -99,12 +88,8 @@ export const isConvexQuad = (q) => {
   return true
 }
 
-/**
- * The bilinear map of the unit square onto the quad `c`.
- * @param {Pt[]} c
- * @returns {(u: number, v: number) => Pt}
- */
-export const bilinearMap = (c) => (u, v) => {
+/** The bilinear map of the unit square onto the quad `c`. */
+export const bilinearMap = (c: Pt[]): UnitMap => (u, v) => {
   const topX = c[0].x + (c[1].x - c[0].x) * u
   const topY = c[0].y + (c[1].y - c[0].y) * u
   const botX = c[3].x + (c[2].x - c[3].x) * u
@@ -115,10 +100,8 @@ export const bilinearMap = (c) => (u, v) => {
 /**
  * The projective map of the unit square onto the quad `c` (Heckbert, "Fundamentals of Texture Mapping and
  * Image Warping", square-to-quad). Null when the quad is degenerate or not convex.
- * @param {Pt[]} c
- * @returns {?((u: number, v: number) => Pt)}
  */
-export const homographyMap = (c) => {
+export const homographyMap = (c: Pt[]): UnitMap | null => {
   if (!isConvexQuad(c)) return null
   const [p0, p1, p2, p3] = c
   const dx1 = p1.x - p2.x
@@ -148,36 +131,25 @@ export const homographyMap = (c) => {
 /**
  * The map the effect `name` applies for these unit corners; a perspective whose corners are not convex falls
  * back to the bilinear map.
- * @param {string} name `freeDistort` or `perspective`
- * @param {Pt[]} corners
- * @returns {(u: number, v: number) => Pt}
+ * @param name `freeDistort` or `perspective`
  */
-export const distortMap = (name, corners) => (name === 'perspective' ? homographyMap(corners) : null) ?? bilinearMap(corners)
+export const distortMap = (name: string, corners: Pt[]): UnitMap => (name === 'perspective' ? homographyMap(corners) : null) ?? bilinearMap(corners)
 
 /**
  * Distort anchor subpaths inside `bbox`.
- * @param {string} name
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @param {{x: number, y: number, width: number, height: number}} bbox
- * @param {Object<string, number>} params
- * @returns {import('./anchor-path.ts').SubPath[]}
  */
-export const distortSubpaths = (name, subpaths, bbox, params) => {
+export const distortSubpaths = (name: string, subpaths: SubPath[], bbox: Box, params: Record<string, number>): SubPath[] => {
   const { x, y, w, h } = distortFrame(bbox)
   const map = distortMap(name, cornersFromParams(params))
-  /** @param {Pt} q */
-  const f = (q) => {
+  const f = (q: Pt): Pt => {
     const out = map((q.x - x) / w, (q.y - y) / h)
     return Number.isFinite(out.x) && Number.isFinite(out.y) ? { x: x + out.x * w, y: y + out.y * h } : q
   }
   return mapNonlinear(subpaths, Math.hypot(bbox.width, bbox.height) / 16, f)
 }
 
-/**
- * Register `freeDistort` and `perspective` (idempotent).
- * @returns {void}
- */
-export const registerDistortEffects = () => {
+/** Register `freeDistort` and `perspective` (idempotent). */
+export const registerDistortEffects = (): void => {
   const defaults = paramsFromCorners(IDENTITY_CORNERS)
   const ranges = Object.fromEntries(CORNER_KEYS.map((k) => [k, { min: -10, max: 10, step: 0.05 }]))
   for (const [name, label] of [['freeDistort', 'Free distort'], ['perspective', 'Perspective distort']]) {
@@ -185,7 +157,7 @@ export const registerDistortEffects = () => {
       label,
       defaults: { ...defaults },
       ranges,
-      apply: (subpaths, bbox, params) => distortSubpaths(name, subpaths, bbox, /** @type {Object<string, number>} */ (params))
+      apply: (subpaths, bbox, params) => distortSubpaths(name, subpaths, bbox, params as Record<string, number>)
     })
   }
 }

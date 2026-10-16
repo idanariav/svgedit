@@ -1,6 +1,6 @@
 import { fc, params } from './fc.js'
 import { parseAnchors } from '../../../packages/svgcanvas/core/anchor-path.ts'
-import { pathCorners, cutCorner, cornerSetback, maxCornerRadius } from '../../../packages/svgcanvas/core/corner-radius.js'
+import { pathCorners, cutCorner, cornerSetback, maxCornerRadius } from '../../../packages/svgcanvas/core/corner-radius.ts'
 
 const coord = fc.integer({ min: 0, max: 400 })
 

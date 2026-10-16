@@ -3,7 +3,7 @@ import {
   formatCornerSpec, cornersD, subpathsToD, expectedCornerD, isCornerStateCurrent,
   remapCornerSource, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR,
   fittedCornerRadius, cornerWidgetAt, cornerRadiusChange
-} from '../../packages/svgcanvas/core/corner-radius.js'
+} from '../../packages/svgcanvas/core/corner-radius.ts'
 import { polyline } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps

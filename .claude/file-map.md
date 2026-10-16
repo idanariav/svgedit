@@ -42,12 +42,12 @@
 | `clip-mask.js` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |
 | `copy-elem.js` | Copy handler |
-| `corner-radius.js` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
+| `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
 | `cutter.js` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
 | `dash-fit.ts` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
-| `distort.js` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
+| `distort.ts` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
 | `dom-utils.ts` | DOM/element manipulation, lookup, and misc canvas-state utilities |
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
 | `draw.js` | Tools for drawing |
@@ -77,7 +77,7 @@
 | `layer-ops.js` | Layer operations (create/clone/delete/rename/reorder/visibility/lock/merge, move-to-layer, all-layers mode), split out of draw.js |
 | `layer.js` | Provides tools for the layer concept |
 | `live-effects-distort.js` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
-| `live-effects.js` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
+| `live-effects.ts` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
 | `live-stack.ts` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |

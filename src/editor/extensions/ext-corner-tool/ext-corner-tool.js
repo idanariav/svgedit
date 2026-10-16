@@ -25,7 +25,7 @@
 
 import {
   CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, cornerRadiusChange, isCornerStateCurrent, cornerWidgetAt, fittedCornerRadius, maxCornerRadius
-} from '@svgedit/svgcanvas/core/corner-radius.js'
+} from '@svgedit/svgcanvas/core/corner-radius.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
 import { refreshToolOptions } from '../../panels/toolOptionsBar.js'
 

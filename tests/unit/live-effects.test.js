@@ -3,7 +3,7 @@ import {
   registerLiveEffect, listLiveEffects, parseFxStack, serializeFxStack, sanitizeFxStack,
   computeFxD, isFxCurrent, remapFxSource, resolveParams, MAX_FX_ANCHORS,
   FX_ATTR, FX_SOURCE_ATTR
-} from '../../packages/svgcanvas/core/live-effects.js'
+} from '../../packages/svgcanvas/core/live-effects.ts'
 import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 // Test-only effects. `fxshift` moves everything by (dx, dy); `fxgrow` scales

@@ -22,7 +22,7 @@
 
 import {
   isCornerStateCurrent, CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR
-} from '@svgedit/svgcanvas/core/corner-radius.js'
+} from '@svgedit/svgcanvas/core/corner-radius.ts'
 
 const name = 'corner-radius'
 const KIND_ICONS = { r: 'round', i: 'inverted', c: 'chamfer' }

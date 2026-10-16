@@ -17,7 +17,7 @@
 
 import { mapNonlinear } from './anchor-path.ts'
 import type { SubPath } from './anchor-path.ts'
-import { registerLiveEffect } from './live-effects.js'
+import { registerLiveEffect } from './live-effects.ts'
 
 export const WARP_STYLES = [
   'arc', 'arcLower', 'arcUpper', 'arch', 'bulge', 'shellLower', 'shellUpper', 'flag',

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { CommandRegistry } from '../../src/editor/commands.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
 import { registerCoreCommands } from '../../src/editor/coreCommands.js'
-import { CORNER_KINDS } from '../../packages/svgcanvas/core/corner-radius.js'
+import { CORNER_KINDS } from '../../packages/svgcanvas/core/corner-radius.ts'
 
 // Command ids are persisted user data: hotkey overrides (`svg-edit-hotkeys`) and
 // favorites (`svg-edit-favorites`) are keyed by them, so renaming or dropping

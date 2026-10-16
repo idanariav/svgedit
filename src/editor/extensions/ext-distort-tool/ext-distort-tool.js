@@ -24,7 +24,7 @@
 
 import {
   DISTORT_EFFECTS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad
-} from '@svgedit/svgcanvas/core/distort.js'
+} from '@svgedit/svgcanvas/core/distort.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
 
 const name = 'distort-tool'

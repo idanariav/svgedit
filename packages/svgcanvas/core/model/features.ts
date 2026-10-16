@@ -13,7 +13,7 @@
  * @module model/features
  * @license MIT
  */
-import { CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, parseCornerSpec } from '../corner-radius.js'
+import { CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, parseCornerSpec } from '../corner-radius.ts'
 import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, parseTaper, parseTaperStyle } from '../width-profile.ts'
 import { DASH_FIT_ATTR, parseDashes } from '../dash-fit.ts'
 import { BRUSH_ATTR, LIB_ATTR, parseBrush } from '../art-brush-canvas.js'

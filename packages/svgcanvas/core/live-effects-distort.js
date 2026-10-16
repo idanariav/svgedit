@@ -25,7 +25,7 @@ import {
   segCubic, evalCubic, normalAt, mapNonlinear, catmullRom, polyline, seededNoise,
   segmentCount, hasIn, hasOut, cubicLength, flattenSubpaths
 } from './anchor-path.ts'
-import { registerLiveEffect } from './live-effects.js'
+import { registerLiveEffect } from './live-effects.ts'
 
 /** @typedef {import('./anchor-path.ts').SubPath} SubPath */
 /** @typedef {{x: number, y: number}} Pt */

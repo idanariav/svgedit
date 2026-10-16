@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Live (re-editable) path-geometry effects — the shared foundation for
  * Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor
@@ -40,6 +39,7 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { NS } from './namespaces.ts'
 import { EPHEMERAL_ATTR } from './history.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
@@ -47,9 +47,18 @@ import { warn } from '../common/logger.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
+import type { SubPath } from './anchor-path.ts'
 import {
   registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked
 } from './live-stack.ts'
+import type { StackPlan } from './live-stack.ts'
+
+/** An effect's resolved params: numbers, booleans and words. */
+export type FxParams = Record<string, number | boolean | string>
+/** One entry of a stack, params resolved. */
+export interface FxEntry { name: string, params: FxParams }
+/** A stack as callers hand it in: params may be partial (missing ones take the defaults) or absent. */
+export type FxStackInput = Array<{ name: string, params?: Record<string, unknown> }>
 
 export const FX_ATTR = 'se:fx'
 export const FX_SOURCE_ATTR = 'se:fx-d'
@@ -70,8 +79,7 @@ export const MAX_FX_ANCHORS = 20000
 const SUPPORTED_TAGS = new Set(['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygon'])
 
 // Geometry attributes dropped when a primitive is swapped for a <path>.
-/** @type {Record<string, string[]>} */
-const GEOMETRY_ATTRS = {
+const GEOMETRY_ATTRS: Record<string, string[]> = {
   rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
   ellipse: ['cx', 'cy', 'rx', 'ry'],
   circle: ['cx', 'cy', 'r'],
@@ -80,55 +88,47 @@ const GEOMETRY_ATTRS = {
   polygon: ['points']
 }
 
-/** @param {number} n */
-const round6 = (n) => Math.round(n * 1e6) / 1e6
+const round6 = (n: number): number => Math.round(n * 1e6) / 1e6
 
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
-/**
- * @typedef {Object} LiveEffectDef
- * @property {string} label - Human-readable name.
- * @property {Object<string, number|boolean|string>} defaults - Params and
- *   their defaults; the default's type is the param's type.
- * @property {(subpaths: import('./anchor-path.ts').SubPath[],
- *   bbox: {x: number, y: number, width: number, height: number},
- *   params: any) => import('./anchor-path.ts').SubPath[]} apply
- * @property {Object<string, string[]>} [choices] - Allowed values for string params.
- * @property {Object<string, {min?: number, max?: number, step?: number}>} [ranges]
- *   - Suggested bounds for number params (UI hints only).
- * @property {{widthParam: string}} [strokeOutput] - The effect returns an open
- *   *centerline* to be painted as a stroke whose width is `params[widthParam]`
- *   (the element's fill becomes the stroke paint; see `se:fx-style`).
- */
+export interface LiveEffectDef {
+  /** Human-readable name. */
+  label: string
+  /** Params and their defaults; the default's type is the param's type. */
+  defaults: FxParams
+  /** A method signature on purpose: each effect declares its own, narrower, params. */
+  apply(subpaths: SubPath[], bbox: { x: number, y: number, width: number, height: number }, params: FxParams): SubPath[]
+  /** Allowed values for string params. */
+  choices?: Record<string, string[]>
+  /** Suggested bounds for number params (UI hints only). */
+  ranges?: Record<string, { min?: number, max?: number, step?: number }>
+  /**
+   * The effect returns an open *centerline* to be painted as a stroke whose width is `params[widthParam]`
+   * (the element's fill becomes the stroke paint; see `se:fx-style`).
+   */
+  strokeOutput?: { widthParam: string }
+}
 
-/** @type {Map<string, LiveEffectDef>} */
-const registry = new Map()
+const registry = new Map<string, LiveEffectDef>()
 
 /**
  * Register a live effect.
- * @function module:live-effects.registerLiveEffect
- * @param {string} name - `[A-Za-z][A-Za-z0-9_-]*`.
- * @param {LiveEffectDef} def
- * @returns {void}
+ * @param name - `[A-Za-z][A-Za-z0-9_-]*`.
  */
-export const registerLiveEffect = (name, def) => {
+export const registerLiveEffect = (name: string, def: LiveEffectDef): void => {
   if (!/^[A-Za-z][\w-]*$/.test(name)) throw new Error(`Invalid live effect name: ${name}`)
   registry.set(name, def)
 }
 
-/**
- * @param {string} name
- * @returns {?LiveEffectDef}
- */
-export const getLiveEffectDef = (name) => registry.get(name) ?? null
+export const getLiveEffectDef = (name: string): LiveEffectDef | null => registry.get(name) ?? null
 
 /**
  * Registered effects, in registration order.
- * @returns {Array<{name: string} & LiveEffectDef>}
  */
-export const listLiveEffects = () => [...registry].map(([name, def]) => ({ name, ...def }))
+export const listLiveEffects = (): Array<{ name: string } & LiveEffectDef> => [...registry].map(([name, def]) => ({ name, ...def }))
 
 // ---------------------------------------------------------------------------
 // `se:fx` parse / serialise
@@ -137,8 +137,7 @@ export const listLiveEffects = () => [...registry].map(([name, def]) => ({ name,
 const NUMBER_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
 const WORD_RE = /^[\w.-]+$/
 
-/** @param {string} raw */
-const parseValue = (raw) => {
+const parseValue = (raw: string): number | boolean | string | undefined => {
   const v = raw.trim()
   if (v === 'true') return true
   if (v === 'false') return false
@@ -150,13 +149,9 @@ const parseValue = (raw) => {
  * Fill in an effect's params: keep a provided value only when it has the
  * default's type (and, for strings with `choices`, is an allowed value),
  * otherwise use the default. Keys that are not declared are dropped.
- * @param {LiveEffectDef} def
- * @param {Record<string, any>} [raw]
- * @returns {Record<string, any>}
  */
-export const resolveParams = (def, raw = {}) => {
-  /** @type {Record<string, any>} */
-  const out = {}
+export const resolveParams = (def: LiveEffectDef, raw: Record<string, unknown> = {}): FxParams => {
+  const out: FxParams = {}
   for (const [key, dflt] of Object.entries(def.defaults)) {
     let v = raw[key]
     if (typeof dflt === 'number') {
@@ -176,11 +171,9 @@ export const resolveParams = (def, raw = {}) => {
 /**
  * Parse an `se:fx` string. Returns the recognised stack plus how many entries
  * were dropped for naming an unregistered effect (or being malformed).
- * @param {?string} str
- * @returns {{stack: Array<{name: string, params: Record<string, any>}>, unknown: number}}
  */
-const parseFxRaw = (str) => {
-  const stack = []
+const parseFxRaw = (str: string | null | undefined): { stack: FxEntry[], unknown: number } => {
+  const stack: FxEntry[] = []
   let unknown = 0
   for (const part of String(str ?? '').split(';')) {
     if (!part.trim()) continue
@@ -190,8 +183,7 @@ const parseFxRaw = (str) => {
       unknown++
       continue
     }
-    /** @type {Record<string, any>} */
-    const raw = {}
+    const raw: Record<string, unknown> = {}
     for (const pair of m[2].split(',')) {
       const eq = pair.indexOf('=')
       if (eq < 1) continue
@@ -203,36 +195,24 @@ const parseFxRaw = (str) => {
   return { stack, unknown }
 }
 
-/**
- * Parse an `se:fx` attribute value into a stack of registered effects.
- * @function module:live-effects.parseFxStack
- * @param {?string} str
- * @returns {Array<{name: string, params: Record<string, any>}>}
- */
-export const parseFxStack = (str) => parseFxRaw(str).stack
+/** Parse an `se:fx` attribute value into a stack of registered effects. */
+export const parseFxStack = (str: string | null | undefined): FxEntry[] => parseFxRaw(str).stack
 
 /**
  * Serialise a stack to `name(key=val,…);name(…)`. Entries naming an
  * unregistered effect are skipped; params are resolved against the defaults.
- * @function module:live-effects.serializeFxStack
- * @param {Array<{name: string, params?: Object}>} stack
- * @returns {string}
  */
-export const serializeFxStack = (stack) => sanitizeFxStack(stack).map(({ name, params }) => {
+export const serializeFxStack = (stack: FxStackInput): string => sanitizeFxStack(stack).map(({ name, params }) => {
   const body = Object.entries(params)
     .map(([k, v]) => `${k}=${typeof v === 'number' ? round6(v) : v}`)
     .join(',')
   return `${name}(${body})`
 }).join(';')
 
-/**
- * Drop unregistered effects and resolve every param against its defaults.
- * @param {Array<{name: string, params?: Object}>} stack
- * @returns {Array<{name: string, params: Record<string, any>}>}
- */
-export const sanitizeFxStack = (stack) => (Array.isArray(stack) ? stack : [])
+/** Drop unregistered effects and resolve every param against its defaults. */
+export const sanitizeFxStack = (stack: FxStackInput): FxEntry[] => (Array.isArray(stack) ? stack : [])
   .filter((e) => e && registry.has(e.name))
-  .map((e) => ({ name: e.name, params: resolveParams(/** @type {LiveEffectDef} */ (registry.get(e.name)), e.params) }))
+  .map((e) => ({ name: e.name, params: resolveParams(registry.get(e.name) as LiveEffectDef, e.params) }))
 
 // ---------------------------------------------------------------------------
 // Geometry
@@ -240,19 +220,17 @@ export const sanitizeFxStack = (stack) => (Array.isArray(stack) ? stack : [])
 
 /**
  * Run `stack` over the source geometry `srcD`.
- * @function module:live-effects.computeFxD
- * @param {string} srcD - Source path data.
- * @param {Array<{name: string, params: Object}>} stack
- * @returns {?string} Absolute path data, or null when the source is empty, an
+ * @param srcD - Source path data.
+ * @returns Absolute path data, or null when the source is empty, an
  *   effect throws or the result exceeds `MAX_FX_ANCHORS`.
  */
-export const computeFxD = (srcD, stack) => {
+export const computeFxD = (srcD: string, stack: FxStackInput): string | null => {
   let subpaths = parseAnchors(srcD)
   if (!subpaths.length) return null
   const bbox = anchorBBox(subpaths)
   for (const { name, params } of sanitizeFxStack(stack)) {
     try {
-      subpaths = /** @type {LiveEffectDef} */ (registry.get(name)).apply(subpaths, bbox, params)
+      subpaths = (registry.get(name) as LiveEffectDef).apply(subpaths, bbox, params)
     } catch (err) {
       warn(`Live effect "${name}" failed`, err, 'live-effects')
       return null
@@ -267,8 +245,7 @@ export const computeFxD = (srcD, stack) => {
   return anchorsToD(subpaths)
 }
 
-/** @param {string} d */
-const normalizeD = (d) => anchorsToD(parseAnchors(d))
+const normalizeD = (d: string): string => anchorsToD(parseAnchors(d))
 
 /**
  * Whether `d` is the regenerated output of `se:fx-d` + `se:fx`. Compared as
@@ -276,11 +253,8 @@ const normalizeD = (d) => anchorsToD(parseAnchors(d))
  * relative commands rounded to 2 decimals — a reloaded drawing must still
  * count as unedited.
  * Stacks naming an unregistered effect cannot be verified and count as current.
- * @function module:live-effects.isFxCurrent
- * @param {Element} elem
- * @returns {boolean}
  */
-export const isFxCurrent = (elem) => {
+export const isFxCurrent = (elem: Element): boolean => {
   const src = elem.getAttribute(FX_SOURCE_ATTR)
   if (!src) return false
   const { stack, unknown } = parseFxRaw(elem.getAttribute(FX_ATTR))
@@ -294,11 +268,9 @@ export const isFxCurrent = (elem) => {
  * Called from `remapElement` (coords.js) when a transform is baked into an
  * effect path: apply the affine map to the stored source and regenerate `d`.
  * Params are not rescaled (see module header).
- * @param {Element} elem
- * @param {Function} remap - `(x, y) → {x, y}` from remapElement.
- * @returns {void}
+ * @param remap - `(x, y) → {x, y}` from remapElement.
  */
-export const remapFxSource = (elem, remap) => {
+export const remapFxSource = (elem: Element, remap: (x: number, y: number) => { x: number, y: number }): void => {
   const src = elem.getAttribute(FX_SOURCE_ATTR)
   if (!src) return
   const subpaths = parseAnchors(src).map((sp) => ({
@@ -315,13 +287,11 @@ export const remapFxSource = (elem, remap) => {
 /**
  * Equivalent <path> (not inserted) for a supported primitive; attributes are
  * copied except the primitive's own geometry.
- * @param {Element} elem
- * @returns {?Element}
  */
-const primitiveToPath = (elem) => {
+const primitiveToPath = (elem: Element): SVGPathElement | null => {
   const d = getPathDFromElement(elem)
   if (!d) return null
-  const path = elem.ownerDocument.createElementNS(NS.SVG, 'path')
+  const path = elem.ownerDocument.createElementNS(NS.SVG, 'path') as SVGPathElement
   const drop = GEOMETRY_ATTRS[elem.tagName] ?? []
   for (const attr of elem.attributes) {
     if (!drop.includes(attr.name)) path.setAttribute(attr.name, attr.value)
@@ -333,13 +303,11 @@ const primitiveToPath = (elem) => {
 /**
  * The stroke-output effect (if any) governing the element's paint: the last
  * one in the stack.
- * @param {Array<{name: string, params: Object}>} stack
- * @returns {?{width: number}}
  */
-const strokeOutputOf = (stack) => {
+const strokeOutputOf = (stack: FxEntry[]): { width: number } | null => {
   for (let i = stack.length - 1; i >= 0; i--) {
     const so = registry.get(stack[i].name)?.strokeOutput
-    if (so) return { width: /** @type {Record<string, any>} */ (stack[i].params)[so.widthParam] }
+    if (so) return { width: stack[i].params[so.widthParam] as number }
   }
   return null
 }
@@ -347,10 +315,8 @@ const strokeOutputOf = (stack) => {
 /**
  * The element's style before any stroke-output effect repainted it: the
  * values saved in `se:fx-style`, else its current attributes (null = absent).
- * @param {Element} elem
- * @returns {Object<string, ?string>}
  */
-const originalStyle = (elem) => {
+const originalStyle = (elem: Element): Record<string, string | null> => {
   const saved = elem.getAttribute(FX_STYLE_ATTR)
   const vals = saved !== null
     ? saved.split('|').map((v) => (v === '' ? null : v))
@@ -361,11 +327,8 @@ const originalStyle = (elem) => {
 /**
  * Paint attributes for an element whose stack outputs a stroked centerline:
  * the original fill (else stroke) becomes the stroke paint.
- * @param {Element} elem
- * @param {number} width
- * @returns {Object<string, string>}
  */
-const hatchPaint = (elem, width) => {
+const hatchPaint = (elem: Element, width: number): Record<string, string> => {
   const { fill, stroke } = originalStyle(elem)
   const ink = fill === null ? '#000000' : (fill !== 'none' ? fill : stroke)
   return {
@@ -377,11 +340,7 @@ const hatchPaint = (elem, width) => {
   }
 }
 
-/**
- * @param {Element} elem
- * @param {Record<string, string|null>} attrs
- */
-const setAttrs = (elem, attrs) => {
+const setAttrs = (elem: Element, attrs: Record<string, string | null>): void => {
   for (const [k, v] of Object.entries(attrs)) {
     if (v === null) elem.removeAttribute(k)
     else elem.setAttribute(k, v)
@@ -390,10 +349,8 @@ const setAttrs = (elem, attrs) => {
 
 /**
  * Put back the style saved in `se:fx-style` and drop the attribute.
- * @param {Element} elem
- * @returns {void}
  */
-const restoreStyle = (elem) => {
+const restoreStyle = (elem: Element): void => {
   if (!elem.hasAttribute(FX_STYLE_ATTR)) return
   setAttrs(elem, originalStyle(elem))
   elem.removeAttribute(FX_STYLE_ATTR)
@@ -408,8 +365,7 @@ registerLiveStage({
   stackable: (view) => !strokeOutputOf(parseFxStack(view.getAttribute(FX_ATTR)))
 })
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   registerGeometryRemap(FX_SOURCE_ATTR, remapFxSource)
@@ -419,18 +375,15 @@ export const init = (canvas) => {
     return parseFxRaw(value).unknown === 0 && named > 0 ? true : 'names an unknown or malformed effect'
   })
 
-  /** @returns {?Element} */
-  const getSelected = () => {
+  const getSelected = (): Element | null => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     return elems.length === 1 ? elems[0] : null
   }
 
   /**
    * Whether live effects can apply to this element right now.
-   * @param {?Element} [elem]
-   * @returns {elem is Element}
    */
-  const canApplyLiveEffect = (elem) => {
+  const canApplyLiveEffect = (elem?: Element | null): elem is Element => {
     if (!elem || !SUPPORTED_TAGS.has(elem.tagName)) return false
     return canAddStage(elem, 'fx') // live-stack.js: effects share an element with a width stroke only
   }
@@ -438,10 +391,9 @@ export const init = (canvas) => {
   /**
    * Drop the effect attributes when `d` was rewritten outside the effect
    * pipeline (node editing, …). The shape itself is untouched.
-   * @param {Element} elem
-   * @returns {boolean} true when the element still carries valid effects.
+   * @returns true when the element still carries valid effects.
    */
-  const reconcileLiveEffects = (elem) => {
+  const reconcileLiveEffects = (elem: Element): boolean => {
     if (!elem?.hasAttribute(FX_SOURCE_ATTR)) return false
     if (isStacked(elem)) return reconcileStack(elem, svgCanvas) ?? false // drops every stage's attributes
     if (isFxCurrent(elem)) return true
@@ -453,25 +405,21 @@ export const init = (canvas) => {
 
   /**
    * Effect stack of the selected element (empty when none).
-   * @returns {Array<{name: string, params: Record<string, number | boolean | string>}>}
    */
-  const getLiveEffects = (elem = getSelected()) =>
+  const getLiveEffects = (elem: Element | null = getSelected()): FxEntry[] =>
     elem?.hasAttribute(FX_SOURCE_ATTR) ? parseFxStack(elem.getAttribute(FX_ATTR)) : []
 
   /**
    * The box the effects are computed against: that of the element's source geometry, in the element's own
    * coordinates (what on-canvas editors such as the distort tool place their handles on).
-   * @param {Element} elem
-   * @returns {?{x: number, y: number, width: number, height: number}}
    */
-  const getLiveEffectsBox = (elem) => {
+  const getLiveEffectsBox = (elem: Element): { x: number, y: number, width: number, height: number } | null => {
     const src = elem && canApplyLiveEffect(elem) ? getSource(elem) : null
     const subpaths = src ? parseAnchors(src) : []
     return subpaths.length ? anchorBBox(subpaths) : null
   }
 
-  /** @param {Element} elem */
-  const getSource = (elem) => {
+  const getSource = (elem: Element): string | null => {
     if (elem.hasAttribute(FX_SOURCE_ATTR)) return elem.getAttribute(FX_SOURCE_ATTR)
     const src = normalizeD(stackSource(elem, 'fx') || getPathDFromElement(elem) || '')
     return src || null
@@ -481,8 +429,7 @@ export const init = (canvas) => {
   // The selected element is hidden and a throwaway <path> clone shows the
   // result, so previewing never touches the real element (a rect can't hold
   // a baked `d`) and cancelling is just removing the clone.
-  /** @type {{elem: Element, clone: Element, [k: string]: any}|null} */
-  let session = null
+  let session: { elem: Element, clone: Element, visibility: string | null } | null = null
 
   const endPreview = () => {
     if (!session) return
@@ -495,16 +442,14 @@ export const init = (canvas) => {
   /**
    * Live-preview a stack on the selected element without recording history.
    * Safe to call on every param tick.
-   * @param {Array<{name: string, params?: Object}>} stack
-   * @returns {void}
    */
-  const previewLiveEffects = (stack) => {
+  const previewLiveEffects = (stack: FxStackInput): void => {
     const elem = getSelected()
     if (!canApplyLiveEffect(elem)) return
     if (session && session.elem !== elem) endPreview()
     reconcileLiveEffects(elem)
     const src = getSource(elem)
-    const d = src && planFx(elem, src, /** @type {any} */ (stack))?.d
+    const d = src && planFx(elem, src, stack)?.d
     if (!d) return
     if (!session) {
       const clone = primitiveToPath(elem)
@@ -523,22 +468,17 @@ export const init = (canvas) => {
     setAttrs(session.clone, paint ? hatchPaint(elem, paint.width) : originalStyle(elem))
   }
 
-  /**
-   * Discard the current preview (no undo step).
-   * @returns {void}
-   */
-  const cancelLiveEffectsPreview = () => endPreview()
+  /** Discard the current preview (no undo step). */
+  const cancelLiveEffectsPreview = (): void => endPreview()
 
   // --- history-recording operations --------------------------------------
   // Each runs inside svgCanvas.transact(), so the one undo step is whatever
   // the body changed; nothing here builds commands by hand.
   // What the element becomes with `stack` over `src`: its stage attributes and `d`, the width outline included.
-  /** @type {(elem: Element, src: string, stack: Array<{name: string, params: Object}>) => any} */
-  const planFx = (elem, src, stack) =>
+  const planFx = (elem: Element, src: string, stack: FxStackInput): StackPlan | null =>
     planStack(elem, { [FX_SOURCE_ATTR]: src, [FX_ATTR]: serializeFxStack(stack) }, svgCanvas)
 
-  /** @param {Element} elem */
-  const finish = (elem) => {
+  const finish = (elem: Element): Element => {
     svgCanvas.selectOnly([elem], true)
     svgCanvas.call('changed', [elem])
     return elem
@@ -547,12 +487,9 @@ export const init = (canvas) => {
   /**
    * Write a planned stack into `elem` (the caller's transaction records it): a primitive is swapped for an
    * equivalent `<path>` (same id), a stroke-output effect repaints it, then the source, the stack and `d` go in.
-   * @param {Element} elem
-   * @param {any} clean
-   * @param {any} plan
-   * @returns {?Element} The (possibly new) element.
+   * @returns The (possibly new) element.
    */
-  const writeFx = (elem, clean, plan) => {
+  const writeFx = (elem: Element, clean: FxEntry[], plan: StackPlan): Element | null => {
     let target = elem
     if (target.tagName !== 'path') {
       const path = primitiveToPath(target)
@@ -580,17 +517,15 @@ export const init = (canvas) => {
    * re-selection, no `changed` event. For a tool that rewrites the effect on every pointer move of a gesture
    * (the registry's gesture transaction is the undo step); the caller selects the returned element when it
    * differs from `elem` (a primitive becomes a path).
-   * @param {Element} elem
-   * @param {Array<{name: string, params?: Object}>} stack
-   * @returns {?Element} The (possibly new) element, or null when the stack cannot be applied.
+   * @returns The (possibly new) element, or null when the stack cannot be applied.
    */
-  const applyLiveEffectsTo = (elem, stack) => {
+  const applyLiveEffectsTo = (elem: Element, stack: FxStackInput): Element | null => {
     if (!canApplyLiveEffect(elem)) return null
     const clean = sanitizeFxStack(stack)
     if (!clean.length) return null
     reconcileLiveEffects(elem)
     const src = getSource(elem)
-    const plan = src && planFx(elem, src, clean)
+    const plan = src ? planFx(elem, src, clean) : null
     return plan?.d ? writeFx(elem, clean, plan) : null
   }
 
@@ -598,10 +533,9 @@ export const init = (canvas) => {
    * Apply (or replace) a stack on the selected element as one undo step.
    * Primitives are swapped for an equivalent `<path>` (same id) in the same
    * step. An empty stack removes the effects.
-   * @param {Array<{name: string, params?: Object}>} stack
-   * @returns {?Element} The (possibly new) element, or null when not applicable.
+   * @returns The (possibly new) element, or null when not applicable.
    */
-  const applyLiveEffects = (stack) => {
+  const applyLiveEffects = (stack: FxStackInput): Element | null => {
     endPreview()
     const selected = getSelected()
     if (!canApplyLiveEffect(selected)) return null
@@ -609,7 +543,7 @@ export const init = (canvas) => {
     if (!clean.length) return removeLiveEffects()
     reconcileLiveEffects(selected)
     const src = getSource(selected)
-    const plan = src && planFx(selected, src, clean)
+    const plan = src ? planFx(selected, src, clean) : null
     if (!plan?.d) {
       warn('Live effect could not be applied to the selection', null, 'live-effects')
       return null
@@ -622,9 +556,8 @@ export const init = (canvas) => {
   /**
    * Remove the effects from the selected element, restoring its source
    * geometry, as one undo step.
-   * @returns {?Element}
    */
-  const removeLiveEffects = () => {
+  const removeLiveEffects = (): Element | null => {
     endPreview()
     const elem = getSelected()
     if (!elem) return null
@@ -642,9 +575,8 @@ export const init = (canvas) => {
 
   /**
    * Bake the effects in: keep `d`, drop the stack and source, as one undo step.
-   * @returns {?Element}
    */
-  const expandLiveEffects = () => {
+  const expandLiveEffects = (): Element | null => {
     endPreview()
     const elem = getSelected()
     if (!elem?.hasAttribute(FX_SOURCE_ATTR)) return null
