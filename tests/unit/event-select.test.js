@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { init as eventSelectInit } from '../../packages/svgcanvas/core/event-select.js'
+import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 
 // Minimal svgCanvas mock: only what `move()` touches before/at the
 // accidental-move threshold check when selectedElements is empty (so the
 // dummy-transform-insertion and per-element branches are no-ops).
 const makeCanvas = () => ({
+  gesture: createGestureState(),
   getStartX: () => 0,
   getStartY: () => 0,
   getCurConfig: () => ({}),
@@ -73,7 +75,7 @@ describe('event-select move() drag threshold', () => {
     // flat threshold of 4 -- the drag would previously do nothing.
     move({ shiftKey: false }, makeCtx({ x: 3.5, zoom: 4 }))
 
-    expect(svgCanvas.moveSelectionThresholdReached).toBe(true)
+    expect(svgCanvas.gesture.moveSelectionThresholdReached).toBe(true)
   })
 
   it('does not fire on a 2-screen-px drag at zoom 0.25 (previously too sensitive)', () => {
@@ -84,7 +86,7 @@ describe('event-select move() drag threshold', () => {
     // intended 4-screen-px accidental-move guard.
     move({ shiftKey: false }, makeCtx({ x: 8, zoom: 0.25 }))
 
-    expect(svgCanvas.moveSelectionThresholdReached).toBeFalsy()
+    expect(svgCanvas.gesture.moveSelectionThresholdReached).toBeFalsy()
   })
 })
 
@@ -94,7 +96,7 @@ describe('event-select move() alt-drag-to-duplicate', () => {
   // invisible duplicate (offset 0,0, on top of the original) on a plain
   // alt+click that never actually dragged, or on any mousedown where the
   // browser/OS misreports a stale altKey:true. event.js now only arms the
-  // intent (svgCanvas.altCloneArmed); the actual clone happens here, gated
+  // intent (svgCanvas.gesture.altCloneArmed); the actual clone happens here, gated
   // on the same real-drag distance threshold used for an ordinary move.
   const makeCloneCanvas = () => {
     const calls = []
@@ -103,32 +105,32 @@ describe('event-select move() alt-drag-to-duplicate', () => {
 
   it('does not clone while still under the real-drag threshold, and touches nothing else', () => {
     const svgCanvas = makeCloneCanvas()
-    svgCanvas.altCloneArmed = true
+    svgCanvas.gesture.altCloneArmed = true
     const { move } = eventSelectInit(svgCanvas)
 
     // 1 content unit at zoom 1, well under the 4-screen-px threshold.
     move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 1, zoom: 1 }))
 
     expect(svgCanvas.calls).toEqual([])
-    expect(svgCanvas.altCloneArmed).toBe(true) // still armed -- next tick gets another chance
-    expect(svgCanvas.hasDragStartTransform).toBeUndefined() // no dummy transform inserted on the original
+    expect(svgCanvas.gesture.altCloneArmed).toBe(true) // still armed -- next tick gets another chance
+    expect(svgCanvas.gesture.hasDragStartTransform).toBe(false) // no dummy transform inserted on the original
   })
 
   it('clones exactly once the drag crosses the threshold, deferring the drag-start bookkeeping to the next tick', () => {
     const svgCanvas = makeCloneCanvas()
-    svgCanvas.altCloneArmed = true
+    svgCanvas.gesture.altCloneArmed = true
     const { move } = eventSelectInit(svgCanvas)
 
     // 5 content units at zoom 1, over the 4-screen-px threshold.
     move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 5, zoom: 1 }))
 
     expect(svgCanvas.calls).toEqual([{ dx: 0, dy: 0 }])
-    expect(svgCanvas.altCloneArmed).toBe(false) // consumed, so a second move tick won't clone again
+    expect(svgCanvas.gesture.altCloneArmed).toBe(false) // consumed, so a second move tick won't clone again
     // cloneSelectedElements() re-selects the clones itself; this tick
     // deliberately doesn't touch hasDragStartTransform so the *next* move
     // tick inserts the dummy transform for the clones, same as any other
     // fresh drag start.
-    expect(svgCanvas.hasDragStartTransform).toBeUndefined()
+    expect(svgCanvas.gesture.hasDragStartTransform).toBe(false)
   })
 
   it('never clones when not armed, regardless of drag distance', () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as eventResizeInit } from '../../packages/svgcanvas/core/event-resize.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
+import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 
 // Regression coverage for the "redundant matrix" bug: clicking a resize grip
 // without dragging used to leave 3 stray identity `matrix(1 0 0 1 0 0)`
@@ -27,6 +28,7 @@ describe('event-resize', () => {
     let startX = 0; let startY = 0
     let initBbox = null
     svgCanvas = {
+      gesture: createGestureState(),
       setStarted: vi.fn(),
       setStartX: vi.fn((v) => { startX = v }),
       setStartY: vi.fn((v) => { startY = v }),

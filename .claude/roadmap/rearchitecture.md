@@ -192,9 +192,11 @@ properly, when editor panels or components call it or their unit tests mock it t
 isolate the UI, and the e2e specs use `window.svgEditor.svgCanvas.x` as their handle). Those members are the facade; the
 thin `canvas.x = (...a) => x(canvas, ...a)` shims in `cutter.js` and `segment.js` stay until the facade is written
 down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentElement`, `sanitizeSvg`, `findSameAs`,
-`selectSameAs`, `splitIntoGrid`, `transformEach`. Gesture state that `event-*` modules park on the canvas
-(`groupRotateCenter`, `dragStartTransforms`, …) is a different job: it belongs in a state object owned by the gesture
-module, not in a function move.
+`selectSameAs`, `splitIntoGrid`, `transformEach`. The gesture state that `event-*` modules parked on the canvas
+(`groupRotateCenter`, `dragStartTransforms`, `spaceKey`, `addedNew`, …: fourteen loose members) is now one object,
+`svgCanvas.gesture` (`core/gesture-state.ts`: `GestureState` and `createGestureState()`, every field at rest from the
+constructor, so no reader sees `undefined`); unit-test canvases that run the event modules get
+`gesture: createGestureState()`.
 **The facade, as it stands (2026-10-16).** `svgcanvas.d.ts` (the class), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
 ~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: `any`, ~195 members core modules share) are the facade
 and its plumbing. Three tests keep them honest: `svgcanvas-dts-drift.test.js` (every runtime member is declared as public
@@ -206,7 +208,7 @@ extensions never call an `any` member**: ten that they did were typed and promot
 `getFontFamily` / `getFontColor` / `getFontSize`) were deleted. What a deeper facade would add (types derived from source,
 the d.ts files deleted) needs the members to leave the canvas, module by module as above; until then a new member is
 declared in `svgcanvas-members.d.ts` if the editor calls it, else in `svgcanvas-internal.d.ts`.
-Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the gesture state of the `event-*` modules, then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
+Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the other state the canvas carries as loose members (`selectorManager`, `pathActions`, the cursor hint, the drawing handles), then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
 
 Size: L, fully incremental, low risk per module.
 

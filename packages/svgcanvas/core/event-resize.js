@@ -59,7 +59,7 @@ const resizeGroup = (svgCanvas, x, y) => {
   // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
   const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
 
-  svgCanvas.groupResizeStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
+  svgCanvas.gesture.groupResizeStart.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
     const newM = matrixMultiply(gm, startMatrix)
     const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
@@ -90,7 +90,7 @@ const resizeGroup = (svgCanvas, x, y) => {
  * @returns {void}
  */
 const resizeAreaText = (svgCanvas, elem, x, y) => {
-  let state = svgCanvas.areaResize
+  let state = svgCanvas.gesture.areaResize
   if (!state) {
     const box = getAreaBox(elem)
     state = {
@@ -98,9 +98,9 @@ const resizeAreaText = (svgCanvas, elem, x, y) => {
       box,
       fixedHeight: getWrapHeight(elem) > 0,
       anchor: elem.getAttribute('text-anchor') ?? 'start',
-      tx: svgCanvas.beginTransaction('Resize text box', { onAbort: () => { svgCanvas.areaResize = null } })
+      tx: svgCanvas.beginTransaction('Resize text box', { onAbort: () => { svgCanvas.gesture.areaResize = null } })
     }
-    svgCanvas.areaResize = state
+    svgCanvas.gesture.areaResize = state
   }
   const { box } = state
   const mode = svgCanvas.getCurrentResizeMode()
@@ -143,9 +143,9 @@ export const init = (canvas) => {
   const down = (evt, ctx) => {
     const { x, y, zoom, selectedElements, mouseTarget } = ctx
     // A box drag whose mouse-up never arrived must not hijack this one.
-    if (svgCanvas.areaResize) {
-      svgCanvas.areaResize.tx.commit()
-      svgCanvas.areaResize = null
+    if (svgCanvas.gesture.areaResize) {
+      svgCanvas.gesture.areaResize.tx.commit()
+      svgCanvas.gesture.areaResize = null
     }
     const tlist = getTransformList(mouseTarget)
     if (!tlist) { return }
@@ -157,7 +157,7 @@ export const init = (canvas) => {
     // here unconditionally left them permanently stuck on the element (as 3
     // stray identity matrices) whenever a grip was clicked but not dragged,
     // since mouseUp only consolidates/removes them after real movement.
-    svgCanvas.hasResizeStartTransform = false
+    svgCanvas.gesture.hasResizeStartTransform = false
 
     // multi-selection: record per-element start matrices and the union bbox,
     // then let mouseMove apply a single uniform group-scale matrix to each.
@@ -166,8 +166,8 @@ export const init = (canvas) => {
       svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
       const starts = new Map()
       const transforms = new Map()
-      svgCanvas.groupResizeStart = starts
-      svgCanvas.dragStartTransforms = transforms
+      svgCanvas.gesture.groupResizeStart = starts
+      svgCanvas.gesture.dragStartTransforms = transforms
       groupElems.forEach((/** @type {Element} */ elem) => {
         starts.set(elem, transformListToTransform(getTransformList(elem)).matrix)
         transforms.set(elem, elem.getAttribute('transform') || '')
@@ -190,15 +190,15 @@ export const init = (canvas) => {
   const move = (evt, ctx) => {
     const { selected, x, y, svgRoot, selectedElements } = ctx
     // multi-selection: uniform group scale (no per-element distortion)
-    if (svgCanvas.groupResizeStart) {
+    if (svgCanvas.gesture.groupResizeStart) {
       resizeGroup(svgCanvas, x, y)
       return
     }
     // an area text keeps its type and changes its box (rotated or transformed ones scale like any text)
     const only = selectedElements.filter(Boolean)
-    if (svgCanvas.areaResize || (only.length === 1 && isAreaText(selected) &&
+    if (svgCanvas.gesture.areaResize || (only.length === 1 && isAreaText(selected) &&
         !getTransformList(selected)?.numberOfItems)) {
-      resizeAreaText(svgCanvas, svgCanvas.areaResize?.elem ?? selected, x, y)
+      resizeAreaText(svgCanvas, svgCanvas.gesture.areaResize?.elem ?? selected, x, y)
       return
     }
     // we track the resize bounding box and translate/scale the selected element
@@ -211,7 +211,7 @@ export const init = (canvas) => {
     // Insert the three dummy transforms (translate/scale/translate) on the
     // first actual movement of the drag, not on mousedown — a click on a
     // resize grip without any drag must leave the element untouched.
-    if (!svgCanvas.hasResizeStartTransform) {
+    if (!svgCanvas.gesture.hasResizeStartTransform) {
       const pos = getRotationAngle(selected) ? 1 : 0
       if (hasMatrix) {
         tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
@@ -222,7 +222,7 @@ export const init = (canvas) => {
         tlist.appendItem(svgRoot.createSVGTransform())
         tlist.appendItem(svgRoot.createSVGTransform())
       }
-      svgCanvas.hasResizeStartTransform = true
+      svgCanvas.gesture.hasResizeStartTransform = true
     }
     const box = hasMatrix ? svgCanvas.getInitBbox() : getBBox(selected)
     let left = box.x

@@ -487,7 +487,7 @@ class EditorStartup {
     // drawing/resize/rotate cursors.
     $id('svgcanvas').addEventListener('mousemove', (evt) => {
       const canv = this.svgCanvas
-      if (panning || canv.spaceKey || canv.getStarted() || canv.getMode() !== 'select') { return }
+      if (panning || canv.gesture.spaceKey || canv.getStarted() || canv.getMode() !== 'select') { return }
       const svgRoot = canv.getSvgRoot()
       const target = canv.getMouseTarget(evt)
       let movable = target && target !== svgRoot &&
@@ -570,7 +570,7 @@ class EditorStartup {
         return
       }
       if (e.code.toLowerCase() === 'space') {
-        this.svgCanvas.spaceKey = keypan = true
+        this.svgCanvas.gesture.spaceKey = keypan = true
         e.preventDefault()
       } else if ((e.key.toLowerCase() === 'shift') && (this.svgCanvas.getMode() === 'zoom')) {
         this.workarea.style.cursor = zoomOutIcon
@@ -669,7 +669,7 @@ class EditorStartup {
         // tools use it to move the shape being drawn) never armed pan, so there
         // is no mode to restore; resetting it would end the drag in progress.
         const panArmed = keypan
-        this.svgCanvas.spaceKey = keypan = false
+        this.svgCanvas.gesture.spaceKey = keypan = false
         if (panArmed) this.svgCanvas.setMode(previousMode === 'ext-panning' ? 'select' : previousMode ?? 'select')
         e.preventDefault()
       } else if ((e.key.toLowerCase() === 'shift') && (this.svgCanvas.getMode() === 'zoom')) {
@@ -684,7 +684,7 @@ class EditorStartup {
      * @returns {void}
      */
     this.setPanning = (active) => {
-      this.svgCanvas.spaceKey = keypan = active
+      this.svgCanvas.gesture.spaceKey = keypan = active
     }
     let inp
     /**

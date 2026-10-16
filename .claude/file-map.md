@@ -65,6 +65,7 @@
 | `event.js` | Tools for event |
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
+| `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
 | `gradient-edit.js` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { init as initEvent } from '../../packages/svgcanvas/core/event.js'
 import { attachUnits } from './unitsMock.js'
+import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 
 const createSvgElement = (name) => {
   return document.createElementNS(NS.SVG, name)
@@ -57,7 +58,7 @@ describe('event', () => {
 
     canvas = {
       drawSnap: { snapDrawPoint: (x, y) => ({ x, y }), hoverDrawSnap: (x, y) => ({ x, y }), clearDrawHover () {}, clearDrawSnap () {} },
-      spaceKey: false,
+      gesture: createGestureState(),
       started: false,
       rootSctm: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
       rubberBox: null,
@@ -201,11 +202,11 @@ describe('event', () => {
     })
 
     expect(canvas.cloneSelectedElementsCalls).toBeUndefined()
-    expect(canvas.altCloneArmed).toBe(true)
+    expect(canvas.gesture.altCloneArmed).toBe(true)
   })
 
   it('mouseDownEvent() disarms alt-clone intent on a plain click', () => {
-    canvas.altCloneArmed = true // leftover from a previous alt+drag gesture
+    canvas.gesture.altCloneArmed = true // leftover from a previous alt+drag gesture
     canvas.setCurrentMode('zoom') // see zoom-mode note in the sibling test above
     canvas.mouseDownEvent({
       clientX: 10,
@@ -217,13 +218,13 @@ describe('event', () => {
       target: contentGroup
     })
 
-    expect(canvas.altCloneArmed).toBe(false)
+    expect(canvas.gesture.altCloneArmed).toBe(false)
   })
 
   it('mouseUpEvent() clears a still-armed alt-clone intent (e.g. an alt+click with no drag)', () => {
     canvas.setCurrentMode('select')
     canvas.setStarted(true) // mouseUpEventImpl no-ops entirely if !getStarted()
-    canvas.altCloneArmed = true
+    canvas.gesture.altCloneArmed = true
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     canvas.mouseUpEvent({
@@ -235,7 +236,7 @@ describe('event', () => {
       target: contentGroup
     })
 
-    expect(canvas.altCloneArmed).toBe(false)
+    expect(canvas.gesture.altCloneArmed).toBe(false)
     errSpy.mockRestore()
   })
 
@@ -290,8 +291,8 @@ describe('event', () => {
     // independently-continuable steps.
     canvas.setCurrentMode('zoom')
     canvas.selectorManager.getRubberBandBox = () => { throw new Error('boom') }
-    canvas.hasDragStartTransform = true
-    canvas.dragStartTransforms = { stale: true }
+    canvas.gesture.hasDragStartTransform = true
+    canvas.gesture.dragStartTransforms = { stale: true }
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -307,8 +308,8 @@ describe('event', () => {
     }).not.toThrow()
 
     expect(canvas.getStarted()).toBe(false)
-    expect(canvas.hasDragStartTransform).toBe(false)
-    expect(canvas.dragStartTransforms).toBe(null)
+    expect(canvas.gesture.hasDragStartTransform).toBe(false)
+    expect(canvas.gesture.dragStartTransforms).toBe(null)
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })
@@ -319,10 +320,10 @@ describe('event', () => {
     // before the group-rotate/-resize state below would normally be cleared.
     canvas.setCurrentMode('rotate')
     canvas.setStarted(true)
-    canvas.groupResizeStart = { stale: true }
-    canvas.groupRotateStart = { stale: true }
-    canvas.groupRotateCenter = { stale: true }
-    canvas.groupRotateBBox = { stale: true }
+    canvas.gesture.groupResizeStart = { stale: true }
+    canvas.gesture.groupRotateStart = { stale: true }
+    canvas.gesture.groupRotateCenter = { stale: true }
+    canvas.gesture.groupRotateBBox = { stale: true }
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -337,10 +338,10 @@ describe('event', () => {
     }).not.toThrow()
 
     expect(canvas.getStarted()).toBe(false)
-    expect(canvas.groupResizeStart).toBe(null)
-    expect(canvas.groupRotateStart).toBe(null)
-    expect(canvas.groupRotateCenter).toBe(null)
-    expect(canvas.groupRotateBBox).toBe(null)
+    expect(canvas.gesture.groupResizeStart).toBe(null)
+    expect(canvas.gesture.groupRotateStart).toBe(null)
+    expect(canvas.gesture.groupRotateCenter).toBe(null)
+    expect(canvas.gesture.groupRotateBBox).toBe(null)
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })

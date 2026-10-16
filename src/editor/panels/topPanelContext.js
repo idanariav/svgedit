@@ -276,7 +276,7 @@ export const updateContextPanel = (topPanel) => {
             $id('tool_perspective_y').value =
               topPanel.editor.svgCanvas.getTextPerspectiveY(elem)
             $id('text').value = topPanel.editor.svgCanvas.getTextWithNewlines(elem)
-            if (topPanel.editor.svgCanvas.addedNew) {
+            if (topPanel.editor.svgCanvas.gesture.addedNew) {
               // Timeout needed for IE9
               setTimeout(() => {
                 $id('text').focus()
@@ -372,7 +372,7 @@ export const updateContextPanel = (topPanel) => {
       // `enabled` check; see CommandRegistry.refreshEnablement.
       topPanel.editor.commands?.refreshEnablement()
 
-      topPanel.editor.svgCanvas.addedNew = false
+      topPanel.editor.svgCanvas.gesture.addedNew = false
     }],
     // The current tool's options may depend on the selection (the Blend tool shows the selected blend's).
     ['toolOptions', () => refreshToolOptions(topPanel.editor)],

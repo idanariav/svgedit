@@ -14,7 +14,7 @@ import { transformPoint, getMatrix, getTransformList, transformListToTransform, 
  * Rotate a multi-element selection rigidly about its union center by `angle`
  * degrees (absolute, measured from drag start). Each element gets the group
  * rotation matrix R(angle, cx, cy) pre-multiplied onto the matrix it had when
- * the drag began (svgCanvas.groupRotateStart), so the relative layout is
+ * the drag began (svgCanvas.gesture.groupRotateStart), so the relative layout is
  * preserved and no shape is individually re-centered. Mirrors resizeGroup.
  * @param {import('../svgcanvas.js').default} svgCanvas
  * @param {number} angle
@@ -22,12 +22,12 @@ import { transformPoint, getMatrix, getTransformList, transformListToTransform, 
  */
 const rotateGroup = (svgCanvas, angle) => {
   const svgRoot = svgCanvas.getSvgRoot()
-  const { x: cx, y: cy } = /** @type {{x: number, y: number}} */ (svgCanvas.groupRotateCenter)
+  const { x: cx, y: cy } = /** @type {{x: number, y: number}} */ (svgCanvas.gesture.groupRotateCenter)
   const rot = svgRoot.createSVGTransform()
   rot.setRotate(angle, cx, cy)
   const rm = rot.matrix
 
-  const starts = /** @type {Map<Element, SVGMatrix>} */ (svgCanvas.groupRotateStart)
+  const starts = /** @type {Map<Element, SVGMatrix>} */ (svgCanvas.gesture.groupRotateStart)
   starts.forEach((/** @type {SVGMatrix} */ startMatrix, /** @type {Element} */ elem) => {
     const newM = matrixMultiply(rm, startMatrix)
     const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
@@ -39,7 +39,7 @@ const rotateGroup = (svgCanvas, angle) => {
   })
 
   // rotate the group box + grips rigidly about the union center
-  svgCanvas.selectorManager.showGroupSelector(svgCanvas.groupRotateBBox, angle)
+  svgCanvas.selectorManager.showGroupSelector(svgCanvas.gesture.groupRotateBBox, angle)
   svgCanvas.call('transition', svgCanvas.getSelectedElements())
 }
 
@@ -64,10 +64,10 @@ export const init = (canvas) => {
     const rotElems = selectedElements.filter(Boolean)
     if (rotElems.length > 1) {
       const ubb = svgCanvas.getStrokedBBoxDefaultVisible(rotElems)
-      svgCanvas.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
-      svgCanvas.groupRotateBBox = ubb
+      svgCanvas.gesture.groupRotateCenter = { x: ubb.x + ubb.width / 2, y: ubb.y + ubb.height / 2 }
+      svgCanvas.gesture.groupRotateBBox = ubb
       const start = new Map()
-      svgCanvas.groupRotateStart = start
+      svgCanvas.gesture.groupRotateStart = start
       rotElems.forEach((/** @type {Element} */ elem) => {
         start.set(elem, transformListToTransform(getTransformList(elem)).matrix)
       })
@@ -78,8 +78,8 @@ export const init = (canvas) => {
   const move = (evt, ctx) => {
     const { selected, x, y, selectedElements } = ctx
     // multi-selection: rotate the whole group rigidly about the union center
-    if (svgCanvas.groupRotateStart && svgCanvas.groupRotateCenter) {
-      const { x: cx, y: cy } = svgCanvas.groupRotateCenter
+    if (svgCanvas.gesture.groupRotateStart && svgCanvas.gesture.groupRotateCenter) {
+      const { x: cx, y: cy } = svgCanvas.gesture.groupRotateCenter
       let angle = ((Math.atan2(cy - y, cx - x) * (180 / Math.PI)) - 90) % 360
       if (svgCanvas.getCurConfig().gridSnapping) { angle = svgCanvas.snapToGrid(angle) }
       if (evt.shiftKey) { angle = Math.round(angle / 15) * 15 }
@@ -109,10 +109,10 @@ export const init = (canvas) => {
   /** @type {(evt: MouseEvent, ctx: any) => any} */
   const up = (evt, ctx) => {
     const { selectedElements } = ctx
-    svgCanvas.hasDragStartTransform = false
-    svgCanvas.dragStartTransforms = null
+    svgCanvas.gesture.hasDragStartTransform = false
+    svgCanvas.gesture.dragStartTransforms = null
     svgCanvas.setCurrentMode('select')
-    const isGroupRotate = !!svgCanvas.groupRotateStart
+    const isGroupRotate = !!svgCanvas.gesture.groupRotateStart
     const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
     if (!batchCmd.isEmpty()) {
       svgCanvas.addCommandToHistory(batchCmd)
@@ -121,9 +121,9 @@ export const init = (canvas) => {
       // Each element carries a baked R·M matrix transform; finishUndoableChange
       // already recorded those per-element changes. Skip recalculateDimensions
       // (it would try to decompose the matrix) and just refresh the boxes.
-      svgCanvas.groupRotateStart = null
-      svgCanvas.groupRotateCenter = null
-      svgCanvas.groupRotateBBox = null
+      svgCanvas.gesture.groupRotateStart = null
+      svgCanvas.gesture.groupRotateCenter = null
+      svgCanvas.gesture.groupRotateBBox = null
       selectedElements.filter(Boolean).forEach((/** @type {Element} */ elem) => {
         svgCanvas.selectorManager.requestSelector(elem).resize()
       })

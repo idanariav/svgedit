@@ -67,6 +67,8 @@ export interface ToolDef {
 export interface AttachedMembers {
   /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
   drawSnap: import('./core/draw-snap.ts').DrawSnap
+  /** Pointer-gesture state (rotate / resize / drag starts, alt-clone, pending new element, space-pan). */
+  gesture: import('./core/gesture-state.ts').GestureState
   /** Remove the canvas's global listeners; call before discarding the instance. */
   destroy(): void
   /** The id of the `localStorage` entry that carries the clipboard between canvases. */
@@ -103,27 +105,16 @@ export interface AttachedMembers {
   moveUpDownSelected(dir: 'Up' | 'Down'): void
 
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
-  groupRotateCenter?: { x: number, y: number } | null
-  groupRotateStart?: Map<Element, SVGMatrix> | null
-  groupRotateBBox?: BBox | null
-  hasDragStartTransform?: boolean
-  dragStartTransforms?: Map<Element, string> | null
   /** Set by the editor's snapping overlay; absent in a bare canvas. */
   showDrawGuides?: (hit: any) => void
 
   // Resize gesture state
-  hasResizeStartTransform?: boolean
-  groupResizeStart?: Map<Element, SVGMatrix> | null
   /** The text-box resize in progress (its transaction stays open until mouse-up). */
-  areaResize?: { elem: Element, box: BBox, fixedHeight: boolean, anchor: string, tx: { commit: () => any, cancel: () => any } } | null
   /** The live scale of a resize, for panels that show the in-progress size. */
   dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
 
   // Move gesture state (select mode)
-  altCloneArmed?: boolean
-  dragStartBBox?: BBox | null
   smartSnapTargets?: any
-  moveSelectionThresholdReached?: boolean
   pendingMoveDelta?: { dx: number, dy: number } | null
   dragLiveMoveDelta?: { dx: number, dy: number } | null
   /** The repeatable delta for transformAgain. */
@@ -134,10 +125,7 @@ export interface AttachedMembers {
   /** Set by the editor's overlay while a path node is dragged. */
   showPathNodeGuides?: (guides: any) => void
   /** Space is held (pan). */
-  spaceKey?: boolean
   /** A tool just created an element (select it on mouse-up when `selectNew`). */
-  addedNew?: boolean
-  pendingNewElement?: Element | null
 
   // Path operations
   pathActions: {

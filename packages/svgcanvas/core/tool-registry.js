@@ -224,8 +224,8 @@ export const init = (canvas) => {
    */
   const finishCreated = (el, evt, opts) => {
     const style = svgCanvas.getStyle()
-    svgCanvas.addedNew = true
-    svgCanvas.pendingNewElement = el
+    svgCanvas.gesture.addedNew = true
+    svgCanvas.gesture.pendingNewElement = el
     if (!opts?.keepOpacity) el.setAttribute('opacity', style.opacity)
     el.setAttribute('style', 'pointer-events:inherit')
     cleanupElement(el)

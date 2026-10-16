@@ -50,6 +50,7 @@
   "core/event.js",
   "core/extension-hooks.ts",
   "core/geometry-remap-registry.ts",
+  "core/gesture-state.ts",
   "core/gradient-edit.js",
   "core/group-detach.js",
   "core/group-ops.js",

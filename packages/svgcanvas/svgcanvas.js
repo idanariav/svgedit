@@ -76,6 +76,7 @@ import { init as cornerRadiusInit } from './core/corner-radius.js'
 import { init as taperStrokeInit } from './core/taper-stroke.js'
 import { init as objectStateInit } from './core/object-state.js'
 import { createDrawSnap } from './core/draw-snap.ts'
+import { createGestureState } from './core/gesture-state.ts'
 import { init as guidesInit } from './core/guides.js'
 import { init as dashFitInit } from './core/dash-fit.js'
 import { init as arrowAlignInit } from './core/arrow-align.js'
@@ -270,6 +271,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     // config), DOM refs, and already-object-scoped subsystems (undoMgr,
     // selectorManager, pathActions, ...) are intentionally NOT here — they
     // stay top-level instance properties.
+    this.gesture = createGestureState()
     this.state = /** @type {CanvasState} */ ({
       zoom: {
         value: 1, // Float displaying the current zoom level (1 = 100%, .5 = 50%, etc.).

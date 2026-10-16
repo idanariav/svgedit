@@ -125,7 +125,7 @@ export const init = (canvas) => {
       hoverSnap(evt)
       return
     }
-    if (evt.button === 1 || svgCanvas.spaceKey) { return }
+    if (evt.button === 1 || svgCanvas.gesture.spaceKey) { return }
 
     svgCanvas.textActions.init()
 
@@ -285,13 +285,13 @@ export const init = (canvas) => {
       logPress('pointer-up', evt)
       logError('mouseUpEvent failed; resetting drag state', err, 'event')
       svgCanvas.setStarted(false)
-      svgCanvas.hasDragStartTransform = false
-      svgCanvas.dragStartTransforms = null
-      svgCanvas.altCloneArmed = false
-      svgCanvas.groupResizeStart = null
-      svgCanvas.groupRotateStart = null
-      svgCanvas.groupRotateCenter = null
-      svgCanvas.groupRotateBBox = null
+      svgCanvas.gesture.hasDragStartTransform = false
+      svgCanvas.gesture.dragStartTransforms = null
+      svgCanvas.gesture.altCloneArmed = false
+      svgCanvas.gesture.groupResizeStart = null
+      svgCanvas.gesture.groupRotateStart = null
+      svgCanvas.gesture.groupRotateCenter = null
+      svgCanvas.gesture.groupRotateBBox = null
       svgCanvas.setStartTransform(null)
     }
   }
@@ -299,8 +299,8 @@ export const init = (canvas) => {
   /** @param {MouseEvent} evt */
   const mouseUpEventImpl = (evt) => {
     evt.preventDefault()
-    svgCanvas.moveSelectionThresholdReached = false
-    svgCanvas.dragStartBBox = null
+    svgCanvas.gesture.moveSelectionThresholdReached = false
+    svgCanvas.gesture.dragStartBBox = null
     svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
     svgCanvas.smartSnapTargets = null
     svgCanvas.drawSnap.clearDrawSnap()
@@ -340,7 +340,7 @@ export const init = (canvas) => {
     // with altKey held while some other mode was active, which move() in
     // event-select.js never got a chance to see) must not leak into a later,
     // unrelated select-mode drag.
-    svgCanvas.altCloneArmed = false
+    svgCanvas.gesture.altCloneArmed = false
     /** @type {any} */
     let t
     // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
@@ -348,8 +348,8 @@ export const init = (canvas) => {
     // real attributes like width/height/font-size), not consolidated into a matrix.
     const operationMode = svgCanvas.getCurrentMode()
     if (svgCanvas.toolPointerUp?.(evt)) {
-      svgCanvas.hasDragStartTransform = false
-      svgCanvas.dragStartTransforms = null
+      svgCanvas.gesture.hasDragStartTransform = false
+      svgCanvas.gesture.dragStartTransforms = null
       svgCanvas.setStartTransform(null)
       return
     }
@@ -392,17 +392,17 @@ export const init = (canvas) => {
         break
       } default:
       // This could occur in an extension
-        svgCanvas.hasDragStartTransform = false
-        svgCanvas.dragStartTransforms = null
+        svgCanvas.gesture.hasDragStartTransform = false
+        svgCanvas.gesture.dragStartTransforms = null
         break
     }
     // Reset drag flag after any mouseUp
-    svgCanvas.hasDragStartTransform = false
-    svgCanvas.dragStartTransforms = null
-    svgCanvas.groupResizeStart = null
-    svgCanvas.groupRotateStart = null
-    svgCanvas.groupRotateCenter = null
-    svgCanvas.groupRotateBBox = null
+    svgCanvas.gesture.hasDragStartTransform = false
+    svgCanvas.gesture.dragStartTransforms = null
+    svgCanvas.gesture.groupResizeStart = null
+    svgCanvas.gesture.groupRotateStart = null
+    svgCanvas.gesture.groupRotateCenter = null
+    svgCanvas.gesture.groupRotateBBox = null
 
     /**
 * The main (left) mouse button is released (anywhere).
@@ -457,12 +457,12 @@ export const init = (canvas) => {
 * @name module:svgcanvas.SvgCanvas#addedNew
 * @type {boolean}
 */
-      svgCanvas.addedNew = true
+      svgCanvas.gesture.addedNew = true
 
       // Tracks which element this deferred (setTimeout below) selection belongs
       // to, so that callback can tell whether it's still current by the time it
       // fires — see the guard where it's read for why this matters.
-      svgCanvas.pendingNewElement = element
+      svgCanvas.gesture.pendingNewElement = element
 
       if (useUnit) { convertAttrs(element) }
 
@@ -534,7 +534,7 @@ export const init = (canvas) => {
         // this stale one (symptom: finishing a path selects/edits an unrelated
         // earlier path). Only touch mode/selection if nothing has been created
         // since — i.e. this is still the most recent element.
-        if (svgCanvas.getCurConfig().selectNew && svgCanvas.pendingNewElement === created) {
+        if (svgCanvas.getCurConfig().selectNew && svgCanvas.gesture.pendingNewElement === created) {
           const modes = ['circle', 'ellipse', 'square', 'rect', 'fhpath', 'line', 'fhellipse', 'fhrect', 'star', 'polygon', 'spiral', 'arc', 'rectgrid', 'polargrid', 'shapelib', 'frame', 'brush']
           if (modes.indexOf(svgCanvas.getCurrentMode()) !== -1 && !evt.altKey && !svgCanvas.getToolLocked()) {
             svgCanvas.setMode('select')
@@ -729,9 +729,9 @@ export const init = (canvas) => {
     } catch (err) {
       logError('mouseDownEvent failed; resetting drag state', err, 'event')
       svgCanvas.setStarted(false)
-      svgCanvas.hasDragStartTransform = false
-      svgCanvas.dragStartTransforms = null
-      svgCanvas.altCloneArmed = false
+      svgCanvas.gesture.hasDragStartTransform = false
+      svgCanvas.gesture.dragStartTransforms = null
+      svgCanvas.gesture.altCloneArmed = false
     }
   }
 
@@ -744,7 +744,7 @@ export const init = (canvas) => {
     const svgRoot = svgCanvas.getSvgRoot()
     const { $id } = svgCanvas
 
-    if (svgCanvas.spaceKey || evt.button === 1) { return }
+    if (svgCanvas.gesture.spaceKey || evt.button === 1) { return }
 
     const rightClick = (evt.button === 2)
 
@@ -757,7 +757,7 @@ export const init = (canvas) => {
     // now happens in event-select.js's move(), once the mouse actually crosses
     // the same real-drag distance threshold used to gate an ordinary move,
     // after the mousedown's own selection change has taken effect.
-    svgCanvas.altCloneArmed = evt.altKey
+    svgCanvas.gesture.altCloneArmed = evt.altKey
 
     // Get screenCTM from the first child group of svgcontent
     // Note: svgcontent itself has x/y offset attributes, so we use its first child

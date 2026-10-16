@@ -11,7 +11,7 @@ import { init as initEventSelect } from '../../packages/svgcanvas/core/event-sel
 // that slot held the wrong element's original transform, so undo overwrote
 // their `transform` attribute with it instead of their own original value —
 // e.g. wiping out a pre-existing rotation. The fix threads each element's own
-// captured pre-drag transform (svgCanvas.dragStartTransforms) through
+// captured pre-drag transform (svgCanvas.gesture.dragStartTransforms) through
 // setStartTransform() right before recalculateDimensions() runs for it.
 describe('undoing a multi-element drag (event-select.js up handler)', () => {
   let svgCanvas
@@ -100,7 +100,7 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
       y: 70
     }
     // First move: inserts the dummy drag transform and snapshots each
-    // element's pre-drag transform into svgCanvas.dragStartTransforms via
+    // element's pre-drag transform into svgCanvas.gesture.dragStartTransforms via
     // the live transform-list API (as a real drag would).
     move({}, moveCtx)
     // Second move: drags the selection by (60, 40) using the same live API.

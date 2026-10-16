@@ -57,7 +57,7 @@ describe('dragging a clipped/masked element (event-select.js up handler)', () =>
   const finishDrag = (elem, dx, dy) => {
     elem.setAttribute('transform', `translate(${dx} ${dy})`)
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.dragStartTransforms = new Map([[elem, '']])
+    svgCanvas.gesture.dragStartTransforms = new Map([[elem, '']])
     svgCanvas.setCurrentMode('select')
     up({}, {
       realX: 999,
