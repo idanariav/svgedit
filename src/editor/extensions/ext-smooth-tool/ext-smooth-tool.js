@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
 import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.js'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
 

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Anchor-based path model — a small, DOM-free representation of a path as
  * subpaths of anchors with in/out Bézier handles, plus the geometry helpers
@@ -22,29 +21,20 @@
 
 import SvgPath from 'svgpath'
 
-/** @typedef {{x: number, y: number}} Pt */
-/** @typedef {{p: Pt, hIn: Pt, hOut: Pt}} Anchor */
-/** @typedef {{closed: boolean, anchors: Anchor[]}} SubPath */
-/** @typedef {{p0: Pt, p1: Pt, p2: Pt, p3: Pt}} Cubic */
+export interface Pt { x: number, y: number }
+export interface Anchor { p: Pt, hIn: Pt, hOut: Pt }
+export interface SubPath { closed: boolean, anchors: Anchor[] }
+export interface Cubic { p0: Pt, p1: Pt, p2: Pt, p3: Pt }
 
 const EPS = 1e-9
-/** @type {(n: number) => number} */
-const round6 = (n) => Math.round(n * 1e6) / 1e6
+const round6 = (n: number): number => Math.round(n * 1e6) / 1e6
 
-/** @type {(a: Pt, b: Pt) => boolean} */
-const same = (a, b) => Math.abs(a.x - b.x) < EPS && Math.abs(a.y - b.y) < EPS
-/** @type {(a: Pt, b: Pt, t: number) => Pt} */
-const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t })
-/** @type {(a: Pt, b: Pt) => number} */
-const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y)
+const same = (a: Pt, b: Pt): boolean => Math.abs(a.x - b.x) < EPS && Math.abs(a.y - b.y) < EPS
+const lerp = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t })
+const dist = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y)
 
-/**
- * Build an anchor with no handles.
- * @param {number} x
- * @param {number} y
- * @returns {Anchor}
- */
-const makeAnchor = (x, y) => ({ p: { x, y }, hIn: { x, y }, hOut: { x, y } })
+/** Build an anchor with no handles. */
+const makeAnchor = (x: number, y: number): Anchor => ({ p: { x, y }, hIn: { x, y }, hOut: { x, y } })
 
 /**
  * Parse path data into anchor subpaths. Relative commands, `H`/`V`, shorthand
@@ -52,47 +42,42 @@ const makeAnchor = (x, y) => ({ p: { x, y }, hIn: { x, y }, hOut: { x, y } })
  * Subpaths with fewer than two anchors (a lone `M`) are dropped. A closing
  * segment that returns to the first anchor (explicit `L`/`C` before `Z`) is
  * folded into the closed subpath instead of producing a duplicate anchor.
- * @param {string} d
- * @param {number} [closeTol] - How close the closing segment's end must be to
+ * @param closeTol - How close the closing segment's end must be to
  *   the start to count as "returns to the first anchor" (default: exact).
  *   Path data re-serialised with rounding needs a looser value.
- * @returns {SubPath[]}
  */
-export const parseAnchors = (d, closeTol = EPS) => {
-  let segments
+export const parseAnchors = (d: string, closeTol = EPS): SubPath[] => {
+  let segments: Array<[string, ...number[]]>
   try {
-    segments = /** @type {any} */ (new SvgPath(d || '').abs().unarc().unshort()).segments
+    // svgpath keeps the parsed segments on a field its typings omit
+    segments = (new SvgPath(d || '').abs().unarc().unshort() as unknown as { segments: Array<[string, ...number[]]> }).segments
   } catch (_err) {
     return []
   }
-  /** @type {SubPath[]} */
-  const out = []
+  const out: SubPath[] = []
   // the cast keeps TS from narrowing `cur` to null: it is assigned inside the closures below
-  let cur = /** @type {SubPath|null} */ (null)
+  let cur = null as SubPath | null
   let cx = 0
   let cy = 0
   let sx = 0
   let sy = 0
-  /** @type {(x: number, y: number) => void} */
-  const begin = (x, y) => {
+  const begin = (x: number, y: number): void => {
     cur = { closed: false, anchors: [makeAnchor(x, y)] }
     out.push(cur)
   }
-  const last = () => /** @type {SubPath} */ (cur).anchors[/** @type {SubPath} */ (cur).anchors.length - 1]
-  /** @type {(x: number, y: number) => void} */
-  const lineTo = (x, y) => {
+  const last = (): Anchor => (cur as SubPath).anchors[(cur as SubPath).anchors.length - 1]
+  const lineTo = (x: number, y: number): void => {
     if (!cur) begin(cx, cy)
-    ;/** @type {SubPath} */ (cur).anchors.push(makeAnchor(x, y))
+    ;(cur as SubPath).anchors.push(makeAnchor(x, y))
     cx = x
     cy = y
   }
-  /** @type {(x1: number, y1: number, x2: number, y2: number, x: number, y: number) => void} */
-  const cubicTo = (x1, y1, x2, y2, x, y) => {
+  const cubicTo = (x1: number, y1: number, x2: number, y2: number, x: number, y: number): void => {
     if (!cur) begin(cx, cy)
     last().hOut = { x: x1, y: y1 }
     const a = makeAnchor(x, y)
     a.hIn = { x: x2, y: y2 }
-    ;/** @type {SubPath} */ (cur).anchors.push(a)
+    ;(cur as SubPath).anchors.push(a)
     cx = x
     cy = y
   }
@@ -136,11 +121,10 @@ export const parseAnchors = (d, closeTol = EPS) => {
           // tiny closing `L` (what the saver writes) folds too; the incoming
           // handle comes from the curve.
           const first = cur.anchors[0]
-          /** @type {Pt|null} */
-          let handle = null
+          let handle: Pt | null = null
           while (cur.anchors.length > 1 &&
             Math.abs(first.p.x - last().p.x) <= closeTol && Math.abs(first.p.y - last().p.y) <= closeTol) {
-            const a = /** @type {Anchor} */ (cur.anchors.pop())
+            const a = cur.anchors.pop() as Anchor
             if (!handle && !same(a.hIn, a.p)) handle = a.hIn
           }
           if (handle) first.hIn = handle
@@ -156,52 +140,27 @@ export const parseAnchors = (d, closeTol = EPS) => {
   return out.filter((sp) => sp.anchors.length >= 2)
 }
 
-/**
- * Whether the segment between two anchors is a straight line.
- * @param {Anchor} a
- * @param {Anchor} b
- * @returns {boolean}
- */
-export const isLineSegment = (a, b) => same(a.hOut, a.p) && same(b.hIn, b.p)
+/** Whether the segment between two anchors is a straight line. */
+export const isLineSegment = (a: Anchor, b: Anchor): boolean => same(a.hOut, a.p) && same(b.hIn, b.p)
 
-/**
- * Whether an anchor has an incoming / outgoing handle.
- * @param {Anchor} a
- * @returns {boolean}
- */
-export const hasIn = (a) => !same(a.hIn, a.p)
-/**
- * @param {Anchor} a
- * @returns {boolean}
- */
-export const hasOut = (a) => !same(a.hOut, a.p)
+/** Whether an anchor has an incoming / outgoing handle. */
+export const hasIn = (a: Anchor): boolean => !same(a.hIn, a.p)
+export const hasOut = (a: Anchor): boolean => !same(a.hOut, a.p)
 
-/**
- * Handle-less subpath through `pts`.
- * @param {Pt[]} pts
- * @param {boolean} closed
- * @returns {SubPath}
- */
-export const polyline = (pts, closed) => ({
+/** Handle-less subpath through `pts`. */
+export const polyline = (pts: Pt[], closed: boolean): SubPath => ({
   closed,
   anchors: pts.map((pt) => makeAnchor(pt.x, pt.y))
 })
 
-/**
- * Number of segments in a subpath (a closed one has a closing segment).
- * @param {SubPath} sp
- * @returns {number}
- */
-export const segmentCount = (sp) => (sp.closed ? sp.anchors.length : sp.anchors.length - 1)
+/** Number of segments in a subpath (a closed one has a closing segment). */
+export const segmentCount = (sp: SubPath): number => (sp.closed ? sp.anchors.length : sp.anchors.length - 1)
 
 /**
  * Segment `i` (anchor i → anchor i+1, wrapping when closed) as a cubic. A
  * straight segment gets handles at 1/3 and 2/3 so a non-linear map bends it.
- * @param {SubPath} sp
- * @param {number} i
- * @returns {Cubic}
  */
-export const segCubic = (sp, i) => {
+export const segCubic = (sp: SubPath, i: number): Cubic => {
   const n = sp.anchors.length
   const a = sp.anchors[i % n]
   const b = sp.anchors[(i + 1) % n]
@@ -215,12 +174,9 @@ export const segCubic = (sp, i) => {
  * Serialise anchor subpaths to absolute `M/L/C/Z` path data. Closed subpaths
  * carry the explicit closing segment *and* `Z` (the node editor models the
  * closing lineto as the start anchor's grip).
- * @param {SubPath[]} subpaths
- * @returns {string}
  */
-export const anchorsToD = (subpaths) => {
-  /** @param {Pt} pt */
-  const f = (pt) => `${round6(pt.x)},${round6(pt.y)}`
+export const anchorsToD = (subpaths: SubPath[]): string => {
+  const f = (pt: Pt): string => `${round6(pt.x)},${round6(pt.y)}`
   return subpaths.map((sp) => {
     const n = sp.anchors.length
     if (n === 0) return ''
@@ -238,13 +194,8 @@ export const anchorsToD = (subpaths) => {
   }).filter(Boolean).join(' ')
 }
 
-/**
- * Evaluate a cubic at `t`.
- * @param {Cubic} c
- * @param {number} t
- * @returns {Pt}
- */
-export const evalCubic = (c, t) => {
+/** Evaluate a cubic at `t`. */
+export const evalCubic = (c: Cubic, t: number): Pt => {
   const u = 1 - t
   const w0 = u * u * u
   const w1 = 3 * u * u * t
@@ -258,14 +209,9 @@ export const evalCubic = (c, t) => {
 
 /**
  * The sub-curve of `c` between parameters `t0` and `t1` (de Casteljau).
- * @param {Cubic} c
- * @param {number} t0
- * @param {number} t1
- * @returns {Cubic}
  */
-export const splitCubic = (c, t0, t1) => {
-  /** @type {(q: Cubic, t: number) => Cubic} */
-  const right = (q, t) => { // keep [t, 1]
+export const splitCubic = (c: Cubic, t0: number, t1: number): Cubic => {
+  const right = (q: Cubic, t: number): Cubic => { // keep [t, 1]
     const a = lerp(q.p0, q.p1, t)
     const b = lerp(q.p1, q.p2, t)
     const cc = lerp(q.p2, q.p3, t)
@@ -274,8 +220,7 @@ export const splitCubic = (c, t0, t1) => {
     const m = lerp(ab, bc, t)
     return { p0: m, p1: bc, p2: cc, p3: q.p3 }
   }
-  /** @type {(q: Cubic, t: number) => Cubic} */
-  const left = (q, t) => { // keep [0, t]
+  const left = (q: Cubic, t: number): Cubic => { // keep [0, t]
     const a = lerp(q.p0, q.p1, t)
     const b = lerp(q.p1, q.p2, t)
     const cc = lerp(q.p2, q.p3, t)
@@ -290,13 +235,8 @@ export const splitCubic = (c, t0, t1) => {
   return left(tail, (t1 - t0) / (1 - t0))
 }
 
-/**
- * Unit normal at `t` (left of the travel direction in y-down coordinates).
- * @param {Cubic} c
- * @param {number} t
- * @returns {Pt}
- */
-export const normalAt = (c, t) => {
+/** Unit normal at `t` (left of the travel direction in y-down coordinates). */
+export const normalAt = (c: Cubic, t: number): Pt => {
   const eps = 1e-4
   const a = evalCubic(c, Math.max(0, t - eps))
   const b = evalCubic(c, Math.min(1, t + eps))
@@ -310,12 +250,8 @@ export const normalAt = (c, t) => {
   return len < 1e-12 ? { x: 0, y: 0 } : { x: dy / len, y: -dx / len }
 }
 
-/**
- * Approximate arc length of a cubic (20-sample polyline).
- * @param {Cubic} c
- * @returns {number}
- */
-export const cubicLength = (c) => {
+/** Approximate arc length of a cubic (20-sample polyline). */
+export const cubicLength = (c: Cubic): number => {
   let len = 0
   let prev = c.p0
   for (let k = 1; k <= 20; k++) {
@@ -329,10 +265,8 @@ export const cubicLength = (c) => {
 /**
  * Flatten subpaths to polylines. Closed subpaths come back with the start
  * point repeated at the end.
- * @param {SubPath[]} subpaths
- * @returns {Array<{closed: boolean, pts: Pt[]}>}
  */
-export const flattenSubpaths = (subpaths) => subpaths.map((sp) => {
+export const flattenSubpaths = (subpaths: SubPath[]): Array<{ closed: boolean, pts: Pt[] }> => subpaths.map((sp) => {
   const pts = [sp.anchors[0].p]
   const n = sp.anchors.length
   for (let i = 0; i < segmentCount(sp); i++) {
@@ -347,28 +281,23 @@ export const flattenSubpaths = (subpaths) => subpaths.map((sp) => {
   return { closed: sp.closed, pts }
 })
 
-/** @param {Cubic} c */
-const polyLen = (c) => dist(c.p0, c.p1) + dist(c.p1, c.p2) + dist(c.p2, c.p3)
+const polyLen = (c: Cubic): number => dist(c.p0, c.p1) + dist(c.p1, c.p2) + dist(c.p2, c.p3)
 
 /**
  * Map every control point of `subpaths` through the non-linear function `f`.
  * Segments are first split into pieces no longer than about `maxPiece` (up to
  * 64 per segment) so the image curve is approximated to O(h²). Closedness and
  * subpath structure are preserved.
- * @param {SubPath[]} subpaths
- * @param {number} maxPiece
- * @param {(p: Pt) => Pt} f
- * @returns {SubPath[]}
  */
-export const mapNonlinear = (subpaths, maxPiece, f) => {
+export const mapNonlinear = (subpaths: SubPath[], maxPiece: number, f: (p: Pt) => Pt): SubPath[] => {
   const piece = Math.max(maxPiece, 1e-3)
-  const result = []
+  const result: SubPath[] = []
   for (const sp of subpaths) {
     const n = sp.anchors.length
     if (n === 0) continue
     const segs = segmentCount(sp)
-    const res = []
-    let pendingIn = null
+    const res: Anchor[] = []
+    let pendingIn: Pt | null = null
     for (let i = 0; i < n; i++) {
       const a = sp.anchors[i]
       const hIn = pendingIn ?? f(a.hIn)
@@ -397,12 +326,9 @@ export const mapNonlinear = (subpaths, maxPiece, f) => {
 
 /**
  * Smooth closed/open subpath through `pts` using Catmull-Rom tangents.
- * @param {Pt[]} pts
- * @param {boolean} closed
- * @param {number} tension - 1 gives standard Catmull-Rom.
- * @returns {SubPath}
+ * @param tension - 1 gives standard Catmull-Rom.
  */
-export const catmullRom = (pts, closed, tension) => {
+export const catmullRom = (pts: Pt[], closed: boolean, tension: number): SubPath => {
   const n = pts.length
   if (n < 3) {
     return { closed, anchors: pts.map((pt) => makeAnchor(pt.x, pt.y)) }
@@ -424,13 +350,8 @@ export const catmullRom = (pts, closed, tension) => {
 /**
  * Deterministic hash noise in [-1, 1] for `(seed, a, b, c)`. 32-bit integer
  * hash (murmur3 finaliser over a mixed key).
- * @param {number} seed
- * @param {number} a
- * @param {number} [b]
- * @param {number} [c]
- * @returns {number}
  */
-export const seededNoise = (seed, a, b = 0, c = 0) => {
+export const seededNoise = (seed: number, a: number, b = 0, c = 0): number => {
   let x = Math.imul(seed | 0, 0x9E3779B1) ^ Math.imul(a | 0, 0x85EBCA6B) ^
     Math.imul(b | 0, 0xC2B2AE35) ^ Math.imul(c | 0, 0x27D4EB2F)
   x = Math.imul(x ^ (x >>> 16), 0x85EBCA6B)
@@ -442,16 +363,13 @@ export const seededNoise = (seed, a, b = 0, c = 0) => {
 /**
  * Bounding box of the path geometry itself (anchors plus samples along every
  * segment — handles are not included, so a circle's box is its true extent).
- * @param {SubPath[]} subpaths
- * @returns {{x: number, y: number, width: number, height: number}}
  */
-export const anchorBBox = (subpaths) => {
+export const anchorBBox = (subpaths: SubPath[]): { x: number, y: number, width: number, height: number } => {
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
-  /** @param {Pt} pt */
-  const add = (pt) => {
+  const add = (pt: Pt): void => {
     if (pt.x < minX) minX = pt.x
     if (pt.x > maxX) maxX = pt.x
     if (pt.y < minY) minY = pt.y
@@ -475,15 +393,10 @@ export const anchorBBox = (subpaths) => {
  * structure and every anchor and handle within `tol` of its counterpart. Used
  * to recognise a path that was only re-serialised (the saver rewrites `d` as
  * relative commands rounded to 2 decimals) as unchanged.
- * @param {SubPath[]} a
- * @param {SubPath[]} b
- * @param {number} [tol]
- * @returns {boolean}
  */
-export const sameAnchorGeometry = (a, b, tol = 0.1) => {
+export const sameAnchorGeometry = (a: SubPath[], b: SubPath[], tol = 0.1): boolean => {
   if (a.length !== b.length) return false
-  /** @type {(p: Pt, q: Pt) => boolean} */
-  const near = (p, q) => Math.abs(p.x - q.x) <= tol && Math.abs(p.y - q.y) <= tol
+  const near = (p: Pt, q: Pt): boolean => Math.abs(p.x - q.x) <= tol && Math.abs(p.y - q.y) <= tol
   return a.every((sp, i) => {
     const other = b[i]
     return sp.closed === other.closed && sp.anchors.length === other.anchors.length &&

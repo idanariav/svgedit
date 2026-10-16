@@ -25,11 +25,11 @@
  * @license MIT
  */
 
-import { segmentCount, segCubic, isLineSegment, cubicLength } from './anchor-path.js'
-import { fitCubics, isStraight, sampleCubic, startTangent, endTangent, unit } from './bezier-fit.js'
+import { segmentCount, segCubic, isLineSegment, cubicLength } from './anchor-path.ts'
+import { fitCubics, isStraight, sampleCubic, startTangent, endTangent, unit } from './bezier-fit.ts'
 
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
-/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').Cubic} Cubic */
 /** @typedef {{x: number, y: number}} Pt */
 /** @typedef {{c: Cubic, line: boolean}} Seg */
 
@@ -38,7 +38,7 @@ const dist = (/** @type {Pt} */ a, /** @type {Pt} */ b) => Math.hypot(a.x - b.x,
 
 /**
  * @param {Pt} p
- * @returns {import('./anchor-path.js').Anchor}
+ * @returns {import('./anchor-path.ts').Anchor}
  */
 const cornerAnchor = (p) => ({ p: { x: p.x, y: p.y }, hIn: { x: p.x, y: p.y }, hOut: { x: p.x, y: p.y } })
 
@@ -72,7 +72,7 @@ const segsToSubpath = (segs, closed) => {
     anchors.push(to)
   }
   if (closed && anchors.length > 2 && dist(anchors[0].p, anchors[anchors.length - 1].p) < 1e-6) {
-    const last = /** @type {import('./anchor-path.js').Anchor} */ (anchors.pop())
+    const last = /** @type {import('./anchor-path.ts').Anchor} */ (anchors.pop())
     anchors[0].hIn = last.hIn
   }
   return { closed, anchors }
@@ -424,7 +424,7 @@ const smoothSubpath = (sp, marked, tolerance) => {
     flags = [...marked.slice(k), ...marked.slice(0, k), false]
   }
   const last = anchors.length - 1
-  /** @type {import('./anchor-path.js').Anchor[]} */
+  /** @type {import('./anchor-path.ts').Anchor[]} */
   const out = []
   let i = 0
   while (i <= last) {
@@ -447,7 +447,7 @@ const smoothSubpath = (sp, marked, tolerance) => {
     i = b + 1
   }
   if (!sp.closed) return { closed: false, anchors: out }
-  const end = /** @type {import('./anchor-path.js').Anchor} */ (out.pop())
+  const end = /** @type {import('./anchor-path.ts').Anchor} */ (out.pop())
   out[0] = { ...out[0], hIn: end.hIn }
   return { closed: true, anchors: out }
 }

@@ -1,6 +1,6 @@
 import { fc, params } from './fc.js'
 import { WARP_STYLES, warpPoint, warpSubpaths } from '../../../packages/svgcanvas/core/warp.js'
-import { polyline } from '../../../packages/svgcanvas/core/anchor-path.js'
+import { polyline } from '../../../packages/svgcanvas/core/anchor-path.ts'
 
 const unitCoord = fc.double({ min: -1, max: 1, noNaN: true })
 const amount = fc.double({ min: -1, max: 1, noNaN: true })

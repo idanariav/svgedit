@@ -43,7 +43,7 @@ import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
-import { widthOutline } from './width-outline.js'
+import { widthOutline } from './width-outline.ts'
 import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.ts'
 
 export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile.ts'
@@ -129,7 +129,7 @@ export const buildTaperOutline = (d, width, startPct, endPct) => {
 /**
  * The caps and joins a width outline takes from the element's stroke attributes.
  * @param {Element} elem
- * @returns {import('./width-outline.js').OutlineOptions}
+ * @returns {import('./width-outline.ts').OutlineOptions}
  */
 const outlineOptions = (elem) => ({
   cap: /** @type {'round'|'square'|'butt'} */ (['round', 'square'].includes(elem.getAttribute('stroke-linecap') ?? '') ? elem.getAttribute('stroke-linecap') : 'butt'),

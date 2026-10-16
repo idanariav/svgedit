@@ -14,14 +14,14 @@
 
 import {
   segCubic, splitCubic, isLineSegment, hasIn, hasOut, segmentCount, anchorsToD
-} from './anchor-path.js'
+} from './anchor-path.ts'
 import {
   fitSingleFrom, sampleCubic, startTangent, endTangent
-} from './bezier-fit.js'
+} from './bezier-fit.ts'
 
-/** @typedef {import('./anchor-path.js').Pt} Pt */
-/** @typedef {import('./anchor-path.js').Anchor} Anchor */
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
 /** @typedef {{type: number, item: Record<string, number>}} NodeSeg */
 
 /**
@@ -77,7 +77,7 @@ const goldenMin = (f, a, b) => {
  * handle directions and their facing handles are refitted so one cubic follows
  * the two segments that met there; two straight segments become one. Removing
  * an end of an open path drops its segment. Mutates `sp`.
- * @param {import('./anchor-path.js').SubPath} sp
+ * @param {import('./anchor-path.ts').SubPath} sp
  * @param {number} index
  * @returns {boolean} false (and `sp` untouched) when `index` is out of range.
  */
@@ -134,7 +134,7 @@ export const removeAnchor = (sp, index) => {
 /**
  * Split segment `seg` of `sp` at parameter `t`, inserting a new anchor.
  * Mutates `sp`.
- * @param {import('./anchor-path.js').SubPath} sp
+ * @param {import('./anchor-path.ts').SubPath} sp
  * @param {number} seg
  * @param {number} t
  * @returns {number} The new anchor's index.
@@ -161,8 +161,8 @@ export const insertAnchor = (sp, seg, t) => {
 
 /**
  * Add Anchor Points: one new anchor at the middle (t = 0.5) of every segment.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
- * @returns {import('./anchor-path.js').SubPath[]} A new array; the input is untouched.
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
+ * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
  */
 export const addAnchorPoints = (subpaths) => {
   const out = subpaths.map(copySub)
@@ -175,11 +175,11 @@ export const addAnchorPoints = (subpaths) => {
 /**
  * Average: move the selected anchors (with their handles) to their average
  * position along `axis`.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @param {Array<[number, number]>} selection - `[subpath, anchor]` pairs.
  * @param {'h'|'v'|'both'} axis - `h` aligns on a common y (horizontal line),
  *   `v` on a common x, `both` collapses to the centroid.
- * @returns {import('./anchor-path.js').SubPath[]} A new array; the input is untouched.
+ * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
  */
 export const averageAnchors = (subpaths, selection, axis) => {
   const out = subpaths.map(copySub)
@@ -207,8 +207,8 @@ const reverseSub = (sp) => {
 
 /**
  * The subpath run the other way (its handles swap with it).
- * @param {import('./anchor-path.js').SubPath} sp
- * @returns {import('./anchor-path.js').SubPath} A new subpath.
+ * @param {import('./anchor-path.ts').SubPath} sp
+ * @returns {import('./anchor-path.ts').SubPath} A new subpath.
  */
 export const reversedSubpath = (sp) => {
   const out = copySub(sp)
@@ -227,9 +227,9 @@ const endAnchor = (sp, last) => sp.anchors[last ? sp.anchors.length - 1 : 0]
  * (endpoints closer than `tolerance` merge into a single anchor, otherwise a
  * straight segment connects them). A single open subpath is closed instead.
  * Closed subpaths pass through unchanged.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @param {number} [tolerance]
- * @returns {import('./anchor-path.js').SubPath[]} A new array; the input is untouched.
+ * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
  */
 export const joinSubpaths = (subpaths, tolerance = 0) => {
   /** @type {SubPath[]} */
@@ -284,12 +284,12 @@ export const joinSubpaths = (subpaths, tolerance = 0) => {
  * Join end `aAtEnd` of `a` to end `bAtEnd` of `b` (`true` = the last anchor).
  * Either may be a lone anchor. Endpoints closer than `tolerance` merge into one
  * anchor, otherwise a straight segment connects them.
- * @param {import('./anchor-path.js').SubPath} a
+ * @param {import('./anchor-path.ts').SubPath} a
  * @param {boolean} aAtEnd
- * @param {import('./anchor-path.js').SubPath} b
+ * @param {import('./anchor-path.ts').SubPath} b
  * @param {boolean} bAtEnd
  * @param {number} [tolerance]
- * @returns {import('./anchor-path.js').SubPath} A new open subpath; the inputs are untouched.
+ * @returns {import('./anchor-path.ts').SubPath} A new open subpath; the inputs are untouched.
  */
 export const joinEnds = (a, aAtEnd, b, bAtEnd, tolerance = 0) => {
   const out = copySub(a)
@@ -330,7 +330,7 @@ const REL = new Set([3, 5, 7, 9, 11, 13, 15, 17, 19])
  * as `M start … <segment back to start> Z`: that closing segment (and `M`) both
  * stand for the start anchor, which is folded into one anchor here.
  * @param {NodeSeg[]} segs - `Path#segs`.
- * @returns {{subpaths: import('./anchor-path.js').SubPath[], owner: Map<number, [number, number]>}}
+ * @returns {{subpaths: import('./anchor-path.ts').SubPath[], owner: Map<number, [number, number]>}}
  *   `owner` maps a segment index to `[subpath, anchor]`.
  */
 export const segsToSubpaths = (segs) => {

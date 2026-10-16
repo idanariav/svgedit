@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { centerline, pointAt, locate } from '@svgedit/svgcanvas/core/width-outline.js'
+import { centerline, pointAt, locate } from '@svgedit/svgcanvas/core/width-outline.ts'
 import { profileAt, withPoint, withoutPoint, movedPoint, isProfile } from '@svgedit/svgcanvas/core/width-profile.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
 

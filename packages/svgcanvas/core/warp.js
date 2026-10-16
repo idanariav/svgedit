@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import { mapNonlinear } from './anchor-path.js'
+import { mapNonlinear } from './anchor-path.ts'
 import { registerLiveEffect } from './live-effects.js'
 
 export const WARP_STYLES = [
@@ -95,10 +95,10 @@ export const warpPoint = (style, b, dh, dv, x, y) => {
 
 /**
  * Warp anchor subpaths inside `bbox`.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @param {{x: number, y: number, width: number, height: number}} bbox
  * @param {{style: string, bend: number, horizontal: number, vertical: number, orientation: string}} p
- * @returns {import('./anchor-path.js').SubPath[]}
+ * @returns {import('./anchor-path.ts').SubPath[]}
  */
 export const warpSubpaths = (subpaths, bbox, p) => {
   const bend = Math.min(100, Math.max(-100, p.bend)) / 100

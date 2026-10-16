@@ -1,6 +1,6 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { joinEnds, reversedSubpath } from '../../packages/svgcanvas/core/path-edit.js'
-import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { findPenEnd, continuationD, drawnSubpath, joinDrawn, extendWith, endDirection } from '../../packages/svgcanvas/core/pen-continue.js'
 
 const sub = (d) => parseAnchors(d)[0]

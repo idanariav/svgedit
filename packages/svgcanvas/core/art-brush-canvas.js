@@ -28,7 +28,7 @@
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
-import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.js'
+import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.js'
 import { LIVE_ATTRS } from './path-join.js'
 import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.js'
@@ -64,7 +64,7 @@ const flag = (v) => (v === true || v === 1 || v === '1')
 
 /** @typedef {import('./art-brush.js').ArtPath} ArtPath */
 /** @typedef {{group: Element, spine: Element, src: Element, out: Element}} BrushParts */
-/** @typedef {import('./anchor-path.js').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
 
 // ---------------------------------------------------------------------------
 // The `se:art-brush` attribute: `art(key=value,…)` / `pattern(key=value,…)`

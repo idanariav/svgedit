@@ -1,6 +1,6 @@
 import {
   fitCubics, fitSingle, fitSingleFrom, startTangent, endTangent, isStraight, sampleCubic, unit
-} from '../../packages/svgcanvas/core/bezier-fit.js'
+} from '../../packages/svgcanvas/core/bezier-fit.ts'
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 

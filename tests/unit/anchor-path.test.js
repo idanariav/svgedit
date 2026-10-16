@@ -1,7 +1,7 @@
 import {
   parseAnchors, anchorsToD, segCubic, evalCubic, splitCubic, normalAt,
   mapNonlinear, catmullRom, seededNoise, anchorBBox, sameAnchorGeometry
-} from '../../packages/svgcanvas/core/anchor-path.js'
+} from '../../packages/svgcanvas/core/anchor-path.ts'
 
 const close = (a, b, eps = 1e-9) => assert.isBelow(Math.abs(a - b), eps, `${a} vs ${b}`)
 

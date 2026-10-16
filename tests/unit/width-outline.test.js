@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { widthOutline, outlineArea } from '../../packages/svgcanvas/core/width-outline.js'
+import { widthOutline, outlineArea } from '../../packages/svgcanvas/core/width-outline.ts'
 import { presetPoints } from '../../packages/svgcanvas/core/width-profile.ts'
 
 const UNIFORM = [[0, 1, 1], [1, 1, 1]]
@@ -103,7 +103,7 @@ describe('widthOutline', () => {
 
 describe('centerline', () => {
   it('locates points by fraction of the length, with the left normal', async () => {
-    const { centerline, pointAt, locate } = await import('../../packages/svgcanvas/core/width-outline.js')
+    const { centerline, pointAt, locate } = await import('../../packages/svgcanvas/core/width-outline.ts')
     const c = centerline('M0,0 L100,0 L100,100')
     expect(c.total).toBeCloseTo(200, 6)
     const mid = pointAt(c, 0.5)
@@ -121,7 +121,7 @@ describe('centerline', () => {
   })
 
   it('a closed path includes the closing segment', async () => {
-    const { centerline, locate } = await import('../../packages/svgcanvas/core/width-outline.js')
+    const { centerline, locate } = await import('../../packages/svgcanvas/core/width-outline.ts')
     const c = centerline('M0,0 L100,0 L100,100 L0,100 Z')
     expect(c.closed).toBe(true)
     expect(c.total).toBeCloseTo(400, 6)
@@ -129,7 +129,7 @@ describe('centerline', () => {
   })
 
   it('nothing to follow gives null', async () => {
-    const { centerline } = await import('../../packages/svgcanvas/core/width-outline.js')
+    const { centerline } = await import('../../packages/svgcanvas/core/width-outline.ts')
     expect(centerline('M0,0')).toBeNull()
     expect(centerline('')).toBeNull()
     expect(centerline('M5,5 L5,5')).toBeNull()

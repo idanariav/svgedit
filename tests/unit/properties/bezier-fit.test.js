@@ -1,6 +1,6 @@
 import { fc, params } from './fc.js'
-import { evalCubic } from '../../../packages/svgcanvas/core/anchor-path.js'
-import { fitCubics, startTangent, endTangent, unit } from '../../../packages/svgcanvas/core/bezier-fit.js'
+import { evalCubic } from '../../../packages/svgcanvas/core/anchor-path.ts'
+import { fitCubics, startTangent, endTangent, unit } from '../../../packages/svgcanvas/core/bezier-fit.ts'
 
 const coord = fc.integer({ min: -300, max: 300 })
 const cubic = fc.record({

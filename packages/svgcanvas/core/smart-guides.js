@@ -17,7 +17,7 @@
  * @license MIT
  */
 
-import { parseAnchors } from './anchor-path.js'
+import { parseAnchors } from './anchor-path.ts'
 import { visibleGuides } from './guides.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.ts'
 

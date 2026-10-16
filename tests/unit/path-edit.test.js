@@ -3,7 +3,7 @@ import {
   removeAnchor, insertAnchor, addAnchorPoints, averageAnchors, joinSubpaths, segsToSubpaths,
   deleteNodesD, averageNodesD, addAnchorPointsD
 } from '../../packages/svgcanvas/core/path-edit.js'
-import { parseAnchors, anchorsToD, segCubic, evalCubic, polyline } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD, segCubic, evalCubic, polyline } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 // The node editor's segment list for a `d`, as `Path#segs` would hold it.
 const segsOf = (d) => {

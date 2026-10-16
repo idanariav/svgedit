@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseAnchors, anchorsToD, anchorBBox, segCubic, cubicLength } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD, anchorBBox, segCubic, cubicLength } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { pairPaths, pathAt, lerpPaint, lerpStyle, stepCount, rgbOf, reverseSubpath, spineStops, centreOn, rotateSubpaths, splitAtLength, pinSpine, reversePins } from '../../packages/svgcanvas/core/blend.js'
 
 const subs = (d) => parseAnchors(d)

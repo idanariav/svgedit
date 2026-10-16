@@ -12,7 +12,7 @@
  * @module model/drawing
  * @license MIT
  */
-import { parseAnchors } from '../anchor-path.js'
+import { parseAnchors } from '../anchor-path.ts'
 import { parseGuides } from '../guides.js'
 import { getAttr } from './node.ts'
 import { readFeatures } from './features.ts'

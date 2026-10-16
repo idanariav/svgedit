@@ -17,8 +17,8 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorBBox } from './anchor-path.js'
-import { flatten } from './width-outline.js'
+import { parseAnchors, anchorBBox } from './anchor-path.ts'
+import { flatten } from './width-outline.ts'
 
 /** @typedef {{x: number, y: number}} Pt */
 /** @typedef {{pts: Pt[], closed: boolean}} Poly */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseAnchors, anchorsToD, flattenSubpaths, isLineSegment, segmentCount, sameAnchorGeometry } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD, flattenSubpaths, isLineSegment, segmentCount, sameAnchorGeometry } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { simplifyWith, fitFreehand } from '../../packages/svgcanvas/core/path-fit.js'
 
 const P = (x, y) => ({ x, y })

@@ -1,7 +1,7 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { getLiveEffectDef, resolveParams, computeFxD, FX_ATTR, FX_STYLE_ATTR } from '../../packages/svgcanvas/core/live-effects.js'
 import { registerDistortEffects } from '../../packages/svgcanvas/core/live-effects-distort.js'
-import { parseAnchors, anchorBBox, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorBBox, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 registerDistortEffects()
 

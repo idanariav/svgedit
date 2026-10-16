@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Variable-width strokes: the filled outline of a path stroked with a width profile.
  *
@@ -17,52 +16,39 @@
  * @license MIT
  */
 
-import { parseAnchors, segCubic, segmentCount, isLineSegment } from './anchor-path.js'
+import { parseAnchors, segCubic, segmentCount, isLineSegment } from './anchor-path.ts'
+import type { Cubic, Pt, SubPath } from './anchor-path.ts'
 import { profileAround } from './width-profile.ts'
+import type { WidthPoint } from './width-profile.ts'
 
-/** @typedef {{x: number, y: number}} Pt */
-/** @typedef {import('./anchor-path.js').Cubic} Cubic */
-/** @typedef {{p: Pt, a: Pt, b: Pt, la: number, lb: number, corner: boolean}} Vertex */
+interface Vertex { p: Pt, a: Pt, b: Pt, la: number, lb: number, corner: boolean }
 
 const EPS = 1e-9
 /** Two segments meeting at more than about a degree are a corner of the path, not a smooth point. */
 const KINK_COS = 0.9998
 
-/** @type {(a: Pt, b: Pt) => Pt} */
-const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
-/** @type {(a: Pt, b: Pt) => Pt} */
-const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
-/** @type {(a: Pt, k: number) => Pt} */
-const mul = (a, k) => ({ x: a.x * k, y: a.y * k })
-/** @type {(a: Pt, b: Pt) => number} */
-const dot = (a, b) => a.x * b.x + a.y * b.y
-/** @type {(a: Pt, b: Pt) => number} */
-const cross = (a, b) => a.x * b.y - a.y * b.x
-/** @type {(a: Pt) => number} */
-const hypot = (a) => Math.hypot(a.x, a.y)
-/** @type {(a: Pt, b: Pt) => number} */
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
-/** @type {(a: Pt) => Pt} */
-const unit = (a) => {
+const sub = (a: Pt, b: Pt): Pt => ({ x: a.x - b.x, y: a.y - b.y })
+const add = (a: Pt, b: Pt): Pt => ({ x: a.x + b.x, y: a.y + b.y })
+const mul = (a: Pt, k: number): Pt => ({ x: a.x * k, y: a.y * k })
+const dot = (a: Pt, b: Pt): number => a.x * b.x + a.y * b.y
+const cross = (a: Pt, b: Pt): number => a.x * b.y - a.y * b.x
+const hypot = (a: Pt): number => Math.hypot(a.x, a.y)
+const dist = (a: Pt, b: Pt): number => Math.hypot(a.x - b.x, a.y - b.y)
+const unit = (a: Pt): Pt => {
   const l = hypot(a)
   return l < EPS ? { x: 1, y: 0 } : { x: a.x / l, y: a.y / l }
 }
 /** Left normal in y-down space (left of the direction of travel). */
-/** @type {(t: Pt) => Pt} */
-const left = (t) => ({ x: t.y, y: -t.x })
+const left = (t: Pt): Pt => ({ x: t.y, y: -t.x })
 
 /** The first non-zero of the vectors, as a direction. */
-/** @type {(...vs: Pt[]) => Pt} */
-const firstDir = (...vs) => unit(vs.find((v) => hypot(v) > EPS) ?? { x: 1, y: 0 })
+const firstDir = (...vs: Pt[]): Pt => unit(vs.find((v) => hypot(v) > EPS) ?? { x: 1, y: 0 })
 
 /** Direction a cubic leaves its start / arrives at its end. */
-/** @type {(c: Cubic) => Pt} */
-const startDir = (c) => firstDir(sub(c.p1, c.p0), sub(c.p2, c.p0), sub(c.p3, c.p0))
-/** @type {(c: Cubic) => Pt} */
-const endDir = (c) => firstDir(sub(c.p3, c.p2), sub(c.p3, c.p1), sub(c.p3, c.p0))
+const startDir = (c: Cubic): Pt => firstDir(sub(c.p1, c.p0), sub(c.p2, c.p0), sub(c.p3, c.p0))
+const endDir = (c: Cubic): Pt => firstDir(sub(c.p3, c.p2), sub(c.p3, c.p1), sub(c.p3, c.p0))
 
-/** @type {(c: Cubic, t: number) => Pt} */
-const cubicAt = (c, t) => {
+const cubicAt = (c: Cubic, t: number): Pt => {
   const u = 1 - t
   const w0 = u * u * u
   const w1 = 3 * u * u * t
@@ -77,22 +63,19 @@ const cubicAt = (c, t) => {
 /**
  * Flatten an anchor subpath to points, each marked when it is a corner of the path.
  * Consecutive duplicates are dropped; a closed subpath does not repeat its start.
- * @param {import('./anchor-path.js').SubPath} sp
- * @param {number} tol flatness tolerance
- * @returns {{pts: Pt[], corner: boolean[]}}
+ * @param tol flatness tolerance
  */
-export const flatten = (sp, tol) => {
+export const flatten = (sp: SubPath, tol: number): { pts: Pt[], corner: boolean[] } => {
   const pts = [sp.anchors[0].p]
   const corner = [false]
-  let first = null
-  let prev = null
+  let first: Cubic | null = null
+  let prev: Cubic | null = null
   for (let i = 0; i < segmentCount(sp); i++) {
     const a = sp.anchors[i]
     const b = sp.anchors[(i + 1) % sp.anchors.length]
     const c = segCubic(sp, i)
     const at = pts.length - 1
-    /** @param {Pt} p */
-    const push = (p) => {
+    const push = (p: Pt): void => {
       if (dist(pts[pts.length - 1], p) > EPS) {
         pts.push(p)
         corner.push(false)
@@ -121,12 +104,7 @@ export const flatten = (sp, tol) => {
   return { pts, corner }
 }
 
-/**
- * @param {Pt[]} pts
- * @param {boolean} closed
- * @returns {number}
- */
-const length = (pts, closed) => {
+const length = (pts: Pt[], closed: boolean): number => {
   const n = pts.length
   let len = 0
   for (let i = 0; i < (closed ? n : n - 1); i++) len += dist(pts[i], pts[(i + 1) % n])
@@ -136,19 +114,16 @@ const length = (pts, closed) => {
 /**
  * Insert samples where the profile has width points, so the piecewise-linear profile is exact along straight
  * runs (the two points of a discontinuous point share one sample).
- * @param {Pt[]} pts
- * @param {boolean[]} corner
- * @param {boolean} closed
- * @param {number[][]} profile
- * @returns {{pts: Pt[], corner: boolean[]}}
  */
-const densify = (pts, corner, closed, profile) => {
+const densify = (
+  pts: Pt[], corner: boolean[], closed: boolean, profile: ReadonlyArray<WidthPoint>
+): { pts: Pt[], corner: boolean[] } => {
   const total = length(pts, closed)
   if (total <= 1e-12) return { pts, corner }
   const marks = profile.map((p) => p[0] * total)
   const n = pts.length
-  const outPts = []
-  const outCorner = []
+  const outPts: Pt[] = []
+  const outCorner: boolean[] = []
   let acc = 0
   for (let i = 0; i < (closed ? n : n - 1); i++) {
     const a = pts[i]
@@ -171,26 +146,20 @@ const densify = (pts, corner, closed, profile) => {
   return { pts: outPts, corner: outCorner }
 }
 
-/**
- * @typedef {object} OutlineOptions
- * @property {'butt'|'round'|'square'} [cap]
- * @property {'miter'|'round'|'bevel'} [join]
- * @property {number} [miterLimit]
- * @property {number} [tol] flatness tolerance in user units
- */
+export interface OutlineOptions {
+  cap?: 'butt' | 'round' | 'square'
+  join?: 'miter' | 'round' | 'bevel'
+  miterLimit?: number
+  /** flatness tolerance in user units */
+  tol?: number
+}
 
 /**
  * The offset points at a vertex on one side (`side` 1: left, −1: right), `w` from the path: the join on the
  * outer side of a turn, the inner miter point (or a detour through the vertex when that would overshoot a
  * segment) on the inner side.
- * @param {Pt[]} out
- * @param {Vertex} v
- * @param {number} w
- * @param {number} side
- * @param {Required<OutlineOptions>} o
- * @returns {void}
  */
-const joinPoints = (out, v, w, side, o) => {
+const joinPoints = (out: Pt[], v: Vertex, w: number, side: number, o: Required<OutlineOptions>): void => {
   const na = mul(left(v.a), side)
   const nb = mul(left(v.b), side)
   const mid = add(na, nb)
@@ -215,15 +184,8 @@ const joinPoints = (out, v, w, side, o) => {
 
 /**
  * A round join from `na` to `nb` (unit normals) at radius `w` around the vertex; a full reversal rounds through the direction of travel.
- * @param {Pt[]} out
- * @param {Vertex} v
- * @param {Pt} na
- * @param {Pt} nb
- * @param {number} w
- * @param {Required<OutlineOptions>} o
- * @returns {void}
  */
-const arc = (out, v, na, nb, w, o) => {
+const arc = (out: Pt[], v: Vertex, na: Pt, nb: Pt, w: number, o: Required<OutlineOptions>): void => {
   const phi = hypot(add(na, nb)) < EPS
     ? (dot({ x: -na.y, y: na.x }, v.a) > 0 ? Math.PI : -Math.PI)
     : Math.atan2(cross(na, nb), dot(na, nb))
@@ -238,16 +200,8 @@ const arc = (out, v, na, nb, w, o) => {
 
 /**
  * Cap points between `c + u·r0` and `c − u·r1`, bulging towards `v`.
- * @param {Pt[]} ring
- * @param {Pt} c
- * @param {Pt} u
- * @param {Pt} v
- * @param {number} r0
- * @param {number} r1
- * @param {'butt'|'round'|'square'} cap
- * @returns {void}
  */
-const capPoints = (ring, c, u, v, r0, r1, cap) => {
+const capPoints = (ring: Pt[], c: Pt, u: Pt, v: Pt, r0: number, r1: number, cap: 'butt' | 'round' | 'square'): void => {
   if (cap === 'square') {
     const h = (r0 + r1) / 2
     ring.push(add(add(c, mul(u, r0)), mul(v, h)), add(sub(c, mul(u, r1)), mul(v, h)))
@@ -263,20 +217,15 @@ const capPoints = (ring, c, u, v, r0, r1, cap) => {
 
 /**
  * The outline polygons of one subpath: one ring for an open subpath, two opposite loops for a closed one.
- * @param {import('./anchor-path.js').SubPath} sp
- * @param {number} width
- * @param {import('./width-profile.ts').WidthPoint[]} profile
- * @param {Required<OutlineOptions>} o
- * @returns {Pt[][]}
  */
-const outlineSubpath = (sp, width, profile, o) => {
+const outlineSubpath = (sp: SubPath, width: number, profile: ReadonlyArray<WidthPoint>, o: Required<OutlineOptions>): Pt[][] => {
   const flat = flatten(sp, o.tol)
   if (flat.pts.length < 2) return []
   const { closed } = sp
   const { pts, corner } = densify(flat.pts, flat.corner, closed, profile)
   const n = pts.length
   const segCount = closed ? n : n - 1
-  const segDir = []
+  const segDir: Pt[] = []
   const cum = [0]
   for (let i = 0; i < segCount; i++) {
     segDir.push(unit(sub(pts[(i + 1) % n], pts[i])))
@@ -286,17 +235,13 @@ const outlineSubpath = (sp, width, profile, o) => {
   if (total <= 1e-12) return []
   const half = width / 2
   // Left and right offsets just before and just after `d` along the subpath (they differ at a discontinuous point).
-  /** @param {number} d */
-  const widthAt = (d) => {
+  const widthAt = (d: number): { before: [number, number], after: [number, number] } => {
     const [b, a] = profileAround(profile, d / total)
-    /** @type {(lr: number[]) => number[]} */
-    const side = ([l, r]) => [half * Math.max(l, 0), half * Math.max(r, 0)]
+    const side = ([l, r]: [number, number]): [number, number] => [half * Math.max(l, 0), half * Math.max(r, 0)]
     return { before: side(b), after: side(a) }
   }
-  /** @type {Pt[]} */
-  const lpts = []
-  /** @type {Pt[]} */
-  const rpts = []
+  const lpts: Pt[] = []
+  const rpts: Pt[] = []
   for (let i = 0; i < n; i++) {
     const p = pts[i]
     const { before, after } = widthAt(cum[i])
@@ -331,32 +276,27 @@ const outlineSubpath = (sp, width, profile, o) => {
   return [ring]
 }
 
-/** @param {number} n */
-const f = (n) => String(Math.round(n * 1000) / 1000)
+const f = (n: number): string => String(Math.round(n * 1000) / 1000)
 
 /**
  * The outline of a path stroked with `width` scaled by `profile`, as absolute `M/L/Z` path data to fill
  * with the non-zero rule.
- * @param {string} d the centerline
- * @param {number} width the stroke's full width
- * @param {import('./width-profile.ts').WidthPoint[]} profile
- * @param {OutlineOptions} [options]
- * @returns {?string} null when there is nothing to stroke (no path, no width)
+ * @param d the centerline
+ * @param width the stroke's full width
+ * @returns null when there is nothing to stroke (no path, no width)
  */
-export const widthOutline = (d, width, profile, options = {}) => {
+export const widthOutline = (d: string, width: number, profile: ReadonlyArray<WidthPoint>, options: OutlineOptions = {}): string | null => {
   if (!(width > 0) || !profile?.length) return null
-  const o = { cap: 'butt', join: 'miter', miterLimit: 4, tol: 0.1, ...options }
-  const rings = parseAnchors(d || '', 0.1).flatMap((sp) => (sp.anchors.length > 1 ? outlineSubpath(sp, width, profile, /** @type {Required<OutlineOptions>} */ (o)) : []))
+  const o: Required<OutlineOptions> = { cap: 'butt', join: 'miter', miterLimit: 4, tol: 0.1, ...options }
+  const rings = parseAnchors(d || '', 0.1).flatMap((sp) => (sp.anchors.length > 1 ? outlineSubpath(sp, width, profile, o) : []))
   const out = rings.filter((r) => r.length > 2).map((r) => `M${r.map((p) => `${f(p.x)},${f(p.y)}`).join(' L')} Z`)
   return out.length ? out.join(' ') : null
 }
 
 /**
  * The area of the polygons in outline path data (shoelace, summed with sign): for tests and sanity checks.
- * @param {string} d
- * @returns {number}
  */
-export const outlineArea = (d) => {
+export const outlineArea = (d: string): number => {
   let area = 0
   for (const ring of d.split('Z')) {
     const pts = [...ring.matchAll(/(-?[\d.]+(?:e-?\d+)?),(-?[\d.]+(?:e-?\d+)?)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }))
@@ -371,21 +311,22 @@ export const outlineArea = (d) => {
   return area
 }
 
-/**
- * A path's centerline prepared for locating points along it by fraction of its length (the profile's `t`).
- * @typedef {object} Centerline
- * @property {Pt[]} pts flattened points (a closed path does not repeat its start)
- * @property {boolean} closed
- * @property {number[]} cum arc length at each point, plus the total (closing segment included for a closed path)
- * @property {number} total
- */
+/** A path's centerline prepared for locating points along it by fraction of its length (the profile's `t`). */
+export interface Centerline {
+  /** flattened points (a closed path does not repeat its start) */
+  pts: Pt[]
+  closed: boolean
+  /** arc length at each point, plus the total (closing segment included for a closed path) */
+  cum: number[]
+  total: number
+}
 
 /**
- * @param {string} d path data of a single subpath
- * @param {number} [tol] flatness tolerance
- * @returns {?Centerline} null when there is no line to follow
+ * @param d path data of a single subpath
+ * @param tol flatness tolerance
+ * @returns null when there is no line to follow
  */
-export const centerline = (d, tol = 0.2) => {
+export const centerline = (d: string, tol = 0.2): Centerline | null => {
   const sp = parseAnchors(d || '', 0.1)[0]
   if (!sp || sp.anchors.length < 2) return null
   const { pts } = flatten(sp, tol)
@@ -398,11 +339,8 @@ export const centerline = (d, tol = 0.2) => {
 
 /**
  * The point at fraction `t` of the centerline, with its left normal (the side a profile's `left` factor is on).
- * @param {Centerline} c
- * @param {number} t
- * @returns {{p: Pt, n: Pt}}
  */
-export const pointAt = (c, t) => {
+export const pointAt = (c: Centerline, t: number): { p: Pt, n: Pt } => {
   const d = Math.min(Math.max(t, 0), 1) * c.total
   const n = c.pts.length
   const segs = c.cum.length - 1
@@ -417,13 +355,10 @@ export const pointAt = (c, t) => {
 
 /**
  * The closest point of the centerline to `q`.
- * @param {Centerline} c
- * @param {Pt} q
- * @returns {{t: number, p: Pt, n: Pt, dist: number}}
  */
-export const locate = (c, q) => {
+export const locate = (c: Centerline, q: Pt): { t: number, p: Pt, n: Pt, dist: number } => {
   const n = c.pts.length
-  let best = null
+  let best: { t: number, p: Pt, n: Pt, dist: number } | null = null
   for (let i = 0; i < c.cum.length - 1; i++) {
     const a = c.pts[i]
     const b = c.pts[(i + 1) % n]
@@ -434,5 +369,5 @@ export const locate = (c, q) => {
     const dd = dist(p, q)
     if (!best || dd < best.dist) best = { t: (c.cum[i] + (c.cum[i + 1] - c.cum[i]) * u) / c.total, p, n: left(unit(ab)), dist: dd }
   }
-  return /** @type {{t: number, p: Pt, n: Pt, dist: number}} */ (best)
+  return best as { t: number, p: Pt, n: Pt, dist: number }
 }

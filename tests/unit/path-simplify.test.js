@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { init as pathSimplifyInit, strengthToTolerance } from '../../packages/svgcanvas/core/path-simplify.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 // The fit itself is covered in path-fit.test.js; these tests cover the strength -> tolerance
 // mapping, the Smooth Path preview / commit / cancel session and the pencil commit around it.

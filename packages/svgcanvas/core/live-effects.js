@@ -46,7 +46,7 @@ import { registerAttrValidator, pathDataValidator } from './drawing-invariants.j
 import { warn } from '../common/logger.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
-import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
+import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
 import {
   registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked
 } from './live-stack.js'
@@ -92,9 +92,9 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6
  * @property {string} label - Human-readable name.
  * @property {Object<string, number|boolean|string>} defaults - Params and
  *   their defaults; the default's type is the param's type.
- * @property {(subpaths: import('./anchor-path.js').SubPath[],
+ * @property {(subpaths: import('./anchor-path.ts').SubPath[],
  *   bbox: {x: number, y: number, width: number, height: number},
- *   params: any) => import('./anchor-path.js').SubPath[]} apply
+ *   params: any) => import('./anchor-path.ts').SubPath[]} apply
  * @property {Object<string, string[]>} [choices] - Allowed values for string params.
  * @property {Object<string, {min?: number, max?: number, step?: number}>} [ranges]
  *   - Suggested bounds for number params (UI hints only).

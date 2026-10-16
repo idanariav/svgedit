@@ -42,7 +42,7 @@
 
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
-import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
+import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.js'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
 import { tracksOf, frameAt } from './art-brush.js'
@@ -135,9 +135,9 @@ export const formatBlend = (opts = {}) => {
 // ---------------------------------------------------------------------------
 
 /** @typedef {import('./art-brush.js').Track} Track */
-/** @typedef {import('./anchor-path.js').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
 
-/** @typedef {{d: string, track: Track, sub: import('./anchor-path.js').SubPath}} Spine */
+/** @typedef {{d: string, track: Track, sub: import('./anchor-path.ts').SubPath}} Spine */
 
 /**
  * The first subpath of path data as a spine: its path data (as stored), the polyline to measure and walk it by, and its
@@ -218,7 +218,7 @@ export const blendGroupOf = (elem) => {
 /** @type {(doc: Document, tag: string) => Element} */
 const svgNS = (doc, tag) => doc.createElementNS(NS.SVG, tag)
 
-/** @param {Element} key @returns {import('./anchor-path.js').SubPath[]} the key's path in its parent's coordinates */
+/** @param {Element} key @returns {import('./anchor-path.ts').SubPath[]} the key's path in its parent's coordinates */
 const keyGeometry = (key) => {
   const d = getPathDFromElement(key)
   return d ? parseAnchors(applyMatrix(d, localMatrix(key)), 0.1) : []

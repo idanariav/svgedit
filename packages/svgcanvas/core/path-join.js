@@ -9,7 +9,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD } from './anchor-path.js'
+import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { joinSubpaths } from './path-edit.js'
 import { getTransformList, transformListToTransform, matrixMultiply, transformPoint } from './math.ts'
 

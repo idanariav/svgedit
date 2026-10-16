@@ -4,7 +4,7 @@ import {
   computeFxD, isFxCurrent, remapFxSource, resolveParams, MAX_FX_ANCHORS,
   FX_ATTR, FX_SOURCE_ATTR
 } from '../../packages/svgcanvas/core/live-effects.js'
-import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 // Test-only effects. `fxshift` moves everything by (dx, dy); `fxgrow` scales
 // about the source bbox centre by `1 + amount` and records the bbox it saw.

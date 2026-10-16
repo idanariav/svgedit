@@ -46,7 +46,7 @@ import { NS } from './namespaces.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
-import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.js'
+import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.ts'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
 export const CORNER_SOURCE_ATTR = 'se:orig-d'
@@ -55,9 +55,9 @@ export const CORNER_SOURCE_ATTR = 'se:orig-d'
 export const CORNER_KINDS = ['r', 'i', 'c']
 
 const EPS = 1e-9
-/** @typedef {import('./anchor-path.js').Pt} Pt */
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
-/** @typedef {import('./anchor-path.js').Anchor & {arc?: {r: number, sweep: 0|1}}} ArcAnchor */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').Anchor & {arc?: {r: number, sweep: 0|1}}} ArcAnchor */
 /** @typedef {{uniform: ?number, radii: number[], kinds: string[]}} CornerSpec */
 
 /** @param {number} n */
@@ -70,7 +70,7 @@ const fmt = (p) => `${round6(p.x)},${round6(p.y)}`
  * predecessor (common in hand-built geometry) so the neighbouring vertex is a
  * proper corner.
  * @param {string} d
- * @returns {import('./anchor-path.js').SubPath[]}
+ * @returns {import('./anchor-path.ts').SubPath[]}
  */
 export const parseSource = (d) => {
   const subpaths = parseAnchors(d)
@@ -182,7 +182,7 @@ const cornerOf = (sp, i, sub, index) => {
 
 /**
  * The corners of `subpaths` Live Corners can cut, in anchor order.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @returns {Corner[]}
  */
 export const pathCorners = (subpaths) => {
@@ -342,7 +342,7 @@ export const formatCornerSpec = (corners, radii, kinds) => {
 
 /**
  * Generate the cut `d` from the source subpaths and a parsed spec.
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @param {{uniform: ?number, radii: number[], kinds: string[]}} spec
  * @returns {string}
  */

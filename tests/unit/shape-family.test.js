@@ -1,10 +1,10 @@
 import { describe, it } from 'vitest'
-import { parseAnchors, evalCubic, segCubic } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, evalCubic, segCubic } from '../../packages/svgcanvas/core/anchor-path.ts'
 import {
   KAPPA, MAX_DIVIDERS, MAX_SEGMENTS, MIN_SEGMENTS,
   spiralD, arcD, dragRect, arcDragEnds,
   rectangularGridParts, polarGridParts, clampDividers, clampSegments
-} from '../../packages/svgcanvas/core/shape-family.js'
+} from '../../packages/svgcanvas/core/shape-family.ts'
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 

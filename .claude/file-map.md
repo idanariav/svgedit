@@ -27,12 +27,12 @@
 
 | File | What it is |
 |---|---|
-| `anchor-path.js` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
+| `anchor-path.ts` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
 | `arrow-align.js` | Arrowhead alignment: where a marker head sits on the end of its line |
 | `art-brush-canvas.js` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
 | `art-brush.js` | Art and pattern brush geometry: artwork bent along a path by arc length |
 | `bbox-utils.ts` | Bounding-box computation utilities |
-| `bezier-fit.js` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
+| `bezier-fit.ts` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
 | `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
 | `blend.js` | Blends: the geometry and paint of the steps between two key shapes |
 | `blur-event.js` | Tools for blur event |
@@ -110,7 +110,7 @@
 | `selected-elem.js` | Tools for SVG selected element operation |
 | `selection.js` | Tools for selection |
 | `shape-builder.js` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
-| `shape-family.js` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
+| `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.js` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.js` | Smart alignment guides — object-to-object snapping math |
 | `split-grid.js` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
@@ -130,7 +130,7 @@
 | `undo.js` | Tools for undo |
 | `units.ts` | Tools for working with units |
 | `warp.js` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
-| `width-outline.js` | Variable-width strokes: the filled outline of a path stroked with a width profile |
+| `width-outline.ts` | Variable-width strokes: the filled outline of a path stroked with a width profile |
 | `width-profile.ts` | Width profiles: the data behind variable-width strokes (the Width tool and the presets) |
 
 ### `packages/svgcanvas/core/model/`

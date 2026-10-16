@@ -13,12 +13,12 @@
   "common/initGuard.ts",
   "common/logger.ts",
   "common/util.ts",
-  "core/anchor-path.js",
+  "core/anchor-path.ts",
   "core/arrow-align.js",
   "core/art-brush-canvas.js",
   "core/art-brush.js",
   "core/bbox-utils.ts",
-  "core/bezier-fit.js",
+  "core/bezier-fit.ts",
   "core/blend-canvas.js",
   "core/blend.js",
   "core/blur-event.js",
@@ -102,7 +102,7 @@
   "core/selected-elem.js",
   "core/selection.js",
   "core/shape-builder.js",
-  "core/shape-family.js",
+  "core/shape-family.ts",
   "core/shape-recognize.js",
   "core/smart-guides.js",
   "core/split-grid.js",
@@ -122,7 +122,7 @@
   "core/undo.js",
   "core/units.ts",
   "core/warp.js",
-  "core/width-outline.js",
+  "core/width-outline.ts",
   "core/width-profile.ts"
  ]
 }

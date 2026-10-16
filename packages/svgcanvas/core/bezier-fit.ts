@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Least-squares cubic Bézier fitting of point sequences: fit a cubic with
  * fixed end tangents, reparameterise with Newton steps, and split at the worst
@@ -17,75 +16,50 @@
  * @license MIT
  */
 
-import { evalCubic } from './anchor-path.js'
-
-/** @typedef {{x: number, y: number}} Pt */
-/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+import { evalCubic } from './anchor-path.ts'
+import type { Cubic, Pt } from './anchor-path.ts'
 
 /** Maximum Newton reparameterisation rounds per fit. */
 const MAX_REPARAM = 6
 
-/** @type {(a: Pt, b: Pt) => Pt} */
-const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
-/** @type {(a: Pt, b: Pt) => Pt} */
-const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
-/** @type {(a: Pt, k: number) => Pt} */
-const mul = (a, k) => ({ x: a.x * k, y: a.y * k })
-/** @type {(a: Pt, b: Pt) => number} */
-const dot = (a, b) => a.x * b.x + a.y * b.y
-/** @type {(a: Pt, b: Pt) => number} */
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+const sub = (a: Pt, b: Pt): Pt => ({ x: a.x - b.x, y: a.y - b.y })
+const add = (a: Pt, b: Pt): Pt => ({ x: a.x + b.x, y: a.y + b.y })
+const mul = (a: Pt, k: number): Pt => ({ x: a.x * k, y: a.y * k })
+const dot = (a: Pt, b: Pt): number => a.x * b.x + a.y * b.y
+const dist = (a: Pt, b: Pt): number => Math.hypot(a.x - b.x, a.y - b.y)
 
-/**
- * Unit vector, or null if (nearly) zero.
- * @param {{x: number, y: number}} v
- * @returns {?{x: number, y: number}}
- */
-export const unit = (v) => {
+/** Unit vector, or null if (nearly) zero. */
+export const unit = (v: Pt): Pt | null => {
   const l = Math.hypot(v.x, v.y)
   return l > 1e-12 && Number.isFinite(l) ? { x: v.x / l, y: v.y / l } : null
 }
 
-/**
- * Direction the curve leaves `p0` (robust to retracted handles).
- * @param {import('./anchor-path.js').Cubic} c
- * @returns {{x: number, y: number}}
- */
-export const startTangent = (c) =>
+/** Direction the curve leaves `p0` (robust to retracted handles). */
+export const startTangent = (c: Cubic): Pt =>
   unit(sub(c.p1, c.p0)) || unit(sub(c.p2, c.p0)) || unit(sub(c.p3, c.p0)) || { x: 1, y: 0 }
 
-/**
- * Direction the curve arrives at `p3`, pointing forward along the travel direction.
- * @param {import('./anchor-path.js').Cubic} c
- * @returns {{x: number, y: number}}
- */
-export const endTangent = (c) =>
+/** Direction the curve arrives at `p3`, pointing forward along the travel direction. */
+export const endTangent = (c: Cubic): Pt =>
   unit(sub(c.p3, c.p2)) || unit(sub(c.p3, c.p1)) || unit(sub(c.p3, c.p0)) || { x: 1, y: 0 }
 
 /**
  * Sample a cubic at `n + 1` evenly spaced parameters (including both ends).
- * @param {import('./anchor-path.js').Cubic} c
- * @param {number} n
- * @param {Array<{x: number, y: number}>} out - Points are appended here.
- * @param {boolean} [includeStart] - Whether to emit the point at t = 0.
- * @returns {void}
+ * @param out - Points are appended here.
+ * @param includeStart - Whether to emit the point at t = 0.
  */
-export const sampleCubic = (c, n, out, includeStart = true) => {
+export const sampleCubic = (c: Cubic, n: number, out: Pt[], includeStart = true): void => {
   for (let i = includeStart ? 0 : 1; i <= n; i++) out.push(evalCubic(c, i / n))
 }
 
-/** @param {Pt[]} pts */
-const dedup = (pts) => {
-  /** @type {Pt[]} */
-  const v = []
+const dedup = (pts: Pt[]): Pt[] => {
+  const v: Pt[] = []
   for (const p of pts) {
     if (!v.length || dist(v[v.length - 1], p) > 1e-12) v.push(p)
   }
   return v
 }
 
-/** @param {Pt[]} pts */
-const chordParams = (pts) => {
+const chordParams = (pts: Pt[]): number[] => {
   const u = [0]
   let acc = 0
   for (let i = 1; i < pts.length; i++) {
@@ -95,21 +69,15 @@ const chordParams = (pts) => {
   return acc > 0 ? u.map((x) => x / acc) : u
 }
 
-/** @param {number} t */
-const bern = (t) => {
+const bern = (t: number): [number, number, number, number] => {
   const s = 1 - t
   return [s * s * s, 3 * s * s * t, 3 * s * t * t, t * t * t]
 }
 
 /**
  * Solve the 2x2 normal equations for the handle lengths along the fixed tangents.
- * @param {Pt[]} pts
- * @param {number[]} u
- * @param {Pt} t0
- * @param {Pt} t1
- * @returns {Cubic}
  */
-const generate = (pts, u, t0, t1) => {
+const generate = (pts: Pt[], u: number[], t0: Pt, t1: Pt): Cubic => {
   const p0 = pts[0]
   const p3 = pts[pts.length - 1]
   const dirIn = mul(t1, -1) // the handle at the end points backwards
@@ -132,8 +100,8 @@ const generate = (pts, u, t0, t1) => {
   const det = c00 * c11 - c01 * c01
   const seg = dist(p0, p3)
   const eps = 1e-6 * seg
-  let al
-  let ar
+  let al: number
+  let ar: number
   if (Math.abs(det) > 1e-12) {
     al = (x0 * c11 - x1 * c01) / det
     ar = (c00 * x1 - c01 * x0) / det
@@ -152,13 +120,7 @@ const generate = (pts, u, t0, t1) => {
   return { p0, p1: add(p0, mul(t0, al)), p2: add(p3, mul(dirIn, ar)), p3 }
 }
 
-/**
- * @param {Pt[]} pts
- * @param {Cubic} c
- * @param {number[]} u
- * @returns {[number, number]}
- */
-const maxError = (pts, c, u) => {
+const maxError = (pts: Pt[], c: Cubic, u: number[]): [number, number] => {
   let e = 0
   let idx = Math.floor(pts.length / 2)
   pts.forEach((p, i) => {
@@ -173,12 +135,8 @@ const maxError = (pts, c, u) => {
 
 /**
  * One Newton step moving parameter `t` towards the point on `c` closest to `p`.
- * @param {Cubic} c
- * @param {Pt} p
- * @param {number} t
- * @returns {number}
  */
-const newton = (c, p, t) => {
+const newton = (c: Cubic, p: Pt, t: number): number => {
   const s = 1 - t
   const q = sub(evalCubic(c, t), p)
   const d1a = mul(sub(c.p1, c.p0), 3)
@@ -198,14 +156,11 @@ const newton = (c, p, t) => {
 /**
  * Best single cubic for `pts` with the given end tangents, starting from the
  * parameters `u` (one per point, 0 to 1) instead of chord-length ones.
- * @param {Array<{x: number, y: number}>} pts
- * @param {number[]} u
- * @param {{x: number, y: number}} t0 - Unit tangent leaving the first point.
- * @param {{x: number, y: number}} t1 - Unit tangent arriving at the last point (forward).
- * @returns {[import('./anchor-path.js').Cubic, number, number]} The curve, its
- *   maximum error and the index of the worst point.
+ * @param t0 - Unit tangent leaving the first point.
+ * @param t1 - Unit tangent arriving at the last point (forward).
+ * @returns The curve, its maximum error and the index of the worst point.
  */
-export const fitSingleFrom = (pts, u, t0, t1) => {
+export const fitSingleFrom = (pts: Pt[], u: number[], t0: Pt, t1: Pt): [Cubic, number, number] => {
   u = [...u]
   let best = generate(pts, u, t0, t1)
   let [bestErr, bestSplit] = maxError(pts, best, u)
@@ -227,23 +182,10 @@ export const fitSingleFrom = (pts, u, t0, t1) => {
 /**
  * Best single cubic for `pts` with the given end tangents (chord-length
  * parameters to start with).
- * @param {Array<{x: number, y: number}>} pts
- * @param {{x: number, y: number}} t0
- * @param {{x: number, y: number}} t1
- * @returns {[import('./anchor-path.js').Cubic, number, number]}
  */
-export const fitSingle = (pts, t0, t1) => fitSingleFrom(pts, chordParams(pts), t0, t1)
+export const fitSingle = (pts: Pt[], t0: Pt, t1: Pt): [Cubic, number, number] => fitSingleFrom(pts, chordParams(pts), t0, t1)
 
-/**
- * @param {Pt[]} pts
- * @param {Pt} t0
- * @param {Pt} t1
- * @param {number} tol
- * @param {Cubic[]} out
- * @param {number} depth
- * @returns {void}
- */
-const fitRec = (pts, t0, t1, tol, out, depth) => {
+const fitRec = (pts: Pt[], t0: Pt, t1: Pt, tol: number, out: Cubic[], depth: number): void => {
   const n = pts.length
   if (n === 2) {
     const d = dist(pts[0], pts[1]) / 3
@@ -265,15 +207,11 @@ const fitRec = (pts, t0, t1, tol, out, depth) => {
 /**
  * Fit a chain of cubics through `pts` with maximum (parametric) error `tol`.
  * Consecutive output cubics are G1 continuous.
- * @param {Array<{x: number, y: number}>} pts
- * @param {{x: number, y: number}} t0 - Unit tangent leaving `pts[0]`.
- * @param {{x: number, y: number}} t1 - Unit tangent arriving at the last point (forward).
- * @param {number} tol
- * @returns {import('./anchor-path.js').Cubic[]}
+ * @param t0 - Unit tangent leaving `pts[0]`.
+ * @param t1 - Unit tangent arriving at the last point (forward).
  */
-export const fitCubics = (pts, t0, t1, tol) => {
-  /** @type {Cubic[]} */
-  const out = []
+export const fitCubics = (pts: Pt[], t0: Pt, t1: Pt, tol: number): Cubic[] => {
+  const out: Cubic[] = []
   const clean = dedup(pts)
   if (clean.length < 2) return out
   fitRec(clean, t0, t1, Math.max(tol, 1e-9), out, 0)
@@ -283,11 +221,8 @@ export const fitCubics = (pts, t0, t1, tol) => {
 /**
  * Whether the cubic is, within `tol`, a straight line from p0 to p3 with its
  * handles inside the chord.
- * @param {import('./anchor-path.js').Cubic} c
- * @param {number} tol
- * @returns {boolean}
  */
-export const isStraight = (c, tol) => {
+export const isStraight = (c: Cubic, tol: number): boolean => {
   const chord = sub(c.p3, c.p0)
   const len = Math.hypot(chord.x, chord.y)
   if (len < 1e-12) return dist(c.p1, c.p0) <= tol && dist(c.p2, c.p0) <= tol

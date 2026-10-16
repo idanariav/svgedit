@@ -24,7 +24,7 @@
  * @license MIT
  */
 
-import { parseAnchors, sameAnchorGeometry } from './anchor-path.js'
+import { parseAnchors, sameAnchorGeometry } from './anchor-path.ts'
 import { registerElementCheck } from './drawing-invariants.js'
 
 /**

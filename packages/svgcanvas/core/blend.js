@@ -21,11 +21,11 @@
  */
 
 import { useMode, useParser, parse, modeRgb, modeOklab, parseHex, parseNamed, parseRgb, parseHsl, modeHsl, parseTransparent, formatHex } from 'culori/fn'
-import { segCubic, splitCubic, evalCubic, isLineSegment, anchorBBox, cubicLength } from './anchor-path.js'
+import { segCubic, splitCubic, evalCubic, isLineSegment, anchorBBox, cubicLength } from './anchor-path.ts'
 
-/** @typedef {import('./anchor-path.js').Anchor} Anchor */
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
-/** @typedef {import('./anchor-path.js').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
 
 const toRgb = useMode(modeRgb)
 const toOklab = useMode(modeOklab)

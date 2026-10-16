@@ -18,7 +18,7 @@
  * @license MIT
  */
 
-import { mapNonlinear } from './anchor-path.js'
+import { mapNonlinear } from './anchor-path.ts'
 import { registerLiveEffect } from './live-effects.js'
 
 /** @typedef {{x: number, y: number}} Pt */
@@ -157,10 +157,10 @@ export const distortMap = (name, corners) => (name === 'perspective' ? homograph
 /**
  * Distort anchor subpaths inside `bbox`.
  * @param {string} name
- * @param {import('./anchor-path.js').SubPath[]} subpaths
+ * @param {import('./anchor-path.ts').SubPath[]} subpaths
  * @param {{x: number, y: number, width: number, height: number}} bbox
  * @param {Object<string, number>} params
- * @returns {import('./anchor-path.js').SubPath[]}
+ * @returns {import('./anchor-path.ts').SubPath[]}
  */
 export const distortSubpaths = (name, subpaths, bbox, params) => {
   const { x, y, w, h } = distortFrame(bbox)

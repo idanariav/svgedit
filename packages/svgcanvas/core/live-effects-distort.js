@@ -24,10 +24,10 @@
 import {
   segCubic, evalCubic, normalAt, mapNonlinear, catmullRom, polyline, seededNoise,
   segmentCount, hasIn, hasOut, cubicLength, flattenSubpaths
-} from './anchor-path.js'
+} from './anchor-path.ts'
 import { registerLiveEffect } from './live-effects.js'
 
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
 /** @typedef {{x: number, y: number}} Pt */
 /** @typedef {{x: number, y: number, width: number, height: number}} Box */
 

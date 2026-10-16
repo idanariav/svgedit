@@ -25,7 +25,7 @@
 import {
   spiralD, arcD, dragRect, arcDragEnds, rectangularGridParts, polarGridParts,
   clampDividers, clampSegments, MAX_DIVIDERS, MAX_SEGMENTS, MIN_SEGMENTS
-} from '@svgedit/svgcanvas/core/shape-family.js'
+} from '@svgedit/svgcanvas/core/shape-family.ts'
 import { positionContextMenu } from '../../dialogs/positionContextMenu.js'
 
 const name = 'shape-family'

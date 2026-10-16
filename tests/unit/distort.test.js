@@ -4,7 +4,7 @@ import {
   bilinearMap, homographyMap, distortMap, distortSubpaths, registerDistortEffects
 } from '../../packages/svgcanvas/core/distort.js'
 import { computeFxD, parseFxStack, getLiveEffectDef } from '../../packages/svgcanvas/core/live-effects.js'
-import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 registerDistortEffects()
 

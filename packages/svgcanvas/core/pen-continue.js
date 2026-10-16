@@ -10,7 +10,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD } from './anchor-path.js'
+import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.js'
 import { LIVE_ATTRS } from './path-join.js'
 import { getTransformList, transformListToTransform, isIdentity } from './math.ts'
@@ -20,7 +20,7 @@ import { getTransformList, transformListToTransform, isIdentity } from './math.t
  * @property {Element} elem the open path
  * @property {boolean} atEnd `true` for its last anchor, `false` for its first
  * @property {{x: number, y: number}} point the end's position
- * @property {import('./anchor-path.js').SubPath} subpath the path's only subpath
+ * @property {import('./anchor-path.ts').SubPath} subpath the path's only subpath
  */
 
 /** The stroke's first anchor sits on the path's end; this much apart still counts as the same point (user units). */
@@ -112,7 +112,7 @@ const lone = (p) => ({ closed: false, anchors: [{ p, hIn: { ...p }, hOut: { ...p
  * The drawing's anchors: its path data may be a lone `M` (one click), which the
  * parser drops.
  * @param {string} d
- * @returns {?import('./anchor-path.js').SubPath}
+ * @returns {?import('./anchor-path.ts').SubPath}
  */
 export const drawnSubpath = (d) => {
   const [sp] = parseAnchors(d || '', 0.1)
@@ -128,10 +128,10 @@ export const drawnSubpath = (d) => {
  * `other` is the path that was pressed. When the drawing carries on a path
  * (`continued`), that path survives and the other one is absorbed. Otherwise
  * the pressed path keeps its id, style and direction.
- * @param {import('./anchor-path.js').SubPath} drawn
+ * @param {import('./anchor-path.ts').SubPath} drawn
  * @param {PenEnd} other
  * @param {boolean} continued
- * @returns {{subpath: import('./anchor-path.js').SubPath, keepsDrawing: boolean}}
+ * @returns {{subpath: import('./anchor-path.ts').SubPath, keepsDrawing: boolean}}
  */
 export const joinDrawn = (drawn, other, continued) => {
   if (continued || !other.atEnd) {
@@ -146,9 +146,9 @@ export const joinDrawn = (drawn, other, continued) => {
  * of the path's other end the path is closed instead. A path continued from its first anchor comes back the
  * way round it started (so markers and dashes keep their direction); a closed one has no direction to keep.
  * @param {PenEnd} end
- * @param {import('./anchor-path.js').SubPath} stroke the fitted stroke, starting at the pressed end
+ * @param {import('./anchor-path.ts').SubPath} stroke the fitted stroke, starting at the pressed end
  * @param {number} closeTol
- * @returns {import('./anchor-path.js').SubPath}
+ * @returns {import('./anchor-path.ts').SubPath}
  */
 export const extendWith = (end, stroke, closeTol) => {
   const base = end.atEnd ? end.subpath : reversedSubpath(end.subpath)

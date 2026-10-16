@@ -1,5 +1,5 @@
 import { fc, params } from './fc.js'
-import { parseAnchors, anchorsToD, evalCubic, splitCubic } from '../../../packages/svgcanvas/core/anchor-path.js'
+import { parseAnchors, anchorsToD, evalCubic, splitCubic } from '../../../packages/svgcanvas/core/anchor-path.ts'
 
 const int = fc.integer({ min: -500, max: 500 })
 const pt = fc.record({ x: int, y: int })

@@ -31,7 +31,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.js'
+import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.ts'
 import { LIVE_ATTRS } from './path-join.js'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
@@ -86,10 +86,10 @@ export const headPlacement = (kind, pos, mode) => {
   return { refX: mode === 'extend' ? tip + (pos === 'end' ? -inset : inset) : tip, inset }
 }
 
-/** @typedef {import('./anchor-path.js').Pt} Pt */
-/** @typedef {import('./anchor-path.js').Anchor} Anchor */
-/** @typedef {import('./anchor-path.js').SubPath} SubPath */
-/** @typedef {import('./anchor-path.js').Cubic} Cubic */
+/** @typedef {import('./anchor-path.ts').Pt} Pt */
+/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
+/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
+/** @typedef {import('./anchor-path.ts').Cubic} Cubic */
 
 /**
  * @param {number} x
@@ -128,10 +128,10 @@ const tAt = (c, len) => {
 
 /**
  * The open subpath without its first `start` and last `end` units of arc length.
- * @param {import('./anchor-path.js').SubPath} sp
+ * @param {import('./anchor-path.ts').SubPath} sp
  * @param {number} start
  * @param {number} end
- * @returns {import('./anchor-path.js').SubPath}
+ * @returns {import('./anchor-path.ts').SubPath}
  */
 export const trimSubpath = (sp, start, end) => {
   const segs = []

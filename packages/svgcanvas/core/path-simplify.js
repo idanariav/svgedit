@@ -20,7 +20,7 @@
  */
 
 import { warn } from '../common/logger.ts'
-import { parseAnchors, anchorsToD } from './anchor-path.js'
+import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { simplifyWith, fitFreehand } from './path-fit.js'
 import { findPenEnd, extendWith, endDirection } from './pen-continue.js'
 

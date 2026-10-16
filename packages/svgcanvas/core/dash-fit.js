@@ -24,8 +24,8 @@
  */
 
 import { registerAttrValidator } from './drawing-invariants.js'
-import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.js'
-import { startTangent, endTangent } from './bezier-fit.js'
+import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.ts'
+import { startTangent, endTangent } from './bezier-fit.ts'
 import { TAPER_ATTR } from './width-profile.ts'
 
 export const DASH_FIT_ATTR = 'se:dash-fit'
@@ -83,7 +83,7 @@ export const fitDashes = (pattern, length, closed) => {
 /**
  * The first subpath of a shape as anchors, for the shapes whose corners can be fitted; null for the others.
  * @param {Element} elem
- * @returns {?import('./anchor-path.js').SubPath} null: not one of them, more than one piece, or a rounded rect
+ * @returns {?import('./anchor-path.ts').SubPath} null: not one of them, more than one piece, or a rounded rect
  */
 const outlineOf = (elem) => {
   /** @param {string} name */
@@ -116,7 +116,7 @@ const outlineOf = (elem) => {
 
 /**
  * Where a subpath has corners, and how long it is.
- * @param {import('./anchor-path.js').SubPath} sp
+ * @param {import('./anchor-path.ts').SubPath} sp
  * @returns {{total: number, closed: boolean, cuts: number[]}} `cuts`: the arc length of each corner from the start of the
  *   path (a closed path's start counts, at 0, when it is a corner; an open path's ends never do)
  */

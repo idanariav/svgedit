@@ -4,7 +4,7 @@ import {
   remapCornerSource, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR,
   fittedCornerRadius, cornerWidgetAt, cornerRadiusChange
 } from '../../packages/svgcanvas/core/corner-radius.js'
-import { polyline } from '../../packages/svgcanvas/core/anchor-path.js'
+import { polyline } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
