@@ -221,6 +221,7 @@ code exploration.
 | [`attributes.md`](.claude/attributes.md) | Working with shape attribute panels or the `attrChanger` handler |
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
 | [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
+| [`commands.md`](.claude/commands.md) | Every command id, label, default keys and params — generated from the registry; look commands up here instead of grepping `register(` |
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup (the source-file tables are generated from each file's header comment: `npm run file-map`) |
 | [`debug-log.md`](.claude/debug-log.md) | Reading or extending the host debug log (event vocabulary, how to retrace a bug from it) |
 | [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
@@ -232,7 +233,7 @@ At the **end of any task** that modifies files covered by these docs, update
 the relevant doc(s) to reflect the change. Specifically:
 
 - Added, removed, or renamed a source file → give it a header comment whose first sentence says what the file is, then run `npm run file-map` (`pretest` fails on a missing header or a stale map); update `architecture.md` if the structure changed
-- Added or removed a toolbar tool / panel control → update `tools.md`
+- Added or removed a toolbar tool / panel control → update `tools.md`; added, renamed (never) or re-keyed a command → `UPDATE_COMMANDS_DOC=1 npx playwright test tests/e2e/commands-doc.spec.js` regenerates `commands.md` (the e2e suite fails when it is stale)
 - Changed which attributes are editable for a shape → update `attributes.md`
 - Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`
 - Created or changed an extension → update `extensions.md`

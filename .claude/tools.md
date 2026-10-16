@@ -1,6 +1,6 @@
 # SVGedit User-Facing Tools
 
-> **How to use this doc:** Look up tools by panel location. Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
+> **How to use this doc:** Look up tools by panel location (the full list of command ids, labels and keys is the generated [`commands.md`](commands.md)). Each entry shows the element ID (for JS code lookup), purpose, and keyboard shortcut. Extension-provided tools are in a separate section at the bottom.
 
 ---
 
@@ -751,36 +751,11 @@ Four more variants in the `tools_shapes` flyout (`tool_spiral`, `tool_arc`, `too
 
 ---
 
-## Keyboard Shortcut Reference
+## Keyboard shortcuts
 
-| Key | Tool / Action |
-|-----|--------------|
-| S | Select tool |
-| Z | Zoom tool |
-| Q | Freehand pencil |
-| L | Line |
-| P | Path |
-| R | Rectangle |
-| E | Ellipse |
-| T | Text |
-| F | Wireframe mode |
-| U | Edit SVG source |
-| D | Clone element |
-| Ctrl/Cmd+D | Transform again — `svgCanvas.transformAgain()`: clone the selection offset by the last committed move delta (drag or nudge, tracked in `svgCanvas.lastMoveDelta`); repeat for evenly spaced chains |
-| C | Clone (multi-select) |
-| G | Group elements |
-| B | Bold (text) |
-| I | Italic (text) |
-| Shift+Enter | New row in the current text object (while editing) |
-| Enter | Commit text + exit edit mode (while editing) |
-| Delete / Backspace | Delete selected |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo |
-| Ctrl+Shift+] | Bring to front |
-| Ctrl+Shift+[ | Send to back |
-| Ctrl/Cmd+C | Copy (mirrors to system clipboard) |
-| Ctrl/Cmd+X | Cut |
-| Ctrl/Cmd+V | Paste — handled by a native `paste` listener, not a keyboard shortcut |
+Every command's id, label and default keys are in [`commands.md`](commands.md), generated from the command registry (the
+authority for keys; the Shortcut columns above are hand-written and can lag). Typing-time keys are not commands:
+**Shift+Enter** inserts a new row in the text being edited and **Enter** commits it and leaves edit mode.
 
 **Paste sources.** Paste is driven by a single native `paste` listener
 (`EditorStartup.js`), not the `v` keyboard shortcut. It accepts both svgedit's own

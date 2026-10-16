@@ -253,11 +253,14 @@ the file map from each file's header comment (a script, plus a check that every 
 lists from `commands.list()` (ids, labels, groups, default keys); keep hand-written prose for behaviour that is not
 obvious from code.
 
-**Done (2026-10-16): the file map.** `scripts/file-map.mjs` writes the source-file tables of `file-map.md` from each file's
-header comment (first sentence) and `--check` (a `pretest` gate) fails on a missing header or a stale map; the map went
-from 75 KB to 46 KB. Some headers inherited from upstream are vague ("Tools for blur event"); improve them in the file when
-you touch it. **Left:** the tool and shortcut lists in `tools.md` (116 KB) from `commands.list()` (needs a browser to
-list, so a build step or an e2e that writes the file), then the changelog prose in `tools.md`, `extensions.md`,
-`css-rules.md`, `attributes.md`.
+**Done (2026-10-16): the file map and the command list.** `scripts/file-map.mjs` writes the source-file tables of
+`file-map.md` from each file's header comment (first sentence) and `--check` (a `pretest` gate) fails on a missing header
+or a stale map; the map went from 75 KB to 46 KB. Some headers inherited from upstream are vague ("Tools for blur
+event"); improve them in the file when you touch it. `commands.md` (194 commands: id, label, default keys, params) is
+generated from `commands.list({ includeHidden: true })` by `tests/e2e/commands-doc.spec.js` (needs a running editor, so
+it is an e2e that fails when stale; the page is pinned to a Mac user agent because default keys differ by platform);
+`tools.md`'s stale shortcut table was replaced by a pointer to it. **Left:** the changelog prose in `tools.md`,
+`extensions.md`, `css-rules.md`, `attributes.md` (trim to what a thing is and why; history is in git), and the per-panel
+Shortcut columns of `tools.md`, which still duplicate `commands.md` by hand.
 
 Size: M, can be done one doc at a time.

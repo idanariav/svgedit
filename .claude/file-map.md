@@ -150,6 +150,7 @@
 | `check-dom-scope.mjs` | Guards against the "wrong owning editor" bug class: svgedit mounts one editor per pane/drawing in the same document, but its chrome uses fixed element ids (workarea, fill_color, the se-* dialogs, ...), so a bare… |
 | `check-layers.mjs` | Keeps the canvas engine (packages/svgcanvas) independent of the editor UI (src/editor), the way VectorCraft's `cargo xtask layers` enforces its crate layering |
 | `check-model-roundtrip.mjs` | Oracle for the document model (R1): parse every saved drawing into the model and serialize it back |
+| `commands-doc.mjs` | Renders `.claude/commands.md` (every command id, label, default keys and params) from `editor.commands.list({ includeHidden: true })` |
 | `copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are not copied) |
 | `file-map.mjs` | Generates the code tables of `.claude/file-map.md` from each source file's header comment, and checks that every file has one (R7 in .claude/roadmap/rearchitecture.md: docs say what a thing is, the file says it first) |
 | `html-template.mjs` | Compaction for the editor's HTML templates (panels, dialogs, editor shell), applied by the `svgedit-html-templates` plugin in `vite.config.mjs` when a template is imported as a string |
