@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { assignAttributes } from '../../packages/svgcanvas/core/dom-utils.js'
+import { assignAttributes } from '../../packages/svgcanvas/core/dom-utils.ts'
 import extSmartGuides from '../../src/editor/extensions/ext-smart-guides/ext-smart-guides.js'
 import { mockCommands } from './helpers/commands.js'
 

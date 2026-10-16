@@ -4,7 +4,7 @@ import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.js'
 import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'
 import favoritesDialogHTML from './favoritesDialog.html'
 import { ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')

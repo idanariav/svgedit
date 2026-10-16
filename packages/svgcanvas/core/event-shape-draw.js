@@ -8,7 +8,7 @@
  * @module event-shape-draw
  * @license MIT
  */
-import { assignAttributes, preventClickDefault, setHref } from './dom-utils.js'
+import { assignAttributes, preventClickDefault, setHref } from './dom-utils.ts'
 import { snapToAngle } from './math.ts'
 import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.js'
 

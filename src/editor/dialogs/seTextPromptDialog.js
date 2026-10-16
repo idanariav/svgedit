@@ -1,7 +1,7 @@
 // seTextPromptDialog.js — `<se-text-prompt-dialog>` — themed replacement for the browser `prompt()`; resolves with the entered text, or `null` when cancelled
 import seTextPromptDialogHTML from './seTextPromptDialog.html'
 import { closestRoot } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')

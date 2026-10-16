@@ -10,7 +10,7 @@
 import { NS } from './namespaces.ts'
 import * as hstry from './history.js'
 import { warn, error } from '../common/logger.ts'
-import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.js'
+import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.ts'
 import {
   getBBox as utilsGetBBox
 } from './bbox-utils.js'
@@ -213,7 +213,7 @@ export const init = (canvas) => {
 
         // Update blur value
         if (cblur) {
-          svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [blurElem])
+          svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [(/** @type {Element} */ (blurElem))])
           svgCanvas.setBlurOffsets(gfilter, cblur)
         }
       }

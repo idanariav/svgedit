@@ -10,7 +10,7 @@ import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-regis
 
 import {
   assignAttributes
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getBBox } from './bbox-utils.js'
 import {
   transformPoint,

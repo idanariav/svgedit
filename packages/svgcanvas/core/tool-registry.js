@@ -35,7 +35,7 @@
  * @license MIT
  */
 
-import { cleanupElement } from './dom-utils.js'
+import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'

@@ -9,7 +9,7 @@
 
 import { NS } from './namespaces.ts'
 import { toXml } from './encoding-utils.ts'
-import { walkTree } from './dom-utils.js'
+import { walkTree } from './dom-utils.ts'
 
 /**
  * This class encapsulates the concept of a layer in the drawing. It can be constructed with

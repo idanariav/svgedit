@@ -48,7 +48,7 @@ import {
   getFeGaussianBlur,
   stringToHTML,
   insertChildAtIndex
-} from './core/dom-utils.js'
+} from './core/dom-utils.ts'
 import {
   getBBoxOfElementAsPath,
   init as bboxUtilsInit
@@ -1760,7 +1760,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
           const composed = filterElem?.hasAttribute('data-fx') || /_(fx|shadow)$/.test(filterElem?.id || '')
           const blurElem = composed ? null : getFeGaussianBlur(filterElem)
           if (blurElem !== null) {
-            val = blurElem.getAttribute('stdDeviation')
+            val = blurElem.getAttribute('stdDeviation') ?? 0
           }
         }
       }

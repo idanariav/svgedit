@@ -8,7 +8,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { getHref, setHref, getRotationAngle, getTextWithNewlines, setMultilineText } from './dom-utils.js'
+import { getHref, setHref, getRotationAngle, getTextWithNewlines, setMultilineText } from './dom-utils.ts'
 import { getBBox } from './bbox-utils.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.ts'
 

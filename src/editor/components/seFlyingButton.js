@@ -4,7 +4,7 @@ import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 /**
  * @class FlyingButton

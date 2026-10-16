@@ -15,7 +15,7 @@ import {
 } from './math.ts'
 import {
   assignAttributes
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getBBox } from './bbox-utils.js'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.ts'
 import { warn as logWarn } from '../common/logger.ts'

@@ -15,7 +15,7 @@ import {
   getTransformList,
   isIdentity
 } from './math.ts'
-import { getRotationAngleFromTransformList } from './dom-utils.js'
+import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.js'
 

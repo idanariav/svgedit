@@ -17,7 +17,7 @@
  * @license MIT
  */
 
-import { getHref, setHref } from './dom-utils.js'
+import { getHref, setHref } from './dom-utils.ts'
 import { loadImage } from './load-image.ts'
 import { NS } from './namespaces.ts'
 

@@ -8,7 +8,7 @@
  * @module event-path-edit
  * @license MIT
  */
-import { assignAttributes } from './dom-utils.js'
+import { assignAttributes } from './dom-utils.ts'
 import { snapToAngle, transformPoint } from './math.ts'
 
 /**

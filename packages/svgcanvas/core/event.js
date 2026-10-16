@@ -7,7 +7,7 @@
  */
 import {
   cleanupElement
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import {
   transformPoint, getTransformList, transformListToTransform

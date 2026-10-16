@@ -10,7 +10,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.js'
+import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'

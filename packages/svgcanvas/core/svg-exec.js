@@ -14,7 +14,7 @@ import {
   cleanupElement,
   setHref,
   preventClickDefault
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import { isGecko } from '../common/browser.ts'
 import { NS } from './namespaces.ts'

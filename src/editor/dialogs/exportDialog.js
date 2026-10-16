@@ -1,7 +1,7 @@
 // exportDialog.js — Export dialog (region, format, scale 1–4×, quality for JPEG/WebP, output-size preview)
 import exportDialogHTML from './exportDialog.html'
 import { ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 import { dialogSkin } from './dialogSkin.css.js'
 const template = document.createElement('template')

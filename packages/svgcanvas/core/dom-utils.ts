@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * DOM/element manipulation, lookup, and misc canvas-state utilities.
  * @module dom-utils
@@ -10,60 +9,7 @@
 import { NS } from './namespaces.ts'
 import { setUnitAttr, getTypeMap } from './units.ts'
 import { getTransformList } from './math.ts'
-
-/**
- * Object with the following keys/values.
- * @typedef {object} SVGElementJSON
- * @property {string} element - Tag name of the SVG element to create
- * @property {PlainObject<string, string>} attr - Has key-value attributes to assign to the new element.
- *   An `id` should be set so that {@link module:utilities.EditorContext#addSVGElementsFromJson} can later re-identify the element for modification or replacement.
- * @property {boolean} [curStyles=false] - Indicates whether current style attributes should be applied first
- * @property {module:utilities.SVGElementJSON[]} [children] - Data objects to be added recursively as children
- * @property {string} [namespace="http://www.w3.org/2000/svg"] - Indicate a (non-SVG) namespace
- */
-
-/**
- * An object that creates SVG elements for the canvas.
- *
- * @interface module:utilities.EditorContext
- * @property {module:path.pathActions} pathActions
- */
-/**
- * @function module:utilities.EditorContext#getSvgContent
- * @returns {SVGSVGElement}
- */
-/**
- * Create a new SVG element based on the given object keys/values and add it
- * to the current layer.
- * The element will be run through `cleanupElement` before being returned.
- * @function module:utilities.EditorContext#addSVGElementsFromJson
- * @param {module:utilities.SVGElementJSON} data
- * @returns {Element} The new element
- */
-/**
- * @function module:utilities.EditorContext#getSelectedElements
- * @returns {Element[]} the array with selected DOM elements
- */
-/**
- * @function module:utilities.EditorContext#getDOMDocument
- * @returns {HTMLDocument}
- */
-/**
- * @function module:utilities.EditorContext#getDOMContainer
- * @returns {HTMLElement}
- */
-/**
- * @function module:utilities.EditorContext#getSvgRoot
- * @returns {SVGSVGElement}
- */
-/**
- * @function module:utilities.EditorContext#getBaseUnit
- * @returns {string}
- */
-/**
- * @function module:utilities.EditorContext#getSnappingStep
- * @returns {number|string}
- */
+import type SvgCanvas from '../svgcanvas.js'
 
 /**
  * Attaches the canvas-state-dependent helpers (element/defs lookup, grid
@@ -73,34 +19,23 @@ import { getTransformList } from './math.ts'
  * nothing to be "pure" against), unlike `getBBox`/`getRotationAngle` below,
  * which stay bare+pure and only get an instance-scoped selection-fallback
  * wrapper here.
- * @function module:dom-utils.init
- * @param {module:utilities.EditorContext} canvas
- * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
-  /**
-   * Get a DOM element by ID within the SVG root element.
-   * @function module:dom-utils.EditorContext#getElement
-   * @param {string} id - String with the element's new ID
-   * @returns {?Element}
-   */
-  const getElement = id => svgCanvas.getSvgRoot()?.querySelector(`#${CSS.escape(id)}`)
+  /** Get a DOM element by ID within the SVG root element. */
+  const getElement = (id: string): Element | null | undefined => svgCanvas.getSvgRoot()?.querySelector(`#${CSS.escape(id)}`)
 
-  /**
-   * @function module:dom-utils.EditorContext#findDefs
-   * @returns {SVGDefsElement} The document's `<defs>` element, creating it first if necessary
-   */
-  const findDefs = () => {
+  /** @returns The document's `<defs>` element, creating it first if necessary */
+  const findDefs = (): SVGDefsElement => {
     const svgElement = svgCanvas.getSvgContent()
     const existingDefs = svgElement.getElementsByTagNameNS(NS.SVG, 'defs')
 
     if (existingDefs.length > 0) {
-      return existingDefs[0]
+      return existingDefs[0] as SVGDefsElement
     }
 
-    const defs = svgElement.ownerDocument.createElementNS(NS.SVG, 'defs')
+    const defs = svgElement.ownerDocument.createElementNS(NS.SVG, 'defs') as SVGDefsElement
     const insertTarget = svgElement.firstChild?.nextSibling
 
     if (insertTarget) {
@@ -114,16 +49,15 @@ export const init = canvas => {
 
   /**
    * Get the reference element associated with the given attribute value.
-   * @function module:dom-utils.EditorContext#getRefElem
-   * @param {string} attrVal - The attribute value as a string
-   * @returns {Element|null} Reference element
+   * @param attrVal - The attribute value as a string
+   * @returns Reference element
    */
-  const getRefElem = attrVal => {
+  const getRefElem = (attrVal: string | null): Element | null => {
     if (!attrVal) return null
     const url = getUrlFromAttr(attrVal)
     if (!url) return null
     const id = url[0] === '#' ? url.slice(1) : url
-    return getElement(id)
+    return getElement(id) ?? null
   }
 
   /**
@@ -131,18 +65,14 @@ export const init = canvas => {
    * clip-paths, …) transitively referenced by the given elements, so a
    * copy/paste or shape-library save can carry its paint servers along instead
    * of leaving dangling `url(#…)` references when pasted into another document.
-   * @function module:dom-utils.EditorContext#getReferencedDefElements
-   * @param {Element[]} elems - root elements to scan (descendants are scanned too)
-   * @returns {Element[]} de-duplicated referenced def elements, dependencies first
+   * @param elems - root elements to scan (descendants are scanned too)
+   * @returns de-duplicated referenced def elements, dependencies first
    */
-  const getReferencedDefElements = (elems) => {
-    const seen = new Set()
-    /** @type {Element[]} */
-    const ordered = []
-    /** @param {any} el */
-    const idsOf = (el) => {
-      /** @type {string[]} */
-      const ids = []
+  const getReferencedDefElements = (elems: Element[]): Element[] => {
+    const seen = new Set<Element>()
+    const ordered: Element[] = []
+    const idsOf = (el: Element): string[] => {
+      const ids: string[] = []
       REF_ATTRS.forEach((name) => {
         const url = getUrlFromAttr(el.getAttribute?.(name))
         if (url) ids.push(url[0] === '#' ? url.slice(1) : url)
@@ -151,8 +81,7 @@ export const init = canvas => {
       if (href?.startsWith('#')) ids.push(href.slice(1))
       return ids
     }
-    /** @param {any} el */
-    const visit = (el) => {
+    const visit = (el: Element): void => {
       idsOf(el).forEach((id) => {
         const ref = getElement(id)
         // Only collect <defs>-resident elements, not on-canvas references.
@@ -171,26 +100,18 @@ export const init = canvas => {
     return ordered
   }
 
-  /**
-   * Snapping step size in px (snappingStep converted from the current base unit).
-   * @returns {number}
-   */
-  const getSnapStepSize = () => {
+  /** Snapping step size in px (snappingStep converted from the current base unit). */
+  const getSnapStepSize = (): number => {
     const unit = svgCanvas.getBaseUnit()
-    let stepSize = svgCanvas.getSnappingStep()
+    let stepSize = Number(svgCanvas.getSnappingStep())
     if (unit !== 'px') {
       stepSize *= getTypeMap()[unit]
     }
     return stepSize
   }
 
-  /**
-   * Round value to for snapping.
-   * @function module:dom-utils.EditorContext#snapToGrid
-   * @param {number} value
-   * @returns {number}
-   */
-  const snapToGrid = value => {
+  /** Round value to for snapping. */
+  const snapToGrid = (value: number): number => {
     value = Math.round(value / getSnapStepSize()) * getSnapStepSize()
     return value
   }
@@ -198,20 +119,15 @@ export const init = canvas => {
   /**
    * Snap a point to the nearest node of the active grid lattice.
    * For the `square` grid (and the non-lattice perspective grids) this is just
-   * per-axis rounding, identical to calling {@link module:dom-utils.EditorContext#snapToGrid}
-   * on each coordinate. For the `isometric` and `triangle` grids the point is
+   * per-axis rounding, identical to calling `snapToGrid` on each coordinate. For the `isometric` and `triangle` grids the point is
    * snapped to the nearest node of the corresponding skewed lattice by inverting
    * its basis vectors.
-   * @function module:dom-utils.EditorContext#snapPointToGrid
-   * @param {number} x
-   * @param {number} y
-   * @returns {{x: number, y: number}}
    */
-  const snapPointToGrid = (x, y) => {
+  const snapPointToGrid = (x: number, y: number): { x: number, y: number } => {
     const shape = svgCanvas.getGridShape ? svgCanvas.getGridShape() : 'square'
     if (shape === 'isometric' || shape === 'triangle') {
       const s = getSnapStepSize()
-      let ax, ay, bx, by
+      let ax: number, ay: number, bx: number, by: number
       if (shape === 'isometric') {
         // Two axes at ±30° from horizontal.
         const c = Math.cos(Math.PI / 6)
@@ -241,50 +157,42 @@ export const init = canvas => {
   // getRotationAngle stays a bare, pure (elem-required) export below — every
   // call site already passes an elem — but the public per-instance API keeps
   // the "default to current selection" convenience, correctly scoped now.
-  canvas.getRotationAngle = /** @param {Element} [elem] @param {boolean} [toRad] */ (elem, toRad) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
+  canvas.getRotationAngle = (elem?: Element, toRad?: boolean) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
 }
 
 // Row storage and area-text layout live in text-rows.js; re-exported so existing imports keep working.
 export { TEXT_LINE_HEIGHT, getTextWithNewlines, setMultilineText } from './text-rows.js'
 
-/**
- * @callback TreeWalker
- * @param {SVGElement} elem - DOM element being traversed
- * @returns {void}
- */
+type TreeWalker = (elem: SVGElement) => void
 
 /**
  * Walks the tree and executes the callback on each element in a top-down fashion.
- * @function module:dom-utils.walkTree
- * @param {Element} elem - DOM element to traverse
- * @param {TreeWalker} cbFn - Callback function to run on each element
- * @returns {void}
+ * @param elem - DOM element to traverse
+ * @param cbFn - Callback function to run on each element
  */
-export const walkTree = (elem, cbFn) => {
+export const walkTree = (elem: Element, cbFn: TreeWalker): void => {
   if (elem?.nodeType === 1) {
-    cbFn(/** @type {SVGElement} */ (elem))
+    cbFn(elem as SVGElement)
     let i = elem.childNodes.length
     while (i--) {
-      walkTree(/** @type {Element} */ (elem.childNodes.item(i)), cbFn)
+      walkTree(elem.childNodes.item(i) as Element, cbFn)
     }
   }
 }
 
 /**
  * Walks the tree and executes the callback on each element in a depth-first fashion.
- * @function module:dom-utils.walkTreePost
  * @todo Shouldn't this be calling walkTreePost?
- * @param {Element} elem - DOM element to traverse
- * @param {TreeWalker} cbFn - Callback function to run on each element
- * @returns {void}
+ * @param elem - DOM element to traverse
+ * @param cbFn - Callback function to run on each element
  */
-export const walkTreePost = (elem, cbFn) => {
+export const walkTreePost = (elem: Element, cbFn: TreeWalker): void => {
   if (elem?.nodeType === 1) {
     let i = elem.childNodes.length
     while (i--) {
-      walkTree(/** @type {Element} */ (elem.childNodes.item(i)), cbFn)
+      walkTree(elem.childNodes.item(i) as Element, cbFn)
     }
-    cbFn(/** @type {SVGElement} */ (elem))
+    cbFn(elem as SVGElement)
   }
 }
 
@@ -294,11 +202,10 @@ export const walkTreePost = (elem, cbFn) => {
  *  - `<circle fill="url(someFile.svg#foo)" />`
  *  - `<circle fill="url('someFile.svg#foo')" />`
  *  - `<circle fill='url("someFile.svg#foo")' />`
- * @function module:dom-utils.getUrlFromAttr
- * @param {string} attrVal The attribute value as a string
- * @returns {string|null} String with just the URL, like "someFile.svg#foo"
+ * @param attrVal The attribute value as a string
+ * @returns String with just the URL, like "someFile.svg#foo"
  */
-export const getUrlFromAttr = (attrVal) => {
+export const getUrlFromAttr = (attrVal: string | null | undefined): string | null => {
   if (!attrVal?.startsWith('url(')) return null
 
   const patterns = [
@@ -317,33 +224,22 @@ export const getUrlFromAttr = (attrVal) => {
   return null
 }
 
-/**
- * @function module:dom-utils.getHref
- * @param {Element} elem
- * @returns {string|null} The given element's `href` value
- */
-export let getHref = (elem) =>
+/** @returns The given element's `href` value */
+export let getHref = (elem: Element): string | null =>
   elem.getAttribute('href') ?? elem.getAttributeNS(NS.XLINK, 'href')
 
-/**
- * Sets the given element's `href` value.
- * @function module:dom-utils.setHref
- * @param {Element} elem
- * @param {string} val
- * @returns {void}
- */
-export let setHref = (elem, val) => {
+/** Sets the given element's `href` value. */
+export let setHref = (elem: Element, val: string): void => {
   elem.setAttribute('href', val)
 }
 
 /**
  * Get the rotation angle of the given transform list.
- * @function module:dom-utils.getRotationAngleFromTransformList
- * @param {SVGTransformList} tlist - List of transforms
- * @param {boolean} [toRad] - When true returns the value in radians rather than degrees
- * @returns {number} The angle in degrees or radians
+ * @param tlist - List of transforms
+ * @param toRad - When true returns the value in radians rather than degrees
+ * @returns The angle in degrees or radians
  */
-export const getRotationAngleFromTransformList = (tlist, toRad) => {
+export const getRotationAngleFromTransformList = (tlist: SVGTransformList | undefined, toRad?: boolean): number => {
   if (!tlist) {
     return 0
   } // <svg> element have no tlist
@@ -362,22 +258,20 @@ export const getRotationAngleFromTransformList = (tlist, toRad) => {
  * convenience lives on the per-instance `canvas.getRotationAngle` wrapper
  * attached by {@link module:dom-utils.init} instead, so it resolves against
  * the right editor instance rather than shared module state.
- * @function module:dom-utils.getRotationAngle
- * @param {Element} elem - DOM element to get the angle for
- * @param {boolean} [toRad=false] - When true returns the value in radians rather than degrees
- * @returns {number} The angle in degrees or radians
+ * @param elem - DOM element to get the angle for
+ * @param toRad - When true returns the value in radians rather than degrees
+ * @returns The angle in degrees or radians
  */
-export let getRotationAngle = (elem, toRad) => {
-  const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+export let getRotationAngle = (elem: Element, toRad?: boolean): number => {
+  const tlist = getTransformList(elem)
   return getRotationAngleFromTransformList(tlist, toRad)
 }
 
 /**
  * Attributes whose value may be a `url(#id)` reference to a `<defs>` element
  * (paint servers, filters, markers, masks, clip-paths).
- * @type {string[]}
  */
-const REF_ATTRS = [
+const REF_ATTRS: string[] = [
   'clip-path', 'fill', 'filter', 'marker-end', 'marker-mid',
   'marker-start', 'mask', 'stroke'
 ]
@@ -387,16 +281,13 @@ const REF_ATTRS = [
  * fresh id, then update any internal `url(#…)` / `href="#…"` references so they
  * keep pointing at the renamed elements. Used when inserting a stored shape so
  * repeated insertions don't collide on ids with each other or the canvas.
- * @function module:dom-utils.remapElementIdsAndRefs
- * @param {Element[]} rootEls - root elements to remap (self + descendants)
- * @param {function(): string} getNewId - supplies a fresh unique id per call
- * @returns {PlainObject<string, string>} map of old id → new id
+ * @param rootEls - root elements to remap (self + descendants)
+ * @param getNewId - supplies a fresh unique id per call
+ * @returns map of old id → new id
  */
-export const remapElementIdsAndRefs = (rootEls, getNewId) => {
-  /** @type {Record<string, string>} */
-  const idMap = {}
-  /** @type {Element[]} */
-  const allEls = []
+export const remapElementIdsAndRefs = (rootEls: Element[], getNewId: () => string): Record<string, string> => {
+  const idMap: Record<string, string> = {}
+  const allEls: Element[] = []
   rootEls.forEach((root) => {
     if (!root) return
     if (root.getAttribute?.('id')) allEls.push(root)
@@ -414,7 +305,7 @@ export const remapElementIdsAndRefs = (rootEls, getNewId) => {
   // Second pass: rewrite references to the renamed ids.
   allEls.forEach((el) => {
     REF_ATTRS.forEach((name) => {
-      const val = /** @type {string} */ (el.getAttribute?.(name))
+      const val = el.getAttribute?.(name) as string
       const url = getUrlFromAttr(val)
       if (!url) return
       const refId = url[0] === '#' ? url.slice(1) : url
@@ -431,37 +322,29 @@ export const remapElementIdsAndRefs = (rootEls, getNewId) => {
   })
   return idMap
 }
-/**
- * Get the reference element associated with the given attribute value.
- * @function module:dom-utils.getFeGaussianBlur
- * @param {any} ele
- * @returns {any} Reference element
- */
-export const getFeGaussianBlur = ele => {
-  if (ele?.firstChild?.tagName === 'feGaussianBlur') {
-    return ele.firstChild
-  } else {
-    const childrens = ele.children
-    // eslint-disable-next-line no-unused-vars
-    for (const [_, value] of Object.entries(childrens)) {
-      if (value.tagName === 'feGaussianBlur') {
-        return value
-      }
-    }
+/** The `feGaussianBlur` of a filter element: its first child, else the first one among its children. */
+export const getFeGaussianBlur = (ele: Element | null | undefined): SVGFEGaussianBlurElement | null => {
+  if (!ele) return null
+  const first = ele?.firstElementChild
+  if (first?.tagName === 'feGaussianBlur') {
+    return first as SVGFEGaussianBlurElement
+  }
+  for (const child of Array.from(ele.children)) {
+    if (child.tagName === 'feGaussianBlur') return child as SVGFEGaussianBlurElement
   }
   return null
 }
 
 /**
  * Assigns multiple attributes to an element.
- * @function module:dom-utils.assignAttributes
- * @param {Element} elem - DOM element to apply new attribute values to
- * @param {Record<string, string|number>} attrs - Object with attribute keys/values
- * @param {number} [suspendLength] - Milliseconds to suspend redraw
- * @param {boolean} [unitCheck=false] - Boolean to indicate the need to use units.setUnitAttr
- * @returns {void}
+ * @param elem - DOM element to apply new attribute values to
+ * @param attrs - Object with attribute keys/values
+ * @param suspendLength - Milliseconds to suspend redraw
+ * @param unitCheck - Boolean to indicate the need to use units.setUnitAttr
  */
-export const assignAttributes = (elem, attrs, suspendLength, unitCheck) => {
+export const assignAttributes = (
+  elem: Element, attrs: Record<string, string | number | undefined>, suspendLength?: number, unitCheck?: boolean
+): void => {
   for (const [key, value] of Object.entries(attrs)) {
     const ns =
       key.startsWith('xml:')
@@ -489,13 +372,10 @@ export const assignAttributes = (elem, attrs, suspendLength, unitCheck) => {
 
 /**
  * Remove unneeded (default) attributes, making resulting SVG smaller.
- * @function module:dom-utils.cleanupElement
- * @param {Element} element - DOM element to clean up
- * @returns {void}
+ * @param element - DOM element to clean up
  */
-export const cleanupElement = element => {
-  /** @type {Record<string, any>} */
-  const defaults = {
+export const cleanupElement = (element: Element): void => {
+  const defaults: Record<string, string | number> = {
     'fill-opacity': 1,
     'stop-opacity': 1,
     opacity: 1,
@@ -524,67 +404,45 @@ export const cleanupElement = element => {
 
 /**
  * Prevents default browser click behaviour on the given element.
- * @function module:dom-utils.preventClickDefault
- * @param {Element} img - The DOM element to prevent the click on
- * @returns {void}
+ * @param img - The DOM element to prevent the click on
  */
-export const preventClickDefault = img => {
-  $click(img, /** @param {Event} e */ e => {
+export const preventClickDefault = (img: Element): void => {
+  $click(img, (e: Event) => {
     e.preventDefault()
   })
 }
 
-/**
- * @callback GetNextID
- * @returns {string} The ID
- */
-
-/**
- * Whether a value is `null` or `undefined`.
- * @param {any} val
- * @returns {boolean}
- */
-export const isNullish = val => {
+/** Whether a value is `null` or `undefined`. */
+export const isNullish = (val: unknown): boolean => {
   return val === null || val === undefined
 }
 
 /**
  * Overwrite methods for unit testing.
- * @function module:dom-utils.mock
- * @param {object} mockMethods
- * @param {typeof getHref} mockMethods.getHref
- * @param {typeof setHref} mockMethods.setHref
- * @param {typeof getRotationAngle} mockMethods.getRotationAngle
- * @returns {void}
  */
 export const mock = ({
   getHref: getHrefUser,
   setHref: setHrefUser,
   getRotationAngle: getRotationAngleUser
-}) => {
+}: {
+  getHref: typeof getHref
+  setHref: typeof setHref
+  getRotationAngle: typeof getRotationAngle
+}): void => {
   getHref = getHrefUser
   setHref = setHrefUser
   getRotationAngle = getRotationAngleUser
 }
 
-/**
- * @param {string} str
- * @returns {ChildNode|null}
- */
-export const stringToHTML = str => {
+export const stringToHTML = (str: string): ChildNode | null => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(str, 'text/html')
   return doc.body.firstChild
 }
 
-/**
- * @param {Element} parent
- * @param {string} child - HTML string
- * @param {number} [index]
- * @returns {void}
- */
-export const insertChildAtIndex = (parent, child, index = 0) => {
-  const doc = /** @type {Node} */ (stringToHTML(child))
+/** @param child - HTML string */
+export const insertChildAtIndex = (parent: Element, child: string, index = 0): void => {
+  const doc = stringToHTML(child) as Node
   if (index >= parent.children.length) {
     parent.appendChild(doc)
   } else {
@@ -593,30 +451,19 @@ export const insertChildAtIndex = (parent, child, index = 0) => {
 }
 
 // shortcuts to common DOM functions
-/** @param {string} id */
-export const $id = id => document.getElementById(id)
-/** @param {string} sel */
-export const $qq = sel => document.querySelector(sel)
-/** @param {string} sel */
-export const $qa = sel => [...document.querySelectorAll(sel)]
+export const $id = (id: string): HTMLElement | null => document.getElementById(id)
+export const $qq = (sel: string): Element | null => document.querySelector(sel)
+export const $qa = (sel: string): Element[] => [...document.querySelectorAll(sel)]
 // Scoped variants: resolve within a given root element instead of the whole
 // document. svgedit's chrome uses fixed element IDs (svgcanvas, workarea, …),
 // so when more than one editor is mounted in the same document a global
 // getElementById returns the first instance's element. Binding $id/$qq/$qa to
 // the owning editor's container lets multiple editors coexist (see svgcanvas.js
 // and the editor's per-instance $id).
-/** @param {ParentNode} root */
-export const scopedId = root => /** @param {string} id */ id => root.querySelector(`[id="${CSS.escape(id)}"]`)
-/** @param {ParentNode} root */
-export const scopedQq = root => /** @param {string} sel */ sel => root.querySelector(sel)
-/** @param {ParentNode} root */
-export const scopedQa = root => /** @param {string} sel */ sel => [...root.querySelectorAll(sel)]
-/**
- * @param {EventTarget} element
- * @param {EventListener} handler
- * @returns {void}
- */
-export const $click = (element, handler) => {
+export const scopedId = (root: ParentNode) => (id: string): Element | null => root.querySelector(`[id="${CSS.escape(id)}"]`)
+export const scopedQq = (root: ParentNode) => (sel: string): Element | null => root.querySelector(sel)
+export const scopedQa = (root: ParentNode) => (sel: string): Element[] => [...root.querySelectorAll(sel)]
+export const $click = (element: EventTarget, handler: EventListener): void => {
   element.addEventListener('click', handler)
   element.addEventListener('touchend', handler)
 }

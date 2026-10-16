@@ -8,7 +8,7 @@
  */
 
 import { getReverseNS, NS } from './namespaces.ts'
-import { getHref, setHref, getUrlFromAttr } from './dom-utils.js'
+import { getHref, setHref, getUrlFromAttr } from './dom-utils.ts'
 import { warn } from '../common/logger.ts'
 
 const REVERSE_NS = getReverseNS()

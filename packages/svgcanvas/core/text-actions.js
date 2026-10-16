@@ -13,7 +13,7 @@ import {
   assignAttributes,
   getTextWithNewlines,
   TEXT_LINE_HEIGHT
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import { supportsGoodTextCharPos } from '../common/browser.ts'
 import { isAreaText, rowsOf, softCount } from './text-rows.js'

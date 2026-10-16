@@ -10,7 +10,7 @@
 import { transformPoint, getTransformList } from './math.ts'
 import {
   getRotationAngle
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import {
   getBBox,
   getBBox as utilsGetBBox

@@ -1,6 +1,6 @@
 // imageImportDialog.js — Insert image dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM
 import imageImportDialogHTML from './imageImportDialog.html'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')

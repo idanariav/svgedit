@@ -13,7 +13,7 @@ import {
   runFavoriteTrigger
 } from '../favoriteActions.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuDialogHTML

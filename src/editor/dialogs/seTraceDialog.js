@@ -1,7 +1,7 @@
 // seTraceDialog.js — `<se-trace-dialog>` — options for tracing a raster image to vector (style, colors) before `traceImageToSvg` runs
 import traceDialogHTML from './seTraceDialog.html'
 import { ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')

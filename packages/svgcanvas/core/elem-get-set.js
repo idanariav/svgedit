@@ -11,7 +11,7 @@ import { NS } from './namespaces.ts'
 import { init as textAttrsInit } from './text-attrs.js'
 import {
   walkTree, getHref, setHref
-} from './dom-utils.js'
+} from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import { getParents } from '../common/util.ts'
 

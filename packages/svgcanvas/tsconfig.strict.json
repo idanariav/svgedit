@@ -33,7 +33,7 @@
   "core/dash-fit.js",
   "core/dataStorage.ts",
   "core/distort.js",
-  "core/dom-utils.js",
+  "core/dom-utils.ts",
   "core/debug-events.ts",
   "core/draw-snap.ts",
   "core/draw.js",

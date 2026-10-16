@@ -8,7 +8,7 @@
  * @license MIT
  */
 
-import { getHref, walkTree } from './dom-utils.js'
+import { getHref, walkTree } from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import {
   transformPoint,

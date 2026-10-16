@@ -14,7 +14,7 @@ import {
 } from './math.ts'
 import {
   assignAttributes
-} from './dom-utils.js'
+} from './dom-utils.ts'
 
 /**
 * @function module:path-actions.init

@@ -3,7 +3,7 @@ import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot } from '../domScope.js'
 import { syncDialogTheme } from '../themeUtil.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 const template = document.createElement('template')
 template.innerHTML = cMenuLayersDialog

@@ -3,7 +3,7 @@ import { t } from '../locale.js'
 import { formatHotkey } from '../Hotkeys.js'
 import hotkeyDialogHTML from './hotkeyDialog.html'
 import { ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')

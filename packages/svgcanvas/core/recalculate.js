@@ -6,7 +6,7 @@
  */
 
 import { getUnits } from './units.ts'
-import { getRotationAngle } from './dom-utils.js'
+import { getRotationAngle } from './dom-utils.ts'
 import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
 import {

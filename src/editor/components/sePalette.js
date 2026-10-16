@@ -3,7 +3,7 @@
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
-import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 // Curated default: "none", five neutrals, then twelve hues in three tones (mid, deep,
 // soft). Fewer, related colours push drawings toward a coherent limited palette.

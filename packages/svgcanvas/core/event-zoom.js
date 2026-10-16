@@ -5,7 +5,7 @@
  * @module event-zoom
  * @license MIT
  */
-import { assignAttributes } from './dom-utils.js'
+import { assignAttributes } from './dom-utils.ts'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
