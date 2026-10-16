@@ -1,6 +1,6 @@
 # SVGedit CSS Rules & Hierarchy
 
-> **How to use this doc:** Start with the Design Tokens table to find variable names, then Grid Layout to understand positioning, then the Component CSS sections to style individual UI elements. All shadow DOM CSS lives in the component `.js` files, not in `svgedit.css`.
+> **How to use this doc:** Start with the Design Tokens to find variable names, then Grid Layout to understand positioning, then the selector rules and component sections. The values live in the CSS (`svgedit.css`, the components), not here: this doc says what each token and rule is for and the traps in them. All shadow DOM CSS lives in the component `.js` files, not in `svgedit.css`.
 
 **Primary CSS file:** [src/editor/svgedit.css](../src/editor/svgedit.css)
 **Component CSS:** embedded in each `src/editor/components/*.js` as a template string
@@ -9,653 +9,146 @@
 
 ## Design Tokens (CSS Custom Properties)
 
-Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and overridden by `.svg_editor.theme-dark`.
+Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and overridden by `.svg_editor.theme-dark`. Keep `:root,` directly before `.svg_editor`: the Obsidian plugin strips it with a regex to scope the variables.
 
-Every dialog (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`,
-`se-image-import-dialog`, `se-trace-dialog`, `se-recolor-dialog`, `se-edit-prefs-dialog`, `se-export-dialog`,
-`se-svg-source-editor-dialog`, `se-img-prop-dialog`, `se-plain-alert-dialog` (alert/confirm/select/prompt),
-`se-cmenu_canvas-dialog`, `se-cmenu-layers`, `se-hotkey-dialog`, `se-favorites-dialog`,
-`se-command-search-dialog`) is mounted next to `.svg_editor`, not inside it, so it is listed in the
-same two token blocks (`se-x-dialog` for light, `se-x-dialog.theme-dark` for dark) and follows the
-editor's light/dark theme. Each dialog calls `syncDialogTheme(this)` (`themeUtil.js`) every time it
-opens, which copies the owning editor's theme onto the host as `theme-dark`/`theme-light`.
-Dialogs must **not** redefine the shared tokens locally; only dialog-specific `--cp-*` / `--pd-*`
-tokens live in their own styles. A new dialog needs: its tag in both blocks, `syncDialogTheme` on
-open, and (for form-style dialogs) `dialogSkin('#its_card')` from `dialogs/dialogSkin.css.js` for
-the card/buttons/fields — `tests/unit/dialog-theme-tokens.test.js` fails if the tag is missing.
-`<dialog>` elements need their own frame reset (`padding:0; background:transparent; border:none`)
-when the card inside is the visible surface; `::part(frame)` does nothing on a native `<dialog>`.
-Keep `:root,` directly before `.svg_editor` — the Obsidian plugin strips it with a regex to scope
-the variables.
+**Dialogs.** Every dialog (`se-color-dialog`, `se-palette-dialog`, `se-text-prompt-dialog`, `se-image-import-dialog`, `se-trace-dialog`, `se-recolor-dialog`, `se-edit-prefs-dialog`, `se-export-dialog`, `se-svg-source-editor-dialog`, `se-img-prop-dialog`, `se-plain-alert-dialog` (alert / confirm / select / prompt), `se-cmenu_canvas-dialog`, `se-cmenu-layers`, `se-hotkey-dialog`, `se-favorites-dialog`, `se-command-search-dialog`) is mounted next to `.svg_editor`, not inside it. So its tag is listed in the same two token blocks (`se-x-dialog` for light, `se-x-dialog.theme-dark` for dark), and it calls `syncDialogTheme(this)` (`themeUtil.js`) every time it opens, which copies the owning editor's theme onto the host as `theme-dark` / `theme-light`. Dialogs must **not** redefine the shared tokens locally; only dialog-specific `--cp-*` / `--pd-*` tokens live in their own styles. A new dialog needs its tag in both blocks, `syncDialogTheme` on open and, for form-style dialogs, `dialogSkin('#its_card')` from `dialogs/dialogSkin.css.js`; `tests/unit/dialog-theme-tokens.test.js` fails if the tag is missing. A `<dialog>` needs its own frame reset (`padding: 0; background: transparent; border: none`) when the card inside is the visible surface, since `::part(frame)` does nothing on a native `<dialog>`.
 
-### Surface Colors
+| Group | Tokens | Purpose |
+|-------|--------|---------|
+| Surfaces | `--app-bg`, `--chrome-bg`, `--chrome-border`, `--canvas-bg` | Outermost background; toolbar / panel background and border; the workarea outside the paper |
+| Paper | `--ruler-bg`, `--paper-bg`, `--paper-border`, `--paper-radius`, `--paper-shadow`, `--paper-shadow-filter` | Ruler strip; the artboard's fill, border, radius and shadow (`--paper-shadow-filter` is the `drop-shadow()` equivalent, since filters have no spread, applied to `#canvasBackground`) |
+| Text | `--fg`, `--muted` | Primary text; secondary labels |
+| Icons | `--icon`, `--icon-hover`, `--icon-hover-bg`, `--icon-active-bg` | Default and hover icon colour; button hover and mousedown backgrounds |
+| Accent | `--accent`, `--accent-soft`, `--accent-border`, `--active-shadow` | Active / selected colour (blue in light, amber in dark), its button tint, border and glow |
+| Fields | `--field-bg`, `--field-border`, `--field-border-h`, `--accent-ring` | Input background, border, hover border, focus ring (`focus-within` box-shadow) |
+| Groups | `--section-rule`, `--group-bg`, `--group-border` | Divider between right-panel sections and layer rows; control-group tray |
+| Swatches | `--swatch-bg/border/border-hover`, `--none-slash` | Paint swatches; the red slash of the palette's "none" swatch |
+| Internal | `--cp-*`, `--sl-*` | Colour-picker modal; shape-library modal |
+| Misc | `--ui-font`, `--top-toolbar-min-height`, `--global-se-spin-input-width`, `--scrollbar-thumb` | UI font stack; top toolbar row height; default spin-input width; thin scrollbar |
 
-| Variable | Light value | Dark value | Purpose |
-|----------|-------------|------------|---------|
-| `--app-bg` | `#F4F5F7` | `#16181D` | Outermost application background |
-| `--chrome-bg` | `#FFFFFF` | `#1E2026` | Toolbar / panel background |
-| `--chrome-border` | `#E6E8EC` | `#2C2F37` | Toolbar / panel border |
-| `--canvas-bg` | `#F8F9FB` | `#0F1115` | Workarea (outside the SVG paper) |
-| `--ruler-bg` | `#FFFFFF` | `#1A1C22` | Ruler strip background |
-| `--paper-bg` | `#FFFFFF` | `#FAFAF8` | SVG artboard/paper background |
-| `--paper-border` | `#DCDFE5` | `#1A1C22` | SVG artboard border |
-| `--paper-radius` | `4px` | `4px` | SVG artboard corner radius |
-| `--paper-shadow` | multi-layer drop shadow | darker shadow | Box shadow on SVG paper |
-| `--paper-shadow-filter` | `drop-shadow()` chain | darker | Page shadow via CSS `filter` on `#canvasBackground` |
-
-### Text Colors
-
-| Variable | Light | Dark | Purpose |
-|----------|-------|------|---------|
-| `--fg` | `#1B1F24` | `#ECEEF2` | Primary text / foreground |
-| `--muted` | `#6B7280` | `#9098A5` | Secondary / muted labels |
-
-### Icon States
-
-| Variable | Light | Dark | Purpose |
-|----------|-------|------|---------|
-| `--icon` | `#4B5563` | `#B7BDC8` | Default icon color |
-| `--icon-hover` | `#0F172A` | `#FFFFFF` | Icon color on hover |
-| `--icon-hover-bg` | `#EEF1F5` | `#2A2D35` | Button hover background |
-| `--icon-active-bg` | `#E2E6EC` | `#353944` | Button active/mousedown background |
-
-Icons drawn as solid silhouettes are converted to outlines at load time by `OUTLINE_ICONS`
-in `components/svgIconLoader.js` (`vector-effect: non-scaling-stroke`, so large-viewBox
-artwork keeps the same 1.6px line as the native outline icons). Add a file name to that set
-instead of redrawing the SVG.
-
-### Accent (Active / Selected State)
-
-| Variable | Light | Dark | Purpose |
-|----------|-------|------|---------|
-| `--accent` | `#2962FF` (blue) | `#F6B23A` (amber) | Active/selected color |
-| `--accent-soft` | `#E8EFFF` | `#3A2E18` | Active button background tint |
-| `--accent-border` | `#C7D7FF` | `#5A4422` | Active button border |
-| `--active-shadow` | blue glow | amber glow | Active button box-shadow |
-
-### Input Fields & Groups
-
-| Variable | Light | Dark | Purpose |
-|----------|-------|------|---------|
-| `--field-bg` | `#FFFFFF` | `#14161A` | Input field background |
-| `--field-border` | `#DDE1E7` | `#2C2F37` | Input field border |
-| `--field-border-h` | `#C8CDD6` | `#3C4150` | Input field border on hover |
-| `--accent-ring` | `rgba(41,98,255,0.16)` | `rgba(246,178,58,0.20)` | Field focus ring (focus-within box-shadow) |
-| `--section-rule` | `#EEF0F3` | `#23262E` | Light divider between right-panel sections / layer rows |
-| `--group-bg` | `#F6F7F9` | `#181A20` | Control-group tray background |
-| `--group-border` | `#E6E8EC` | `#2C2F37` | Control-group tray border |
-
-### Swatches & Color Picker
-
-| Variable | Purpose |
-|----------|---------|
-| `--swatch-bg/border/border-hover` | Paint swatch appearance |
-| `--none-slash` | Colour of the red slash on the palette's "none" swatch (lighter in the dark theme) |
-| `--cp-*` | Color picker modal internal tokens (modal-bg, head-bg, stage-bg, etc.) |
-| `--sl-*` | Shape library modal internal tokens |
-
-### Misc / UI
-
-| Variable | Purpose |
-|----------|---------|
-| `--ui-font` | `'Inter', -apple-system, system-ui, sans-serif` |
-| `--top-toolbar-min-height` | `56px` — top toolbar row height |
-| `--global-se-spin-input-width` | `82px` — default spin input width |
-| `--scrollbar-thumb` | Thin scrollbar color |
-
----
+Icons drawn as solid silhouettes are converted to outlines at load time by `OUTLINE_ICONS` in `components/svgIconLoader.js` (`vector-effect: non-scaling-stroke`, so large-viewBox artwork keeps the same 1.6 px line as the native outline icons). Add a file name to that set instead of redrawing the SVG.
 
 ## Retired Aliases
 
-The legacy alias variables (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`,
-`--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, `--workarea-bg`,
-`--ruler-color`, `--bevel-light`, …) no longer exist; every use was migrated to the canonical tokens
-above (`--workarea-bg` → `--canvas-bg`, `--ruler-color` → `--ruler-bg`, `--bevel-light` →
-`--chrome-border`). `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again.
-
-**Rule:** Always use the canonical tokens above.
+The legacy alias variables (`--main-bg-color`, `--text-color`, `--border-color`, `--dropdown-bg`, `--hover-highlight`, `--icon-bg-color-hover`, `--link-color`, `--orange-color`, `--workarea-bg`, `--ruler-color`, `--bevel-light`, …) no longer exist; `--workarea-bg` is `--canvas-bg`, `--ruler-color` is `--ruler-bg`, `--bevel-light` is `--chrome-border`. `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again. **Always use the canonical tokens.**
 
 ---
 
 ## Grid Layout (`.svg_editor`)
 
-The editor root is a **CSS Grid** with 4 rows × 5 columns.
+The editor root is a **CSS Grid** (4 rows × 5 columns; sizes in `svgedit.css`) with the areas:
 
-```css
-.svg_editor {
-  display: grid;
-  grid-template-rows: minmax(56px, auto) 15px 1fr 56px;
-  grid-template-columns: 56px 15px 50px 1fr 15px;
-  grid-template-areas:
-    "main  main    main    top    top"
-    "left  corner  rulerX  rulerX side"
-    "left  rulerY  workarea workarea side"
-    "left  bottom  bottom  bottom bottom";
-}
+```
+"main  main    main    top    top"
+"left  corner  rulerX  rulerX side"
+"left  rulerY  workarea workarea side"
+"left  bottom  bottom  bottom bottom"
 ```
 
 | Grid area | Element | Description |
 |-----------|---------|-------------|
-| `main` | `#main_button` | Brand pill / hamburger menu button (spans full width) |
+| `main` | `#main_button` | Brand pill / menu button |
 | `top` | `#tools_top` | Horizontal top toolbar |
 | `left` | `#tools_left` | Vertical left tool sidebar |
-| `corner` | *(ruler corner)* | Empty corner where rulers meet |
-| `rulerX` | `#rulers .ruler_x` | Horizontal ruler |
-| `rulerY` | `#rulers .ruler_y` | Vertical ruler |
+| `corner` | *(ruler corner)* | Empty corner where the rulers meet |
+| `rulerX` / `rulerY` | `#rulers .ruler_x` / `.ruler_y` | Rulers |
 | `workarea` | `#workarea` | Canvas scroll area |
-| `side` | `#sidepanels` | Right side panel (layers, overview; collapsible) |
+| `side` | `#sidepanels` | Right side panel (collapsible) |
+| `bottom` | `#tools_bottom` | Bottom colour bar |
 
-**Empty-canvas watermark** — `#canvas_watermark` is an absolutely-positioned,
-`pointer-events:none` overlay inside `#svgcanvas` (centered, `opacity:0.07`) whose
-background image is the full-color brand `logo.svg`. Hidden by default; gets the
-`.visible` class only while the drawing has no objects. Toggled by
-`Editor.updateCanvasWatermark()` (called on `changed`/`afterClear` and at startup).
+**Open state** (side panel expanded): `.open` on `.svg_editor` widens column 5 from 15 px to 220 px.
 
-**Layer Focus badge** — `#layer_focus_badge` is a `pointer-events:none` pill that
-shows the active layer name while Layer Focus mode is on (ext-layer_view). It is a
-**sibling** of `#workarea` placed in the same `grid-area: workarea` cell (not a
-child of the scroll container), so it stays pinned to the viewport top instead of
-scrolling with the canvas. Hidden by default; shown via the `.visible` class.
-| `bottom` | `#tools_bottom` | Bottom status bar |
+**Empty-canvas watermark.** `#canvas_watermark` is an absolutely positioned, `pointer-events: none` overlay inside `#svgcanvas` (centred, `opacity: 0.07`) with the full-colour brand `logo.svg`. It gets `.visible` only while the drawing has no objects, toggled by `Editor.updateCanvasWatermark()` (on `changed` / `afterClear` and at startup).
 
-**Open state** (side panel expanded): adds class `.open` to `.svg_editor`, changing column 5 from `15px` to `220px`.
+**Layer Focus badge.** `#layer_focus_badge` is a `pointer-events: none` pill showing the active layer name in Layer Focus mode (ext-layer_view). It is a **sibling** of `#workarea` in the same `grid-area: workarea` cell, not a child of the scroll container, so it stays pinned to the viewport top instead of scrolling with the canvas. Shown via `.visible`.
 
-**Tablet mode** (touch-first shell): adds class `.ui-tablet` to `.svg_editor`
-(via `uiMode.js`). All tablet styling lives in [src/editor/tablet.css](../src/editor/tablet.css),
-`@import`ed at the top of `svgedit.css` and **entirely scoped under
-`.svg_editor.ui-tablet`** — colors inherit from the tokens above; only geometry +
-visibility change. It collapses the grid (`grid-template-rows: 0 0 1fr 0;
-grid-template-columns: 0 0 0 1fr 0`) so `#workarea` fills the shell, `display:none`s
-`#tools_top/#tools_left/#sidepanels/#tools_bottom` (+ rulers), floats `#main_button`
-top-left, and renders the `.tablet-shell` overlay (`.ts-topbar` command bar +
-`.ts-sheet` bottom sheet, both built by `panels/TabletShell.js`). The desktop and
-tablet shells are mutually exclusive — `.svg_editor:not(.ui-tablet) .tablet-shell`
-is hidden. Touch sizing tokens (`--hit: 56px`, `--hit-sm: 46px`, `--r-md/lg/pill`)
-are defined on the `.ui-tablet` root. The embedded `<se-shape-library>` button is
-sized to the touch toolgroup via the component's `--sl-tool-size` /
-`--sl-tool-icon-size` / `--sl-tool-radius` custom properties (defaults 40/22/10px
-in `seShapeLibrary.js`; these inherit through the shadow boundary). The select
-cursor icon gets a small `translate(2px,1px)` nudge (`.ts-tool-select svg`) so its
-top-left-weighted shape reads as centred in the active blue circle.
+**Tablet mode** (touch-first shell) adds `.ui-tablet` to `.svg_editor` (`uiMode.js`). All tablet styling is in [tablet.css](../src/editor/tablet.css), `@import`ed at the top of `svgedit.css` and **entirely scoped under `.svg_editor.ui-tablet`**: colours inherit from the tokens, only geometry and visibility change. It collapses the grid so `#workarea` fills the shell, hides `#tools_top` / `#tools_left` / `#sidepanels` / `#tools_bottom` and the rulers, floats `#main_button` top-left, and shows the `.tablet-shell` overlay (`.ts-topbar` command bar + `.ts-sheet` bottom sheet, built by `panels/TabletShell.js`). The desktop and tablet shells are mutually exclusive (`.svg_editor:not(.ui-tablet) .tablet-shell` is hidden). Touch sizing tokens (`--hit`, `--hit-sm`, `--r-md/lg/pill`) are defined on the `.ui-tablet` root. The embedded `<se-shape-library>` button is sized through `--sl-tool-size` / `--sl-tool-icon-size` / `--sl-tool-radius` (they inherit through the shadow boundary); the select cursor icon gets a small `translate(2px, 1px)` (`.ts-tool-select svg`) so its top-left-weighted shape reads as centred in the active circle.
 
-**Tablet narrow panes:** `.tablet-shell` is a size container (`container-type: inline-size`);
-`@container` rules near the end of the command-bar section hide the zoom row (≤1240px), slim
-the tool buttons (≤980px), hide Done (≤840px) and slim them again (≤800px) so Undo/Redo stay on screen; ≤960px also drops the
-bottom sheet's column dividers (its columns wrap there). Each tier sits a little *above* the width where the bar would overflow, and
-`top-bar-layout.spec.js` checks a dense list of widths (the bar overflowed in the bands just above 1160px and 900px while the
-three widths first tested passed): when a button is added to the bar, re-measure and move the tiers. Add new tiers
-there, not as viewport `@media` (hosts embed the editor in panes).
+**Tablet narrow panes.** `.tablet-shell` is a size container (`container-type: inline-size`); `@container` rules at the end of the command-bar section hide the zoom row, slim the tool buttons, hide Done and slim them again so Undo / Redo stay on screen, and drop the bottom sheet's column dividers where its columns wrap. Each tier sits a little *above* the width where the bar would overflow, and `top-bar-layout.spec.js` checks a dense list of widths (the bar once overflowed in bands just above 1160 px and 900 px while the three widths first tested passed): when a button is added to the bar, re-measure and move the tiers. Add tiers there, **not as viewport `@media`** (hosts embed the editor in panes).
 
-The **bottom sheet** (`.ts-sheet`) holds its columns in a wrapping flex row, so in a narrow pane the last column drops to a second line
-instead of running off the sheet; its top band (34px) holds the kind label and the close button. A range input has an intrinsic
-width: `.te-range` needs `min-width: 0` or its value label spills into the next column, and the input is 32px tall (the 6px
-track is drawn inside it) so the finger's target is the input, not the track. Swatches and flyout rows are 44px; the command bar's
-tool buttons are 46px, then 38px and 35px in the narrow tiers (the bar has no room for more).
-`tests/e2e/tablet-shell-layout.spec.js` guards all of this.
+The **bottom sheet** (`.ts-sheet`) keeps its columns in a wrapping flex row, so in a narrow pane the last column drops to a second line; its 34 px top band holds the kind label and the close button. A range input has an intrinsic width: `.te-range` needs `min-width: 0` or its value label spills into the next column, and the input itself is 32 px tall (the track is drawn inside) so the finger's target is the input, not the track. Touch targets: swatches and flyout rows 44 px, command-bar tool buttons 46 px (38 / 35 px in the narrow tiers). `tests/e2e/tablet-shell-layout.spec.js` guards it.
 
-> **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline
-> `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves
-> that percentage against the button box, but the iOS/Android WebView (Obsidian
-> mobile) collapses it to a near-zero intrinsic size — icons render tiny. Every
-> tablet icon-size rule (`.tbtn svg`, `.ts-toolgroup .tbtn svg`, `.tbtn.sm svg`,
-> `.menu-item .mi-ic svg`, `.lib-cell svg`) therefore uses `!important` so the
-> explicit pixel size beats the inline style on all platforms. The embedded
-> shape-library button does **not** need this (it sizes via `--sl-tool-icon-size`,
-> not the injected inline style) — which is why it was the only icon that rendered
-> correctly before the fix.
+> **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves the percentage against the button box, but the iOS / Android WebView (Obsidian mobile) collapses it to a near-zero intrinsic size. Every tablet icon-size rule (`.tbtn svg`, `.ts-toolgroup .tbtn svg`, `.tbtn.sm svg`, `.menu-item .mi-ic svg`, `.lib-cell svg`) therefore uses `!important`, so the explicit pixel size beats the inline style everywhere. The embedded shape-library button does not need it (it sizes via `--sl-tool-icon-size`).
 
 ---
 
 ## Key Selector Rules
 
-### `#workarea` — Canvas Container
-```css
-#workarea {
-  grid-area: workarea;
-  background-color: var(--canvas-bg);   /* workarea, not paper */
-  overflow: auto;
-  text-align: center;
-  padding: 56px 80px 80px 56px;         /* space around SVG paper */
-}
-```
+### `#workarea` — canvas container
+`grid-area: workarea`, `background: var(--canvas-bg)` (the workarea, not the paper), `overflow: auto`, padded around the paper.
 
 ### `#svgcanvas` / `#canvasBackground` — scroll area vs. document page
-`#svgcanvas` is the over-sized scroll/pan area (size = `max(workarea, contentW·zoom·canvas_expansion)`), **not** the document page — so it must stay transparent. The "paper" appearance lives on `#canvasBackground`, the SVG element sized to the document that scales with zoom. Putting the paper styling on `#svgcanvas` makes the white page appear fixed-size while objects scale (they then look like they spill off the page).
-```css
-#svgcanvas { background: transparent; }      /* just the scroll/pan container */
+`#svgcanvas` is the over-sized scroll / pan area (size = `max(workarea, contentW·zoom·canvas_expansion)`), **not** the document page, so it must stay transparent. The "paper" lives on `#canvasBackground`, the SVG element sized to the document that scales with zoom (`filter: var(--paper-shadow-filter)`; its `> rect` is the page border: `stroke: var(--paper-border)`, `vector-effect: non-scaling-stroke` so it stays 1 px at any zoom). Putting the paper styling on `#svgcanvas` makes the white page look fixed-size while objects scale, so they appear to spill off the page.
 
-#canvasBackground { filter: var(--paper-shadow-filter); }   /* page drop shadow */
-#canvasBackground > rect {                   /* the page border */
-  stroke: var(--paper-border);
-  stroke-width: 1px;
-  vector-effect: non-scaling-stroke;         /* stays 1px at any zoom */
-}
-```
-`--paper-shadow-filter` is the `drop-shadow()` equivalent of `--paper-shadow` (filters have no spread param), defined per theme.
+### `#tools_top` — top toolbar
+A single row (`flex-wrap: nowrap`, `overflow-x: auto`): children keep their natural width (`flex-shrink: 0`) and the bar scrolls horizontally instead of squishing or wrapping. Quick-action clusters share one rounded **tray** look (`#editor_panel`, `#history_panel`, `#zoom_panel`, `.quick_tray`: `--group-bg` / `--group-border`). `#top_end` wraps `#history_panel` + `#zoom_panel` with `margin-left: auto; position: sticky; right: 0`, pinning Undo / Redo and zoom to the right edge. `#star_panel` / `#polygon_panel` spin-inputs are capped to 58 px: at the default ~184 px the three polystar fields would wrap the toolbar to a second row.
 
-### `#tools_top` — Top Toolbar
-```css
-#tools_top {
-  grid-area: top;
-  display: flex; flex-direction: row; flex-wrap: nowrap;
-  align-items: center;
-  background: var(--chrome-bg);
-  border-bottom: 1px solid var(--chrome-border);
-  min-height: 56px;  /* var(--top-toolbar-min-height) */
-  padding: 0 10px;
-  gap: 6px;
-  z-index: 5;
-  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; /* single row; scroll on overflow */
-}
-/* Children keep natural width (flex-shrink:0) and don't wrap internally, so the
-   bar scrolls horizontally instead of squishing or wrapping to a second row. */
-#tools_top > * { flex-shrink: 0; flex-wrap: nowrap; }
-/* Rounded "tray" groups in the top toolbar — shared visual language for all
-   quick-action clusters (view / history / object / arrange / zoom / path-node) */
-#editor_panel, #history_panel, #zoom_panel, .quick_tray {
-  display: inline-flex; align-items: center; gap: 2px;
-  padding: 4px;
-  background: var(--group-bg);
-  border: 1px solid var(--group-border);
-  border-radius: 10px;
-}
-/* #top_end wraps #history_panel + #zoom_panel: margin-left:auto + position:sticky;
-   right:0 pins Undo/Redo + zoom to the right edge (stable position, always reachable) */
-#top_end { margin-left: auto; position: sticky; right: 0; background: var(--chrome-bg); }
+Contextual trays carry their selection classes (`.selected_panel`, `.multiselected_panel`, `.g_panel`, `.path_node_panel`) plus `.quick_tray` and start `display: none`; `TopPanel.js` `displayTool()` / `hideTool()` toggle them. One consolidated tray per selection context (`.selected_panel` for one element, `.multiselected_panel` for many) holds all object actions. `.selected_panel` and `.multiselected_panel` are **shared** with RightPanel sections, so one `displayTool()` call toggles both the top tray and the matching side-panel section.
 
-/* Polystar context fields: the spin-box defaults to ~184px, so the star
-   panel's three fields would wrap the toolbar to a second row. Cap them. */
-#star_panel se-spin-input,
-#polygon_panel se-spin-input { width: 58px; } /* short labels keep panel ~178px */
-```
+> **Gotcha:** `displayTool(name)` / `hideTool(name)` select by CSS **class** (`.${name}`), not `id`. A per-button element (e.g. `#tool_topath`) needs a matching `class="tool_topath"` on top of its `id`, or the toggle is a silent no-op. If the element already has `class="span2"`, append to that list.
 
-Contextual trays carry their selection classes (`.selected_panel`,
-`.multiselected_panel`, `.g_panel`, `.path_node_panel`) plus `.quick_tray`, and
-start with inline `display:none`; `TopPanel.js` `displayTool()`/`hideTool()` toggle
-them (`#tools_top > *` provides the `display:flex` fallback when shown). Each
-selection context uses a single consolidated tray (`.selected_panel` for one
-element, `.multiselected_panel` for many) holding all object actions — clone /
-delete / group / arrange / flip / align. Note `.selected_panel` and
-`.multiselected_panel` are **shared** with RightPanel sections, so the same
-`displayTool()` call toggles both the top tray and the matching side-panel section.
-**Gotcha:** `displayTool(name)`/`hideTool(name)` select by CSS **class** (`.${name}`),
-not `id` — a per-button element (e.g. `#tool_topath`) needs a matching
-`class="tool_topath"` on top of its `id`, or the toggle is a silent no-op.
-This bit `tool_topath`/`tool_reorient`/`tool_smooth_path`/`tool_stroke_to_path`/
-`tool_path_offset` in RightPanel.html, which only carried the `id` (fixed 2026-07-09),
-and `tool_make_link`/`tool_make_link_multi`/`image_url` (fixed 2026-07-10; `image_url`
-already had `class="span2"` — the fix appends `image_url` to that list rather than
-replacing it).
+> **Gotcha:** `se-button`'s `disabled` sets `pointer-events: none` on the *inner shadow div* only, which does **not** block clicks on the host (the hit test skips the div and resolves to the host), so an external listener (e.g. through `$click`) still fires. `seButton.js` therefore adds a capture-phase click guard on the host that calls `stopImmediatePropagation()` when disabled; any rewrite must keep it. Code that disables a button **must** set `.disabled = true` (or the `disabled` attribute), never `classList.add('disabled')` on the host, which has no effect from outside the shadow root.
 
-**Gotcha:** `se-button`'s `disabled` state (`components/seButton.js`) sets
-`pointer-events: none` on the *inner shadow `div`* only. That does **not**
-block clicks on the host — the browser's hit test just skips the div and
-resolves to the host underneath, so an external `addEventListener('click', ...)`
-bound to the host (e.g. via the `$click` helper) still fires. `seButton.js`'s
-constructor now adds its own capture-phase click guard on the host that calls
-`stopImmediatePropagation()` when `disabled`, so this is safe again — but any
-future rewrite of that component must keep it, and code that wants to
-disable a button **must** set `.disabled = true` (or the `disabled`
-attribute), never `classList.add('disabled')` on the host — that class has
-no effect from outside the shadow root. (`TopPanel.js`'s `changeRotationAngle`/
-pathedit `tool_node_delete` toggle and `Editor.js`'s rotate-drag handler all
-had this exact bug against `tool_reorient`/`tool_node_delete`, fixed 2026-07-09.)
+### `#tools_left` — left tool sidebar
+A column flex container (`overflow-y: scroll; scrollbar-width: none`). The drag-to-reorder indicators (`.se-dragging`, `.se-drop-before`, `.se-drop-after`, `[draggable]:hover`) apply wherever the tool lives (main row or the overflow popover), since the classes are set on the light-DOM tool element. A tool's key badge is `::after` on the host with `content: attr(data-shortcut)` (set by `toolShortcutBadges.js`; `--muted` on a `--chrome-bg` pill, `--accent` while pressed, absolute at the bottom right). See `tools.md` for the behaviour.
 
-### `#tools_left` — Left Tool Sidebar
-```css
-#tools_left {
-  grid-area: left;
-  display: flex; flex-direction: column;
-  align-items: center;
-  padding: 10px 0; gap: 4px;
-  background: var(--chrome-bg);
-  border-right: 1px solid var(--chrome-border);
-  overflow-y: scroll; scrollbar-width: none; /* hidden scrollbar */
-}
-```
+### `#tools_bottom` — bottom colour bar
+Colour controls only (`fill_color`, `stroke_color`, `bg_color`, `palette`); a single scrolling row.
 
-Drag-to-reorder indicators (`toolDragReorder.js`) apply to a tool wherever it
-currently lives — the main row or inside the "Additional tools" overflow
-popover (`<se-tool-overflow>`) — since the classes are set on the actual
-light-DOM tool element, unaffected by shadow boundaries:
-A tool's activating key is drawn on the host with `::after` (text from `data-shortcut`, set by
-`toolShortcutBadges.js`; `--muted` text on a `--chrome-bg` pill, `--accent` while pressed, absolute at the bottom right):
-```css
-#tools_left [data-shortcut] { position: relative; }
-#tools_left [data-shortcut]::after { content: attr(data-shortcut); position: absolute; right: 3px; bottom: 2px; }
-```
-```css
-#tools_left > [draggable]:hover { cursor: grab; }
-#tools_left .se-dragging { opacity: 0.4; cursor: grabbing; }
-#tools_left .se-drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
-#tools_left .se-drop-after { box-shadow: 0 2px 0 0 var(--accent); }
-```
+### `#main_button` / `#main_menu` — brand pill and menu
+The brand button's label lives inside `se-menu`'s own shadow DOM (`components/seMenu.js`, a plain custom element using the native Popover API for its dropdown), which global CSS cannot pierce: to restyle the button, edit the `#popupToggle` style block in that file (it is deliberately `transparent` so the brand button blends into the toolbar). The `#main_icon`, `#logo` and `#main_button .dropdown` rules in `svgedit.css` are **dead** for that reason; `#main_button` (the light-DOM container) only contributes the bottom and right `--chrome-border` separators. `#main_menu` is a 230 px card (`--chrome-bg`, `--chrome-border`, `--main-menu-shadow`) with `li` rows hovering to `--icon-hover-bg`.
 
-### `#tools_bottom` — Bottom Color Bar
-Holds only the color controls (`fill_color`, `stroke_color`, `bg_color`, `palette`).
-```css
-#tools_bottom {
-  grid-area: bottom;
-  display: flex; align-items: center;
-  height: 56px; gap: 8px; padding: 0 14px;
-  background: var(--chrome-bg);
-  border-top: 1px solid var(--chrome-border);
-  overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: thin;
-}
-```
+### Right-panel tabs and sections
+The right panel is tabbed (Design / Text / Effects / Layers). `#sidepanel_tabs` is sticky at the top of the scrolling `#sidepanel_content`; the active `.sidepanel_tab` uses the accent colour with an underline drawn by `::after`; `.sidepanel_tabpanel` is hidden unless `.active`. Helper classes: `.sidepanel_btn_row` (a wrapping row of buttons inside a section), `.sidepanel_btn_group` (a labelled button cluster, e.g. Object: Path / Select & Link; a hairline divider before every cluster after the first), `.sidepanel_text_font`.
 
-### `#main_button` — Brand Pill / Menu
-```css
-#main_button {
-  grid-area: main;
-  display: inline-flex; align-items: center;
-  padding: 0 10px;
-  background: var(--chrome-bg);
-  border-bottom: 1px solid var(--chrome-border);
-  border-right: 1px solid var(--chrome-border);
-}
-#main_icon {                          /* inner styled pill */
-  height: 36px; border-radius: 10px;
-  background: var(--brand-bg);
-  border: 1px solid var(--brand-border);
-  color: var(--brand-fg);
-}
-#main_icon:hover { background: var(--brand-bg-hover); }
-```
-
-> ⚠️ The `#main_icon`, `#logo`, `#main_button .dropdown` rules above are **dead** —
-> the brand button's label lives inside `se-menu`'s own shadow DOM
-> (`components/seMenu.js`, a plain custom element using the native Popover API
-> for its dropdown), which global CSS cannot pierce. Edit the `#popupToggle`
-> style block in that file to restyle the button; it is deliberately
-> `transparent`/`transparent` so the brand button blends into the toolbar.
-> `#main_button` (the light-DOM container) only contributes the bottom + right
-> `--chrome-border` panel separators.
-
-### `#main_menu` — Dropdown Menu
-```css
-#main_menu {
-  position: relative; z-index: 12;
-  background: var(--chrome-bg); color: var(--fg);
-  width: 230px; padding: 6px;
-  border: 1px solid var(--chrome-border); border-radius: 10px;
-  box-shadow: 0 4px 16px -2px var(--main-menu-shadow);
-}
-#main_menu li { border-radius: 7px; padding: 7px 10px; cursor: pointer; }
-#main_menu li:hover { background: var(--icon-hover-bg); }
-```
-
-### Right-panel tabs (`#sidepanel_tabs` / `.sidepanel_tabpanel`)
-The right panel is tabbed (Design / Text / Effects / Layers). The tab bar is sticky at
-the top of the scrolling `#sidepanel_content`; the active tab uses the accent color with
-an underline drawn by `::after`. Tab panels are hidden unless `.active`.
-```css
-#sidepanel_tabs { display: flex; gap: 2px; padding: 6px 8px 0;
-  position: sticky; top: 0; background: var(--chrome-bg);
-  border-bottom: 1px solid var(--section-rule); z-index: 1; }
-.sidepanel_tab { flex: 1; border: none; background: transparent;
-  color: var(--muted); font: 600 12.5px var(--ui-font);
-  border-radius: 7px 7px 0 0; padding: 9px 4px 11px; cursor: pointer; position: relative; }
-.sidepanel_tab:hover { color: var(--fg); background: var(--icon-hover-bg); }
-.sidepanel_tab.active { color: var(--accent); }
-.sidepanel_tab.active::after { content: ""; position: absolute;
-  left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--accent); }
-.sidepanel_tabpanel { display: none; padding: 2px 0 10px; }
-.sidepanel_tabpanel.active { display: block; }
-/* horizontal button rows inside sections (Object / Combine / Join / Cap) */
-.sidepanel_btn_row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.sidepanel_text_font { display: flex; align-items: center; gap: 8px; }
-/* labelled button cluster within a section (Object: Path / Select & Link) —
-   hairline divider before every cluster after the first */
-.sidepanel_btn_group + .sidepanel_btn_group {
-  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--section-rule);
-}
-```
-
-### `.sidepanel_section` — Right side-panel sections ("Direction A" layout)
-Shared style for context-aware sections inside the tab panels (General, Dimensions,
-Stroke & Opacity, Object, Combine, Font, Spacing & Shape, Blur, Clip & Mask, Shadow,
-Color Shift). Sections are divided by a light `--section-rule`; the first section in a
-tab drops its top rule. Fields are laid out in a **two-column grid where each field
-stretches to fill its cell** (the `se-*` components stack a small uppercase label above
-a single bordered field — see component CSS below), which is what makes the columns
-align. Use `.span2` on a field to make it fill the full row (e.g. ID / Class).
-```css
-.sidepanel_section, #color_shift_panel, #shadow_panel {
-  padding: 14px 16px; margin: 0;
-  border-top: 1px solid var(--section-rule); color: var(--fg); user-select: none;
-}
-.sidepanel_tabpanel > .sidepanel_section:first-child { border-top: none; }
-.sidepanel_section_label, #color_shift_label {
-  font: 700 11px var(--ui-font); letter-spacing: 0.07em; text-transform: uppercase;
-  color: var(--muted); margin: 0 0 12px; white-space: nowrap;
-}
-.sidepanel_section_grid, .color_shift_grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; align-items: start;
-}
-.sidepanel_section_grid .span2 { grid-column: 1 / -1; }      /* full-row field */
-.sub_label { font: 600 10px var(--ui-font); letter-spacing: 0.05em;   /* sub-block header */
-  text-transform: uppercase; color: var(--muted); margin: 0 0 5px 2px; }
-.sidepanel_subsection { margin-top: 12px; }                  /* spacing between sub-blocks */
-```
-Each section sets `style.display: 'none'` until its trigger selection is active.
-
-`ext-live-effects` adds a "Distort" section to `#tab_effects` (`.sidepanel_section` + `.ext-live-effects-*` rules in `svgedit.css`, all on the primary tokens: `--field-bg/--field-border` rows, `--group-bg/--group-border` inline param editor, `--accent-soft/--accent-border/--accent` for the primary button).
+`.sidepanel_section` is the shared style for context-aware sections (General, Dimensions, Stroke & Opacity, Object, Combine, Font, Spacing & Shape, Blur, Clip & Mask, Shadow, Color Shift): padding, a `--section-rule` top divider (the first section in a tab drops it), `user-select: none`. Its label (`.sidepanel_section_label`) is 11 px / 700 uppercase `--muted`; `.sub_label` heads a sub-block and `.sidepanel_subsection` spaces sub-blocks. Fields sit in a **two-column grid** (`.sidepanel_section_grid`) where each field stretches to fill its cell (the `se-*` components stack a small uppercase label over one bordered field, which is what makes the columns align); `.span2` makes a field fill the full row (ID, Class). Each section sets `style.display: 'none'` until its trigger selection is active. `ext-live-effects` adds a "Distort" section (`.sidepanel_section` + `.ext-live-effects-*` rules in `svgedit.css`, all on the primary tokens).
 
 ### Layer-row cells (`#layerlist`)
-Each `tr.layer` has icon cells before the name. The visibility cell (`td.layervis`,
-hidden via `td.layerinvis * { display:none }`) and the **lock cell**:
-```css
-#layerlist td.layerlock { width: 22px; padding-left: 4px; text-align: center; }
-#layerlist td.layerlock * { display: block; color: var(--muted); }          /* unlocked */
-#layerlist td.layerlock:hover * { color: var(--icon-hover, var(--fg)); }
-#layerlist td.layerlock.locked * { color: var(--accent); }                   /* locked */
-```
-The icon itself differs by state — `lock_open.svg` when unlocked (muted, signals it's
-clickable), `lock.svg` when locked (accent). `RightPanel.populateLayers` picks the icon
-and swaps it on click via its `renderLockIcon` helper.
+Each `tr.layer` has icon cells before the name: visibility (`td.layervis`, hidden via `td.layerinvis * { display: none }`), lock (`td.layerlock`: muted when unlocked, `--accent` with `.locked`; the icon swaps between `lock_open.svg` and `lock.svg` in `RightPanel.populateLayers`' `renderLockIcon`) and the preview (`td.layerpreview` with `.layerpreview-thumb`, a 28×20 inline `<svg>` of one `<use>` of the layer's own group; how it mirrors live and why the group gets an id is in `tools.md` › Layers Panel).
 
-The **preview cell** (`td.layerpreview`) holds a small live thumbnail:
-```css
-#layerlist td.layerpreview { width: 30px; padding-left: 0; padding-right: 0; cursor: default; }
-#layerlist .layerpreview-thumb {
-  display: block; width: 28px; height: 20px; overflow: hidden;
-  border: 1px solid var(--field-border); border-radius: 4px;
-  background: var(--canvas-bg);
-}
-```
-`.layerpreview-thumb` is an inline `<svg>` containing one `<use>` targeting the layer's
-own group by id — see [tools.md](tools.md) "Layers Panel" for how the live-mirroring
-works and why the group gets an id lazily stamped on it.
-
-### Wireframe Mode
-```css
-#workarea.wireframe #svgcontent * {
-  fill: none; stroke: #000; stroke-width: 1px;
-  opacity: 1; filter: none;
-}
-```
+### Wireframe mode
+`#workarea.wireframe #svgcontent *` forces `fill: none`, a 1 px black stroke, full opacity and no filter.
 
 ### No-fill shapes are outline-only for selection
-Shapes inherit `pointer-events: all` from the layer `<g>` (set in
-`packages/svgcanvas/core/layer.js`), so by default a `fill="none"` shape captures
-clicks across its whole interior. This rule restores SVG's expected behavior for
-no-fill shapes: only the stroke is hit-testable, and the empty interior is
-click-through to whatever lies behind. It keys on the `fill` **attribute** (the
-form svgedit's color tools write), so it self-applies/reverts as fill changes and
-also covers imported SVGs using `fill="none"`.
-```css
-#svgcontent [fill="none"] {
-  pointer-events: stroke;
-}
-```
+Shapes inherit `pointer-events: all` from the layer `<g>` (`packages/svgcanvas/core/layer.js`), so a `fill="none"` shape would capture clicks across its whole interior. `#svgcontent [fill="none"] { pointer-events: stroke }` restores SVG's expected behaviour: only the stroke is hit-testable and the empty interior is click-through. It keys on the `fill` **attribute** (the form svgedit's colour tools write), so it self-applies and reverts as the fill changes and also covers imported SVGs using `fill="none"`.
 
 ---
 
 ## Shadow DOM Component CSS
 
-These styles live **inside** each component file and are scoped to the shadow DOM. They cannot be overridden from the outside except via CSS custom properties.
+These styles live **inside** each component file and are scoped to the shadow DOM; they can be changed from outside only through CSS custom properties (and `color`, below).
 
 ### `se-button` ([seButton.js](../src/editor/components/seButton.js))
+A 40 px square (`size="small"`: 30 px) icon button with a 10 px radius and a transparent border. Hover uses `--icon-hover-bg` / `--icon-hover`. `.pressed` (active) uses `--accent-soft` background, `--accent` colour, `--accent-border` and `--active-shadow`, all `!important`. `.locked` (tool lock mode) stacks on `.pressed` with a 2 px accent outline (`se-flyingbutton` mirrors it via `.overall.locked .menu-button`). `.disabled` is 0.35 opacity with `pointer-events: none` (see the disabled gotcha above).
 
-```
-Host:  display: inline-flex
-Inner div (.button-wrapper):
-  width: 40px; height: 40px
-  display: flex; align-items: center; justify-content: center
-  border: 1px solid transparent
-  border-radius: 10px
-  background: transparent
-  color: var(--icon, #4B5563)
-  transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s
+**Icons** are inline SVG (fetched and cached by `svgIconLoader.js`). Because they use `stroke="currentColor"`, the `color:` property recolours them with no CSS filter. From outside a shadow boundary: `se-button { color: var(--icon) }` and `se-button[pressed] { color: var(--accent) }`.
 
-Hover:
-  background: var(--icon-hover-bg, #EEF1F5)
-  color: var(--icon-hover, #0F172A)
+### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js))
+The host is `display: flex; flex-direction: column; align-items: stretch`, so the component **fills its grid cell**: a small uppercase `.top-label` (shown only when `label` is set) above one bordered `.field` (34 px, `--field-bg` / `--field-border`, 8 px radius; hover → `--field-border-h`; `focus-within` → `--accent` border + `--accent-ring`). The `src` icon is only a fallback leading glyph when there is **no** `label` (`:host([src]:not([label]))`). A plain native `<input>` is transparent and fills the field; `.spin-buttons` is a right-edge column of two `.spin-btn`s.
 
-.pressed (active/selected):
-  background: var(--accent-soft, #E8EFFF) !important
-  color: var(--accent, #2962FF) !important
-  border-color: var(--accent-border, #C7D7FF) !important
-  box-shadow: var(--active-shadow)
+- **Hold-repeat:** the ▲ / ▼ buttons step on `mousedown`, then **auto-repeat while held** (400 ms delay, then every 60 ms; stops on any `mouseup`, on reaching min / max, or on disconnect). Every tick fires `change`, so a long hold on an undoable field (e.g. stroke width) records one undo step per tick. Touch has no hold-repeat (mouse events are synthesized only on tap).
+- **Scrubby labels:** dragging the `.top-label` (pointer-captured; a 3 px threshold separates click from drag) changes the value, one step per 2 px (**Shift** ×10, **Ctrl/Cmd** ×0.1, which keeps one more decimal than the step), clamped to min / max, `ew-resize` cursor (`.scrubbable`, set on pointerenter from the preference). Every tick fires `change` (live preview), but the drag runs inside `svgCanvas.beginTransaction('Change value')`, so it commits as **one undo step** (a field without a canvas, e.g. in a dialog, just fires the changes); **Escape** cancels, restores the field and refreshes the panels. A plain click on the label focuses the field; touch pointers and the text box never scrub. The **mouse wheel** over a *focused* field steps it with the same modifiers (one `change` per notch); an unfocused field leaves the wheel to the page. Preference `scrub_numeric_fields` (default on; Editor Preferences, `config.scrub_fields`).
+- **Arc quick-pick chips** (`svgedit.css`): `.arc_field` (flex column) wraps the arc `se-spin-input` and a `.arc_presets` row of `.arc_preset` buttons (22 px, `--field-bg` / `--field-border`, hover → accent).
 
-.locked (tool lock mode — stacks on .pressed):
-  outline: 2px solid var(--accent, #2962FF)
-  outline-offset: -2px
-  (se-flyingbutton mirrors this via .overall.locked .menu-button)
-
-.disabled:
-  opacity: 0.35
-  pointer-events: none
-
-size="small" variant:
-  width: 30px; height: 30px; border-radius: 7px
-```
-
-**Icon rendering:** Icons are inline SVG (fetched by `svgIconLoader.js`). Because SVGs use `stroke="currentColor"`, the `color:` property controls icon color — no CSS filter needed.
-
-To style a button from outside a shadow boundary:
-```css
-se-button { color: var(--icon); }
-se-button[pressed] { color: var(--accent); }
-```
-
-### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js)) — "Direction A"
-
-Behavior note: the ▲/▼ buttons step on `mousedown`, then **auto-repeat while held**
-(400ms delay, then every 60ms; stops on any `mouseup`, on reaching min/max, or on
-disconnect). Every tick fires `change`, so a long hold on an undoable field
-(e.g. stroke width) records one undo step per tick. Touch has no hold-repeat
-(mouse events are only synthesized on tap).
-
-**Scrubby labels:** dragging the `.top-label` (pointer-captured; a 3px threshold separates
-a click from a drag) changes the value, one step per 2px (**Shift** x10, **Ctrl/Cmd** x0.1,
-which keeps one more decimal than the step), clamped to min/max, `ew-resize` cursor
-(`.scrubbable`, set on pointerenter from the preference). Every tick still fires `change`
-(live preview), but the drag runs inside `svgCanvas.beginTransaction('Change value')`, so
-it commits as **one undo step** (a field without a canvas, e.g. in a dialog, just fires
-the changes). **Escape** cancels the transaction, restores the field and refreshes the
-panels. A plain click on the label focuses the field; touch pointers never scrub; the
-text box never scrubs. The **mouse wheel** over a *focused* field steps it with the same
-modifiers (one `change` per notch); an unfocused field leaves the wheel to the page.
-Preference `scrub_numeric_fields` (default on; checkbox in Editor Preferences, `config.scrub_fields`).
-
-Arc quick-pick chips (`svgedit.css`): `.arc_field` (flex column) wraps the arc
-`se-spin-input` + `.arc_presets` row of `.arc_preset` buttons (22px tall, 10px/600,
-`--field-bg`/`--field-border`, hover → `--accent`/`--icon-hover-bg`/`--accent-border`).
-
-The host is `display: flex; flex-direction: column; align-items: stretch` so the
-component **fills its grid cell**. A small uppercase `.top-label` (shown only when the
-`label` attribute is set) stacks above a single bordered `.field`. The `src` icon is now
-only a fallback leading glyph shown when **no** `label` is set (`:host([src]:not([label]))`).
-```
-:host: flex column, align-items stretch, min-width 0
-.top-label: 10px/600 uppercase, var(--muted), display:none until [label] set
-.field: height 34px, flex row, background var(--field-bg),
-        border 1px var(--field-border), border-radius 8px, overflow hidden
-.field:hover  → border-color var(--field-border-h)
-.field:focus-within → border var(--accent) + box-shadow 0 0 0 3px var(--accent-ring)
-.icon-wrap: 30px wide leading glyph, shown only via :host([src]:not([label]))
-.num-input: plain native <input>, transparent, flex:1; `.spin-buttons` is a
-  right-edge column of two `.spin-btn`s (border-left, hover → accent)
-```
-
-### `se-input` ([seInput.js](../src/editor/components/seInput.js))
-
-Same single-field + stacked-label treatment as `se-spin-input` (`:host` stretches,
-`.top-label` + `.field`, same hover/focus-within states). Inner native `<input>` is
-transparent and fills the field.
-
-### `se-select` ([seSelect.js](../src/editor/components/seSelect.js))
-
-Same single-field + stacked-label treatment. The native `<select>` is transparent,
-`appearance: none`, and fills the field; a built-in `.chev` SVG chevron sits at the
-right edge. `src` icon is a fallback leading glyph only when no `label` is set.
+### `se-input`, `se-select` ([seInput.js](../src/editor/components/seInput.js), [seSelect.js](../src/editor/components/seSelect.js))
+The same single-field + stacked-label treatment as `se-spin-input` (`.top-label` + `.field`, same hover and `focus-within` states). The native `<input>` / `<select>` is transparent and fills the field; `se-select` is `appearance: none` with a built-in `.chev` chevron at the right edge. A `src` icon is a leading glyph only when there is no `label`.
 
 ### `se-font-select` ([seFontSelect.js](../src/editor/components/seFontSelect.js))
-
-Same `group-bg` tray as `se-select`, but the inner control is a custom `.trigger`
-button (field-bg/field-border, current font rendered in its own face) that opens a
-fixed-position `.fl-popover`. The popover reuses the **same visual language as
-`se-font-library`**: `chrome-bg`/`chrome-border` card, a `.fl-search` input box,
-and a scrollable `.fl-list` where each `.fl-item-preview` is styled with its
-option's `font-family` (per-font preview). Active row uses `accent-soft` /
-`accent-border` with an `accent`-colored check. Theme is synced by toggling
-`theme-dark`/`theme-light` on the host (matches `se-font-library`).
+The same `--group-bg` tray as `se-select`, but the control is a custom `.trigger` button (field background and border, the current font rendered in its own face) opening a fixed-position `.fl-popover` in the same visual language as `se-font-library`: a `--chrome-bg` card, a `.fl-search` box and a scrollable `.fl-list` whose `.fl-item-preview` rows use their option's `font-family`. The active row uses `--accent-soft` / `--accent-border` with an accent check. Theme is synced by toggling `theme-dark` / `theme-light` on the host.
 
 ### `se-list` ([seList.js](../src/editor/components/seList.js))
-
-```
-Trigger (.select-container): 28px × 28px
-  border: 1px solid transparent; border-radius: 7px
-  background: transparent; color: var(--icon)
-  transition: background/color 0.12s; cursor: pointer
-
-Hover:
-  background: var(--icon-hover-bg); color: var(--icon-hover)
-
-Dropdown (.options-container): position: fixed
-  background: var(--chrome-bg); border: 1px solid var(--chrome-border)
-  border-radius: 10px; padding: 6px
-  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12)
-  z-index: 100; display: flex; flex-direction: column; gap: 2px
-```
+A 28 px icon trigger (`.select-container`, transparent, hover → `--icon-hover-bg`) and a `position: fixed` dropdown (`.options-container`: `--chrome-bg` card with `--chrome-border`, 10 px radius, `z-index: 100`, a flex column).
 
 ---
 
 ## Theme Switching
 
-The editor applies theme by toggling classes on `.svg_editor`:
+The editor applies the theme by toggling classes on `.svg_editor`: use the canonical helper `applyTheme(theme, rootEl)` (`src/editor/themeUtil.js`, `theme` = `'light' | 'dark'`), or from a host (the Obsidian plugin) toggle `theme-dark` / `theme-light` directly on the element. The user preference is `localStorage` `svg-edit-theme`.
 
-```js
-// Canonical helper (src/editor/themeUtil.js)
-applyTheme(theme, rootEl)  // theme = 'light' | 'dark'
+## Icon Recolouring Rules
 
-// Direct class toggle (host environments / Obsidian plugin)
-editorEl.classList.toggle('theme-dark', isDark)
-editorEl.classList.toggle('theme-light', !isDark)
-```
+All toolbar SVG icons in `src/editor/images/` use `stroke="currentColor" fill="none"`, so they respond to the CSS `color` property and need no `filter`. **Do not use `filter: var(--icon-filter)`: that pattern is retired.** Recolour from outside a component with `se-button { color: var(--icon) }` / `se-button[pressed] { color: var(--accent) }`.
 
-User pref is stored in `localStorage` as `svg-edit-theme`.
-
----
-
-## Icon Recoloring Rules
-
-All toolbar SVG icons in `src/editor/images/` use `stroke="currentColor" fill="none"`.
-
-They respond to the CSS `color` property, so no `filter` is needed. **Do not use `filter: var(--icon-filter)` — that pattern is retired.**
-
-```css
-/* Correct way to recolor from outside a component */
-se-button         { color: var(--icon); }
-se-button[pressed]{ color: var(--accent); }
-
-/* Never do this */
-se-button img { filter: var(--icon-filter); }  /* ❌ retired */
-```
-
-Icons are injected by `src/editor/components/svgIconLoader.js`, which normalises and caches each SVG. The SVG source is resolved from the **inlined** registry in `src/editor/images/iconRegistry.js` (bundled at build time); `fetch()` is only a fallback for `data:` URIs or icons absent from the registry.
+Icons are injected by `src/editor/components/svgIconLoader.js`, which normalises and caches each SVG. The source comes from the **inlined** registry `src/editor/images/iconRegistry.js` (bundled at build time); `fetch()` is only a fallback for `data:` URIs or icons absent from the registry.
 
 > **Stylesheet loading:** `svgedit.css` (which `@import`s `tablet.css`) is **not** loaded via `<link>`. It is imported as a string (`./svgedit.css?inline`) and injected once as `<style data-svgedit-css>` by `EditorStartup.injectSvgeditStyles()`, so the editor needs no runtime CSS file.
