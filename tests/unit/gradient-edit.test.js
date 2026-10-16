@@ -2,7 +2,7 @@ import {
   IDENTITY, multiply, invert, applyMatrix, parseTransform, readGradient, gradientOf, ensureOwnGradient,
   ownStops, readStops, setLinear, setRadial, addStop, copyStop, placeStop, removeStop, setStopColor, colorAt,
   gradientToLocal
-} from '../../packages/svgcanvas/core/gradient-edit.js'
+} from '../../packages/svgcanvas/core/gradient-edit.ts'
 
 const NS = 'http://www.w3.org/2000/svg'
 

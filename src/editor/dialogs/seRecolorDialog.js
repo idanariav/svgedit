@@ -3,7 +3,7 @@ import { dialogSkin } from './dialogSkin.css.js'
 import { syncDialogTheme } from '../themeUtil.js'
 import {
   buildRows, planMap, harmonyColors, shiftHue, keyColor, HARMONIES, METHODS, DEFAULT_PRESERVE
-} from '@svgedit/svgcanvas/core/recolor.js'
+} from '@svgedit/svgcanvas/core/recolor.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `

@@ -20,7 +20,7 @@
  * @license MIT
  */
 
-import { recognize } from '@svgedit/svgcanvas/core/shape-recognize.js'
+import { recognize } from '@svgedit/svgcanvas/core/shape-recognize.ts'
 
 const name = 'shaper'
 
@@ -130,7 +130,7 @@ export const strokeTouches = (el, samples, base) => {
 /**
  * What to draw for a recognized shape, as `addSVGElementsFromJson` takes it
  * (minus id and paint).
- * @param {import('@svgedit/svgcanvas/core/shape-recognize.js').Recognized} shape
+ * @param {import('@svgedit/svgcanvas/core/shape-recognize.ts').Recognized} shape
  * @returns {{element: string, attr: object, open?: boolean}|null}
  */
 export const describeShape = (shape) => {

@@ -11,7 +11,7 @@
  *
  * @license Apache-2.0
  */
-import { collectColors, applyColors } from '@svgedit/svgcanvas/core/recolor.js'
+import { collectColors, applyColors } from '@svgedit/svgcanvas/core/recolor.ts'
 
 const name = 'recolor'
 const DIALOG_LABELS = [

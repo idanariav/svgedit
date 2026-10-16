@@ -28,7 +28,7 @@
 | File | What it is |
 |---|---|
 | `anchor-path.ts` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
-| `arrow-align.js` | Arrowhead alignment: where a marker head sits on the end of its line |
+| `arrow-align.ts` | Arrowhead alignment: where a marker head sits on the end of its line |
 | `art-brush-canvas.js` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
 | `art-brush.ts` | Art and pattern brush geometry: artwork bent along a path by arc length |
 | `bbox-utils.ts` | Bounding-box computation utilities |
@@ -66,7 +66,7 @@
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
-| `gradient-edit.js` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
+| `gradient-edit.ts` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
@@ -101,7 +101,7 @@
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.js` | Recalculate dimensions and transformations of SVG elements |
-| `recolor.js` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
+| `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
 | `sanitize.js` | Tools for SVG sanitization |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.js` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
@@ -111,7 +111,7 @@
 | `selection.js` | Tools for selection |
 | `shape-builder.js` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
-| `shape-recognize.js` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
+| `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `split-grid.js` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |

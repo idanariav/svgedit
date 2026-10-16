@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`).
  *
@@ -24,32 +23,38 @@
 
 import { NS } from './namespaces.ts'
 
-/** @typedef {{a: number, b: number, c: number, d: number, e: number, f: number}} Matrix */
-/** @typedef {{x: number, y: number}} Point */
-/** @typedef {{x: number, y: number, width: number, height: number}} Box */
-/**
- * @typedef {object} Stop
- * @property {Element} node
- * @property {number} offset 0..1
- * @property {string} color as written (`#rrggbb`, `red`, …)
- * @property {number} opacity 0..1
- */
-/**
- * @typedef {object} GradientModel
- * @property {Element} grad
- * @property {'linear'|'radial'} kind
- * @property {Matrix} toLocal gradient space → the element's local space
- * @property {Point} p1 linear start, radial centre (gradient space)
- * @property {Point} p2 linear end; radial: the point `r` to the right of the centre
- * @property {number} r radial radius (0 for linear)
- * @property {Point} focal radial focal point (the centre for linear)
- * @property {Stop[]} stops
- */
+export interface Matrix { a: number, b: number, c: number, d: number, e: number, f: number }
+export interface Point { x: number, y: number }
+export interface Box { x: number, y: number, width: number, height: number }
+export interface Stop {
+  node: Element
+  /** 0..1 */
+  offset: number
+  /** as written (`#rrggbb`, `red`, …) */
+  color: string
+  /** 0..1 */
+  opacity: number
+}
+export interface GradientModel {
+  grad: Element
+  kind: 'linear' | 'radial'
+  /** gradient space → the element's local space */
+  toLocal: Matrix
+  /** linear start, radial centre (gradient space) */
+  p1: Point
+  /** linear end; radial: the point `r` to the right of the centre */
+  p2: Point
+  /** radial radius (0 for linear) */
+  r: number
+  /** radial focal point (the centre for linear) */
+  focal: Point
+  stops: Stop[]
+}
 
-export const IDENTITY = Object.freeze({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+export const IDENTITY: Readonly<Matrix> = Object.freeze({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
 
-/** `m` after `n` (n is applied first). @param {Matrix} m @param {Matrix} n @returns {Matrix} */
-export const multiply = (m, n) => ({
+/** `m` after `n` (n is applied first). */
+export const multiply = (m: Matrix, n: Matrix): Matrix => ({
   a: m.a * n.a + m.c * n.b,
   b: m.b * n.a + m.d * n.b,
   c: m.a * n.c + m.c * n.d,
@@ -58,8 +63,8 @@ export const multiply = (m, n) => ({
   f: m.b * n.e + m.d * n.f + m.f
 })
 
-/** @param {Matrix} m @returns {?Matrix} null when singular */
-export const invert = (m) => {
+/** @returns null when singular */
+export const invert = (m: Matrix): Matrix | null => {
   const det = m.a * m.d - m.b * m.c
   if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return null
   return {
@@ -72,25 +77,20 @@ export const invert = (m) => {
   }
 }
 
-/** @param {Matrix} m @param {Point} p @returns {Point} */
-export const applyMatrix = (m, p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+export const applyMatrix = (m: Matrix, p: Point): Point => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
 
 /**
  * Parse an SVG transform list (`matrix`, `translate`, `scale`, `rotate`, `skewX`, `skewY`).
- * @param {?string} str
- * @returns {Matrix}
  */
-export const parseTransform = (str) => {
-  let m = /** @type {Matrix} */ ({ ...IDENTITY })
+export const parseTransform = (str: string | null | undefined): Matrix => {
+  let m: Matrix = { ...IDENTITY }
   if (!str) return m
   const re = /(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)/g
-  let hit
+  let hit: RegExpExecArray | null
   while ((hit = re.exec(str))) {
     const v = hit[2].split(/[\s,]+/).filter(Boolean).map(Number)
-    /** @param {number} deg */
-    const rad = (deg) => (deg * Math.PI) / 180
-    /** @type {Matrix} */
-    let t = { ...IDENTITY }
+    const rad = (deg: number): number => (deg * Math.PI) / 180
+    let t: Matrix = { ...IDENTITY }
     switch (hit[1]) {
       case 'matrix': if (v.length === 6) t = { a: v[0], b: v[1], c: v[2], d: v[3], e: v[4], f: v[5] }; break
       case 'translate': t = { ...IDENTITY, e: v[0] || 0, f: v[1] || 0 }; break
@@ -111,28 +111,24 @@ export const parseTransform = (str) => {
   return m
 }
 
-/** Round to the precision the saver keeps. @param {number} n */
-const fmt = (n) => String(Number(n.toFixed(5)))
+/** Round to the precision the saver keeps. */
+const fmt = (n: number): string => String(Number(n.toFixed(5)))
 
 // ---- reading ---------------------------------------------------------------------
 
 const MAX_HOPS = 16
 
-/** @param {Element} el @returns {?string} the id an `href` / `xlink:href` points at */
-const hrefId = (el) => {
+/** @returns the id an `href` / `xlink:href` points at */
+const hrefId = (el: Element): string | null => {
   const v = el.getAttribute('href') ?? el.getAttribute('xlink:href')
   return v && v.startsWith('#') ? v.slice(1) : null
 }
 
-/**
- * @param {ParentNode} scope the drawing
- * @param {string} id
- * @returns {?Element}
- */
-export const findById = (scope, id) => scope.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`)
+/** @param scope the drawing */
+export const findById = (scope: ParentNode, id: string): Element | null => scope.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`)
 
-/** The gradient plus the gradients it inherits from, nearest first. @param {ParentNode} scope @param {Element} grad */
-const chain = (scope, grad) => {
+/** The gradient plus the gradients it inherits from, nearest first. */
+const chain = (scope: ParentNode, grad: Element): Element[] => {
   const out = [grad]
   let cur = grad
   for (let i = 0; i < MAX_HOPS; i++) {
@@ -148,11 +144,8 @@ const chain = (scope, grad) => {
 /**
  * An attribute of a gradient, taken from the nearest one in its `href` chain that sets it. Geometry attributes
  * are only inherited from a gradient of the same kind (SVG 2, 13.2.2).
- * @param {ParentNode} scope @param {Element} grad @param {string} name
- * @param {boolean} [sameKind]
- * @returns {?string}
  */
-export const inheritedAttr = (scope, grad, name, sameKind = false) => {
+export const inheritedAttr = (scope: ParentNode, grad: Element, name: string, sameKind = false): string | null => {
   for (const g of chain(scope, grad)) {
     if (sameKind && g.tagName !== grad.tagName) continue
     const v = g.getAttribute(name)
@@ -161,41 +154,37 @@ export const inheritedAttr = (scope, grad, name, sameKind = false) => {
   return null
 }
 
-/** The gradient in the chain that supplies the stops. @param {ParentNode} scope @param {Element} grad */
-const stopOwner = (scope, grad) => chain(scope, grad).find((g) => g.querySelector(':scope > stop')) ?? grad
+/** The gradient in the chain that supplies the stops. */
+const stopOwner = (scope: ParentNode, grad: Element): Element => chain(scope, grad).find((g) => g.querySelector(':scope > stop')) ?? grad
 
-/** @param {?string} v @returns {number} 0..1 */
-const parseOffset = (v) => {
+/** @returns 0..1 */
+const parseOffset = (v: string | null): number => {
   if (v === null) return 0
   const n = parseFloat(v)
   if (!Number.isFinite(n)) return 0
   return Math.min(1, Math.max(0, v.trim().endsWith('%') ? n / 100 : n))
 }
 
-/** @param {Element} stop @param {string} prop @returns {?string} */
-const stopProp = (stop, prop) => {
+const stopProp = (stop: Element, prop: string): string | null => {
   const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, 'i').exec(stop.getAttribute('style') || '')
   return (m ? m[1] : stop.getAttribute(prop))?.trim() ?? null
 }
 
-/** @param {Element} node @returns {Stop} */
-const readStop = (node) => ({
+const readStop = (node: Element): Stop => ({
   node,
   offset: parseOffset(node.getAttribute('offset')),
   color: stopProp(node, 'stop-color') ?? '#000000',
   opacity: Math.min(1, Math.max(0, Number(stopProp(node, 'stop-opacity') ?? 1)))
 })
 
-/** The gradient's effective stops, in document order. @param {ParentNode} scope @param {Element} grad @returns {Stop[]} */
-export const readStops = (scope, grad) => [...stopOwner(scope, grad).querySelectorAll(':scope > stop')].map(readStop)
+/** The gradient's effective stops, in document order. */
+export const readStops = (scope: ParentNode, grad: Element): Stop[] => [...stopOwner(scope, grad).querySelectorAll(':scope > stop')].map(readStop)
 
 /**
  * A length as a gradient-space number: a fraction for `objectBoundingBox` (percentages allowed), a user unit for
  * `userSpaceOnUse` (percentages refer to a viewport the tool does not know: null).
- * @param {?string} v @param {number} fallback @param {boolean} bbox
- * @returns {?number}
  */
-const length = (v, fallback, bbox) => {
+const length = (v: string | null, fallback: number, bbox: boolean): number | null => {
   if (v === null || v.trim() === '') return fallback
   const n = parseFloat(v)
   if (!Number.isFinite(n)) return null
@@ -205,12 +194,11 @@ const length = (v, fallback, bbox) => {
 
 /**
  * Gradient space → the element's local space.
- * @param {boolean} bbox objectBoundingBox units
- * @param {?Box} box the element's geometry box (local, stroke excluded); required for bbox units
- * @param {Matrix} gradientTransform
- * @returns {?Matrix} null when the box is empty
+ * @param bbox objectBoundingBox units
+ * @param box the element's geometry box (local, stroke excluded); required for bbox units
+ * @returns null when the box is empty
  */
-export const gradientToLocal = (bbox, box, gradientTransform) => {
+export const gradientToLocal = (bbox: boolean, box: Box | null, gradientTransform: Matrix): Matrix | null => {
   if (!bbox) return gradientTransform
   if (!box || !(box.width > 0) || !(box.height > 0)) return null
   return multiply({ a: box.width, b: 0, c: 0, d: box.height, e: box.x, f: box.y }, gradientTransform)
@@ -218,19 +206,18 @@ export const gradientToLocal = (bbox, box, gradientTransform) => {
 
 /**
  * Read a gradient for editing.
- * @param {ParentNode} scope the drawing, to follow `href`s
- * @param {Element} grad a `linearGradient` or `radialGradient`
- * @param {?Box} box the geometry box of the element painted with it
- * @returns {?GradientModel} null when it cannot be edited here (empty box, percentages in user space, singular transform)
+ * @param scope the drawing, to follow `href`s
+ * @param grad a `linearGradient` or `radialGradient`
+ * @param box the geometry box of the element painted with it
+ * @returns null when it cannot be edited here (empty box, percentages in user space, singular transform)
  */
-export const readGradient = (scope, grad, box) => {
+export const readGradient = (scope: ParentNode, grad: Element, box: Box | null): GradientModel | null => {
   const kind = grad.tagName === 'radialGradient' ? 'radial' : grad.tagName === 'linearGradient' ? 'linear' : null
   if (!kind) return null
   const bbox = (inheritedAttr(scope, grad, 'gradientUnits') ?? 'objectBoundingBox') !== 'userSpaceOnUse'
   const toLocal = gradientToLocal(bbox, box, parseTransform(inheritedAttr(scope, grad, 'gradientTransform')))
   if (!toLocal || !invert(toLocal)) return null
-  /** @param {string} name @param {number} fallback */
-  const attr = (name, fallback) => length(inheritedAttr(scope, grad, name, true), fallback, bbox)
+  const attr = (name: string, fallback: number): number | null => length(inheritedAttr(scope, grad, name, true), fallback, bbox)
   const stops = readStops(scope, grad)
   if (kind === 'linear') {
     const x1 = attr('x1', 0)
@@ -238,48 +225,41 @@ export const readGradient = (scope, grad, box) => {
     const x2 = attr('x2', bbox ? 1 : NaN)
     const y2 = attr('y2', 0)
     if ([x1, y1, x2, y2].some((n) => n === null || !Number.isFinite(n))) return null
-    const p1 = { x: /** @type {number} */ (x1), y: /** @type {number} */ (y1) }
-    return { grad, kind, toLocal, p1, p2: { x: /** @type {number} */ (x2), y: /** @type {number} */ (y2) }, r: 0, focal: p1, stops }
+    const p1 = { x: x1 as number, y: y1 as number }
+    return { grad, kind, toLocal, p1, p2: { x: x2 as number, y: y2 as number }, r: 0, focal: p1, stops }
   }
   const cx = attr('cx', bbox ? 0.5 : NaN)
   const cy = attr('cy', bbox ? 0.5 : NaN)
   const r = attr('r', bbox ? 0.5 : NaN)
   if ([cx, cy, r].some((n) => n === null || !Number.isFinite(n))) return null
-  const fx = attr('fx', /** @type {number} */ (cx))
-  const fy = attr('fy', /** @type {number} */ (cy))
+  const fx = attr('fx', cx as number)
+  const fy = attr('fy', cy as number)
   if (fx === null || fy === null) return null
-  const c = { x: /** @type {number} */ (cx), y: /** @type {number} */ (cy) }
-  const rad = /** @type {number} */ (r)
+  const c = { x: cx as number, y: cy as number }
+  const rad = r as number
   return { grad, kind, toLocal, p1: c, p2: { x: c.x + rad, y: c.y }, r: rad, focal: { x: fx, y: fy }, stops }
 }
 
 // ---- which gradient a paint uses -------------------------------------------------
 
-/** @param {?string} value @returns {?string} the id in `url(#id)` */
-export const urlId = (value) => /url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/.exec(value ?? '')?.[1] ?? null
+/** @returns the id in `url(#id)` */
+export const urlId = (value: string | null | undefined): string | null => /url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/.exec(value ?? '')?.[1] ?? null
 
-/** The paint property as the browser resolves it: `style` wins over the attribute. @param {Element} el @param {string} prop */
-export const paintValue = (el, prop) => {
+/** The paint property as the browser resolves it: `style` wins over the attribute. */
+export const paintValue = (el: Element, prop: string): string | null => {
   const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, 'i').exec(el.getAttribute('style') || '')
   return (m ? m[1] : el.getAttribute(prop))?.trim() ?? null
 }
 
-/**
- * The gradient an element's fill or stroke refers to.
- * @param {ParentNode} scope @param {Element} el @param {'fill'|'stroke'} prop
- * @returns {?Element}
- */
-export const gradientOf = (scope, el, prop) => {
+/** The gradient an element's fill or stroke refers to. */
+export const gradientOf = (scope: ParentNode, el: Element, prop: 'fill' | 'stroke'): Element | null => {
   const id = urlId(paintValue(el, prop))
   const grad = id ? findById(scope, id) : null
   return grad && /^(linear|radial)Gradient$/.test(grad.tagName) ? grad : null
 }
 
-/**
- * Whether anything but `(el, prop)` uses the gradient (a paint, or a gradient that inherits from it).
- * @param {ParentNode} scope @param {Element} grad @param {Element} el @param {string} prop
- */
-const isShared = (scope, grad, el, prop) => {
+/** Whether anything but `(el, prop)` uses the gradient (a paint, or a gradient that inherits from it). */
+const isShared = (scope: ParentNode, grad: Element, el: Element, prop: string): boolean => {
   const id = grad.getAttribute('id')
   for (const other of scope.querySelectorAll('*')) {
     if (other === grad || other.hasAttribute('data-se-ephemeral')) continue
@@ -298,16 +278,13 @@ const isShared = (scope, grad, el, prop) => {
 /**
  * Make the gradient of `(el, prop)` safe to edit: when anything else uses it, give the element a copy
  * (new id, inserted after the original) and point the paint at it.
- * @param {ParentNode} scope the drawing
- * @param {Element} el
- * @param {'fill'|'stroke'} prop
- * @param {Element} grad the gradient the paint refers to
- * @param {() => string} nextId
- * @returns {Element} `grad`, or its copy
+ * @param scope the drawing
+ * @param grad the gradient the paint refers to
+ * @returns `grad`, or its copy
  */
-export const ensureOwnGradient = (scope, el, prop, grad, nextId) => {
+export const ensureOwnGradient = (scope: ParentNode, el: Element, prop: 'fill' | 'stroke', grad: Element, nextId: () => string): Element => {
   if (!isShared(scope, grad, el, prop)) return grad
-  const copy = /** @type {Element} */ (grad.cloneNode(true))
+  const copy = grad.cloneNode(true) as Element
   const id = nextId()
   copy.setAttribute('id', id)
   grad.after(copy)
@@ -324,22 +301,16 @@ export const ensureOwnGradient = (scope, el, prop, grad, nextId) => {
 
 // ---- writing ---------------------------------------------------------------------
 
-/**
- * Set a linear gradient's vector (gradient space).
- * @param {Element} grad @param {Point} p1 @param {Point} p2
- */
-export const setLinear = (grad, p1, p2) => {
+/** Set a linear gradient's vector (gradient space). */
+export const setLinear = (grad: Element, p1: Point, p2: Point): void => {
   grad.setAttribute('x1', fmt(p1.x))
   grad.setAttribute('y1', fmt(p1.y))
   grad.setAttribute('x2', fmt(p2.x))
   grad.setAttribute('y2', fmt(p2.y))
 }
 
-/**
- * Set a radial gradient's centre, radius and focal point (gradient space).
- * @param {Element} grad @param {Point} c @param {number} r @param {Point} focal
- */
-export const setRadial = (grad, c, r, focal) => {
+/** Set a radial gradient's centre, radius and focal point (gradient space). */
+export const setRadial = (grad: Element, c: Point, r: number, focal: Point): void => {
   grad.setAttribute('cx', fmt(c.x))
   grad.setAttribute('cy', fmt(c.y))
   grad.setAttribute('r', fmt(Math.max(r, 1e-5)))
@@ -350,17 +321,15 @@ export const setRadial = (grad, c, r, focal) => {
 /**
  * The gradient's own `<stop>`s. A gradient that takes its stops from another through `href` gets copies of them first
  * (its own stops replace the inherited ones), so editing never touches the gradient it inherits from.
- * @param {ParentNode} scope @param {Element} grad @returns {Element[]}
  */
-export const ownStops = (scope, grad) => {
+export const ownStops = (scope: ParentNode, grad: Element): Element[] => {
   if (!grad.querySelector(':scope > stop')) {
     for (const s of stopOwner(scope, grad).querySelectorAll(':scope > stop')) grad.append(s.cloneNode(true))
   }
   return [...grad.querySelectorAll(':scope > stop')]
 }
 
-/** @param {string} c @returns {?[number, number, number]} */
-const parseRgb = (c) => {
+const parseRgb = (c: string): [number, number, number] | null => {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c.trim())
   if (hex) {
     const h = hex[1].length === 3 ? [...hex[1]].map((x) => x + x).join('') : hex[1]
@@ -373,10 +342,8 @@ const parseRgb = (c) => {
 /**
  * The colour a new stop at `t` starts with: the neighbours' colours mixed (nearest one's when either is not a
  * hex / rgb() colour). Stops must be sorted by offset.
- * @param {Stop[]} stops @param {number} t
- * @returns {{color: string, opacity: number}}
  */
-export const colorAt = (stops, t) => {
+export const colorAt = (stops: Stop[], t: number): { color: string, opacity: number } => {
   if (!stops.length) return { color: '#000000', opacity: 1 }
   const next = stops.findIndex((s) => s.offset > t)
   if (next === 0) return { color: stops[0].color, opacity: stops[0].opacity }
@@ -392,16 +359,16 @@ export const colorAt = (stops, t) => {
   return { color: `#${hex}`, opacity }
 }
 
-/** @param {Element} stop @param {string} prop @param {string} value Write where the stop keeps it (`style` wins). */
-const writeStopProp = (stop, prop, value) => {
+/** Write where the stop keeps it (`style` wins). */
+const writeStopProp = (stop: Element, prop: string, value: string): void => {
   const style = stop.getAttribute('style')
   const re = new RegExp(`((?:^|;)\\s*${prop}\\s*:\\s*)[^;]+`, 'i')
   if (style && re.test(style)) stop.setAttribute('style', style.replace(re, `$1${value}`))
   else stop.setAttribute(prop, value)
 }
 
-/** @param {Element} stop @param {string} color `#rrggbb` @param {number} opacity */
-export const setStopColor = (stop, color, opacity) => {
+/** @param color `#rrggbb` */
+export const setStopColor = (stop: Element, color: string, opacity: number): void => {
   writeStopProp(stop, 'stop-color', color)
   writeStopProp(stop, 'stop-opacity', fmt(opacity))
 }
@@ -409,11 +376,9 @@ export const setStopColor = (stop, color, opacity) => {
 /**
  * Put `stop` at `offset` and keep the stops sorted (SVG treats an offset below the previous one as equal to it,
  * so a stop dragged past a neighbour must change places with it in the DOM).
- * @param {Element} stop
- * @param {number} offset
  */
-export const placeStop = (stop, offset) => {
-  const grad = /** @type {Element} */ (stop.parentElement)
+export const placeStop = (stop: Element, offset: number): void => {
+  const grad = stop.parentElement as Element
   const t = Math.min(1, Math.max(0, offset))
   stop.setAttribute('offset', fmt(t))
   const others = [...grad.querySelectorAll(':scope > stop')].filter((s) => s !== stop)
@@ -423,10 +388,9 @@ export const placeStop = (stop, offset) => {
 
 /**
  * Add a stop at `t`, coloured by its neighbours. The gradient must have its own stops ({@link ownStops}).
- * @param {Element} grad @param {number} t
- * @returns {Element} the new `<stop>`
+ * @returns the new `<stop>`
  */
-export const addStop = (grad, t) => {
+export const addStop = (grad: Element, t: number): Element => {
   const stops = [...grad.querySelectorAll(':scope > stop')].map(readStop)
   const { color, opacity } = colorAt(stops, t)
   const stop = grad.ownerDocument.createElementNS(NS.SVG, 'stop')
@@ -436,19 +400,16 @@ export const addStop = (grad, t) => {
   return stop
 }
 
-/**
- * A copy of `stop` at `offset` (Alt-drag).
- * @param {Element} stop @param {number} offset @returns {Element}
- */
-export const copyStop = (stop, offset) => {
-  const copy = /** @type {Element} */ (stop.cloneNode(true))
+/** A copy of `stop` at `offset` (Alt-drag). */
+export const copyStop = (stop: Element, offset: number): Element => {
+  const copy = stop.cloneNode(true) as Element
   stop.after(copy)
   placeStop(copy, offset)
   return copy
 }
 
-/** Remove a stop, never leaving fewer than two. @param {Element} stop @returns {boolean} */
-export const removeStop = (stop) => {
+/** Remove a stop, never leaving fewer than two. */
+export const removeStop = (stop: Element): boolean => {
   const grad = stop.parentElement
   if (!grad || grad.querySelectorAll(':scope > stop').length <= 2) return false
   stop.remove()

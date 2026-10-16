@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Arrowhead alignment: where a marker head sits on the end of its line.
  *
@@ -31,9 +30,12 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.ts'
+import type { Anchor, Cubic, Pt, SubPath } from './anchor-path.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
+import type { RemapPoint } from './geometry-remap-registry.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 
 export const ARROW_ALIGN_ATTR = 'se:arrow-align'
@@ -57,8 +59,7 @@ const SAME_TOL = 0.05
  * end), `solid`/`hollow` the inset in box units. Anything not listed (box, circle,
  * star, slashes, X) has no tip and stays centred.
  */
-/** @type {Record<string, {tip: number|null, solid: number, hollow: number}>} */
-const HEADS = {
+const HEADS: Record<string, { tip: number | null, solid: number, hollow: number }> = {
   leftarrow: { tip: 0, solid: 50, hollow: 70 }, // hollow: the notch of the dart
   rightarrow: { tip: 100, solid: 50, hollow: 70 },
   triangle: { tip: 100, solid: 50, hollow: 97.5 }, // hollow: into the base wall
@@ -68,13 +69,11 @@ const HEADS = {
 
 /**
  * Where a head of marker kind `kind` sits at `pos` for `mode`.
- * @param {string} kind the marker's `se_type`, e.g. `rightarrow_o`
- * @param {'start'|'end'} pos
- * @param {'tip'|'extend'|null} mode
- * @returns {{refX: number, inset: number}} `refX` in box units; `inset` is the part of the head
+ * @param kind the marker's `se_type`, e.g. `rightarrow_o`
+ * @returns `refX` in box units; `inset` is the part of the head
  *   the stroke may run into, in box units (0 when the head points into the line).
  */
-export const headPlacement = (kind, pos, mode) => {
+export const headPlacement = (kind: string, pos: 'start' | 'end', mode: 'tip' | 'extend' | null): { refX: number, inset: number } => {
   const hollow = kind.endsWith('_o')
   const head = HEADS[hollow ? kind.slice(0, -2) : kind]
   if (!head || !mode) return { refX: CENTRE, inset: 0 }
@@ -86,33 +85,12 @@ export const headPlacement = (kind, pos, mode) => {
   return { refX: mode === 'extend' ? tip + (pos === 'end' ? -inset : inset) : tip, inset }
 }
 
-/** @typedef {import('./anchor-path.ts').Pt} Pt */
-/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
-/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
-/** @typedef {import('./anchor-path.ts').Cubic} Cubic */
+const pt = (x: number, y: number): Pt => ({ x, y })
+const anchor = (p: Pt, hIn: Pt = p, hOut: Pt = p): Anchor => ({ p, hIn, hOut })
+const num = (n: number): number => Math.round(n * 1e5) / 1e5
 
-/**
- * @param {number} x
- * @param {number} y
- * @returns {Pt}
- */
-const pt = (x, y) => ({ x, y })
-/**
- * @param {Pt} p
- * @param {Pt} [hIn]
- * @param {Pt} [hOut]
- * @returns {Anchor}
- */
-const anchor = (p, hIn = p, hOut = p) => ({ p, hIn, hOut })
-/** @param {number} n */
-const num = (n) => Math.round(n * 1e5) / 1e5
-
-/**
- * The parameter of `c` at arc length `len` from its start.
- * @param {Cubic} c
- * @param {number} len
- */
-const tAt = (c, len) => {
+/** The parameter of `c` at arc length `len` from its start. */
+const tAt = (c: Cubic, len: number): number => {
   const n = 40
   let prev = c.p0
   let acc = 0
@@ -128,13 +106,9 @@ const tAt = (c, len) => {
 
 /**
  * The open subpath without its first `start` and last `end` units of arc length.
- * @param {import('./anchor-path.ts').SubPath} sp
- * @param {number} start
- * @param {number} end
- * @returns {import('./anchor-path.ts').SubPath}
  */
-export const trimSubpath = (sp, start, end) => {
-  const segs = []
+export const trimSubpath = (sp: SubPath, start: number, end: number): SubPath => {
+  const segs: Array<{ c: Cubic, len: number, straight: boolean }> = []
   let total = 0
   for (let i = 0; i < segmentCount(sp); i++) {
     const straight = isLineSegment(sp.anchors[i], sp.anchors[i + 1])
@@ -148,8 +122,7 @@ export const trimSubpath = (sp, start, end) => {
   const k = want > room && want > 0 ? room / want : 1
   const from = start * k
   const to = total - end * k
-  /** @type {Array<Cubic & {straight: boolean}>} */
-  const kept = []
+  const kept: Array<Cubic & { straight: boolean }> = []
   let at = 0
   for (const { c, len, straight } of segs) {
     const s0 = at
@@ -158,7 +131,7 @@ export const trimSubpath = (sp, start, end) => {
     const a = from > s0 ? from - s0 : 0
     const b = to < at ? to - s0 : len
     if (straight) {
-      const lerp = (/** @type {number} */ u) => pt(c.p0.x + (c.p3.x - c.p0.x) * u, c.p0.y + (c.p3.y - c.p0.y) * u)
+      const lerp = (u: number): Pt => pt(c.p0.x + (c.p3.x - c.p0.x) * u, c.p0.y + (c.p3.y - c.p0.y) * u)
       const p0 = lerp(a / len)
       const p3 = lerp(b / len)
       kept.push({ p0, p1: p0, p2: p3, p3, straight })
@@ -175,27 +148,18 @@ export const trimSubpath = (sp, start, end) => {
   return { closed: false, anchors }
 }
 
-/** @param {?string|undefined} str */
-const parsePoints = (str) => {
+const parsePoints = (str: string | null | undefined): Pt[] => {
   const n = (str || '').trim().split(/[\s,]+/).map(Number)
-  /** @type {Pt[]} */
-  const out = []
+  const out: Pt[] = []
   for (let i = 0; i + 1 < n.length; i += 2) out.push(pt(n[i], n[i + 1]))
   return out.length === n.length / 2 && out.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)) ? out : []
 }
-/** @param {Anchor[]} anchors */
-const pointsToStr = (anchors) => anchors.map((a) => `${num(a.p.x)},${num(a.p.y)}`).join(' ')
+const pointsToStr = (anchors: Anchor[]): string => anchors.map((a) => `${num(a.p.x)},${num(a.p.y)}`).join(' ')
 
-/** @param {Element} elem */
-const isPathTag = (elem) => elem.tagName === 'path'
+const isPathTag = (elem: Element): boolean => elem.tagName === 'path'
 
-/**
- * The element's current geometry as one open subpath, or null.
- * @param {Element} elem
- * @param {?string} [attr]
- * @returns {?SubPath}
- */
-const readSubpath = (elem, attr) => {
+/** The element's current geometry as one open subpath, or null. */
+const readSubpath = (elem: Element, attr?: string | null): SubPath | null => {
   if (isPathTag(elem)) {
     const sps = parseAnchors(attr ?? elem.getAttribute('d') ?? '', 0.1)
     return sps.length === 1 && !sps[0].closed && sps[0].anchors.length >= 2 ? sps[0] : null
@@ -207,11 +171,7 @@ const readSubpath = (elem, attr) => {
   return { closed: false, anchors: pts.map((p) => anchor(p)) }
 }
 
-/**
- * @param {Element} elem
- * @param {SubPath} sp
- */
-const writeGeometry = (elem, sp) => {
+const writeGeometry = (elem: Element, sp: SubPath): void => {
   if (isPathTag(elem)) {
     elem.setAttribute('d', anchorsToD([sp]))
   } else if (elem.tagName === 'line') {
@@ -224,85 +184,61 @@ const writeGeometry = (elem, sp) => {
   }
 }
 
-/** @param {Element} elem */
-const sourceAttr = (elem) => (isPathTag(elem) ? ARROW_D_ATTR : ARROW_PTS_ATTR)
+const sourceAttr = (elem: Element): string => (isPathTag(elem) ? ARROW_D_ATTR : ARROW_PTS_ATTR)
 
-/**
- * A string that changes when the element's geometry does.
- * @param {Element} elem
- */
-const geometryKey = (elem) => ['d', 'points', 'x1', 'y1', 'x2', 'y2'].map((a) => elem.getAttribute(a)).join('|')
+/** A string that changes when the element's geometry does. */
+const geometryKey = (elem: Element): string => ['d', 'points', 'x1', 'y1', 'x2', 'y2'].map((a) => elem.getAttribute(a)).join('|')
 
-/**
- * @param {SubPath} a
- * @param {SubPath} b
- */
-const sameGeometry = (a, b) => a.anchors.length === b.anchors.length && a.anchors.every((an, i) => {
+const sameGeometry = (a: SubPath, b: SubPath): boolean => a.anchors.length === b.anchors.length && a.anchors.every((an, i) => {
   const bn = b.anchors[i]
-  return /** @type {const} */ (['p', 'hIn', 'hOut']).every((k) => Math.abs(an[k].x - bn[k].x) <= SAME_TOL && Math.abs(an[k].y - bn[k].y) <= SAME_TOL)
+  return (['p', 'hIn', 'hOut'] as const).every((k) => Math.abs(an[k].x - bn[k].x) <= SAME_TOL && Math.abs(an[k].y - bn[k].y) <= SAME_TOL)
 })
 
-/**
- * The element's untrimmed geometry: its stored source, or what it has now.
- * @param {Element} elem
- */
-const sourceOf = (elem) => {
+/** The element's untrimmed geometry: its stored source, or what it has now. */
+const sourceOf = (elem: Element): SubPath | null => {
   const attr = elem.getAttribute(sourceAttr(elem))
   return attr ? readSubpath(elem, attr) : readSubpath(elem)
 }
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
    * The `se_type` of the marker linked at `pos` (`marker-start`/`-end`), by marker element.
-   * @param {Element} elem
-   * @param {string} pos
    */
-  const markerAt = (elem, pos) => {
+  const markerAt = (elem: Element, pos: string): { marker: Element, kind: string } | null => {
     const m = /\(#(.+)\)/.exec(elem.getAttribute(`marker-${pos}`) || '')
     const marker = m && svgCanvas.getElement(m[1])
     const kind = marker?.getAttribute('se_type')
     return marker && kind ? { marker, kind } : null
   }
 
-  /** @param {Element} elem */
-  const strokeWidth = (elem) => {
+  const strokeWidth = (elem: Element): number => {
     const sw = parseFloat(elem.getAttribute('stroke-width') ?? '')
     return Number.isFinite(sw) ? sw : 1
   }
 
   /**
    * The unit one box unit of the marker is worth, in the element's user units.
-   * @param {Element} elem
-   * @param {Element} marker
    */
-  const boxUnit = (elem, marker) => strokeWidth(elem) * (parseFloat(marker.getAttribute('markerWidth') ?? '') || DEFAULT_MARKER_SIZE) / BOX
+  const boxUnit = (elem: Element, marker: Element): number => strokeWidth(elem) * (parseFloat(marker.getAttribute('markerWidth') ?? '') || DEFAULT_MARKER_SIZE) / BOX
 
   /**
    * Whether the element's start and end can carry an aligned head: a line, a polyline or a path
    * of one open subpath, whose geometry is its own (no live effect, taper or corner source).
-   * @param {?Element} elem
-   * @returns {boolean}
    */
-  const canAlignArrows = (elem) => {
+  const canAlignArrows = (elem: Element | null | undefined): boolean => {
     if (!elem || !['line', 'polyline', 'path'].includes(elem.tagName)) return false
     if (LIVE_ATTRS.some((a) => elem.hasAttribute(a) && a !== ARROW_D_ATTR)) return false
     return !!readSubpath(elem, elem.getAttribute(sourceAttr(elem)) ?? undefined)
   }
 
-  /**
-   * @param {?Element} elem
-   * @returns {'tip'|'extend'|null}
-   */
-  const getArrowAlign = (elem) => {
+  const getArrowAlign = (elem: Element | null | undefined): 'tip' | 'extend' | null => {
     const mode = elem?.getAttribute(ARROW_ALIGN_ATTR)
     return mode === 'tip' || mode === 'extend' ? mode : null
   }
 
-  /** @param {Element} elem */
-  const restore = (elem) => {
+  const restore = (elem: Element): void => {
     const src = elem.getAttribute(sourceAttr(elem))
     if (src) {
       const sp = readSubpath(elem, src)
@@ -316,18 +252,17 @@ export const init = (canvas) => {
    * Make the element's markers and geometry follow its alignment: `refX` of both end markers, and for
    * Tip the stroke trimmed by each outward head's inset. Idempotent; records no history (callers
    * run it inside a transaction or as part of a change that is already recorded).
-   * @param {Element} elem
-   * @param {boolean} [trusted] the source was just rewritten by the caller: skip the staleness check
-   * @returns {boolean} Whether the element's geometry changed.
+   * @param trusted the source was just rewritten by the caller: skip the staleness check
+   * @returns Whether the element's geometry changed.
    */
-  const syncArrowAlign = (elem, trusted = false) => {
+  const syncArrowAlign = (elem: Element, trusted = false): boolean => {
     if (!elem?.hasAttribute?.(ARROW_ALIGN_ATTR)) return false
     // Not in the drawing (an undo just took it out), or its marker is not there (yet): its state is not ours to judge.
     if (!elem.isConnected || ['start', 'end'].some((pos) => {
       const ref = /\(#(.+)\)/.exec(elem.getAttribute(`marker-${pos}`) || '')
       return ref && !svgCanvas.getElement(ref[1])
     })) return false
-    let mode = getArrowAlign(elem)
+    let mode: 'tip' | 'extend' | null = getArrowAlign(elem)
     const before = geometryKey(elem)
     const ends = { start: markerAt(elem, 'start'), end: markerAt(elem, 'end') }
     let hasSource = elem.hasAttribute(sourceAttr(elem))
@@ -354,14 +289,14 @@ export const init = (canvas) => {
         restore(elem)
       }
       elem.removeAttribute(ARROW_ALIGN_ATTR)
-      for (const pos of /** @type {const} */ (['start', 'end'])) ends[pos]?.marker.setAttribute('refX', String(CENTRE))
+      for (const pos of ['start', 'end'] as const) ends[pos]?.marker.setAttribute('refX', String(CENTRE))
       mode = null
       hasSource = false
     }
 
     // Heads: refX, and the trims they ask for.
     const trims = { start: 0, end: 0 }
-    for (const pos of /** @type {const} */ (['start', 'end'])) {
+    for (const pos of ['start', 'end'] as const) {
       const e = ends[pos]
       if (!e) continue
       const { refX, inset } = headPlacement(e.kind, pos, mode)
@@ -390,11 +325,9 @@ export const init = (canvas) => {
   /**
    * Set (or with `null`, clear) the element's head alignment, re-deriving markers and geometry.
    * Records no history: run it in `transact` or alongside a recorded change.
-   * @param {Element} elem
-   * @param {'tip'|'extend'|null} mode
-   * @returns {boolean} Whether the element took it.
+   * @returns Whether the element took it.
    */
-  const setArrowAlign = (elem, mode) => {
+  const setArrowAlign = (elem: Element, mode: 'tip' | 'extend' | null): boolean => {
     if (!mode) {
       if (!elem?.hasAttribute(ARROW_ALIGN_ATTR)) return true
       restore(elem)
@@ -411,11 +344,9 @@ export const init = (canvas) => {
   /**
    * How far a connector's endpoint must stay from the shape it is bound to, in user units, for an aligned head
    * (0 for Tip: the tip is the endpoint; the inset for Extend: the stroke stops short and the tip lands on the edge).
-   * @param {Element} elem
-   * @param {'start'|'end'} pos
-   * @returns {?number} null when the element is not aligned (the caller keeps its own offset).
+   * @returns null when the element is not aligned (the caller keeps its own offset).
    */
-  const getArrowOffset = (elem, pos) => {
+  const getArrowOffset = (elem: Element, pos: 'start' | 'end'): number | null => {
     const mode = getArrowAlign(elem)
     if (!mode) return null
     const e = markerAt(elem, pos)
@@ -426,21 +357,17 @@ export const init = (canvas) => {
   /**
    * The untrimmed geometry of a line or polyline as points, so that code that moves its ends
    * (the connector) works on the real ends.
-   * @param {Element} elem
-   * @returns {?Array<{x: number, y: number}>}
    */
-  const getArrowSourcePoints = (elem) => {
+  const getArrowSourcePoints = (elem: Element): Pt[] | null => {
     if (!elem?.hasAttribute?.(ARROW_PTS_ATTR)) return null
     return parsePoints(elem.getAttribute(ARROW_PTS_ATTR))
   }
 
   /**
    * Replace the untrimmed geometry of an aligned line or polyline (a connector re-routing) and trim again.
-   * @param {Element} elem
-   * @param {Array<{x: number, y: number}>} pts
-   * @returns {boolean} false when the element holds no source (nothing was done).
+   * @returns false when the element holds no source (nothing was done).
    */
-  const setArrowSourcePoints = (elem, pts) => {
+  const setArrowSourcePoints = (elem: Element, pts: Pt[]): boolean => {
     if (!elem?.hasAttribute?.(ARROW_PTS_ATTR) || pts.length < 2) return false
     elem.setAttribute(ARROW_PTS_ATTR, pts.map((p) => `${num(p.x)},${num(p.y)}`).join(' '))
     syncArrowAlign(elem, true)
@@ -449,13 +376,11 @@ export const init = (canvas) => {
 
   /**
    * A transform baked into the element: its own geometry was remapped by coords.js, the source is ours.
-   * @param {Element} elem
-   * @param {Function} remap
    */
-  const remapSource = (elem, remap) => {
+  const remapSource = (elem: Element, remap: RemapPoint): void => {
     const sp = readSubpath(elem, elem.getAttribute(sourceAttr(elem)))
     if (!sp) return
-    const map = (/** @type {Pt} */ p) => remap(p.x, p.y)
+    const map = (p: Pt): Pt => remap(p.x, p.y)
     const moved = { closed: false, anchors: sp.anchors.map((a) => anchor(map(a.p), map(a.hIn), map(a.hOut))) }
     elem.setAttribute(sourceAttr(elem), isPathTag(elem) ? anchorsToD([moved]) : pointsToStr(moved.anchors))
     syncArrowAlign(elem, true)

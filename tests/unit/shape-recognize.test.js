@@ -1,5 +1,5 @@
 import { describe, it } from 'vitest'
-import { recognize, polygonRotation, simplify, resample, closedCorners } from '../../packages/svgcanvas/core/shape-recognize.js'
+import { recognize, polygonRotation, simplify, resample, closedCorners } from '../../packages/svgcanvas/core/shape-recognize.ts'
 
 // The Rust tests of VectorCraft's `crates/geom/src/recognize.rs`, on the same synthetic strokes.
 

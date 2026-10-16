@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape.
  *
@@ -13,37 +12,34 @@
  * @license MIT
  */
 
-/** @typedef {{x: number, y: number}} Point */
-/** A rectangle given by its centre and size (rotation, if any, is about the centre).
- * @typedef {{cx: number, cy: number, width: number, height: number}} CenterRect */
-/** An axis-aligned box.
- * @typedef {{x: number, y: number, width: number, height: number}} Box */
+export interface Point { x: number, y: number }
+/** A rectangle given by its centre and size (rotation, if any, is about the centre). */
+export interface CenterRect { cx: number, cy: number, width: number, height: number }
+/** An axis-aligned box. */
+export interface Box { x: number, y: number, width: number, height: number }
 
 /**
  * What the Shaper recognised.
  * `rotation` of a rectangle / ellipse is in degrees, a 45° step in [0, 180). A polygon's `rotation`
  * is the angle (degrees) of its first vertex from straight up, snapped (0 / 180 for a triangle,
  * 0 / 90 for a hexagon, 0 otherwise).
- * @typedef {{type: 'line', a: Point, b: Point}
- *   | {type: 'rectangle', rect: CenterRect, rotation: number}
- *   | {type: 'ellipse', rect: CenterRect, rotation: number}
- *   | {type: 'polygon', center: Point, radius: number, sides: number, rotation: number}
- *   | {type: 'scribble', rect: Box}} Recognized
  */
+export type Recognized =
+  | { type: 'line', a: Point, b: Point }
+  | { type: 'rectangle', rect: CenterRect, rotation: number }
+  | { type: 'ellipse', rect: CenterRect, rotation: number }
+  | { type: 'polygon', center: Point, radius: number, sides: number, rotation: number }
+  | { type: 'scribble', rect: Box }
 
 const SAMPLES = 256
-const toDegrees = (/** @type {number} */ rad) => rad * 180 / Math.PI
-const toRadians = (/** @type {number} */ deg) => deg * Math.PI / 180
-const remEuclid = (/** @type {number} */ x, /** @type {number} */ p) => ((x % p) + p) % p
+const toDegrees = (rad: number): number => rad * 180 / Math.PI
+const toRadians = (deg: number): number => deg * Math.PI / 180
+const remEuclid = (x: number, p: number): number => ((x % p) + p) % p
 /** Rust's `f64::round` (half away from zero). */
-const round = (/** @type {number} */ x) => Math.sign(x) * Math.round(Math.abs(x))
-const dist = (/** @type {Point} */ a, /** @type {Point} */ b) => Math.hypot(a.x - b.x, a.y - b.y)
+const round = (x: number): number => Math.sign(x) * Math.round(Math.abs(x))
+const dist = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y)
 
-/**
- * @param {Point[]} pts
- * @returns {Box}
- */
-const bbox = (pts) => {
+const bbox = (pts: Point[]): Box => {
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -57,20 +53,14 @@ const bbox = (pts) => {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
-/** @param {Point[]} pts */
-const pathLen = (pts) => {
+const pathLen = (pts: Point[]): number => {
   let sum = 0
   for (let i = 1; i < pts.length; i++) sum += dist(pts[i - 1], pts[i])
   return sum
 }
 
-/**
- * @param {Point} p
- * @param {Point} a
- * @param {Point} b
- * @returns {number} distance from `p` to the segment `ab`
- */
-export const distToSegment = (p, a, b) => {
+/** @returns distance from `p` to the segment `ab` */
+export const distToSegment = (p: Point, a: Point, b: Point): number => {
   const abx = b.x - a.x
   const aby = b.y - a.y
   const l2 = abx * abx + aby * aby
@@ -81,17 +71,13 @@ export const distToSegment = (p, a, b) => {
 
 /**
  * Douglas–Peucker simplification with bounded stack use, even for noisy strokes.
- * @param {Point[]} pts
- * @param {number} tol
- * @returns {Point[]}
  */
-export const simplify = (pts, tol) => {
+export const simplify = (pts: Point[], tol: number): Point[] => {
   if (pts.length < 3) return pts.slice()
-  const keep = new Array(pts.length).fill(false)
+  const keep: boolean[] = new Array(pts.length).fill(false)
   keep[0] = true
   keep[pts.length - 1] = true
-  /** @type {Array<[number, number]>} */
-  const pending = [[0, pts.length - 1]]
+  const pending: Array<[number, number]> = [[0, pts.length - 1]]
   for (let job = pending.pop(); job; job = pending.pop()) {
     const [start, end] = job
     const a = pts[start]
@@ -117,11 +103,8 @@ export const simplify = (pts, tol) => {
 /**
  * Sample by distance, so pointer speed/density cannot bias the shape fit. Bounds and length still
  * come from the complete stroke, but simplification works on at most 256 samples.
- * @param {Point[]} pts
- * @param {number} length
- * @returns {Point[]}
  */
-export const resample = (pts, length) => {
+export const resample = (pts: Point[], length: number): Point[] => {
   if (!pts.length) return []
   const first = pts[0]
   const last = pts[pts.length - 1]
@@ -146,10 +129,8 @@ export const resample = (pts, length) => {
 
 /**
  * Index of the point farthest from `from` (the last one on ties, like Rust's `max_by`).
- * @param {Point[]} pts
- * @param {Point} from
  */
-const farthest = (pts, from) => {
+const farthest = (pts: Point[], from: Point): number => {
   let best = 0
   let bestD = -Infinity
   pts.forEach((p, i) => {
@@ -165,11 +146,8 @@ const farthest = (pts, from) => {
 /**
  * A closed stroke has no special starting corner. Split at distant points and simplify both
  * halves, then discard collinear seam points instead of counting them as polygon vertices.
- * @param {Point[]} pts
- * @param {number} tol
- * @returns {Point[]}
  */
-export const closedCorners = (pts, tol) => {
+export const closedCorners = (pts: Point[], tol: number): Point[] => {
   if (!pts.length) return []
   const start = farthest(pts, pts[0])
   const ring = [...pts.slice(start), ...pts.slice(0, start)]
@@ -193,9 +171,8 @@ export const closedCorners = (pts, tol) => {
 
 /**
  * Area of the polygon through `poly` (closed implicitly by the shoelace sum from the first point).
- * @param {Point[]} poly
  */
-const area = (poly) => {
+const area = (poly: Point[]): number => {
   if (!poly.length) return 0
   const o = poly[0]
   let sum = 0
@@ -210,12 +187,8 @@ const area = (poly) => {
 
 /**
  * Do the stroke's points hug the straight edges between `corners` (rather than bulging like an ellipse)?
- * @param {Point[]} pts
- * @param {Point[]} corners
- * @param {number} size
- * @param {number} tolerance
  */
-const isPolygonal = (pts, corners, size, tolerance) => {
+const isPolygonal = (pts: Point[], corners: Point[], size: number, tolerance: number): boolean => {
   if (!pts.length || corners.length < 3) return false
   let total = 0
   for (const p of pts) {
@@ -228,11 +201,7 @@ const isPolygonal = (pts, corners, size, tolerance) => {
   return total / pts.length < tolerance * size
 }
 
-/**
- * @param {Point[]} corners
- * @param {number} size
- */
-const rightAngles = (corners, size) => {
+const rightAngles = (corners: Point[], size: number): boolean => {
   const n = corners.length
   for (let i = 0; i < n; i++) {
     const a = corners[i]
@@ -251,15 +220,11 @@ const rightAngles = (corners, size) => {
 
 /**
  * Four substantial, approximately perpendicular edges, even with uneven sides and corners.
- * @param {Point[]} pts
- * @param {Point[]} corners
- * @param {number} size
  */
-const isRectangle = (pts, corners, size) =>
+const isRectangle = (pts: Point[], corners: Point[], size: number): boolean =>
   corners.length === 4 && isPolygonal(pts, corners, size, 0.055) && rightAngles(corners, size)
 
-/** @param {Point[]} pts */
-const mean = (pts) => {
+const mean = (pts: Point[]): Point => {
   const o = pts[0]
   let x = 0
   let y = 0
@@ -272,16 +237,14 @@ const mean = (pts) => {
 
 /**
  * Fit all vertices, so neither the starting point nor drawing direction picks the orientation.
- * @param {Point[]} corners
- * @param {number} step the candidate rotations are the multiples of `step` in [0, 360)
- * @returns {number} degrees
+ * @param step the candidate rotations are the multiples of `step` in [0, 360)
+ * @returns degrees
  */
-export const polygonRotation = (corners, step) => {
+export const polygonRotation = (corners: Point[], step: number): number => {
   if (!corners.length) return 0
   const center = mean(corners)
   const period = 360 / corners.length
-  /** @param {number} rotation */
-  const error = (rotation) => corners.reduce((sum, p) => {
+  const error = (rotation: number): number => corners.reduce((sum, p) => {
     const angle = toDegrees(Math.atan2(p.y - center.y, p.x - center.x)) + 90
     const delta = remEuclid(angle - rotation, period)
     return sum + Math.min(delta, period - delta) ** 2
@@ -303,11 +266,8 @@ export const polygonRotation = (corners, step) => {
   return best
 }
 
-/**
- * @param {Point[]} corners
- * @returns {number} degrees, a multiple of 45 in [0, 180)
- */
-export const rectangleRotation = (corners) => {
+/** @returns degrees, a multiple of 45 in [0, 180) */
+export const rectangleRotation = (corners: Point[]): number => {
   let sin = 0
   let cos = 0
   corners.forEach((a, i) => {
@@ -319,11 +279,8 @@ export const rectangleRotation = (corners) => {
   return remEuclid(round(toDegrees(Math.atan2(sin, cos)) / 4 / 45) * 45, 180)
 }
 
-/**
- * @param {Point[]} pts
- * @returns {number} degrees, a multiple of 45 in [0, 180)
- */
-const ellipseRotation = (pts) => {
+/** @returns degrees, a multiple of 45 in [0, 180) */
+const ellipseRotation = (pts: Point[]): number => {
   const center = mean(pts)
   let xx = 0
   let yy = 0
@@ -342,11 +299,9 @@ const ellipseRotation = (pts) => {
 
 /**
  * Dimensions in the fitted frame, but the centre stays in document coordinates.
- * @param {Point[]} pts
- * @param {number} rotation degrees
- * @returns {CenterRect}
+ * @param rotation degrees
  */
-const orientedBounds = (pts, rotation) => {
+const orientedBounds = (pts: Point[], rotation: number): CenterRect => {
   if (rotation === 0) {
     const b = bbox(pts)
     return { cx: b.x + b.width / 2, cy: b.y + b.height / 2, width: b.width, height: b.height }
@@ -369,10 +324,8 @@ const orientedBounds = (pts, rotation) => {
 
 /**
  * Number of sharp direction reversals (turns of more than 120°) along the stroke.
- * @param {Point[]} pts
- * @param {number} minSeg
  */
-const reversals = (pts, minSeg) => {
+const reversals = (pts: Point[], minSeg: number): number => {
   const s = simplify(pts, minSeg)
   let count = 0
   for (let i = 2; i < s.length; i++) {
@@ -389,10 +342,8 @@ const reversals = (pts, minSeg) => {
 
 /**
  * Near-squares and near-circles snap to equal sides.
- * @param {CenterRect} r
- * @returns {CenterRect}
  */
-const squared = (r) => {
+const squared = (r: CenterRect): CenterRect => {
   const { width: w, height: h } = r
   if (Math.abs(w - h) < 0.1 * Math.max(w, h)) {
     const s = (w + h) / 2
@@ -403,10 +354,10 @@ const squared = (r) => {
 
 /**
  * Recognise a freehand stroke.
- * @param {Point[]} stroke document points, in drawing order
- * @returns {Recognized|null} `null` when the stroke is not a shape (the Shaper then does nothing)
+ * @param stroke document points, in drawing order
+ * @returns `null` when the stroke is not a shape (the Shaper then does nothing)
  */
-export const recognize = (stroke) => {
+export const recognize = (stroke: Point[]): Recognized | null => {
   if (stroke.length < 2 || stroke.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) return null
   const b = bbox(stroke)
   const size = Math.max(b.width, b.height)

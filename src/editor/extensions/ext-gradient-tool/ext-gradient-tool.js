@@ -26,7 +26,7 @@
 import {
   multiply, invert, applyMatrix, readGradient, gradientOf, ensureOwnGradient, ownStops, setLinear, setRadial,
   addStop, copyStop, placeStop, removeStop, setStopColor
-} from '@svgedit/svgcanvas/core/gradient-edit.js'
+} from '@svgedit/svgcanvas/core/gradient-edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { closestRoot } from '../../domScope.js'
 
@@ -93,7 +93,7 @@ export default {
      * @property {Element} el
      * @property {'fill'|'stroke'} prop
      * @property {Element} grad
-     * @property {import('@svgedit/svgcanvas/core/gradient-edit.js').GradientModel} model
+     * @property {import('@svgedit/svgcanvas/core/gradient-edit.ts').GradientModel} model
      * @property {{a: number, b: number, c: number, d: number, e: number, f: number}} T gradient space → document
      * @property {?{a: number, b: number, c: number, d: number, e: number, f: number}} Tinv
      */

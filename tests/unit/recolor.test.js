@@ -1,7 +1,7 @@
 import {
   parseColor, toHex, normalizeColor, rgbToHsb, hsbToRgb, shiftHue, neutralOf, isPreserved, DEFAULT_PRESERVE,
   keyColor, rowMap, cluster, buildRows, planMap, harmonyColors, HARMONIES, METHODS, collectColors, applyColors
-} from '../../packages/svgcanvas/core/recolor.js'
+} from '../../packages/svgcanvas/core/recolor.ts'
 
 const NS = 'http://www.w3.org/2000/svg'
 
