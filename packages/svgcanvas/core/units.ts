@@ -6,7 +6,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import { error } from '../common/logger.js'
+import { error } from '../common/logger.ts'
 
 const NSSVG = 'http://www.w3.org/2000/svg'
 

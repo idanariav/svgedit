@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { error, warn, info, setLogSink, setLogLevel, LogLevel } from '../../packages/svgcanvas/common/logger.js'
+import { error, warn, info, setLogSink, setLogLevel, LogLevel } from '../../packages/svgcanvas/common/logger.ts'
 
 describe('logger sink', () => {
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('logger sink', () => {
     const sink = vi.fn()
     setLogSink(sink)
     vi.resetModules()
-    const copy = await import('../../packages/svgcanvas/common/logger.js')
+    const copy = await import('../../packages/svgcanvas/common/logger.ts')
     copy.error('from the other bundle')
     expect(sink).toHaveBeenCalledTimes(1)
   })
@@ -59,7 +59,7 @@ describe('logging discipline', () => {
     const walk = (dir) => readdirSync(dir).flatMap((f) => {
       const p = join(dir, f)
       if (f === 'node_modules' || f === 'dist') return []
-      return statSync(p).isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : []
+      return statSync(p).isDirectory() ? walk(p) : /\.(js|ts)$/.test(p) && !p.endsWith('.d.ts') ? [p] : []
     })
     const offenders = [...walk('src'), ...walk('packages/svgcanvas/core'), 'packages/svgcanvas/svgcanvas.js']
       .filter(f => readFileSync(f, 'utf8').split('\n')

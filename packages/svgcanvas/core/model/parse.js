@@ -11,12 +11,12 @@
  * @license MIT
  */
 import { SaxesParser } from 'saxes'
-import { cdata, comment, decl, doctype, element, pi, text } from './node.js'
+import { cdata, comment, decl, doctype, element, pi, text } from './node.ts'
 
-/** @typedef {import('./node.js').ModelNode} ModelNode */
-/** @typedef {import('./node.js').ModelElement} ModelElement */
-/** @typedef {import('./node.js').ModelMisc} ModelMisc */
-/** @typedef {import('./node.js').ModelDocument} ModelDocument */
+/** @typedef {import('./node.ts').ModelNode} ModelNode */
+/** @typedef {import('./node.ts').ModelElement} ModelElement */
+/** @typedef {import('./node.ts').ModelMisc} ModelMisc */
+/** @typedef {import('./node.ts').ModelDocument} ModelDocument */
 
 /** Thrown for text that is not well-formed XML; `line` / `column` are 1-based. */
 export class SvgParseError extends Error {
@@ -49,7 +49,7 @@ export const parseSvg = (source) => {
   const parser = new SaxesParser({ xmlns: false, position: true, fileName: 'drawing.svg' })
   /** @type {ModelMisc[]} */
   const prolog = []
-  /** @type {(import('./node.js').ModelComment | import('./node.js').ModelPI)[]} */
+  /** @type {(import('./node.ts').ModelComment | import('./node.ts').ModelPI)[]} */
   const epilog = []
   /** @type {Open[]} */
   const stack = []
@@ -66,7 +66,7 @@ export const parseSvg = (source) => {
     if (node.kind === 'text' && last?.kind === 'text') top.children[top.children.length - 1] = text(last.value + node.value)
     else top.children.push(node)
   }
-  /** @param {import('./node.js').ModelComment | import('./node.js').ModelPI} node */
+  /** @param {import('./node.ts').ModelComment | import('./node.ts').ModelPI} node */
   const addMisc = (node) => {
     if (stack.length) addChild(node)
     else (root ? epilog : prolog).push(node)

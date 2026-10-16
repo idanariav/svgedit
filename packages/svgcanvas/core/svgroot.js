@@ -7,7 +7,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 import { NS } from './namespaces.ts'
-import { text2xml } from './encoding-utils.js'
+import { text2xml } from './encoding-utils.ts'
 
 /**
 * @function module:svgcanvas.svgRootElement svgRootElement the svg node and its children.

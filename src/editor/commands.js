@@ -24,7 +24,7 @@
  */
 import { t } from './locale.js'
 import { expandEditorKey } from './Hotkeys.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 /**
  * @typedef {object} ParamSpec

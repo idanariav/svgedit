@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Greedy line breaking for area text. Pure: the caller supplies `measure`, a
  * function from a string to its rendered width, so the algorithm runs the same
@@ -16,12 +15,17 @@
  * @license MIT
  */
 
-/**
- * @typedef {object} WrappedRow
- * @property {string} text The row as drawn (no trailing separator).
- * @property {number|null} soft `null` for the first row of a paragraph; otherwise the number of
- *   spaces the break swallowed (0 for a break inside a word or between CJK characters).
- */
+export interface WrappedRow {
+  /** The row as drawn (no trailing separator). */
+  text: string
+  /**
+   * `null` for the first row of a paragraph; otherwise the number of
+   * spaces the break swallowed (0 for a break inside a word or between CJK characters).
+   */
+  soft: number | null
+}
+
+type Measure = (s: string) => number
 
 /** Characters that may break before and after (ideographs, kana, fullwidth forms). */
 const CJK = '\\u2E80-\\u9FFF\\uF900-\\uFAFF\\uFF00-\\uFFEF'
@@ -31,14 +35,10 @@ const CJK_CHAR = new RegExp(`^[${CJK}]$`)
 /**
  * Split an over-long word into the longest pieces that each fit `maxWidth`
  * (at least one character per piece, so a narrow box still terminates).
- * @param {string} word
- * @param {number} maxWidth
- * @param {(s: string) => number} measure
- * @returns {string[]}
  */
-const splitWord = (word, maxWidth, measure) => {
+const splitWord = (word: string, maxWidth: number, measure: Measure): string[] => {
   const chars = Array.from(word)
-  const pieces = []
+  const pieces: string[] = []
   let cur = ''
   for (const ch of chars) {
     if (cur && measure(cur + ch) > maxWidth) {
@@ -52,23 +52,16 @@ const splitWord = (word, maxWidth, measure) => {
   return pieces
 }
 
-/**
- * Wrap one paragraph (no newlines).
- * @param {string} text
- * @param {number} maxWidth
- * @param {(s: string) => number} measure
- * @returns {WrappedRow[]}
- */
-export const wrapParagraph = (text, maxWidth, measure) => {
-  /** @type {WrappedRow[]} */
-  const rows = []
+/** Wrap one paragraph (no newlines). */
+export const wrapParagraph = (text: string, maxWidth: number, measure: Measure): WrappedRow[] => {
+  const rows: WrappedRow[] = []
   const tokens = text.match(TOKEN) ?? []
   let cur = ''
   let pending = '' // spaces seen after `cur`, not yet committed to it
-  let soft = /** @type {number|null} */ (null) // `soft` of the row being built
+  let soft: number | null = null // `soft` of the row being built
 
-  /** @param {number} nextSoft `soft` of the row that follows */
-  const closeRow = (nextSoft) => {
+  /** `nextSoft` is the `soft` of the row that follows */
+  const closeRow = (nextSoft: number) => {
     rows.push({ text: cur, soft })
     cur = ''
     pending = ''
@@ -118,16 +111,9 @@ export const wrapParagraph = (text, maxWidth, measure) => {
   return rows
 }
 
-/**
- * Wrap text that may hold hard newlines.
- * @param {string} value
- * @param {number} maxWidth Box width; `<= 0` disables wrapping (hard breaks only).
- * @param {(s: string) => number} measure
- * @returns {WrappedRow[]}
- */
-export const wrapText = (value, maxWidth, measure) => {
-  /** @type {WrappedRow[]} */
-  const rows = []
+/** Wrap text that may hold hard newlines. `maxWidth` is the box width; `<= 0` disables wrapping (hard breaks only). */
+export const wrapText = (value: string, maxWidth: number, measure: Measure): WrappedRow[] => {
+  const rows: WrappedRow[] = []
   for (const paragraph of String(value ?? '').split('\n')) {
     if (!(maxWidth > 0) || paragraph === '') {
       rows.push({ text: paragraph, soft: null })

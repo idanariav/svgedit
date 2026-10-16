@@ -8,7 +8,7 @@
  */
 
 import { converter, formatHex, wcagContrast, clampChroma } from 'culori'
-import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
+import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
 const toRgb = converter('rgb')
 

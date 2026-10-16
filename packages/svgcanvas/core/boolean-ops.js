@@ -13,7 +13,7 @@
 
 import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.ts'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // Element types that cannot be converted to a path (mirrors the check in
 // svgToPaper) — used when walking into a group to find its leaf shapes.

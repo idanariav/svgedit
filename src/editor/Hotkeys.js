@@ -22,7 +22,7 @@
 import { isMac } from '@svgedit/svgcanvas/common/browser'
 import { isActiveEditor, ownsKeyEvent } from './domScope.js'
 import { getUserDataAdapter } from './userDataAdapter.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const STORAGE_KEY = 'svg-edit-hotkeys'
 // Canonical physical-modifier order (matches the legacy editor handler order).

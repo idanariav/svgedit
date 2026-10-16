@@ -13,7 +13,7 @@ import {
   transformPoint, getTransformList, transformListToTransform
 } from './math.ts'
 import * as hstry from './history.js'
-import { error as logError, warn as logWarn } from '../common/logger.js'
+import { error as logError, warn as logWarn } from '../common/logger.ts'
 import { findPos } from '../../svgcanvas/common/util.ts'
 import { isDrawSnapMode } from './draw-snap.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'

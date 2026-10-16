@@ -7,7 +7,7 @@ import {
   getHref,
   setHref
 } from '../../packages/svgcanvas/core/dom-utils.js'
-import { dropXMLInternalSubset, encodeUTF8, decodeUTF8 } from '../../packages/svgcanvas/core/encoding-utils.js'
+import { dropXMLInternalSubset, encodeUTF8, decodeUTF8 } from '../../packages/svgcanvas/core/encoding-utils.ts'
 
 describe('utilities extra coverage', () => {
   let svg

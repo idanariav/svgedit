@@ -11,12 +11,12 @@
  * @module model/serialize
  * @license MIT
  */
-import { toXml } from '../encoding-utils.js'
+import { toXml } from '../encoding-utils.ts'
 
-/** @typedef {import('./node.js').ModelNode} ModelNode */
-/** @typedef {import('./node.js').ModelElement} ModelElement */
-/** @typedef {import('./node.js').ModelDocument} ModelDocument */
-/** @typedef {import('./node.js').ModelMisc} ModelMisc */
+/** @typedef {import('./node.ts').ModelNode} ModelNode */
+/** @typedef {import('./node.ts').ModelElement} ModelElement */
+/** @typedef {import('./node.ts').ModelDocument} ModelDocument */
+/** @typedef {import('./node.ts').ModelMisc} ModelMisc */
 /** @typedef {{format?: 'preserve' | 'indent'}} SerializeOptions */
 
 /** Attribute values keep their tabs and line breaks as character references (a raw one is normalised to a space on parse). */

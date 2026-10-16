@@ -9,8 +9,8 @@
  */
 
 import HistoryRecordingService from './historyrecording.js'
-import { toXml } from './encoding-utils.js'
-import { warn } from '../common/logger.js'
+import { toXml } from './encoding-utils.ts'
+import { warn } from '../common/logger.ts'
 
 /**
  * Get a HistoryRecordingService.

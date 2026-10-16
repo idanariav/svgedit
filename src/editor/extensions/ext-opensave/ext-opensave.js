@@ -18,7 +18,7 @@
    */
 import { fileOpen, fileSave } from 'browser-fs-access'
 import { insertImageFromHref } from '../../dialogs/insertImage.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const name = 'opensave'
 let handle = null

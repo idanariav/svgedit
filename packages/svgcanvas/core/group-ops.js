@@ -9,7 +9,7 @@
 
 import { NS } from './namespaces.ts'
 import * as hstry from './history.js'
-import { warn, error } from '../common/logger.js'
+import { warn, error } from '../common/logger.ts'
 import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.js'
 import {
   getBBox as utilsGetBBox
@@ -20,7 +20,7 @@ import {
   transformListToTransform,
   getTransformList
 } from './math.ts'
-import { isGecko } from '../common/browser.js'
+import { isGecko } from '../common/browser.ts'
 import { getParents } from '../common/util.ts'
 
 const {

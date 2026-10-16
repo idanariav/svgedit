@@ -7,7 +7,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 export interface AngleCoord45 {
   /** The angle-snapped x value */

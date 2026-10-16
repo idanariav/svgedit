@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.js'
 import { simplifyWith, fitFreehand } from './path-fit.js'
 import { findPenEnd, extendWith, endDirection } from './pen-continue.js'

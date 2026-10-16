@@ -28,7 +28,7 @@
 
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
 import { getMatrixToContent, isIdentity } from './math.ts'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // Element types that cannot be converted to a path (used for the
 // selection-fallback filter below; svgToPaper applies the same check itself).

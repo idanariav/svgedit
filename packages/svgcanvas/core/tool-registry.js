@@ -39,8 +39,8 @@ import { cleanupElement } from './dom-utils.js'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
-import { isMac } from '../common/browser.js'
-import { error as logError, warn } from '../common/logger.js'
+import { isMac } from '../common/browser.ts'
+import { error as logError, warn } from '../common/logger.ts'
 
 const LOG = 'tool-registry'
 

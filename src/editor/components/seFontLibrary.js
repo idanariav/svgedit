@@ -19,7 +19,7 @@ import { closestRoot, ownerEditor } from '../domScope.js'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.
 import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const CAT_LABELS = {
   handwriting: 'Handwriting',

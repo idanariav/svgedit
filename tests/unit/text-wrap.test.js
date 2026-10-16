@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wrapParagraph, wrapText } from '../../packages/svgcanvas/core/text-wrap.js'
+import { wrapParagraph, wrapText } from '../../packages/svgcanvas/core/text-wrap.ts'
 
 // Every character is 10 wide, so a box of 100 holds 10 characters.
 const measure = (s) => Array.from(s).length * 10

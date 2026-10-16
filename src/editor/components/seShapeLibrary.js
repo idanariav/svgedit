@@ -20,7 +20,7 @@ import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
 } from '../extensions/ext-shapes/userShapes.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 import { CSS } from './seShapeLibrary.css.js'
 import { shapeLibData, CAT_LABELS, ALL_CAT, STAR_SVG, STAR18, SEARCH16, SEARCH13, CLOSE18, CLOSE12, GRID_SVG, ROWS_SVG } from './seShapeLibrary.data.js'

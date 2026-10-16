@@ -24,7 +24,7 @@ import { getClosest } from '../common/util.ts'
 import Layer from './layer.js'
 import { isObjectLocked, isObjectHidden } from './object-state.js'
 import { isExtensionHook } from './extension-hooks.ts'
-import { warn, error as logError } from '../common/logger.js'
+import { warn, error as logError } from '../common/logger.ts'
 
 const { BatchCommand } = hstry
 

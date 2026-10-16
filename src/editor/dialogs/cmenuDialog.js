@@ -12,7 +12,7 @@ import {
   VALUE_CONTROLS,
   runFavoriteTrigger
 } from '../favoriteActions.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 const template = document.createElement('template')

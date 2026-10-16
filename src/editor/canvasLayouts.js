@@ -15,7 +15,7 @@
  * (`getCanvasLayouts`/`setCanvasLayouts`) when present, else `localStorage`.
  */
 import { getUserDataAdapter } from './userDataAdapter.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const STORAGE_KEY = 'svg-edit-canvas-layouts'
 const LAYER_PREFIX = 'Layout: '

@@ -7,8 +7,8 @@
  */
 
 import * as history from './history.js'
-import { error, warn as logWarn } from '../common/logger.js'
-import { text2xml, toXml, hashCode } from './encoding-utils.js'
+import { error, warn as logWarn } from '../common/logger.ts'
+import { text2xml, toXml, hashCode } from './encoding-utils.ts'
 import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.ts'
 import {
   cleanupElement,
@@ -16,7 +16,7 @@ import {
   preventClickDefault
 } from './dom-utils.js'
 import { getUnits } from './units.ts'
-import { isGecko } from '../common/browser.js'
+import { isGecko } from '../common/browser.ts'
 import { NS } from './namespaces.ts'
 import * as draw from './draw.js'
 import { getParents, getClosest } from '../common/util.ts'

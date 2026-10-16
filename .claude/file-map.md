@@ -18,9 +18,9 @@
 
 | File | What it is |
 |---|---|
-| `browser.js` | Browser detection |
-| `initGuard.js` | Collision guard for SvgCanvas's per-module `xxxInit(canvas)` calls |
-| `logger.js` | Centralized logging utility for SVGCanvas |
+| `browser.ts` | Browser detection |
+| `initGuard.ts` | Collision guard for SvgCanvas's per-module `xxxInit(canvas)` calls |
+| `logger.ts` | Centralized logging utility for SVGCanvas |
 | `util.ts` | Common utility functions |
 
 ### `packages/svgcanvas/core/`
@@ -53,7 +53,7 @@
 | `draw.js` | Tools for drawing |
 | `drawing-invariants.js` | Structural invariants of a healthy drawing, as a pure DOM check |
 | `elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
-| `encoding-utils.js` | String/XML/base64 encoding utilities |
+| `encoding-utils.ts` | String/XML/base64 encoding utilities |
 | `event-group-context.js` | Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove preludes and the select/shape-draw mode handlers |
 | `event-path-edit.js` | Path drawing/editing mode (`path`/`pathedit`) mouse handlers, extracted from the `path`/`pathedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event-resize.js` | Resize mode (`resize`) mouse handlers, extracted from the `resize` case of `event.js`'s mouseDown/mouseMove switches |
@@ -121,7 +121,7 @@
 | `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
 | `text-path.js` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.js` | How a `<text>` element's rows are stored, read and laid out |
-| `text-wrap.js` | Greedy line breaking for area text |
+| `text-wrap.ts` | Greedy line breaking for area text |
 | `tool-registry.js` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
 | `touch.js` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
 | `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
@@ -139,7 +139,7 @@
 | `drawing.js` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.js` |
 | `features.js` | Document model, layer 2b: the `se:*` features of one element as typed fields |
 | `index.js` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.js`, `parse.js`, `serialize.js`) and a typed read-only view of a drawing over it (`drawing.js`) |
-| `node.js` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
+| `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
 | `parse.js` | Document model: SVG/XML text -> persistent tree (see `node.js`) |
 | `serialize.js` | Document model: persistent tree -> SVG/XML text (see `node.js`, `parse.js`) |
 

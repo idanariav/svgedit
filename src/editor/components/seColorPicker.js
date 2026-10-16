@@ -4,7 +4,7 @@ import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import './colorPicker/index.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 

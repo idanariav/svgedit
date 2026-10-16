@@ -3,7 +3,7 @@ import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { loadLayouts } from '../canvasLayouts.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 

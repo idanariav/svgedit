@@ -7,12 +7,12 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import { isWebkit } from '../common/browser.js'
+import { isWebkit } from '../common/browser.ts'
 import { getRotationAngle } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // change radius if touch screen
 // Bigger handles whenever the primary pointer is a finger (not only where `ontouchstart` exists).

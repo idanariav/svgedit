@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
 // Stateless helpers (no per-instance state) stay at module scope and are shared.

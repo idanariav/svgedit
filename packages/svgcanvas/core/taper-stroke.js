@@ -38,7 +38,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.js'

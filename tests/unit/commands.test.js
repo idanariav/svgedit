@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { CommandRegistry, CommandError } from '../../src/editor/commands.js'
-import { setLogSink } from '../../packages/svgcanvas/common/logger.js'
+import { setLogSink } from '../../packages/svgcanvas/common/logger.ts'
 
 const makeEditor = (extra = {}) => ({ svgCanvas: {}, ...extra })
 

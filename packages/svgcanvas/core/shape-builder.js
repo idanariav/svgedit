@@ -25,7 +25,7 @@
  */
 
 import { getOwnTransformScale, getPaperScope, getStyleAttrs as getBaseStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // Ignore slivers below this absolute area (user units²).
 const AREA_EPS = 0.5

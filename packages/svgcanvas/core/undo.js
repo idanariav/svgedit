@@ -14,7 +14,7 @@ import { getBBox as utilsGetBBox } from './bbox-utils.js'
 import { isAreaText, reflowAreaText, settleAreaText, LAYOUT_ATTRS } from './text-rows.js'
 import {
   isGecko
-} from '../common/browser.js'
+} from '../common/browser.ts'
 import {
   transformPoint, transformListToTransform, getTransformList
 } from './math.ts'

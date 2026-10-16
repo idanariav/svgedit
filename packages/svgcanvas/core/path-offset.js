@@ -16,7 +16,7 @@
 
 import ClipperLib from 'clipper-lib'
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper } from './paper-utils.js'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // Clipper works on integers — scale coordinates up, then back down.
 const SCALE = 1000

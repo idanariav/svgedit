@@ -20,7 +20,7 @@ import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
 import { refreshToolOptions } from './panels/toolOptionsBar.js'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
-import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
 /**
    * @fires module:svgcanvas.SvgCanvas#event:svgEditorReady

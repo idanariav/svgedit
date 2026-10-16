@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { runGuardedInit } from '../../packages/svgcanvas/common/initGuard.js'
-import { setLoggingEnabled } from '../../packages/svgcanvas/common/logger.js'
+import { runGuardedInit } from '../../packages/svgcanvas/common/initGuard.ts'
+import { setLoggingEnabled } from '../../packages/svgcanvas/common/logger.ts'
 
 describe('runGuardedInit', () => {
   let warnSpy

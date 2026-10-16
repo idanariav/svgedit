@@ -7,7 +7,7 @@ import topPanelHTML from './TopPanel.html'
 import { localizePanelFragment } from '../panelI18n.js'
 import { runSteps } from '../runSteps.js'
 import { updateContextPanel, round1 } from './topPanelContext.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const { getTypeMap } = SvgCanvas
 

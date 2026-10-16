@@ -43,7 +43,7 @@ import {
   BatchCommand, ChangeElementCommand, ChildListCommand, CharacterDataCommand, isEphemeral
 } from './history.js'
 import { getHref } from './dom-utils.js'
-import { debug, error, warn } from '../common/logger.js'
+import { debug, error, warn } from '../common/logger.ts'
 
 const LOG = 'transaction'
 

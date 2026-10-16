@@ -1,5 +1,5 @@
 // runSteps.js — `runSteps(steps)`: runs labeled, independent steps so one that throws is logged and skipped instead of aborting the chain
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 /**
  * Run a sequence of labeled, independent steps, isolating each from the
  * others: a step that throws (e.g. a stale DOM id after a panel refactor) is

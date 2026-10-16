@@ -203,11 +203,11 @@ opportunistic and small per module.
 - **Gates and docs tools:** `check-dom-scope`, `check-layers` and the file map see `.ts` (not `.d.ts`).
 
 **Converted:** `proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`, `math`, `units`, `common/util`,
-`dataStorage`, `extension-hooks` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
+`dataStorage`, `extension-hooks`, `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
+`text-wrap` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
-**Left (the conversion):** the other leaves next (`common/logger`, `common/browser`, `common/initGuard`, `core/encoding-utils`,
-`core/model/node`, `core/paint`, `core/text-wrap`, `core/touch`), then up the import graph, `svgcanvas.js` last; the editor
+**Left (the conversion):** `core/paint` and `core/touch` (DOM-heavy `any` / `init(svgCanvas)` shapes, easier after R2), then up the import graph, `svgcanvas.js` last; the editor
 after the engine, with its own strict tsconfig.
 Per module: `git mv x.js x.ts`, move the JSDoc types into syntax, `node scripts/check-ts-imports.mjs --fix`, change the
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,

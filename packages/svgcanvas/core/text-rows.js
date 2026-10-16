@@ -24,7 +24,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { wrapText } from './text-wrap.js'
+import { wrapText } from './text-wrap.ts'
 
 /**
  * Multiplier applied to font-size to derive the row step for multiline text.
@@ -225,7 +225,7 @@ export const withMeasure = (elem, fn) => {
 const planArea = (elem, value, fontSizeFallback) => {
   if (value === '') { return [] }
   const width = getWrapWidth(elem)
-  /** @type {import('./text-wrap.js').WrappedRow[]} */
+  /** @type {import('./text-wrap.ts').WrappedRow[]} */
   const rows = withMeasure(elem, (measure) => wrapText(value, width, measure))
   const x = parseFloat(elem.getAttribute('x') ?? '') || 0
   const baseY = parseFloat(elem.getAttribute('y') ?? '') || 0

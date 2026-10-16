@@ -23,7 +23,7 @@
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.js'
 import { getTextWithNewlines } from './text-rows.js'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
 const SHAPE_GEOM_ATTRS = ['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points', 'x1', 'y1', 'x2', 'y2', 'd']

@@ -55,14 +55,14 @@ import {
   init as bboxUtilsInit
 } from './core/bbox-utils.js'
 import { convertToPath } from './core/path-utils.js'
-import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.js'
+import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.ts'
 import {
   matrixMultiply,
   hasMatrixTransform,
   transformListToTransform
 } from './core/math.ts'
 import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.ts'
-import { warn } from './common/logger.js'
+import { warn } from './common/logger.ts'
 import { createUnits, getTypeMap } from './core/units.ts'
 import { init as svgInit } from './core/svg-exec.js'
 import { init as svgDefsInit } from './core/svg-defs.js'
@@ -102,7 +102,7 @@ import {
   getParents,
   mergeDeep
 } from './common/util.ts'
-import { runGuardedInit } from './common/initGuard.js'
+import { runGuardedInit } from './common/initGuard.ts'
 
 import dataStorage from './core/dataStorage.ts'
 

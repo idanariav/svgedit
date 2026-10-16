@@ -2,7 +2,7 @@
 import { tooltipText } from '../Hotkeys.js'
 import { getIconDataUri } from '../images/iconRegistry.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 
 /**

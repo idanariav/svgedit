@@ -5,7 +5,7 @@
  * @license MIT
  */
 
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-registry.ts'
 
 import {

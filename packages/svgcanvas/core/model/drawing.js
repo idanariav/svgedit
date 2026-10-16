@@ -15,13 +15,13 @@
  */
 import { parseAnchors } from '../anchor-path.js'
 import { parseGuides } from '../guides.js'
-import { getAttr } from './node.js'
+import { getAttr } from './node.ts'
 import { readFeatures } from './features.js'
 
-/** @typedef {import('./node.js').ModelNode} ModelNode */
-/** @typedef {import('./node.js').ModelElement} ModelElement */
-/** @typedef {import('./node.js').ModelDocument} ModelDocument */
-/** @typedef {import('./node.js').NodePath} NodePath */
+/** @typedef {import('./node.ts').ModelNode} ModelNode */
+/** @typedef {import('./node.ts').ModelElement} ModelElement */
+/** @typedef {import('./node.ts').ModelDocument} ModelDocument */
+/** @typedef {import('./node.ts').NodePath} NodePath */
 /** @typedef {import('./features.js').Features} Features */
 
 /**

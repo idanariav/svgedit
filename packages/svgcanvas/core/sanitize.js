@@ -9,7 +9,7 @@
 
 import { getReverseNS, NS } from './namespaces.ts'
 import { getHref, setHref, getUrlFromAttr } from './dom-utils.js'
-import { warn } from '../common/logger.js'
+import { warn } from '../common/logger.ts'
 
 const REVERSE_NS = getReverseNS()
 const FONT_ATTRIBUTES = ['font-family', 'font-size', 'font-stretch', 'font-style', 'font-weight']

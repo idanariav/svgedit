@@ -42,7 +42,7 @@ import { blurActiveField } from './components/fieldAutoBlur.js'
 import { runSteps } from './runSteps.js'
 import { buildEditorShortcuts } from './editorShortcuts.js'
 import { getDefaultClassForTag, getClass, applyDefaultClassAttrs } from './classLibrary.js'
-import { warn as logWarn, setLogSink, setLogLevel } from '@svgedit/svgcanvas/common/logger.js'
+import { warn as logWarn, setLogSink, setLogLevel } from '@svgedit/svgcanvas/common/logger.ts'
 
 const { $click, decode64 } = SvgCanvas
 

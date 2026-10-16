@@ -1,7 +1,7 @@
 // seInput.js — `<se-input>` — Text input with icon/label
 import { t } from '../locale.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `

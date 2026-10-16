@@ -8,7 +8,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { toXml } from './encoding-utils.js'
+import { toXml } from './encoding-utils.ts'
 import { walkTree } from './dom-utils.js'
 
 /**

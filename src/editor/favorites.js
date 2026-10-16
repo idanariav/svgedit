@@ -11,7 +11,7 @@
  * @module favorites
  */
 import { getUserDataAdapter } from './userDataAdapter.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const STORAGE_KEY = 'svg-edit-favorites'
 

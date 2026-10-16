@@ -20,7 +20,7 @@
  */
 
 import { getUserDataAdapter } from '../../userDataAdapter.js'
-import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.js'
+import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
 const DB_NAME = 'svgedit-fonts'
 const STORE = 'fonts'

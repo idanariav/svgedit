@@ -1,7 +1,7 @@
 // seList.js — `<se-list>` — Icon-based dropdown list; the `field` attribute draws the trigger as a framed field with a chevron (used for stroke Join / Cap)
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { ownerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
