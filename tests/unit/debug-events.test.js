@@ -1,4 +1,4 @@
-import { describeElement, redact, describePointer } from '../../packages/svgcanvas/core/debug-events.js'
+import { describeElement, redact, describePointer } from '../../packages/svgcanvas/core/debug-events.ts'
 
 describe('debug-events', () => {
   it('names an element tag#id, never its content', () => {

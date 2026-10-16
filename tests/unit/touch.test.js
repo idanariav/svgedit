@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { init as initTouch } from '../../packages/svgcanvas/core/touch.js'
+import { init as initTouch } from '../../packages/svgcanvas/core/touch.ts'
 
 const createSvgRoot = () => {
   const listeners = {}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { measureSegment, constrainAngle, trimNumber, readoutLines } from '../../packages/svgcanvas/core/measure.js'
+import { measureSegment, constrainAngle, trimNumber, readoutLines } from '../../packages/svgcanvas/core/measure.ts'
 
 describe('measureSegment', () => {
   it('reports distance, offsets and the angle counter-clockwise as on paper', () => {

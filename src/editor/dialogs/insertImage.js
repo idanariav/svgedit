@@ -1,5 +1,5 @@
 // insertImage.js — `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a…
-import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.js'
+import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.ts'
 
 // Basic shapes that get converted to <path> on import, and the geometry
 // attributes that become meaningless once they are paths.

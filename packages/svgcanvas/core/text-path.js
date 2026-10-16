@@ -21,7 +21,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { getPathDFromElement } from './path-utils.js'
+import { getPathDFromElement } from './path-utils.ts'
 import { getTextWithNewlines } from './text-rows.js'
 import { warn } from '../common/logger.ts'
 

@@ -16,7 +16,7 @@ import {
   isIdentity
 } from './math.ts'
 import { getRotationAngleFromTransformList } from './dom-utils.js'
-import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.js'
+import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.js'
 
 // Much faster than running getBBox() every time

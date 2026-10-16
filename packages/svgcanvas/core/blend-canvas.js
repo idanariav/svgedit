@@ -41,7 +41,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { getPathDFromElement } from './path-utils.js'
+import { getPathDFromElement } from './path-utils.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
 import { registerAttrValidator } from './drawing-invariants.js'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'

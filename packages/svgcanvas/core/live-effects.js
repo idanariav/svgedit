@@ -44,7 +44,7 @@ import { NS } from './namespaces.ts'
 import { EPHEMERAL_ATTR } from './history.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { warn } from '../common/logger.ts'
-import { getPathDFromElement } from './path-utils.js'
+import { getPathDFromElement } from './path-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
 import {

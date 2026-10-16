@@ -1,6 +1,6 @@
 // sePalette.js — `<se-palette>` — Color palette swatch grid: per-swatch overrides, removable/re-addable swatches (`removed` key in the overrides map), and a labelled "Recent" row (`setDocumentColors`, last 5, fed by…
 /* eslint-disable max-len */
-import Paint from '@svgedit/svgcanvas/core/paint.js'
+import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { closestRoot, ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'

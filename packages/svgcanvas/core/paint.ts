@@ -1,18 +1,40 @@
-// @ts-check
-// paint.js — Fill, stroke, color management
-/**
- *
- */
+// paint.ts — Fill, stroke, color management
+
+export type PaintType = 'none' | 'solidColor' | 'linearGradient' | 'radialGradient'
+
+/** What a paint is made from: a copy of another paint, a gradient element, or a colour. */
+export interface PaintOptions {
+  /** opacity (0-100) */
+  alpha?: number | string
+  copy?: {
+    type: PaintType
+    alpha?: number | string
+    solidColor?: string | null
+    linearGradient?: SVGLinearGradientElement | null
+    radialGradient?: SVGRadialGradientElement | null
+  }
+  linearGradient?: SVGLinearGradientElement | null
+  radialGradient?: SVGRadialGradientElement | null
+  /** `RRGGBB` (with or without the `#`), or `none` */
+  solidColor?: string | null
+}
+
 export default class Paint {
-  /** @param {any} alpha */
-  static #normalizeAlpha (alpha) {
+  type: PaintType = 'none'
+  /** opacity (0-100) */
+  alpha: number
+  /** `RRGGBB` hex of the colour */
+  solidColor: string | null = null
+  linearGradient: SVGLinearGradientElement | null = null
+  radialGradient: SVGRadialGradientElement | null = null
+
+  static #normalizeAlpha (alpha: unknown): number {
     const numeric = Number(alpha)
     if (!Number.isFinite(numeric)) return 100
     return Math.min(100, Math.max(0, numeric))
   }
 
-  /** @param {any} color */
-  static #normalizeSolidColor (color) {
+  static #normalizeSolidColor (color: unknown): string | null {
     if (color === null || color === undefined) return null
     const str = String(color).trim()
     if (!str) return null
@@ -20,8 +42,7 @@ export default class Paint {
     return str.startsWith('#') ? str.slice(1) : str
   }
 
-  /** @param {string|null|undefined} hrefAttr */
-  static #extractHrefId (hrefAttr) {
+  static #extractHrefId (hrefAttr: string | null | undefined): string | null {
     if (!hrefAttr) return null
     const href = String(hrefAttr).trim()
     if (!href) return null
@@ -35,12 +56,11 @@ export default class Paint {
     return null
   }
 
-  /** @param {any} gradient */
-  static #resolveGradient (gradient) {
+  static #resolveGradient<T extends SVGGradientElement> (gradient: T | null | undefined): T | null {
     if (!gradient?.cloneNode) return null
     const doc = gradient.ownerDocument || document
-    const visited = new Set()
-    const clone = gradient.cloneNode(true)
+    const visited = new Set<string>()
+    const clone = gradient.cloneNode(true) as T
 
     let refId = Paint.#extractHrefId(
       clone.getAttribute('href') || clone.getAttribute('xlink:href')
@@ -91,41 +111,13 @@ export default class Paint {
     return clone
   }
 
-  /**
-   * @param {module:jGraduate.jGraduatePaintOptions} [opt]
-   */
-  constructor (opt) {
+  constructor (opt?: PaintOptions) {
     const options = opt || {}
     this.alpha = Paint.#normalizeAlpha(options.alpha)
     // copy paint object
     if (options.copy) {
-      /**
-       * @name module:jGraduate~Paint#type
-       * @type {"none"|"solidColor"|"linearGradient"|"radialGradient"}
-       */
       this.type = options.copy.type
-      /**
-       * Represents opacity (0-100).
-       * @name module:jGraduate~Paint#alpha
-       * @type {number}
-       */
       this.alpha = Paint.#normalizeAlpha(options.copy.alpha)
-      /**
-       * Represents #RRGGBB hex of color.
-       * @name module:jGraduate~Paint#solidColor
-       * @type {string|null}
-       */
-      this.solidColor = null
-      /**
-       * @name module:jGraduate~Paint#linearGradient
-       * @type {SVGLinearGradientElement|null}
-       */
-      this.linearGradient = null
-      /**
-       * @name module:jGraduate~Paint#radialGradient
-       * @type {SVGRadialGradientElement|null}
-       */
-      this.radialGradient = null
 
       switch (this.type) {
         case 'none':
@@ -135,12 +127,12 @@ export default class Paint {
           break
         case 'linearGradient':
           this.linearGradient = options.copy.linearGradient?.cloneNode
-            ? options.copy.linearGradient.cloneNode(true)
+            ? options.copy.linearGradient.cloneNode(true) as SVGLinearGradientElement
             : null
           break
         case 'radialGradient':
           this.radialGradient = options.copy.radialGradient?.cloneNode
-            ? options.copy.radialGradient.cloneNode(true)
+            ? options.copy.radialGradient.cloneNode(true) as SVGRadialGradientElement
             : null
           break
       }

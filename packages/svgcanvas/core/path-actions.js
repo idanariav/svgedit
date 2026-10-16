@@ -17,7 +17,7 @@ import {
   assignAttributes
 } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
-import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.js'
+import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.ts'
 import { warn as logWarn } from '../common/logger.ts'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
 import { anchorsToD } from './anchor-path.js'

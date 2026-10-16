@@ -19,7 +19,7 @@
  *
  * @license MIT
  */
-import { redact, describeElement } from '@svgedit/svgcanvas/core/debug-events.js'
+import { redact, describeElement } from '@svgedit/svgcanvas/core/debug-events.ts'
 
 /** Findings listed per action; the rest are only counted. */
 const MAX_FINDINGS = 5

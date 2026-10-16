@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { collectPathNodeTargets, snapPathNodeToTargets } from '../../packages/svgcanvas/core/path-node-guides.js'
+import { collectPathNodeTargets, snapPathNodeToTargets } from '../../packages/svgcanvas/core/path-node-guides.ts'
 
 describe('path-node-guides', () => {
   describe('collectPathNodeTargets', () => {

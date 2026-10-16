@@ -3,7 +3,7 @@
  * No DOM side effects; all functions are pure utilities.
  */
 
-import Paint from '@svgedit/svgcanvas/core/paint.js'
+import Paint from '@svgedit/svgcanvas/core/paint.ts'
 
 // ─── Color math ─────────────────────────────────────────────────────────────
 

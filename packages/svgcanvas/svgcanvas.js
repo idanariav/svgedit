@@ -10,17 +10,17 @@
  */
 import './core/path-seg-shim.js' // SVGPathSeg/SVGPathSegList replacement (see core/path-seg-shim.js)
 
-import Paint from './core/paint.js'
+import Paint from './core/paint.ts'
 import * as pathModule from './core/path.js'
 import * as history from './core/history.js'
 import * as draw from './core/draw.js'
 import { init as pasteInit } from './core/paste-elem.js'
-import { init as touchInit } from './core/touch.js'
+import { init as touchInit } from './core/touch.ts'
 import { svgRootElement } from './core/svgroot.ts'
 import { init as undoInit } from './core/undo.js'
 import { init as transactionInit } from './core/transaction.js'
 import { checkDrawing } from './core/drawing-invariants.js'
-import { describeElement } from './core/debug-events.js'
+import { describeElement } from './core/debug-events.ts'
 import { init as toolRegistryInit } from './core/tool-registry.js'
 import { init as selectionInit } from './core/selection.js'
 import { init as textActionsInit } from './core/text-actions.js'
@@ -53,7 +53,7 @@ import {
   getBBoxOfElementAsPath,
   init as bboxUtilsInit
 } from './core/bbox-utils.js'
-import { convertToPath } from './core/path-utils.js'
+import { convertToPath } from './core/path-utils.ts'
 import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.ts'
 import {
   matrixMultiply,

@@ -26,7 +26,7 @@ import { init as eventShapeDrawInit } from './event-shape-draw.js'
 import { init as eventResizeInit } from './event-resize.js'
 import { init as eventRotateInit } from './event-rotate.js'
 import { init as eventSelectInit } from './event-select.js'
-import { describeElement, describePointer } from './debug-events.js'
+import { describeElement, describePointer } from './debug-events.ts'
 
 const {
   InsertElementCommand

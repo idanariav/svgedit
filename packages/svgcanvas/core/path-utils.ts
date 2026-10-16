@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Path `d`-attribute construction and element-to-path conversion utilities.
  * @module path-utils
@@ -12,24 +11,22 @@ import {
   getTransformList
 } from './math.ts'
 import { mergeDeep } from '../common/util.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
-/**
- * @typedef {GenericArray} module:path-utils.PathSegmentArray
- * @property {number} length 2
- * @property {"M"|"L"|"C"|"Z"} 0
- * @property {number[]} 1
- */
+type ConvertHost = Pick<SvgCanvas, 'history' | 'addSVGElementsFromJson' | 'pathActions' | 'clearSelection' | 'addToSelection' | 'addCommandToHistory'>
+
+/** One path segment: its command letter and its coordinates, `x,y` pairs flattened. */
+export type PathSegmentArray = [command: string, points: number[]]
 
 /**
  * Create a path 'd' attribute from path segments.
  * Each segment is an array of the form: `[singleChar, [x,y, x,y, ...]]`
- * @function module:path-utils.getPathDFromSegments
- * @param {Array<[string, number[]]>} pathSegments - An array of path segments to be converted
- * @returns {string} The converted path d attribute.
+ * @param pathSegments - An array of path segments to be converted
+ * @returns The converted path d attribute.
  */
-export const getPathDFromSegments = (pathSegments) => {
+export const getPathDFromSegments = (pathSegments: PathSegmentArray[]): string => {
   return pathSegments.map(([command, points]) => {
-    const coords = []
+    const coords: string[] = []
     for (let i = 0; i < points.length; i += 2) {
       coords.push(`${points[i]},${points[i + 1]}`)
     }
@@ -39,16 +36,15 @@ export const getPathDFromSegments = (pathSegments) => {
 
 /**
  * Make a path 'd' attribute from a simple SVG element shape.
- * @function module:path-utils.getPathDFromElement
- * @param {Element} elem - The element to be converted
- * @returns {string|null|undefined} The path d attribute or `undefined` if the element type is unknown.
+ * @param elem - The element to be converted
+ * @returns The path d attribute or `undefined` if the element type is unknown.
  */
-export const getPathDFromElement = (elem) => {
+export const getPathDFromElement = (elem: Element): string | null | undefined => {
   // Possibly the cubed root of 6, but 1.81 works best
   let num = 1.81
-  let d
-  let rx
-  let ry
+  let d: string | null | undefined
+  let rx: number
+  let ry: number
   switch (elem.tagName) {
     case 'ellipse':
     case 'circle': {
@@ -94,7 +90,7 @@ export const getPathDFromElement = (elem) => {
       // blend key (and any hidden rect converted to a path) to a point. A non-numeric value (a percentage) still
       // asks the browser.
       const box = ['x', 'y', 'width', 'height'].map((n) => Number(elem.getAttribute(n) || 0))
-      const b = box.every(Number.isFinite) ? null : /** @type {SVGGraphicsElement} */ (elem).getBBox()
+      const b = box.every(Number.isFinite) ? null : (elem as SVGGraphicsElement).getBBox()
       const [x, y, w, h] = b ? [b.x, b.y, b.width, b.height] : box
       num = 4 - num // Why? Because!
 
@@ -141,11 +137,10 @@ export const getPathDFromElement = (elem) => {
 
 /**
  * Get a set of attributes from an element that is useful for convertToPath.
- * @function module:path-utils.getExtraAttributesForConvertToPath
- * @param {Element} elem - The element to be probed
- * @returns {Object<string, string>} An object with attributes (marker-start / -mid / -end, filter, clip-path).
+ * @param elem - The element to be probed
+ * @returns An object with attributes (marker-start / -mid / -end, filter, clip-path).
  */
-export const getExtraAttributesForConvertToPath = (elem) => {
+export const getExtraAttributesForConvertToPath = (elem: Element): Record<string, string> => {
   // TODO: make this list global so that we can properly maintain it
   // TODO: what about @transform, @clip-rule, @fill-rule, etc?
   const attributeNames = ['marker-start', 'marker-end', 'marker-mid', 'filter', 'clip-path']
@@ -154,18 +149,17 @@ export const getExtraAttributesForConvertToPath = (elem) => {
     const value = elem.getAttribute(name)
     if (value) attrs[name] = value
     return attrs
-  }, /** @type {Object<string, string>} */ ({}))
+  }, {} as Record<string, string>)
 }
 
 /**
  * Convert selected element to a path.
- * @function module:path-utils.convertToPath
- * @param {Element} elem - The DOM element to be converted
- * @param {Object<string, any>} attrs - Apply attributes to new path. see canvas.convertToPath
- * @param {any} svgCanvas - the canvas: `history`, `addSVGElementsFromJson`, `pathActions`, `clearSelection`, `addToSelection`, `addCommandToHistory`
- * @returns {SVGPathElement|null} The converted path element or null if the DOM element was not recognized.
+ * @param elem - The DOM element to be converted
+ * @param attrs - Apply attributes to new path. see canvas.convertToPath
+ * @param svgCanvas - the canvas
+ * @returns The converted path element or null if the DOM element was not recognized.
  */
-export const convertToPath = (elem, attrs, svgCanvas) => {
+export const convertToPath = (elem: Element, attrs: Record<string, string>, svgCanvas: ConvertHost): SVGPathElement | null => {
   const batchCmd = new svgCanvas.history.BatchCommand('Convert element to Path')
 
   // Any attribute on the element not covered by the passed-in attributes
@@ -174,7 +168,7 @@ export const convertToPath = (elem, attrs, svgCanvas) => {
   const path = svgCanvas.addSVGElementsFromJson({
     element: 'path',
     attr: attrs
-  })
+  }) as SVGPathElement
 
   const eltrans = elem.getAttribute('transform')
   if (eltrans) {
@@ -186,7 +180,7 @@ export const convertToPath = (elem, attrs, svgCanvas) => {
   if (elem.nextSibling) {
     elem.before(path)
   } else {
-    /** @type {ParentNode} */ (parentNode).append(path)
+    (parentNode as ParentNode).append(path)
   }
 
   const d = getPathDFromElement(elem)

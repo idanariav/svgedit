@@ -17,7 +17,7 @@ import './components/index.js'
 import './dialogs/index.js'
 
 import SvgCanvas from '@svgedit/svgcanvas'
-import Paint from '@svgedit/svgcanvas/core/paint.js'
+import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { Command } from '@svgedit/svgcanvas/core/history.js'
 import ConfigObj from './ConfigObj.js'
 import DebugSnapshotLogger from './DebugSnapshotLogger.js'

@@ -41,7 +41,7 @@
 import { deformPoint } from './mls.js'
 import { getMatrixToContent, getMatrix, matrixMultiply, transformPoint } from '@svgedit/svgcanvas/core/math.ts'
 import { getPaperScope } from '@svgedit/svgcanvas/core/paper-utils.js'
-import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.js'
+import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.ts'
 
 const name = 'puppetwarp'
 const svgNS = 'http://www.w3.org/2000/svg'

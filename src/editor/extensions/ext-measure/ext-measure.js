@@ -11,7 +11,7 @@
  *
  * @license Apache-2.0
  */
-import { measureSegment, constrainAngle, readoutLines } from '@svgedit/svgcanvas/core/measure.js'
+import { measureSegment, constrainAngle, readoutLines } from '@svgedit/svgcanvas/core/measure.ts'
 
 const name = 'measure'
 const SVG = 'http://www.w3.org/2000/svg'

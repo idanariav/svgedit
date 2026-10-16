@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import Paint from '../../packages/svgcanvas/core/paint.js'
+import Paint from '../../packages/svgcanvas/core/paint.ts'
 
 const createLinear = (id) => {
   const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient')

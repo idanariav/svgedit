@@ -6,7 +6,7 @@
  * @copyright 2011 Jeff Schiller
  */
 
-import Paint from './paint.js'
+import Paint from './paint.ts'
 import { NS } from './namespaces.ts'
 import { init as textAttrsInit } from './text-attrs.js'
 import {

@@ -1,34 +1,24 @@
-// @ts-check
 // http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 
-/**
- * Distance between two Touch points in screen pixels.
- * @param {Touch} a
- * @param {Touch} b
- * @returns {number}
- */
-const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+import type SvgCanvas from '../svgcanvas.js'
 
-/**
- * @param {import('../svgcanvas.js').default} svgCanvas
- * @returns {boolean} whether the editor is currently in tablet mode
- */
-const isTabletMode = (svgCanvas) =>
+type Host = Pick<SvgCanvas, 'svgroot' | 'getZoom' | 'zoomAtPoint'>
+
+/** Distance between two Touch points in screen pixels. */
+const touchDist = (a: Touch, b: Touch): number => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+
+/** Whether the editor is currently in tablet mode. */
+const isTabletMode = (svgCanvas: Host): boolean =>
   Boolean(svgCanvas.svgroot.closest('.svg_editor')?.classList.contains('ui-tablet'))
 
-/** @param {import('../svgcanvas.js').default} svgCanvas */
-export const init = (svgCanvas) => {
+export const init = (svgCanvas: Host): void => {
   // Pinch-to-zoom (tablet mode) state, per canvas.
   let pinching = false
   let pinchStartDist = 0
   let pinchStartZoom = 1
   let pinchRaf = 0
 
-  /**
-   * @param {TouchEvent} ev
-   * @returns {void}
-   */
-  const touchHandler = (ev) => {
+  const touchHandler = (ev: TouchEvent): void => {
     // Two-finger pinch-to-zoom — tablet mode only.
     if (ev.touches?.length === 2 && (pinching || isTabletMode(svgCanvas))) {
       ev.preventDefault()

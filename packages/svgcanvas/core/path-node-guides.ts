@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Path-node alignment guides — node-to-node alignment math for pathedit mode.
  *
@@ -22,19 +21,29 @@
  * @license MIT
  */
 
+export interface NodeTarget { x: number, y: number, index: number }
+
+export interface AxisSnap {
+  pos: number
+  delta: number
+  target: NodeTarget
+}
+
+/** The edited path: only the segment list is read. */
+interface EditedPath {
+  segs?: Array<{ item?: { x?: unknown, y?: unknown } } | null | undefined>
+}
+
 /**
  * Collect the snap targets for a node drag: every anchor node of the path
  * other than the ones being dragged.
- * @param {module:path.Path} path - The currently-edited Path instance.
- * @param {number[]} excludeIndices - Segment indices to leave out (the
- *   dragged node(s) themselves).
- * @returns {{x: number, y: number, index: number}[]}
+ * @param path - The currently-edited Path instance.
+ * @param excludeIndices - Segment indices to leave out (the dragged node(s) themselves).
  */
-export const collectPathNodeTargets = (path, excludeIndices) => {
-  /** @type {{x: number, y: number, index: number}[]} */
-  const targets = []
+export const collectPathNodeTargets = (path: EditedPath | null | undefined, excludeIndices: number[]): NodeTarget[] => {
+  const targets: NodeTarget[] = []
   if (!path?.segs) return targets
-  path.segs.forEach((/** @type {any} */ seg, /** @type {number} */ index) => {
+  path.segs.forEach((seg, index) => {
     if (excludeIndices.includes(index)) return
     const pt = seg?.item
     if (!pt || typeof pt.x !== 'number' || typeof pt.y !== 'number') return
@@ -45,15 +54,16 @@ export const collectPathNodeTargets = (path, excludeIndices) => {
 
 /**
  * Find the best per-axis snap for a candidate node position.
- * @param {number} x - Candidate x (current position + drag delta).
- * @param {number} y - Candidate y (current position + drag delta).
- * @param {{x: number, y: number, index: number}[]} targets
- * @param {number} tol - Snap tolerance in content units.
- * @returns {{x: ?Object, y: ?Object}} Per-axis `{pos, delta, target}` or null.
+ * @param x - Candidate x (current position + drag delta).
+ * @param y - Candidate y (current position + drag delta).
+ * @param tol - Snap tolerance in content units.
+ * @returns Per-axis `{pos, delta, target}` or null.
  */
-export const snapPathNodeToTargets = (x, y, targets, tol) => {
-  let bestX = null
-  let bestY = null
+export const snapPathNodeToTargets = (
+  x: number, y: number, targets: NodeTarget[], tol: number
+): { x: AxisSnap | null, y: AxisSnap | null } => {
+  let bestX: AxisSnap | null = null
+  let bestY: AxisSnap | null = null
   for (const t of targets) {
     const dx = Math.abs(t.x - x)
     if (dx <= tol && (!bestX || dx < Math.abs(bestX.delta))) {

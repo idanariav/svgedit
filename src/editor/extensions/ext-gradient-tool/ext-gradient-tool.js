@@ -27,7 +27,7 @@ import {
   multiply, invert, applyMatrix, readGradient, gradientOf, ensureOwnGradient, ownStops, setLinear, setRadial,
   addStop, copyStop, placeStop, removeStop, setStopColor
 } from '@svgedit/svgcanvas/core/gradient-edit.js'
-import Paint from '@svgedit/svgcanvas/core/paint.js'
+import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { closestRoot } from '../../domScope.js'
 
 const name = 'gradient-tool'

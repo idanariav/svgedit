@@ -46,7 +46,7 @@
 | `cutter.js` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
 | `dash-fit.js` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
-| `debug-events.js` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
+| `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
 | `distort.js` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
 | `dom-utils.js` | DOM/element manipulation, lookup, and misc canvas-state utilities |
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
@@ -81,10 +81,10 @@
 | `live-stack.js` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |
-| `measure.js` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
+| `measure.ts` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
 | `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.js` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
-| `paint.js` | Fill, stroke, color management |
+| `paint.ts` | Fill, stroke, color management |
 | `paper-utils.js` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
 | `paste-elem.js` | Paste handler |
 | `path-actions.js` | Path functionality |
@@ -92,11 +92,11 @@
 | `path-fit.js` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
 | `path-join.js` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |
 | `path-method.js` | Path functionality |
-| `path-node-guides.js` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
+| `path-node-guides.ts` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
 | `path-offset.js` | Path offset / inset and stroke-to-path operations |
 | `path-seg-shim.js` | Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API, removed from browsers around 2016 and previously restored here via the `pathseg` npm polyfill |
 | `path-simplify.js` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
-| `path-utils.js` | Path `d`-attribute construction and element-to-path conversion utilities |
+| `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
 | `path.js` | Path functionality |
 | `pen-continue.js` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
@@ -124,7 +124,7 @@
 | `text-rows.js` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |
 | `tool-registry.js` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
-| `touch.js` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
+| `touch.ts` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
 | `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
 | `transform-each.js` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
 | `undo.js` | Tools for undo |
