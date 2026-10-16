@@ -272,7 +272,11 @@ explicit, typed APIs at startup, in `src/editor/features/<name>/`. Hosts turn fe
 ['opensave']`) instead of listing everything on. The extension API stays only as a small typed surface for genuinely
 third-party add-ons (none exist today, so it could also go).
 
-**Path:** add the opt-out config and make the plugin use it (so new tools stop needing plugin changes); then move
+**Path:** the opt-out config exists (`disabledFeatures`, 2026-10-16: names with or without `ext-`, applied to the defaults
+and to an explicit `extensions` list; `docs/tutorials/ConfigOptions.md`). **Left: the plugin must use it** (in
+`obsidian-svgedit-plugin/src/view/SvgView.ts`: drop `noDefaultExtensions` and the 43-name list, pass
+`disabledFeatures: ['opensave']`; the plugin's comment also mentions `ext-storage` and `ext-overview_window`, which no
+longer exist here), so new tools stop needing plugin changes; then move
 features one at a time, deleting extension hooks as their last user goes; puppet warp after the `registerTool` session
 concept ([infrastructure](infrastructure.md) › Tier 0 follow-ups).
 

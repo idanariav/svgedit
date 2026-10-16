@@ -99,6 +99,7 @@ export default class ConfigObj {
       *   Note that as of version 2.7, paths containing "/", "\", or ":", are disallowed for security reasons.
       *   Although previous versions of this list would entirely override the default list, as of version 2.7, the defaults will always be added to this explicit list unless the configuration `noDefaultExtensions` is included.
       *   See {@link module:SVGEditor~defaultExtensions}.
+      * @property {string[]} [disabledFeatures=[]] Built-in features to leave out, by name with or without the `ext-` prefix (`['opensave', 'ext-grid']`). Applies on top of the default list, so a host that wants everything except a few names lists only those, and new built-in tools reach it without a change. Also removes the names from an explicit `extensions` list. Can only be meaningfully set before `init()`.
       * @property {Float} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
       * @property {PlainObject} [initFill] Init fill properties
       * @property {string} [initFill.color="FFFFFF"] The initial fill color. Must be a hex code string. Defaults to solid white.
@@ -185,6 +186,7 @@ export default class ConfigObj {
       dynamicOutput: false,
       // EXTENSION CONFIGURATION
       noDefaultExtensions: false, // can only be meaningfully set before `init()`
+      disabledFeatures: [], // built-in `ext-*` names (prefix optional) to leave out; can only be meaningfully set before `init()`
       // EXTENSION-RELATED (GRID)
       showGrid: false, // Set by ext-grid.js
       gridShape: 'square', // 'square' | 'isometric' | 'triangle' | 'perspective1' | 'perspective2'. Set via the grid settings popover.
@@ -289,6 +291,10 @@ export default class ConfigObj {
     // Now deal with extensions and other array config
     if (!curConfig.noDefaultExtensions) {
       curConfig.extensions = [...this.defaultExtensions]
+    }
+    if (curConfig.disabledFeatures?.length) {
+      const off = new Set(curConfig.disabledFeatures.map((name) => (name.startsWith('ext-') ? name : `ext-${name}`)))
+      curConfig.extensions = curConfig.extensions.filter((name) => !off.has(name))
     }
     // Export updated config
     this.curConfig = curConfig

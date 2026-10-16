@@ -36,6 +36,35 @@ describe('ConfigObj', () => {
     expect(cfg.curConfig.pencilFidelity).toBe(0.5)
   })
 
+  describe('disabledFeatures', () => {
+    it('leaves the named built-ins out of the defaults, with or without the ext- prefix', () => {
+      const cfg = new ConfigObj(stubEditor())
+      cfg.setConfig({ disabledFeatures: ['opensave', 'ext-grid'] })
+      cfg.setupCurConfig()
+      expect(cfg.curConfig.extensions).not.toContain('ext-opensave')
+      expect(cfg.curConfig.extensions).not.toContain('ext-grid')
+      expect(cfg.curConfig.extensions).toContain('ext-connector')
+      expect(cfg.curConfig.extensions.length).toBe(cfg.defaultExtensions.length - 2)
+    })
+
+    it('keeps every default when nothing is disabled, and ignores names that are not built in', () => {
+      const cfg = new ConfigObj(stubEditor())
+      cfg.setupCurConfig()
+      expect(cfg.curConfig.extensions).toEqual(cfg.defaultExtensions)
+      const other = new ConfigObj(stubEditor())
+      other.setConfig({ disabledFeatures: ['nope'] })
+      other.setupCurConfig()
+      expect(other.curConfig.extensions).toEqual(other.defaultExtensions)
+    })
+
+    it('also removes the names from an explicit extensions list', () => {
+      const cfg = new ConfigObj(stubEditor())
+      cfg.setConfig({ noDefaultExtensions: true, extensions: ['ext-grid', 'ext-shapes'], disabledFeatures: ['shapes'] })
+      cfg.setupCurConfig()
+      expect(cfg.curConfig.extensions).toEqual(['ext-grid'])
+    })
+  })
+
   it('merges defaults and respects allowInitialUserOverride', () => {
     const editor = stubEditor()
     const cfg = new ConfigObj(editor)

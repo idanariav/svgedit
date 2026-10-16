@@ -130,6 +130,20 @@ svgEditor.setConfig({
 - When `userDataAdapter` is omitted or `null`, both fall back to the original
   `localStorage` behavior described above — standalone SVG-Edit is unchanged.
 
+## Choosing built-in features
+
+The editor loads its built-in features (the `ext-*` modules) by default. To leave some out, name them in
+`disabledFeatures` (the `ext-` prefix is optional):
+
+```js
+svgEditor.setConfig({ disabledFeatures: ['opensave', 'ext-grid'] })
+```
+
+This is the recommended way for a host to trim the editor: it lists only what it does *not* want, so tools added in
+later versions reach the host without a change. `noDefaultExtensions: true` plus an explicit `extensions` list still
+works for a host that wants to name every feature itself; `disabledFeatures` is applied to that list too. Set it
+before `init()`.
+
 ## Customizing stylesheets
 
 As of version 3.0, stylesheets can be indicated dynamically (and
