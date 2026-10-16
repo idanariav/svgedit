@@ -19,7 +19,7 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { drawingsIn } from './repair-drawings.mjs'
-import * as model from '../packages/svgcanvas/core/model/index.js'
+import * as model from '../packages/svgcanvas/core/model/index.ts'
 
 const { parseSvg, serializeSvg } = model
 
