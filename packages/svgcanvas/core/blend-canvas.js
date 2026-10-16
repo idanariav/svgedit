@@ -47,7 +47,7 @@ import { registerAttrValidator } from './drawing-invariants.ts'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
 import { tracksOf, frameAt } from './art-brush.js'
 import { getTransformList, matrixMultiply } from './math.ts'
-import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.js'
+import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.ts'
 
 export const BLEND_ATTR = 'se:blend'
 export const KEY_ATTR = 'se:blend-key'
@@ -60,7 +60,7 @@ export const PINS_ATTR = 'se:blend-pins'
 const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'ellipse', 'circle'])
 const MODES = ['steps', 'distance', 'smooth']
 
-/** @typedef {import('./blend.js').BlendSpacing} BlendSpacing */
+/** @typedef {import('./blend.ts').BlendSpacing} BlendSpacing */
 
 /**
  * The inverse of an affine matrix (null stays null: no transform).

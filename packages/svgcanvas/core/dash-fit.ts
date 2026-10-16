@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the
  * stroke's length, with a dash centred on both ends of an open path.
@@ -23,8 +22,10 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.ts'
+import type { Pt, SubPath } from './anchor-path.ts'
 import { startTangent, endTangent } from './bezier-fit.ts'
 import { TAPER_ATTR } from './width-profile.ts'
 
@@ -36,13 +37,13 @@ const CORNER_DEG = 3
 /** The most entries a fitted `stroke-dasharray` may have (every dash and every gap is one). */
 export const MAX_DASH_ENTRIES = 4000
 
-const round5 = (/** @type {number} */ n) => Math.round(n * 100000) / 100000
+const round5 = (n: number): number => Math.round(n * 100000) / 100000
 
 /**
- * @param {?string|undefined} text a `stroke-dasharray` or `se:dash-fit` value
- * @returns {?number[]} the lengths, at least one, none negative; null for `none` or anything unreadable
+ * @param text a `stroke-dasharray` or `se:dash-fit` value
+ * @returns the lengths, at least one, none negative; null for `none` or anything unreadable
  */
-export const parseDashes = (text) => {
+export const parseDashes = (text: string | null | undefined): number[] | null => {
   if (!text || /^\s*none\s*$/i.test(text)) return null
   const nums = text.trim().split(/[\s,]+/).map(Number)
   if (!nums.length || nums.some((n) => !Number.isFinite(n) || n < 0)) return null
@@ -50,11 +51,9 @@ export const parseDashes = (text) => {
 }
 
 /**
- * Validator for `se:dash-fit` (see `drawing-invariants.js`).
- * @param {string} value
- * @returns {true|string}
+ * Validator for `se:dash-fit` (see `drawing-invariants.ts`).
  */
-export const validateDashFit = (value) => {
+export const validateDashFit = (value: string): true | string => {
   const nums = parseDashes(value)
   if (!nums) return 'is not a list of dash lengths'
   return nums.some((n) => n > 0) ? true : 'has no dash length'
@@ -62,13 +61,12 @@ export const validateDashFit = (value) => {
 
 /**
  * Fit a dash pattern to a stroke.
- * @param {number[]} pattern the pattern as the user wrote it (an odd count repeats, as in SVG)
- * @param {number} length the stroke's length
- * @param {boolean} closed a closed curve has no ends to centre a dash on
- * @returns {?{array: number[], offset: number}} `array` is a whole number of periods long in total;
- *   null when the pattern or the length is empty
+ * @param pattern the pattern as the user wrote it (an odd count repeats, as in SVG)
+ * @param length the stroke's length
+ * @param closed a closed curve has no ends to centre a dash on
+ * @returns `array` is a whole number of periods long in total; null when the pattern or the length is empty
  */
-export const fitDashes = (pattern, length, closed) => {
+export const fitDashes = (pattern: number[], length: number, closed: boolean): { array: number[], offset: number } | null => {
   const base = pattern.length % 2 ? [...pattern, ...pattern] : pattern
   const period = base.reduce((a, b) => a + b, 0)
   if (!(period > 0) || !(length > 0)) return null
@@ -82,12 +80,10 @@ export const fitDashes = (pattern, length, closed) => {
 
 /**
  * The first subpath of a shape as anchors, for the shapes whose corners can be fitted; null for the others.
- * @param {Element} elem
- * @returns {?import('./anchor-path.ts').SubPath} null: not one of them, more than one piece, or a rounded rect
+ * @returns null: not one of them, more than one piece, or a rounded rect
  */
-const outlineOf = (elem) => {
-  /** @param {string} name */
-  const num = (name) => parseFloat(elem.getAttribute(name) ?? '') || 0
+const outlineOf = (elem: Element): SubPath | null => {
+  const num = (name: string): number => parseFloat(elem.getAttribute(name) ?? '') || 0
   switch (elem.tagName.toLowerCase()) {
     case 'path': {
       const subpaths = parseAnchors(elem.getAttribute('d') || '', 0.1)
@@ -99,7 +95,7 @@ const outlineOf = (elem) => {
     case 'polygon': {
       const nums = (elem.getAttribute('points') ?? '').trim().split(/[\s,]+/).map(Number)
       if (nums.length < 4 || nums.some((n) => !Number.isFinite(n))) return null
-      const pts = []
+      const pts: Pt[] = []
       for (let i = 0; i + 1 < nums.length; i += 2) pts.push({ x: nums[i], y: nums[i + 1] })
       return polyline(pts, elem.tagName.toLowerCase() === 'polygon')
     }
@@ -116,16 +112,14 @@ const outlineOf = (elem) => {
 
 /**
  * Where a subpath has corners, and how long it is.
- * @param {import('./anchor-path.ts').SubPath} sp
- * @returns {{total: number, closed: boolean, cuts: number[]}} `cuts`: the arc length of each corner from the start of the
+ * @returns `cuts`: the arc length of each corner from the start of the
  *   path (a closed path's start counts, at 0, when it is a corner; an open path's ends never do)
  */
-export const outlineCorners = (sp) => {
+export const outlineCorners = (sp: SubPath): { total: number, closed: boolean, cuts: number[] } => {
   const n = segmentCount(sp)
   const cum = [0]
   for (let i = 0; i < n; i++) cum.push(cum[i] + cubicLength(segCubic(sp, i)))
-  /** @type {number[]} */
-  const cuts = []
+  const cuts: number[] = []
   for (let i = sp.closed ? 0 : 1; i < n; i++) {
     const before = endTangent(segCubic(sp, (i + n - 1) % n))
     const after = startTangent(segCubic(sp, i % n))
@@ -138,20 +132,16 @@ export const outlineCorners = (sp) => {
 /**
  * The stretches (as arc lengths from `s`) that a pattern paints along one run `s`..`e`: a whole number of periods, the
  * run starting and ending half way through the first dash.
- * @param {number[]} base the pattern, an even count
- * @param {number} s
- * @param {number} e
- * @returns {Array<[number, number]>}
+ * @param base the pattern, an even count
  */
-const runDashes = (base, s, e) => {
+const runDashes = (base: number[], s: number, e: number): Array<[number, number]> => {
   const length = e - s
   const period = base.reduce((a, b) => a + b, 0)
   const periods = Math.max(1, Math.round(length / period))
   const scale = length / (periods * period)
   const arr = base.map((v) => v * scale)
   const from = arr[0] / 2
-  /** @type {Array<[number, number]>} */
-  const out = []
+  const out: Array<[number, number]> = []
   let pos = 0
   for (let k = 0; k <= periods && pos < from + length; k++) {
     for (let j = 0; j < arr.length; j++) {
@@ -166,21 +156,20 @@ const runDashes = (base, s, e) => {
 
 /**
  * Fit a dash pattern to an outline with corners, run by run (see the module comment).
- * @param {number[]} pattern the pattern as the user wrote it (an odd count repeats, as in SVG)
- * @param {number} total the stroke's length
- * @param {boolean} closed
- * @param {number[]} cuts the arc length of each corner (`outlineCorners`), at least one
- * @returns {?{array: number[], offset: number}} an even number of entries that add up to `total`; null when the
- *   pattern or the length is empty
+ * @param pattern the pattern as the user wrote it (an odd count repeats, as in SVG)
+ * @param total the stroke's length
+ * @param cuts the arc length of each corner (`outlineCorners`), at least one
+ * @returns an even number of entries that add up to `total`; null when the pattern or the length is empty
  */
-export const fitDashesCornered = (pattern, total, closed, cuts) => {
+export const fitDashesCornered = (
+  pattern: number[], total: number, closed: boolean, cuts: number[]
+): { array: number[], offset: number } | null => {
   const base = pattern.length % 2 ? [...pattern, ...pattern] : pattern
   if (!(base.reduce((a, b) => a + b, 0) > 0) || !(total > 0) || !cuts.length) return null
   // A closed outline is walked from its first corner, so the dash round that corner is one piece (below).
   const origin = closed ? cuts[0] : 0
   const bounds = closed ? [0, ...cuts.slice(1).map((c) => c - origin), total] : [0, ...cuts, total]
-  /** @type {Array<[number, number]>} */
-  let on = []
+  let on: Array<[number, number]> = []
   for (let i = 0; i + 1 < bounds.length; i++) {
     for (const [a, b] of runDashes(base, bounds[i], bounds[i + 1])) {
       const last = on[on.length - 1]
@@ -196,14 +185,13 @@ export const fitDashesCornered = (pattern, total, closed, cuts) => {
     // The dash round the first corner is split by the start of the frame: join its two parts at the front.
     if (on.length > 1 && head[0] < 1e-6 && tail[1] > total - 1e-6) {
       const lead = tail[1] - tail[0]
-      on = [[0, head[1] + lead], ...on.slice(1, -1).map(/** @returns {[number, number]} */ ([a, b]) => [a + lead, b + lead])]
+      on = [[0, head[1] + lead], ...on.slice(1, -1).map(([a, b]): [number, number] => [a + lead, b + lead])]
       offset = lead
     }
     // Where the path's own start lies in that frame.
     offset = (offset + (total - origin)) % total
   }
-  /** @type {number[]} */
-  const array = []
+  const array: number[] = []
   let pos = 0
   for (const [a, b] of on) {
     const gap = a - pos
@@ -219,10 +207,9 @@ export const fitDashesCornered = (pattern, total, closed, cuts) => {
 
 /**
  * Why the element cannot have its dashes fitted.
- * @param {Element} elem
- * @returns {?string} null when it can
+ * @returns null when it can
  */
-export const dashFitIssue = (elem) => {
+export const dashFitIssue = (elem: Element): string | null => {
   const tag = elem?.tagName?.toLowerCase()
   if (!['path', 'line', 'polyline', 'polygon', 'rect', 'circle', 'ellipse'].includes(tag)) {
     return 'Fitting dashes works on a line, a path, a polyline, a polygon, a rectangle, a circle or an ellipse'
@@ -241,21 +228,15 @@ export const dashFitIssue = (elem) => {
   return null
 }
 
-/**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
   registerAttrValidator(DASH_FIT_ATTR, validateDashFit)
 
   /**
    * Write the fit of `pattern` onto `elem`.
-   * @param {Element} elem
-   * @param {number[]} pattern
-   * @returns {boolean} false (nothing written) when the pattern or the length is empty
+   * @returns false (nothing written) when the pattern or the length is empty
    */
-  const applyFit = (elem, pattern) => {
+  const applyFit = (elem: Element, pattern: number[]): boolean => {
     // Corners: one fit per run, as an explicit list of the outline's dashes.
     const outline = outlineOf(elem)
     const corners = outline ? outlineCorners(outline) : null
@@ -268,7 +249,7 @@ export const init = (canvas) => {
       else elem.removeAttribute('stroke-dashoffset')
       return true
     }
-    const length = /** @type {SVGGeometryElement} */ (elem).getTotalLength()
+    const length = (elem as SVGGeometryElement).getTotalLength()
     const closed = ['circle', 'ellipse', 'rect', 'polygon'].includes(elem.tagName) ||
       (elem.tagName === 'path' && Boolean(parseAnchors(elem.getAttribute('d') || '', 0.1)[0]?.closed))
     const fit = fitDashes(pattern, length, closed)
@@ -281,7 +262,7 @@ export const init = (canvas) => {
   }
 
   /** Put the user's own pattern back. */
-  const clearFit = (/** @type {Element} */ elem, /** @type {?string} */ pattern) => {
+  const clearFit = (elem: Element, pattern: string | null): void => {
     if (pattern) elem.setAttribute('stroke-dasharray', pattern)
     else elem.removeAttribute('stroke-dasharray')
     elem.removeAttribute('stroke-dashoffset')
@@ -289,10 +270,7 @@ export const init = (canvas) => {
   }
 
   /**
-   * Whether dashes are fitted on every one of the elements.
-   * @function module:dash-fit.SvgCanvas#isDashFitted
-   * @param {Element[]} [elems] default: the selection
-   * @returns {boolean}
+   * Whether dashes are fitted on every one of the elements (default: the selection).
    */
   svgCanvas.isDashFitted = (elems = svgCanvas.getSelectedElements()) => {
     const list = elems.filter(Boolean)
@@ -303,11 +281,8 @@ export const init = (canvas) => {
 
   /**
    * Fit the dashes of the elements (or turn the fit off), as one undo step. Elements that cannot be
-   * fitted are left alone.
-   * @function module:dash-fit.SvgCanvas#setDashFit
-   * @param {boolean} on
-   * @param {Element[]} [elems] default: the selection
-   * @returns {number} how many elements changed
+   * fitted are left alone. Elements default to the selection.
+   * @returns how many elements changed
    */
   svgCanvas.setDashFit = (on, elems = svgCanvas.getSelectedElements()) => {
     const list = elems.filter(Boolean).filter((el) => (on ? dashFitIssue(el) === null : el.hasAttribute(DASH_FIT_ATTR)))
@@ -331,13 +306,12 @@ export const init = (canvas) => {
   /**
    * Choose a dash pattern for the selection. Fitted elements take it as their new pattern and are
    * fitted again; the rest get it as a plain `stroke-dasharray`. One undo step.
-   * @function module:dash-fit.SvgCanvas#setDashPattern
-   * @param {string} value a `stroke-dasharray` value, `none` for solid
-   * @returns {boolean} false when nothing is fitted (the caller sets the attribute as usual)
+   * @param value a `stroke-dasharray` value, `none` for solid
+   * @returns false when nothing is fitted (the caller sets the attribute as usual)
    */
   svgCanvas.setDashPattern = (value) => {
     const list = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!list.some((/** @type {Element} */ el) => el.hasAttribute(DASH_FIT_ATTR))) return false
+    if (!list.some((el: Element) => el.hasAttribute(DASH_FIT_ATTR))) return false
     const pattern = parseDashes(value)
     svgCanvas.transact('Change dash', () => {
       for (const el of list) {

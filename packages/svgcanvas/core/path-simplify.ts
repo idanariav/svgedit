@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Path simplification / smoothing, on the corner-keeping Bézier fit in
  * `path-fit.js` (sharp turns stay corners; tolerances are distances in user
@@ -19,10 +18,12 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { warn } from '../common/logger.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { simplifyWith, fitFreehand } from './path-fit.ts'
-import { findPenEnd, extendWith, endDirection } from './pen-continue.js'
+import { findPenEnd, extendWith, endDirection } from './pen-continue.ts'
+import type { PenEnd } from './pen-continue.ts'
 
 // The pencil's default fidelity: the most the committed curve may stray from
 // the drawn stroke, in user units (about 2 px at 100% zoom).
@@ -38,12 +39,10 @@ const SMOOTH_CORNER_ANGLE = 30
 const CONTINUE_REACH = 6
 
 // Exported for direct unit testing — pure math, no paper.js dependency.
-/** @type {(strength: number) => number} */
-export const strengthToTolerance = (strength) =>
+export const strengthToTolerance = (strength: number): number =>
   MIN_TOLERANCE + Math.max(0, Math.min(1, strength)) * (MAX_TOLERANCE - MIN_TOLERANCE)
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
@@ -51,17 +50,17 @@ export const init = (canvas) => {
    * of the pen stay corners) and swap it for a `<path>`. Mirrors the contract
    * of pathActions.smoothPolylineIntoPath: reuses the polyline's id so
    * addSVGElementsFromJson replaces it in place.
-   * @param {Element} element - The `<polyline>` created by the fhpath tool.
-   * @param {number} [fidelity] - Largest distance, in user units, the curve may stray from the stroke.
-   * @returns {Element} The new `<path>` (or the original element on failure).
+   * @param element - The `<polyline>` created by the fhpath tool.
+   * @param fidelity - Largest distance, in user units, the curve may stray from the stroke.
+   * @returns The new `<path>` (or the original element on failure).
    */
-  const simplifyFreehand = (element, fidelity = DEFAULT_FIDELITY) => {
+  const simplifyFreehand = (element: Element, fidelity = DEFAULT_FIDELITY): Element => {
     try {
-      const { points } = /** @type {SVGPolylineElement} */ (element)
+      const { points } = element as SVGPolylineElement
       const n = points.numberOfItems
       if (n < 2) return element
 
-      const stroke = []
+      const stroke: Array<{ x: number, y: number }> = []
       for (let i = 0; i < n; i++) {
         const pt = points.getItem(i)
         stroke.push({ x: pt.x, y: pt.y })
@@ -88,11 +87,10 @@ export const init = (canvas) => {
   /**
    * Smooth one path's `d` (local space; transforms untouched): refit each run
    * between its corners with as few cubics as fit within `tolerance`.
-   * @param {string} d
-   * @param {number} tolerance - Largest distance, in user units, the result may stray from `d`.
-   * @returns {string|null} The smoothed `d`, or null when nothing usable.
+   * @param tolerance - Largest distance, in user units, the result may stray from `d`.
+   * @returns The smoothed `d`, or null when nothing usable.
    */
-  const smoothPathD = (d, tolerance) => {
+  const smoothPathD = (d: string, tolerance: number): string | null => {
     const subpaths = parseAnchors(d).filter((sp) => sp.anchors.length > 0)
     if (!subpaths.length) return null
     return anchorsToD(simplifyWith(subpaths, { tolerance, cornerAngleDeg: SMOOTH_CORNER_ANGLE }))
@@ -104,20 +102,16 @@ export const init = (canvas) => {
   // always re-fit from the same untouched shape instead of compounding.
   // `previewLastD` is the most recent previewed result, needed so
   // commitSmoothPath can record a single undo step from baseline -> final.
-  /** @type {Element|null} */
-  let previewElem = null
-  /** @type {string|null} */
-  let previewBaseline = null
-  /** @type {string|null} */
-  let previewLastD = null
+  let previewElem: Element | null = null
+  let previewBaseline: string | null = null
+  let previewLastD: string | null = null
 
-  const getSelectedPath = () => {
+  const getSelectedPath = (): Element | null => {
     const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
     return (elem && elem.tagName === 'path') ? elem : null
   }
 
-  /** @param {Element} elem */
-  const refreshSelector = (elem) => {
+  const refreshSelector = (elem: Element): void => {
     svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
     svgCanvas.call('changed', [elem])
   }
@@ -125,10 +119,9 @@ export const init = (canvas) => {
   /**
    * Live-preview smoothing the selected path at the given strength, without
    * recording undo history. Safe to call on every strength-slider tick.
-   * @param {number} [strength] - 0 (barely-there cleanup) to 1 (aggressive).
-   * @returns {void}
+   * @param strength - 0 (barely-there cleanup) to 1 (aggressive).
    */
-  const previewSmoothPath = (strength = DEFAULT_STRENGTH) => {
+  const previewSmoothPath = (strength = DEFAULT_STRENGTH): void => {
     const elem = getSelectedPath()
     if (!elem) {
       warn('Smooth requires a selected path', null, 'path-simplify')
@@ -139,9 +132,9 @@ export const init = (canvas) => {
       previewBaseline = elem.getAttribute('d')
     }
 
-    let d
+    let d: string | null
     try {
-      d = smoothPathD(/** @type {string} */ (previewBaseline), strengthToTolerance(strength))
+      d = smoothPathD(previewBaseline as string, strengthToTolerance(strength))
     } catch (err) {
       warn('Smooth path preview failed', err, 'path-simplify')
       return
@@ -156,9 +149,8 @@ export const init = (canvas) => {
   /**
    * Commit the current preview as one undoable change (baseline -> last
    * previewed result), then clear the preview session.
-   * @returns {void}
    */
-  const commitSmoothPath = () => {
+  const commitSmoothPath = (): void => {
     const elem = previewElem
     const baseline = previewBaseline
     const finalD = previewLastD
@@ -167,7 +159,7 @@ export const init = (canvas) => {
     previewLastD = null
     if (!elem || !finalD || finalD === baseline) return
 
-    elem.setAttribute('d', /** @type {string} */ (baseline))
+    elem.setAttribute('d', baseline as string)
     svgCanvas.undoMgr.beginUndoableChange('d', [elem])
     elem.setAttribute('d', finalD)
     const cmd = svgCanvas.undoMgr.finishUndoableChange()
@@ -181,9 +173,8 @@ export const init = (canvas) => {
    * Discard the current preview, restoring the path to its pre-preview `d`
    * with no undo step recorded (used when the popover is dismissed without
    * applying).
-   * @returns {void}
    */
-  const cancelSmoothPath = () => {
+  const cancelSmoothPath = (): void => {
     const elem = previewElem
     const baseline = previewBaseline
     previewElem = null
@@ -191,36 +182,32 @@ export const init = (canvas) => {
     previewLastD = null
     if (!elem) return
 
-    elem.setAttribute('d', /** @type {string} */ (baseline))
+    elem.setAttribute('d', baseline as string)
     refreshSelector(elem)
   }
 
   /**
    * The end of the selected open path a pencil press at (x, y) would carry on, if any: exactly one plain,
    * untransformed, single-subpath open path selected in the current layer, pressed within `CONTINUE_REACH`.
-   * @param {number} x
-   * @param {number} y
-   * @returns {?import('./pen-continue.js').PenEnd}
    */
-  const pencilEnd = (x, y) => {
+  const pencilEnd = (x: number, y: number): PenEnd | null => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (selected.length !== 1 || svgCanvas.getCurrentGroup()) return null
     if (selected[0].parentNode !== svgCanvas.getCurrentDrawing().getCurrentLayer()) return null
-    return findPenEnd(/** @type {any} */ ({ children: [selected[0]] }), x, y, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
+    return findPenEnd({ children: [selected[0]] }, x, y, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
   }
 
   /**
    * Finish a pencil stroke that started on `end` by adding it to that path (one undo step) instead of
    * creating a new element. The stroke's `<polyline>` is thrown away; a stroke that ends near the path's
    * other end closes the path.
-   * @param {Element} polyline - The `<polyline>` created by the fhpath tool; its first point is `end.point`.
-   * @param {import('./pen-continue.js').PenEnd} end
-   * @param {number} [fidelity] - As for `simplifyFreehand`.
-   * @returns {Element} The continued path.
+   * @param polyline - The `<polyline>` created by the fhpath tool; its first point is `end.point`.
+   * @param fidelity - As for `simplifyFreehand`.
+   * @returns The continued path.
    */
-  const continueFreehand = (polyline, end, fidelity = DEFAULT_FIDELITY) => {
-    const { points } = /** @type {SVGPolylineElement} */ (polyline)
-    const stroke = []
+  const continueFreehand = (polyline: Element, end: PenEnd, fidelity = DEFAULT_FIDELITY): Element => {
+    const { points } = polyline as SVGPolylineElement
+    const stroke: Array<{ x: number, y: number }> = []
     for (let i = 0; i < points.numberOfItems; i++) stroke.push({ x: points.getItem(i).x, y: points.getItem(i).y })
     svgCanvas.getCurrentDrawing().releaseId(svgCanvas.getId())
     polyline.remove()

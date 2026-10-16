@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.ts'
-import { parseDashes, validateDashFit, fitDashes, fitDashesCornered, outlineCorners, MAX_DASH_ENTRIES, dashFitIssue, DASH_FIT_ATTR } from '../../packages/svgcanvas/core/dash-fit.js'
+import { parseDashes, validateDashFit, fitDashes, fitDashesCornered, outlineCorners, MAX_DASH_ENTRIES, dashFitIssue, DASH_FIT_ATTR } from '../../packages/svgcanvas/core/dash-fit.ts'
 
 describe('parseDashes', () => {
   it('reads comma or space separated lengths', () => {

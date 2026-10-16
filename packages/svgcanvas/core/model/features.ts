@@ -15,7 +15,7 @@
  */
 import { CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, parseCornerSpec } from '../corner-radius.js'
 import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, parseTaper, parseTaperStyle } from '../width-profile.ts'
-import { DASH_FIT_ATTR, parseDashes } from '../dash-fit.js'
+import { DASH_FIT_ATTR, parseDashes } from '../dash-fit.ts'
 import { BRUSH_ATTR, LIB_ATTR, parseBrush } from '../art-brush-canvas.js'
 import { BLEND_ATTR, parseBlend } from '../blend-canvas.js'
 import type { WidthPoint } from '../width-profile.ts'

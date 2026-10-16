@@ -21,7 +21,7 @@ import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guide
 import { warn as logWarn } from '../common/logger.ts'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.ts'
 import { anchorsToD } from './anchor-path.ts'
-import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.js'
+import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.ts'
 
 /**
 * @function module:path-actions.init
@@ -356,7 +356,7 @@ export const init = (canvas) => {
      * @param {number} x
      * @param {number} y
      * @param {?Element} drawnPath
-     * @returns {?import('./pen-continue.js').PenEnd}
+     * @returns {?import('./pen-continue.ts').PenEnd}
      */
     #penEnd (x, y, drawnPath) {
       if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
@@ -367,7 +367,7 @@ export const init = (canvas) => {
 
     /**
      * Start a drawing that carries on `end`'s path from the pressed end.
-     * @param {import('./pen-continue.js').PenEnd} end
+     * @param {import('./pen-continue.ts').PenEnd} end
      * @param {Element} stretchy
      */
     #carryOn (end, stretchy) {
@@ -394,7 +394,7 @@ export const init = (canvas) => {
 
     /**
      * Finish the drawing by joining it to `end`'s path.
-     * @param {import('./pen-continue.js').PenEnd} end
+     * @param {import('./pen-continue.ts').PenEnd} end
      * @param {Element} drawnPath
      * @param {Element} stretchy
      */

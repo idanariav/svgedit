@@ -1,5 +1,5 @@
 import { fc, params } from './fc.js'
-import { WARP_STYLES, warpPoint, warpSubpaths } from '../../../packages/svgcanvas/core/warp.js'
+import { WARP_STYLES, warpPoint, warpSubpaths } from '../../../packages/svgcanvas/core/warp.ts'
 import { polyline } from '../../../packages/svgcanvas/core/anchor-path.ts'
 
 const unitCoord = fc.double({ min: -1, max: 1, noNaN: true })

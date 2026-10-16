@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Blends: the geometry and paint of the steps between two key shapes. DOM-free; `blend-canvas.js` has the elements.
  *
@@ -23,35 +22,29 @@
 import { useMode, useParser, parse, modeRgb, modeOklab, parseHex, parseNamed, parseRgb, parseHsl, modeHsl, parseTransparent, formatHex } from 'culori/fn'
 import { segCubic, splitCubic, evalCubic, isLineSegment, anchorBBox, cubicLength } from './anchor-path.ts'
 
-/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
-/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
-/** @typedef {import('./anchor-path.ts').Pt} Pt */
+import type { Anchor, Pt, SubPath } from './anchor-path.ts'
 
 const toRgb = useMode(modeRgb)
 const toOklab = useMode(modeOklab)
 useMode(modeHsl)
-for (const parser of /** @type {any[]} */ ([parseHex, parseNamed, parseRgb, parseHsl, parseTransparent])) useParser(parser)
+for (const parser of [parseHex, parseNamed, parseRgb, parseHsl, parseTransparent]) useParser(parser)
 
-const lerp = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ t) => a + (b - a) * t
-const lerpPt = (/** @type {Pt} */ a, /** @type {Pt} */ b, /** @type {number} */ t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) })
-const dist = (/** @type {Pt} */ a, /** @type {Pt} */ b) => Math.hypot(b.x - a.x, b.y - a.y)
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t
+const lerpPt = (a: Pt, b: Pt, t: number): Pt => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) })
+const dist = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y)
 
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
 
-/** @param {Anchor} a @returns {Anchor} */
-const cloneAnchor = (a) => ({ p: { ...a.p }, hIn: { ...a.hIn }, hOut: { ...a.hOut } })
-/** @param {SubPath} sp @returns {SubPath} */
-const cloneSub = (sp) => ({ closed: sp.closed, anchors: sp.anchors.map(cloneAnchor) })
+const cloneAnchor = (a: Anchor): Anchor => ({ p: { ...a.p }, hIn: { ...a.hIn }, hOut: { ...a.hOut } })
+const cloneSub = (sp: SubPath): SubPath => ({ closed: sp.closed, anchors: sp.anchors.map(cloneAnchor) })
 
 /**
  * Split segment `i` of `sp` at parameter `t` (its middle by default), adding an anchor.
- * @param {SubPath} sp edited in place
- * @param {number} i
- * @param {number} [t]
+ * @param sp edited in place
  */
-const splitSegment = (sp, i, t = 0.5) => {
+const splitSegment = (sp: SubPath, i: number, t = 0.5): void => {
   const n = sp.anchors.length
   const a = sp.anchors[i]
   const j = (i + 1) % n
@@ -65,7 +58,7 @@ const splitSegment = (sp, i, t = 0.5) => {
     a.hOut = left.p1
     b.hIn = right.p2
   }
-  const anchor = straight
+  const anchor: Anchor = straight
     ? { p: mid, hIn: { ...mid }, hOut: { ...mid } }
     : { p: mid, hIn: left.p2, hOut: right.p1 }
   sp.anchors.splice(i + 1, 0, anchor)
@@ -73,10 +66,9 @@ const splitSegment = (sp, i, t = 0.5) => {
 
 /**
  * Add anchors to `sp` until it has `n`, splitting the longest segment each time.
- * @param {SubPath} sp edited in place
- * @param {number} n
+ * @param sp edited in place
  */
-const grow = (sp, n) => {
+const grow = (sp: SubPath, n: number): void => {
   let guard = 0
   while (sp.anchors.length < n && guard++ < 20000) {
     const segs = sp.closed ? sp.anchors.length : sp.anchors.length - 1
@@ -100,12 +92,9 @@ const grow = (sp, n) => {
 
 /**
  * Signed area of a subpath (positive: clockwise on screen), from points along its segments.
- * @param {SubPath} sp
- * @returns {number}
  */
-const signedArea = (sp) => {
-  /** @type {Pt[]} */
-  const pts = []
+const signedArea = (sp: SubPath): number => {
+  const pts: Pt[] = []
   const segs = sp.anchors.length
   for (let i = 0; i < segs; i++) {
     const c = segCubic(sp, i)
@@ -121,20 +110,19 @@ const signedArea = (sp) => {
 
 /**
  * Reverse a closed subpath, keeping its first anchor first.
- * @param {SubPath} sp edited in place
+ * @param sp edited in place
  */
-const reverseClosed = (sp) => {
+const reverseClosed = (sp: SubPath): void => {
   const flipped = sp.anchors.map((a) => ({ p: a.p, hIn: a.hOut, hOut: a.hIn })).reverse()
-  flipped.unshift(/** @type {Anchor} */ (flipped.pop())) // the old first anchor stays first
+  flipped.unshift(flipped.pop() as Anchor) // the old first anchor stays first
   sp.anchors = flipped
 }
 
 /**
  * `sp` backwards: the same curve, run the other way (an open subpath's ends swap; a closed one keeps its first anchor).
- * @param {SubPath} sp
- * @returns {SubPath} a new subpath
+ * @returns a new subpath
  */
-export const reverseSubpath = (sp) => {
+export const reverseSubpath = (sp: SubPath): SubPath => {
   const out = cloneSub(sp)
   if (sp.closed) reverseClosed(out)
   else out.anchors = out.anchors.map((x) => ({ p: x.p, hIn: x.hOut, hOut: x.hIn })).reverse()
@@ -144,21 +132,17 @@ export const reverseSubpath = (sp) => {
 /**
  * The arc lengths at which `count` keys sit along a spine of `length`, evenly spread, the first at the start and the
  * last at the end.
- * @param {number} length
- * @param {number} count
- * @returns {number[]}
  */
-export const spineStops = (length, count) => Array.from({ length: count }, (_, i) => (length * i) / Math.max(1, count - 1))
+export const spineStops = (length: number, count: number): number[] => Array.from({ length: count }, (_, i) => (length * i) / Math.max(1, count - 1))
 
 /**
  * The index of the anchor of an open subpath that sits `s` along it, adding one (splitting a segment) when none does.
  * Lengths are those of the cubics, scaled so that the whole is `total` (the length the caller measured the stop by).
- * @param {SubPath} sp edited in place
- * @param {number} s arc length from the start
- * @param {number} total the subpath's length
- * @returns {number}
+ * @param sp edited in place
+ * @param s arc length from the start
+ * @param total the subpath's length
  */
-export const splitAtLength = (sp, s, total) => {
+export const splitAtLength = (sp: SubPath, s: number, total: number): number => {
   const segs = sp.anchors.length - 1
   const lens = Array.from({ length: segs }, (_, i) => cubicLength(segCubic(sp, i)))
   const sum = lens.reduce((a, b) => a + b, 0)
@@ -189,16 +173,13 @@ export const splitAtLength = (sp, s, total) => {
 /**
  * A copy of an open subpath with an anchor under each of `count` keys spread evenly along it (the stops of `spineStops`),
  * and the anchors' indices: those are the pins, the places a key holds the spine by.
- * @param {SubPath} sp
- * @param {number} count
- * @param {number} total the subpath's length
- * @returns {{sp: SubPath, pins: ?number[]}} `pins` is null when two keys would share an anchor
+ * @param total the subpath's length
+ * @returns `pins` is null when two keys would share an anchor
  */
-export const pinSpine = (sp, count, total) => {
+export const pinSpine = (sp: SubPath, count: number, total: number): { sp: SubPath, pins: number[] | null } => {
   const out = cloneSub(sp)
   const stops = spineStops(total, count)
-  /** @type {Anchor[]} */
-  const marks = []
+  const marks: Anchor[] = []
   // From the far end back: a split further along does not move the indices of the stops before it.
   for (let k = count - 1; k >= 0; k--) marks[k] = out.anchors[splitAtLength(out, stops[k], total)]
   const pins = marks.map((a) => out.anchors.indexOf(a))
@@ -207,50 +188,38 @@ export const pinSpine = (sp, count, total) => {
 
 /**
  * The pins of a spine run the other way, for the keys in the same order (the first key now holds where the last did).
- * @param {number[]} pins
- * @param {number} anchors how many anchors the spine has
- * @returns {number[]}
+ * @param anchors how many anchors the spine has
  */
-export const reversePins = (pins, anchors) => pins.map((i) => anchors - 1 - i).reverse()
+export const reversePins = (pins: number[], anchors: number): number[] => pins.map((i) => anchors - 1 - i).reverse()
 
 /**
  * `subpaths` moved so that the centre of their bounding box is at `to`.
- * @param {SubPath[]} subpaths
- * @param {Pt} to
- * @returns {SubPath[]} new subpaths
+ * @returns new subpaths
  */
-export const centreOn = (subpaths, to) => {
+export const centreOn = (subpaths: SubPath[], to: Pt): SubPath[] => {
   const box = anchorBBox(subpaths)
   const dx = to.x - (box.x + box.width / 2)
   const dy = to.y - (box.y + box.height / 2)
-  /** @param {Pt} pt */
-  const move = (pt) => ({ x: pt.x + dx, y: pt.y + dy })
+  const move = (pt: Pt): Pt => ({ x: pt.x + dx, y: pt.y + dy })
   return subpaths.map((sp) => ({ closed: sp.closed, anchors: sp.anchors.map((x) => ({ p: move(x.p), hIn: move(x.hIn), hOut: move(x.hOut) })) }))
 }
 
 /**
  * `subpaths` turned by `angle` (radians, clockwise on screen) about the centre of their bounding box.
- * @param {SubPath[]} subpaths
- * @param {number} angle
- * @returns {SubPath[]} new subpaths
+ * @returns new subpaths
  */
-export const rotateSubpaths = (subpaths, angle) => {
+export const rotateSubpaths = (subpaths: SubPath[], angle: number): SubPath[] => {
   const box = anchorBBox(subpaths)
   const cx = box.x + box.width / 2
   const cy = box.y + box.height / 2
   const cos = Math.cos(angle)
   const sin = Math.sin(angle)
-  /** @param {Pt} pt */
-  const turn = (pt) => ({ x: cx + (pt.x - cx) * cos - (pt.y - cy) * sin, y: cy + (pt.x - cx) * sin + (pt.y - cy) * cos })
+  const turn = (pt: Pt): Pt => ({ x: cx + (pt.x - cx) * cos - (pt.y - cy) * sin, y: cy + (pt.x - cx) * sin + (pt.y - cy) * cos })
   return subpaths.map((sp) => ({ closed: sp.closed, anchors: sp.anchors.map((x) => ({ p: turn(x.p), hIn: turn(x.hIn), hOut: turn(x.hOut) })) }))
 }
 
-/**
- * Anchor positions relative to their box centre, scaled to unit size.
- * @param {SubPath} sp
- * @returns {Pt[]}
- */
-const normalised = (sp) => {
+/** Anchor positions relative to their box centre, scaled to unit size. */
+const normalised = (sp: SubPath): Pt[] => {
   const xs = sp.anchors.map((a) => a.p.x)
   const ys = sp.anchors.map((a) => a.p.y)
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
@@ -262,16 +231,13 @@ const normalised = (sp) => {
 
 /**
  * The rotation of `b`'s anchors that best matches `a`'s: the start point that keeps a closed blend from twisting.
- * @param {SubPath} a
- * @param {SubPath} b
- * @returns {number}
  */
-const bestRotation = (a, b) => {
+const bestRotation = (a: SubPath, b: SubPath): number => {
   const qa = normalised(a)
   const qb = normalised(b)
   const m = Math.min(qa.length, qb.length)
   if (m < 2) return 0
-  const cost = (/** @type {number} */ s) => {
+  const cost = (s: number): number => {
     let sum = 0
     for (let j = 0; j < m; j++) sum += Math.hypot(qa[j].x - qb[(j + s) % m].x, qa[j].y - qb[(j + s) % m].y) ** 2
     return sum
@@ -299,41 +265,30 @@ const bestRotation = (a, b) => {
   return best
 }
 
-/**
- * @param {SubPath[]} subs
- * @returns {Pt}
- */
-const centreOf = (subs) => {
+const centreOf = (subs: SubPath[]): Pt => {
   const box = anchorBBox(subs)
   return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : { x: 0, y: 0 }
 }
 
-/**
- * @typedef {object} PathPair
- * @property {SubPath[]} a
- * @property {SubPath[]} b
- */
+export interface PathPair {
+  a: SubPath[]
+  b: SubPath[]
+}
 
 /**
  * Two paths prepared for interpolation: subpaths paired in order, with equal anchor counts, the same winding and
  * matching start points.
- * @param {SubPath[]} a
- * @param {SubPath[]} b
- * @returns {PathPair}
  */
-export const pairPaths = (a, b) => {
+export const pairPaths = (a: SubPath[], b: SubPath[]): PathPair => {
   const n = Math.max(a.length, b.length)
   const ca = centreOf(a)
   const cb = centreOf(b)
-  /** @param {SubPath} like @param {Pt} c @returns {SubPath} */
-  const point = (like, c) => ({
+  const point = (like: SubPath, c: Pt): SubPath => ({
     closed: like.closed,
     anchors: like.anchors.map(() => ({ p: { ...c }, hIn: { ...c }, hOut: { ...c } }))
   })
-  /** @type {SubPath[]} */
-  const outA = []
-  /** @type {SubPath[]} */
-  const outB = []
+  const outA: SubPath[] = []
+  const outB: SubPath[] = []
   for (let i = 0; i < n; i++) {
     const sa = a[i] ? cloneSub(a[i]) : point(b[i], ca)
     const sb = b[i] ? cloneSub(b[i]) : point(a[i], cb)
@@ -354,11 +309,8 @@ export const pairPaths = (a, b) => {
 
 /**
  * The paired paths at `t` (0 = the first, 1 = the second).
- * @param {PathPair} pair
- * @param {number} t
- * @returns {SubPath[]}
  */
-export const pathAt = (pair, t) => pair.a.map((sa, i) => {
+export const pathAt = (pair: PathPair, t: number): SubPath[] => pair.a.map((sa, i) => {
   const sb = pair.b[i]
   return {
     closed: t < 0.5 ? sa.closed : sb.closed,
@@ -375,10 +327,9 @@ export const pathAt = (pair, t) => pair.a.map((sa, i) => {
 
 /**
  * The red, green and blue (0..1) of a plain CSS colour.
- * @param {?string} str
- * @returns {?[number, number, number]} null for `none`, `url(#…)`, `currentColor`, …
+ * @returns null for `none`, `url(#…)`, `currentColor`, …
  */
-export const rgbOf = (str) => {
+export const rgbOf = (str: string | null | undefined): [number, number, number] | null => {
   const c = str ? parse(str.trim()) : undefined
   if (!c) return null
   const { r, g, b } = toRgb(c)
@@ -387,12 +338,8 @@ export const rgbOf = (str) => {
 
 /**
  * Interpolate two paints: two plain colours in OKLab (as `#rrggbb`), anything else switches halfway.
- * @param {string} a
- * @param {string} b
- * @param {number} t
- * @returns {string}
  */
-export const lerpPaint = (a, b, t) => {
+export const lerpPaint = (a: string, b: string, t: number): string => {
   const ca = a.trim() === 'none' ? undefined : parse(a.trim())
   const cb = b.trim() === 'none' ? undefined : parse(b.trim())
   if (!ca || !cb) return t < 0.5 ? a : b
@@ -403,24 +350,20 @@ export const lerpPaint = (a, b, t) => {
   return formatHex(toRgb({ mode: 'oklab', l: lerp(x.l, y.l, t), a: lerp(x.a, y.a, t), b: lerp(x.b, y.b, t) }))
 }
 
-const round = (/** @type {number} */ n, places = 4) => {
+const round = (n: number, places = 4): number => {
   const k = 10 ** places
   return Math.round(n * k) / k
 }
 
-/** @type {(a: number, b: number) => number} */
-const gcd = (a, b) => (b ? gcd(b, a % b) : a)
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a)
 
 /**
  * Interpolate dash patterns; patterns of different lengths repeat to a common one. A solid stroke against a dashed
  * one switches halfway.
- * @param {string} a `stroke-dasharray` value
- * @param {string} b
- * @param {number} t
- * @returns {string}
+ * @param a `stroke-dasharray` value
  */
-const lerpDashes = (a, b, t) => {
-  const list = (/** @type {string} */ s) => {
+const lerpDashes = (a: string, b: string, t: number): string => {
+  const list = (s: string): number[] | null => {
     const nums = s.split(/[\s,]+/).filter(Boolean).map(Number)
     return nums.length && nums.every(Number.isFinite) ? (nums.length % 2 ? [...nums, ...nums] : nums) : null
   }
@@ -438,8 +381,7 @@ const SWITCHED = ['fill-rule', 'stroke-linecap', 'stroke-linejoin']
 export const BLEND_STYLE_ATTRS = [...PAINTS, ...NUMBERS, ...SWITCHED, 'stroke-dasharray']
 
 /** What an attribute is when a shape does not say. */
-/** @type {Object<string, string>} */
-const DEFAULTS = {
+const DEFAULTS: Record<string, string> = {
   fill: 'black',
   stroke: 'none',
   'fill-opacity': '1',
@@ -456,14 +398,11 @@ const DEFAULTS = {
 
 /**
  * The style of a step between two keys at `t`.
- * @param {Object<string, string>} a presentation attributes of the first key (those it does not set take the SVG default)
- * @param {Object<string, string>} b
- * @param {number} t
- * @returns {Object<string, string>} only attributes at least one key sets
+ * @param a presentation attributes of the first key (those it does not set take the SVG default)
+ * @returns only attributes at least one key sets
  */
-export const lerpStyle = (a, b, t) => {
-  /** @type {Object<string, string>} */
-  const out = {}
+export const lerpStyle = (a: Record<string, string>, b: Record<string, string>, t: number): Record<string, string> => {
+  const out: Record<string, string> = {}
   for (const name of BLEND_STYLE_ATTRS) {
     if (!(name in a) && !(name in b)) continue
     const x = a[name] ?? DEFAULTS[name]
@@ -484,31 +423,27 @@ export const lerpStyle = (a, b, t) => {
 // Step counts
 // ---------------------------------------------------------------------------
 
-/**
- * @typedef {object} BlendSpacing
- * @property {'steps'|'distance'|'smooth'} mode
- * @property {number} steps steps between each pair of keys (mode `steps`)
- * @property {number} distance distance between steps (mode `distance`)
- */
+export interface BlendSpacing {
+  mode: 'steps' | 'distance' | 'smooth'
+  /** steps between each pair of keys (mode `steps`) */
+  steps: number
+  /** distance between steps (mode `distance`) */
+  distance: number
+}
 
 export const MAX_STEPS = 200
 
-/**
- * @typedef {object} KeyLook what the step count of `smooth` spacing looks at
- * @property {?string} fill
- * @property {?string} stroke
- * @property {{x: number, y: number, width: number, height: number}} box
- */
+/** What the step count of `smooth` spacing looks at. */
+export interface KeyLook {
+  fill: string | null
+  stroke: string | null
+  box: { x: number, y: number, width: number, height: number }
+}
 
-/**
- * Largest difference (0..1) between the same channel of the fills, and of the strokes, of two keys.
- * @param {KeyLook} a
- * @param {KeyLook} b
- * @returns {number}
- */
-const colourDistance = (a, b) => {
+/** Largest difference (0..1) between the same channel of the fills, and of the strokes, of two keys. */
+const colourDistance = (a: KeyLook, b: KeyLook): number => {
   let d = 0
-  for (const name of /** @type {const} */ (['fill', 'stroke'])) {
+  for (const name of ['fill', 'stroke'] as const) {
     const x = rgbOf(a[name])
     const y = rgbOf(b[name])
     if (x && y) for (let k = 0; k < 3; k++) d = Math.max(d, Math.abs(x[k] - y[k]))
@@ -518,13 +453,9 @@ const colourDistance = (a, b) => {
 
 /**
  * The number of steps between two keys.
- * @param {BlendSpacing} spacing
- * @param {KeyLook} a
- * @param {KeyLook} b
- * @param {number} length distance between the keys (their centres)
- * @returns {number}
+ * @param length distance between the keys (their centres)
  */
-export const stepCount = (spacing, a, b, length) => {
+export const stepCount = (spacing: BlendSpacing, a: KeyLook, b: KeyLook, length: number): number => {
   if (spacing.mode === 'steps') return Math.min(MAX_STEPS, Math.max(1, Math.round(spacing.steps)))
   if (spacing.mode === 'distance') {
     const d = Math.max(spacing.distance, 0.01)

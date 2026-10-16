@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Warp live effect: 15 envelope styles plus horizontal/vertical
  * perspective-like distortion. Each style is a closed-form map on normalised
@@ -17,6 +16,7 @@
  */
 
 import { mapNonlinear } from './anchor-path.ts'
+import type { SubPath } from './anchor-path.ts'
 import { registerLiveEffect } from './live-effects.js'
 
 export const WARP_STYLES = [
@@ -28,19 +28,18 @@ const { PI } = Math
 
 /**
  * The warp map on normalised coordinates.
- * @param {string} style - One of `WARP_STYLES` (unknown ids act as `arc`).
- * @param {number} b - Bend, -1..1.
- * @param {number} dh - Horizontal distortion, -1..1.
- * @param {number} dv - Vertical distortion, -1..1.
- * @param {number} x - Normalised x, -1..1.
- * @param {number} y - Normalised y, -1..1 (y down).
- * @returns {[number, number]}
+ * @param style - One of `WARP_STYLES` (unknown ids act as `arc`).
+ * @param b - Bend, -1..1.
+ * @param dh - Horizontal distortion, -1..1.
+ * @param dv - Vertical distortion, -1..1.
+ * @param x - Normalised x, -1..1.
+ * @param y - Normalised y, -1..1 (y down).
  */
-export const warpPoint = (style, b, dh, dv, x, y) => {
+export const warpPoint = (style: string, b: number, dh: number, dv: number, x: number, y: number): [number, number] => {
   const t = (y + 1) / 2 // 0 at top, 1 at bottom
   const par = 1 - x * x // parabola: 1 at centre, 0 at the sides
-  let x2
-  let y2
+  let x2: number
+  let y2: number
   switch (style) {
     case 'arcLower': [x2, y2] = [x, y + b * par * t]; break
     case 'arcUpper': [x2, y2] = [x, y - b * par * (1 - t)]; break
@@ -95,12 +94,12 @@ export const warpPoint = (style, b, dh, dv, x, y) => {
 
 /**
  * Warp anchor subpaths inside `bbox`.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @param {{x: number, y: number, width: number, height: number}} bbox
- * @param {{style: string, bend: number, horizontal: number, vertical: number, orientation: string}} p
- * @returns {import('./anchor-path.ts').SubPath[]}
  */
-export const warpSubpaths = (subpaths, bbox, p) => {
+export const warpSubpaths = (
+  subpaths: SubPath[],
+  bbox: { x: number, y: number, width: number, height: number },
+  p: { style: string, bend: number, horizontal: number, vertical: number, orientation: string }
+): SubPath[] => {
   const bend = Math.min(100, Math.max(-100, p.bend)) / 100
   const dh = Math.min(100, Math.max(-100, p.horizontal)) / 100
   const dv = Math.min(100, Math.max(-100, p.vertical)) / 100
@@ -112,12 +111,11 @@ export const warpSubpaths = (subpaths, bbox, p) => {
   // A flat box has no extent on one axis: borrow the other one's.
   if (hw < 1e-6) hw = Math.max(hh, 1e-9)
   if (hh < 1e-6) hh = Math.max(hw, 1e-9)
-  /** @param {{x: number, y: number}} q */
-  const f = (q) => {
+  const f = (q: { x: number, y: number }): { x: number, y: number } => {
     const x = (q.x - cx) / hw
     const y = (q.y - cy) / hh
-    let x2
-    let y2
+    let x2: number
+    let y2: number
     if (vertical) {
       const [a, b2] = warpPoint(p.style, bend, dh, dv, y, x)
       x2 = b2
@@ -131,11 +129,8 @@ export const warpSubpaths = (subpaths, bbox, p) => {
   return mapNonlinear(subpaths, Math.hypot(bbox.width, bbox.height) / 24, f)
 }
 
-/**
- * Register the `warp` effect (idempotent).
- * @returns {void}
- */
-export const registerWarpEffect = () => {
+/** Register the `warp` effect (idempotent). */
+export const registerWarpEffect = (): void => {
   registerLiveEffect('warp', {
     label: 'Warp',
     defaults: { style: 'arc', bend: 50, horizontal: 0, vertical: 0, orientation: 'horizontal' },

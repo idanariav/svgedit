@@ -34,7 +34,7 @@
 | `bbox-utils.ts` | Bounding-box computation utilities |
 | `bezier-fit.ts` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
 | `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
-| `blend.js` | Blends: the geometry and paint of the steps between two key shapes |
+| `blend.ts` | Blends: the geometry and paint of the steps between two key shapes |
 | `blur-event.js` | Tools for blur event |
 | `boolean-ops.js` | Boolean path operations: union, intersect, subtract, exclude, divide |
 | `brush-stroke.js` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
@@ -44,7 +44,7 @@
 | `copy-elem.js` | Copy handler |
 | `corner-radius.js` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
 | `cutter.js` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
-| `dash-fit.js` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
+| `dash-fit.ts` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
 | `distort.js` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
@@ -95,10 +95,10 @@
 | `path-node-guides.ts` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
 | `path-offset.js` | Path offset / inset and stroke-to-path operations |
 | `path-seg-shim.js` | Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API, removed from browsers around 2016 and previously restored here via the `pathseg` npm polyfill |
-| `path-simplify.js` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
+| `path-simplify.ts` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
 | `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
 | `path.js` | Path functionality |
-| `pen-continue.js` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
+| `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.js` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.js` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
@@ -129,7 +129,7 @@
 | `transform-each.js` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
 | `undo.js` | Tools for undo |
 | `units.ts` | Tools for working with units |
-| `warp.js` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
+| `warp.ts` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
 | `width-outline.ts` | Variable-width strokes: the filled outline of a path stroked with a width profile |
 | `width-profile.ts` | Width profiles: the data behind variable-width strokes (the Width tool and the presets) |
 

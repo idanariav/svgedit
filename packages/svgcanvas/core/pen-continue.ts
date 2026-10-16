@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * The Pen's "continue" and "join" gestures: pressing on an end of an existing
  * open path carries that path on (or, while drawing, joins the drawing to it).
@@ -14,23 +13,26 @@ import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { getTransformList, transformListToTransform, isIdentity } from './math.ts'
+import type { Pt, SubPath } from './anchor-path.ts'
 
-/**
- * @typedef {object} PenEnd
- * @property {Element} elem the open path
- * @property {boolean} atEnd `true` for its last anchor, `false` for its first
- * @property {{x: number, y: number}} point the end's position
- * @property {import('./anchor-path.ts').SubPath} subpath the path's only subpath
- */
+export interface PenEnd {
+  /** the open path */
+  elem: Element
+  /** `true` for its last anchor, `false` for its first */
+  atEnd: boolean
+  /** the end's position */
+  point: Pt
+  /** the path's only subpath */
+  subpath: SubPath
+}
 
 /** The stroke's first anchor sits on the path's end; this much apart still counts as the same point (user units). */
 const MERGE_TOLERANCE = 0.5
 
 /** Parsed open single-subpath paths, by element (a mouse move asks about every path in the layer). */
-const parsed = new WeakMap()
+const parsed = new WeakMap<Element, { d: string, subpath: SubPath | null }>()
 
-/** @param {Element} elem */
-const openSubpath = (elem) => {
+const openSubpath = (elem: Element): SubPath | null => {
   const d = elem.getAttribute('d') || ''
   let hit = parsed.get(elem)
   if (!hit || hit.d !== d) {
@@ -41,8 +43,7 @@ const openSubpath = (elem) => {
   return hit.subpath
 }
 
-/** @param {Element} elem */
-const isPlain = (elem) => {
+const isPlain = (elem: Element): boolean => {
   if (LIVE_ATTRS.some((a) => elem.hasAttribute(a))) return false
   const tlist = getTransformList(elem)
   return !(tlist && tlist.numberOfItems && !isIdentity(transformListToTransform(tlist).matrix))
@@ -53,15 +54,13 @@ const isPlain = (elem) => {
  * Paths with live geometry (`se:taper-d`, `se:orig-d`, `se:fx-d`) are skipped:
  * extending them would desync their source. So are paths with several subpaths
  * and closed ones (they have no end).
- * @param {Element} container the layer or group that new shapes are drawn into
- * @param {number} x
- * @param {number} y
- * @param {number} tolerance
- * @param {Element[]} [exclude]
- * @returns {?PenEnd} The closest end, or null.
+ * @param container the layer or group that new shapes are drawn into (anything with `children`)
+ * @returns The closest end, or null.
  */
-export const findPenEnd = (container, x, y, tolerance, exclude = []) => {
-  let best = null
+export const findPenEnd = (
+  container: { children?: Iterable<Element> } | null | undefined, x: number, y: number, tolerance: number, exclude: Element[] = []
+): PenEnd | null => {
+  let best: (PenEnd & { dist: number }) | null = null
   for (const elem of container?.children ?? []) {
     if (elem.tagName !== 'path' || exclude.includes(elem)) continue
     const subpath = openSubpath(elem)
@@ -77,26 +76,19 @@ export const findPenEnd = (container, x, y, tolerance, exclude = []) => {
   return end
 }
 
-/**
- * Path data for `end`'s path with the pressed end last, so a drawing carries on
- * from it.
- * @param {PenEnd} end
- * @returns {string}
- */
-export const continuationD = (end) =>
+/** Path data for `end`'s path with the pressed end last, so a drawing carries on from it. */
+export const continuationD = (end: PenEnd): string =>
   anchorsToD([end.atEnd ? end.subpath : reversedSubpath(end.subpath)])
 
 /**
  * The unit direction the path was travelling when it reached the pressed end, or null when it has no
  * direction there (a single anchor).
- * @param {PenEnd} end
- * @returns {?{x: number, y: number}}
  */
-export const endDirection = (end) => {
+export const endDirection = (end: PenEnd): Pt | null => {
   const { anchors } = end.atEnd ? end.subpath : reversedSubpath(end.subpath)
   const last = anchors[anchors.length - 1]
   const prev = anchors[anchors.length - 2]
-  const same = (/** @type {{x: number, y: number}} */ a, /** @type {{x: number, y: number}} */ b) => a.x === b.x && a.y === b.y
+  const same = (a: Pt, b: Pt): boolean => a.x === b.x && a.y === b.y
   const from = !same(last.hIn, last.p) ? last.hIn : prev && (!same(prev.hOut, prev.p) ? prev.hOut : prev.p)
   if (!from) return null
   const dx = last.p.x - from.x
@@ -105,16 +97,13 @@ export const endDirection = (end) => {
   return len > 1e-9 ? { x: dx / len, y: dy / len } : null
 }
 
-/** @param {{x: number, y: number}} p */
-const lone = (p) => ({ closed: false, anchors: [{ p, hIn: { ...p }, hOut: { ...p } }] })
+const lone = (p: Pt): SubPath => ({ closed: false, anchors: [{ p, hIn: { ...p }, hOut: { ...p } }] })
 
 /**
  * The drawing's anchors: its path data may be a lone `M` (one click), which the
  * parser drops.
- * @param {string} d
- * @returns {?import('./anchor-path.ts').SubPath}
  */
-export const drawnSubpath = (d) => {
+export const drawnSubpath = (d: string): SubPath | null => {
   const [sp] = parseAnchors(d || '', 0.1)
   if (sp) return sp
   const m = /M\s*(-?[\d.e+-]+)[\s,]+(-?[\d.e+-]+)/i.exec(d || '')
@@ -128,12 +117,8 @@ export const drawnSubpath = (d) => {
  * `other` is the path that was pressed. When the drawing carries on a path
  * (`continued`), that path survives and the other one is absorbed. Otherwise
  * the pressed path keeps its id, style and direction.
- * @param {import('./anchor-path.ts').SubPath} drawn
- * @param {PenEnd} other
- * @param {boolean} continued
- * @returns {{subpath: import('./anchor-path.ts').SubPath, keepsDrawing: boolean}}
  */
-export const joinDrawn = (drawn, other, continued) => {
+export const joinDrawn = (drawn: SubPath, other: PenEnd, continued: boolean): { subpath: SubPath, keepsDrawing: boolean } => {
   if (continued || !other.atEnd) {
     return { subpath: joinEnds(drawn, true, other.subpath, other.atEnd), keepsDrawing: continued }
   }
@@ -145,12 +130,9 @@ export const joinDrawn = (drawn, other, continued) => {
  * end (the pencil snaps its first point there) and merges into it. When the stroke finishes within `closeTol`
  * of the path's other end the path is closed instead. A path continued from its first anchor comes back the
  * way round it started (so markers and dashes keep their direction); a closed one has no direction to keep.
- * @param {PenEnd} end
- * @param {import('./anchor-path.ts').SubPath} stroke the fitted stroke, starting at the pressed end
- * @param {number} closeTol
- * @returns {import('./anchor-path.ts').SubPath}
+ * @param stroke the fitted stroke, starting at the pressed end
  */
-export const extendWith = (end, stroke, closeTol) => {
+export const extendWith = (end: PenEnd, stroke: SubPath, closeTol: number): SubPath => {
   const base = end.atEnd ? end.subpath : reversedSubpath(end.subpath)
   const joined = joinEnds(base, true, stroke, false, MERGE_TOLERANCE)
   const first = joined.anchors[0].p

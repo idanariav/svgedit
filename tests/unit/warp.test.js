@@ -1,5 +1,5 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { WARP_STYLES, warpPoint, warpSubpaths, registerWarpEffect } from '../../packages/svgcanvas/core/warp.js'
+import { WARP_STYLES, warpPoint, warpSubpaths, registerWarpEffect } from '../../packages/svgcanvas/core/warp.ts'
 import { getLiveEffectDef, computeFxD, parseFxStack, serializeFxStack } from '../../packages/svgcanvas/core/live-effects.js'
 import { parseAnchors, anchorBBox, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
 
