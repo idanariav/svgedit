@@ -1,127 +1,23 @@
 # SVGedit Architecture
 
-> **How to use this doc:** Start with the Directory Tree to orient yourself, then jump to Initialization Flow to understand startup order, or Subsystems table for module responsibilities. When modifying canvas logic, see the SvgCanvas Core Modules table.
+> **How to use this doc:** Orientation and the contracts that cut across files: layering, startup order, undo, the tool and command contracts, the host seams. For "what is this file", use the generated [`file-map.md`](file-map.md); for commands and keys, [`commands.md`](commands.md); for tools and panels, [`tools.md`](tools.md).
 
 ---
 
-## Directory Tree
+## Layout
 
-```
-svgedit/
-├── src/editor/                    # Main editor application (UI layer)
-│   ├── hostApi.d.ts               # Host API types (EditorHostApi) — typechecked against Editor; shipped to dist/editor
-│   ├── Editor.js                  # Main class (extends EditorStartup) — menus, events, top-level handlers
-│   ├── EditorStartup.js           # Async init sequence — panels, canvas, extensions, i18n
-│   ├── ConfigObj.js               # Configuration + localStorage preferences
-│   ├── MainMenu.js                # File-menu operations (export, doc props, prefs, hotkey manager, favorites)
-│   ├── Hotkeys.js                 # HotkeyManager — central registry + dispatcher for all keyboard shortcuts
-│   ├── favorites.js               # Quick-action favorites store (load/save/toggle; svg-edit-favorites)
-│   ├── favoriteActions.js         # Catalog of favoritable actions (registry superset: triggers + value controls)
-│   ├── Rulers.js                  # Canvas ruler rendering
-│   ├── themeUtil.js               # applyTheme() helper — canonical way to switch light/dark
-│   ├── userDataAdapter.js         # Registry for optional host storage adapter (palette + user shapes + hotkeys + favorites); localStorage fallback
-│   ├── locale.js                  # i18next setup and language loading
-│   ├── contextmenu.js             # Extension custom-handler hook for context-menu actions (see also dialogs/cmenuDialog.js — the canvas quick-action menu)
-│   ├── commandGates.js            # Shared `enabled` checks for registry commands (needsSelection, canPaste, …)
-│   ├── canvasCommands.js          # The canvas page as commands: size, background, saved layouts
-│   ├── toolCursors.js             # Canvas cursor per tool (images/cursors/<mode>_cursor.svg) and per cursor hint
-│   ├── DebugActionStream.js       # Debug log action channel (commands, keys, pointer, gestures); see debug-log.md
-│   │
-│   ├── panels/                    # 4 UI panels (each has .js + .html)
-│   │   ├── TopPanel.js/.html      # Horizontal toolbar — all shape + text attribute panels
-│   │   ├── LeftPanel.js/.html     # Vertical tool sidebar — drawing/selection tools
-│   │   ├── BottomPanel.js/.html   # Status bar — fill/stroke/opacity/zoom
-│   │   ├── RightPanel.js/.html    # Right side panel host: Layers + General/Text/Shadow/Color Shift sections
-│   │   └── layerTree.js / layerGestures.js / layerKeyboard.js  # Layers panel: object rows, mouse gestures, keyboard (tree-grid)
-│   │
-│   ├── components/                # Custom HTML elements (shadow DOM, reusable)
-│   │   ├── seButton.js            # Clickable icon button
-│   │   ├── seFlyingButton.js      # Button with sub-tool variants (flyout)
-│   │   ├── seColorPicker.js       # Color selection modal
-│   │   ├── seSelect.js            # Custom styled <select>
-│   │   ├── seList.js + seListItem.js  # Icon-based list/dropdown
-│   │   ├── seSpinInput.js         # Numeric spin input with icon/label
-│   │   ├── seInput.js             # Text input with icon/label
-│   │   ├── seZoom.js              # Zoom percentage control
-│   │   ├── seCanvasSettings.js    # Canvas-resize popover (W/H + presets + Apply/Reset) + Layouts section (canvasLayouts.js)
-│   │   ├── sePalette.js           # Color palette swatch grid
-│   │   ├── seShapeLibrary.js      # Shape-library modal/popover (large: 48KB)
-│   │   ├── PaintBox.js            # Fill/stroke paint control
-│   │   └── svgIconLoader.js       # Shared utility: fetches + inlines SVG icons
-│   │
-│   ├── dialogs/                   # Modal dialogs (custom elements, native <dialog>-based)
-│   │   ├── imagePropertiesDialog.js
-│   │   ├── editorPreferencesDialog.js
-│   │   ├── exportDialog.js
-│   │   ├── imageImportDialog.js     # Insert-image dialog (file upload + URL)
-│   │   ├── insertImage.js           # insertImageFromHref() + insertSvgElements() helpers
-│   │   ├── traceImage.js            # traceImageToSvg() — raster <image> → editable paths (imagetracerjs)
-│   │   ├── traceCenterline.js       # pure centerline tracer (ImageData → stroked open paths): Otsu, distance transform, Zhang-Suen, skeleton graph, path-fit
-│   │   ├── seTraceDialog.js         # "Convert to editable SVG" options dialog (se-trace-dialog)
-│   │   ├── seRecolorDialog.js       # Recolor Artwork dialog (se-recolor-dialog): colour rows, harmony, reduce, hue; a view only
-│   │   ├── svgSourceDialog.js
-│   │   ├── SePlainAlertDialog.js     # native-<dialog> choice-prompt base class
-│   │   ├── seAlertDialog.js / seConfirmDialog.js / sePromptDialog.js / seSelectDialog.js
-│   │   └── seTextPromptDialog.js     # on-brand window.prompt replacement (window.sePrompt)
-│   │
-│   ├── extensions/                # Optional plugin modules (see extensions.md)
-│   │   ├── ext-connector/         # Line-binding engine behind the Line tool (endpoint↔shape binding)
-│   │   ├── ext-eyedropper/        # Pick color/style from canvas element
-│   │   ├── ext-grid/              # Grid overlay + snap-to-grid
-│   │   ├── ext-layer_view/        # Layer mode: Focus (isolate current layer) + All Layers (cross-layer select)
-│   │   ├── ext-markers/           # Arrow/marker decorators on lines
-│   │   ├── ext-opensave/          # File open / save / import dialogs
-│   │   ├── ext-panning/           # Pan tool (hand) for mobile/touch
-│   │   ├── ext-polystar/          # Star and polygon drawing tools
-│   │   ├── ext-shape-family/      # Spiral, Arc, Rectangular Grid, Polar Grid drag tools (+ options popover)
-│   │   ├── ext-brush/             # Pressure-sensitive freehand brush (perfect-freehand)
-│   │   ├── ext-curvature/         # Curvature tool — Spiro smooth curves
-│   │   ├── ext-puppet-warp/       # Puppet warp — MLS rigid mesh deformation (mls.js)
-│   │   ├── ext-proportion-markers/ # Wireframe-only edge proportion ticks
-│   │   ├── ext-frame-labels/      # Name label above each frame; double-click to rename
-│   │   ├── ext-smart-guides/      # Smart alignment guide overlay + snap toggle
-│   │   ├── ext-ruler-guides/      # Ruler guides dragged from the rulers (data: core/guides.js)
-│   │   ├── ext-corner-radius/     # "Corners" panel — Live Corners (per-corner radius, round/inverted/chamfer)
-│   │   ├── ext-repeat/            # Radial/grid repeat (array) tool
-│   │   ├── ext-mirror/            # Mirror drawing mode (API-only) + live linked symmetry
-│   │   ├── ext-taper/             # Tapered-stroke popover (core/taper-stroke.js glue)
-│   │   ├── ext-text-path/         # Text-on-path attach button + offset panel
-│   │   ├── ext-shape-builder/     # Interactive paint-to-merge region mode
-│   │   ├── ext-shapes/            # Pre-made shape library (clipart, incl. Accents)
-│   │   ├── ext-fonts/             # Font catalog + Google Fonts loading for the Text tab
-│   │   ├── ext-shadow/            # Drop shadow filter (feDropShadow)
-│   │   ├── ext-live-effects/      # "Distort" panel — re-editable se:fx effect stack (core/live-effects.js glue)
-│   │   ├── ext-outline/           # Second outline/halo color for line strokes (feMorphology)
-│   │   ├── ext-glow/              # Outer / inner glow (shared fx-filter composer)
-│   │   ├── ext-path-edit/         # Average / Add anchor points / Join buttons
-│   │   ├── ext-cutter/            # Cutter (knife) tool — split shapes along a drawn line
-│   │   ├── ext-shaper/            # Shaper — rough stroke → clean shape; scribble deletes (core/shape-recognize.js)
-│   │   ├── ext-width-tool/        # Width tool — variable-width strokes on the canvas (core/width-outline.js)
-│   │   ├── ext-distort-tool/      # Distort tool — drag a shape's four box corners (core/distort.js via the live-effect stack)
-│   │   ├── ext-gradient-tool/     # Gradient tool — on-canvas gradient handles and stops (core/gradient-edit.js)
-│   │   ├── ext-corner-tool/       # Corners tool — a widget in each corner of the selected shape (core/corner-radius.js)
-│   │   ├── ext-art-brush/         # Art / pattern brushes panel (core/art-brush.js, core/art-brush-canvas.js)
-│   │   ├── ext-blend/             # Blend tool + Design-tab section (core/blend.js, core/blend-canvas.js); first tool with an options bar
-│   │   ├── ext-smooth-tool/       # Smooth tool — brush to smooth part of a path (core/path-fit.js smoothRegion)
-│   │   ├── ext-color-shift/       # H/S/L/T relative color-delta panel
-│   │   ├── ext-layout-ops/        # Transform Each + Split Into Grid (se-params-dialog; core/transform-each.js, split-grid.js)
-│   │   ├── ext-measure/           # Measure tool (core/measure.js)
-│   │   ├── ext-magic-wand/        # Magic Wand tool — click selects every shape sharing a property (core/select-same.js)
-│   │   ├── ext-recolor/           # Recolor Artwork — button in the Effects tab + `se-recolor-dialog` (core/recolor.js)
-│   │   └── ext-theme-toggle/      # Light/dark theme toggle button
-│   │
-│   ├── images/                    # SVG toolbar icons (source of truth; dist/ is generated)
-│   ├── locale/                    # i18n JSON translation files
-│   ├── svgedit.css                # Main stylesheet — CSS variables + grid layout
-│   └── tests/                     # Unit tests
-│
-├── packages/svgcanvas/            # Core drawing engine (separate npm workspace)
-│   ├── svgcanvas.js               # SvgCanvas class (aggregates all core modules)
-│   ├── core/                      # ~100 modules, each attached to the canvas by its `init(canvas)` (see table below)
-│   └── common/                    # Shared utilities (browser.js, util.js, logger.js)
-│
-└── vite.config.mjs                # Build configuration (Vite)
-```
+| Path | What lives there |
+|---|---|
+| `src/editor/` | The editor application (UI layer): `Editor.js` / `EditorStartup.js`, panels, components (shadow-DOM custom elements), dialogs, extensions, the command registry, hotkeys |
+| `src/editor/panels/` | Four panels, each a `.js` + `.html` (Top, Left, Bottom, Right), plus the tablet shell and the Layers panel helpers (`layerTree.js`, `layerGestures.js`, `layerKeyboard.js`) |
+| `src/editor/extensions/` | `ext-*` folders (see [`extensions.md`](extensions.md)); inlined into the bundle by `extensionRegistry.js` |
+| `src/editor/hostApi.d.ts` | The host API types (`EditorHostApi`), typechecked against `Editor` and shipped to `dist/editor` |
+| `packages/svgcanvas/` | The drawing engine (a separate npm workspace): `svgcanvas.js` aggregates `core/` (~100 modules, each attached to the canvas by its `init(canvas)`) and `common/` |
+| `packages/svgcanvas/core/model/` | The document model (R1 step a, below): a persistent XML tree, DOM-free |
+| `scripts/`, `tests/` | Build, gates and repair scripts; `tests/unit` (vitest) and `tests/e2e` (Playwright) |
+| `dist/` | Build output, gitignored |
+
+**Layering.** `packages/svgcanvas` never imports from `src/editor`, never reads `window.svgEditor` and never defines custom elements; `scripts/check-layers.mjs` (a `pretest` gate) fails the build otherwise. The editor reaches the canvas only through its public API; the canvas reaches the editor only through events and hooks (e.g. `elementInserted`).
 
 ---
 
@@ -129,27 +25,19 @@ svgedit/
 
 | Subsystem | File(s) | Responsibility |
 |-----------|---------|----------------|
-| **Editor** | `Editor.js` | Top-level orchestration: menus, event routing, alignment, groups, exports |
-| **EditorStartup** | `EditorStartup.js` | Async init: load config → i18n → DOM → SvgCanvas → panels → extensions |
-| **SvgCanvas** | `packages/svgcanvas/svgcanvas.js` + `core/` | All SVG creation, selection, transforms, undo/redo, path editing |
-| **ConfigObj** | `ConfigObj.js` | Settings storage, `pref(key)`, `setConfig(obj)`, localStorage persistence |
-| **TopPanel** | `panels/TopPanel.js/.html` | "Quick actions" bar: view toggles, undo/redo, clone/delete, group/ungroup, layering, flip, align, zoom, path-node editing. Also **binds** the relocated zoom + stroke + opacity listeners (it inits last) |
-| **LeftPanel** | `panels/LeftPanel.js/.html` | Drawing tool buttons (select, rect, circle, path, text, etc.) |
-| **BottomPanel** | `panels/BottomPanel.js/.html` | "Colors" bar: fill/stroke/background color pickers + quick palette only |
-| **RightPanel** | `panels/RightPanel.js/.html` | Tabbed properties panel (**Design / Text / Effects / Layers**). `activateTab`/`autoSelectTab` switch tabs; shape-dimension, stroke, text, blur, clip/mask, boolean, layers sections live in the tab containers; ext-shadow/ext-color-shift inject into `#tab_effects` |
-| **TabletShell** | `panels/TabletShell.js/.html` + `tablet.css` + `uiMode.js` | Optional touch-first shell (command bar + contextual bottom sheet) layered over `#workarea`. A presentation layer only — every control calls an existing `svgCanvas.*`/`editor.*` method. Toggled from the SVG-Edit menu (`MainMenu.clickTabletMode` → `applyUiMode` + `tabletMode` pref); shown only while `.svg_editor` has the `ui-tablet` class. Hides the four desktop panels via CSS |
-| **MainMenu** | `MainMenu.js` | Export, Preferences, Tablet mode, Hotkey Manager, Favorites |
-| **CommandRegistry** | `commands.js`, `coreCommands.js`, `components/commandBinding.js` | "Everything is a command": one per-editor table (`editor.commands`) where every user-visible action has a stable persisted id, label, group, default keys, typed `params`, an `enabled(editor)` check that returns a *reason* when unavailable, and `run(editor, params)`; `run(id, params)` throws `CommandError` (`unknown`/`disabled`/`badParams`/`internal`). Hotkeys, `command="<id>"` buttons, the favorites menu, the tablet shell and the host API (`EditorHostApi.commands`) are all views over it. Components that still self-register via `registerEl` become **adapter** commands (`run` = `el.click()`, `enabled` = not `disabled`), so `list()` is complete while buttons migrate one at a time; `coreCommands.js` holds the migrated pilots (`tool_clone`, `tool_delete`, `tool_group_elements`, `tool_ungroup`, `tool_undo`, `tool_redo`, `paste`, `paste_in_place`, `zoom_fit`). `atomic: true` runs a command in an undo transaction; `refreshEnablement()` runs after every command and from `updateContextPanel` |
-| **Automation** | `automation.js` | `editor.automation`: `inspect()` (mode, zoom, selection with doc-unit bboxes, layers, undo state, open dialog), `pointer([...])` (real `MouseEvent`s from document- or screen-space points, scrolls the point into view, resolves coordinates once per gesture), `key(combo)` (through the HotkeyManager path), `commands` (= `editor.commands`). `docToClient`/`clientToDoc` are the single definition of the origin formula. In-page only, no network |
-| **HotkeyManager** | `Hotkeys.js` | Key-binding **view over the command registry**: `this.actions` *is* `editor.commands.table`. Single registry + dispatcher for **all** keyboard shortcuts. Ingests `Editor.shortcuts` (editor-level, incl. curated keyless dropdown/context commands) and **every** `se-button` (pushed via `registerEl` on connect, bindable even with no default `shortcut`) + `se-menu-item[shortcut]`; installs one document keydown listener (replacing the old per-button + `setAll()` listeners); does conflict detection and per-user overrides (persisted via `userDataAdapter` `getHotkeys`/`setHotkeys` or localStorage `svg-edit-hotkeys`). Read by `se-hotkey-dialog`. Dispatch runs `editor.commands.tryRun(id)`; a disabled command does nothing and leaves the key to the browser. Exposes `getAction(id)` for the favorites menu. A command is `interactive` when its spec says so, or (for a self-registered adapter) when its element has an `interactive` attribute; `alias: true` marks a twin button (`tool_clone_multi`, `tool_delete_multi`) that owns no keys and is hidden from palettes / the shortcut manager. `refreshEnablement()` also mirrors an unavailable command's reason into the button's `disabled-reason` attribute, which `se-button` appends to its tooltip |
-| **Favorites / quick-action menu** | `favorites.js`, `favoriteActions.js`, `dialogs/favoritesDialog.js`, `dialogs/cmenuDialog.js` | Canvas right-click menu rebuilt per-open from user-starred favorites. `favoriteActions.js` catalog = the command registry (triggers) plus live value controls; triggers run through `editor.commands`. `se-favorites-dialog` curates the list (star toggles); `se-cmenu_canvas-dialog` renders it. Persisted via `userDataAdapter` `getFavorites`/`setFavorites` or localStorage `svg-edit-favorites` |
-| **Components** | `components/*.js` | Reusable shadow-DOM web elements (buttons, inputs, selects, color pickers) |
-| **Dialogs** | `dialogs/*.js` | Modal dialogs (export, prefs, image props, SVG source, alerts) |
-| **Extensions** | `extensions/ext-*/` | Plugin system — adds tools, UI, and canvas behaviors |
+| **Editor / EditorStartup** | `Editor.js`, `EditorStartup.js` | Orchestration (menus, event routing, alignment, groups, exports); async init: config → i18n → DOM → SvgCanvas → panels → extensions |
+| **SvgCanvas** | `packages/svgcanvas/svgcanvas.js` + `core/` | All SVG creation, selection, transforms, undo / redo, path editing |
+| **ConfigObj** | `ConfigObj.js` | Config and prefs: `pref(key)`, `setConfig(obj)`, localStorage persistence. Config comes only through `setConfig` (the page URL is not read) |
+| **Panels** | `panels/*` | **Top**: quick actions and contextual trays; it inits last, so it can bind controls that live in other panels (zoom, stroke, opacity). **Left**: drawing tools. **Bottom**: colours. **Right**: the tabbed properties panel (Design / Text / Effects / Layers; `activateTab` / `autoSelectTab`) |
+| **TabletShell** | `panels/TabletShell.*`, `tablet.css`, `uiMode.js` | Optional touch-first shell (command bar + contextual bottom sheet) over `#workarea`: a presentation layer only, every control calls an existing `svgCanvas.*` / `editor.*` method. Toggled by `MainMenu.clickTabletMode` (`applyUiMode` + the `tabletMode` pref); shown only while `.svg_editor` has `ui-tablet` |
+| **CommandRegistry** | `commands.js`, `coreCommands.js`, `panelCommands.js`, `components/commandBinding.js` | "Everything is a command": one per-editor table (`editor.commands`) where each user-visible action has a stable persisted id, label, group, default keys, typed `params`, an `enabled(editor)` check that returns a *reason* when unavailable, and `run(editor, params)`; `run(id, params)` throws `CommandError` (`unknown` / `disabled` / `badParams` / `internal`). Hotkeys, `command="<id>"` buttons, the favorites menu, the tablet shell and the host API (`EditorHostApi.commands`) are views over it. Panel, main-menu and extension buttons are real commands (`panelCommands.js`, per-extension `commands.register`, `LeftPanel.addModeCommand`); a component that still self-registers through `registerEl` becomes an **adapter** command (`run` = `el.click()`, `enabled` = not `disabled`), so `list()` stays complete. `atomic: true` runs a command in an undo transaction; `refreshEnablement()` runs after every command and from `updateContextPanel`. New button: register a command and add `command=`. The list: [`commands.md`](commands.md) |
+| **Automation** | `automation.js` | `editor.automation`: `inspect()` (mode, zoom, selection with document-unit bboxes, layers, undo state, open dialog), `pointer([...])` (real `MouseEvent`s from document- or screen-space points, scrolling the point into view, resolving coordinates once per gesture), `key(combo)` (through the HotkeyManager path). `docToClient` / `clientToDoc` are the single definition of the origin formula. In-page only, no network |
+| **HotkeyManager** | `Hotkeys.js` | The key-binding **view over the command registry** (`this.actions` *is* `editor.commands.table`) and the one document keydown dispatcher. Ingests `Editor.shortcuts` (editor-level, including curated keyless dropdown / context commands) and every `se-button` and `se-menu-item` (pushed via `registerEl` on connect, bindable even without a default `shortcut`); detects conflicts; keeps per-user overrides (`userDataAdapter` `getHotkeys` / `setHotkeys` or `svg-edit-hotkeys`). Dispatch is `editor.commands.tryRun(id)`: a disabled command does nothing and leaves the key to the browser. A command is `interactive` when its spec says so (or, for an adapter, when its element has an `interactive` attribute); `alias: true` marks a twin button (`tool_clone_multi`, `tool_delete_multi`) that owns no keys and is hidden from palettes and the shortcut manager. `refreshEnablement()` mirrors an unavailable command's reason into the button's `disabled-reason`, which `se-button` appends to its tooltip |
+| **Favorites** | `favorites.js`, `favoriteActions.js`, `dialogs/favoritesDialog.js`, `dialogs/cmenuDialog.js` | The canvas right-click menu, rebuilt per open from the user's starred favorites; the catalog is the command registry plus live value controls (see `tools.md` › Main Menu) |
+| **Components / Dialogs** | `components/*`, `dialogs/*` | Reusable shadow-DOM elements; modal dialogs |
+| **Extensions** | `extensions/ext-*/` | Adds tools, UI and canvas behaviour |
 
 ---
-
-**Layering.** `packages/svgcanvas` (the canvas engine) never imports from `src/editor`, never reads `window.svgEditor`, and never defines custom elements; `scripts/check-layers.mjs` (a `pretest` gate) fails the build otherwise. The editor reaches the canvas only through its public API; the canvas reaches the editor only through events and hooks (e.g. `elementInserted`).
 
 ## Initialization Flow
 
@@ -158,7 +46,7 @@ src/editor/index.html
   └─→ import Editor.js
         └─→ new Editor(containerEl)       // EditorStartup.constructor()
               └─→ editor.init()           // EditorStartup.init()  [async]
-                    ├── configObj.load()             // load prefs from localStorage
+                    ├── configObj.load()             // config + prefs from localStorage
                     ├── putLocale()                  // load i18n translations
                     ├── import all components + dialogs  // register custom elements
                     ├── render editorTemplate        // insert full DOM structure
@@ -166,15 +54,12 @@ src/editor/index.html
                     ├── leftPanel.init()
                     ├── bottomPanel.init()
                     ├── rightPanel.init()      // builds the tabbed side panel
-                    ├── topPanel.init()        // LAST → can bind any control in any
-                    │                          //   panel (e.g. zoom/stroke/opacity that
-                    │                          //   physically live elsewhere)
+                    ├── topPanel.init()        // LAST → can bind any control in any panel
                     ├── mainMenu.init()
-                    ├── tabletShell.init()     // builds tablet command bar + sheet;
-                    │                          //   binds its own selected/changed/zoomed
-                    │                          //   handlers directly (svgCanvas.bind is
-                    │                          //   backed by a native EventTarget, so this
-                    │                          //   coexists with the binds registered below)
+                    ├── tabletShell.init()     // builds tablet command bar + sheet; binds its own
+                    │                          //   selected / changed / zoomed handlers directly
+                    │                          //   (svgCanvas.bind is a native EventTarget, so it
+                    │                          //   coexists with the binds below)
                     ├── bind svgCanvas events:
                     │     selected   → selectedChanged()   // update attribute panels
                     │     changed    → elementChanged()    // update coordinates
@@ -188,124 +73,57 @@ src/editor/index.html
 
 ---
 
-## SvgCanvas Core Modules (`packages/svgcanvas/core/`)
+## Core engine contracts (`packages/svgcanvas/core/`)
 
-| Module | Purpose |
-|--------|---------|
-| `draw.js` | Shape creation primitives (rect, circle, ellipse, text, line, path…); also the `Drawing` class (layer CRUD, current-layer tracking). `Drawing.refreshLayerPointerEvents()` is the single place layer `pointer-events` gets set — normally only `current_layer` is `'all'` (rest `'none'`, the base single-layer-selectable isolation), but `setAllLayersMode(bool)`/`getAllLayersMode()` (exported as `svgCanvas.setAllLayersMode`/`getAllLayersMode`) flips every layer to `'all'` so any layer's elements are selectable at once — used by `ext-layer_view`'s All Layers sub-mode |
-| `event.js` | mouseDown/mouseMove/mouseUp orchestrators (shared prelude, hit-testing, dispatch to the `event-*.js` mode-family modules, epilogue) + custom event dispatch, `dblClickEvent`, `mouseOutEvent`, `DOMMouseScrollEvent`/`zoomAtPoint`. The shared mouseUp insertion block fires a dedicated `elementInserted` event (element only, before the `InsertElementCommand`/`changed` pair) once per freshly-drawn-and-kept element — the sanctioned core→editor seam for "a new element was just created" (used by `Editor.js#elementInserted` to apply `classLibrary.js` per-tag default classes; the core package itself never imports editor-layer code) |
-| `event-group-context.js` | Group-local coordinate helpers shared across `event.js` and the select/shape-draw handlers (`toCurrentGroupLocalDelta`/`Point`, `isCreateInCurrentGroup`) |
-| `event-select.js` | `select`/`multiselect` mode: drag-move w/ snapping, rubber-band multiselect, mouseUp transform-consolidation tail (shared via fallthrough with `resize`) |
-| `event-resize.js` | `resize` mode: single-element + multi-element `resizeGroup` uniform scale |
-| `event-rotate.js` | `rotate` mode: single-element + multi-element `rotateGroup` rigid rotate |
-| `event-shape-draw.js` | Shape-creation modes (rect/circle/ellipse/line/text/image/frame/freehand…) |
-| `event-path-edit.js` | `path`/`pathedit` mode — thin delegates onto `path-actions.js` |
-| `event-text-edit.js` | `textedit` mode — thin delegates onto `text-actions.js` |
-| `event-zoom.js` | `zoom` mode (marquee-zoom rubber band) |
-| `select-same.js` | Select Same (`svgCanvas.selectSameAs(criterion, { tolerance })`): fill, stroke, fill & stroke, stroke weight, opacity, type; colour tolerance = OKLab distance (black↔white = 100) via `culori/fn`; tapered paths are read as their stroked line |
-| `object-state.js` | Per-object state for the Layers panel's object rows: `setObjectsHidden` (`display="none"`), `setObjectsLocked` (`se:locked`), `setObjectName` (`data-name`), `moveObjects` / `objectMoveIssue` (re-parent or reorder, keeping the place on the page by folding the parents' transforms into the object's), each one undo step (`transact`); pure helpers `isPanelObject`, `isExpandableGroup`, `isObjectLocked` (own mark or a group above, **not** the layer's), `isObjectHidden`. `selection.js` imports `isObjectLocked`: a locked object is dropped by `addToSelection`, is no click target, and is skipped by rubber bands |
-| `layer-ops.js` (layer batches) | `setLayersVisibility` (several layers, ONE undo step), `setLayersLocked` (not undoable), `setLayerTemplate` / `getLayerTemplate` (`se:template` on a comment layer: locked, dimmed by CSS, unselectable via `isObjectLocked`, left out of `rasterExport`). The Layers panel's Alt-click, column drag and layer-row drag (`src/editor/panels/layerGestures.js`) call them |
-| `selected-elem.js` | Manipulate selected element(s): move, resize, flip; z-order (`moveToTopSelectedElement`, `moveToBottomSelectedElement`, `moveUpDownSelected`, `switchSelectedZorder`) |
-| `selection.js` | Selection list management; `updateGroupSelector()` toggles the multi-select group box. `getMouseTargetFromNode` (click hit-testing) and `getIntersectionListMethod` (rubber-band) both normally resolve/scope to the current layer only, but widen to any layer when `svgCanvas.getAllLayersMode()` is on (and no group-isolation context is active) |
-| `select.js` | Selector UI object (rubber-band, resize handles); `SelectorManager.showGroupSelector(bbox, angle)`/`hideGroupSelector()` draw one union box + 8 resize grips **+ the rotate grip** around a multi-selection (the optional `angle` rotates the box+grips rigidly during a live group rotation) |
-| `path.js` | Path element state and node data |
-| `path-actions.js` | Path editing operations (add/delete/move nodes) |
-| `path-method.js` | Path utility methods |
-| `path-seg-shim.js` | Self-installing `pathSegList`/`createSVGPathSeg*`/`SVGPathSeg.PATHSEG_*` replacement, backed by the `svgpath` package (no browser API dependency — replaces the old `pathseg` polyfill) |
-| `svg-exec.js` | Execute high-level SVG operations |
-| `elem-get-set.js` | `changeSelectedAttribute()` and attribute getters/setters |
-| `history.js` | Undo/redo stack data structures: `Command` types (`ChangeElementCommand` reads the **new** value from the DOM at construction, so build it *after* the mutation), `ChildListCommand` (before/after child lists of several parents, applied in two phases so re-nesting can't hit an ancestor-into-descendant error), `CharacterDataCommand`, `BatchCommand`, `UndoManager`. `BatchCommand` brackets (un)apply with the handler's `beginBatch()`/`endBatch()` so `undo.js` clears the selection and fires `changed` **once per batch** with the union of elements (5,000 moved elements: 12 s → 0.46 s). `EPHEMERAL_ATTR`/`isEphemeral`: nodes inside `#svgcontent` that aren't content (`data-se-ephemeral`) |
-| `undo.js` | Recording changes into history; `handleHistoryEvent` side effects of undo/redo keyed on command type (incl. `ChildListCommand`: `identifyLayers`, `restoreRefElements`, `setUseData`) and the batch coalescing described above |
-| `transaction.js` | **Undo transactions**: `svgCanvas.beginTransaction(label)` → `{commit, cancel}`, `transact(label, fn)`, `inTransaction()`. `begin` snapshots every element's attributes, every text node and every parent's child list; `commit` diffs the snapshot against the live drawing into ONE `BatchCommand` (structure first, then attributes, then text); `cancel` reverts the drawing and restores the selection. Nests by depth; `undoMgr.addCommandToHistory` is swallowed while open, `undo()/redo()` cancel it. `beginTransaction(label, { onAbort })`: a transaction held across many gestures (a tool session, e.g. puppet-warp) is told via `onAbort` when undo/redo or a drawing replace ended it from outside; not called for its owner's own commit/cancel. A snapshot-diff (not a MutationObserver) because browsers don't report native list edits (`elem.transform.baseVal…`) and detached-node edits to observers. O(elements) at begin and commit (≈14 ms / ≈22 ms at 5,000 elements). New code should prefer this over hand-built batches |
-| `tool-registry.js` | **Tool contract**: `svgCanvas.registerTool({id, pointerDown, pointerMove, pointerUp, keyDown, cancel, activate, deactivate, undoLabel, wantsHover, options, setOption})`. `event.js` dispatches to the tool whose id equals the current mode *before* the mode `switch` and the extension hooks (`pointerDown` returning `false` declines). Events carry `x/y` in document units (unzoomed, grid-snapped, group-local; `rawX/rawY` unsnapped), `dragDistance`, `mods`. Each press→release gesture is one transaction (`pointerUp` → `'cancel'` or `{created}`); Escape, `setMode`, or a throw roll it back. `ctx.addOverlay` draws outside `#svgcontent`; `finishCreated` finishes a new element like a drawn shape. Pilot: ext-shape-family. **Options bar**: a tool's `options()` returns descriptors (`{id, label, type: number|select|checkbox, value, min/max/step, choices, hidden}`), `setOption(id, value)` takes a change; `svgCanvas.getToolOptions()` / `setToolOption()` expose them and `src/editor/panels/toolOptionsBar.js` draws the `#tool_options_panel` tray in the top panel (rebuilt on mode change, values refreshed from `updateContextPanel`). First consumer: the Blend tool. `cursor` (a CSS cursor, or a function of the context) is set on the canvas while the tool is the mode; `keepOverlays` lets a finished gesture leave its overlay on show (the Measure tool's readout) |
-| `drawing-invariants.js` | `checkDrawing(svgContent)` → findings (`duplicate-id`, `dangling-ref`, `stray-text-in-defs`, `layer-shape`, `bad-number`, `se-attr-parse`); `registerAttrValidator(name, fn)` lets a module own the parse check of its `se:*` attribute (live-effects, corner-radius, taper). Exposed as `svgCanvas.checkDrawing()`; run by the e2e `afterEach` and the command sweep. Not run in production |
-| `coords.js` | Coordinate transforms + remapping between spaces |
-| `recalculate.js` | Recalculate dimensions/transforms after changes |
-| `dom-utils.js` | DOM/element manipulation, lookup, ids/refs, snapping, `$id`/`$qq`/`$qa` shortcuts |
-| `bbox-utils.js` | Bounding-box computation (`getBBox`, `getBBoxWithTransform`, `getStrokedBBox`, `getVisibleElements`) |
-| `path-utils.js` | Path `d`-attribute construction and element-to-path conversion |
-| `encoding-utils.js` | String/XML/base64 encoding (`toXml`, `encode64`, `text2xml`, …) |
-| `paint.js` | Fill, stroke, and color management |
-| `sanitize.js` | SVG sanitization for security |
-| `text-actions.js` | Text element editing (cursor, selection) |
-| `text-rows.js` / `text-wrap.js` | Row storage and layout of `<text>` (hard rows = tspans; **area text** wraps to a box, soft rows are `se:soft` tspans recomputed on every layout and left out of the content string). `undo.js` settles an area text's rows once per undo batch (`settleAreaText`); resize is `event-resize.js` `resizeAreaText` (a transaction held for the drag, committed by `event-select.js`) |
-| `layer.js` | Layer CRUD (add, delete, rename, reorder) |
-| `paper-utils.js` | Shared paper.js helpers for the six geometry-tool modules below: `getPaperScope()` (one lazy singleton scope shared by all of them), `getStyleAttrs(elem, extraAttrs)`, `svgToPaper(elem, scope, {asCompoundPath, flatten})` (element → paper.Path/CompoundPath with its own transform applied) |
-| `boolean-ops.js` | Union, intersect, subtract, exclude, divide (uses `paper-utils.js`) |
-| `cutter.js` | Cutter/knife tool — half-plane intersection cut (uses `paper-utils.js`) |
-| `segment.js` | **Segment** tool — divides a single shape into symmetric pieces via evenly-spaced dividing lines: radial (spokes from a center) or grid (parallel vertical/horizontal lines). Split mode cuts via paper.js `intersect()` against a generated wedge/strip polygon per piece (uses `paper-utils.js`); non-split mode clips the divider lines to the shape's true boundary via `getIntersections()` and wraps shape+lines in a `<g>`, re-editable via an `se:segment` attribute stamp |
-| `path-offset.js` | `offsetPath(delta)` (outset/inset) + `strokeToPath()` via clipper-lib polygon offsetting (paper.js flattening via `paper-utils.js`) |
-| `path-fit.js` | Corner-keeping Bézier fit on the anchor model: `simplifyWith(subpaths, {tolerance, cornerAngleDeg})` (turns sharper than the angle stay corners, runs between them are refit with `bezier-fit.js`, nearly straight fits become lines, never more anchors than before; tolerance = real distance in user units) and `fitFreehand(points, tolerance)` (pencil strokes: jitter dropped, corners found over a few tolerances of stroke length so dense, already smoothed capture still shows them, each corner put where its two legs meet, runs fit with leg tangents). VectorCraft port (`simplify_with`, `fit_freehand`), with the dense-input corner handling added |
-| `path-simplify.js` | `simplifyFreehand` (pencil commit, via `path-fit.js` `fitFreehand`, fidelity `pencilFidelity`) + `previewSmoothPath`/`commitSmoothPath`/`cancelSmoothPath` ("Smooth Path" popover via `simplifyWith`, non-destructive session baseline so repeated strength adjustments never compound) + `simplifyPathD` (one-shot refit, used by puppet-warp). No longer uses paper.js |
-| `dash-fit.js` | Fitted dashes: `se:dash-fit` holds the user's dash pattern, `stroke-dasharray` / `stroke-dashoffset` the fit (a whole number of periods, a dash centred on each end of an open stroke); `fitDashes`, `dashFitIssue`, `svgCanvas.setDashFit` / `isDashFitted` / `setDashPattern` (one undo step each). Single run only (line, circle, ellipse, corner-less one-piece path); VectorCraft `dash.rs` `align_corners` for one run |
-| `arrow-align.js` | Arrowhead alignment (`se:arrow-align` = `tip`/`extend`, source `se:arrow-pts` for a line/polyline or `se:arrow-d` for a path, `se:arrow-trim` = the trim last applied): `headPlacement` (per marker kind: tip, outward or not, inset), `trimSubpath` (trim by arc length), `svgCanvas.setArrowAlign` / `syncArrowAlign` / `getArrowAlign` / `canAlignArrows` / `getArrowOffset` / `getArrowSourcePoints` / `setArrowSourcePoints`. Records no history itself (callers use `transact`; `changed` re-syncs). A source that no longer matches its geometry makes the element Extend on what it has. Registers remap hooks (a bake moves the source; `coords.js` now runs the hooks for lines and polylines too) and `se:*` validators. VectorCraft port |
-| `guides.js` | Ruler guides data model: `se:guides="v:x,…;h:y,…"` on the drawing root, `svgCanvas.getGuides()` / `setGuides(guides, label)` (one transaction = one undo step), `checkDrawing` validator (checkDrawing now also validates `se:` attributes on the root); guides are axis-only snap targets in `smart-guides.js` and line targets for `draw-snap.js` |
-| `draw-snap.js` | Snapping while drawing: `svgCanvas.snapDrawPoint(x, y)` snaps a point a drawing tool places to other objects' anchors / boxes / the page (`smart-guides.js` `collectPointTargets` + `snapPoint`), once-per-gesture target cache cleared on mouse-up. Called from the `event.js` mouseDown/mouseMove prelude for the built-in drawing modes (not the pencil, not inside a group) and from `tool-registry.js` for tools with `snap: true`; grid snapping wins; same `smartSnapping` switch as below |
-| `smart-guides.js` | Object-to-object snap math (`collectSnapTargets`/`snapMovingBBox`/`findEqualSpacing`); consumed by `event.js` select-move, rendered by ext-smart-guides |
-| `corner-radius.js` | Live Corners (`se:corner-radius`/`se:orig-d`): per-corner radius + kind via `pathCorners`/`cutCorner`; `cornerWidgetAt` / `cornerRadiusChange` / `fittedCornerRadius` are the Corners tool's widget geometry; `remapCornerSource` keeps the source in sync from `coords.js` |
-| `shape-family.js` | DOM-free generators + drag geometry for the Spiral / Arc / Rectangular Grid / Polar Grid tools (`spiralD`, `arcD`, `dragRect`, `arcDragEnds`, `rectangularGridParts`, `polarGridParts`); used by ext-shape-family |
-| `shape-recognize.js` | DOM-free freehand shape recogniser behind the Shaper tool: `recognize(points)` → `line` / `rectangle` / `ellipse` / `polygon` / `scribble` / `null`. Distance-resampled (256), Douglas–Peucker with an explicit stack, corner count independent of where the stroke began, 45° snapping for rectangles/ellipses, upright/inverted triangles, 90° hexagons. Strict-typed (`tsconfig.strict.json`). VectorCraft port |
-| `pen-continue.js` | Lookup and geometry for the Pen's continue/join (`findPenEnd`, `continuationD`, `joinDrawn`, on `path-edit.js` `joinEnds`); `path-actions.js` drives the gesture: the continued path is hidden while a temp drawing stands in for it, and finishing writes `d` into the survivor inside one `svgCanvas.transact` (the temp is removed *before* the transaction so its removal isn't recorded). `event.js` forwards un-pressed `path`-mode moves to `pathActions.hover` for the end ring |
-| `bezier-fit.js` / `path-edit.js` / `path-join.js` | Least-squares Bézier fit; anchor-model path edits (refit remove-anchor, add anchors, average, join); select-mode Join |
-| `anchor-path.js` | DOM-free anchor path model (`{closed, anchors:[{p,hIn,hOut}]}`): `parseAnchors(d)`/`anchorsToD`, `segCubic`/`evalCubic`/`splitCubic`/`normalAt`, `mapNonlinear` (split-and-map for Twist/Warp/Free Distort), `catmullRom`, `seededNoise`, `anchorBBox`, `sameAnchorGeometry`. Ported from VectorCraft; uses `svgpath` for normalisation |
-| `warp.js` | Warp live effect: 15 envelope styles (`warpPoint`, closed-form maps on normalised box coords) + horizontal/vertical distortion + orientation swap, applied via `mapNonlinear` (`warpSubpaths`); registers `warp`. VectorCraft port |
-| `distort.js` | Free Distort / Perspective Distort live effects (`freeDistort` bilinear, `perspective` homography) on eight unit-box corner params; `distortFrame`, `isConvexQuad`; the on-canvas editor is `ext-distort-tool`. `live-effects.js` gained `applyLiveEffectsTo(elem, stack)` (apply inside the caller's transaction: no undo step, no re-select, no event) and `getLiveEffectsBox(elem)` for it |
-| `recolor.js` | Recolor Artwork maths + DOM walk: colour parsing, preserve rules, row methods, Lab clustering, 21 harmony rules, `collectColors` / `applyColors` (clone-on-write of shared gradients and filters) |
-| `gradient-edit.js` | Gradient editing for the Gradient tool: gradient space → local matrix (units + `gradientTransform`), `href`-aware reads, clone-on-write of shared gradients, geometry setters, stop add / move / copy / remove |
-| `live-effects-distort.js` | The seven distort/stylize effects registered into the live-effect registry: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners, Scribble (stroked-centerline output via `strokeOutput`). VectorCraft port; pure functions over anchor subpaths |
-| `live-effects.js` | Re-editable path effects (`se:fx` stack + `se:fx-d` source): effect registry (`registerLiveEffect`), `applyLiveEffects`/`removeLiveEffects`/`expandLiveEffects` (each one `transact`), `getLiveEffects`, non-undo `previewLiveEffects`/`cancelLiveEffectsPreview`, `reconcileLiveEffects`; `remapFxSource` keeps the source in sync from `coords.js`. Mutually exclusive with taper/corner-radius. Foundation for the Distort/Warp effects |
-| `taper-stroke.js` | Tapered strokes (`se:taper`/`se:taper-d`/`se:taper-style`): stroked open path → filled variable-width outline via paper.js normal offsetting (`paper-utils.js`'s shared scope); `remapTaperSource` keeps the centerline in sync from `coords.js` |
-| `art-brush.js` / `art-brush-canvas.js` | Art and pattern brushes (T2.14): `art-brush.js` is the geometry (`makeTrack`/`frameAt`/`mapOnTrack` arc-length tracks, `artAlongPath`, `patternAlongPath`; VectorCraft `crates/brush` warp + track port); `art-brush-canvas.js` the elements and the canvas API (library in `<defs>` as `<g se:brush>`, brushed group `<g se:art-brush>` with `se:art-spine` / `se:art-src` / `se:art-out`; `makeArtBrush`, `applyArtBrush`, `setArtBrushOptions`, `expandArtBrush`, `releaseArtBrush`, `refreshArtBrush`) |
-| `blend.js` / `blend-canvas.js` | Blends (T2.13): `blend.js` is the geometry and paint (`pairPaths` / `pathAt` anchor matching, `lerpPaint` in OKLab, `lerpStyle`, `stepCount`; VectorCraft `crates/doc/src/blend.rs` port); `blend-canvas.js` the elements and the canvas API (blend group `<g se:blend>` of `se:blend-key` shapes and `se:blend-steps` groups; `makeBlend`, `setBlendOptions`, `expandBlend`, `releaseBlend`, `refreshBlend`, `getBlendDefaults`). Steps are regenerated on `elementChanged` of a key with the brush's `madeFrom` / `earlier` bookkeeping, per gap |
-| `live-stack.js` | The live stack: corners (`se:orig-d`) → effects (`se:fx-d`) → width (`se:taper-d`) on one element. Stages register themselves (`registerLiveStage`, from `corner-radius.js` / `live-effects.js` / `taper-stroke.js`); the earliest active stage's source is the root, later sources are mirrors of the stage before; `planStack` / `commitPlan` / `removalSet` are how a feature changes a stack, `reconcileStack` / `rebuildAfterRemap` keep it current. Supported sets: corners + width, effects + width. `checkDrawing` rule `se-stack`. See `plans/live-stack.md` |
-| `width-profile.js` / `width-outline.js` | Width profiles (T2.6): `se:width-profile="t:l:r;…"` on a tapered-stroke element (`se:taper-d` centerline, `se:taper-style` width and paint; `se:taper` kept as its two end widths); `widthOutline` is the filled outline (joins by `stroke-linejoin`, caps by `stroke-linecap`, closed paths as two loops, non-zero fill); `taper-stroke.js` draws it (`drawWidthProfile` / `applyWidthProfile`) and `remapTaperSource` regenerates it after a bake. VectorCraft port |
-| `image-crop.js` | Destructive re-encode crop for `<image>` elements — resamples the source pixels to just the cropped region via canvas `drawImage`, replacing `href`/`x`/`y`/`width`/`height` in one undo step; excludes vault-linked and transformed images. Own hand-rolled overlay/drag mechanics, not `select.js`'s `SelectorManager` |
-| `load-image.js` | Shared `loadImage(href)` — `HTMLImageElement` loader with CORS handling, used by both `image-crop.js` and `dialogs/traceImage.js` |
-| `text-path.js` | Text on path: attach/detach a `<textPath>` (href + xlink:href), rail auto-converted to `<path>`, `textPathOffset(pct)` for startOffset |
-| `shape-builder.js` | Shape-builder region math (`svgCanvas.shapeBuilder`): planar arrangement via iterative paper.js booleans (uses `paper-utils.js`); merge/delete gestures as BatchCommands |
-| `json.js` | JSON import/export of SVG data |
-| `units.js` | Unit conversion (px, em, cm, mm, in…) |
-| `math.js` | Transform matrix operations |
-| `proportions.js` | Wireframe proportion-marker tiers (fractions/sizes/colors) + `proportionLines()`; shared by `event.js` snapping and `ext-proportion-markers` |
-| `paste-elem.js` | Paste operation handler |
-| `copy-elem.js` | Copy element to clipboard |
-| `clear.js` | Clear canvas |
-| `model/` | **Document model, layer 1** (R1 step a, [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md)): a persistent, frozen XML tree (`element`, `text`, `cdata`, `comment`, `pi`; qualified names kept as written, `xmlns*` are plain attributes) with `parseSvg` / `serializeSvg` and path-copy edits (`updateAt`, `setAttr`: only the ancestors are copied, so the previous root is the undo snapshot). `serializeSvg` writes the editor's own spelling (`toXml` escaping, `<x/>`): every round-trip fixture comes back byte-identical (`format: 'preserve'`), and `format: 'indent'` is the editor's save layout (it differs only by the blank line the editor leaves for a skipped empty `<defs>`). Not wired into the editor; no DOM, so it runs in Node.  `drawing.js` adds the typed read-only view `readDrawing(doc)`: layers (top-level `<g class="layer">`, named by `<title>`, hidden / locked / template), items (group with a `role` for generated blend / art-brush / repeat groups, shape, path, text, image, use, other — each with its `path` into the tree, `hidden`, `locked`, `generated` and every `se:*` attribute verbatim in `se`), the top-level `<defs>` children, orphans and the ruler guides; it follows `draw.js` / `object-state.js` and is cross-checked against them on the round-trip corpus. `features.js` types the `se:*` attributes whose owning module exports a DOM-free parser (corner radius, taper / width profile, dash fit, art brush, blend, guides, path anchors) by calling that parser, so the grammar has one definition; a typed attribute that does not parse is named in `features.invalid`. The model must stay importable in a bare Node process (a unit test runs it there): `math.js` makes its scratch `<svg>` on first use, and the taper attribute names and parsers live in `width-profile.js` (re-exported by `taper-stroke.js`) so `dash-fit.js` and the model do not import `paper.js` |
-| `touch.js` | Mobile touch event support; tablet-mode two-finger pinch-to-zoom via `svgCanvas.zoomAtPoint` |
-| `blur-event.js` | Gaussian blur filter UI helpers |
-| `dataStorage.js` | Internal element data storage |
-| `debug-events.js` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): privacy-safe `tag#id` element names, input descriptions, `redact` for long / `data:` values. See `debug-log.md` |
-| `namespaces.js` | SVG/XML namespace constants |
+One file, one job: the per-file list is [`file-map.md`](file-map.md). These are the contracts that span files.
+
+**Events and selection.**
+- `event.js` orchestrates mouseDown / Move / Up (shared prelude, hit-testing, dispatch to the `event-*.js` mode-family modules, epilogue). Its mouseUp insertion block fires a dedicated `elementInserted` event (element only, before the `InsertElementCommand` / `changed` pair) once per freshly drawn and kept element: the sanctioned core → editor seam for "a new element was just created" (`Editor.js#elementInserted` applies `classLibrary.js` per-tag default classes).
+- `Drawing.refreshLayerPointerEvents()` (`draw.js`) is the single place layer `pointer-events` is set: normally only `current_layer` is `'all'` (the base single-layer isolation); `setAllLayersMode(bool)` flips every layer to `'all'` (ext-layer_view's All Layers). `selection.js` (`getMouseTargetFromNode`, `getIntersectionListMethod`) scopes to the current layer and widens when `getAllLayersMode()` is on and no group context is active.
+- A locked object (`isObjectLocked` in `object-state.js`: own `se:locked` or a group above, **not** the layer's) is dropped by `addToSelection`, is no click target and is skipped by rubber bands. A template layer is treated like a locked group.
+- `object-state.js` / `layer-ops.js` hold the Layers panel's per-object and per-layer-batch operations (hide, lock, rename, move; `setLayersVisibility` is one undo step, `setLayersLocked` none).
+
+**Undo** (see also `extensions.md` › Recording undo).
+- `history.js`: the `Command` types. `ChangeElementCommand` reads the **new** value from the DOM at construction, so build it *after* the mutation. `ChildListCommand` holds before / after child lists of several parents, applied in two phases so re-nesting can't hit an ancestor-into-descendant error. `BatchCommand` brackets (un)apply with `beginBatch()` / `endBatch()`, so `undo.js` clears the selection and fires `changed` **once per batch** with the union of elements (5,000 moved elements: 12 s → 0.46 s). `EPHEMERAL_ATTR` / `isEphemeral`: nodes inside `#svgcontent` that aren't content (`data-se-ephemeral`).
+- `undo.js`: recording, and `handleHistoryEvent`'s undo / redo side effects keyed on command type (`identifyLayers`, `restoreRefElements`, `setUseData`).
+- `transaction.js`: `beginTransaction(label)` → `{commit, cancel}`, `transact(label, fn)`, `inTransaction()`. `begin` snapshots every element's attributes, every text node and every parent's child list; `commit` diffs the snapshot against the live drawing into ONE `BatchCommand` (structure, then attributes, then text); `cancel` reverts the drawing and restores the selection. It nests by depth; `undoMgr.addCommandToHistory` is swallowed while open and `undo()` / `redo()` cancel it. `beginTransaction(label, { onAbort })`: a transaction held across gestures (a tool session, e.g. puppet-warp) is told via `onAbort` when undo, redo or a drawing replace ended it from outside (not for its owner's own commit / cancel). It is a snapshot diff, not a MutationObserver, because browsers don't report native list edits (`elem.transform.baseVal…`) or detached-node edits to observers; O(elements) at begin and commit (≈14 ms / ≈22 ms at 5,000 elements). New code uses this, not hand-built batches. R1 (`roadmap/rearchitecture.md`) is the plan to replace the whole mechanism.
+
+**Tools.** `tool-registry.js`: `svgCanvas.registerTool({id, pointerDown, pointerMove, pointerUp, keyDown, cancel, activate, deactivate, undoLabel, wantsHover, options, setOption, snap, cursor, keepOverlays})`. `event.js` dispatches to the tool whose id equals the current mode *before* the mode `switch` and the extension hooks (`pointerDown` returning `false` declines). Events carry `x/y` in document units (unzoomed, grid-snapped, group-local; `rawX/rawY` unsnapped), `dragDistance` and `mods`. Each press → release gesture is one transaction (`pointerUp` → `'cancel'` or `{created}`); Escape, `setMode` or a throw roll it back. `ctx.addOverlay` draws outside `#svgcontent`; `finishCreated` finishes a new element like a drawn shape. **Options bar:** `options()` returns descriptors (`{id, label, type: number|select|checkbox, value, min/max/step, choices, hidden}`), `setOption(id, value)` takes a change; `svgCanvas.getToolOptions()` / `setToolOption()` expose them and `panels/toolOptionsBar.js` draws the tray. `cursor` is a CSS cursor or a function of the context; `keepOverlays` lets a finished gesture leave its overlay (the Measure readout). Reference implementation: ext-shape-family; how to write one: `extensions.md`.
+
+**Invariants.** `drawing-invariants.js`: `checkDrawing(svgContent)` → findings (`duplicate-id`, `dangling-ref`, `stray-text-in-defs`, `layer-shape`, `bad-number`, `se-attr-parse`, `se-stack`); `registerAttrValidator(name, fn)` lets a module own the parse check of its `se:*` attribute. Exposed as `svgCanvas.checkDrawing()`, run by the e2e `afterEach` and the command sweep, never in production.
+
+**Geometry tools** share `paper-utils.js` (`getPaperScope()`, one lazy scope; `getStyleAttrs`; `svgToPaper(elem, scope, {asCompoundPath, flatten})`): boolean ops, cutter, segment, shape-builder, taper stroke. `path-offset.js` offsets with clipper-lib (paper.js only flattens). The path fitting stack is DOM-free and VectorCraft-derived: `anchor-path.js` (the anchor model) → `bezier-fit.js` → `path-fit.js` (`simplifyWith`, `fitFreehand`) → `path-simplify.js` (pencil commit, Smooth Path preview / commit / cancel, `simplifyPathD`).
+
+**Path pen.** `pen-continue.js` finds and joins ends (`findPenEnd`, `continuationD`, `joinDrawn`, on `path-edit.js` `joinEnds`); `path-actions.js` drives the gesture: the continued path is hidden while a temp drawing stands in for it, and finishing writes `d` into the survivor inside one `svgCanvas.transact` (the temp is removed *before* the transaction so its removal isn't recorded). `event.js` forwards un-pressed `path`-mode moves to `pathActions.hover` for the end ring.
+
+**The live stack** (`live-stack.js`): corners (`se:orig-d`) → effects (`se:fx-d`) → width (`se:taper-d`) on one element. Stages register themselves (`registerLiveStage`, from `corner-radius.js` / `live-effects.js` / `taper-stroke.js`); the earliest active stage's source is the root, later sources are mirrors of the stage before; `planStack` / `commitPlan` / `removalSet` change a stack, `reconcileStack` / `rebuildAfterRemap` keep it current. Supported: corners + width, effects + width. `coords.js` runs the geometry-remap hooks (`remapCornerSource`, `remapFxSource`, `remapTaperSource`, arrow-align, puppet) after a bake, for lines and polylines too. Grammar: `attributes.md`.
+
+**Snapping.** `smart-guides.js` is the object-to-object snap math (rendered by ext-smart-guides); `draw-snap.js` snaps a point a drawing tool places (`svgCanvas.snapDrawPoint`, a per-gesture target cache cleared on mouse-up; called from the `event.js` prelude for the built-in drawing modes, not the pencil, not inside a group, and from `tool-registry.js` for `snap: true` tools); grid snapping wins; one `smartSnapping` switch governs both. `guides.js` is the ruler-guide model (`se:guides` on the root); guides are axis-only targets in `smart-guides.js` and line targets in `draw-snap.js`.
+
+**Text.** `text-rows.js` / `text-wrap.js` store and lay out `<text>` rows (hard rows are tspans; **area text** wraps to a box, soft rows are `se:soft` tspans recomputed on every layout and left out of the content string). `undo.js` settles an area text's rows once per undo batch (`settleAreaText`); resize is `event-resize.js` `resizeAreaText` (a transaction held for the drag, committed by `event-select.js`).
+
+**Other seams.** `path-seg-shim.js` installs the `pathSegList` / `createSVGPathSeg*` replacement backed by `svgpath` (no browser API dependency). `recolor.js` and `gradient-edit.js` clone shared gradients and filters on write. `debug-events.js` backs `svgCanvas.logDebugEvent` (privacy-safe `tag#id` names, `redact`; see `debug-log.md`). `load-image.js` is the shared CORS-aware image loader (`image-crop.js`, `dialogs/traceImage.js`).
+
+**The document model** (`core/model/`, R1 step a; status and decisions in [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md)). Not wired into the editor yet. It must stay importable in a bare Node process (a unit test runs it there): no `document`, no `paper.js`. `node.js` is a frozen, structurally shared XML tree (`element`, `text`, `cdata`, `comment`, `pi`; qualified names kept as written, `xmlns*` plain attributes) with path-copy edits (`updateAt`, `setAttr`: only the ancestors are copied, so the previous root is the undo snapshot). `parseSvg` / `serializeSvg` write the editor's own spelling (`toXml` escaping, `<x/>`): every round-trip fixture comes back byte-identical in `format: 'preserve'`, and `'indent'` is the editor's save layout. `drawing.js` is the typed read-only view `readDrawing(doc)`: layers, items (groups with a `role` for generated blend / art-brush / repeat groups, shapes, paths, text, image, use, other; each with its `path` into the tree, `hidden`, `locked`, `generated` and every `se:*` attribute verbatim in `se`), the top-level `<defs>` children, orphans and the guides; cross-checked against `draw.js` / `object-state.js` on the corpus. `features.js` types the `se:*` attributes whose owning module exports a DOM-free parser by calling that parser (one definition of each grammar); one that does not parse is named in `features.invalid`. A module that wants to be typed keeps its attribute names and parsers in a DOM-free file (`math.js` makes its scratch `<svg>` on first use; the taper names and parsers live in `width-profile.js`, re-exported by `taper-stroke.js`).
 
 ---
 
 ## Extension Plugin Lifecycle
 
-1. Host sets `setConfig({ extensions: ['ext-polystar', 'ext-grid', ...] })`
-2. `EditorStartup` resolves each from the inlined `extensionRegistry.js` (eager
-   glob — bundled into `Editor.js`, no runtime fetch from `extPath`)
-3. Each extension default-exports `{ name: 'ext-name', init(S) { ... } }`
-4. `init(S)` receives a context object `S` with `svgCanvas`, `editor`, `addLangData`, etc.
-5. Extension can: add buttons to panels, register new `mode` handlers, listen for canvas events, inject UI HTML
+1. Host sets `setConfig({ extensions: [...] })` (or takes the defaults in `ConfigObj.defaultExtensions`).
+2. `EditorStartup` resolves each from the inlined `extensionRegistry.js` (an eager glob, bundled into `Editor.js`; no runtime fetch from `extPath`).
+3. Each extension default-exports `{ name: 'ext-name', init(S) { ... } }`; `init(S)` receives `svgCanvas`, `editor`, `addLangData`, etc.
+4. An extension can add buttons to panels, register tools and commands, listen for canvas events, inject UI.
 
-See [extensions.md](extensions.md) for the full extension reference.
+See [`extensions.md`](extensions.md) for the contract and the per-extension notes.
 
 ---
 
 ## Host data persistence (`userDataAdapter`)
 
-By default the editor persists four pieces of user customization to its own
-`localStorage`: the **custom palette** (`sePalette.js`, key
-`svg-edit-custom-palette`), the **saved shape library** (`userShapes.js`, key
-`svg-edit-user-shapes` — store is `{ categories, shapes, categoryLabels, hidden }`,
-where `categoryLabels` holds display-name overrides and `hidden` holds non-destructively
-hidden built-in category ids; see [tools.md](tools.md) "Library management"),
-**hotkey overrides** (`Hotkeys.js`, key
-`svg-edit-hotkeys`), and **quick-action favorites** (`favorites.js`, key
-`svg-edit-favorites`).
+The editor persists four pieces of user customisation to its own `localStorage`: the **custom palette** (`sePalette.js`, `svg-edit-custom-palette`), the **saved shape library** (`userShapes.js`, `svg-edit-user-shapes`; store `{ categories, shapes, categoryLabels, hidden }`, see `tools.md` › ext-shapes), **hotkey overrides** (`Hotkeys.js`, `svg-edit-hotkeys`) and **quick-action favorites** (`favorites.js`, `svg-edit-favorites`); the tool order, canvas presets and layouts have their own keys (see `tools.md`).
 
-An embedding host that wants this data in *its own* store (so it survives
-updates / syncs) passes an adapter via `setConfig`:
+A host that wants this data in *its own* store passes an adapter through `setConfig`:
 
 ```js
 setConfig({ userDataAdapter: {
@@ -316,30 +134,9 @@ setConfig({ userDataAdapter: {
 }})
 ```
 
-`EditorStartup.init()` registers it once into the `userDataAdapter.js` module
-registry **before** any component is constructed; `sePalette.js`,
-`userShapes.js`, `Hotkeys.js`, and `favorites.js` resolve it via `getUserDataAdapter()`. Reads
-are synchronous; writes receive the full current state on every edit. Each
-method is independent and optional — a host can implement only some. When no
-adapter (or method) is set, that data falls back to the localStorage behavior
-above — standalone svgedit is unchanged.
+`EditorStartup.init()` registers it once into the `userDataAdapter.js` registry **before** any component is constructed; the consumers resolve it through `getUserDataAdapter()`. Reads are synchronous; writes receive the full current state on every edit. Each method is independent and optional; with none set, that data falls back to localStorage and standalone svgedit is unchanged.
 
-### Live refresh across instances — `svgEditor.reloadUserData()`
-
-When several editor instances share one backing store, a write by one instance
-leaves the others showing their stale in-memory copy. The public method
-`svgEditor.reloadUserData()` (on `Editor`, see `Editor.js`) re-reads **both**
-stores from the adapter (or localStorage fallback) and re-renders the palette
-and shape library **for that instance only** — the host calls it on every
-*other* open instance after a write. It resolves both components through the
-instance's own root (`this.$svgEditor`), never a document-wide query, and
-no-ops safely when a component isn't mounted. Mechanics:
-
-- **Palette** — `sePalette.js` exposes a public `reload()` that re-runs
-  `loadOverrides()` + `renderSwatches()`.
-- **Shape library** — dispatches the existing `user-shapes-updated` event on
-  each `se-shape-library` element (desktop `#tool_shapelib` and the tablet
-  shell's instance), driving `_reloadUserShapes()`.
+**Live refresh across instances: `svgEditor.reloadUserData()`.** When several instances share one store, a write by one leaves the others stale. `reloadUserData()` re-reads **both** stores (adapter, else localStorage) and re-renders the palette (`sePalette.reload()`) and shape library (the `user-shapes-updated` event on each `se-shape-library`, desktop and tablet) **for that instance only**; the host calls it on every *other* open instance after a write. It resolves components through the instance's own root (`this.$svgEditor`), never a document-wide query, and no-ops when a component isn't mounted.
 
 ---
 
@@ -348,36 +145,17 @@ no-ops safely when a component isn't mounted. Mechanics:
 ```
 npm run build
   └── builds src/editor          → dist/editor/
-        ├── Editor.js            (self-contained ES module — all assets inlined,
-        │                         svgcanvas bundled from source)
+        ├── Editor.js            (self-contained ES module: all assets inlined, svgcanvas bundled from source)
         └── *.html               (entry pages; copy-static.mjs)
 
 npm start           → Vite dev server on http://localhost:8000 (editor and canvas from source)
 ```
 
-`vite.config.mjs` aliases the bare `@svgedit/svgcanvas` to
-`packages/svgcanvas/svgcanvas.js` in every mode (dev, vitest, build), the same
-files its subpath imports (`@svgedit/svgcanvas/core/*.js`) already reach, so
-each core module exists once. The package's own `vite build` (→
-`packages/svgcanvas/dist/`) still works but nothing here consumes it.
-HTML templates (`panels/`, `dialogs/`, `templates/`) are imported as strings
-through the `svgedit-html-templates` plugin, which only drops indentation
-between tags (`scripts/html-template.mjs`).
-
-Entry point: `src/editor/index.html` (dev + ES build) — this is the only build
-entry; the IIFE (`iife-index.html`/`iife-Editor.js`) and cross-domain iframe
-(`xdomain-index.html`) entries were dropped since the sole consumer (the
-Obsidian plugin) imports the ES module directly. Sourcemaps are opt-in:
-`SOURCEMAP=true npm run build` (default builds skip them — the plugin never
-consumes maps, and they roughly triple `dist/` size).
+`vite.config.mjs` aliases the bare `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.js` in every mode (dev, vitest, build), the same files its subpath imports (`@svgedit/svgcanvas/core/*.js`) already reach, so each core module exists once. HTML templates (`panels/`, `dialogs/`, `templates/`) are imported as strings through the `svgedit-html-templates` plugin, which only drops indentation between tags (`scripts/html-template.mjs`). `src/editor/index.html` is the only build entry (the sole consumer, the Obsidian plugin, imports the ES module directly). Sourcemaps are opt-in: `SOURCEMAP=true npm run build` (the plugin never consumes them and they roughly triple `dist/`).
 
 ### Self-contained bundle (no runtime asset folder)
 
-`Editor.js` inlines **every** asset so a consumer (e.g. the Obsidian plugin's
-esbuild) can bundle it into a single file with no `images/`/`extensions/`/CSS
-folder and **no custom loaders**. The inlining mechanism is Vite's
-`import.meta.glob({ eager: true })` / `?raw` / `?inline`, which Rollup resolves
-statically:
+`Editor.js` inlines **every** asset, so a consumer (the Obsidian plugin's esbuild) can bundle it into one file with no `images/`, `extensions/` or CSS folder and no custom loaders. Mechanism: Vite's `import.meta.glob({ eager: true })` / `?raw` / `?inline`, resolved statically by Rollup.
 
 | Asset | Inlined via | Entry point |
 |---|---|---|
@@ -388,219 +166,64 @@ statically:
 | Shape library JSON | `import.meta.glob('shapelib/*.json', eager)` | `components/seShapeLibrary.js` |
 | Google-fonts catalog | static JSON import | `components/seFontLibrary.js` |
 
-Runtime `fetch()` survives only for genuinely external/dynamic content
-(Google-fonts network downloads, user-supplied SVG URLs) and as guarded
-fallbacks behind the inlined data.
+Runtime `fetch()` survives only for genuinely external content (Google-fonts downloads, user-supplied SVG URLs) and as guarded fallbacks behind the inlined data.
 
 ---
 
 ## Host bridge (`window.svgEditHost`)
 
-An **optional, feature-detected** global an embedding host (e.g. the Obsidian
-plugin) may install so the editor can reach host-only resources. It is
-deliberately host-agnostic — no Obsidian naming — so it respects the repo
-boundary. When the global is absent, all dependent UI is hidden and standalone
-svgedit is unchanged.
+An **optional, feature-detected** global a host (the Obsidian plugin) may install so the editor can reach host-only resources. It is host-agnostic (no Obsidian naming), which respects the repo boundary. When it is absent, all dependent UI is hidden and standalone svgedit is unchanged.
 
-Methods (all optional, async):
-
-| Method | Returns | Used by |
+| Method (all optional, async) | Returns | Used by |
 |---|---|---|
 | `pickVaultImage()` | `{ dataUrl, link, locked?, editableSvg? } \| null` | Image dialog "Import from vault" |
 | `pickVaultFile()` | `{ link } \| null` | "Add to Shape Library" link control |
 | `exportDrawing()` | — | Main menu "Export": when present it replaces svgedit's own export dialog |
 
-**Locked vs. unlocked imports.** `pickVaultImage()` returns one of two shapes
-that select how the drawing is inserted:
+**Locked vs. unlocked imports.** `pickVaultImage()` selects how the drawing is inserted:
+- **Embed (locked / raster / frame crop)**, `{ dataUrl, link, locked? }`: a single `<image>` through `insertImageFromHref`; `locked` also stamps `data-vault-locked` so the host re-bakes content from source.
+- **Editable (whole-drawing unlocked)**, `{ dataUrl, link, editableSvg }` with `editableSvg` the full `<svg>…</svg>` source: inserted as **real, editable elements** by `insertSvgElements` (`dialogs/insertImage.js`). The drawable top-level elements go into the current layer as **individual, directly selectable** elements, not wrapped in one group (a wrapper makes a multi-object drawing select as one giant group with grips in empty canvas); paint-server and defs content goes to the canvas `<defs>`. Ids are uniquified together, the import is centred on the page and multi-selected (so it still moves as a unit right after), and recorded as one undoable `BatchCommand`. `editable` implies unlocked (`locked` is ignored, `data-vault-locked` is never set); `dataUrl` still feeds the dialog's preview.
 
-- **Embed (locked / raster / frame crop)** — `{ dataUrl, link, locked? }`. Goes
-  through `insertImageFromHref` as a single `<image>`. `locked` additionally
-  stamps `data-vault-locked` so the host re-bakes content from source.
-- **Editable (whole-drawing unlocked)** — `{ dataUrl, link, editableSvg }` where
-  `editableSvg` is the full `<svg>…</svg>` source. When that field is a
-  non-empty string the editor inserts the drawing as **real, editable elements**
-  via `insertSvgElements` (`dialogs/insertImage.js`): the source's drawable
-  top-level elements go in as **individual, directly-selectable** elements in the
-  current layer (NOT wrapped in one group — wrapping made multi-object drawings
-  select as one giant group with grips in empty canvas and shapes unclickable);
-  paint-server/defs content goes to the canvas `<defs>`. IDs are uniquified
-  together, the import is centered on page and multi-selected (so it still moves
-  as a unit right after import), and recorded as one undoable `BatchCommand`.
-  `editable` implies unlocked, so `locked` is ignored and `data-vault-locked` is
-  never set. `dataUrl` is still used for the dialog's preview thumbnail.
+**Provenance stamping, `data-vault-link`.** Every flow records the returned `link` on the inserted element(s): an image import stamps the single `<image>`; an editable import stamps each inserted top-level element (the host's backlink reconciler dedupes by link value, so repeats collapse to one backlink; never re-baked); a shape insert stamps the imported root **and every descendant** (`ext-shapes.js`) so the link survives ungroup and partial deletion and goes away only with the last stamped element. `data-*` attributes round-trip through sanitize (an explicit bypass in `core/sanitize.js`) and `getSvgString()`, the same mechanism `data-frame` relies on; the host reads the attribute from the serialized SVG on save and svgedit emits no event for it.
 
-**Provenance stamping — `data-vault-link`.** All flows record the returned
-`link` as a `data-vault-link` attribute on the inserted element(s):
+**System-clipboard paste (Ctrl/Cmd+V).** One native `paste` listener in `EditorStartup.js` (`this.pasteHandler`, registered with a remove-before-add guard like `keydownHandler`) is the sole arbiter of paste; there is **no** `v` shortcut in `Editor.js`. The system clipboard decides the path: an internal copy mirrors its JSON array onto the clipboard (`copySelectedElements`, `core/selected-elem.js` → `navigator.clipboard.writeText`), so the handler can tell svgedit's own clipboard (a JSON array → `pasteInCenter()` → `pasteElements`, reading `sessionStorage`) from an external SVG document (`<svg>…</svg>` text, e.g. another editor's "Copy as SVG" → `importSvgString`, then `selectOnly` + `ungroupSelectedElement` to turn the non-editable `<use>` / `<symbol>` reference into a real editable group, then centred; without the ungroup it lands as one opaque object). Editable fields (`INPUT` / `TEXTAREA` / contentEditable) are skipped so their native paste works. One arbiter avoids double-pasting when an internal copy and an external SVG are both present.
 
-- Image import → stamps the single `<image>` (`dialogs/insertImage.js`).
-- Editable SVG import → stamps each inserted top-level element
-  (`dialogs/insertImage.js`); the host's backlink reconciler dedupes by link
-  value, so the repeats collapse to one backlink. Never re-baked.
-- Shape insert → stamps the imported root **and every descendant**
-  (`extensions/ext-shapes/ext-shapes.js`) so the link survives ungroup / partial
-  deletion; it disappears only when the last stamped element is gone.
+**Referenced `<defs>` travel with a copy.** A selection that uses gradients, filters, markers, masks or clip-paths references them by `url(#id)` into the canvas `<defs>`, and those defs are **not** selected, so a naive copy leaves dangling references (and `restoreRefElements` once appended a literal `"undefined"` text node into `<defs>`). Every copy path collects the transitively referenced defs with `getReferencedDefElements(elems)` (`core/dom-utils.js`):
+- **Clipboard copy / paste:** `copySelectedElements` tags each def's JSON `_defs:true` and prepends it; `pasteElements` recreates the `_defs` entries **first** (so the shapes' refs resolve), with the id remap keeping references consistent.
+- **Shape library:** `_addSelectedToShapeLibrary` (`EditorStartup.js`) serialises the defs into a leading `<defs>…</defs>` so `svgContent` is self-contained; on insert `ext-shapes.js` splits it off, imports both and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)`.
+- **Duplicate:** `cloneSelectedElements` (`core/selected-elem.js`) clones the defs (`def.cloneNode(true)`) and remaps each duplicate's own `url(#…)` / `href` onto the clones before `copyElem` builds the shape clones. Sharing the original's node is a bug: a drop-shadow filter's region is a bbox snapshot (`fx-filter.js` `setRegion`), so the duplicate rendered clipped to the original's position.
+- `restoreRefElements` (`svgcanvas.js`) restores a missing ref only when it was tracked in `this.removedElements`.
 
-**System-clipboard paste (Ctrl/Cmd+V).** A single native `paste` listener in
-`EditorStartup.js` (`this.pasteHandler`, registered with a remove-before-add
-guard like `keydownHandler`) is the sole arbiter of paste; there is **no** `v`
-keyboard shortcut in `Editor.js` anymore. The system clipboard decides the path:
-internal copy mirrors its JSON array onto the clipboard
-(`copySelectedElements` in `core/selected-elem.js` → `navigator.clipboard.writeText`)
-so the handler can distinguish svgedit's own clipboard (a JSON array →
-`pasteInCenter()` → `pasteElements`, reading `sessionStorage`) from an external
-SVG document (`<svg>…</svg>` text, e.g. another editor's "Copy as SVG" → imported
-via `importSvgString`, then `selectOnly` + `ungroupSelectedElement` to convert the
-non-editable `<use>`/`<symbol>` reference into a real editable group, then centered).
-Without the ungroup step the paste lands as one opaque, non-editable object. Editable
-fields (`INPUT`/`TEXTAREA`/contentEditable) are skipped so their native paste
-works. This single-arbiter design avoids double-pasting when both an internal copy
-and external SVG are present.
+**Effect-filter ownership does not depend on its id.** `fx-filter.js` `buildFilter` stamps `data-fx="1"` on every filter it creates and `isOurFilter` checks that first, falling back to the `${elem.id}_fx` suffix for filters saved before the marker. A duplicate's `remapElementIdsAndRefs` and paste's `checkIDs` both rename filters, so the id convention can't be relied on. `convertDropShadowFilters` (`svg-exec.js`, the load-time region repair) retrofits the marker onto legacy filters.
 
-`data-*` attributes round-trip through sanitize (explicit bypass in
-`packages/svgcanvas/core/sanitize.js`) and `getSvgString()` serialization — the
-same mechanism `data-frame` (frame export) relies on. The host reads the
-attribute back from the serialized SVG on save; svgedit emits no events for it.
-
-**Referenced `<defs>` travel with a copy.** A selection that uses gradients,
-filters, markers, masks or clip-paths references them by `url(#id)` into the
-canvas `<defs>` — those def elements are **not** selected, so a naive copy left
-the references dangling when pasted into another drawing (and
-`restoreRefElements` then appended a literal `"undefined"` text node into
-`<defs>`, corrupting it). Both copy paths now collect the transitively
-referenced defs via `getReferencedDefElements(elems)`
-(`packages/svgcanvas/core/dom-utils.js`):
-- **Clipboard copy/paste** — `copySelectedElements` tags each referenced def's
-  JSON with `_defs:true` and prepends them to the clipboard array; `pasteElements`
-  recreates `_defs` entries in `<defs>` **first** (so the shapes' refs resolve),
-  with the existing id-remap keeping references consistent.
-- **Shape library** — `_addSelectedToShapeLibrary` (`EditorStartup.js`) serializes
-  the referenced defs into a leading `<defs>…</defs>` so the saved `svgContent` is
-  self-contained; on insert, `ext-shapes.js` splits the defs off, imports both,
-  and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)` so repeated
-  insertions get independent, collision-free ids.
-- **Duplicate** — `cloneSelectedElements` (`core/selected-elem.js`) clones the
-  referenced defs (`def.cloneNode(true)`) and remaps each duplicate's own
-  `url(#…)`/`href` references onto the clones via `remapElementIdsAndRefs`,
-  before `copyElem` builds the shape clones. Without this the duplicate shared
-  the *same* `<filter>`/gradient/marker node as the original — most visibly
-  with the drop-shadow effect, whose filter region is a bbox snapshot
-  (`fx-filter.js`'s `setRegion`): a duplicate sharing the original's filter
-  rendered clipped to the original's position/size until the original was
-  touched again.
-
-`restoreRefElements` (`svgcanvas.js`) only restores a missing ref when it was
-actually tracked in `this.removedElements` (guards against the `append(undefined)`
-corruption above).
-
-**A cloned/pasted effect filter's ownership no longer depends on its id.**
-`fx-filter.js`'s `isOurFilter` used to check `filter.id === \`${elem.id}_fx\`` —
-true for a freshly-built filter, but broken the moment the filter gets a new id
-that doesn't follow that convention (which duplicate's `remapElementIdsAndRefs`
-and paste's `checkIDs` id-remap scheme both produce). `buildFilter` now stamps
-a `data-fx="1"` marker on every filter it creates, and `isOurFilter` checks that
-attribute first (falling back to the old id-suffix check for filters saved
-before the marker existed). `svg-exec.js`'s `convertDropShadowFilters` — the
-load-time region-repair pass — retrofits the marker onto legacy filters so a
-loaded drawing self-heals without needing the id fallback going forward.
-
-**Copy/paste & duplicate keep the source id prefix.** A copy preserves the
-copied element's own id prefix instead of forcing the default `svg_` — e.g.
-`ellipse_1` → `ellipse_2`, a renamed `foo_1` → `foo_2`, a `<g>` `svg_18` → `svg_19`.
-Both paths derive the prefix by stripping the trailing digits of the source id
-and call `Drawing.getNextIdWithPrefix(prefix)` (`core/draw.js`), which bumps the
-shared `obj_num` counter until the id is unused (so no duplicate is produced; the
-number follows the global counter, not literally source+1). Paste applies this in
-`checkIDs` (`core/paste-elem.js`); duplicate applies it via the `copyElem(el, getNextId)`
-closure (`core/copy-elem.js` now passes the source element to `getNextId`).
+**Copy / paste and duplicate keep the source id prefix** (`ellipse_1` → `ellipse_2`, a renamed `foo_1` → `foo_2`, `svg_18` → `svg_19`): both strip the trailing digits of the source id and call `Drawing.getNextIdWithPrefix(prefix)` (`core/draw.js`), which bumps the shared `obj_num` counter until the id is unused (the number follows the global counter, not literally source + 1). Paste does it in `checkIDs` (`core/paste-elem.js`); duplicate through the `copyElem(el, getNextId)` closure (`core/copy-elem.js` passes the source element to `getNextId`).
 
 ---
 
 ## Event Flow Example: Draw a Rectangle
 
 ```
-1. User clicks Rectangle button in LeftPanel
-2. LeftPanel calls editor.setMode('rect')
-3. Editor.setMode() → svgCanvas.setMode('rect')
-4. SvgCanvas stores currentMode = 'rect', fires modeChange event
-5. Editor.modeListener() updates LeftPanel button states
-6. User drags on canvas
-7. SvgCanvas event.js handles mousedown/mousemove/mouseup
-8. draw.js creates <rect> element in SVG DOM
-9. SvgCanvas fires 'changed' event
-10. Editor.elementChanged() → updates position/size inputs (Right panel Design tab)
-11. SvgCanvas fires 'selected' event with new element
-12. Editor.selectedChanged() → updateContextPanel shows the rect_panel section in the
-    Design tab + the top object/arrange trays; autoSelectTab keeps Design active
-13. RightPanel updates to show new element in active layer
+1. User clicks Rectangle in LeftPanel → editor.setMode('rect') → svgCanvas.setMode('rect')
+2. SvgCanvas stores currentMode = 'rect', fires modeChange; Editor.modeListener() updates the LeftPanel button states
+3. User drags on canvas: event.js handles mousedown / mousemove / mouseup; draw.js creates the <rect>
+4. SvgCanvas fires 'changed' → Editor.elementChanged() updates the position / size inputs (Design tab)
+5. SvgCanvas fires 'selected' → Editor.selectedChanged() → updateContextPanel shows the rect_panel section
+   in the Design tab and the top object / arrange trays; autoSelectTab keeps Design active
+6. RightPanel shows the new element in the active layer
 ```
 
 ---
 
 ## Group editing (drill-in)
 
-Groups are native `<g>` containers. Selection/editing follows an Excalidraw-style
-*isolation* model on top of that DOM (it does **not** use flat `groupIds` metadata):
+Groups are native `<g>` containers. Selection and editing follow an Excalidraw-style *isolation* model on that DOM (not flat `groupIds` metadata):
 
-- **Single click** on any grouped element selects the **whole group** — `getMouseTarget`
-  (`core/selection.js`) walks up to the `<g>` that is a direct child of the current layer
-  when no group context is active. The walk-up itself is factored into
-  `getMouseTargetFromNode(node)` (same file), so any raw DOM node — not just `evt.target`
-  — can be resolved to its selectable element while honoring group isolation.
-- **Proximity hit-testing for fill-less elements.** A `fill="none"` line/path is only
-  hittable on its thin stroke, so the native hit-test usually misses it when it overlaps a
-  filled shape. `findStrokeElementNearPoint` (`core/event.js`) samples `elementsFromPoint`
-  in a small screen-space radius (`HIT_TOLERANCE`, 8px) around a select-mode click and
-  prefers a nearby stroke-only element (resolved via `getMouseTargetFromNode`) over the
-  filled shape under the exact pixel. Runs last in the `mouseDownEvent` select branch so it
-  has final say; skipped for right-click and selector grips.
-- **Selection bbox is a move handle.** When a select-mode click would otherwise hit empty
-  canvas (`mouseTarget === svgRoot`, e.g. the hollow interior of a fill-less shape or the
-  gap between a shape and its bbox edge) but lands inside the current selection's union bbox
-  (`getStrokedBBoxDefaultVisible`), the `mouseDownEvent` select branch retargets to the
-  selection so the drag moves it instead of starting a rubber-band. A click on a real
-  element inside the bbox is left alone, so you can still select something within it.
-- **Multi-selection rotation.** A 2+ element selection can be rotated, not just resized.
-  `showGroupSelector` shows the rotate grip; dragging it enters `rotate` mode with
-  `svgCanvas.groupRotateStart` (per-element start matrices) + `groupRotateCenter` (union
-  center) captured in `mouseDownEvent`. `rotateGroup` (`core/event-rotate.js`, mirrors
-  `resizeGroup` in `core/event-resize.js`) applies `R(angle, cx, cy)·startMatrix` to each
-  element so the layout rotates rigidly. Undo
-  is recorded by the existing `beginUndoableChange('transform', selectedElements)` /
-  `finishUndoableChange()` pair (already multi-element aware); the group-rotate mouseUp skips
-  `recalculateAllSelectedDimensions` (which would decompose the baked matrices) and refreshes
-  the boxes via `updateGroupSelector`.
-- **Double-click** (or **Ctrl/Cmd-click**) **drills into** the group: `setContext(group)`
-  sets `currentGroup` (the analog of Excalidraw's `editingGroupId`), dims sibling content,
-  and selects the clicked child. Both paths live in `core/event.js`
-  (`dblClickEvent` and the Ctrl/Cmd branch in `mouseDownEvent`).
-- **Non-destructive — never bakes.** Entering a *rotated/scaled* group keeps the group's
-  transform on the `<g>`. Children are edited in the group's **local coordinate space**:
-  pointer deltas are mapped through `toCurrentGroupLocalDelta` /
-  `getMatrixToContent` (`core/math.js`), so a dragged child tracks the cursor 1:1 while the
-  group transform stays intact. The old behavior pushed the group's rotation down onto every
-  child (`pushGroupProperties`) and cleared the group transform — that is **gone** from the
-  entry path (the move was also unrecorded, so the next undo removed the `<g>` and dissolved
-  the group). `pushGroupProperty` itself is kept, used only by ungroup/import/menu paths.
-- **Moving a child never re-parents it.** The drag only changes the child's own `transform`
-  (consolidated/recorded as one `BatchCommand` in the `mouseUp` select-case), so group
-  membership is preserved and undo/redo round-trips.
-- **Exiting** a group context: a single click on empty canvas (or any element outside the
-  current group) calls `leaveContext` — the `mouseDownEvent` select branch clears
-  `currentGroup` whenever the click target is not the group or one of its descendants. Without
-  this the editor stayed trapped in drill-in mode after moving a child, so every later click
-  selected an individual child instead of the whole group — making the group *feel*
-  destroyed even though the `<g>` was intact. Double-clicking outside also exits.
-- **Duplicate/paste of a group member always detaches.** Unlike a drag (which
-  never re-parents a child), `cloneSelectedElements` (Duplicate) and
-  `pasteElements` while drilled into a group both produce an **independent,
-  top-level** copy in the current layer rather than a new group member —
-  copies are new content, not edits to the group's membership. Both call
-  `getGroupDetachTarget` (`core/group-detach.js`), which walks up through
-  however many nested `<g>`/`<a>` ancestors the source sits inside (the
-  original's parent for duplicate, `currentGroup` for paste) up to the layer,
-  and `applyGroupDetachTransform`, which bakes the accumulated ancestor
-  matrix into the copy's own `transform` so it lands in the same visual spot
-  it was copied from.
-
-
-> **Commands (updated 2026-10-10):** every panel, main-menu and extension button is a real command in `editor.commands` (`panelCommands.js`, per-extension `commands.register`, `LeftPanel.addModeCommand`); buttons carry `command="<id>"` and no `$click`. `layer_moreopts` is the only adapter left. New buttons: register a command, add `command=`.
+- **Single click** on a grouped element selects the **whole group**: `getMouseTarget` (`core/selection.js`) walks up to the `<g>` that is a direct child of the current layer when no group context is active. The walk-up is `getMouseTargetFromNode(node)`, so any raw DOM node can be resolved while honouring isolation.
+- **Proximity hit-testing for fill-less elements.** A `fill="none"` line / path is hittable only on its thin stroke, so the native hit-test usually misses it where it overlaps a filled shape. `findStrokeElementNearPoint` (`core/event.js`) samples `elementsFromPoint` in a screen-space radius (`HIT_TOLERANCE`, 8 px) around a select-mode click and prefers a nearby stroke-only element over the filled shape under the exact pixel. It runs last in the `mouseDownEvent` select branch and is skipped for right-click and selector grips.
+- **The selection bbox is a move handle.** When a select-mode click would hit empty canvas (`mouseTarget === svgRoot`: the hollow interior of a fill-less shape, the gap between a shape and its bbox edge) but lands inside the selection's union bbox (`getStrokedBBoxDefaultVisible`), the click retargets to the selection so the drag moves it instead of starting a rubber band. A click on a real element inside the bbox is left alone.
+- **Multi-selection rotation.** `showGroupSelector` shows the rotate grip; dragging it enters `rotate` mode with `svgCanvas.groupRotateStart` (per-element start matrices) and `groupRotateCenter` (the union centre) captured in `mouseDownEvent`. `rotateGroup` (`core/event-rotate.js`, mirroring `resizeGroup` in `event-resize.js`) applies `R(angle, cx, cy)·startMatrix` to each element, so the layout rotates rigidly. Undo is the multi-element-aware `beginUndoableChange('transform', selectedElements)` / `finishUndoableChange()` pair; the mouseUp skips `recalculateAllSelectedDimensions` (which would decompose the baked matrices) and refreshes the boxes through `updateGroupSelector`.
+- **Double-click** (or **Ctrl/Cmd-click**) **drills into** the group: `setContext(group)` sets `currentGroup` (the analogue of Excalidraw's `editingGroupId`), dims sibling content and selects the clicked child (`dblClickEvent` and the Ctrl/Cmd branch of `mouseDownEvent`, `core/event.js`).
+- **Non-destructive: never bakes.** Entering a *rotated / scaled* group keeps its transform on the `<g>`. Children are edited in the group's **local coordinate space**: pointer deltas go through `toCurrentGroupLocalDelta` / `getMatrixToContent` (`core/math.js`), so a dragged child tracks the cursor 1:1 while the group transform stays. (`pushGroupProperty` is kept for ungroup, import and menu paths only; entry must not push a group's rotation onto its children, because that move was unrecorded and the next undo then dissolved the group.)
+- **Moving a child never re-parents it.** The drag changes only the child's own `transform` (consolidated and recorded as one `BatchCommand` in the `mouseUp` select-case), so membership is preserved and undo / redo round-trips.
+- **Exiting.** A click on empty canvas, or on any element outside the current group, calls `leaveContext` (the `mouseDownEvent` select branch clears `currentGroup` whenever the target is not the group or a descendant); double-clicking outside also exits. Without it the editor stays trapped in drill-in mode and every later click selects a single child, making the group *feel* destroyed.
+- **Duplicate / paste of a group member always detaches.** `cloneSelectedElements` (Duplicate) and `pasteElements` while drilled in produce an **independent, top-level** copy in the current layer, not a new group member (copies are new content, not edits to the group). Both call `getGroupDetachTarget` (`core/group-detach.js`), which walks up through however many nested `<g>` / `<a>` ancestors the source sits in (the original's parent for duplicate, `currentGroup` for paste) to the layer, and `applyGroupDetachTransform`, which bakes the accumulated ancestor matrix into the copy's own `transform` so it lands where it was copied from.

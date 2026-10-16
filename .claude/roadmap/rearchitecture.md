@@ -263,7 +263,8 @@ it is an e2e that fails when stale; the page is pinned to a Mac user agent becau
 `extensions.md` 55 → 44 KB, `css-rules.md` 33 → 22 KB (pasted CSS and hex tables gone), `attributes.md` 28 → 27 KB (it was
 already mostly normative). Checking the two overlapping docs against the code found stale claims in both (grid snapping,
 shape-family's hooks, the `keyDown` hook, the shadow panel, puppet-warp persistence), which is the argument for one fact in
-one place. **Left:** `architecture.md` (63 KB) has not had this pass; `tools.md`'s per-panel Shortcut columns still
+one place. `architecture.md` 63 → 34 KB (the directory tree and per-module table, which duplicated the generated
+file map, became a layout table and a list of cross-file contracts). **Left:** `tools.md`'s per-panel Shortcut columns still
 duplicate `commands.md` by hand; where `tools.md` and `extensions.md` describe the same extension, the user-facing part
 belongs in `tools.md` only (the table in `extensions.md` now points there, but the two are not generated).
 

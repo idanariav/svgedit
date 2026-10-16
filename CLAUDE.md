@@ -216,7 +216,7 @@ code exploration.
 
 | Doc | When to read it |
 |-----|-----------------|
-| [`architecture.md`](.claude/architecture.md) | Understanding init flow, subsystems, or where code lives |
+| [`architecture.md`](.claude/architecture.md) | Understanding init flow, subsystems and the cross-file contracts (undo, tools, host seams); "where does X live" is `file-map.md` |
 | [`tools.md`](.claude/tools.md) | Adding/modifying any toolbar tool or panel control |
 | [`attributes.md`](.claude/attributes.md) | Working with shape attribute panels or the `attrChanger` handler |
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
