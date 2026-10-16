@@ -182,9 +182,11 @@ a while). Rules that made it work:
   the class and the d.ts); the subset checks only what the module uses, and says what it needs.
 - **No optional chaining for "the module may be absent"**: the service is always there. Unit-test canvases that call
   through `event.js` get a `drawSnap` stub.
-- A stateless module needs no service: export the functions, take `host` as the first argument.
-Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next pilots by size: `sanitize.js`, `clear.js`,
-`layer.js`, `event-rotate.js`, then the 5–10-member modules (`select-same`, `split-grid`, `boolean-ops`, `clip-mask`).
+- A stateless module needs no service: export the functions, take `host` as the first argument (`clear.ts`'s
+  `clearSvgContentElement(host)` and `sanitize.js`'s `sanitizeSvg(host, node)` went this way; their two members left
+  `svgcanvas-members.d.ts`).
+Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next by size: `layer.js`,
+`event-rotate.js`, then the 5–10-member modules (`select-same`, `split-grid`, `boolean-ops`, `clip-mask`).
 
 Size: L, fully incremental, low risk per module.
 

@@ -228,7 +228,6 @@ export interface AttachedMembers {
   runExtensions(action: string, vars?: any, returnArray?: boolean): any
 
   /** Strip disallowed elements/attributes from `node` in place (per-instance). */
-  sanitizeSvg(node: Element): void
   addToSelection(elemsToAdd: ArrayLike<Element>, showGrips?: boolean): void
   cloneSelectedElements(x: number, y: number): void
   alignSelectedElements(type: string, relativeTo: string): void
@@ -487,7 +486,6 @@ export interface AttachedMembers {
   selectorManager: any
   SelectorClass: any
   updateGroupSelector(elem?: Element): void
-  clearSvgContentElement(): void
   getDisabledElems(): Element[]
   getPathObj(): any
 

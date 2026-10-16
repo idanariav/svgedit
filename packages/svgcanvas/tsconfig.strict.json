@@ -24,7 +24,7 @@
   "core/blur-event.js",
   "core/boolean-ops.js",
   "core/brush-stroke.js",
-  "core/clear.js",
+  "core/clear.ts",
   "core/clip-mask.js",
   "core/coords.js",
   "core/copy-elem.js",

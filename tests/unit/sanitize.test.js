@@ -24,7 +24,6 @@ describe('sanitize', function () {
       getSvgRoot: () => svg
     }
     utilities.init(canvas)
-    sanitize.init(canvas)
   })
 
   afterEach(() => {
@@ -37,7 +36,7 @@ describe('sanitize', function () {
     rect.setAttribute('style', 'stroke: blue ;\t\tstroke-width :\t\t40; vector-effect: non-scaling-stroke;')
     // sanitizeSvg() requires the node to have a parent and a document.
     svg.append(rect)
-    canvas.sanitizeSvg(rect)
+    sanitize.sanitizeSvg(canvas, rect)
 
     assert.equal(rect.getAttribute('stroke'), 'blue')
     assert.equal(rect.getAttribute('stroke-width'), '40')
@@ -51,7 +50,7 @@ describe('sanitize', function () {
     rect.setAttribute('data-note', 'safe')
     svg.append(rect)
 
-    canvas.sanitizeSvg(rect)
+    sanitize.sanitizeSvg(canvas, rect)
 
     assert.equal(rect.hasAttribute('onclick'), false)
     assert.equal(rect.getAttribute('data-note'), 'safe')
@@ -62,7 +61,7 @@ describe('sanitize', function () {
     image.setAttributeNS(NS.XLINK, 'xlink:href', 'http://example.com/test.png')
     svg.append(image)
 
-    canvas.sanitizeSvg(image)
+    sanitize.sanitizeSvg(canvas, image)
 
     assert.equal(image.getAttribute('href'), 'http://example.com/test.png')
     assert.equal(image.hasAttributeNS(NS.XLINK, 'href'), false)
@@ -73,7 +72,7 @@ describe('sanitize', function () {
     gradient.setAttribute('href', 'http://example.com/grad')
     svg.append(gradient)
 
-    canvas.sanitizeSvg(gradient)
+    sanitize.sanitizeSvg(canvas, gradient)
 
     assert.equal(gradient.hasAttribute('href'), false)
   })
@@ -82,7 +81,7 @@ describe('sanitize', function () {
     const use = createSvgElement('use')
     svg.append(use)
 
-    canvas.sanitizeSvg(use)
+    sanitize.sanitizeSvg(canvas, use)
 
     assert.equal(use.parentNode, null)
     assert.equal(svg.querySelector('use'), null)
@@ -98,7 +97,7 @@ describe('sanitize', function () {
     use.setAttribute('href', '#icon')
     svg.append(use)
 
-    canvas.sanitizeSvg(use)
+    sanitize.sanitizeSvg(canvas, use)
 
     assert.equal(use.parentNode, svg)
     assert.equal(use.getAttribute('href'), '#icon')
@@ -111,7 +110,7 @@ describe('sanitize', function () {
     rect.setAttribute('fill', 'url(http://example.com/pat)')
     svg.append(rect)
 
-    canvas.sanitizeSvg(rect)
+    sanitize.sanitizeSvg(canvas, rect)
 
     assert.equal(rect.hasAttribute('fill'), false)
   })
@@ -121,7 +120,7 @@ describe('sanitize', function () {
     text.append(document.createTextNode('  Hello  '), document.createTextNode('   '))
     svg.append(text)
 
-    canvas.sanitizeSvg(text)
+    sanitize.sanitizeSvg(canvas, text)
 
     assert.equal(text.textContent, 'Hello')
   })
@@ -132,7 +131,7 @@ describe('sanitize', function () {
     unknown.append(rect)
     svg.append(unknown)
 
-    canvas.sanitizeSvg(unknown)
+    sanitize.sanitizeSvg(canvas, unknown)
 
     assert.equal(svg.querySelector('foo'), null)
     assert.equal(rect.parentNode, svg)
@@ -145,7 +144,7 @@ describe('sanitize', function () {
     rect.setAttribute('y', '20')
     svg.append(rect)
 
-    canvas.sanitizeSvg(rect)
+    sanitize.sanitizeSvg(canvas, rect)
 
     assert.equal(rect.getAttribute('id'), 'myRect')
   })
@@ -156,7 +155,7 @@ describe('sanitize', function () {
     g.append(comment)
     svg.append(g)
 
-    canvas.sanitizeSvg(g)
+    sanitize.sanitizeSvg(canvas, g)
     assert.ok(true)
   })
 
@@ -168,7 +167,7 @@ describe('sanitize', function () {
     g1.append(g2)
     svg.append(g1)
 
-    canvas.sanitizeSvg(g1)
+    sanitize.sanitizeSvg(canvas, g1)
 
     assert.ok(svg.querySelector('rect'))
   })

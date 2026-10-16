@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { init as initClear } from '../../packages/svgcanvas/core/clear.js'
+import { clearSvgContentElement } from '../../packages/svgcanvas/core/clear.ts'
 
 const buildCanvas = (showOutside = false) => {
   const svgContent = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -23,9 +23,7 @@ const buildCanvas = (showOutside = false) => {
 describe('clearSvgContentElementInit', () => {
   it('clears existing children and sets canvas attributes', () => {
     const { canvas, svgContent, svgRoot } = buildCanvas(false)
-    initClear(canvas)
-
-    canvas.clearSvgContentElement()
+    clearSvgContentElement(canvas)
 
     expect(svgRoot.contains(svgContent)).toBe(true)
     expect(svgContent.childNodes[0].nodeType).toBe(Node.COMMENT_NODE)
@@ -42,9 +40,7 @@ describe('clearSvgContentElementInit', () => {
     const { canvas, svgContent } = buildCanvas(false)
     svgContent.setAttribute('viewBox', '0 0 10 10')
     svgContent.setAttribute('class', 'stale')
-    initClear(canvas)
-
-    canvas.clearSvgContentElement()
+    clearSvgContentElement(canvas)
 
     expect(svgContent.getAttribute('viewBox')).toBe(null)
     expect(svgContent.getAttribute('class')).toBe(null)
@@ -52,9 +48,7 @@ describe('clearSvgContentElementInit', () => {
 
   it('honors show_outside_canvas by leaving overflow visible', () => {
     const { canvas, svgContent } = buildCanvas(true)
-    initClear(canvas)
-
-    canvas.clearSvgContentElement()
+    clearSvgContentElement(canvas)
 
     expect(svgContent.getAttribute('overflow')).toBe('visible')
   })

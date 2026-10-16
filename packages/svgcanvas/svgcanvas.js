@@ -29,7 +29,6 @@ import { init as jsonInit } from './core/json.js'
 import * as elemGetSet from './core/elem-get-set.js'
 import { init as selectedElemInit } from './core/selected-elem.js'
 import { init as blurInit } from './core/blur-event.js'
-import { init as sanitizeInit } from './core/sanitize.js'
 import { getReverseNS, NS } from './core/namespaces.ts'
 import {
   assignAttributes,
@@ -69,7 +68,7 @@ import { init as svgDefsInit } from './core/svg-defs.js'
 import { init as coordsInit } from './core/coords.js'
 import { init as recalculateInit } from './core/recalculate.js'
 import { init as selectInit } from './core/select.js'
-import { init as clearInit } from './core/clear.js'
+import { clearSvgContentElement } from './core/clear.ts'
 import { init as booleanOpsInit } from './core/boolean-ops.js'
 import { init as pathOffsetInit } from './core/path-offset.js'
 import { init as pathSimplifyInit } from './core/path-simplify.js'
@@ -352,8 +351,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     // The actual element that represents the final output SVG element.
     this.svgContent = /** @type {SVGSVGElement} */ (/** @type {unknown} */ (this.svgdoc.createElementNS(NS.SVG, 'svg')))
     runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
-    runGuardedInit(this, 'clear', clearInit, initGuardRegistry)
-    this.clearSvgContentElement()
+    clearSvgContentElement(this)
     // Current `draw.Drawing` object.
     this.randIdsMode = draw.RandomizeModes.LET_DOCUMENT_DECIDE // set by randomizeIds()
     this.current_drawing_ = new draw.Drawing(this.svgContent, this.idprefix, this.randIdsMode)
@@ -364,8 +362,6 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
     runGuardedInit(this, 'bboxUtils', bboxUtilsInit, initGuardRegistry)
-    // sanitizeInit needs getRefElem, set above by domUtilsInit
-    runGuardedInit(this, 'sanitize', sanitizeInit, initGuardRegistry)
     runGuardedInit(this, 'coords', coordsInit, initGuardRegistry)
     runGuardedInit(this, 'recalculate', recalculateInit, initGuardRegistry)
     runGuardedInit(this, 'select', selectInit, initGuardRegistry)
@@ -1453,7 +1449,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     this.pathActions.clear()
     this.clearSelection()
     // clear the svgcontent node
-    this.clearSvgContentElement()
+    clearSvgContentElement(this)
     // create new document
     this.current_drawing_ = new draw.Drawing(this.svgContent, undefined, this.randIdsMode)
     // create empty first layer
@@ -1921,13 +1917,13 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
 
   initializeSvgCanvasMethods () {
     // getJsonFromSvgElements / addSVGElementsFromJson are attached per-instance by jsonInit()
-    // clearSvgContentElement is attached per-instance by clearInit()
+    // clearSvgContentElement(this) lives in core/clear.ts
     // textActions is attached per-instance by textActionsInit()
     // getElement / findDefs / getRefElem / getReferencedDefElements /
     // getRotationAngle / snapToGrid / snapPointToGrid are attached
     // per-instance by domUtilsInit() (run later in the constructor); getBBox /
     // getVisibleElements / getStrokedBBoxDefaultVisible / getStrokedBBox by
-    // bboxUtilsInit(); sanitizeSvg by sanitizeInit().
+    // bboxUtilsInit().
     this.stringToHTML = stringToHTML
     this.insertChildAtIndex = insertChildAtIndex
     this.getClosest = getClosest

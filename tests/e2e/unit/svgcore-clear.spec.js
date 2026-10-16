@@ -19,8 +19,7 @@ test.describe('clear module', () => {
         getDOMDocument: () => document
       }
 
-      clearModule.init(canvas)
-      canvas.clearSvgContentElement()
+      clearModule.clearSvgContentElement(canvas)
       const comment = svgContent.firstChild
 
       return {
@@ -52,8 +51,7 @@ test.describe('clear module', () => {
         getSvgRoot: () => svgRoot,
         getDOMDocument: () => document
       }
-      clearModule.init(canvas)
-      canvas.clearSvgContentElement()
+      clearModule.clearSvgContentElement(canvas)
       return svgContent.getAttribute('overflow')
     })
 

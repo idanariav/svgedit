@@ -38,7 +38,7 @@
 | `blur-event.js` | Tools for blur event |
 | `boolean-ops.js` | Boolean path operations: union, intersect, subtract, exclude, divide |
 | `brush-stroke.js` | Custom brush geometry: centerline smoothing + a nib-based variable-width outline generator for the freehand "brush" tool (see `ext-brush`) |
-| `clear.js` | Tools for clear |
+| `clear.ts` | Resets the `#svgcontent` element to a blank document |
 | `clip-mask.js` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
 | `coords.js` | Manipulating coordinates |
 | `copy-elem.js` | Copy handler |

@@ -24,6 +24,7 @@ import { getClosest } from '../common/util.ts'
 import Layer from './layer.js'
 import { isObjectLocked, isObjectHidden } from './object-state.js'
 import { isExtensionHook } from './extension-hooks.ts'
+import { sanitizeSvg } from './sanitize.js'
 import { warn, error as logError } from '../common/logger.ts'
 
 const { BatchCommand } = hstry
@@ -458,7 +459,7 @@ export const init = (canvas) => {
  * @returns {void}
  */
   const prepareSvg = (newDoc) => {
-    svgCanvas.sanitizeSvg(newDoc.documentElement)
+    sanitizeSvg(svgCanvas, newDoc.documentElement)
 
     // convert paths into absolute commands
     const paths = [...newDoc.getElementsByTagNameNS(NS.SVG, 'path')]
