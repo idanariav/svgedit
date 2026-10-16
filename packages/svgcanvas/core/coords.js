@@ -11,7 +11,7 @@ import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-regis
 import {
   assignAttributes
 } from './dom-utils.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import {
   transformPoint,
   transformListToTransform,
@@ -105,7 +105,7 @@ export const init = (canvas) => {
       assignAttributes(selected, changes, 1000, true)
     }
 
-    const box = getBBox(selected)
+    const box = /** @type {import('./bbox-utils.ts').BBoxObject} */ (getBBox(selected)) // null only for the guarded no-box cases
 
   // Handle gradients and patterns
   ;['fill', 'stroke'].forEach(type => {

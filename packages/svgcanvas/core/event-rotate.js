@@ -7,7 +7,7 @@
  * @module event-rotate
  * @license MIT
  */
-import { getBBox } from './bbox-utils.js'
+import { requireBBox } from './bbox-utils.ts'
 import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 
 /**
@@ -86,7 +86,7 @@ export const init = (canvas) => {
       rotateGroup(svgCanvas, angle < -180 ? (360 + angle) : angle)
       return
     }
-    const box = getBBox(selected)
+    const box = requireBBox(selected)
     let cx = box.x + box.width / 2
     let cy = box.y + box.height / 2
     const m = getMatrix(selected)

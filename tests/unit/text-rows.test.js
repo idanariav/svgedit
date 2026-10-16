@@ -3,7 +3,7 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
   getTextWithNewlines, setMultilineText, isAreaText, getWrapWidth, getWrapHeight, getValign, getAreaBox,
   areaAttrsForBox, writeAreaAttrs, reflowAreaText, makeAreaText, makePointText, areaTextAtPoint, TEXT_ASCENT, TEXT_LINE_HEIGHT
-} from '../../packages/svgcanvas/core/text-rows.js'
+} from '../../packages/svgcanvas/core/text-rows.ts'
 
 // jsdom has no SVG text metrics, so layout uses the character-count estimate: 0.55 × font-size per character.
 // With font-size 20 every character is 11 wide.

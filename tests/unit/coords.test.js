@@ -1,6 +1,6 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
-import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
 import * as coords from '../../packages/svgcanvas/core/coords.js'
 import { attachUnits } from './unitsMock.js'
 

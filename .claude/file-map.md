@@ -31,7 +31,7 @@
 | `arrow-align.js` | Arrowhead alignment: where a marker head sits on the end of its line |
 | `art-brush-canvas.js` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
 | `art-brush.js` | Art and pattern brush geometry: artwork bent along a path by arc length |
-| `bbox-utils.js` | Bounding-box computation utilities |
+| `bbox-utils.ts` | Bounding-box computation utilities |
 | `bezier-fit.js` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
 | `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
 | `blend.js` | Blends: the geometry and paint of the steps between two key shapes |
@@ -121,7 +121,7 @@
 | `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
 | `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
 | `text-path.js` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
-| `text-rows.js` | How a `<text>` element's rows are stored, read and laid out |
+| `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |
 | `tool-registry.js` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
 | `touch.ts` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |

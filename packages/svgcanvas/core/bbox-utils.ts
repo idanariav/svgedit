@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Bounding-box computation utilities.
  * @module bbox-utils
@@ -17,7 +16,23 @@ import {
 } from './math.ts'
 import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
-import { isAreaText, getAreaBox } from './text-rows.js'
+import { isAreaText, getAreaBox } from './text-rows.ts'
+import type SvgCanvas from '../svgcanvas.js'
+
+/** A bounding box (like `DOMRect`). */
+export interface BBoxObject {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+type AddElements = SvgCanvas['addSVGElementsFromJson']
+type ResetOrientation = Pick<SvgCanvas['pathActions'], 'resetOrientation'>
+
+/** `SVGPathElement.pathSegList` is gone from the DOM typings; the segment shim (`path-seg-shim`) puts it back. */
+interface PathSegLike { x?: number, y?: number, x1?: number, y1?: number, x2?: number, y2?: number }
+interface PathWithSegList { pathSegList: { numberOfItems: number, getItem: (i: number) => PathSegLike } }
 
 // Much faster than running getBBox() every time
 const visElems =
@@ -31,27 +46,23 @@ const visElemsArr = visElems.split(',')
  * `core/*.js` module's `init(canvas)`. `getBBox` stays a bare, pure
  * (elem-required) export; the instance also gets a selection-fallback
  * wrapper for it, matching `dom-utils.js`'s `getRotationAngle` treatment.
- * @function module:bbox-utils.init
- * @param {module:utilities.EditorContext} canvas
- * @returns {void}
  */
-export const init = canvas => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
    * Get all elements that have a BBox (excludes `<defs>`, `<title>`, etc).
    * Note that 0-opacity, off-screen etc elements are still considered "visible"
    * for this function.
-   * @function module:bbox-utils.EditorContext#getVisibleElements
-   * @param {Element} [parentElement] - The parent DOM element to search within; defaults to the first visible top-level content element
-   * @returns {Element[]} All "visible" elements.
+   * @param parentElement - The parent DOM element to search within; defaults to the first visible top-level content element
+   * @returns All "visible" elements.
    */
-  const getVisibleElements = parentElement => {
+  const getVisibleElements = (parentElement?: Element): Element[] => {
     if (!parentElement) {
       const svgContent = svgCanvas.getSvgContent()
       for (let i = 0; i < svgContent.children.length; i++) {
-        if (svgContent.children[i].getBBox) {
-          const bbox = svgContent.children[i].getBBox()
+        if ((svgContent.children[i] as SVGGraphicsElement).getBBox) {
+          const bbox = (svgContent.children[i] as SVGGraphicsElement).getBBox()
           if (
             bbox.width !== 0 &&
             bbox.height !== 0 &&
@@ -65,13 +76,12 @@ export const init = canvas => {
       }
     }
 
-    /** @type {Element[]} */
-    const contentElems = []
+    const contentElems: Element[] = []
     if (parentElement) {
       const children = parentElement.children
       // eslint-disable-next-line array-callback-return
       Array.from(children, elem => {
-        if (/** @type {SVGGraphicsElement} */ (elem).getBBox) {
+        if ((elem as SVGGraphicsElement).getBBox) {
           contentElems.push(elem)
         }
       })
@@ -81,11 +91,10 @@ export const init = canvas => {
 
   /**
    * Get the bounding box for one or more stroked and/or transformed elements.
-   * @function module:bbox-utils.EditorContext#getStrokedBBoxDefaultVisible
-   * @param {Element[]} elems - Array with DOM elements to check
-   * @returns {module:bbox-utils.BBoxObject} A single bounding box object
+   * @param elems - Array with DOM elements to check
+   * @returns A single bounding box object
    */
-  const getStrokedBBoxDefaultVisible = elems => {
+  const getStrokedBBoxDefaultVisible = (elems?: Element[]): BBoxObject | false | null => {
     if (!elems) {
       elems = getVisibleElements()
     }
@@ -93,35 +102,28 @@ export const init = canvas => {
       elems,
       svgCanvas.addSVGElementsFromJson,
       svgCanvas.pathActions,
-      /** @type {(n: number) => number} */ (getUnits(svgCanvas).shortFloat)
+      getUnits(svgCanvas).shortFloat as (n: number) => number
     )
   }
 
   canvas.getVisibleElements = getVisibleElements
-  canvas.getStrokedBBoxDefaultVisible = getStrokedBBoxDefaultVisible
+  // The canvas types promise a box (a list of attached elements always has one); `false` / `null` only come back for an
+  // empty or fully detached list (techdebt.md "getStrokedBBox's false / null").
+  canvas.getStrokedBBoxDefaultVisible = getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBoxDefaultVisible']
   // Public API alias — external hosts/extensions call svgCanvas.getStrokedBBox()
-  canvas.getStrokedBBox = getStrokedBBoxDefaultVisible
+  canvas.getStrokedBBox = getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBox']
   // getBBox stays a bare, pure (elem-required) export below — every call site
   // already passes an elem — but the public per-instance API keeps the
   // "default to current selection" convenience, correctly scoped now.
-  canvas.getBBox = /** @param {Element} [elem] */ elem => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
+  canvas.getBBox = (elem?: Element) => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
 }
 
 /**
- * @typedef {PlainObject} module:bbox-utils.BBoxObject (like `DOMRect`)
- * @property {number} x
- * @property {number} y
- * @property {number} width
- * @property {number} height
- */
-
-/**
  * Converts a `SVGRect` into an object.
- * @function module:bbox-utils.bboxToObj
- * @param {{x: number, y: number, width: number, height: number}} bbox - a SVGRect (or any box with those four numbers)
- * @returns {module:bbox-utils.BBoxObject} An object with properties names x, y, width, height.
+ * @param bbox - a SVGRect (or any box with those four numbers)
+ * @returns An object with properties names x, y, width, height.
  */
-export const bboxToObj = ({ x, y, width, height }) => {
+export const bboxToObj = ({ x, y, width, height }: BBoxObject): BBoxObject => {
   return { x, y, width, height }
 }
 
@@ -130,27 +132,18 @@ export const bboxToObj = ({ x, y, width, height }) => {
 /**
  * Get correct BBox for a path in Webkit.
  * Converted from code found [here]{@link http://blog.hackers-cafe.net/2009/06/how-to-calculate-bezier-curves-bounding.html}.
- * @function module:bbox-utils.getPathBBox
- * @param {SVGPathElement} path - The path DOM element to get the BBox for
- * @returns {module:bbox-utils.BBoxObject} A BBox-like object
+ * @param path - The path DOM element to get the BBox for
+ * @returns A BBox-like object
  */
-export const getPathBBox = (path) => {
-  const seglist = /** @type {any} */ (path).pathSegList
+export const getPathBBox = (path: SVGPathElement): BBoxObject => {
+  const seglist = (path as unknown as PathWithSegList).pathSegList
   const totalSegments = seglist.numberOfItems
 
-  /** @type {number[][]} */
-  const bounds = [[], []]
+  const bounds: number[][] = [[], []]
   const start = seglist.getItem(0)
-  let P0 = [start.x, start.y]
+  let P0 = [start.x as number, start.y as number]
 
-  /**
-   * @param {number} j
-   * @param {number[]} P1
-   * @param {number[]} P2
-   * @param {number[]} P3
-   * @returns {(t: number) => number}
-   */
-  const getCalc = (j, P1, P2, P3) => (t) => {
+  const getCalc = (j: number, P1: number[], P2: number[], P3: number[]) => (t: number): number => {
     const oneMinusT = 1 - t
     return (
       oneMinusT ** 3 * P0[j] +
@@ -170,9 +163,9 @@ export const getPathBBox = (path) => {
     bounds[1].push(P0[1])
 
     if (seg.x1) {
-      const P1 = [seg.x1, seg.y1]
-      const P2 = [seg.x2, seg.y2]
-      const P3 = [seg.x, seg.y]
+      const P1 = [seg.x1, seg.y1] as number[]
+      const P2 = [seg.x2, seg.y2] as number[]
+      const P3 = [seg.x, seg.y] as number[]
 
       for (let j = 0; j < 2; j++) {
         const calc = getCalc(j, P1, P2, P3)
@@ -207,7 +200,7 @@ export const getPathBBox = (path) => {
       P0 = P3
     } else {
       bounds[0].push(seg.x)
-      bounds[1].push(seg.y)
+      bounds[1].push(seg.y as number)
     }
   }
 
@@ -229,17 +222,16 @@ export const getPathBBox = (path) => {
  * per-instance `canvas.getBBox` wrapper attached by {@link module:bbox-utils.init}
  * instead, so it resolves against the right editor instance rather than
  * shared module state.
- * @function module:bbox-utils.getBBox
- * @param {Element} elem - DOM element to get the BBox for
- * @returns {module:bbox-utils.BBoxObject|null} Bounding box object
+ * @param elem - DOM element to get the BBox for
+ * @returns Bounding box object
  */
-export const getBBox = (elem) => {
-  const selected = /** @type {SVGTextContentElement} */ (elem)
+export const getBBox = (elem: Element): BBoxObject | null => {
+  const selected = elem as SVGTextContentElement
   if (elem.nodeType !== 1) return null
 
   const elname = selected.nodeName
 
-  let ret = null
+  let ret: BBoxObject | null = null
   switch (elname) {
     case 'text':
       if (isAreaText(selected)) {
@@ -284,8 +276,7 @@ export const getBBox = (elem) => {
     // JSDOM lacks SVG geometry; fall back to simple attribute-based bbox when native values are empty.
     if (ret.width === 0 && ret.height === 0) {
       const tag = elname.toLowerCase()
-      /** @type {(name: string, fallback?: number) => number} */
-      const num = (name, fallback = 0) =>
+      const num = (name: string, fallback = 0): number =>
         Number.parseFloat(String(selected.getAttribute(name) ?? fallback))
       const fromAttrs = (() => {
         switch (tag) {
@@ -313,7 +304,7 @@ export const getBBox = (elem) => {
           case 'g': {
             const boxes = Array.from(selected.children || [])
               .map(child => getBBox(child))
-              .filter(Boolean)
+              .filter((b): b is BBoxObject => b !== null)
             if (boxes.length) {
               const minX = Math.min(...boxes.map(b => b.x))
               const minY = Math.min(...boxes.map(b => b.y))
@@ -338,23 +329,29 @@ export const getBBox = (elem) => {
   return ret
 }
 
+/** `getBBox` for an element known to have a box (a shape, a group, the rubber band): throws rather than returns null. */
+export const requireBBox = (elem: Element): BBoxObject => {
+  const box = getBBox(elem)
+  if (!box) throw new Error(`no bounding box for <${elem.nodeName}>`)
+  return box
+}
+
 /**
  * Get the BBox of an element-as-path.
- * @function module:bbox-utils.getBBoxOfElementAsPath
- * @param {Element} elem - The DOM element to be probed
- * @param {module:utilities.EditorContext#addSVGElementsFromJson} addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
- * @param {module:path.pathActions} pathActions - If a transform exists, `pathActions.resetOrientation()` is used. See: canvas.pathActions.
- * @returns {DOMRect|false} The resulting path's bounding box object.
+ * @param elem - The DOM element to be probed
+ * @param addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
+ * @param pathActions - If a transform exists, `pathActions.resetOrientation()` is used. See: canvas.pathActions.
+ * @returns The resulting path's bounding box object.
  */
 export const getBBoxOfElementAsPath = (
-  elem,
-  addSVGElementsFromJson,
-  pathActions
-) => {
+  elem: Element,
+  addSVGElementsFromJson: AddElements,
+  pathActions: ResetOrientation
+): BBoxObject | false => {
   const path = addSVGElementsFromJson({
     element: 'path',
     attr: getExtraAttributesForConvertToPath(elem)
-  })
+  }) as SVGPathElement
 
   const eltrans = elem.getAttribute('transform')
   if (eltrans) {
@@ -362,7 +359,7 @@ export const getBBoxOfElementAsPath = (
   }
 
   const { parentNode } = elem
-  elem.nextSibling ? elem.before(path) : /** @type {ParentNode} */ (parentNode).append(path)
+  elem.nextSibling ? elem.before(path) : (parentNode as ParentNode).append(path)
 
   const d = getPathDFromElement(elem)
   if (d) {
@@ -373,8 +370,7 @@ export const getBBoxOfElementAsPath = (
 
   // Get the correct BBox of the new path, then discard it
   pathActions.resetOrientation(path)
-  /** @type {any} */
-  let bb = false
+  let bb: BBoxObject | false = false
   try {
     bb = path.getBBox()
   } catch (e) {
@@ -382,7 +378,7 @@ export const getBBoxOfElementAsPath = (
   }
   if (bb && bb.width === 0 && bb.height === 0) {
     const dAttr = path.getAttribute('d') || ''
-    const nums = /** @type {string[]} */ (dAttr.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
+    const nums = (dAttr.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
     if (nums.length >= 2) {
       const xs = nums.filter((_, i) => i % 2 === 0)
       const ys = nums.filter((_, i) => i % 2 === 1)
@@ -414,11 +410,11 @@ export const getBBoxOfElementAsPath = (
  * The optimization is not needed if the rotation is a multiple 90 degrees. The default technique is to call
  * getBBox then apply the angle and any transforms.
  *
- * @param {number} angle - The rotation angle in degrees
- * @param {boolean} hasAMatrixTransform - True if there is a matrix transform
- * @returns {boolean} True if the bbox can be optimized.
+ * @param angle - The rotation angle in degrees
+ * @param hasAMatrixTransform - True if there is a matrix transform
+ * @returns True if the bbox can be optimized.
  */
-const bBoxCanBeOptimizedOverNativeGetBBox = (angle, hasAMatrixTransform) => {
+const bBoxCanBeOptimizedOverNativeGetBBox = (angle: number, hasAMatrixTransform: boolean): boolean => {
   const angleModulo90 = angle % 90
   const closeTo90 = angleModulo90 < -89.99 || angleModulo90 > 89.99
   const closeTo0 = angleModulo90 > -0.001 && angleModulo90 < 0.001
@@ -427,17 +423,16 @@ const bBoxCanBeOptimizedOverNativeGetBBox = (angle, hasAMatrixTransform) => {
 
 /**
  * Get bounding box that includes any transforms.
- * @function module:bbox-utils.getBBoxWithTransform
- * @param {Element} elem - The DOM element to be converted
- * @param {module:utilities.EditorContext#addSVGElementsFromJson} addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
- * @param {module:path.pathActions} pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
- * @returns {module:bbox-utils.BBoxObject|module:math.TransformedBox|DOMRect|null} A single bounding box object
+ * @param elem - The DOM element to be converted
+ * @param addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
+ * @param pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
+ * @returns A single bounding box object
  */
 export const getBBoxWithTransform = (
-  elem,
-  addSVGElementsFromJson,
-  pathActions
-) => {
+  elem: Element,
+  addSVGElementsFromJson: AddElements,
+  pathActions: ResetOrientation
+): BBoxObject | null => {
   // TODO: Fix issue with rotated groups. Currently they work
   // fine in FF, but not in other browsers (same problem mentioned
   // in Issue 339 comment #2).
@@ -454,8 +449,7 @@ export const getBBoxWithTransform = (
     const cos = Math.cos(rad)
     const sin = Math.sin(rad)
     const tag = elem.tagName?.toLowerCase()
-    /** @type {any[]} */
-    let points = []
+    let points: Array<{ x: number, y: number }> = []
     if (tag === 'path') {
       const d = elem.getAttribute('d') || ''
       const coords = (d.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
@@ -506,7 +500,7 @@ export const getBBoxWithTransform = (
     }
   }
 
-  const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+  const tlist = getTransformList(elem)
   const angle = getRotationAngleFromTransformList(tlist)
   const hasMatrixXForm = hasMatrixTransform(tlist)
   const { matrix } = transformListToTransform(tlist)
@@ -518,8 +512,7 @@ export const getBBoxWithTransform = (
   // (this is what produced blank shape-library thumbnails for translate-only
   // imported content, e.g. pasted/vault SVGs that were never dragged).
   if (angle || hasMatrixXForm || !isIdentity(matrix)) {
-    /** @type {any} */
-    let goodBb = false
+    let goodBb: BBoxObject | false = false
     if (bBoxCanBeOptimizedOverNativeGetBBox(angle, hasMatrixXForm)) {
       // Get the BBox from the raw path for these elements
       // TODO: why ellipse and not circle
@@ -560,12 +553,10 @@ export const getBBoxWithTransform = (
 }
 
 /**
- * @param {Element} elem
- * @returns {number}
  * @todo This is problematic with large stroke-width and, for example, a single
  * horizontal line. The calculated BBox extends way beyond left and right sides.
  */
-const getStrokeOffsetForBBox = elem => {
+const getStrokeOffsetForBBox = (elem: Element): number => {
   const stroke = elem.getAttribute('stroke')
   const swAttr = elem.getAttribute('stroke-width')
   // A missing stroke-width means the SVG initial value of 1 — cleanupElement
@@ -576,29 +567,21 @@ const getStrokeOffsetForBBox = elem => {
 }
 
 /**
- * @typedef {PlainObject} BBox
- * @property {number} x The x value
- * @property {number} y The y value
- * @property {number} width
- * @property {number} height
- */
-
-/**
  * Get the bounding box for one or more stroked and/or transformed elements.
- * @function module:bbox-utils.getStrokedBBox
- * @param {Element[]} elems - Array with DOM elements to check
- * @param {module:utilities.EditorContext#addSVGElementsFromJson} addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
- * @param {module:path.pathActions} pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
- * @param {function(number): number} shortFloat - Rounding function of the owning canvas (`canvas.units.shortFloat`)
- * @returns {module:bbox-utils.BBoxObject|module:math.TransformedBox|DOMRect} A single bounding box object
+ * @param elems - Array with DOM elements to check
+ * @param addSVGElementsFromJson - Function to add the path element to the current layer. See canvas.addSVGElementsFromJson
+ * @param pathActions - If a transform exists, pathActions.resetOrientation() is used. See: canvas.pathActions.
+ * @param shortFloat - Rounding function of the owning canvas (`canvas.units.shortFloat`)
+ * @returns A single bounding box object; `false` for no elements, `null` when none of them has a box
  */
-export const getStrokedBBox = (elems, addSVGElementsFromJson, pathActions, shortFloat) => {
+export const getStrokedBBox = (
+  elems: Element[], addSVGElementsFromJson: AddElements, pathActions: ResetOrientation, shortFloat: (n: number) => number
+): BBoxObject | false | null => {
   if (!elems || !elems.length) {
     return false
   }
 
-  /** @type {any} */
-  let fullBb
+  let fullBb: BBoxObject | null | undefined
   elems.forEach(elem => {
     if (fullBb) {
       return

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * How a `<text>` element's rows are stored, read and laid out.
  *
@@ -25,11 +24,9 @@
 
 import { NS } from './namespaces.ts'
 import { wrapText } from './text-wrap.ts'
+import type { WrappedRow } from './text-wrap.ts'
 
-/**
- * Multiplier applied to font-size to derive the row step for multiline text.
- * @type {number}
- */
+/** Multiplier applied to font-size to derive the row step for multiline text. */
 export const TEXT_LINE_HEIGHT = 1.2
 
 /** Distance from a row's baseline up to its top, as a fraction of the font size (the caret uses it too). */
@@ -46,82 +43,43 @@ export const LAYOUT_ATTRS = new Set([
   'text-anchor', 'x', 'y', 'style', 'xml:space', WRAP_WIDTH_ATTR, WRAP_HEIGHT_ATTR, VALIGN_ATTR
 ])
 
-/** @type {Record<string, number>} */
-const ANCHOR_FACTOR = { start: 0, middle: 0.5, end: 1 }
+const ANCHOR_FACTOR: Record<string, number> = { start: 0, middle: 0.5, end: 1 }
 
-/**
- * @param {Element} elem
- * @param {string} name Local name in the `se:` namespace
- * @returns {string|null}
- */
-const getSe = (elem, name) => elem.getAttributeNS(NS.SE, name) ?? elem.getAttribute(`se:${name}`)
+/** @param name Local name in the `se:` namespace */
+const getSe = (elem: Element, name: string): string | null => elem.getAttributeNS(NS.SE, name) ?? elem.getAttribute(`se:${name}`)
 
-/**
- * @param {Element} elem
- * @returns {boolean}
- */
-const hasTextPath = (elem) => elem.getElementsByTagName('textPath').length > 0
+const hasTextPath = (elem: Element): boolean => elem.getElementsByTagName('textPath').length > 0
 
-/**
- * Box width of an area text, 0 for point text.
- * @param {Element} elem
- * @returns {number}
- */
-export const getWrapWidth = (elem) => {
+/** Box width of an area text, 0 for point text. */
+export const getWrapWidth = (elem: Element): number => {
   const w = parseFloat(getSe(elem, 'wrap-width') ?? '')
   return w > 0 ? w : 0
 }
 
-/**
- * @param {Element|null|undefined} elem
- * @returns {boolean} Whether `elem` is a `<text>` that wraps to a box (text on a path never does).
- */
-export const isAreaText = (elem) =>
+/** Whether `elem` is a `<text>` that wraps to a box (text on a path never does). */
+export const isAreaText = (elem: Element | null | undefined): boolean =>
   !!elem && elem.localName === 'text' && getWrapWidth(elem) > 0 && !hasTextPath(elem)
 
-/**
- * @param {Element} elem
- * @returns {number} Box height, 0 when the box grows with its content
- */
-export const getWrapHeight = (elem) => {
+/** @returns Box height, 0 when the box grows with its content */
+export const getWrapHeight = (elem: Element): number => {
   const h = parseFloat(getSe(elem, 'wrap-height') ?? '')
   return h > 0 ? h : 0
 }
 
-/**
- * @param {Element} elem
- * @returns {'top'|'middle'|'bottom'}
- */
-export const getValign = (elem) => {
+export const getValign = (elem: Element): 'top' | 'middle' | 'bottom' => {
   const v = getSe(elem, 'valign')
   return v === 'middle' || v === 'bottom' ? v : 'top'
 }
 
-/**
- * @param {Element} elem
- * @param {number} [fallback=16]
- * @returns {number}
- */
-const fontSizeOf = (elem, fallback = 16) => parseFloat(elem.getAttribute('font-size') ?? '') || fallback
+const fontSizeOf = (elem: Element, fallback = 16): number => parseFloat(elem.getAttribute('font-size') ?? '') || fallback
 
-/**
- * @param {Element} elem
- * @returns {number} 0 / 0.5 / 1 for start / middle / end
- */
-export const anchorFactor = (elem) => ANCHOR_FACTOR[elem.getAttribute('text-anchor') ?? 'start'] ?? 0
+/** @returns 0 / 0.5 / 1 for start / middle / end */
+export const anchorFactor = (elem: Element): number => ANCHOR_FACTOR[elem.getAttribute('text-anchor') ?? 'start'] ?? 0
 
-/**
- * @param {Element} elem
- * @returns {Element[]}
- */
-export const rowsOf = (elem) => Array.from(elem.children).filter((c) => c.tagName === 'tspan')
+export const rowsOf = (elem: Element): Element[] => Array.from(elem.children).filter((c) => c.tagName === 'tspan')
 
-/**
- * Separator characters a soft row swallowed, or null for a row that starts a paragraph.
- * @param {Element} tspan
- * @returns {number|null}
- */
-export const softCount = (tspan) => {
+/** Separator characters a soft row swallowed, or null for a row that starts a paragraph. */
+export const softCount = (tspan: Element): number | null => {
   const raw = getSe(tspan, 'soft')
   if (raw === null) return null
   const n = parseInt(raw, 10)
@@ -135,11 +93,9 @@ export const softCount = (tspan) => {
  * history. The soft rows of an area text are joined back with the spaces their
  * break swallowed, not with a newline. A single-line `<text>` (no tspans) falls
  * back to plain `textContent`.
- * @function module:text-rows.getTextWithNewlines
- * @param {Element} elem - The `<text>` element
- * @returns {string}
+ * @param elem - The `<text>` element
  */
-export const getTextWithNewlines = (elem) => {
+export const getTextWithNewlines = (elem: Element): string => {
   if (!elem) { return '' }
   const tspans = rowsOf(elem)
   if (!tspans.length) { return elem.textContent ?? '' }
@@ -155,13 +111,9 @@ export const getTextWithNewlines = (elem) => {
   return out
 }
 
-/**
- * The outermost `<svg>` above `elem`, where a measuring probe can live.
- * @param {Element} elem
- * @returns {SVGSVGElement|null}
- */
-const outerSvg = (elem) => {
-  let svg = /** @type {SVGSVGElement|null} */ (/** @type {any} */ (elem).ownerSVGElement ?? null)
+/** The outermost `<svg>` above `elem`, where a measuring probe can live. */
+const outerSvg = (elem: Element): SVGSVGElement | null => {
+  let svg = (elem as SVGElement).ownerSVGElement ?? null
   while (svg?.ownerSVGElement) svg = svg.ownerSVGElement
   return svg
 }
@@ -176,14 +128,10 @@ const PROBE_STYLES = [
  * font. In a browser a hidden `<text>` probe with the element's computed font
  * is attached for the duration (so letter/word spacing and kerning count); where
  * SVG text metrics do not exist (jsdom) a character-count estimate is used.
- * @template T
- * @param {Element} elem
- * @param {(measure: (s: string) => number) => T} fn
- * @returns {T}
  */
-export const withMeasure = (elem, fn) => {
+export const withMeasure = <T>(elem: Element, fn: (measure: (s: string) => number) => T): T => {
   const svg = outerSvg(elem)
-  const probe = svg ? /** @type {SVGTextContentElement} */ (/** @type {unknown} */ (document.createElementNS(NS.SVG, 'text'))) : null
+  const probe = svg ? document.createElementNS(NS.SVG, 'text') as SVGTextContentElement : null
   if (svg && probe && typeof probe.getComputedTextLength === 'function') {
     const computed = window.getComputedStyle(elem)
     probe.setAttribute('xml:space', 'preserve')
@@ -207,26 +155,18 @@ export const withMeasure = (elem, fn) => {
   return fn((s) => Array.from(s).length * size * 0.55)
 }
 
-/**
- * @typedef {object} PlannedRow
- * @property {string} text
- * @property {number|null} soft
- * @property {number} x
- * @property {number} y
- */
+interface PlannedRow {
+  text: string
+  soft: number | null
+  x: number
+  y: number
+}
 
-/**
- * The rows an area text should show for `value`: wrapped to the box, each with its position.
- * @param {Element} elem
- * @param {string} value
- * @param {number} fontSizeFallback
- * @returns {PlannedRow[]}
- */
-const planArea = (elem, value, fontSizeFallback) => {
+/** The rows an area text should show for `value`: wrapped to the box, each with its position. */
+const planArea = (elem: Element, value: string, fontSizeFallback: number): PlannedRow[] => {
   if (value === '') { return [] }
   const width = getWrapWidth(elem)
-  /** @type {import('./text-wrap.ts').WrappedRow[]} */
-  const rows = withMeasure(elem, (measure) => wrapText(value, width, measure))
+  const rows: WrappedRow[] = withMeasure(elem, (measure) => wrapText(value, width, measure))
   const x = parseFloat(elem.getAttribute('x') ?? '') || 0
   const baseY = parseFloat(elem.getAttribute('y') ?? '') || 0
   const lineHeight = fontSizeOf(elem, fontSizeFallback) * TEXT_LINE_HEIGHT
@@ -239,19 +179,15 @@ const planArea = (elem, value, fontSizeFallback) => {
 /**
  * Write a `\n`-separated string onto an area text: wrap it to the box, then one
  * tspan per row. Rows are reused in order, so their ids survive a re-wrap.
- * @param {Element} elem
- * @param {string} value
- * @param {number} fontSizeFallback
- * @returns {void}
  */
-const layoutArea = (elem, value, fontSizeFallback) => {
+const layoutArea = (elem: Element, value: string, fontSizeFallback: number): void => {
   const plan = planArea(elem, value, fontSizeFallback)
   if (!plan.length) {
     elem.textContent = ''
     return
   }
   const existing = rowsOf(elem)
-  Array.from(elem.childNodes).filter((n) => !existing.includes(/** @type {Element} */ (n))).forEach((n) => n.remove())
+  Array.from(elem.childNodes).filter((n) => !existing.includes(n as Element)).forEach((n) => n.remove())
   plan.forEach((row, i) => {
     const tspan = existing[i] ?? document.createElementNS(NS.SVG, 'tspan')
     tspan.setAttribute('x', String(row.x))
@@ -270,13 +206,11 @@ const layoutArea = (elem, value, fontSizeFallback) => {
  * them) and stepping `y` by the line height. Absolute `y` per row (rather than
  * `dy` accumulation) is robust to blank rows and is what `recalculate` bakes.
  * An area text is wrapped to its box first (and always gets tspans).
- * @function module:text-rows.setMultilineText
- * @param {Element} elem - The `<text>` element
- * @param {string} value - The new content, rows separated by `\n`
- * @param {number} [fontSizeFallback=16] - Used when the element has no font-size
- * @returns {void}
+ * @param elem - The `<text>` element
+ * @param value - The new content, rows separated by `\n`
+ * @param fontSizeFallback - Used when the element has no font-size
  */
-export const setMultilineText = (elem, value, fontSizeFallback = 16) => {
+export const setMultilineText = (elem: Element, value: string | null | undefined, fontSizeFallback = 16): void => {
   const val = value === null || value === undefined ? '' : String(value)
   if (isAreaText(elem)) {
     layoutArea(elem, val, fontSizeFallback)
@@ -304,10 +238,9 @@ export const setMultilineText = (elem, value, fontSizeFallback = 16) => {
 /**
  * Lay an area text out again from its current attributes (box, font, anchor,
  * position), keeping its content. Does nothing for other elements.
- * @param {Element} elem
- * @returns {boolean} Whether `elem` was an area text
+ * @returns Whether `elem` was an area text
  */
-export const reflowAreaText = (elem) => {
+export const reflowAreaText = (elem: Element): boolean => {
   if (!isAreaText(elem)) { return false }
   setMultilineText(elem, getTextWithNewlines(elem))
   return true
@@ -317,10 +250,9 @@ export const reflowAreaText = (elem) => {
  * Lay an area text out again only if its rows are not what its attributes and content call for. Undo and
  * redo use it: a restored text already has the right rows (and its tspans may belong to a recorded command, so
  * they must not be touched), while a restored *attribute* (font, width, …) leaves the old rows behind.
- * @param {Element} elem
- * @returns {boolean} Whether the rows were rewritten
+ * @returns Whether the rows were rewritten
  */
-export const settleAreaText = (elem) => {
+export const settleAreaText = (elem: Element): boolean => {
   if (!isAreaText(elem)) { return false }
   const plan = planArea(elem, getTextWithNewlines(elem), 16)
   const current = rowsOf(elem)
@@ -334,21 +266,20 @@ export const settleAreaText = (elem) => {
   return true
 }
 
-/**
- * @typedef {object} AreaBox
- * @property {number} x Left edge
- * @property {number} y Top edge
- * @property {number} width
- * @property {number} height
- */
+export interface AreaBox {
+  /** Left edge */
+  x: number
+  /** Top edge */
+  y: number
+  width: number
+  height: number
+}
 
 /**
  * The box of an area text in its own coordinates. Without `se:wrap-height` the
  * height is the content's (its rows × the line height).
- * @param {Element} elem
- * @returns {AreaBox}
  */
-export const getAreaBox = (elem) => {
+export const getAreaBox = (elem: Element): AreaBox => {
   const width = getWrapWidth(elem)
   const size = fontSizeOf(elem)
   const x = parseFloat(elem.getAttribute('x') ?? '') || 0
@@ -365,13 +296,10 @@ export const getAreaBox = (elem) => {
 /**
  * The topmost area text under a screen point, hit on its *box* rather than its glyphs (so the empty part of a
  * box is clickable). The point is mapped into each text's own coordinates, so zoom and transforms are handled.
- * @param {ParentNode} root where to look (the drawing's content)
- * @param {number} clientX
- * @param {number} clientY
- * @returns {SVGTextElement|null}
+ * @param root where to look (the drawing's content)
  */
-export const areaTextAtPoint = (root, clientX, clientY) => {
-  const texts = /** @type {SVGTextElement[]} */ (Array.from(root.querySelectorAll('text')).filter(isAreaText))
+export const areaTextAtPoint = (root: ParentNode, clientX: number, clientY: number): SVGTextElement | null => {
+  const texts = Array.from(root.querySelectorAll('text')).filter(isAreaText)
   for (let i = texts.length - 1; i >= 0; i--) {
     const text = texts[i]
     if (text.checkVisibility?.() === false) continue // display:none on it or an ancestor (hidden layer)
@@ -388,12 +316,9 @@ export const areaTextAtPoint = (root, clientX, clientY) => {
  * The attributes that put an area text's box at `box` for the given anchor and
  * font size (`x` / `y` stay the anchor and the first baseline). Pass `height: 0`
  * for a box that grows with its content.
- * @param {AreaBox} box
- * @param {string} anchor `start` | `middle` | `end`
- * @param {number} fontSize
- * @returns {Record<string, number|null>}
+ * @param anchor `start` | `middle` | `end`
  */
-export const areaAttrsForBox = (box, anchor, fontSize) => ({
+export const areaAttrsForBox = (box: AreaBox, anchor: string, fontSize: number): Record<string, number | null> => ({
   x: box.x + (ANCHOR_FACTOR[anchor] ?? 0) * box.width,
   y: box.y + TEXT_ASCENT * fontSize,
   [WRAP_WIDTH_ATTR]: box.width,
@@ -403,11 +328,8 @@ export const areaAttrsForBox = (box, anchor, fontSize) => ({
 /**
  * Write attributes from {@link areaAttrsForBox} (a `null` value removes it).
  * `se:` attributes are namespaced so a saved drawing declares the prefix.
- * @param {Element} elem
- * @param {Record<string, number|string|null>} attrs
- * @returns {void}
  */
-export const writeAreaAttrs = (elem, attrs) => {
+export const writeAreaAttrs = (elem: Element, attrs: Record<string, number | string | null>): void => {
   for (const [name, value] of Object.entries(attrs)) {
     if (name.startsWith('se:')) {
       const local = name.slice(3)
@@ -427,11 +349,11 @@ export const writeAreaAttrs = (elem, attrs) => {
  * Turn point text into area text without moving anything: the box is as wide as
  * the text is now (plus a little slack so measurement jitter does not re-wrap
  * it), its rows stay as they are.
- * @param {Element} elem A `<text>` that is not on a path
- * @param {number} contentWidth The text's current width
- * @returns {boolean} Whether anything changed
+ * @param elem A `<text>` that is not on a path
+ * @param contentWidth The text's current width
+ * @returns Whether anything changed
  */
-export const makeAreaText = (elem, contentWidth) => {
+export const makeAreaText = (elem: Element, contentWidth: number): boolean => {
   if (elem.localName !== 'text' || hasTextPath(elem) || getWrapWidth(elem)) { return false }
   const value = getTextWithNewlines(elem)
   writeAreaAttrs(elem, { [WRAP_WIDTH_ATTR]: Math.ceil(contentWidth) + 2 })
@@ -442,10 +364,9 @@ export const makeAreaText = (elem, contentWidth) => {
 /**
  * Turn area text back into point text: the rows as drawn become hard rows, so it
  * looks the same.
- * @param {Element} elem
- * @returns {boolean} Whether anything changed
+ * @returns Whether anything changed
  */
-export const makePointText = (elem) => {
+export const makePointText = (elem: Element): boolean => {
   if (!isAreaText(elem)) { return false }
   const rows = rowsOf(elem).map((t) => t.textContent).join('\n')
   writeAreaAttrs(elem, { [WRAP_WIDTH_ATTR]: null, [WRAP_HEIGHT_ATTR]: null, [VALIGN_ATTR]: null })

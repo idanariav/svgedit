@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { init as textAttrsInit } from '../../packages/svgcanvas/core/text-attrs.js'
-import { setMultilineText, getTextWithNewlines } from '../../packages/svgcanvas/core/text-rows.js'
+import { setMultilineText, getTextWithNewlines } from '../../packages/svgcanvas/core/text-rows.ts'
 import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.js'
 

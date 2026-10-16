@@ -8,8 +8,9 @@
 
 import { NS } from './namespaces.ts'
 import {
-  getBBox
-} from './bbox-utils.js'
+  getBBox,
+  requireBBox
+} from './bbox-utils.ts'
 import {
   transformPoint,
   transformListToTransform,
@@ -485,7 +486,7 @@ export const init = (canvas) => {
     val = Number.parseFloat(String(val))
     const elem = selectedElements[0]
     const oldTransform = elem.getAttribute('transform')
-    const bbox = getBBox(elem)
+    const bbox = requireBBox(elem)
     const cx = bbox.x + bbox.width / 2
     const cy = bbox.y + bbox.height / 2
     const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))

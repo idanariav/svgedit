@@ -1,5 +1,5 @@
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
-import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
 import * as pathUtils from '../../packages/svgcanvas/core/path-utils.ts'
 import * as encodingUtils from '../../packages/svgcanvas/core/encoding-utils.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'

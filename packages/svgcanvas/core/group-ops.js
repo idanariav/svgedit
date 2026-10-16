@@ -12,8 +12,8 @@ import * as hstry from './history.js'
 import { warn, error } from '../common/logger.ts'
 import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.ts'
 import {
-  getBBox as utilsGetBBox
-} from './bbox-utils.js'
+  requireBBox
+} from './bbox-utils.ts'
 import {
   transformPoint,
   matrixMultiply,
@@ -266,7 +266,7 @@ export const init = (canvas) => {
           }
 
           // get child's old center of rotation
-          const cbox = utilsGetBBox(elem)
+          const cbox = requireBBox(elem)
           const ceqm = transformListToTransform(chtlist).matrix
           const coldc = transformPoint(
             cbox.x + cbox.width / 2,

@@ -9,7 +9,7 @@
 
 import { isWebkit } from '../common/browser.ts'
 import { getRotationAngle } from './dom-utils.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.ts'

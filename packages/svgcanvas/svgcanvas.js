@@ -52,7 +52,7 @@ import {
 import {
   getBBoxOfElementAsPath,
   init as bboxUtilsInit
-} from './core/bbox-utils.js'
+} from './core/bbox-utils.ts'
 import { convertToPath } from './core/path-utils.ts'
 import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.ts'
 import {
@@ -1812,7 +1812,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
    * @todo (codedread): Remove the getBBox argument and split this function into two.
    * @param {Element} elem - The DOM element to be converted
    * @param {boolean} [getBBox] - Boolean on whether or not to only return the path's BBox
-   * @returns {void|DOMRect|false|SVGPathElement|null} If the getBBox flag is true, the resulting path's bounding box object.
+   * @returns {void|import('./core/bbox-utils.ts').BBoxObject|false|SVGPathElement|null} If the getBBox flag is true, the resulting path's bounding box object.
    * Otherwise the resulting path element is returned.
    */
   convertToPath (elem, getBBox) {

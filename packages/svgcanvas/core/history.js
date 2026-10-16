@@ -9,7 +9,7 @@
 
 import { NS } from './namespaces.ts'
 import { getHref, setHref, getRotationAngle, getTextWithNewlines, setMultilineText } from './dom-utils.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import { getTransformList, transformListToTransform, transformPoint } from './math.ts'
 
 // Attributes that affect an element's bounding box. Only these require

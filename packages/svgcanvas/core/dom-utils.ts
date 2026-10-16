@@ -161,7 +161,7 @@ export const init = (canvas: SvgCanvas): void => {
 }
 
 // Row storage and area-text layout live in text-rows.js; re-exported so existing imports keep working.
-export { TEXT_LINE_HEIGHT, getTextWithNewlines, setMultilineText } from './text-rows.js'
+export { TEXT_LINE_HEIGHT, getTextWithNewlines, setMultilineText } from './text-rows.ts'
 
 type TreeWalker = (elem: SVGElement) => void
 

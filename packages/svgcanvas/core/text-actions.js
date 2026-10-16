@@ -14,9 +14,9 @@ import {
   getTextWithNewlines,
   TEXT_LINE_HEIGHT
 } from './dom-utils.ts'
-import { getBBox as utilsGetBBox } from './bbox-utils.js'
+import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import { supportsGoodTextCharPos } from '../common/browser.ts'
-import { isAreaText, rowsOf, softCount } from './text-rows.js'
+import { isAreaText, rowsOf, softCount } from './text-rows.ts'
 
 /** @typedef {{x: number, y: number, height: number}} CharBox */
 

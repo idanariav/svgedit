@@ -10,7 +10,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 
 /** Most cells one split makes (every cell is a DOM element and the undo snapshot walks them all). */
 export const MAX_CELLS = 2500

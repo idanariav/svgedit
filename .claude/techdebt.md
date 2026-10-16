@@ -10,6 +10,14 @@ When adding an entry: say what it is, why it wasn't done now, and roughly
 how big/risky it is. When an item is finally addressed, delete its entry
 (git history keeps the record).
 
+## getStrokedBBox's false / null
+
+`getStrokedBBox` returns `false` for an empty list and `null` when every element is detached, but the canvas
+types (`svgcanvas-members.d.ts`) promise a box, because ~40 callers pass a non-empty list of attached elements and use the
+result unchecked. `bbox-utils.ts` casts at the assignment. Making the type honest (`BBox | false | null`) gave 33 strict
+errors in `event-rotate`, `event-select`, `selected-elem`…; the proper fix is a single contract (return `null` for both
+and have callers guard, or throw on an empty list), done once with those callers.
+
 ## Ghost path-node grips after leaving path-edit (unreproduced)
 
 An Obsidian-plugin log (2026-09-28) showed 4 `pathpointgrip_*` still

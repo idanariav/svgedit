@@ -13,8 +13,8 @@ import {
 } from './dom-utils.ts'
 import {
   getBBox,
-  getBBox as utilsGetBBox
-} from './bbox-utils.js'
+  requireBBox
+} from './bbox-utils.ts'
 import { init as pathMethodInit } from './path-method.js'
 import { init as pathActionsInit } from './path-actions.js'
 
@@ -518,7 +518,7 @@ export const init = (canvas) => {
 * @returns {void}
 */
   const reorientGrads = (elem, m) => {
-    const bb = utilsGetBBox(elem)
+    const bb = requireBBox(elem)
     for (let i = 0; i < 2; i++) {
       const type = i === 0 ? 'fill' : 'stroke'
       const attrVal = elem.getAttribute(type)

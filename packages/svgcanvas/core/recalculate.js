@@ -7,7 +7,7 @@
 
 import { getUnits } from './units.ts'
 import { getRotationAngle } from './dom-utils.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import { BatchCommand, ChangeElementCommand } from './history.js'
 import {
   isIdentity,
@@ -323,7 +323,7 @@ export const init = (canvas) => {
     // Non-group elements
 
     // Get the bounding box of the element
-    const box = getBBox(selected)
+    const box = /** @type {import('./bbox-utils.ts').BBoxObject} */ (getBBox(selected)) // null only for the guarded no-box cases
 
     // Handle elements without a bounding box (e.g., <defs>, <metadata>)
     if (!box && selected.tagName !== 'path') return null

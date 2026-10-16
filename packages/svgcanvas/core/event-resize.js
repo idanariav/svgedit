@@ -11,12 +11,12 @@
  * @module event-resize
  * @license MIT
  */
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import { getRotationAngle } from './dom-utils.ts'
 import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 import {
   isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
-} from './text-rows.js'
+} from './text-rows.ts'
 
 /**
  * Uniform group scale for a multi-element selection. Scales every selected

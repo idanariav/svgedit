@@ -18,7 +18,7 @@
  * @license MIT
  */
 
-import { getBBox } from './bbox-utils.js'
+import { getBBox } from './bbox-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
 /** Reference points, row by row: top left … bottom right. */

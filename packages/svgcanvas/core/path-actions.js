@@ -16,7 +16,7 @@ import {
 import {
   assignAttributes
 } from './dom-utils.ts'
-import { getBBox } from './bbox-utils.js'
+import { getBBox, requireBBox } from './bbox-utils.ts'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.ts'
 import { warn as logWarn } from '../common/logger.ts'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
@@ -953,7 +953,7 @@ export const init = (canvas) => {
 
           // const {item} = seg;
           const rubberBox = svgCanvas.getRubberBox()
-          const rbb = getBBox(rubberBox)
+          const rbb = requireBBox(rubberBox)
 
           const pt = svgCanvas.getGripPt(seg)
           const ptBb = {

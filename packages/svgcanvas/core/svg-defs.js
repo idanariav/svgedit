@@ -9,7 +9,7 @@
  */
 
 import { getHref, walkTree } from './dom-utils.ts'
-import { getBBox as utilsGetBBox } from './bbox-utils.js'
+import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import {
   transformPoint,
   transformListToTransform,

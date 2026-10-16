@@ -10,7 +10,7 @@
  */
 import { assignAttributes, preventClickDefault, setHref } from './dom-utils.ts'
 import { snapToAngle } from './math.ts'
-import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.js'
+import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.ts'
 
 /** Screen pixels the pointer must travel with the Text tool before the press becomes a box (area text). */
 const TEXT_DRAG_PX = 5

@@ -3,7 +3,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
-import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
+import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
 import * as math from '../../packages/svgcanvas/core/math.ts'
 import * as path from '../../packages/svgcanvas/core/path.js'
 import { attachUnits } from './unitsMock.js'
@@ -143,6 +143,14 @@ describe('utilities bbox', function () {
     assert.ok(utilities.getStrokedBBox)
     assert.ok(utilities.getRotationAngleFromTransformList)
     assert.ok(utilities.getRotationAngle)
+  })
+
+  it('requireBBox returns the box of a shape and throws for an element that has none', function () {
+    const rect = mockCreateSVGElement({ element: 'rect', attr: { x: '10', y: '20', width: '30', height: '40' } })
+    assert.deepEqual(bboxUtils.requireBBox(rect), { x: 10, y: 20, width: 30, height: 40 })
+    const defs = document.createElementNS(NS.SVG, 'defs')
+    assert.equal(bboxUtils.getBBox(defs), null)
+    assert.throws(() => bboxUtils.requireBBox(defs), /no bounding box for <defs>/)
   })
 
   it('Test getBBoxWithTransform and no transform', function () {

@@ -2,7 +2,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.ts'
-import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.js'
+import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.ts'
 import { attachUnits } from './unitsMock.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 

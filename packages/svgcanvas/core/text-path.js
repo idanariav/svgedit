@@ -22,7 +22,7 @@
 
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
-import { getTextWithNewlines } from './text-rows.js'
+import { getTextWithNewlines } from './text-rows.ts'
 import { warn } from '../common/logger.ts'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
