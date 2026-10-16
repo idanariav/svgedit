@@ -12,6 +12,8 @@
  * @license Apache-2.0
  */
 import '../../dialogs/seParamsDialog.js'
+import { splitIntoGrid as splitGrid, canSplitIntoGrid } from '@svgedit/svgcanvas/core/split-grid.js'
+import { transformEach as transformEachOf } from '@svgedit/svgcanvas/core/transform-each.js'
 
 const name = 'layout-ops'
 
@@ -100,17 +102,17 @@ export default {
         { id: 'reflectY', type: 'checkbox', value: false },
         { id: 'random', type: 'checkbox', value: false },
         { id: 'copy', type: 'checkbox', value: false }
-      ], (values) => svgCanvas.transformEach(values, seeded(seed)))
+      ], (values) => transformEachOf(svgCanvas, values, seeded(seed)))
     }
 
     const splitIntoGrid = () => {
-      if (!svgCanvas.canSplitIntoGrid(sole())) return
+      if (!canSplitIntoGrid(sole())) return
       const num = (id, value, min) => ({ id, type: 'number', value, min, step: 1 })
       openForm('grid', [
         num('rows', 2, 1),
         num('cols', 2, 1),
         num('gutter', 0, 0)
-      ], (values) => svgCanvas.splitIntoGrid({ rows: values.rows, cols: values.cols, gutter: values.gutter }))
+      ], (values) => splitGrid(svgCanvas, { rows: values.rows, cols: values.cols, gutter: values.gutter }))
     }
 
     const updateVisibility = () => {
@@ -139,7 +141,7 @@ export default {
           group: 'Tools',
           pd: true,
           interactive: true,
-          enabled: () => (svgCanvas.canSplitIntoGrid(sole()) ? true : tr('grid.selectFirst')),
+          enabled: () => (canSplitIntoGrid(sole()) ? true : tr('grid.selectFirst')),
           run: splitIntoGrid
         })
 

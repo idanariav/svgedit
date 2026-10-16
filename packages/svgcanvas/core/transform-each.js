@@ -158,72 +158,63 @@ const toTransform = (svgRoot, m) => {
 }
 
 /**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
+ * Apply Transform Each to the selection (or to copies of it).
+ * @function module:transform-each.SvgCanvas#transformEach
+ * @param {Pick<import('../svgcanvas.js').default, 'getSelectedElements' | 'getSvgRoot' | 'transact' | 'cloneSelectedElements' | 'recalculateDimensions' | 'selectorManager' | 'call'>} svgCanvas
+ * @param {EachParams} params
+ * @param {() => number} [rng] random source for `random` (tests pass a seeded one)
+ * @returns {Element[]} the elements that were transformed
  */
-export const init = (canvas) => {
-  const svgCanvas = canvas
-
-  /**
-   * Apply Transform Each to the selection (or to copies of it).
-   * @function module:transform-each.SvgCanvas#transformEach
-   * @param {EachParams} params
-   * @param {() => number} [rng] random source for `random` (tests pass a seeded one)
-   * @returns {Element[]} the elements that were transformed
-   */
-  const transformEach = (params, rng = Math.random) => {
-    if (!svgCanvas.getSelectedElements().filter(Boolean).length) return []
-    const svgRoot = svgCanvas.getSvgRoot()
-    const at = referenceFraction(params.origin)
-    /** @type {Element[]} */
-    let done = []
-    svgCanvas.transact('Transform each', () => {
-      if (params.copy) svgCanvas.cloneSelectedElements(0, 0)
-      done = svgCanvas.getSelectedElements().filter(Boolean)
-      for (const el of done) {
-        const tlist = getTransformList(el)
-        const box = getBBox(el)
-        if (!tlist || !box) continue
-        const current = transformListToTransform(tlist).matrix
-        /** @type {Affine} */
-        const own = [current.a, current.b, current.c, current.d, current.e, current.f]
-        // The reference point on the box's axis-aligned extent in the parent's coordinates (as Flip does).
-        const xs = []
-        const ys = []
-        for (const [x, y] of [[box.x, box.y], [box.x + box.width, box.y], [box.x, box.y + box.height], [box.x + box.width, box.y + box.height]]) {
-          xs.push(own[0] * x + own[2] * y + own[4])
-          ys.push(own[1] * x + own[3] * y + own[5])
-        }
-        const left = Math.min(...xs)
-        const top = Math.min(...ys)
-        const px = left + at.x * (Math.max(...xs) - left)
-        const py = top + at.y * (Math.max(...ys) - top)
-        const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
-        const parts = decompose(result)
-        tlist.clear()
-        if (parts) {
-          // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
-          const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-          const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
-          const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
-          /** @type {Affine} */
-          const scale = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
-          if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
-          if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
-          if (parts.angle) {
-            const rotation = svgRoot.createSVGTransform()
-            rotation.setRotate(parts.angle, c1x, c1y)
-            tlist.insertItemBefore(rotation, 0)
-          }
-        } else {
-          tlist.appendItem(toTransform(svgRoot, result))
-        }
-        svgCanvas.selectorManager.requestSelector(el).resize()
+export const transformEach = (svgCanvas, params, rng = Math.random) => {
+  if (!svgCanvas.getSelectedElements().filter(Boolean).length) return []
+  const svgRoot = svgCanvas.getSvgRoot()
+  const at = referenceFraction(params.origin)
+  /** @type {Element[]} */
+  let done = []
+  svgCanvas.transact('Transform each', () => {
+    if (params.copy) svgCanvas.cloneSelectedElements(0, 0)
+    done = svgCanvas.getSelectedElements().filter(Boolean)
+    for (const el of done) {
+      const tlist = getTransformList(el)
+      const box = getBBox(el)
+      if (!tlist || !box) continue
+      const current = transformListToTransform(tlist).matrix
+      /** @type {Affine} */
+      const own = [current.a, current.b, current.c, current.d, current.e, current.f]
+      // The reference point on the box's axis-aligned extent in the parent's coordinates (as Flip does).
+      const xs = []
+      const ys = []
+      for (const [x, y] of [[box.x, box.y], [box.x + box.width, box.y], [box.x, box.y + box.height], [box.x + box.width, box.y + box.height]]) {
+        xs.push(own[0] * x + own[2] * y + own[4])
+        ys.push(own[1] * x + own[3] * y + own[5])
       }
-    })
-    svgCanvas.call('changed', done)
-    return done
-  }
-
-  svgCanvas.transformEach = transformEach
+      const left = Math.min(...xs)
+      const top = Math.min(...ys)
+      const px = left + at.x * (Math.max(...xs) - left)
+      const py = top + at.y * (Math.max(...ys) - top)
+      const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
+      const parts = decompose(result)
+      tlist.clear()
+      if (parts) {
+        // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
+        const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+        const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
+        const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
+        /** @type {Affine} */
+        const scale = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
+        if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
+        if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
+        if (parts.angle) {
+          const rotation = svgRoot.createSVGTransform()
+          rotation.setRotate(parts.angle, c1x, c1y)
+          tlist.insertItemBefore(rotation, 0)
+        }
+      } else {
+        tlist.appendItem(toTransform(svgRoot, result))
+      }
+      svgCanvas.selectorManager.requestSelector(el).resize()
+    }
+  })
+  svgCanvas.call('changed', done)
+  return done
 }

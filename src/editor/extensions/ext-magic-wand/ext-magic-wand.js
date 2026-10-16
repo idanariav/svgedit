@@ -5,7 +5,7 @@
  * weight, opacity or shape type, optionally within a colour tolerance). Shift adds what the click finds to the
  * selection, Alt takes it out (the *Click* option on the options bar sets the same for a screen with no Shift or Alt: Replace /
  * Add / Subtract; the modifiers still win), a click on empty canvas clears the selection. The matching is the same as Select
- * Same (`@svgedit/svgcanvas/core/select-same.js`, `svgCanvas.findSameAs`): the current group, else the visible
+ * Same (`@svgedit/svgcanvas/core/select-same.js`, `findSameAs`): the current group, else the visible
  * layers; locked shapes are not targets.
  *
  * What the shapes have to share is on the options bar. The tolerance is the Editor Preferences' "Select Same"
@@ -15,7 +15,7 @@
  *
  * @license MIT
  */
-import { combineSelection, selectionOpFor } from '@svgedit/svgcanvas/core/select-same.js'
+import { combineSelection, selectionOpFor, findSameAs } from '@svgedit/svgcanvas/core/select-same.js'
 
 const name = 'magic-wand'
 const MODE = 'wand'
@@ -81,7 +81,7 @@ export default {
           if (op === 'replace' && current.length) svgCanvas.clearSelection()
           return
         }
-        const found = svgCanvas.findSameAs(target, criterion, { tolerance: COLOUR_CRITERIA.has(criterion) ? tolerance() : 0 })
+        const found = findSameAs(svgCanvas, target, criterion, { tolerance: COLOUR_CRITERIA.has(criterion) ? tolerance() : 0 })
         const next = combineSelection(op, current, found)
         if (next.length) svgCanvas.selectOnly(next, true)
         else svgCanvas.clearSelection()

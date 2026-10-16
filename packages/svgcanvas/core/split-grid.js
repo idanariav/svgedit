@@ -60,60 +60,50 @@ const SHAPES = ['rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'pat
 export const canSplitIntoGrid = (elem) => !!elem && SHAPES.includes(elem.localName) && !elem.hasAttribute('data-frame')
 
 /**
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
+ * Replace the selected shape with a group of `rows × cols` rects. One undo step.
+ * @function module:split-grid.SvgCanvas#splitIntoGrid
+ * @param {Pick<import("../svgcanvas.js").default, "getSelectedElements" | "transact" | "getNextId" | "selectOnly">} svgCanvas
+ * @param {{rows: number, cols: number, gutter?: number}} params
+ * @param {Element} [elem] defaults to the single selected element
+ * @returns {Element|null} the new group (selected), or null when nothing was done
  */
-export const init = (canvas) => {
-  const svgCanvas = canvas
+export const splitIntoGrid = (svgCanvas, params, elem) => {
+  const source = elem ?? (svgCanvas.getSelectedElements().filter(Boolean).length === 1 ? svgCanvas.getSelectedElements()[0] : null)
+  if (!source || !canSplitIntoGrid(source) || !source.parentNode) return null
+  const isRect = source.localName === 'rect'
+  const num = (/** @type {string} */ name) => parseFloat(source.getAttribute(name) ?? '') || 0
+  // In the shape's own coordinates: a rect's attributes, else the geometry's box (its transform is kept on the group).
+  const box = isRect ? { x: num('x'), y: num('y'), width: num('width'), height: num('height') } : getBBox(source)
+  const cells = box ? gridCells(box, params.rows, params.cols, params.gutter ?? 0) : null
+  if (!cells) return null
 
-  /**
-   * Replace the selected shape with a group of `rows × cols` rects. One undo step.
-   * @function module:split-grid.SvgCanvas#splitIntoGrid
-   * @param {{rows: number, cols: number, gutter?: number}} params
-   * @param {Element} [elem] defaults to the single selected element
-   * @returns {Element|null} the new group (selected), or null when nothing was done
-   */
-  const splitIntoGrid = (params, elem) => {
-    const source = elem ?? (svgCanvas.getSelectedElements().filter(Boolean).length === 1 ? svgCanvas.getSelectedElements()[0] : null)
-    if (!source || !canSplitIntoGrid(source) || !source.parentNode) return null
-    const isRect = source.localName === 'rect'
-    const num = (/** @type {string} */ name) => parseFloat(source.getAttribute(name) ?? '') || 0
-    // In the shape's own coordinates: a rect's attributes, else the geometry's box (its transform is kept on the group).
-    const box = isRect ? { x: num('x'), y: num('y'), width: num('width'), height: num('height') } : getBBox(source)
-    const cells = box ? gridCells(box, params.rows, params.cols, params.gutter ?? 0) : null
-    if (!cells) return null
-
-    const group = document.createElementNS(NS.SVG, 'g')
-    svgCanvas.transact('Split into grid', () => {
-      group.setAttribute('id', svgCanvas.getNextId())
-      const transform = source.getAttribute('transform')
-      if (transform) group.setAttribute('transform', transform)
-      for (const cell of cells) {
-        const rect = document.createElementNS(NS.SVG, 'rect')
-        for (const attr of Array.from(source.attributes)) {
-          if (SKIP_ATTRS.has(attr.name) || attr.name.startsWith('se:') || attr.name.startsWith('data-')) continue
-          rect.setAttributeNS(attr.namespaceURI, attr.name, attr.value)
-        }
-        if (isRect) {
-          for (const radius of ['rx', 'ry']) {
-            const value = source.getAttribute(radius)
-            if (value) rect.setAttribute(radius, value)
-          }
-        }
-        rect.setAttribute('id', svgCanvas.getNextId())
-        rect.setAttribute('x', String(cell.x))
-        rect.setAttribute('y', String(cell.y))
-        rect.setAttribute('width', String(cell.width))
-        rect.setAttribute('height', String(cell.height))
-        group.append(rect)
+  const group = document.createElementNS(NS.SVG, 'g')
+  svgCanvas.transact('Split into grid', () => {
+    group.setAttribute('id', svgCanvas.getNextId())
+    const transform = source.getAttribute('transform')
+    if (transform) group.setAttribute('transform', transform)
+    for (const cell of cells) {
+      const rect = document.createElementNS(NS.SVG, 'rect')
+      for (const attr of Array.from(source.attributes)) {
+        if (SKIP_ATTRS.has(attr.name) || attr.name.startsWith('se:') || attr.name.startsWith('data-')) continue
+        rect.setAttributeNS(attr.namespaceURI, attr.name, attr.value)
       }
-      source.before(group)
-      source.remove()
-    })
-    svgCanvas.selectOnly([group], true)
-    return group
-  }
-
-  svgCanvas.splitIntoGrid = splitIntoGrid
-  svgCanvas.canSplitIntoGrid = canSplitIntoGrid
+      if (isRect) {
+        for (const radius of ['rx', 'ry']) {
+          const value = source.getAttribute(radius)
+          if (value) rect.setAttribute(radius, value)
+        }
+      }
+      rect.setAttribute('id', svgCanvas.getNextId())
+      rect.setAttribute('x', String(cell.x))
+      rect.setAttribute('y', String(cell.y))
+      rect.setAttribute('width', String(cell.width))
+      rect.setAttribute('height', String(cell.height))
+      group.append(rect)
+    }
+    source.before(group)
+    source.remove()
+  })
+  svgCanvas.selectOnly([group], true)
+  return group
 }

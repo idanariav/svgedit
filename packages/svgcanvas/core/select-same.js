@@ -134,61 +134,53 @@ export const combineSelection = (op, current, found) => {
   return [...found]
 }
 
+/** @typedef {Pick<import('../svgcanvas.js').default, 'getCurrentGroup' | 'getSvgContent'>} FindHost */
+/** @typedef {FindHost & Pick<import('../svgcanvas.js').default, 'getSelectedElements' | 'selectOnly'>} SelectHost */
+
 /**
- * @param {import('../svgcanvas.js').default} canvas
+ * Every element (in the current group context, or on any visible layer) that shares a property with `ref`,
+ * `ref` included. Nothing is selected.
+ * @param {FindHost} svgCanvas
+ * @param {Element} ref
+ * @param {SelectSameCriterion|string} criterion
+ * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
+ * @returns {Element[]}
+ */
+export const findSameAs = (svgCanvas, ref, criterion, options = {}) => {
+  const tolerance = Math.max(0, Number(options.tolerance) || 0)
+  /** @type {Element[]} */
+  const found = []
+  /** @param {Element} parent */
+  const scan = (parent) => {
+    for (const el of parent.children) {
+      if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
+      if (matchesSame(criterion, ref, el, tolerance)) found.push(el)
+    }
+  }
+  const group = svgCanvas.getCurrentGroup()
+  if (group) {
+    scan(group)
+  } else {
+    for (const layer of svgCanvas.getSvgContent().children) {
+      if (layer.tagName !== 'g') continue
+      if (layer.getAttribute('display') === 'none' || /** @type {HTMLElement} */ (layer).style.display === 'none') continue
+      scan(layer)
+    }
+  }
+  return found
+}
+
+/**
+ * Extend the selection to every element (in the current group context, or on
+ * any visible layer) that shares a property with the primary selected element.
+ * @param {SelectHost} svgCanvas
+ * @param {SelectSameCriterion|string} criterion
+ * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
  * @returns {void}
  */
-export const init = (canvas) => {
-  const svgCanvas = canvas
-
-  /**
-   * Every element (in the current group context, or on any visible layer) that shares a property with `ref`,
-   * `ref` included. Nothing is selected.
-   * @function module:select-same.SvgCanvas#findSameAs
-   * @param {Element} ref
-   * @param {SelectSameCriterion|string} criterion
-   * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
-   * @returns {Element[]}
-   */
-  const findSameAs = (ref, criterion, options = {}) => {
-    const tolerance = Math.max(0, Number(options.tolerance) || 0)
-    /** @type {Element[]} */
-    const found = []
-    /** @param {Element} parent */
-    const scan = (parent) => {
-      for (const el of parent.children) {
-        if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
-        if (matchesSame(criterion, ref, el, tolerance)) found.push(el)
-      }
-    }
-    const group = svgCanvas.getCurrentGroup()
-    if (group) {
-      scan(group)
-    } else {
-      for (const layer of svgCanvas.getSvgContent().children) {
-        if (layer.tagName !== 'g') continue
-        if (layer.getAttribute('display') === 'none' || /** @type {HTMLElement} */ (layer).style.display === 'none') continue
-        scan(layer)
-      }
-    }
-    return found
-  }
-
-  /**
-   * Extend the selection to every element (in the current group context, or on
-   * any visible layer) that shares a property with the primary selected element.
-   * @function module:select-same.SvgCanvas#selectSameAs
-   * @param {SelectSameCriterion|string} criterion
-   * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
-   * @returns {void}
-   */
-  const selectSameAs = (criterion, options = {}) => {
-    const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!ref) return
-    const found = findSameAs(ref, criterion, options)
-    if (found.length) svgCanvas.selectOnly(found, true)
-  }
-
-  svgCanvas.findSameAs = findSameAs
-  svgCanvas.selectSameAs = selectSameAs
+export const selectSameAs = (svgCanvas, criterion, options = {}) => {
+  const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
+  if (!ref) return
+  const found = findSameAs(svgCanvas, ref, criterion, options)
+  if (found.length) svgCanvas.selectOnly(found, true)
 }

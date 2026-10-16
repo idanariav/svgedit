@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
-  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, selectionOpFor, init
+  SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, selectionOpFor, selectSameAs, findSameAs
 } from '../../packages/svgcanvas/core/select-same.js'
 
 const make = (tag, attrs = {}, parent = document.body) => {
@@ -133,7 +133,6 @@ describe('svgCanvas.selectSameAs', () => {
       getSvgContent: () => content,
       selectOnly: vi.fn((els) => { selected = els })
     }
-    init(canvas)
   })
   afterEach(() => { document.body.textContent = '' })
 
@@ -147,7 +146,7 @@ describe('svgCanvas.selectSameAs', () => {
     item('rect', 'c', { fill: '#00ff00' })
     const hidden = make('g', { class: 'layer', display: 'none' }, content)
     item('rect', 'd', { fill: '#ff0000' }, hidden)
-    canvas.selectSameAs('fill')
+    selectSameAs(canvas, 'fill')
     expect(picked()).toEqual(['a', 'b'])
     expect(canvas.selectOnly.mock.calls[0][1]).toBe(true)
   })
@@ -155,18 +154,18 @@ describe('svgCanvas.selectSameAs', () => {
   it('skips titles and frames', () => {
     selected = [item('rect', 'a', { fill: '#ff0000' })]
     item('rect', 'frame', { fill: '#ff0000', 'data-frame': '1' })
-    canvas.selectSameAs('fill')
+    selectSameAs(canvas, 'fill')
     expect(picked()).toEqual(['a'])
   })
 
   it('passes the tolerance through, and treats a missing or negative one as exact', () => {
     selected = [item('rect', 'a', { fill: '#336699' })]
     item('rect', 'b', { fill: '#346a9b' })
-    canvas.selectSameAs('fill')
+    selectSameAs(canvas, 'fill')
     expect(picked()).toEqual(['a'])
-    canvas.selectSameAs('fill', { tolerance: -5 })
+    selectSameAs(canvas, 'fill', { tolerance: -5 })
     expect(picked()).toEqual(['a'])
-    canvas.selectSameAs('fill', { tolerance: 3 })
+    selectSameAs(canvas, 'fill', { tolerance: 3 })
     expect(picked()).toEqual(['a', 'b'])
   })
 
@@ -175,13 +174,13 @@ describe('svgCanvas.selectSameAs', () => {
     group = item('g', 'grp')
     selected = [item('rect', 'inside', { fill: '#ff0000' }, group)]
     item('rect', 'other', { fill: '#ff0000' }, group)
-    canvas.selectSameAs('fill')
+    selectSameAs(canvas, 'fill')
     expect(picked()).toEqual(['inside', 'other'])
   })
 
   it('does nothing without a selection', () => {
     item('rect', 'a')
-    canvas.selectSameAs('fill')
+    selectSameAs(canvas, 'fill')
     expect(canvas.selectOnly).not.toHaveBeenCalled()
   })
 
@@ -189,16 +188,16 @@ describe('svgCanvas.selectSameAs', () => {
     selected = [item('rect', 'a', { opacity: '0.5', stroke: '#000', 'stroke-width': '2' })]
     item('rect', 'b', { opacity: '0.5' })
     item('rect', 'c', { stroke: '#111', 'stroke-width': '2' })
-    canvas.selectSameAs('opacity')
+    selectSameAs(canvas, 'opacity')
     expect(picked()).toEqual(['a', 'b'])
     selected = [layer.querySelector('#a')]
-    canvas.selectSameAs('strokeweight')
+    selectSameAs(canvas, 'strokeweight')
     expect(picked()).toEqual(['a', 'c'])
     selected = [layer.querySelector('#a')]
-    canvas.selectSameAs('fillstroke', { tolerance: 10 })
+    selectSameAs(canvas, 'fillstroke', { tolerance: 10 })
     expect(picked()).toEqual(['a']) // #000 against #111 is about 18 apart
     selected = [layer.querySelector('#a')]
-    canvas.selectSameAs('fillstroke', { tolerance: 20 })
+    selectSameAs(canvas, 'fillstroke', { tolerance: 20 })
     expect(picked()).toEqual(['a', 'c'])
   })
 })
@@ -218,7 +217,6 @@ describe('svgCanvas.findSameAs', () => {
     make('title', {}, layer)
     group = null
     canvas = { getCurrentGroup: () => group, getSvgContent: () => content, getSelectedElements: () => [], selectOnly: vi.fn() }
-    init(canvas)
   })
   afterEach(() => { document.body.textContent = '' })
 
@@ -226,7 +224,7 @@ describe('svgCanvas.findSameAs', () => {
     const ref = item('rect', 'a', { fill: '#ff0000' })
     item('circle', 'b', { fill: '#ff0000' })
     item('rect', 'c', { fill: '#00ff00' })
-    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a', 'b'])
+    expect(ids(findSameAs(canvas, ref, 'fill'))).toEqual(['a', 'b'])
     expect(canvas.selectOnly).not.toHaveBeenCalled()
   })
 
@@ -235,17 +233,17 @@ describe('svgCanvas.findSameAs', () => {
     item('rect', 'frame', { fill: '#ff0000', 'data-frame': '1' })
     const hidden = make('g', { class: 'layer', display: 'none' }, content)
     item('rect', 'd', { fill: '#ff0000' }, hidden)
-    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a'])
+    expect(ids(findSameAs(canvas, ref, 'fill'))).toEqual(['a'])
   })
 
   it('applies the tolerance, and an open group limits the scan to the group', () => {
     const ref = item('rect', 'a', { fill: '#336699' })
     item('rect', 'b', { fill: '#346a9b' })
-    expect(ids(canvas.findSameAs(ref, 'fill'))).toEqual(['a'])
-    expect(ids(canvas.findSameAs(ref, 'fill', { tolerance: 3 }))).toEqual(['a', 'b'])
+    expect(ids(findSameAs(canvas, ref, 'fill'))).toEqual(['a'])
+    expect(ids(findSameAs(canvas, ref, 'fill', { tolerance: 3 }))).toEqual(['a', 'b'])
     group = item('g', 'grp')
     const inner = item('rect', 'inner', { fill: '#336699' }, group)
-    expect(ids(canvas.findSameAs(inner, 'fill'))).toEqual(['inner'])
+    expect(ids(findSameAs(canvas, inner, 'fill'))).toEqual(['inner'])
   })
 })
 

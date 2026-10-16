@@ -8,6 +8,7 @@ import { localizePanelFragment } from '../panelI18n.js'
 import { runSteps } from '../runSteps.js'
 import { updateContextPanel, round1 } from './topPanelContext.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+import { selectSameAs } from '@svgedit/svgcanvas/core/select-same.js'
 
 const { getTypeMap } = SvgCanvas
 
@@ -658,7 +659,7 @@ class TopPanel {
    * @returns {void}
    */
   clickSelectSame (evt) {
-    this.editor.svgCanvas.selectSameAs(evt.detail.value, { tolerance: this.selectSameTolerance() })
+    selectSameAs(this.editor.svgCanvas, evt.detail.value, { tolerance: this.selectSameTolerance() })
   }
 
   /**

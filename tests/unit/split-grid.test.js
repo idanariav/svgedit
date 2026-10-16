@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { gridCells, canSplitIntoGrid, init, MAX_CELLS } from '../../packages/svgcanvas/core/split-grid.js'
+import { gridCells, canSplitIntoGrid, MAX_CELLS, splitIntoGrid } from '../../packages/svgcanvas/core/split-grid.js'
 
 describe('gridCells', () => {
   const box = { x: 10, y: 20, width: 100, height: 60 }
@@ -55,7 +55,6 @@ describe('splitIntoGrid', () => {
       transact: (label, fn) => fn(),
       selectOnly: (els) => { selection = els }
     }
-    init(canvas)
   })
 
   const rect = (attrs) => {
@@ -68,7 +67,7 @@ describe('splitIntoGrid', () => {
 
   it('replaces a rect with a group of cells that keep its style', () => {
     const r = rect({ fill: '#ff0000', stroke: '#000000', 'stroke-width': 3, opacity: 0.5, rx: 4 })
-    const group = canvas.splitIntoGrid({ rows: 2, cols: 2, gutter: 10 })
+    const group = splitIntoGrid(canvas, { rows: 2, cols: 2, gutter: 10 })
     expect(r.isConnected).toBe(false)
     expect(group.localName).toBe('g')
     expect(group.children).toHaveLength(4)
@@ -84,7 +83,7 @@ describe('splitIntoGrid', () => {
 
   it('gives every cell and the group a fresh id', () => {
     rect()
-    const group = canvas.splitIntoGrid({ rows: 2, cols: 3 })
+    const group = splitIntoGrid(canvas, { rows: 2, cols: 3 })
     const ids = [group.id, ...Array.from(group.children, (c) => c.id)]
     expect(new Set(ids).size).toBe(7)
     expect(ids).not.toContain('r')
@@ -92,28 +91,28 @@ describe('splitIntoGrid', () => {
 
   it('keeps the rect\'s own transform on the group so a rotated rect stays rotated', () => {
     rect({ transform: 'rotate(30 60 50)' })
-    const group = canvas.splitIntoGrid({ rows: 1, cols: 2 })
+    const group = splitIntoGrid(canvas, { rows: 1, cols: 2 })
     expect(group.getAttribute('transform')).toBe('rotate(30 60 50)')
     for (const cell of group.children) expect(cell.hasAttribute('transform')).toBe(false)
   })
 
   it('does not copy live-feature state or geometry to the cells', () => {
     rect({ 'se:corner-radius': '5', 'data-name': 'x', fill: '#00f' })
-    const group = canvas.splitIntoGrid({ rows: 1, cols: 1 })
+    const group = splitIntoGrid(canvas, { rows: 1, cols: 1 })
     const cell = group.children[0]
     expect([...cell.attributes].some((a) => a.name.startsWith('se:') || a.name.startsWith('data-'))).toBe(false)
   })
 
   it('does nothing for a refused grid, a non-shape or several selected elements', () => {
     const r = rect()
-    expect(canvas.splitIntoGrid({ rows: 0, cols: 1 })).toBeNull()
+    expect(splitIntoGrid(canvas, { rows: 0, cols: 1 })).toBeNull()
     expect(r.isConnected).toBe(true)
     const g = document.createElementNS(NS.SVG, 'g')
     svg.append(g)
     selection = [g]
-    expect(canvas.splitIntoGrid({ rows: 2, cols: 2 })).toBeNull()
+    expect(splitIntoGrid(canvas, { rows: 2, cols: 2 })).toBeNull()
     selection = [r, g]
-    expect(canvas.splitIntoGrid({ rows: 2, cols: 2 })).toBeNull()
+    expect(splitIntoGrid(canvas, { rows: 2, cols: 2 })).toBeNull()
   })
 
   it('canSplitIntoGrid takes plain shapes only', () => {

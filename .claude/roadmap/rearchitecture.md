@@ -185,8 +185,17 @@ a while). Rules that made it work:
 - A stateless module needs no service: export the functions, take `host` as the first argument (`clear.ts`'s
   `clearSvgContentElement(host)` and `sanitize.js`'s `sanitizeSvg(host, node)` went this way; their two members left
   `svgcanvas-members.d.ts`).
-Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next by size: `layer.js`,
-`event-rotate.js`, then the 5–10-member modules (`select-same`, `split-grid`, `boolean-ops`, `clip-mask`).
+**Which members move and which stay (2026-10-16).** Move a member when its callers are core modules, built-in extensions
+and unit tests of the module itself (they import the function and pass the canvas). Keep it on the canvas, typed
+properly, when editor panels or components call it or their unit tests mock it through `svgCanvas` (`offsetPath`,
+`strokeToPath`, `hasVisibleStroke`, `segmentSelection`, `getSegmentParams`, `cutShapes`: the mock canvas is how those tests
+isolate the UI, and the e2e specs use `window.svgEditor.svgCanvas.x` as their handle). Those members are the facade; the
+thin `canvas.x = (...a) => x(canvas, ...a)` shims in `cutter.js` and `segment.js` stay until the facade is written
+down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentElement`, `sanitizeSvg`, `findSameAs`,
+`selectSameAs`, `splitIntoGrid`, `transformEach`. Gesture state that `event-*` modules park on the canvas
+(`groupRotateCenter`, `dragStartTransforms`, …) is a different job: it belongs in a state object owned by the gesture
+module, not in a function move.
+Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). Next: the gesture state of the `event-*` modules, then the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`).
 
 Size: L, fully incremental, low risk per module.
 
