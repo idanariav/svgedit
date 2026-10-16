@@ -45,3 +45,9 @@ full check (tests, then build).
 `node scripts/repair-drawings.mjs <dir>` dry-runs the repairs registered in the
 script over `.svg` files and the Obsidian plugin's `.md` drawings;
 `--write` applies them.
+
+## Bundle size
+
+`npm run bundle-report` builds the editor in memory and prints what is in `Editor.js` by package and source folder;
+`npm run bundle-size` fails when the minified bundle is over the budget in `scripts/bundle-report.mjs` (raise it in the
+commit that adds the weight). Neither is part of `npm test`.

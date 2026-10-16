@@ -292,13 +292,25 @@ catalog and all 45 extensions in one file. The build sets `inlineDynamicImports`
 into an inline module, because the plugin ships only `Editor.js` (`fetch-svgedit-dist.mjs`); so code splitting cannot
 help without a plugin change.
 
+**Measured (2026-10-16, `npm run bundle-report`, `npm run bundle-size`).** `Editor.js` is 3249 KB minified (4844 KB rendered
+across 775 modules). By share of the rendered size: `packages/svgcanvas/core` 29% (1411 KB, 105 files), `src/editor/components`
+10%, `paper` 8.5% (413 KB), the editor's top-level files 8%, **`ext-shapes` 7.4% (360 KB: the shape library data)**,
+`clipper-lib` 4.4%, panels and dialogs 4% each, the toolbar icons 3.7% (241 files), `ext-fonts` 2.4% (the font catalog),
+`culori` 2%, `i18next` 1.6%, the 43 other extensions together about 8% (10–35 KB each). Startup (uninstrumented build,
+`vite preview` on this machine, median of 7): `#svgroot` at 234 ms and extensions added at 243 ms from navigation; with the
+CPU throttled 4x, 620 / 644 ms. The Editor.js fetch is 96 ms of that on localhost. **So startup is not a problem, and
+splitting the bundle would not buy a visible win**; what is left to weigh is the plugin's main.js parse cost at Obsidian
+launch (the whole editor sits in `main.js`), which this machine cannot show and a phone would.
+
 **Options, cheapest first:**
-1. **Measure:** a bundle report (e.g. `rollup-plugin-visualizer`) and an e2e startup-time budget, like VectorCraft's
-   `vectorcraft-cli perf` budgets.
-2. **Defer evaluation inside the single file:** heavy modules initialised on first use (paper's scope already is,
-   `getPaperScope`); large data (shape library, font catalog) parsed on first open rather than at import.
+1. **Measure:** done (above). `npm run bundle-size` fails over a 3400 KB budget (`MAX_MINIFIED_KB` in
+   `scripts/bundle-report.mjs`; raise it in the commit that adds the weight); it is not in `pretest` (a build takes about a
+   minute). A startup-time budget in e2e would be flaky, so there is none.
+2. **Defer evaluation inside the single file:** the shape library data (360 KB) and the font catalog (117 KB) are 10% of
+   the rendered size and are parsed at import; making them lazy (first open of the shape library / fonts panel) costs no
+   plugin change. `paper` (413 KB) is already a lazy scope but is imported eagerly, so its source is still parsed.
 3. **Ship chunks:** teach the plugin to copy a `svgedit-dist/` folder, drop `inlineDynamicImports`, and lazy-load rarely
-   used tools (tracing, puppet warp, blend, recolor, shape library data). Cross-repo; only if 1 shows startup matters.
+   used tools. Cross-repo; the numbers above say startup does not need it.
 
 **Cost to budget (from R1 step (a)).** Wiring the document model into the editor adds `saxes` + `xmlchars` (about 84 KB of
 source before minification; minified size not measured). The browser's `DOMParser` could parse instead in the editor

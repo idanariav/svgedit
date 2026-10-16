@@ -148,6 +148,7 @@
 
 | File | What it is |
 |---|---|
+| `bundle-report.mjs` | What is in `dist/editor/Editor.js`, by package and by source folder (R6 in .claude/roadmap/rearchitecture.md) |
 | `check-dom-scope.mjs` | Guards against the "wrong owning editor" bug class: svgedit mounts one editor per pane/drawing in the same document, but its chrome uses fixed element ids (workarea, fill_color, the se-* dialogs, ...), so a bare… |
 | `check-layers.mjs` | Keeps the canvas engine (packages/svgcanvas) independent of the editor UI (src/editor), the way VectorCraft's `cargo xtask layers` enforces its crate layering |
 | `check-model-roundtrip.mjs` | Oracle for the document model (R1): parse every saved drawing into the model and serialize it back |
