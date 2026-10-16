@@ -9,7 +9,7 @@
 
 import { getTextWithNewlines, setMultilineText } from './dom-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
-import { registerAttrValidator, registerElementCheck } from './drawing-invariants.js'
+import { registerAttrValidator, registerElementCheck } from './drawing-invariants.ts'
 import { getBBox } from './bbox-utils.ts'
 import {
   WRAP_WIDTH_ATTR, WRAP_HEIGHT_ATTR, VALIGN_ATTR, TEXT_ASCENT, getWrapWidth, getWrapHeight, writeAreaAttrs,

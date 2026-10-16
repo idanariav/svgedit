@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Select Same: extend the selection to every element that shares a property
  * with the primary selected element. Colour criteria take a tolerance, a
@@ -15,6 +14,7 @@
 
 // The modular entry point: only the colour modes and parsers the fills and strokes of a drawing use
 // (hex, names, rgb(), hsl()), not all of culori.
+import type SvgCanvas from '../svgcanvas.js'
 import { useMode, useParser, parse, modeRgb, modeOklab, modeHsl, parseHex, parseNamed, parseRgb, parseHsl, parseTransparent } from 'culori/fn'
 
 useMode(modeRgb)
@@ -22,16 +22,14 @@ useMode(modeHsl)
 const toOklab = useMode(modeOklab)
 for (const parser of [parseHex, parseNamed, parseRgb, parseHsl, parseTransparent]) useParser(parser)
 
-/** @typedef {'fill'|'stroke'|'type'|'fillstroke'|'strokeweight'|'opacity'} SelectSameCriterion */
-export const SELECT_SAME_CRITERIA = ['fill', 'stroke', 'type', 'fillstroke', 'strokeweight', 'opacity']
+export type SelectSameCriterion = 'fill' | 'stroke' | 'type' | 'fillstroke' | 'strokeweight' | 'opacity'
+export const SELECT_SAME_CRITERIA: SelectSameCriterion[] = ['fill', 'stroke', 'type', 'fillstroke', 'strokeweight', 'opacity']
 
 /**
  * Distance between two CSS colours in OKLab, black to white = 100.
- * @param {string} a
- * @param {string} b
- * @returns {number} `Infinity` when either is not a plain colour (`none`, `url(#g)`, …)
+ * @returns `Infinity` when either is not a plain colour (`none`, `url(#g)`, …)
  */
-export const colorDistance = (a, b) => {
+export const colorDistance = (a: string, b: string): number => {
   const ca = parse(a)
   const cb = parse(b)
   if (!ca || !cb) return Infinity
@@ -44,15 +42,13 @@ export const colorDistance = (a, b) => {
  * The attributes a viewer sees. A tapered stroke is drawn as a filled outline,
  * so its colour is `fill` and its width and stroke paint are in `se:taper-style`
  * ("width|paint"): read it as the stroked line it stands for.
- * @param {Element} el
- * @returns {{fill: string, stroke: string, strokeWidth: number, opacity: number}}
  */
-export const appearanceOf = (el) => {
-  const norm = (/** @type {string} */ attr, /** @type {string} */ def) => {
+export const appearanceOf = (el: Element): { fill: string, stroke: string, strokeWidth: number, opacity: number } => {
+  const norm = (attr: string, def: string): string => {
     const v = el.getAttribute(attr)
     return v === null || v.trim() === '' ? def : v.trim().toLowerCase()
   }
-  const num = (/** @type {string} */ attr, /** @type {number} */ def) => {
+  const num = (attr: string, def: number): number => {
     const n = parseFloat(el.getAttribute(attr) ?? '')
     return Number.isFinite(n) ? n : def
   }
@@ -76,22 +72,15 @@ export const appearanceOf = (el) => {
   }
 }
 
-/**
- * @param {string} a normalised paint
- * @param {string} b normalised paint
- * @param {number} tolerance
- * @returns {boolean}
- */
-export const samePaint = (a, b, tolerance) => a === b || (tolerance > 0 && colorDistance(a, b) <= tolerance)
+/** @param a normalised paint */
+export const samePaint = (a: string, b: string, tolerance: number): boolean => a === b || (tolerance > 0 && colorDistance(a, b) <= tolerance)
 
 /**
- * @param {SelectSameCriterion|string} criterion
- * @param {Element} ref the primary selected element
- * @param {Element} el a candidate
- * @param {number} [tolerance] colour tolerance, 0 = exact
- * @returns {boolean}
+ * @param ref the primary selected element
+ * @param el a candidate
+ * @param tolerance colour tolerance, 0 = exact
  */
-export const matchesSame = (criterion, ref, el, tolerance = 0) => {
+export const matchesSame = (criterion: SelectSameCriterion | string, ref: Element, el: Element, tolerance = 0): boolean => {
   if (criterion === 'type') return el.tagName === ref.tagName
   const a = appearanceOf(ref)
   const b = appearanceOf(el)
@@ -105,16 +94,14 @@ export const matchesSame = (criterion, ref, el, tolerance = 0) => {
   }
 }
 
-/** @typedef {'replace'|'add'|'subtract'} SelectionOp */
+export type SelectionOp = 'replace' | 'add' | 'subtract'
 
 /**
  * What a click of the Magic Wand does: Shift adds and Alt subtracts whatever the tool is set to, otherwise it is the set
  * mode (what a touch screen, with no Shift or Alt, uses).
- * @param {{shift?: boolean, alt?: boolean}} mods
- * @param {SelectionOp|string} [mode] the mode set on the options bar
- * @returns {SelectionOp}
+ * @param mode the mode set on the options bar
  */
-export const selectionOpFor = (mods, mode = 'replace') => {
+export const selectionOpFor = (mods: { shift?: boolean, alt?: boolean }, mode: SelectionOp | string = 'replace'): SelectionOp => {
   if (mods.shift) return 'add'
   if (mods.alt) return 'subtract'
   return mode === 'add' || mode === 'subtract' ? mode : 'replace'
@@ -123,35 +110,25 @@ export const selectionOpFor = (mods, mode = 'replace') => {
 /**
  * How a click of the Magic Wand combines what it found with the current selection (Shift adds, Alt subtracts).
  * Order is kept: the current selection first, then what was added.
- * @param {SelectionOp} op
- * @param {Element[]} current
- * @param {Element[]} found
- * @returns {Element[]}
  */
-export const combineSelection = (op, current, found) => {
+export const combineSelection = (op: SelectionOp, current: Element[], found: Element[]): Element[] => {
   if (op === 'add') return [...current, ...found.filter((el) => !current.includes(el))]
   if (op === 'subtract') return current.filter((el) => !found.includes(el))
   return [...found]
 }
 
-/** @typedef {Pick<import('../svgcanvas.js').default, 'getCurrentGroup' | 'getSvgContent'>} FindHost */
-/** @typedef {FindHost & Pick<import('../svgcanvas.js').default, 'getSelectedElements' | 'selectOnly'>} SelectHost */
+type FindHost = Pick<SvgCanvas, 'getCurrentGroup' | 'getSvgContent'>
+type SelectHost = FindHost & Pick<SvgCanvas, 'getSelectedElements' | 'selectOnly'>
 
 /**
  * Every element (in the current group context, or on any visible layer) that shares a property with `ref`,
  * `ref` included. Nothing is selected.
- * @param {FindHost} svgCanvas
- * @param {Element} ref
- * @param {SelectSameCriterion|string} criterion
- * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
- * @returns {Element[]}
+ * @param options `tolerance`: colour distance (see the module comment), default 0 = exact
  */
-export const findSameAs = (svgCanvas, ref, criterion, options = {}) => {
+export const findSameAs = (svgCanvas: FindHost, ref: Element, criterion: SelectSameCriterion | string, options: { tolerance?: number } = {}): Element[] => {
   const tolerance = Math.max(0, Number(options.tolerance) || 0)
-  /** @type {Element[]} */
-  const found = []
-  /** @param {Element} parent */
-  const scan = (parent) => {
+  const found: Element[] = []
+  const scan = (parent: Element): void => {
     for (const el of parent.children) {
       if (el.tagName === 'title' || el.hasAttribute('data-frame')) continue
       if (matchesSame(criterion, ref, el, tolerance)) found.push(el)
@@ -163,7 +140,7 @@ export const findSameAs = (svgCanvas, ref, criterion, options = {}) => {
   } else {
     for (const layer of svgCanvas.getSvgContent().children) {
       if (layer.tagName !== 'g') continue
-      if (layer.getAttribute('display') === 'none' || /** @type {HTMLElement} */ (layer).style.display === 'none') continue
+      if (layer.getAttribute('display') === 'none' || (layer as HTMLElement).style.display === 'none') continue
       scan(layer)
     }
   }
@@ -173,12 +150,9 @@ export const findSameAs = (svgCanvas, ref, criterion, options = {}) => {
 /**
  * Extend the selection to every element (in the current group context, or on
  * any visible layer) that shares a property with the primary selected element.
- * @param {SelectHost} svgCanvas
- * @param {SelectSameCriterion|string} criterion
- * @param {{tolerance?: number}} [options] `tolerance`: colour distance (see the module comment), default 0 = exact
- * @returns {void}
+ * @param options `tolerance`: colour distance (see the module comment), default 0 = exact
  */
-export const selectSameAs = (svgCanvas, criterion, options = {}) => {
+export const selectSameAs = (svgCanvas: SelectHost, criterion: SelectSameCriterion | string, options: { tolerance?: number } = {}): void => {
   const [ref] = svgCanvas.getSelectedElements().filter(Boolean)
   if (!ref) return
   const found = findSameAs(svgCanvas, ref, criterion, options)

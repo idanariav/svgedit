@@ -19,7 +19,7 @@ import {
 import { getBBox, requireBBox } from './bbox-utils.ts'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.ts'
 import { warn as logWarn } from '../common/logger.ts'
-import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.js'
+import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.ts'
 import { anchorsToD } from './anchor-path.ts'
 import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.js'
 

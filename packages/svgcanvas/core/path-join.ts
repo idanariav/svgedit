@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Join for the select tool: two selected open paths become one (the upper one is
  * merged into the lower one, which keeps its id and style), or one open path is
@@ -9,8 +8,9 @@
  * @license MIT
  */
 
+import type SvgCanvas from '../svgcanvas.js'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
-import { joinSubpaths } from './path-edit.js'
+import { joinSubpaths } from './path-edit.ts'
 import { getTransformList, transformListToTransform, matrixMultiply, transformPoint } from './math.ts'
 
 /** Endpoints closer than this (user units, at 100% zoom) merge into one anchor. */
@@ -19,27 +19,22 @@ const JOIN_TOLERANCE = 0.5
 /** Source-geometry attributes of the live features: a path carrying one is not plain path data. */
 export const LIVE_ATTRS = ['se:fx-d', 'se:orig-d', 'se:taper-d', 'se:arrow-d']
 
-/** @param {Element|null|undefined} elem */
-const isPlainPath = (elem) =>
+const isPlainPath = (elem: Element | null | undefined): boolean =>
   !!elem && elem.tagName === 'path' && !LIVE_ATTRS.some((a) => elem.hasAttribute(a))
 
-/** @param {Element} elem */
-const matrixOf = (elem) => {
+const matrixOf = (elem: Element): SVGMatrix | null => {
   const tlist = getTransformList(elem)
   return tlist ? transformListToTransform(tlist).matrix : null
 }
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
    * Whether the elements can be joined: one plain path with an open subpath
    * (it will be closed), or two plain paths in the same parent.
-   * @param {Element[]} elems
-   * @returns {boolean}
    */
-  const canJoinPaths = (elems) => {
+  const canJoinPaths = (elems: Element[]): boolean => {
     const list = (elems || []).filter(Boolean)
     if (list.length < 1 || list.length > 2 || !list.every(isPlainPath)) return false
     if (list.length === 2 && list[0].parentNode !== list[1].parentNode) return false
@@ -48,11 +43,11 @@ export const init = (canvas) => {
 
   /**
    * Join the selected paths (or close the selected open path) as one undo step.
-   * @returns {?Element} The resulting path, or null when not eligible.
+   * @returns The resulting path, or null when not eligible.
    */
-  const joinSelectedPaths = () => {
+  const joinSelectedPaths = (): Element | null => {
     // The lower element in the document keeps its id and style.
-    const selected = svgCanvas.getSelectedElements().filter(Boolean).sort((/** @type {Element} */ a, /** @type {Element} */ b) =>
+    const selected = svgCanvas.getSelectedElements().filter(Boolean).sort((a: Element, b: Element) =>
       (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
     if (!canJoinPaths(selected)) return null
     const { BatchCommand, ChangeElementCommand, RemoveElementCommand } = svgCanvas.history
@@ -63,8 +58,7 @@ export const init = (canvas) => {
       const m1 = matrixOf(first)
       const m2 = matrixOf(second)
       const toFirst = m1 && m2 ? matrixMultiply(m1.inverse(), m2) : (m2 || (m1 ? m1.inverse() : null))
-      /** @param {{x: number, y: number}} pt */
-      const map = (pt) => (toFirst ? transformPoint(pt.x, pt.y, toFirst) : pt)
+      const map = (pt: { x: number, y: number }): { x: number, y: number } => (toFirst ? transformPoint(pt.x, pt.y, toFirst) : pt)
       for (const sp of parseAnchors(second.getAttribute('d') || '', 0.1)) {
         subpaths.push({
           closed: sp.closed,

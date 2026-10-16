@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseAnchors, anchorsToD, flattenSubpaths, isLineSegment, segmentCount, sameAnchorGeometry } from '../../packages/svgcanvas/core/anchor-path.ts'
-import { simplifyWith, fitFreehand } from '../../packages/svgcanvas/core/path-fit.js'
+import { simplifyWith, fitFreehand } from '../../packages/svgcanvas/core/path-fit.ts'
 
 const P = (x, y) => ({ x, y })
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Structural invariants of a healthy drawing, as a pure DOM check.
  *
@@ -27,60 +26,44 @@
 
 import { NS } from './namespaces.ts'
 
-/**
- * @typedef {object} Finding
- * @property {string} code stable rule name, e.g. `duplicate-id`
- * @property {string} message human-readable
- * @property {string} [id] id of the offending element, when it has one
- */
+export interface Finding {
+  /** stable rule name, e.g. `duplicate-id` */
+  code: string
+  /** human-readable */
+  message: string
+  /** id of the offending element, when it has one */
+  id?: string
+}
 
-/**
- * Validator for one `se:*` attribute: `true` when the value parses, else a reason.
- * @callback AttrValidator
- * @param {string} value
- * @param {Element} elem
- * @returns {true|string}
- */
+/** Validator for one `se:*` attribute: `true` when the value parses, else a reason. */
+export type AttrValidator = (value: string, elem: Element) => true | string
 
-/** @type {Map<string, AttrValidator>} */
-const attrValidators = new Map()
+const attrValidators = new Map<string, AttrValidator>()
 
 /**
  * Register the parser-backed check for an `se:*` attribute a module owns.
  * Modules call this from their `init`, like `registerGeometryRemap`.
- * @param {string} attrName e.g. `se:fx`
- * @param {AttrValidator} validator
- * @returns {void}
+ * @param attrName e.g. `se:fx`
  */
-export const registerAttrValidator = (attrName, validator) => {
+export const registerAttrValidator = (attrName: string, validator: AttrValidator): void => {
   attrValidators.set(attrName, validator)
 }
 
-/**
- * A check a module owns that looks at one element and returns what is wrong with it.
- * @callback ElementCheck
- * @param {Element} elem
- * @returns {string[]} messages, empty when healthy
- */
+/** A check a module owns that looks at one element and returns what is wrong with it (messages, empty when healthy). */
+export type ElementCheck = (elem: Element) => string[]
 
-/** @type {Map<string, ElementCheck>} */
-const elementChecks = new Map()
+const elementChecks = new Map<string, ElementCheck>()
 
 /**
  * Register a per-element check, reported under `code` (e.g. the live stack's `se-stack`).
- * @param {string} code stable rule name
- * @param {ElementCheck} check
- * @returns {void}
+ * @param code stable rule name
  */
-export const registerElementCheck = (code, check) => {
+export const registerElementCheck = (code: string, check: ElementCheck): void => {
   elementChecks.set(code, check)
 }
 
-/**
- * Validator for attributes that hold SVG path data (`se:fx-d`, `se:orig-d`, `se:taper-d`).
- * @type {AttrValidator}
- */
-export const pathDataValidator = (value) => {
+/** Validator for attributes that hold SVG path data (`se:fx-d`, `se:orig-d`, `se:taper-d`). */
+export const pathDataValidator: AttrValidator = (value) => {
   if (BAD_NUMBER_RE.test(value)) return 'contains a non-number'
   if (!/^\s*[Mm]/.test(value)) return 'does not start with a moveto'
   return /^[MmLlHhVvCcSsQqTtAaZz0-9eE+\-.,\s]*$/.test(value) ? true : 'is not path data'
@@ -100,21 +83,16 @@ const URL_RE = /url\(\s*['"]?#([^'")\s]+)/g
 const STACKED_TRANSLATE_RE = /translate\([^)]*\)[\s,]*translate\(/
 const BAD_NUMBER_RE = /(?:^|[^A-Za-z])(NaN|undefined|Infinity)(?![A-Za-z])/
 
-/**
- * @param {Element} elem
- * @returns {string|undefined}
- */
-const idOf = (elem) => elem.getAttribute('id') || undefined
+const idOf = (elem: Element): string | undefined => elem.getAttribute('id') || undefined
 
 /**
  * Check a drawing for corruption.
- * @param {Element} svgContent the `<svg id="svgcontent">` element (or any drawing root)
- * @returns {Finding[]} empty when healthy
+ * @param svgContent the `<svg id="svgcontent">` element (or any drawing root)
+ * @returns empty when healthy
  */
-export const checkDrawing = (svgContent) => {
-  /** @type {Finding[]} */
-  const findings = []
-  const add = (/** @type {string} */ code, /** @type {string} */ message, /** @type {Element} */ elem) => {
+export const checkDrawing = (svgContent: Element): Finding[] => {
+  const findings: Finding[] = []
+  const add = (code: string, message: string, elem: Element): void => {
     const id = elem && idOf(elem)
     findings.push(id ? { code, message, id } : { code, message })
   }
@@ -129,8 +107,7 @@ export const checkDrawing = (svgContent) => {
   }
 
   // duplicate-id
-  /** @type {Map<string, number>} */
-  const ids = new Map()
+  const ids = new Map<string, number>()
   for (const el of all) {
     const id = el.getAttribute('id')
     if (id) ids.set(id, (ids.get(id) ?? 0) + 1)
@@ -138,7 +115,7 @@ export const checkDrawing = (svgContent) => {
   for (const [id, count] of ids) {
     if (count > 1) findings.push({ code: 'duplicate-id', message: `id "${id}" is used by ${count} elements`, id })
   }
-  if (svgContent.getAttribute('id')) ids.set(/** @type {string} */ (svgContent.getAttribute('id')), 1)
+  if (svgContent.getAttribute('id')) ids.set(svgContent.getAttribute('id') as string, 1)
 
   for (const el of all) {
     const tag = el.localName
@@ -191,7 +168,7 @@ export const checkDrawing = (svgContent) => {
     // module-owned checks (se-stack, …): only elements with `se:` state are worth the call
     if (elementChecks.size && Array.from(el.attributes).some((a) => a.name.startsWith('se:'))) {
       for (const [code, check] of elementChecks) {
-        let problems
+        let problems: string[]
         try {
           problems = check(el)
         } catch (err) {
@@ -205,7 +182,7 @@ export const checkDrawing = (svgContent) => {
     for (const attr of Array.from(el.attributes)) {
       const validator = attr.name.startsWith('se:') ? attrValidators.get(attr.name) : undefined
       if (!validator) continue
-      let verdict
+      let verdict: true | string
       try {
         verdict = validator(attr.value, el)
       } catch (err) {

@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import { registerAttrValidator } from './drawing-invariants.js'
+import { registerAttrValidator } from './drawing-invariants.ts'
 import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.ts'
 import { startTangent, endTangent } from './bezier-fit.ts'
 import { TAPER_ATTR } from './width-profile.ts'

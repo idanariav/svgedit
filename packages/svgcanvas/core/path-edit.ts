@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor
  * (keeps the shape by refitting the neighbours' handles), Add Anchor Points,
@@ -18,23 +17,15 @@ import {
 import {
   fitSingleFrom, sampleCubic, startTangent, endTangent
 } from './bezier-fit.ts'
+import type { Anchor, Cubic, Pt, SubPath } from './anchor-path.ts'
 
-/** @typedef {import('./anchor-path.ts').Pt} Pt */
-/** @typedef {import('./anchor-path.ts').Anchor} Anchor */
-/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
-/** @typedef {{type: number, item: Record<string, number>}} NodeSeg */
+/** A segment of the node editor's `Path#segs`. */
+export interface NodeSeg { type: number, item: Record<string, number> }
 
-/**
- * @param {Pt} a
- * @param {Pt} b
- */
-const same = (a, b) => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6
-/** @param {Pt} p */
-const copyPt = (p) => ({ x: p.x, y: p.y })
-/** @param {Anchor} a */
-const copyAnchor = (a) => ({ p: copyPt(a.p), hIn: copyPt(a.hIn), hOut: copyPt(a.hOut) })
-/** @param {SubPath} sp */
-const copySub = (sp) => ({ closed: sp.closed, anchors: sp.anchors.map(copyAnchor) })
+const same = (a: Pt, b: Pt): boolean => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6
+const copyPt = (p: Pt): Pt => ({ x: p.x, y: p.y })
+const copyAnchor = (a: Anchor): Anchor => ({ p: copyPt(a.p), hIn: copyPt(a.hIn), hOut: copyPt(a.hOut) })
+const copySub = (sp: SubPath): SubPath => ({ closed: sp.closed, anchors: sp.anchors.map(copyAnchor) })
 
 /** Samples per segment when refitting across a removed anchor. */
 const REFIT_SAMPLES = 16
@@ -42,12 +33,8 @@ const REFIT_SAMPLES = 16
 /**
  * The fit `f` (curve, error, worst point) with the least error for an argument
  * in `[a, b]`, by a golden-section search (a bounded number of steps).
- * @param {(k: number) => any[]} f
- * @param {number} a
- * @param {number} b
- * @returns {any[]}
  */
-const goldenMin = (f, a, b) => {
+const goldenMin = (f: (k: number) => [Cubic, number, number], a: number, b: number): [Cubic, number, number] => {
   const R = 0.618033988749895
   let x1 = b - R * (b - a)
   let x2 = a + R * (b - a)
@@ -77,11 +64,9 @@ const goldenMin = (f, a, b) => {
  * handle directions and their facing handles are refitted so one cubic follows
  * the two segments that met there; two straight segments become one. Removing
  * an end of an open path drops its segment. Mutates `sp`.
- * @param {import('./anchor-path.ts').SubPath} sp
- * @param {number} index
- * @returns {boolean} false (and `sp` untouched) when `index` is out of range.
+ * @returns false (and `sp` untouched) when `index` is out of range.
  */
-export const removeAnchor = (sp, index) => {
+export const removeAnchor = (sp: SubPath, index: number): boolean => {
   const n = sp.anchors.length
   if (!(index >= 0 && index < n)) return false
   if ((sp.closed || (index > 0 && index + 1 < n)) && n >= 3) {
@@ -92,8 +77,7 @@ export const removeAnchor = (sp, index) => {
     if (!bothLines) {
       const left = segCubic(sp, pi)
       const right = segCubic(sp, index)
-      /** @type {Pt[]} */
-      const pts = []
+      const pts: Pt[] = []
       sampleCubic(left, REFIT_SAMPLES, pts, true)
       sampleCubic(right, REFIT_SAMPLES, pts, false)
       const t0 = startTangent(left)
@@ -102,15 +86,14 @@ export const removeAnchor = (sp, index) => {
       // The new curve passes the removed point at some parameter k: the left
       // samples sit at k·i/N, the right ones at k + (1 − k)·i/N. Search k for
       // the closest fit.
-      const fit = (/** @type {number} */ k) => {
-        /** @type {number[]} */
-        const u = []
+      const fit = (k: number): [Cubic, number, number] => {
+        const u: number[] = []
         for (let i = 0; i <= N; i++) u.push(k * i / N)
         for (let i = 1; i <= N; i++) u.push(k + (1 - k) * i / N)
         return fitSingleFrom(pts, u, t0, t1)
       }
       const [c] = goldenMin(fit, 0, 1)
-      const finite = (/** @type {Pt} */ p) => Number.isFinite(p.x) && Number.isFinite(p.y)
+      const finite = (p: Pt): boolean => Number.isFinite(p.x) && Number.isFinite(p.y)
       if (finite(c.p1) && finite(c.p2)) {
         sp.anchors[pi].hOut = copyPt(c.p1)
         sp.anchors[ni].hIn = copyPt(c.p2)
@@ -134,12 +117,9 @@ export const removeAnchor = (sp, index) => {
 /**
  * Split segment `seg` of `sp` at parameter `t`, inserting a new anchor.
  * Mutates `sp`.
- * @param {import('./anchor-path.ts').SubPath} sp
- * @param {number} seg
- * @param {number} t
- * @returns {number} The new anchor's index.
+ * @returns The new anchor's index.
  */
-export const insertAnchor = (sp, seg, t) => {
+export const insertAnchor = (sp: SubPath, seg: number, t: number): number => {
   const n = sp.anchors.length
   const c = segCubic(sp, seg)
   const i0 = seg % n
@@ -147,7 +127,7 @@ export const insertAnchor = (sp, seg, t) => {
   const line = isLineSegment(sp.anchors[i0], sp.anchors[i1])
   const l = splitCubic(c, 0, t)
   const r = splitCubic(c, t, 1)
-  let mid
+  let mid: Anchor
   if (line) {
     mid = { p: copyPt(l.p3), hIn: copyPt(l.p3), hOut: copyPt(l.p3) }
   } else {
@@ -161,10 +141,9 @@ export const insertAnchor = (sp, seg, t) => {
 
 /**
  * Add Anchor Points: one new anchor at the middle (t = 0.5) of every segment.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
+ * @returns A new array; the input is untouched.
  */
-export const addAnchorPoints = (subpaths) => {
+export const addAnchorPoints = (subpaths: SubPath[]): SubPath[] => {
   const out = subpaths.map(copySub)
   for (const sp of out) {
     for (let seg = segmentCount(sp) - 1; seg >= 0; seg--) insertAnchor(sp, seg, 0.5)
@@ -175,67 +154,56 @@ export const addAnchorPoints = (subpaths) => {
 /**
  * Average: move the selected anchors (with their handles) to their average
  * position along `axis`.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @param {Array<[number, number]>} selection - `[subpath, anchor]` pairs.
- * @param {'h'|'v'|'both'} axis - `h` aligns on a common y (horizontal line),
+ * @param selection - `[subpath, anchor]` pairs.
+ * @param axis - `h` aligns on a common y (horizontal line),
  *   `v` on a common x, `both` collapses to the centroid.
- * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
+ * @returns A new array; the input is untouched.
  */
-export const averageAnchors = (subpaths, selection, axis) => {
+export const averageAnchors = (subpaths: SubPath[], selection: Array<[number, number]>, axis: 'h' | 'v' | 'both'): SubPath[] => {
   const out = subpaths.map(copySub)
-  const picked = /** @type {Anchor[]} */ (selection
+  const picked = selection
     .map(([s, a]) => out[s]?.anchors[a])
-    .filter(Boolean))
+    .filter((a): a is Anchor => Boolean(a))
   if (!picked.length) return out
   const cx = picked.reduce((acc, a) => acc + a.p.x, 0) / picked.length
   const cy = picked.reduce((acc, a) => acc + a.p.y, 0) / picked.length
   for (const a of new Set(picked)) {
     const dx = axis === 'h' ? 0 : cx - a.p.x
     const dy = axis === 'v' ? 0 : cy - a.p.y
-    for (const key of /** @type {const} */ (['p', 'hIn', 'hOut'])) {
+    for (const key of ['p', 'hIn', 'hOut'] as const) {
       a[key] = { x: a[key].x + dx, y: a[key].y + dy }
     }
   }
   return out
 }
 
-/** @param {SubPath} sp */
-const reverseSub = (sp) => {
+const reverseSub = (sp: SubPath): void => {
   sp.anchors.reverse()
   sp.anchors = sp.anchors.map((a) => ({ p: a.p, hIn: a.hOut, hOut: a.hIn }))
 }
 
 /**
  * The subpath run the other way (its handles swap with it).
- * @param {import('./anchor-path.ts').SubPath} sp
- * @returns {import('./anchor-path.ts').SubPath} A new subpath.
+ * @returns A new subpath.
  */
-export const reversedSubpath = (sp) => {
+export const reversedSubpath = (sp: SubPath): SubPath => {
   const out = copySub(sp)
   reverseSub(out)
   return out
 }
 
-/**
- * @param {SubPath} sp
- * @param {boolean} last
- */
-const endAnchor = (sp, last) => sp.anchors[last ? sp.anchors.length - 1 : 0]
+const endAnchor = (sp: SubPath, last: boolean): Anchor => sp.anchors[last ? sp.anchors.length - 1 : 0]
 
 /**
  * Join. Open subpaths are joined nearest-endpoint-first into one open path
  * (endpoints closer than `tolerance` merge into a single anchor, otherwise a
  * straight segment connects them). A single open subpath is closed instead.
  * Closed subpaths pass through unchanged.
- * @param {import('./anchor-path.ts').SubPath[]} subpaths
- * @param {number} [tolerance]
- * @returns {import('./anchor-path.ts').SubPath[]} A new array; the input is untouched.
+ * @returns A new array; the input is untouched.
  */
-export const joinSubpaths = (subpaths, tolerance = 0) => {
-  /** @type {SubPath[]} */
-  const closed = []
-  /** @type {SubPath[]} */
-  const open = []
+export const joinSubpaths = (subpaths: SubPath[], tolerance = 0): SubPath[] => {
+  const closed: SubPath[] = []
+  const open: SubPath[] = []
   for (const sp of subpaths.map(copySub)) {
     if (sp.closed || sp.anchors.length < 2) {
       if (sp.anchors.length) closed.push(sp)
@@ -284,14 +252,9 @@ export const joinSubpaths = (subpaths, tolerance = 0) => {
  * Join end `aAtEnd` of `a` to end `bAtEnd` of `b` (`true` = the last anchor).
  * Either may be a lone anchor. Endpoints closer than `tolerance` merge into one
  * anchor, otherwise a straight segment connects them.
- * @param {import('./anchor-path.ts').SubPath} a
- * @param {boolean} aAtEnd
- * @param {import('./anchor-path.ts').SubPath} b
- * @param {boolean} bAtEnd
- * @param {number} [tolerance]
- * @returns {import('./anchor-path.ts').SubPath} A new open subpath; the inputs are untouched.
+ * @returns A new open subpath; the inputs are untouched.
  */
-export const joinEnds = (a, aAtEnd, b, bAtEnd, tolerance = 0) => {
+export const joinEnds = (a: SubPath, aAtEnd: boolean, b: SubPath, bAtEnd: boolean, tolerance = 0): SubPath => {
   const out = copySub(a)
   const rest = copySub(b)
   const gap = Math.hypot(endAnchor(a, aAtEnd).p.x - endAnchor(b, bAtEnd).p.x, endAnchor(a, aAtEnd).p.y - endAnchor(b, bAtEnd).p.y)
@@ -301,18 +264,13 @@ export const joinEnds = (a, aAtEnd, b, bAtEnd, tolerance = 0) => {
 
 /**
  * Append `b` to `a` (both are changed), reversing either so the chosen ends meet; `merge` fuses the two meeting anchors.
- * @param {SubPath} a
- * @param {boolean} aAtEnd
- * @param {SubPath} b
- * @param {boolean} bAtEnd
- * @param {boolean} merge
  */
-const attach = (a, aAtEnd, b, bAtEnd, merge) => {
+const attach = (a: SubPath, aAtEnd: boolean, b: SubPath, bAtEnd: boolean, merge: boolean): void => {
   if (!aAtEnd) reverseSub(a)
   if (bAtEnd) reverseSub(b)
   const tail = endAnchor(a, true)
   if (merge && b.anchors.length) {
-    const first = /** @type {Anchor} */ (b.anchors.shift())
+    const first = b.anchors.shift() as Anchor
     // A retracted handle sits on its own anchor, so re-seat it on the merged one.
     a.anchors[a.anchors.length - 1] = { p: tail.p, hIn: tail.hIn, hOut: hasOut(first) ? first.hOut : copyPt(tail.p) }
   } else {
@@ -329,27 +287,21 @@ const REL = new Set([3, 5, 7, 9, 11, 13, 15, 17, 19])
  * anchor each segment index is the grip of. The editor models a closed subpath
  * as `M start … <segment back to start> Z`: that closing segment (and `M`) both
  * stand for the start anchor, which is folded into one anchor here.
- * @param {NodeSeg[]} segs - `Path#segs`.
- * @returns {{subpaths: import('./anchor-path.ts').SubPath[], owner: Map<number, [number, number]>}}
- *   `owner` maps a segment index to `[subpath, anchor]`.
+ * @param segs - `Path#segs`.
+ * @returns `owner` maps a segment index to `[subpath, anchor]`.
  */
-export const segsToSubpaths = (segs) => {
-  /** @type {SubPath[]} */
-  const subpaths = []
-  /** @type {number[][][]} */
-  const grips = [] // per subpath: per anchor, the seg indices that grip it
+export const segsToSubpaths = (segs: NodeSeg[]): { subpaths: SubPath[], owner: Map<number, [number, number]> } => {
+  const subpaths: SubPath[] = []
+  const grips: number[][][] = [] // per subpath: per anchor, the seg indices that grip it
   let cx = 0
   let cy = 0
   let sx = 0
   let sy = 0
-  /** @type {?number[]} */
-  let prevC2 = null // for S/s reflection
-  /** @type {?SubPath} */
-  let cur = null
-  /** @type {?number[][]} */
-  let curGrips = null
-  const pt = (/** @type {number} */ x, /** @type {number} */ y) => ({ x, y })
-  const addAnchor = (/** @type {number} */ i, /** @type {number} */ x, /** @type {number} */ y, /** @type {number[]|undefined} */ c1 = undefined, /** @type {number[]|undefined} */ c2 = undefined) => {
+  let prevC2: number[] | null = null // for S/s reflection
+  let cur = null as SubPath | null
+  let curGrips = null as number[][] | null
+  const pt = (x: number, y: number): Pt => ({ x, y })
+  const addAnchor = (i: number, x: number, y: number, c1?: number[], c2?: number[]): void => {
     if (!cur || !curGrips) return
     const prev = cur.anchors[cur.anchors.length - 1]
     if (c1) prev.hOut = pt(c1[0], c1[1])
@@ -423,32 +375,29 @@ export const segsToSubpaths = (segs) => {
     const g = grips[s]
     const n = sp.anchors.length
     if (sp.closed && n >= 3 && same(sp.anchors[n - 1].p, sp.anchors[0].p)) {
-      const last = /** @type {Anchor} */ (sp.anchors.pop())
+      const last = sp.anchors.pop() as Anchor
       sp.anchors[0].hIn = last.hIn
-      const folded = /** @type {number[]} */ (g.pop())
+      const folded = g.pop() as number[]
       g[0].push(...folded)
     }
   })
-  /** @type {Map<number, [number, number]>} */
-  const owner = new Map()
+  const owner = new Map<number, [number, number]>()
   grips.forEach((g, s) => g.forEach((ids, k) => ids.forEach((i) => owner.set(i, [s, k]))))
   return { subpaths, owner }
 }
 
-/** @param {SubPath[]} subpaths */
-const emit = (subpaths) => anchorsToD(subpaths.filter((sp) => sp.anchors.length >= 2))
+const emit = (subpaths: SubPath[]): string => anchorsToD(subpaths.filter((sp) => sp.anchors.length >= 2))
 
 /**
  * `d` for a path with the nodes at the given segment indices removed, the
  * shape kept (see {@link removeAnchor}). Closed subpaths stay closed and open
  * ones open.
- * @param {NodeSeg[]} segs
- * @param {Iterable<number>} deleted - Segment indices.
- * @returns {string} '' when nothing renderable remains.
+ * @param deleted - Segment indices.
+ * @returns '' when nothing renderable remains.
  */
-export const deleteNodesD = (segs, deleted) => {
+export const deleteNodesD = (segs: NodeSeg[], deleted: Iterable<number>): string => {
   const { subpaths, owner } = segsToSubpaths(segs)
-  const perSub = subpaths.map(() => new Set())
+  const perSub = subpaths.map(() => new Set<number>())
   for (const i of deleted) {
     const o = owner.get(i)
     if (o) perSub[o[0]].add(o[1])
@@ -463,20 +412,13 @@ export const deleteNodesD = (segs, deleted) => {
 
 /**
  * `d` for a path with the nodes at the given segment indices averaged.
- * @param {NodeSeg[]} segs
- * @param {Iterable<number>} selected - Segment indices.
- * @param {'h'|'v'|'both'} axis
- * @returns {string}
+ * @param selected - Segment indices.
  */
-export const averageNodesD = (segs, selected, axis) => {
+export const averageNodesD = (segs: NodeSeg[], selected: Iterable<number>, axis: 'h' | 'v' | 'both'): string => {
   const { subpaths, owner } = segsToSubpaths(segs)
-  const picks = /** @type {Array<[number, number]>} */ ([...selected].map((i) => owner.get(i)).filter(Boolean))
+  const picks = [...selected].map((i) => owner.get(i)).filter((o): o is [number, number] => Boolean(o))
   return emit(averageAnchors(subpaths, picks, axis))
 }
 
-/**
- * `d` for a path with a new anchor in the middle of every segment.
- * @param {NodeSeg[]} segs
- * @returns {string}
- */
-export const addAnchorPointsD = (segs) => emit(addAnchorPoints(segsToSubpaths(segs).subpaths))
+/** `d` for a path with a new anchor in the middle of every segment. */
+export const addAnchorPointsD = (segs: NodeSeg[]): string => emit(addAnchorPoints(segsToSubpaths(segs).subpaths))

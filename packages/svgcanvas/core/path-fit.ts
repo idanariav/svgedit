@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Corner-keeping path simplification, on the anchor model (`anchor-path.js`).
  *
@@ -27,27 +26,17 @@
 
 import { segmentCount, segCubic, isLineSegment, cubicLength } from './anchor-path.ts'
 import { fitCubics, isStraight, sampleCubic, startTangent, endTangent, unit } from './bezier-fit.ts'
+import type { Anchor, Cubic, Pt, SubPath } from './anchor-path.ts'
 
-/** @typedef {import('./anchor-path.ts').SubPath} SubPath */
-/** @typedef {import('./anchor-path.ts').Cubic} Cubic */
-/** @typedef {{x: number, y: number}} Pt */
-/** @typedef {{c: Cubic, line: boolean}} Seg */
+interface Seg { c: Cubic, line: boolean }
 
-const dot = (/** @type {Pt} */ a, /** @type {Pt} */ b) => a.x * b.x + a.y * b.y
-const dist = (/** @type {Pt} */ a, /** @type {Pt} */ b) => Math.hypot(a.x - b.x, a.y - b.y)
+const dot = (a: Pt, b: Pt): number => a.x * b.x + a.y * b.y
+const dist = (a: Pt, b: Pt): number => Math.hypot(a.x - b.x, a.y - b.y)
 
-/**
- * @param {Pt} p
- * @returns {import('./anchor-path.ts').Anchor}
- */
-const cornerAnchor = (p) => ({ p: { x: p.x, y: p.y }, hIn: { x: p.x, y: p.y }, hOut: { x: p.x, y: p.y } })
+const cornerAnchor = (p: Pt): Anchor => ({ p: { x: p.x, y: p.y }, hIn: { x: p.x, y: p.y }, hOut: { x: p.x, y: p.y } })
 
-/**
- * @param {SubPath} sp
- * @returns {Seg[]}
- */
-const subpathSegs = (sp) => {
-  const segs = []
+const subpathSegs = (sp: SubPath): Seg[] => {
+  const segs: Seg[] = []
   for (let i = 0; i < segmentCount(sp); i++) {
     segs.push({ c: segCubic(sp, i), line: isLineSegment(sp.anchors[i], sp.anchors[(i + 1) % sp.anchors.length]) })
   }
@@ -57,11 +46,8 @@ const subpathSegs = (sp) => {
 /**
  * Anchors joined by `segs` (a line leaves its anchors handle-less). A closed result
  * ends where it began, so the last anchor folds into the first.
- * @param {Seg[]} segs
- * @param {boolean} closed
- * @returns {?SubPath}
  */
-const segsToSubpath = (segs, closed) => {
+const segsToSubpath = (segs: Seg[], closed: boolean): SubPath | null => {
   if (!segs.length) return null
   const anchors = [cornerAnchor(segs[0].c.p0)]
   for (const { c, line } of segs) {
@@ -72,33 +58,22 @@ const segsToSubpath = (segs, closed) => {
     anchors.push(to)
   }
   if (closed && anchors.length > 2 && dist(anchors[0].p, anchors[anchors.length - 1].p) < 1e-6) {
-    const last = /** @type {import('./anchor-path.ts').Anchor} */ (anchors.pop())
+    const last = anchors.pop() as Anchor
     anchors[0].hIn = last.hIn
   }
   return { closed, anchors }
 }
 
-/**
- * The angle (degrees) the path turns by where segment `a` meets segment `b`.
- * @param {Seg} a
- * @param {Seg} b
- * @returns {number}
- */
-const turnDeg = (a, b) => Math.acos(Math.max(-1, Math.min(1, dot(endTangent(a.c), startTangent(b.c))))) * 180 / Math.PI
+/** The angle (degrees) the path turns by where segment `a` meets segment `b`. */
+const turnDeg = (a: Seg, b: Seg): number => Math.acos(Math.max(-1, Math.min(1, dot(endTangent(a.c), startTangent(b.c))))) * 180 / Math.PI
 
-/**
- * @param {SubPath} sp
- * @param {number} tol
- * @param {number} cornerAngleDeg
- * @returns {SubPath}
- */
-const simplifySubpath = (sp, tol, cornerAngleDeg) => {
+const simplifySubpath = (sp: SubPath, tol: number, cornerAngleDeg: number): SubPath => {
   let segs = subpathSegs(sp)
   const n = segs.length
   if (n === 0) return sp
-  const cornerAt = (/** @type {number} */ i) =>
+  const cornerAt = (i: number): boolean =>
     (!sp.closed && i === 0) || turnDeg(segs[(i + n - 1) % n], segs[i % n]) > cornerAngleDeg
-  let corners = []
+  let corners: number[] = []
   for (let i = 0; i < n; i++) if (cornerAt(i)) corners.push(i)
   if (sp.closed) {
     if (corners.length) {
@@ -113,13 +88,11 @@ const simplifySubpath = (sp, tol, cornerAngleDeg) => {
     corners.push(n)
   }
 
-  /** @type {Seg[]} */
-  const result = []
+  const result: Seg[] = []
   for (let w = 0; w + 1 < corners.length; w++) {
     const run = segs.slice(corners[w], corners[w + 1])
     if (!run.length) continue
-    /** @type {Pt[]} */
-    const pts = []
+    const pts: Pt[] = []
     run.forEach((s, k) => {
       const m = Math.min(256, Math.max(4, Math.ceil(cubicLength(s.c) / (tol * 0.5))))
       sampleCubic(s.c, m, pts, k === 0)
@@ -135,12 +108,10 @@ const simplifySubpath = (sp, tol, cornerAngleDeg) => {
 
 /**
  * Least-squares Bézier refit of every subpath, keeping the corners.
- * @param {SubPath[]} subpaths
- * @param {{tolerance: number, cornerAngleDeg?: number}} opts `tolerance`: largest distance between the original
+ * @param opts `tolerance`: largest distance between the original
  *   and the simplified path, in user units; `cornerAngleDeg`: turns sharper than this stay corners (default 30)
- * @returns {SubPath[]}
  */
-export const simplifyWith = (subpaths, opts) => {
+export const simplifyWith = (subpaths: SubPath[], opts: { tolerance: number, cornerAngleDeg?: number }): SubPath[] => {
   const tol = Math.max(opts.tolerance, 1e-6)
   const angle = opts.cornerAngleDeg ?? 30
   return subpaths.map((sp) => simplifySubpath(sp, tol, angle))
@@ -160,16 +131,13 @@ const CORNER_REACH = 6
  * Which samples are corners: the sharpest sample of each stretch where the stroke
  * turns by more than about 84°, the turn measured between the chords to the
  * samples `reach` of stroke length before and after (at least the neighbours).
- * @param {Pt[]} pts
- * @param {number} reach arc length each side of a sample the chords span
- * @returns {boolean[]}
+ * @param reach arc length each side of a sample the chords span
  */
-const markCorners = (pts, reach) => {
+const markCorners = (pts: Pt[], reach: number): boolean[] => {
   const n = pts.length
   const s = [0]
   for (let i = 1; i < n; i++) s.push(s[i - 1] + dist(pts[i - 1], pts[i]))
-  /** @type {number[]} */
-  const cosAt = new Array(n).fill(1)
+  const cosAt: number[] = new Array(n).fill(1)
   let before = 0
   let after = 0
   for (let i = 1; i + 1 < n; i++) {
@@ -181,7 +149,7 @@ const markCorners = (pts, reach) => {
     const b = { x: pts[after].x - pts[i].x, y: pts[after].y - pts[i].y }
     cosAt[i] = dot(a, b) / Math.max(Math.hypot(a.x, a.y) * Math.hypot(b.x, b.y), 1e-12)
   }
-  const corner = new Array(n).fill(false)
+  const corner: boolean[] = new Array(n).fill(false)
   for (let i = 1; i + 1 < n; i++) {
     if (cosAt[i] >= CORNER_COS) continue
     // Only the sharpest sample of a stretch counts, or a rounded corner would flag a run of them.
@@ -194,13 +162,9 @@ const markCorners = (pts, reach) => {
 }
 
 /**
- * The point `dist` of stroke length from the start of `pts` (`s` = cumulative lengths), interpolated.
- * @param {Pt[]} pts
- * @param {number[]} s
- * @param {number} target
- * @returns {Pt}
+ * The point `target` of stroke length from the start of `pts` (`s` = cumulative lengths), interpolated.
  */
-const pointAtArc = (pts, s, target) => {
+const pointAtArc = (pts: Pt[], s: number[], target: number): Pt => {
   if (target <= 0) return pts[0]
   if (target >= s[s.length - 1]) return pts[pts.length - 1]
   let i = 1
@@ -212,13 +176,9 @@ const pointAtArc = (pts, s, target) => {
 /**
  * Unit direction of travel along `run` between `from` and `to` stroke length of its start (or, reversed,
  * its end), clipped to the run, so a rounded corner's flat bit can be skipped.
- * @param {Pt[]} run
- * @param {number} from
- * @param {number} to
- * @param {boolean} atEnd measure from the end of the run, travelling towards its end
- * @returns {Pt}
+ * @param atEnd measure from the end of the run, travelling towards its end
  */
-const legDirection = (run, from, to, atEnd) => {
+const legDirection = (run: Pt[], from: number, to: number, atEnd: boolean): Pt => {
   const s = [0]
   for (let i = 1; i < run.length; i++) s.push(s[i - 1] + dist(run[i - 1], run[i]))
   const len = s[s.length - 1]
@@ -233,15 +193,13 @@ const legDirection = (run, from, to, atEnd) => {
 /**
  * Where the leg arriving at a corner and the leg leaving it would meet, if that is close to the corner sample
  * (a rounded corner's sample sits inside the true vertex).
- * @param {Pt} corner
- * @param {Pt} arriveFrom a point on the arriving leg, before the corner
- * @param {Pt} arriveDir unit direction of travel along it
- * @param {Pt} leaveTo a point on the leaving leg, after the corner
- * @param {Pt} leaveDir unit direction of travel along it
- * @param {number} reach farthest the vertex may lie from the corner sample
- * @returns {Pt}
+ * @param arriveFrom a point on the arriving leg, before the corner
+ * @param arriveDir unit direction of travel along it
+ * @param leaveTo a point on the leaving leg, after the corner
+ * @param leaveDir unit direction of travel along it
+ * @param reach farthest the vertex may lie from the corner sample
  */
-const vertexOf = (corner, arriveFrom, arriveDir, leaveTo, leaveDir, reach) => {
+const vertexOf = (corner: Pt, arriveFrom: Pt, arriveDir: Pt, leaveTo: Pt, leaveDir: Pt, reach: number): Pt => {
   const det = arriveDir.x * leaveDir.y - arriveDir.y * leaveDir.x
   if (Math.abs(det) < 1e-6) return corner // parallel legs: no vertex to find
   const dx = leaveTo.x - arriveFrom.x
@@ -262,11 +220,8 @@ const MIN_LOOP_AREA = 0.01
 /**
  * Whether a stroke is a loop drawn back onto its start: ends within `CLOSE_REACH` tolerances of each other
  * and encloses a real area.
- * @param {Pt[]} pts
- * @param {number} tolerance
- * @returns {boolean}
  */
-const isLoop = (pts, tolerance) => {
+const isLoop = (pts: Pt[], tolerance: number): boolean => {
   if (pts.length < 4 || dist(pts[0], pts[pts.length - 1]) > CLOSE_REACH * tolerance) return false
   let length = 0
   let area2 = 0
@@ -291,15 +246,14 @@ const isLoop = (pts, tolerance) => {
  *
  * With `closeLoops`, a stroke that ends on its start (see `isLoop`) comes back closed: its end is joined to its start, and the
  * seam is smooth unless the stroke turns by more than a corner there.
- * @param {Pt[]} pts the stroke's points, in order
- * @param {number} tolerance the pencil's fidelity, in user units
- * @param {{closeLoops?: boolean, startDirection?: ?Pt}} [opts] `closeLoops`: return a stroke that ends on its
+ * @param pts the stroke's points, in order
+ * @param tolerance the pencil's fidelity, in user units
+ * @param opts `closeLoops`: return a stroke that ends on its
  *   start as a closed subpath (default: always open); `startDirection`: a unit direction the stroke should leave
  *   its first point in, so it joins a path arriving that way without a kink (ignored when the stroke itself sets
  *   off at a corner's angle to it)
- * @returns {SubPath}
  */
-export const fitFreehand = (pts, tolerance, opts = {}) => {
+export const fitFreehand = (pts: Pt[], tolerance: number, opts: { closeLoops?: boolean, startDirection?: Pt | null } = {}): SubPath => {
   const { closeLoops = false, startDirection = null } = opts
   if (!pts.length) return { closed: false, anchors: [] }
   const min = Math.max(tolerance * 0.3, 0.05)
@@ -322,8 +276,7 @@ export const fitFreehand = (pts, tolerance, opts = {}) => {
   flags.forEach((f, i) => { if (f) cuts.push(i) })
   cuts.push(kept.length - 1)
 
-  /** @type {Pt[][]} */
-  const runs = []
+  const runs: Pt[][] = []
   for (let k = 0; k + 1 < cuts.length; k++) runs.push(kept.slice(cuts[k], cuts[k + 1] + 1))
   // Tangents of every run end, before any corner moves: along the legs, skipping the rounding at a corner.
   const outDir = runs.map((run, k) => legDirection(run, k === 0 ? 0 : reach / 3, reach, false))
@@ -351,8 +304,7 @@ export const fitFreehand = (pts, tolerance, opts = {}) => {
     leave[0] = vertex
   }
 
-  /** @type {Seg[]} */
-  const segs = []
+  const segs: Seg[] = []
   runs.forEach((run, k) => {
     for (const c of fitCubics(run, outDir[k], inDir[k], tolerance)) segs.push({ c, line: isStraight(c, tolerance * 0.02) })
   })
@@ -362,14 +314,8 @@ export const fitFreehand = (pts, tolerance, opts = {}) => {
 /** Turns up to this are smoothed away by the Smooth tool: only a path that doubles back on itself keeps a corner. */
 const SMOOTH_CORNER_ANGLE = 179
 
-/**
- * Distance from `p` to the segment `a`–`b`.
- * @param {Pt} p
- * @param {Pt} a
- * @param {Pt} b
- * @returns {number}
- */
-const distToSegment = (p, a, b) => {
+/** Distance from `p` to the segment `a`–`b`. */
+const distToSegment = (p: Pt, a: Pt, b: Pt): number => {
   const vx = b.x - a.x
   const vy = b.y - a.y
   const len2 = vx * vx + vy * vy
@@ -380,14 +326,10 @@ const distToSegment = (p, a, b) => {
 /**
  * Mark the anchors within `radius` of the segment `from`–`to` (a step of the Smooth tool's drag).
  * Marks are only ever added, so a drag's reach grows monotonically.
- * @param {SubPath[]} subpaths
- * @param {boolean[][]} marks per subpath, per anchor; updated in place
- * @param {Pt} from
- * @param {Pt} to
- * @param {number} radius
- * @returns {boolean} whether an anchor was newly marked
+ * @param marks per subpath, per anchor; updated in place
+ * @returns whether an anchor was newly marked
  */
-export const markAnchorsNear = (subpaths, marks, from, to, radius) => {
+export const markAnchorsNear = (subpaths: SubPath[], marks: boolean[][], from: Pt, to: Pt, radius: number): boolean => {
   let added = false
   subpaths.forEach((sp, s) => {
     sp.anchors.forEach((a, i) => {
@@ -406,12 +348,8 @@ export const markAnchorsNear = (subpaths, marks, from, to, radius) => {
  * anchors keep their position and the direction of their outer handle. A closed subpath is opened at an
  * unmarked anchor first (so it comes out starting there); when every anchor of a closed subpath is marked the
  * whole of it is refit.
- * @param {SubPath} sp
- * @param {boolean[]} marked
- * @param {number} tolerance
- * @returns {SubPath}
  */
-const smoothSubpath = (sp, marked, tolerance) => {
+const smoothSubpath = (sp: SubPath, marked: boolean[], tolerance: number): SubPath => {
   if (!marked.some(Boolean)) return sp
   let anchors = sp.anchors
   let flags = marked
@@ -424,8 +362,7 @@ const smoothSubpath = (sp, marked, tolerance) => {
     flags = [...marked.slice(k), ...marked.slice(0, k), false]
   }
   const last = anchors.length - 1
-  /** @type {import('./anchor-path.ts').Anchor[]} */
-  const out = []
+  const out: Anchor[] = []
   let i = 0
   while (i <= last) {
     if (!flags[i]) {
@@ -447,19 +384,18 @@ const smoothSubpath = (sp, marked, tolerance) => {
     i = b + 1
   }
   if (!sp.closed) return { closed: false, anchors: out }
-  const end = /** @type {import('./anchor-path.ts').Anchor} */ (out.pop())
+  const end = out.pop() as Anchor
   out[0] = { ...out[0], hIn: end.hIn }
   return { closed: true, anchors: out }
 }
 
 /**
  * The Smooth tool's geometry: smooth every subpath where its anchors are marked, leaving the rest alone.
- * @param {SubPath[]} subpaths
- * @param {boolean[][]} marks per subpath, per anchor
- * @param {number} tolerance largest distance between the original and the smoothed part, in user units
- * @returns {SubPath[]} subpaths without a mark are returned as they are
+ * @param marks per subpath, per anchor
+ * @param tolerance largest distance between the original and the smoothed part, in user units
+ * @returns subpaths without a mark are returned as they are
  */
-export const smoothRegion = (subpaths, marks, tolerance) => {
+export const smoothRegion = (subpaths: SubPath[], marks: boolean[][], tolerance: number): SubPath[] => {
   const tol = Math.max(tolerance, 1e-6)
   return subpaths.map((sp, s) => smoothSubpath(sp, marks[s], tol))
 }

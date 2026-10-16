@@ -15,7 +15,7 @@
  *
  * @license MIT
  */
-import { combineSelection, selectionOpFor, findSameAs } from '@svgedit/svgcanvas/core/select-same.js'
+import { combineSelection, selectionOpFor, findSameAs } from '@svgedit/svgcanvas/core/select-same.ts'
 
 const name = 'magic-wand'
 const MODE = 'wand'

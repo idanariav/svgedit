@@ -43,7 +43,7 @@
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
-import { registerAttrValidator } from './drawing-invariants.js'
+import { registerAttrValidator } from './drawing-invariants.ts'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
 import { tracksOf, frameAt } from './art-brush.js'
 import { getTransformList, matrixMultiply } from './math.ts'

@@ -21,7 +21,7 @@
 
 import { warn } from '../common/logger.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
-import { simplifyWith, fitFreehand } from './path-fit.js'
+import { simplifyWith, fitFreehand } from './path-fit.ts'
 import { findPenEnd, extendWith, endDirection } from './pen-continue.js'
 
 // The pencil's default fidelity: the most the committed curve may stray from

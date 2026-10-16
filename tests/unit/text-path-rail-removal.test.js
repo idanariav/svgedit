@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.js'
+import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
 
 describe('text on a path whose rail is deleted', () => {
   let canvas

@@ -20,8 +20,8 @@
  */
 
 import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
-import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.js'
-import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
+import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
+import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
 
 const name = 'smooth-tool'
 

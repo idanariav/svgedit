@@ -42,7 +42,7 @@ import { warn } from '../common/logger.ts'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.js'
-import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
+import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 import { widthOutline } from './width-outline.ts'
 import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.ts'
 

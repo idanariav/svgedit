@@ -11,8 +11,8 @@
  */
 
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
-import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.js'
-import { LIVE_ATTRS } from './path-join.js'
+import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.ts'
+import { LIVE_ATTRS } from './path-join.ts'
 import { getTransformList, transformListToTransform, isIdentity } from './math.ts'
 
 /**

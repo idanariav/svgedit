@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
   SELECT_SAME_CRITERIA, colorDistance, appearanceOf, samePaint, matchesSame, combineSelection, selectionOpFor, selectSameAs, findSameAs
-} from '../../packages/svgcanvas/core/select-same.js'
+} from '../../packages/svgcanvas/core/select-same.ts'
 
 const make = (tag, attrs = {}, parent = document.body) => {
   const el = document.createElementNS(NS.SVG, tag)

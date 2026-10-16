@@ -51,7 +51,7 @@
 | `dom-utils.ts` | DOM/element manipulation, lookup, and misc canvas-state utilities |
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
 | `draw.js` | Tools for drawing |
-| `drawing-invariants.js` | Structural invariants of a healthy drawing, as a pure DOM check |
+| `drawing-invariants.ts` | Structural invariants of a healthy drawing, as a pure DOM check |
 | `elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
 | `encoding-utils.ts` | String/XML/base64 encoding utilities |
 | `event-group-context.js` | Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove preludes and the select/shape-draw mode handlers |
@@ -88,9 +88,9 @@
 | `paper-utils.js` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
 | `paste-elem.js` | Paste handler |
 | `path-actions.js` | Path functionality |
-| `path-edit.js` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
-| `path-fit.js` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
-| `path-join.js` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |
+| `path-edit.ts` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
+| `path-fit.ts` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
+| `path-join.ts` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |
 | `path-method.js` | Path functionality |
 | `path-node-guides.ts` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
 | `path-offset.js` | Path offset / inset and stroke-to-path operations |
@@ -105,7 +105,7 @@
 | `sanitize.js` | Tools for SVG sanitization |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.js` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
-| `select-same.js` | Select Same: extend the selection to every element that shares a property with the primary selected element |
+| `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |
 | `select.js` | DOM element selection box tools |
 | `selected-elem.js` | Tools for SVG selected element operation |
 | `selection.js` | Tools for selection |

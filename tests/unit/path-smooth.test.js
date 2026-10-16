@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseAnchors, anchorsToD, flattenSubpaths, polyline } from '../../packages/svgcanvas/core/anchor-path.ts'
-import { markAnchorsNear, smoothRegion } from '../../packages/svgcanvas/core/path-fit.js'
+import { markAnchorsNear, smoothRegion } from '../../packages/svgcanvas/core/path-fit.ts'
 
 const P = (x, y) => ({ x, y })
 

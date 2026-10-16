@@ -2,7 +2,7 @@ import { beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.js'
+import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
 
 const FIXTURES = path.resolve(__dirname, '../e2e/fixtures/roundtrip')
 const parse = (xml) => new DOMParser().parseFromString(xml, 'image/svg+xml').documentElement

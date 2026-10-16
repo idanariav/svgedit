@@ -27,9 +27,9 @@
  * @license MIT
  */
 
-import { fitFreehand } from '@svgedit/svgcanvas/core/path-fit.js'
+import { fitFreehand } from '@svgedit/svgcanvas/core/path-fit.ts'
 import { anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
-import { joinSubpaths } from '@svgedit/svgcanvas/core/path-edit.js'
+import { joinSubpaths } from '@svgedit/svgcanvas/core/path-edit.ts'
 
 /**
  * @typedef {object} CenterlineOptions

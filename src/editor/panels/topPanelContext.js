@@ -6,7 +6,7 @@
 
 import { runSteps } from '../runSteps.js'
 import { refreshToolOptions } from './toolOptionsBar.js'
-import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.js'
+import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
 
 // Position/dimension fields read straight off drag math (move/resize) can
 // carry long floating-point tails (e.g. 200.00000596046448) — round for

@@ -15,7 +15,7 @@
  * @license MIT
  */
 
-import { registerAttrValidator } from './drawing-invariants.js'
+import { registerAttrValidator } from './drawing-invariants.ts'
 
 export const GUIDES_ATTR = 'se:guides'
 

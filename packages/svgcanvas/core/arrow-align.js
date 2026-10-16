@@ -32,9 +32,9 @@
  */
 
 import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.ts'
-import { LIVE_ATTRS } from './path-join.js'
+import { LIVE_ATTRS } from './path-join.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
-import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
+import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
 
 export const ARROW_ALIGN_ATTR = 'se:arrow-align'
 export const ARROW_PTS_ATTR = 'se:arrow-pts'

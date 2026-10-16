@@ -25,7 +25,7 @@
  */
 
 import { parseAnchors, sameAnchorGeometry } from './anchor-path.ts'
-import { registerElementCheck } from './drawing-invariants.js'
+import { registerElementCheck } from './drawing-invariants.ts'
 
 /**
  * @typedef {object} AttrView read-only attribute access: an element, or an element with some attributes overridden
