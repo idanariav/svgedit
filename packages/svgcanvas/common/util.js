@@ -1,4 +1,5 @@
 // @ts-check
+// util.js — Common utility functions
 /**
  * @param {any} obj
  * @returns {any}

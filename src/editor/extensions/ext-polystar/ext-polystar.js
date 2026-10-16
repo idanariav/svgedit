@@ -1,3 +1,4 @@
+// ext-polystar.js — Star and polygon tools
 /**
  * @file ext-polystar.js
  *

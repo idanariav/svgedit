@@ -1,3 +1,4 @@
+// cmenuDialog.js — Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot, ownerEditor } from '../domScope.js'

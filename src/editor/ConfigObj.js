@@ -1,3 +1,4 @@
+// ConfigObj.js — `pref(key)`, `setConfig(obj)`, localStorage persistence
 import { mergeDeep } from '@svgedit/svgcanvas/common/util.js'
 
 /**

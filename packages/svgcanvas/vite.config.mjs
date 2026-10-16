@@ -1,3 +1,4 @@
+// vite.config.mjs — Vite library build of the canvas on its own: one ES `svgcanvas.js` into `dist/`
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 

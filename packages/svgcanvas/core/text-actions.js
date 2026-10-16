@@ -1,4 +1,5 @@
 // @ts-check
+// text-actions.js — Text cursor/selection editing (`verticalMove` for area text)
 /**
  * @module text-actions Tools for Text edit functions
  * @license MIT

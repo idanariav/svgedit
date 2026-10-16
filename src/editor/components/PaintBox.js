@@ -1,3 +1,4 @@
+// PaintBox.js — `<se-paint-box>` — Fill/stroke paint control
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**

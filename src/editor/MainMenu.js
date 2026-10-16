@@ -1,3 +1,4 @@
+// MainMenu.js — Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`)
 import { applyUiMode, isTabletMode } from './uiMode.js'
 import { applyTheme } from './themeUtil.js'
 

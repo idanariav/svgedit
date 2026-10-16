@@ -1,3 +1,4 @@
+// BottomPanel.js — Color-picker handlers + zoom/stroke/opacity handler methods (listeners bound in TopPanel)
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import BottomPanelHtml from './BottomPanel.html'
 import { collectDocumentColors } from '../documentColors.js'

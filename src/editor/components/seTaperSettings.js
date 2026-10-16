@@ -1,3 +1,4 @@
+// seTaperSettings.js — `<se-taper-settings>` — Taper-stroke popover (start/end tip % + Apply/Update/Remove → `svgCanvas.applyTaperStroke`/`removeTaperStroke`); seeded from `svgCanvas.getTaperParams()`; injected by ext-taper
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'

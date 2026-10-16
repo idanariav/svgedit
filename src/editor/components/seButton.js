@@ -1,3 +1,4 @@
+// seButton.js — `<se-button>` — Icon button with pressed/disabled states
 import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'

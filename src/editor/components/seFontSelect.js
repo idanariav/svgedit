@@ -1,3 +1,4 @@
+// seFontSelect.js — `<se-font-select>` — Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface)
 import { closestRoot, ownerEditor } from '../domScope.js'
 /**
  * SeFontSelect — <se-font-select> web component.

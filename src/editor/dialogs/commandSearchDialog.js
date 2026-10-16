@@ -1,3 +1,4 @@
+// commandSearchDialog.js — `<se-command-search-dialog>` — command search: type to find a command by name or key and run it
 import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../commandSearch.js'
 import { formatHotkey } from '../Hotkeys.js'
 import commandSearchDialogHTML from './commandSearchDialog.html'

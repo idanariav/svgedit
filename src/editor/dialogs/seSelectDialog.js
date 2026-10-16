@@ -1,3 +1,4 @@
+// seSelectDialog.js — Multi-choice select dialog
 import SePlainAlertDialog from './SePlainAlertDialog.js'
 
 const seSelect = async (text, choices) => {

@@ -1,3 +1,4 @@
+// imagePropertiesDialog.js — Modal for image element properties
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'

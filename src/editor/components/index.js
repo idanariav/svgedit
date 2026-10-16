@@ -1,3 +1,4 @@
+// index.js — Imports every custom-element component so that each registers itself
 import './seButton.js'
 import './seShapeLibrary.js'
 import './seFlyingButton.js'

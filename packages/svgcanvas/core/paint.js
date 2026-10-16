@@ -1,4 +1,5 @@
 // @ts-check
+// paint.js — Fill, stroke, color management
 /**
  *
  */

@@ -1,3 +1,4 @@
+// svgSourceDialog.js — View/edit raw SVG source
 import svgSourceDialogHTML from './svgSourceDialog.html'
 import { ownerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.js'

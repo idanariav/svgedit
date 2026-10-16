@@ -1,3 +1,4 @@
+// seMenuItem.js — `<se-menu-item>` — one row of a `<se-menu>` popup, with an icon, a label and a shortcut hint
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'

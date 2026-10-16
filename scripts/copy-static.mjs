@@ -1,3 +1,4 @@
+// copy-static.mjs — Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are not copied)
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createInstrumenter } from 'istanbul-lib-instrument'
 import { dirname, resolve } from 'node:path'

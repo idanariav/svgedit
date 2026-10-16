@@ -1,3 +1,4 @@
+// seSegmentSettings.js — `<se-segment-settings>` — Radial/grid Segment popover (mode tabs, count/start-angle/center or count/axis, Split/Non-split toggle + Apply/Update → `svgCanvas.segmentSelection`); seeded from…
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'

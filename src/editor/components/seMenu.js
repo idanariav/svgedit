@@ -1,3 +1,4 @@
+// seMenu.js — `<se-menu>` — menu button with a popup that holds `<se-menu-item>` rows
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'

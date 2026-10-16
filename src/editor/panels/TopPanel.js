@@ -1,3 +1,4 @@
+// TopPanel.js — Quick-action handlers + `updateContextPanel` (shows/hides trays & tab sections); binds relocated zoom/stroke/opacity listeners; `attrChanger()`
 /* eslint-disable max-len */
 /* globals seAlert */
 

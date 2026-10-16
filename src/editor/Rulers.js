@@ -1,3 +1,4 @@
+// Rulers.js — Canvas ruler rendering and tick marks
 import rulersTemplate from './templates/rulersTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
 

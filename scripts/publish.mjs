@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// publish.mjs — Interactive release helper: confirms the version bump and CHANGES.md, optionally commits and tags the release, then publishes the packages
 import { execSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'

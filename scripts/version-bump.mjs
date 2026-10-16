@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// version-bump.mjs — Interactive version bump: suggests patch / minor / major from the current version and writes it to the root and workspace packages
 import { execSync } from 'node:child_process'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

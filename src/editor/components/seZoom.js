@@ -1,3 +1,4 @@
+// seZoom.js — `<se-zoom>` — Zoom percentage selector
 import { fetchSvgEl } from './svgIconLoader.js'
 import { ownerEditor } from '../domScope.js'
 import { t } from '../locale.js'

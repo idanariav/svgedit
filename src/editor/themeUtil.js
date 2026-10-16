@@ -1,3 +1,4 @@
+// themeUtil.js — `applyTheme(theme, rootEl)` — canonical theme helper
 import { getActiveRoot } from './domScope.js'
 
 /**

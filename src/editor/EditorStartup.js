@@ -1,3 +1,4 @@
+// EditorStartup.js — Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions
 import {
   putLocale
 } from './locale.js'

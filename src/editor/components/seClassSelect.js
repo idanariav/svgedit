@@ -1,3 +1,4 @@
+// seClassSelect.js — `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for…
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import {

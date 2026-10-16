@@ -1,3 +1,4 @@
+// uiMode.js — `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell)
 import { getActiveRoot } from './domScope.js'
 
 /**

@@ -1,3 +1,4 @@
+// ext-panning.js — Pan/hand tool
 /**
  * @file ext-panning.js
  *

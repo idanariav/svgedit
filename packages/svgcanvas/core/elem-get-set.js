@@ -1,4 +1,5 @@
 // @ts-check
+// elem-get-set.js — `changeSelectedAttribute()` and attribute I/O
 /**
  * @module elem-get-set get and set methods.
  * @license MIT

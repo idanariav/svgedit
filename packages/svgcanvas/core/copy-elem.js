@@ -1,4 +1,5 @@
 // @ts-check
+// copy-elem.js — Copy handler
 import { preventClickDefault } from './dom-utils.js'
 import dataStorage from './dataStorage.js'
 

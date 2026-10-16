@@ -1,3 +1,4 @@
+// seText.js — `<se-text>` — themed text label driven by its `text` / `value` attributes
 import { t } from '../locale.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 const template = document.createElement('template')

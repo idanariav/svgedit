@@ -1,3 +1,4 @@
+// seFlyingButton.js — `<se-flying-button>` — Button with sub-tool flyout
 import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'

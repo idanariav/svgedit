@@ -1,3 +1,4 @@
+// seAlertDialog.js — Alert dialog (OK only)
 import SePlainAlertDialog from './SePlainAlertDialog.js'
 
 const seAlert = (text) => {

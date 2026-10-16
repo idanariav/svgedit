@@ -221,7 +221,7 @@ code exploration.
 | [`attributes.md`](.claude/attributes.md) | Working with shape attribute panels or the `attrChanger` handler |
 | [`css-rules.md`](.claude/css-rules.md) | Styling anything — tokens, layout grid, shadow DOM component CSS |
 | [`extensions.md`](.claude/extensions.md) | Creating or modifying an extension |
-| [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup |
+| [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup (the source-file tables are generated from each file's header comment: `npm run file-map`) |
 | [`debug-log.md`](.claude/debug-log.md) | Reading or extending the host debug log (event vocabulary, how to retrace a bug from it) |
 | [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
 | [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes), the re-architecture track (R1–R7: document model, canvas composition, TypeScript, features vs extensions…) and an index of per-area follow-up files in [`roadmap/`](.claude/roadmap/). Apply the guidelines while you work; read an area file and fold its items in when your task touches that area |
@@ -231,7 +231,7 @@ code exploration.
 At the **end of any task** that modifies files covered by these docs, update
 the relevant doc(s) to reflect the change. Specifically:
 
-- Added, removed, or renamed a file → update `file-map.md` and `architecture.md`
+- Added, removed, or renamed a source file → give it a header comment whose first sentence says what the file is, then run `npm run file-map` (`pretest` fails on a missing header or a stale map); update `architecture.md` if the structure changed
 - Added or removed a toolbar tool / panel control → update `tools.md`
 - Changed which attributes are editable for a shape → update `attributes.md`
 - Added, removed, or renamed a CSS variable / layout rule → update `css-rules.md`

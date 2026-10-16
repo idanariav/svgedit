@@ -1,3 +1,4 @@
+// seColorPicker.js — `<se-color-picker>` — Color selection modal
 import Paint from '@svgedit/svgcanvas/core/paint.js'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'

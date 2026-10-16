@@ -1,4 +1,5 @@
 // @ts-check
+// paste-elem.js — Paste handler
 import { getUrlFromAttr } from './dom-utils.js'
 import * as hstry from './history.js'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.js'

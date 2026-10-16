@@ -1,3 +1,4 @@
+// cmenuLayersDialog.js — `<se-cmenu-layers>` — right-click menu of the Layers panel
 import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
 import { closestRoot } from '../domScope.js'

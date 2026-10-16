@@ -1,3 +1,4 @@
+// seSelect.js — `<se-select>` — Styled `<select>` dropdown
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'

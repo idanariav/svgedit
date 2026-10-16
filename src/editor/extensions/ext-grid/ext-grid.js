@@ -1,3 +1,4 @@
+// ext-grid.js — Grid overlay + snap, incl. thirds/golden-ratio/center-cross composition-guide shapes (formerly the separate ext-guides overlays)
 /**
  * @file ext-grid.js
  *

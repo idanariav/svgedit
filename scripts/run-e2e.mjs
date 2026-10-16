@@ -1,3 +1,4 @@
+// run-e2e.mjs — Runs the Playwright e2e suite: builds `dist/editor` with coverage instrumentation, starts the preview server, runs the specs and merges their coverage with vitest's
 import { spawn } from 'node:child_process'
 import { copyFile, mkdir, readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'

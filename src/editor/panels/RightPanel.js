@@ -1,3 +1,4 @@
+// RightPanel.js — Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops
 /* globals seAlert, sePrompt */
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'

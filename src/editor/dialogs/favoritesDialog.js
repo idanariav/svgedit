@@ -1,3 +1,4 @@
+// favoritesDialog.js — Favorites manager modal (`se-favorites-dialog`) — grouped list of every favoritable action (via `buildFavoritesCatalog`) with a star toggle each
 import { t } from '../locale.js'
 import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.js'
 import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'

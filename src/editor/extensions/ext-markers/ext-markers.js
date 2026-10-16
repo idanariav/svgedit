@@ -1,3 +1,4 @@
+// ext-markers.js — Arrow/marker decorators
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  * @file ext-markers.js

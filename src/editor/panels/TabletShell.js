@@ -1,3 +1,4 @@
+// TabletShell.js — Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native…
 import tabletShellHTML from './TabletShell.html'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 

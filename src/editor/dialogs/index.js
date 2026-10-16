@@ -1,3 +1,4 @@
+// index.js — Imports every dialog element so that each registers itself
 import './imagePropertiesDialog.js'
 import './editorPreferencesDialog.js'
 import './svgSourceDialog.js'

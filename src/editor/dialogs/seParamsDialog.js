@@ -1,3 +1,4 @@
+// seParamsDialog.js — `se-params-dialog`: a small modal form from field descriptors (number / checkbox / select / 9-point `origin` locator); `open({title, fields, onChange, onOk, onCancel})`, knows nothing of the drawing…
 import { dialogSkin } from './dialogSkin.css.js'
 import { syncDialogTheme } from '../themeUtil.js'
 

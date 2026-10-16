@@ -1,3 +1,4 @@
+// runSteps.js — `runSteps(steps)`: runs labeled, independent steps so one that throws is logged and skipped instead of aborting the chain
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**
  * Run a sequence of labeled, independent steps, isolating each from the

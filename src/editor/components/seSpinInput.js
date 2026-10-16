@@ -1,3 +1,4 @@
+// seSpinInput.js — `<se-spin-input>` — Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, scrubby label (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and…
 import { tooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'

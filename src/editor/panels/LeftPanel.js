@@ -1,3 +1,4 @@
+// LeftPanel.js — Drawing tool button handlers; mode switching
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
 import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'

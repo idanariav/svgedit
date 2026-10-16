@@ -1,3 +1,4 @@
+// seBrushSettings.js — `<se-brush-settings>` — Brush-tool settings popover (its trigger is a gear with the text "Brush settings", not a lone icon; thickness/angle/roundness/taper start-end/opacity/smoothness fields + 5…
 /* globals sePrompt */
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import './seSpinInput.js'

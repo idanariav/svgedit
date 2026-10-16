@@ -1,3 +1,4 @@
+// seExplorerButton.js — `<se-explorerbutton>` — toolbar button that opens a library explorer (the shape library, through its `lib` attribute)
 import { tooltipText } from '../Hotkeys.js'
 import { getIconDataUri } from '../images/iconRegistry.js'
 import { closestRoot, ownerEditor } from '../domScope.js'

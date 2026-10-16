@@ -1,3 +1,4 @@
+// ext-shapes.js — Pre-made shape library (incl. the stroke-based Accents decoration category — droplets, sparkles, motion arcs, speed lines, puffs — in `shapelib/accents.json`)
 /**
  * @file ext-shapes.js
  *

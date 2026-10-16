@@ -1,3 +1,4 @@
+// sePromptDialog.js — Prompt-style dialog (`se-prompt-dialog`) — used by ext-opensave as a "loading" indicator (title + Cancel), not a real text prompt
 import SePlainAlertDialog from './SePlainAlertDialog.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.js'
 /**

@@ -1,3 +1,4 @@
+// hotkeyDialog.js — Hotkey Manager modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback
 import { t } from '../locale.js'
 import { formatHotkey } from '../Hotkeys.js'
 import hotkeyDialogHTML from './hotkeyDialog.html'
