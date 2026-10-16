@@ -12,7 +12,7 @@
  */
 
 import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
-import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.js'
+import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.ts'
 import { warn } from '../common/logger.js'
 
 // Element types that cannot be converted to a path (mirrors the check in

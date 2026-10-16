@@ -8,11 +8,11 @@
  */
 
 import { NS } from './namespaces.ts'
-import { getUnits } from './units.js'
+import { getUnits } from './units.ts'
 import {
   transformPoint, snapToAngle, rectsIntersect,
   transformListToTransform, getTransformList
-} from './math.js'
+} from './math.ts'
 import {
   assignAttributes
 } from './dom-utils.js'

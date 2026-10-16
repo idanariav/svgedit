@@ -8,13 +8,13 @@
 import {
   cleanupElement
 } from './dom-utils.js'
-import { getUnits } from './units.js'
+import { getUnits } from './units.ts'
 import {
   transformPoint, getTransformList, transformListToTransform
-} from './math.js'
+} from './math.ts'
 import * as hstry from './history.js'
 import { error as logError, warn as logWarn } from '../common/logger.js'
-import { findPos } from '../../svgcanvas/common/util.js'
+import { findPos } from '../../svgcanvas/common/util.ts'
 import { isDrawSnapMode } from './draw-snap.js'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import Layer from './layer.js'
@@ -1122,7 +1122,7 @@ export const init = (canvas) => {
     const pt = transformPoint(clientX, clientY, svgCanvas.getrootSctm())
 
     // content offset from canvas in screen pixels
-    const wOffset = findPos(workarea)
+    const wOffset = findPos(/** @type {HTMLElement} */ (workarea))
     const wOffsetLeft = wOffset.left + rulerwidth
     const wOffsetTop = wOffset.top + rulerwidth
 

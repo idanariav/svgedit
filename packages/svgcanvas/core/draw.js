@@ -11,7 +11,7 @@ import { init as layerOpsInit } from './layer-ops.js'
 
 import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.js'
-import { getParentsUntil } from '../common/util.js'
+import { getParentsUntil } from '../common/util.ts'
 
 const visElems =
   'a,circle,ellipse,foreignObject,g,image,line,path,polygon,polyline,rect,svg,text,tspan,use'.split(
@@ -1217,7 +1217,7 @@ export const init = canvas => {
     svgCanvas.setCurrentGroup(elem)
 
     // Disable other elements
-    const parentsUntil = getParentsUntil(elem, '#svgcontent')
+    const parentsUntil = getParentsUntil(/** @type {Element} */ (elem), '#svgcontent')
     if (!parentsUntil) {
       return
     }

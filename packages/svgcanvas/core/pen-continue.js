@@ -13,7 +13,7 @@
 import { parseAnchors, anchorsToD } from './anchor-path.js'
 import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.js'
 import { LIVE_ATTRS } from './path-join.js'
-import { getTransformList, transformListToTransform, isIdentity } from './math.js'
+import { getTransformList, transformListToTransform, isIdentity } from './math.ts'
 
 /**
  * @typedef {object} PenEnd

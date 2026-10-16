@@ -60,10 +60,10 @@ import {
   matrixMultiply,
   hasMatrixTransform,
   transformListToTransform
-} from './core/math.js'
-import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.js'
+} from './core/math.ts'
+import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-hooks.ts'
 import { warn } from './common/logger.js'
-import { createUnits, getTypeMap } from './core/units.js'
+import { createUnits, getTypeMap } from './core/units.ts'
 import { init as svgInit } from './core/svg-exec.js'
 import { init as svgDefsInit } from './core/svg-defs.js'
 import { init as coordsInit } from './core/coords.js'
@@ -101,10 +101,10 @@ import {
   getClosest,
   getParents,
   mergeDeep
-} from './common/util.js'
+} from './common/util.ts'
 import { runGuardedInit } from './common/initGuard.js'
 
-import dataStorage from './core/dataStorage.js'
+import dataStorage from './core/dataStorage.ts'
 
 const visElems =
   'a,circle,ellipse,foreignObject,g,image,line,path,polygon,polyline,rect,svg,text,tspan,use'

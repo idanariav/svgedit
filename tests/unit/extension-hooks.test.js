@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { EXTENSION_HOOKS, isExtensionHook } from '../../packages/svgcanvas/core/extension-hooks.js'
+import { EXTENSION_HOOKS, isExtensionHook } from '../../packages/svgcanvas/core/extension-hooks.ts'
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => {
   const p = join(dir, f)

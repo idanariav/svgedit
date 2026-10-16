@@ -7,14 +7,14 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import { getUnits } from './units.js'
+import { getUnits } from './units.ts'
 import {
   hasMatrixTransform,
   transformListToTransform,
   transformBox,
   getTransformList,
   isIdentity
-} from './math.js'
+} from './math.ts'
 import { getRotationAngleFromTransformList } from './dom-utils.js'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.js'
 import { isAreaText, getAreaBox } from './text-rows.js'

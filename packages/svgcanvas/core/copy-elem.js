@@ -1,7 +1,7 @@
 // @ts-check
 // copy-elem.js — Copy handler
 import { preventClickDefault } from './dom-utils.js'
-import dataStorage from './dataStorage.js'
+import dataStorage from './dataStorage.ts'
 
 /**
  * Create a clone of an element, updating its ID and its children's IDs when needed.

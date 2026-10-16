@@ -21,7 +21,7 @@ import Layer from './layer.js'
 import { NS } from './namespaces.ts'
 import {
   getMatrixToContent, getTransformList, isIdentity, matrixMultiply, transformListToTransform
-} from './math.js'
+} from './math.ts'
 
 /** @param {any} el @returns {boolean} */
 const isLayer = (el) => !!Layer.isLayer(el)

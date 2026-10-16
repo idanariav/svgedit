@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import dataStorage from '../../packages/svgcanvas/core/dataStorage.js'
+import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
 
 describe('dataStorage', () => {
   it('stores, checks and retrieves keyed values per element', () => {

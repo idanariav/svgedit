@@ -1,4 +1,4 @@
-import * as units from '../../packages/svgcanvas/core/units.js'
+import * as units from '../../packages/svgcanvas/core/units.ts'
 
 describe('units', function () {
   let u

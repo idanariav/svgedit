@@ -4,7 +4,7 @@ import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../..
 import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.js'
 import { getPathDFromElement } from '../../packages/svgcanvas/core/path-utils.js'
 import { localMatrix, applyMatrix } from '../../packages/svgcanvas/core/art-brush-canvas.js'
-import { getTransformList } from '../../packages/svgcanvas/core/math.js'
+import { getTransformList } from '../../packages/svgcanvas/core/math.ts'
 
 describe('blend attribute', () => {
   it('parses and formats, filling defaults and clamping', () => {

@@ -19,7 +19,7 @@
  */
 
 import { getBBox } from './bbox-utils.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getTransformList, transformListToTransform } from './math.ts'
 
 /** Reference points, row by row: top left … bottom right. */
 export const REFERENCE_POINTS = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br']

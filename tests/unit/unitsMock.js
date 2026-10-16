@@ -1,4 +1,4 @@
-import { createUnits } from '../../packages/svgcanvas/core/units.js'
+import { createUnits } from '../../packages/svgcanvas/core/units.ts'
 
 /**
  * Give a hand-built mock canvas the per-canvas `units` instance that the real

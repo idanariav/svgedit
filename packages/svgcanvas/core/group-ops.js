@@ -19,9 +19,9 @@ import {
   matrixMultiply,
   transformListToTransform,
   getTransformList
-} from './math.js'
+} from './math.ts'
 import { isGecko } from '../common/browser.js'
-import { getParents } from '../common/util.js'
+import { getParents } from '../common/util.ts'
 
 const {
   Command,

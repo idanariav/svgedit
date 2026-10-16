@@ -19,7 +19,7 @@
 
 import { parseAnchors } from './anchor-path.js'
 import { visibleGuides } from './guides.js'
-import { getTransformList, transformListToTransform, transformPoint } from './math.js'
+import { getTransformList, transformListToTransform, transformPoint } from './math.ts'
 
 /**
  * @typedef {{left: number, cx: number, right: number, top: number, cy: number, bottom: number,

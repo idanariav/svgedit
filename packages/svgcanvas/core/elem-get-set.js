@@ -12,8 +12,8 @@ import { init as textAttrsInit } from './text-attrs.js'
 import {
   walkTree, getHref, setHref
 } from './dom-utils.js'
-import { getUnits } from './units.js'
-import { getParents } from '../common/util.js'
+import { getUnits } from './units.ts'
+import { getParents } from '../common/util.ts'
 
 /**
 * @function module:elem-get-set.init

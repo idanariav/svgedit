@@ -11,7 +11,7 @@
  * @license MIT
  */
 import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.js'
-import { getTransformList, transformListToTransform } from './math.js'
+import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'
 import { toCurrentGroupLocalDelta } from './event-group-context.js'

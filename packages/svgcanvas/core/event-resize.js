@@ -13,7 +13,7 @@
  */
 import { getBBox } from './bbox-utils.js'
 import { getRotationAngle } from './dom-utils.js'
-import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.js'
+import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 import {
   isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
 } from './text-rows.js'

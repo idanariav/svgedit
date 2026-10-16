@@ -4,7 +4,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
-import * as math from '../../packages/svgcanvas/core/math.js'
+import * as math from '../../packages/svgcanvas/core/math.ts'
 import * as path from '../../packages/svgcanvas/core/path.js'
 import { attachUnits } from './unitsMock.js'
 

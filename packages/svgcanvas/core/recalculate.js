@@ -5,7 +5,7 @@
  * @license MIT
  */
 
-import { getUnits } from './units.js'
+import { getUnits } from './units.ts'
 import { getRotationAngle } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { BatchCommand, ChangeElementCommand } from './history.js'
@@ -16,8 +16,8 @@ import {
   transformListToTransform,
   hasMatrixTransform,
   getTransformList
-} from './math.js'
-import { mergeDeep } from '../common/util.js'
+} from './math.ts'
+import { mergeDeep } from '../common/util.ts'
 import { remapSourceAttrs } from './geometry-remap-registry.ts'
 
 /**

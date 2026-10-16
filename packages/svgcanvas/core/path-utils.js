@@ -10,8 +10,8 @@
 import {
   hasMatrixTransform,
   getTransformList
-} from './math.js'
-import { mergeDeep } from '../common/util.js'
+} from './math.ts'
+import { mergeDeep } from '../common/util.ts'
 
 /**
  * @typedef {GenericArray} module:path-utils.PathSegmentArray

@@ -189,7 +189,7 @@ declare class SvgCanvas {
   removeFromSelection (elemsToRemove: Element[]): void
   getNextId (elemType?: Element | string | null): string
   addCommandToHistory (cmd: HistoryCommand): void
-  getDataStorage (): typeof import('./core/dataStorage.js').default
+  getDataStorage (): typeof import('./core/dataStorage.ts').default
 
   // Paint
   getColor (type: 'fill' | 'stroke' | string): any

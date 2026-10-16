@@ -27,7 +27,7 @@
 
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.js'
-import { getTransformList, transformListToTransform, matrixMultiply } from './math.js'
+import { getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.js'
 import { registerAttrValidator } from './drawing-invariants.js'
 import { LIVE_ATTRS } from './path-join.js'

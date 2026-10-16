@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tools for working with units.
  * @module units
@@ -20,50 +19,35 @@ const unitAttrs = ['r', 'radius', ...wAttrs, ...hAttrs]
 // is fine. Everything that *does* depend on a canvas (round digits, base unit,
 // canvas size for `%`, id lookup) goes through a per-canvas instance from
 // createUnits().
-let typeMap_ = null
+let typeMap_: TypeMap | null = null
 
-/**
- * @interface module:units.ElementContainer
- */
-/**
- * @function module:units.ElementContainer#getBaseUnit
- * @returns {string} The base unit type of the container ('em')
- */
-/**
- * @function module:units.ElementContainer#getElement
- * @returns {?Element} An element in the container given an id
- */
-/**
- * @function module:units.ElementContainer#getHeight
- * @returns {number} The container's height
- */
-/**
- * @function module:units.ElementContainer#getWidth
- * @returns {number} The container's width
- */
-/**
- * @function module:units.ElementContainer#getRoundDigits
- * @returns {number} The number of digits number should be rounded to
- */
+/** What createUnits() needs from its canvas. */
+export interface ElementContainer {
+  /** The base unit type of the container ('em') */
+  getBaseUnit (): string
+  /** An element in the container given an id */
+  getElement (id: string): Element | null | undefined
+  getHeight (): number
+  getWidth (): number
+  /** The number of digits numbers should be rounded to */
+  getRoundDigits (): number
+}
 
-/**
- * @typedef {PlainObject} TypeMap
- * @property {number} em
- * @property {number} ex
- * @property {number} in
- * @property {number} cm
- * @property {number} mm
- * @property {number} pt
- * @property {number} pc
- * @property {number} px
- * @property {0} %
- */
+export interface TypeMap {
+  em: number
+  ex: number
+  in: number
+  cm: number
+  mm: number
+  pt: number
+  pc: number
+  px: number
+  '%': 0
+  [unit: string]: number
+}
 
-/**
- * Measure em/ex/in once via a temporary SVG and derive the unit table.
- * @returns {TypeMap}
- */
-const computeTypeMap = () => {
+/** Measure em/ex/in once via a temporary SVG and derive the unit table. */
+const computeTypeMap = (): TypeMap => {
   // Get correct em/ex values by creating a temporary SVG.
   const svg = document.createElementNS(NSSVG, 'svg')
   document.body.append(svg)
@@ -89,41 +73,18 @@ const computeTypeMap = () => {
   }
 }
 
-/**
-* Group: Unit conversion functions.
-*/
-
-/**
- * @function module:units.getTypeMap
- * @returns {TypeMap} The unit object with values for each unit
-*/
-export const getTypeMap = () => {
+/** The unit object with values for each unit. */
+export const getTypeMap = (): TypeMap => {
   typeMap_ ??= computeTypeMap()
   return typeMap_
 }
 
-/**
-* @typedef {GenericArray} CompareNumbers
-* @property {number} length 2
-* @property {number} 0
-* @property {number} 1
-*/
-
-/**
-* Sets an element's attribute based on the unit in its current value.
-*
-* @function module:units.setUnitAttr
-* @param {Element} elem - DOM element to be changed
-* @param {string} attr - Name of the attribute associated with the value
-* @param {string|number} val - Attribute value to convert
-* @returns {void}
-*/
-export const setUnitAttr = (elem, attr, val) => {
+/** Sets an element's attribute based on the unit in its current value. */
+export const setUnitAttr = (elem: Element, attr: string, val: string | number): void => {
   elem.setAttribute(attr, String(val))
 }
 
-/** @type {Record<string, string[]>} */
-const attrsToConvert = {
+const attrsToConvert: Record<string, string[]> = {
   line: ['x1', 'x2', 'y1', 'y2'],
   circle: ['cx', 'cy', 'r'],
   ellipse: ['cx', 'cy', 'rx', 'ry'],
@@ -134,25 +95,32 @@ const attrsToConvert = {
   text: ['x', 'y']
 }
 
+/** The unit-conversion functions bound to one canvas, see createUnits(). */
+export interface Units {
+  shortFloat: {
+    (val: string | number): number
+    (val: readonly number[]): string
+  }
+  convertUnit: (val: number | string, unit?: string) => number
+  convertAttrs: (element: Element) => void
+  convertToNum: (attr: string, val: string | number) => number
+  isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean
+  getTypeMap: () => TypeMap
+  setUnitAttr: typeof setUnitAttr
+}
+
 /**
  * The unit-conversion functions bound to one canvas (`elementContainer`):
  * rounding digits, base unit, canvas size (for `%`) and id lookup all come
  * from that container, so two editors in one page never read each other's.
- * @function module:units.createUnits
- * @param {module:units.ElementContainer} elementContainer
- * @returns {{shortFloat: Function, convertUnit: (val: number, unit?: string) => number, convertAttrs: Function, convertToNum: (attr: string, val: string|number) => number, isValidUnit: (attr: string, val: string, selectedElement?: Element) => boolean, getTypeMap: () => Record<string, number>, setUnitAttr: Function}}
  */
-export const createUnits = (elementContainer) => {
+export const createUnits = (elementContainer: ElementContainer): Units => {
   /**
-  * Rounds a given value to a float with number of digits defined in
-  * `round_digits` of `saveOptions`
-  *
-  * @function module:units.shortFloat
-  * @param {string|number|CompareNumbers} val - The value (or Array of two numbers) to be rounded
-  * @returns {number|string} If a string/number was given, returns a number. If an array, return a string
-  * with comma-separated floats
-  */
-  const shortFloat = (val) => {
+   * Rounds a given value to a float with number of digits defined in
+   * `round_digits` of `saveOptions`. A string/number gives a number; an array
+   * of two numbers gives a string of comma-separated floats.
+   */
+  const shortFloat = ((val: string | number | readonly number[]): number | string => {
     const digits = elementContainer.getRoundDigits()
     if (!isNaN(Number(val))) {
       return Number(Number(val).toFixed(digits))
@@ -161,27 +129,16 @@ export const createUnits = (elementContainer) => {
       return `${shortFloat(val[0])},${shortFloat(val[1])}`
     }
     return Number(Number.parseFloat(String(val)).toFixed(digits))
-  }
+  }) as Units['shortFloat']
 
-  /**
-  * Converts the number to given unit or baseUnit.
-  * @function module:units.convertUnit
-  * @param {string|number} val
-  * @param {string} [unit]
-  * @returns {number}
-  */
-  const convertUnit = (val, unit) => {
+  /** Converts the number to given unit or baseUnit. */
+  const convertUnit = (val: number | string, unit?: string): number => {
     const key = unit || elementContainer.getBaseUnit()
-    return /** @type {number} */ (shortFloat(Number(val) / getTypeMap()[key]))
+    return shortFloat(Number(val) / getTypeMap()[key])
   }
 
-  /**
-  * Converts all applicable attributes to the configured baseUnit.
-  * @function module:units.convertAttrs
-  * @param {Element} element - A DOM element whose attributes should be converted
-  * @returns {void}
-  */
-  const convertAttrs = (element) => {
+  /** Converts all applicable attributes of an element to the configured baseUnit. */
+  const convertAttrs = (element: Element): void => {
     const elName = element.tagName
     const unit = elementContainer.getBaseUnit()
     const attrs = attrsToConvert[elName]
@@ -196,21 +153,16 @@ export const createUnits = (elementContainer) => {
   }
 
   /**
-  * Converts given values to numbers. Attributes must be supplied in
-  * case a percentage is given.
-  *
-  * @function module:units.convertToNum
-  * @param {string} attr - Name of the attribute associated with the value
-  * @param {string|number} val - Attribute value to convert
-  * @returns {number} The converted number
-  */
-  const convertToNum = (attr, val) => {
+   * Converts given values to numbers. The attribute name must be supplied in
+   * case a percentage is given.
+   */
+  const convertToNum = (attr: string, val: string | number): number => {
     // Return a number if that's what it already is
     if (!isNaN(Number(val))) { return Number(val) }
-    const str = /** @type {string} */ (val)
-    if (str.substr(-1) === '%') {
+    const str = val as string
+    if (str.slice(-1) === '%') {
       // Deal with percentage, depends on attribute
-      const num = Number(str.substr(0, str.length - 1)) / 100
+      const num = Number(str.slice(0, -1)) / 100
       const width = elementContainer.getWidth()
       const height = elementContainer.getHeight()
 
@@ -228,15 +180,8 @@ export const createUnits = (elementContainer) => {
     return Number(num) * getTypeMap()[unit]
   }
 
-  /**
-  * Check if an attribute's value is in a valid format.
-  * @function module:units.isValidUnit
-  * @param {string} attr - The name of the attribute associated with the value
-  * @param {string} val - The attribute value to check
-  * @param {Element} [selectedElement]
-  * @returns {boolean} Whether the unit is valid
-  */
-  const isValidUnit = (attr, val, selectedElement) => {
+  /** Check if an attribute's value is in a valid format. */
+  const isValidUnit = (attr: string, val: string, selectedElement?: Element): boolean => {
     if (unitAttrs.includes(attr)) {
       // True if it's just a number
       if (!isNaN(Number(val))) {
@@ -270,12 +215,8 @@ export const createUnits = (elementContainer) => {
   return { shortFloat, convertUnit, convertAttrs, convertToNum, isValidUnit, getTypeMap, setUnitAttr }
 }
 
-/**
- * The units bound to `canvas` (`canvas.units`, from createUnits()).
- * @param {{units?: object}} canvas
- * @returns {ReturnType<typeof createUnits>}
- */
-export const getUnits = (canvas) => {
+/** The units bound to `canvas` (`canvas.units`, from createUnits()). */
+export const getUnits = (canvas: { units?: Units }): Units => {
   if (!canvas?.units) throw new Error('getUnits: canvas has no `units` (create it with createUnits(canvas))')
-  return /** @type {ReturnType<typeof createUnits>} */ (canvas.units)
+  return canvas.units
 }

@@ -18,12 +18,12 @@ import {
   getMatrixToContent,
   transformBox,
   isIdentity
-} from './math.js'
+} from './math.ts'
 import * as hstry from './history.js'
-import { getClosest } from '../common/util.js'
+import { getClosest } from '../common/util.ts'
 import Layer from './layer.js'
 import { isObjectLocked, isObjectHidden } from './object-state.js'
-import { isExtensionHook } from './extension-hooks.js'
+import { isExtensionHook } from './extension-hooks.ts'
 import { warn, error as logError } from '../common/logger.js'
 
 const { BatchCommand } = hstry
@@ -273,7 +273,7 @@ export const init = (canvas) => {
  * @todo Consider: Should this return an array by default, so extension results aren't overwritten?
  * @todo Would be easier to document if passing in object with key of action and vars as value; could then define an interface which tied both together
  * @function module:svgcanvas.SvgCanvas#runExtensions
- * @param {keyof import('./extension-hooks.js').ExtensionHookPayloads} action - A registered hook name (see core/extension-hooks.js)
+ * @param {keyof import('./extension-hooks.ts').ExtensionHookPayloads} action - A registered hook name (see core/extension-hooks.ts)
  * @param {*} [vars] - The hook's payload, typed by `ExtensionHookPayloads` (or a function of the extension name returning it)
  * @param {boolean} [returnArray]
  * @returns {ExtensionStatus[]|ExtensionStatus|false} See {@tutorial ExtensionDocs} on the ExtensionStatus.
@@ -285,7 +285,7 @@ export const init = (canvas) => {
     returnArray
   ) => {
     if (!isExtensionHook(action)) {
-      warn(`runExtensions: unknown hook "${action}"; add it to extension-hooks.js`, undefined, 'extensions')
+      warn(`runExtensions: unknown hook "${action}"; add it to extension-hooks.ts`, undefined, 'extensions')
     }
     /** @type {any} */
     let result = returnArray ? [] : false

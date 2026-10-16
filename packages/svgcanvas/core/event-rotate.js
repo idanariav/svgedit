@@ -8,7 +8,7 @@
  * @license MIT
  */
 import { getBBox } from './bbox-utils.js'
-import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.js'
+import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 
 /**
  * Rotate a multi-element selection rigidly about its union center by `angle`

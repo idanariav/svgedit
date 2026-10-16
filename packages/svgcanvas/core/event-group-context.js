@@ -12,7 +12,7 @@
  * @module event-group-context
  * @license MIT
  */
-import { transformPoint, getMatrixToContent } from './math.js'
+import { transformPoint, getMatrixToContent } from './math.ts'
 
 /**
  * Modes that operate on existing elements / the selection, working in content

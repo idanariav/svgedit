@@ -11,7 +11,7 @@
 
 import { parseAnchors, anchorsToD } from './anchor-path.js'
 import { joinSubpaths } from './path-edit.js'
-import { getTransformList, transformListToTransform, matrixMultiply, transformPoint } from './math.js'
+import { getTransformList, transformListToTransform, matrixMultiply, transformPoint } from './math.ts'
 
 /** Endpoints closer than this (user units, at 100% zoom) merge into one anchor. */
 const JOIN_TOLERANCE = 0.5

@@ -36,7 +36,7 @@
  */
 
 import { cleanupElement } from './dom-utils.js'
-import { transformPoint } from './math.js'
+import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.js'
 import { isMac } from '../common/browser.js'

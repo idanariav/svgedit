@@ -21,7 +21,7 @@
 
 import { centerline, pointAt, locate } from '@svgedit/svgcanvas/core/width-outline.js'
 import { profileAt, withPoint, withoutPoint, movedPoint, isProfile } from '@svgedit/svgcanvas/core/width-profile.js'
-import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.js'
+import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
 
 const name = 'width-tool'
 

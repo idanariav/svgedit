@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { createUnits } from '../../packages/svgcanvas/core/units.js'
+import { createUnits } from '../../packages/svgcanvas/core/units.ts'
 import {
   init as initUtilities,
   assignAttributes,

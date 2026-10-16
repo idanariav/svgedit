@@ -13,7 +13,7 @@ import {
   matrixMultiply,
   transformListToTransform,
   isIdentity
-} from './math.js'
+} from './math.ts'
 
 /**
  * Walks up from `parent` through any nested `<g>`/`<a>` group ancestors,

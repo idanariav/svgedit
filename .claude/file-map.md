@@ -21,7 +21,7 @@
 | `browser.js` | Browser detection |
 | `initGuard.js` | Collision guard for SvgCanvas's per-module `xxxInit(canvas)` calls |
 | `logger.js` | Centralized logging utility for SVGCanvas |
-| `util.js` | Common utility functions |
+| `util.ts` | Common utility functions |
 
 ### `packages/svgcanvas/core/`
 
@@ -45,7 +45,7 @@
 | `corner-radius.js` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
 | `cutter.js` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
 | `dash-fit.js` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
-| `dataStorage.js` | A storage solution aimed at replacing jQuery's data function |
+| `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.js` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
 | `distort.js` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
 | `dom-utils.js` | DOM/element manipulation, lookup, and misc canvas-state utilities |
@@ -63,7 +63,7 @@
 | `event-text-edit.js` | Text-editing mode (`textedit`) mouse handlers, extracted from the `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event-zoom.js` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event.js` | Tools for event |
-| `extension-hooks.js` | Registry of extension hook names, with the payload each one receives |
+| `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gradient-edit.js` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
@@ -79,7 +79,7 @@
 | `live-effects.js` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
 | `live-stack.js` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
 | `load-image.js` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
-| `math.js` | Mathematical utilities |
+| `math.ts` | Mathematical utilities |
 | `measure.js` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
 | `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.js` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
@@ -127,7 +127,7 @@
 | `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
 | `transform-each.js` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
 | `undo.js` | Tools for undo |
-| `units.js` | Tools for working with units |
+| `units.ts` | Tools for working with units |
 | `warp.js` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
 | `width-outline.js` | Variable-width strokes: the filled outline of a path stroked with a width profile |
 | `width-profile.js` | Width profiles: the data behind variable-width strokes (the Width tool and the presets) |

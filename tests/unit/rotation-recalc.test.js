@@ -18,7 +18,7 @@
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as utilities from '../../packages/svgcanvas/core/dom-utils.js'
 import * as history from '../../packages/svgcanvas/core/history.js'
-import { getTransformList } from '../../packages/svgcanvas/core/math.js'
+import { getTransformList } from '../../packages/svgcanvas/core/math.ts'
 
 describe('Rotation recalculation on attribute change', function () {
   /**

@@ -9,7 +9,7 @@
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.js'
-import { snapToAngle, transformPoint } from './math.js'
+import { snapToAngle, transformPoint } from './math.ts'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these

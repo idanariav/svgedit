@@ -11,7 +11,7 @@ import { NS } from './namespaces.ts'
 import { ChangeElementCommand } from './history.js'
 import {
   transformPoint, getMatrix, getMatrixToContent, matrixMultiply, isIdentity
-} from './math.js'
+} from './math.ts'
 import {
   assignAttributes
 } from './dom-utils.js'

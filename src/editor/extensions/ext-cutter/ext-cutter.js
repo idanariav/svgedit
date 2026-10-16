@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import { snapToAngle } from '@svgedit/svgcanvas/core/math.js'
+import { snapToAngle } from '@svgedit/svgcanvas/core/math.ts'
 
 const name = 'cutter'
 

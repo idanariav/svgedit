@@ -14,7 +14,7 @@ import {
   transformPoint,
   transformListToTransform,
   getTransformList
-} from './math.js'
+} from './math.ts'
 import { isWebkit } from '../common/browser.js'
 import { NS } from './namespaces.ts'
 

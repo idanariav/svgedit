@@ -18,8 +18,8 @@ import {
   matrixMultiply,
   transformBox,
   getTransformList
-} from './math.js'
-import { getUnits } from './units.js'
+} from './math.ts'
+import { getUnits } from './units.ts'
 
 /** @param {*} value */
 const flipBoxCoordinate = (value) => {

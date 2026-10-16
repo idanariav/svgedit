@@ -8,8 +8,8 @@
  */
 
 import { NS } from './namespaces.ts'
-import { setUnitAttr, getTypeMap } from './units.js'
-import { getTransformList } from './math.js'
+import { setUnitAttr, getTypeMap } from './units.ts'
+import { getTransformList } from './math.ts'
 
 /**
  * Object with the following keys/values.

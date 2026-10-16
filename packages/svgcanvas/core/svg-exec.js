@@ -15,11 +15,11 @@ import {
   setHref,
   preventClickDefault
 } from './dom-utils.js'
-import { getUnits } from './units.js'
+import { getUnits } from './units.ts'
 import { isGecko } from '../common/browser.js'
 import { NS } from './namespaces.ts'
 import * as draw from './draw.js'
-import { getParents, getClosest } from '../common/util.js'
+import { getParents, getClosest } from '../common/util.ts'
 
 const {
   InsertElementCommand,
@@ -376,7 +376,7 @@ export const init = (canvas) => {
               attrVal = svgCanvas.pathActions.convertPath(/** @type {SVGPathElement} */ (elem), true)
             }
             if (!isNaN(Number(attrVal))) {
-              attrVal = shortFloat(attrVal)
+              attrVal = String(shortFloat(attrVal))
             } else if (unitRe.test(attrVal)) {
               attrVal = shortFloat(attrVal) + unit
             }

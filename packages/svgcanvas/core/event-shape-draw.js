@@ -9,7 +9,7 @@
  * @license MIT
  */
 import { assignAttributes, preventClickDefault, setHref } from './dom-utils.js'
-import { snapToAngle } from './math.js'
+import { snapToAngle } from './math.ts'
 import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.js'
 
 /** Screen pixels the pointer must travel with the Text tool before the press becomes a box (area text). */

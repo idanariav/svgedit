@@ -46,7 +46,7 @@ import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anch
 import { registerAttrValidator } from './drawing-invariants.js'
 import { localMatrix, applyMatrix } from './art-brush-canvas.js'
 import { tracksOf, frameAt } from './art-brush.js'
-import { getTransformList, matrixMultiply } from './math.js'
+import { getTransformList, matrixMultiply } from './math.ts'
 import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.js'
 
 export const BLEND_ATTR = 'se:blend'

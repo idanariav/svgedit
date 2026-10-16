@@ -7,7 +7,7 @@
  * @copyright 2011 Alexis Deveria, 2011 Jeff Schiller
  */
 
-import { transformPoint, getTransformList } from './math.js'
+import { transformPoint, getTransformList } from './math.ts'
 import {
   getRotationAngle
 } from './dom-utils.js'

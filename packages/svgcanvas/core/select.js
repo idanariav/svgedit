@@ -10,7 +10,7 @@
 import { isWebkit } from '../common/browser.js'
 import { getRotationAngle } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
-import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.js'
+import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.js'
 

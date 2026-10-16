@@ -8,7 +8,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import { transformPoint, matrixMultiply, getTransformList, transformListToTransform } from './math.js'
+import { transformPoint, matrixMultiply, getTransformList, transformListToTransform } from './math.ts'
 import {
   assignAttributes,
   getTextWithNewlines,

@@ -6,7 +6,7 @@ import {
   getClosest,
   getParents,
   getParentsUntil
-} from '../../packages/svgcanvas/common/util.js'
+} from '../../packages/svgcanvas/common/util.ts'
 
 describe('common util helpers', () => {
   it('computes positions and merges objects deeply', () => {

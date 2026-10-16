@@ -27,7 +27,7 @@
  */
 
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.js'
-import { getMatrixToContent, isIdentity } from './math.js'
+import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.js'
 
 // Element types that cannot be converted to a path (used for the

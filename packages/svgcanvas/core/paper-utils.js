@@ -9,7 +9,7 @@
 
 import paperCore from 'paper/dist/paper-core.js'
 import { getPathDFromElement } from './path-utils.js'
-import { getMatrix, getTransformList, transformListToTransform } from './math.js'
+import { getMatrix, getTransformList, transformListToTransform } from './math.ts'
 
 // Element types that cannot be converted to a path for paper.js operations.
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])

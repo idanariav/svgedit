@@ -3,8 +3,8 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as utilities from '../../packages/svgcanvas/core/bbox-utils.js'
-import * as math from '../../packages/svgcanvas/core/math.js'
-import { createUnits } from '../../packages/svgcanvas/core/units.js'
+import * as math from '../../packages/svgcanvas/core/math.ts'
+import { createUnits } from '../../packages/svgcanvas/core/units.ts'
 
 describe('utilities performance', function () {
   let currentLayer; let groupWithMatrixTransform; let textWithMatrixTransform

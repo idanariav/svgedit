@@ -27,7 +27,7 @@
  */
 
 import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.js'
-import { getMatrixToContent, isIdentity } from './math.js'
+import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.js'
 
 const SEGMENT_ATTR = 'se:segment'

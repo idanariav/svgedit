@@ -17,7 +17,7 @@ import {
 } from '../common/browser.js'
 import {
   transformPoint, transformListToTransform, getTransformList
-} from './math.js'
+} from './math.ts'
 
 const {
   UndoManager, HistoryEventTypes
