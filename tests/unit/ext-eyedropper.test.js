@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import extEyedropper from '../../src/editor/extensions/ext-eyedropper/ext-eyedropper.js'
 import { mockCommands } from './helpers/commands.js'
 

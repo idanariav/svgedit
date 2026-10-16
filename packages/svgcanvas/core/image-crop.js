@@ -19,7 +19,7 @@
 
 import { getHref, setHref } from './dom-utils.js'
 import { loadImage } from './load-image.js'
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 const MIN_SIZE = 4
 const HANDLE_SCREEN_RADIUS = 5

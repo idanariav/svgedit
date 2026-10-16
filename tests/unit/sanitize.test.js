@@ -1,4 +1,4 @@
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as sanitize from '../../packages/svgcanvas/core/sanitize.js'
 import * as utilities from '../../packages/svgcanvas/core/dom-utils.js'
 

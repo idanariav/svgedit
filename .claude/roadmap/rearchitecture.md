@@ -173,28 +173,43 @@ Size: L, fully incremental, low risk per module.
 
 ## R3. TypeScript
 
-**Today.** Decision of 2026-10-09 / 10-13: strict JSDoc (`// @ts-check` on all 107 core modules, strict for all of them
-and `svgcanvas.js`), no `.ts`, three tsconfigs, hand-written d.ts. With a rewrite on the table that decision is open
-again: JSDoc types are verbose for the data model R1 needs (discriminated unions, readonly trees), and `.ts` lets
-`tsc --emitDeclarationOnly` produce the declarations once R2 removes the attachment pattern.
+**Decision (2026-10-16): `.ts` for the engine, incrementally.** The toolchain is in and proven on four leaf modules
+(`proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`). The case for `.ts` that the document model's JSDoc
+datapoint left standing: `tsc --emitDeclarationOnly` can replace the hand-written d.ts once R2 removes the attachment
+pattern, one style across the code, and R1's data model reads better as types than as JSDoc. The conversion itself stays
+opportunistic and small per module.
 
-**Datapoint from R1 step (a) (2026-10-15).** The document model was written in strict JSDoc (discriminated unions, `readonly`
-trees, typed factories, a type-guarded walker) and is clean under `tsconfig.strict.json`; the JSDoc was verbose but not a
-blocker, which weakens the case for `.ts` on the data model alone. The remaining case is generated declarations (R2) and one
-style across the editor.
+**Toolchain, done:**
+- **Lint:** ESLint 9 + `neostandard` (`eslint.config.mjs`) replaces `standard`, which does not lint TypeScript. One style over
+  `.js` and `.ts`; `no-var` stays an error (neostandard only warns), `@typescript-eslint/no-explicit-any` is an error in
+  `.ts`. ESLint does not read `.gitignore`: ignores are listed in the config. The three hand-written d.ts files, which
+  `standard` never linted, were autofixed. The 24 stale `eslint-disable` directives are not reported
+  (`reportUnusedDisableDirectives: 'off'`, as `standard` behaved); cleaning them up is a possible small task.
+- **Build and tests:** Vite 7 and vitest resolve `./x.js` to `x.ts` from JS importers (checked in build, dev server and
+  vitest). Nothing to configure.
+- **Plain Node is the catch.** Node does not map `.js` to `.ts`, and the headless engine (the document model, the LLM CLI) runs
+  in plain Node using its built-in type stripping (22.18+; CI is 22.x, `engines` is now `>=22.18`). So a converted module is
+  imported as `./x.ts` everywhere. `scripts/check-ts-imports.mjs` (a `pretest` gate) fails on a `.js` specifier whose file now
+  exists only as `.ts`; `--fix` rewrites them. `tests/unit/model-features.test.js`, which spawns a bare `node`, is what found it.
+- **tsconfig:** `isolatedModules`, `erasableSyntaxOnly` (so converted code runs under type stripping), `allowImportingTsExtensions`
+  (`noEmit`). `tsconfig.strict.json` lists `.ts` files by their `.ts` name. The checks stay as before: non-strict for
+  everything, strict for the listed files.
+- **Coverage:** `vite-plugin-istanbul` and vitest's istanbul provider include `.ts` (`vite.config.mjs`, `nyc.config.js`);
+  `proportions.ts` shows in both the unit report and the instrumented e2e bundle.
+- **The browser unit harness** (`tests/e2e/unit/*.spec.js` via `src/editor/tests/unit-harness.html`) loads a copy of the core
+  sources as raw ES modules, which a browser can't do for `.ts`. `scripts/copy-static.mjs` therefore transpiles the copied `.ts`
+  files to `.js` with esbuild, rewrites their `./x.ts` specifiers to `./x.js`, and instruments that copy (the full e2e run
+  found it; the unit tests could not). The harness page itself still imports `./vendor/svgcanvas/core/x.js`.
+- **Gates and docs tools:** `check-dom-scope`, `check-layers` and the file map see `.ts` (not `.d.ts`).
 
-**Target.** New engine code (R1) in `.ts`; existing modules converted leaves first (`math.js`, `units.js`,
-`namespaces.js`, `se-namespace.js`, `proportions.js`, `geometry-remap-registry.js`, `common/util.js`), then upward
-through the import graph, `svgcanvas.js` last; the editor after the engine.
+**Left (the conversion):** existing modules, leaves first: `math.js`, `units.js`, `common/util.js`, `dataStorage.js`,
+`extension-hooks.js`, then up the import graph, `svgcanvas.js` last; the editor after the engine, with its own strict tsconfig.
+Per module: `git mv x.js x.ts`, move the JSDoc types into syntax, `node scripts/check-ts-imports.mjs --fix`, change the
+`tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,
+no enums or parameter properties, and the hand-written d.ts files (`svgcanvas*.d.ts`) still describe the canvas until R2.
+Retire the d.ts and the drift test only with R2.
 
-**Toolchain** (steps already listed in [infrastructure](infrastructure.md) › "Convert `packages/svgcanvas` core modules
-to TypeScript"): Vite and Vitest transpile `.ts` already; `standard` does not lint TS, so move to ESLint +
-`typescript-eslint` (or `ts-standard`) for one style over `.js` and `.ts`; `isolatedModules` on; check that
-`vite-plugin-istanbul` and nyc map `.ts` coverage back to source (`nyc.config.js` `extension`). Known pitfalls of
-incremental migrations: no big-bang conversion, no `any` to silence errors (`unknown` and narrowing), strict flags kept
-on per file as today.
-
-Size: M for the toolchain, L for the conversion (small per module).
+Size: M for the toolchain (done), L for the conversion (small per module).
 
 ## R4. Built-in features are not extensions
 

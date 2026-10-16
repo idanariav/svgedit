@@ -16,7 +16,7 @@
  *
  * @license Apache-2.0
  */
-import { PROPORTION_TIERS } from '@svgedit/svgcanvas/core/proportions.js'
+import { PROPORTION_TIERS } from '@svgedit/svgcanvas/core/proportions.ts'
 
 const name = 'proportion-markers'
 

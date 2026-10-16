@@ -78,7 +78,7 @@ export default defineConfig({
       istanbul({
         include: ['src/editor/**', 'packages/svgcanvas/**'],
         exclude: ['node_modules', 'dist', 'packages/**/dist'],
-        extension: ['.js'],
+        extension: ['.js', '.ts'],
         forceBuildInstrument: true
       }),
     {
@@ -126,8 +126,8 @@ export default defineConfig({
       // istanbul, like the e2e build's instrumentation (vite-plugin-istanbul),
       // so `scripts/run-e2e.mjs` merges two reports with the same statement maps.
       provider: 'istanbul',
-      include: ['src/editor/**/*.js', 'packages/svgcanvas/**/*.js'],
-      exclude: ['**/dist/**', '**/node_modules/**', 'tests/**']
+      include: ['src/editor/**/*.{js,ts}', 'packages/svgcanvas/**/*.{js,ts}'],
+      exclude: ['**/dist/**', '**/node_modules/**', 'tests/**', '**/*.d.ts']
     }
   }
 })

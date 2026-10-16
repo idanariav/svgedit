@@ -16,7 +16,7 @@
 
 `npm test` runs, in order:
 
-1. the `pretest` gates: `standard` lint (`npm run lint`), `check-dom-scope`
+1. the `pretest` gates: ESLint lint (`npm run lint`, neostandard flat config in `eslint.config.mjs`), `check-dom-scope`
    (multi-editor DOM scoping), `check-layers` (the canvas package never imports
    the editor) and `typecheck` (`tsc` over the JSDoc-typed modules and the host
    API);

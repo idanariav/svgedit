@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { setLogSink, setLogLevel, LogLevel } from '../../packages/svgcanvas/common/logger.js'
 
 const createSvgCanvas = () => {

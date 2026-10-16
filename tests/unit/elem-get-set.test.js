@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.js'
 import { init as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.js'

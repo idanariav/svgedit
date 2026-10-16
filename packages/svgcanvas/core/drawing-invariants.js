@@ -25,7 +25,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 /**
  * @typedef {object} Finding

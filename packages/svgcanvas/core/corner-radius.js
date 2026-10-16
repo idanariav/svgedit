@@ -42,8 +42,8 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
-import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { NS } from './namespaces.ts'
+import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.js'

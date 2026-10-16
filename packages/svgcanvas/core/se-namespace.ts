@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Helpers for the editor's `se:` attribute namespace.
  *
@@ -12,15 +11,13 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 /**
  * Whether `elems` hold any `se:`-prefixed attribute that carries no namespace
  * (so the serializer would not otherwise declare `xmlns:se`).
- * @param {Iterable<Element>} elems
- * @returns {boolean}
  */
-export const hasUnnamespacedSeAttr = (elems) => {
+export const hasUnnamespacedSeAttr = (elems: Iterable<Element>): boolean => {
   for (const el of elems) {
     for (const attr of el.attributes) {
       if (attr.name.startsWith('se:') && !attr.namespaceURI) return true
@@ -34,10 +31,8 @@ export const hasUnnamespacedSeAttr = (elems) => {
  * (see module doc): adds `xmlns:se` to the root `<svg>` tag when the markup
  * uses `se:` attributes but never declares them. Narrow on purpose — it leaves
  * any string that already declares `xmlns:se`, or doesn't use the prefix, alone.
- * @param {string} xml
- * @returns {string}
  */
-export const declareMissingSeNamespace = (xml) => {
+export const declareMissingSeNamespace = (xml: string): string => {
   if (typeof xml !== 'string') return xml
   if (/\bxmlns:se\s*=/.test(xml)) return xml
   // `<… se:name="…"` — an attribute using the prefix inside some tag

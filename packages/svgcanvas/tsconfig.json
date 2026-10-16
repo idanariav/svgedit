@@ -9,6 +9,9 @@
     "noImplicitAny": false,
     "strictNullChecks": false,
     "allowJs": true,
+    "isolatedModules": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "files": ["legacy-jsdoc-types.d.ts", "svgcanvas.d.ts", "svgcanvas.js"]

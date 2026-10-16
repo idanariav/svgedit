@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Registry for attribute-driven derived-geometry remap hooks.
  *
@@ -15,31 +14,25 @@
 
 import { rebuildAfterRemap } from './live-stack.js'
 
-const registry = new Map()
+/** The hook signature: the element, `coords.js`'s remap helpers and the canvas. */
+export type GeometryRemapFn = (elem: Element, remap: Function, scalew: Function, scaleh: Function, svgCanvas: object) => void
+
+const registry = new Map<string, GeometryRemapFn>()
 
 /**
  * Register a remap hook for elements carrying `attrName`.
  * @function module:geometry-remap-registry.registerGeometryRemap
- * @param {string} attrName - Attribute that marks an element as owned by
- *   this hook, e.g. `se:orig-d`.
- * @param {(elem: Element, remap: Function, scalew: Function, scaleh: Function, svgCanvas: Object) => void} remapFn
- * @returns {void}
+ * @param attrName - Attribute that marks an element as owned by this hook, e.g. `se:orig-d`.
  */
-export const registerGeometryRemap = (attrName, remapFn) => {
+export const registerGeometryRemap = (attrName: string, remapFn: GeometryRemapFn): void => {
   registry.set(attrName, remapFn)
 }
 
 /**
  * Run every registered remap hook whose attribute is present on `elem`.
  * @function module:geometry-remap-registry.runGeometryRemaps
- * @param {Element} elem
- * @param {Function} remap
- * @param {Function} scalew
- * @param {Function} scaleh
- * @param {Object} svgCanvas
- * @returns {void}
  */
-export const runGeometryRemaps = (elem, remap, scalew, scaleh, svgCanvas) => {
+export const runGeometryRemaps = (elem: Element, remap: Function, scalew: Function, scaleh: Function, svgCanvas: object): void => {
   registry.forEach((remapFn, attrName) => {
     if (elem.hasAttribute(attrName)) {
       remapFn(elem, remap, scalew, scaleh, svgCanvas)
@@ -54,6 +47,5 @@ export const runGeometryRemaps = (elem, remap, scalew, scaleh, svgCanvas) => {
  * The attributes that have a remap hook, i.e. the cached source geometry that a transform bake rewrites.
  * Anything that records the old values of a bake for undo must include these.
  * @function module:geometry-remap-registry.remapSourceAttrs
- * @returns {string[]}
  */
-export const remapSourceAttrs = () => [...registry.keys()]
+export const remapSourceAttrs = (): string[] => [...registry.keys()]

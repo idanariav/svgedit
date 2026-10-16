@@ -1,5 +1,5 @@
 // copy-static.mjs — Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are not copied)
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createInstrumenter } from 'istanbul-lib-instrument'
 import { dirname, resolve } from 'node:path'
 import esbuild from 'esbuild'
@@ -61,6 +61,31 @@ await esbuild.build({
 const svgCanvasSrc = resolve(root, 'packages/svgcanvas')
 const svgCanvasDest = resolve(outDir, 'tests/vendor/svgcanvas')
 await cp(svgCanvasSrc, svgCanvasDest, { recursive: true })
+
+// The harness is a plain browser: it cannot run `.ts`. Transpile the copied `.ts` modules to `.js` and point every
+// `./x.ts` specifier at `./x.js` (the source tree imports them as `.ts` so plain Node can run it; R3).
+async function walkFiles (dir, out = []) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === 'dist') continue
+    const full = resolve(dir, entry.name)
+    if (entry.isDirectory()) await walkFiles(full, out)
+    else out.push(full)
+  }
+  return out
+}
+for (const file of await walkFiles(svgCanvasDest)) {
+  if (file.endsWith('.d.ts')) continue
+  if (file.endsWith('.ts')) {
+    const { code } = await esbuild.transform(await readFile(file, 'utf8'), { loader: 'ts', format: 'esm', target: 'es2020' })
+    await writeFile(file.replace(/\.ts$/, '.js'), code.replace(/(from\s+|import\s*\(\s*)(['"])(\.[^'"]*)\.ts\2/g, '$1$2$3.js$2'), 'utf8')
+    await rm(file)
+  } else if (file.endsWith('.js')) {
+    const code = await readFile(file, 'utf8')
+    const next = code.replace(/(from\s+|import\s*\(\s*|import\s+)(['"])(\.[^'"]*)\.ts\2/g, '$1$2$3.js$2')
+    if (next !== code) await writeFile(file, next, 'utf8')
+  }
+}
+
 if (process.env.COVERAGE === 'true') {
   const instrumenter = createInstrumenter({ compact: false })
   const instrumentPaths = [
@@ -84,7 +109,7 @@ if (process.env.COVERAGE === 'true') {
   for (const relativePath of instrumentPaths) {
     const sourceFile = resolve(svgCanvasSrc, relativePath)
     const destFile = resolve(svgCanvasDest, relativePath)
-    const code = await readFile(sourceFile, 'utf8')
+    const code = await readFile(destFile, 'utf8') // the copy above, so a transpiled `.ts` module is instrumented as JS
     const instrumented = instrumenter.instrumentSync(code, sourceFile)
     await mkdir(dirname(destFile), { recursive: true })
     await writeFile(destFile, instrumented, 'utf8')

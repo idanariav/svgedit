@@ -42,7 +42,7 @@ function walk (dir, files = []) {
     const full = join(dir, entry)
     if (statSync(full).isDirectory()) {
       walk(full, files)
-    } else if (entry.endsWith('.js')) {
+    } else if (/\.(js|ts)$/.test(entry) && !entry.endsWith('.d.ts')) {
       files.push(full)
     }
   }

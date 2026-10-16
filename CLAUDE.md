@@ -225,7 +225,7 @@ code exploration.
 | [`file-map.md`](.claude/file-map.md) | Quick file-to-purpose lookup (the source-file tables are generated from each file's header comment: `npm run file-map`) |
 | [`debug-log.md`](.claude/debug-log.md) | Reading or extending the host debug log (event vocabulary, how to retrace a bug from it) |
 | [`techdebt.md`](.claude/techdebt.md) | Compromises, known hazards and "do it properly later" items from past sessions — check before starting non-trivial work in an area it covers |
-| [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes), the re-architecture track (R1–R7: document model, canvas composition, TypeScript, features vs extensions…) and an index of per-area follow-up files in [`roadmap/`](.claude/roadmap/). Apply the guidelines while you work; read an area file and fold its items in when your task touches that area |
+| [`roadmap.md`](.claude/roadmap.md) | **Read at the start of any task.** Standing guidelines for new code (commands, tools, transactions, typing, corruption fixes), the re-architecture track (R1–R4, R6: document model, canvas composition, TypeScript, features vs extensions…) and an index of per-area follow-up files in [`roadmap/`](.claude/roadmap/). Apply the guidelines while you work; read an area file and fold its items in when your task touches that area |
 
 ### Keeping the docs fresh
 
@@ -261,10 +261,12 @@ workflows) a missing/broken Playwright install now **fails the build**
 rather than silently skipping the suite — only outside CI does it warn and
 skip, for contributors without browsers installed locally.
 
-`npm test` first runs the `pretest` gates: `standard` lint, `check-dom-scope`
+`npm test` first runs the `pretest` gates: ESLint (`neostandard`, `.js` and `.ts`), `check-dom-scope`
 (multi-editor DOM scoping), **`check-layers`** (`packages/svgcanvas` must not
 import `src/editor`, read `window.svgEditor` or define custom elements) and
-`typecheck` (`tsc` over the JSDoc-typed modules, a strict config for the
+`check-ts-imports` (a module converted to `.ts` must be imported as `./x.ts`; `--fix` rewrites),
+`check-file-map` (every source file has a header comment, the generated map is current) and
+`typecheck` (`tsc` over the JSDoc- and TypeScript-typed modules, a strict config for the
 cleanest ones, and the host API conformance check).
 
 Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`

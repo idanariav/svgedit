@@ -7,7 +7,7 @@
  * @copyright 2010 Jeff Schiller
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { getHref, setHref, getRotationAngle, getTextWithNewlines, setMultilineText } from './dom-utils.js'
 import { getBBox } from './bbox-utils.js'
 import { getTransformList, transformListToTransform, transformPoint } from './math.js'

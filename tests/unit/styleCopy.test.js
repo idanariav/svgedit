@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { copyStyle, readStyle, styleSourceOf, styleTargetsOf } from '../../src/editor/styleCopy.js'
 
 describe('styleCopy', () => {

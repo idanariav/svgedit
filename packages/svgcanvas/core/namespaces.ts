@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Namespaces or tools therefor.
  * @module namespaces
@@ -9,7 +8,7 @@
 * Common namespaces constants in alpha order.
 * * @memberof module:namespaces
 */
-export const NS = /** @type {const} */ ({
+export const NS = {
   HTML: 'http://www.w3.org/1999/xhtml',
   MATH: 'http://www.w3.org/1998/Math/MathML',
   SE: 'http://svg-edit.googlecode.com',
@@ -24,15 +23,14 @@ export const NS = /** @type {const} */ ({
   // OSB: 'http://www.openswatchbook.org/uri/2009/osb',
   // CC: 'http://creativecommons.org/ns#',
   // DC: 'http://purl.org/dc/elements/1.1/'
-})
+} as const
 
 /**
 * @function module:namespaces.getReverseNS
-* @returns {Object<string, string>} The namespace URI map with values swapped to their lowercase keys
+* @returns The namespace URI map with values swapped to their lowercase keys
 */
-export const getReverseNS = () => {
-  /** @type {Object<string, string>} */
-  const reverseNS = {}
+export const getReverseNS = (): Record<string, string> => {
+  const reverseNS: Record<string, string> = {}
   for (const [name, URI] of Object.entries(NS)) {
     reverseNS[URI] = name.toLowerCase()
   }

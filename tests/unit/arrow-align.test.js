@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { headPlacement, trimSubpath, ARROW_ALIGN_ATTR, ARROW_PTS_ATTR, ARROW_D_ATTR, ARROW_TRIM_ATTR } from '../../packages/svgcanvas/core/arrow-align.js'
 import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.js'
-import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.js'
+import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'
 
 describe('headPlacement', () => {
   it('puts the tip of an outward head on the end and says how far the stroke may run into it', () => {

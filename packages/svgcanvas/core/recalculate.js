@@ -18,7 +18,7 @@ import {
   getTransformList
 } from './math.js'
 import { mergeDeep } from '../common/util.js'
-import { remapSourceAttrs } from './geometry-remap-registry.js'
+import { remapSourceAttrs } from './geometry-remap-registry.ts'
 
 /**
  * Attribute list to translate for each simple (non-points, non-path) tag

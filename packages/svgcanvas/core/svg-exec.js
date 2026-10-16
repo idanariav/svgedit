@@ -9,7 +9,7 @@
 import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.js'
 import { text2xml, toXml, hashCode } from './encoding-utils.js'
-import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.js'
+import { hasUnnamespacedSeAttr, declareMissingSeNamespace } from './se-namespace.ts'
 import {
   cleanupElement,
   setHref,
@@ -17,7 +17,7 @@ import {
 } from './dom-utils.js'
 import { getUnits } from './units.js'
 import { isGecko } from '../common/browser.js'
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import * as draw from './draw.js'
 import { getParents, getClosest } from '../common/util.js'
 

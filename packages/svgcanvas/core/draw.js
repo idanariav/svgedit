@@ -9,7 +9,7 @@
 import Layer from './layer.js'
 import { init as layerOpsInit } from './layer-ops.js'
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.js'
 import { getParentsUntil } from '../common/util.js'
 

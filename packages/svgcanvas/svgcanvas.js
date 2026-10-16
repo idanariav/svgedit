@@ -30,7 +30,7 @@ import * as elemGetSet from './core/elem-get-set.js'
 import { init as selectedElemInit } from './core/selected-elem.js'
 import { init as blurInit } from './core/blur-event.js'
 import { init as sanitizeInit } from './core/sanitize.js'
-import { getReverseNS, NS } from './core/namespaces.js'
+import { getReverseNS, NS } from './core/namespaces.ts'
 import {
   assignAttributes,
   cleanupElement,

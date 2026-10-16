@@ -1,6 +1,6 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as draw from '../../packages/svgcanvas/core/draw.js'
 import { Layer } from '../../packages/svgcanvas/core/draw'
 

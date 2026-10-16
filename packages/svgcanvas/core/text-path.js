@@ -20,7 +20,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.js'
 import { getTextWithNewlines } from './text-rows.js'
 import { warn } from '../common/logger.js'

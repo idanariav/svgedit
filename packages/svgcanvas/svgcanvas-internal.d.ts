@@ -9,9 +9,9 @@
  */
 export interface InternalMembers {
   /** @internal */
-  '$click': any
+  $click: any
   /** @internal */
-  '$qq': any
+  $qq: any
   /** @internal */
   PathClass: any
   /** @internal */

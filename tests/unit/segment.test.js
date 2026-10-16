@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
   canSegment,
   serializeParams,

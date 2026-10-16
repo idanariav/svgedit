@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import HistoryRecordingService from '../../packages/svgcanvas/core/historyrecording.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)

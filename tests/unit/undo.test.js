@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import { init as initUndo } from '../../packages/svgcanvas/core/undo.js'
 

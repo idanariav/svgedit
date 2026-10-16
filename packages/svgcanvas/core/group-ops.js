@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import * as hstry from './history.js'
 import { warn, error } from '../common/logger.js'
 import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.js'

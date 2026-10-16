@@ -7,7 +7,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 import { assignAttributes, cleanupElement } from './dom-utils.js'
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 /**
  * @function module:json.jsonContext#getSelectedElements

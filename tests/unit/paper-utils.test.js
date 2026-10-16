@@ -2,7 +2,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
 import { attachUnits } from './unitsMock.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { toAbsolutePathData, getStyleAttrs, getMatrixScale, getOwnTransformScale, scaleStrokeWidth } from '../../packages/svgcanvas/core/paper-utils.js'
 
 const makeSvgCanvas = () => {

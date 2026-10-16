@@ -40,12 +40,12 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { EPHEMERAL_ATTR } from './history.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { warn } from '../common/logger.js'
 import { getPathDFromElement } from './path-utils.js'
-import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.js'
 import {
   registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked

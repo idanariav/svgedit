@@ -44,5 +44,8 @@ describe('file-map coverage', () => {
     expect(files).toContain('packages/svgcanvas/core/transaction.js')
     expect(files).toContain('scripts/file-map.mjs')
     expect(files.some(f => f.includes('node_modules') || f.includes('/dist/'))).toBe(false)
+    // TypeScript sources are listed, declaration files are not
+    expect(files).toContain('packages/svgcanvas/core/proportions.ts')
+    expect(files.some(f => f.endsWith('.d.ts'))).toBe(false)
   })
 })

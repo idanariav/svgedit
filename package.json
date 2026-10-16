@@ -13,19 +13,19 @@
     "doc": "docs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
   },
   "workspaces": [
     "packages/svgcanvas"
   ],
   "scripts": {
-    "lint": "standard .",
+    "lint": "eslint .",
     "check-dom-scope": "node scripts/check-dom-scope.mjs",
     "check-layers": "node scripts/check-layers.mjs",
     "file-map": "node scripts/file-map.mjs",
     "check-file-map": "node scripts/file-map.mjs --check",
     "typecheck": "tsc -p packages/svgcanvas/tsconfig.json && tsc -p packages/svgcanvas/tsconfig.strict.json && tsc -p src/editor/tsconfig.hostapi.json",
-    "pretest": "npm run lint && npm run check-dom-scope && npm run check-layers && npm run check-file-map && npm run typecheck",
+    "pretest": "npm run lint && npm run check-dom-scope && npm run check-layers && npm run check-ts-imports && npm run check-file-map && npm run typecheck",
     "test": "vitest run --coverage && node scripts/run-e2e.mjs",
     "build": "vite build",
     "postbuild": "node scripts/copy-static.mjs",
@@ -34,7 +34,8 @@
     "start:e2e": "vite preview --host --port 8000 --strictPort --outDir dist/editor",
     "version-bump": "node scripts/version-bump.mjs",
     "publish": "node scripts/publish.mjs",
-    "test-build": "npm test && npm run build"
+    "test-build": "npm test && npm run build",
+    "check-ts-imports": "node scripts/check-ts-imports.mjs"
   },
   "repository": {
     "type": "git",
@@ -66,24 +67,6 @@
     "not IE 11",
     "not OperaMini all"
   ],
-  "standard": {
-    "ignore": [],
-    "globals": [
-      "assert",
-      "expect",
-      "describe",
-      "it",
-      "test",
-      "vi",
-      "beforeAll",
-      "afterAll",
-      "beforeEach",
-      "afterEach"
-    ],
-    "env": [
-      "browser"
-    ]
-  },
   "dependencies": {
     "@svgedit/svgcanvas": "7.4.1",
     "browser-fs-access": "0.38.0",
@@ -99,12 +82,13 @@
     "@playwright/test": "^1.57.0",
     "@rollup/plugin-dynamic-import-vars": "2.1.5",
     "@vitest/coverage-istanbul": "^4.1.11",
+    "eslint": "^9.39.5",
     "fast-check": "^4.10.2",
     "jsdom": "^27.4.0",
     "lz-string": "^1.5.0",
+    "neostandard": "^0.14.1",
     "nyc": "17.1.0",
     "rimraf": "6.1.2",
-    "standard": "17.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-istanbul": "^7.2.1",

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import {
   getTextWithNewlines, setMultilineText, isAreaText, getWrapWidth, getWrapHeight, getValign, getAreaBox,
   areaAttrsForBox, writeAreaAttrs, reflowAreaText, makeAreaText, makePointText, areaTextAtPoint, TEXT_ASCENT, TEXT_LINE_HEIGHT

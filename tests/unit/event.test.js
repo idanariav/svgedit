@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { init as initEvent } from '../../packages/svgcanvas/core/event.js'
 import { attachUnits } from './unitsMock.js'
 

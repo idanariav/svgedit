@@ -22,7 +22,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 /** @typedef {{a: number, b: number, c: number, d: number, e: number, f: number}} Matrix */
 /** @typedef {{x: number, y: number}} Point */

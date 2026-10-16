@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.js'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.js'
 import * as math from '../../packages/svgcanvas/core/math.js'

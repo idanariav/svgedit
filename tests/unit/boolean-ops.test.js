@@ -1,4 +1,4 @@
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { collectLeaves, getAncestorMatrix, getStyleSourceElem } from '../../packages/svgcanvas/core/boolean-ops.js'
 
 describe('boolean-ops', function () {

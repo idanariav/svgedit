@@ -64,7 +64,7 @@
 | `event-zoom.js` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event.js` | Tools for event |
 | `extension-hooks.js` | Registry of extension hook names, with the payload each one receives |
-| `geometry-remap-registry.js` | Registry for attribute-driven derived-geometry remap hooks |
+| `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gradient-edit.js` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.js` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
@@ -81,7 +81,7 @@
 | `load-image.js` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.js` | Mathematical utilities |
 | `measure.js` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
-| `namespaces.js` | Namespaces or tools therefor |
+| `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.js` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
 | `paint.js` | Fill, stroke, color management |
 | `paper-utils.js` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
@@ -98,11 +98,11 @@
 | `path-utils.js` | Path `d`-attribute construction and element-to-path conversion utilities |
 | `path.js` | Path functionality |
 | `pen-continue.js` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
-| `proportions.js` | Shared definitions for wireframe-mode proportion markers + snapping |
+| `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.js` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.js` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
 | `sanitize.js` | Tools for SVG sanitization |
-| `se-namespace.js` | Helpers for the editor's `se:` attribute namespace |
+| `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.js` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.js` | Select Same: extend the selection to every element that shares a property with the primary selected element |
 | `select.js` | DOM element selection box tools |
@@ -150,6 +150,7 @@
 | `check-dom-scope.mjs` | Guards against the "wrong owning editor" bug class: svgedit mounts one editor per pane/drawing in the same document, but its chrome uses fixed element ids (workarea, fill_color, the se-* dialogs, ...), so a bare… |
 | `check-layers.mjs` | Keeps the canvas engine (packages/svgcanvas) independent of the editor UI (src/editor), the way VectorCraft's `cargo xtask layers` enforces its crate layering |
 | `check-model-roundtrip.mjs` | Oracle for the document model (R1): parse every saved drawing into the model and serialize it back |
+| `check-ts-imports.mjs` | Fails when an import names a `.js` file that exists only as `.ts` |
 | `commands-doc.mjs` | Renders `.claude/commands.md` (every command id, label, default keys and params) from `editor.commands.list({ includeHidden: true })` |
 | `copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are not copied) |
 | `file-map.mjs` | Generates the code tables of `.claude/file-map.md` from each source file's header comment, and checks that every file has one (R7 in .claude/roadmap/rearchitecture.md: docs say what a thing is, the file says it first) |
@@ -185,6 +186,7 @@
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions |
 | `favoriteActions.js` | The catalog of favoritable actions and their execution |
 | `favorites.js` | Persistence for the user's quick-action favorites |
+| `hostApi.check.ts` | Compile-time conformance check: fails `npm run typecheck` if `Editor` stops satisfying the declared host API |
 | `Hotkeys.js` | Central keyboard-shortcut registry for the editor |
 | `locale.js` | Localizing script for SVG-edit UI |
 | `MainMenu.js` | Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`) |

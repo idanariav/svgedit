@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { wrapText } from './text-wrap.js'
 
 /**

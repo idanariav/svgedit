@@ -69,7 +69,7 @@ export interface AttachedMembers {
   clearSelection(noCall?: boolean): void
   getResolution(): Resolution
   setResolution(width: number | string, height: number | string): boolean
-  
+
   // Element manipulation
   moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): HistoryCommand | void
   deleteSelectedElements(): void
@@ -80,7 +80,7 @@ export interface AttachedMembers {
   moveToTopSelectedElement(): void
   moveToBottomSelectedElement(): void
   moveUpDownSelected(dir: 'Up' | 'Down'): void
-  
+
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
   groupRotateCenter: { x: number, y: number } | null
   groupRotateStart: Map<Element, SVGMatrix> | null
@@ -129,7 +129,7 @@ export interface AttachedMembers {
     closed_subpath?: boolean
     resetOrientation: (path: Element | null) => false | void
     zoomChange: () => void
-    getNodePoint: () => {x: number, y: number}
+    getNodePoint: () => { x: number, y: number }
     linkControlPoints: (linkPoints: boolean) => void
     clonePathNode: () => void
     deletePathNode: () => void
@@ -155,7 +155,7 @@ export interface AttachedMembers {
   moveSelectedToLayer(layerName: string): void
   cloneLayer(name?: string, hrService?: unknown): void
   deleteCurrentLayer(): boolean
-  
+
   // Undo/Redo
   undoMgr: UndoManager
   undo(): void
@@ -184,19 +184,19 @@ export interface AttachedMembers {
   finishCreatedElement(el: Element, evt?: { altKey?: boolean }, opts?: { keepOpacity?: boolean }): void
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
   checkDrawing(): Array<{ code: string, message: string, id?: string }>
-  
+
   // Attribute manipulation
   changeSelectedAttribute(attr: string, val: string | number, elems?: Element[]): void
   changeSelectedAttributeNoUndo(attr: string, val: string | number, elems?: Element[]): void
-  
+
   // Canvas properties
   contentW: number
   contentH: number
-  
+
   // Text operations
   textActions: any
   embedImage(src: string): Promise<string | false>
-  
+
   // Other utilities
   getPrivateMethods(): any
 
@@ -312,7 +312,7 @@ export interface AttachedMembers {
   getTextPerspectiveX(elem: Element): number
   getTextPerspectiveY(elem: Element): number
   detachTextFromPath(): void
-  releaseTextOnPath(removing: Element[], batchCmd: import("./core/history.js").BatchCommand): Element[]
+  releaseTextOnPath(removing: Element[], batchCmd: import('./core/history.js').BatchCommand): Element[]
   /** Every element (current group, else visible layers) sharing the criterion with `ref`, `ref` included; selects nothing. */
   findSameAs(ref: Element, criterion: string, options?: { tolerance?: number }): Element[]
   selectSameAs(criterion: string, options?: { tolerance?: number }): void
@@ -400,7 +400,10 @@ export interface AttachedMembers {
   canJoinPaths(elems: Element[]): boolean
   joinSelectedPaths(): Element | null
   getCornerSettings(elem?: Element): Array<{
-    index: number, radius: number, kind: 'r' | 'i' | 'c', max: number,
+    index: number,
+    radius: number,
+    kind: 'r' | 'i' | 'c',
+    max: number,
     /** The corner's geometry in the element's own space (`core/corner-radius.js`). */
     corner: { index: number, at: { x: number, y: number }, u: { x: number, y: number }, v: { x: number, y: number }, lu: number, lv: number, tanHalf: number }
   }>

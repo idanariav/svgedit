@@ -1,4 +1,4 @@
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as math from '../../packages/svgcanvas/core/math.js'
 
 describe('math', function () {

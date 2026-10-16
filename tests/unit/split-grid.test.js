@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { gridCells, canSplitIntoGrid, init, MAX_CELLS } from '../../packages/svgcanvas/core/split-grid.js'
 
 describe('gridCells', () => {

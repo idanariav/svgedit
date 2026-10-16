@@ -16,7 +16,7 @@ import {
   getTransformList
 } from './math.js'
 import { isWebkit } from '../common/browser.js'
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 
 /** @param {import('../svgcanvas.js').default} canvas */
 export const init = (canvas) => {

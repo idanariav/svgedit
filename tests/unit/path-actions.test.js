@@ -4,7 +4,7 @@ import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-acti
 import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.js'
 import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.js'
 import { attachUnits } from './unitsMock.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 describe('PathActions', () => {
   let svgRoot

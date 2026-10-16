@@ -1,4 +1,4 @@
-import { NS, getReverseNS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS, getReverseNS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 describe('namespaces', function () {
   it('exposes common namespace constants', function () {

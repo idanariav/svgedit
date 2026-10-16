@@ -7,7 +7,7 @@
  * @copyright 2011 Jeff Schiller, 2016 Flint O'Brien
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { toXml } from './encoding-utils.js'
 import { walkTree } from './dom-utils.js'
 

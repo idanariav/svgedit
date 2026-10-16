@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { GUIDES_ATTR, parseGuides, formatGuides, validateGuides, visibleGuides, init } from '../../packages/svgcanvas/core/guides.js'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.js'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing, collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.js'

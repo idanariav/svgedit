@@ -25,7 +25,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.js'
 import { getTransformList, transformListToTransform, matrixMultiply } from './math.js'
 import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.js'

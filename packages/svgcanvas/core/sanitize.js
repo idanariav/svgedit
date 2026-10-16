@@ -7,7 +7,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import { getReverseNS, NS } from './namespaces.js'
+import { getReverseNS, NS } from './namespaces.ts'
 import { getHref, setHref, getUrlFromAttr } from './dom-utils.js'
 import { warn } from '../common/logger.js'
 

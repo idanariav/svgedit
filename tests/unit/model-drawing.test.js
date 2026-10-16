@@ -5,7 +5,7 @@ import {
   findItem, getAt, getAttr, parseSvg, pathAnchors, readDrawing, serializeSvg, setAttr, updateAt, walkItems
 } from '../../packages/svgcanvas/core/model/index.js'
 import { hasLockMark, isObjectHidden, isPanelObject } from '../../packages/svgcanvas/core/object-state.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 const SE = NS.SE
 const read = (svg) => readDrawing(parseSvg(svg))

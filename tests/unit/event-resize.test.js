@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as eventResizeInit } from '../../packages/svgcanvas/core/event-resize.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 // Regression coverage for the "redundant matrix" bug: clicking a resize grip
 // without dragging used to leave 3 stray identity `matrix(1 0 0 1 0 0)`

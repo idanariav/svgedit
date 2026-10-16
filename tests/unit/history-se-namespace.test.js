@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as history from '../../packages/svgcanvas/core/history.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 // object-state reads `se:locked` with getAttributeNS; undo / redo must put it back in the namespace.
 describe('ChangeElementCommand and se: attributes', () => {

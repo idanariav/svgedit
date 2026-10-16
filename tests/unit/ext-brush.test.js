@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import extBrush from '../../src/editor/extensions/ext-brush/ext-brush.js'
 
 // Outline `d` strings are plain 'M x y L x y ... Z' (no curve commands), so

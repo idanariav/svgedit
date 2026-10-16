@@ -37,10 +37,10 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { warn } from '../common/logger.js'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.js'
-import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { widthOutline } from './width-outline.js'

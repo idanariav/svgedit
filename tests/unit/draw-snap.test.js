@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.js'
 import { init, isDrawSnapMode } from '../../packages/svgcanvas/core/draw-snap.js'
 

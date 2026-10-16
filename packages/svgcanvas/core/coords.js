@@ -6,7 +6,7 @@
  */
 
 import { warn } from '../common/logger.js'
-import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-registry.js'
+import { registerGeometryRemap, runGeometryRemaps } from './geometry-remap-registry.ts'
 
 import {
   assignAttributes

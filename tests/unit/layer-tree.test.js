@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { objectRows, ROW_LIMIT } from '../../src/editor/panels/layerTree.js'
 
 const make = (tag, attrs = {}, parent = document.body) => {

@@ -33,7 +33,7 @@
 
 import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.js'
 import { LIVE_ATTRS } from './path-join.js'
-import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 
 export const ARROW_ALIGN_ATTR = 'se:arrow-align'

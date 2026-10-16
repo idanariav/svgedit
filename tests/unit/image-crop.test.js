@@ -2,7 +2,7 @@
    use a write-only `src` setter to trigger an async load/error callback;
    they deliberately have no matching getter. */
 import { beforeEach, afterEach, describe, expect, it } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import {
   init as initImageCrop,

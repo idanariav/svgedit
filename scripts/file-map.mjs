@@ -19,7 +19,7 @@ const BEGIN = '<!-- file-map:begin -->'
 const END = '<!-- file-map:end -->'
 const MAX_LEN = 220
 
-/** Roots listed in the map. A file is listed when it is `.js` / `.mjs` and no segment is in SKIP_DIRS. */
+/** Roots listed in the map. A file is listed when it is `.js` / `.mjs` / `.ts` (not `.d.ts`) and no segment is in SKIP_DIRS. */
 const ROOTS = ['src/editor', 'packages/svgcanvas', 'scripts']
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'locale', 'fixtures', 'coverage'])
 
@@ -62,7 +62,7 @@ function walk (dir) {
     if (SKIP_DIRS.has(e.name)) continue
     const rel = path.posix.join(dir, e.name)
     if (e.isDirectory()) out.push(...walk(rel))
-    else if (/\.m?js$/.test(e.name)) out.push(rel)
+    else if (/\.(m?js|ts)$/.test(e.name) && !e.name.endsWith('.d.ts')) out.push(rel)
   }
   return out
 }

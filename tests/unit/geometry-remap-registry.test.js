@@ -1,4 +1,4 @@
-import { registerGeometryRemap, runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.js'
+import { registerGeometryRemap, runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'
 
 describe('geometry-remap-registry', function () {
   /**

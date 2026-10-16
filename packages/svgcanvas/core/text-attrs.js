@@ -8,7 +8,7 @@
  */
 
 import { getTextWithNewlines, setMultilineText } from './dom-utils.js'
-import { registerGeometryRemap } from './geometry-remap-registry.js'
+import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerAttrValidator, registerElementCheck } from './drawing-invariants.js'
 import { getBBox } from './bbox-utils.js'
 import {

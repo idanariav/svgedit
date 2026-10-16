@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { init as textAttrsInit } from '../../packages/svgcanvas/core/text-attrs.js'
 import { setMultilineText, getTextWithNewlines } from '../../packages/svgcanvas/core/text-rows.js'
-import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.js'
+import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.js'
 
 // jsdom has no SVG text metrics: every character is font-size × 0.55 wide (11 at size 20).

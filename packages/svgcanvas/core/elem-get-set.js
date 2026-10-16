@@ -7,7 +7,7 @@
  */
 
 import Paint from './paint.js'
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { init as textAttrsInit } from './text-attrs.js'
 import {
   walkTree, getHref, setHref

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { declareMissingSeNamespace, hasUnnamespacedSeAttr } from '../../packages/svgcanvas/core/se-namespace.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { declareMissingSeNamespace, hasUnnamespacedSeAttr } from '../../packages/svgcanvas/core/se-namespace.ts'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 // Regression: corner-radius/taper set `se:*` attributes with setAttribute() (no
 // namespace), the serializer never declared `xmlns:se`, and the saved drawing

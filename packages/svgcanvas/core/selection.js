@@ -6,7 +6,7 @@
  * @copyright 2011 Jeff Schiller
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import {
   getBBox
 } from './bbox-utils.js'

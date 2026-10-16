@@ -153,79 +153,79 @@ export interface Logger {
 
 // Main SvgCanvas class
 declare class SvgCanvas {
-  constructor(container: HTMLElement, config?: Partial<Config>)
-  
+  constructor (container: HTMLElement, config?: Partial<Config>)
+
   // Core methods
-  getSvgContent(): SVGSVGElement
-  getSvgRoot(): SVGSVGElement
-  getSvgString(): string
-  selectOnly(elements: Element[], showGrips?: boolean): void
-  getZoom(): number
-  setZoom(zoomLevel: number): void
-  cutSelectedElements(): void
-  
+  getSvgContent (): SVGSVGElement
+  getSvgRoot (): SVGSVGElement
+  getSvgString (): string
+  selectOnly (elements: Element[], showGrips?: boolean): void
+  getZoom (): number
+  setZoom (zoomLevel: number): void
+  cutSelectedElements (): void
+
   // Layer operations
-  getCurrentDrawing(): any
-  
+  getCurrentDrawing (): any
+
   // Drawing modes
-  setMode(name: string): void
-  getMode(): string
-  
+  setMode (name: string): void
+  getMode (): string
+
   // Events
-  call(event: string, args?: any): void
-  bind(event: string, callback: Function): void
-  
-  // Extensions
-  addExtension(name: string, extFunc: Function): void
-  
-  // Export
-  getSvgString(): string
+  call (event: string, args?: any): void
+  bind (event: string, callback: Function): void
 
   // Extensions
-  getExtensions(): Record<string, any>
+  addExtension (name: string, extFunc: Function): void
+
+  // Export
+  getSvgString (): string
+
+  // Extensions
+  getExtensions (): Record<string, any>
 
   // Selection
-  getSelectedElements(): Element[]
-  removeFromSelection(elemsToRemove: Element[]): void
-  getNextId(elemType?: Element | string | null): string
-  addCommandToHistory(cmd: HistoryCommand): void
-  getDataStorage(): typeof import('./core/dataStorage.js').default
+  getSelectedElements (): Element[]
+  removeFromSelection (elemsToRemove: Element[]): void
+  getNextId (elemType?: Element | string | null): string
+  addCommandToHistory (cmd: HistoryCommand): void
+  getDataStorage (): typeof import('./core/dataStorage.js').default
 
   // Paint
-  getColor(type: 'fill' | 'stroke' | string): any
-  getStrokeWidth(): number
+  getColor (type: 'fill' | 'stroke' | string): any
+  getStrokeWidth (): number
 
   // Config / options
-  getCurConfig(): Config
-  getSvgOption(): Record<string, any>
-  setSvgOption(key: string, value: any): void
-  getToolLocked(): boolean
-  setToolLocked(locked: boolean): void
-  getOpacity(): number
-  setOpacity(val: number): void
-  setConfig(opts: Partial<Config>): void
-  convertToPath(elem: Element, getBBox?: boolean): unknown
-  clear(): void
+  getCurConfig (): Config
+  getSvgOption (): Record<string, any>
+  setSvgOption (key: string, value: any): void
+  getToolLocked (): boolean
+  setToolLocked (locked: boolean): void
+  getOpacity (): number
+  setOpacity (val: number): void
+  setConfig (opts: Partial<Config>): void
+  convertToPath (elem: Element, getBBox?: boolean): unknown
+  clear (): void
 
   // Selection / transforms
-  selectAllInCurrentLayer(): void
+  selectAllInCurrentLayer (): void
 
   // Effects
-  getBlur(elem: Element): number | string
-  getDocumentTitle(): string
-  getDOMDocument(): Document
-  getCurrentGroup(): Element | null
-  getContentW(): number
-  randomizeIds(enableRandomization: boolean): void
+  getBlur (elem: Element): number | string
+  getDocumentTitle (): string
+  getDOMDocument (): Document
+  getCurrentGroup (): Element | null
+  getContentW (): number
+  randomizeIds (enableRandomization: boolean): void
 
   // Debugging
   /** Forward discrete debug events `(event, detail)` to a host; null stops. */
-  setDebugEventSink(sink: ((event: string, detail?: object) => void) | null): void
-  logDebugEvent(event: string, detail?: object): void
+  setDebugEventSink (sink: ((event: string, detail?: object) => void) | null): void
+  logDebugEvent (event: string, detail?: object): void
   /** The host's debug-event sink, or null while the debug log is off. */
   _debugEventSink: ((event: string, detail?: object) => void) | null
   /** Read-only snapshot of visibility state that can desync from the model. */
-  getDebugSnapshot(): object
+  getDebugSnapshot (): object
 }
 
 interface SvgCanvas extends AttachedMembers, InternalMembers {}

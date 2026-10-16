@@ -9,7 +9,7 @@
  * @license MIT
  */
 
-import { NS } from './namespaces.js'
+import { NS } from './namespaces.ts'
 import { getBBox } from './bbox-utils.js'
 
 /** Most cells one split makes (every cell is a DOM element and the undo snapshot walks them all). */

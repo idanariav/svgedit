@@ -12,7 +12,7 @@
  */
 import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.js'
 import { getTransformList, transformListToTransform } from './math.js'
-import { proportionLines } from './proportions.js'
+import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.js'
 import { toCurrentGroupLocalDelta } from './event-group-context.js'
 import * as hstry from './history.js'

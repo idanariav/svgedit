@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { init as pathInit } from '../../packages/svgcanvas/core/path.js'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { attachUnits } from './unitsMock.js'

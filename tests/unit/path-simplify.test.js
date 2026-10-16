@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { init as pathSimplifyInit, strengthToTolerance } from '../../packages/svgcanvas/core/path-simplify.js'
-import { NS } from '../../packages/svgcanvas/core/namespaces.js'
+import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.js'
 
 // The fit itself is covered in path-fit.test.js; these tests cover the strength -> tolerance

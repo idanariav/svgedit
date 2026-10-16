@@ -17,9 +17,12 @@ short: details belong in the area files.
 - **Drawing tools use `svgCanvas.registerTool`** (document-space events, one undo step per gesture, `options()` for an
   options bar). No new legacy mouse hooks.
 - **Undo goes through `svgCanvas.transact(label, fn)`.** Never construct a `ChangeElementCommand` before its mutation.
-- **Typing:** new modules start with `// @ts-check` and full JSDoc types (strict-clean). When you touch a core module's
-  `init`, type its `canvas` parameter as `import('../svgcanvas.js').default`. Until [R3](roadmap/rearchitecture.md#r3-typescript)
-  is decided, no `.ts` files.
+- **Typing ([R3](roadmap/rearchitecture.md#r3-typescript)):** a new module in `packages/svgcanvas` is a `.ts` file (erasable
+  syntax only: no enums, namespaces or parameter properties; no `any`, use `unknown` and narrow) and is listed in
+  `tsconfig.strict.json`. Import a `.ts` module with its `.ts` extension (`./x.ts`): plain Node runs the headless engine and
+  does not map `.js` to `.ts`. After renaming a module run `node scripts/check-ts-imports.mjs --fix`. A new *editor* module
+  stays `// @ts-check` with strict JSDoc until the editor has its own strict tsconfig. When you touch a core module's `init`,
+  type its `canvas` parameter as `import('../svgcanvas.js').default`; convert a module you are rewriting anyway.
 - **No new `canvas.foo = …` attachments** ([R2](roadmap/rearchitecture.md#r2-canvas-composition-instead-of-attached-members)):
   a new core module exports functions that take the canvas (or what they need from it) as an argument, and the editor
   imports them. Attach to the canvas only what hosts or extensions call through `svgCanvas`.
@@ -36,8 +39,8 @@ short: details belong in the area files.
 
 ## Background tracks
 
-- **Typing** (strict JSDoc; d.ts stay hand-written, guarded by the drift test): opportunistic, see
-  [infrastructure](roadmap/infrastructure.md). [R3](roadmap/rearchitecture.md#r3-typescript) may replace it with `.ts`.
+- **Typing** (strict JSDoc plus `.ts` for converted modules; d.ts stay hand-written, guarded by the drift test): opportunistic
+  conversion, leaves first, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48): one "Run editor command…" palette picker
   over `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette
   entries, by decision. The picker asks for a command's `params` (2026-10-15); no editor command declares any yet.
