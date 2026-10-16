@@ -2,8 +2,38 @@ import { test as base, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
 
-// Playwright fixture that captures Istanbul coverage from instrumented builds.
+// Istanbul coverage from instrumented builds, merged per worker. The full coverage object is ~20 MB (statement, branch and
+// function maps for every file), so a test sends the page's maps only the first time a file is seen in this worker and
+// its counters (`s`, `f`, `b`) afterwards, and the worker writes one `.nyc_output/playwright-worker-N.json` at the end:
+// per-test dumps cost ~3 s each and ~11 GB per run. `nyc report` merges the per-worker files.
+const merged = {}
+const mergeCoverage = (coverage) => {
+  for (const [file, entry] of Object.entries(coverage)) {
+    const acc = merged[file]
+    if (!acc) { merged[file] = entry; continue }
+    for (const k of Object.keys(entry.s)) acc.s[k] += entry.s[k]
+    for (const k of Object.keys(entry.f)) acc.f[k] += entry.f[k]
+    for (const k of Object.keys(entry.b)) entry.b[k].forEach((n, i) => { acc.b[k][i] += n })
+  }
+}
+
+// Runs in the page: whole entries for files this worker has not merged yet, counters only for the others.
+const collectCoverage = (known) => {
+  const cov = globalThis.__coverage__
+  if (!cov) return null
+  return Object.fromEntries(Object.entries(cov).map(([file, e]) => [file, known.includes(file) ? { s: e.s, f: e.f, b: e.b } : e]))
+}
+
+// Playwright fixtures: the drawing health check and the coverage capture.
 export const test = base.extend({
+  // eslint-disable-next-line no-empty-pattern
+  _writeCoverage: [async ({}, use, workerInfo) => {
+    await use()
+    if (Object.keys(merged).length === 0) return
+    const nycDir = path.join(process.cwd(), '.nyc_output')
+    fs.mkdirSync(nycDir, { recursive: true })
+    fs.writeFileSync(path.join(nycDir, `playwright-worker-${workerInfo.workerIndex}.json`), JSON.stringify(merged))
+  }, { scope: 'worker', auto: true }],
   page: async ({ page }, use, testInfo) => {
     await use(page)
 
@@ -25,14 +55,8 @@ export const test = base.extend({
       expect(findings, `drawing invariants violated after "${testInfo.title}"`).toEqual([])
     }
 
-    const coverage = await page.evaluate(() => globalThis.__coverage__ || null)
-    if (!coverage) return
-
-    const nycDir = path.join(process.cwd(), '.nyc_output')
-    fs.mkdirSync(nycDir, { recursive: true })
-    const slug = testInfo.title.replace(/[^\w-]+/g, '_')
-    const file = path.join(nycDir, `playwright-${slug}.json`)
-    fs.writeFileSync(file, JSON.stringify(coverage))
+    const coverage = await page.evaluate(collectCoverage, Object.keys(merged))
+    if (coverage) mergeCoverage(coverage)
   }
 })
 
