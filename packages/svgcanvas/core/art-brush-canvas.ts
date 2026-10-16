@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Art and pattern brushes on the canvas: the elements, the brush library and the canvas API.
  * The geometry (artwork bent along a path) is in `art-brush.js`.
@@ -32,6 +31,9 @@ import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.ts'
+import type { ArtPath } from './art-brush.ts'
+import type { Pt } from './anchor-path.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
 export const BRUSH_ATTR = 'se:art-brush'
 export const SPINE_ATTR = 'se:art-spine'
@@ -52,49 +54,37 @@ const SHAPES = new Set(['path', 'line', 'polyline', 'polygon', 'rect', 'ellipse'
 /** Geometry attributes dropped when a shape becomes a path. */
 const GEOMETRY_ATTRS = ['d', 'x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2', 'points', 'id']
 
-const DIRS = ['ltr', 'rtl', 'ttb', 'btt']
-/**
- * @param {number} v
- * @param {number} lo
- * @param {number} hi
- */
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
-/** @param {unknown} v */
-const flag = (v) => (v === true || v === 1 || v === '1')
+const DIRS = ['ltr', 'rtl', 'ttb', 'btt'] as const
+const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v))
+/** `v` when it is one of `list`, else `def`. */
+const pick = <T extends string>(list: readonly T[], v: unknown, def: T): T => (list.includes(v as T) ? v as T : def)
+const flag = (v: unknown): boolean => (v === true || v === 1 || v === '1')
 
-/** @typedef {import('./art-brush.ts').ArtPath} ArtPath */
-/** @typedef {{group: Element, spine: Element, src: Element, out: Element}} BrushParts */
-/** @typedef {import('./anchor-path.ts').Pt} Pt */
+type BrushType = 'art' | 'pattern'
+export type BrushOptions = Record<string, unknown>
+export interface BrushParts { group: Element, spine: Element, src: Element, out: Element }
+interface Matrix { a: number, b: number, c: number, d: number, e: number, f: number }
 
 // ---------------------------------------------------------------------------
 // The `se:art-brush` attribute: `art(key=value,…)` / `pattern(key=value,…)`
 // ---------------------------------------------------------------------------
 
-/**
- * @param {?string} str
- * @returns {?{type: 'art'|'pattern', opts: Object<string, any>}} null when it is not a brush
- */
-export const parseBrush = (str) => {
+/** @returns null when it is not a brush */
+export const parseBrush = (str: string | null): { type: BrushType, opts: BrushOptions } | null => {
   const m = /^\s*(art|pattern)\s*\(([^()]*)\)\s*$/.exec(str ?? '')
   if (!m) return null
-  /** @type {Object<string, string>} */
-  const raw = {}
+  const raw: Record<string, string> = {}
   for (const pair of m[2].split(',')) {
     const eq = pair.indexOf('=')
     if (eq > 0) raw[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim()
   }
-  const type = /** @type {'art'|'pattern'} */ (m[1])
+  const type = m[1] as BrushType
   return { type, opts: sanitizeOptions(type, raw) }
 }
 
-/**
- * The options of a brush type with every value checked against its range and its default.
- * @param {'art'|'pattern'} type
- * @param {Object<string, any>} [raw]
- * @returns {Object<string, any>}
- */
-export const sanitizeOptions = (type, raw = {}) => {
-  const num = (/** @type {any} */ v, /** @type {number} */ def, /** @type {number} */ lo, /** @type {number} */ hi) => (Number.isFinite(Number(v)) && v !== '' && v != null ? clamp(Number(v), lo, hi) : def)
+/** The options of a brush type with every value checked against its range and its default. */
+export const sanitizeOptions = (type: BrushType, raw: BrushOptions = {}): BrushOptions => {
+  const num = (v: unknown, def: number, lo: number, hi: number): number => (Number.isFinite(Number(v)) && v !== '' && v != null ? clamp(Number(v), lo, hi) : def)
   if (type === 'art') {
     const d = ART_DEFAULTS
     return {
@@ -102,25 +92,20 @@ export const sanitizeOptions = (type, raw = {}) => {
       width: num(raw.width, d.width, 1, 1000),
       flipAlong: flag(raw.flipAlong),
       flipAcross: flag(raw.flipAcross),
-      dir: DIRS.includes(raw.dir) ? raw.dir : d.dir
+      dir: pick(DIRS, raw.dir, d.dir as (typeof DIRS)[number])
     }
   }
   const d = PATTERN_DEFAULTS
   return {
     scale: num(raw.scale, d.scale, 5, 1000),
     spacing: num(raw.spacing, d.spacing, 0, 1000),
-    fit: ['stretch', 'addSpace', 'approximate'].includes(raw.fit) ? raw.fit : d.fit,
+    fit: pick(['stretch', 'addSpace', 'approximate'] as const, raw.fit, d.fit),
     flipAlong: flag(raw.flipAlong),
     flipAcross: flag(raw.flipAcross)
   }
 }
 
-/**
- * @param {'art'|'pattern'} type
- * @param {Object<string, any>} [opts]
- * @returns {string}
- */
-export const formatBrush = (type, opts = {}) => {
+export const formatBrush = (type: BrushType, opts: BrushOptions = {}): string => {
   const o = sanitizeOptions(type, opts)
   const body = Object.entries(o).map(([k, v]) => `${k}=${typeof v === 'boolean' ? (v ? 1 : 0) : v}`).join(',')
   return `${type}(${body})`
@@ -130,57 +115,45 @@ export const formatBrush = (type, opts = {}) => {
 // Artwork
 // ---------------------------------------------------------------------------
 
-/** @param {Element} el */
-export const localMatrix = (el) => {
+export const localMatrix = (el: Element): SVGMatrix | null => {
   const list = getTransformList(el)
   return list && list.numberOfItems ? transformListToTransform(list).matrix : null
 }
 
 /**
  * The matrix taking `el`'s own coordinates to the drawing's (its own transform and every ancestor's).
- * @param {Element} el
  */
-const matrixToContent = (el) => {
-  /** @type {?DOMMatrix} */
-  let m = null
-  for (let n = /** @type {any} */ (el); n && n.id !== 'svgcontent' && n.tagName !== 'svg'; n = n.parentNode) {
+const matrixToContent = (el: Element): SVGMatrix | null => {
+  let m: SVGMatrix | null = null
+  for (let n: Element | null = el; n && n.id !== 'svgcontent' && n.tagName !== 'svg'; n = n.parentElement) {
     const local = localMatrix(n)
     if (local) m = m ? matrixMultiply(local, m) : local
   }
   return m
 }
 
-/**
- * @param {string} d
- * @param {?{a: number, b: number, c: number, d: number, e: number, f: number}} m
- */
-export const applyMatrix = (d, m) => {
+export const applyMatrix = (d: string, m: Matrix | null): string => {
   if (!m) return d
-  const map = (/** @type {Pt} */ pt) => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
+  const map = (pt: Pt): Pt => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
   return anchorsToD(parseAnchors(d, 0.1).map((sp) => ({
     closed: sp.closed,
     anchors: sp.anchors.map((a) => ({ p: map(a.p), hIn: map(a.hIn), hOut: map(a.hOut) }))
   })))
 }
 
-/** @param {Element} el */
-const pickStyle = (el) => {
-  /** @type {Object<string, string>} */
-  const attrs = {}
-  for (const name of STYLE_ATTRS) if (el.hasAttribute(name)) attrs[name] = /** @type {string} */ (el.getAttribute(name))
+const pickStyle = (el: Element): Record<string, string> => {
+  const attrs: Record<string, string> = {}
+  for (const name of STYLE_ATTRS) if (el.hasAttribute(name)) attrs[name] = el.getAttribute(name) as string
   return attrs
 }
 
 /**
  * The paths of some elements (groups are searched; text and images are skipped), in the drawing's coordinates,
  * with the presentation attributes to paint them.
- * @param {Element[]} elems
- * @returns {ArtPath[]}
  */
-export const artPathsFromElements = (elems) => {
-  /** @type {ArtPath[]} */
-  const out = []
-  const visit = (/** @type {Element} */ el) => {
+export const artPathsFromElements = (elems: Element[]): ArtPath[] => {
+  const out: ArtPath[] = []
+  const visit = (el: Element): void => {
     if (el.getAttribute?.('display') === 'none') return
     if (el.tagName === 'g' || el.tagName === 'a') {
       for (const child of el.children) visit(child)
@@ -193,29 +166,18 @@ export const artPathsFromElements = (elems) => {
   return out
 }
 
-/**
- * @param {Document} doc
- * @param {string} tag
- */
-const svgNS = (doc, tag) => doc.createElementNS(NS.SVG, tag)
+const svgNS = (doc: Document, tag: string): Element => doc.createElementNS(NS.SVG, tag)
 
-/**
- * @param {Element} container
- * @returns {ArtPath[]} the `<path>` children of an artwork container
- */
-const readArtPaths = (container) => [...container.children]
+/** The `<path>` children of an artwork container. */
+const readArtPaths = (container: Element): ArtPath[] => [...container.children]
   .filter((c) => c.tagName === 'path')
   .map((c) => ({ d: c.getAttribute('d') ?? '', attrs: pickStyle(c) }))
 
 /**
  * Fill an artwork container with paths. With `newId`, each path keeps the id of the one that stood at its place
  * before (so regenerating the same art writes the same document), and new places get a fresh id.
- * @param {Document} doc
- * @param {Element} container
- * @param {ArtPath[]} paths
- * @param {?(() => string)} newId
  */
-const writeArtPaths = (doc, container, paths, newId) => {
+const writeArtPaths = (doc: Document, container: Element, paths: ArtPath[], newId: (() => string) | null): void => {
   const ids = [...container.children].map((c) => c.getAttribute('id'))
   container.replaceChildren()
   paths.forEach((p, i) => {
@@ -229,10 +191,8 @@ const writeArtPaths = (doc, container, paths, newId) => {
 
 /**
  * Whether the paths in `container` are these paths (within the saver's rounding, which adds up along a long path).
- * @param {Element} container
- * @param {ArtPath[]} paths
  */
-const sameArt = (container, paths) => {
+const sameArt = (container: Element, paths: ArtPath[]): boolean => {
   const kids = [...container.children]
   if (kids.length !== paths.length) return false
   return kids.every((el, i) => {
@@ -247,11 +207,8 @@ const sameArt = (container, paths) => {
 // A brushed group
 // ---------------------------------------------------------------------------
 
-/**
- * @param {?Element} group
- * @returns {?BrushParts} null when it is not a complete brushed group
- */
-export const brushParts = (group) => {
+/** @returns null when it is not a complete brushed group */
+export const brushParts = (group: Element | null): BrushParts | null => {
   if (!group || group.tagName !== 'g' || !group.hasAttribute(BRUSH_ATTR)) return null
   const kids = [...group.children]
   const spine = kids.find((c) => c.tagName === 'path' && c.hasAttribute(SPINE_ATTR))
@@ -262,39 +219,32 @@ export const brushParts = (group) => {
 
 /**
  * The brushed group `elem` is, or the spine of.
- * @param {?Element} elem
- * @returns {?Element}
  */
-export const brushGroupOf = (elem) => {
+export const brushGroupOf = (elem: Element | null | undefined): Element | null => {
   if (!elem) return null
-  const group = elem.hasAttribute?.(SPINE_ATTR) ? elem.parentNode : elem
-  return brushParts(/** @type {Element} */ (group)) ? /** @type {Element} */ (group) : null
+  const group = (elem.hasAttribute?.(SPINE_ATTR) ? elem.parentNode : elem) as Element
+  return brushParts(group) ? group : null
 }
 
 /**
  * What the generated art for a group is made from: the spine, the options and the artwork.
- * @param {{group: Element, spine: Element, src: Element}} p
  */
-const signature = (p) => `${p.spine.getAttribute('d')}|${p.group.getAttribute(BRUSH_ATTR)}|${p.src.innerHTML}`
+const signature = (p: Pick<BrushParts, 'group' | 'spine' | 'src'>): string => `${p.spine.getAttribute('d')}|${p.group.getAttribute(BRUSH_ATTR)}|${p.src.innerHTML}`
 
 /**
- * @type {WeakMap<Element, string>} what a generated path was made from (the group's signature). Kept on the paths,
- * not the group, so that paths an undo put back still say what they belong to.
+ * What a generated path was made from (the group's signature). Kept on the paths, not the group, so that paths an
+ * undo put back still say what they belong to.
  */
-const madeFrom = new WeakMap()
+const madeFrom = new WeakMap<Element, string>()
 /**
- * @type {WeakMap<Element, Map<string, Element[]>>} the art a group had for the spines it had before, so that going
- * back to one (an undo, a redo) puts the very same paths back instead of rewriting them
+ * The art a group had for the spines it had before, so that going back to one (an undo, a redo) puts the very same
+ * paths back instead of rewriting them.
  */
-const earlier = new WeakMap()
+const earlier = new WeakMap<Element, Map<string, Element[]>>()
 const KEEP_EARLIER = 4
 
-/**
- * The art for a group's spine.
- * @param {{group: Element, spine: Element, src: Element}} p
- * @returns {ArtPath[]}
- */
-const artFor = (p) => {
+/** The art for a group's spine. */
+const artFor = (p: Pick<BrushParts, 'group' | 'spine' | 'src'>): ArtPath[] => {
   const brush = parseBrush(p.group.getAttribute(BRUSH_ATTR))
   if (!brush) return []
   const art = readArtPaths(p.src)
@@ -302,34 +252,31 @@ const artFor = (p) => {
   return brush.type === 'art' ? artAlongPath(d, art, brush.opts) : patternAlongPath(d, art, brush.opts)
 }
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   registerAttrValidator(BRUSH_ATTR, (value) => (parseBrush(value) ? true : 'is not art(…) or pattern(…)'))
   registerAttrValidator(LIB_ATTR, (value) => (value === 'art' || value === 'pattern' ? true : 'is not art or pattern'))
 
-  /** @returns {Element[]} */
-  const getSelected = () => svgCanvas.getSelectedElements().filter(Boolean)
-  /** @returns {Element[]} the brushed groups among the selection */
-  const selectedBrushGroups = () => /** @type {Element[]} */ (getSelected().map(brushGroupOf).filter(Boolean))
-  const newId = () => svgCanvas.getNextId()
+  const getSelected = (): Element[] => svgCanvas.getSelectedElements().filter(Boolean)
+  /** The brushed groups among the selection. */
+  const selectedBrushGroups = (): Element[] => getSelected().map(brushGroupOf).filter(Boolean) as Element[]
+  const newId = (): string => svgCanvas.getNextId()
 
   /**
    * Regenerate the art of a brushed group from its spine. No history.
-   * @param {Element} group
-   * @param {boolean} [force] regenerate even when nothing it is made from changed
-   * @returns {boolean} whether the art was rewritten
+   * @param force regenerate even when nothing it is made from changed
+   * @returns whether the art was rewritten
    */
-  const regenerate = (group, force = false) => {
+  const regenerate = (group: Element, force = false): boolean => {
     const p = brushParts(group)
     if (!p) return false
     const sig = signature(p)
     const kids = [...p.out.children]
     const was = kids.length ? madeFrom.get(kids[0]) : undefined
     if (!force && was === sig) return false
-    const mark = (/** @type {Element[]} */ nodes) => nodes.forEach((n) => madeFrom.set(n, sig))
-    const kept = earlier.get(group) ?? new Map()
+    const mark = (nodes: Element[]): void => nodes.forEach((n) => madeFrom.set(n, sig))
+    const kept = earlier.get(group) ?? new Map<string, Element[]>()
     earlier.set(group, kept)
     const back = !force && kept.get(sig)
     if (back) {
@@ -347,7 +294,7 @@ export const init = (canvas) => {
     if (was !== undefined) {
       kept.delete(was)
       kept.set(was, kids)
-      if (kept.size > KEEP_EARLIER) kept.delete(/** @type {string} */ (kept.keys().next().value))
+      if (kept.size > KEEP_EARLIER) kept.delete(kept.keys().next().value as string)
     }
     writeArtPaths(group.ownerDocument, p.out, art, newId)
     mark([...p.out.children])
@@ -357,41 +304,33 @@ export const init = (canvas) => {
   /**
    * Keep the art of a brushed group in step with its spine: call it when an element changed (it does nothing for
    * anything but a spine or a brushed group). Not undoable by itself; the change that caused it is.
-   * @param {?Element} elem
-   * @returns {boolean}
    */
-  const refreshArtBrush = (elem) => {
+  const refreshArtBrush = (elem: Element | null): boolean => {
     const group = brushGroupOf(elem)
     return group ? regenerate(group) : false
   }
 
   // --- the library -------------------------------------------------------
 
-  const libraryDefs = () => [...svgCanvas.findDefs().children].filter((c) => c.tagName === 'g' && c.hasAttribute(LIB_ATTR))
+  const libraryDefs = (): Element[] => [...svgCanvas.findDefs().children].filter((c) => c.tagName === 'g' && c.hasAttribute(LIB_ATTR))
 
-  /**
-   * The brushes of the drawing.
-   * @returns {Array<{id: string, name: string, type: 'art'|'pattern'}>}
-   */
-  const getArtBrushLibrary = () => libraryDefs().map((g) => ({
+  /** The brushes of the drawing. */
+  const getArtBrushLibrary = (): Array<{ id: string, name: string, type: BrushType }> => libraryDefs().map((g) => ({
     id: g.id,
     name: g.getAttribute(LIB_NAME_ATTR) || g.id,
-    type: g.getAttribute(LIB_ATTR) === 'pattern' ? 'pattern' : 'art'
+    type: g.getAttribute(LIB_ATTR) === 'pattern' ? 'pattern' as const : 'art' as const
   }))
 
   /**
    * Whether the selection holds artwork for a brush: at least one shape or group of shapes.
-   * @returns {boolean}
    */
-  const canMakeArtBrush = () => artPathsFromElements(getSelected().filter((e) => !brushGroupOf(e))).length > 0
+  const canMakeArtBrush = (): boolean => artPathsFromElements(getSelected().filter((e) => !brushGroupOf(e))).length > 0
 
   /**
    * Add the selected artwork to the library as a brush (one undo step).
-   * @param {'art'|'pattern'} type
-   * @param {string} [name]
-   * @returns {?string} the new brush's id, or null when the selection has no artwork
+   * @returns the new brush's id, or null when the selection has no artwork
    */
-  const makeArtBrush = (type, name) => {
+  const makeArtBrush = (type: BrushType, name?: string): string | null => {
     const art = artPathsFromElements(getSelected().filter((e) => !brushGroupOf(e)))
     if (!art.length) return null
     const defs = svgCanvas.findDefs()
@@ -409,10 +348,8 @@ export const init = (canvas) => {
 
   /**
    * Remove a brush from the library (strokes already brushed keep their copy of the artwork).
-   * @param {string} id
-   * @returns {boolean}
    */
-  const deleteArtBrush = (id) => {
+  const deleteArtBrush = (id: string): boolean => {
     const def = libraryDefs().find((g) => g.id === id)
     if (!def) return false
     svgCanvas.transact('Delete brush', () => def.remove())
@@ -424,10 +361,8 @@ export const init = (canvas) => {
   /**
    * Whether a brush can be put on this element: a path or a basic shape without live geometry, or a brushed group
    * (which takes another brush).
-   * @param {?Element} elem
-   * @returns {boolean}
    */
-  const canApplyArtBrush = (elem) => {
+  const canApplyArtBrush = (elem: Element | null): boolean => {
     if (!elem) return false
     if (brushGroupOf(elem)) return true
     return SHAPES.has(elem.tagName) && !LIVE_ATTRS.some((a) => elem.hasAttribute(a)) && !elem.hasAttribute(SPINE_ATTR) &&
@@ -436,30 +371,23 @@ export const init = (canvas) => {
 
   /**
    * The element as the spine path of a new brushed group: a copy that is a `<path>`, hidden.
-   * @param {Element} elem
-   * @param {Document} doc
    */
-  const makeSpine = (elem, doc) => {
+  const makeSpine = (elem: Element, doc: Document): Element => {
     const spine = svgNS(doc, 'path')
     for (const attr of elem.attributes) if (!GEOMETRY_ATTRS.includes(attr.name) && attr.name !== 'transform') spine.setAttribute(attr.name, attr.value)
-    spine.setAttribute('d', /** @type {string} */ (getPathDFromElement(elem)))
+    spine.setAttribute('d', getPathDFromElement(elem) as string)
     spine.setAttribute('id', newId())
     spine.setAttribute(SPINE_ATTR, '1') // not empty: the saver drops empty attributes
-    if (spine.hasAttribute('opacity')) spine.setAttribute(SPINE_OPACITY_ATTR, /** @type {string} */ (spine.getAttribute('opacity')))
+    if (spine.hasAttribute('opacity')) spine.setAttribute(SPINE_OPACITY_ATTR, spine.getAttribute('opacity') as string)
     spine.setAttribute('opacity', '0')
     return spine
   }
 
-  /**
-   * @param {Element} elem
-   * @param {Element} def
-   * @param {'art'|'pattern'} type
-   */
-  const buildGroup = (elem, def, type) => {
+  const buildGroup = (elem: Element, def: Element, type: BrushType): Element => {
     const doc = elem.ownerDocument
     const g = svgNS(doc, 'g')
     g.setAttribute('id', elem.id)
-    if (elem.hasAttribute('transform')) g.setAttribute('transform', /** @type {string} */ (elem.getAttribute('transform')))
+    if (elem.hasAttribute('transform')) g.setAttribute('transform', elem.getAttribute('transform') as string)
     g.setAttribute(BRUSH_ATTR, formatBrush(type))
     const src = svgNS(doc, 'g')
     src.setAttribute(SRC_ATTR, '1')
@@ -474,21 +402,19 @@ export const init = (canvas) => {
   /**
    * Put a library brush on the selected paths (one undo step); a brushed group takes the new artwork and keeps
    * its spine. The art's size follows the path: see the brush options.
-   * @param {string} brushId
-   * @returns {Element[]} the brushed groups
+   * @returns the brushed groups
    */
-  const applyArtBrush = (brushId) => {
+  const applyArtBrush = (brushId: string): Element[] => {
     const def = libraryDefs().find((g) => g.id === brushId)
     const targets = getSelected().filter(canApplyArtBrush)
     if (!def || !targets.length) return []
     const type = def.getAttribute(LIB_ATTR) === 'pattern' ? 'pattern' : 'art'
-    /** @type {Element[]} */
-    const done = []
+    const done: Element[] = []
     svgCanvas.transact('Apply brush', () => {
       for (const elem of targets) {
         const existing = brushGroupOf(elem)
         if (existing) {
-          const p = /** @type {BrushParts} */ (brushParts(existing))
+          const p = brushParts(existing) as BrushParts
           writeArtPaths(existing.ownerDocument, p.src, readArtPaths(def), null)
           const was = parseBrush(existing.getAttribute(BRUSH_ATTR))
           existing.setAttribute(BRUSH_ATTR, formatBrush(type, was?.type === type ? was.opts : {}))
@@ -512,20 +438,17 @@ export const init = (canvas) => {
 
   /**
    * The brush of an element (the selection's by default): its type and options, or null.
-   * @param {Element} [elem]
-   * @returns {?{type: 'art'|'pattern', opts: Object<string, any>}}
    */
-  const getArtBrush = (elem = getSelected()[0]) => {
+  const getArtBrush = (elem: Element = getSelected()[0]): { type: BrushType, opts: BrushOptions } | null => {
     const group = brushGroupOf(elem)
     return group ? parseBrush(group.getAttribute(BRUSH_ATTR)) : null
   }
 
   /**
    * Change options of the selected brushed groups (one undo step); the art is regenerated.
-   * @param {Object<string, any>} changes e.g. `{width: 150}`
-   * @returns {Element[]}
+   * @param changes e.g. `{width: 150}`
    */
-  const setArtBrushOptions = (changes) => {
+  const setArtBrushOptions = (changes: BrushOptions): Element[] => {
     const groups = selectedBrushGroups()
     if (!groups.length) return []
     svgCanvas.transact('Brush options', () => {
@@ -542,14 +465,13 @@ export const init = (canvas) => {
 
   /**
    * Turn the selected brushed groups into plain groups of paths (one undo step): the art stays, the brush goes.
-   * @returns {Element[]}
    */
-  const expandArtBrush = () => {
+  const expandArtBrush = (): Element[] => {
     const groups = selectedBrushGroups()
     if (!groups.length) return []
     svgCanvas.transact('Expand brush', () => {
       for (const g of groups) {
-        const p = /** @type {BrushParts} */ (brushParts(g))
+        const p = brushParts(g) as BrushParts
         regenerate(g)
         g.append(...p.out.children)
         p.spine.remove()
@@ -565,25 +487,23 @@ export const init = (canvas) => {
 
   /**
    * Turn the selected brushed groups back into their plain path (one undo step).
-   * @returns {Element[]}
    */
-  const releaseArtBrush = () => {
+  const releaseArtBrush = (): Element[] => {
     const groups = selectedBrushGroups()
     if (!groups.length) return []
-    /** @type {Element[]} */
-    const paths = []
+    const paths: Element[] = []
     svgCanvas.transact('Release brush', () => {
       for (const g of groups) {
-        const { spine } = /** @type {BrushParts} */ (brushParts(g))
+        const { spine } = brushParts(g) as BrushParts
         spine.removeAttribute(SPINE_ATTR)
         if (spine.hasAttribute(SPINE_OPACITY_ATTR)) {
-          spine.setAttribute('opacity', /** @type {string} */ (spine.getAttribute(SPINE_OPACITY_ATTR)))
+          spine.setAttribute('opacity', spine.getAttribute(SPINE_OPACITY_ATTR) as string)
           spine.removeAttribute(SPINE_OPACITY_ATTR)
         } else {
           spine.removeAttribute('opacity')
         }
         spine.setAttribute('id', g.id)
-        if (g.hasAttribute('transform')) spine.setAttribute('transform', /** @type {string} */ (g.getAttribute('transform')))
+        if (g.hasAttribute('transform')) spine.setAttribute('transform', g.getAttribute('transform') as string)
         g.before(spine)
         g.remove()
         paths.push(spine)

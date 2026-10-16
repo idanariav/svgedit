@@ -29,11 +29,11 @@
 |---|---|
 | `anchor-path.ts` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
 | `arrow-align.ts` | Arrowhead alignment: where a marker head sits on the end of its line |
-| `art-brush-canvas.js` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
+| `art-brush-canvas.ts` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |
 | `art-brush.ts` | Art and pattern brush geometry: artwork bent along a path by arc length |
 | `bbox-utils.ts` | Bounding-box computation utilities |
 | `bezier-fit.ts` | Least-squares cubic Bézier fitting of point sequences: fit a cubic with fixed end tangents, reparameterise with Newton steps, and split at the worst point when one cubic is not enough (the approach from Graphics Gems,… |
-| `blend-canvas.js` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
+| `blend-canvas.ts` | Blends on the canvas: the group, its keys and generated steps, and the canvas API |
 | `blend.ts` | Blends: the geometry and paint of the steps between two key shapes |
 | `blur-event.js` | Tools for blur event |
 | `boolean-ops.ts` | Boolean path operations: union, intersect, subtract, exclude, divide |

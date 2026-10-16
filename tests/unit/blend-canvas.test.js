@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../../packages/svgcanvas/core/blend-canvas.js'
+import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../../packages/svgcanvas/core/blend-canvas.ts'
 import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { getPathDFromElement } from '../../packages/svgcanvas/core/path-utils.ts'
-import { localMatrix, applyMatrix } from '../../packages/svgcanvas/core/art-brush-canvas.js'
+import { localMatrix, applyMatrix } from '../../packages/svgcanvas/core/art-brush-canvas.ts'
 import { getTransformList } from '../../packages/svgcanvas/core/math.ts'
 
 describe('blend attribute', () => {
