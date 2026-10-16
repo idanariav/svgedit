@@ -1,5 +1,5 @@
 /**
- * Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.js`).
+ * Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.ts`).
  *
  * One canonical spelling, the editor's own (`toXml` escaping, `<x/>` for an empty element, attributes in the order the
  * tree holds them), so a file the editor saved parses and serializes back to the same bytes.

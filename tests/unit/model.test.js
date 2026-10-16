@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   cdata, comment, element, getAt, getAttr, parseSvg, serializeNode, serializeSvg, setAttr, SvgParseError, text, updateAt, walk
-} from '../../packages/svgcanvas/core/model/index.js'
+} from '../../packages/svgcanvas/core/model/index.ts'
 
 const SE = 'http://svg-edit.googlecode.com'
 const roundTrip = (src, options) => serializeSvg(parseSvg(src), options)

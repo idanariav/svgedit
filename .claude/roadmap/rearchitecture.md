@@ -73,11 +73,11 @@ parser, serializer, typed view); the typed features and the headless fixes follo
 
 | Layer | File | What it is |
 |---|---|---|
-| Tree | `node.js` | Frozen, structurally shared XML tree: element / text / cdata / comment / pi, plus the declaration and doctype around the root. `updateAt(root, path, fn)` copies only the ancestors, so the previous root is the undo snapshot; an edit that changes nothing returns the same root |
-| Parse | `parse.js` | `parseSvg(text)` on `saxes`, namespace processing off, qualified names kept as written (saved drawings used `se:` without declaring it); `SvgParseError` carries the line |
-| Serialize | `serialize.js` | `serializeSvg(doc, {format})`: `preserve` writes the tree as is, `indent` is the editor's save layout (`svgToString`); the editor's `toXml` escaping; tabs and line breaks in attributes as character references |
-| Typed view | `drawing.js` | `readDrawing(doc)`: layers (top-level `<g class="layer">`, `<title>` name, hidden / locked / template), items (group with a `role`, shape, path, text, image, use, other), `<defs>` children, orphans, ruler guides, every `se:*` attribute verbatim in `item.se`. Every item has a `path` into the tree |
-| Features | `features.js` | `readFeatures(se)`: corner radius, taper / taper style, width profile, dash fit, art brush, blend, brush library, each read with the parser its owning module exports; `invalid` names a typed attribute that does not parse (the `se-attr-parse` condition) |
+| Tree | `node.ts` | Frozen, structurally shared XML tree: element / text / cdata / comment / pi, plus the declaration and doctype around the root. `updateAt(root, path, fn)` copies only the ancestors, so the previous root is the undo snapshot; an edit that changes nothing returns the same root |
+| Parse | `parse.ts` | `parseSvg(text)` on `saxes`, namespace processing off, qualified names kept as written (saved drawings used `se:` without declaring it); `SvgParseError` carries the line |
+| Serialize | `serialize.ts` | `serializeSvg(doc, {format})`: `preserve` writes the tree as is, `indent` is the editor's save layout (`svgToString`); the editor's `toXml` escaping; tabs and line breaks in attributes as character references |
+| Typed view | `drawing.ts` | `readDrawing(doc)`: layers (top-level `<g class="layer">`, `<title>` name, hidden / locked / template), items (group with a `role`, shape, path, text, image, use, other), `<defs>` children, orphans, ruler guides, every `se:*` attribute verbatim in `item.se`. Every item has a `path` into the tree |
+| Features | `features.ts` | `readFeatures(se)`: corner radius, taper / taper style, width profile, dash fit, art brush, blend, brush library, each read with the parser its owning module exports; `invalid` names a typed attribute that does not parse (the `se-attr-parse` condition) |
 
 **Evidence (2026-10-15).**
 - `node scripts/check-model-roundtrip.mjs [--typed] [--verbose] <dir>` (read-only; `.svg` files and the plugin's `.md`
@@ -232,7 +232,7 @@ opportunistic and small per module.
 
 **Converted:** `proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`, `math`, `units`, `common/util`,
 `dataStorage`, `extension-hooks`, `draw-snap` (also the R2 pilot), `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
-`text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `width-profile` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
+`text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `model/features`, `model/drawing`, `model/index`, `width-profile` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
 **Left (the conversion):** `core/paint` and `core/touch` (DOM-heavy `any` / `init(svgCanvas)` shapes, easier after R2), then up the import graph, `svgcanvas.js` last; the editor

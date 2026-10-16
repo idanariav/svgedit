@@ -136,12 +136,12 @@
 
 | File | What it is |
 |---|---|
-| `drawing.js` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.js` |
-| `features.js` | Document model, layer 2b: the `se:*` features of one element as typed fields |
-| `index.js` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.js`, `parse.js`, `serialize.js`) and a typed read-only view of a drawing over it (`drawing.js`) |
+| `drawing.ts` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.ts` |
+| `features.ts` | Document model, layer 2b: the `se:*` features of one element as typed fields |
+| `index.ts` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.ts`, `parse.ts`, `serialize.ts`) and a typed read-only view of a drawing over it (`drawing.ts`) |
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
 | `parse.ts` | Document model: SVG/XML text -> persistent tree (see `node.ts`) |
-| `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.js`) |
+| `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.ts`) |
 
 ### `scripts/`
 

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { describe, it, expect } from 'vitest'
-import { parseSvg, readDrawing, readFeatures, walkItems } from '../../packages/svgcanvas/core/model/index.js'
+import { parseSvg, readDrawing, readFeatures, walkItems } from '../../packages/svgcanvas/core/model/index.ts'
 import { parseCornerSpec } from '../../packages/svgcanvas/core/corner-radius.js'
 import { parseBrush } from '../../packages/svgcanvas/core/art-brush-canvas.js'
 import { parseBlend } from '../../packages/svgcanvas/core/blend-canvas.js'
@@ -104,7 +104,7 @@ describe('the round-trip corpus', () => {
 
 describe('headless', () => {
   it('imports and runs in a bare Node process: no DOM, no paper.js', () => {
-    const entry = path.join(process.cwd(), 'packages/svgcanvas/core/model/index.js')
+    const entry = path.join(process.cwd(), 'packages/svgcanvas/core/model/index.ts')
     const script = `
       import { parseSvg, readDrawing, serializeSvg } from ${JSON.stringify(entry)}
       const doc = parseSvg('<svg><g class="layer"><title>L</title><path d="M0 0L5 5" se:taper="1,2"/></g></svg>')

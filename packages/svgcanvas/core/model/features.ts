@@ -1,8 +1,7 @@
-// @ts-check
 /**
  * Document model, layer 2b: the `se:*` features of one element as typed fields.
  *
- * Each feature is read with the parser its owning module exports (`corner-radius.js`, `width-profile.js`, `dash-fit.js`,
+ * Each feature is read with the parser its owning module exports (`corner-radius.js`, `width-profile.ts`, `dash-fit.js`,
  * `art-brush-canvas.js`, `blend-canvas.js`), so the grammar has one definition and the editor and the model cannot
  * disagree about it. Only features whose parser runs without a DOM are here; an attribute that is not typed yet stays
  * readable verbatim in `item.se`, and one that has a typed field but does not parse is named in `invalid` (the same
@@ -19,44 +18,45 @@ import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, pa
 import { DASH_FIT_ATTR, parseDashes } from '../dash-fit.js'
 import { BRUSH_ATTR, LIB_ATTR, parseBrush } from '../art-brush-canvas.js'
 import { BLEND_ATTR, parseBlend } from '../blend-canvas.js'
+import type { WidthPoint } from '../width-profile.ts'
 
-/**
- * @typedef {object} Features
- * @property {ReturnType<typeof parseCornerSpec>} [cornerRadius] `se:corner-radius`: one radius for every corner, or per-corner radii and kinds
- * @property {string} [cornerSource] `se:orig-d`: the path data the corners were cut from
- * @property {import('../width-profile.ts').WidthPoint[]} [widthProfile] `se:width-profile`
- * @property {{start: number, end: number}} [taper] `se:taper`: end widths in percent
- * @property {{width: number, paint: string}} [taperStyle] `se:taper-style`
- * @property {string} [taperSource] `se:taper-d`: the centerline of a tapered or width-profiled outline
- * @property {number[]} [dashFit] `se:dash-fit`: the dash pattern the fitted `stroke-dasharray` was made from
- * @property {NonNullable<ReturnType<typeof parseBrush>>} [artBrush] `se:art-brush` on a brushed group
- * @property {'art' | 'pattern'} [brushLibrary] `se:brush` on a library entry in `<defs>`
- * @property {NonNullable<ReturnType<typeof parseBlend>>} [blend] `se:blend` on a blend group
- * @property {string[]} invalid typed attributes that did not parse (their raw value stays in `se`)
- */
+export interface Features {
+  /** `se:corner-radius`: one radius for every corner, or per-corner radii and kinds */
+  cornerRadius?: ReturnType<typeof parseCornerSpec>
+  /** `se:orig-d`: the path data the corners were cut from */
+  cornerSource?: string
+  /** `se:width-profile` */
+  widthProfile?: WidthPoint[]
+  /** `se:taper`: end widths in percent */
+  taper?: { start: number, end: number }
+  /** `se:taper-style` */
+  taperStyle?: { width: number, paint: string }
+  /** `se:taper-d`: the centerline of a tapered or width-profiled outline */
+  taperSource?: string
+  /** `se:dash-fit`: the dash pattern the fitted `stroke-dasharray` was made from */
+  dashFit?: number[]
+  /** `se:art-brush` on a brushed group */
+  artBrush?: NonNullable<ReturnType<typeof parseBrush>>
+  /** `se:brush` on a library entry in `<defs>` */
+  brushLibrary?: 'art' | 'pattern'
+  /** `se:blend` on a blend group */
+  blend?: NonNullable<ReturnType<typeof parseBlend>>
+  /** typed attributes that did not parse (their raw value stays in `se`) */
+  invalid: string[]
+}
 
-/**
- * @param {Readonly<Record<string, string>>} se every `se:*` attribute of the element
- * @returns {Features}
- */
-export const readFeatures = (se) => {
-  /** @type {Features} */
-  const out = { invalid: [] }
-  /**
-   * @template T
-   * @param {string} attr
-   * @param {(value: string) => T | null | undefined} parse
-   * @returns {T | undefined}
-   */
-  const read = (attr, parse) => {
+/** `se` is every `se:*` attribute of the element. */
+export const readFeatures = (se: Readonly<Record<string, string>>): Features => {
+  const out: Features = { invalid: [] }
+  const read = <T>(attr: string, parse: (value: string) => T | null | undefined): T | undefined => {
     const value = se[attr]
     if (value === undefined) return undefined
     const parsed = parse(value)
     if (parsed === null || parsed === undefined) { out.invalid.push(attr); return undefined }
     return parsed
   }
-  const set = (/** @type {Partial<Features>} */ fields) => {
-    for (const [k, v] of Object.entries(fields)) if (v !== undefined) /** @type {any} */ (out)[k] = v
+  const set = (fields: Partial<Features>) => {
+    for (const [k, v] of Object.entries(fields)) if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v
   }
   set({
     cornerRadius: read(CORNER_RADIUS_ATTR, parseCornerSpec),
