@@ -7,15 +7,16 @@
  * declared either there or here, and `tsc` checks each module's assignment (`svgCanvas.x = fn`) and each class
  * method against these types.
  *
- * Grouped by the file that owns the member. The eleven typed `any` at the end wait for their module's conversion
- * (rearchitecture R3): the `Path`, `Segment` and `SelectorManager` classes are defined inside the `init` of
- * `path-method.js` / `select.js`, and the drawn-path accessors hand out a path element that still uses the legacy
+ * Grouped by the file that owns the member. The typed `any` at the end wait for their module's conversion
+ * (rearchitecture R3): the `Path` and `Segment` classes are defined inside the `init` of `path-method.js`, and the drawn-path accessors hand out a path element that still uses the legacy
  * `pathSegList` API (`path-seg-shim`).
  */
 import type { SVGElementJSON, BBox } from './svgcanvas.js'
 import type { StyleProps, XY, ElementAndBBox, CanvasState } from './core/canvas-state.ts'
 import type { BatchCommand, ChangeElementCommand } from './core/history.js'
 import type { BBoxObject } from './core/bbox-utils.ts'
+import type { RemapChanges } from './core/coords.ts'
+import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { Drawing } from './core/draw.js'
 import type { PenEnd } from './core/pen-continue.ts'
 import type { Units } from './core/units.ts'
@@ -176,7 +177,7 @@ export interface InternalMembers {
   setBlurNoUndo(val: number): void
   setBlurOffsets(filterElem: Element, stdDev: number): void
   // --- `core/coords.js` ---
-  remapElement(selected: Element, changes: Record<string, unknown>, m: DOMMatrix): void
+  remapElement(selected: Element, changes: Partial<RemapChanges>, m: DOMMatrix): void
   // --- `core/dom-utils.ts` ---
   snapPointToGrid(x: number, y: number): XY
   // --- `core/draw.js` ---
@@ -241,12 +242,9 @@ export interface InternalMembers {
   PathClass: any
   /** @internal (path-method.js) */
   SegmentClass: any
-  /** @internal (select.js) */
-  SelectorManagerClass: any
-  /** @internal (select.js) */
-  getSelector(...args: any[]): any
-  /** @internal (select.js) */
-  getSelectorManager(...args: any[]): any
+  SelectorManagerClass: new () => SelectorManagerApi
+  getSelector(): SelectorClassApi
+  getSelectorManager(): SelectorManagerApi
   /** @internal (path.js) */
   getPath_(...args: any[]): any
   /** @internal (path.js) */

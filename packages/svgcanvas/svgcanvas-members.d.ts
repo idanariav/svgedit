@@ -11,6 +11,7 @@ import type { BrushParams, StyleProps } from './core/canvas-state.ts'
 import type { Command } from './core/history.js'
 import type { SnapTarget, SmartGuidesPayload, DrawGuidesPayload } from './core/smart-guides.ts'
 import type { PathNodeGuidesPayload } from './core/path-node-guides.ts'
+import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { ProportionSnapGuides } from './core/proportions.ts'
 import type { SegmentParams } from './core/segment.ts'
 
@@ -74,7 +75,7 @@ export interface AttachedMembers {
   getMouseTargetFromNode(node: Element | null | undefined): Element | null
   /** The stroked, transformed bounding box of the elements (all visible ones when omitted). */
   getStrokedBBoxDefaultVisible(elems?: Element[]): BBox
-  gettingSelectorManager(): any
+  gettingSelectorManager(): SelectorManagerApi
   /** Name the cursor hint a tool shows (`'add'`, `'pointer'`…), or `null` for none; only a change fires `cursorHint`. */
   setCursorHint(hint: string | null): void
   setEncodableFont(family: string, base64: string): void
@@ -473,8 +474,8 @@ export interface AttachedMembers {
   mouseOutEvent(evt: Event): void
   DOMMouseScrollEvent(evt: Event): void
   /** Per-canvas selector box manager (core/select.js). */
-  selectorManager: any
-  SelectorClass: any
+  selectorManager: SelectorManagerApi
+  SelectorClass: SelectorClassApi
   updateGroupSelector(elem?: Element): void
   getDisabledElems(): Element[]
   getPathObj(): any

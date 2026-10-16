@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * DOM element selection box tools.
  * @module select
@@ -13,6 +12,48 @@ import { getBBox } from './bbox-utils.ts'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BBoxObject } from './bbox-utils.ts'
+
+/** One element's selection box: the dashed outline and the position the grips take around it. */
+export interface SelectorApi {
+  id: number
+  /** The element being boxed; `null` while the selector is free (released). */
+  selectedElement: Element
+  locked: boolean
+  hasGrips?: boolean
+  selectorGroup: Element
+  selectorRect: Element
+  gripCoords: Record<string, number[]>
+  reset: (e: Element, bbox?: BBoxObject | null) => void
+  showGrips: (show: boolean) => void
+  resize: (bbox?: BBoxObject | null) => void
+}
+
+/** The selection boxes, the 8 resize grips and the rotate grip they share, and the rubber band. */
+export interface SelectorManagerApi {
+  selectorParentGroup: Element
+  rubberBandBox: Element | null
+  selectors: SelectorApi[]
+  selectorMap: Record<string, SelectorApi>
+  selectorGrips: Record<string, SVGElement>
+  selectorGripsGroup: Element
+  rotateGripConnector: Element
+  rotateGrip: Element
+  groupSelectorRect: Element | null
+  initGroup: () => void
+  requestSelector: (elem: Element | null | undefined, bbox?: BBoxObject | null) => SelectorApi
+  releaseSelector: (elem: Element) => void
+  getRubberBandBox: () => SVGRectElement
+  showGroupSelector: (contentBBox: BBoxObject | null, angle?: number) => void
+  hideGroupSelector: () => void
+}
+
+/** The per-canvas `Selector` class (static `updateGripCursors` included). */
+export interface SelectorClassApi {
+  new (id: number, elem: Element, bbox?: BBoxObject | null): SelectorApi
+  updateGripCursors: (angle: number) => void
+}
 
 // change radius if touch screen
 // Bigger handles whenever the primary pointer is a finger (not only where `ontouchstart` exists).
@@ -23,23 +64,28 @@ export const gripRadius = (window.ontouchstart || window.matchMedia?.('(pointer:
  * SvgCanvas instance (closed over `svgCanvas` and the per-instance
  * `selectorManager` created at the end of init), so several editors can coexist
  * in one realm. The manager + Selector class are attached to the canvas.
- * @function module:select.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas
 
   /**
 * Private class for DOM element selection boxes.
 */
-  class Selector {
-  /**
-  * @param {number} id - Internally identify the selector
-  * @param {Element} elem - DOM element associated with this selector
-  * @param {module:utilities.BBoxObject} [bbox] - Optional bbox to use for initialization (prevents duplicate `getBBox` call).
+  class Selector implements SelectorApi {
+    id: number
+    selectedElement: Element
+    locked: boolean
+    hasGrips?: boolean
+    selectorGroup: Element
+    selectorRect: Element
+    gripCoords: Record<string, number[]>
+
+    /**
+  * @param id - Internally identify the selector
+  * @param elem - DOM element associated with this selector
+  * @param bbox - Optional bbox to use for initialization (prevents duplicate `getBBox` call).
   */
-    constructor (id, elem, bbox) {
+    constructor (id: number, elem: Element, bbox?: BBoxObject | null) {
     // this is the selector's unique number
       this.id = id
 
@@ -71,8 +117,7 @@ export const init = (canvas) => {
       this.selectorGroup.append(this.selectorRect)
 
       // this holds a reference to the grip coordinates for this selector
-      /** @type {Record<string, number[]>} */
-      this.gripCoords = /** @type {any} */ ({
+      this.gripCoords = ({
         nw: null,
         n: null,
         ne: null,
@@ -81,18 +126,17 @@ export const init = (canvas) => {
         s: null,
         sw: null,
         w: null
-      })
+      } as unknown) as Record<string, number[]>
 
       this.reset(this.selectedElement, bbox)
     }
 
     /**
   * Used to reset the id and element that the selector is attached to.
-  * @param {Element} e - DOM element associated with this selector
-  * @param {module:utilities.BBoxObject} bbox - Optional bbox to use for reset (prevents duplicate getBBox call).
-  * @returns {void}
+  * @param e - DOM element associated with this selector
+  * @param bbox - Optional bbox to use for reset (prevents duplicate getBBox call).
   */
-    reset (e, bbox) {
+    reset (e: Element, bbox?: BBoxObject | null): void {
       this.locked = true
       this.selectedElement = e
       this.resize(bbox)
@@ -101,10 +145,9 @@ export const init = (canvas) => {
 
     /**
   * Show the resize grips of this selector.
-  * @param {boolean} show - Indicates whether grips should be shown or not
-  * @returns {void}
+  * @param show - Indicates whether grips should be shown or not
   */
-    showGrips (show) {
+    showGrips (show: boolean): void {
       const bShow = show ? 'inline' : 'none'
       selectorManager.selectorGripsGroup.setAttribute('display', bShow)
       const elem = this.selectedElement
@@ -117,10 +160,9 @@ export const init = (canvas) => {
 
     /**
   * Updates the selector to match the element's size.
-  * @param {module:utilities.BBoxObject} [bbox] - BBox to use for resize (prevents duplicate getBBox call).
-  * @returns {void}
+  * @param bbox - BBox to use for resize (prevents duplicate getBBox call).
   */
-    resize (bbox) {
+    resize (bbox?: BBoxObject | null): void {
       const selectedBox = this.selectorRect
       const mgr = selectorManager
       const selectedGrips = mgr.selectorGrips
@@ -143,14 +185,15 @@ export const init = (canvas) => {
       // find the transformations applied to the parent of the selected element
       const svg = document.createElementNS(NS.SVG, 'svg')
       let parentTransformationMatrix = svg.createSVGMatrix()
-      let currentElt = /** @type {any} */ (selected)
+      let currentElt: Element = selected
       while (currentElt.parentNode) {
-        if (currentElt.parentNode && currentElt.parentNode.tagName === 'g' && currentElt.parentNode.transform) {
-          if (currentElt.parentNode.transform.baseVal.numberOfItems) {
-            parentTransformationMatrix = matrixMultiply(transformListToTransform(getTransformList(currentElt.parentNode)).matrix, parentTransformationMatrix)
+        const parent = currentElt.parentNode as SVGGElement
+        if (parent.tagName === 'g' && parent.transform) {
+          if (parent.transform.baseVal.numberOfItems) {
+            parentTransformationMatrix = matrixMultiply(transformListToTransform(getTransformList(parent)).matrix, parentTransformationMatrix)
           }
         }
-        currentElt = currentElt.parentNode
+        currentElt = parent
       }
 
       // loop and transform our bounding box until we reach our first rotation
@@ -258,15 +301,14 @@ export const init = (canvas) => {
     // STATIC methods
     /**
   * Updates cursors for corner grips on rotation so arrows point the right way.
-  * @param {number} angle - Current rotation angle in degrees
-  * @returns {void}
+  * @param angle - Current rotation angle in degrees
   */
-    static updateGripCursors (angle) {
+    static updateGripCursors (angle: number): void {
       const dirArr = Object.keys(selectorManager.selectorGrips)
       let steps = Math.round(angle / 45)
       if (steps < 0) { steps += 8 }
       while (steps > 0) {
-        dirArr.push(/** @type {string} */ (dirArr.shift()))
+        dirArr.push(dirArr.shift() as string)
         steps--
       }
       Object.values(selectorManager.selectorGrips).forEach((gripElement, i) => {
@@ -278,28 +320,35 @@ export const init = (canvas) => {
   /**
 * Manage all selector objects (selection boxes).
 */
-  class SelectorManager {
-  /**
+  class SelectorManager implements SelectorManagerApi {
+    selectorParentGroup: Element
+    rubberBandBox: Element | null
+    selectors: SelectorApi[]
+    selectorMap: Record<string, SelectorApi>
+    selectorGrips: Record<string, SVGElement>
+    selectorGripsGroup: Element
+    rotateGripConnector: Element
+    rotateGrip: Element
+    groupSelectorRect: Element | null
+
+    /**
    * Sets up properties and calls `initGroup`.
    */
     constructor () {
     // this will hold the <g> element that contains all selector rects/grips
-      this.selectorParentGroup = /** @type {Element} */ (/** @type {unknown} */ (null))
+      this.selectorParentGroup = null as unknown as Element
 
       // this is a special rect that is used for multi-select
       this.rubberBandBox = null
 
       // this will hold objects of type Selector (see above)
-      /** @type {Selector[]} */
       this.selectors = []
 
       // this holds a map of SVG elements to their Selector object
-      /** @type {Record<string, Selector>} */
       this.selectorMap = {}
 
       // this holds a reference to the grip elements
-      /** @type {Record<string, SVGElement>} */
-      this.selectorGrips = /** @type {any} */ ({
+      this.selectorGrips = ({
         nw: null,
         n: null,
         ne: null,
@@ -308,12 +357,12 @@ export const init = (canvas) => {
         s: null,
         sw: null,
         w: null
-      })
+      } as unknown) as Record<string, SVGElement>
 
       // (created by `initGroup()` below, so typed as present)
-      this.selectorGripsGroup = /** @type {Element} */ (/** @type {unknown} */ (null))
-      this.rotateGripConnector = /** @type {Element} */ (/** @type {unknown} */ (null))
-      this.rotateGrip = /** @type {Element} */ (/** @type {unknown} */ (null))
+      this.selectorGripsGroup = null as unknown as Element
+      this.rotateGripConnector = null as unknown as Element
+      this.rotateGrip = null as unknown as Element
 
       // dashed box drawn around a multi-element selection (uniform group scale)
       this.groupSelectorRect = null
@@ -323,9 +372,8 @@ export const init = (canvas) => {
 
     /**
   * Resets the parent selector group element.
-  * @returns {void}
   */
-    initGroup () {
+    initGroup (): void {
       const dataStorage = svgCanvas.getDataStorage()
       // remove old selector parent group if it existed
       if (this.selectorParentGroup?.parentNode) {
@@ -344,9 +392,7 @@ export const init = (canvas) => {
       this.selectorParentGroup.append(this.selectorGripsGroup)
       svgCanvas.getSvgRoot().append(this.selectorParentGroup)
 
-      /** @type {Record<string, Selector>} */
       this.selectorMap = {}
-      /** @type {Selector[]} */
       this.selectors = []
       this.rubberBandBox = null
       // the old group box was a child of the parent group we just removed
@@ -372,7 +418,7 @@ export const init = (canvas) => {
 
         dataStorage.put(grip, 'dir', dir)
         dataStorage.put(grip, 'type', 'resize')
-        this.selectorGrips[dir] = /** @type {SVGElement} */ (grip)
+        this.selectorGrips[dir] = grip as SVGElement
         this.selectorGripsGroup.append(grip)
       })
 
@@ -405,7 +451,7 @@ export const init = (canvas) => {
 
       if (svgCanvas.$id('canvasBackground')) { return } // scoped: each editor gets its own
 
-      const [width, height] = /** @type {[number, number]} */ (svgCanvas.curConfig.dimensions)
+      const [width, height] = svgCanvas.curConfig.dimensions as [number, number]
       const canvasbg = svgCanvas.createSVGElement({
         element: 'svg',
         attr: {
@@ -438,12 +484,12 @@ export const init = (canvas) => {
 
     /**
   *
-  * @param {Element} elem - DOM element to get the selector for
-  * @param {module:utilities.BBoxObject} [bbox] - Optional bbox to use for reset (prevents duplicate getBBox call).
-  * @returns {Selector} The selector based on the given element
+  * @param elem - DOM element to get the selector for
+  * @param bbox - Optional bbox to use for reset (prevents duplicate getBBox call).
+  * @returns The selector based on the given element (null for no element)
   */
-    requestSelector (elem, bbox) {
-      if (!elem) { return /** @type {any} */ (null) }
+    requestSelector (elem: Element | null | undefined, bbox?: BBoxObject | null): SelectorApi {
+      if (!elem) { return null as unknown as SelectorApi }
 
       const N = this.selectors.length
       // If we've already acquired one for this element, return it.
@@ -469,10 +515,9 @@ export const init = (canvas) => {
     /**
   * Removes the selector of the given element (hides selection box).
   *
-  * @param {Element} elem - DOM element to remove the selector for
-  * @returns {void}
+  * @param elem - DOM element to remove the selector for
   */
-    releaseSelector (elem) {
+    releaseSelector (elem: Element): void {
       if (!elem) { return }
       const N = this.selectors.length
       let sel = this.selectorMap[elem.id]
@@ -497,7 +542,7 @@ export const init = (canvas) => {
             if (this.selectorMap[key] === sel) delete this.selectorMap[key]
           }
           sel.locked = false
-          sel.selectedElement = /** @type {any} */ (null)
+          sel.selectedElement = null as unknown as Element
           sel.showGrips(false)
 
           // remove from DOM and store reference in JS but only if it exists in the DOM
@@ -511,10 +556,10 @@ export const init = (canvas) => {
     }
 
     /**
-  * @returns {SVGRectElement} The rubberBandBox DOM element. This is the rectangle drawn by
+  * @returns The rubberBandBox DOM element. This is the rectangle drawn by
   * the user for selecting/zooming
   */
-    getRubberBandBox () {
+    getRubberBandBox (): SVGRectElement {
       if (!this.rubberBandBox) {
         this.rubberBandBox =
         svgCanvas.createSVGElement({
@@ -531,17 +576,16 @@ export const init = (canvas) => {
         })
         this.selectorParentGroup.append(this.rubberBandBox)
       }
-      return /** @type {SVGRectElement} */ (this.rubberBandBox)
+      return this.rubberBandBox as SVGRectElement
     }
 
     /**
   * Shows a single dashed box, the 8 resize grips and the rotate grip around a
   * multi-element selection (uniform group-scale + group-rotate mode).
-  * @param {module:utilities.BBoxObject} contentBBox - Union bbox of the selection in content/user coords
-  * @param {number} [angle] - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
-  * @returns {void}
+  * @param contentBBox - Union bbox of the selection in content/user coords
+  * @param angle - Live group-rotation angle in degrees; rotates the box + grips rigidly about the union center
   */
-    showGroupSelector (contentBBox, angle = 0) {
+    showGroupSelector (contentBBox: BBoxObject | null, angle = 0): void {
       if (!contentBBox) { return }
       const zoom = svgCanvas.getZoom()
       const x = contentBBox.x * zoom
@@ -611,9 +655,8 @@ export const init = (canvas) => {
     /**
   * Hides the multi-selection group box and restores the rotate grip so that
   * single-selection mode draws normally again.
-  * @returns {void}
   */
-    hideGroupSelector () {
+    hideGroupSelector (): void {
       if (this.groupSelectorRect) {
         this.groupSelectorRect.setAttribute('display', 'none')
         this.groupSelectorRect.setAttribute('transform', '')
@@ -626,43 +669,6 @@ export const init = (canvas) => {
     }
   }
 
-  /**
- * An object that creates SVG elements for the canvas.
- *
- * @interface module:select.SVGFactory
- */
-  /**
- * @function module:select.SVGFactory#createSVGElement
- * @param {module:utilities.EditorContext#addSVGElementsFromJson} jsonMap
- * @returns {SVGElement}
- */
-  /**
- * @function module:select.SVGFactory#svgRoot
- * @returns {SVGSVGElement}
- */
-  /**
- * @function module:select.SVGFactory#svgContent
- * @returns {SVGSVGElement}
- */
-  /**
- * @function module:select.SVGFactory#getZoom
- * @returns {number} The current zoom level
- */
-
-  /**
- * @typedef {GenericArray} Dimensions
- * @property {number} length 2
- * @property {number} 0 Width
- * @property {number} 1 Height
- */
-  /**
- * @typedef {PlainObject} Config
- * @property {string} imgPath
- * @property {Dimensions} dimensions
- */
-
-  // Per-instance selector manager + class, attached for consumers (svgcanvas.js
-  // reads svgCanvas.selectorManager and exposes the Selector class via getSelector()).
   const selectorManager = new SelectorManager()
   svgCanvas.selectorManager = selectorManager
   svgCanvas.getSelectorManager = () => selectorManager

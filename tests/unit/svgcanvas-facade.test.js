@@ -35,10 +35,10 @@ const editorSources = () => {
 // to delete it (`history`).
 const UNTYPED = {
   'packages/svgcanvas/svgcanvas-internal.d.ts': [
-    'PathClass', 'SegmentClass', 'SelectorManagerClass', 'getSelector', 'getSelectorManager', 'getPath_', 'setPathObj',
+    'PathClass', 'SegmentClass', 'getPath_', 'setPathObj',
     'getGripPt', 'getPointFromGrip', 'getDrawnPath', 'setDrawnPath'
   ],
-  'packages/svgcanvas/svgcanvas-members.d.ts': ['gettingSelectorManager', 'selectorManager', 'SelectorClass', 'getPathObj', 'history']
+  'packages/svgcanvas/svgcanvas-members.d.ts': ['getPathObj', 'history']
 }
 
 describe('svgCanvas facade', () => {

@@ -41,7 +41,7 @@
 | `canvas-state.ts` | The session/UI state of one canvas (`svgCanvas.state`), grouped by concern: zoom, selection, current styles, history scratch and the drawing gesture's working values |
 | `clear.ts` | Resets the `#svgcontent` element to a blank document |
 | `clip-mask.ts` | Clip & mask creation: confine the top selected object to the silhouette of the object below it, and release an existing clip/mask |
-| `coords.js` | Manipulating coordinates |
+| `coords.ts` | Manipulating coordinates |
 | `copy-elem.ts` | Copy handler |
 | `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
 | `cutter.ts` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
@@ -101,13 +101,13 @@
 | `path.js` | Path functionality |
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
-| `recalculate.js` | Recalculate dimensions and transformations of SVG elements |
+| `recalculate.ts` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
 | `sanitize.ts` | Tools for SVG sanitization |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.ts` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |
-| `select.js` | DOM element selection box tools |
+| `select.ts` | DOM element selection box tools |
 | `selected-elem.js` | Tools for SVG selected element operation |
 | `selection.js` | Tools for selection |
 | `shape-builder.ts` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
@@ -120,7 +120,7 @@
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
-| `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
+| `text-attrs.ts` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
 | `text-path.ts` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |

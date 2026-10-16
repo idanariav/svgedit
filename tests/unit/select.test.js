@@ -1,4 +1,4 @@
-import * as select from '../../packages/svgcanvas/core/select.js'
+import * as select from '../../packages/svgcanvas/core/select.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 describe('select', function () {

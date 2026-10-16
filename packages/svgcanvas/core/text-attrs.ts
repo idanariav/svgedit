@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Text attribute operations (bold/italic/decoration, anchor and spacing,
  * perspective, font family/size/colour, text content), split out of
@@ -15,9 +14,9 @@ import {
   WRAP_WIDTH_ATTR, WRAP_HEIGHT_ATTR, VALIGN_ATTR, TEXT_ASCENT, getWrapWidth, getWrapHeight, writeAreaAttrs,
   reflowAreaText, settleAreaText, isAreaText, getAreaBox, makeAreaText, makePointText, rowsOf, softCount, SOFT_ATTR, getValign
 } from './text-rows.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
 
   // A transform bake that scales the type (a group scale, a rotated resize) scales an area text's box with
@@ -35,7 +34,7 @@ export const init = (canvas) => {
     }, { signal: svgCanvas.destroyAbort?.signal })
   }
 
-  const positive = (/** @type {string} */ value) => (parseFloat(value) > 0 ? true : 'is not a positive number')
+  const positive = (value: string): true | string => (parseFloat(value) > 0 ? true : 'is not a positive number')
   registerAttrValidator(WRAP_WIDTH_ATTR, positive)
   registerAttrValidator(WRAP_HEIGHT_ATTR, positive)
   registerAttrValidator(VALIGN_ATTR, (value) => (['top', 'middle', 'bottom'].includes(value) ? true : 'is not top, middle or bottom'))
@@ -59,17 +58,11 @@ export const init = (canvas) => {
     reflowAreaText(elem)
   })
 
-  /** @returns {SVGTextElement[]} */
-  const getSelectedTextElements = () => {
-    return /** @type {SVGTextElement[]} */ (svgCanvas.getSelectedElements().filter((/** @type {Element} */ el) => el?.tagName === 'text'))
+  const getSelectedTextElements = (): SVGTextElement[] => {
+    return svgCanvas.getSelectedElements().filter((el) => el?.tagName === 'text') as SVGTextElement[]
   }
 
-  /**
-   * @param {Element[]} textElements
-   * @param {string} attr
-   * @param {*} newValue
-   */
-  const getChangedTextElements = (textElements, attr, newValue) => {
+  const getChangedTextElements = <T extends Element>(textElements: T[], attr: string, newValue: unknown): T[] => {
     const normalizedValue = String(newValue)
     return textElements.filter((elem) => {
       const oldValue = attr === '#text' ? elem.textContent : elem.getAttribute(attr)
@@ -77,8 +70,7 @@ export const init = (canvas) => {
     })
   }
 
-  /** @param {Element[]} textElements */
-  const notifyTextChange = (textElements) => {
+  const notifyTextChange = (textElements: Element[]): void => {
     if (textElements.length > 0) {
       svgCanvas.call('changed', textElements)
     }
@@ -86,21 +78,18 @@ export const init = (canvas) => {
 
   /**
  * Check if all selected text elements are in bold.
- * @function module:svgcanvas.SvgCanvas#getBold
  * @returns {boolean} `true` if all selected elements are bold, `false` otherwise.
  */
-  const getBoldMethod = () => {
+  const getBoldMethod = (): boolean => {
     const textElements = getSelectedTextElements()
     return textElements.every(el => el.getAttribute('font-weight') === 'bold')
   }
 
   /**
  * Make the selected element(s) bold or normal.
- * @function module:svgcanvas.SvgCanvas#setBold
- * @param {boolean} b - Indicates bold (`true`) or normal (`false`)
- * @returns {void}
+ * @param b - Indicates bold (`true`) or normal (`false`)
  */
-  const setBoldMethod = (b) => {
+  const setBoldMethod = (b: boolean): void => {
     const textElements = getSelectedTextElements()
     const value = b ? 'bold' : 'normal'
     const changedTextElements = getChangedTextElements(textElements, 'font-weight', value)
@@ -115,9 +104,9 @@ export const init = (canvas) => {
 
   /**
  * Check if all selected text elements have the given text decoration value or not.
- * @returns {boolean} Indicates whether or not elements have the text decoration value
+ * @returns Indicates whether or not elements have the text decoration value
  */
-  const hasTextDecorationMethod = (/** @type {string} */ value) => {
+  const hasTextDecorationMethod = (value: string): boolean => {
     const textElements = getSelectedTextElements()
     return textElements.every(el => (el.getAttribute('text-decoration') || '').includes(value))
   }
@@ -125,9 +114,8 @@ export const init = (canvas) => {
   /**
  * Adds the given text decoration value
  * @param value The text decoration value
- * @returns {void}
  */
-  const addTextDecorationMethod = (/** @type {string} */ value) => {
+  const addTextDecorationMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
 
     // One transaction instead of a hand-built batch: the old code built each
@@ -151,9 +139,8 @@ export const init = (canvas) => {
   /**
  * Removes the given text decoration value
  * @param value The text decoration value
- * @returns {void}
  */
-  const removeTextDecorationMethod = (/** @type {string} */ value) => {
+  const removeTextDecorationMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
 
     svgCanvas.transact('Remove text decoration', () => {
@@ -170,21 +157,18 @@ export const init = (canvas) => {
 
   /**
  * Check if all selected elements have an italic font style.
- * @function module:svgcanvas.SvgCanvas#getItalic
  * @returns {boolean} `true` if all selected elements are in italics, `false` otherwise.
  */
-  const getItalicMethod = () => {
+  const getItalicMethod = (): boolean => {
     const textElements = getSelectedTextElements()
     return textElements.every(el => el.getAttribute('font-style') === 'italic')
   }
 
   /**
  * Make the selected element(s) italic or normal.
- * @function module:svgcanvas.SvgCanvas#setItalic
- * @param {boolean} i - Indicates italic (`true`) or normal (`false`)
- * @returns {void}
+ * @param i - Indicates italic (`true`) or normal (`false`)
  */
-  const setItalicMethod = (i) => {
+  const setItalicMethod = (i: boolean): void => {
     const textElements = getSelectedTextElements()
     const value = i ? 'italic' : 'normal'
     const changedTextElements = getChangedTextElements(textElements, 'font-style', value)
@@ -198,11 +182,9 @@ export const init = (canvas) => {
   }
 
   /**
- * @function module:svgcanvas.SvgCanvas#setTextAnchorMethod Set the new text anchor
- * @param {string} value - The text anchor value (start, middle or end)
- * @returns {void}
+ * @param value - The text anchor value (start, middle or end)
  */
-  const setTextAnchorMethod = (value) => {
+  const setTextAnchorMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'text-anchor', value)
     if (changedTextElements.length > 0) {
@@ -210,7 +192,7 @@ export const init = (canvas) => {
       if (areas.length) {
         // The box stays where it is: `x` is the anchor, so it moves with the alignment.
         const lefts = areas.map((el) => getAreaBox(el).x)
-        const factor = { start: 0, middle: 0.5, end: 1 }[value] ?? 0
+        const factor = ({ start: 0, middle: 0.5, end: 1 } as Record<string, number>)[value] ?? 0
         svgCanvas.transact('Text alignment', () => {
           areas.forEach((el, i) => {
             svgCanvas.changeSelectedAttributeNoUndo('x', lefts[i] + factor * getWrapWidth(el), [el])
@@ -230,11 +212,9 @@ export const init = (canvas) => {
   }
 
   /**
- * @function module:svgcanvas.SvgCanvas#setLetterSpacingMethod Set the new letter spacing
- * @param {string} value - The letter spacing value
- * @returns {void}
+ * @param value - The letter spacing value
  */
-  const setLetterSpacingMethod = (value) => {
+  const setLetterSpacingMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'letter-spacing', value)
     if (changedTextElements.length > 0) {
@@ -247,11 +227,9 @@ export const init = (canvas) => {
   }
 
   /**
- * @function module:svgcanvas.SvgCanvas#setWordSpacingMethod Set the new word spacing
- * @param {string} value - The word spacing value
- * @returns {void}
+ * @param value - The word spacing value
  */
-  const setWordSpacingMethod = (value) => {
+  const setWordSpacingMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'word-spacing', value)
     if (changedTextElements.length > 0) {
@@ -264,11 +242,9 @@ export const init = (canvas) => {
   }
 
   /**
- * @function module:svgcanvas.SvgCanvas#setTextLengthMethod Set the new text length
- * @param {string} value - The text length value
- * @returns {void}
+ * @param value - The text length value
  */
-  const setTextLengthMethod = (value) => {
+  const setTextLengthMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'textLength', value)
     if (changedTextElements.length > 0) {
@@ -281,11 +257,9 @@ export const init = (canvas) => {
   }
 
   /**
- * @function module:svgcanvas.SvgCanvas#setLengthAdjustMethod Set the new length adjust
- * @param {string} value - The length adjust value
- * @returns {void}
+ * @param value - The length adjust value
  */
-  const setLengthAdjustMethod = (value) => {
+  const setLengthAdjustMethod = (value: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'lengthAdjust', value)
     if (changedTextElements.length > 0) {
@@ -310,7 +284,7 @@ export const init = (canvas) => {
  *
  * The rotation axis is always perpendicular to the perspective direction.
  */
-  const buildPerspectiveTransform = (/** @type {*} */ degX, /** @type {*} */ degY, /** @type {{width: number, height: number}} */ bbox) => {
+  const buildPerspectiveTransform = (degX: unknown, degY: unknown, bbox: { width: number, height: number }): string => {
     const x = Number(degX) || 0
     const y = Number(degY) || 0
     if (x === 0 && y === 0) return ''
@@ -342,10 +316,10 @@ export const init = (canvas) => {
  * an explicit `transform-origin` keeps the element anchored to its current
  * position regardless of browser handling of `transform-box`.
  */
-  const setTransformInStyle = (/** @type {?string} */ styleStr, /** @type {string} */ transformValue, /** @type {number} */ cx, /** @type {number} */ cy) => {
+  const setTransformInStyle = (styleStr: string | null, transformValue: string, cx: number, cy: number): string => {
     const parts = (styleStr || '').split(';')
-      .map((/** @type {string} */ s) => s.trim())
-      .filter((/** @type {string} */ s) => s &&
+      .map((s) => s.trim())
+      .filter((s) => s &&
       !s.startsWith('transform:') &&
       !s.startsWith('transform-box:') &&
       !s.startsWith('transform-origin:') &&
@@ -360,10 +334,9 @@ export const init = (canvas) => {
 
   /**
  * Apply one axis of CSS perspective to all selected text elements, with undo.
- * @param {'x'|'y'} axis
- * @param {number|string} val - Degrees (-80…80)
+ * @param val - Degrees (-80…80)
  */
-  const applyTextPerspective = (axis, val) => {
+  const applyTextPerspective = (axis: 'x' | 'y', val: number | string): void => {
     const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const textElements = getSelectedTextElements()
     if (!textElements.length) return
@@ -400,43 +373,33 @@ export const init = (canvas) => {
 
   /**
  * Set horizontal perspective (rotateY) on selected text elements.
- * @function module:svgcanvas.SvgCanvas#setTextPerspectiveX
- * @param {number} val - Degrees; positive = right side closer
+ * @param val - Degrees; positive = right side closer
  */
-  const setTextPerspectiveXMethod = (val) => applyTextPerspective('x', val)
+  const setTextPerspectiveXMethod = (val: number): void => applyTextPerspective('x', val)
 
   /**
  * Set vertical perspective (rotateX) on selected text elements.
- * @function module:svgcanvas.SvgCanvas#setTextPerspectiveY
- * @param {number} val - Degrees; positive = bottom closer
+ * @param val - Degrees; positive = bottom closer
  */
-  const setTextPerspectiveYMethod = (val) => applyTextPerspective('y', val)
+  const setTextPerspectiveYMethod = (val: number): void => applyTextPerspective('y', val)
 
   /**
  * Get current horizontal perspective value from element.
- * @function module:svgcanvas.SvgCanvas#getTextPerspectiveX
- * @param {Element} elem
- * @returns {number}
  */
-  const getTextPerspectiveXMethod = (elem) => Number(elem?.getAttribute('data-perspective-x') || 0)
+  const getTextPerspectiveXMethod = (elem: Element): number => Number(elem?.getAttribute('data-perspective-x') || 0)
 
   /**
  * Get current vertical perspective value from element.
- * @function module:svgcanvas.SvgCanvas#getTextPerspectiveY
- * @param {Element} elem
- * @returns {number}
  */
-  const getTextPerspectiveYMethod = (elem) => Number(elem?.getAttribute('data-perspective-y') || 0)
+  const getTextPerspectiveYMethod = (elem: Element): number => Number(elem?.getAttribute('data-perspective-y') || 0)
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
 * Set the new font family.
-* @function module:svgcanvas.SvgCanvas#setFontFamily
-* @param {string} val - String with the new font family
-* @returns {void}
+* @param val - String with the new font family
 */
-  const setFontFamilyMethod = (val) => {
+  const setFontFamilyMethod = (val: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'font-family', val)
     svgCanvas.setCurText('font_family', val)
@@ -451,11 +414,9 @@ export const init = (canvas) => {
 
   /**
 * Set the new font color.
-* @function module:svgcanvas.SvgCanvas#setFontColor
-* @param {string} val - String with the new font color
-* @returns {void}
+* @param val - String with the new font color
 */
-  const setFontColorMethod = (val) => {
+  const setFontColorMethod = (val: string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'fill', val)
     svgCanvas.setCurText('fill', val)
@@ -467,11 +428,9 @@ export const init = (canvas) => {
 
   /**
 * Applies the given font size to the selected element.
-* @function module:svgcanvas.SvgCanvas#setFontSize
-* @param {number} val - number with the new font size
-* @returns {void}
+* @param val - number with the new font size
 */
-  const setFontSizeMethod = (val) => {
+  const setFontSizeMethod = (val: number): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'font-size', val)
     svgCanvas.setCurText('font_size', val)
@@ -507,11 +466,9 @@ export const init = (canvas) => {
 * is stored as one `<tspan>` per row (SVG has no newline character), so this
 * rebuilds the `\n`-separated value the edit buffer and undo history use. A
 * single-line `<text>` (no tspans) falls back to plain `textContent`.
-* @function module:svgcanvas.SvgCanvas#getTextWithNewlines
-* @param {Element} elem - The `<text>` element
-* @returns {string}
+* @param elem - The `<text>` element
 */
-  const getTextWithNewlinesMethod = (elem) => getTextWithNewlines(elem)
+  const getTextWithNewlinesMethod = (elem: Element): string => getTextWithNewlines(elem)
 
   /**
 * Render a `\n`-separated string onto a `<text>` element. A single line is set
@@ -520,20 +477,17 @@ export const init = (canvas) => {
 * `text-anchor` aligns them) and stepping `y` by the line height. Absolute `y`
 * per row (rather than `dy` accumulation) is robust to blank rows and is what
 * `recalculate` already bakes during move/scale.
-* @function module:svgcanvas.SvgCanvas#setMultilineText
-* @param {Element} elem - The `<text>` element
-* @param {string} value - The new content, rows separated by `\n`
-* @returns {void}
+* @param elem - The `<text>` element
+* @param value - The new content, rows separated by `\n`
 */
-  const setMultilineTextMethod = (elem, value) => {
+  const setMultilineTextMethod = (elem: Element, value: string): void => {
     setMultilineText(elem, value, parseFloat(String(svgCanvas.getCurText('font_size'))) || 16)
   }
 
   /**
-* @function module:svgcanvas.SvgCanvas#getText
-* @returns {string} The current text of the selected element (newline-joined for multiline)
+* @returns The current text of the selected element (newline-joined for multiline)
 */
-  const getTextMethod = () => {
+  const getTextMethod = (): string => {
     const selectedElements = svgCanvas.getSelectedElements()
     const selected = selectedElements[0]
     return (selected) ? getTextWithNewlinesMethod(selected) : ''
@@ -541,11 +495,9 @@ export const init = (canvas) => {
 
   /**
 * Updates the text element with the given string.
-* @function module:svgcanvas.SvgCanvas#setTextContent
-* @param {string} val - String with the new text
-* @returns {void}
+* @param val - String with the new text
 */
-  const setTextContentMethod = (val) => {
+  const setTextContentMethod = (val: string): void => {
     svgCanvas.changeSelectedAttribute('#text', val)
     svgCanvas.textActions.init()
     svgCanvas.textActions.setCursor()
@@ -553,11 +505,8 @@ export const init = (canvas) => {
 
   /**
  * Vertical alignment of the selected area texts inside their box.
- * @function module:svgcanvas.SvgCanvas#setTextValign
- * @param {'top'|'middle'|'bottom'} value
- * @returns {void}
  */
-  const setTextValignMethod = (value) => {
+  const setTextValignMethod = (value: 'top' | 'middle' | 'bottom'): void => {
     const areas = getSelectedTextElements().filter(isAreaText)
     const changed = areas.filter((el) => getValign(el) !== value)
     if (changed.length) {
@@ -573,10 +522,9 @@ export const init = (canvas) => {
 
   /**
  * Turn the selected point texts into area texts of the width they have now (nothing moves).
- * @function module:svgcanvas.SvgCanvas#makeAreaText
- * @returns {boolean} Whether anything changed
+ * @returns Whether anything changed
  */
-  const makeAreaTextMethod = () => {
+  const makeAreaTextMethod = (): boolean => {
     const elems = getSelectedTextElements().filter((el) => !isAreaText(el))
     if (!elems.length) { return false }
     let changed = false
@@ -590,10 +538,9 @@ export const init = (canvas) => {
 
   /**
  * Turn the selected area texts back into point texts; the rows as drawn become hard rows.
- * @function module:svgcanvas.SvgCanvas#makePointText
- * @returns {boolean} Whether anything changed
+ * @returns Whether anything changed
  */
-  const makePointTextMethod = () => {
+  const makePointTextMethod = (): boolean => {
     const elems = getSelectedTextElements().filter(isAreaText)
     if (!elems.length) { return false }
     svgCanvas.transact('Point text', () => elems.forEach(makePointText))

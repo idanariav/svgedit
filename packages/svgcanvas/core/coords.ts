@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Manipulating coordinates.
  * @module coords
@@ -20,9 +19,62 @@ import {
   getTransformList
 } from './math.ts'
 import { getUnits } from './units.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BBoxObject } from './bbox-utils.ts'
 
-/** @param {*} value */
-const flipBoxCoordinate = (value) => {
+/** One path segment as `remapElement` reads it: the legacy `pathSegList` item or a `getPathData()` entry, by type number. */
+interface PathSegEntry {
+  type: number
+  // Only the members the command has are set (a `V` has no `x`): the others are `undefined` at runtime.
+  x: number
+  y: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  r1: number
+  r2: number
+  angle: number
+  largeArcFlag: boolean | number
+  sweepFlag: boolean | number
+}
+
+/**
+ * The new attribute values of an element about to be remapped by a matrix (what `recalculateDimensions` read off it).
+ * Which geometry fields are present depends on the element's tag; the caller passes the ones that tag has.
+ */
+export interface RemapChanges {
+  x: number
+  y: number
+  width: number
+  height: number
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  r: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  'font-size'?: number
+  points: Array<{ x: number, y: number }>
+  d: PathSegEntry[]
+  [attr: string]: unknown
+}
+
+/** `getPathData()` / `setPathData()`, the SVG 2 path API (not in the DOM typings yet). */
+interface PathDataElement {
+  getPathData: () => Array<{ type: string, values?: number[] }>
+  setPathData: (data: Array<{ type: string, values: number[] }>) => void
+}
+/** The legacy `pathSegList` (provided by `path-seg-shim`). */
+interface LegacySegList {
+  numberOfItems: number
+  getItem: (i: number) => Omit<PathSegEntry, 'type'> & { pathSegType: number }
+}
+
+const flipBoxCoordinate = (value: unknown): string | null => {
   if (value === null || value === undefined) return null
   const str = String(value).trim()
   if (!str) return null
@@ -36,11 +88,7 @@ const flipBoxCoordinate = (value) => {
   return Number.isNaN(num) ? str : String(1 - num)
 }
 
-/**
- * @param {Element} elem
- * @param {string} attr
- */
-const flipAttributeInBoxUnits = (elem, attr) => {
+const flipAttributeInBoxUnits = (elem: Element, attr: string): void => {
   const value = elem.getAttribute(attr)
   if (value === null || value === undefined) return
 
@@ -52,11 +100,9 @@ const flipAttributeInBoxUnits = (elem, attr) => {
 
 /**
  * Initialize the coords module with the SVG canvas.
- * @function module:coords.init
- * @param {import('../svgcanvas.js').default} canvas - The SVG canvas object
- * @returns {void}
+ * @param canvas - The SVG canvas object
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; remapElement below is closed over it
   const { convertToNum } = getUnits(canvas)
 
@@ -67,29 +113,28 @@ export const init = (canvas) => {
 
   /**
  * Applies coordinate changes to an element based on the given matrix.
- * @function module:coords.remapElement
- * @param {Element} selected - The DOM element to remap
- * @param {Record<string, any>} changes - An object containing attribute changes
- * @param {SVGMatrix} m - The transformation matrix
- * @returns {void}
+ * @param selected - The DOM element to remap
+ * @param changes - An object containing attribute changes
+ * @param m - The transformation matrix
  */
-  const remapElement = (selected, changes, m) => {
-    const remap = (/** @type {number} */ x, /** @type {number} */ y) => transformPoint(x, y, m)
-    const scalew = (/** @type {number} */ w) => m.a * w
-    const scaleh = (/** @type {number} */ h) => m.d * h
+  const remapElement = (selected: Element, partialChanges: Partial<RemapChanges>, m: SVGMatrix): void => {
+    const changes = partialChanges as RemapChanges
+    const remap = (x: number, y: number) => transformPoint(x, y, m)
+    const scalew = (w: number): number => m.a * w
+    const scaleh = (h: number): number => m.d * h
     const doSnapping =
     svgCanvas.getGridSnapping?.() &&
-    /** @type {Element|null|undefined} */ (selected?.parentNode?.parentNode)?.localName === 'svg'
+    (selected?.parentNode?.parentNode as Element | null | undefined)?.localName === 'svg'
 
     const finishUp = () => {
       if (doSnapping) {
       // Snap known coordinate pairs together so non-square (isometric /
       // triangular) lattices land on their nodes; remaining scalar attributes
       // (width, height, r, …) keep the simple per-axis square snap.
-        const handled = new Set()
+        const handled = new Set<string>()
         for (const [xa, ya] of [['x', 'y'], ['cx', 'cy'], ['x1', 'y1'], ['x2', 'y2'], ['fx', 'fy']]) {
           if (xa in changes && ya in changes) {
-            const sp = svgCanvas.snapPointToGrid(changes[xa], changes[ya])
+            const sp = svgCanvas.snapPointToGrid(changes[xa] as number, changes[ya] as number)
             changes[xa] = sp.x
             changes[ya] = sp.y
             handled.add(xa)
@@ -102,10 +147,10 @@ export const init = (canvas) => {
           }
         }
       }
-      assignAttributes(selected, changes, 1000, true)
+      assignAttributes(selected, changes as Record<string, string | number>, 1000, true)
     }
 
-    const box = /** @type {import('./bbox-utils.ts').BBoxObject} */ (getBBox(selected)) // null only for the guarded no-box cases
+    const box = getBBox(selected) as BBoxObject // null only for the guarded no-box cases
 
   // Handle gradients and patterns
   ;['fill', 'stroke'].forEach(type => {
@@ -120,7 +165,7 @@ export const init = (canvas) => {
         // userSpaceOnUse gradients do not need object-bounding-box correction.
         if (grad.getAttribute('gradientUnits') === 'userSpaceOnUse') return
 
-        const newgrad = /** @type {Element} */ (grad.cloneNode(true))
+        const newgrad = grad.cloneNode(true) as Element
         if (m.a < 0) {
         // Flip x
           if (tagName === 'lineargradient') {
@@ -173,7 +218,7 @@ export const init = (canvas) => {
       // Allow images to be inverted (give them matrix when flipped)
         if (elName === 'image' && (m.a < 0 || m.d < 0)) {
         // Convert to matrix if flipped
-          const chlist = /** @type {SVGTransformList} */ (getTransformList(selected))
+          const chlist = getTransformList(selected) as SVGTransformList
           const mt = svgCanvas.getSvgRoot().createSVGTransform()
           mt.setMatrix(matrixMultiply(transformListToTransform(chlist).matrix, m))
           chlist.clear()
@@ -244,10 +289,9 @@ export const init = (canvas) => {
         // Handle child 'tspan' elements
         const childNodes = selected.childNodes
         for (let i = 0; i < childNodes.length; i++) {
-          const child = /** @type {Element} */ (childNodes[i])
+          const child = childNodes[i] as Element
           if (child.nodeType === 1 && child.tagName === 'tspan') {
-            /** @type {Record<string, string|number>} */
-            const childChanges = {}
+            const childChanges: Record<string, string | number> = {}
             const hasX = child.hasAttribute('x')
             const hasY = child.hasAttribute('y')
             if (hasX) {
@@ -299,43 +343,41 @@ export const init = (canvas) => {
         const dataStorage = svgCanvas.getDataStorage()
         const gsvg = dataStorage.get(selected, 'gsvg')
         if (gsvg) {
-          assignAttributes(gsvg, changes, 1000, true)
+          assignAttributes(gsvg, changes as Record<string, string | number>, 1000, true)
         }
         break
       }
       case 'polyline':
       case 'polygon': {
-        changes.points.forEach((/** @type {{x: number, y: number}} */ pt) => {
+        changes.points.forEach((pt) => {
           const { x, y } = remap(pt.x, pt.y)
           pt.x = x
           pt.y = y
         })
-        const pstr = changes.points.map((/** @type {{x: number, y: number}} */ pt) => `${pt.x},${pt.y}`).join(' ')
+        const pstr = changes.points.map((pt) => `${pt.x},${pt.y}`).join(' ')
         selected.setAttribute('points', pstr)
         runGeometryRemaps(selected, remap, scalew, scaleh, svgCanvas)
         break
       }
       case 'path': {
-        const supportsPathData =
-        typeof /** @type {any} */ (selected).getPathData === 'function' &&
-        typeof /** @type {any} */ (selected).setPathData === 'function'
+        const pathApi = selected as unknown as PathDataElement
+        const supportsPathData = typeof pathApi.getPathData === 'function' && typeof pathApi.setPathData === 'function'
 
         // Handle path segments
-        const segList = supportsPathData ? null : /** @type {any} */ (selected).pathSegList
-        const len = supportsPathData ? /** @type {any} */ (selected).getPathData().length : segList.numberOfItems
+        const segList = supportsPathData ? null : (selected as unknown as { pathSegList: LegacySegList }).pathSegList
+        const len = supportsPathData ? pathApi.getPathData().length : (segList as LegacySegList).numberOfItems
         const det = m.a * m.d - m.b * m.c
         const shouldToggleArcSweep = det < 0
         changes.d = []
         if (supportsPathData) {
-          const pathDataSegments = /** @type {any} */ (selected).getPathData()
+          const pathDataSegments = pathApi.getPathData()
           for (let i = 0; i < len; ++i) {
             const seg = pathDataSegments[i]
             const t = seg.type
             const type = pathMap.indexOf(t)
             if (type === -1) continue
             const values = seg.values || []
-            /** @type {Record<string, any>} */
-            const entry = { type }
+            const entry = { type } as PathSegEntry
             switch (t.toUpperCase()) {
               case 'M':
               case 'L':
@@ -375,7 +417,7 @@ export const init = (canvas) => {
           }
         } else {
           for (let i = 0; i < len; ++i) {
-            const seg = segList.getItem(i)
+            const seg = (segList as LegacySegList).getItem(i)
             changes.d[i] = {
               type: seg.pathSegType,
               x: seg.x,
@@ -452,11 +494,10 @@ export const init = (canvas) => {
         }
 
         let dstr = ''
-        /** @type {Array<{type: string, values: number[]}>} */
-        const newPathData = []
-        changes.d.forEach((/** @type {Record<string, any>} */ seg) => {
+        const newPathData: Array<{ type: string, values: number[] }> = []
+        changes.d.forEach((seg) => {
           const { type } = seg
-          const letter = /** @type {string} */ (pathMap[type])
+          const letter = pathMap[type] as string
           dstr += letter
           switch (type) {
             case 13: // relative horizontal line (h)
@@ -535,7 +576,7 @@ export const init = (canvas) => {
         selected.setAttribute('d', d)
         if (supportsPathData) {
           try {
-            /** @type {any} */ (selected).setPathData(newPathData)
+            pathApi.setPathData(newPathData)
           } catch (e) {
           // Fallback to 'd' attribute if setPathData is unavailable or throws.
           }
@@ -548,12 +589,12 @@ export const init = (canvas) => {
         // shape back to its pre-move/resize geometry. The M point is always the
         // center and the (sole) A/a segment always carries the radii.
         if (selected.hasAttribute('data-arc')) {
-          const arcSeg = changes.d.find((/** @type {Record<string, any>} */ seg) => seg.type === 10 || seg.type === 11)
-          selected.setAttribute('data-cx', changes.d[0].x)
-          selected.setAttribute('data-cy', changes.d[0].y)
+          const arcSeg = changes.d.find((seg) => seg.type === 10 || seg.type === 11)
+          selected.setAttribute('data-cx', String(changes.d[0].x))
+          selected.setAttribute('data-cy', String(changes.d[0].y))
           if (arcSeg) {
-            selected.setAttribute('data-rx', arcSeg.r1)
-            selected.setAttribute('data-ry', arcSeg.r2)
+            selected.setAttribute('data-rx', String(arcSeg.r1))
+            selected.setAttribute('data-ry', String(arcSeg.r2))
           }
         }
 

@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Recalculate dimensions and transformations of SVG elements.
  * @module recalculate
@@ -19,13 +18,16 @@ import {
 } from './math.ts'
 import { mergeDeep } from '../common/util.ts'
 import { remapSourceAttrs } from './geometry-remap-registry.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BBoxObject } from './bbox-utils.ts'
+import type { Command } from './history.js'
+import type { RemapChanges } from './coords.ts'
 
 /**
  * Attribute list to translate for each simple (non-points, non-path) tag
  * recalculateDimensions handles.
  */
-/** @type {Record<string, string[]>} */
-const TAG_RECALC_ATTRS = {
+const TAG_RECALC_ATTRS: Record<string, string[]> = {
   line: ['x1', 'y1', 'x2', 'y2'],
   circle: ['cx', 'cy', 'r'],
   ellipse: ['cx', 'cy', 'rx', 'ry'],
@@ -38,12 +40,12 @@ const TAG_RECALC_ATTRS = {
 
 /**
  * Translates a `points` attribute string (polyline/polygon) by tx/ty.
- * @param {string} pointsStr - The current `points` attribute value
- * @param {number} tx - The translation's x value
- * @param {number} ty - The translation's y value
- * @returns {string} The translated `points` attribute value
+ * @param pointsStr - The current `points` attribute value
+ * @param tx - The translation's x value
+ * @param ty - The translation's y value
+ * @returns The translated `points` attribute value
  */
-const translatePoints = (pointsStr, tx, ty) => pointsStr
+const translatePoints = (pointsStr: string, tx: number, ty: number): string => pointsStr
   .trim()
   .split(/\s+/)
   .map((pair) => {
@@ -54,24 +56,21 @@ const translatePoints = (pointsStr, tx, ty) => pointsStr
 
 /**
  * Initialize the recalculate module with the SVG canvas.
- * @function module:recalculate.init
- * @param {import('../svgcanvas.js').default} canvas - The SVG canvas object
- * @returns {void}
+ * @param canvas - The SVG canvas object
  */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const { convertToNum } = getUnits(canvas)
 
   /**
  * Updates a `<clipPath>` element's values based on the given translation.
- * @function module:recalculate.updateClipPath
- * @param {string} attr - The clip-path attribute value containing the clipPath's ID
- * @param {number} tx - The translation's x value
- * @param {number} ty - The translation's y value
- * @param {Element} [elem] - The element referencing the clipPath
- * @returns {string|undefined} The clip-path attribute used after updates.
+ * @param attr - The clip-path attribute value containing the clipPath's ID
+ * @param tx - The translation's x value
+ * @param ty - The translation's y value
+ * @param elem - The element referencing the clipPath
+ * @returns The clip-path attribute used after updates.
  */
-  const updateClipPath = (attr, tx, ty, elem) => {
+  const updateClipPath = (attr: string, tx: number, ty: number, elem?: Element): string | undefined => {
     const clipPath = svgCanvas.getRefElem(attr)
     if (!clipPath) return undefined
     if (elem && clipPath.id) {
@@ -80,7 +79,7 @@ export const init = (canvas) => {
         const refSelector = `[clip-path="url(#${clipPath.id})"]`
         const users = svgContent.querySelectorAll(refSelector)
         if (users.length > 1) {
-          const newClipPath = /** @type {Element} */ (clipPath.cloneNode(true))
+          const newClipPath = clipPath.cloneNode(true) as Element
           newClipPath.id = svgCanvas.getNextId()
           svgCanvas.findDefs().append(newClipPath)
           elem.setAttribute('clip-path', `url(#${newClipPath.id})`)
@@ -130,7 +129,7 @@ export const init = (canvas) => {
       return attr
     }
     const tag = (path.tagName || '').toLowerCase()
-    if ((tag === 'polyline' || tag === 'polygon') && !(/** @type {any} */ (path).points?.numberOfItems)) {
+    if ((tag === 'polyline' || tag === 'polygon') && !(path as SVGPolylineElement).points?.numberOfItems) {
       const points = (path.getAttribute('points') || '').trim()
       if (points) {
         path.setAttribute('points', translatePoints(points, tx, ty))
@@ -147,11 +146,10 @@ export const init = (canvas) => {
 
   /**
  * Recalculates the dimensions and transformations of a selected element.
- * @function module:recalculate.recalculateDimensions
- * @param {Element} selected - The DOM element to recalculate
- * @returns {import('./history.js').Command|null} Undo command object with the resulting change, or null if no change
+ * @param selected - The DOM element to recalculate
+ * @returns Undo command object with the resulting change, or null if no change
  */
-  const recalculateDimensions = selected => {
+  const recalculateDimensions = (selected: Element): Command | null => {
     if (!selected) return null
 
     // Don't recalculate dimensions for groups - this would push their transforms down to children
@@ -257,24 +255,24 @@ export const init = (canvas) => {
       : undefined
 
     // Store initial values affected by reducing the transform list
-    /** @type {Record<string, any>} */
-    let changes = {}
-    /** @type {Record<string, any>|null} */
-    let initial = null
-    /** @type {string[]} */
-    let attrs = []
+    let changes: Record<string, unknown> = {}
+    let initial: Record<string, unknown> | null = null
+    let attrs: string[] = []
+    // `changes` starts as the element's own values (a `points` or `d` string for those) and the remap rewrites it
+    const remapWith = (matrix: SVGMatrix): void => svgCanvas.remapElement(selected, changes as Partial<RemapChanges>, matrix)
 
     // Determine which attributes to adjust based on element type
     if (selected.tagName === 'polygon' || selected.tagName === 'polyline') {
       initial = {}
       initial.points = selected.getAttribute('points')
-      const list = /** @type {SVGPolygonElement} */ (selected).points
+      const list = (selected as SVGPolygonElement).points
       const len = list.numberOfItems
-      changes.points = new Array(len)
+      const points: Array<{ x: number, y: number }> = new Array(len)
       for (let i = 0; i < len; ++i) {
         const pt = list.getItem(i)
-        changes.points[i] = { x: pt.x, y: pt.y }
+        points[i] = { x: pt.x, y: pt.y }
       }
+      changes.points = points
     } else if (selected.tagName === 'path') {
       initial = {}
       initial.d = selected.getAttribute('d')
@@ -298,10 +296,11 @@ export const init = (canvas) => {
 
     // If initial values were not set for polygon/polyline/path, create a copy
     if (!initial) {
-      initial = /** @type {Record<string, any>} */ (mergeDeep({}, changes))
-      for (const [attr, val] of Object.entries(initial)) {
-        initial[attr] = convertToNum(attr, val)
+      const copy = mergeDeep({}, changes) as Record<string, unknown>
+      for (const [attr, val] of Object.entries(copy)) {
+        copy[attr] = convertToNum(attr, val as string | number)
       }
+      initial = copy
     }
     // An attribute the element did not have is put back by removing it, not by writing its default.
     for (const attr of attrs) {
@@ -315,20 +314,18 @@ export const init = (canvas) => {
     }
 
     // Both are set below whenever `angle` is, and only read then.
-    /** @type {{x: number, y: number}} */
-    let oldcenter = { x: 0, y: 0 }
-    /** @type {{x: number, y: number}} */
-    let newcenter = { x: 0, y: 0 }
+    let oldcenter: { x: number, y: number } = { x: 0, y: 0 }
+    let newcenter: { x: number, y: number } = { x: 0, y: 0 }
 
     // Non-group elements
 
     // Get the bounding box of the element
-    const box = /** @type {import('./bbox-utils.ts').BBoxObject} */ (getBBox(selected)) // null only for the guarded no-box cases
+    const box = getBBox(selected) as BBoxObject // null only for the guarded no-box cases
 
     // Handle elements without a bounding box (e.g., <defs>, <metadata>)
     if (!box && selected.tagName !== 'path') return null
 
-    let m // Transformation matrix
+    let m: SVGMatrix // Transformation matrix
 
     // Adjust for elements with x and y attributes
     let x = 0
@@ -411,7 +408,7 @@ export const init = (canvas) => {
         tlist.appendItem(newTransform)
       } else {
       // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
+        remapWith(m)
       }
 
       // Restore rotation if needed
@@ -432,7 +429,7 @@ export const init = (canvas) => {
         )
 
         // Remap the element with the extra transformation
-        svgCanvas.remapElement(selected, changes, extraTransform)
+        remapWith(extraTransform)
 
         if (tlist.numberOfItems) {
           tlist.insertItemBefore(newRotation, 0)
@@ -472,7 +469,7 @@ export const init = (canvas) => {
         tlist.appendItem(newTransform)
       } else {
       // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
+        remapWith(m)
       }
 
       // Restore rotation if needed
@@ -515,7 +512,7 @@ export const init = (canvas) => {
         tlist.appendItem(newTransform)
       } else {
       // Remap other elements normally
-        svgCanvas.remapElement(selected, changes, m)
+        remapWith(m)
       }
     } else {
     // Rotation or other transformations
@@ -541,7 +538,8 @@ export const init = (canvas) => {
     }
 
     // Record the changes for undo functionality
-    batchCmd.addSubCommand(new ChangeElementCommand(selected, initial))
+    // (some values are numbers; setAttribute coerces them back)
+    batchCmd.addSubCommand(new ChangeElementCommand(selected, initial as Record<string, string | null>))
 
     return batchCmd
   }

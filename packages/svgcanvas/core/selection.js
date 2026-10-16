@@ -142,7 +142,7 @@ export const init = (canvas) => {
     if (selectedElements.length === 1) {
       svgCanvas.selectorManager
         .requestSelector(selectedElements[0])
-        .showGrips(showGrips)
+        .showGrips(Boolean(showGrips))
     }
 
     // make sure the elements are in the correct order

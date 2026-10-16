@@ -9,7 +9,7 @@ describe('selection grip radius', () => {
   const load = async (matches) => {
     vi.resetModules()
     vi.stubGlobal('matchMedia', (q) => ({ matches: matches && q.includes('coarse'), media: q }))
-    return (await import('../../packages/svgcanvas/core/select.js')).gripRadius
+    return (await import('../../packages/svgcanvas/core/select.ts')).gripRadius
   }
 
   it('uses small handles for a mouse and large ones for a coarse (finger) pointer', async () => {
