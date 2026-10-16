@@ -275,7 +275,7 @@ third-party add-ons (none exist today, so it could also go).
 **Path:** the opt-out config exists (`disabledFeatures`, 2026-10-16: names with or without `ext-`, applied to the defaults
 and to an explicit `extensions` list; `docs/tutorials/ConfigOptions.md`). The plugin uses it (1.0.51, local commit: `disabledFeatures: ['opensave']`, its drift test now checks the
 disabled names are real built-ins). **Left: cut a fork release that contains `disabledFeatures` and pin it in the plugin's
-`SVGEDIT_RELEASE`** (still `v7.4.1-fork.7`, which lacks it), so a fresh clone or CI builds the same editor; then move
+`SVGEDIT_RELEASE`** (`v7.4.1-fork.7` lacks it; `v7.4.1-fork.8` has it), so a fresh clone or CI builds the same editor; then move
 features one at a time, deleting extension hooks as their last user goes; puppet warp after the `registerTool` session
 concept ([infrastructure](infrastructure.md) › Tier 0 follow-ups).
 

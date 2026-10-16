@@ -1,5 +1,13 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.8
+- Config: `disabledFeatures: ['opensave']` leaves built-in features out by name (the `ext-` prefix is optional), on the default list and on an explicit `extensions` list. A host lists what it does not want instead of mirroring every built-in, so new tools reach it without a change.
+- BREAKING (config): URL configuration is gone — the `preventAllURLConfig`, `preventURLContentLoading`, `lockExtensions` and `allowedOrigins` options, reading config or content from the page's query string, and `setConfig`'s `overwrite: false` mode. Use `setConfig` and `loadFromString` / `loadFromURL` / `loadFromDataURI`.
+- BREAKING (canvas members): `findSameAs`, `selectSameAs`, `splitIntoGrid`, `transformEach`, `clearSvgContentElement` and `sanitizeSvg` are module functions that take the canvas (`core/select-same.js`, `split-grid.js`, `transform-each.js`, `clear.ts`, `sanitize.js`); `snapDrawPoint`, `hoverDrawSnap`, `clearDrawSnap` and `clearDrawHover` are on `svgCanvas.drawSnap`; the pointer-gesture fields (`spaceKey`, `addedNew`, `groupRotateCenter`, `dragStartTransforms`, …) are on `svgCanvas.gesture`. Removed because nothing called them: `getCanvas`, `getVersion`, `getSnapToGrid`, `getPaintOpacity`, `setFillPaint`, `setStrokePaint`, `setIdPrefix`, `getFontFamily`, `getFontColor`, `getFontSize`.
+- BREAKING (engine imports): converted engine modules are TypeScript and are imported with their `.ts` extension (`@svgedit/svgcanvas/core/math.ts`, `common/util.ts`, `core/units.ts`, `model/index.ts`, …). Node 22.18+ is required (native type stripping).
+- Types: `ExtensionHookPayloads`, the document model's items and the host-facing canvas members the editor calls (`getMouseTarget`, `setCursorHint`, `snapToGrid`, `toolKeyDown`, …) are typed; declared-but-missing members (`undo`, `redo`, `getLayer`, `getNumLayers`, `unbind`, …) are removed from the declarations.
+- Tooling: ESLint with `neostandard` replaces `standard`; `npm run bundle-report` / `bundle-size`; the e2e run takes about 5 minutes (coverage is merged per worker); the agent docs (`.claude/`) are generated from the code where they can be (file map, command list).
+
 ## 7.4.1-fork.7
 - Debug log: an action stream records what the user did (commands with source, pointer, keys, selection, mode, tool gestures, history pushes) so a bug can be retraced; see `.claude/debug-log.md`.
 - Commands: `canvas_set_size`, `canvas_set_background`, `canvas_apply_layout`, `canvas_save_layout`, `canvas_delete_layout`; command params may declare `values` as a function; `commands.onRun` listeners and a `source` argument on `run`.
