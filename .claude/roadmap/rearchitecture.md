@@ -232,7 +232,7 @@ opportunistic and small per module.
 
 **Converted:** `proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`, `math`, `units`, `common/util`,
 `dataStorage`, `extension-hooks`, `draw-snap` (also the R2 pilot), `common/logger`, `common/browser`, `common/initGuard`, `encoding-utils`, `model/node`,
-`text-wrap` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
+`text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `width-profile` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
 **Left (the conversion):** `core/paint` and `core/touch` (DOM-heavy `any` / `init(svgCanvas)` shapes, easier after R2), then up the import graph, `svgcanvas.js` last; the editor

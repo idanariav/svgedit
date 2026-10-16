@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseProfile, formatProfile, validateProfile, isProfile, profileAt, profileAround, presetId, presetPoints, PRESETS,
   withPoint, withoutPoint, movedPoint, endPercents
-} from '../../packages/svgcanvas/core/width-profile.js'
+} from '../../packages/svgcanvas/core/width-profile.ts'
 
 describe('profile text', () => {
   it('round-trips', () => {

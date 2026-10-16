@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
 import { registerLiveEffect } from '../../packages/svgcanvas/core/live-effects.js'
-import { presetPoints } from '../../packages/svgcanvas/core/width-profile.js'
+import { presetPoints } from '../../packages/svgcanvas/core/width-profile.ts'
 import { planStack, removalSet, canAddStage, stackProblems, rebuildAfterRemap } from '../../packages/svgcanvas/core/live-stack.js'
 
 // Test-only effects: a plain shift, and a stroke-output one (like Scribble).

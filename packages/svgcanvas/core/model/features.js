@@ -15,7 +15,7 @@
  * @license MIT
  */
 import { CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, parseCornerSpec } from '../corner-radius.js'
-import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, parseTaper, parseTaperStyle } from '../width-profile.js'
+import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, parseTaper, parseTaperStyle } from '../width-profile.ts'
 import { DASH_FIT_ATTR, parseDashes } from '../dash-fit.js'
 import { BRUSH_ATTR, LIB_ATTR, parseBrush } from '../art-brush-canvas.js'
 import { BLEND_ATTR, parseBlend } from '../blend-canvas.js'
@@ -24,7 +24,7 @@ import { BLEND_ATTR, parseBlend } from '../blend-canvas.js'
  * @typedef {object} Features
  * @property {ReturnType<typeof parseCornerSpec>} [cornerRadius] `se:corner-radius`: one radius for every corner, or per-corner radii and kinds
  * @property {string} [cornerSource] `se:orig-d`: the path data the corners were cut from
- * @property {import('../width-profile.js').WidthPoint[]} [widthProfile] `se:width-profile`
+ * @property {import('../width-profile.ts').WidthPoint[]} [widthProfile] `se:width-profile`
  * @property {{start: number, end: number}} [taper] `se:taper`: end widths in percent
  * @property {{width: number, paint: string}} [taperStyle] `se:taper-style`
  * @property {string} [taperSource] `se:taper-d`: the centerline of a tapered or width-profiled outline

@@ -2,7 +2,7 @@
    write-only setters (src/crossOrigin) to observe assignment order/timing;
    they deliberately have no matching getter. */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { loadImage } from '../../packages/svgcanvas/core/load-image.js'
+import { loadImage } from '../../packages/svgcanvas/core/load-image.ts'
 
 describe('load-image', () => {
   let originalImage

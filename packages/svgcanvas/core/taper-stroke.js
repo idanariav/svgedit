@@ -44,9 +44,9 @@ import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import { registerLiveStage, canAddStage } from './live-stack.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.js'
 import { widthOutline } from './width-outline.js'
-import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.js'
+import { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR, WIDTH_PROFILE_ATTR, parseProfile, formatProfile, validateProfile, endPercents, isProfile } from './width-profile.ts'
 
-export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile.js'
+export { TAPER_ATTR, TAPER_SOURCE_ATTR, TAPER_STYLE_ATTR } from './width-profile.ts'
 
 /**
  * Quadratic-Bézier width profile through (0,s), (0.5,1), (1,e): full width
@@ -401,7 +401,7 @@ export const init = (canvas) => {
   /**
    * The width profile of an element (the selection's by default), or null for a plain or only-tapered stroke.
    * @param {Element} [elem]
-   * @returns {?import('./width-profile.js').WidthPoint[]}
+   * @returns {?import('./width-profile.ts').WidthPoint[]}
    */
   const getWidthProfile = (elem = svgCanvas.getSelectedElements().filter(Boolean)[0]) =>
     parseProfile(elem?.getAttribute(WIDTH_PROFILE_ATTR))
@@ -435,7 +435,7 @@ export const init = (canvas) => {
    * Draw `elem` (a path that can take a width profile) with the profile, regenerating the outline from its stored
    * centerline. Records no history: use it inside `transact` or a tool gesture.
    * @param {Element} elem
-   * @param {import('./width-profile.js').WidthPoint[]} points
+   * @param {import('./width-profile.ts').WidthPoint[]} points
    * @returns {boolean} false when nothing could be drawn (no width, no centerline).
    */
   const drawWidthProfile = (elem, points) => {
@@ -467,7 +467,7 @@ export const init = (canvas) => {
 
   /**
    * Give the selected strokes a width profile as one undo step (lines and polylines become paths).
-   * @param {import('./width-profile.js').WidthPoint[]} points
+   * @param {import('./width-profile.ts').WidthPoint[]} points
    * @returns {Element[]} the elements that took it.
    */
   const applyWidthProfile = (points) => {

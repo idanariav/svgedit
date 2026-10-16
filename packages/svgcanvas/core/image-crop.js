@@ -18,7 +18,7 @@
  */
 
 import { getHref, setHref } from './dom-utils.js'
-import { loadImage } from './load-image.js'
+import { loadImage } from './load-image.ts'
 import { NS } from './namespaces.ts'
 
 const MIN_SIZE = 4

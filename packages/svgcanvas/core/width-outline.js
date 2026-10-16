@@ -18,7 +18,7 @@
  */
 
 import { parseAnchors, segCubic, segmentCount, isLineSegment } from './anchor-path.js'
-import { profileAround } from './width-profile.js'
+import { profileAround } from './width-profile.ts'
 
 /** @typedef {{x: number, y: number}} Pt */
 /** @typedef {import('./anchor-path.js').Cubic} Cubic */
@@ -265,7 +265,7 @@ const capPoints = (ring, c, u, v, r0, r1, cap) => {
  * The outline polygons of one subpath: one ring for an open subpath, two opposite loops for a closed one.
  * @param {import('./anchor-path.js').SubPath} sp
  * @param {number} width
- * @param {import('./width-profile.js').WidthPoint[]} profile
+ * @param {import('./width-profile.ts').WidthPoint[]} profile
  * @param {Required<OutlineOptions>} o
  * @returns {Pt[][]}
  */
@@ -339,7 +339,7 @@ const f = (n) => String(Math.round(n * 1000) / 1000)
  * with the non-zero rule.
  * @param {string} d the centerline
  * @param {number} width the stroke's full width
- * @param {import('./width-profile.js').WidthPoint[]} profile
+ * @param {import('./width-profile.ts').WidthPoint[]} profile
  * @param {OutlineOptions} [options]
  * @returns {?string} null when there is nothing to stroke (no path, no width)
  */

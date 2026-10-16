@@ -26,7 +26,7 @@
 import { registerAttrValidator } from './drawing-invariants.js'
 import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.js'
 import { startTangent, endTangent } from './bezier-fit.js'
-import { TAPER_ATTR } from './width-profile.js'
+import { TAPER_ATTR } from './width-profile.ts'
 
 export const DASH_FIT_ATTR = 'se:dash-fit'
 

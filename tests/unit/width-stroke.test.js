@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
-import { presetPoints, parseProfile } from '../../packages/svgcanvas/core/width-profile.js'
+import { presetPoints, parseProfile } from '../../packages/svgcanvas/core/width-profile.ts'
 
 describe('width profiles on the canvas', () => {
   let svgCanvas

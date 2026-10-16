@@ -63,15 +63,15 @@
   "core/live-effects-distort.js",
   "core/live-effects.js",
   "core/live-stack.js",
-  "core/load-image.js",
+  "core/load-image.ts",
   "core/math.ts",
   "core/measure.js",
   "core/model/drawing.js",
   "core/model/features.js",
   "core/model/index.js",
   "core/model/node.ts",
-  "core/model/parse.js",
-  "core/model/serialize.js",
+  "core/model/parse.ts",
+  "core/model/serialize.ts",
   "core/namespaces.ts",
   "core/object-state.js",
   "core/paint.js",
@@ -106,7 +106,7 @@
   "core/split-grid.js",
   "core/svg-defs.js",
   "core/svg-exec.js",
-  "core/svgroot.js",
+  "core/svgroot.ts",
   "core/taper-stroke.js",
   "core/text-actions.js",
   "core/text-attrs.js",
@@ -121,6 +121,6 @@
   "core/units.ts",
   "core/warp.js",
   "core/width-outline.js",
-  "core/width-profile.js"
+  "core/width-profile.ts"
  ]
 }

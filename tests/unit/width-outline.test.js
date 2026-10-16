@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { widthOutline, outlineArea } from '../../packages/svgcanvas/core/width-outline.js'
-import { presetPoints } from '../../packages/svgcanvas/core/width-profile.js'
+import { presetPoints } from '../../packages/svgcanvas/core/width-profile.ts'
 
 const UNIFORM = [[0, 1, 1], [1, 1, 1]]
 const area = (d) => Math.abs(outlineArea(d))

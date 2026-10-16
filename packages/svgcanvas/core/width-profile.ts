@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Width profiles: the data behind variable-width strokes (the Width tool and the presets).
  *
@@ -26,20 +25,14 @@ export const TAPER_SOURCE_ATTR = 'se:taper-d'
 /** `se:taper-style="width|paint"`: the stroke width and paint the outline stands for. */
 export const TAPER_STYLE_ATTR = 'se:taper-style'
 
-/**
- * @param {?string} str an `se:taper` value
- * @returns {?{start: number, end: number}} null when it is not `start,end`
- */
-export const parseTaper = (str) => {
+/** Parses an `se:taper` value; null when it is not `start,end`. */
+export const parseTaper = (str: string | null): { start: number, end: number } | null => {
   const parts = String(str ?? '').split(',').map(Number)
   return parts.length === 2 && parts.every(Number.isFinite) ? { start: parts[0], end: parts[1] } : null
 }
 
-/**
- * @param {?string} str an `se:taper-style` value
- * @returns {?{width: number, paint: string}} null when it is not `width|paint`
- */
-export const parseTaperStyle = (str) => {
+/** Parses an `se:taper-style` value; null when it is not `width|paint`. */
+export const parseTaperStyle = (str: string | null | undefined): { width: number, paint: string } | null => {
   const m = /^([\d.]+)\|(.+)$/.exec(str ?? '')
   return m && Number.isFinite(Number(m[1])) ? { width: Number(m[1]), paint: m[2] } : null
 }
@@ -47,13 +40,11 @@ export const parseTaperStyle = (str) => {
 /** Points this close in `t` are at the same place (the two sides of a discontinuous point). */
 export const SAME_T = 1e-6
 
-/** @typedef {[number, number, number]} WidthPoint `[t, left, right]` */
+/** `[t, left, right]` */
+export type WidthPoint = [number, number, number]
 
-/**
- * The built-in profiles, in menu order. The plain stroke is "no profile".
- * @type {ReadonlyArray<{id: string, label: string, points: ReadonlyArray<WidthPoint>}>}
- */
-export const PRESETS = [
+/** The built-in profiles, in menu order. The plain stroke is "no profile". */
+export const PRESETS: ReadonlyArray<{ id: string, label: string, points: ReadonlyArray<WidthPoint> }> = [
   { id: 'lens', label: 'Lens', points: [[0, 0, 0], [0.5, 1, 1], [1, 0, 0]] },
   { id: 'taperStart', label: 'Taper start', points: [[0, 0, 0], [1, 1, 1]] },
   { id: 'taperEnd', label: 'Taper end', points: [[0, 1, 1], [1, 0, 0]] },
@@ -65,48 +56,27 @@ export const PRESETS = [
   { id: 'wave', label: 'Wave', points: [[0, 0.3, 0.3], [0.25, 1, 1], [0.5, 0.3, 0.3], [0.75, 1, 1], [1, 0.3, 0.3]] }
 ]
 
-/** @param {number} n */
-const num = (n) => Math.round(n * 1e5) / 1e5
+const num = (n: number) => Math.round(n * 1e5) / 1e5
 
-/**
- * Whether the points form a profile: at least two, `t` in 0–1 and not going back, widths finite and not negative.
- * @param {WidthPoint[]} points
- * @returns {boolean}
- */
-export const isProfile = (points) => Array.isArray(points) && points.length >= 2 &&
+/** Whether the points form a profile: at least two, `t` in 0–1 and not going back, widths finite and not negative. */
+export const isProfile = (points: WidthPoint[]): boolean => Array.isArray(points) && points.length >= 2 &&
   points.every(([t, l, r], i) => [t, l, r].every(Number.isFinite) && t >= 0 && t <= 1 && l >= 0 && r >= 0 &&
     (i === 0 || t >= points[i - 1][0]))
 
-/**
- * @param {?string} str an `se:width-profile` value
- * @returns {?WidthPoint[]} null when it is not a profile
- */
-export const parseProfile = (str) => {
+/** Parses an `se:width-profile` value; null when it is not a profile. */
+export const parseProfile = (str: string | null | undefined): WidthPoint[] | null => {
   if (!str) return null
   const points = str.split(';').map((p) => p.split(':').map(Number))
-  return points.every((p) => p.length === 3) && isProfile(/** @type {any} */ (points)) ? /** @type {WidthPoint[]} */ (points) : null
+  return points.every((p) => p.length === 3) && isProfile(points as WidthPoint[]) ? points as WidthPoint[] : null
 }
 
-/**
- * @param {WidthPoint[]} points
- * @returns {string}
- */
-export const formatProfile = (points) => points.map((p) => p.map(num).join(':')).join(';')
+export const formatProfile = (points: WidthPoint[]): string => points.map((p) => p.map(num).join(':')).join(';')
 
-/**
- * Validator for `registerAttrValidator`.
- * @param {string} value
- * @returns {true|string}
- */
-export const validateProfile = (value) => (parseProfile(value) ? true : 'is not "t:left:right;…" (t rising, 0–1)')
+/** Validator for `registerAttrValidator`. */
+export const validateProfile = (value: string): true | string => (parseProfile(value) ? true : 'is not "t:left:right;…" (t rising, 0–1)')
 
-/**
- * The (left, right) factors at `t`, linear between points.
- * @param {ReadonlyArray<WidthPoint>} points
- * @param {number} t
- * @returns {[number, number]}
- */
-export const profileAt = (points, t) => {
+/** The (left, right) factors at `t`, linear between points. */
+export const profileAt = (points: ReadonlyArray<WidthPoint>, t: number): [number, number] => {
   if (!points.length) return [1, 1]
   if (t <= points[0][0]) return [points[0][1], points[0][2]]
   for (let i = 1; i < points.length; i++) {
@@ -124,11 +94,8 @@ export const profileAt = (points, t) => {
 /**
  * The (left, right) factors just before and just after `t`: they differ only at a discontinuous point
  * (two points at `t`).
- * @param {ReadonlyArray<WidthPoint>} points
- * @param {number} t
- * @returns {[[number, number], [number, number]]}
  */
-export const profileAround = (points, t) => {
+export const profileAround = (points: ReadonlyArray<WidthPoint>, t: number): [[number, number], [number, number]] => {
   const i = points.findIndex((p) => Math.abs(p[0] - t) <= SAME_T)
   if (i >= 0) {
     let j = i
@@ -139,42 +106,29 @@ export const profileAround = (points, t) => {
   return [v, v]
 }
 
-/**
- * The id of the preset these points are, or `'custom'`.
- * @param {?ReadonlyArray<WidthPoint>} points null for the plain stroke
- * @returns {string} `'uniform'`, a preset id or `'custom'`
- */
-export const presetId = (points) => {
+/** The id of the preset these points are: `'uniform'` for the plain stroke (null), a preset id or `'custom'`. */
+export const presetId = (points: ReadonlyArray<WidthPoint> | null): string => {
   if (!points) return 'uniform'
-  /** @type {(a: readonly (readonly number[])[], b: readonly (readonly number[])[]) => boolean} */
-  const same = (a, b) => a.length === b.length && a.every((p, i) => p.every((v, k) => Math.abs(v - b[i][k]) < 1e-6))
+  const same = (a: readonly (readonly number[])[], b: readonly (readonly number[])[]): boolean => a.length === b.length && a.every((p, i) => p.every((v, k) => Math.abs(v - b[i][k]) < 1e-6))
   return PRESETS.find((p) => same(p.points, points))?.id ?? 'custom'
 }
 
-/**
- * @param {string} id
- * @returns {?WidthPoint[]} a copy of the preset's points
- */
-export const presetPoints = (id) => PRESETS.find((p) => p.id === id)?.points.map((p) => /** @type {WidthPoint} */ ([...p])) ?? null
+/** A copy of the preset's points. */
+export const presetPoints = (id: string): WidthPoint[] | null => PRESETS.find((p) => p.id === id)?.points.map((p): WidthPoint => [...p]) ?? null
 
 /**
  * The profile with a width point set at `t`: an existing point there (within `SAME_T`) is changed, else one
  * is added in order.
- * @param {ReadonlyArray<WidthPoint>} points
- * @param {number} t
- * @param {number} left
- * @param {number} right
- * @returns {WidthPoint[]}
  */
-export const withPoint = (points, t, left, right) => {
-  const out = points.map((p) => /** @type {WidthPoint} */ ([...p]))
+export const withPoint = (points: ReadonlyArray<WidthPoint>, t: number, left: number, right: number): WidthPoint[] => {
+  const out = points.map((p): WidthPoint => [...p])
   const i = out.findIndex((p) => Math.abs(p[0] - t) <= SAME_T)
   if (i >= 0) {
     out[i] = [out[i][0], Math.max(0, left), Math.max(0, right)]
     return out
   }
   const at = out.findIndex((p) => p[0] > t)
-  const point = /** @type {WidthPoint} */ ([t, Math.max(0, left), Math.max(0, right)])
+  const point: WidthPoint = [t, Math.max(0, left), Math.max(0, right)]
   if (at < 0) out.push(point)
   else out.splice(at, 0, point)
   return out
@@ -183,25 +137,16 @@ export const withPoint = (points, t, left, right) => {
 /**
  * The profile without the point at `index`. A profile keeps at least two points: removing one of two
  * gives the profile back unchanged.
- * @param {ReadonlyArray<WidthPoint>} points
- * @param {number} index
- * @returns {WidthPoint[]}
  */
-export const withoutPoint = (points, index) => {
-  const out = points.map((p) => /** @type {WidthPoint} */ ([...p]))
+export const withoutPoint = (points: ReadonlyArray<WidthPoint>, index: number): WidthPoint[] => {
+  const out = points.map((p): WidthPoint => [...p])
   if (out.length > 2 && index >= 0 && index < out.length) out.splice(index, 1)
   return out
 }
 
-/**
- * The profile with the point at `index` moved to `t`, kept between its neighbours.
- * @param {ReadonlyArray<WidthPoint>} points
- * @param {number} index
- * @param {number} t
- * @returns {WidthPoint[]}
- */
-export const movedPoint = (points, index, t) => {
-  const out = points.map((p) => /** @type {WidthPoint} */ ([...p]))
+/** The profile with the point at `index` moved to `t`, kept between its neighbours. */
+export const movedPoint = (points: ReadonlyArray<WidthPoint>, index: number, t: number): WidthPoint[] => {
+  const out = points.map((p): WidthPoint => [...p])
   if (index < 0 || index >= out.length) return out
   const lo = index > 0 ? out[index - 1][0] + SAME_T * 10 : 0
   const hi = index < out.length - 1 ? out[index + 1][0] - SAME_T * 10 : 1
@@ -212,11 +157,8 @@ export const movedPoint = (points, index, t) => {
 /**
  * The "taper" a profile amounts to at each end, in percent of the full width (the mean of its two sides):
  * what `se:taper` records so that code that only asks "is this stroke tapered" keeps working.
- * @param {ReadonlyArray<WidthPoint>} points
- * @returns {[number, number]}
  */
-export const endPercents = (points) => {
-  /** @param {number[]} p */
-  const mean = (p) => Math.round(((p[1] + p[2]) / 2) * 100)
+export const endPercents = (points: ReadonlyArray<WidthPoint>): [number, number] => {
+  const mean = (p: number[]) => Math.round(((p[1] + p[2]) / 2) * 100)
   return [mean(points[0]), mean(points[points.length - 1])]
 }

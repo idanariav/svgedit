@@ -43,7 +43,7 @@ const editorJsFiles = walk(EDITOR_ROOT, ['.js'])
 // a handful of DOM nodes (canvasBackground, ...) that extensions legitimately
 // look up by id. Only used to seed the known-id/class set below -- its own
 // outgoing references are out of scope for this sweep.
-const svgcanvasJsFiles = walk(SVGCANVAS_ROOT, ['.js']).filter((f) => !f.endsWith('.test.js'))
+const svgcanvasJsFiles = walk(SVGCANVAS_ROOT, ['.js', '.ts']).filter((f) => !f.endsWith('.test.js') && !f.endsWith('.d.ts'))
 
 const knownIds = new Set()
 const knownClasses = new Set()

@@ -78,7 +78,7 @@
 | `live-effects-distort.js` | Distort & stylize live effects: Roughen, Zig Zag, Pucker & Bloat, Twist, Tweak, Round Corners and Scribble |
 | `live-effects.js` | Live (re-editable) path-geometry effects — the shared foundation for Roughen, Zig Zag, Warp, … Each effect is a pure function over anchor subpaths registered here; this module owns the attribute plumbing so an effect is… |
 | `live-stack.js` | The live stack: how corner radius, live effects and a variable-width stroke combine on one element |
-| `load-image.js` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
+| `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |
 | `measure.js` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
 | `namespaces.ts` | Namespaces or tools therefor |
@@ -115,7 +115,7 @@
 | `split-grid.js` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.js` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.js` | Tools for svg |
-| `svgroot.js` | Tools for SVG Root Element |
+| `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
 | `taper-stroke.js` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
 | `text-attrs.js` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
@@ -130,7 +130,7 @@
 | `units.ts` | Tools for working with units |
 | `warp.js` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
 | `width-outline.js` | Variable-width strokes: the filled outline of a path stroked with a width profile |
-| `width-profile.js` | Width profiles: the data behind variable-width strokes (the Width tool and the presets) |
+| `width-profile.ts` | Width profiles: the data behind variable-width strokes (the Width tool and the presets) |
 
 ### `packages/svgcanvas/core/model/`
 
@@ -140,8 +140,8 @@
 | `features.js` | Document model, layer 2b: the `se:*` features of one element as typed fields |
 | `index.js` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.js`, `parse.js`, `serialize.js`) and a typed read-only view of a drawing over it (`drawing.js`) |
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
-| `parse.js` | Document model: SVG/XML text -> persistent tree (see `node.js`) |
-| `serialize.js` | Document model: persistent tree -> SVG/XML text (see `node.js`, `parse.js`) |
+| `parse.ts` | Document model: SVG/XML text -> persistent tree (see `node.ts`) |
+| `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.js`) |
 
 ### `scripts/`
 

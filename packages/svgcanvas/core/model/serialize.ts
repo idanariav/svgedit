@@ -1,6 +1,5 @@
-// @ts-check
 /**
- * Document model: persistent tree -> SVG/XML text (see `node.js`, `parse.js`).
+ * Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.js`).
  *
  * One canonical spelling, the editor's own (`toXml` escaping, `<x/>` for an empty element, attributes in the order the
  * tree holds them), so a file the editor saved parses and serializes back to the same bytes.
@@ -13,21 +12,16 @@
  */
 import { toXml } from '../encoding-utils.ts'
 
-/** @typedef {import('./node.ts').ModelNode} ModelNode */
-/** @typedef {import('./node.ts').ModelElement} ModelElement */
-/** @typedef {import('./node.ts').ModelDocument} ModelDocument */
-/** @typedef {import('./node.ts').ModelMisc} ModelMisc */
-/** @typedef {{format?: 'preserve' | 'indent'}} SerializeOptions */
+import type { ModelNode, ModelElement, ModelDocument, ModelMisc } from './node.ts'
+
+export interface SerializeOptions { format?: 'preserve' | 'indent' }
 
 /** Attribute values keep their tabs and line breaks as character references (a raw one is normalised to a space on parse). */
-const attrValue = (/** @type {string} */ v) => toXml(v).replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;')
-const attrs = (/** @type {ModelElement} */ el) => el.attrs.map((a) => ` ${a.name}="${attrValue(a.value)}"`).join('')
+const attrValue = (v: string) => toXml(v).replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;')
+const attrs = (el: ModelElement) => el.attrs.map((a) => ` ${a.name}="${attrValue(a.value)}"`).join('')
 
-/**
- * @param {ModelNode} node
- * @returns {string} a node that is not an element
- */
-const leaf = (node) => {
+/** A node that is not an element. */
+const leaf = (node: ModelNode | ModelMisc): string => {
   switch (node.kind) {
     case 'text': return toXml(node.value)
     case 'cdata': return `<![CDATA[${node.value}]]>`
@@ -37,21 +31,12 @@ const leaf = (node) => {
   }
 }
 
-/**
- * @param {ModelElement} el
- * @returns {string}
- */
-const preserve = (el) => {
+const preserve = (el: ModelElement): string => {
   if (!el.children.length) return `<${el.name}${attrs(el)}/>`
   return `<${el.name}${attrs(el)}>${el.children.map((c) => (c.kind === 'element' ? preserve(c) : leaf(c))).join('')}</${el.name}>`
 }
 
-/**
- * @param {ModelElement} el
- * @param {number} depth
- * @returns {string}
- */
-const indented = (el, depth) => {
+const indented = (el: ModelElement, depth: number): string => {
   const pad = ' '.repeat(depth)
   if (!el.children.length) return `${pad}<${el.name}${attrs(el)}/>`
   let out = `${pad}<${el.name}${attrs(el)}>`
@@ -66,11 +51,7 @@ const indented = (el, depth) => {
   return out + (inline ? '' : `\n${pad}`) + `</${el.name}>`
 }
 
-/**
- * @param {ModelMisc} node
- * @returns {string}
- */
-const misc = (node) => {
+const misc = (node: ModelMisc): string => {
   if (node.kind === 'decl') {
     const enc = node.encoding === undefined ? '' : ` encoding="${node.encoding}"`
     const sa = node.standalone === undefined ? '' : ` standalone="${node.standalone}"`
@@ -80,23 +61,13 @@ const misc = (node) => {
   return leaf(node)
 }
 
-/**
- * @param {ModelDocument} doc
- * @param {SerializeOptions} [options]
- * @returns {string}
- */
-export const serializeSvg = (doc, options = {}) => {
+export const serializeSvg = (doc: ModelDocument, options: SerializeOptions = {}): string => {
   const body = options.format === 'indent' ? indented(doc.root, 0) : preserve(doc.root)
   return [...doc.prolog.map(misc), body, ...doc.epilog.map(misc)].join('\n')
 }
 
-/**
- * Serialize one subtree (an element or any other node), without the document wrapper.
- * @param {ModelNode} node
- * @param {SerializeOptions} [options]
- * @returns {string}
- */
-export const serializeNode = (node, options = {}) => {
+/** Serialize one subtree (an element or any other node), without the document wrapper. */
+export const serializeNode = (node: ModelNode, options: SerializeOptions = {}): string => {
   if (node.kind !== 'element') return leaf(node)
   return options.format === 'indent' ? indented(node, 0) : preserve(node)
 }

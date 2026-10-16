@@ -3,7 +3,7 @@ import { SeSettingsPopover } from './seSettingsPopover.js'
 import { ownerEditor } from '../domScope.js'
 import './seSpinInput.js'
 import './seSelect.js'
-import { PRESETS, presetId, presetPoints } from '@svgedit/svgcanvas/core/width-profile.js'
+import { PRESETS, presetId, presetPoints } from '@svgedit/svgcanvas/core/width-profile.ts'
 
 const TEMPLATE_HTML = `
   <style>

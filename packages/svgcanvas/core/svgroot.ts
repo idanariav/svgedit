@@ -1,7 +1,6 @@
-// @ts-check
 /**
- * Tools for SVG Root Element.
- * @module svgcanvas
+ * The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from.
+ * @module svgroot
  * @license MIT
  *
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
@@ -9,14 +8,9 @@
 import { NS } from './namespaces.ts'
 import { text2xml } from './encoding-utils.ts'
 
-/**
-* @function module:svgcanvas.svgRootElement svgRootElement the svg node and its children.
-* @param {Document} svgdoc - window.document
-* @param {ArrayLike<number|string>} dimensions - dimensions of width and height
-* @returns {SVGSVGElement}
-*/
-export const svgRootElement = (svgdoc, dimensions) => {
-  return /** @type {SVGSVGElement} */ (/** @type {unknown} */ (svgdoc.importNode(
+/** The svg root node and its children; `dimensions` is width and height. */
+export const svgRootElement = (svgdoc: Document, dimensions: ArrayLike<number | string>): SVGSVGElement => {
+  return (svgdoc.importNode(
     text2xml(
       `<svg id="svgroot" xmlns="${NS.SVG}" xlinkns="${NS.XLINK}" width="${dimensions[0]}" 
         height="${dimensions[1]}" x="${dimensions[0]}" y="${dimensions[1]}" overflow="visible">
@@ -33,5 +27,5 @@ export const svgRootElement = (svgdoc, dimensions) => {
       </svg>`
     ).documentElement,
     true
-  )))
+  ) as unknown) as SVGSVGElement
 }

@@ -1,7 +1,7 @@
 // traceImage.js — `traceImageToSvg(imageElem, { preset, numberofcolors })` — vectorizes a selected `<image>` (PNG/raster) into editable `<path>` elements via `imagetracerjs`, positioned over the original…
 import ImageTracer from 'imagetracerjs'
 import { insertSvgElements } from './insertImage.js'
-import { loadImage } from '@svgedit/svgcanvas/core/load-image.js'
+import { loadImage } from '@svgedit/svgcanvas/core/load-image.ts'
 import { traceCenterline } from './traceCenterline.js'
 
 /**
