@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Grouping operations (group, ungroup, convert-to-group, push group properties
  * down to children), split out of selected-elem.js. Created per SvgCanvas
@@ -22,6 +21,7 @@ import {
 } from './math.ts'
 import { isGecko } from '../common/browser.ts'
 import { getParents } from '../common/util.ts'
+import type SvgCanvas from '../svgcanvas.js'
 
 const {
   Command,
@@ -32,24 +32,20 @@ const {
   ChangeElementCommand
 } = hstry
 
-/** @param {import('../svgcanvas.js').default} canvas */
-export const init = (canvas) => {
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
  * Wraps all the selected elements in a group (`g`) element.
- * @function module:selected-elem.SvgCanvas#groupSelectedElements
- * @param {"a"|"g"} [type="g"] - type of element to group into, defaults to `<g>`
- * @param {string} [urlArg]
- * @returns {void}
+ * @param type - type of element to group into, defaults to `<g>`
  */
-  const groupSelectedElements = (type, urlArg) => {
+  const groupSelectedElements = (type?: string, urlArg?: string): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     if (!type) {
       type = 'g'
     }
     let cmdStr = ''
-    let url
+    let url: string | undefined
 
     switch (type) {
       case 'a': {
@@ -74,7 +70,7 @@ export const init = (canvas) => {
       }
     })
     if (type === 'a') {
-      setHref(g, /** @type {string} */ (url))
+      setHref(g, url as string)
     }
     batchCmd.addSubCommand(new InsertElementCommand(g))
 
@@ -86,16 +82,16 @@ export const init = (canvas) => {
         continue
       }
 
-      const elemParent = /** @type {Element} */ (elem.parentNode)
+      const elemParent = elem.parentNode as Element
       if (elemParent.tagName === 'a' && elemParent.childNodes.length === 1) {
         elem = elemParent
       }
 
-      const oldNextSibling = /** @type {Element|null} */ (elem.nextSibling)
+      const oldNextSibling = elem.nextSibling as Element | null
       const oldParent = elem.parentNode
       g.append(elem)
       batchCmd.addSubCommand(
-        new MoveElementCommand(elem, oldNextSibling, /** @type {Element} */ (oldParent))
+        new MoveElementCommand(elem, oldNextSibling, oldParent as Element)
       )
     }
     if (!batchCmd.isEmpty()) {
@@ -109,17 +105,13 @@ export const init = (canvas) => {
   /**
  * Pushes all appropriate parent group properties down to its children, then
  * removes them from the group.
- * @function module:selected-elem.SvgCanvas#pushGroupProperty
- * @param {SVGAElement|SVGGElement} g
- * @param {boolean} undoable
- * @returns {import('./history.js').BatchCommand|void}
  */
-  const pushGroupProperty = (g, undoable) => {
+  const pushGroupProperty = (g: SVGAElement | SVGGElement, undoable: boolean): hstry.BatchCommand | void => {
     const children = g.childNodes
     const len = children.length
     const xform = g.getAttribute('transform')
 
-    const glist = /** @type {SVGTransformList} */ (getTransformList(g))
+    const glist = getTransformList(g) as SVGTransformList
     const m = transformListToTransform(glist).matrix
 
     const batchCmd = new BatchCommand('Push group properties')
@@ -133,34 +125,32 @@ export const init = (canvas) => {
 
     const gangle = getRotationAngle(g)
 
-    /** @type {{filter: string|null, opacity: any}} */
-    const gattrs = {
+    const gattrs: { filter: string | null, opacity: string | null } = {
       filter: g.getAttribute('filter'),
       opacity: g.getAttribute('opacity')
     }
-    let gfilter
-    let gblur
-    /** @type {Record<string, any>} */
-    let changes
+    let gfilter: Element | null | undefined
+    let gblur: number | string | undefined
+    let changes: Record<string, string>
     const drawing = svgCanvas.getDrawing()
 
     for (let i = 0; i < len; i++) {
-      const elem = /** @type {Element} */ (children[i])
+      const elem = children[i] as Element
 
       if (elem.nodeType !== 1) {
         continue
       }
 
-      if (gattrs.opacity !== null && gattrs.opacity !== 1) {
+      if (gattrs.opacity !== null) { // (the attribute is a string, so it was never equal to 1)
       // const c_opac = elem.getAttribute('opacity') || 1;
         const newOpac =
-        Math.round(Number(elem.getAttribute('opacity') || 1) * gattrs.opacity * 100) /
+        Math.round(Number(elem.getAttribute('opacity') || 1) * Number(gattrs.opacity) * 100) /
         100
         svgCanvas.changeSelectedAttribute('opacity', newOpac, [elem])
       }
 
       if (gattrs.filter) {
-        let cblur = svgCanvas.getBlur(elem)
+        let cblur: number | string = svgCanvas.getBlur(elem)
         const origCblur = cblur
         if (!gblur) {
           gblur = svgCanvas.getBlur(g)
@@ -213,13 +203,12 @@ export const init = (canvas) => {
 
         // Update blur value
         if (cblur) {
-          svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [(/** @type {Element} */ (blurElem))])
-          svgCanvas.setBlurOffsets(/** @type {Element} */ (gfilter), Number(cblur))
+          svgCanvas.changeSelectedAttribute('stdDeviation', cblur, [blurElem as Element])
+          svgCanvas.setBlurOffsets(gfilter as Element, Number(cblur))
         }
       }
 
-      /** @type {SVGTransformList|null|undefined} */
-      let chtlist = getTransformList(elem)
+      let chtlist: SVGTransformList | null | undefined = getTransformList(elem)
 
       // Don't process gradient transforms
       if (elem.tagName.includes('Gradient')) {
@@ -364,30 +353,26 @@ export const init = (canvas) => {
 
   /**
  * Converts selected/given `<use>` or child SVG element to a group.
- * @function module:selected-elem.SvgCanvas#convertToGroup
- * @param {Element} elem
- * @fires module:selected-elem.SvgCanvas#event:selected
- * @returns {void}
  */
-  const convertToGroup = elem => {
+  const convertToGroup = (elem: Element): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     if (!elem) {
       elem = selectedElements[0]
     }
     const $elem = elem
     const batchCmd = new BatchCommand()
-    let ts
+    let ts: string
     const dataStorage = svgCanvas.getDataStorage()
     if (dataStorage.has($elem, 'gsvg')) {
     // Use the gsvg as the new group
-      const svg = /** @type {Element} */ (elem.firstChild)
+      const svg = elem.firstChild as Element
       const pt = {
         x: Number(svg.getAttribute('x')),
         y: Number(svg.getAttribute('y'))
       }
 
       // $(elem.firstChild.firstChild).unwrap();
-      const firstChild = /** @type {any} */ (/** @type {ChildNode} */ (elem.firstChild).firstChild)
+      const firstChild = (elem.firstChild as ChildNode).firstChild as Element | null
       if (firstChild) {
         const container = svg
         // Snapshot before/after as detached clones (rather than innerHTML
@@ -397,13 +382,12 @@ export const init = (canvas) => {
         const beforeNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
         firstChild.outerHTML = firstChild.innerHTML
         const afterNodes = Array.from(container.childNodes).map(n => n.cloneNode(true))
-        /** @param {Node[]} nodes */
-        const replaceChildren = nodes => {
+        const replaceChildren = (nodes: Node[]): void => {
           while (container.firstChild) { container.removeChild(container.firstChild) }
           nodes.forEach(n => container.appendChild(n.cloneNode(true)))
         }
         const unwrapCmd = new Command()
-        ;/** @type {any} */ (unwrapCmd).text = 'Unwrap SVG'
+        ;(unwrapCmd as unknown as { text: string }).text = 'Unwrap SVG'
         unwrapCmd.elements = () => [elem]
         unwrapCmd.apply = handler => {
           Command.prototype.apply.call(unwrapCmd, handler, () => {
@@ -420,7 +404,7 @@ export const init = (canvas) => {
       dataStorage.remove(elem, 'gsvg')
 
       const oldTransform = elem.getAttribute('transform') || ''
-      const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+      const tlist = getTransformList(elem) as SVGTransformList
       const xform = svgCanvas.getSvgRoot().createSVGTransform()
       xform.setTranslate(pt.x, pt.y)
       tlist.appendItem(xform)
@@ -457,7 +441,7 @@ export const init = (canvas) => {
       // Not ideal, but works
       ts += ' translate(' + (pos.x || 0) + ',' + (pos.y || 0) + ')'
 
-      const useParent = /** @type {Element} */ ($elem.parentNode)
+      const useParent = $elem.parentNode as Element
       const useNextSibling = $elem.nextSibling
 
       // Remove <use> element
@@ -479,7 +463,7 @@ export const init = (canvas) => {
       const g = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'g')
       const childs = elem.childNodes
 
-      let i
+      let i: number
       for (i = 0; i < childs.length; i++) {
         g.append(childs[i].cloneNode(true))
       }
@@ -499,7 +483,7 @@ export const init = (canvas) => {
         g.setAttribute('transform', ts)
       }
 
-      const parent = /** @type {Element} */ (elem.parentNode)
+      const parent = elem.parentNode as Element
 
       svgCanvas.uniquifyElems(g)
 
@@ -553,7 +537,7 @@ export const init = (canvas) => {
 
       // Give ID for any visible element missing one
       const visElems = g.querySelectorAll(svgCanvas.getVisElems())
-      Array.prototype.forEach.call(visElems, el => {
+      visElems.forEach((el) => {
         if (!el.id) {
           el.id = svgCanvas.getNextId()
         }
@@ -575,10 +559,8 @@ export const init = (canvas) => {
   /**
  * Unwraps all the elements in a selected group (`g`) element. This requires
  * significant recalculations to apply group's transforms, etc. to its children.
- * @function module:selected-elem.SvgCanvas#ungroupSelectedElement
- * @returns {void}
  */
-  const ungroupSelectedElement = () => {
+  const ungroupSelectedElement = (): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     const dataStorage = svgCanvas.getDataStorage()
     let g = selectedElements[0]
@@ -607,7 +589,7 @@ export const init = (canvas) => {
       convertToGroup(g)
       return
     }
-    const parentsA = getParents(/** @type {Node} */ (g.parentNode), 'a')
+    const parentsA = getParents(g.parentNode as Node, 'a')
     if (parentsA?.length) {
       g = parentsA[0]
     }
@@ -615,20 +597,20 @@ export const init = (canvas) => {
     // Look for parent "a"
     if (g.tagName === 'g' || g.tagName === 'a') {
       const batchCmd = new BatchCommand('Ungroup Elements')
-      const cmd = pushGroupProperty(/** @type {SVGGElement} */ (g), true)
+      const cmd = pushGroupProperty(g as SVGGElement, true)
       if (cmd) {
         batchCmd.addSubCommand(cmd)
       }
 
-      const parent = /** @type {Element} */ (g.parentNode)
+      const parent = g.parentNode as Element
       const anchor = g.nextSibling
       const children = new Array(g.childNodes.length)
 
       let i = 0
       while (g.firstChild) {
-        const elem = /** @type {Element} */ (g.firstChild)
-        const oldNextSibling = /** @type {Element|null} */ (elem.nextSibling)
-        const oldParent = /** @type {Element} */ (elem.parentNode)
+        const elem = g.firstChild as Element
+        const oldNextSibling = elem.nextSibling as Element | null
+        const oldParent = elem.parentNode as Element
 
         // Remove child title elements
         if (elem.tagName === 'title') {

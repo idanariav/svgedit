@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
-import { init as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.js'
+import { init as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.ts'
 import * as undo from '../../packages/svgcanvas/core/undo.js'
 import { attachUnits } from './unitsMock.js'
 

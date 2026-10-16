@@ -53,7 +53,7 @@
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
 | `draw.js` | Tools for drawing |
 | `drawing-invariants.ts` | Structural invariants of a healthy drawing, as a pure DOM check |
-| `elem-get-set.js` | `changeSelectedAttribute()` and attribute I/O |
+| `elem-get-set.ts` | `changeSelectedAttribute()` and attribute I/O |
 | `encoding-utils.ts` | String/XML/base64 encoding utilities |
 | `event-group-context.ts` | Group-editing coordinate helpers shared by `event.js`'s mouseDown/mouseMove preludes and the select/shape-draw mode handlers |
 | `event-path-edit.ts` | Path drawing/editing mode (`path`/`pathedit`) mouse handlers, extracted from the `path`/`pathedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
@@ -69,7 +69,7 @@
 | `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
 | `gradient-edit.ts` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.ts` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
-| `group-ops.js` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
+| `group-ops.ts` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
 | `history.js` | For command history tracking and undo functionality |
 | `historyrecording.js` | HistoryRecordingService component of history |
@@ -108,8 +108,8 @@
 | `segment.ts` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |
 | `select.ts` | DOM element selection box tools |
-| `selected-elem.js` | Tools for SVG selected element operation |
-| `selection.js` | Tools for selection |
+| `selected-elem.ts` | Tools for SVG selected element operation |
+| `selection.ts` | Tools for selection |
 | `shape-builder.ts` | Shape builder — region arithmetic for the interactive paint-to-merge tool (UI/mode in ext-shape-builder; this module owns the paper.js math and the document mutations) |
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |

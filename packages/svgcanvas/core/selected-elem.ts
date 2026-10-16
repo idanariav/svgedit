@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Tools for SVG selected element operation.
  * @module selected-elem
@@ -11,7 +10,9 @@ import * as hstry from './history.js'
 import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
-import { init as groupOpsInit } from './group-ops.js'
+import { init as groupOpsInit } from './group-ops.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BBoxObject } from './bbox-utils.ts'
 
 const {
   MoveElementCommand,
@@ -21,12 +22,9 @@ const {
   ChangeElementCommand
 } = hstry
 
-/**
- * @function module:selected-elem.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+type Box = BBoxObject
+
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   groupOpsInit(canvas)
 
@@ -35,11 +33,8 @@ export const init = (canvas) => {
  * getSelectedElements() does not guarantee this order (it's kept sorted for
  * grip-drawing purposes, topmost-first), so callers that care about relative
  * stacking order must sort explicitly rather than trust the incoming array.
- * @param {Element} a
- * @param {Element} b
- * @returns {number}
  */
-  const _byDocumentOrder = (a, b) => {
+  const _byDocumentOrder = (a: Element, b: Element): number => {
     const position = a.compareDocumentPosition(b)
     if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
       return -1
@@ -55,16 +50,15 @@ export const init = (canvas) => {
  * ascending document order (bottom-most stacking first). Elements normally
  * share one parent (a layer or a group being edited), but grouping keeps
  * this correct even when a selection spans multiple parents.
- * @param {Element[]} selected
- * @returns {Map<Element, Element[]>}
- */
-  const _groupSelectedByParent = selected => {
-    const byParent = new Map()
+  */
+  const _groupSelectedByParent = (selected: Element[]): Map<Element, Element[]> => {
+    const byParent = new Map<Element, Element[]>()
     selected.forEach(el => {
-      if (!byParent.has(el.parentNode)) {
-        byParent.set(el.parentNode, [])
+      const parent = el.parentNode as Element
+      if (!byParent.has(parent)) {
+        byParent.set(parent, [])
       }
-      byParent.get(el.parentNode).push(el)
+      (byParent.get(parent) as Element[]).push(el)
     })
     byParent.forEach(els => els.sort(_byDocumentOrder))
     return byParent
@@ -74,28 +68,24 @@ export const init = (canvas) => {
  * Repositions all selected elements to the bottom in the DOM to appear on
  * top of other elements, preserving their relative stacking order (works
  * for a single element, a multi-selection, or a selected group).
- * @function module:selected-elem.SvgCanvas#moveToTopSelectedElem
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
  */
-  const moveToTopSelectedElem = () => {
+  const moveToTopSelectedElem = (): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selected.length) {
       return
     }
     const batchCmd = new BatchCommand('Move to Top')
-    /** @type {Element[]} */
-    const changedEls = []
+    const changedEls: Element[] = []
     _groupSelectedByParent(selected).forEach(els => {
       els.forEach(t => {
-        const oldParent = /** @type {ParentNode} */ (t.parentNode)
+        const oldParent = t.parentNode as ParentNode
         const oldNextSibling = t.nextSibling
         oldParent.append(t)
         // If the element actually moved position, add the command and fire the changed
         // event handler.
         if (oldNextSibling !== t.nextSibling) {
           batchCmd.addSubCommand(
-            new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), 'top')
+            new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, 'top')
           )
           changedEls.push(t)
         }
@@ -111,18 +101,14 @@ export const init = (canvas) => {
  * Repositions all selected elements to the top in the DOM to appear under
  * other elements, preserving their relative stacking order (works for a
  * single element, a multi-selection, or a selected group).
- * @function module:selected-elem.SvgCanvas#moveToBottomSelectedElement
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
  */
-  const moveToBottomSelectedElem = () => {
+  const moveToBottomSelectedElem = (): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selected.length) {
       return
     }
     const batchCmd = new BatchCommand('Move to Bottom')
-    /** @type {Element[]} */
-    const changedEls = []
+    const changedEls: Element[] = []
     _groupSelectedByParent(selected).forEach((els, parent) => {
       let firstChild = parent.firstElementChild
       if (firstChild?.tagName === 'title') {
@@ -139,7 +125,7 @@ export const init = (canvas) => {
       // Insert in reverse document order, each one right before the previous
       // insertion point, so the group ends up at the bottom with its
       // original relative order preserved.
-      let ref = firstChild
+      let ref: Element = firstChild
     ;[...els].reverse().forEach(t => {
         const oldParent = t.parentNode
         const oldNextSibling = t.nextSibling
@@ -149,7 +135,7 @@ export const init = (canvas) => {
         // event handler.
         if (oldNextSibling !== t.nextSibling) {
           batchCmd.addSubCommand(
-            new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), 'bottom')
+            new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, 'bottom')
           )
           changedEls.push(t)
         }
@@ -164,35 +150,31 @@ export const init = (canvas) => {
   /**
  * Moves one selected element up or down the stack by a single step, based
  * on the visibly intersecting elements.
- * @param {Element} selected
- * @param {"Up"|"Down"} dir - String that's either 'Up' or 'Down'
- * @returns {import('./history.js').MoveElementCommand|void}
+ * @param dir - String that's either 'Up' or 'Down'
  */
-  const _moveUpDownOne = (selected, dir) => {
+  const _moveUpDownOne = (selected: Element, dir: 'Up' | 'Down'): hstry.MoveElementCommand | undefined => {
     svgCanvas.setCurBBoxes([])
-    /** @type {Element|undefined} */
-    let closest
+    let closest: Element | undefined
     let foundCur = false
     // jQuery sorts this list
-    const list = /** @type {Element[]} */ (svgCanvas.getIntersectionList(
+    const list = svgCanvas.getIntersectionList(
       svgCanvas.getStrokedBBoxDefaultVisible([selected])
-    ))
+    ) as Element[]
     if (dir === 'Down') {
       list.reverse()
     }
 
-    Array.prototype.forEach.call(list, el => {
+    for (const el of list) {
       if (!foundCur) {
         if (el === selected) {
           foundCur = true
         }
-        return true
+        continue
       }
       if (closest === undefined) {
         closest = el
       }
-      return false
-    })
+    }
     if (!closest) {
       return undefined
     }
@@ -208,7 +190,7 @@ export const init = (canvas) => {
     // If the element actually moved position, return the command so the caller
     // can add it to history and report it as changed.
     if (oldNextSibling !== t.nextSibling) {
-      return new MoveElementCommand(t, /** @type {Element} */ (oldNextSibling), /** @type {Element} */ (oldParent), `Move ${dir}`)
+      return new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, `Move ${dir}`)
     }
     return undefined
   }
@@ -217,12 +199,9 @@ export const init = (canvas) => {
  * Moves all selected elements up or down the stack by a single step each,
  * based on the visibly intersecting elements (works for a single element or
  * a multi-selection).
- * @function module:selected-elem.SvgCanvas#moveUpDownSelected
- * @param {"Up"|"Down"} dir - String that's either 'Up' or 'Down'
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
+ * @param dir - String that's either 'Up' or 'Down'
  */
-  const moveUpDownSelected = dir => {
+  const moveUpDownSelected = (dir: 'Up' | 'Down'): void => {
     const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selectedElements.length) {
       return
@@ -236,8 +215,7 @@ export const init = (canvas) => {
     const ordered = dir === 'Down' ? ascending : ascending.reverse()
 
     const batchCmd = new BatchCommand(`Move ${dir}`)
-    /** @type {Element[]} */
-    const changedEls = []
+    const changedEls: Element[] = []
     ordered.forEach(selected => {
       const cmd = _moveUpDownOne(selected, dir)
       if (cmd) {
@@ -254,22 +232,19 @@ export const init = (canvas) => {
   /**
  * Reverses the z-order (DOM stacking) of exactly two selected elements that
  * share the same parent layer. If one was behind the other, they swap.
- * @function module:selected-elem.SvgCanvas#switchSelectedZorder
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
  */
-  const switchSelectedZorder = () => {
+  const switchSelectedZorder = (): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (selected.length !== 2) {
       return
     }
     const [a, b] = selected
-    const parent = /** @type {Element} */ (a.parentNode)
+    const parent = a.parentNode as Element
     if (parent !== b.parentNode) {
       return
     }
-    const aOldNext = /** @type {Element|null} */ (a.nextSibling)
-    const bOldNext = /** @type {Element|null} */ (b.nextSibling)
+    const aOldNext = a.nextSibling as Element | null
+    const bOldNext = b.nextSibling as Element | null
     // Swap the two siblings' DOM positions via a placeholder
     const tmp = document.createComment('swap')
     parent.replaceChild(tmp, a)
@@ -288,40 +263,38 @@ export const init = (canvas) => {
 
   /**
  * Moves selected elements on the X/Y axis.
- * @function module:selected-elem.SvgCanvas#moveSelectedElements
- * @param {number|number[]} dx - number with the distance to move on the x-axis (or one distance per selected element)
- * @param {number|number[]} dy - number with the distance to move on the y-axis (or one distance per selected element)
- * @param {boolean} [undoable] - Boolean indicating whether or not the action should be undoable
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {import('./history.js').BatchCommand|void} Batch command for the move
+ * @param dx - number with the distance to move on the x-axis (or one distance per selected element)
+ * @param dy - number with the distance to move on the y-axis (or one distance per selected element)
+ * @param undoable - Boolean indicating whether or not the action should be undoable
+ * @returns Batch command for the move
  */
 
-  const moveSelectedElements = (dx, dy, undoable = true) => {
+  const moveSelectedElements = (dx: number | number[], dy: number | number[], undoable = true): hstry.BatchCommand | undefined => {
     const selectedElements = svgCanvas.getSelectedElements()
     const zoom = svgCanvas.getZoom()
     // if undoable is not sent, default to true
     // if single values, scale them to the zoom
     if (!Array.isArray(dx)) {
-      dx = /** @type {number} */ (dx) / zoom
-      dy = /** @type {number} */ (dy) / zoom
+      dx = (dx as number) / zoom
+      dy = (dy as number) / zoom
       // Remember the delta (content units) so transformAgain can repeat it.
       if (undoable && (dx || dy)) svgCanvas.lastMoveDelta = { dx, dy }
     }
 
     const batchCmd = new BatchCommand('position')
-    selectedElements.forEach((/** @type {?Element} */ selected, /** @type {number} */ i) => {
+    selectedElements.forEach((selected, i) => {
       if (selected) {
       // Store the existing transform before modifying
         const existingTransform = selected.getAttribute('transform') || ''
 
         const xform = svgCanvas.getSvgRoot().createSVGTransform()
-        const tlist = /** @type {SVGTransformList} */ (getTransformList(selected))
+        const tlist = getTransformList(selected) as SVGTransformList
 
         // dx and dy could be arrays
         if (Array.isArray(dx)) {
-          xform.setTranslate(dx[i], /** @type {number[]} */ (dy)[i])
+          xform.setTranslate(dx[i], (dy as number[])[i])
         } else {
-          xform.setTranslate(dx, /** @type {number} */ (dy))
+          xform.setTranslate(dx, dy as number)
         }
 
         if (tlist.numberOfItems) {
@@ -387,24 +360,21 @@ export const init = (canvas) => {
   /**
  * Create deep DOM copies (clones) of all selected elements and move them slightly
  * from their originals.
- * @function module:selected-elem.SvgCanvas#cloneSelectedElements
- * @param {number} x number with the distance to move on the x-axis
- * @param {number} y number with the distance to move on the y-axis
- * @returns {void}
+ * @param x number with the distance to move on the x-axis
+ * @param y number with the distance to move on the y-axis
  */
-  const cloneSelectedElements = (x, y) => {
+  const cloneSelectedElements = (x: number, y: number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
-    let i
-    let elem
+    let i: number
+    let elem: Element
     const batchCmd = new BatchCommand('Clone Elements')
     // find all the elements selected (stop at first null)
     const len = selectedElements.length
 
-    const index = (/** @type {?Element} */ el) => {
+    const index = (el: Element | null): number => {
       if (!el) return -1
       let i = 0
-      /** @type {?Element} */
-      let current = el
+      let current: Element | null = el
       do {
         i++
         current = current.previousElementSibling
@@ -412,13 +382,8 @@ export const init = (canvas) => {
       return i
     }
 
-    /**
-   * Sorts an array numerically and ascending.
-   * @param {Element} a
-   * @param {Element} b
-   * @returns {number}
-   */
-    const sortfunction = (a, b) => {
+    /** Sorts an array numerically and ascending. */
+    const sortfunction = (a: Element, b: Element): number => {
       return index(b) - index(a)
     }
     selectedElements.sort(sortfunction)
@@ -447,20 +412,19 @@ export const init = (canvas) => {
     // mirroring what copySelectedElements/pasteElements already do for the
     // clipboard path.
     const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
-    /** @type {Record<string, string>} */
-    let defIdMap = {}
+    let defIdMap: Record<string, string> = {}
     if (originalDefs.length) {
-      const clonedDefs = originalDefs.map((/** @type {Element} */ def) => /** @type {Element} */ (def.cloneNode(true)))
+      const clonedDefs = originalDefs.map((def) => def.cloneNode(true) as Element)
       defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
       const defs = svgCanvas.findDefs()
-      clonedDefs.forEach((/** @type {Element} */ def) => {
+      clonedDefs.forEach((def) => {
         defs.append(def)
         batchCmd.addSubCommand(new InsertElementCommand(def))
       })
     }
     // Rewrite an element's (and its descendants') url(#…)/href references from
     // the originals' def ids to the freshly cloned ones above.
-    const remapToClonedDefs = (/** @type {Element} */ el) => {
+    const remapToClonedDefs = (el: Element): void => {
       Array.from(el.attributes).forEach((attr) => {
         if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#')) {
           const refId = attr.value.slice(1)
@@ -491,12 +455,12 @@ export const init = (canvas) => {
       const original = copiedElements[i]
       elem = copiedElements[i] = drawing.copyElem(original)
       if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
-      const { targetParent, matrix } = getGroupDetachTarget(/** @type {Element} */ (original.parentNode))
+      const { targetParent, matrix } = getGroupDetachTarget(original.parentNode as Element)
       if (targetParent !== original.parentNode) {
         applyGroupDetachTransform(elem, matrix)
         targetParent.append(elem)
       } else {
-        original.parentNode.append(elem)
+        original.parentNode?.append(elem)
       }
       batchCmd.addSubCommand(new InsertElementCommand(elem))
     }
@@ -514,10 +478,8 @@ export const init = (canvas) => {
  * delta (drag or nudge, recorded in `svgCanvas.lastMoveDelta` in content
  * units). Because the clones become the selection, pressing it repeatedly
  * builds a chain of evenly spaced copies.
- * @function module:selected-elem.SvgCanvas#transformAgain
- * @returns {void}
  */
-  const transformAgain = () => {
+  const transformAgain = (): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selected.length) return
     const d = svgCanvas.lastMoveDelta || { dx: 10, dy: 10 }
@@ -531,16 +493,13 @@ export const init = (canvas) => {
  * One-click stroke cleanup across the selection (groups included): every
  * stroked element gets the primary element's stroke-width plus round
  * joins/caps — uniform confident linework in one undo step.
- * @function module:selected-elem.SvgCanvas#matchStrokes
- * @returns {void}
  */
-  const matchStrokes = () => {
+  const matchStrokes = (): void => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
     if (!selected.length) return
     const skip = new Set(['title', 'desc', 'defs', 'metadata', 'image', 'use'])
-    /** @type {Element[]} */
-    const targets = []
-    const collect = (/** @type {Element} */ el) => {
+    const targets: Element[] = []
+    const collect = (el: Element): void => {
       if (skip.has(el.tagName)) return
       if (el.tagName === 'g' || el.tagName === 'a') {
         for (const c of el.children) collect(c)
@@ -553,7 +512,7 @@ export const init = (canvas) => {
 
     const width = targets[0].getAttribute('stroke-width') || '1'
     const batchCmd = new BatchCommand('Match strokes')
-    const changeAttr = (/** @type {Element} */ el, /** @type {string} */ attr, /** @type {string} */ val) => {
+    const changeAttr = (el: Element, attr: string, val: string): void => {
       const old = el.getAttribute(attr)
       if (old === val) return
       el.setAttribute(attr, val)
@@ -571,14 +530,11 @@ export const init = (canvas) => {
   }
   /**
  * Aligns selected elements.
- * @function module:selected-elem.SvgCanvas#alignSelectedElements
- * @param {string} type - String with single character indicating the alignment type
- * @param {"selected"|"largest"|"smallest"|"page"} relativeTo
- * @returns {void}
+ * @param type - String with single character indicating the alignment type
  */
-  const alignSelectedElements = (type, relativeTo) => {
+  const alignSelectedElements = (type: string, relativeTo: 'selected' | 'largest' | 'smallest' | 'page'): void => {
     const selectedElements = svgCanvas.getSelectedElements()
-    const bboxes = [] // angles = [];
+    const bboxes: Box[] = [] // angles = [];
     const len = selectedElements.length
     if (!len) {
       return
@@ -588,8 +544,8 @@ export const init = (canvas) => {
     let miny = Number.MAX_VALUE
     let maxy = Number.MIN_VALUE
 
-    const isHorizontalAlign = (/** @type {string} */ type) => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
-    const isVerticalAlign = (/** @type {string} */ type) => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
+    const isHorizontalAlign = (type: string): boolean => ['l', 'c', 'r', 'left', 'center', 'right'].includes(type)
+    const isVerticalAlign = (type: string): boolean => ['t', 'm', 'b', 'top', 'middle', 'bottom'].includes(type)
 
     for (let i = 0; i < len; ++i) {
       if (!selectedElements[i]) {
@@ -640,8 +596,8 @@ export const init = (canvas) => {
         break
     } // adjust min/max
 
-    let dx = []
-    let dy = []
+    let dx: number[] = []
+    let dy: number[] = []
 
     if (['dh', 'distrib_horiz'].includes(type)) { // distribute horizontal align
       [dx, dy] = _getDistributeHorizontalDistances(relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy)
@@ -655,32 +611,21 @@ export const init = (canvas) => {
   }
 
   /**
- * Aligns selected elements.
- * @function module:selected-elem.SvgCanvas#alignSelectedElements
- * @param {string} type - String with single character indicating the alignment type
- * @param {"selected"|"largest"|"smallest"|"page"} relativeTo
- * @returns {void}
- */
-
-  /**
  * get distribution horizontal distances.
  * (internal call only)
  *
- * @param {string} relativeTo
- * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
- * @param {number} minx - selected area min-x
- * @param {number} maxx - selected area max-x
- * @param {number} miny - selected area min-y
- * @param {number} maxy - selected area max-y
- * @returns {number[][]} x and y distances array, one distance per selected element each
+ * @param selectedElements - the array with selected DOM elements
+ * @param bboxes - bounding box objects
+ * @param minx - selected area min-x
+ * @param maxx - selected area max-x
+ * @param miny - selected area min-y
+ * @param maxy - selected area max-y
+ * @returns x and y distances array, one distance per selected element each
  * @private
  */
-  const _getDistributeHorizontalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
-    /** @type {number[]} */
-    const dx = []
-    /** @type {number[]} */
-    const dy = []
+  const _getDistributeHorizontalDistances = (relativeTo: string, selectedElements: Element[], bboxes: Box[], minx: number, maxx: number, miny: number, maxy: number): number[][] => {
+    const dx: number[] = []
+    const dy: number[] = []
 
     for (let i = 0; i < selectedElements.length; i++) {
       dy[i] = 0
@@ -703,8 +648,7 @@ export const init = (canvas) => {
     const totalWidth = maxx - minx
     const totalBoxWidth = bboxesSortedClone.map(b => b.width).reduce((w1, w2) => w1 + w2, 0)
     const space = (totalWidth - totalBoxWidth) / (bboxesSortedClone.length - 1)
-    /** @type {number[]} */
-    const _dx = []
+    const _dx: number[] = []
 
     for (let i = 0; i < bboxesSortedClone.length; ++i) {
       _dx[i] = 0
@@ -730,21 +674,18 @@ export const init = (canvas) => {
  * get distribution vertical distances.
  * (internal call only)
  *
- * @param {string} relativeTo
- * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
- * @param {number} minx - selected area min-x
- * @param {number} maxx - selected area max-x
- * @param {number} miny - selected area min-y
- * @param {number} maxy - selected area max-y
- * @returns {number[][]} x and y distances array, one distance per selected element each
+ * @param selectedElements - the array with selected DOM elements
+ * @param bboxes - bounding box objects
+ * @param minx - selected area min-x
+ * @param maxx - selected area max-x
+ * @param miny - selected area min-y
+ * @param maxy - selected area max-y
+ * @returns x and y distances array, one distance per selected element each
  * @private
  */
-  const _getDistributeVerticalDistances = (relativeTo, selectedElements, bboxes, minx, maxx, miny, maxy) => {
-    /** @type {number[]} */
-    const dx = []
-    /** @type {number[]} */
-    const dy = []
+  const _getDistributeVerticalDistances = (relativeTo: string, selectedElements: Element[], bboxes: Box[], minx: number, maxx: number, miny: number, maxy: number): number[][] => {
+    const dx: number[] = []
+    const dy: number[] = []
 
     for (let i = 0; i < selectedElements.length; i++) {
       dx[i] = 0
@@ -767,8 +708,7 @@ export const init = (canvas) => {
     const totalHeight = maxy - miny
     const totalBoxHeight = bboxesSortedClone.map(b => b.height).reduce((h1, h2) => h1 + h2, 0)
     const space = (totalHeight - totalBoxHeight) / (bboxesSortedClone.length - 1)
-    /** @type {number[]} */
-    const _dy = []
+    const _dy: number[] = []
 
     for (let i = 0; i < bboxesSortedClone.length; ++i) {
       _dy[i] = 0
@@ -794,20 +734,19 @@ export const init = (canvas) => {
  * get normal align distances.
  * (internal call only)
  *
- * @param {string} type
- * @param {Element[]} selectedElements - the array with selected DOM elements
- * @param {Array<{x: number, y: number, width: number, height: number}>} bboxes - bounding box objects
- * @param {number} minx - selected area min-x
- * @param {number} maxx - selected area max-x
- * @param {number} miny - selected area min-y
- * @param {number} maxy - selected area max-y
- * @returns {number[][]} x and y distances array, one distance per selected element each
+ * @param selectedElements - the array with selected DOM elements
+ * @param bboxes - bounding box objects
+ * @param minx - selected area min-x
+ * @param maxx - selected area max-x
+ * @param miny - selected area min-y
+ * @param maxy - selected area max-y
+ * @returns x and y distances array, one distance per selected element each
  * @private
  */
-  const _getNormalDistances = (type, selectedElements, bboxes, minx, maxx, miny, maxy) => {
+  const _getNormalDistances = (type: string, selectedElements: Element[], bboxes: Box[], minx: number, maxx: number, miny: number, maxy: number): number[][] => {
     const len = selectedElements.length
-    const dx = new Array(len)
-    const dy = new Array(len)
+    const dx: number[] = new Array(len)
+    const dy: number[] = new Array(len)
 
     for (let i = 0; i < len; ++i) {
       if (!selectedElements[i]) {
@@ -852,22 +791,18 @@ export const init = (canvas) => {
   /**
  * Removes all selected elements from the DOM and adds the change to the
  * history stack.
- * @function module:selected-elem.SvgCanvas#deleteSelectedElements
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
  */
-  const deleteSelectedElements = () => {
+  const deleteSelectedElements = (): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     const batchCmd = new BatchCommand('Delete Elements')
-    /** @type {Element[]} */
-    const selectedCopy = [] // selectedElements is being deleted
+    const selectedCopy: Element[] = [] // selectedElements is being deleted
 
     // Text that follows a path being deleted becomes plain text (needs the rail still in place).
     svgCanvas.releaseTextOnPath?.(selectedElements.filter(Boolean), batchCmd)
 
-    selectedElements.forEach((/** @type {?Element} */ selected) => {
+    selectedElements.forEach((selected) => {
       if (selected) {
-        let parent = /** @type {?Element} */ (selected.parentNode)
+        let parent = selected.parentNode as Element | null
         let t = selected
         // this will unselect the element and remove the selectedOutline
         svgCanvas.gettingSelectorManager().releaseSelector(t)
@@ -876,13 +811,13 @@ export const init = (canvas) => {
         // Get the parent if it's a single-child anchor
         if (parent && parent.tagName === 'a' && parent.childNodes.length === 1) {
           t = parent
-          parent = /** @type {?Element} */ (parent.parentNode)
+          parent = parent.parentNode as Element | null
         }
         const { nextSibling } = t
         t.remove()
         const elem = t
         selectedCopy.push(selected) // for the copy
-        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, /** @type {Element} */ (parent)))
+        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, parent as Element))
       }
     })
     svgCanvas.setEmptySelectedElements()
@@ -896,25 +831,22 @@ export const init = (canvas) => {
 
   /**
  * Flips selected elements horizontally or vertically by transforming actual coordinates.
- * @function module:selected-elem.SvgCanvas#flipSelectedElements
- * @param {number} scaleX - Scale factor for X axis (-1 for horizontal flip, 1 for no flip)
- * @param {number} scaleY - Scale factor for Y axis (1 for no flip, -1 for vertical flip)
- * @fires module:selected-elem.SvgCanvas#event:changed
- * @returns {void}
+ * @param scaleX - Scale factor for X axis (-1 for horizontal flip, 1 for no flip)
+ * @param scaleY - Scale factor for Y axis (1 for no flip, -1 for vertical flip)
  */
-  const flipSelectedElements = (scaleX, scaleY) => {
+  const flipSelectedElements = (scaleX: number, scaleY: number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     const batchCmd = new BatchCommand('Flip Elements')
     const svgRoot = svgCanvas.getSvgRoot()
 
-    ;/** @type {Array<?SVGGraphicsElement>} */ (selectedElements).forEach((selected) => {
+    ;(selectedElements as Array<SVGGraphicsElement | null>).forEach((selected) => {
       if (!selected) return
 
       const localBBox = selected.getBBox()
       if (!localBBox) return
 
       const existingTransform = selected.getAttribute('transform') || ''
-      const tlist = /** @type {SVGTransformList} */ (getTransformList(selected))
+      const tlist = getTransformList(selected) as SVGTransformList
       const elemMatrix = transformListToTransform(tlist).matrix
 
       // Pivot the flip around the element's *true* axis-aligned bbox centre in
@@ -978,17 +910,15 @@ export const init = (canvas) => {
 
   /**
  * Remembers the current selected elements on the clipboard.
- * @function module:selected-elem.SvgCanvas#copySelectedElements
- * @returns {void}
  */
-  const copySelectedElements = () => {
+  const copySelectedElements = (): void => {
     const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-    const elemsJson = selectedElements.map((/** @type {Element} */ x) => svgCanvas.getJsonFromSvgElements(x))
+    const elemsJson = selectedElements.map((x) => svgCanvas.getJsonFromSvgElements(x))
     // Carry the referenced paint servers (gradients, filters, markers, …) on the
     // clipboard, tagged `_defs`, so a paste into another drawing recreates them
     // instead of leaving dangling url(#…) references and a corrupted <defs>.
     const defsJson = svgCanvas.getReferencedDefElements(selectedElements)
-      .map((/** @type {Element} */ d) => {
+      .map((d) => {
         const json = svgCanvas.getJsonFromSvgElements(d)
         if (json) json._defs = true
         return json
@@ -1018,17 +948,14 @@ export const init = (canvas) => {
 
   /**
  * Updates the editor canvas width/height/position after a zoom has occurred.
- * @function module:svgcanvas.SvgCanvas#updateCanvas
- * @param {number} w - number with the new width
- * @param {number} h - number with the new height
- * @fires module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
- * @returns {module:svgcanvas.CanvasInfo}
+ * @param w - number with the new width
+ * @param h - number with the new height
  */
-  const updateCanvas = (w, h) => {
+  const updateCanvas = (w: number, h: number): { x: number, y: number, old_x: number, old_y: number, d_x: number, d_y: number } => {
     svgCanvas.getSvgRoot().setAttribute('width', String(w))
     svgCanvas.getSvgRoot().setAttribute('height', String(h))
     const zoom = svgCanvas.getZoom()
-    const bg = /** @type {Element} */ (svgCanvas.$id('canvasBackground'))
+    const bg = svgCanvas.$id('canvasBackground') as Element
     const oldX = Number(svgCanvas.getSvgContent().getAttribute('x'))
     const oldY = Number(svgCanvas.getSvgContent().getAttribute('y'))
     const x = (w - svgCanvas.contentW * zoom) / 2
@@ -1062,22 +989,9 @@ export const init = (canvas) => {
     `translate(${x},${y})`
     )
 
-    /**
-   * Invoked upon updates to the canvas.
-   * @event module:svgcanvas.SvgCanvas#event:ext_canvasUpdated
-   * @type {PlainObject}
-   * @property {number} new_x
-   * @property {number} new_y
-   * @property {string} old_x (Of number)
-   * @property {string} old_y (Of number)
-   * @property {number} d_x
-   * @property {number} d_y
-   */
+    // Invoked upon updates to the canvas.
     svgCanvas.runExtensions(
       'canvasUpdated',
-      /**
-     * @type {module:svgcanvas.SvgCanvas#event:ext_canvasUpdated}
-     */
       {
         new_x: x,
         new_y: y,
@@ -1091,18 +1005,14 @@ export const init = (canvas) => {
   }
   /**
  * Select the next/previous element within the current layer.
- * @function module:svgcanvas.SvgCanvas#cycleElement
- * @param {boolean} next - true = next and false = previous element
- * @fires module:svgcanvas.SvgCanvas#event:selected
- * @returns {void}
+ * @param next - true = next and false = previous element
  */
-  const cycleElement = next => {
+  const cycleElement = (next: boolean): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     const currentGroup = svgCanvas.getCurrentGroup()
-    let num
+    let num: number
     const curElem = selectedElements[0]
-    /** @type {Element|undefined} */
-    let elem
+    let elem: Element | undefined
     const allElems = svgCanvas.getVisibleElements(
       currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
     )
@@ -1127,7 +1037,7 @@ export const init = (canvas) => {
         }
       }
     }
-    svgCanvas.selectOnly([(/** @type {Element} */ (elem))], true)
+    svgCanvas.selectOnly([elem as Element], true)
     svgCanvas.call('selected', selectedElements)
   }
 

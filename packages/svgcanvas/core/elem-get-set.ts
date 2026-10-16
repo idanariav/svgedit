@@ -1,4 +1,3 @@
-// @ts-check
 // elem-get-set.js — `changeSelectedAttribute()` and attribute I/O
 /**
  * @module elem-get-set get and set methods.
@@ -14,13 +13,16 @@ import {
 } from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import { getParents } from '../common/util.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { BBoxObject } from './bbox-utils.ts'
+import type { BatchCommand as BatchCommandType } from './history.js'
 
-/**
-* @function module:elem-get-set.init
-* @param {import('../svgcanvas.js').default} canvas
-* @returns {void}
-*/
-export const init = (canvas) => {
+/** A bounding box to zoom to, optionally with the zoom/factor to use when the box is empty. */
+type ZoomBox = BBoxObject & { zoom?: number, factor?: number }
+type ZoomTarget = 'selection' | 'canvas' | 'content' | 'layer' | ZoomBox
+interface ZoomAndBBox { zoom: number, bbox: ZoomBox }
+
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
   const { convertToNum } = getUnits(canvas)
   textAttrsInit(canvas)
@@ -33,10 +35,9 @@ export const init = (canvas) => {
   let bgGradientSeq = 0
 
   /**
-* @function module:elem-get-set.SvgCanvas#getResolution
-* @returns {{w: number, h: number, zoom: number}} The current dimensions and zoom level in an object
+* @returns The current dimensions and zoom level in an object
 */
-  const getResolutionMethod = () => {
+  const getResolutionMethod = (): { w: number, h: number, zoom: number } => {
     const zoom = svgCanvas.getZoom()
     const w = Number(svgCanvas.getSvgContent().getAttribute('width')) / zoom
     const h = Number(svgCanvas.getSvgContent().getAttribute('height')) / zoom
@@ -49,13 +50,10 @@ export const init = (canvas) => {
   }
 
   /**
-* @function module:elem-get-set.SvgCanvas#getTitle
-* @param {Element} [elem]
-* @returns {string|void} the current group/SVG's title contents or
+* @returns the current group/SVG's title contents or
 * `undefined` if no element is passed nd there are no selected elements.
 */
-  /** @param {Element} [elem] */
-  const getTitleMethod = (elem) => {
+  const getTitleMethod = (elem?: Element): string | undefined => {
     const selectedElements = svgCanvas.getSelectedElements()
     const dataStorage = svgCanvas.getDataStorage()
     elem = elem || selectedElements[0]
@@ -65,10 +63,10 @@ export const init = (canvas) => {
     } else if (dataStorage.has(elem, 'symbol')) {
       elem = dataStorage.get(elem, 'symbol')
     }
-    const childs = /** @type {Element} */ (elem).childNodes
+    const childs = (elem as Element).childNodes
     for (const child of childs) {
       if (child.nodeName === 'title') {
-        return /** @type {string} */ (child.textContent)
+        return child.textContent as string
       }
     }
     return ''
@@ -76,12 +74,9 @@ export const init = (canvas) => {
 
   /**
 * Sets the group/SVG's title content.
-* @function module:elem-get-set.SvgCanvas#setGroupTitle
-* @param {string} val
 * @todo Combine this with `setDocumentTitle`
-* @returns {void}
 */
-  const setGroupTitleMethod = (val) => {
+  const setGroupTitleMethod = (val: string): void => {
     const {
       InsertElementCommand, RemoveElementCommand,
       ChangeElementCommand, BatchCommand
@@ -99,8 +94,8 @@ export const init = (canvas) => {
 
     const batchCmd = new BatchCommand('Set Label')
 
-    let title = null
-    for (const child of elem.childNodes) {
+    let title: Element | null = null
+    for (const child of elem.childNodes as NodeListOf<Element>) {
       if (child.nodeName === 'title') {
         title = child
         break
@@ -135,11 +130,9 @@ export const init = (canvas) => {
   /**
 * Adds/updates a title element for the document with the given name.
 * This is an undoable action.
-* @function module:elem-get-set.SvgCanvas#setDocumentTitle
-* @param {string} newTitle - String with the new title
-* @returns {void}
+* @param newTitle - String with the new title
 */
-  const setDocumentTitleMethod = (newTitle) => {
+  const setDocumentTitleMethod = (newTitle: string): void => {
     const {
       InsertElementCommand, RemoveElementCommand,
       ChangeElementCommand, BatchCommand
@@ -148,10 +141,8 @@ export const init = (canvas) => {
 
     const batchCmd = new BatchCommand('Change Image Title')
 
-    /** @type {Element|null} */
-    /** @type {Element|null} */
-    let docTitle = null
-    for (const child of /** @type {Element[]} */ ([...svgContent.childNodes])) {
+    let docTitle: Element | null = null
+    for (const child of [...svgContent.childNodes] as Element[]) {
       if (child.nodeName === 'title') {
         docTitle = child
         break
@@ -160,7 +151,7 @@ export const init = (canvas) => {
 
     if (!docTitle) {
       if (!newTitle.length) { return }
-      docTitle = /** @type {Element} */ (svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title'))
+      docTitle = svgCanvas.getDOMDocument().createElementNS(NS.SVG, 'title') as Element
       docTitle.textContent = newTitle
       svgContent.insertBefore(docTitle, svgContent.firstChild)
       batchCmd.addSubCommand(new InsertElementCommand(docTitle))
@@ -183,33 +174,29 @@ export const init = (canvas) => {
 
   /**
 * Changes the document's dimensions to the given size.
-* @function module:elem-get-set.SvgCanvas#setResolution
-* @param {number|"fit"} x - Number with the width of the new dimensions in user units.
+* @param x - Number with the width of the new dimensions in user units.
 * Can also be the string "fit" to indicate "fit to content".
-* @param {number} y - Number with the height of the new dimensions in user units.
-* @fires module:elem-get-set.SvgCanvas#event:changed
-* @returns {boolean} Indicates if resolution change was successful.
+* @param y - Number with the height of the new dimensions in user units.
+* @returns Indicates if resolution change was successful.
 * It will fail on "fit to content" option with no content to fit to.
 */
-  const setResolutionMethod = (x, y) => {
+  const setResolutionMethod = (x: number | string, y: number | string): boolean => {
     const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const res = svgCanvas.getResolution()
     const { w, h } = res
-    let batchCmd
+    let batchCmd: BatchCommandType | undefined
 
     if (x === 'fit') {
     // Get bounding box
       const bbox = svgCanvas.getStrokedBBoxDefaultVisible()
 
       if (bbox) {
-        batchCmd = new BatchCommand('Fit Canvas to Content')
+        batchCmd = new BatchCommand('Fit Canvas to Content') as BatchCommandType
         const visEls = svgCanvas.getVisibleElements()
         svgCanvas.addToSelection(visEls)
-        /** @type {number[]} */
-        const dx = []
-        /** @type {number[]} */
-        const dy = []
-        visEls.forEach((/** @type {any} */ _item, /** @type {number} */ _i) => {
+        const dx: number[] = []
+        const dy: number[] = []
+        visEls.forEach(() => {
           dx.push(bbox.x * -1)
           dy.push(bbox.y * -1)
         })
@@ -230,7 +217,7 @@ export const init = (canvas) => {
     const newH = convertToNum('height', y)
     if (newW !== w || newH !== h) {
       if (!batchCmd) {
-        batchCmd = new BatchCommand('Change Image Dimensions')
+        batchCmd = new BatchCommand('Change Image Dimensions') as BatchCommandType
       }
       const svgContent = svgCanvas.getSvgContent()
       const oldViewBox = svgContent.getAttribute('viewBox')
@@ -251,11 +238,10 @@ export const init = (canvas) => {
 
   /**
 * Returns the editor's namespace URL, optionally adding it to the root element.
-* @function module:elem-get-set.SvgCanvas#getEditorNS
-* @param {boolean} [add] - Indicates whether or not to add the namespace value
-* @returns {string} The editor's namespace URL
+* @param add - Indicates whether or not to add the namespace value
+* @returns The editor's namespace URL
 */
-  const getEditorNSMethod = (add) => {
+  const getEditorNSMethod = (add?: boolean): string => {
     if (add) {
       svgCanvas.getSvgContent().setAttribute('xmlns:se', NS.SE)
     }
@@ -263,26 +249,17 @@ export const init = (canvas) => {
   }
 
   /**
- * @typedef {PlainObject} module:elem-get-set.ZoomAndBBox
- * @property {number} zoom
- * @property {module:utilities.BBoxObject} bbox
- */
-  /**
 * Sets the zoom level on the canvas-side based on the given value.
-* @function module:elem-get-set.SvgCanvas#setBBoxZoom
-* @param {"selection"|"canvas"|"content"|"layer"|object} val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
-* @param {number} editorW - The editor's workarea box's width
-* @param {number} editorH - The editor's workarea box's height
-* @returns {module:elem-get-set.ZoomAndBBox|void}
+* @param val - Bounding box object to zoom to or string indicating zoom option. Note: the object value type is defined in `svg-editor.js`
+* @param editorW - The editor's workarea box's width
+* @param editorH - The editor's workarea box's height
 */
-  const setBBoxZoomMethod = (val, editorW, editorH) => {
+  const setBBoxZoomMethod = (val: ZoomTarget, editorW: number, editorH: number): ZoomAndBBox | void => {
     const zoom = svgCanvas.getZoom()
     const selectedElements = svgCanvas.getSelectedElements()
     let spacer = 0.85
-    /** @type {any} */
-    let bb
-    /** @param {any} bb */
-    const calcZoom = (bb) => {
+    let bb: ZoomBox | null | undefined
+    const calcZoom = (bb: ZoomBox | null | undefined): ZoomAndBBox | undefined => {
       if (!bb) { return undefined }
       if (!Number.isFinite(editorW) || !Number.isFinite(editorH) || editorW <= 0 || editorH <= 0) {
         return undefined
@@ -304,10 +281,10 @@ export const init = (canvas) => {
       bb = val
       if (bb.width === 0 || bb.height === 0) {
         let newzoom = zoom
-        if (Number.isFinite(bb.zoom) && bb.zoom > 0) {
-          newzoom = bb.zoom
-        } else if (Number.isFinite(bb.factor) && bb.factor > 0) {
-          newzoom = zoom * bb.factor
+        if (Number.isFinite(bb.zoom) && (bb.zoom as number) > 0) {
+          newzoom = bb.zoom as number
+        } else if (Number.isFinite(bb.factor) && (bb.factor as number) > 0) {
+          newzoom = zoom * (bb.factor as number)
         }
         if (Number.isFinite(newzoom) && newzoom > 0) {
           svgCanvas.setZoom(newzoom)
@@ -342,12 +319,9 @@ export const init = (canvas) => {
 
   /**
 * Sets the zoom to the given level.
-* @function module:elem-get-set.SvgCanvas#setZoom
-* @param {number} zoomLevel - number indicating the zoom level to change to
-* @fires module:elem-get-set.SvgCanvas#event:ext_zoomChanged
-* @returns {void}
+* @param zoomLevel - number indicating the zoom level to change to
 */
-  const setZoomMethod = (zoomLevel) => {
+  const setZoomMethod = (zoomLevel: number): void => {
     if (!Number.isFinite(zoomLevel) || zoomLevel <= 0) {
       return
     }
@@ -360,7 +334,7 @@ export const init = (canvas) => {
     }
     svgCanvas.getSvgContent().setAttribute('viewBox', `0 0 ${w} ${h}`)
     svgCanvas.setZoom(zoomLevel)
-    selectedElements.forEach((/** @type {Element|null} */ elem) => {
+    selectedElements.forEach((elem) => {
       if (!elem) { return }
       const selector = svgCanvas.selectorManager.requestSelector(elem)
       selector && selector.resize()
@@ -371,24 +345,16 @@ export const init = (canvas) => {
 
   /**
 * Change the current stroke/fill color/gradient value.
-* @function module:elem-get-set.SvgCanvas#setColor
-* @param {'fill'|'stroke'} type - String indicating fill or stroke
-* @param {string} val - The value to set the stroke attribute to
-* @param {boolean} preventUndo - Boolean indicating whether or not svgCanvas should be an undoable option
-* @fires module:elem-get-set.SvgCanvas#event:changed
-* @returns {void}
+* @param type - String indicating fill or stroke
+* @param val - The value to set the stroke attribute to
+* @param preventUndo - Boolean indicating whether or not svgCanvas should be an undoable option
 */
-  const setColorMethod = (type, val, preventUndo) => {
+  const setColorMethod = (type: 'fill' | 'stroke', val: string, preventUndo?: boolean): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     svgCanvas.setCurShape(type, val)
     svgCanvas.setCurProperties(`${type}_paint`, { type: 'solidColor' })
-    const elems = []
-    /**
-*
-* @param {Element} e
-* @returns {void}
-*/
-    const addNonG = (e) => {
+    const elems: Element[] = []
+    const addNonG = (e: Element): void => {
       if (e.nodeName !== 'g') {
         elems.push(e)
       }
@@ -419,15 +385,13 @@ export const init = (canvas) => {
 
   /**
 * Apply the current gradient to selected element's fill or stroke.
-* @function module:elem-get-set.SvgCanvas#setGradient
-* @param {"fill"|"stroke"} type - String indicating "fill" or "stroke" to apply to an element
-* @returns {void}
+* @param type - String indicating "fill" or "stroke" to apply to an element
 */
-  const setGradientMethod = (type) => {
+  const setGradientMethod = (type: 'fill' | 'stroke'): void => {
     const curPaint = svgCanvas.getCurProperties(`${type}_paint`)
     if (!curPaint || curPaint.type === 'solidColor') { return }
     const canvas = svgCanvas
-    let grad = /** @type {any} */ (canvas)[type + 'Grad']
+    let grad = (canvas as unknown as Record<string, SVGGradientElement | undefined>)[type + 'Grad']
     if (!grad) { return }
     // find out if there is a duplicate gradient already in the defs
     const duplicateGrad = findDuplicateGradient(grad)
@@ -448,10 +412,8 @@ export const init = (canvas) => {
   /**
 * Read a stop's effective color/opacity, whether stored as presentation
 * attributes (`stop-color`/`stop-opacity`) or inline in the `style` attribute.
-* @param {SVGStopElement} stop
-* @returns {{color: string|null, opacity: string|null}}
 */
-  const readStop = (stop) => {
+  const readStop = (stop: SVGStopElement): { color: string | null, opacity: string | null } => {
     const style = stop.getAttribute('style') || ''
     const colorMatch = style.match(/stop-color\s*:\s*([^;]+)/i)
     const opacityMatch = style.match(/stop-opacity\s*:\s*([^;]+)/i)
@@ -462,11 +424,10 @@ export const init = (canvas) => {
 
   /**
 * Check if exact gradient already exists.
-* @function module:svgcanvas~findDuplicateGradient
-* @param {SVGGradientElement} grad - The gradient DOM element to compare to others
-* @returns {SVGGradientElement|null} The existing gradient if found, `null` if not
+* @param grad - The gradient DOM element to compare to others
+* @returns The existing gradient if found, `null` if not
 */
-  const findDuplicateGradient = (grad) => {
+  const findDuplicateGradient = (grad: SVGGradientElement): SVGGradientElement | null => {
     if (!grad) {
       return null
     }
@@ -478,7 +439,7 @@ export const init = (canvas) => {
     let i = existingGrads.length
     const radAttrs = ['r', 'cx', 'cy', 'fx', 'fy']
     while (i--) {
-      const og = /** @type {SVGGradientElement} */ (existingGrads[i])
+      const og = existingGrads[i] as SVGGradientElement
       if (og.tagName !== grad.tagName) {
         continue
       }
@@ -508,7 +469,7 @@ export const init = (canvas) => {
 
         let diff = false
         radAttrs.forEach((attr) => {
-          if (/** @type {Record<string, number>} */ (gradAttrs)[attr] !== /** @type {Record<string, number>} */ (ogAttrs)[attr]) { diff = true }
+          if ((gradAttrs as Record<string, number>)[attr] !== (ogAttrs as Record<string, number>)[attr]) { diff = true }
         })
 
         if (diff) { continue }
@@ -526,8 +487,8 @@ export const init = (canvas) => {
       while (j--) {
         const stop = stops[j]
         const ostop = ostops[j]
-        const sVals = readStop(/** @type {SVGStopElement} */ (stop))
-        const oVals = readStop(/** @type {SVGStopElement} */ (ostop))
+        const sVals = readStop(stop as SVGStopElement)
+        const oVals = readStop(ostop as SVGStopElement)
 
         if (stop.getAttribute('offset') !== ostop.getAttribute('offset') ||
         sVals.opacity !== oVals.opacity ||
@@ -546,12 +507,10 @@ export const init = (canvas) => {
 
   /**
 * Set a color/gradient to a fill/stroke.
-* @function module:elem-get-set.SvgCanvas#setPaint
-* @param {"fill"|"stroke"} type - String with "fill" or "stroke"
-* @param {Object<string, any>} paint - The paint object to apply
-* @returns {void}
+* @param type - String with "fill" or "stroke"
+* @param paint - The paint object to apply
 */
-  const setPaintMethod = (type, paint) => {
+  const setPaintMethod = (type: 'fill' | 'stroke', paint: ConstructorParameters<typeof Paint>[0]): void => {
   // make a copy
     const p = new Paint(paint)
     svgCanvas.setPaintOpacity(type, p.alpha / 100, true)
@@ -573,12 +532,9 @@ export const init = (canvas) => {
   /**
 * Sets the stroke width for the current selected elements.
 * When attempting to set a line's width to 0, this changes it to 1 instead.
-* @function module:elem-get-set.SvgCanvas#setStrokeWidth
-* @param {number} val - A number indicating the new stroke width value
-* @fires module:elem-get-set.SvgCanvas#event:changed
-* @returns {void}
+* @param val - A number indicating the new stroke width value
 */
-  const setStrokeWidthMethod = (val) => {
+  const setStrokeWidthMethod = (val: number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     if (val === 0 && ['line', 'path'].includes(svgCanvas.getMode())) {
       svgCanvas.setStrokeWidth(1)
@@ -586,13 +542,8 @@ export const init = (canvas) => {
     }
     svgCanvas.setCurProperties('stroke_width', val)
 
-    const elems = []
-    /**
-*
-* @param {Element} e
-* @returns {void}
-*/
-    const addNonG = (e) => {
+    const elems: Element[] = []
+    const addNonG = (e: Element): void => {
       if (e.nodeName !== 'g') {
         elems.push(e)
       }
@@ -619,16 +570,13 @@ export const init = (canvas) => {
 
   /**
 * Set the given stroke-related attribute the given value for selected elements.
-* @function module:elem-get-set.SvgCanvas#setStrokeAttr
-* @param {string} attr - String with the attribute name
-* @param {string|number} val - String or number with the attribute value
-* @fires module:elem-get-set.SvgCanvas#event:changed
-* @returns {void}
+* @param attr - String with the attribute name
+* @param val - String or number with the attribute value
 */
-  const setStrokeAttrMethod = (attr, val) => {
+  const setStrokeAttrMethod = (attr: string, val: string | number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
-    svgCanvas.setCurShape(/** @type {'stroke_width'} */ (attr.replace('-', '_')), /** @type {number} */ (val))
-    const elems = []
+    svgCanvas.setCurShape(attr.replace('-', '_') as 'stroke_width', val as number)
+    const elems: Element[] = []
 
     let i = selectedElements.length
     while (i--) {
@@ -650,12 +598,9 @@ export const init = (canvas) => {
   /**
 * Sets the new image URL for the selected image element. Updates its size if
 * a new URL is given.
-* @function module:svgcanvas.SvgCanvas#setImageURL
-* @param {string} val - String with the image URL/path
-* @fires module:svgcanvas.SvgCanvas#event:changed
-* @returns {void}
+* @param val - String with the image URL/path
 */
-  const setImageURLMethod = (val) => {
+  const setImageURLMethod = (val: string): void => {
     const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const selectedElements = svgCanvas.getSelectedElements()
     const elem = selectedElements[0]
@@ -716,18 +661,16 @@ export const init = (canvas) => {
 
   /**
 * Sets the new link URL for the selected anchor element.
-* @function module:svgcanvas.SvgCanvas#setLinkURL
-* @param {string} val - String with the link URL/path
-* @returns {void}
+* @param val - String with the link URL/path
 */
-  const setLinkURLMethod = (val) => {
+  const setLinkURLMethod = (val: string): void => {
     const { ChangeElementCommand, BatchCommand } = svgCanvas.history
     const selectedElements = svgCanvas.getSelectedElements()
     let elem = selectedElements[0]
     if (!elem) { return }
     if (elem.tagName !== 'a') {
     // See if parent is an anchor
-      const parentsA = getParents(/** @type {Node} */ (elem.parentNode), 'a')
+      const parentsA = getParents(elem.parentNode as Node, 'a')
       if (parentsA?.length) {
         elem = parentsA[0]
       } else {
@@ -752,12 +695,9 @@ export const init = (canvas) => {
   /**
 * Sets the `rx` and `ry` values to the selected `rect` element
 * to change its corner radius.
-* @function module:svgcanvas.SvgCanvas#setRectRadius
-* @param {string|number} val - The new radius
-* @fires module:svgcanvas.SvgCanvas#event:changed
-* @returns {void}
+* @param val - The new radius
 */
-  const setRectRadiusMethod = (val) => {
+  const setRectRadiusMethod = (val: string | number): void => {
     const { ChangeElementCommand } = svgCanvas.history
     const selectedElements = svgCanvas.getSelectedElements()
     const selected = selectedElements[0]
@@ -786,19 +726,14 @@ export const init = (canvas) => {
 
   /**
 * Wraps the selected element(s) in an anchor element or converts group to one.
-* @function module:svgcanvas.SvgCanvas#makeHyperlink
-* @param {string} url
-* @returns {void}
 */
-  const makeHyperlinkMethod = (url) => {
+  const makeHyperlinkMethod = (url: string): void => {
     svgCanvas.groupSelectedElements('a', url)
   }
 
   /**
-* @function module:svgcanvas.SvgCanvas#removeHyperlink
-* @returns {void}
 */
-  const removeHyperlinkMethod = () => {
+  const removeHyperlinkMethod = (): void => {
     svgCanvas.ungroupSelectedElement()
   }
 
@@ -808,23 +743,18 @@ export const init = (canvas) => {
 
   /**
 * Sets the new segment type to the selected segment(s).
-* @function module:svgcanvas.SvgCanvas#setSegType
-* @param {number} newType - New segment type. See {@link https://www.w3.org/TR/SVG/paths.html#InterfaceSVGPathSeg} for list
-* @returns {void}
+* @param newType - New segment type. See {@link https://www.w3.org/TR/SVG/paths.html#InterfaceSVGPathSeg} for list
 */
-  const setSegTypeMethod = (newType) => {
+  const setSegTypeMethod = (newType: number): void => {
     svgCanvas.pathActions.setSegType(newType)
   }
 
   /**
 * Set the background of the editor (NOT the actual document).
-* @function module:svgcanvas.SvgCanvas#setBackground
-* @param {string} color - String with fill color to apply
-* @param {string} url - URL or path to image to use
-* @returns {void}
+* @param color - String with fill color to apply
+* @param url - URL or path to image to use
 */
-  /** @type {(color: string, url?: string, gradientElem?: Element, recordUndo?: boolean) => void} */
-  const setBackgroundMethod = (color, url, gradientElem) => {
+  const setBackgroundMethod = (color: string, url?: string, gradientElem?: Element, _recordUndo?: boolean): void => {
     const bg = svgCanvas.getElement('canvasBackground')
     if (!bg) { return }
     const border = bg.querySelector('rect')
@@ -855,7 +785,7 @@ export const init = (canvas) => {
       // document-wide — can't have a second canvas's background rect bind to
       // the first's gradient.
       const gradId = svgCanvas.getNonceId(`background_gradient_${++bgGradientSeq}`)
-      ;/** @type {Element} */ (grad).id = gradId
+      ;(grad as Element).id = gradId
       bgDefs.appendChild(grad)
       border.setAttribute('fill', `url(#${gradId})`)
     } else {
@@ -926,14 +856,9 @@ export const init = (canvas) => {
  * The "mouth" is centred at 3-o'clock (angle 0, rightward).
  * A single SVG arc cannot represent a full ellipse (coincident start/end point),
  * so this function must only be called for arcDeg in the range [1, 359].
- * @param {number} cx
- * @param {number} cy
- * @param {number} rx
- * @param {number} ry
- * @param {number} arcDeg - arc span in degrees (1–359)
- * @returns {string}
+ * @param arcDeg - arc span in degrees (1–359)
  */
-  const computeArcPathD = (cx, cy, rx, ry, arcDeg) => {
+  const computeArcPathD = (cx: number, cy: number, rx: number, ry: number, arcDeg: number): string => {
     const halfGap = ((360 - arcDeg) / 2) * (Math.PI / 180)
     const startX = cx + rx * Math.cos(halfGap)
     const startY = cy + ry * Math.sin(halfGap)
@@ -947,12 +872,9 @@ export const init = (canvas) => {
  * Read the centre and radii of a circle, ellipse, or arc path as
  * `{ cx, cy, rx, ry }`. Arc paths store geometry in `data-*` attributes;
  * legacy arc paths used a single `data-r`, read as a fallback for both radii.
- * @param {Element} elem
- * @returns {{cx:number, cy:number, rx:number, ry:number}}
  */
-  const readArcGeom = (elem) => {
-    /** @param {string} a */
-    const num = (a) => Number(elem.getAttribute(a)) || 0
+  const readArcGeom = (elem: Element): { cx: number, cy: number, rx: number, ry: number } => {
+    const num = (a: string): number => Number(elem.getAttribute(a)) || 0
     if (elem.tagName === 'circle') {
       const r = num('r')
       return { cx: num('cx'), cy: num('cy'), rx: r, ry: r }
@@ -978,9 +900,8 @@ export const init = (canvas) => {
  * - arcDegrees < 360 converts a <circle>/<ellipse> to a <path data-arc> (or
  *   updates an existing arc path in place).
  * Supports full undo/redo via BatchCommand / ChangeElementCommand.
- * @param {number} arcDegrees
  */
-  const setCircleArcMethod = (arcDegrees) => {
+  const setCircleArcMethod = (arcDegrees: number): void => {
     const selected = svgCanvas.getSelectedElements()[0]
     if (!selected) return
     const { tagName } = selected
@@ -997,16 +918,14 @@ export const init = (canvas) => {
     const { BatchCommand, RemoveElementCommand, InsertElementCommand, ChangeElementCommand } = svgCanvas.history
 
     // Collect presentational attributes from elem
-    /** @param {Element} elem */
-    const collectPresAttrs = (elem) => ARC_PRES_ATTRS.reduce((o, a) => {
+    const collectPresAttrs = (elem: Element): Record<string, string> => ARC_PRES_ATTRS.reduce((o, a) => {
       const v = elem.getAttribute(a)
       if (v !== null) o[a] = v
       return o
-    }, /** @type {Record<string, string>} */ ({}))
+    }, {} as Record<string, string>)
 
     // Swap `selected` out for `replacement`, preserving id/transform, as one undo step.
-    /** @type {(replacement: Element, label: string) => void} */
-    const replaceSelected = (replacement, label) => {
+    const replaceSelected = (replacement: Element, label: string): void => {
       const batchCmd = new BatchCommand(label)
       const eltrans = selected.getAttribute('transform')
       if (eltrans) replacement.setAttribute('transform', eltrans)
@@ -1057,10 +976,8 @@ export const init = (canvas) => {
  * the path `d` attribute accordingly. Used when the user edits the cx/cy/r
  * (circular arc) or cx/cy/rx/ry (elliptical arc) fields in the panel while an
  * arc path is selected. An `r` edit sets both radii (keeps the arc circular).
- * @param {'cx'|'cy'|'r'|'rx'|'ry'} attr
- * @param {number} val
  */
-  const setCircleArcAttrMethod = (attr, val) => {
+  const setCircleArcAttrMethod = (attr: 'cx' | 'cy' | 'r' | 'rx' | 'ry', val: number): void => {
     const selected = svgCanvas.getSelectedElements()[0]
     if (!selected || selected.tagName !== 'path' || !selected.hasAttribute('data-arc')) return
 
@@ -1071,7 +988,7 @@ export const init = (canvas) => {
     const oldVals = changedAttrs.reduce((o, a) => {
       o[a] = selected.getAttribute(a)
       return o
-    }, /** @type {Record<string, string|null>} */ ({}))
+    }, {} as Record<string, string | null>)
 
     if (attr === 'cx') {
       geom.cx = val
