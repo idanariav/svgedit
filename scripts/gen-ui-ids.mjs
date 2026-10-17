@@ -97,7 +97,7 @@ const markupFiles = (dir) => readdirSync(dir).flatMap((name) => {
   const path = join(dir, name)
   if (SKIP.has(name)) return []
   if (statSync(path).isDirectory()) return markupFiles(path)
-  return /\.(js|html)$/.test(name) && !name.endsWith('.test.js') ? [path] : []
+  return /\.(js|ts|html)$/.test(name) && !/\.(test\.js|d\.ts)$/.test(name) ? [path] : []
 })
 
 export const generate = (root) => {

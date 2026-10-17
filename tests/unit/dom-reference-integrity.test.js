@@ -37,8 +37,8 @@ function walk (dir, exts) {
 }
 
 const editorHtmlFiles = walk(EDITOR_ROOT, ['.html'])
-const editorJsFiles = walk(EDITOR_ROOT, ['.js'])
-  .filter((f) => !f.includes(`${join('src', 'editor', 'tests')}`) && !f.endsWith('.test.js'))
+const editorJsFiles = walk(EDITOR_ROOT, ['.js', '.ts'])
+  .filter((f) => !f.includes(`${join('src', 'editor', 'tests')}`) && !f.endsWith('.test.js') && !f.endsWith('.d.ts'))
 // svgcanvas is the engine editor panels/extensions sit on top of: it creates
 // a handful of DOM nodes (canvasBackground, ...) that extensions legitimately
 // look up by id. Only used to seed the known-id/class set below -- its own

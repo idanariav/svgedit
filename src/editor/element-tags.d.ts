@@ -3,7 +3,6 @@ interface HTMLElementTagNameMap {
   'se-color-dialog': import('./components/colorPicker/ColorDialog.js').SeColorDialog
   'se-eyedropper-menu': import('./components/eyedropper/EyedropperActionMenu.js').SeEyedropperMenu
   'se-palette-dialog': import('./components/palette/PaletteDialog.js').SePaletteDialog
-  'se-brush-settings': import('./components/seBrushSettings.js').default
   'se-button': import('./components/seButton.js').ToolButton
   'se-canvas-settings': import('./components/seCanvasSettings.js').default
   'se-class-select': import('./components/seClassSelect.js').default

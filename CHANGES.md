@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.12
+- UI: the Brush tool's settings moved from a popover in the right panel's Effects tab to the tool's options bar: the five saved brushes are a button row (the one in use is highlighted, an edited one is dashed with Save / ✕), the main parameters are inline and a More toggle shows angle, roundness and taper. Tool options gain `buttons` and `button` controls.
+
 ## 7.4.1-fork.11
 - Fix: after `clear()` the selection overlay and the drag rectangle (and its hit-test) sat left of the cursor by the canvas margin, because the rebuilt selector group lost the `translate(x,y)` that `updateCanvas()` sets.
 - UI: the layer fold arrow is a larger drawn triangle, vertically centred in its row.

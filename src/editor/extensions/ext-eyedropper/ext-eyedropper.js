@@ -18,7 +18,7 @@
 import '../../components/eyedropper/EyedropperActionMenu.js'
 import '../../components/palette/PaletteDialog.js'
 import { closestRoot } from '../../domScope.js'
-import { normalizeFillToHex } from '../../palette/oklchColor.js'
+import { normalizeFillToHex } from '../../palette/oklchColor.ts'
 import { copyStyle } from '../../styleCopy.js'
 
 const name = 'eyedropper'

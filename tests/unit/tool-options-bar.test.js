@@ -106,4 +106,29 @@ describe('tool options bar', () => {
     tray.remove()
     expect(() => refreshToolOptions(editor)).not.toThrow()
   })
+
+  it('draws a button row with each choice\'s state; a click and a double click go to the tool, a repaint keeps the buttons', () => {
+    options = [{
+      id: 'slot',
+      type: 'buttons',
+      label: 'Brushes',
+      value: '',
+      choices: [{ value: '0', label: 'Ink', state: 'active', title: 'in use' }, { value: '1', label: '2', state: 'empty' }]
+    }, { id: 'update', type: 'button', label: 'Update', value: false }]
+    refreshToolOptions(editor)
+    const row = tray.querySelector('[data-option="slot"]')
+    const [a, b] = row.children
+    expect([a.textContent, a.dataset.state, a.getAttribute('aria-pressed'), a.title]).toEqual(['Ink', 'active', 'true', 'in use'])
+    expect([b.dataset.state, b.getAttribute('aria-pressed')]).toEqual(['empty', 'false'])
+
+    b.click()
+    b.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    tray.querySelector('[data-option="update"]').click()
+    expect(changes).toEqual([['slot', '1'], ['slot', 'dblclick:1'], ['update', true]])
+
+    options[0] = { ...options[0], choices: [{ value: '0', label: 'Ink', state: 'modified' }, { value: '1', label: 'Pen', state: 'active' }] }
+    refreshToolOptions(editor)
+    expect(tray.querySelector('[data-option="slot"]')).toBe(row)
+    expect([a.dataset.state, b.textContent, b.dataset.state]).toEqual(['modified', 'Pen', 'active'])
+  })
 })

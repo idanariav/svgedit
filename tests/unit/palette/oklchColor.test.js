@@ -7,7 +7,7 @@ import {
   oklchToCartesian,
   oklchDistance,
   normalizeFillToHex
-} from '../../../src/editor/palette/oklchColor.js'
+} from '../../../src/editor/palette/oklchColor.ts'
 
 describe('maxChromaAt', () => {
   it('returns an sRGB-displayable color at the exact requested L,h', () => {

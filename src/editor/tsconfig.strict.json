@@ -7,5 +7,5 @@
     // The editor builds itself in two steps (a constructor, then the async `init()`), so a class declares its late members as fields.
     "strictPropertyInitialization": false
   },
-  "include": ["./**/*.js", "./globals.d.ts", "./element-tags.d.ts", "./ui-ids.d.ts"]
+  "include": ["./**/*.js", "./**/*.ts", "./globals.d.ts", "./element-tags.d.ts", "./ui-ids.d.ts"]
 }

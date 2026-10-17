@@ -1,14 +1,17 @@
 /**
- * paletteObjectives.js — scoring and whole-palette harmonization passes for
+ * paletteObjectives.ts — scoring and whole-palette harmonization passes for
  * the OKLCH palette generator. Never scores/optimizes a single hue against
  * the background in isolation without also considering the other 7 — the
  * `harmonize*` functions are the mandatory global pass that makes the
  * result read as one cohesive palette instead of 8 independent picks.
  */
 
-import { oklchDistance } from './oklchColor.js'
+import { oklchDistance } from './oklchColor.ts'
 
-/** @typedef {{l: number, c: number, h: number, contrast: number}} Candidate one point of a hue's lightness / chroma curve, with its contrast against the background */
+/** One point of a hue's lightness / chroma curve, with its contrast against the background. */
+export interface Candidate { /** culori needs it to format the colour */ mode?: 'oklch', l: number, c: number, h: number, contrast: number }
+
+interface Weights { wChroma: number, wContrast: number }
 
 export const DEFAULT_TARGET_HUES = [
   { name: 'red', h: 29 },
@@ -25,8 +28,7 @@ export const DEFAULT_PREFERRED_CHROMA = 0.15
 
 export const SEMANTIC_HUE_NAMES = new Set(['red', 'yellow', 'green', 'blue'])
 
-/** @type {Record<string, {wChroma: number, wContrast: number}>} */
-const PURPOSE_WEIGHTS = {
+const PURPOSE_WEIGHTS: Record<string, Weights> = {
   icons: { wChroma: 0.65, wContrast: 0.35 },
   buttons: { wChroma: 0.6, wContrast: 0.4 },
   text: { wChroma: 1, wContrast: 0 }, // contrast is a hard gate applied upstream in the shortlist
@@ -39,12 +41,7 @@ const MAX_PASSES_EQUAL_WEIGHT = 4
 const MAX_PASSES_PAIRWISE = 6
 const CONVERGENCE_EPSILON = 0.01
 
-/**
- * @param {string} purpose
- * @param {string} hueName
- * @returns {{wChroma: number, wContrast: number}}
- */
-export function weightsForHue (purpose, hueName) {
+export function weightsForHue (purpose: string, hueName: string): Weights {
   if (purpose === 'notifications') {
     return SEMANTIC_HUE_NAMES.has(hueName)
       ? PURPOSE_WEIGHTS.notifications_semantic
@@ -57,11 +54,9 @@ export function weightsForHue (purpose, hueName) {
  * Saturating normalization: contrast right at the floor scores 0, contrast at
  * 2x the floor (or above) scores 1. Prevents the objective from rewarding
  * unbounded contrast overshoot at the expense of chroma.
- * @param {number} contrast
- * @param {number} minContrast
- * @returns {number} 0..1
+ * @returns 0..1
  */
-export function normalizedContrastScore (contrast, minContrast) {
+export function normalizedContrastScore (contrast: number, minContrast: number): number {
   if (minContrast <= 0) return 1
   return Math.min(1, Math.max(0, (contrast - minContrast) / minContrast))
 }
@@ -71,11 +66,8 @@ export function normalizedContrastScore (contrast, minContrast) {
  * purpose: peak-chroma yellow sits very high in L (~0.9) and reads as
  * "bright", not "warning" — bias the score down as L climbs past a legible
  * ceiling so the harmonization pass prefers a slightly deeper yellow.
- * @param {{l: number}} candidate
- * @param {string} hueName
- * @returns {number}
  */
-function legibilityBias (candidate, hueName) {
+function legibilityBias (candidate: { l: number }, hueName: string): number {
   if (hueName === 'yellow') {
     const over = Math.max(0, candidate.l - 0.82)
     return -over * 2
@@ -87,14 +79,15 @@ function legibilityBias (candidate, hueName) {
  * Single-hue score for a candidate, purpose-weighted. This is what ranks
  * candidates within one hue's shortlist and (for the equal-weight shapes)
  * what "equal visual weight" is measured against across hues.
- * @param {Candidate} candidate
- * @param {number} hueMaxChroma - this hue's own peak achievable chroma
- * @param {number} minContrast
- * @param {{wChroma: number, wContrast: number}} weights
- * @param {{hueName?: string, purpose?: string}} [context]
- * @returns {number}
+ * @param hueMaxChroma - this hue's own peak achievable chroma
  */
-export function scoreCandidate (candidate, hueMaxChroma, minContrast, weights, context = {}) {
+export function scoreCandidate (
+  candidate: Candidate,
+  hueMaxChroma: number,
+  minContrast: number,
+  weights: Weights,
+  context: { hueName?: string, purpose?: string } = {}
+): number {
   const normalizedChroma = hueMaxChroma > 0 ? candidate.c / hueMaxChroma : 0
   const normalizedContrast = normalizedContrastScore(candidate.contrast, minContrast)
   let score = weights.wChroma * normalizedChroma + weights.wContrast * normalizedContrast
@@ -110,17 +103,20 @@ export function scoreCandidate (candidate, hueMaxChroma, minContrast, weights, c
  * to its own best-scoring candidate, then repeatedly pull outlier hues toward
  * the cross-palette mean weight, never leaving that hue's own shortlist (so
  * gamut/contrast-floor guarantees from the shortlist step are preserved).
- * @param {Candidate[][]} shortlists - per-hue candidate shortlists
- * @param {number[]} hueMaxChromas - per-hue peak chroma
- * @param {number} minContrast
- * @param {Array<{wChroma: number, wContrast: number}>} weightsPerHue
- * @param {{hueNames?: string[], purpose?: string, maxPasses?: number, epsilon?: number}} [opts]
- * @returns {Candidate[]} one chosen candidate per hue
+ * @param shortlists - per-hue candidate shortlists
+ * @param hueMaxChromas - per-hue peak chroma
+ * @returns one chosen candidate per hue
  */
-export function harmonizeEqualWeight (shortlists, hueMaxChromas, minContrast, weightsPerHue, opts = {}) {
+export function harmonizeEqualWeight (
+  shortlists: Candidate[][],
+  hueMaxChromas: number[],
+  minContrast: number,
+  weightsPerHue: Weights[],
+  opts: { hueNames?: string[], purpose?: string, maxPasses?: number, epsilon?: number } = {}
+): Candidate[] {
   const { hueNames = [], purpose, maxPasses = MAX_PASSES_EQUAL_WEIGHT, epsilon = CONVERGENCE_EPSILON } = opts
   const n = shortlists.length
-  const scoreOf = (/** @type {Candidate} */ candidate, /** @type {number} */ i) =>
+  const scoreOf = (candidate: Candidate, i: number) =>
     scoreCandidate(candidate, hueMaxChromas[i], minContrast, weightsPerHue[i], { hueName: hueNames[i], purpose })
 
   const picks = shortlists.map((list, i) =>
@@ -157,16 +153,14 @@ export function harmonizeEqualWeight (shortlists, hueMaxChromas, minContrast, we
  * distance as a tiebreaker), so adjacent hues can never end up looking
  * confusably similar. Coordinate-ascent hill climb, each hue's candidate is
  * always scored against the other 7 hues' *current* picks.
- * @param {Candidate[][]} shortlists
- * @param {{maxPasses?: number}} [opts]
- * @returns {Candidate[]} one chosen candidate per hue
+ * @returns one chosen candidate per hue
  */
-export function harmonizePairwiseDistinct (shortlists, opts = {}) {
+export function harmonizePairwiseDistinct (shortlists: Candidate[][], opts: { maxPasses?: number } = {}): Candidate[] {
   const { maxPasses = MAX_PASSES_PAIRWISE } = opts
   const n = shortlists.length
   const picks = shortlists.map(list => list.reduce((best, cand) => (cand.c > best.c ? cand : best), list[0]))
 
-  const globalObjective = (/** @type {Candidate[]} */ candidates) => {
+  const globalObjective = (candidates: Candidate[]) => {
     let minDist = Infinity
     let sumDist = 0
     let pairs = 0
@@ -210,11 +204,10 @@ export function harmonizePairwiseDistinct (shortlists, opts = {}) {
  * Pulls every hue toward one shared (L, C) target derived from the common
  * achievable ceiling across all 8 hues, directly minimizing cross-palette
  * variance by construction — the "harmonious over max-contrast" objective.
- * @param {Candidate[][]} shortlists - shortlists already built against
- *   the purpose's softened contrast floor
- * @returns {Candidate[]} one chosen candidate per hue
+ * @param shortlists - shortlists already built against the purpose's softened contrast floor
+ * @returns one chosen candidate per hue
  */
-export function harmonizeVarianceMin (shortlists) {
+export function harmonizeVarianceMin (shortlists: Candidate[][]): Candidate[] {
   const targetC = Math.min(...shortlists.map(list => Math.max(...list.map(c => c.c))))
   const peakLs = shortlists.map(list => list.reduce((best, c) => (c.c > best.c ? c : best), list[0]).l)
   const targetL = Math.min(0.75, Math.max(0.4, median(peakLs)))
@@ -228,11 +221,7 @@ export function harmonizeVarianceMin (shortlists) {
   )
 }
 
-/**
- * @param {number[]} values
- * @returns {number}
- */
-function median (values) {
+function median (values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2

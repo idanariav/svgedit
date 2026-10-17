@@ -8,7 +8,7 @@ const ROOT = join(__dirname, '../../src/editor')
 const walk = (dir) => readdirSync(dir).flatMap((f) => {
   const p = join(dir, f)
   if (p.includes(`${join('src', 'editor', 'locale')}`)) return []
-  return statSync(p).isDirectory() ? walk(p) : (p.endsWith('.js') ? [p] : [])
+  return statSync(p).isDirectory() ? walk(p) : (/\.(js|ts)$/.test(p) && !p.endsWith('.d.ts') ? [p] : [])
 })
 
 const has = (key) => key.split('.').reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), en) !== undefined

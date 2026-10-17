@@ -17,7 +17,7 @@ const TRAYS = ['tool_options_panel', 'ts_tool_options']
 export const refreshToolOptions = (/** @type {EditorInstance} */ editor) => {
   const { $id, svgCanvas } = editor
   const options = svgCanvas.getToolOptions().filter((o) => !o.hidden)
-  const signature = `${svgCanvas.getMode()}|${options.map((o) => `${o.id}:${o.type}:${(o.choices ?? []).map((c) => c.value).join('/')}`).join(',')}`
+  const signature = `${svgCanvas.getMode()}|${options.map((o) => `${o.id}:${o.type}:${o.type === 'button' ? o.label : ''}:${(o.choices ?? []).map((c) => c.value).join('/')}`).join(',')}`
   for (const id of TRAYS) {
     const tray = $id(id)
     if (tray) fillTray(editor, tray, options, signature)
@@ -46,9 +46,26 @@ const fillTray = (editor, tray, options, signature) => {
   for (const o of options) {
     const control = /** @type {HTMLInputElement} */ (tray.querySelector(`[data-option="${o.id}"]`))
     if (!control) continue
+    if (o.type === 'buttons') {
+      o.choices?.forEach((c, i) => paintChoice(/** @type {HTMLButtonElement} */ (control.children[i]), c))
+      continue
+    }
+    if (o.type === 'button') continue
     if (o.type === 'checkbox') /** @type {HTMLInputElement} */ (control.querySelector('input')).checked = Boolean(o.value)
     else if (String(control.value) !== String(o.value) && document.activeElement !== control) control.value = String(o.value)
   }
+}
+
+/**
+ * @param {HTMLButtonElement} btn
+ * @param {{ value: string, label: string, title?: string, state?: string }} c
+ * @returns {void}
+ */
+const paintChoice = (btn, c) => {
+  btn.textContent = c.label
+  btn.title = c.title ?? ''
+  btn.dataset.state = c.state ?? ''
+  btn.setAttribute('aria-pressed', String(c.state === 'active'))
 }
 
 /**
@@ -61,6 +78,33 @@ const buildControl = (editor, o) => {
   const send = (/** @type {number | string | boolean} */ value) => {
     svgCanvas.setToolOption(o.id, value)
     refreshToolOptions(editor)
+  }
+  if (o.type === 'button') {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'tool-option-action'
+    btn.dataset.option = o.id
+    btn.textContent = o.label
+    if (o.title) btn.title = o.title
+    btn.addEventListener('click', () => send(true))
+    return btn
+  }
+  if (o.type === 'buttons') {
+    const row = document.createElement('div')
+    row.className = 'tool-option-buttons'
+    row.dataset.option = o.id
+    row.setAttribute('role', 'group')
+    row.setAttribute('aria-label', o.label)
+    for (const c of o.choices ?? []) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'tool-option-choice'
+      paintChoice(btn, c)
+      btn.addEventListener('click', () => send(c.value))
+      btn.addEventListener('dblclick', () => send(`dblclick:${c.value}`))
+      row.append(btn)
+    }
+    return row
   }
   if (o.type === 'checkbox') {
     const label = document.createElement('label')

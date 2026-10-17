@@ -11,7 +11,7 @@ const sourceFiles = (dir) => readdirSync(dir).flatMap((name) => {
   const path = join(dir, name)
   if (['vendor', 'locale', 'tests', 'node_modules'].includes(name)) return []
   if (statSync(path).isDirectory()) return sourceFiles(path)
-  return name.endsWith('.js') ? [path] : []
+  return /\.(js|ts)$/.test(name) && !name.endsWith('.d.ts') ? [path] : []
 })
 
 describe('element-tags.d.ts', () => {

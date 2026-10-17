@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import generatePalette, { DEFAULT_TARGET_HUES } from '../../../src/editor/palette/generatePalette.js'
+import generatePalette, { DEFAULT_TARGET_HUES } from '../../../src/editor/palette/generatePalette.ts'
 
 const BACKGROUNDS = {
   veryLight: '#f5f5f0',

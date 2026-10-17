@@ -20,7 +20,7 @@ const walk = (dir, out = []) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
     if (entry.isDirectory()) walk(full, out)
-    else if (/\.(html|js)$/.test(entry.name)) out.push(full)
+    else if (/\.(html|js|ts)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) out.push(full)
   }
   return out
 }

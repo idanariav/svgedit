@@ -96,7 +96,7 @@ export interface ToolOption {
   id: string
   /** already translated */
   label: string
-  type: 'number' | 'select' | 'checkbox'
+  type: 'number' | 'select' | 'checkbox' | 'buttons' | 'button'
   /** the current value */
   value: number | string | boolean
   /** number */
@@ -105,8 +105,12 @@ export interface ToolOption {
   max?: number
   /** number */
   step?: number
-  /** select; labels already translated */
-  choices?: Array<{ value: string, label: string }>
+  /**
+   * select, buttons; labels already translated. `buttons` is a row of presets: a click calls `setOption(id, value)`,
+   * a double click `setOption(id, 'dblclick:' + value)`; `state` is drawn on the button (`active`, `modified`, `filled`, `empty`).
+   * `button` is one action button: a click calls `setOption(id, true)`.
+   */
+  choices?: Array<{ value: string, label: string, title?: string, state?: 'active' | 'modified' | 'filled' | 'empty' }>
   /** tooltip */
   title?: string
   /** the control is not relevant right now (e.g. the distance while spacing is by step count) */

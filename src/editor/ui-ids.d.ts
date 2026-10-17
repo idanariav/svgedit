@@ -27,14 +27,6 @@ interface ElementIdMap {
   bg_color: HTMLElementTagNameMap['se-colorpicker']
   block: HTMLDivElement
   blur: HTMLElementTagNameMap['se-spin-input']
-  brush_angle: HTMLElementTagNameMap['se-spin-input']
-  brush_opacity: HTMLElementTagNameMap['se-spin-input']
-  brush_roundness: HTMLElementTagNameMap['se-spin-input']
-  brush_settings_panel: HTMLDivElement
-  brush_smoothness: HTMLElementTagNameMap['se-spin-input']
-  brush_taper_end: HTMLElementTagNameMap['se-spin-input']
-  brush_taper_start: HTMLElementTagNameMap['se-spin-input']
-  brush_thickness: HTMLElementTagNameMap['se-spin-input']
   caniuse: HTMLDivElement
   canvas_h: HTMLElementTagNameMap['se-spin-input']
   canvas_height: HTMLInputElement
@@ -425,7 +417,6 @@ interface ElementIdMap {
   tool_bool_subtract: HTMLElementTagNameMap['se-list-item']
   tool_bool_union: HTMLElementTagNameMap['se-list-item']
   tool_brush: HTMLElementTagNameMap['se-button']
-  tool_brush_settings: HTMLElementTagNameMap['se-brush-settings']
   tool_canvas_settings: HTMLElementTagNameMap['se-canvas-settings']
   tool_clear: HTMLElementTagNameMap['se-menu-item']
   tool_clip_set: HTMLElementTagNameMap['se-button']

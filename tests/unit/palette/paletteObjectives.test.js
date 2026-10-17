@@ -8,8 +8,8 @@ import {
   harmonizeEqualWeight,
   harmonizePairwiseDistinct,
   harmonizeVarianceMin
-} from '../../../src/editor/palette/paletteObjectives.js'
-import { buildHueCurve, shortlistCandidates } from '../../../src/editor/palette/generatePalette.js'
+} from '../../../src/editor/palette/paletteObjectives.ts'
+import { buildHueCurve, shortlistCandidates } from '../../../src/editor/palette/generatePalette.ts'
 
 describe('DEFAULT_TARGET_HUES', () => {
   it('has exactly the 8 required hue names', () => {

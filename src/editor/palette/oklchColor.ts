@@ -1,5 +1,5 @@
 /**
- * oklchColor.js — thin culori wrapper for OKLCH color-space math.
+ * oklchColor.ts — thin culori wrapper for OKLCH color-space math.
  *
  * Every color produced here comes from `clampChroma`, which bisects chroma
  * downward at a fixed L/h until the result is sRGB-displayable. That is what
@@ -10,33 +10,28 @@
 import { converter, formatHex, wcagContrast, clampChroma } from 'culori'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
-/** @typedef {{l: number, c: number, h?: number}} Oklch a culori oklch color */
+/** A culori oklch color. */
+export interface Oklch { l: number, c: number, h?: number }
 
 const toRgb = converter('rgb')
 
 /**
- * @param {number} l - OKLCH lightness, 0..1
- * @param {number} h - OKLCH hue, degrees
- * @param {number} [c] - chroma ceiling to search down from
- * @returns {{mode: 'oklch', l: number, c: number, h: number}} max in-gamut chroma at l,h
+ * @param l - OKLCH lightness, 0..1
+ * @param h - OKLCH hue, degrees
+ * @param c - chroma ceiling to search down from
+ * @returns max in-gamut chroma at l,h
  */
-export function maxChromaAt (l, h, c = 0.4) {
+export function maxChromaAt (l: number, h: number, c = 0.4): { mode: 'oklch', l: number, c: number, h: number } {
   return clampChroma({ mode: 'oklch', l, c, h }, 'oklch')
 }
 
-/**
- * @param {object} oklchColor - a culori oklch color object
- * @returns {string} '#rrggbb'
- */
-export function toRgbHex (oklchColor) {
+/** @returns '#rrggbb' */
+export function toRgbHex (oklchColor: Oklch): string {
   return formatHex(oklchColor)
 }
 
-/**
- * @param {Oklch} oklchColor - a culori oklch color object
- * @returns {string} 'oklch(L C H)' CSS Color 4 string
- */
-export function toOklchString (oklchColor) {
+/** @returns 'oklch(L C H)' CSS Color 4 string */
+export function toOklchString (oklchColor: Oklch): string {
   const l = oklchColor.l.toFixed(3)
   const c = oklchColor.c.toFixed(3)
   const h = oklchColor.h !== undefined && Number.isFinite(oklchColor.h) ? oklchColor.h.toFixed(1) : '0'
@@ -46,11 +41,10 @@ export function toOklchString (oklchColor) {
 /**
  * WCAG relative-luminance contrast ratio between a candidate OKLCH color and
  * a background hex string.
- * @param {object} oklchColor - a culori oklch color object
- * @param {string} backgroundHex - '#rrggbb'
- * @returns {number} contrast ratio, 1..21
+ * @param backgroundHex - '#rrggbb'
+ * @returns contrast ratio, 1..21
  */
-export function contrastAgainst (oklchColor, backgroundHex) {
+export function contrastAgainst (oklchColor: Oklch, backgroundHex: string): number {
   return wcagContrast(oklchColor, backgroundHex)
 }
 
@@ -58,21 +52,16 @@ export function contrastAgainst (oklchColor, backgroundHex) {
  * Convert an OKLCH color to Cartesian (l, a, b)-style coordinates so that a
  * plain Euclidean distance is a valid perceptual-distance metric (hue is
  * cyclic, so a naive scalar hue diff is not).
- * @param {Oklch} oklchColor - a culori oklch color object
- * @returns {[number, number, number]}
  */
-export function oklchToCartesian ({ l, c, h }) {
+export function oklchToCartesian ({ l, c, h }: Oklch): [number, number, number] {
   const hRad = (h ?? 0) * Math.PI / 180
   return [l, c * Math.cos(hRad), c * Math.sin(hRad)]
 }
 
 /**
  * Euclidean distance between two OKLCH colors in Cartesian space.
- * @param {Oklch} a - a culori oklch color object
- * @param {Oklch} b - a culori oklch color object
- * @returns {number}
  */
-export function oklchDistance (a, b) {
+export function oklchDistance (a: Oklch, b: Oklch): number {
   const [al, aa, ab] = oklchToCartesian(a)
   const [bl, ba, bb] = oklchToCartesian(b)
   return Math.sqrt((al - bl) ** 2 + (aa - ba) ** 2 + (ab - bb) ** 2)
@@ -83,10 +72,10 @@ export function oklchDistance (a, b) {
  * `none`, gradient refs (`url(#...)`), and unparseable values fall back to
  * black with a console warning — the palette feature only deals in solid
  * colors.
- * @param {string|null} fillAttr - raw `fill` attribute value
- * @returns {string} '#rrggbb'
+ * @param fillAttr - raw `fill` attribute value
+ * @returns '#rrggbb'
  */
-export function normalizeFillToHex (fillAttr) {
+export function normalizeFillToHex (fillAttr: string | null): string {
   if (!fillAttr || fillAttr === 'none' || fillAttr.startsWith('url(')) {
     if (fillAttr && fillAttr !== 'none') {
       logWarn(`[eyedropper] Cannot sample a solid color from fill="${fillAttr}", defaulting to black`, undefined, 'oklchColor')

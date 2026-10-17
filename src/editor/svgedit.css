@@ -1304,7 +1304,31 @@ hr {
   gap: 6px;
   width: auto;
 }
-#tool_options_panel se-spin-input { max-width: 150px; }
+#tool_options_panel se-spin-input { max-width: 108px; }
+/* Preset row (the brush slots) and plain action buttons in the bar. */
+.tool-option-buttons { display: flex; gap: 4px; align-items: center; }
+.tool-option-choice,
+.tool-option-action {
+  height: 28px;
+  min-width: 24px;
+  max-width: 96px;
+  padding: 0 5px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--field-bg);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.tool-option-choice[data-state="filled"] { color: var(--fg); border-color: var(--accent-border); }
+.tool-option-choice[data-state="modified"] { color: var(--accent); border: 1px dashed var(--accent); background: var(--accent-soft); }
+.tool-option-choice[data-state="active"] { color: var(--chrome-bg); border-color: var(--accent); background: var(--accent); }
+.tool-option-choice:hover,
+.tool-option-action:hover { border-color: var(--accent); }
 .tool-option-check { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--fg); cursor: pointer; }
 
 /* Polystar context fields hold only small numbers, but the default spin-box

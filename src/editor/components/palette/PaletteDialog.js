@@ -6,7 +6,7 @@
  */
 
 import { css } from './PaletteDialog.css.js'
-import { generatePalette } from '../../palette/generatePalette.js'
+import { generatePalette } from '../../palette/generatePalette.ts'
 import { closestRoot } from '../../domScope.js'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 

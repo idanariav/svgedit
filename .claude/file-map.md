@@ -222,7 +222,6 @@
 | `fieldAutoBlur.js` | Release keyboard focus held by panel input fields |
 | `index.js` | Imports every custom-element component so that each registers itself |
 | `PaintBox.js` | `<se-paint-box>` — Fill/stroke paint control |
-| `seBrushSettings.js` | `<se-brush-settings>` — Brush-tool settings popover (its trigger is a gear with the text "Brush settings", not a lone icon; thickness/angle/roundness/taper start-end/opacity/smoothness fields + 5… |
 | `seButton.js` | `<se-button>` — Icon button with pressed/disabled states |
 | `seCanvasSettings.js` | `<se-canvas-settings>` — Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
 | `seClassSelect.js` | `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for… |
@@ -347,6 +346,7 @@
 
 | File | What it is |
 |---|---|
+| `brushOptions.js` | The Brush tool's options bar: the five saved brushes as a row of buttons (the one in use is highlighted, one edited since it was loaded is dashed), the live brush parameters, and Save / Delete for the current slot |
 | `ext-brush.js` | Configurable freehand "brush" tool |
 
 ### `src/editor/extensions/ext-color-shift/`
@@ -614,9 +614,9 @@
 
 | File | What it is |
 |---|---|
-| `generatePalette.js` | OKLCH palette generator orchestrator |
-| `oklchColor.js` | Thin culori wrapper for OKLCH color-space math |
-| `paletteObjectives.js` | Scoring and whole-palette harmonization passes for the OKLCH palette generator |
+| `generatePalette.ts` | OKLCH palette generator orchestrator |
+| `oklchColor.ts` | Thin culori wrapper for OKLCH color-space math |
+| `paletteObjectives.ts` | Scoring and whole-palette harmonization passes for the OKLCH palette generator |
 
 ### `src/editor/panels/`
 

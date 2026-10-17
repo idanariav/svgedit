@@ -1,5 +1,5 @@
 /**
- * generatePalette.js — OKLCH palette generator orchestrator.
+ * generatePalette.ts — OKLCH palette generator orchestrator.
  *
  * Given a background color, produces one optimized OKLCH color per target
  * hue by (1) building each hue's full achievable (L, maxChroma, contrast)
@@ -10,7 +10,8 @@
  * per-purpose harmonization shapes.
  */
 
-import { maxChromaAt, toRgbHex, toOklchString, contrastAgainst } from './oklchColor.js'
+import { maxChromaAt, toRgbHex, toOklchString, contrastAgainst } from './oklchColor.ts'
+import type { Candidate } from './paletteObjectives.ts'
 import {
   DEFAULT_TARGET_HUES,
   DEFAULT_PREFERRED_CHROMA,
@@ -20,9 +21,7 @@ import {
   harmonizeEqualWeight,
   harmonizePairwiseDistinct,
   harmonizeVarianceMin
-} from './paletteObjectives.js'
-
-/** @typedef {import('./paletteObjectives.js').Candidate} Candidate */
+} from './paletteObjectives.ts'
 
 export { DEFAULT_TARGET_HUES, DEFAULT_PREFERRED_CHROMA }
 
@@ -36,14 +35,16 @@ const DIVERSE_PURPOSES = new Set(['charts', 'illustrations'])
  * Sample the full (L, maxChroma, contrast) frontier for a single hue against
  * a background. Each sample's chroma is the max sRGB-in-gamut chroma at that
  * L,h — this is the per-hue candidate search the optimizer works from.
- * @param {number} h - OKLCH hue, degrees
- * @param {string} backgroundHex
- * @param {number} preferredChroma - chroma ceiling to search down from
- * @returns {{curve: Array<{l:number,c:number,h:number,contrast:number}>, hueMaxChroma: number}}
+ * @param h - OKLCH hue, degrees
+ * @param preferredChroma - chroma ceiling to search down from
  */
-export function buildHueCurve (h, backgroundHex, preferredChroma = DEFAULT_PREFERRED_CHROMA) {
+export function buildHueCurve (
+  h: number,
+  backgroundHex: string,
+  preferredChroma = DEFAULT_PREFERRED_CHROMA
+): { curve: Candidate[], hueMaxChroma: number } {
   const searchCeiling = Math.max(preferredChroma, 0.4)
-  const curve = []
+  const curve: Candidate[] = []
   let hueMaxChroma = 0
   for (let l = L_MIN; l <= L_MAX + 1e-9; l += L_STEP) {
     const clamped = maxChromaAt(l, h, searchCeiling)
@@ -61,13 +62,13 @@ export function buildHueCurve (h, backgroundHex, preferredChroma = DEFAULT_PREFE
  * fails. For Charts/Illustrations (which need a diverse spread of (L,C)
  * options to search over, not just the single best), an evenly-spaced
  * sample across the qualifying range is kept instead of a score-ranked top-N.
- * @param {Candidate[]} curve
- * @param {number} hueMaxChroma
- * @param {number} minContrast
- * @param {{purpose: string, hueName: string, size?: number}} context
- * @returns {{shortlist: Candidate[], meetsFloor: boolean}}
  */
-export function shortlistCandidates (curve, hueMaxChroma, minContrast, context) {
+export function shortlistCandidates (
+  curve: Candidate[],
+  hueMaxChroma: number,
+  minContrast: number,
+  context: { purpose: string, hueName: string, size?: number }
+): { shortlist: Candidate[], meetsFloor: boolean } {
   const { purpose, hueName, size = SHORTLIST_SIZE } = context
   const qualifying = curve.filter((cand) => cand.contrast >= minContrast)
 
@@ -88,33 +89,43 @@ export function shortlistCandidates (curve, hueMaxChroma, minContrast, context) 
   return { shortlist: ranked.slice(0, size), meetsFloor: true }
 }
 
-/**
- * @param {Candidate[]} pool
- * @param {number} size
- * @returns {Candidate[]}
- */
-function evenlySpaced (pool, size) {
+function evenlySpaced (pool: Candidate[], size: number): Candidate[] {
   if (pool.length <= size) return pool
   const step = (pool.length - 1) / (size - 1)
-  const result = []
+  const result: Candidate[] = []
   for (let i = 0; i < size; i++) {
     result.push(pool[Math.round(i * step)])
   }
   return result
 }
 
-/**
- * Generate an 8-color OKLCH palette optimized against a background color.
- * @param {object} options
- * @param {string} options.backgroundHex - '#rrggbb' background to contrast against
- * @param {'icons'|'text'|'charts'|'illustrations'|'buttons'|'notifications'} [options.purpose]
- * @param {number} [options.minContrast] - WCAG contrast ratio floor
- * @param {'hex'|'oklch'} [options.outputFormat] - display-only; both are always computed
- * @param {Array<{name: string, h: number}>} [options.targetHues] - not exposed in v1 UI
- * @param {number} [options.preferredChroma] - not exposed in v1 UI
- * @returns {Array<{name: string, hue: number, l: number, c: number, h: number,
- *   hex: string, oklch: string, contrast: number, meetsContrastFloor: boolean}>}
- */
+export interface PaletteOptions {
+  /** '#rrggbb' background to contrast against */
+  backgroundHex: string
+  purpose?: 'icons' | 'text' | 'charts' | 'illustrations' | 'buttons' | 'notifications'
+  /** WCAG contrast ratio floor */
+  minContrast?: number
+  /** display-only; both are always computed */
+  outputFormat?: 'hex' | 'oklch'
+  /** not exposed in v1 UI */
+  targetHues?: Array<{ name: string, h: number }>
+  /** not exposed in v1 UI */
+  preferredChroma?: number
+}
+
+export interface PaletteColor {
+  name: string
+  hue: number
+  l: number
+  c: number
+  h: number
+  hex: string
+  oklch: string
+  contrast: number
+  meetsContrastFloor: boolean
+}
+
+/** Generate an 8-color OKLCH palette optimized against a background color. */
 export function generatePalette ({
   backgroundHex,
   purpose = 'icons',
@@ -122,7 +133,7 @@ export function generatePalette ({
   outputFormat = 'hex',
   targetHues = DEFAULT_TARGET_HUES,
   preferredChroma = DEFAULT_PREFERRED_CHROMA
-}) {
+}: PaletteOptions): PaletteColor[] {
   if (outputFormat !== 'hex' && outputFormat !== 'oklch') {
     throw new Error(`generatePalette: invalid outputFormat "${outputFormat}", expected "hex" or "oklch"`)
   }
@@ -131,16 +142,9 @@ export function generatePalette ({
     ? Math.max(1.0, minContrast * 0.85)
     : minContrast
 
-  /**
-* @type {number[]}
-*/
-  const hueMaxChromas = []
-  /**
-* @type {Candidate[][]}
-*/
-  const shortlists = []
-  /** @type {boolean[]} */
-  const meetsFloorFlags = []
+  const hueMaxChromas: number[] = []
+  const shortlists: Candidate[][] = []
+  const meetsFloorFlags: boolean[] = []
 
   targetHues.forEach(({ h, name }) => {
     const { curve, hueMaxChroma } = buildHueCurve(h, backgroundHex, preferredChroma)

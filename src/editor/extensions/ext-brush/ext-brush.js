@@ -4,8 +4,8 @@
  * Configurable freehand "brush" tool. Produces a variable-width stroke
  * rendered as a filled <path> outline via `core/brush-stroke.js` — a
  * nib-based renderer supporting roundness, thickness, calligraphic angle,
- * taper start/end, opacity and smoothness (see `<se-brush-settings>` for the
- * live controls and up to 5 saved presets).
+ * taper start/end, opacity and smoothness. Its controls and up to 5 saved
+ * presets are the tool's options bar (see `brushOptions.js`).
  *
  * Pen pressure (Apple Pencil, Wacom, Surface Pen, …) is read from PointerEvents
  * through a passive side-channel: the editor's drawing pipeline is mouse-based,
@@ -18,7 +18,8 @@
  * @license MIT
  */
 
-import '../../components/seBrushSettings.js'
+import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../../customBrushes.js'
+import { createBrushOptions } from './brushOptions.js'
 import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.ts'
 
 const name = 'brush'
@@ -33,7 +34,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id, $req } = svgCanvas
+    const { $req } = svgCanvas
     /**
 * @type {Element | null}
 */
@@ -52,12 +53,24 @@ export default {
       element?.setAttribute('d', buildBrushOutline(points, svgCanvas.getBrushParams()))
     }
 
+    const brushOptions = createBrushOptions({
+      slotCount: BRUSH_SLOT_COUNT,
+      getParams: () => svgCanvas.getBrushParams(),
+      setParams: (params) => svgCanvas.setBrushParams(params),
+      getSlot: getBrushSlot,
+      saveSlot: saveBrushSlot,
+      deleteSlot: deleteBrushSlot,
+      renameSlot: renameBrushSlot,
+      askName: (i, current) => window.sePrompt(`Name for brush ${i + 1}`, current, {}, svgEditor.$container)
+    })
+
     // The brush as a registered tool: one undo step per stroke, rolled back on Escape
     // or a tool switch. First point is the (grid-snapped) press, the rest are raw.
     svgCanvas.registerTool({
       id: 'brush',
       undoLabel: 'Brush stroke',
-      keepOpacity: true, // the stroke carries the brush popover's opacity, not the shape style's
+      ...brushOptions,
+      keepOpacity: true, // the stroke carries the brush's own opacity, not the shape style's
       pointerDown (ctx, ev) {
         smoother = createSmoother(svgCanvas.getBrushParams().smoothness)
         points = [smoother.push({ x: ev.x, y: ev.y, pressure: pressureNow() })]
@@ -110,18 +123,6 @@ export default {
         // `lockable` list) — added dynamically here since #tool_brush doesn't
         // exist yet when LeftPanel.js wires up its own static lockable buttons.
         $req('tool_brush').addEventListener('dblclick', () => svgEditor.leftPanel.lockTool($req('tool_brush')))
-        // Lives in the Effects tab (not tied to the current selection, unlike
-        // ext-shadow/ext-outline's panels there — it configures the brush
-        // tool itself) until it finds a more permanent home.
-        const panelTemplate = document.createElement('template')
-        panelTemplate.innerHTML = `
-          <div id="brush_settings_panel" class="sidepanel_section">
-            <div class="sidepanel_section_label">Brush</div>
-            <se-brush-settings id="tool_brush_settings" title="Brush settings" src="config.svg"></se-brush-settings>
-          </div>
-        `
-        const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
-        host?.appendChild(panelTemplate.content.cloneNode(true))
         // Passive pressure side-channel — never interferes with the mouse pipeline.
         svgCanvas.svgroot.addEventListener('pointerdown', recordPressure, { passive: true })
         svgCanvas.svgroot.addEventListener('pointermove', recordPressure, { passive: true })

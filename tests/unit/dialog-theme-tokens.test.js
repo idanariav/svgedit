@@ -46,7 +46,7 @@ describe('dialog theme tokens', () => {
 
   it('lists every custom element defined in dialogs/ (so a new dialog cannot ship unthemed)', () => {
     const dir = resolve(process.cwd(), 'src/editor/dialogs')
-    const defined = readdirSync(dir).filter((f) => f.endsWith('.js')).flatMap((f) =>
+    const defined = readdirSync(dir).filter((f) => /\.(js|ts)$/.test(f) && !f.endsWith('.d.ts')).flatMap((f) =>
       [...readFileSync(join(dir, f), 'utf8').matchAll(/customElements\.define\('([a-z0-9_-]+)'/g)].map((m) => m[1]))
     expect(defined.length).toBeGreaterThan(10)
     expect(defined.filter((t) => !NOT_A_SURFACE.has(t) && !(t in DIALOGS))).toEqual([])
@@ -72,7 +72,7 @@ describe('dialog theme tokens', () => {
     const retired = /--(main-bg-color|text-color|input-color|border-color|icon-bg-color-hover|hover-highlight|dropdown-bg|dropdown-pressed-bg|canvas-bg-color|layer-bg|layer-selected-bg|link-color|orange-color|workarea-bg|ruler-color|bevel-light|main-menu-bg)\b/
     const walk = (dir) => readdirSync(dir).flatMap((n) => {
       const p = join(dir, n)
-      return statSync(p).isDirectory() ? walk(p) : /\.(js|html|css)$/.test(n) ? [p] : []
+      return statSync(p).isDirectory() ? walk(p) : /\.(js|ts|html|css)$/.test(n) ? [p] : []
     })
     const hits = walk(resolve(process.cwd(), 'src/editor')).filter((f) => retired.test(readFileSync(f, 'utf8')))
     expect(hits).toEqual([])
