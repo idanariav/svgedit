@@ -183,3 +183,11 @@ selector manager (`selectorManager`, `getSelectorManager()`, and the misspelt `g
 `svgCanvas.getPathObj()` is honest (`PathObject | null`). Make the handlers take the path from a `requirePath()` that
 throws (or pass it in from the session) when `PathActions` is next reworked; the same applies to the `Path` / `Segment`
 fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
+
+## Flaky e2e: area-text Home / End with Shift (2026-10-17)
+
+`tests/e2e/area-text.spec.js` › "Home / End (and Shift) go to the start / end of the drawn row" failed once in about seven full
+runs (`Shift+Home` right after `End` returned the selection `[0, 54]` instead of `[16, 34]`) and passed 44 of 44 reruns, alone and
+under parallel load. Not tied to a change (the failing run touched only canvas services); the test reads the textarea selection straight
+after the key press, so it probably needs to wait for the caret to settle. Fix the test's wait before reading the selection if it
+shows up again.
