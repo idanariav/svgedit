@@ -11,7 +11,7 @@
  *
  * @license Apache-2.0
  */
-import '../../dialogs/seParamsDialog.js'
+import '../../dialogs/seParamsDialog.ts'
 import { splitIntoGrid as splitGrid, canSplitIntoGrid } from '@svgedit/svgcanvas/core/split-grid.ts'
 import { transformEach as transformEachOf } from '@svgedit/svgcanvas/core/transform-each.ts'
 
@@ -61,7 +61,7 @@ export default {
     /**
      * Open the form and keep one preview transaction in step with it.
      * @param {string} kind `each` | `grid`
-     * @param {Array<Omit<import('../../dialogs/seParamsDialog.js').ParamField, 'label'>>} fields
+     * @param {Array<Omit<import('../../dialogs/seParamsDialog.ts').ParamField, 'label'>>} fields
      * @param {(values: Record<string, *>) => void} apply runs the operation (inside the preview transaction)
      */
     const openForm = (kind, fields, apply) => {

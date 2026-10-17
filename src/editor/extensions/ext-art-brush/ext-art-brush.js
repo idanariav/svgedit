@@ -146,7 +146,7 @@ export default {
         else (designTab || $id('tools_top'))?.appendChild(template.content)
 
         // se-select options go in after the elements are in the document (they are upgraded on insertion).
-        const fill = (/** @type {string} */ id, /** @type {string[][]} */ pairs) => pairs.forEach(([v, key]) => /** @type {import('../../components/seSelect.js').SeSelect} */ (/** @type {unknown} */ ($req(`${P}-${id}`))).addOption(v, tr(key)))
+        const fill = (/** @type {string} */ id, /** @type {string[][]} */ pairs) => pairs.forEach(([v, key]) => /** @type {import('../../components/seSelect.ts').SeSelect} */ (/** @type {unknown} */ ($req(`${P}-${id}`))).addOption(v, tr(key)))
         fill('scale', [['stretch', 'scaleStretch'], ['proportional', 'scaleProportional']])
         fill('dir', [['ltr', 'dirLtr'], ['rtl', 'dirRtl'], ['ttb', 'dirTtb'], ['btt', 'dirBtt']])
         fill('fit', [['stretch', 'fitStretch'], ['addSpace', 'fitAddSpace'], ['approximate', 'fitApproximate']])

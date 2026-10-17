@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mountElement } from './testUtils.js'
-import '../../../src/editor/components/seInput.js'
+import '../../../src/editor/components/seInput.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 

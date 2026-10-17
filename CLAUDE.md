@@ -170,7 +170,7 @@ theme support. The `applyTheme(theme, rootEl)` helper in
 All toolbar icons in `src/editor/images/` are stroke-based SVGs using
 `stroke="currentColor"` and `fill="none"`. They are injected inline into the
 shadow DOM by each `se-*` component via the shared
-`src/editor/components/svgIconLoader.js` utility, which fetches, normalises,
+`src/editor/components/svgIconLoader.ts` utility, which fetches, normalises,
 and caches each SVG.
 
 Because the icons use `currentColor`, they respond directly to the CSS `color`

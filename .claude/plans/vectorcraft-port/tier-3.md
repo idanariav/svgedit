@@ -22,7 +22,7 @@ Behaviour described in `ROADMAP.md` ("Scrubby labels (#400)" and "#485" wheel
 stepping). Implementation is egui-specific, so port the behaviour only.
 
 ### svgedit integration
-- `src/editor/components/seSpinInput.js` (423 lines) — the shadow DOM has a
+- `src/editor/components/seSpinInput.ts` (423 lines) — the shadow DOM has a
   `.top-label` (`<label>`, shown only when `[label]` is set) and spin
   buttons. Add pointer handlers on `.top-label` with
   `setPointerCapture`; respect `min`/`max`/`step`; round to the field's
@@ -35,7 +35,7 @@ stepping). Implementation is egui-specific, so port the behaviour only.
   inputs). If a consumer can't be made single-step, wrap with
   `svgCanvas.undoMgr.beginUndoableChange`/`finishUndoableChange` ❓.
 - Pref: `ConfigObj.ts` (e.g. `scrubNumericFields`), toggle in
-  `editorPreferencesDialog.js`.
+  `editorPreferencesDialog.ts`.
 - Tablet shell: disable scrubbing on touch pointers (conflicts with scrolling).
 
 ### Tests
@@ -271,7 +271,7 @@ selected open path continues it").
   (`LeftPanel.ts`, `LOCKABLE_TOOL_IDS`), so VectorCraft's "double-click opens
   Tool Options" can't be copied. Options: a small popover in the Design tab
   while the pencil is active, or rows in Preferences. Recommended: the
-  Preferences dialog (`dialogs/editorPreferencesDialog.js`), since these
+  Preferences dialog (`dialogs/editorPreferencesDialog.ts`), since these
   are set once and rarely changed.
 
 ### Tests

@@ -13,8 +13,8 @@
  * @module SVGEditor
  */
 
-import './components/index.js'
-import './dialogs/index.js'
+import './components/index.ts'
+import './dialogs/index.ts'
 
 import SvgCanvas from '@svgedit/svgcanvas'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
@@ -37,8 +37,8 @@ import { registerPanelCommands } from './panelCommands.ts'
 import { Automation } from './automation.ts'
 import HotkeyManager from './Hotkeys.ts'
 import { getParentsUntil } from '@svgedit/svgcanvas/common/util.ts'
-import { getIconDataUri } from './images/iconRegistry.js'
-import { blurActiveField } from './components/fieldAutoBlur.js'
+import { getIconDataUri } from './images/iconRegistry.ts'
+import { blurActiveField } from './components/fieldAutoBlur.ts'
 import { runSteps } from './runSteps.ts'
 import { buildEditorShortcuts } from './editorShortcuts.ts'
 import { getDefaultClassForTag, getClass, applyDefaultClassAttrs } from './classLibrary.ts'

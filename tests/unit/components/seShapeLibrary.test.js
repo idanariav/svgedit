@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
-import '../../../src/editor/components/seShapeLibrary.js'
+import '../../../src/editor/components/seShapeLibrary.ts'
 import * as userShapes from '../../../src/editor/extensions/ext-shapes/userShapes.js'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))

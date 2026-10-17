@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTraceOptions } from '../../../src/editor/dialogs/traceImage.js'
+import { buildTraceOptions } from '../../../src/editor/dialogs/traceImage.ts'
 
 describe('buildTraceOptions', () => {
   it('lineart preset tunes curve-fitting thresholds for a tighter, corner-free trace', () => {

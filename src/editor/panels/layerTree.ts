@@ -22,7 +22,7 @@
 import {
   isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark
 } from '@svgedit/svgcanvas/core/object-state.ts'
-import { fetchSvgEl } from '../components/svgIconLoader.js'
+import { fetchSvgEl } from '../components/svgIconLoader.ts'
 import { LayerKeyboard } from './layerKeyboard.ts'
 
 /** an object (or group) to list */

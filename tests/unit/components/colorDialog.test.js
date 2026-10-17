@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
-import '../../../src/editor/components/colorPicker/index.js'
+import '../../../src/editor/components/colorPicker/index.ts'
 import Paint from '../../../packages/svgcanvas/core/paint.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))

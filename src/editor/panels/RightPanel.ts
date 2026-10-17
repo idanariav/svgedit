@@ -3,8 +3,8 @@
 import SvgCanvas from '@svgedit/svgcanvas'
 import RightPanelHtml from './RightPanel.html'
 import { localizePanelFragment } from '../panelI18n.ts'
-import { fetchSvgEl } from '../components/svgIconLoader.js'
-import { traceImageToSvg } from '../dialogs/traceImage.js'
+import { fetchSvgEl } from '../components/svgIconLoader.ts'
+import { traceImageToSvg } from '../dialogs/traceImage.ts'
 import { LayerTree } from './layerTree.ts'
 import { LayerGestures } from './layerGestures.ts'
 

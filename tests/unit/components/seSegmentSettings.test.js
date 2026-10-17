@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
-import '../../../src/editor/components/seSegmentSettings.js'
+import '../../../src/editor/components/seSegmentSettings.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 

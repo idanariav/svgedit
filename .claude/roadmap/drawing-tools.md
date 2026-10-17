@@ -63,7 +63,7 @@ Done: pressing an open path's end with the Pen carries it on (the same element, 
 - A press on the carried-on path's *other* end closes it (the pen's existing close-on-first-point rule); its other old points do nothing, unlike a brand-new drawing where the second point also closes.
 - The throwaway drawing is still the pen's half-opacity temp element; the original is hidden (`display="none"`) while it stands in, and restored by `clear()` if the tool changes mid-gesture.
 
-## Centerline tracing (`dialogs/traceCenterline.js`): follow-ups from T2.12
+## Centerline tracing (`dialogs/traceCenterline.ts`): follow-ups from T2.12
 
 Done: **Line art (centerlines)** in Convert to editable SVG traces thin strokes as stroked open (or closed) paths with their width and colour. Remaining:
 - **Wide areas are skipped, not traced.** A component whose widest point is over 12 px is treated as a filled area and left out, so a drawing with a solid block shows only its lines; run the Line art / Color style as well for the fills. VectorCraft handles both in one pass. A line that touches a wide area is in the same component, so it is skipped with it. The width limit (`maxWidth`) and the other thresholds (`minLength`, `minSpur`, `tolerance`) are options of the module but not in the dialog.

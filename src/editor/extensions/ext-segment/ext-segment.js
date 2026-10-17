@@ -10,7 +10,7 @@
  * @license Apache-2.0
  */
 
-import '../../components/seSegmentSettings.js'
+import '../../components/seSegmentSettings.ts'
 
 const name = 'segment'
 

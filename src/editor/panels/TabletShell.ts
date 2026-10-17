@@ -1,6 +1,6 @@
 // TabletShell.ts — Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native…
 import tabletShellHTML from './TabletShell.html'
-import { fetchSvgEl } from '../components/svgIconLoader.js'
+import { fetchSvgEl } from '../components/svgIconLoader.ts'
 
 // Preset palette for the lightweight swatch popovers (custom colors go through
 // the existing seColorPicker via the "More…" entry).

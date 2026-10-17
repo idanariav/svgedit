@@ -49,7 +49,7 @@ Done: a drag with the Text tool draws a box (a click still places point text); t
 - **Not in the tablet shell**, no options bar; the box while dragging is the select tool's rubber band.
 - The re-wrap on `document.fonts` `loadingdone` is not an undo step and does not refresh an open caret.
 
-## Scrubby labels (`seSpinInput.js`): follow-ups from T3.1
+## Scrubby labels (`seSpinInput.ts`): follow-ups from T3.1
 
 Done: label scrubbing with modifiers, one undo step per drag, Escape, focused-wheel stepping, the preference. Remaining:
 - **Other numeric fields**: only `<se-spin-input>` scrubs. Plain `<input type=number>` fields (a few dialogs) and `se-input` do not; the tablet shell's sheet fields never scrub (touch).

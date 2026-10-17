@@ -3,7 +3,7 @@
  * and preset palette. Factory function — not a custom element.
  */
 
-import { hexToHsv, hexToRgb, rgbToHex, hsvToHex } from '../../PaintModel.js'
+import { hexToHsv, hexToRgb, rgbToHex, hsvToHex } from '../../PaintModel.ts'
 
 // 72 presets in a 12-column grid: 5 rows of saturated colors (one column per hue,
 // one row per lightness level) + 1 row of grays from white to black.

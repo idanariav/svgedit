@@ -64,7 +64,7 @@ call inside it is checked against the real class, and the object it returns agai
 Decided and under way as [R3](rearchitecture.md#r3-typescript) (2026-10-16): the toolchain (ESLint + neostandard, `.ts` through
 Vite / vitest / tsc / coverage, the `./x.ts` import rule and its gate) is done and four leaf modules are converted. State of
 the types: every `core/` and `common/` module is `// @ts-check` or `.ts` and strict-clean (`tsconfig.strict.json`, 2026-10-12 / 13);
-editor-layer Tier 0 modules (`commands.js`, `coreCommands.ts`, `automation.ts`, `components/commandBinding.js`) are `// @ts-check`,
+editor-layer Tier 0 modules (`commands.js`, `coreCommands.ts`, `automation.ts`, `components/commandBinding.ts`) are `// @ts-check`,
 checked through `src/editor/tsconfig.hostapi.json`. The class is `svgcanvas.ts` (2026-10-17) and the members the core modules give it are typed by the interfaces those modules export
 (R2): no hand-written declaration file describes the canvas.
 

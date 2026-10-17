@@ -26,7 +26,7 @@ Theme variables are defined on `:root, .svg_editor, .svg_editor.theme-light` and
 | Internal | `--cp-*`, `--sl-*` | Colour-picker modal; shape-library modal |
 | Misc | `--ui-font`, `--top-toolbar-min-height`, `--global-se-spin-input-width`, `--scrollbar-thumb` | UI font stack; top toolbar row height; default spin-input width; thin scrollbar |
 
-Icons drawn as solid silhouettes are converted to outlines at load time by `OUTLINE_ICONS` in `components/svgIconLoader.js` (`vector-effect: non-scaling-stroke`, so large-viewBox artwork keeps the same 1.6 px line as the native outline icons). Add a file name to that set instead of redrawing the SVG.
+Icons drawn as solid silhouettes are converted to outlines at load time by `OUTLINE_ICONS` in `components/svgIconLoader.ts` (`vector-effect: non-scaling-stroke`, so large-viewBox artwork keeps the same 1.6 px line as the native outline icons). Add a file name to that set instead of redrawing the SVG.
 
 ## Retired Aliases
 
@@ -68,7 +68,7 @@ The editor root is a **CSS Grid** (4 rows × 5 columns; sizes in `svgedit.css`) 
 
 The **bottom sheet** (`.ts-sheet`) keeps its columns in a wrapping flex row, so in a narrow pane the last column drops to a second line; its 34 px top band holds the kind label and the close button. A range input has an intrinsic width: `.te-range` needs `min-width: 0` or its value label spills into the next column, and the input itself is 32 px tall (the track is drawn inside) so the finger's target is the input, not the track. Touch targets: swatches and flyout rows 44 px, command-bar tool buttons 46 px (38 / 35 px in the narrow tiers). `tests/e2e/tablet-shell-layout.spec.js` guards it.
 
-> **Tablet icon sizing uses `!important`.** `svgIconLoader.js` stamps an inline `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves the percentage against the button box, but the iOS / Android WebView (Obsidian mobile) collapses it to a near-zero intrinsic size. Every tablet icon-size rule (`.tbtn svg`, `.ts-toolgroup .tbtn svg`, `.tbtn.sm svg`, `.menu-item .mi-ic svg`, `.lib-cell svg`) therefore uses `!important`, so the explicit pixel size beats the inline style everywhere. The embedded shape-library button does not need it (it sizes via `--sl-tool-icon-size`).
+> **Tablet icon sizing uses `!important`.** `svgIconLoader.ts` stamps an inline `style="width:100%;height:100%"` on every injected `<svg>`. Chromium resolves the percentage against the button box, but the iOS / Android WebView (Obsidian mobile) collapses it to a near-zero intrinsic size. Every tablet icon-size rule (`.tbtn svg`, `.ts-toolgroup .tbtn svg`, `.tbtn.sm svg`, `.menu-item .mi-ic svg`, `.lib-cell svg`) therefore uses `!important`, so the explicit pixel size beats the inline style everywhere. The embedded shape-library button does not need it (it sizes via `--sl-tool-icon-size`).
 
 ---
 
@@ -87,7 +87,7 @@ Contextual trays carry their selection classes (`.selected_panel`, `.multiselect
 
 > **Gotcha:** `displayTool(name)` / `hideTool(name)` select by CSS **class** (`.${name}`), not `id`. A per-button element (e.g. `#tool_topath`) needs a matching `class="tool_topath"` on top of its `id`, or the toggle is a silent no-op. If the element already has `class="span2"`, append to that list.
 
-> **Gotcha:** `se-button`'s `disabled` sets `pointer-events: none` on the *inner shadow div* only, which does **not** block clicks on the host (the hit test skips the div and resolves to the host), so an external listener (e.g. through `$click`) still fires. `seButton.js` therefore adds a capture-phase click guard on the host that calls `stopImmediatePropagation()` when disabled; any rewrite must keep it. Code that disables a button **must** set `.disabled = true` (or the `disabled` attribute), never `classList.add('disabled')` on the host, which has no effect from outside the shadow root.
+> **Gotcha:** `se-button`'s `disabled` sets `pointer-events: none` on the *inner shadow div* only, which does **not** block clicks on the host (the hit test skips the div and resolves to the host), so an external listener (e.g. through `$click`) still fires. `seButton.ts` therefore adds a capture-phase click guard on the host that calls `stopImmediatePropagation()` when disabled; any rewrite must keep it. Code that disables a button **must** set `.disabled = true` (or the `disabled` attribute), never `classList.add('disabled')` on the host, which has no effect from outside the shadow root.
 
 ### `#tools_left` — left tool sidebar
 A column flex container (`overflow-y: scroll; scrollbar-width: none`). The drag-to-reorder indicators (`.se-dragging`, `.se-drop-before`, `.se-drop-after`, `[draggable]:hover`) apply wherever the tool lives (main row or the overflow popover), since the classes are set on the light-DOM tool element. A tool's key badge is `::after` on the host with `content: attr(data-shortcut)` (set by `toolShortcutBadges.ts`; `--muted` on a `--chrome-bg` pill, `--accent` while pressed, absolute at the bottom right). See `tools.md` for the behaviour.
@@ -96,7 +96,7 @@ A column flex container (`overflow-y: scroll; scrollbar-width: none`). The drag-
 Colour controls only (`fill_color`, `stroke_color`, `bg_color`, `palette`); a single scrolling row.
 
 ### `#main_button` / `#main_menu` — brand pill and menu
-The brand button's label lives inside `se-menu`'s own shadow DOM (`components/seMenu.js`, a plain custom element using the native Popover API for its dropdown), which global CSS cannot pierce: to restyle the button, edit the `#popupToggle` style block in that file (it is deliberately `transparent` so the brand button blends into the toolbar). The `#main_icon`, `#logo` and `#main_button .dropdown` rules in `svgedit.css` are **dead** for that reason; `#main_button` (the light-DOM container) only contributes the bottom and right `--chrome-border` separators. `#main_menu` is a 230 px card (`--chrome-bg`, `--chrome-border`, `--main-menu-shadow`) with `li` rows hovering to `--icon-hover-bg`.
+The brand button's label lives inside `se-menu`'s own shadow DOM (`components/seMenu.ts`, a plain custom element using the native Popover API for its dropdown), which global CSS cannot pierce: to restyle the button, edit the `#popupToggle` style block in that file (it is deliberately `transparent` so the brand button blends into the toolbar). The `#main_icon`, `#logo` and `#main_button .dropdown` rules in `svgedit.css` are **dead** for that reason; `#main_button` (the light-DOM container) only contributes the bottom and right `--chrome-border` separators. `#main_menu` is a 230 px card (`--chrome-bg`, `--chrome-border`, `--main-menu-shadow`) with `li` rows hovering to `--icon-hover-bg`.
 
 ### Right-panel tabs and sections
 The right panel is tabbed (Design / Text / Effects / Layers). `#sidepanel_tabs` is sticky at the top of the scrolling `#sidepanel_content`; the active `.sidepanel_tab` uses the accent colour with an underline drawn by `::after`; `.sidepanel_tabpanel` is hidden unless `.active`. Helper classes: `.sidepanel_btn_row` (a wrapping row of buttons inside a section), `.sidepanel_btn_group` (a labelled button cluster, e.g. Object: Path / Select & Link; a hairline divider before every cluster after the first), `.sidepanel_text_font`.
@@ -118,25 +118,25 @@ Shapes inherit `pointer-events: all` from the layer `<g>` (`packages/svgcanvas/c
 
 These styles live **inside** each component file and are scoped to the shadow DOM; they can be changed from outside only through CSS custom properties (and `color`, below).
 
-### `se-button` ([seButton.js](../src/editor/components/seButton.js))
+### `se-button` ([seButton.ts](../src/editor/components/seButton.ts))
 A 40 px square (`size="small"`: 30 px) icon button with a 10 px radius and a transparent border. Hover uses `--icon-hover-bg` / `--icon-hover`. `.pressed` (active) uses `--accent-soft` background, `--accent` colour, `--accent-border` and `--active-shadow`, all `!important`. `.locked` (tool lock mode) stacks on `.pressed` with a 2 px accent outline (`se-flyingbutton` mirrors it via `.overall.locked .menu-button`). `.disabled` is 0.35 opacity with `pointer-events: none` (see the disabled gotcha above).
 
-**Icons** are inline SVG (fetched and cached by `svgIconLoader.js`). Because they use `stroke="currentColor"`, the `color:` property recolours them with no CSS filter. From outside a shadow boundary: `se-button { color: var(--icon) }` and `se-button[pressed] { color: var(--accent) }`.
+**Icons** are inline SVG (fetched and cached by `svgIconLoader.ts`). Because they use `stroke="currentColor"`, the `color:` property recolours them with no CSS filter. From outside a shadow boundary: `se-button { color: var(--icon) }` and `se-button[pressed] { color: var(--accent) }`.
 
-### `se-spin-input` ([seSpinInput.js](../src/editor/components/seSpinInput.js))
+### `se-spin-input` ([seSpinInput.ts](../src/editor/components/seSpinInput.ts))
 The host is `display: flex; flex-direction: column; align-items: stretch`, so the component **fills its grid cell**: a small uppercase `.top-label` (shown only when `label` is set) above one bordered `.field` (34 px, `--field-bg` / `--field-border`, 8 px radius; hover → `--field-border-h`; `focus-within` → `--accent` border + `--accent-ring`). The `src` icon is only a fallback leading glyph when there is **no** `label` (`:host([src]:not([label]))`). A plain native `<input>` is transparent and fills the field; `.spin-buttons` is a right-edge column of two `.spin-btn`s.
 
 - **Hold-repeat:** the ▲ / ▼ buttons step on `mousedown`, then **auto-repeat while held** (400 ms delay, then every 60 ms; stops on any `mouseup`, on reaching min / max, or on disconnect). Every tick fires `change`, so a long hold on an undoable field (e.g. stroke width) records one undo step per tick. Touch has no hold-repeat (mouse events are synthesized only on tap).
 - **Scrubby labels:** dragging the `.top-label` (pointer-captured; a 3 px threshold separates click from drag) changes the value, one step per 2 px (**Shift** ×10, **Ctrl/Cmd** ×0.1, which keeps one more decimal than the step), clamped to min / max, `ew-resize` cursor (`.scrubbable`, set on pointerenter from the preference). Every tick fires `change` (live preview), but the drag runs inside `svgCanvas.beginTransaction('Change value')`, so it commits as **one undo step** (a field without a canvas, e.g. in a dialog, just fires the changes); **Escape** cancels, restores the field and refreshes the panels. A plain click on the label focuses the field; touch pointers and the text box never scrub. The **mouse wheel** over a *focused* field steps it with the same modifiers (one `change` per notch); an unfocused field leaves the wheel to the page. Preference `scrub_numeric_fields` (default on; Editor Preferences, `config.scrub_fields`).
 - **Arc quick-pick chips** (`svgedit.css`): `.arc_field` (flex column) wraps the arc `se-spin-input` and a `.arc_presets` row of `.arc_preset` buttons (22 px, `--field-bg` / `--field-border`, hover → accent).
 
-### `se-input`, `se-select` ([seInput.js](../src/editor/components/seInput.js), [seSelect.js](../src/editor/components/seSelect.js))
+### `se-input`, `se-select` ([seInput.ts](../src/editor/components/seInput.ts), [seSelect.ts](../src/editor/components/seSelect.ts))
 The same single-field + stacked-label treatment as `se-spin-input` (`.top-label` + `.field`, same hover and `focus-within` states). The native `<input>` / `<select>` is transparent and fills the field; `se-select` is `appearance: none` with a built-in `.chev` chevron at the right edge. A `src` icon is a leading glyph only when there is no `label`.
 
-### `se-font-select` ([seFontSelect.js](../src/editor/components/seFontSelect.js))
+### `se-font-select` ([seFontSelect.ts](../src/editor/components/seFontSelect.ts))
 The same `--group-bg` tray as `se-select`, but the control is a custom `.trigger` button (field background and border, the current font rendered in its own face) opening a fixed-position `.fl-popover` in the same visual language as `se-font-library`: a `--chrome-bg` card, a `.fl-search` box and a scrollable `.fl-list` whose `.fl-item-preview` rows use their option's `font-family`. The active row uses `--accent-soft` / `--accent-border` with an accent check. Theme is synced by toggling `theme-dark` / `theme-light` on the host.
 
-### `se-list` ([seList.js](../src/editor/components/seList.js))
+### `se-list` ([seList.ts](../src/editor/components/seList.ts))
 A 28 px icon trigger (`.select-container`, transparent, hover → `--icon-hover-bg`) and a `position: fixed` dropdown (`.options-container`: `--chrome-bg` card with `--chrome-border`, 10 px radius, `z-index: 100`, a flex column).
 
 ---
@@ -149,6 +149,6 @@ The editor applies the theme by toggling classes on `.svg_editor`: use the canon
 
 All toolbar SVG icons in `src/editor/images/` use `stroke="currentColor" fill="none"`, so they respond to the CSS `color` property and need no `filter`. **Do not use `filter: var(--icon-filter)`: that pattern is retired.** Recolour from outside a component with `se-button { color: var(--icon) }` / `se-button[pressed] { color: var(--accent) }`.
 
-Icons are injected by `src/editor/components/svgIconLoader.js`, which normalises and caches each SVG. The source comes from the **inlined** registry `src/editor/images/iconRegistry.js` (bundled at build time); `fetch()` is only a fallback for `data:` URIs or icons absent from the registry.
+Icons are injected by `src/editor/components/svgIconLoader.ts`, which normalises and caches each SVG. The source comes from the **inlined** registry `src/editor/images/iconRegistry.ts` (bundled at build time); `fetch()` is only a fallback for `data:` URIs or icons absent from the registry.
 
 > **Stylesheet loading:** `svgedit.css` (which `@import`s `tablet.css`) is **not** loaded via `<link>`. It is imported as a string (`./svgedit.css?inline`) and injected once as `<style data-svgedit-css>` by `EditorStartup.injectSvgeditStyles()`, so the editor needs no runtime CSS file.

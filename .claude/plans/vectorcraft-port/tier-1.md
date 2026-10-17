@@ -600,7 +600,7 @@ halo is a hard-edged `feMorphology` dilate.
   `elementChanged`, `selectedChanged`).
 - **Style presets:** expose `svgEditor.glowApi = { read(elem), apply(elem, params, batchCmd) }`
   and add a glow row to `<se-class-select>`'s capture checklist
-  (`src/editor/components/seClassSelect.js`, see how `shadowApi` and
+  (`src/editor/components/seClassSelect.ts`, see how `shadowApi` and
   `outlineApi` are used ≈ lines 402–526).
 - Locale strings in `ext-glow/locale/en.js`.
 

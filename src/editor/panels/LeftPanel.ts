@@ -1,7 +1,7 @@
 // LeftPanel.ts — Drawing tool button handlers; mode switching
 import SvgCanvas from '@svgedit/svgcanvas'
 import leftPanelHTML from './LeftPanel.html'
-import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.js'
+import { insertImageFromHref, insertSvgElements } from '../dialogs/insertImage.ts'
 import {
   loadToolOrder, saveToolOrder, reconcileToolOrder,
   markToolGroups, defaultToolOrder, isUncustomisedOrder

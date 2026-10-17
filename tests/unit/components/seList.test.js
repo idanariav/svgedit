@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
-import '../../../src/editor/components/seListItem.js'
-import '../../../src/editor/components/seList.js'
+import '../../../src/editor/components/seListItem.ts'
+import '../../../src/editor/components/seList.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 

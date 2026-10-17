@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   otsu, binarize, distanceTransform, lineComponents, thin, skeletonGraph, pruneGraph,
   centerlineRuns, traceCenterline, runToD
-} from '../../../src/editor/dialogs/traceCenterline.js'
+} from '../../../src/editor/dialogs/traceCenterline.ts'
 
 /** A white W x H image; `paint(set)` blacks (or colours) pixels. */
 const image = (w, h, paint, bg = [255, 255, 255]) => {

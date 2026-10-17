@@ -5,16 +5,16 @@
 import { createStopBar } from './shared/StopBar.js'
 import { createSlider } from './shared/Slider.js'
 import { createHsvBox } from './shared/HsvBox.js'
-import { paintToState } from '../PaintModel.js'
+import { paintToState } from '../PaintModel.ts'
 
-/** @typedef {import('../PaintModel.js').GradientStop} GradientStop */
+/** @typedef {import('../PaintModel.ts').GradientStop} GradientStop */
 
 const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>'
 
 /**
  * @param {import('@svgedit/svgcanvas/core/paint.ts').default|null} paint
  * @param {import('i18next').i18n|null|undefined} i18next
- * @returns {import('../PaintModel.js').PaintPanel}
+ * @returns {import('../PaintModel.ts').PaintPanel}
  */
 export function createRadialPanel (paint, i18next) {
   const t = (/** @type {string} */ key) => {
@@ -42,7 +42,7 @@ export function createRadialPanel (paint, i18next) {
     monoMode: state.monoMode || 'white'
   }
 
-  const panel = /** @type {import('../PaintModel.js').PaintPanel} */ (document.createElement('div'))
+  const panel = /** @type {import('../PaintModel.ts').PaintPanel} */ (document.createElement('div'))
   panel.className = 'cp-body cp-body-grad'
 
   // ── Left column ────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import '../../../src/editor/components/eyedropper/EyedropperActionMenu.js'
+import '../../../src/editor/components/eyedropper/EyedropperActionMenu.ts'
 
 describe('se-eyedropper-menu', () => {
   afterEach(() => {

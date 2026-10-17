@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 
-import '../../../src/editor/dialogs/commandSearchDialog.js'
+import '../../../src/editor/dialogs/commandSearchDialog.ts'
 
 const activateCommandSearchResult = vi.fn()
 let mockCatalog = () => [

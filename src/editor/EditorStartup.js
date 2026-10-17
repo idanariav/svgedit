@@ -221,8 +221,8 @@ class EditorStartup {
     this.configObj.load()
     const { i18next } = await putLocale(this.configObj.pref('lang'), this.goodLangs)
     this.i18next = i18next
-    await import('./components/index.js')
-    await import('./dialogs/index.js')
+    await import('./components/index.ts')
+    await import('./dialogs/index.ts')
     try {
       // add editor components to the DOM
       const template = document.createElement('template')

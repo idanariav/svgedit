@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
-import '../../src/editor/components/seSpinInput.js'
-import '../../src/editor/components/seSelect.js'
+import '../../src/editor/components/seSpinInput.ts'
+import '../../src/editor/components/seSelect.ts'
 import extLiveEffects from '../../src/editor/extensions/ext-live-effects/ext-live-effects.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 

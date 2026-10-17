@@ -147,7 +147,7 @@ all 55 verified to load identically. The two load-time sanitizers it replaced ar
 ## Oversized modules (remaining)
 
 All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
-seShapeLibrary.js 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
+seShapeLibrary.ts 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
 1,172, TopPanel.ts 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
 moving cohesive blocks into `addToShapeLibrary.ts`, `editorShortcuts.ts`,
 `seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`,

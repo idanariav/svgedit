@@ -10,7 +10,7 @@
  */
 
 import { fileOpen, fileSave } from 'browser-fs-access'
-import { insertImageFromHref } from '../../dialogs/insertImage.js'
+import { insertImageFromHref } from '../../dialogs/insertImage.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const name = 'opensave'
@@ -178,7 +178,7 @@ export default {
       const editingsource = $editorDialog?.getAttribute('dialog') === 'open'
       if (editingsource) {
         // Save the source editor's text, as its own Save button does.
-        const value = /** @type {import('../../dialogs/svgSourceDialog.js').SeSvgSourceEditorDialog} */ (/** @type {unknown} */ ($editorDialog)).$sourceTxt.value
+        const value = /** @type {import('../../dialogs/svgSourceDialog.ts').SeSvgSourceEditorDialog} */ (/** @type {unknown} */ ($editorDialog)).$sourceTxt.value
         svgEditor.saveSourceEditor(new CustomEvent('change', { detail: { value, dialog: 'close' } }))
       } else {
         // In the future, more options can be provided here

@@ -1,0 +1,271 @@
+// seToolOverflow.ts — `<se-tool-overflow>` — Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes…
+import { t } from '../locale.ts'
+import { fetchSvgEl } from './svgIconLoader.ts'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+import { requireOwnerEditor } from '../domScope.ts'
+import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
+
+/**
+ * `<se-tool-overflow>` — the left panel's "Additional tools" drawer.
+ *
+ * Visually modeled on `se-flyingbutton` (same button/menu/handle shell and
+ * design tokens), but it isn't a tool selector: it has no "active sub-tool"
+ * concept, and clicking its own face always just opens/closes the popover
+ * (never invokes a tool). Its slotted children are real `se-button`/
+ * `se-flyingbutton` tools the user dragged in from the main row — see
+ * `toolDragReorder.js` — each keeps working exactly as it did in the main
+ * row (own click handler, own hotkey registration, own lock gesture).
+ * @class ToolOverflow
+ */
+export class ToolOverflow extends HTMLElement {
+  imgPath: any
+  template: any
+  _shadowRoot: ShadowRoot
+  $button: HTMLDivElement
+  $overall: HTMLDivElement
+  $iconWrap: HTMLSpanElement
+  $menu: HTMLDivElement
+  $badge: HTMLSpanElement
+  _globalAbort: AbortController | undefined
+
+  /**
+    * @function constructor
+    */
+  constructor () {
+    super()
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
+    this.template = this.createTemplate()
+    this._shadowRoot = this.attachShadow({ mode: 'open' })
+    this._shadowRoot.append(this.template.content.cloneNode(true))
+    this.$button = (this._shadowRoot.querySelector('.menu-button') as HTMLDivElement)
+    this.$overall = (this._shadowRoot.querySelector('.overall') as HTMLDivElement)
+    this.$iconWrap = (this._shadowRoot.querySelector('.icon-wrap') as HTMLSpanElement)
+    this.$menu = (this._shadowRoot.querySelector('.menu') as HTMLDivElement)
+    this.$badge = (this._shadowRoot.querySelector('.badge') as HTMLSpanElement)
+    this._shadowRoot.querySelector('slot')?.addEventListener('slotchange', () => this._updateBadge())
+  }
+
+  /** Show how many tools the drawer holds on its button. */
+  _updateBadge (): void {
+    const count = this.children.length
+    this.$badge.textContent = String(count)
+    this.$badge.hidden = count === 0
+  }
+
+  /**
+   * @function createTemplate
+ * @returns template
+   */
+  createTemplate (): any {
+    const template = document.createElement('template')
+    template.innerHTML = `
+      <style>
+        :host {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 6px;
+        }
+        .overall {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .menu-button {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          background: transparent;
+          color: var(--icon, #4B5563);
+          cursor: pointer;
+          box-sizing: border-box;
+          transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        .menu-button:hover {
+          background: var(--icon-hover-bg, #EEF1F5);
+          color: var(--icon-hover, #0F172A);
+        }
+        .overall.open .menu-button {
+          background: var(--accent-soft, #E8EFFF);
+          color: var(--accent, #2962FF);
+        }
+        .icon-wrap {
+          width: 22px;
+          height: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+        .icon-wrap svg,
+        .icon-wrap img {
+          width: 22px;
+          height: 22px;
+          display: block;
+        }
+        .badge {
+          position: absolute;
+          top: -3px;
+          right: -3px;
+          min-width: 14px;
+          height: 14px;
+          padding: 0 3px;
+          box-sizing: border-box;
+          border-radius: 7px;
+          background: var(--accent, #2962FF);
+          color: var(--chrome-bg, #fff);
+          font: 600 9px/14px sans-serif;
+          text-align: center;
+          pointer-events: none;
+        }
+        .badge[hidden] {
+          display: none;
+        }
+        .menu {
+          position: fixed;
+          background: var(--chrome-bg, #fff);
+          border: 1px solid var(--chrome-border, #E6E8EC);
+          border-radius: 10px;
+          padding: 6px;
+          display: none;
+          flex-direction: column;
+          gap: 2px;
+          margin-left: 44px;
+          box-sizing: border-box;
+          overflow-y: auto;
+          z-index: 100;
+          box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
+        }
+        .open .menu {
+          display: flex;
+        }
+      </style>
+
+      <div class="overall">
+        <div class="menu">
+          <slot></slot>
+        </div>
+        <div class="menu-button" title="">
+          <span class="icon-wrap"></span>
+          <span class="badge" hidden></span>
+        </div>
+      </div>`
+    return template
+  }
+
+  /**
+   * @function observedAttributes
+ * @returns observed
+   */
+  static get observedAttributes (): any {
+    return ['title', 'opened', 'src']
+  }
+
+  /** @function attributeChangedCallback */
+  attributeChangedCallback (name: string, oldValue: string, newValue: string): void {
+    if (oldValue === newValue) return
+    switch (name) {
+      case 'title':
+        this.$button.setAttribute('title', t(newValue))
+        break
+      case 'opened':
+        this.$overall.classList.toggle('open', Boolean(newValue))
+        break
+      case 'src':
+        this._loadIcon(newValue)
+        break
+      default:
+        logError(`unknown attribute: ${name}`, undefined, 'seToolOverflow')
+        break
+    }
+  }
+
+  /** @function get */
+  get opened (): any {
+    return this.hasAttribute('opened')
+  }
+
+  /** @function set */
+  set opened (value) {
+    if (value) {
+      this.setAttribute('opened', 'opened')
+    } else {
+      this.removeAttribute('opened')
+    }
+  }
+
+  /**
+   * Load an SVG icon by URL, injecting it inline into the shadow DOM.
+   * Falls back to an <img> if fetch fails.
+   */
+  async _loadIcon (src: string): Promise<void> {
+    if (!src) return
+    const url = `${this.imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    if (svgEl) {
+      this.$iconWrap.replaceChildren(svgEl)
+    } else {
+      const img = document.createElement('img')
+      img.src = url
+      img.alt = 'icon'
+      this.$iconWrap.replaceChildren(img)
+    }
+  }
+
+  disconnectedCallback () {
+    this._globalAbort?.abort()
+  }
+
+  connectedCallback () {
+    // Close on an outside click (mirrors se-flyingbutton) or Escape.
+    this._globalAbort = new AbortController()
+    const { signal } = this._globalAbort
+    document.addEventListener('click', () => {
+      if (this.opened) this.opened = false
+    }, { signal })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.opened) this.opened = false
+    }, { signal })
+    // Slotted tools (real se-button/se-flyingbutton elements the user dragged
+    // in) are genuine light-DOM children of this host, so a single listener
+    // here catches both the drawer's own button (retargeted to
+    // SE-TOOL-OVERFLOW, since that click originates inside the shadow root)
+    // and clicks on the slotted content (un-retargeted, same light DOM tree)
+    // — mirroring se-flyingbutton's identical single-listener pattern.
+    const onClickHandler = (ev: Event) => {
+      ev.stopPropagation()
+      if ((ev.target as Element).nodeName === 'SE-TOOL-OVERFLOW') {
+        this.opened = !this.opened
+        if (this.opened) {
+          const rect = this.getBoundingClientRect()
+          const vh = window.innerHeight
+          // taller than the window: cap it and let it scroll, else the last tools are out of reach
+          this.$menu.style.maxHeight = `${vh - 16}px`
+          const menuRect = this.$menu.getBoundingClientRect()
+          const top = menuRect.height > 0 && rect.top + menuRect.height > vh - 8
+            ? Math.max(8, vh - 8 - menuRect.height)
+            : rect.top
+          this.$menu.style.top = top + 'px'
+        }
+      } else if ((ev.target as Element).nodeName !== 'SE-FLYINGBUTTON') {
+        // A slotted leaf tool handled its own click — close the drawer after,
+        // mirroring se-flyingbutton's close-after-pick behavior. A slotted
+        // se-flyingbutton's own trigger click is retargeted to SE-FLYINGBUTTON
+        // (its host) the same way ours is retargeted to SE-TOOL-OVERFLOW above —
+        // that click only opens/toggles the nested flyout's own submenu, so it
+        // must not also dismiss this outer popover.
+        this.opened = false
+      }
+    }
+    $click(this, onClickHandler)
+  }
+}
+
+// Register
+customElements.define('se-tool-overflow', ToolOverflow)

@@ -156,7 +156,7 @@ Plus [common attributes](#common-attributes-all-shapes). **No x/y panel** (text 
 | `image_width` | `width` | `width` | px |
 | `image_height` | `height` | `height` | px |
 | `image_url` | `image_url` | `href` / `xlink:href` | URL text input |
-| `tool_trace_image` | — | — | **Convert to editable SVG** button — vectorizes the raster into editable `<path>`s via `imagetracerjs` (`dialogs/traceImage.js` + `se-trace-dialog`); not an attribute editor |
+| `tool_trace_image` | — | — | **Convert to editable SVG** button — vectorizes the raster into editable `<path>`s via `imagetracerjs` (`dialogs/traceImage.ts` + `se-trace-dialog`); not an attribute editor |
 
 Plus [common attributes](#common-attributes-all-shapes) including **x/y position**.
 
@@ -281,7 +281,7 @@ These controls are always available when any element is selected.
 | Control ID | SVG Attribute / Property | Range |
 |------------|--------------------------|-------|
 | `elem_id` | `id` | Free text |
-| `elem_class` | `class` | **`<se-class-select>`** style-preset picker (not free text). Scope-filtered dropdown of saved classes + save/update popover + delete. Picking a class **stamps the preset's captured attributes inline** onto the selection (one undo step) and tags `class="<name>"`. Does **not** go through `attrChanger` — see `seClassSelect.js` / `classLibrary.ts` |
+| `elem_class` | `class` | **`<se-class-select>`** style-preset picker (not free text). Scope-filtered dropdown of saved classes + save/update popover + delete. Picking a class **stamps the preset's captured attributes inline** onto the selection (one undo step) and tags `class="<name>"`. Does **not** go through `attrChanger` — see `seClassSelect.ts` / `classLibrary.ts` |
 | `angle` | `transform: rotate(…)` | −180 to 180°, step 5 |
 | `blur` | `filter: blur(…)` | 0–100, step 5 (multiplied ×10 to compute σ) |
 | `tool_position` | `transform` | Align to page: L/C/R/T/M/B + distribute H/V |

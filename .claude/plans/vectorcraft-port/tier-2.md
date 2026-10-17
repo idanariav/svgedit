@@ -326,7 +326,7 @@ Effort: L.
 narrowed** to sample fill only and show an action menu ("does not stamp a
 whole style … the way the tool historically did" — see its header comment).
 Do not revert that. Instead add actions to the existing menu
-(`components/eyedropper/EyedropperActionMenu.js`).
+(`components/eyedropper/EyedropperActionMenu.ts`).
 
 ### Goal
 New menu actions:
@@ -421,8 +421,8 @@ Effort: M–L.
 
 ### Goal
 Add a "Line art (centerlines)" mode to **Convert to editable SVG**
-(`tool_trace_image`, `src/editor/dialogs/traceImage.js` +
-`seTraceDialog.js`): thin strokes of a scanned/photographed drawing become
+(`tool_trace_image`, `src/editor/dialogs/traceImage.ts` +
+`seTraceDialog.ts`): thin strokes of a scanned/photographed drawing become
 **stroked open paths** (with their mean width) instead of filled outlines.
 imagetracerjs only produces outlines.
 
@@ -438,14 +438,14 @@ imagetracerjs only produces outlines.
    stroke width = pixel count / length.
 
 ### svgedit integration
-- Pure module `src/editor/dialogs/traceCenterline.js` taking `ImageData` +
+- Pure module `src/editor/dialogs/traceCenterline.ts` taking `ImageData` +
   options; binarize first (Otsu threshold or the dialog's existing
   palette step — reuse whatever imagetracerjs preprocessing is cheap).
 - Wider-than-threshold areas: either hand them to imagetracerjs as fills
   (VectorCraft does both in one pass) or ignore in v1 ❓.
 - Run in a Web Worker if a 2000×2000 image blocks the UI > 200 ms
   (measure first).
-- Same CORS guard as the existing tracer (`traceImage.js` line ≈ 74).
+- Same CORS guard as the existing tracer (`traceImage.ts` line ≈ 74).
 
 ### Tests
 Unit with synthetic `ImageData`: a 3-px horizontal bar → one open path of
@@ -512,7 +512,7 @@ it. Re-editable; the path stays editable and the art regenerates.
 - Art source: reference by id to a `<symbol>`/group in `<defs>`
   (`se:art-brush="#id;mode=stretch|tile;scale=1"` on the path) — keeps the
   file self-contained. Shape library integration: "Use as brush" action in
-  `seShapeLibrary.js` inserts the item into defs.
+  `seShapeLibrary.ts` inserts the item into defs.
 - Generated art: a sibling `<g se:art-brush-out>` (paths inside) with the
   source path hidden (`display:none` but selectable through the group?) ❓ —
   decide how selection works; simplest v1: the group is the selectable

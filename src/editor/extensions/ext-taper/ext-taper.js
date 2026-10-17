@@ -11,7 +11,7 @@
  * @license Apache-2.0
  */
 
-import '../../components/seTaperSettings.js'
+import '../../components/seTaperSettings.ts'
 
 const name = 'taper'
 

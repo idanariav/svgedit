@@ -15,8 +15,8 @@
  *
  */
 
-import '../../components/eyedropper/EyedropperActionMenu.js'
-import '../../components/palette/PaletteDialog.js'
+import '../../components/eyedropper/EyedropperActionMenu.ts'
+import '../../components/palette/PaletteDialog.ts'
 import { closestRoot } from '../../domScope.ts'
 import { normalizeFillToHex } from '../../palette/oklchColor.ts'
 import { copyStyle } from '../../styleCopy.ts'

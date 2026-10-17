@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mountElement } from './testUtils.js'
 import { ensureFont, isCached } from '../../../src/editor/extensions/ext-fonts/fontStore.js'
-import '../../../src/editor/components/seFontLibrary.js'
+import '../../../src/editor/components/seFontLibrary.ts'
 
 vi.mock('../../../src/editor/extensions/ext-fonts/fontStore.js', () => ({
   ensureFont: vi.fn(async () => {}),

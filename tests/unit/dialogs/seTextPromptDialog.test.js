@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from '../components/testUtils.js'
-import '../../../src/editor/dialogs/seTextPromptDialog.js'
+import '../../../src/editor/dialogs/seTextPromptDialog.ts'
 
 // jsdom doesn't implement <dialog>'s showModal()/close() (only the plain
 // `open` attribute reflection). Polyfill just enough for prompt()'s

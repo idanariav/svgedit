@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
-import '../../../../src/editor/components/palette/PaletteDialog.js'
+import '../../../../src/editor/components/palette/PaletteDialog.ts'
 
 function mountDialog (attrs = {}) {
   const el = document.createElement('se-palette-dialog')

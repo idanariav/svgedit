@@ -8,7 +8,7 @@
  * keep the default cursor; the few below use a system cursor.
  * @module toolCursors
  */
-import { getIconDataUri, getRawIcon } from './images/iconRegistry.js'
+import { getIconDataUri, getRawIcon } from './images/iconRegistry.ts'
 
 /** Modes whose cursor is a plain system one. */
 const SYSTEM_CURSORS = {

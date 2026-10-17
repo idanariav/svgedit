@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
-import '../../../src/editor/components/seCanvasSettings.js'
+import '../../../src/editor/components/seCanvasSettings.ts'
 import { CommandRegistry } from '../../../src/editor/commands.ts'
 import { registerCanvasCommands } from '../../../src/editor/canvasCommands.ts'
 

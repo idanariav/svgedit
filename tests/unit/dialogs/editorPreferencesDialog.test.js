@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import '../../../src/editor/dialogs/editorPreferencesDialog.js'
+import '../../../src/editor/dialogs/editorPreferencesDialog.ts'
 
 if (!HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }

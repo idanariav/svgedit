@@ -8,7 +8,7 @@ import {
   getDefaultClassForTag,
   setDefaultClassForTag
 } from '../../../src/editor/classLibrary.ts'
-import '../../../src/editor/components/seClassSelect.js'
+import '../../../src/editor/components/seClassSelect.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 vi.mock('../../../src/editor/classLibrary.ts', () => ({

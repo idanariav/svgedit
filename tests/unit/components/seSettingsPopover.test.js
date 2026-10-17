@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
-import { SeSettingsPopover } from '../../../src/editor/components/seSettingsPopover.js'
+import { SeSettingsPopover } from '../../../src/editor/components/seSettingsPopover.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 

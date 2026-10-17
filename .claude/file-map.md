@@ -218,49 +218,49 @@
 
 | File | What it is |
 |---|---|
-| `commandBinding.js` | Lets a component act as a *view* of a registry command: with `command="<id>"` a click runs `editor.commands.run(id)` instead of whatever the host panel would otherwise bind, and the editor keeps the component's… |
-| `fieldAutoBlur.js` | Release keyboard focus held by panel input fields |
-| `index.js` | Imports every custom-element component so that each registers itself |
-| `PaintBox.js` | `<se-paint-box>` — Fill/stroke paint control |
-| `seButton.js` | `<se-button>` — Icon button with pressed/disabled states |
-| `seCanvasSettings.js` | `<se-canvas-settings>` — Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
-| `seClassSelect.js` | `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for… |
-| `seColorPicker.js` | `<se-color-picker>` — Color selection modal |
-| `seExplorerButton.js` | `<se-explorerbutton>` — toolbar button that opens a library explorer (the shape library, through its `lib` attribute) |
-| `seFlyingButton.js` | `<se-flying-button>` — Button with sub-tool flyout |
-| `seFontLibrary.js` | SeFontLibrary — <se-font-library> web component |
-| `seFontSelect.js` | `<se-font-select>` — Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface) |
-| `seGridSettings.js` | `<se-grid-settings>` — Grid-settings popover (show/snap toggles, shape select — square/isometric/triangle/1pt/2pt perspective plus the thirds/golden ratio/center cross composition-guide shapes,… |
-| `seInput.js` | `<se-input>` — Text input with icon/label |
-| `seList.js` | `<se-list>` — Icon-based dropdown list; the `field` attribute draws the trigger as a framed field with a chevron (used for stroke Join / Cap) |
-| `seListItem.js` | `<se-list-item>` — Item inside `<se-list>` |
-| `seMenu.js` | `<se-menu>` — menu button with a popup that holds `<se-menu-item>` rows |
-| `seMenuItem.js` | `<se-menu-item>` — one row of a `<se-menu>` popup, with an icon, a label and a shortcut hint |
-| `seOffsetSettings.js` | `<se-offset-settings>` — Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
-| `sePalette.js` | `<se-palette>` — Color palette swatch grid: per-swatch overrides, removable/re-addable swatches (`removed` key in the overrides map), and a labelled "Recent" row (`setDocumentColors`, last 5, fed by… |
-| `seRepeatSettings.js` | `<se-repeat-settings>` — Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected… |
-| `seSegmentSettings.js` | `<se-segment-settings>` — Radial/grid Segment popover (mode tabs, count/start-angle/center or count/axis, Split/Non-split toggle + Apply/Update → `svgCanvas.segmentSelection`); seeded from… |
-| `seSelect.js` | `<se-select>` — Styled `<select>` dropdown |
-| `seSettingsPopover.js` | `SeSettingsPopover` — shared base for the seven toolbar-button-plus-popover settings components below (incl |
+| `commandBinding.ts` | Lets a component act as a *view* of a registry command: with `command="<id>"` a click runs `editor.commands.run(id)` instead of whatever the host panel would otherwise bind, and the editor keeps the component's… |
+| `fieldAutoBlur.ts` | Release keyboard focus held by panel input fields |
+| `index.ts` | Imports every custom-element component so that each registers itself |
+| `PaintBox.ts` | `<se-paint-box>` — Fill/stroke paint control |
+| `seButton.ts` | `<se-button>` — Icon button with pressed/disabled states |
+| `seCanvasSettings.ts` | `<se-canvas-settings>` — Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
+| `seClassSelect.ts` | `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for… |
+| `seColorPicker.ts` | `<se-color-picker>` — Color selection modal |
+| `seExplorerButton.ts` | `<se-explorerbutton>` — toolbar button that opens a library explorer (the shape library, through its `lib` attribute) |
+| `seFlyingButton.ts` | `<se-flying-button>` — Button with sub-tool flyout |
+| `seFontLibrary.ts` | SeFontLibrary — <se-font-library> web component |
+| `seFontSelect.ts` | `<se-font-select>` — Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface) |
+| `seGridSettings.ts` | `<se-grid-settings>` — Grid-settings popover (show/snap toggles, shape select — square/isometric/triangle/1pt/2pt perspective plus the thirds/golden ratio/center cross composition-guide shapes,… |
+| `seInput.ts` | `<se-input>` — Text input with icon/label |
+| `seList.ts` | `<se-list>` — Icon-based dropdown list; the `field` attribute draws the trigger as a framed field with a chevron (used for stroke Join / Cap) |
+| `seListItem.ts` | `<se-list-item>` — Item inside `<se-list>` |
+| `seMenu.ts` | `<se-menu>` — menu button with a popup that holds `<se-menu-item>` rows |
+| `seMenuItem.ts` | `<se-menu-item>` — one row of a `<se-menu>` popup, with an icon, a label and a shortcut hint |
+| `seOffsetSettings.ts` | `<se-offset-settings>` — Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`) |
+| `sePalette.ts` | `<se-palette>` — Color palette swatch grid: per-swatch overrides, removable/re-addable swatches (`removed` key in the overrides map), and a labelled "Recent" row (`setDocumentColors`, last 5, fed by… |
+| `seRepeatSettings.ts` | `<se-repeat-settings>` — Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected… |
+| `seSegmentSettings.ts` | `<se-segment-settings>` — Radial/grid Segment popover (mode tabs, count/start-angle/center or count/axis, Split/Non-split toggle + Apply/Update → `svgCanvas.segmentSelection`); seeded from… |
+| `seSelect.ts` | `<se-select>` — Styled `<select>` dropdown |
+| `seSettingsPopover.ts` | `SeSettingsPopover` — shared base for the seven toolbar-button-plus-popover settings components below (incl |
 | `seShapeLibrary.css.js` | Shadow-DOM stylesheet for <se-shape-library> (split out of seShapeLibrary.js) |
 | `seShapeLibrary.data.js` | Static data for <se-shape-library> (split out of seShapeLibrary.js): the bundled shape catalog, category labels and inline icon markup |
-| `seShapeLibrary.js` | SeShapeLibrary — <se-shape-library> web component |
-| `seSmoothPathSettings.js` | `<se-smooth-path-settings>` — Smooth-path popover (0-100% strength spin-input, live-previews on every change via `svgCanvas.previewSmoothPath`, Apply → `svgCanvas.commitSmoothPath`,… |
-| `seSpinInput.js` | `<se-spin-input>` — Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, scrubby label (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and… |
-| `seTaperSettings.js` | `<se-taper-settings>` — Taper-stroke popover (start/end tip % + Apply/Update/Remove → `svgCanvas.applyTaperStroke`/`removeTaperStroke`); seeded from `svgCanvas.getTaperParams()`; injected by ext-taper |
-| `seText.js` | `<se-text>` — themed text label driven by its `text` / `value` attributes |
-| `seToolOverflow.js` | `<se-tool-overflow>` — Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes… |
-| `seZoom.js` | `<se-zoom>` — Zoom percentage selector |
-| `svgIconLoader.js` | SvgIconLoader.js |
+| `seShapeLibrary.ts` | SeShapeLibrary — <se-shape-library> web component |
+| `seSmoothPathSettings.ts` | `<se-smooth-path-settings>` — Smooth-path popover (0-100% strength spin-input, live-previews on every change via `svgCanvas.previewSmoothPath`, Apply → `svgCanvas.commitSmoothPath`,… |
+| `seSpinInput.ts` | `<se-spin-input>` — Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, scrubby label (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and… |
+| `seTaperSettings.ts` | `<se-taper-settings>` — Taper-stroke popover (start/end tip % + Apply/Update/Remove → `svgCanvas.applyTaperStroke`/`removeTaperStroke`); seeded from `svgCanvas.getTaperParams()`; injected by ext-taper |
+| `seText.ts` | `<se-text>` — themed text label driven by its `text` / `value` attributes |
+| `seToolOverflow.ts` | `<se-tool-overflow>` — Left panel's "Additional tools" overflow bucket — a pure drawer (no active-tool concept, unlike `se-flyingbutton`): fixed `src` icon, clicking the trigger always opens/closes… |
+| `seZoom.ts` | `<se-zoom>` — Zoom percentage selector |
+| `svgIconLoader.ts` | SvgIconLoader.ts |
 
 ### `src/editor/components/colorPicker/`
 
 | File | What it is |
 |---|---|
 | `ColorDialog.css.js` | All styles for the <se-color-dialog> shadow DOM |
-| `ColorDialog.js` | <se-color-dialog> web component |
-| `index.js` | Registers <se-color-dialog> custom element |
-| `PaintModel.js` | Pure data-transformation layer for the color picker |
+| `ColorDialog.ts` | <se-color-dialog> web component |
+| `index.ts` | Registers <se-color-dialog> custom element |
+| `PaintModel.ts` | Pure data-transformation layer for the color picker |
 
 ### `src/editor/components/colorPicker/panels/`
 
@@ -284,44 +284,44 @@
 | File | What it is |
 |---|---|
 | `EyedropperActionMenu.css.js` | Styles for the <se-eyedropper-menu> shadow DOM |
-| `EyedropperActionMenu.js` | <se-eyedropper-menu> web component |
+| `EyedropperActionMenu.ts` | <se-eyedropper-menu> web component |
 
 ### `src/editor/components/palette/`
 
 | File | What it is |
 |---|---|
 | `PaletteDialog.css.js` | Styles for the <se-palette-dialog> shadow DOM |
-| `PaletteDialog.js` | <se-palette-dialog> web component |
+| `PaletteDialog.ts` | <se-palette-dialog> web component |
 
 ### `src/editor/dialogs/`
 
 | File | What it is |
 |---|---|
-| `cmenuDialog.js` | Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu |
-| `cmenuLayersDialog.js` | `<se-cmenu-layers>` — right-click menu of the Layers panel |
-| `commandSearchDialog.js` | `<se-command-search-dialog>` — command search: type to find a command by name or key and run it |
+| `cmenuDialog.ts` | Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu |
+| `cmenuLayersDialog.ts` | `<se-cmenu-layers>` — right-click menu of the Layers panel |
+| `commandSearchDialog.ts` | `<se-command-search-dialog>` — command search: type to find a command by name or key and run it |
 | `dialogSkin.css.js` | Shared look for the form-style dialogs (export, SVG source, document properties, preferences, alert/confirm/prompt) |
-| `editorPreferencesDialog.js` | Editor preferences modal (units, rulers, theme; grid settings moved to the grid-settings popover) |
-| `exportDialog.js` | Export dialog (region, format, scale 1–4×, quality for JPEG/WebP, output-size preview) |
-| `favoritesDialog.js` | Favorites manager modal (`se-favorites-dialog`) — grouped list of every favoritable action (via `buildFavoritesCatalog`) with a star toggle each |
-| `hotkeyDialog.js` | Hotkey Manager modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback |
-| `imageImportDialog.js` | Insert image dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
-| `imagePropertiesDialog.js` | Modal for image element properties |
-| `index.js` | Imports every dialog element so that each registers itself |
-| `insertImage.js` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a… |
-| `positionContextMenu.js` | Position a `position: fixed` context menu at the given viewport coordinates, keeping it inside the viewport |
-| `seAlertDialog.js` | Alert dialog (OK only) |
-| `seConfirmDialog.js` | Confirm dialog (OK / Cancel) |
-| `seParamsDialog.js` | `se-params-dialog`: a small modal form from field descriptors (number / checkbox / select / 9-point `origin` locator); `open({title, fields, onChange, onOk, onCancel})`, knows nothing of the drawing… |
-| `SePlainAlertDialog.js` | Native-`<dialog>` choice-prompt base class (`se-plain-alert-dialog`) — renders light-DOM content + one button per `choices` entry, resolves via `whenClosed()` |
-| `sePromptDialog.js` | Prompt-style dialog (`se-prompt-dialog`) — used by ext-opensave as a "loading" indicator (title + Cancel), not a real text prompt |
-| `seRecolorDialog.js` | Recolor Artwork dialog (`se-recolor-dialog`): rows "current → new", method / harmony / reduce / hue turn / keep white-black-grays; knows nothing of the drawing, hands `ext-recolor` an old → new `Map` |
-| `seSelectDialog.js` | Multi-choice select dialog |
-| `seTextPromptDialog.js` | `<se-text-prompt-dialog>` — themed replacement for the browser `prompt()`; resolves with the entered text, or `null` when cancelled |
-| `seTraceDialog.js` | `<se-trace-dialog>` — options for tracing a raster image to vector (style, colors) before `traceImageToSvg` runs |
-| `svgSourceDialog.js` | View/edit raw SVG source |
-| `traceCenterline.js` | Centerline tracing: thin strokes of a scanned or photographed drawing become stroked open paths (with their mean width and colour) instead of the filled outlines imagetracerjs makes |
-| `traceImage.js` | `traceImageToSvg(imageElem, { preset, numberofcolors })` — vectorizes a selected `<image>` (PNG/raster) into editable `<path>` elements via `imagetracerjs`, positioned over the original… |
+| `editorPreferencesDialog.ts` | Editor preferences modal (units, rulers, theme; grid settings moved to the grid-settings popover) |
+| `exportDialog.ts` | Export dialog (region, format, scale 1–4×, quality for JPEG/WebP, output-size preview) |
+| `favoritesDialog.ts` | Favorites manager modal (`se-favorites-dialog`) — grouped list of every favoritable action (via `buildFavoritesCatalog`) with a star toggle each |
+| `hotkeyDialog.ts` | Hotkey Manager modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback |
+| `imageImportDialog.ts` | Insert image dialog (`se-image-import-dialog`) — file upload + URL, self-themed shadow DOM |
+| `imagePropertiesDialog.ts` | Modal for image element properties |
+| `index.ts` | Imports every dialog element so that each registers itself |
+| `insertImage.ts` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a… |
+| `positionContextMenu.ts` | Position a `position: fixed` context menu at the given viewport coordinates, keeping it inside the viewport |
+| `seAlertDialog.ts` | Alert dialog (OK only) |
+| `seConfirmDialog.ts` | Confirm dialog (OK / Cancel) |
+| `seParamsDialog.ts` | `se-params-dialog`: a small modal form from field descriptors (number / checkbox / select / 9-point `origin` locator); `open({title, fields, onChange, onOk, onCancel})`, knows nothing of the drawing… |
+| `SePlainAlertDialog.ts` | Native-`<dialog>` choice-prompt base class (`se-plain-alert-dialog`) — renders light-DOM content + one button per `choices` entry, resolves via `whenClosed()` |
+| `sePromptDialog.ts` | Prompt-style dialog (`se-prompt-dialog`) — used by ext-opensave as a "loading" indicator (title + Cancel), not a real text prompt |
+| `seRecolorDialog.ts` | Recolor Artwork dialog (`se-recolor-dialog`): rows "current → new", method / harmony / reduce / hue turn / keep white-black-grays; knows nothing of the drawing, hands `ext-recolor` an old → new `Map` |
+| `seSelectDialog.ts` | Multi-choice select dialog |
+| `seTextPromptDialog.ts` | `<se-text-prompt-dialog>` — themed replacement for the browser `prompt()`; resolves with the entered text, or `null` when cancelled |
+| `seTraceDialog.ts` | `<se-trace-dialog>` — options for tracing a raster image to vector (style, colors) before `traceImageToSvg` runs |
+| `svgSourceDialog.ts` | View/edit raw SVG source |
+| `traceCenterline.ts` | Centerline tracing: thin strokes of a scanned or photographed drawing become stroked open paths (with their mean width and colour) instead of the filled outlines imagetracerjs makes |
+| `traceImage.ts` | `traceImageToSvg(imageElem, { preset, numberofcolors })` — vectorizes a selected `<image>` (PNG/raster) into editable `<path>` elements via `imagetracerjs`, positioned over the original… |
 
 ### `src/editor/extensions/`
 
@@ -608,7 +608,7 @@
 
 | File | What it is |
 |---|---|
-| `iconRegistry.js` | IconRegistry.js |
+| `iconRegistry.ts` | IconRegistry.ts |
 
 ### `src/editor/palette/`
 

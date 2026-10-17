@@ -1,0 +1,1406 @@
+/**
+ * SeShapeLibrary — <se-shape-library> web component.
+ *
+ * Modernized shape library: toolbar button → popover (quick pick) → modal
+ * (full library with search, category sidebar, grid/list views).
+ *
+ * Attributes:
+ *   lib    — URL prefix for the shape library JSON files (must end with /)
+ *   src    — filename of the toolbar button icon (relative to imgPath)
+ *   title  — tooltip for the toolbar button
+ *
+ * Events dispatched (bubbles, composed):
+ *   shape-insert  — { detail: { draw, categoryId, shapeId } }
+ *                    draw = SVG path data string; also sets this.dataset.draw
+ */
+
+import { fetchSvgEl } from './svgIconLoader.ts'
+import { closestRoot, ownerEditor } from '../domScope.ts'
+import {
+  loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
+  deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
+} from '../extensions/ext-shapes/userShapes.js'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+
+import { CSS } from './seShapeLibrary.css.js'
+import { shapeLibData, CAT_LABELS, ALL_CAT, STAR_SVG, STAR18, SEARCH16, SEARCH13, CLOSE18, CLOSE12, GRID_SVG, ROWS_SVG } from './seShapeLibrary.data.js'
+
+export type UserShape = import('../extensions/ext-shapes/userShapes.js').UserShape
+
+export type UserShapeStore = import('../extensions/ext-shapes/userShapes.js').UserShapeStore
+
+/** a built-in shape is its path data; a user shape is an entry */
+export type ShapeData = string | UserShape
+
+/** one catalog entry */
+export interface Category {
+  data: Record<string, ShapeData>
+  /** coordinate size of the category's shapes */
+  size?: number
+  /** shapes are filled, not stroked */
+  fill?: boolean
+  /** per-shape `size` / `fill` */
+  overrides?: Record<string, { size?: number, fill?: boolean }>
+  isUser?: boolean
+  displayName?: string
+}
+
+/** `[shapeId, data, category, categoryId]` */
+export type ShapeTuple = [string, ShapeData, Category, string]
+
+export type DropdownItem = { label: string, cls?: string, keepOpen?: boolean, onClick: (dropdown: Dropdown) => void }
+
+/** an open ⋮ menu */
+export type Dropdown = HTMLDivElement & { _reposition?: () => void }
+
+const isUserShape = (data: ShapeData | null | undefined): data is UserShape => data !== null && typeof data === 'object' && 'svgContent' in data
+
+// ── Component class ──────────────────────────────────────────────────────────
+export class SeShapeLibrary extends HTMLElement {
+  _shadow: ShadowRoot
+  _open: string | null
+  _categoryId: string
+  _query: string
+  _view: string
+  _popCatId: string
+  _popQuery: string
+  _libPath: string
+  _allLoaded: boolean
+  _themeObserver: MutationObserver | null
+  _hiddenExpanded: any
+
+  _catalog: Record<string, Category>
+  _categories: string[]
+  _builtinCategories: string[]
+  _allCategoryIds: string[]
+  _catGroups: Map<string, string[]>
+  _catGroupOf: Map<string, string>
+  _userStore: UserShapeStore
+  _selectedId: string | null
+  _selectedCat: string | null
+  _searchTimer: ReturnType<typeof setTimeout> | null
+  _outsideClickHandler: ((e: MouseEvent) => void) | null
+  _keyHandler: ((e: KeyboardEvent) => void) | null
+
+  constructor () {
+    super()
+    this._shadow = this.attachShadow({ mode: 'open' })
+
+    // State
+    this._open = null // null | 'popover' | 'modal'
+    this._categoryId = ALL_CAT // active tab (a real category or the virtual ALL_CAT)
+    this._selectedId = null
+    this._selectedCat = null // category the selected shape belongs to (≠ tab in grouped views)
+    this._query = ''
+    this._view = localStorage.getItem('svg-edit-shape-view') || 'grid'
+
+    // Popover-specific state (doesn't persist into modal)
+    this._popCatId = ALL_CAT
+    this._popQuery = ''
+
+    // Data
+    this._libPath = ''
+    this._categories = [] // ordered array of category ids (user: prefixed first)
+    this._builtinCategories = [] // built-in category ids from index.json
+    this._catalog = {} // { catId: { data: {id: path|shapeEntry}, size, fill, isUser, displayName } }
+    this._userStore = { categories: [], shapes: {}, categoryLabels: {}, hidden: [] } // cached user shapes data
+    this._allLoaded = false
+
+    // Timers / observers
+    this._searchTimer = null
+    this._themeObserver = null
+    this._outsideClickHandler = null
+    this._keyHandler = null
+  }
+
+  static get observedAttributes () {
+    return ['lib', 'src', 'title', 'pressed']
+  }
+
+  attributeChangedCallback (name: string, oldValue: string | null, newValue: string) {
+    if (oldValue === newValue) return
+    if (name === 'lib') {
+      this._libPath = newValue
+      this._loadIndex()
+    } else if (name === 'src') {
+      this._loadIcon(newValue)
+    } else if (name === 'title') {
+      const btn = this._shadow.querySelector('.sl-tool') as HTMLElement
+      if (btn) btn.title = newValue
+    } else if (name === 'pressed') {
+      this._syncToolPressed()
+    }
+  }
+
+  async _loadIcon (src: string) {
+    if (!src) return
+    const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
+    if (!imgPath) return
+    const url = `${imgPath}/${src}`
+    const svgEl = await fetchSvgEl(url)
+    const iconWrap = this._shadow.querySelector('.sl-tool-icon')
+    if (iconWrap && svgEl) {
+      svgEl.setAttribute('width', '22')
+      svgEl.setAttribute('height', '22')
+      iconWrap.replaceChildren(svgEl)
+    }
+  }
+
+  /** The action behind the Hotkey Manager / command registry (a real click lands on the inner tool button). */
+  click () {
+    this._togglePopover()
+  }
+
+  connectedCallback () {
+    if (this.id) {
+      ownerEditor(this)?.hotkeys?.registerEl({
+        id: this.id,
+        el: this,
+        label: this.getAttribute('title'),
+        rawKey: this.getAttribute('shortcut')
+      })
+    }
+    this._renderShell()
+    this._syncTheme()
+    this._observeTheme()
+    this.addEventListener('user-shapes-updated', () => this._reloadUserShapes())
+  }
+
+  disconnectedCallback () {
+    this._themeObserver?.disconnect()
+    this._removeGlobalListeners()
+  }
+
+  // ── Theme sync ─────────────────────────────────────────────────────────────
+  _syncTheme () {
+    const root = closestRoot(this).querySelector('.svg_editor')
+    const isDark = root?.classList.contains('theme-dark')
+    this.classList.toggle('theme-dark', !!isDark)
+    this.classList.toggle('theme-light', !isDark)
+  }
+
+  _observeTheme () {
+    const root = closestRoot(this).querySelector('.svg_editor')
+    if (!root) return
+    this._themeObserver = new MutationObserver(() => this._syncTheme())
+    this._themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
+  }
+
+  // ── Data loading ───────────────────────────────────────────────────────────
+  async _loadIndex () {
+    if (!this._libPath) return
+    let json = shapeLibData.index
+    if (!json) {
+      try {
+        const r = await fetch(`${this._libPath}index.json`)
+        json = await r.json()
+      } catch (e) {
+        logError('SeShapeLibrary: failed to load index', e, 'seShapeLibrary')
+        json = { lib: [] }
+      }
+    }
+    this._builtinCategories = json.lib || []
+    this._loadUserShapesIntoMemory()
+    this._rebuildCategoryList()
+    if (this._categories.length > 0) {
+      const first = this._categories[0]
+      await this._loadCategory(first)
+      this._categoryId = first
+      this._popCatId = first
+    }
+  }
+
+  async _loadCategory (catId: string) {
+    // The "All" tab is virtual — it has no JSON of its own; loading it means
+    // making sure every real category is loaded.
+    if (catId === ALL_CAT) { await this._loadAllCategories(); return null }
+    if (this._catalog[catId]) return this._catalog[catId]
+    // User categories are already loaded in memory — no fetch needed
+    if (catId.startsWith('user:')) return this._catalog[catId] || null
+    let json = shapeLibData[catId]
+    if (!json) {
+      try {
+        const r = await fetch(`${this._libPath}${catId}.json`)
+        json = await r.json()
+      } catch (e) {
+        logError(`SeShapeLibrary: failed to load category "${catId}"`, e, 'seShapeLibrary')
+        return null
+      }
+    }
+    this._catalog[catId] = json
+    // Inject any user shapes that belong to this built-in category
+    const userShapes = this._userStore?.shapes?.[catId]
+    if (userShapes) this._injectUserShapesIntoCatalog(catId, userShapes)
+    return json
+  }
+
+  async _loadAllCategories () {
+    if (this._allLoaded) return
+    await Promise.all((this._allCategoryIds || []).map(id => this._loadCategory(id)))
+    this._allLoaded = true
+  }
+
+  // ── User shapes ────────────────────────────────────────────────────────────
+  /**
+* Read user shapes from localStorage and inject them into the catalog.
+* Inject user shapes into a built-in catalog entry's data map.
+* User shape entries are objects { svgContent, bbox } — built-in shapes are strings —
+* so they are naturally distinguishable at render time.
+   */
+  _injectUserShapesIntoCatalog (catId: string, userShapes: Record<string, UserShape>) {
+    const cat = this._catalog[catId]
+    if (!cat?.data) return
+    // Remove any previously injected user shapes (objects), leave built-in strings intact
+    for (const key of Object.keys(cat.data)) {
+      if (typeof cat.data[key] === 'object') delete cat.data[key]
+    }
+    Object.assign(cat.data, userShapes)
+  }
+
+  _loadUserShapesIntoMemory () {
+    this._userStore = loadUserShapes()
+    for (const catId of this._userStore.categories) {
+      const userShapes = this._userStore.shapes[catId] || {}
+      if (this._builtinCategories.includes(catId)) {
+        // Merge into the built-in catalog entry (if already fetched)
+        this._injectUserShapesIntoCatalog(catId, userShapes)
+      } else {
+        // Purely custom category — keep as a standalone user: entry
+        this._catalog[`user:${catId}`] = {
+          data: userShapes,
+          isUser: true,
+          displayName: CAT_LABELS[catId] || (catId.charAt(0).toUpperCase() + catId.slice(1))
+        }
+      }
+    }
+  }
+
+  /**
+   * Rebuild the category list and the display-merge groups. Categories that
+   * share the same display label (e.g. two built-in sets both renamed
+   * "Raphael") collapse into ONE sidebar entry that aggregates their shapes —
+   * a non-destructive merge that works for read-only built-in categories.
+   */
+  _rebuildCategoryList () {
+    const hidden = this._userStore.hidden || []
+    // Only add user: prefix entries for categories that have no matching built-in
+    const customUserCats = this._userStore.categories
+      .filter(c => !this._builtinCategories.includes(c))
+      .map(c => `user:${c}`)
+    // Full ordered id list (user categories first, then visible built-ins)
+    this._allCategoryIds = [
+      ...customUserCats,
+      ...this._builtinCategories.filter(c => !hidden.includes(c))
+    ]
+
+    // Group by display label (case-insensitive). The first id seen for a label
+    // is that group's representative; the sidebar shows one entry per group.
+    this._catGroups = new Map() // repId -> [catId…]
+    this._catGroupOf = new Map() // catId -> repId
+    const repByLabel = new Map() // labelKey -> repId
+    for (const id of this._allCategoryIds) {
+      const key = this._catLabel(id).trim().toLowerCase()
+      let rep = repByLabel.get(key)
+      if (rep === undefined) {
+        rep = id
+        repByLabel.set(key, rep)
+        this._catGroups.set(rep, [])
+      }
+      (this._catGroups.get(rep) as string[]).push(id)
+      this._catGroupOf.set(id, rep)
+    }
+    this._categories = [ALL_CAT, ...this._catGroups.keys()]
+  }
+
+  /** Load every category id in a representative's display-merge group. */
+  async _loadCategoryGroup (repId: string) {
+    if (repId === ALL_CAT) { await this._loadAllCategories(); return }
+    const ids = this._catGroups?.get(repId) || [repId]
+    await Promise.all(ids.map((id) => this._catalog[id] ? null : this._loadCategory(id)))
+  }
+
+  /** Flatten a merge-group's shapes into [shapeId, data, cat, catId] tuples. */
+  _groupEntries (repId: string): ShapeTuple[] {
+    const ids = this._catGroups?.get(repId) || [repId]
+    const out: ShapeTuple[] = []
+    for (const id of ids) {
+      const cat = this._catalog[id]
+      if (!cat?.data) continue
+      for (const [sid, p] of Object.entries(cat.data)) out.push([sid, p, cat, id])
+    }
+    return out
+  }
+
+  /**
+   * Re-read localStorage, update catalog, and re-render any open panel.
+   * When `selectLabel` is given (after a rename/merge) the view re-selects the
+   * group now carrying that label so the user stays on the merged category.
+   */
+  _reloadUserShapes (selectLabel?: string) {
+    // Remove stale purely-custom user catalog entries
+    for (const key of Object.keys(this._catalog)) {
+      if (key.startsWith('user:')) delete this._catalog[key]
+    }
+    // Clear user shapes previously merged into built-in catalog entries
+    for (const catId of this._builtinCategories) {
+      const cat = this._catalog[catId]
+      if (cat?.data) {
+        for (const key of Object.keys(cat.data)) {
+          if (typeof cat.data[key] === 'object') delete cat.data[key]
+        }
+      }
+    }
+    this._loadUserShapesIntoMemory()
+    this._rebuildCategoryList()
+
+    // After a rename/merge, follow the (possibly new) representative for the label
+    if (selectLabel != null) {
+      const key = selectLabel.trim().toLowerCase()
+      for (const rep of this._catGroups.keys()) {
+        if (this._catLabel(rep).trim().toLowerCase() === key) { this._categoryId = rep; break }
+      }
+    }
+
+    // If the active category was removed or hidden, fall back to the first available
+    if (this._categoryId && !this._categories.includes(this._categoryId)) {
+      this._categoryId = this._categories[0] || 'basic'
+    }
+    if (this._popCatId && !this._categories.includes(this._popCatId)) {
+      this._popCatId = this._categories[0] || 'basic'
+    }
+
+    if (this._open === 'popover') {
+      this._renderPopover()
+    } else if (this._open === 'modal') {
+      this._renderModal()
+    }
+  }
+
+  /** Return the display label for a category id. */
+  _catLabel (id: string): string {
+    if (id === ALL_CAT) return 'All'
+    // Display-name overrides are keyed by canonical id (built-in id or raw user cat name)
+    const overrides = this._userStore?.categoryLabels || {}
+    const rawId = id.startsWith('user:') ? id.slice(5) : id
+    if (overrides[rawId]) return overrides[rawId]
+    if (this._catalog[id]?.isUser) return (this._catalog[id].displayName as string)
+    return CAT_LABELS[id] || id
+  }
+
+  _countCategory (catId: string) {
+    if (catId === ALL_CAT) return this._totalCount()
+    const ids = this._catGroups?.get(catId) || [catId]
+    return ids.reduce((n, id) => n + Object.keys(this._catalog[id]?.data ?? {}).length, 0)
+  }
+
+  _totalCount () {
+    return Object.values(this._catalog).reduce((n, c) => n + Object.keys(c?.data ?? {}).length, 0)
+  }
+
+  // ── Shape thumbnail ────────────────────────────────────────────────────────
+  // `name` lets a category provide per-shape render overrides (`overrides[name]`
+  // → { size, fill }). Needed because the redistributed library mixes shapes
+  // authored in different coordinate spaces / fill modes within one category
+  // (e.g. 32-unit filled Raphael icons sitting next to 300-unit stroked shapes).
+  _shapeThumb (path: string | null, catData: Category | undefined, w: number, h: number, name: string) {
+    const ov = catData?.overrides?.[name]
+    const sz = ov?.size ?? catData?.size ?? 300
+    const off = sz * 0.05
+    const vb = `${-off} ${-off} ${sz + off * 2} ${sz + off * 2}`
+    if (ov?.fill ?? catData?.fill) {
+      return `<svg viewBox="${vb}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${path}"/></svg>`
+    }
+    const sw = (sz / 30).toFixed(1)
+    return `<svg viewBox="${vb}" width="${w}" height="${h}" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" d="${path}"/></svg>`
+  }
+
+  /**
+   * Generate an SVG thumbnail for a user-saved shape entry.
+ * @returns HTML string
+   */
+  _userShapeThumb (shapeEntry: { svgContent: string, bbox: { x: number, y: number, width: number, height: number } }, w: number, h: number): string {
+    const { bbox, svgContent } = shapeEntry
+    const m = Math.max(bbox.width, bbox.height) * 0.05
+    const vb = `${bbox.x - m} ${bbox.y - m} ${bbox.width + m * 2} ${bbox.height + m * 2}`
+    return `<svg viewBox="${vb}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`
+  }
+
+  // ── Shell render (once) ────────────────────────────────────────────────────
+  _renderShell () {
+    const sheet = new CSSStyleSheet()
+    sheet.replaceSync(CSS)
+    this._shadow.adoptedStyleSheets = [sheet]
+
+    this._shadow.innerHTML = `
+      <button class="sl-tool" type="button" title="${this._esc(this.getAttribute('title') || 'Shapes')}"
+              aria-label="${this._esc(this.getAttribute('title') || 'Shapes')}">
+        <span class="sl-tool-icon">${STAR_SVG}</span>
+      </button>
+      <div class="sl-popover" style="display:none" role="dialog" aria-label="Shapes"></div>
+      <div class="sl-backdrop" style="display:none"></div>
+      <div class="sl-modal" role="dialog" aria-modal="true" aria-label="Shape library" style="display:none"></div>
+    `
+    // Load the real icon if src was already set before connectedCallback
+    const src = this.getAttribute('src')
+    if (src) this._loadIcon(src)
+
+    ;(this._shadow.querySelector('.sl-tool') as HTMLButtonElement).addEventListener('click', e => {
+      e.stopPropagation()
+      this._togglePopover()
+    })
+    ;(this._shadow.querySelector('.sl-backdrop') as HTMLDivElement).addEventListener('click', () => this.close())
+  }
+
+  get pressed () { return this.hasAttribute('pressed') }
+  set pressed (value) {
+    if (value) {
+      this.setAttribute('pressed', 'true')
+    } else {
+      this.removeAttribute('pressed')
+    }
+  }
+
+  _syncToolPressed () {
+    const btn = this._shadow.querySelector('.sl-tool')
+    if (!btn) return
+    // Pressed while the popover/modal is open, OR while armed for insertion
+    // (ext-shapes.js sets the `pressed` attribute directly on this element
+    // while a shape is armed, independent of the popover being open).
+    btn.classList.toggle('pressed', !!this._open || this.hasAttribute('pressed'))
+  }
+
+  // ── Open / close ───────────────────────────────────────────────────────────
+  async _togglePopover () {
+    if (this._open === 'popover') { this.close(); return }
+    this._open = 'popover'
+    this._syncToolPressed()
+
+    if (!this._catalog[this._popCatId] && this._libPath) {
+      await this._loadCategory(this._popCatId)
+    }
+    this._renderPopover()
+    const popover = this._shadow.querySelector('.sl-popover') as HTMLDivElement
+    popover.style.display = ''
+    ;(this._shadow.querySelector('.sl-modal') as HTMLDivElement).style.display = 'none'
+    ;(this._shadow.querySelector('.sl-backdrop') as HTMLDivElement).style.display = 'none'
+    // Position after display is set so we can measure actual dimensions
+    this._positionPopover(popover)
+    this._attachOutsideClick()
+    this._attachEscape()
+  }
+
+  _positionPopover (popover: HTMLElement) {
+    const btnRect = this.getBoundingClientRect()
+    // `position: fixed` is resolved against the nearest transformed/contained
+    // ancestor (e.g. Obsidian's workspace leaf), not necessarily the viewport,
+    // so the style coords we set are offset from the viewport coords we compute
+    // below. Render at the origin to measure that offset and correct for it
+    // (a no-op in the plain-viewport case where blockLeft/blockTop are 0).
+    popover.style.left = '0px'
+    popover.style.top = '0px'
+    const zeroRect = popover.getBoundingClientRect()
+    const blockLeft = zeroRect.left
+    const blockTop = zeroRect.top
+    const popW = zeroRect.width
+    const popH = zeroRect.height
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const gap = 8
+
+    // Prefer opening to the right of the button; flip left if it would overflow
+    let left = btnRect.right + gap
+    if (left + popW > vw - gap) left = Math.max(gap, btnRect.left - gap - popW)
+
+    // Align top to button, clamp so bottom stays within viewport
+    let top = Math.max(gap, btnRect.top)
+    if (top + popH > vh - gap) top = Math.max(gap, vh - gap - popH)
+
+    // Convert the viewport target back into the containing block's coordinates.
+    popover.style.left = `${left - blockLeft}px`
+    popover.style.top = `${top - blockTop}px`
+  }
+
+  async _openModal () {
+    this._open = 'modal'
+    this._syncToolPressed()
+
+    if (!this._catalog[this._categoryId] && this._libPath) {
+      await this._loadCategory(this._categoryId)
+    }
+    this._renderModal()
+    ;(this._shadow.querySelector('.sl-popover') as HTMLDivElement).style.display = 'none'
+    ;(this._shadow.querySelector('.sl-modal') as HTMLDivElement).style.display = ''
+    ;(this._shadow.querySelector('.sl-backdrop') as HTMLDivElement).style.display = ''
+    this._removeGlobalListeners()
+    this._attachEscape()
+
+    requestAnimationFrame(() => {
+      ;(this._shadow.querySelector('.sl-search input') as HTMLInputElement | null)?.focus()
+    })
+  }
+
+  close () {
+    this._open = null
+    this._query = ''
+    this._selectedId = null
+    this._selectedCat = null
+    this._syncToolPressed()
+    ;(this._shadow.querySelector('.sl-popover') as HTMLDivElement).style.display = 'none'
+    ;(this._shadow.querySelector('.sl-modal') as HTMLDivElement).style.display = 'none'
+    ;(this._shadow.querySelector('.sl-backdrop') as HTMLDivElement).style.display = 'none'
+    this._removeGlobalListeners()
+  }
+
+  _removeGlobalListeners () {
+    if (this._outsideClickHandler) {
+      document.removeEventListener('click', this._outsideClickHandler, true)
+      this._outsideClickHandler = null
+    }
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler)
+      this._keyHandler = null
+    }
+  }
+
+  _attachOutsideClick () {
+    this._outsideClickHandler = e => {
+      const path = e.composedPath()
+      if (!path.includes(this) && !path.some(el => (el as Element).classList?.contains('sl-popover'))) {
+        this.close()
+      }
+    }
+    setTimeout(() => { if (this._outsideClickHandler) document.addEventListener('click', this._outsideClickHandler, true) }, 0)
+  }
+
+  _attachEscape () {
+    this._keyHandler = (e) => {
+      if (e.key !== 'Escape') return
+      if (this._open === 'modal' && this._query) {
+        // First Esc clears search
+        this._query = ''
+        const input = this._shadow.querySelector('.sl-search input') as HTMLInputElement
+        if (input) input.value = ''
+        this._updateShapesArea()
+        this._updateFooter()
+        this._updateSearchClear()
+      } else {
+        this.close()
+      }
+    }
+    document.addEventListener('keydown', this._keyHandler)
+  }
+
+  // ── Insert ─────────────────────────────────────────────────────────────────
+  _doInsert () {
+    if (!this._selectedId) return
+    const catId = this._selectedCat || this._categoryId
+    const cat = this._catalog[catId]
+    if (!cat) return
+    const shapeData = cat.data[this._selectedId]
+    if (!shapeData) return
+
+    if (isUserShape(shapeData)) {
+      // User shape: shapeData = { svgContent, bbox }
+      delete this.dataset.draw
+      this.dispatchEvent(new CustomEvent('shape-insert', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          isUserShape: true,
+          svgContent: shapeData.svgContent,
+          bbox: shapeData.bbox,
+          linkedFile: shapeData.linkedFile,
+          categoryId: catId,
+          shapeId: this._selectedId
+        }
+      }))
+    } else {
+      // Built-in shape: shapeData is the path 'd' string
+      this.dataset.draw = shapeData
+      this.dispatchEvent(new CustomEvent('shape-insert', {
+        bubbles: true,
+        composed: true,
+        detail: { draw: shapeData, categoryId: catId, shapeId: this._selectedId }
+      }))
+    }
+    this.close()
+  }
+
+  /**
+   * Normalized entry list for the active popover category, as
+   * `[id, shapeData, cat, catId]` tuples. For the virtual "All" tab this spans
+   * every real category so each shape carries its own cat metadata.
+   */
+  _popEntries (): ShapeTuple[] {
+    if (this._popCatId === ALL_CAT) {
+      const out: ShapeTuple[] = []
+      for (const catId of this._allCategoryIds || []) {
+        const cat = this._catalog[catId]
+        if (!cat?.data) continue
+        for (const [id, data] of Object.entries(cat.data)) out.push([id, data, cat, catId])
+      }
+      return out
+    }
+    return this._groupEntries(this._popCatId)
+  }
+
+  // ── Popover render ─────────────────────────────────────────────────────────
+  _renderPopover () {
+    const popover = this._shadow.querySelector('.sl-popover') as HTMLDivElement
+    const visibleCats = this._categories.slice(0, 7)
+    const total = this._totalCount()
+
+    popover.innerHTML = `
+      <header class="sl-pop-head">
+        <span class="sl-pop-title">Shapes</span>
+        <div class="sl-pop-search-box">
+          <span class="sl-pop-search-icon">${SEARCH13}</span>
+          <input type="text" placeholder="Filter…" value="${this._escAttr(this._popQuery)}"
+                 aria-label="Filter shapes" autocomplete="off" spellcheck="false">
+        </div>
+      </header>
+      <div class="sl-pop-cats">
+        ${visibleCats.map(id => `
+          <button class="sl-pop-cat${id === this._popCatId ? ' is-active' : ''}" data-cat="${id}">
+            ${this._esc(this._catLabel(id))}
+          </button>`).join('')}
+        <button class="sl-pop-cat sl-pop-cat-more" data-more>More…</button>
+      </div>
+      <div class="sl-pop-grid">${this._popGridHtml()}</div>
+      <footer class="sl-pop-foot">
+        <span class="sl-pop-hint">Click a shape, then draw on canvas to size it.</span>
+        <button class="sl-pop-browse">Browse all${total ? ` ${total}` : ''} →</button>
+      </footer>
+    `
+
+    // Events
+    ;(popover.querySelectorAll('.sl-pop-cat[data-cat]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation()
+        const id = btn.dataset.cat as string
+        this._popCatId = id
+        await this._loadCategoryGroup(id)
+        this._selectedId = null
+        this._renderPopover()
+      })
+    })
+
+    popover.querySelector('[data-more]')?.addEventListener('click', e => {
+      e.stopPropagation()
+      this._categoryId = this._popCatId
+      this._openModal()
+    })
+
+    this._bindPopChips(popover)
+
+    const filterInput = popover.querySelector('.sl-pop-search-box input') as HTMLInputElement
+    filterInput?.addEventListener('input', () => {
+      clearTimeout(this._searchTimer ?? undefined)
+      this._searchTimer = setTimeout(() => {
+        // Update only the grid — re-rendering the whole popover would rebuild
+        // the input element and reset the caret, reversing typed characters.
+        this._popQuery = filterInput.value
+        const grid = popover.querySelector('.sl-pop-grid')
+        if (grid) {
+          grid.innerHTML = this._popGridHtml()
+          this._bindPopChips(popover)
+        }
+      }, 200)
+    })
+
+    popover.querySelector('.sl-pop-browse')?.addEventListener('click', e => {
+      e.stopPropagation()
+      this._categoryId = this._popCatId
+      this._openModal()
+    })
+  }
+
+  /** Build the popover grid markup for the current filter query. */
+  _popGridHtml () {
+    const all = this._popEntries()
+    const q = this._popQuery.toLowerCase()
+    const shapes = q
+      ? all.filter(([id]) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q))
+      : all.slice(0, 24)
+
+    return shapes.map(([id, shapeData, cat, catId]) => {
+      const isUser = isUserShape(shapeData)
+      const thumb = isUser
+        ? this._userShapeThumb(shapeData, 26, 26)
+        : this._shapeThumb(shapeData, cat, 26, 26, id)
+      const label = isUser ? id : this._fmtName(id)
+      return `
+          <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
+                  data-id="${this._escAttr(id)}" data-cat="${this._escAttr(catId)}" title="${this._escAttr(label)}">
+            ${thumb}
+          </button>`
+    }).join('')
+  }
+
+  /** Bind click handlers to the popover's shape chips. */
+  _bindPopChips (popover: HTMLElement) {
+    ;(popover.querySelectorAll('.sl-chip[data-id]') as NodeListOf<HTMLElement>).forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this._selectedCat = chip.dataset.cat || this._popCatId
+        this._selectedId = chip.dataset.id ?? null
+        this._doInsert()
+      })
+    })
+  }
+
+  // ── Modal render ───────────────────────────────────────────────────────────
+  _renderModal () {
+    const modal = this._shadow.querySelector('.sl-modal') as HTMLDivElement
+    const total = this._totalCount()
+    const placeholder = total ? `Search ${total} shapes…` : 'Search shapes…'
+
+    modal.innerHTML = `
+      <header class="sl-head">
+        <div class="sl-head-title">
+          <span class="sl-head-icon">${STAR18}</span>
+          <span>Shape library</span>
+        </div>
+        <div class="sl-search-wrap">
+          <div class="sl-search">
+            <span class="sl-search-icon">${SEARCH16}</span>
+            <input type="text" placeholder="${this._escAttr(placeholder)}"
+                   value="${this._escAttr(this._query)}"
+                   aria-label="Search shapes" autocomplete="off" spellcheck="false">
+            ${this._query ? `<button class="sl-search-clear" type="button" aria-label="Clear search">${CLOSE12}</button>` : ''}
+          </div>
+        </div>
+        <button class="sl-head-close" type="button" aria-label="Close shape library">${CLOSE18}</button>
+      </header>
+
+      <div class="sl-body">
+        <aside class="sl-side">
+          <nav class="sl-side-cats" aria-label="Shape categories">
+            ${this._categories.map(id => `
+              <div class="sl-cat-wrap">
+                <button class="sl-cat${id === this._categoryId ? ' is-active' : ''}" data-cat="${id}">
+                  <span class="sl-cat-label">${this._esc(this._catLabel(id))}</span>
+                  <span class="sl-cat-count">${this._countCategory(id)}</span>
+                </button>
+                ${id === ALL_CAT
+? ''
+: `<button class="sl-cat-menu" data-cat="${this._escAttr(id)}" aria-label="Category options" title="Options" type="button">⋮</button>`}
+              </div>`).join('')}
+          </nav>
+          ${this._buildHiddenSection()}
+        </aside>
+        <div class="sl-divider" aria-hidden="true"></div>
+        <section class="sl-content">
+          <header class="sl-content-head">
+            <div class="sl-content-title">
+              <span class="sl-content-name">${this._esc(this._catLabel(this._categoryId))}</span>
+              <span class="sl-content-meta">${this._countCategory(this._categoryId)} shapes</span>
+            </div>
+            <div class="sl-view-toggle" role="group" aria-label="View mode">
+              <button class="sl-view-btn${this._view === 'grid' ? ' is-active' : ''}" data-view="grid" title="Grid view" aria-label="Grid view">${GRID_SVG}</button>
+              <button class="sl-view-btn${this._view === 'rows' ? ' is-active' : ''}" data-view="rows" title="List view" aria-label="List view">${ROWS_SVG}</button>
+            </div>
+          </header>
+          <div class="sl-shapes-area" id="sl-shapes-area">
+            ${this._buildShapesArea()}
+          </div>
+        </section>
+      </div>
+
+      ${this._buildFooter()}
+    `
+
+    this._bindModalEvents()
+  }
+
+  _buildShapesArea () {
+    if (this._query) {
+      return this._buildSearchResults()
+    }
+    if (this._categoryId === ALL_CAT) {
+      return this._buildAllResults()
+    }
+    const ids = this._catGroups?.get(this._categoryId) || [this._categoryId]
+    if (!ids.some((id) => this._catalog[id])) return '<div class="sl-loading">Loading…</div>'
+
+    const entries = this._groupEntries(this._categoryId)
+    if (this._view === 'grid') {
+      return `<div class="sl-grid-body">${entries.map(([id, p, cat, cid]) => this._tileHtml(id, p, cat, cid)).join('')}</div>`
+    }
+    return `<div class="sl-list-body">${entries.map(([id, p, cat, cid]) => this._rowHtml(id, p, cat, cid)).join('')}</div>`
+  }
+
+  /** Grouped rendering of every real category for the "All" tab. */
+  _buildAllResults () {
+    const groups = this._collectGroups(() => true)
+    if (!groups.length) return '<div class="sl-loading">Loading…</div>'
+    return this._renderGroups(groups)
+  }
+
+  _buildSearchResults () {
+    const q = this._query.toLowerCase()
+    const match = (id: string) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
+    const groups = this._collectGroups(match)
+    if (!groups.length) return `<div class="sl-empty">No shapes found for &ldquo;${this._esc(this._query)}&rdquo;</div>`
+    return this._renderGroups(groups)
+  }
+
+  /**
+   * Build label-merged groups across every category id, keeping each shape's own
+   * cat metadata (so thumbnails size correctly even when a merged group spans
+   * categories with different `size`/`fill`).
+   */
+  _collectGroups (shapeFilter: (shapeId:string) => boolean): { label: string, hits: ShapeTuple[] }[] {
+    /** repId -> { label, hits: [] } */
+    const map: Map<string, { label: string, hits: ShapeTuple[] }> = new Map()
+    for (const catId of this._allCategoryIds || []) {
+      const cat = this._catalog[catId]
+      if (!cat?.data) continue
+      const rep = this._catGroupOf?.get(catId) || catId
+      let g = map.get(rep)
+      if (!g) { g = { label: this._catLabel(rep), hits: [] }; map.set(rep, g) }
+      for (const [id, p] of Object.entries(cat.data)) {
+        if (shapeFilter(id)) g.hits.push([id, p, cat, catId])
+      }
+    }
+    return [...map.values()].filter(g => g.hits.length)
+  }
+
+  /**
+   * Render category-labelled groups of shapes (used by both the "All" tab and
+   * search results), honouring the current grid/list view.
+   */
+  _renderGroups (groups: { label: string, hits: ShapeTuple[] }[]): string {
+    if (this._view === 'grid') {
+      return groups.map(({ label, hits }) => `
+        <div class="sl-search-group">
+          <div class="sl-search-group-label">${this._esc(label)}</div>
+          <div class="sl-grid-body sl-grid-inline">
+            ${hits.map(([id, p, cat, catId]) => this._tileHtml(id, p, cat, catId)).join('')}
+          </div>
+        </div>`).join('')
+    }
+    return groups.map(({ label, hits }) => `
+      <div class="sl-search-group">
+        <div class="sl-search-group-label">${this._esc(label)}</div>
+        <div class="sl-list-body sl-list-inline">
+          ${hits.map(([id, p, cat, catId]) => this._rowHtml(id, p, cat, catId)).join('')}
+        </div>
+      </div>`).join('')
+  }
+
+  _tileHtml (id: string, shapeData: ShapeData | null, cat: Category, catId: string) {
+    const sel = id === this._selectedId && catId === this._selectedCat
+    // User shapes are objects { svgContent, bbox }; built-in shapes are path strings
+    const isUser = isUserShape(shapeData)
+    const thumb = isUser
+      ? this._userShapeThumb(shapeData, 40, 40)
+      : this._shapeThumb(shapeData, cat, 40, 40, id)
+    const label = isUser ? id : this._fmtName(id)
+    const menuBtn = isUser
+      ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
+                 aria-label="Shape options" title="Options" type="button">⋮</button>`
+      : ''
+    return `
+      <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
+        <button class="sl-tile${sel ? ' is-selected' : ''}"
+                data-id="${this._escAttr(id)}" data-cat="${catId}"
+                title="${this._escAttr(label)}">
+          <span class="sl-tile-icon">${thumb}</span>
+          <span class="sl-tile-name">${this._esc(label)}</span>
+        </button>
+        ${menuBtn}
+      </div>`
+  }
+
+  _rowHtml (id: string, shapeData: ShapeData | null, cat: Category, catId: string) {
+    const sel = id === this._selectedId && catId === this._selectedCat
+    const isUser = isUserShape(shapeData)
+    const thumb = isUser
+      ? this._userShapeThumb(shapeData, 24, 24)
+      : this._shapeThumb(shapeData, cat, 24, 24, id)
+    const label = isUser ? id : this._fmtName(id)
+    const menuBtn = isUser
+      ? `<button class="sl-shape-menu" data-cat="${this._escAttr(catId)}" data-id="${this._escAttr(id)}"
+                 aria-label="Shape options" title="Options" type="button">⋮</button>`
+      : ''
+    return `
+      <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
+        <button class="sl-row${sel ? ' is-selected' : ''}"
+                data-id="${this._escAttr(id)}" data-cat="${catId}">
+          <span class="sl-row-icon">${thumb}</span>
+          <span class="sl-row-name">${this._esc(label)}</span>
+          <span class="sl-row-id">${this._esc(catId)} / ${this._esc(id)}</span>
+        </button>
+        ${menuBtn}
+      </div>`
+  }
+
+  _buildFooter () {
+    const catId = this._selectedCat || this._categoryId
+    const cat = this._selectedId ? this._catalog[catId] : null
+    const shapeData = this._selectedId ? cat?.data?.[this._selectedId] : undefined
+    const isUser = isUserShape(shapeData)
+    let footChip = ''
+    let footMeta = ''
+    if (this._selectedId && shapeData) {
+      const thumb = isUser
+        ? this._userShapeThumb(shapeData, 22, 22)
+        : this._shapeThumb(shapeData, cat ?? undefined, 22, 22, this._selectedId)
+      const label = isUser ? this._selectedId : this._fmtName(this._selectedId)
+      footChip = `<span class="sl-foot-chip">${thumb}</span>`
+      footMeta = `
+        <span class="sl-foot-meta">
+          <span class="sl-foot-name">${this._esc(label)}</span>
+          <span class="sl-foot-path">${this._esc(catId)} / ${this._esc(this._selectedId)}</span>
+        </span>`
+    }
+    return `
+      <footer class="sl-foot">
+        <div class="sl-foot-status">
+          ${this._selectedId && shapeData
+? `${footChip}${footMeta}`
+: `
+            <span class="sl-foot-empty">Select a shape</span>`}
+        </div>
+        <span class="sl-foot-spacer"></span>
+        <button class="sl-action-btn sl-action-ghost" data-action="cancel">Cancel</button>
+        <button class="sl-action-btn sl-action-primary" data-action="insert"${this._selectedId ? '' : ' disabled'}>Insert shape</button>
+      </footer>`
+  }
+
+  _bindModalEvents () {
+    const modal = this._shadow.querySelector('.sl-modal') as HTMLDivElement
+
+    modal.querySelector('.sl-head-close')?.addEventListener('click', () => this.close())
+    modal.querySelector('[data-action="cancel"]')?.addEventListener('click', () => this.close())
+    modal.querySelector('[data-action="insert"]')?.addEventListener('click', () => this._doInsert())
+
+    // Category sidebar
+    ;(modal.querySelectorAll('.sl-cat[data-cat]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.cat as string
+        if (id === this._categoryId && !this._query) return
+        this._categoryId = id
+        this._selectedId = null
+        this._selectedCat = null
+        this._query = ''
+        const searchInput = modal.querySelector('.sl-search input') as HTMLInputElement
+        if (searchInput) searchInput.value = ''
+        await this._loadCategoryGroup(id)
+        this._refreshModalContent()
+      })
+    })
+
+    // Category ⋮ menus and the "show hidden" restore section
+    this._bindCategoryMenus(modal)
+    this._bindHiddenSection(modal)
+
+    // View toggle
+    ;(modal.querySelectorAll('.sl-view-btn[data-view]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._view = (btn.dataset.view as string)
+        localStorage.setItem('svg-edit-shape-view', this._view)
+        modal.querySelectorAll('.sl-view-btn').forEach(b => b.classList.toggle('is-active', b === btn))
+        this._updateShapesArea()
+      })
+    })
+
+    // Shape selection (delegated via shapes area)
+    this._bindShapeButtons()
+
+    // Search field
+    const searchWrap = modal.querySelector('.sl-search')
+    const searchInput = modal.querySelector('.sl-search input') as HTMLInputElement
+    searchInput?.addEventListener('focus', () => searchWrap?.classList.add('focused'))
+    searchInput?.addEventListener('blur', () => searchWrap?.classList.remove('focused'))
+    searchInput?.addEventListener('input', () => {
+      clearTimeout(this._searchTimer ?? undefined)
+      this._searchTimer = setTimeout(async () => {
+        const q = searchInput.value.trim()
+        if (q && !this._allLoaded) await this._loadAllCategories()
+        this._query = q
+        this._selectedId = null
+        this._selectedCat = null
+        this._updateShapesArea()
+        this._updateFooter()
+        this._updateSearchClear()
+      }, 200)
+    })
+
+    modal.querySelector('.sl-search-clear')?.addEventListener('click', () => {
+      this._query = ''
+      if (searchInput) searchInput.value = ''
+      this._updateShapesArea()
+      this._updateFooter()
+      this._updateSearchClear()
+      searchInput?.focus()
+    })
+
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && this._selectedId) { e.preventDefault(); this._doInsert() }
+    })
+  }
+
+  _bindShapeButtons () {
+    const area = this._shadow.querySelector('#sl-shapes-area')
+    if (!area) return
+    ;(area.querySelectorAll('.sl-tile[data-id], .sl-row[data-id]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._selectedCat = btn.dataset.cat || this._categoryId
+        this._selectedId = btn.dataset.id ?? null
+        this._refreshSelectedState()
+        this._updateFooter()
+      })
+      btn.addEventListener('dblclick', () => {
+        this._selectedCat = btn.dataset.cat || this._categoryId
+        this._selectedId = btn.dataset.id ?? null
+        this._doInsert()
+      })
+    })
+
+    // Three-dot menu for user shapes: Rename, Move to…, Remove
+    ;(area.querySelectorAll('.sl-shape-menu') as NodeListOf<HTMLElement>).forEach(menuBtn => {
+      menuBtn.addEventListener('click', e => {
+        e.stopPropagation()
+        const wrap = menuBtn.closest('.sl-tile-wrap') as HTMLElement
+        const rawCat = String(menuBtn.dataset.cat).replace(/^user:/, '')
+        const label = String(menuBtn.dataset.id)
+        this._openDropdown(wrap, [
+          {
+            label: 'Rename',
+            keepOpen: true,
+            onClick: (dropdown: HTMLElement) => this._renderRenameInput(dropdown, label, newLabel => {
+              renameUserShape({ category: rawCat, oldLabel: label, newLabel })
+              this._reloadUserShapes()
+            })
+          },
+          {
+            label: 'Move to…',
+            keepOpen: true,
+            onClick: (dropdown) => this._renderMoveSubmenu(dropdown, rawCat, label)
+          },
+          {
+            label: 'Remove from library',
+            cls: 'sl-remove',
+            onClick: () => {
+              removeUserShape({ category: rawCat, label })
+              this._reloadUserShapes()
+            }
+          }
+        ])
+      })
+    })
+  }
+
+  /**
+   * Open a small dropdown menu anchored inside `wrap` (a relatively-positioned
+   * `.sl-*-wrap`). `items` are { label, cls?, keepOpen?, onClick }. A non-keepOpen
+   * item closes the dropdown before running; a keepOpen item receives the
+   * dropdown element so it can repopulate itself (used for submenus).
+   */
+  _openDropdown (wrap: HTMLElement, items: DropdownItem[]): Dropdown {
+    this._shadow.querySelectorAll('.sl-shape-dropdown').forEach(d => d.remove())
+    const dropdown = document.createElement('div') as Dropdown
+    dropdown.className = 'sl-shape-dropdown'
+    this._fillDropdown(dropdown, items)
+    // Host the dropdown on the modal, not inside `wrap`: the tile grid / sidebar
+    // scroll containers (and the modal's own overflow) would otherwise clip it.
+    // Anchor rect is captured now — the ⋮ button is only visible while `wrap` is
+    // hovered, and the dropdown no longer lives inside `wrap`.
+    const modal = this._shadow.querySelector('.sl-modal') as HTMLDivElement
+    const anchor = (wrap.querySelector('.sl-shape-menu, .sl-cat-menu') || wrap).getBoundingClientRect()
+    modal.appendChild(dropdown)
+    this._positionDropdown(dropdown, modal, anchor)
+    dropdown._reposition = () => this._positionDropdown(dropdown, modal, anchor)
+
+    // Use composedPath() so clicks *inside* the dropdown are recognised — at the
+    // document level a shadow-DOM event target is retargeted to the host, which
+    // would otherwise make every click look like an outside click.
+    const closeDropdown = (ev: MouseEvent) => {
+      if (!ev.composedPath().includes(dropdown)) {
+        dropdown.remove()
+        document.removeEventListener('click', closeDropdown, true)
+      }
+    }
+    setTimeout(() => document.addEventListener('click', closeDropdown, true), 0)
+    return dropdown
+  }
+
+  /**
+* Place `dropdown` (absolutely positioned inside `modal`) just below `anchor`,
+* right-aligned to it, flipping above / clamping so it stays inside the modal.
+* The modal is transformed, so coordinates are made relative to its rect.
+   */
+  _positionDropdown (dropdown: HTMLDivElement, modal: HTMLElement, anchor: DOMRect) {
+    const m = modal.getBoundingClientRect()
+    const w = dropdown.offsetWidth
+    const h = dropdown.offsetHeight
+    const gap = 4
+    let left = anchor.right - m.left - w
+    let top = anchor.bottom - m.top + gap
+    if (top + h > m.height - gap) top = anchor.top - m.top - gap - h
+    left = Math.min(Math.max(gap, left), m.width - w - gap)
+    top = Math.min(Math.max(gap, top), m.height - h - gap)
+    dropdown.style.left = `${left}px`
+    dropdown.style.top = `${top}px`
+  }
+
+  /** Populate (or repopulate) a dropdown element with item buttons. */
+  _fillDropdown (dropdown: Dropdown, items: DropdownItem[]) {
+    dropdown.replaceChildren()
+    for (const it of items) {
+      const b = document.createElement('button')
+      if (it.cls) b.className = it.cls
+      b.textContent = it.label
+      b.addEventListener('click', ev => {
+        ev.stopPropagation()
+        if (it.keepOpen) { it.onClick(dropdown); dropdown._reposition?.(); return }
+        dropdown.remove()
+        it.onClick(dropdown)
+      })
+      dropdown.appendChild(b)
+    }
+  }
+
+  /** Repopulate a dropdown with the list of move-target categories. */
+  _renderMoveSubmenu (dropdown: Dropdown, fromCat: string, label: string) {
+    const targets = this._categories
+      .filter(id => id !== ALL_CAT && id.replace(/^user:/, '') !== fromCat)
+    if (!targets.length) {
+      this._fillDropdown(dropdown, [{ label: 'No other categories', cls: 'sl-menu-empty', onClick: () => {} }])
+      return
+    }
+    this._fillDropdown(dropdown, targets.map(id => ({
+      label: this._catLabel(id),
+      onClick: () => {
+        moveUserShape({ category: fromCat, label, toCategory: id.replace(/^user:/, '') })
+        this._reloadUserShapes()
+      }
+    })))
+  }
+
+  /**
+   * Turn an open dropdown into a rename text-input popover. The input lives in
+   * the dropdown (a sibling of the tile/category button) — never *inside* a
+   * <button>, where selection and typing break. Commits on Enter/blur, cancels
+   * on Escape; `onCommit(newValue)` runs only when the value actually changed.
+   */
+  _renderRenameInput (dropdown: HTMLElement, current: string, onCommit: (v:string) => void) {
+    dropdown.replaceChildren()
+    dropdown.classList.add('sl-rename-pop')
+    const input = document.createElement('input')
+    input.className = 'sl-inline-edit'
+    input.value = current
+    dropdown.appendChild(input)
+    input.focus()
+    input.select()
+
+    let done = false
+    const finish = (commit: boolean) => {
+      if (done) return
+      done = true
+      const val = input.value.trim()
+      dropdown.remove()
+      if (commit && val && val !== current) onCommit(val)
+    }
+    input.addEventListener('click', ev => ev.stopPropagation())
+    input.addEventListener('keydown', ev => {
+      ev.stopPropagation()
+      if (ev.key === 'Enter') { ev.preventDefault(); finish(true) } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false) }
+    })
+    input.addEventListener('blur', () => finish(true))
+  }
+
+  /** Bind the ⋮ menu on each category in the sidebar. */
+  _bindCategoryMenus (modal: HTMLElement) {
+    ;(modal.querySelectorAll('.sl-cat-menu[data-cat]') as NodeListOf<HTMLElement>).forEach(menuBtn => {
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const id = String(menuBtn.dataset.cat)
+        const wrap = menuBtn.closest('.sl-cat-wrap') as HTMLElement
+        const isUser = id.startsWith('user:')
+        // Operate on every category merged under this sidebar entry
+        const members = this._catGroups?.get(id) || [id]
+        const items: DropdownItem[] = [
+          {
+            label: 'Rename',
+            keepOpen: true,
+            onClick: (dropdown: HTMLElement) => this._renderRenameInput(dropdown, this._catLabel(id), newLabel => {
+              // Rename every member so the group stays merged under the new name.
+              // User members rename their real key (merging on collision); built-in
+              // members are read-only, so only their display label changes.
+              for (const mid of members) {
+                if (mid.startsWith('user:')) renameUserCategory({ category: mid.slice(5), newName: newLabel })
+                else setCategoryLabel({ category: mid, label: newLabel })
+              }
+              this._reloadUserShapes(newLabel)
+            })
+          }
+        ]
+        if (isUser) {
+          items.push({
+            label: 'Delete category',
+            cls: 'sl-remove',
+            onClick: () => {
+              const count = this._countCategory(id)
+              const msg = count
+                ? `Delete "${this._catLabel(id)}" and its ${count} shape${count === 1 ? '' : 's'}?`
+                : `Delete "${this._catLabel(id)}"?`
+              // eslint-disable-next-line no-alert
+              if (window.confirm(msg)) {
+                for (const mid of members) if (mid.startsWith('user:')) deleteUserCategory({ category: mid.slice(5) })
+                this._reloadUserShapes()
+              }
+            }
+          })
+        } else {
+          items.push({
+            label: 'Hide category',
+            cls: 'sl-remove',
+            onClick: () => {
+              for (const mid of members) if (!mid.startsWith('user:')) hideCategory({ category: mid })
+              this._reloadUserShapes()
+            }
+          })
+        }
+        this._openDropdown(wrap, items)
+      })
+    })
+  }
+
+  /** Bind the "Show hidden" toggle and per-row restore buttons. */
+  _bindHiddenSection (modal: HTMLElement) {
+    modal.querySelector('.sl-hidden-toggle')?.addEventListener('click', () => {
+      this._hiddenExpanded = !this._hiddenExpanded
+      const list = modal.querySelector('.sl-hidden-list') as HTMLElement
+      if (list) list.hidden = !this._hiddenExpanded
+      modal.querySelector('.sl-hidden-toggle')?.classList.toggle('is-open', this._hiddenExpanded)
+    })
+    ;(modal.querySelectorAll('.sl-hidden-restore[data-cat]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        unhideCategory({ category: String(btn.dataset.cat) })
+        this._reloadUserShapes()
+      })
+    })
+  }
+
+  /** Markup for the collapsible "Show hidden (N)" section under the sidebar. */
+  _buildHiddenSection () {
+    const hidden = (this._userStore?.hidden || []).filter(id => this._builtinCategories.includes(id))
+    if (!hidden.length) return ''
+    const rows = hidden.map((id: string) => `
+      <div class="sl-hidden-row">
+        <span class="sl-hidden-name">${this._esc(this._catLabel(id))}</span>
+        <button class="sl-hidden-restore" data-cat="${this._escAttr(id)}" type="button" title="Restore">Restore</button>
+      </div>`).join('')
+    return `
+      <div class="sl-hidden-section">
+        <button class="sl-hidden-toggle${this._hiddenExpanded ? ' is-open' : ''}" type="button">
+          Hidden (${hidden.length})
+        </button>
+        <div class="sl-hidden-list"${this._hiddenExpanded ? '' : ' hidden'}>${rows}</div>
+      </div>`
+  }
+
+  // ── Targeted DOM updates (avoid full re-render) ────────────────────────────
+  _refreshSelectedState () {
+    const area = this._shadow.querySelector('#sl-shapes-area')
+    if (!area) return
+    ;(area.querySelectorAll('.sl-tile, .sl-row') as NodeListOf<HTMLElement>).forEach(btn => {
+      const sel = btn.dataset.id === this._selectedId && btn.dataset.cat === this._selectedCat
+      btn.classList.toggle('is-selected', sel)
+    })
+  }
+
+  _updateShapesArea () {
+    const area = this._shadow.querySelector('#sl-shapes-area')
+    if (!area) return
+    area.innerHTML = this._buildShapesArea()
+    this._bindShapeButtons()
+  }
+
+  _updateFooter () {
+    const foot = this._shadow.querySelector('.sl-foot')
+    if (!foot) return
+    const tmp = document.createElement('template')
+    tmp.innerHTML = this._buildFooter()
+    const newFoot = tmp.content.firstElementChild
+    foot.replaceWith((newFoot as Element))
+    this._shadow.querySelector('[data-action="cancel"]')?.addEventListener('click', () => this.close())
+    this._shadow.querySelector('[data-action="insert"]')?.addEventListener('click', () => this._doInsert())
+  }
+
+  _updateSearchClear () {
+    const wrap = this._shadow.querySelector('.sl-search')
+    if (!wrap) return
+    const existing = wrap.querySelector('.sl-search-clear')
+    if (this._query && !existing) {
+      const btn = document.createElement('button')
+      btn.className = 'sl-search-clear'
+      btn.type = 'button'
+      btn.setAttribute('aria-label', 'Clear search')
+      btn.innerHTML = CLOSE12
+      btn.addEventListener('click', () => {
+        this._query = ''
+        const inp = wrap.querySelector('input')
+        if (inp) inp.value = ''
+        this._updateShapesArea()
+        this._updateFooter()
+        this._updateSearchClear()
+        inp?.focus()
+      })
+      wrap.appendChild(btn)
+    } else if (!this._query && existing) {
+      existing.remove()
+    }
+  }
+
+  _refreshModalContent () {
+    const modal = this._shadow.querySelector('.sl-modal')
+    if (!modal) return
+
+    // Sync category active states
+    ;(modal.querySelectorAll('.sl-cat[data-cat]') as NodeListOf<HTMLElement>).forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.cat === this._categoryId)
+    })
+
+    // Update section header
+    const nameEl = modal.querySelector('.sl-content-name')
+    const metaEl = modal.querySelector('.sl-content-meta')
+    if (nameEl) nameEl.textContent = this._catLabel(this._categoryId)
+    if (metaEl) metaEl.textContent = `${this._countCategory(this._categoryId)} shapes`
+
+    this._updateShapesArea()
+    this._updateFooter()
+    this._updateSearchClear()
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  _fmtName (id: string) {
+    return id.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+  }
+
+  _esc (str: string) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  _escAttr (str: string) {
+    return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  }
+
+  /**
+   * Returns the built-in category list as { id, label } pairs.
+   * Used by the "Add to Shape Library" dialog to populate the category dropdown.
+   * May return [] if the index hasn't been loaded yet (library not yet opened).
+   */
+  getBuiltinCategoryOptions (): { id: string, label: string }[] {
+    return this._builtinCategories.map(id => ({ id, label: CAT_LABELS[id] || id }))
+  }
+}
+
+if (!customElements.get('se-shape-library')) {
+  customElements.define('se-shape-library', SeShapeLibrary)
+}

@@ -108,7 +108,7 @@ views over it.
 1. **`src/editor/editorShortcuts.ts`**: `buildEditorShortcuts(editor)`, 88
    keyboard-only entries `{id, group, label, key, fn}`.
 2. **`se-button` / `se-menu-item` self-registration**:
-   `components/seButton.js` ≈ line 226 and `seMenuItem.js` ≈ line 170 call
+   `components/seButton.ts` ≈ line 226 and `seMenuItem.ts` ≈ line 170 call
    `hotkeys.registerEl({id, el, label, rawKey})`. These actions run by
    **`el.click()`** (`Hotkeys.ts` `register()` ≈ line 501).
 3. **`src/editor/favoriteActions.ts`**: `EXTRA_TRIGGERS` (paste, paste in
@@ -247,7 +247,7 @@ transitional adapter.
 ### Implementation notes (T0.1, done 2026-10-10)
 
 - `src/editor/commands.js` (`CommandRegistry`, `CommandError`), `coreCommands.ts` (9 pilot commands),
-  `components/commandBinding.js`. `HotkeyManager.actions` **is** `editor.commands.table`; there is no second catalogue.
+  `components/commandBinding.ts`. `HotkeyManager.actions` **is** `editor.commands.table`; there is no second catalogue.
 - Registration order is irrelevant: a real command declared before or after its button's adapter keeps the button
   as `el` and takes its key from the command, falling back to the button's `shortcut`.
 - **`atomic` is opt-in per command**, not "wrap every command in `transact`" as the plan suggested: a blanket

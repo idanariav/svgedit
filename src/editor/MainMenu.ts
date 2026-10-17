@@ -2,7 +2,7 @@
 import { applyUiMode, isTabletMode } from './uiMode.ts'
 import { applyTheme } from './themeUtil.ts'
 
-export type PrefsDialog = import('./dialogs/editorPreferencesDialog.js').SeEditPrefsDialog
+export type PrefsDialog = import('./dialogs/editorPreferencesDialog.ts').SeEditPrefsDialog
 
 /**
  *

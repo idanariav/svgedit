@@ -3,7 +3,7 @@
  * Not a custom element — returns a container div with API methods.
  */
 
-import { interpolateStopColor, alphaToHex } from '../../PaintModel.js'
+import { interpolateStopColor, alphaToHex } from '../../PaintModel.ts'
 
 const TRASH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
   <path d="M4 7h16"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/>
@@ -15,16 +15,16 @@ const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 </svg>`
 
 /**
- * @param {import('../../PaintModel.js').GradientStop[]} initialStops
+ * @param {import('../../PaintModel.ts').GradientStop[]} initialStops
  * @param {'two'|'mono'|'multi'} initialMode
- * @returns {import('../../PaintModel.js').StopBarElement}
+ * @returns {import('../../PaintModel.ts').StopBarElement}
  */
 export function createStopBar (initialStops, initialMode = 'two') {
   let stops = initialStops.map(s => ({ ...s }))
   let mode = initialMode
   let selectedIndex = 0
 
-  const container = /** @type {import('../../PaintModel.js').StopBarElement} */ (document.createElement('div'))
+  const container = /** @type {import('../../PaintModel.ts').StopBarElement} */ (document.createElement('div'))
   container.className = 'cp-stopbar-wrap'
   container.innerHTML = `
     <div class="cp-stopbar">

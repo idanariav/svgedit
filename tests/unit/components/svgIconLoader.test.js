@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchSvgEl } from '../../../src/editor/components/svgIconLoader.js'
+import { fetchSvgEl } from '../../../src/editor/components/svgIconLoader.ts'
 
 describe('svgIconLoader outline conversion', () => {
   it('re-styles solid silhouette icons as screen-px outlines', async () => {

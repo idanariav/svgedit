@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
-import '../../../src/editor/components/seToolOverflow.js'
-import '../../../src/editor/components/seButton.js'
-import '../../../src/editor/components/seFlyingButton.js'
+import '../../../src/editor/components/seToolOverflow.ts'
+import '../../../src/editor/components/seButton.ts'
+import '../../../src/editor/components/seFlyingButton.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
