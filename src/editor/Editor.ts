@@ -633,8 +633,7 @@ host restore) leave this false to avoid polluting history.
           }
         }
       }],
-      ['runExtensions:elementTransition', () => this.svgCanvas.runExtensions(
-        'elementTransition',
+      ['emit:elementTransition', () => this.svgCanvas.call('elementTransition',
         /** @type {module:svgcanvas.SvgCanvas#event:ext_elementTransition} */ {
           elems
         }
@@ -737,7 +736,6 @@ host restore) leave this false to avoid polluting history.
 
   afterClear (win: Window): void {
     this.updateCanvasWatermark()
-    this.svgCanvas.runExtensions('afterClear')
   }
 
   zoomDone (): void {

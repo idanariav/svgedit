@@ -24,7 +24,7 @@ describe('extension hook registry', () => {
       const src = readFileSync(f, 'utf8')
       for (const m of src.matchAll(/runExtensions\(\s*'([A-Za-z]+)'/g)) dispatched.add(m[1])
     }
-    expect(dispatched.size).toBeGreaterThan(10)
+    expect(dispatched.size).toBeGreaterThan(3)
     for (const name of dispatched) expect(EXTENSION_HOOKS).toContain(name)
   })
 

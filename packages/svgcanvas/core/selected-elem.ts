@@ -1010,8 +1010,7 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     )
 
     // Invoked upon updates to the canvas.
-    svgCanvas.runExtensions(
-      'canvasUpdated',
+    svgCanvas.call('canvasUpdated',
       {
         new_x: x,
         new_y: y,

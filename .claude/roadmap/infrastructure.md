@@ -37,9 +37,6 @@ Not started. Each is built with the first feature that needs it; do not build th
   corrupt drawing (its Offset Path hang and the 1e9 pt refusals came from this). Add a pass over `params` for the commands
   that declare them, plus a budget on anything that multiplies elements (blend steps, repeat, split grid). Doubles as the
   validation the [LLM CLI](llm-cli.md) needs.
-- **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
-  transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
-  appears; then give the registry a session concept instead of special-casing. *Scheduled:* T2.7 and T2.8 did not need it (one undo step per drag); the next candidate is T2.11, if it becomes a tool at all.
 - **Lazy transaction snapshot** (targeted at the elements a caller declares) if anything ever needs a transaction
   per pointer-move. *Not scheduled:* no known consumer (T3.1's scrub is one transaction around a drag, which is cheap).
 - **Plugin side:** expose `editor.commands.list()/run()` as Obsidian palette entries and hotkeys. Tracked in the

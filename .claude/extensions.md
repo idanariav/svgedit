@@ -28,6 +28,7 @@ export default defineFeature({
     svgCanvas.bind('selectedChanged', (_win: Window, { elems, selectedElement }: SelectedChangedPayload) => { })
     svgCanvas.bind('elementChanged', (_win: Window, { elems }: ElementsPayload) => { })   // any element changed
     svgCanvas.bind('zoomChanged', (_win: Window, zoom: ZoomChangedPayload) => { })        // the zoom factor (1 = 100%)
+    // Also events: canvasUpdated, elementTransition, layersChanged, layerVisChanged, afterClear, onOpenedDocument, gestureEnded.
 
     return {
       // Hooks, all optional, each typed with its payload (core/extension-hooks.ts):

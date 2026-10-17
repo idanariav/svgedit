@@ -214,6 +214,31 @@ describe('tool registry (registerTool)', () => {
       expect(t.calls).toEqual(expect.arrayContaining(['cancel', 'deactivate']))
     })
 
+    describe('a tool that owns its undo (ownsUndo)', () => {
+      it('gets no per-gesture transaction, so a cancelled gesture cannot doom its own session transaction', () => {
+        const t = makeTool({ ownsUndo: true })
+        canvas.registerTool(t.tool)
+        canvas.setMode('dragrect')
+        const session = canvas.beginTransaction('session')
+        gesture([10, 10], [60, 50])
+        canvas.setMode('select') // mid-gesture: cancelGesture()
+        expect(t.calls).toContain('cancel')
+        expect(canvas.inTransaction()).toBe(true) // the session's transaction is untouched
+        session.commit()
+        expect(canvas.inTransaction()).toBe(false)
+      })
+
+      it('commits nothing of its own on release; the tool decides what is undoable', () => {
+        const t = makeTool({ ownsUndo: true })
+        canvas.registerTool(t.tool)
+        canvas.setMode('dragrect')
+        gesture([10, 10], [60, 50])
+        expect(canvas.inTransaction()).toBe(false)
+        release(60, 50)
+        expect(undoSize()).toBe(0)
+      })
+    })
+
     it('a throwing pointerMove rolls back and rethrows', () => {
       const t = makeTool({ pointerMove: () => { throw new Error('boom') } })
       canvas.registerTool(t.tool)

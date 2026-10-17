@@ -121,7 +121,7 @@ export default defineFeature({
         svgEditor.updateCanvas()
         handle = blob.handle
         svgEditor.topPanel.updateTitle(blob.name)
-        svgEditor.svgCanvas.runExtensions('onOpenedDocument', {
+        svgEditor.svgCanvas.call('onOpenedDocument', {
           name: blob.name,
           lastModified: blob.lastModified,
           size: blob.size,

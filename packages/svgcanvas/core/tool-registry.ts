@@ -157,6 +157,12 @@ export interface ToolDef {
   cursor?: string | ((ctx: ToolContext) => string)
   /** a finished gesture leaves its overlay on show (a readout); the tool clears it itself on the next press and in `deactivate` */
   keepOverlays?: boolean
+  /**
+   * The tool keeps its own undo transaction across gestures (a session: puppet warp pins, then drags, then one commit). The
+   * registry opens no transaction per press, so a cancelled gesture (mode switch mid-drag, a stray press) calls `cancel` and
+   * nothing else, instead of dooming the session's transaction. `undoLabel` is unused.
+   */
+  ownsUndo?: boolean
   /** receive `pointerMove` with no button down */
   wantsHover?: boolean
   /** created elements keep the `opacity` the tool stamped (the brush has its own) */
@@ -192,6 +198,9 @@ export interface ToolRegistryApi {
   toolModeChanged(prev: string, next: string): void
   cancelToolGesture(): void
 }
+
+/** Stands in for a gesture's transaction when the tool owns its undo (`ToolDef.ownsUndo`). */
+const NO_TRANSACTION = { commit: (): void => {}, cancel: (): void => {} }
 
 export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const svgCanvas = canvas
@@ -327,7 +336,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     if (!tool) return false
     cancelGesture() // a previous press that never saw its mouseup
     const start = toToolEvent(evt, undefined, tool)
-    const tx = svgCanvas.beginTransaction(tool.undoLabel ?? tool.id)
+    const tx = tool.ownsUndo ? NO_TRANSACTION : svgCanvas.beginTransaction(tool.undoLabel ?? tool.id)
     gesture = { tool, tx, start }
     let declined: boolean
     try {

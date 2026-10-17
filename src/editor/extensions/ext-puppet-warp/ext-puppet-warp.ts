@@ -567,6 +567,54 @@ export default defineFeature({
       if (pins.length) redrawPins()
     })
 
+    // Pins are placed and dragged with the pointer. The session (one undo transaction from startSession to commit/cancel)
+    // is the tool's own, so the registry opens no transaction per gesture and a cancelled gesture only drops the drag.
+    svgCanvas.registerTool({
+      id: name,
+      ownsUndo: true,
+      pointerDown (_ctx, ev) {
+        if (!targets.length) return false
+        const { x, y } = ev
+
+        const hit = hitTestPin(x, y)
+        if (hit !== -1) {
+          dragIndex = hit
+          svgCanvas.setCursorHint('grabbing')
+          redrawPins()
+          return undefined
+        }
+
+        // Empty space → drop a new anchor pin. Anchor its rest position to
+        // the nearest rest-pose sample (see attachPinToRest) rather than the
+        // raw click, so it stays mesh-attached instead of drifting off the
+        // limb it was placed on once other pins warp the shape further.
+        const anchor = attachPinToRest(targets.map((t) => t.rest), pins, x, y)
+        pins.push({ px: anchor.x, py: anchor.y, qx: x, qy: y })
+        syncPinOverlay()
+        addPinDot(pins.length - 1)
+        return undefined
+      },
+      pointerMove (_ctx, ev) {
+        if (dragIndex < 0) return
+        pins[dragIndex].qx = ev.rawX
+        pins[dragIndex].qy = ev.rawY
+        dirty = true
+        applyWarp()
+        redrawPins()
+      },
+      pointerUp () {
+        svgCanvas.setCursorHint(null)
+        if (dragIndex < 0) return
+        dragIndex = -1
+        redrawPins()
+      },
+      cancel () {
+        svgCanvas.setCursorHint(null)
+        dragIndex = -1
+        if (pins.length) redrawPins()
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -595,55 +643,8 @@ export default defineFeature({
             svgCanvas.setMode(name)
           }
         })
-      },
-
-      mouseDown (opts: { start_x: number, start_y: number }) {
-        if (svgCanvas.getMode() !== name) return undefined
-        if (!targets.length) return undefined
-
-        const x = opts.start_x
-        const y = opts.start_y
-
-        const hit = hitTestPin(x, y)
-        if (hit !== -1) {
-          dragIndex = hit
-          svgCanvas.setCursorHint('grabbing')
-          redrawPins()
-          return { started: true }
-        }
-
-        // Empty space → drop a new anchor pin. Anchor its rest position to
-        // the nearest rest-pose sample (see attachPinToRest) rather than the
-        // raw click, so it stays mesh-attached instead of drifting off the
-        // limb it was placed on once other pins warp the shape further.
-        const anchor = attachPinToRest(targets.map((t) => t.rest), pins, x, y)
-        pins.push({ px: anchor.x, py: anchor.y, qx: x, qy: y })
-        syncPinOverlay()
-        addPinDot(pins.length - 1)
-        return { started: true }
-      },
-
-      mouseMove (opts: { mouse_x: number; mouse_y: number; }) {
-        if (svgCanvas.getMode() !== name) return undefined
-        if (dragIndex < 0) return undefined
-
-        const zoom = svgCanvas.getZoom()
-        pins[dragIndex].qx = opts.mouse_x / zoom
-        pins[dragIndex].qy = opts.mouse_y / zoom
-        dirty = true
-        applyWarp()
-        redrawPins()
-        return { started: true }
-      },
-
-      mouseUp () {
-        if (svgCanvas.getMode() !== name) return undefined
-        svgCanvas.setCursorHint(null)
-        if (dragIndex < 0) return { keep: false, started: false }
-        dragIndex = -1
-        redrawPins()
-        return { keep: false, started: false }
       }
+
     }
   }
 })

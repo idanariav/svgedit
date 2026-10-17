@@ -99,20 +99,11 @@ export interface ExtensionHookPayloads {
   mouseUp: MouseUpPayload
   keyDown: KeyDownPayload
   IDsUpdated: IDsUpdatedPayload
-  canvasUpdated: CanvasUpdatedPayload
-  elementTransition: ElementsPayload
-  layersChanged: undefined
-  layerVisChanged: undefined
-  afterClear: undefined
-  onOpenedDocument: OpenedDocumentPayload
 }
 
 export const EXTENSION_HOOKS: ReadonlyArray<keyof ExtensionHookPayloads> = Object.freeze([
   'mouseDown', 'mouseMove', 'mouseUp', 'keyDown',
-  'IDsUpdated', 'canvasUpdated',
-  'elementTransition',
-  'layersChanged', 'layerVisChanged',
-  'afterClear', 'onOpenedDocument'
+  'IDsUpdated'
 ] as const)
 
 export const isExtensionHook = (name: string): boolean => (EXTENSION_HOOKS as readonly string[]).includes(name)

@@ -22,6 +22,7 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { ElementsPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
 
 const name = 'connector'
 
@@ -750,6 +751,16 @@ export default defineFeature({
       }
     })
 
+    // Fires on every mousemove while elements are being dragged/resized.
+    // Primary hook for keeping bound lines in sync during interactive drag,
+    // because svgCanvas moves elements via SVG transforms (not attribute
+    // changes) and does NOT fire 'changed' on mouseUp for move operations.
+    svgCanvas.bind('elementTransition', (_win: Window, opts: ElementsPayload) => {
+      if (started) return // don't interfere during line drawing
+      const elems = opts.elems?.filter(Boolean) || []
+      if (elems.length) updateConnectors(elems)
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -872,15 +883,6 @@ export default defineFeature({
 
         // Leave keep/element to core (a non-zero line is already kept).
         return undefined
-      },
-      // Fires on every mousemove while elements are being dragged/resized.
-      // Primary hook for keeping bound lines in sync during interactive drag,
-      // because svgCanvas moves elements via SVG transforms (not attribute
-      // changes) and does NOT fire 'changed' on mouseUp for move operations.
-      elementTransition (opts) {
-        if (started) return // don't interfere during line drawing
-        const elems = opts.elems?.filter(Boolean) || []
-        if (elems.length) updateConnectors(elems)
       },
       IDsUpdated (input) {
         const remove: string[] = []

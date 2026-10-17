@@ -64,7 +64,8 @@ describe('ext-layer_view', () => {
       }),
       getSelectedElements: () => [],
       moveSelectedToLayer: vi.fn(),
-      selectOnly: vi.fn()
+      selectOnly: vi.fn(),
+      bind: vi.fn()
     }
 
     svgEditor = {

@@ -227,6 +227,12 @@ export default defineFeature({
 
     svgCanvas.bind('elementChanged', () => render())
 
+    svgCanvas.bind('canvasUpdated', () => render())
+
+    svgCanvas.bind('onOpenedDocument', () => render())
+
+    svgCanvas.bind('afterClear', () => (render)())
+
     return {
       name: t('name'),
       callback () {
@@ -238,9 +244,6 @@ export default defineFeature({
         // Whether the guides can be grabbed depends on the tool.
         document.addEventListener('modeChange', render, { signal: svgEditor.listenerAbort.signal })
       },
-      canvasUpdated: render,
-      onOpenedDocument: render,
-      afterClear: render
     }
   }
 })

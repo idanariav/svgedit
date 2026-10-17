@@ -486,9 +486,7 @@ class RightPanel {
         self.editor.svgCanvas.setCurrentLayer(String(cell.textContent))
         self.layerTree.invalidate()
         // run extension when different layer is selected from listener
-        self.editor.svgCanvas.runExtensions(
-          'layersChanged'
-        )
+        self.editor.svgCanvas.call('layersChanged')
         evt.preventDefault()
       })
       element.addEventListener('mouseup', (evt) => {
@@ -534,9 +532,7 @@ class RightPanel {
           const visCell = row.querySelector('td.layervis')
           visCell?.classList.add('layerinvis')
         }
-        self.editor.svgCanvas.runExtensions(
-          'layersChanged'
-        )
+        self.editor.svgCanvas.call('layersChanged')
       })
     })
 
@@ -552,9 +548,7 @@ class RightPanel {
     this.layerTree.observe()
     this.layerTree.invalidate()
     // run extension when layer panel is populated
-    self.editor.svgCanvas.runExtensions(
-      'layersChanged'
-    )
+    self.editor.svgCanvas.call('layersChanged')
     // Layer commands (delete, move up / down) depend on where the current layer sits.
     self.editor.commands?.refreshEnablement()
   }
@@ -568,7 +562,7 @@ class RightPanel {
     if (!this.editor.svgCanvas.setLayersVisibility(states)) return false
     this.syncLayerRows()
     // Toggling visibility by hand takes over from Focus mode (ext-layer_view).
-    this.editor.svgCanvas.runExtensions('layerVisChanged')
+    this.editor.svgCanvas.call('layerVisChanged')
     return true
   }
 
@@ -580,7 +574,7 @@ class RightPanel {
   applyLayerLock (states: Record<string, boolean>): boolean {
     if (!this.editor.svgCanvas.setLayersLocked(states)) return false
     this.syncLayerRows()
-    this.editor.svgCanvas.runExtensions('layersChanged')
+    this.editor.svgCanvas.call('layersChanged')
     return true
   }
 
@@ -605,7 +599,7 @@ class RightPanel {
     }
     c.setLayerTemplate(layerName, on)
     this.syncLayerRows()
-    c.runExtensions('layersChanged')
+    c.call('layersChanged')
     return on
   }
 

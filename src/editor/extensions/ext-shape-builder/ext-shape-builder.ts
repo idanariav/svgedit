@@ -252,11 +252,12 @@ export default defineFeature({
       }
     })
 
+    svgCanvas.bind('canvasUpdated', (_win: Window) => {
+      if (active) syncOverlay()
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      canvasUpdated () {
-        if (active) syncOverlay()
-      },
       callback () {
         const combine = $id('tool_clip_set')?.parentElement
         if (!combine) return

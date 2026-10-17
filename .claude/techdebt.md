@@ -115,11 +115,7 @@ green. Converting more of them is a roadmap guideline, not debt.
   open; nothing in that tool's flow does today (the selection is cleared).
 
 **Tool contract (compromises)**
-- `ext-puppet-warp` keeps its legacy mouse hooks: the registry opens a nested transaction per gesture and a cancelled
-  gesture (tool switch mid-drag, window blur) dooms the outer session transaction, silently discarding the whole warp
-  while the tool still shows its pins. Its undo is the session transaction (`tests/e2e/puppet-warp-session.spec.js`).
-- `ext-connector` augments the built-in line and select modes (not a tool). `glow`/`outline`/`shadow`/`repeat` only
-  refresh on mouseup (not tools). Built-in modes (select/path/text/resize/rotate/zoom/shape) stay in `event.js`.
+- `ext-connector` augments the built-in line and select modes (not a tool; it keeps the `mouseDown/Move/Up` hooks). Built-in modes (select/path/text/resize/rotate/zoom/shape) stay in `event.js`.
 - Behaviour changes in the ported tools: with grid snapping on the dragged end snaps too (legacy hooks snapped only
   the start point); polystar's size was wrong at zoom != 100% and is fixed; `cancelTool` now includes `curvature`.
 - A hotkey on a disabled command is inert and does not `preventDefault` (before, the button's own guard swallowed it

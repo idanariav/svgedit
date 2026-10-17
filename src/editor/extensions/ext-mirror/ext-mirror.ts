@@ -309,11 +309,12 @@ export default defineFeature({
       handleLinkedElems((opts.elems as Element[]), false)
     })
 
+    svgCanvas.bind('elementTransition', (_win: Window, opts: { elems: Element[]; }) => {
+      handleLinkedElems(opts.elems, true)
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      elementTransition (opts: { elems: Element[]; }) {
-        handleLinkedElems(opts.elems, true)
-      },
       callback () {
         // Mirror-copy buttons in the Object (single) + Combine (multi) rows.
         const title = svgEditor.i18next.t(`${name}:mirrorSelection`)

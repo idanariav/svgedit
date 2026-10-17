@@ -256,27 +256,29 @@ export default defineFeature({
       keyHandler = null
     }
 
+    svgCanvas.bind('layersChanged', (_win: Window) => {
+      // Honour a host config that asks the editor to start in focus mode.
+      if (svgEditor.configObj.curConfig.layerView && !isPressed()) {
+        svgEditor.configObj.curConfig.layerView = false
+        $req('tool_layerView').pressed = true
+        enterFocus()
+        return
+      }
+      // Re-derive the focus visuals after layers are added/removed/reordered.
+      if (isPressed()) applyFocus()
+    })
+
+    svgCanvas.bind('layerVisChanged', (_win: Window) => {
+      // Manually toggling a layer's visibility means the user is taking control
+      // of what's shown, so drop out of focus mode.
+      if (isPressed()) {
+        $req('tool_layerView').pressed = false
+        exitFocus()
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      layersChanged () {
-        // Honour a host config that asks the editor to start in focus mode.
-        if (svgEditor.configObj.curConfig.layerView && !isPressed()) {
-          svgEditor.configObj.curConfig.layerView = false
-          $req('tool_layerView').pressed = true
-          enterFocus()
-          return
-        }
-        // Re-derive the focus visuals after layers are added/removed/reordered.
-        if (isPressed()) applyFocus()
-      },
-      layerVisChanged () {
-        // Manually toggling a layer's visibility means the user is taking control
-        // of what's shown, so drop out of focus mode.
-        if (isPressed()) {
-          $req('tool_layerView').pressed = false
-          exitFocus()
-        }
-      },
       callback () {
         const buttonTemplate = document.createElement('template')
         const title = `${name}:buttons.0.title`

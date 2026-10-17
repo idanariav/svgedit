@@ -61,7 +61,8 @@ const buildEditor = (layerGroups) => {
       getNextId: () => `svg_${nextId++}`,
       getResolution: () => ({ w: 640, h: 480 }),
       getSvgContent: () => null,
-      runExtensions: () => {}
+      runExtensions: () => {},
+      call: () => {}
     }
   }
   return editor
