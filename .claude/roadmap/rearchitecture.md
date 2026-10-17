@@ -64,6 +64,13 @@ enforce them).
 5. **(e) Tools:** `registerTool` gestures become Begin / Preview / Commit over the model.
 
 Size: XL (months). Step (a) is in; decide on (b)–(e) with it in hand (see "What step (a) changed about the plan").
+
+**Where this stands (2026-10-17).** R2, R3 and R4 are done (R4 but for the optional `features/` rename), R6 was measured and needs nothing, and the
+part of R1 that pays without a rewrite shipped: the model reads and writes the whole vault losslessly and `npm run cli` inspects, reads
+and checks drawings with no browser. (b)–(e) are still a months-long rewrite, not a refactor: the editor leans on the live DOM at about 94
+`getBBox`, 55 `getStrokedBBox`, 57 `BatchCommand` and 51 `transact` sites. Do not start it as a side effect of other work; start it
+with the text-measurement spike named above (area text through a model plus a measuring SVG), and only if the bug classes in "Today"
+keep costing more than the rewrite would.
 R2 and R3 make it much cheaper.
 
 ### Step (a): status
