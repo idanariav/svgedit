@@ -1,7 +1,6 @@
-// @ts-check
 /**
- * Path functionality.
- * @module path
+ * Path-drawing and path-editing gestures (the Pen, the node editor's mouse handling, node delete / add / align) and the path-data converters.
+ * @module path-actions
  * @license MIT
  *
  * @copyright 2011 Alexis Deveria, 2011 Jeff Schiller
@@ -21,39 +20,57 @@ import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guide
 import { warn as logWarn } from '../common/logger.ts'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.ts'
 import { anchorsToD } from './anchor-path.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { PathElement, PathObject, PathSegItem } from './path-types.ts'
 import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.ts'
+import type { PenEnd } from './pen-continue.ts'
+import type { XY } from './canvas-state.ts'
 
-/**
-* @function module:path-actions.init
-* @param {import('../svgcanvas.js').default} canvas
-* @returns {void}
-*/
-export const init = (canvas) => {
+/** What a release handler hands back for the caller to keep or drop. */
+export interface KeepElement { keep: boolean, element?: Element | null }
+
+export interface NodePoint { x: number, y: number, type: number }
+
+/** A segment as `convertPath` reads it: only the fields its command letter has are set. */
+interface ConvertSeg {
+  pathSegTypeAsLetter: string
+  x?: number
+  y?: number
+  x1?: number
+  y1?: number
+  x2?: number
+  y2?: number
+  r1: number
+  r2: number
+  angle: number
+  largeArcFlag?: boolean
+  sweepFlag?: boolean
+}
+
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
   const { shortFloat } = getUnits(canvas)
   /** Screen pixels within which a press counts as on an open path's end. */
   const PEN_END_REACH = 6
   const END_HINT_ID = 'pen_end_hint'
-  /** @type {any} the `Path` being edited (per instance); its class is built in path-method.js's `init` */
-  let path = null
+  /** The `Path` being edited (per instance); its class is built in path-method.ts's `init`. */
+  let path = null as unknown as PathObject
 
   /**
  * Convert a path to one with only absolute or relative values.
  * @todo move to pathActions.js
- * @function module:path.convertPath
- * @param {SVGPathElement} pth - the path to convert
- * @param {boolean} toRel - true of convert to relative
- * @returns {string}
+ * @param pth the path to convert
+ * @param toRel true of convert to relative
  */
-  const convertPath = (pth, toRel) => {
-    const { pathSegList } = /** @type {any} */ (pth)
+  const convertPath = (pth: SVGPathElement, toRel: boolean): string => {
+    const { pathSegList } = pth as PathElement
     const len = pathSegList.numberOfItems
     let curx = 0; let cury = 0
     let d = ''
     let lastM = null
 
     for (let i = 0; i < len; ++i) {
-      const seg = pathSegList.getItem(i)
+      const seg = pathSegList.getItem(i) as unknown as ConvertSeg
       // if these properties are not in the segment, set them to zero
       let x = seg.x || 0
       let y = seg.y || 0
@@ -218,13 +235,12 @@ export const init = (canvas) => {
   /**
  * TODO: refactor callers in `convertPath` to use `getPathDFromSegments` instead of this function.
  * Legacy code refactored from `svgcanvas.pathActions.convertPath`.
- * @param {string} letter - path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
- * @param {number[][]} points - x,y points
- * @param {number[][]} [morePoints] - x,y points
- * @param {number[]} [lastPoint] - x,y point
- * @returns {string}
+ * @param letter path segment command (letter in potentially either case from {@link module:path.pathMap}; see [SVGPathSeg#pathSegTypeAsLetter]{@link https://www.w3.org/TR/SVG/single-page.html#paths-__svg__SVGPathSeg__pathSegTypeAsLetter})
+ * @param points x,y points
+ * @param morePoints x,y points
+ * @param lastPoint x,y point
  */
-  const pathDSegment = (letter, points, morePoints, lastPoint) => {
+  const pathDSegment = (letter: string, points: number[][], morePoints?: number[], lastPoint?: number[]): string => {
     const parts = [
       letter + points.map(pnt => shortFloat(pnt)).join(' '),
       morePoints ? morePoints.join(' ') : null,
@@ -241,31 +257,25 @@ export const init = (canvas) => {
  * refitted so one cubic follows the two old segments (two straight segments
  * become one). Several nodes are removed one after another. See
  * `core/path-edit.js` (`removeAnchor`) and `core/bezier-fit.js`.
- * @param {module:path.Path} pathObj - the path being edited
- * @returns {string} the rebuilt `d`, or '' if nothing renderable remains
+ * @param pathObj the path being edited
+ * @returns the rebuilt `d`, or '' if nothing renderable remains
  */
-  const buildReconnectedPathData = (pathObj) => deleteNodesD(pathObj.segs, pathObj.selected_pts)
+  const buildReconnectedPathData = (pathObj: PathObject): string => deleteNodesD(pathObj.segs, pathObj.selected_pts)
 
   /**
 * Group: Path edit functions.
 * Functions relating to editing path elements.
-* @class PathActions
-* @memberof module:path
 */
   class PathActions {
     #subpath = false
-    /** @type {?number[]} */
-    #newPoint = null
-    /** @type {?number[]} */
-    #firstCtrl = null
-    /** @type {?Element|false} */
-    #currentPath = null
+    #newPoint: number[] | null = null
+    #firstCtrl: number[] | null = null
+    #currentPath: (Element | false) | null = null
     #hasMoved = false
     #downOnPath = false
     // The open path the Pen is carrying on (pressed at one of its ends): hidden while
     // the drawing stands in for it, then given the drawing's geometry on commit.
-    /** @type {?{elem: Element, display: ?string, count: number}} */
-    #continued = null
+    #continued: { elem: Element; display: string | null; count: number } | null = null
     // Whether the node-alignment snap (see mouseMove's smartSnapping branch)
     // applied at any point during the drag currently in progress — reset at
     // drag-start, read (and logged) once at drag-end, since the per-mousemove
@@ -276,12 +286,9 @@ export const init = (canvas) => {
   * This function converts a polyline (created by the fh_path tool) into
   * a path element and coverts every three line segments into a single bezier
   * curve in an attempt to smooth out the free-hand.
-  * @function smoothPolylineIntoPath
-  * @param {Element} element
-  * @returns {Element}
   */
-    #smoothPolylineIntoPath = (element) => {
-      const { points } = /** @type {SVGPolylineElement} */ (element)
+    #smoothPolylineIntoPath = (element: Element): Element => {
+      const { points } = element as SVGPolylineElement
       const N = points.numberOfItems
       if (N >= 4) {
       // loop through every 3 points and convert to a cubic bezier curve segment
@@ -299,12 +306,11 @@ export const init = (canvas) => {
       // - https://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/Bezier/bezier-der.html
         let curpos = points.getItem(0)
         let prevCtlPt = null
-        /** @type {any} */
-        let d = []
-        d.push(`M${curpos.x},${curpos.y} C`)
+        const parts: string[] = []
+        parts.push(`M${curpos.x},${curpos.y} C`)
         let i
         for (i = 1; i <= (N - 4); i += 3) {
-          let ct1 = /** @type {import('./canvas-state.ts').XY} */ (points.getItem(i))
+          let ct1 = points.getItem(i) as XY
           const ct2 = points.getItem(i + 1)
           const end = points.getItem(i + 2)
 
@@ -313,27 +319,27 @@ export const init = (canvas) => {
           if (prevCtlPt) {
             const newpts = svgCanvas.smoothControlPoints(prevCtlPt, ct1, curpos)
             if (newpts?.length === 2) {
-              const prevArr = d[d.length - 1].split(',')
-              prevArr[2] = newpts[0].x
-              prevArr[3] = newpts[0].y
-              d[d.length - 1] = prevArr.join(',')
+              const prevArr = parts[parts.length - 1].split(',')
+              prevArr[2] = String(newpts[0].x)
+              prevArr[3] = String(newpts[0].y)
+              parts[parts.length - 1] = prevArr.join(',')
               ct1 = newpts[1]
             }
           }
 
-          d.push([ct1.x, ct1.y, ct2.x, ct2.y, end.x, end.y].join(','))
+          parts.push([ct1.x, ct1.y, ct2.x, ct2.y, end.x, end.y].join(','))
 
           curpos = end
           prevCtlPt = ct2
         }
         // handle remaining line segments
-        d.push('L')
+        parts.push('L')
         while (i < N) {
           const pt = points.getItem(i)
-          d.push([pt.x, pt.y].join(','))
+          parts.push([pt.x, pt.y].join(','))
           i++
         }
-        d = d.join(' ')
+        const d = parts.join(' ')
 
         element = svgCanvas.addSVGElementsFromJson({
           element: 'path',
@@ -353,24 +359,18 @@ export const init = (canvas) => {
     /**
      * The open path end under (x, y) that the Pen could carry on or join to: ends of
      * the carried-on path itself are not offered (clicking its far end closes it).
-     * @param {number} x
-     * @param {number} y
-     * @param {?Element} drawnPath
-     * @returns {?import('./pen-continue.ts').PenEnd}
      */
-    #penEnd (x, y, drawnPath) {
+    #penEnd (x: number, y: number, drawnPath: Element | null): PenEnd | null {
       if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
       const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
-      const exclude = /** @type {Element[]} */ ([drawnPath, this.#continued?.elem].filter(Boolean))
+      const exclude = [drawnPath, this.#continued?.elem].filter(Boolean) as Element[]
       return findPenEnd(layer, x, y, PEN_END_REACH / svgCanvas.getZoom(), exclude)
     }
 
     /**
      * Start a drawing that carries on `end`'s path from the pressed end.
-     * @param {import('./pen-continue.ts').PenEnd} end
-     * @param {Element} stretchy
      */
-    #carryOn (end, stretchy) {
+    #carryOn (end: PenEnd, stretchy: Element) {
       const zoom = svgCanvas.getZoom()
       this.#newPoint = null
       this.#firstCtrl = null
@@ -383,8 +383,8 @@ export const init = (canvas) => {
           opacity: svgCanvas.getOpacity() / 2
         }
       })
-      svgCanvas.setDrawnPath(/** @type {import('./path-types.ts').PathElement} */ (drawn))
-      this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: /** @type {any} */ (drawn).pathSegList.numberOfItems }
+      svgCanvas.setDrawnPath((drawn as PathElement))
+      this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: (drawn as PathElement).pathSegList.numberOfItems }
       end.elem.setAttribute('display', 'none')
       const x = end.point.x * zoom
       const y = end.point.y * zoom
@@ -394,11 +394,8 @@ export const init = (canvas) => {
 
     /**
      * Finish the drawing by joining it to `end`'s path.
-     * @param {import('./pen-continue.ts').PenEnd} end
-     * @param {Element} drawnPath
-     * @param {Element} stretchy
      */
-    #joinTo (end, drawnPath, stretchy) {
+    #joinTo (end: PenEnd, drawnPath: Element, stretchy: Element) {
       const drawn = drawnSubpath(drawnPath.getAttribute('d') ?? '')
       this.#newPoint = null
       if (!drawn) return
@@ -414,12 +411,8 @@ export const init = (canvas) => {
     /**
      * Give `survivor` the finished geometry (and drop the paths it absorbed) as one
      * undo step, in place of the throwaway drawing.
-     * @param {Element} survivor
-     * @param {string} d
-     * @param {Element[]} absorbed
-     * @param {Element} drawnPath
      */
-    #commitInto (survivor, d, absorbed, drawnPath) {
+    #commitInto (survivor: Element, d: string, absorbed: Element[], drawnPath: Element) {
       const label = absorbed.length || (this.#continued && survivor !== this.#continued.elem) ? 'Join paths' : 'Continue path'
       svgCanvas.getCurrentDrawing().releaseId(drawnPath.id)
       drawnPath.remove()
@@ -451,26 +444,18 @@ export const init = (canvas) => {
 
     /**
      * The pointer moved with no button down in `path` or `fhpath` mode (`null` coordinates just hide the ring).
-     * @param {?number} mouseX
-     * @param {?number} mouseY
-     * @param {string} [mode]
-     * @returns {void}
      */
-    hover (mouseX, mouseY, mode = 'path') {
+    hover (mouseX: number | null, mouseY: number | null, mode: string = 'path'): void {
       if (mouseX === null || mouseY === null) this.#hideEndHint()
       else this.#showEndHint(mouseX, mouseY, mode)
     }
 
     /**
      * A ring on the open end the next press would carry on or join to (screen coordinates).
-     * @param {number} mouseX
-     * @param {number} mouseY
-     * @param {string} [mode]
-     * @returns {void}
      */
-    #showEndHint (mouseX, mouseY, mode = 'path') {
+    #showEndHint (mouseX: number, mouseY: number, mode: string = 'path'): void {
       const zoom = svgCanvas.getZoom()
-      const at = /** @type {[number, number]} */ ([mouseX / zoom, mouseY / zoom])
+      const at = [mouseX / zoom, mouseY / zoom] as [number, number]
       const end = this.#subpath
         ? null
         : mode === 'fhpath' ? svgCanvas.pencilEnd?.(...at) : this.#penEnd(...at, svgCanvas.getDrawnPath())
@@ -486,7 +471,7 @@ export const init = (canvas) => {
         assignAttributes(ring, {
           id: END_HINT_ID, r: 7, fill: 'none', stroke: '#22C', 'stroke-width': 1.5, 'pointer-events': 'none'
         })
-        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
         parentGroup.append(ring)
       }
       assignAttributes(ring, { cx: end.point.x * zoom, cy: end.point.y * zoom, display: 'inline' })
@@ -497,14 +482,7 @@ export const init = (canvas) => {
       svgCanvas.setCursorHint(null)
     }
 
-    /**
-  * @param {MouseEvent} evt
-  * @param {Element} mouseTarget
-  * @param {number} startX
-  * @param {number} startY
-  * @returns {boolean|void}
-  */
-    mouseDown (evt, mouseTarget, startX, startY) {
+    mouseDown (evt: MouseEvent, mouseTarget: Element, startX: number, startY: number): boolean | void {
       let id
       if (svgCanvas.getCurrentMode() === 'path') {
         let mouseX = startX // Was this meant to work with the other `mouseX`? (was defined globally so adding `let` to at least avoid a global)
@@ -534,7 +512,7 @@ export const init = (canvas) => {
             'stroke-width': '0.5',
             fill: 'none'
           })
-          const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+          const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
           parentGroup.append(stretchy)
         }
         stretchy.setAttribute('display', 'inline')
@@ -572,7 +550,7 @@ export const init = (canvas) => {
             }
           }
           const dAttr = `M${x},${y} `
-          /* drawnPath = */ svgCanvas.setDrawnPath(/** @type {import('./path-types.ts').PathElement} */ (svgCanvas.addSVGElementsFromJson({
+          /* drawnPath = */ svgCanvas.setDrawnPath((svgCanvas.addSVGElementsFromJson({
             element: 'path',
             curStyles: true,
             attr: {
@@ -580,7 +558,7 @@ export const init = (canvas) => {
               id: svgCanvas.getNextId('path'),
               opacity: svgCanvas.getOpacity() / 2
             }
-          })))
+          }) as PathElement))
           // set stretchy line to first point
           stretchy.setAttribute('d', `M${mouseX} ${mouseY} ${mouseX} ${mouseY}`)
           index = this.#subpath ? path.segs.length : 0
@@ -612,7 +590,7 @@ export const init = (canvas) => {
           // Remove previous path object if previously created
           svgCanvas.removePath_(id)
 
-          const newpath = /** @type {Element} */ (svgCanvas.getElement(id))
+          const newpath = svgCanvas.getElement(id) as Element
           let newseg
           let sSeg
           const len = seglist.numberOfItems
@@ -628,7 +606,7 @@ export const init = (canvas) => {
               const absX = seglist.getItem(0).x
               const absY = seglist.getItem(0).y
 
-              sSeg = /** @type {any} */ (stretchy).pathSegList.getItem(1)
+              sSeg = (stretchy as PathElement).pathSegList.getItem(1)
               newseg = sSeg.pathSegType === 4
                 ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
                 : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
@@ -656,7 +634,7 @@ export const init = (canvas) => {
             svgCanvas.setStarted(false)
 
             if (this.#continued) {
-              this.#commitInto(this.#continued.elem, /** @type {string} */ (newpath.getAttribute('d')), [], newpath)
+              this.#commitInto(this.#continued.elem, (newpath.getAttribute('d') as string), [], newpath)
               return false
             }
 
@@ -667,7 +645,7 @@ export const init = (canvas) => {
 
               const newD = newpath.getAttribute('d')
               const origD = path.elem.getAttribute('d')
-              path.elem.setAttribute('d', origD + newD)
+              path.elem.setAttribute('d', (origD ?? '') + (newD ?? ''))
               newpath.remove()
               if (path.matrix) {
                 svgCanvas.recalcRotatedPath()
@@ -691,7 +669,7 @@ export const init = (canvas) => {
             // in that gap sees this path's nodes with no path considered
             // "current" to own them. Hiding them here, synchronously, closes
             // both gaps regardless of tool-lock state or mouseup timing.
-            svgCanvas.getPath_(/** @type {SVGPathElement} */ (newpath)).show(false)
+            svgCanvas.getPath_((newpath as SVGPathElement)).show(false)
           // else, create a new point, update path element
           } else {
           // Checks if current target or parents are #svgcontent
@@ -712,7 +690,7 @@ export const init = (canvas) => {
             }
 
             // Use the segment defined by stretchy
-            sSeg = /** @type {any} */ (stretchy).pathSegList.getItem(1)
+            sSeg = (stretchy as PathElement).pathSegList.getItem(1)
             newseg = sSeg.pathSegType === 4
               ? drawnPath.createSVGPathSegLinetoAbs(svgCanvas.round(x), svgCanvas.round(y))
               : drawnPath.createSVGPathSegCurvetoCubicAbs(
@@ -746,7 +724,7 @@ export const init = (canvas) => {
 
       path.storeD();
 
-      ({ id } = /** @type {Element} */ (evt.target))
+      ({ id } = (evt.target as Element))
       this.#downOnPath = false
       let curPt
       if (id.startsWith('pathpointgrip_')) {
@@ -795,9 +773,9 @@ export const init = (canvas) => {
       if (!path.dragging) {
         let rubberBox = svgCanvas.getRubberBox()
         if (!rubberBox) {
-          rubberBox = /** @type {Element} */ (svgCanvas.setRubberBox(
+          rubberBox = (svgCanvas.setRubberBox(
             svgCanvas.selectorManager.getRubberBandBox()
-          ))
+          ) as Element)
         }
         const zoom = svgCanvas.getZoom()
         assignAttributes(rubberBox, {
@@ -811,12 +789,7 @@ export const init = (canvas) => {
       return undefined
     }
 
-    /**
-    * @param {number} mouseX
-    * @param {number} mouseY
-    * @returns {void}
-    */
-    mouseMove (mouseX, mouseY) {
+    mouseMove (mouseX: number, mouseY: number): void {
       const zoom = svgCanvas.getZoom()
       this.#hasMoved = true
       const drawnPath = svgCanvas.getDrawnPath()
@@ -844,8 +817,8 @@ export const init = (canvas) => {
 
           // set curve
           // const seg = seglist.getItem(index);
-          const curX = /** @type {number} */ (mouseX) / zoom
-          const curY = /** @type {number} */ (mouseY) / zoom
+          const curX = (mouseX as number) / zoom
+          const curY = (mouseY as number) / zoom
           const altX = (ptX + (ptX - curX))
           const altY = (ptY + (ptY - curY))
 
@@ -928,9 +901,9 @@ export const init = (canvas) => {
         // found. Informational only; the node always tracks the raw drag
         // delta. Gated on the same `smartSnapping` flag as object-to-object
         // guides.
-          const curSeg = path.segs[path.cur_pt]
+          const curSeg = path.segs[path.cur_pt as number]
           if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
-            const exclude = [path.cur_pt, ...path.selected_pts]
+            const exclude = [path.cur_pt as number, ...path.selected_pts]
             const targets = collectPathNodeTargets(path, exclude)
             const tol = 8 / zoom // ~8 screen px
             const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
@@ -947,7 +920,7 @@ export const init = (canvas) => {
         }
       } else {
         path.selected_pts = []
-        path.eachSeg(/** @this {any} */ function (/** @type {number} */ _i) {
+        path.eachSeg(function (_i) {
           const seg = this
           if (!seg.next && !seg.prev) return
 
@@ -973,15 +946,7 @@ export const init = (canvas) => {
       }
     }
 
-    /** @typedef {{keep: boolean, element?: ?Element}} KeepElement */
-    /**
-    * @param {MouseEvent} evt
-    * @param {?Element} [element]
-    * @param {number} [mouseX]
-    * @param {number} [mouseY]
-    * @returns {KeepElement|void}
-    */
-    mouseUp (evt, element, mouseX, mouseY) {
+    mouseUp (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number): KeepElement | void {
       const drawnPath = svgCanvas.getDrawnPath()
       // Create mode
       if (svgCanvas.getCurrentMode() === 'path') {
@@ -997,8 +962,8 @@ export const init = (canvas) => {
           const zoom = svgCanvas.getZoom()
           const ptX = this.#newPoint[0]
           const ptY = this.#newPoint[1]
-          const curX = /** @type {number} */ (mouseX) / zoom
-          const curY = /** @type {number} */ (mouseY) / zoom
+          const curX = (mouseX as number) / zoom
+          const curY = (mouseY as number) / zoom
           // Matches the FUZZ tolerance mouseDown uses to detect "clicked on an
           // existing point" (below) — real click imprecision (mouse/trackpad
           // hand tremor) commonly runs several CSS px, well past a stricter
@@ -1067,23 +1032,19 @@ export const init = (canvas) => {
         rubberBox.setAttribute('display', 'none')
 
         if (Number(rubberBox.getAttribute('width')) <= 2 && Number(rubberBox.getAttribute('height')) <= 2) {
-          svgCanvas.pathActions.toSelectMode(/** @type {Element} */ (evt.target))
+          svgCanvas.pathActions.toSelectMode((evt.target as Element))
         }
 
       // else, move back to select mode
       } else {
-        svgCanvas.pathActions.toSelectMode(/** @type {Element} */ (evt.target))
+        svgCanvas.pathActions.toSelectMode((evt.target as Element))
       }
       this.#hasMoved = false
       return undefined
     }
 
-    /**
-    * @param {Element} element
-    * @returns {void}
-    */
-    toEditMode (element) {
-      path = svgCanvas.getPath_(/** @type {SVGPathElement} */ (element))
+    toEditMode (element: Element): void {
+      path = svgCanvas.getPath_((element as SVGPathElement))
       // getPath_() caches this wrapper by element id for the session's whole
       // lifetime. If `element`'s `d` changed while some other path was being
       // tracked (e.g. a node was added/removed here, then undone/redone while
@@ -1104,11 +1065,9 @@ export const init = (canvas) => {
     }
 
     /**
-    * @param {?Element} [elem]
     * @fires module:svgcanvas.SvgCanvas#event:selected
-    * @returns {void}
     */
-    toSelectMode (elem) {
+    toSelectMode (elem?: Element | null): void {
       svgCanvas.logDebugEvent?.('pathedit-exit', {
         elemId: path.elem.id, segCount: path.segs.length, d: path.elem.getAttribute('d')
       })
@@ -1153,11 +1112,7 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-    * @param {boolean} on
-    * @returns {void}
-    */
-    addSubPath (on) {
+    addSubPath (on: boolean): void {
       if (on) {
       // Internally we go into "path" mode, but in the UI it will
       // still appear as if in "pathedit" mode.
@@ -1184,11 +1139,7 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-    * @param {Element} target
-    * @returns {void}
-    */
-    select (target) {
+    select (target: Element): void {
       if (this.#currentPath === target) {
         svgCanvas.pathActions.toEditMode(target)
         svgCanvas.setCurrentMode('pathedit')
@@ -1198,10 +1149,7 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-    * @returns {void}
-    */
-    clear () {
+    clear (): void {
       const drawnPath = svgCanvas.getDrawnPath()
       const mode = svgCanvas.getCurrentMode()
       // `path` (the current path-edit session, if any) is set once by
@@ -1294,17 +1242,13 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-    * @param {?(Element|SVGPathElement)} pth
-    * @returns {false|void}
-    */
-    resetOrientation (pth) {
+    resetOrientation (pth: (Element | SVGPathElement) | null): false | void {
       if (pth?.nodeName !== 'path') { return false }
-      const tlist = /** @type {SVGTransformList} */ (getTransformList(pth))
+      const tlist = getTransformList(pth) as SVGTransformList
       const m = transformListToTransform(tlist).matrix
       tlist.clear()
       pth.removeAttribute('transform')
-      const segList = /** @type {any} */ (pth).pathSegList
+      const segList = (pth as PathElement).pathSegList
 
       // Opera/win/non-EN throws an error here.
       // TODO: Find out why!
@@ -1315,7 +1259,7 @@ export const init = (canvas) => {
       // } catch(err) {
       //   const fixed_d = pathActions.convertPath(pth);
       //   pth.setAttribute('d', fixed_d);
-      //   segList = /** @type {any} */ (pth).pathSegList;
+      //   segList = (pth as PathElement).pathSegList;
       //   const len = segList.numberOfItems;
       // }
       // let lastX, lastY;
@@ -1339,25 +1283,13 @@ export const init = (canvas) => {
       return undefined
     }
 
-    /**
-    * @returns {void}
-    */
-    zoomChange () {
+    zoomChange (): void {
       if (svgCanvas.getCurrentMode() === 'pathedit') {
         path.update()
       }
     }
 
-    /**
-    * @typedef {PlainObject} NodePoint
-    * @property {number} x
-    * @property {number} y
-    * @property {number} type
-    */
-    /**
-    * @returns {module:path.NodePoint}
-    */
-    getNodePoint () {
+    getNodePoint (): NodePoint {
       const selPt = path.selected_pts.length ? path.selected_pts[0] : 1
 
       const seg = path.segs[selPt]
@@ -1368,18 +1300,11 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-    * @param {boolean} linkPoints
-    * @returns {void}
-    */
-    linkControlPoints (linkPoints) {
+    linkControlPoints (linkPoints: boolean): void {
       svgCanvas.setLinkControlPoints(linkPoints)
     }
 
-    /**
-    * @returns {void}
-    */
-    clonePathNode () {
+    clonePathNode (): void {
       path.storeD()
 
       const selPts = path.selected_pts
@@ -1400,16 +1325,13 @@ export const init = (canvas) => {
       path.endChanges('Clone path node(s)', { sourceIndexes: [...selPts], newIndexes: nums })
     }
 
-    /**
-    * @returns {void}
-    */
-    opencloseSubPath () {
+    opencloseSubPath (): void {
       const selPts = path.selected_pts
       // Only allow one selected node for now
       if (selPts.length !== 1) { return }
 
       const { elem } = path
-      const list = /** @type {any} */ (elem).pathSegList
+      const list = (elem as PathElement).pathSegList
       // Like every other pathedit action (move/clone/delete/toggle-seg-type/
       // smooth), bracket the direct pathSegList mutation below with
       // storeD()/endChanges() so an open/close toggle gets a real undo-history
@@ -1421,13 +1343,11 @@ export const init = (canvas) => {
 
       const index = selPts[0]
 
-      /** @type {number|boolean|null} */
-      let openPt = /** @type {?number|false} */ (null)
-      /** @type {any} */
-      let startItem = null
+      let openPt: number | boolean | null = null as number | false | null
+      let startItem = null as PathSegItem | null
 
       // Check if subpath is already open
-      path.eachSeg(/** @this {any} */ function (/** @type {number} */ i) {
+      path.eachSeg(function (i) {
         if (this.type === 2 && i <= index) {
           startItem = this.item
         }
@@ -1458,9 +1378,9 @@ export const init = (canvas) => {
       // Close this path
 
         // Create a line going to the previous "M"
-        const newseg = /** @type {any} */ (elem).createSVGPathSegLinetoAbs(startItem.x, startItem.y)
+        const newseg = (elem as PathElement).createSVGPathSegLinetoAbs((startItem as PathSegItem).x, (startItem as PathSegItem).y)
 
-        const closer = /** @type {any} */ (elem).createSVGPathSegClosePath()
+        const closer = (elem as PathElement).createSVGPathSegClosePath()
         if (openPt === path.segs.length - 1) {
           list.appendItem(newseg)
           list.appendItem(closer)
@@ -1472,7 +1392,7 @@ export const init = (canvas) => {
         svgCanvas.logDebugEvent?.('path-open-close', {
           elemId: elem.id, index, action: 'close', before: beforeD, after: elem.getAttribute('d')
         })
-        path.init().selectPt(/** @type {number} */ (openPt) + 1)
+        path.init().selectPt((openPt as number) + 1)
         path.endChanges('Close subpath', { index })
         return
       }
@@ -1496,7 +1416,7 @@ export const init = (canvas) => {
         return
       }
 
-      let lastM = 0; let zSeg
+      let lastM = 0; let zSeg: number | undefined
 
       // Find this sub-path's closing point and remove
       for (let i = 0; i < list.numberOfItems; i++) {
@@ -1520,7 +1440,7 @@ export const init = (canvas) => {
       let num = (index - lastM) - 1
 
       while (num--) {
-        list.insertItemBefore(list.getItem(lastM), zSeg)
+        list.insertItemBefore(list.getItem(lastM), zSeg as number)
       }
 
       const pt = list.getItem(lastM)
@@ -1541,9 +1461,8 @@ export const init = (canvas) => {
   * Removes the selected node(s) and reconnects their neighbors directly,
   * keeping the path exactly as closed/continuous as it was. Splitting a path
   * open is the cutter tool's job, not delete-node's.
-  * @returns {void}
   */
-    deletePathNode () {
+    deletePathNode (): void {
       if (!svgCanvas.pathActions.canDeleteNodes) { return }
       path.storeD()
       const deletedIndexes = [...path.selected_pts]
@@ -1565,8 +1484,8 @@ export const init = (canvas) => {
       path.init()
       path.clearSelection()
 
-      if (/** @type {any} */ (window).opera) { // Opera repaints incorrectly
-        path.elem.setAttribute('d', path.elem.getAttribute('d'))
+      if ((window as unknown as { opera?: unknown }).opera) { // Opera repaints incorrectly
+        path.elem.setAttribute('d', path.elem.getAttribute('d') ?? '')
       }
       path.endChanges('Delete path node(s)', { deletedIndexes })
     }
@@ -1575,10 +1494,8 @@ export const init = (canvas) => {
   * Move the selected nodes (with their handles) to their average position:
   * `'h'` onto a common horizontal line, `'v'` onto a common vertical line,
   * `'both'` onto one point. One undo step.
-  * @param {'h'|'v'|'both'} [axis]
-  * @returns {void}
   */
-    averageSelectedNodes (axis = 'both') {
+    averageSelectedNodes (axis: 'h' | 'v' | 'both' = 'both'): void {
       if (!path || path.selected_pts.length < 2) { return }
       const newD = averageNodesD(path.segs, path.selected_pts, axis)
       if (!newD) { return }
@@ -1592,9 +1509,8 @@ export const init = (canvas) => {
     /**
   * Add an anchor at the middle of every segment of the path being edited,
   * keeping its shape. One undo step.
-  * @returns {void}
   */
-    addAnchorPoints () {
+    addAnchorPoints (): void {
       if (!path) { return }
       const newD = addAnchorPointsD(path.segs)
       if (!newD) { return }
@@ -1608,39 +1524,29 @@ export const init = (canvas) => {
     // Can't seem to use `@borrows` here, so using `@see`
     /**
   * Smooth polyline into path.
-  * @function module:path.pathActions.smoothPolylineIntoPath
   * @see module:path~smoothPolylineIntoPath
-  * @param {Element} element
-  * @returns {Element}
   */
-    smoothPolylineIntoPath (element) {
+    smoothPolylineIntoPath (element: Element): Element {
       return this.#smoothPolylineIntoPath(element)
     }
 
     /* eslint-enable  */
     /**
-  * @param {?number} v See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
-  * @returns {void}
+  * @param v See {@link https://www.w3.org/TR/SVG/single-page.html#paths-InterfaceSVGPathSeg}
   */
-    setSegType (v) {
+    setSegType (v: number | null): void {
       path?.setSegType(v)
     }
 
     /**
   * Recompute the selected node(s)' bezier handles so they're smooth again,
   * without moving any anchor. See {@link module:path.Path#smoothSelectedNodes}.
-  * @returns {void}
   */
-    smoothSelectedNodes () {
+    smoothSelectedNodes (): void {
       path?.smoothSelectedNodes()
     }
 
-    /**
-  * @param {string} attr
-  * @param {number} newValue
-  * @returns {void}
-  */
-    moveNode (attr, newValue) {
+    moveNode (attr: string, newValue: number): void {
       const selPts = path.selected_pts
       if (!selPts.length) { return }
 
@@ -1648,25 +1554,20 @@ export const init = (canvas) => {
 
       // Get first selected point
       const seg = path.segs[selPts[0]]
-      /** @type {Record<string, number>} */
-      const diff = { x: 0, y: 0 }
+      const diff: Record<string, number> = { x: 0, y: 0 }
       diff[attr] = newValue - seg.item[attr]
 
       seg.move(diff.x, diff.y)
       path.endChanges('Move path point', { index: selPts[0], attr, newValue })
     }
 
-    /**
-  * @param {Element} elem
-  * @returns {void}
-  */
-    fixEnd (elem) {
+    fixEnd (elem: Element): void {
     // Adds an extra segment if the last seg before a Z doesn't end
     // at its M point
     // M0,0 L0,100 L100,100 z
-      const segList = /** @type {any} */ (elem).pathSegList
+      const segList = (elem as PathElement).pathSegList
       const len = segList.numberOfItems
-      let lastM
+      let lastM: PathSegItem | undefined
       for (let i = 0; i < len; ++i) {
         const item = segList.getItem(i)
         if (item.pathSegType === 2) { // 2 => M segment type (move to)
@@ -1675,9 +1576,9 @@ export const init = (canvas) => {
 
         if (item.pathSegType === 1) { // 1 => Z segment type (close path)
           const prev = segList.getItem(i - 1)
-          if (prev.x !== lastM.x || prev.y !== lastM.y) {
+          if (lastM && (prev.x !== lastM.x || prev.y !== lastM.y)) {
           // Add an L segment here
-            const newseg = /** @type {any} */ (elem).createSVGPathSegLinetoAbs(lastM.x, lastM.y)
+            const newseg = (elem as PathElement).createSVGPathSegLinetoAbs(lastM.x, lastM.y)
             segList.insertItemBefore(newseg, i)
             // Can this be done better?
             svgCanvas.pathActions.fixEnd(elem)
@@ -1690,13 +1591,9 @@ export const init = (canvas) => {
     // Can't seem to use `@borrows` here, so using `@see`
     /**
   * Convert a path to one with only absolute or relative values.
-  * @function module:path.pathActions.convertPath
   * @see module:path.convertPath
-  * @param {SVGPathElement} pth
-  * @param {boolean} toRel
-  * @returns {string}
   */
-    convertPath (pth, toRel) {
+    convertPath (pth: SVGPathElement, toRel: boolean): string {
       return convertPath(pth, toRel)
     }
   }

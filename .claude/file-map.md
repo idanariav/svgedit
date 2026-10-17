@@ -88,7 +88,7 @@
 | `paint.ts` | Fill, stroke, color management |
 | `paper-utils.ts` | Shared paper.js helpers for the boolean/geometry tools (boolean-ops, cutter, path-offset, shape-builder, taper-stroke, path-simplify) |
 | `paste-elem.ts` | Paste handler |
-| `path-actions.js` | Path functionality |
+| `path-actions.ts` | Path-drawing and path-editing gestures (the Pen, the node editor's mouse handling, node delete / add / align) and the path-data converters |
 | `path-edit.ts` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
 | `path-fit.ts` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
 | `path-join.ts` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |

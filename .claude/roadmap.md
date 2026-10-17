@@ -62,7 +62,7 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 |---|---|---|---|
 | R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo (step a mostly done 2026-10-15: `core/model/`, see its status in the re-architecture file) | XL | R2, R3 helpful |
 | R2 | Canvas composition: modules export functions over an explicit context instead of attaching ~540 members to one object (facade typed 2026-10-16; members not yet moved off the canvas, see the status in the re-architecture file) | L | — |
-| R3 | TypeScript (`.ts`) for the engine, then the editor (toolchain done; engine ~92% converted 2026-10-17; `path-actions`, `svg-exec`, `draw` and `svgcanvas.js` left) | M toolchain + L conversion | — |
+| R3 | TypeScript (`.ts`) for the engine, then the editor (toolchain done; engine ~92% converted 2026-10-17; `svg-exec`, `draw` and `svgcanvas.js` left) | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 

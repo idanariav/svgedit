@@ -80,7 +80,7 @@
   "core/paint.ts",
   "core/paper-utils.ts",
   "core/paste-elem.ts",
-  "core/path-actions.js",
+  "core/path-actions.ts",
   "core/path-edit.ts",
   "core/path-fit.ts",
   "core/path-join.ts",

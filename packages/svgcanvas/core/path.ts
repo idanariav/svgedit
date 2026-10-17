@@ -18,7 +18,7 @@ import type SvgCanvas from '../svgcanvas.js'
 import type { XY } from './canvas-state.ts'
 import type { PathObject } from './path-types.ts'
 import { init as pathMethodInit } from './path-method.ts'
-import { init as pathActionsInit } from './path-actions.js'
+import { init as pathActionsInit } from './path-actions.ts'
 
 const segData: Record<number, string[]> = {
   2: ['x', 'y'], // PATHSEG_MOVETO_ABS

@@ -175,3 +175,11 @@ creates the rubber band and the mouse handlers set the root matrix before anythi
 ~25 casts into the event modules. They really are `null` before the first gesture. Make them honest (a `requireRubberBox()`
 that throws, or narrowing in the converted event modules) when `event*.js` move to `.ts`. Related: three names reach the
 selector manager (`selectorManager`, `getSelectorManager()`, and the misspelt `gettingSelectorManager()`); keep one.
+
+## `path` in `path-actions.ts` is typed non-null (2026-10-17)
+
+`let path = null as unknown as PathObject` in `path-actions.ts`: it is `null` outside a path-edit session and set by
+`toEditMode()` before any handler reads it, and typing it `PathObject | null` put ~85 guards into the mouse handlers.
+`svgCanvas.getPathObj()` is honest (`PathObject | null`). Make the handlers take the path from a `requirePath()` that
+throws (or pass it in from the session) when `PathActions` is next reworked; the same applies to the `Path` / `Segment`
+fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.

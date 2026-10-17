@@ -3,7 +3,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
-import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.js'
+import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.ts'
 import * as pathModule from '../../packages/svgcanvas/core/path.ts'
 import { attachUnits } from './unitsMock.js'
 

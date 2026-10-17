@@ -86,6 +86,8 @@ export interface PathObject {
   last_d: string | null
   /** The control handle (1 or 2) being dragged. */
   dragctrl: number | false | undefined
+  /** The index of the node that was pressed. */
+  cur_pt?: number
   /** Where the node drag started, while one is under way. */
   dragging?: [number, number] | false
   /** The path's transform up to content space, and its inverse; `null` when it is the identity. */
