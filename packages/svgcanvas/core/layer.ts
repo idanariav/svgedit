@@ -205,7 +205,7 @@ class Layer {
    * @param hrService - History recording service
    * @returns The new name if changed; otherwise, null.
    */
-  setName (name: string, hrService?: { changeElement: (elem: Element, attrs: Record<string, unknown>) => unknown }): string | null {
+  setName (name: string, hrService?: { changeElement: (elem: Element, attrs: Record<string, string | null>) => unknown }): string | null {
     const previousName = this.name_
     name = toXml(name)
     // now change the underlying title element contents

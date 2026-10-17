@@ -51,7 +51,7 @@
 | `distort.ts` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
 | `dom-utils.ts` | DOM/element manipulation, lookup, and misc canvas-state utilities |
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
-| `draw.js` | Tools for drawing |
+| `draw.ts` | The drawing: the layer list, element id minting and the nonce, plus the group-context (isolation) functions the canvas attaches |
 | `drawing-invariants.ts` | Structural invariants of a healthy drawing, as a pure DOM check |
 | `elem-get-set.ts` | `changeSelectedAttribute()` and attribute I/O |
 | `encoding-utils.ts` | String/XML/base64 encoding utilities |
@@ -117,7 +117,7 @@
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.ts` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
-| `svg-exec.js` | Tools for svg |
+| `svg-exec.ts` | SVG text in and out of the canvas: serializing the drawing (`svgToString`, `svgCanvasToString`), loading it (`setSvgString`), importing and inserting fragments, embedding images and fonts, and rasterising the result |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.ts` | Text edit session: the caret, the selection and the hidden textarea behind them (`verticalMove` / `lineEdge` for area text) |

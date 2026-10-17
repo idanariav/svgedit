@@ -91,7 +91,7 @@ class HistoryRecordingService {
   /**
    * Add a `MoveElementCommand` to the history or current batch command.
    * @param {Element} elem - The DOM element that was moved
-   * @param {Element} oldNextSibling - The element's next sibling before it was moved
+   * @param {Element|null} oldNextSibling - The element's next sibling before it was moved
    * @param {Element} oldParent - The element's parent before it was moved
    * @param {string} [text] - An optional string visible to user related to this change
    * @returns {module:history.HistoryRecordingService}
@@ -117,7 +117,7 @@ class HistoryRecordingService {
   /**
    * Add a `RemoveElementCommand` to the history or current batch command.
    * @param {Element} elem - The DOM element that was removed
-   * @param {Element} oldNextSibling - The element's next sibling before it was removed
+   * @param {Element|null} oldNextSibling - The element's next sibling before it was removed
    * @param {Element} oldParent - The element's parent before it was removed
    * @param {string} [text] - An optional string visible to user related to this change
    * @returns {module:history.HistoryRecordingService}
