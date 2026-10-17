@@ -25,6 +25,13 @@ happened in a session can be *named* rather than guessed from DOM snapshots.
    anything else; start with the Playwright route. The plugin already exposes `editorCommands` for a future CLI / MCP bridge
    (see "Plugin command access" in [`../roadmap.md`](../roadmap.md)), so an MCP server over the same verbs is the natural second front end.
 
+   *Shipped 2026-10-17 (read side, no browser):* `npm run cli -- inspect|read|check <file.svg|note.md> [--version N]`
+   (`scripts/svgedit-cli.mjs`; `summarizeDrawing` in `core/model/summary.ts`): `inspect` prints a JSON summary (size, guides, layers
+   with their objects by kind, defs, every `se:` attribute in use, typed features that do not parse, all object ids), `read` writes
+   the drawing back through the model, `check` runs the round-trip and typed-feature check and exits 1 on a problem; notes are read
+   like `repair-drawings.mjs` does (raw or compressed block, saved versions). Left: `list` (needs the command registry without the
+   DOM), `run` and the DOM `checkDrawing` (the editor), `write`, and an MCP front end.
+
    *Update 2026-10-15 ([R1](rearchitecture.md#step-a-status) step a):* the read side no longer needs a browser. `core/model/`
    parses a drawing in plain Node (`readDrawing`: layers, objects with ids, transforms, hidden / locked state, typed `se:`
    features) and `scripts/check-model-roundtrip.mjs` already reads `.svg` files and the plugin's `.md` drawings, so `inspect`,

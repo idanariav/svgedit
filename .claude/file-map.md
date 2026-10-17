@@ -145,6 +145,7 @@
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
 | `parse.ts` | Document model: SVG/XML text -> persistent tree (see `node.ts`) |
 | `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.ts`) |
+| `summary.ts` | Document model, layer 3: a compact structural summary of a drawing, for tools that read a drawing without an editor (the headless CLI, an LLM that wants the shape of a file before it opens it) |
 
 ### `scripts/`
 
@@ -165,6 +166,7 @@
 | `publish.mjs` | Interactive release helper: confirms the version bump and CHANGES.md, optionally commits and tags the release, then publishes the packages |
 | `repair-drawings.mjs` | One-off repair of already-saved drawings: rewrites the .svg files themselves, so the editor never has to carry a load-time sanitizer for old corruption |
 | `run-e2e.mjs` | Runs the Playwright e2e suite: builds `dist/editor` with coverage instrumentation, starts the preview server, runs the specs and merges their coverage with vitest's |
+| `svgedit-cli.mjs` | Headless CLI over the document model (R1): read a drawing without an editor or a browser |
 | `version-bump.mjs` | Interactive version bump: suggests patch / minor / major from the current version and writes it to the root and workspace packages |
 
 ### `src/editor/`
