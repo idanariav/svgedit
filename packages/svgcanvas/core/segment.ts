@@ -37,7 +37,7 @@ const SEGMENT_LINE_ATTR = 'se:segment-line'
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
 
 type Scope = paper.PaperScope
-type Batch = { addSubCommand: (cmd: unknown) => void }
+type Batch = import('./history.js').BatchCommand
 
 /**
  * Whether `elem` is eligible for the Segment tool — used as the toolbar

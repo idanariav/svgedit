@@ -24,8 +24,9 @@ short: details belong in the area files.
   stays `// @ts-check` with strict JSDoc until the editor has its own strict tsconfig. When you touch a core module's `init`,
   type its `canvas` parameter as `SvgCanvas` (`import type SvgCanvas from '../svgcanvas.ts'`); convert a module you are rewriting anyway.
 - **No new `canvas.foo = …` attachments** ([R2](roadmap/rearchitecture.md#r2-canvas-composition-instead-of-attached-members)):
-  a new core module exports functions that take the canvas (or what they need from it) as an argument, and the editor
-  imports them. Attach to the canvas only what hosts or extensions call through `svgCanvas`.
+  a new core module exports `XApi` (its interface) and `createX(canvas): XApi`; `svgcanvas.ts` attaches it with `attachApi` and
+  lists it in `type ModuleApis`. A feature with few callers returns one service object instead (`svgCanvas.clipMask.setClip()`).
+  Pure logic is exported as plain functions that take the canvas (or what they need from it) as an argument.
 - **Built-in features are not new extensions** ([R4](roadmap/rearchitecture.md#r4-built-in-features-are-not-extensions)):
   new built-in behaviour registers commands, tools and panel sections directly; `ext-*` stays for what a host may
   leave out.
@@ -35,7 +36,7 @@ short: details belong in the area files.
   the command sweep green, `SWEEP=full` before closing a larger batch.
 - **Agent docs:** say what a thing is and why, not how it got there (history is in git). Give every source file a header comment (the file map is generated from it, `npm run file-map`); regenerate `commands.md` when a command changes; put user-facing behaviour in `tools.md` and construction notes in `extensions.md`, one fact in one place.
 - **Calling the canvas from the editor:** `check-canvas-calls` (`pretest`) type-checks every `svgCanvas.x(…)` in `src/editor` against the
-  facade, so a new canvas member is declared in `svgcanvas-members.d.ts` (or exists on the class) before the editor calls it; an
+  facade, so a new canvas member is on the class or in a module interface before the editor calls it; an
   extension reaches the editor through `const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))`.
 - **Layering:** `packages/svgcanvas` never imports `src/editor`, reads `window.svgEditor` or defines custom elements
   (`check-layers`).

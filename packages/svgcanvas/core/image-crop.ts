@@ -314,7 +314,7 @@ export const createImageCrop = (svgCanvas: Host): ImageCrop => {
     imageElem.setAttribute('height', String(cropRect.height))
 
     const batchCmd = new BatchCommand('Crop Image')
-    batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues))
+    batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues as unknown as Record<string, string | null>))
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.call('changed', [imageElem])
 

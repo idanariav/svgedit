@@ -19,7 +19,7 @@
 | File | What it is |
 |---|---|
 | `browser.ts` | Browser detection |
-| `initGuard.ts` | Collision guard for SvgCanvas's per-module `xxxInit(canvas)` calls |
+| `initGuard.ts` | Collision guard for the members core modules give the SvgCanvas instance |
 | `logger.ts` | Centralized logging utility for SVGCanvas |
 | `util.ts` | Common utility functions |
 

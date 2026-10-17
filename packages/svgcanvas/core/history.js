@@ -194,8 +194,8 @@ export class Command {
 export class MoveElementCommand extends Command {
   /**
   * @param {Element} elem - The DOM element that was moved
-  * @param {Element|null} oldNextSibling - The element's next sibling before it was moved
-  * @param {Element} oldParent - The element's parent before it was moved
+  * @param {Node|null} oldNextSibling - The element's next sibling before it was moved
+  * @param {Node|null} oldParent - The element's parent before it was moved
   * @param {string} [text] - An optional string visible to user related to this change
   */
   constructor (elem, oldNextSibling, oldParent, text) {
@@ -236,7 +236,8 @@ export class MoveElementCommand extends Command {
         this.oldNextSibling && this.oldNextSibling.parentNode === this.oldParent
           ? this.oldNextSibling
           : null
-      this.elem = this.oldParent.insertBefore(this.elem, reference)
+      const oldParent = /** @type {Node} */ (this.oldParent)
+      this.elem = oldParent.insertBefore(this.elem, reference)
     })
   }
 }
@@ -294,7 +295,7 @@ export class RemoveElementCommand extends Command {
   /**
   * @param {Element} elem - The removed DOM element
   * @param {Node|null} oldNextSibling - The DOM element's nextSibling when it was in the DOM
-  * @param {Element} oldParent - The DOM element's parent
+  * @param {Node|null} oldParent - The DOM element's parent
   * @param {string} [text] - An optional string visible to user related to this change
   */
   constructor (elem, oldNextSibling, oldParent, text) {
@@ -330,7 +331,8 @@ export class RemoveElementCommand extends Command {
         this.nextSibling && this.nextSibling.parentNode === this.parent
           ? this.nextSibling
           : null
-      this.parent.insertBefore(this.elem, reference) // Don't use `before` or `prepend` as `reference` may be `null`
+      const parent = /** @type {Node} */ (this.parent)
+      parent.insertBefore(this.elem, reference) // Don't use `before` or `prepend` as `reference` may be `null`
     })
   }
 }

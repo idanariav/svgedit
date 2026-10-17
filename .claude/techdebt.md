@@ -13,7 +13,7 @@ how big/risky it is. When an item is finally addressed, delete its entry
 ## getStrokedBBox's false / null
 
 `getStrokedBBox` returns `false` for an empty list and `null` when every element is detached, but the canvas
-types (`svgcanvas-members.d.ts`) promise a box, because ~40 callers pass a non-empty list of attached elements and use the
+types (`BBoxUtilsApi` in `core/bbox-utils.ts`) promise a box, because ~40 callers pass a non-empty list of attached elements and use the
 result unchecked. `bbox-utils.ts` casts at the assignment. Making the type honest (`BBox | false | null`) gave 33 strict
 errors in `event-rotate`, `event-select`, `selected-elem`…; the proper fix is a single contract (return `null` for both
 and have callers guard, or throw on an empty list), done once with those callers.

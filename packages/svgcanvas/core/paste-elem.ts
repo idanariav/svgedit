@@ -9,11 +9,16 @@ const {
   InsertElementCommand, BatchCommand
 } = hstry
 
+/** The members `paste-elem.ts` gives its canvas. */
+export interface PasteElemApi {
+  pasteElements(type?: string, x?: number, y?: number, data?: unknown[]): void
+}
+
 /**
 * Reentrant init: `pasteElements` is created per-instance, closed over this
 * canvas, so several editors can coexist in one realm.
 */
-export const init = (canvas: SvgCanvas): void => {
+export const createPasteElem = (canvas: SvgCanvas): PasteElemApi => {
   const svgCanvas = canvas
 
   // Tracks consecutive pastes of the same clipboard content so repeated
@@ -192,5 +197,7 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.call('changed', pasted)
   }
 
-  svgCanvas.pasteElements = pasteElementsMethod
+  return {
+    pasteElements: pasteElementsMethod
+  }
 }

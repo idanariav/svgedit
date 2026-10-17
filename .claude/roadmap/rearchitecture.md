@@ -147,96 +147,34 @@ parser, serializer, typed view); the typed features and the headless fixes follo
 
 ## R2. Canvas composition instead of attached members
 
-**Safety net (2026-10-17).** `npm run check-canvas-calls` (`scripts/check-canvas-calls.mjs`, `src/editor/tsconfig.canvas-calls.json`) runs `checkJs` over `src/editor` and fails on an error naming `SvgCanvas` or an argument error on a line that touches `svgCanvas`, so moving a member off the canvas is compiler-checked for the ~80 editor files and extensions that call it. The other ~1,700 `checkJs` errors in the editor (DOM typing: `Element.style`, `EventTarget.value`, …) are not gated; clearing them is the editor half of R3.
+**Status (2026-10-17).** Done for the attachment pattern; the canvas itself is still one big object. No core module attaches
+members with `svgCanvas.foo = …` any more, and the hand-written `svgcanvas-members.d.ts` / `svgcanvas-internal.d.ts` are gone.
 
-**Status (2026-10-16).** Typed, not yet composed. The facade is fully typed except ten members (eight internal, two public, listed
-in `tests/unit/svgcanvas-facade.test.js`), and `tsc` checks every module against it. Members have moved off the canvas only for
-`drawSnap` (a service), `gesture` (state) and a handful of stateless helpers; the other ~530 are still attached, and the
-d.ts files and the drift test stay until that changes. What remains is the work below: services for the loose state
-(`selectorManager`, `pathActions`, the drawing handles), `createX(host)` for the 5–10-member modules, then deleting
-the two hand-written d.ts files for `tsc --emitDeclarationOnly`.
+**How a module gives the canvas its members.** `export const createX = (canvas: SvgCanvas): XApi => { …; return { a, b } }`, with
+`export interface XApi` written in the same file (the explicit interface is what breaks the class-type cycle). `svgcanvas.ts`
+attaches it with `attachApi(this, 'x', createX(this), initGuardRegistry)` (which warns when two modules use one name) and lists
+`XApi` in `type ModuleApis = A & B & …`, which the class extends through its base-class type. A module that sits under another
+(`text-attrs` under `elem-get-set`, `layer-ops` under `draw`, `group-ops` under `selected-elem`, `path-method` under `path`) is
+merged by its parent (`Object.assign(canvas, createY(canvas))`) and still listed in `ModuleApis`. Data that is canvas state
+(`undoMgr`, `contentW`, `pathActions`, the drag deltas) is `declare`d as a field of the class. A side-effect-only module
+(`touch`, `warp`, `distort`, `live-effects-distort`) keeps a plain `init()`.
 
-**Today.** `svgcanvas.ts` runs 50 `init(canvas)` functions (`runGuardedInit`), each attaching functions and state to
-the one `SvgCanvas` instance (`svgCanvas.findSameAs = findSameAs`): about 540 members, with an `initGuardRegistry` to
-log name collisions. The shape cannot be inferred, so it is described by hand: `svgcanvas-members.d.ts`,
-`svgcanvas-internal.d.ts` (the plumbing members; typed since 2026-10-16), kept honest by
-`tests/unit/svgcanvas-dts-drift.test.js`. Generating them was tried and dropped: deriving the members from `init` is a
-type cycle (see [infrastructure](infrastructure.md) › "Typing the `init` modules").
+**Services.** Where the members form a feature with few callers, the module returns *one* object and the canvas holds it as one
+member (`svgCanvas.clipMask.setClip()`, `drawSnap`, `booleanOps`, `imageCrop`, `shapeBuilder`, `textActions`, `pathActions`,
+`gesture`): no flat compatibility members, callers (editor, tests) use the nested object, and `check-canvas-calls` fails on a
+stale editor call. The rest stay flat on the canvas (the public editing API: `clearSelection`, `setFontSize`, `createLayer`, …),
+because hundreds of editor, extension and test call sites and the plugin's host API (`hostApi.d.ts`) use them; their types
+come from the module's interface, not from a second declaration.
 
-**Target.** Core modules export plain functions taking an explicit context (`selectSameAs(ctx, criterion, opts)`), or
-small service objects the canvas composes; the canvas's public surface is an explicit facade of what hosts and
-extensions call (`hostApi.d.ts` already says what the plugin uses). Types come from the source, and the two
-hand-written d.ts files and the drift test go away.
+**Guards.** `tests/unit/svgcanvas-members.test.js` compares a live canvas with the class and the `ModuleApis` interfaces (every
+runtime member declared, every required one present, none declared twice); `svgcanvas-facade.test.js` keeps `any` out of the
+class and the attachment through `attachApi`; `npm run check-canvas-calls` type-checks the editor's calls into the canvas.
 
-**Evidence from R1 step (a).** The modules that own the `se:` grammars mix pure parsers with DOM or `paper.js` work, so
-a headless consumer cannot import them: `math.js` built an `<svg>` at load and `dash-fit.js` reached `paper.js` through one
-constant (both fixed, see [R1](#step-a-status)). Splitting each feature into a DOM-free part (attribute names, parser,
-formatter, geometry) and the canvas glue is the same work as this item, and the model is its first consumer.
+**What is left of R2.** The class still carries ~190 state accessors and ~50 `declare`d fields, and hosts see all of it. Narrowing
+it to an explicit facade (what `hostApi.d.ts` lists, what extensions call) and moving the loose state into services
+(`selectorManager`, the drawing handles, `state`) is the remaining work; it does not block R1.
 
-**Path:** the standing guideline (no new attachments) now; then per module, leaves first: export the functions,
-generate the attachment as a thin compatibility shim (`canvas.foo = (...a) => foo(canvas, ...a)`) from one table,
-move callers to the import, delete the shim when nothing calls it through `svgCanvas`. The context object is where R1's
-document and services later live.
-
-**Pattern, settled by the pilot (`core/draw-snap.ts`, 2026-10-16).** A module with per-canvas state becomes a service:
-`export interface DrawSnap {…}` plus `createDrawSnap(host): DrawSnap`, and the canvas holds it as one member
-(`this.drawSnap = createDrawSnap(this)`; one line in `svgcanvas-members.d.ts`, the four `any` lines in
-`svgcanvas-internal.d.ts` deleted). Callers say `svgCanvas.drawSnap.snapDrawPoint(…)`; there is no flat compatibility
-member, because the callers were few and all in the repo (a module with outside callers would keep a generated shim for
-a while). Rules that made it work:
-- **The explicit interface breaks the type cycle**: the factory's return type is written down, so the class's type does
-  not depend on inferring the body.
-- **`host` is `Pick<SvgCanvas, …>` of what the module reads**, not the whole canvas. Passing the JS class `this` to a
-  function typed with the whole d.ts canvas fails on unrelated drift (`addExtension`, `getStrokeWidth` disagree between
-  the class and the d.ts); the subset checks only what the module uses, and says what it needs.
-- **No optional chaining for "the module may be absent"**: the service is always there. Unit-test canvases that call
-  through `event.js` get a `drawSnap` stub.
-- A stateless module needs no service: export the functions, take `host` as the first argument (`clear.ts`'s
-  `clearSvgContentElement(host)` and `sanitize.js`'s `sanitizeSvg(host, node)` went this way; their two members left
-  `svgcanvas-members.d.ts`).
-**Which members move and which stay (2026-10-17).** A module with a handful of related canvas members becomes a service:
-`createX(host)` returns one object and the canvas holds it as one member (`svgCanvas.clipMask.setClip()`), with no flat
-compatibility members. Editor panels and their unit-test mocks are no reason to keep a member flat any more:
-`npm run check-canvas-calls` fails on a stale editor call, and a mock canvas gets the nested object (mechanical).
-Members whose callers are only core modules and the module's own tests take the plain-function route (export the function,
-pass the host). What still stays flat, typed properly, is what the e2e specs and hosts use as their handle
-(`window.svgEditor.svgCanvas.x`: `offsetPath`, `strokeToPath`, `hasVisibleStroke`, `segmentSelection`, `getSegmentParams`,
-`cutShapes`); the thin `canvas.x = (...a) => x(canvas, ...a)` shims in `cutter.js` and `segment.js` stay until the facade
-is written down as one typed object. Moved so far: `drawSnap`, `clipMask` (5 members), `booleanOps` (5) and `imageCrop` (5)
-as services, and `clearSvgContentElement`, `sanitizeSvg`, `findSameAs`, `selectSameAs`, `splitIntoGrid`, `transformEach`
-as functions. The gesture state that `event-*` modules parked on the canvas
-(`groupRotateCenter`, `dragStartTransforms`, `spaceKey`, `addedNew`, …: fourteen loose members) is now one object,
-`svgCanvas.gesture` (`core/gesture-state.ts`: `GestureState` and `createGestureState()`, every field at rest from the
-constructor, so no reader sees `undefined`); unit-test canvases that run the event modules get
-`gesture: createGestureState()`.
-**The facade, as it stands (2026-10-17).** `svgcanvas.ts` (the class, and the public types hosts import), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
-~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: ~205 members core modules share, all typed except eight that wait for their module's conversion) are the facade
-and its plumbing. Three tests keep them honest: `svgcanvas-dts-drift.test.js` (every runtime member is declared as public
-or internal, none is both, no internal one is stale, and now **no required public member is missing at runtime**: the
-phantoms `undo`, `redo`, `getLayer`, `getNumLayers`, `getCurrentLayerName`, `unbind`, `getPrivateMethods` were removed and
-the gesture fields that only exist during a gesture are optional), and `svgcanvas-facade.test.js` (**the editor and the
-extensions never call an `any` member**: ten that they did were typed and promoted). Eleven members nothing called
-(`getCanvas`, `getVersion`, `getSnapToGrid`, `getPaintOpacity`, `setFillPaint`, `setStrokePaint`, `setIdPrefix`,
-`getFontFamily` / `getFontColor` / `getFontSize`) were deleted. What a deeper facade would add (types derived from source,
-the d.ts files deleted) needs the members to leave the canvas, module by module as above; until then a new member is
-declared in `svgcanvas-members.d.ts` if the editor calls it, else in `svgcanvas-internal.d.ts`.
-**Internal members typed (2026-10-16).** The ~195 `any` members of `svgcanvas-internal.d.ts` now have real types: the state
-accessors from the class's own JSDoc, the module-attached ones from the assignment (`svgCanvas.x = fn`), and `core/canvas-state.ts`
-holds the `CanvasState` / `StyleProps` / `BrushParams` shapes the constructor fills in. `tsc` checks each class method and
-each `svgCanvas.x = fn` against the declaration, so a module that drifts from its facade type no longer compiles. Typing them
-surfaced about 160 strict-null errors in the event modules; they were fixed at the source: the gesture scalars (`startX`,
-`rStartX`, the freehand extremes, `initBbox`) are numbers at rest instead of `null`, and `getRubberBox()` / `getrootSctm()` are
-typed non-null (set when a gesture starts; see techdebt). `Path` and `Segment` are
-defined inside the `init` of `path-method.ts`, so their shapes are interfaces in `core/path-types.ts` (`PathObject`, `PathSegment`,
-`PathElement` with the shim's `pathSegList`) that the classes `implements`, and the facade (`PathClass`, `getPath_`, `getPathObj`, the drawn path) uses them;
-`tests/unit/svgcanvas-facade.test.js` lists the members still `any` and fails if another appears. `svgcanvas-members.d.ts` got the same
-pass: the guide hooks take payload types owned by the modules that produce them (`SmartGuidesPayload`, `DrawGuidesPayload`,
-`PathNodeGuidesPayload`, `ProportionSnapGuides`), `textActions` is a `TextActionsApi`, `runExtensions` is keyed by
-`ExtensionHookPayloads`, `rasterExport` resolves to a `RasterExportResult`, and the tool types are re-exported from
-`tool-registry.ts` instead of being declared twice. One public member stays `any`: `history` (R1 deletes it).
-Tests spy on the service (`vi.spyOn(canvas.drawSnap, 'snapDrawPoint')`). `select` is done (`SelectorApi` / `SelectorManagerApi`, which type `selectorManager`, `SelectorClass` and `getSelector`). Still open from the pattern: the loose state the canvas carries as members (`selectorManager`, `pathActions`, the drawing handles) as services, and the 5–10-member modules (`boolean-ops`, `clip-mask`, `image-crop`) as `createX(host)`.
-
-Size: L, fully incremental, low risk per module.
+Size: done; the rest is optional.
 
 ## R3. TypeScript
 
@@ -281,7 +219,7 @@ opportunistic and small per module.
 **Left (the conversion):** the self-contained modules are done and the facade is typed (2026-10-16, see R2). The engine is done (`svgcanvas.ts` last, 2026-10-17); `path-seg-shim` is a shim and `history.js`, `historyrecording.js`, `transaction.js` and `undo.js` are not worth converting: R1 deletes them. The `strictNullChecks` errors a conversion hits are real ones (`getRubberBox()` and `getrootSctm()` are typed non-null, `path` in `path-actions.ts` too, see techdebt); the editor after the engine, with its own strict tsconfig.
 Per module: `git mv x.js x.ts`, move the JSDoc types into syntax (TypeScript's own `annotateWithTypeFromJSDoc` code fix does most of it through the language service API, but it drops the `?` of `[optional]` params, leaves an empty annotation for `module:` pseudo-types, and mixes up the `@param` / `@returns` of a function that follows a `@callback` / `@typedef` block, so read every signature it changed; a class's `this.x = …` fields need declarations; `/** @type {T} */ (expr)` casts become `(expr as T)`), `node scripts/check-ts-imports.mjs --fix`, change the
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,
-no enums or parameter properties, and the two hand-written d.ts files (`svgcanvas-members.d.ts`, `svgcanvas-internal.d.ts`) still describe the attached members until R2.
+no enums or parameter properties, and no hand-written declaration file describes the canvas any more (R2).
 Retire the d.ts and the drift test only with R2.
 
 Size: M for the toolchain (done), L for the conversion (small per module).

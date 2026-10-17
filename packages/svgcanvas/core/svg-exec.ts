@@ -20,8 +20,7 @@ import { NS } from './namespaces.ts'
 import * as draw from './draw.ts'
 import { getParents, getClosest } from '../common/util.ts'
 import type SvgCanvas from '../svgcanvas.ts'
-import type { RasterExportOptions, RasterExportResult } from '../svgcanvas-members.js'
-import type { ImportEntry } from '../svgcanvas-internal.js'
+import type { ImportEntry, RasterExportOptions, RasterExportResult } from '../svgcanvas.ts'
 import type { Drawing } from './draw.ts'
 
 const {

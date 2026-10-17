@@ -27,7 +27,7 @@ export const refreshToolOptions = (editor) => {
 /**
  * @param {any} editor
  * @param {HTMLElement} tray
- * @param {import('@svgedit/svgcanvas/svgcanvas-members.js').ToolOption[]} options the visible options
+ * @param {import('@svgedit/svgcanvas').ToolOption[]} options the visible options
  * @param {string} signature changes when the set of controls has to be rebuilt
  * @returns {void}
  */
@@ -53,7 +53,7 @@ const fillTray = (editor, tray, options, signature) => {
 
 /**
  * @param {any} editor
- * @param {import('@svgedit/svgcanvas/svgcanvas-members.js').ToolOption} o
+ * @param {import('@svgedit/svgcanvas').ToolOption} o
  * @returns {HTMLElement}
  */
 const buildControl = (editor, o) => {

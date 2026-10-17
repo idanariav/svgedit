@@ -16,6 +16,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
+import type { BatchCommand } from './history.js'
 import { warn } from '../common/logger.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
@@ -254,7 +255,7 @@ export const createClipMask = (svgCanvas: Host): ClipMask => {
    * Convert a hard clip on `elem` into an equivalent mask, so it can be feathered.
    * The clip's silhouette children are whitened and moved into a new `<mask>`.
    */
-  const convertClipToMask = (elem: Element, batchCmd: { addSubCommand: (cmd: unknown) => void }): void => {
+  const convertClipToMask = (elem: Element, batchCmd: BatchCommand): void => {
     const { InsertElementCommand, RemoveElementCommand, MoveElementCommand, ChangeElementCommand } =
       svgCanvas.history
     const clipEl = svgCanvas.getElement(refId(elem.getAttribute('clip-path') as string))

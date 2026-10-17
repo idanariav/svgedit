@@ -257,7 +257,7 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       svgCanvas.contentW = newW
       svgCanvas.contentH = newH
       svgContent.setAttribute('viewBox', [0, 0, newW, newH].join(' '))
-      batchCmd.addSubCommand(new ChangeElementCommand(svgContent, { width: w, height: h, viewBox: oldViewBox }))
+      batchCmd.addSubCommand(new ChangeElementCommand(svgContent, { width: w, height: h, viewBox: oldViewBox } as unknown as Record<string, string | null>))
 
       svgCanvas.addCommandToHistory(batchCmd)
       svgCanvas.call('changed', [svgContent])

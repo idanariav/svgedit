@@ -26,6 +26,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
+import type { BatchCommand } from './history.js'
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
@@ -313,7 +314,7 @@ const cutShapePath = (scope: paper.PaperScope, shapePath: paper.CompoundPath, po
  * Replace `elem` with the cut pieces (2 or more), batched into `batchCmd`.
  */
 const replaceWithPieces = (
-  svgCanvas: SvgCanvas, elem: Element, pieces: paper.PathItem[], batchCmd: { addSubCommand: (cmd: unknown) => void }, resultElems: Element[]
+  svgCanvas: SvgCanvas, elem: Element, pieces: paper.PathItem[], batchCmd: BatchCommand, resultElems: Element[]
 ): void => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)

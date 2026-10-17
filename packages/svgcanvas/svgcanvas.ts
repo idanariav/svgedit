@@ -13,7 +13,8 @@ import Paint from './core/paint.ts'
 import * as pathModule from './core/path.ts'
 import * as history from './core/history.js'
 import * as draw from './core/draw.ts'
-import { init as pasteInit } from './core/paste-elem.ts'
+import { createPasteElem } from './core/paste-elem.ts'
+import type { PasteElemApi } from './core/paste-elem.ts'
 import { init as touchInit } from './core/touch.ts'
 import { svgRootElement } from './core/svgroot.ts'
 import { createUndo } from './core/undo.ts'
@@ -136,14 +137,18 @@ import type { DrawContextApi } from './core/draw.ts'
 import type { GroupOpsApi } from './core/group-ops.ts'
 import type { PathMethodApi } from './core/path-method.ts'
 import type { PathStateApi } from './core/path.ts'
-import { runGuardedInit, attachApi } from './common/initGuard.ts'
+import { attachApi } from './common/initGuard.ts'
 
 import dataStorage from './core/dataStorage.ts'
+import type { SnapTarget } from './core/smart-guides.ts'
+import type { SmartGuidesPayload } from './core/smart-guides.ts'
+import type { DrawGuidesPayload } from './core/smart-guides.ts'
+import type { PathNodeGuidesPayload } from './core/path-node-guides.ts'
+import type { ProportionSnapGuides } from './core/proportions.ts'
+import type { Drawing } from './core/draw.ts'
+import type { Units } from './core/units.ts'
 import type { StyleProps, BrushParams, XY, CanvasState, ElementAndBBox } from './core/canvas-state.ts'
 import type { BatchCommand } from './core/history.js'
-import type { ImportEntry } from './svgcanvas-internal.js'
-import type { AttachedMembers } from './svgcanvas-members.js'
-import type { InternalMembers } from './svgcanvas-internal.js'
 
 const visElems =
   'a,circle,ellipse,foreignObject,g,image,line,path,polygon,polyline,rect,svg,text,tspan,use'
@@ -270,6 +275,33 @@ export interface UndoManager {
   finishUndoableChange(): HistoryCommand & { isEmpty(): boolean }
 }
 
+/** What an extension's hook returns (its shape is the extension's own). */
+export type ExtensionResult = Record<string, unknown>
+export interface RasterExportOptions {
+  includeBg?: boolean
+  bgcolor?: string
+  crop?: { x: number, y: number, w: number, h: number }
+  scale?: number
+  avoidEvent?: boolean
+}
+
+/** What `rasterExport` resolves to (and the `exported` event carries). */
+export interface RasterExportResult {
+  datauri: string
+  bloburl: string
+  svg: string
+  issues: string[]
+  issueCodes: string[]
+  type: string
+  mimeType: string
+  quality: number
+  windowName: string
+}
+
+export type { ToolMods, ToolEvent, ToolContext, ToolOption, ToolDef } from './core/tool-registry.ts'
+/** What `importSvgString` remembers per imported file, to reuse its `<symbol>`. */
+export interface ImportEntry { symbol: Element, xform: string }
+
 /** What the core modules give the canvas; each module owns its interface. */
 type ModuleApis =
   SvgDefsApi &
@@ -309,7 +341,8 @@ type ModuleApis =
   TransactionApi &
   LiveStackApi &
   ArtBrushApi &
-  BlendApi
+  BlendApi &
+  PasteElemApi
 
 /** The detail of the event `call()` dispatches: its argument, and what the last `bind()` handler returned. */
 interface CallDetail { arg: unknown, result?: unknown }
@@ -324,7 +357,7 @@ export interface ExtensionObject {
 /**
  * The main SvgCanvas class that manages all SVG-related functions.
  */
-class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers & InternalMembers & ModuleApis) {
+class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   static $id = $id
   static $qq = $qq
   static $qa = $qa
@@ -341,6 +374,111 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
   static Paint = Paint
   static getTypeMap = getTypeMap
 
+  // Helpers the editor and the extensions call through the canvas (the same functions the statics above export).
+  stringToHTML = stringToHTML
+  insertChildAtIndex = insertChildAtIndex
+  getClosest = getClosest
+  getParents = getParents
+  isLayer = draw.Layer.isLayer
+  matrixMultiply = matrixMultiply
+  hasMatrixTransform = hasMatrixTransform
+  transformListToTransform = transformListToTransform
+  declare convertToNum: Units['convertToNum']
+  declare convertUnit: Units['convertUnit']
+  declare isValidUnit: Units['isValidUnit']
+  remapElementIdsAndRefs = remapElementIdsAndRefs
+  getUrlFromAttr = getUrlFromAttr
+  getHref = getHref
+  setHref = setHref
+  assignAttributes = assignAttributes
+  cleanupElement = cleanupElement
+  declare getTypeMap: Units['getTypeMap']
+  history = history
+  NS = NS
+  encode64 = encode64
+  decode64 = decode64
+  mergeDeep = mergeDeep
+
+  $id = $id
+  $qq = $qq
+  $qa = $qa
+  $click = $click
+  /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
+  declare drawSnap: import('./core/draw-snap.ts').DrawSnap
+  /** Clip / mask / feather of the selection (`core/clip-mask.ts`). */
+  declare clipMask: import('./core/clip-mask.ts').ClipMask
+  /** Union / intersect / subtract / exclude / divide of two selected shapes (`core/boolean-ops.ts`). */
+  declare booleanOps: import('./core/boolean-ops.ts').BooleanOps
+  /** The image-crop session (`core/image-crop.ts`). */
+  declare imageCrop: import('./core/image-crop.ts').ImageCrop
+  /** Pointer-gesture state (rotate / resize / drag starts, alt-clone, pending new element, space-pan). */
+  declare gesture: import('./core/gesture-state.ts').GestureState
+  // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
+  /** Set by the editor's snapping overlay; absent in a bare canvas. */
+  declare showDrawGuides?: (payload: DrawGuidesPayload | null) => void
+  // Resize gesture state
+  /** The text-box resize in progress (its transaction stays open until mouse-up). */
+  /** The live scale of a resize, for panels that show the in-progress size. */
+  declare dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
+  // Move gesture state (select mode)
+  declare smartSnapTargets?: SnapTarget[] | null
+  declare pendingMoveDelta?: { dx: number, dy: number } | null
+  declare dragLiveMoveDelta?: { dx: number, dy: number } | null
+  /** The repeatable delta for transformAgain. */
+  declare lastMoveDelta?: { dx: number, dy: number }
+  /** Set by the editor's guide overlays; absent in a bare canvas. */
+  declare showSnapGuides?: (snap: ProportionSnapGuides | null) => void
+  declare showSmartGuides?: (payload: SmartGuidesPayload | null) => void
+  /** Set by the editor's overlay while a path node is dragged. */
+  declare showPathNodeGuides?: (payload: PathNodeGuidesPayload | null) => void
+  // Undo/Redo
+  declare undoMgr: UndoManager
+  /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
+  declare checkDrawing: () => Array<{ code: string, message: string, id?: string }>
+  // Canvas properties
+  declare contentW: number
+  declare contentH: number
+  // Text operations
+  declare textActions: import('./core/text-actions.ts').TextActionsApi
+  /** Interactive region-merge session over the given (or selected) elements. */
+  declare shapeBuilder: import('./core/shape-builder.ts').ShapeBuilder
+  // Events
+  /** `modeChange` event dispatched by `setMode`. */
+  declare modeEvent: CustomEvent<{ getMode: () => string }>
+  declare pathActions: import('./core/path-actions.ts').PathActionsApi
+  // --- attached by built-in extensions (absent when the extension is left out) ---
+  declare setMirrorAxis?: (axis: 'v' | 'h' | null) => void
+  declare getMirrorAxis?: () => 'v' | 'h' | null
+  declare mirrorSelection?: () => void
+  declare repeatSelection?: (params: Record<string, unknown>) => void
+  declare getRepeatParams?: () => Record<string, unknown> | null
+  declare armRepeatCenterPick?: (onPicked: (x: number, y: number) => void) => void
+  /** The host's debug-event sink, or null while the debug log is off. */
+  declare _debugEventSink: ((event: string, detail?: object) => void) | null
+  declare svgroot: SVGSVGElement
+  declare curConfig: Config
+  declare container: HTMLElement
+  declare current_drawing_: Drawing
+  declare cursorHintValue: string | null
+  declare destroyAbort: AbortController
+  declare encodableFonts: Record<string, string>
+  declare encodableImages: Record<string, string | false>
+  declare extensions: Record<string, unknown>
+  declare idprefix: string
+  declare importIds: Record<string, ImportEntry>
+  declare lastGoodImgUrl: string
+  declare linkControlPoints: (linkPoints: boolean) => void
+  declare nsMap: Record<string, string>
+  declare opacAni: SVGAnimateElement
+  declare randIdsMode: number
+  declare removedElements: Record<string, Element>
+  declare saveOptions: { round_digits: number, apply?: boolean, images?: string, [key: string]: unknown }
+  declare scopeRoot: ParentNode | null
+  declare state: CanvasState
+  declare svgContent: SVGSVGElement
+  declare svgdoc: Document
+  declare units: Units
+
   parameter?: number
   nextParameter?: number
 
@@ -355,8 +493,11 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     // all come from this canvas). Must exist before the core inits below read it.
     this.units = createUnits(this)
     this.cursorHintValue = null
-    // imported function made available as methods
-    this.initializeSvgCanvasMethods()
+    // the unit helpers are the canvas's own (their rounding digits and base unit come from it)
+    this.convertToNum = this.units.convertToNum
+    this.convertUnit = this.units.convertUnit
+    this.isValidUnit = this.units.isValidUnit
+    this.getTypeMap = this.units.getTypeMap
     // Tracks which `core/*.js` init() call last claimed each property name
     // on this instance, so a later call reusing the same name gets logged
     // instead of silently overwriting the earlier one.
@@ -504,7 +645,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     // extensions read these off the instance, so they inherit the scoping.
     this.scopeRoot = scopeRoot
     if (scopeRoot) {
-      this.$id = scopedId(scopeRoot)
+      this.$id = scopedId(scopeRoot) as typeof this.$id
       this.$qq = scopedQq(scopeRoot)
       this.$qa = scopedQa(scopeRoot)
     }
@@ -513,7 +654,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     container.append(this.svgroot)
     // The actual element that represents the final output SVG element.
     this.svgContent = this.svgdoc.createElementNS(NS.SVG, 'svg') as unknown as SVGSVGElement
-    runGuardedInit(this, 'touch', touchInit, initGuardRegistry)
+    touchInit(this)
     clearSvgContentElement(this)
     // Current `draw.Drawing` object.
     this.randIdsMode = draw.RandomizeModes.LET_DOCUMENT_DECIDE // set by randomizeIds()
@@ -591,9 +732,9 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     attachApi(this, 'arrowAlign', createArrowAlign(this), initGuardRegistry)
     attachApi(this, 'pathJoin', createPathJoin(this), initGuardRegistry)
     attachApi(this, 'liveEffects', createLiveEffects(this), initGuardRegistry)
-    runGuardedInit(this, 'liveEffectsDistort', liveEffectsDistortInit, initGuardRegistry)
-    runGuardedInit(this, 'warp', warpInit, initGuardRegistry)
-    runGuardedInit(this, 'distort', distortInit, initGuardRegistry)
+    liveEffectsDistortInit()
+    warpInit()
+    distortInit()
     attachApi(this, 'textPath', createTextPath(this), initGuardRegistry)
     this.shapeBuilder = createShapeBuilder(this)
     attachApi(this, 'cutter', createCutter(this), initGuardRegistry)
@@ -624,7 +765,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     // Ask other tabs for sessionStorage (this is ONLY to trigger event).
     localStorage.setItem(`${CLIPBOARD_ID}_startup`, String(Math.random()))
 
-    runGuardedInit(this, 'paste', pasteInit, initGuardRegistry)
+    attachApi(this, 'paste', createPasteElem(this), initGuardRegistry)
 
     this.contentW = this.getResolution().w
     this.contentH = this.getResolution().h
@@ -1760,51 +1901,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
   cutSelectedElements (): void {
     this.copySelectedElements()
     this.deleteSelectedElements()
-  }
-
-  initializeSvgCanvasMethods () {
-    // getJsonFromSvgElements / addSVGElementsFromJson are attached per-instance by jsonInit()
-    // clearSvgContentElement(this) lives in core/clear.ts
-    // textActions is attached per-instance by textActionsInit()
-    // getElement / findDefs / getRefElem / getReferencedDefElements /
-    // getRotationAngle / snapToGrid / snapPointToGrid are attached
-    // per-instance by domUtilsInit() (run later in the constructor); getBBox /
-    // getVisibleElements / getStrokedBBoxDefaultVisible / getStrokedBBox by
-    // bboxUtilsInit().
-    this.stringToHTML = stringToHTML
-    this.insertChildAtIndex = insertChildAtIndex
-    this.getClosest = getClosest
-    this.getParents = getParents
-    this.isLayer = draw.Layer.isLayer
-    this.matrixMultiply = matrixMultiply
-    this.hasMatrixTransform = hasMatrixTransform
-    this.transformListToTransform = transformListToTransform
-    this.convertToNum = this.units.convertToNum
-    this.convertUnit = this.units.convertUnit
-    this.isValidUnit = this.units.isValidUnit
-    this.remapElementIdsAndRefs = remapElementIdsAndRefs
-    this.getUrlFromAttr = getUrlFromAttr
-    this.getHref = getHref
-    this.setHref = setHref
-    this.assignAttributes = assignAttributes
-    this.cleanupElement = cleanupElement
-    // remapElement / recalculateDimensions are attached per-instance by coordsInit() / recalculateInit()
-    // pasteElements is attached per-instance by pasteInit()
-    // The layer/context operations (identifyLayers, createLayer, leaveContext, …)
-    // are attached per-instance by draw.init().
-    // changeSelectedAttributeNoUndo / changeSelectedAttribute are attached per-instance by undoInit()
-    // setBlurNoUndo / setBlurOffsets / setBlur are attached per-instance by blurInit().
-    // smoothControlPoints is attached per-instance by pathModule.init()
-    this.getTypeMap = this.units.getTypeMap
-    this.history = history // object with all histor methods
-    this.NS = NS
-    this.$id = $id
-    this.$qq = $qq
-    this.$qa = $qa
-    this.$click = $click
-    this.encode64 = encode64
-    this.decode64 = decode64
-    this.mergeDeep = mergeDeep
   }
 
   /**
