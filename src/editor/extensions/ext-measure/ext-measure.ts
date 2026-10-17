@@ -120,12 +120,13 @@ export default defineFeature({
       }
     })
 
+    // The label and dots are sized in screen pixels, so they are redrawn at the new zoom.
+    svgCanvas.bind('zoomChanged', (_win: Window) => {
+      if (line && toolCtx && svgCanvas.getMode() === name) draw(toolCtx)
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      // The label and dots are sized in screen pixels, so they are redrawn at the new zoom.
-      zoomChanged () {
-        if (line && toolCtx && svgCanvas.getMode() === name) draw(toolCtx)
-      },
       callback () {
         const title = `${name}:buttons.0.title`
         const button = `<se-button id="tool_measure" command="tool_measure" title="${title}" src="measure.svg"></se-button>`

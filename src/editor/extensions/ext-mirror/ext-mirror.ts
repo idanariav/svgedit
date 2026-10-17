@@ -298,17 +298,19 @@ export default defineFeature({
     svgCanvas.getMirrorAxis = () => axis
     svgCanvas.mirrorSelection = mirrorSelection
 
+    svgCanvas.bind('zoomChanged', (_win: Window) => {
+      drawAxis()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] | { tagName: string; }[]; }) => {
+      // Canvas resize fires elementChanged with the <svg> element — the
+      // axis position depends on the resolution.
+      if (opts.elems.some((el: { tagName: string; }) => el?.tagName === 'svg')) drawAxis()
+      handleLinkedElems((opts.elems as Element[]), false)
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged () {
-        drawAxis()
-      },
-      elementChanged (opts: { elems: Element[] | { tagName: string; }[]; }) {
-        // Canvas resize fires elementChanged with the <svg> element — the
-        // axis position depends on the resolution.
-        if (opts.elems.some((el: { tagName: string; }) => el?.tagName === 'svg')) drawAxis()
-        handleLinkedElems((opts.elems as Element[]), false)
-      },
       elementTransition (opts: { elems: Element[]; }) {
         handleLinkedElems(opts.elems, true)
       },

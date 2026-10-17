@@ -311,6 +311,41 @@ export default defineFeature({
       })
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems: Element[], selectedElement: Element | null, multiselected: boolean }) => {
+      // Use this to update the current selected elements
+      selElems = opts.elems
+      let i = selElems.length
+      // Hide panels if nothing is selected
+      if (!i) {
+        showPanel(false, 'star')
+        showPanel(false, 'polygon')
+        return
+      }
+      while (i--) {
+        const elem = selElems[i]
+        if (elem?.getAttribute('shape') === 'star') {
+          if (opts.selectedElement && !opts.multiselected) {
+            $req('starNumPoints').value = elem.getAttribute('point')
+            $req('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
+            $req('radialShift').value = elem.getAttribute('radialshift')
+            showPanel(true, 'star')
+          } else {
+            showPanel(false, 'star')
+          }
+        } else if (elem?.getAttribute('shape') === 'regularPoly') {
+          if (opts.selectedElement && !opts.multiselected) {
+            $req('polySides').value = elem.getAttribute('sides')
+            showPanel(true, 'polygon')
+          } else {
+            showPanel(false, 'polygon')
+          }
+        } else {
+          showPanel(false, 'star')
+          showPanel(false, 'polygon')
+        }
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       // The callback should be used to load the DOM with the appropriate UI items
@@ -429,40 +464,6 @@ export default defineFeature({
           }
         })
       },
-      selectedChanged (opts: { elems: Element[], selectedElement: Element | null, multiselected: boolean }) {
-        // Use this to update the current selected elements
-        selElems = opts.elems
-        let i = selElems.length
-        // Hide panels if nothing is selected
-        if (!i) {
-          showPanel(false, 'star')
-          showPanel(false, 'polygon')
-          return
-        }
-        while (i--) {
-          const elem = selElems[i]
-          if (elem?.getAttribute('shape') === 'star') {
-            if (opts.selectedElement && !opts.multiselected) {
-              $req('starNumPoints').value = elem.getAttribute('point')
-              $req('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
-              $req('radialShift').value = elem.getAttribute('radialshift')
-              showPanel(true, 'star')
-            } else {
-              showPanel(false, 'star')
-            }
-          } else if (elem?.getAttribute('shape') === 'regularPoly') {
-            if (opts.selectedElement && !opts.multiselected) {
-              $req('polySides').value = elem.getAttribute('sides')
-              showPanel(true, 'polygon')
-            } else {
-              showPanel(false, 'polygon')
-            }
-          } else {
-            showPanel(false, 'star')
-            showPanel(false, 'polygon')
-          }
-        }
-      }
     }
   }
 })

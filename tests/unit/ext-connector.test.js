@@ -7,14 +7,18 @@ describe('ext-connector', () => {
   let svgEditor
   let svgContent
   let svgroot
+  let handlers
 
   beforeEach(() => {
+    handlers = {}
     svgContent = document.createElementNS(NS.SVG, 'svg')
     svgroot = document.createElementNS(NS.SVG, 'svg')
     document.body.append(svgroot)
 
     svgCanvas = {
       getSvgRoot: () => svgroot,
+      bind: vi.fn((ev, f) => { (handlers[ev] ??= []).push(f) }),
+      call: vi.fn((ev, arg) => (handlers[ev] ?? []).forEach((f) => f(window, arg))),
       selectorManager: {},
       getElement: vi.fn(),
       $id: vi.fn(() => null),
@@ -75,8 +79,8 @@ describe('ext-connector', () => {
       has: (el, key) => store.has(`${el.id}:${key}`)
     })
 
-    const ext = await extConnector.init(svgEditor)
-    ext.elementChanged({ elems: [boxA, boxB] })
+    await extConnector.init(svgEditor)
+    svgCanvas.call('elementChanged', { elems: [boxA, boxB] })
 
     expect(lineA.getAttribute('x1')).toBeTruthy()
     expect(lineB.getAttribute('x1')).toBeTruthy()
@@ -105,8 +109,8 @@ describe('ext-connector', () => {
       has: (el, key) => store.has(`${el.id}:${key}`)
     })
 
-    const ext = await extConnector.init(svgEditor)
-    ext.elementChanged({ elems: [boxA] })
+    await extConnector.init(svgEditor)
+    svgCanvas.call('elementChanged', { elems: [boxA] })
 
     expect(lineA.hasAttribute('x1')).toBe(false)
   })

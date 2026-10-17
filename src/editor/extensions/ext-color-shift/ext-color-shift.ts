@@ -337,6 +337,11 @@ export default defineFeature({
 
     const t = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
+    svgCanvas.bind('selectedChanged', (_win: Window) => {
+      syncToSelection()
+      updateVisibility()
+    })
+
     return {
       name: t('name'),
 
@@ -392,11 +397,6 @@ export default defineFeature({
 
         updateVisibility()
       },
-
-      selectedChanged () {
-        syncToSelection()
-        updateVisibility()
-      }
     }
   }
 })

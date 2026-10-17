@@ -19,7 +19,7 @@ describe('ext-live-effects', function () {
   const button = (text) => [...document.querySelectorAll(`#${P}-panel button`)].find((b) => b.textContent === text)
   const select = (elem) => {
     svgCanvas.selectOnly([elem], true)
-    ext.selectedChanged({ elems: [elem], selectedElement: elem })
+    svgCanvas.call('selectedChanged', { elems: [elem], selectedElement: elem })
   }
   const addRect = () => svgCanvas.addSVGElementsFromJson({
     element: 'rect', attr: { id: svgCanvas.getNextId(), x: 10, y: 20, width: 100, height: 50, fill: '#f00' }

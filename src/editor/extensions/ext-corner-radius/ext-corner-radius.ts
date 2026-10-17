@@ -91,6 +91,16 @@ export default defineFeature({
       showPanel(svgCanvas.canRoundCorners(elem), elem)
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems: Element[] }) => {
+      update(opts)
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
+      const elem = opts.elems.filter(Boolean)[0]
+      const panel = $id('corner_panel')
+      if (elem && panel && panel.style.display !== 'none') refresh(elem)
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -146,14 +156,6 @@ export default defineFeature({
           })
         }
       },
-      selectedChanged (opts: { elems: Element[] }) {
-        update(opts)
-      },
-      elementChanged (opts: { elems: Element[] }) {
-        const elem = opts.elems.filter(Boolean)[0]
-        const panel = $id('corner_panel')
-        if (elem && panel && panel.style.display !== 'none') refresh(elem)
-      }
     }
   }
 })

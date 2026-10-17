@@ -15,7 +15,7 @@ describe('ext-corner-radius', function () {
   const $ = (id) => document.getElementById(id)
   const select = (elem) => {
     svgCanvas.selectOnly([elem], true)
-    ext.selectedChanged({ elems: [elem], selectedElement: elem })
+    svgCanvas.call('selectedChanged', { elems: [elem], selectedElement: elem })
   }
   const add = (element, attr) => svgCanvas.addSVGElementsFromJson({
     element, attr: { ...attr, id: svgCanvas.getNextId() }
@@ -26,7 +26,7 @@ describe('ext-corner-radius', function () {
   }
   const selected = () => svgCanvas.getSelectedElements().filter(Boolean)[0]
   // The extension system dispatches `changed` to elementChanged.
-  const changed = () => ext.elementChanged({ elems: [selected()] })
+  const changed = () => svgCanvas.call('elementChanged', { elems: [selected()] })
 
   beforeEach(async function () {
     installMockSvgEditor()

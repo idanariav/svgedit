@@ -225,6 +225,18 @@ export default defineFeature({
       if (!editing) renderRows()
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window) => {
+      // Effects registered after startup (late extensions) show up here.
+      refillAddSelect()
+      if (editing) cancelEdit()
+      refresh()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window) => {
+      // Undo/redo and canvas-side rewrites change the stack in place.
+      if (!editing) refresh()
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -273,18 +285,6 @@ export default defineFeature({
           refresh()
         })
       },
-
-      selectedChanged () {
-        // Effects registered after startup (late extensions) show up here.
-        refillAddSelect()
-        if (editing) cancelEdit()
-        refresh()
-      },
-
-      elementChanged () {
-        // Undo/redo and canvas-side rewrites change the stack in place.
-        if (!editing) refresh()
-      }
     }
   }
 })

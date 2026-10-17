@@ -398,6 +398,10 @@ export default defineFeature({
       }
     })
 
+    svgCanvas.bind('selectedChanged', () => redrawIdle())
+
+    svgCanvas.bind('elementChanged', () => redrawIdle())
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -410,8 +414,6 @@ export default defineFeature({
         )
         svgEditor.leftPanel.addModeCommand('tool_corners', 'corners', { label: title })
       },
-      selectedChanged: redrawIdle,
-      elementChanged: redrawIdle
     }
   }
 })

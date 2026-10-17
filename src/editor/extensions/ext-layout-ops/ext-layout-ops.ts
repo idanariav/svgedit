@@ -110,10 +110,12 @@ export default defineFeature({
       if (panel) panel.style.display = selection().length ? '' : 'none'
     }
 
+    svgCanvas.bind('selectedChanged', () => updateVisibility())
+
+    svgCanvas.bind('elementChanged', () => updateVisibility())
+
     return {
       name: tr('name'),
-      selectedChanged: updateVisibility,
-      elementChanged: updateVisibility,
 
       callback () {
         svgEditor.commands.register({

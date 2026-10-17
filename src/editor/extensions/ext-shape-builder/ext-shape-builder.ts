@@ -239,21 +239,23 @@ export default defineFeature({
       }
     })
 
+    svgCanvas.bind('zoomChanged', (_win: Window) => {
+      if (active) syncOverlay()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window) => {
+      // An outside mutation (undo/redo, panel edit) invalidates the
+      // precomputed regions — bail out rather than act on stale geometry.
+      if (active && !busy) {
+        teardown()
+        if (svgCanvas.getMode() === 'shapebuilder') svgCanvas.setMode('select')
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged () {
-        if (active) syncOverlay()
-      },
       canvasUpdated () {
         if (active) syncOverlay()
-      },
-      elementChanged () {
-        // An outside mutation (undo/redo, panel edit) invalidates the
-        // precomputed regions — bail out rather than act on stale geometry.
-        if (active && !busy) {
-          teardown()
-          if (svgCanvas.getMode() === 'shapebuilder') svgCanvas.setMode('select')
-        }
       },
       callback () {
         const combine = $id('tool_clip_set')?.parentElement

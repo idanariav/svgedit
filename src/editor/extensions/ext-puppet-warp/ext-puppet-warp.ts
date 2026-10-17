@@ -561,6 +561,12 @@ export default defineFeature({
 
     // ── Extension object ─────────────────────────────────────────────────────
 
+    // Zoom changes #svgcontent's viewBox without a mouse event to piggyback
+    // a resync on — keep the overlay (and pin dot radii) aligned.
+    svgCanvas.bind('zoomChanged', (_win: Window) => {
+      if (pins.length) redrawPins()
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -615,12 +621,6 @@ export default defineFeature({
         syncPinOverlay()
         addPinDot(pins.length - 1)
         return { started: true }
-      },
-
-      // Zoom changes #svgcontent's viewBox without a mouse event to piggyback
-      // a resync on — keep the overlay (and pin dot radii) aligned.
-      zoomChanged () {
-        if (pins.length) redrawPins()
       },
 
       mouseMove (opts: { mouse_x: number; mouse_y: number; }) {

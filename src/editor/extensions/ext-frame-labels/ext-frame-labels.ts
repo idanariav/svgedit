@@ -144,10 +144,12 @@ export default defineFeature({
     })
     schedule()
 
+    svgCanvas.bind('zoomChanged', () => schedule())
+
+    svgCanvas.bind('selectedChanged', () => schedule())
+
     return {
       name,
-      zoomChanged: schedule,
-      selectedChanged: schedule
     }
   }
 })

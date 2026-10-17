@@ -575,9 +575,9 @@ host restore) leave this false to avoid polluting history.
       // watermark here too — otherwise it lingers after drawing with those
       // tools.
       ['updateCanvasWatermark', () => this.updateCanvasWatermark()],
-      ['runExtensions:selectedChanged', () => this.svgCanvas.runExtensions(
+      ['emit:selectedChanged', () => this.svgCanvas.call(
         'selectedChanged',
-        /** @type {module:svgcanvas.SvgCanvas#event:ext_selectedChanged} */ {
+        {
           elems,
           selectedElement: this.selectedElement,
           multiselected: this.multiselected
@@ -687,9 +687,9 @@ host restore) leave this false to avoid polluting history.
         if (this.selectedElement && mode === 'select') this.bottomPanel.updateColorpickers()
       }],
       ['updateCanvasWatermark', () => this.updateCanvasWatermark()],
-      ['runExtensions:elementChanged', () => this.svgCanvas.runExtensions(
+      ['emit:elementChanged', () => this.svgCanvas.call(
         'elementChanged',
-        /** @type {module:svgcanvas.SvgCanvas#event:ext_elementChanged} */ {
+        {
           elems
         }
       )]
@@ -798,9 +798,9 @@ host restore) leave this false to avoid polluting history.
         if (this.svgCanvas.getMode() === 'zoom' && bb.width) this.leftPanel.clickSelect()
       }],
       ['zoomDone', () => this.zoomDone()],
-      ['runExtensions:zoomChanged', () => this.svgCanvas.runExtensions(
+      ['emit:zoomChanged', () => this.svgCanvas.call(
         'zoomChanged',
-        /** @type {module:svgcanvas.SvgCanvas#event:ext_zoomChanged} */ this.svgCanvas.getZoom()
+        this.svgCanvas.getZoom()
       )]
     ])
   }

@@ -130,13 +130,14 @@ export default defineFeature({
       guides.replaceChildren(frag)
     }
 
+    svgCanvas.bind('zoomChanged', (_win: Window, zoom: number) => {
+      if (isWireframe()) {
+        drawMarkers(zoom)
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged (zoom: number) {
-        if (isWireframe()) {
-          drawMarkers(zoom)
-        }
-      }
     }
   }
 })

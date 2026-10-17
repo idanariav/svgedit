@@ -179,6 +179,18 @@ export default defineFeature({
     const needBlend = () => (blendedSelection() ? true : tr('needBlend'))
     const needSpine = () => (blendedSelection() && svgCanvas.getBlendSpine() ? true : tr('needSpine'))
 
+    svgCanvas.bind('selectedChanged', (_win: Window) => {
+      for (const el of selected()) svgCanvas.refreshBlend(el)
+      refresh()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
+      // The steps follow their keys (also after an undo of a key edit).
+      let changed = false
+      for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshBlend(el) || changed
+      if (changed || blendedSelection()) refresh()
+    })
+
     return {
       name: tr('name'),
       callback () {
@@ -259,19 +271,9 @@ export default defineFeature({
         })
         reg('blend_detach_spine', 'detachSpine', { enabled: needSpine, run: () => { svgCanvas.detachBlendSpine(); refresh() } })
       },
-      selectedChanged () {
-        for (const el of selected()) svgCanvas.refreshBlend(el)
-        refresh()
-      },
       modeChange () {
         refresh()
       },
-      elementChanged (opts: { elems: Element[] }) {
-        // The steps follow their keys (also after an undo of a key edit).
-        let changed = false
-        for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshBlend(el) || changed
-        if (changed || blendedSelection()) refresh()
-      }
     }
   }
 })

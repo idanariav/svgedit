@@ -16,7 +16,7 @@ describe('ext-path-edit', function () {
   const add = (d) => svgCanvas.addSVGElementsFromJson({ element: 'path', attr: { id: svgCanvas.getNextId(), d } })
   const select = (...els) => {
     svgCanvas.selectOnly(els, true)
-    ext.selectedChanged({ elems: els, selectedElement: els[0], multiselected: els.length > 1 })
+    svgCanvas.call('selectedChanged', { elems: els, selectedElement: els[0], multiselected: els.length > 1 })
   }
 
   beforeEach(async function () {

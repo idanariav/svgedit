@@ -18,7 +18,7 @@ describe('ext-glow', function () {
   const $ = (id) => document.getElementById(id)
   const select = (elem) => {
     svgCanvas.selectOnly([elem], true)
-    ext.selectedChanged({ elems: [elem], selectedElement: elem })
+    svgCanvas.call('selectedChanged', { elems: [elem], selectedElement: elem })
   }
   const addRect = () => svgCanvas.addSVGElementsFromJson({
     element: 'rect', attr: { id: svgCanvas.getNextId(), x: 10, y: 20, width: 100, height: 50, fill: '#f00' }
@@ -82,9 +82,9 @@ describe('ext-glow', function () {
     select(text)
     assert.equal($('glow_panel').style.display, '')
     const rect = addRect()
-    ext.selectedChanged({ elems: [rect, text], selectedElement: rect, multiselected: true })
+    svgCanvas.call('selectedChanged', { elems: [rect, text], selectedElement: rect, multiselected: true })
     assert.equal($('glow_panel').style.display, 'none')
-    ext.selectedChanged({ elems: [], selectedElement: null })
+    svgCanvas.call('selectedChanged', { elems: [], selectedElement: null })
     assert.equal($('glow_panel').style.display, 'none')
   })
 

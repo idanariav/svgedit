@@ -369,7 +369,7 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       selector && selector.resize()
     })
     svgCanvas.pathActions.zoomChange()
-    svgCanvas.runExtensions('zoomChanged', zoomLevel)
+    svgCanvas.call('zoomChanged', zoomLevel)
   }
 
   /**

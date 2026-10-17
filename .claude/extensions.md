@@ -24,11 +24,13 @@ export default defineFeature({
     // Register commands (svgEditor.commands.register), tools (svgCanvas.registerTool: PREFERRED for new tools,
     // see "Adding a canvas tool" below), and panel sections here.
 
+    // Canvas events the editor emits after it has updated its own state; bind them here (payload types: core/extension-hooks.ts):
+    svgCanvas.bind('selectedChanged', (_win: Window, { elems, selectedElement }: SelectedChangedPayload) => { })
+    svgCanvas.bind('elementChanged', (_win: Window, { elems }: ElementsPayload) => { })   // any element changed
+    svgCanvas.bind('zoomChanged', (_win: Window, zoom: ZoomChangedPayload) => { })        // the zoom factor (1 = 100%)
+
     return {
       // Hooks, all optional, each typed with its payload (core/extension-hooks.ts):
-      elementChanged ({ elems }) { },           // any element changed
-      selectedChanged ({ elems }) { },          // the selection changed
-      zoomChanged (zoom) { },                   // the zoom factor (1 = 100%)
       keyDown ({ event }) { },                  // an Editor-owned keydown; return { preventDefault: true } to swallow it
 
       // Not a hook: svgCanvas.bind('gestureEnded', (_win, { mode, event }: GestureEndedDetail) => …) fires once after every canvas pointer

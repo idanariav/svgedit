@@ -223,6 +223,10 @@ export default defineFeature({
     })
 
     render()
+    svgCanvas.bind('zoomChanged', () => render())
+
+    svgCanvas.bind('elementChanged', () => render())
+
     return {
       name: t('name'),
       callback () {
@@ -234,9 +238,7 @@ export default defineFeature({
         // Whether the guides can be grabbed depends on the tool.
         document.addEventListener('modeChange', render, { signal: svgEditor.listenerAbort.signal })
       },
-      zoomChanged: render,
       canvasUpdated: render,
-      elementChanged: render,
       onOpenedDocument: render,
       afterClear: render
     }

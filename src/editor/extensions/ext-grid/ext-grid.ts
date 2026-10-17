@@ -292,11 +292,12 @@ export default defineFeature({
     // Expose so the editor can refresh the grid after a canvas resize, which
     // changes the extent the non-square line grids are drawn over.
     svgEditor.updateGrid = gridUpdate
+    svgCanvas.bind('zoomChanged', (_win: Window, zoom: number) => {
+      if (curConfig.showGrid) { updateGrid(zoom) }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged (zoom: number) {
-        if (curConfig.showGrid) { updateGrid(zoom) }
-      },
       callback () {
         // Add the grid-settings popover and its handler(s)
         const buttonTemplate = document.createElement('template')

@@ -42,14 +42,16 @@ export default defineFeature({
       }
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window) => {
+      updateVisibility()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window) => {
+      updateVisibility()
+    })
+
     return {
       name: t('name'),
-      selectedChanged () {
-        updateVisibility()
-      },
-      elementChanged () {
-        updateVisibility()
-      },
       callback () {
         // Attach button — Combine section (multi-selection tray).
         const combine = $id('tool_clip_set')?.parentElement

@@ -299,6 +299,38 @@ export default defineFeature({
       })
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems: Element[], selectedElement: Element | null, multiselected: boolean }) => {
+      // Use this to update the current selected elements
+      if (opts.elems.length === 0) showPanel(false)
+      opts.elems.forEach((elem) => {
+        if (elem && markerElems.includes(elem.tagName)) {
+          if (opts.selectedElement && !opts.multiselected) {
+            showPanel(true, elem)
+          } else {
+            showPanel(false)
+          }
+        } else {
+          showPanel(false)
+        }
+      })
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
+      const elem = opts.elems[0]
+      // Stroke width, markers or the source changed: the trimmed geometry follows.
+      if (elem?.hasAttribute?.('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
+        svgCanvas.selectorManager.requestSelector(elem).resize()
+      }
+      if (elem && (
+        elem.getAttribute('marker-start') ||
+          elem.getAttribute('marker-mid') ||
+          elem.getAttribute('marker-end')
+      )) {
+        colorChanged(elem)
+        updateReferences(elem)
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       // The callback should be used to load the DOM with the appropriate UI items
@@ -356,36 +388,6 @@ export default defineFeature({
           })
         })
       },
-      selectedChanged (opts: { elems: Element[], selectedElement: Element | null, multiselected: boolean }) {
-        // Use this to update the current selected elements
-        if (opts.elems.length === 0) showPanel(false)
-        opts.elems.forEach((elem) => {
-          if (elem && markerElems.includes(elem.tagName)) {
-            if (opts.selectedElement && !opts.multiselected) {
-              showPanel(true, elem)
-            } else {
-              showPanel(false)
-            }
-          } else {
-            showPanel(false)
-          }
-        })
-      },
-      elementChanged (opts: { elems: Element[] }) {
-        const elem = opts.elems[0]
-        // Stroke width, markers or the source changed: the trimmed geometry follows.
-        if (elem?.hasAttribute?.('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
-          svgCanvas.selectorManager.requestSelector(elem).resize()
-        }
-        if (elem && (
-          elem.getAttribute('marker-start') ||
-          elem.getAttribute('marker-mid') ||
-          elem.getAttribute('marker-end')
-        )) {
-          colorChanged(elem)
-          updateReferences(elem)
-        }
-      }
     }
   }
 })

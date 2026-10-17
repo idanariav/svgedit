@@ -7,6 +7,9 @@
  * fails if a dispatched name is missing, or a registered one is never dispatched.
  *
  * Return values (only where noted) are collected by the dispatcher.
+ *
+ * Not hooks: `selectedChanged` ({@link SelectedChangedPayload}), `elementChanged` ({@link ElementsPayload}) and `zoomChanged`
+ * ({@link ZoomChangedPayload}) are canvas events a feature `bind`s in its `init`; the editor `call`s them, so they are not here.
  * @module extension-hooks
  * @license MIT
  */
@@ -95,12 +98,9 @@ export interface ExtensionHookPayloads {
   mouseMove: MouseMovePayload
   mouseUp: MouseUpPayload
   keyDown: KeyDownPayload
-  zoomChanged: ZoomChangedPayload
   IDsUpdated: IDsUpdatedPayload
   canvasUpdated: CanvasUpdatedPayload
-  selectedChanged: SelectedChangedPayload
   elementTransition: ElementsPayload
-  elementChanged: ElementsPayload
   layersChanged: undefined
   layerVisChanged: undefined
   afterClear: undefined
@@ -109,8 +109,8 @@ export interface ExtensionHookPayloads {
 
 export const EXTENSION_HOOKS: ReadonlyArray<keyof ExtensionHookPayloads> = Object.freeze([
   'mouseDown', 'mouseMove', 'mouseUp', 'keyDown',
-  'zoomChanged', 'IDsUpdated', 'canvasUpdated',
-  'selectedChanged', 'elementTransition', 'elementChanged',
+  'IDsUpdated', 'canvasUpdated',
+  'elementTransition',
   'layersChanged', 'layerVisChanged',
   'afterClear', 'onOpenedDocument'
 ] as const)

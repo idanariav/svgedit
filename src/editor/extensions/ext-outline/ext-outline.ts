@@ -122,6 +122,20 @@ export default defineFeature({
       svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
     })
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { selectedElement: Element | null, multiselected: boolean }) => {
+      if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
+      if (!opts.selectedElement || opts.multiselected) {
+        showPanel(false)
+        return
+      }
+      const show = outlineElems.includes(opts.selectedElement.tagName)
+      showPanel(show, show ? opts.selectedElement : null)
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
+      ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -169,20 +183,6 @@ export default defineFeature({
           run: () => setOutline({ remove: true })
         })
       },
-
-      selectedChanged (opts: { selectedElement: Element | null, multiselected: boolean }) {
-        if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
-        if (!opts.selectedElement || opts.multiselected) {
-          showPanel(false)
-          return
-        }
-        const show = outlineElems.includes(opts.selectedElement.tagName)
-        showPanel(show, show ? opts.selectedElement : null)
-      },
-
-      elementChanged (opts: { elems: Element[] }) {
-        ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
-      }
     }
   }
 })

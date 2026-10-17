@@ -554,6 +554,10 @@ export default defineFeature({
       }
     })
 
+    svgCanvas.bind('selectedChanged', () => redrawIdle())
+
+    svgCanvas.bind('elementChanged', () => redrawIdle())
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -567,9 +571,6 @@ export default defineFeature({
         )
         svgEditor.leftPanel.addModeCommand('tool_gradient', 'gradient', { label: title })
       },
-
-      selectedChanged: redrawIdle,
-      elementChanged: redrawIdle
     }
   }
 })

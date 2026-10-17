@@ -718,6 +718,38 @@ export default defineFeature({
       }
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems: (Element | null)[] }) => {
+      hideHoverHighlight()
+      if (!getBoundConnectors().length) return
+
+      const dataStorage = svgCanvas.getDataStorage()
+      const { elems: selElems } = opts
+
+      // Legacy polyline connectors keep their endpoint grips hidden (their
+      // shape is driven by binding). New <line>s behave like normal lines.
+      for (const elem of selElems) {
+        if (elem?.id?.startsWith('conn_') && dataStorage.has(elem, 'c_start')) {
+          selectorManager.requestSelector(elem).showGrips(false)
+        }
+      }
+
+      updateConnectors((selElems.filter(Boolean) as Element[]))
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems?: (Element | null)[] }) => {
+      // 'changed' can carry several elements at once (a multi-element
+      // drag commit's `svgCanvas.call('changed', selectedElements)`, a
+      // multi-delete's `svgCanvas.call('changed', selectedCopy)`, …), not
+      // just the single-element case this hook was originally shaped for.
+      // Previously only opts.elems[0] was ever processed, so any *other*
+      // shape's bound connector silently never got re-routed after such a
+      // bulk operation -- e.g. drag two connected boxes together and
+      // release: only the first box's line ends up back where it should.
+      for (const elem of opts.elems?.filter(Boolean) || []) {
+        handleOneChangedElement((elem as Element))
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -841,23 +873,6 @@ export default defineFeature({
         // Leave keep/element to core (a non-zero line is already kept).
         return undefined
       },
-      selectedChanged (opts: { elems: (Element | null)[] }) {
-        hideHoverHighlight()
-        if (!getBoundConnectors().length) return
-
-        const dataStorage = svgCanvas.getDataStorage()
-        const { elems: selElems } = opts
-
-        // Legacy polyline connectors keep their endpoint grips hidden (their
-        // shape is driven by binding). New <line>s behave like normal lines.
-        for (const elem of selElems) {
-          if (elem?.id?.startsWith('conn_') && dataStorage.has(elem, 'c_start')) {
-            selectorManager.requestSelector(elem).showGrips(false)
-          }
-        }
-
-        updateConnectors((selElems.filter(Boolean) as Element[]))
-      },
       // Fires on every mousemove while elements are being dragged/resized.
       // Primary hook for keeping bound lines in sync during interactive drag,
       // because svgCanvas moves elements via SVG transforms (not attribute
@@ -866,19 +881,6 @@ export default defineFeature({
         if (started) return // don't interfere during line drawing
         const elems = opts.elems?.filter(Boolean) || []
         if (elems.length) updateConnectors(elems)
-      },
-      elementChanged (opts: { elems?: (Element | null)[] }) {
-        // 'changed' can carry several elements at once (a multi-element
-        // drag commit's `svgCanvas.call('changed', selectedElements)`, a
-        // multi-delete's `svgCanvas.call('changed', selectedCopy)`, …), not
-        // just the single-element case this hook was originally shaped for.
-        // Previously only opts.elems[0] was ever processed, so any *other*
-        // shape's bound connector silently never got re-routed after such a
-        // bulk operation -- e.g. drag two connected boxes together and
-        // release: only the first box's line ends up back where it should.
-        for (const elem of opts.elems?.filter(Boolean) || []) {
-          handleOneChangedElement((elem as Element))
-        }
       },
       IDsUpdated (input) {
         const remove: string[] = []

@@ -95,6 +95,19 @@ export default defineFeature({
 
     const needBrushed = () => (brushedSelection() ? true : tr('needBrushed'))
 
+    svgCanvas.bind('selectedChanged', (_win: Window) => {
+      // Note what the selected brushed paths' art was made from, so an undo of an edit can put it back as it was.
+      for (const el of selected()) svgCanvas.refreshArtBrush(el)
+      refresh()
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: (Element | null)[] }) => {
+      // The art follows its path (also after an undo of a path edit).
+      let changed = false
+      for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshArtBrush((el as Element)) || changed
+      if (changed || brushedSelection()) refresh()
+    })
+
     return {
       name: tr('name'),
       callback () {
@@ -202,20 +215,9 @@ export default defineFeature({
         reg('brush_expand', 'expand', { enabled: needBrushed, run: () => { svgCanvas.expandArtBrush(); refresh() } })
         reg('brush_release', 'release', { enabled: needBrushed, run: () => { svgCanvas.releaseArtBrush(); refresh() } })
       },
-      selectedChanged () {
-        // Note what the selected brushed paths' art was made from, so an undo of an edit can put it back as it was.
-        for (const el of selected()) svgCanvas.refreshArtBrush(el)
-        refresh()
-      },
       modeChange () {
         refresh()
       },
-      elementChanged (opts: { elems: (Element | null)[] }) {
-        // The art follows its path (also after an undo of a path edit).
-        let changed = false
-        for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshArtBrush((el as Element)) || changed
-        if (changed || brushedSelection()) refresh()
-      }
     }
   }
 })

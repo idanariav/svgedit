@@ -42,6 +42,14 @@ export default defineFeature({
       if (multi) multi.style.display = ok && list.length === 2 ? '' : 'none'
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems?: Element[] }) => {
+      updateJoin(opts.elems?.filter(Boolean))
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window) => {
+      updateJoin(undefined)
+    })
+
     return {
       name: t('name'),
 
@@ -125,13 +133,6 @@ export default defineFeature({
           })
         }
       },
-      selectedChanged (opts: { elems?: Element[] }) {
-        updateJoin(opts.elems?.filter(Boolean))
-      },
-
-      elementChanged () {
-        updateJoin(undefined)
-      }
     }
   }
 })

@@ -29,14 +29,16 @@ export default defineFeature({
       btn.style.display = single && svgCanvas.canSegment?.(single) ? '' : 'none'
     }
 
+    svgCanvas.bind('selectedChanged', (_win: Window, opts: { elems?: Element[] }) => {
+      updateVisibility(opts.elems?.filter(Boolean))
+    })
+
+    svgCanvas.bind('elementChanged', (_win: Window) => {
+      updateVisibility(svgCanvas.getSelectedElements().filter(Boolean))
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      selectedChanged (opts: { elems?: Element[] }) {
-        updateVisibility(opts.elems?.filter(Boolean))
-      },
-      elementChanged () {
-        updateVisibility(svgCanvas.getSelectedElements().filter(Boolean))
-      },
       callback () {
         const title = svgEditor.i18next.t(`${name}:title`)
         const anchor = $id('tool_repeat') || $id('tool_path_offset')
