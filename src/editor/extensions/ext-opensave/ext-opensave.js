@@ -9,13 +9,6 @@
  *
  */
 
-/**
-   * @type {module:svgcanvas.EventHandler}
-   * @param {external:Window} wind
-   * @param {module:svgcanvas.SvgCanvas#event:saved} svg The SVG source
-   * @listens module:svgcanvas.SvgCanvas#event:saved
-   * @returns {void}
-   */
 import { fileOpen, fileSave } from 'browser-fs-access'
 import { insertImageFromHref } from '../../dialogs/insertImage.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
@@ -39,7 +32,7 @@ const loadExtensionTranslation = function (svgEditor) {
 
 export default {
   name,
-  async init (_S) {
+  async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
@@ -49,22 +42,24 @@ export default {
     * @returns {void}
     */
     const importImage = (e) => {
-      const fileInput = (e.target && e.target.type === 'file') ? e.target : null
+      const target = /** @type {HTMLInputElement|null} */ (e.target)
+      const fileInput = (target && target.type === 'file') ? target : null
       const resetFileInput = () => {
         if (fileInput) {
           fileInput.value = ''
         }
       }
       // only import files
-      if (e.dataTransfer && !e.dataTransfer.types?.includes('Files')) return
+      const dataTransfer = /** @type {DragEvent} */ (e).dataTransfer
+      if (dataTransfer && !dataTransfer.types?.includes('Files')) return
 
-      $req('se-prompt-dialog').title = this.i18next.t('notification.loadingImage')
-      $req('se-prompt-dialog').setAttribute('close', false)
+      $req('se-prompt-dialog').title = svgEditor.i18next.t('notification.loadingImage')
+      $req('se-prompt-dialog').setAttribute('close', 'false')
       e.stopPropagation()
       e.preventDefault()
-      const file = (e.type === 'drop') ? e.dataTransfer.files[0] : /** @type {HTMLInputElement} */ (e.currentTarget).files[0]
+      const file = (e.type === 'drop') ? dataTransfer?.files[0] : /** @type {HTMLInputElement} */ (e.currentTarget).files?.[0]
       if (!file) {
-        $req('se-prompt-dialog').setAttribute('close', true)
+        $req('se-prompt-dialog').setAttribute('close', 'true')
         resetFileInput()
         return
       }
@@ -75,26 +70,27 @@ export default {
       }
       // Detected an image
       // svg handling
+      /** @type {FileReader} */
       let reader
       if (file.type.includes('svg')) {
         reader = new FileReader()
         reader.onloadend = (ev) => {
           // imgImport.shiftKey (shift key pressed or not) will determine if import should preserve dimension)
-          const newElement = this.svgCanvas.importSvgString(ev.target.result, imgImport.shiftKey)
-          this.svgCanvas.alignSelectedElements('m', 'page')
-          this.svgCanvas.alignSelectedElements('c', 'page')
+          const newElement = svgCanvas.importSvgString(String(ev.target?.result), shiftKey)
+          svgCanvas.alignSelectedElements('m', 'page')
+          svgCanvas.alignSelectedElements('c', 'page')
           // highlight imported element, otherwise we get strange empty selectbox
-          this.svgCanvas.selectOnly([newElement])
-          $req('se-prompt-dialog').setAttribute('close', true)
+          if (newElement) svgCanvas.selectOnly([newElement])
+          $req('se-prompt-dialog').setAttribute('close', 'true')
           resetFileInput()
         }
         reader.readAsText(file)
       } else {
         // bitmap handling
         reader = new FileReader()
-        reader.onloadend = ({ target: { result } }) => {
-          insertImageFromHref(svgEditor, result)
-          $req('se-prompt-dialog').setAttribute('close', true)
+        reader.onloadend = () => {
+          insertImageFromHref(svgEditor, String(reader.result))
+          $req('se-prompt-dialog').setAttribute('close', 'true')
           resetFileInput()
         }
         reader.readAsDataURL(file)
@@ -102,10 +98,12 @@ export default {
     }
     // create an input with type file to open the filesystem dialog
     const imgImport = document.createElement('input')
+    /** shift held on the menu entry: import keeps the file's own dimensions */
+    let shiftKey = false
     imgImport.type = 'file'
     imgImport.addEventListener('change', importImage)
     // dropping a svg file will import it in the svg as well
-    this.workarea.addEventListener('drop', importImage)
+    svgEditor.workarea.addEventListener('drop', importImage)
 
     const clickClear = async function () {
       const [x, y] = svgEditor.configObj.curConfig.dimensions
@@ -127,7 +125,7 @@ export default {
      * By default,  this.editor.svgCanvas.open() is a no-op. It is up to an extension
      *  mechanism (opera widget, etc.) to call `setCustomHandlers()` which
      *  will make it do something.
-     * @returns {void}
+     * @returns {Promise<void>}
      */
     const clickOpen = async function () {
       // ask user before clearing an unsaved SVG
@@ -151,7 +149,7 @@ export default {
         })
         svgEditor.rightPanel.populateLayers()
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (/** @type {Error} */ (err).name !== 'AbortError') {
           return logError('Failed to open file', err, 'ext-opensave')
         }
       }
@@ -173,14 +171,15 @@ export default {
     }
 
     /**
-     *
-     * @returns {void}
+     * @returns {Promise<void>}
      */
     const clickSave = async function (/** @type {string} */ type) {
       const $editorDialog = $id('se-svg-editor-dialog')
-      const editingsource = $editorDialog.getAttribute('dialog') === 'open'
+      const editingsource = $editorDialog?.getAttribute('dialog') === 'open'
       if (editingsource) {
-        svgEditor.saveSourceEditor()
+        // Save the source editor's text, as its own Save button does.
+        const value = /** @type {import('../../dialogs/svgSourceDialog.js').SeSvgSourceEditorDialog} */ (/** @type {unknown} */ ($editorDialog)).$sourceTxt.value
+        svgEditor.saveSourceEditor(new CustomEvent('change', { detail: { value, dialog: 'close' } }))
       } else {
         // In the future, more options can be provided here
         const saveOpts = {
@@ -215,13 +214,15 @@ export default {
               extensions: ['.svg']
             })
           }
-          svgEditor.topPanel.updateTitle(handle.name)
-          svgCanvas.runExtensions('onSavedDocument', {
-            name: handle.name,
-            kind: handle.kind
-          })
+          if (handle) {
+            svgEditor.topPanel.updateTitle(handle.name)
+            svgCanvas.runExtensions('onSavedDocument', {
+              name: handle.name,
+              kind: handle.kind
+            })
+          }
         } catch (err) {
-          if (err.name !== 'AbortError') {
+          if (/** @type {Error} */ (err).name !== 'AbortError') {
             return logError('Failed to save file', err, 'ext-opensave')
           }
         }
@@ -245,8 +246,8 @@ export default {
         svgCanvas.insertChildAtIndex($req('main_button'), importButtonTemplate, 4)
 
         // The menu entries are views of these commands (`command=` above).
-        const register = (/** @type {string} */ id, /** @type {string} */ label, /** @type {{ (): Promise<void>; (): void; (): void; (): void; (): void; }} */ run, extra = {}) =>
-          this.commands.register({ id, label, group: 'Tools', pd: true, run, ...extra })
+        const register = (/** @type {string} */ id, /** @type {string} */ label, /** @type {() => void|Promise<void>} */ run, extra = {}) =>
+          svgEditor.commands.register({ id, label, group: 'Tools', pd: true, run, ...extra })
         register('tool_clear', 'opensave.new_doc', () => clickClear.call(this), { group: 'File' })
         register('tool_open', 'opensave.open_image_doc', () => clickOpen.call(this), { interactive: true })
         register('tool_save', 'opensave.save_doc', () => clickSave.call(this, 'save'), { group: 'File' })
@@ -256,7 +257,7 @@ export default {
         let shiftHeld = false
         $req('tool_import').addEventListener('click', (ev) => { shiftHeld = ev.shiftKey }, { capture: true })
         register('tool_import', 'tools.import_doc', () => {
-          imgImport.shiftKey = shiftHeld
+          shiftKey = shiftHeld
           shiftHeld = false
           imgImport.click()
         }, { interactive: true })

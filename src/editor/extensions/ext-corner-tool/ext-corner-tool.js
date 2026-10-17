@@ -41,9 +41,9 @@ const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
-const apply = (/** @type {object} */ m, /** @type {import("@svgedit/svgcanvas/core/anchor-path.ts").Pt} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+const apply = (/** @type {{a: number, b: number, c: number, d: number, e: number, f: number}} */ m, /** @type {import("@svgedit/svgcanvas/core/anchor-path.ts").Pt} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
 
-const mk = (tag, attrs) => {
+const mk = (/** @type {string} */ tag, /** @type {Record<string, unknown>} */ attrs) => {
   const e = document.createElementNS(SVG_NS, tag)
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
   return e
@@ -86,24 +86,28 @@ export default {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
 
+    /** @typedef {{a: number, b: number, c: number, d: number, e: number, f: number}} Matrix */
+    /** @typedef {{index: number, radius: number, kind: import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind, max: number, corner: import('@svgedit/svgcanvas/core/corner-radius.ts').Corner, at: {x: number, y: number}}} Widget */
+
     /**
      * The shape being edited: its element, its corners (`getCornerSettings`) with their widgets' places in the
      * layer's coordinates, and the element's transform to the layer.
      * @typedef {object} Target
      * @property {Element} el
-     * @property {Array<{index: number, radius: number, kind: string, max: number, corner: object, at: {x: number, y: number}}>} widgets
-     *   the corners that show a widget
-     * @property {object} matrix local → layer
-     * @property {object} inverse
+     * @property {Widget[]} widgets the corners that show a widget
+     * @property {Matrix} matrix local → layer
+     * @property {Matrix} inverse
      */
 
     /** The kind a corner gets when it is first cut. */
+    /** @type {import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind} */
     let preferredKind = 'r'
     /** The "Pick several" option: Shift held for good, for a screen with no Shift key (the Corner choice stands in for Alt-click). */
     let pickMore = false
     /** @type {?Target} */
     let target = null
     /** Picked corners (anchor indices) of `target.el`; empty = every corner that shows a widget. */
+    /** @type {Set<number>} */
     let picked = new Set()
     /**
 * @type {Element | null}
@@ -114,7 +118,7 @@ export default {
 * @type {import("@svgedit/svgcanvas").ToolContext | null}
 */
     let toolCtx = null
-    /** @type {?{w: object, press: {x: number, y: number}, start: {x: number, y: number}, radius0: number, targets: number[], fresh: boolean, alt: boolean, shift: boolean, moved: boolean, radius: number, at: {x: number, y: number}}} */
+    /** @type {?{w: Widget, press: {x: number, y: number}, start: {x: number, y: number}, radius0: number, targets: number[], fresh: boolean, alt: boolean, shift: boolean, moved: boolean, radius: number, at: {x: number, y: number}}} */
     let drag = null
 
     /** @returns {?Target} */
@@ -145,7 +149,8 @@ export default {
       return elems.length === 1 ? targetFor(elems[0]) : null
     }
 
-    const hit = (t, ev, zoom) => {
+    const hit = (/** @type {Target} */ t, /** @type {{rawX: number, rawY: number}} */ ev, /** @type {number} */ zoom) => {
+      /** @type {Widget|null} */
       let best = null
       let bestDist = GRAB_PX / zoom
       for (const w of t.widgets) {
@@ -159,7 +164,7 @@ export default {
     }
 
     /** The corners an edit reaches: the picked ones that show, else every one that shows. */
-    const targetsOf = (t) => {
+    const targetsOf = (/** @type {Target} */ t) => {
       const shown = t.widgets.map((w) => w.index)
       const some = shown.filter((i) => picked.has(i))
       return some.length ? some : shown
@@ -216,22 +221,22 @@ export default {
      * Cut the `corners` of `t` to `radius` (and give corners that were not cut yet the preferred kind), inside the
      * caller's transaction or as its own undo step. Returns the shape afterwards (a rect becomes a path).
      */
-    const cut = (t, radius, corners, fresh) => {
+    const cut = (/** @type {Target} */ t, /** @type {number} */ radius, /** @type {number[]} */ corners, /** @type {boolean} */ fresh) => {
       if (svgCanvas.getSelectedElements().filter(Boolean)[0] !== t.el) svgCanvas.selectOnly([t.el], true)
-      const el = svgCanvas.applyCornerRadius(radius, fresh ? { kind: /** @type {'r' | 'i' | 'c'} */ (preferredKind), corners } : { corners })
+      const el = svgCanvas.applyCornerRadius(radius, fresh ? { kind: preferredKind, corners } : { corners })
       if (el && el !== t.el) pickedEl = el // a rect became a path: the picks carry over
       return el || t.el
     }
 
-    const radiusOf = (t, index) => t.widgets.find((w) => w.index === index)?.radius ?? 0
+    const radiusOf = (/** @type {Target} */ t, /** @type {number} */ index) => t.widgets.find((w) => w.index === index)?.radius ?? 0
 
     /** Every targeted corner is still square: they get the preferred kind. */
-    const isFresh = (t, corners) => corners.every((i) => radiusOf(t, i) === 0)
+    const isFresh = (/** @type {Target} */ t, /** @type {number[]} */ corners) => corners.every((i) => radiusOf(t, i) === 0)
 
-    const nextKind = (/** @type {string} */ kind) => CORNER_KINDS[(CORNER_KINDS.indexOf(kind) + 1) % CORNER_KINDS.length]
+    const nextKind = (/** @type {import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind} */ kind) => CORNER_KINDS[(CORNER_KINDS.indexOf(kind) + 1) % CORNER_KINDS.length]
 
     /** Change only the kind of the cut `corners` of `t`. */
-    const setKind = (t, kind, corners) => {
+    const setKind = (/** @type {Target} */ t, /** @type {import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind} */ kind, /** @type {number[]} */ corners) => {
       if (svgCanvas.getSelectedElements().filter(Boolean)[0] !== t.el) svgCanvas.selectOnly([t.el], true)
       svgCanvas.applyCornerRadius(undefined, { kind, corners })
     }
@@ -325,8 +330,9 @@ export default {
         const t = targetFor(el)
         if (t) {
           target = t
-          const w = t.widgets.find((x) => x.index === drag.w.index)
-          if (w) drag.w = { ...w, corner: drag.w.corner }
+          const d = drag
+          const w = t.widgets.find((x) => x.index === d.w.index)
+          if (w) d.w = { ...w, corner: d.w.corner }
         }
         draw(ctx)
       },
@@ -397,7 +403,7 @@ export default {
           pickMore = Boolean(value)
           return
         }
-        if (id === 'kind' && CORNER_KINDS.includes(String(value))) preferredKind = String(value)
+        if (id === 'kind' && CORNER_KINDS.includes(/** @type {import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind} */ (String(value)))) preferredKind = /** @type {import('@svgedit/svgcanvas/core/corner-radius.ts').CornerKind} */ (String(value))
         const t = selectedTarget()
         if (!t) return
         const corners = targetsOf(t)

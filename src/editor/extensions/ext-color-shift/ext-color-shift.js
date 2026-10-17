@@ -40,17 +40,22 @@ const loadExtensionTranslation = function (svgEditor) {
 
 // ── Colour helpers ────────────────────────────────────────────────────────
 
+/** @typedef {{r: number, g: number, b: number, a?: number}} Rgb */
+/** @typedef {{h: number, s: number, l: number, t: number}} Delta the applied shift (hue, saturation, lightness, transparency) */
+
 const clamp = (/** @type {number} */ v, /** @type {number} */ a, /** @type {number} */ b) => Math.max(a, Math.min(b, v))
 
 /**
 * @type {CanvasRenderingContext2D | null}
 */
 let _namedColorCtx
-const parseNamedColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) => {
-  if (!_namedColorCtx) _namedColorCtx = document.createElement('canvas').getContext('2d')
-  _namedColorCtx.fillStyle = '#000'
-  try { _namedColorCtx.fillStyle = str } catch { return null }
-  const c = _namedColorCtx.fillStyle
+/** @returns {Rgb|null} */
+const parseNamedColor = (/** @type {string} */ str) => {
+  const ctx = _namedColorCtx ??= document.createElement('canvas').getContext('2d')
+  if (!ctx) return null
+  ctx.fillStyle = '#000'
+  try { ctx.fillStyle = str } catch { return null }
+  const c = String(ctx.fillStyle)
   if (c[0] === '#') return parseColor(c)
   const m = c.match(/^rgba?\(([^)]+)\)$/)
   if (m) {
@@ -60,6 +65,7 @@ const parseNamedColor = (/** @type {string | CanvasGradient | CanvasPattern} */ 
   return null
 }
 
+/** @returns {Rgb|null} */
 const parseColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) => {
   if (!str) return null
   const s = String(str).trim().toLowerCase()
@@ -89,6 +95,7 @@ const parseColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) 
   m = s.match(/^hsla?\(([^)]+)\)$/)
   if (m) {
     const p = m[1].split(/[,\s/]+/).filter(Boolean)
+    /** @type {Rgb} */
     const rgb = hslToRgb({ h: +p[0], s: +String(p[1]).replace('%', ''), l: +String(p[2]).replace('%', '') })
     rgb.a = p[3] != null ? +p[3] : 1
     return rgb
@@ -96,7 +103,7 @@ const parseColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) 
   return parseNamedColor(s)
 }
 
-const rgbToHsl = ({ r, g, b }) => {
+const rgbToHsl = (/** @type {Rgb} */ { r, g, b }) => {
   r /= 255; g /= 255; b /= 255
   const max = Math.max(r, g, b)
   const min = Math.min(r, g, b)
@@ -120,7 +127,7 @@ const hue2rgb = (/** @type {number} */ p, /** @type {number} */ q, /** @type {nu
   return p
 }
 
-const hslToRgb = ({ h, s, l }) => {
+const hslToRgb = (/** @type {{h: number, s: number, l: number}} */ { h, s, l }) => {
   const hh = ((h % 360) + 360) % 360 / 360
   const ss = clamp(s, 0, 100) / 100
   const ll = clamp(l, 0, 100) / 100
@@ -137,7 +144,7 @@ const hslToRgb = ({ h, s, l }) => {
   }
 }
 
-const toHex = ({ r, g, b }) => '#' +
+const toHex = (/** @type {Rgb} */ { r, g, b }) => '#' +
   [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('')
 
 // ── Extension ─────────────────────────────────────────────────────────────
@@ -160,19 +167,21 @@ export default {
 
     // Per-element baseline. Keyed by element node so multi-select works even
     // when elements have different starting colours.
+    /** @type {WeakMap<Element, ReturnType<typeof captureSnapshot>>} */
     const snapshots = new WeakMap()
     // Per-element applied delta {h,s,l,t}, so reselecting an element restores
     // the inputs to the shift currently applied to it.
+    /** @type {WeakMap<Element, Delta>} */
     const deltas = new WeakMap()
 
-    const isZeroDelta = (d) => !d || (!d.h && !d.s && !d.l && !d.t)
+    const isZeroDelta = (/** @type {Delta|undefined} */ d) => !d || (!d.h && !d.s && !d.l && !d.t)
 
     const isPaintable = (/** @type {{ tagName: string; }} */ el) => el && PAINTABLE_TAGS.has(el.tagName)
 
     // Expand a selected node into the paintable elements it represents. A
     // paintable leaf is itself; a `<g>` (possibly nested) yields its paintable
     // descendants, so selecting a group shifts every shape inside it.
-    const collectPaintable = (el, out) => {
+    const collectPaintable = (/** @type {Element|null} */ el, /** @type {Element[]} */ out) => {
       if (!el) return
       if (isPaintable(el)) out.push(el)
       else if (el.tagName === 'g') {
@@ -182,14 +191,14 @@ export default {
 
     const paintableSelection = () => {
       /**
-* @type {never[]}
+* @type {Element[]}
 */
       const out = []
       for (const el of svgCanvas.getSelectedElements()) collectPaintable(el, out)
       return out
     }
 
-    const captureSnapshot = (/** @type {object} */ elem) => {
+    const captureSnapshot = (/** @type {Element} */ elem) => {
       const fillRaw = elem.getAttribute('fill')
       const strokeRaw = elem.getAttribute('stroke')
       const fill = fillRaw ?? '#000000' // SVG default for non-stroked paints
@@ -210,7 +219,7 @@ export default {
       }
     }
 
-    const ensureSnapshot = (/** @type {object} */ elem) => {
+    const ensureSnapshot = (/** @type {Element} */ elem) => {
       let s = snapshots.get(elem)
       if (!s) {
         s = captureSnapshot(elem)
@@ -234,7 +243,7 @@ export default {
      *
      * `value === null` means "remove the attribute".
      */
-    const setAttrIfChanged = (elem, attr, value, oldAttrs) => {
+    const setAttrIfChanged = (/** @type {Element} */ elem, /** @type {string} */ attr, /** @type {string|number|null} */ value, /** @type {Record<string, string>} */ oldAttrs) => {
       const current = elem.getAttribute(attr)
       const next = value === null ? null : String(value)
       if (current === next) return
@@ -256,6 +265,7 @@ export default {
 
       for (const elem of elems) {
         const snap = ensureSnapshot(elem)
+        /** @type {Record<string, string>} */
         const oldAttrs = {}
 
         // Fill channel
@@ -328,6 +338,7 @@ export default {
           snapshots.set(elem, captureSnapshot(elem))
         }
       }
+      /** @type {Delta} */
       const d = (elems[0] && deltas.get(elems[0])) || { h: 0, s: 0, l: 0, t: 0 }
       $req('color_shift_h').value = d.h || 0
       $req('color_shift_s').value = d.s || 0
@@ -341,8 +352,8 @@ export default {
       const body = $id('color_shift_body')
       if (!panel) return
       const hasPaintable = paintableSelection().length > 0
-      hint.style.display = hasPaintable ? 'none' : ''
-      body.style.display = hasPaintable ? '' : 'none'
+      if (hint) hint.style.display = hasPaintable ? 'none' : ''
+      if (body) body.style.display = hasPaintable ? '' : 'none'
     }
 
     const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
@@ -389,11 +400,11 @@ export default {
         sidepanel.appendChild(tpl.content.cloneNode(true))
 
         ;['color_shift_h', 'color_shift_s', 'color_shift_l', 'color_shift_t']
-          .forEach((id) => $id(id).addEventListener('change', applyShift))
+          .forEach((id) => $id(id)?.addEventListener('change', applyShift))
         // Toggling a channel mid-edit should re-apply with current deltas so
         // the other channel reverts immediately.
         ;['color_shift_fill', 'color_shift_stroke']
-          .forEach((id) => $id(id).addEventListener('change', applyShift))
+          .forEach((id) => $id(id)?.addEventListener('change', applyShift))
 
         $req('color_shift_reset').addEventListener('click', () => {
           resetInputs()
@@ -403,7 +414,7 @@ export default {
         updateVisibility()
       },
 
-      selectedChanged (_opts) {
+      selectedChanged () {
         syncToSelection()
         updateVisibility()
       }

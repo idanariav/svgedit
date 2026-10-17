@@ -241,7 +241,7 @@ select {
  * @param {Element} elem
  * @param {string} attr
  * @param {string|null} value
- * @param {Object} oldAttrs
+ * @param {Record<string, string>} oldAttrs
  * @returns {void}
  */
 const setAttrIfChanged = (elem, attr, value, oldAttrs) => {
@@ -261,6 +261,12 @@ const currentUserClass = (/** @type {Element} */ elem) =>
     .join(' ')
 
 class SeClassSelect extends HTMLElement {
+  /** @type {HTMLSelectElement} */ $select
+  /** @type {Element|null} the selected element the control describes */ _elem
+  /** @type {import('../classLibrary.js').ClassPreset|null} the preset the popover is editing */ _editingPreset
+  /** @type {string|null} lowercase tag the "default for new objects" toggle refers to */ _defaultTag
+  /** @type {AbortController|undefined} */ _globalAbort
+
   constructor () {
     super()
     this.handleClose = this.handleClose.bind(this)
@@ -270,7 +276,7 @@ class SeClassSelect extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
 
     this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('.top-label'))
-    this.$select = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.field select'))
+    this.$select = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('.field select'))
     this.$add = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.add'))
     this.$del = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.del'))
     this.$row = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.row'))
@@ -384,6 +390,7 @@ class SeClassSelect extends HTMLElement {
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const batch = new BatchCommand('Apply class')
     elems.forEach(elem => {
+      /** @type {Record<string, string>} */
       const oldAttrs = {}
       setAttrIfChanged(elem, 'class', nextClassString(elem, name), oldAttrs)
       if (preset) {
@@ -403,14 +410,17 @@ class SeClassSelect extends HTMLElement {
       // rebuild the per-element effect filter via the extension APIs, adding the
       // undo subcommands to this same batch. Both share one filter (fx-filter),
       // so order doesn't matter; each preserves the others' slices.
-      if (preset?.shadow && requireOwnerEditor(this).shadowApi) {
-        requireOwnerEditor(this).shadowApi.apply(elem, preset.shadow, batch)
+      const shadowApi = requireOwnerEditor(this).shadowApi
+      if (preset?.shadow && shadowApi) {
+        shadowApi.apply(elem, preset.shadow, batch)
       }
-      if (preset?.outline && requireOwnerEditor(this).outlineApi) {
-        requireOwnerEditor(this).outlineApi.apply(elem, preset.outline, batch)
+      const outlineApi = requireOwnerEditor(this).outlineApi
+      if (preset?.outline && outlineApi) {
+        outlineApi.apply(elem, preset.outline, batch)
       }
-      if (preset?.glow && requireOwnerEditor(this).glowApi) {
-        requireOwnerEditor(this).glowApi.apply(elem, preset.glow, batch)
+      const glowApi = requireOwnerEditor(this).glowApi
+      if (preset?.glow && glowApi) {
+        glowApi.apply(elem, preset.glow, batch)
       }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
@@ -430,7 +440,7 @@ class SeClassSelect extends HTMLElement {
     if (!this._elem) return
     const current = this.$select.value
     const editing = current ? getClass(current) : null
-    this._editingPreset = editing
+    this._editingPreset = editing ?? null
     const scope = editing?.scope ?? elementScope(this._elem)
     this.$name.value = editing?.name ?? currentUserClass(this._elem)
     this.$scope.value = scope
@@ -449,18 +459,19 @@ class SeClassSelect extends HTMLElement {
 
   /**
 * @param {string} scope
-* @param {Object | null | undefined} editing
+* @param {import('../classLibrary.js').ClassPreset | null | undefined} editing
 */
   _renderChecklist (scope, editing) {
     const elem = this._elem
+    if (!elem) return
     this.$checklist.replaceChildren()
-    attrCatalog(scope).forEach(attr => {
+    attrCatalog(/** @type {'text'|'shape'|'any'} */ (scope)).forEach(attr => {
       const elemVal = elem.getAttribute(attr)
       const presetVal = editing?.attrs?.[attr]
       const hasVal = elemVal != null || presetVal != null
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = document.createElement('input')
+      const cb = /** @type {HTMLInputElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.attr = attr
       cb.checked = hasVal
@@ -483,7 +494,7 @@ class SeClassSelect extends HTMLElement {
     if (shadow) {
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = document.createElement('input')
+      const cb = /** @type {HTMLInputElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.shadow = 'true'
       cb.checked = true
@@ -501,7 +512,7 @@ class SeClassSelect extends HTMLElement {
     if (outline) {
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = /** @type {HTMLElement} */ (document.createElement('input'))
+      const cb = /** @type {HTMLInputElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.outline = 'true'
       cb.checked = true
@@ -519,7 +530,7 @@ class SeClassSelect extends HTMLElement {
     if (glow) {
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = /** @type {HTMLElement} */ (document.createElement('input'))
+      const cb = /** @type {HTMLInputElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.glow = 'true'
       cb.checked = true
@@ -541,26 +552,29 @@ class SeClassSelect extends HTMLElement {
     }
     const scope = this.$scope.value
     const elem = this._elem
+    if (!elem) return
+    /** @type {Record<string, string>} */
     const attrs = {}
-    this.$checklist.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    ;/** @type {NodeListOf<HTMLInputElement>} */ (this.$checklist.querySelectorAll('input[type=checkbox]')).forEach(cb => {
       if (!cb.checked) return
       const attr = cb.dataset.attr
+      if (!attr) return
       const v = elem.getAttribute(attr) ?? this._editingPreset?.attrs?.[attr]
       if (v != null) attrs[attr] = v
     })
     // Capture the drop shadow (structured params) when its row is checked,
     // reading live values off the element or falling back to the edited preset.
-    const shadowCb = this.$checklist.querySelector('input[data-shadow]')
+    const shadowCb = /** @type {HTMLInputElement|null} */ (this.$checklist.querySelector('input[data-shadow]'))
     const shadow = shadowCb?.checked
       ? (requireOwnerEditor(this).shadowApi?.read(elem) || this._editingPreset?.shadow)
       : undefined
     // Capture the outline (structured params) when its row is checked.
-    const outlineCb = this.$checklist.querySelector('input[data-outline]')
+    const outlineCb = /** @type {HTMLInputElement|null} */ (this.$checklist.querySelector('input[data-outline]'))
     const outline = outlineCb?.checked
       ? (requireOwnerEditor(this).outlineApi?.read(elem) || this._editingPreset?.outline)
       : undefined
     // Capture the glow (structured params) when its row is checked.
-    const glowCb = this.$checklist.querySelector('input[data-glow]')
+    const glowCb = /** @type {HTMLInputElement|null} */ (this.$checklist.querySelector('input[data-glow]'))
     const glow = glowCb?.checked
       ? (requireOwnerEditor(this).glowApi?.read(elem) || this._editingPreset?.glow)
       : undefined
@@ -570,6 +584,7 @@ class SeClassSelect extends HTMLElement {
         return
       }
     }
+    /** @type {import('../classLibrary.js').ClassPreset} */
     const preset = { name, scope, attrs }
     if (shadow) preset.shadow = shadow
     if (outline) preset.outline = outline
@@ -578,12 +593,13 @@ class SeClassSelect extends HTMLElement {
     // Persist the "default for new <tag> objects" toggle. Only clear the
     // existing default when it pointed at *this* preset (by its old name) —
     // otherwise leave an unrelated tag's default alone.
-    const wasDefault = this._editingPreset &&
-      getDefaultClassForTag(this._defaultTag) === this._editingPreset.name
-    if (this.$default.checked) {
-      setDefaultClassForTag(this._defaultTag, name)
-    } else if (wasDefault) {
-      setDefaultClassForTag(this._defaultTag, null)
+    const defaultTag = this._defaultTag
+    const wasDefault = defaultTag && this._editingPreset &&
+      getDefaultClassForTag(defaultTag) === this._editingPreset.name
+    if (defaultTag && this.$default.checked) {
+      setDefaultClassForTag(defaultTag, name)
+    } else if (defaultTag && wasDefault) {
+      setDefaultClassForTag(defaultTag, null)
     }
     this.closeSave()
     // Tag the source object with the new class (a no-op on its attributes) so
@@ -636,6 +652,9 @@ class SeClassSelect extends HTMLElement {
     }
   }
 
+  /**
+   * @param {Event} e
+   */
   handleClose (e) {
     // Clicks anywhere inside this component retarget to the host (=== this).
     if (this.isOpen && e.target !== this) {

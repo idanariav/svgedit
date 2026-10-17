@@ -37,7 +37,7 @@ import { getUserDataAdapter } from './userDataAdapter.js'
  * @property {Record<string, string>} attrs
  * @property {{angle: number, length: number, blur: number, opacity: number, color: string}} [shadow]
  * @property {{width: number, color: string, opacity: number}} [outline]
- * @property {{outer: {blur: number, color: string, opacity: number}|null, inner: {blur: number, color: string, opacity: number, source: string}|null}} [glow]
+ * @property {{outer: {blur: number, color: string, opacity: number}|null, inner: {blur: number, color: string, opacity: number, source: string}|null, feather?: {radius: number}|null}} [glow]
  */
 
 const STORAGE_KEY = 'svg-edit-class-library'

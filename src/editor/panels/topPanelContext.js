@@ -68,7 +68,7 @@ export const updateContextPanel = (topPanel) => {
         const angle = topPanel.editor.svgCanvas.getRotationAngle(elem)
         $req('angle').value = angle
 
-        const blurval = topPanel.editor.svgCanvas.getBlur(elem) * 10
+        const blurval = Number(topPanel.editor.svgCanvas.getBlur(elem)) * 10
         $req('blur').value = blurval
 
         if (!isNode && currentMode !== 'pathedit') {
@@ -84,7 +84,9 @@ export const updateContextPanel = (topPanel) => {
           $req('selected_x').style.display = hasOwnCoords ? 'none' : ''
           $req('selected_y').style.display = hasOwnCoords ? 'none' : ''
           if (!hasOwnCoords) {
+            /** @type {string|number|null|undefined} */
             let x
+            /** @type {string|number|null|undefined} */
             let y
 
             // Get BBox vals for g, polyline and path
@@ -99,8 +101,8 @@ export const updateContextPanel = (topPanel) => {
             }
 
             if (unit) {
-              x = topPanel.editor.svgCanvas.convertUnit(x)
-              y = topPanel.editor.svgCanvas.convertUnit(y)
+              x = topPanel.editor.svgCanvas.convertUnit(/** @type {string|number} */ (x))
+              y = topPanel.editor.svgCanvas.convertUnit(/** @type {string|number} */ (y))
             }
             /**
              * Updates the value of an input field if needed
@@ -109,16 +111,17 @@ export const updateContextPanel = (topPanel) => {
              */
             const updateValue = (id, newValue) => {
               const rounded = round1(newValue)
-              const currentValue = $id(id).value // Get current value from the field
+              const field = /** @type {HTMLInputElement|null} */ ($id(id))
+              const currentValue = field?.value ?? '' // Get current value from the field
               // do nothing if nothing changed...
               if (parseFloat(currentValue) === rounded) {
                 return
               }
-              $id(id).value = rounded
+              if (field) field.value = String(rounded)
             }
 
-            updateValue('selected_x', x)
-            updateValue('selected_y', y)
+            updateValue('selected_x', Number(x))
+            updateValue('selected_y', Number(y))
           }
 
           // Elements in this array cannot be converted to a path
@@ -156,12 +159,12 @@ export const updateContextPanel = (topPanel) => {
           // setIcon('#tool_openclose_path', path.closed_subpath ? 'open_path' : 'close_path');
 
           if (point) {
-            const segType = $id('seg_type')
+            const segType = $req('seg_type')
             if (point.type) {
-              segType.value = point.type
+              segType.value = String(point.type)
               segType.removeAttribute('disabled')
             } else {
-              segType.value = 4
+              segType.value = '4'
               segType.setAttribute('disabled', 'disabled')
             }
           }
@@ -192,15 +195,16 @@ export const updateContextPanel = (topPanel) => {
         }
         // siblings
         if (elem.parentNode) {
+          const parent = /** @type {Element} */ (elem.parentNode)
           const selements = Array.prototype.filter.call(
-            elem.parentNode.children,
+            parent.children,
             function (child) {
               return child !== elem
             }
           )
-          if (elem.parentNode.tagName === 'a' && !selements.length) {
+          if (parent.tagName === 'a' && !selements.length) {
             topPanel.displayTool('a_panel')
-            linkHref = topPanel.editor.svgCanvas.getHref(elem.parentNode)
+            linkHref = topPanel.editor.svgCanvas.getHref(parent)
           }
         }
 
@@ -218,13 +222,15 @@ export const updateContextPanel = (topPanel) => {
           const curPanel = panels[tagName]
           topPanel.displayTool(tagName + '_panel')
 
-          curPanel.forEach((/** @type {string | number} */ item) => {
+          curPanel.forEach((/** @type {string} */ item) => {
+            /** @type {string|number|null} */
             let attrVal = elem.getAttribute(item)
-            if (topPanel.editor.configObj.curConfig.baseUnit !== 'px' && elem[item]) {
-              const bv = elem[item].baseVal.value
+            const animated = /** @type {Record<string, {baseVal: {value: number}}|undefined>} */ (/** @type {unknown} */ (elem))[item]
+            if (topPanel.editor.configObj.curConfig.baseUnit !== 'px' && animated) {
+              const bv = animated.baseVal.value
               attrVal = topPanel.editor.svgCanvas.convertUnit(bv)
             }
-            $req(`${tagName}_${item}`).value = attrVal ? round1(attrVal) : 0
+            ;/** @type {{value: *}} */ (/** @type {unknown} */ ($req(`${tagName}_${item}`))).value = attrVal ? round1(Number(attrVal)) : 0
           })
 
           if (tagName === 'image') {
@@ -252,18 +258,18 @@ export const updateContextPanel = (topPanel) => {
             $req('tool_text_decoration_overline').pressed =
               topPanel.editor.svgCanvas.hasTextDecoration('overline')
             // Area text: the box button is pressed and the vertical alignment shows
-            const areaTexts = topPanel.editor.svgCanvas.getSelectedElements().filter((/** @type {{ tagName: string; }} */ el) => el?.tagName === 'text' && topPanel.editor.svgCanvas.isAreaText(el))
+            const areaTexts = topPanel.editor.svgCanvas.getSelectedElements().filter((/** @type {Element} */ el) => el?.tagName === 'text' && topPanel.editor.svgCanvas.isAreaText(el))
             $req('tool_text_area').pressed = areaTexts.length > 0
             $req('tool_text_valign').style.display = areaTexts.length ? '' : 'none'
             if (areaTexts.length) $req('tool_text_valign').value = topPanel.editor.svgCanvas.getTextValign(areaTexts[0])
-            $req('tool_font_family').value = elem.getAttribute('font-family')
+            $req('tool_font_family').value = elem.getAttribute('font-family') ?? ''
             $req('tool_text_anchor').setAttribute(
               'value',
-              elem.getAttribute('text-anchor')
+              elem.getAttribute('text-anchor') ?? ''
             )
             // Show at most 1 decimal so resized sizes read "20.4" not "20.41258606"
             $req('font_size').value = Number(
-              parseFloat(elem.getAttribute('font-size')).toFixed(1)
+              parseFloat(elem.getAttribute('font-size') ?? '').toFixed(1)
             )
             $req('tool_letter_spacing').value =
               elem.getAttribute('letter-spacing') ?? 0
@@ -288,14 +294,17 @@ export const updateContextPanel = (topPanel) => {
             tagName === 'image' &&
             topPanel.editor.svgCanvas.getMode() === 'image'
           ) {
-            topPanel.editor.svgCanvas.setImageURL(topPanel.editor.svgCanvas.getHref(elem))
+            topPanel.editor.svgCanvas.setImageURL(topPanel.editor.svgCanvas.getHref(elem) ?? '')
             // image
           } else if (tagName === 'g' || tagName === 'use') {
             topPanel.displayTool('container_panel')
             const title = topPanel.editor.svgCanvas.getTitle()
             const label = $id('g_title')
-            label.value = title
-            $req('g_title').disabled = tagName === 'use'
+            if (label) {
+              label.value = title
+              // (`se-input` has no `disabled`: this sets a plain property and disables nothing — see techdebt.md)
+              ;/** @type {HTMLInputElement} */ (/** @type {unknown} */ ($req('g_title'))).disabled = tagName === 'use'
+            }
           }
         }
 
@@ -330,11 +339,11 @@ export const updateContextPanel = (topPanel) => {
           }
         }
 
-        menuItems.setAttribute(
+        menuItems?.setAttribute(
           (tagName === 'g' ? 'en' : 'dis') + 'ablemenuitems',
           '#ungroup'
         )
-        menuItems.setAttribute(
+        menuItems?.setAttribute(
           (tagName === 'g' || !topPanel.multiselected ? 'dis' : 'en') +
             'ablemenuitems',
           '#group'
@@ -353,10 +362,10 @@ export const updateContextPanel = (topPanel) => {
         // Switch Layers only applies to exactly two selected elements
         $req('arrange_switch').style.display =
           selElems.filter(Boolean).length === 2 ? '' : 'none'
-        menuItems.setAttribute('enablemenuitems', '#group,#add_to_shape_library')
-        menuItems.setAttribute('disablemenuitems', '#ungroup')
+        menuItems?.setAttribute('enablemenuitems', '#group,#add_to_shape_library')
+        menuItems?.setAttribute('disablemenuitems', '#ungroup')
       } else {
-        menuItems.setAttribute(
+        menuItems?.setAttribute(
           'disablemenuitems',
           '#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back,#add_to_shape_library'
         )
@@ -385,7 +394,7 @@ export const updateContextPanel = (topPanel) => {
 
         // Enable regular menu options
         const canCMenu = $id('se-cmenu_canvas')
-        canCMenu.setAttribute(
+        canCMenu?.setAttribute(
           'enablemenuitems',
           '#delete,#cut,#copy,#move_front,#move_up,#move_down,#move_back,#add_to_shape_library'
         )

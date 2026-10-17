@@ -20,6 +20,15 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
+/**
+ * @typedef {object} ShapeInsertDetail the `shape-insert` event detail
+ * @property {string} [draw] path `d` of a built-in shape
+ * @property {boolean} [isUserShape] a saved user shape (the fields below)
+ * @property {string} [svgContent]
+ * @property {{x: number, y: number, width: number, height: number}} [bbox]
+ * @property {string} [linkedFile]
+ */
+
 export default {
   name,
   async init () {
@@ -27,13 +36,14 @@ export default {
     const canv = svgEditor.svgCanvas
     const { $id, $req } = canv
     const svgroot = canv.getSvgRoot()
-    let lastBBox = {}
+    /** @type {{x: number, y: number, width: number, height: number}} */
+    let lastBBox = { x: 0, y: 0, width: 0, height: 0 }
     loadExtensionTranslation(svgEditor)
 
     const modeId = 'shapelib'
 
     /**
-* @type {Node | null}
+* @type {SVGGraphicsElement | null}
 */
     let curShape
     /**
@@ -45,7 +55,7 @@ export default {
 */
     let startY
     /**
-* @type {object | null}
+* @type {ShapeInsertDetail | null}
 */
     let _userShapeData = null // non-null when a user shape is selected for insertion
     /**
@@ -59,7 +69,7 @@ export default {
      * element so multiple hosts (the desktop left-panel button AND, e.g., the
      * tablet command bar) can drive it. The next canvas mousedown places the
      * armed shape; geometry comes from the event detail, not a DOM dataset.
-     * @param {object} detail - `shape-insert` detail ({ draw } | user-shape data)
+     * @param {ShapeInsertDetail} detail - `shape-insert` detail ({ draw } | user-shape data)
      * @param {Element} [target] - originating library element to mark pressed
      * @returns {void}
      */
@@ -85,7 +95,8 @@ export default {
 
         if (_userShapeData) {
         // ── User shape (SVG group) insertion ────────────────────────────────
-          const { svgContent, bbox } = _userShapeData
+          const userShape = _userShapeData
+          const { svgContent, bbox } = /** @type {Required<Pick<ShapeInsertDetail, 'svgContent'|'bbox'>>} */ (userShape)
           const parser = new DOMParser()
           const parsed = parser.parseFromString(
           `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
@@ -99,7 +110,7 @@ export default {
           const defsNode = children.find(c => c.tagName === 'defs')
           const shapeNode = children.find(c => c.tagName !== 'defs')
           const doc = canv.getDOMDocument()
-          const imported = doc.importNode(shapeNode, true)
+          const imported = /** @type {SVGGraphicsElement} */ (doc.importNode(/** @type {Element} */ (shapeNode), true))
           const importedDefs = defsNode
             ? [...defsNode.children].map(c => doc.importNode(c, true))
             : []
@@ -112,7 +123,7 @@ export default {
           }
 
           const layer = canv.getCurrentGroup() || canv.getCurrentDrawing().getCurrentLayer()
-          layer.appendChild(imported)
+          layer?.appendChild(imported)
 
           // Apply tiny initial scale anchored at the click point, adjusted for the shape's own origin
           imported.setAttribute(
@@ -130,9 +141,10 @@ export default {
           // Stamping every element (not just the wrapper) keeps the link alive
           // through ungroup / partial deletion — the embedding host's save-time
           // scan only drops the link once the last stamped element is gone.
-          if (_userShapeData.linkedFile) {
-            const stamp = (/** @type {Node} */ el) => {
-              el.setAttribute('data-vault-link', _userShapeData.linkedFile)
+          const linkedFile = userShape.linkedFile
+          if (linkedFile) {
+            const stamp = (/** @type {Element} */ el) => {
+              el.setAttribute('data-vault-link', linkedFile)
               for (const child of el.children) stamp(child)
             }
             stamp(imported)
@@ -144,19 +156,20 @@ export default {
           const currentD = _armedDraw
           const curStyle = canv.getStyle()
 
-          curShape = canv.addSVGElementsFromJson({
+          const created = /** @type {SVGGraphicsElement} */ (canv.addSVGElementsFromJson({
             element: 'path',
             curStyles: true,
             attr: {
-              d: currentD,
+              d: currentD ?? '',
               id: canv.getNextId(),
-              opacity: curStyle.opacity / 2,
+              opacity: Number(curStyle.opacity) / 2,
               style: 'pointer-events:none'
             }
-          })
+          }))
+          curShape = created
 
-          curShape.setAttribute('transform', 'translate(' + x + ',' + y + ') scale(0.005) translate(' + -x + ',' + -y + ')')
-          canv.recalculateDimensions(curShape)
+          created.setAttribute('transform', 'translate(' + x + ',' + y + ') scale(0.005) translate(' + -x + ',' + -y + ')')
+          canv.recalculateDimensions(created)
         }
 
         lastBBox = curShape.getBBox()
@@ -175,7 +188,7 @@ export default {
         // accumulation, which breaks for container elements whose transform
         // can't be flattened. The transform is rewritten from scratch each
         // move (no recalc until mouseUp), keeping the saved bbox valid.
-          const { bbox } = _userShapeData
+          const bbox = /** @type {NonNullable<ShapeInsertDetail['bbox']>} */ (_userShapeData.bbox)
           const newbox = {
             x: Math.min(startX, x),
             y: Math.min(startY, y),
@@ -251,7 +264,7 @@ export default {
         if (!shape) return 'cancel'
 
         // a click without a drag on both axes places nothing
-        const keepObject = ev.screenX !== ctx.start.screenX && ev.screenY !== ctx.start.screenY
+        const keepObject = ev.screenX !== ctx.start?.screenX && ev.screenY !== ctx.start?.screenY
 
         // Finalize the user shape's transform once (bakes primitives into
         // geometry, normalizes containers) now that resizing is done.
@@ -279,8 +292,8 @@ export default {
           // `shape-insert` bubbles + is composed, so a single document-level
           // listener catches every `se-shape-library` instance (desktop or
           // tablet). `e.target` is retargeted to the dispatching host element.
-          document.addEventListener('shape-insert', (/** @type {CustomEvent} */ e) => {
-            armShapeInsert(e.detail, e.target)
+          document.addEventListener('shape-insert', (e) => {
+            armShapeInsert(/** @type {CustomEvent} */ (e).detail, /** @type {Element} */ (e.target))
           }, { signal: svgEditor.listenerAbort.signal })
         }
       }

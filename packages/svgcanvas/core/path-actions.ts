@@ -58,7 +58,7 @@ export interface PathActionsApi {
   closed_subpath?: boolean
   resetOrientation: (path: Element | null) => false | void
   zoomChange: () => void
-  getNodePoint: () => { x: number, y: number }
+  getNodePoint: () => NodePoint
   linkControlPoints: (linkPoints: boolean) => void
   clonePathNode: () => void
   deletePathNode: () => void

@@ -426,7 +426,7 @@ export interface CornerRadiusApi {
     kind: 'r' | 'i' | 'c',
     max: number,
     /** The corner's geometry in the element's own space (`core/corner-radius.js`). */
-    corner: { index: number, at: { x: number, y: number }, u: { x: number, y: number }, v: { x: number, y: number }, lu: number, lv: number, tanHalf: number }
+    corner: Corner
   }>
 }
 

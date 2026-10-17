@@ -35,21 +35,21 @@
  * visible focus change to narrate otherwise.
  */
 
-const isBefore = (evt, targetEl) => {
+const isBefore = (/** @type {MouseEvent} */ evt, /** @type {Element} */ targetEl) => {
   const rect = targetEl.getBoundingClientRect()
   return evt.clientY < rect.top + rect.height / 2
 }
 
 const clearIndicators = (/** @type {HTMLElement} */ root) => {
-  root.querySelectorAll('.se-drop-before, .se-drop-after').forEach((/** @type {{ classList: { remove: (arg0: string, arg1: string) => void; }; }} */ el) => {
+  root.querySelectorAll('.se-drop-before, .se-drop-after').forEach((el) => {
     el.classList.remove('se-drop-before', 'se-drop-after')
   })
 }
 
 /**
-* @type {Node | null}
+* @type {HTMLElement | null}
 */
-let sharedLiveRegion = /** @type {HTMLElement} */ (null)
+let sharedLiveRegion = null
 const announce = (/** @type {string | null} */ message) => {
   if (!sharedLiveRegion || !document.body.contains(sharedLiveRegion)) {
     sharedLiveRegion = document.createElement('div')
@@ -62,16 +62,18 @@ const announce = (/** @type {string | null} */ message) => {
   // Clearing first (rather than overwriting directly) ensures back-to-back
   // identical announcements still register as a change for screen readers.
   sharedLiveRegion.textContent = ''
-  setTimeout(() => { sharedLiveRegion.textContent = message }, 0)
+  const region = sharedLiveRegion
+  setTimeout(() => { region.textContent = message }, 0)
 }
 
-const toolLabel = (/** @type {Element | null} */ el) => el.getAttribute('title') || el.id
+const toolLabel = (/** @type {Element} */ el) => el.getAttribute('title') || el.id
 
-const swapAdjacent = (list, el, dir) => {
+const swapAdjacent = (/** @type {Element[]} */ list, /** @type {Element} */ el, /** @type {number} */ dir) => {
   const otherIdx = list.indexOf(el) + dir
   if (otherIdx < 0 || otherIdx >= list.length) return false
   const other = list[otherIdx]
   const parent = el.parentElement
+  if (!parent) return false
   if (dir < 0) parent.insertBefore(el, other)
   else parent.insertBefore(other, el)
   return true
@@ -86,21 +88,21 @@ const swapAdjacent = (list, el, dir) => {
  */
 export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
   /**
-* @type {{ classList: { remove: (arg0: string) => void; }; } | null}
+* @type {HTMLElement | null}
 */
   let dragged = null
   /**
-* @type {Element | null}
+* @type {HTMLElement | null}
 */
   let grabbed = null
   /**
-* @type {{ main: Element[]; overflow: Element[]; } | null}
+* @type {{ main: HTMLElement[]; overflow: HTMLElement[]; } | null}
 */
   let grabSnapshot = null
 
-  const mainItems = () => Array.from(container.children)
+  const mainItems = () => /** @type {HTMLElement[]} */ (Array.from(container.children))
     .filter((el) => el !== overflowHost)
-  const overflowItems = () => Array.from(overflowHost.children)
+  const overflowItems = () => /** @type {HTMLElement[]} */ (Array.from(overflowHost.children))
   const overflowOpen = () => overflowHost.hasAttribute('opened')
 
   const currentOrder = () => ({
@@ -109,10 +111,10 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
   })
 
   const applyDraggable = () => {
-    Array.from(container.children).forEach((/** @type {HTMLElement} */ el) => {
+    mainItems().concat(overflowHost).forEach((el) => {
       el.draggable = el !== overflowHost
     })
-    Array.from(overflowHost.children).forEach((/** @type {HTMLElement} */ el) => {
+    overflowItems().forEach((el) => {
       el.draggable = true
     })
   }
@@ -141,16 +143,19 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     })
   }
 
-  const applyRoving = (/** @type {Element | null | undefined} */ preferred) => {
+  /** @param {Element | null} [preferred] */
+  const applyRoving = (preferred) => {
     const flat = focusable()
     if (!flat.length) return
-    let target = preferred && flat.includes(preferred) ? preferred : null
-    if (!target && flat.includes(document.activeElement)) target = document.activeElement
-    if (!target) target = flat.find((/** @type {HTMLElement} */ el) => el.tabIndex === 0) || flat[0]
-    flat.forEach((/** @type {HTMLElement} */ el) => { el.tabIndex = el === target ? 0 : -1 })
+    const active = /** @type {HTMLElement|null} */ (document.activeElement)
+    /** @type {HTMLElement|null} */
+    let target = preferred && flat.includes(/** @type {HTMLElement} */ (preferred)) ? /** @type {HTMLElement} */ (preferred) : null
+    if (!target && active && flat.includes(active)) target = active
+    if (!target) target = flat.find((el) => el.tabIndex === 0) || flat[0]
+    flat.forEach((el) => { el.tabIndex = el === target ? 0 : -1 })
   }
 
-  const setGrabbed = (/** @type {Element | null} */ el) => {
+  const setGrabbed = (/** @type {HTMLElement} */ el) => {
     grabbed = el
     grabSnapshot = { main: mainItems(), overflow: overflowItems() }
     el.classList.add('se-grabbed')
@@ -177,6 +182,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     const el = /** @type {HTMLElement} */ (grabbed)
     const snapshot = grabSnapshot
     clearGrabbed()
+    if (!snapshot) return
     snapshot.main.forEach((item) => container.insertBefore(item, overflowHost))
     snapshot.overflow.forEach((item) => overflowHost.appendChild(item))
     applyDraggable()
@@ -187,7 +193,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     announce('Move canceled.')
   }
 
-  const settleMove = (/** @type {Element} */ focusTarget, /** @type {string} */ message) => {
+  const settleMove = (/** @type {HTMLElement} */ focusTarget, /** @type {string} */ message) => {
     applyDraggable()
     applyRoles()
     applyRoving(focusTarget)
@@ -196,7 +202,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     announce(message)
   }
 
-  const moveGrabbed = (/** @type {Element} */ el, /** @type {number} */ dir) => {
+  const moveGrabbed = (/** @type {HTMLElement} */ el, /** @type {number} */ dir) => {
     const inOverflow = el.parentElement === overflowHost
     const list = inOverflow ? overflowItems() : mainItems()
     const idx = list.indexOf(el)
@@ -220,7 +226,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     settleMove(el, `${toolLabel(el)} moved to position ${updated.indexOf(el) + 1} of ${updated.length}.`)
   }
 
-  const onKeyDown = (evt) => {
+  const onKeyDown = (/** @type {KeyboardEvent} */ evt) => {
     const el = /** @type {HTMLElement} */ (evt.target)
     if (!(el instanceof Element) || !focusable().includes(el)) return
 
@@ -262,7 +268,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
   // by the next tick our own refocus (settleMove/dropGrabbed/cancelGrabbed)
   // will already have run if this was one of our own moves, so only a
   // genuine focus loss (e.g. Tab out of the toolbar) still looks unresolved.
-  const onFocusOut = (/** @type {{ target: Element; }} */ evt) => {
+  const onFocusOut = (/** @type {FocusEvent} */ evt) => {
     const wasGrabbed = grabbed
     if (!wasGrabbed || evt.target !== wasGrabbed) return
     setTimeout(() => {
@@ -274,12 +280,14 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
 
   // --- Mouse drag-and-drop (unchanged mechanics) ------------------------
 
-  const onDragStart = (evt) => {
-    const el = evt.target.closest?.('[draggable="true"]')
+  const onDragStart = (/** @type {DragEvent} */ evt) => {
+    const el = /** @type {HTMLElement|null|undefined} */ (/** @type {Element} */ (evt.target).closest?.('[draggable="true"]'))
     if (!el) return
     dragged = el
-    evt.dataTransfer.effectAllowed = 'move'
-    evt.dataTransfer.setData('text/plain', el.id)
+    if (evt.dataTransfer) {
+      evt.dataTransfer.effectAllowed = 'move'
+      evt.dataTransfer.setData('text/plain', el.id)
+    }
     el.classList.add('se-dragging')
   }
 
@@ -295,7 +303,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     const el = /** @type {Element} */ (evt.target).closest?.('[draggable="true"]')
     if (!el || el === dragged) return
     evt.preventDefault()
-    evt.dataTransfer.dropEffect = 'move'
+    if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
     clearIndicators(container)
     clearIndicators(overflowHost)
     el.classList.add(isBefore(evt, el) ? 'se-drop-before' : 'se-drop-after')
@@ -307,6 +315,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     if (!el || el === dragged) return
     evt.preventDefault()
     const parent = el.parentElement
+    if (!parent) return
     parent.insertBefore(dragged, isBefore(evt, el) ? el : el.nextSibling)
     clearIndicators(container)
     clearIndicators(overflowHost)
@@ -324,11 +333,11 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
   // Reordering against another tool button, whether it's in the main row or
   // currently sitting inside the overflow popover.
   container.addEventListener('dragover', (evt) => {
-    if (evt.target === overflowHost || overflowHost.contains(evt.target)) return
+    if (evt.target === overflowHost || overflowHost.contains(/** @type {Node} */ (evt.target))) return
     onDragOverTool(evt)
   })
   container.addEventListener('drop', (evt) => {
-    if (evt.target === overflowHost || overflowHost.contains(evt.target)) return
+    if (evt.target === overflowHost || overflowHost.contains(/** @type {Node} */ (evt.target))) return
     onDropTool(evt)
   })
 
@@ -338,7 +347,7 @@ export const initToolDragReorder = ({ container, overflowHost, onChange }) => {
     if (!dragged) return
     if (evt.target === overflowHost) {
       evt.preventDefault()
-      evt.dataTransfer.dropEffect = 'move'
+      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
     } else {
       onDragOverTool(evt)
     }

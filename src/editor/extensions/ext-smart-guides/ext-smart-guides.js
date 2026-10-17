@@ -35,6 +35,12 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
+/**
+ * @typedef {{left: number, right: number, top: number, bottom: number}} Box a snap target's edges
+ * @typedef {{segments: {x1: number, y1: number, x2: number, y2: number}[]}} Spacing the equal-spacing gaps to draw
+ * @typedef {{index: number, x: number, y: number}} PathNodeTarget the path node a drag snaps to
+ */
+
 export default {
   name,
   async init () {
@@ -57,7 +63,15 @@ export default {
     })
     svgroot.append(overlay)
 
-    const addLine = (/** @type {DocumentFragment} */ frag, /** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string | undefined} */ dash) => {
+    /**
+     * @param {DocumentFragment} frag
+     * @param {number} x1
+     * @param {number} y1
+     * @param {number} x2
+     * @param {number} y2
+     * @param {string} [dash]
+     */
+    const addLine = (frag, x1, y1, x2, y2, dash) => {
       const ln = svgdoc.createElementNS(NS.SVG, 'line')
       assignAttributes(ln, {
         x1, y1, x2, y2, stroke: GUIDE_COLOR, 'stroke-width': 1, ...(dash ? { 'stroke-dasharray': dash } : {})
@@ -81,8 +95,8 @@ export default {
     /**
      * Draw the current snap state. Called from core `event.js` on every
      * drag move; `null` (or a payload with no matches) clears the overlay.
-     * @param {?{x: ?Object, y: ?Object, spacingX: ?Object, spacingY: ?Object,
-     *   moving: {x: Float, y: Float, width: Float, height: Float}}} payload
+     * @param {?{x: ?{pos: number, target: Box}, y: ?{pos: number, target: Box}, spacingX: ?Spacing, spacingY: ?Spacing,
+     *   moving: {x: number, y: number, width: number, height: number}}} payload
      * @returns {void}
      */
     svgCanvas.showSmartGuides = (payload) => {
@@ -94,7 +108,7 @@ export default {
       // as #canvasBackground: x/y/width/height track #svgcontent).
       const content = svgCanvas.getSvgContent()
       for (const attr of ['x', 'y', 'width', 'height']) {
-        overlay.setAttribute(attr, content.getAttribute(attr))
+        overlay.setAttribute(attr, content.getAttribute(attr) ?? '')
       }
 
       const zoom = svgCanvas.getZoom()
@@ -119,7 +133,7 @@ export default {
       }
 
       // Equal-spacing gap segments with end ticks.
-      const drawSpacing = (/** @type {Object} */ spacing, /** @type {boolean} */ vertical) => {
+      const drawSpacing = (/** @type {Spacing} */ spacing, /** @type {boolean} */ vertical) => {
         for (const seg of spacing.segments) {
           const x1 = seg.x1 * zoom
           const y1 = seg.y1 * zoom
@@ -146,7 +160,7 @@ export default {
      * midpoint / centre it snapped to, or a guide line along each box edge or centre line it snapped to,
      * from the snapped point out to the object's extent. `null` clears the overlay.
      * @param {?{at: {x: number, y: number}, point: ?{x: number, y: number},
-     *   xLine: ?{pos: Float, lo: Float, hi: Float}, yLine: ?{pos: Float, lo: Float, hi: Float}}} payload
+     *   xLine: ?{pos: number, lo: number, hi: number}, yLine: ?{pos: number, lo: number, hi: number}}} payload
      * @returns {void}
      */
     svgCanvas.showDrawGuides = (payload) => {
@@ -156,7 +170,7 @@ export default {
       }
       const content = svgCanvas.getSvgContent()
       for (const attr of ['x', 'y', 'width', 'height']) {
-        overlay.setAttribute(attr, content.getAttribute(attr))
+        overlay.setAttribute(attr, content.getAttribute(attr) ?? '')
       }
       const zoom = svgCanvas.getZoom()
       const frag = svgdoc.createDocumentFragment()
@@ -182,7 +196,7 @@ export default {
      * see `@svgedit/svgcanvas/core/path-node-guides.js`. Called from core
      * `path-actions.js` on every pathedit drag move; `null` (or a payload
      * with no matches) clears the overlay.
-     * @param {?{x: ?Object, y: ?Object, from: {x: number, y: number}}} payload
+     * @param {?{x: ?{target: PathNodeTarget}, y: ?{target: PathNodeTarget}, from: {x: number, y: number}}} payload
      * @returns {void}
      */
     svgCanvas.showPathNodeGuides = (payload) => {
@@ -192,7 +206,7 @@ export default {
       }
       const content = svgCanvas.getSvgContent()
       for (const attr of ['x', 'y', 'width', 'height']) {
-        overlay.setAttribute(attr, content.getAttribute(attr))
+        overlay.setAttribute(attr, content.getAttribute(attr) ?? '')
       }
 
       const zoom = svgCanvas.getZoom()
@@ -201,8 +215,9 @@ export default {
 
       // A shared coordinate makes the line between the two points already
       // perfectly vertical (x match) or horizontal (y match).
+      /** @type {Set<number>} */
       const ringedIndices = new Set()
-      const ringTarget = (t) => {
+      const ringTarget = (/** @type {PathNodeTarget} */ t) => {
         if (ringedIndices.has(t.index)) return
         ringedIndices.add(t.index)
         addNodeTargetRing(frag, t.x * zoom, t.y * zoom)
@@ -231,7 +246,7 @@ export default {
         `
         $req('editor_panel').append(buttonTemplate.content.cloneNode(true))
         const btn = $id('tool_smart_snap')
-        btn.pressed = svgCanvas.getCurConfig().smartSnapping
+        if (btn) btn.pressed = svgCanvas.getCurConfig().smartSnapping !== false
         svgEditor.commands.register({
           id: 'tool_smart_snap',
           label: title,
@@ -240,7 +255,7 @@ export default {
           run: () => {
             const on = !svgCanvas.getCurConfig().smartSnapping
             svgCanvas.getCurConfig().smartSnapping = on
-            btn.pressed = on
+            if (btn) btn.pressed = on
             svgEditor.configObj.pref('smart_snapping', on ? 'on' : 'off')
           }
         })

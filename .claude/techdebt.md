@@ -181,9 +181,13 @@ fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
 Typing `Editor.js`, `EditorStartup.js` and `contextmenu.js` strictly turned up code that is wrong today but not reachable
 (or not noticed) in normal use. Fixed where the fix was a typing consequence; the rest is left for a deliberate change:
 
-- **`ext-opensave` calls `svgEditor.saveSourceEditor()` without the dialog's event** (`clickSave`, while the source editor
-  is open). `saveSourceEditor(e)` reads `e.detail.value`, so that path throws a `TypeError`. When `ext-opensave.js` joins the
-  strict list the call fails the type check; read the dialog's value (`#svg_source_textarea`) there instead.
+- **`ext-connector`'s marker block is dead.** `handleOneChangedElement` destructures `{ markerStart, markerMid, markerEnd }` from
+  `elem.attributes`, but a `NamedNodeMap` is keyed by attribute *name* (`marker-start`), so all three are always `undefined` and the
+  block (track marker presence for the endpoint offsets; turn a `<line>` with a mid-marker into a polyline) never runs. Typing it
+  kept the behaviour (a cast, with a comment). Reading `marker-start`/`marker-mid`/`marker-end` would switch the feature on, which
+  needs its own tests (and a look at `getOffset`, which already reads the attributes directly).
+- **`#g_title` is never disabled for a `<use>`.** `topPanelContext.js` sets `.disabled` on the `se-input`, which has no such property
+  (a plain expando), so the box stays editable. Give `se-input` a `disabled` attribute, or drop the line.
 - **`loadFromURL` carries on after a failed fetch** (`!response.ok` and not `noAlert`): it alerts and resolves, then falls
   through to `response.text()` and tries to load the error body as SVG (a second alert). Add the missing `return`.
 - **Extension context-menu items are never shown.** `contextmenu.js` appends them to a `#cmenu_canvas` list that the

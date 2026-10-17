@@ -92,8 +92,14 @@ export const remapAffine = (remap) => {
   return { a: x.x - o.x, b: x.y - o.y, c: y.x - o.x, d: y.y - o.y, e: o.x, f: o.y }
 }
 
+/**
+ * @typedef {{px: number, py: number, qx: number, qy: number}} Pin a pin in content coordinates: rest (p) and current (q) position
+ * @typedef {{pts: Array<{x: number, y: number}>, closed: boolean}} RestSubpath one sampled subpath of a rest pose
+ * @typedef {{el: SVGPathElement, inv: SVGMatrix, m: SVGMatrix, diag: number, rest: RestSubpath[], origD: string}} WarpTarget one shape in the session
+ */
+
 /** Serialize pins to the `se:puppet-pins` JSON form (rounded, compact). */
-export const serializePins = (pinList) =>
+export const serializePins = (/** @type {Pin[]} */ pinList) =>
   JSON.stringify(pinList.map((/** @type {{ px: number; py: number; qx: number; qy: number; }} */ p) => [fmt(p.px), fmt(p.py), fmt(p.qx), fmt(p.qy)]))
 
 /**
@@ -222,7 +228,7 @@ export const buildD = (subpaths, inv) => {
   let d = ''
   for (const sp of subpaths) {
     sp.pts.forEach((p, i) => {
-      const l = transformPoint(p.x, p.y, inv)
+      const l = transformPoint(p.x, p.y, /** @type {SVGMatrix} */ (inv))
       d += (i === 0 ? `M${fmt(l.x)},${fmt(l.y)}` : ` L${fmt(l.x)},${fmt(l.y)}`)
     })
     if (sp.closed) d += ' Z'
@@ -300,8 +306,10 @@ export default {
 
     // ── Session state ──────────────────────────────────────────────────────
     // targets: [{ el, inv, m, diag, rest: [{ pts:[{x,y}…contentSpace], closed }], origD }]
+    /** @type {WarpTarget[]} */
     let targets = []
     // pins in CONTENT coordinates: { px,py (rest), qx,qy (current) }
+    /** @type {Pin[]} */
     let pins = []
     let dragIndex = -1
     let dirty = false
@@ -310,6 +318,7 @@ export default {
     // rig's metadata can't be kept in sync with external transforms).
     let persistable = false
     // The open undo transaction for the whole session (see file header).
+    /** @type {ReturnType<typeof svgCanvas.beginTransaction>|null} */
     let tx = null
     /** @type {SVGCircleElement[]} */
     let pinDots = []
@@ -366,9 +375,11 @@ export default {
       const scope = getPaperScope()
       const compound = new scope.CompoundPath(d)
       const children = compound.children?.length ? compound.children : [compound]
+      /** @type {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>} */
       const subpaths = []
       const step = sampleStepFor(diag)
-      for (const ch of children) {
+      for (const item of children) {
+        const ch = /** @type {import('paper').Path} */ (item)
         const len = ch.length
         if (!len) {
           // Degenerate (a lone moveto) — keep its single point.
@@ -381,6 +392,7 @@ export default {
         // bounded.
         const n = Math.max(8, Math.min(400, Math.ceil(len / step)))
         const last = ch.closed ? n - 1 : n
+        /** @type {Array<{x:number,y:number}>} */
         const pts = []
         for (let i = 0; i <= last; i++) {
           const pt = ch.getPointAt((i / n) * len)
@@ -405,9 +417,9 @@ export default {
       const zoom = svgCanvas.getZoom()
       const p = pins[i]
       const dot = document.createElementNS(svgNS, 'circle')
-      dot.setAttribute('cx', p.qx)
-      dot.setAttribute('cy', p.qy)
-      dot.setAttribute('r', 5 / zoom)
+      dot.setAttribute('cx', String(p.qx))
+      dot.setAttribute('cy', String(p.qy))
+      dot.setAttribute('r', String(5 / zoom))
       // Dragged pin: solid accent. Anchors: hollow. Use the theme accent token
       // via `style` (SVG presentation attributes don't resolve var()); the
       // custom property inherits through the SVG DOM, falling back to blue.
@@ -459,24 +471,24 @@ export default {
       // tick and the rig attributes become a single undo step on commit, and
       // cancel() reverts all of it. onAbort: undo or a file load ended it.
       tx = svgCanvas.beginTransaction('Puppet Warp', { onAbort: abandon })
-      const paths = shapes
+      const paths = /** @type {SVGPathElement[]} */ (shapes
         .map((el) => (el.tagName === 'path' ? el : svgCanvas.convertToPath(el)))
-        .filter(Boolean)
+        .filter(Boolean))
 
       svgCanvas.clearSelection() // drop selector grips so they don't eat our drags
 
       // Map element-local (`d`) coords all the way to content space: the element's
       // OWN transform (getMatrix) then its ancestors' (getMatrixToContent, which
       // covers only `<g>`/`<a>` parents). Skip any target whose matrix is singular.
-      targets = paths
+      targets = /** @type {WarpTarget[]} */ (paths
         .map((el) => {
           const m = matrixMultiply(getMatrixToContent(el), getMatrix(el))
           let inv
           try { inv = m.inverse() } catch { return null }
           const diag = bboxDiagonal(el, m)
-          return { el, inv, m, diag, rest: sampleRest(el, m, diag), origD: el.getAttribute('d') }
+          return { el, inv, m, diag, rest: sampleRest(el, m, diag), origD: /** @type {string} */ (el.getAttribute('d')) }
         })
-        .filter(Boolean)
+        .filter(Boolean))
 
       // A persistent rig only exists (and can only be kept in sync — see file
       // header) for a single-target session. Rehydrate its canonical rest
@@ -496,7 +508,7 @@ export default {
       }
 
       if (!targets.length) {
-        tx.cancel()
+        tx?.cancel()
         teardown()
         return 0
       }
@@ -519,7 +531,7 @@ export default {
           // path is compact (and doesn't grow each re-pose session). Falls back
           // to the raw polyline if the fit fails.
           try {
-            const refit = svgCanvas.simplifyPathD?.(t.el.getAttribute('d'), refitToleranceFor(t.diag))
+            const refit = svgCanvas.simplifyPathD?.(t.el.getAttribute('d') ?? '', refitToleranceFor(t.diag))
             if (refit) t.el.setAttribute('d', refit)
           } catch { /* keep the raw polyline */ }
 
@@ -535,10 +547,10 @@ export default {
           if (patch.newRestD !== null) t.el.setAttribute(REST_D_ATTR, patch.newRestD)
           if (patch.newPins !== null) t.el.setAttribute(PINS_ATTR, patch.newPins)
         })
-        tx.commit()
+        tx?.commit()
       } else {
         // Entered but never warped — roll the conversions back so it's a true no-op.
-        tx.cancel()
+        tx?.cancel()
       }
       teardown()
     }
@@ -566,8 +578,8 @@ export default {
 
     // Any exit from puppetwarp mode commits the pose (mirrors ext-curvature's
     // modeChange teardown; critical so overlay dots aren't serialized).
-    document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
-      if (evt.detail.getMode() !== name && targets.length) {
+    document.addEventListener('modeChange', (evt) => {
+      if (/** @type {CustomEvent} */ (evt).detail.getMode() !== name && targets.length) {
         commit()
       }
     }, { signal: svgEditor.listenerAbort.signal })
@@ -618,7 +630,7 @@ export default {
         })
       },
 
-      mouseDown (opts) {
+      mouseDown (/** @type {{start_x: number, start_y: number}} */ opts) {
         if (svgCanvas.getMode() !== name) return undefined
         if (!targets.length) return undefined
 

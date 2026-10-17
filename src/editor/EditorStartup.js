@@ -88,6 +88,7 @@ class EditorStartup {
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ shadowApi
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ outlineApi
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ glowApi
+  /** @type {((detail?: object, target?: Element) => void)|undefined} */ armShapeInsert
   /** @type {ReturnType<typeof import('./extensions/fx-filter.js').createFxComposer>|undefined} */ fxFilter
   /** @type {((zoom?: number) => void)|undefined} */ updateGrid
   /** @type {(() => void)|undefined} */ updateProportionMarkers

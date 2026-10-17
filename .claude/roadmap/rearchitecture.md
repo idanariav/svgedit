@@ -226,9 +226,10 @@ Retire the d.ts and the drift test only with R2.
 DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
 runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
 that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
-188 of 222 files are on the list; about 930 errors remain in the other 34, concentrated in the extensions (`ext-repeat`, `ext-polystar`,
-`ext-shape-family`, `ext-gradient-tool`, `ext-width-tool`, `ext-markers`, `ext-connector`, …) and a few components/dialogs (`seClassSelect`, `seRecolorDialog`,
-`addToShapeLibrary`). `Editor.js`, `EditorStartup.js`, `TopPanel`, `RightPanel`, `TabletShell`, `layerTree`, `seShapeLibrary` and the colour picker are clean.
+200 of 222 files are on the list; about 440 errors remain in the other 22, spread thin (none above 28): the small extensions (`ext-layer_view`, `ext-grid`,
+`ext-live-effects`, `ext-cutter`, `ext-shaper`, `ext-ruler-guides`, `ext-distort-tool`, `fontStore`), a few components/dialogs (`seFontSelect`,
+`seFontLibrary`, `seBrushSettings`, `hotkeyDialog`, `sePalette`) and `Rulers`, `MainMenu`, `LeftPanel`, `BottomPanel`, `layerGestures`, `addToShapeLibrary`.
+`Editor.js`, `EditorStartup.js`, `TopPanel`, `RightPanel`, `TabletShell`, `layerTree`, `seShapeLibrary` and the colour picker are clean.
 What made the first 3,000 cheap, and is what the rest should use:
 - `$id('x')` returns the element type of that id (`src/editor/ui-ids.d.ts`, generated from the panels' HTML and the templates inside the JS sources by
   `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.

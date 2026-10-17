@@ -57,12 +57,15 @@ export default {
       pick.value = svgCanvas.getArtBrushLibrary().some((b) => b.id === keep) ? keep : ''
     }
 
-    const optionRow = (id, label, control) => `<div class="sidepanel_btn_row" id="${P}-row-${id}">${control(label)}</div>`
-    const spin = (/** @type {string} */ id, /** @type {number} */ min, /** @type {number} */ max, /** @type {number} */ step, value = 100) => (label) =>
+    const optionRow = (/** @type {string} */ id, /** @type {string} */ label, /** @type {(label: string) => string} */ control) => `<div class="sidepanel_btn_row" id="${P}-row-${id}">${control(label)}</div>`
+    const spin = (/** @type {string} */ id, /** @type {number} */ min, /** @type {number} */ max, /** @type {number} */ step, value = 100) => (/** @type {string} */ label) =>
       `<se-spin-input id="${P}-${id}" label="${label}" min="${min}" max="${max}" step="${step}" value="${value}"></se-spin-input>`
-    const check = (/** @type {string} */ id) => (label) =>
+    const check = (/** @type {string} */ id) => (/** @type {string} */ label) =>
       `<label class="ext-live-effects-check"><input type="checkbox" id="${P}-${id}"> ${label}</label>`
-    const select = (/** @type {string} */ id) => (label) => `<se-select id="${P}-${id}" label="${label}"></se-select>`
+    const select = (/** @type {string} */ id) => (/** @type {string} */ label) => `<se-select id="${P}-${id}" label="${label}"></se-select>`
+
+    /** The panel's native inputs, by their id suffix. */
+    const field = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ ($req(`${P}-${id}`))
 
     const refresh = () => {
       const panel = $id(`${P}-panel`)
@@ -78,19 +81,19 @@ export default {
       $req(`${P}-brushed`).style.display = brush ? '' : 'none'
       for (const type of ['art', 'pattern']) $req(`${P}-${type}-opts`).style.display = brush?.type === type ? '' : 'none'
       if (!brush) return
-      const o = brush.opts
+      const o = /** @type {Record<string, *>} */ (brush.opts)
       if (brush.type === 'art') {
-        $req(`${P}-scale`).value = o.scale
-        $req(`${P}-width`).value = o.width
-        $req(`${P}-dir`).value = o.dir
-        $req(`${P}-flipAlong`).checked = o.flipAlong
-        $req(`${P}-flipAcross`).checked = o.flipAcross
+        field('scale').value = o.scale
+        field('width').value = o.width
+        field('dir').value = o.dir
+        field('flipAlong').checked = o.flipAlong
+        field('flipAcross').checked = o.flipAcross
       } else {
-        $req(`${P}-tileScale`).value = o.scale
-        $req(`${P}-spacing`).value = o.spacing
-        $req(`${P}-fit`).value = o.fit
-        $req(`${P}-pflipAlong`).checked = o.flipAlong
-        $req(`${P}-pflipAcross`).checked = o.flipAcross
+        field('tileScale').value = o.scale
+        field('spacing').value = o.spacing
+        field('fit').value = o.fit
+        field('pflipAlong').checked = o.flipAlong
+        field('pflipAcross').checked = o.flipAcross
       }
     }
 
@@ -140,23 +143,23 @@ export default {
         const designTab = $id('tab_design')
         const objectPanel = designTab?.querySelector('.selected_panel')
         if (designTab && objectPanel) designTab.insertBefore(template.content, objectPanel)
-        else (designTab || $id('tools_top')).appendChild(template.content)
+        else (designTab || $id('tools_top'))?.appendChild(template.content)
 
         // se-select options go in after the elements are in the document (they are upgraded on insertion).
-        const fill = (id, pairs) => pairs.forEach(([v, key]) => $req(`${P}-${id}`).addOption(v, tr(key)))
+        const fill = (/** @type {string} */ id, /** @type {string[][]} */ pairs) => pairs.forEach(([v, key]) => /** @type {import('../../components/seSelect.js').SeSelect} */ (/** @type {unknown} */ ($req(`${P}-${id}`))).addOption(v, tr(key)))
         fill('scale', [['stretch', 'scaleStretch'], ['proportional', 'scaleProportional']])
         fill('dir', [['ltr', 'dirLtr'], ['rtl', 'dirRtl'], ['ttb', 'dirTtb'], ['btt', 'dirBtt']])
         fill('fit', [['stretch', 'fitStretch'], ['addSpace', 'fitAddSpace'], ['approximate', 'fitApproximate']])
         refillPicker()
 
-        const onChange = (id, read) => $req(`${P}-${id}`).addEventListener('change', (e) => set(read(e.target)))
+        const onChange = (/** @type {string} */ id, /** @type {(t: HTMLInputElement) => Record<string, unknown>} */ read) => $req(`${P}-${id}`).addEventListener('change', (e) => set(read(/** @type {HTMLInputElement} */ (e.target))))
         onChange('scale', (t) => ({ scale: t.value }))
-        onChange('width', (/** @type {{ value: string; }} */ t) => ({ width: parseFloat(t.value) || 100 }))
+        onChange('width', (t) => ({ width: parseFloat(t.value) || 100 }))
         onChange('dir', (t) => ({ dir: t.value }))
         onChange('flipAlong', (t) => ({ flipAlong: t.checked }))
         onChange('flipAcross', (t) => ({ flipAcross: t.checked }))
-        onChange('tileScale', (/** @type {{ value: string; }} */ t) => ({ scale: parseFloat(t.value) || 100 }))
-        onChange('spacing', (/** @type {{ value: string; }} */ t) => ({ spacing: parseFloat(t.value) || 0 }))
+        onChange('tileScale', (t) => ({ scale: parseFloat(t.value) || 100 }))
+        onChange('spacing', (t) => ({ spacing: parseFloat(t.value) || 0 }))
         onChange('fit', (t) => ({ fit: t.value }))
         onChange('pflipAlong', (t) => ({ flipAlong: t.checked }))
         onChange('pflipAcross', (t) => ({ flipAcross: t.checked }))
@@ -199,7 +202,8 @@ export default {
           enabled: needBrushed,
           run: () => {
             const group = brushedSelection()
-            const spine = [...group.children].find((c) => c.hasAttribute('se:art-spine'))
+            const spine = group && [...group.children].find((c) => c.hasAttribute('se:art-spine'))
+            if (!spine) return
             svgCanvas.selectOnly([spine], true)
             svgCanvas.pathActions.toEditMode(spine)
           }
@@ -215,10 +219,10 @@ export default {
       modeChange () {
         refresh()
       },
-      elementChanged (opts) {
+      elementChanged (/** @type {{elems: (Element|null)[]}} */ opts) {
         // The art follows its path (also after an undo of a path edit).
         let changed = false
-        for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshArtBrush(el) || changed
+        for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshArtBrush(/** @type {Element} */ (el)) || changed
         if (changed || brushedSelection()) refresh()
       }
     }

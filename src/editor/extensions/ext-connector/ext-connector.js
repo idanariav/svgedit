@@ -36,7 +36,7 @@ const loadExtensionTranslation = function (svgEditor) {
 
 export default {
   name,
-  async init (S) {
+  async init (/** @type {{svgroot: SVGSVGElement, selectorManager: *}} */ S) {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { getElement, $id, addSVGElementsFromJson } = svgCanvas
@@ -58,6 +58,7 @@ export default {
     let startElem // shape under the cursor when a line draw began (pending start binding)
 
     let started = false
+    /** @type {{elem: Element, connector: Element, is_start: boolean, start_x: number, start_y: number}[]} */
     let connections = []
 
     // ── Hover-highlight state ────────────────────────────────────────────────
@@ -65,6 +66,7 @@ export default {
 * @type {SVGRectElement | null}
 */
     let highlightRect = null
+    /** @type {Record<string, SVGCircleElement>} */
     const snapDots = {} // { n, s, e, w } → SVGCircleElement
     /**
 * @type {Element | null}
@@ -159,7 +161,7 @@ export default {
     }
 
     /** Euclidean distance between two points. */
-    const ptDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+    const ptDist = (/** @type {{x: number, y: number}} */ a, /** @type {{x: number, y: number}} */ b) => Math.hypot(a.x - b.x, a.y - b.y)
 
     // ── Proximity hit detection ──────────────────────────────────────────────
 
@@ -277,13 +279,14 @@ export default {
       const rw = br.x - tl.x
       const rh = br.y - tl.y
 
-      highlightRect.setAttribute('x', rx)
-      highlightRect.setAttribute('y', ry)
-      highlightRect.setAttribute('width', rw)
-      highlightRect.setAttribute('height', rh)
+      highlightRect.setAttribute('x', String(rx))
+      highlightRect.setAttribute('y', String(ry))
+      highlightRect.setAttribute('width', String(rw))
+      highlightRect.setAttribute('height', String(rh))
       highlightRect.style.display = ''
 
       // Cardinal midpoints in svgroot space (derived from the converted bbox).
+      /** @type {Record<string, {x: number, y: number}>} */
       const pts = {
         n: { x: rx + rw / 2, y: ry },
         s: { x: rx + rw / 2, y: ry + rh },
@@ -301,8 +304,8 @@ export default {
       }
 
       for (const [key, dot] of Object.entries(snapDots)) {
-        dot.setAttribute('cx', pts[key].x)
-        dot.setAttribute('cy', pts[key].y)
+        dot.setAttribute('cx', String(pts[key].x))
+        dot.setAttribute('cy', String(pts[key].y))
         dot.style.display = ''
         const isNearest = key === nearKey
         dot.setAttribute('r', isNearest ? '7' : '5')
@@ -428,7 +431,7 @@ export default {
       // TODO: This factor should ideally be based on the actual marker size.
       // A missing stroke-width means the SVG initial value of 1, not 0 —
       // cleanupElement strips the attribute at that value.
-      const size = (line.getAttribute('stroke-width') ?? 1) * 5
+      const size = Number(line.getAttribute('stroke-width') ?? 1) * 5
       return hasMarker ? size : 0
     }
 
@@ -497,7 +500,7 @@ export default {
       if (!startBB || !endBB) return
       const pts = computeConnectorPoints(startBB, endBB, line)
       // An aligned polyline is trimmed from its real ends.
-      if (!svgCanvas.setArrowSourcePoints(line, pts)) line.setAttribute('points', pts.map((p) => `${p.x},${p.y}`).join(' '))
+      if (!svgCanvas.setArrowSourcePoints(line, pts)) line.setAttribute('points', pts.map((/** @type {{x: number, y: number}} */ p) => `${p.x},${p.y}`).join(' '))
     }
 
     /**
@@ -534,23 +537,23 @@ export default {
         const p = getBBintersect(startAim.x, startAim.y, startBB, getOffset('start', line))
         x1 = p.x; y1 = p.y
         if (!real) {
-          line.setAttribute('x1', x1)
-          line.setAttribute('y1', y1)
+          line.setAttribute('x1', String(x1))
+          line.setAttribute('y1', String(y1))
         }
       }
       if (endBB) {
         const p = getBBintersect(endAim.x, endAim.y, endBB, getOffset('end', line))
         x2 = p.x; y2 = p.y
         if (!real) {
-          line.setAttribute('x2', x2)
-          line.setAttribute('y2', y2)
+          line.setAttribute('x2', String(x2))
+          line.setAttribute('y2', String(y2))
         }
       }
       if (real) svgCanvas.setArrowSourcePoints(line, [{ x: x1, y: y1 }, { x: x2, y: y2 }])
     }
 
     /** Re-routes any connector (new line or legacy polyline) from cached bboxes. */
-    const routeAny = (/** @type {object} */ line) => {
+    const routeAny = (/** @type {Element} */ line) => {
       if (line.tagName === 'line') {
         routeLineBinding(line)
       } else {
@@ -627,12 +630,13 @@ export default {
 
           let addThis = false
           const parents = svgCanvas.getParents(cElem.parentNode)
-          for (const el of parents) {
+          for (const el of parents ?? []) {
             if (elems.includes(el)) { addThis = true; break }
           }
 
           if (elems.includes(cElem) || addThis) {
             const bb = svgCanvas.getStrokedBBox([cElem])
+            if (!bb) continue
             connections.push({
               elem: cElem,
               connector,
@@ -659,6 +663,7 @@ export default {
         const { elem, connector: line, is_start: isStart, start_x: sx, start_y: sy } = conn
         const pre = isStart ? 'start' : 'end'
         const bb = svgCanvas.getStrokedBBox([elem])
+        if (!bb) continue
         bb.x = sx
         bb.y = sy
         dataStorage.put(line, `${pre}_bb`, bb)
@@ -701,7 +706,7 @@ export default {
 
     reset()
 
-    const handleOneChangedElement = (/** @type {object} */ elem) => {
+    const handleOneChangedElement = (/** @type {Element} */ elem) => {
       const dataStorage = svgCanvas.getDataStorage()
 
       // Reinitialize on document (re)load.
@@ -711,13 +716,15 @@ export default {
 
       // Track marker presence for endpoint offsets; convert a line to a
       // polyline when a mid-marker is applied (SVG <line> has no mid vertex).
-      const { markerStart, markerMid, markerEnd } = elem.attributes
+      // (never set: an `attributes` map is keyed by attribute name, i.e. `marker-start`)
+      const markerAttrs = /** @type {Record<string, Attr|undefined>} */ (/** @type {unknown} */ (elem.attributes))
+      const { markerStart, markerMid, markerEnd } = markerAttrs
       if (markerStart || markerMid || markerEnd) {
         dataStorage.put(elem, 'start_off', Boolean(markerStart))
         dataStorage.put(elem, 'end_off', Boolean(markerEnd))
 
         if (elem.tagName === 'line' && markerMid) {
-          const { x1, x2, y1, y2, id } = elem.attributes
+          const { x1, x2, y1, y2, id } = /** @type {Record<string, Attr>} */ (markerAttrs)
           const bindStart = elem.getAttributeNS(seNs, 'bind-start')
           const bindEnd = elem.getAttributeNS(seNs, 'bind-end')
 
@@ -728,12 +735,12 @@ export default {
             element: 'polyline',
             attr: {
               points: `${x1.value},${y1.value} ${midPt} ${x2.value},${y2.value}`,
-              stroke: elem.getAttribute('stroke'),
+              stroke: elem.getAttribute('stroke') ?? 'none',
               // A missing stroke-width means the SVG initial value of 1 — pass
               // that through explicitly, since assignAttributes would otherwise
               // set the attribute to the literal string "null".
               'stroke-width': elem.getAttribute('stroke-width') ?? 1,
-              'marker-mid': markerMid.value,
+              'marker-mid': markerMid?.value,
               fill: 'none',
               opacity: elem.getAttribute('opacity') || 1
             }
@@ -797,7 +804,7 @@ export default {
           else hideHoverHighlight()
         })
       },
-      mouseDown (opts) {
+      mouseDown (/** @type {{event: MouseEvent, start_x: number, start_y: number, selectedElements: Element[]}} */ opts) {
         const { event: e } = opts
         const mode = svgCanvas.getMode()
 
@@ -855,12 +862,12 @@ export default {
         for (const elem of svgCanvas.getSelectedElements()) {
           if (elem && dataStorage.has(elem, 'c_start')) {
             svgCanvas.removeFromSelection([elem])
-            elem.transform.baseVal.clear()
+            ;/** @type {SVGGraphicsElement} */ (elem).transform.baseVal.clear()
           }
         }
         if (connections.length) updateLine(diffX, diffY)
       },
-      mouseUp (opts) {
+      mouseUp (/** @type {{event: MouseEvent, element: Element|null}} */ opts) {
         const { event: e, element: line } = opts
         if (svgCanvas.getMode() !== 'line') return undefined
 
@@ -896,7 +903,7 @@ export default {
         // Leave keep/element to core (a non-zero line is already kept).
         return undefined
       },
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{elems: (Element|null)[]}} */ opts) {
         hideHoverHighlight()
         if (!getBoundConnectors().length) return
 
@@ -911,7 +918,7 @@ export default {
           }
         }
 
-        updateConnectors(selElems.filter(Boolean))
+        updateConnectors(/** @type {Element[]} */ (selElems.filter(Boolean)))
       },
       // Fires on every mousemove while elements are being dragged/resized.
       // Primary hook for keeping bound lines in sync during interactive drag,
@@ -925,7 +932,7 @@ export default {
         const elems = opts.elems?.filter(Boolean) || []
         if (elems.length) updateConnectors(elems)
       },
-      elementChanged (opts) {
+      elementChanged (/** @type {{elems?: (Element|null)[]}} */ opts) {
         // 'changed' can carry several elements at once (a multi-element
         // drag commit's `svgCanvas.call('changed', selectedElements)`, a
         // multi-delete's `svgCanvas.call('changed', selectedCopy)`, …), not
@@ -935,10 +942,11 @@ export default {
         // bulk operation -- e.g. drag two connected boxes together and
         // release: only the first box's line ends up back where it should.
         for (const elem of opts.elems?.filter(Boolean) || []) {
-          handleOneChangedElement(elem)
+          handleOneChangedElement(/** @type {Element} */ (elem))
         }
       },
-      IDsUpdated (input) {
+      IDsUpdated (/** @type {{elems: {attr: Record<string, string>}[], changes: Record<string, string>}} */ input) {
+        /** @type {string[]} */
         const remove = []
         input.elems.forEach(function (elem) {
           // Legacy both-ends connector attribute.

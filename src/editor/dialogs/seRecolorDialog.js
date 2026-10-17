@@ -74,15 +74,28 @@ template.innerHTML = `
  * nothing about the drawing: `ext-recolor` previews each `onChange` plan and commits or rolls it back.
  */
 export class SeRecolorDialog extends HTMLElement {
+  /** @type {RecolorOptions|null} */ _opts
+  /** @type {import('@svgedit/svgcanvas/core/recolor.ts').Row[]} */ _rows
+  /** @type {string[]} the new colour of each row before the hue turn */ _base
+  /** @type {boolean} */ _finished
   constructor () {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    const $ = (/** @type {string} */ id) => this._shadowRoot.querySelector('#' + id)
+    const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (this._shadowRoot.querySelector('#' + id))
     this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('dialog'))
-    for (const id of ['title', 'method', 'harmony', 'reduce', 'hue_in', 'hue_out', 'white', 'black', 'grays', 'rows', 'cancel', 'ok']) {
-      this['$' + id] = $('rc_' + id)
-    }
+    this.$title = $('rc_title')
+    this.$method = /** @type {HTMLSelectElement} */ ($('rc_method'))
+    this.$harmony = /** @type {HTMLSelectElement} */ ($('rc_harmony'))
+    this.$reduce = /** @type {HTMLInputElement} */ ($('rc_reduce'))
+    this.$hue_in = /** @type {HTMLInputElement} */ ($('rc_hue_in'))
+    this.$hue_out = $('rc_hue_out')
+    this.$white = /** @type {HTMLInputElement} */ ($('rc_white'))
+    this.$black = /** @type {HTMLInputElement} */ ($('rc_black'))
+    this.$grays = /** @type {HTMLInputElement} */ ($('rc_grays'))
+    this.$rows = $('rc_rows')
+    this.$cancel = /** @type {HTMLButtonElement} */ ($('rc_cancel'))
+    this.$ok = /** @type {HTMLButtonElement} */ ($('rc_ok'))
     this.$ = $
     this._opts = null
     this._rows = []
@@ -162,8 +175,10 @@ export class SeRecolorDialog extends HTMLElement {
 
   /** The rows, and the new colours they start with, follow the options. */
   _optionsChanged () {
+    const opts = this._opts
+    if (!opts) return
     const reduce = Math.max(0, Math.floor(Number(this.$reduce.value) || 0))
-    this._rows = buildRows(this._opts.uses, {
+    this._rows = buildRows(opts.uses, {
       preserve: { white: this.$white.checked, black: this.$black.checked, grays: this.$grays.checked },
       reduce
     })
@@ -191,7 +206,8 @@ export class SeRecolorDialog extends HTMLElement {
   }
 
   _renderRows () {
-    const labels = this._opts.labels
+    const labels = this._opts?.labels
+    if (!labels) return
     if (!this._rows.length) {
       const empty = document.createElement('div')
       empty.id = 'rc_empty'
@@ -240,11 +256,12 @@ export class SeRecolorDialog extends HTMLElement {
   _emit () {
     const targets = this._targets()
     this.$rows.querySelectorAll('.rc_to').forEach((input, i) => {
-      input.value = targets[i]
-      input.parentElement.querySelector('.rc_hex').textContent = targets[i]
+      /** @type {HTMLInputElement} */ (input).value = targets[i]
+      const hex = input.parentElement?.querySelector('.rc_hex')
+      if (hex) hex.textContent = targets[i]
     })
     this.$ok.disabled = !this._rows.length
-    this._opts.onChange(this._plan())
+    this._opts?.onChange(this._plan())
   }
 }
 
