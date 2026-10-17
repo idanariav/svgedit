@@ -76,11 +76,11 @@ const unlinkable = (editor) => {
 /** @param {any} editor @returns {true|string} Crop needs one image the canvas can crop */
 const croppable = (editor) => {
   const list = selectedOf(editor)
-  return list.length === 1 && editor.svgCanvas.isImageCropEligible(list[0]) ? true : 'Select one image'
+  return list.length === 1 && editor.svgCanvas.imageCrop.isEligible(list[0]) ? true : 'Select one image'
 }
 
 /** @param {any} editor @returns {true|string} Apply / Cancel exist only while a crop session is open */
-const cropping = (editor) => editor.svgCanvas.isImageCropping() ? true : 'Start cropping an image first'
+const cropping = (editor) => editor.svgCanvas.imageCrop.isCropping() ? true : 'Start cropping an image first'
 
 /** @param {any} editor @returns {true|string} Trace needs one selected image */
 const traceable = (editor) => {
@@ -266,7 +266,7 @@ export const registerPanelCommands = (commands) => {
     group: 'Tools',
     pd: true,
     enabled: cropping,
-    run: (editor) => editor.svgCanvas.cancelImageCrop()
+    run: (editor) => editor.svgCanvas.imageCrop.cancel()
   })
   for (const [id, value] of TEXT_DECORATIONS) {
     commands.register({

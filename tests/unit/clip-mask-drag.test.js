@@ -1,6 +1,5 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
-import { init as initClipMask } from '../../packages/svgcanvas/core/clip-mask.ts'
 
 // Regression test for a bug where dragging an element with a clip-path (or
 // mask) baked the move into its x/y geometry via recalculateDimensions() ->
@@ -47,7 +46,6 @@ describe('dragging a clipped/masked element (event-select.js up handler)', () =>
       initTool: 'select',
       wireframe: false
     })
-    initClipMask(svgCanvas)
     up = initEventSelect(svgCanvas).up
   }
 
@@ -87,7 +85,7 @@ describe('dragging a clipped/masked element (event-select.js up handler)', () =>
       attr: { id: 'top', x: 20, y: 20, width: 150, height: 150, fill: '#f00' }
     })
     svgCanvas.selectOnly([bottom, top], true)
-    svgCanvas.setClip()
+    svgCanvas.clipMask.setClip()
 
     const clipRef = top.getAttribute('clip-path')
     expect(clipRef).toMatch(/^url\(#/)
@@ -116,7 +114,7 @@ describe('dragging a clipped/masked element (event-select.js up handler)', () =>
       attr: { id: 'top-m', x: 20, y: 20, width: 150, height: 150, fill: '#f00' }
     })
     svgCanvas.selectOnly([bottom, top], true)
-    svgCanvas.setMask()
+    svgCanvas.clipMask.setMask()
 
     const maskRef = top.getAttribute('mask')
     expect(maskRef).toMatch(/^url\(#/)
@@ -182,7 +180,6 @@ describe('setSvgString() id-assignment does not reach into <defs>', () => {
       initTool: 'select',
       wireframe: false
     })
-    initClipMask(svgCanvas)
   })
 
   afterEach(() => {
@@ -199,7 +196,7 @@ describe('setSvgString() id-assignment does not reach into <defs>', () => {
       attr: { id: 'top', x: 20, y: 20, width: 150, height: 150, fill: '#f00' }
     })
     svgCanvas.selectOnly([bottom, top], true)
-    svgCanvas.setClip()
+    svgCanvas.clipMask.setClip()
 
     // Save -> reload -> save -> reload, mirroring closing and reopening the
     // file (twice, since the original bug only showed up on the 2nd load).
@@ -210,5 +207,23 @@ describe('setSvgString() id-assignment does not reach into <defs>', () => {
     expect(clipPath).toBeTruthy()
     const silhouette = clipPath.firstElementChild
     expect(silhouette.hasAttribute('id')).toBe(false)
+  })
+})
+
+describe('svgCanvas.clipMask (service)', () => {
+  it('is one member per canvas, with no flat setClip / setMask / releaseClipMask / setFeather / getFeather left on it', () => {
+    const a = new SvgCanvas(document.createElement('div'), { dimensions: [640, 480], initFill: { color: 'FF0000', opacity: 1 }, initStroke: { width: 5, color: '000000', opacity: 1 }, initOpacity: 1, imgPath: '', extensions: [], initTool: 'select' })
+    const b = new SvgCanvas(document.createElement('div'), { dimensions: [640, 480], initFill: { color: 'FF0000', opacity: 1 }, initStroke: { width: 5, color: '000000', opacity: 1 }, initOpacity: 1, imgPath: '', extensions: [], initTool: 'select' })
+    expect(Object.keys(a.clipMask).sort()).toEqual(['getFeather', 'releaseClipMask', 'setClip', 'setFeather', 'setMask'])
+    expect(a.clipMask).not.toBe(b.clipMask)
+    for (const name of ['setClip', 'setMask', 'releaseClipMask', 'setFeather', 'getFeather']) expect(a[name]).toBeUndefined()
+  })
+
+  it('getFeather reads data-feather as a signed number, 0 when absent', () => {
+    const c = new SvgCanvas(document.createElement('div'), { dimensions: [640, 480], initFill: { color: 'FF0000', opacity: 1 }, initStroke: { width: 5, color: '000000', opacity: 1 }, initOpacity: 1, imgPath: '', extensions: [], initTool: 'select' })
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    expect(c.clipMask.getFeather(el)).toBe(0)
+    el.setAttribute('data-feather', '-4')
+    expect(c.clipMask.getFeather(el)).toBe(-4)
   })
 })

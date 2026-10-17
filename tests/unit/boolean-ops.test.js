@@ -142,3 +142,15 @@ describe('boolean-ops', function () {
     })
   })
 })
+
+describe('svgCanvas.booleanOps (service)', () => {
+  it('is one member per canvas, with the five operations and no flat boolean* members left on it', async () => {
+    const { default: SvgCanvas } = await import('../../packages/svgcanvas/svgcanvas.ts')
+    const config = { dimensions: [640, 480], initFill: { color: 'FF0000', opacity: 1 }, initStroke: { width: 5, color: '000000', opacity: 1 }, initOpacity: 1, imgPath: '', extensions: [], initTool: 'select' }
+    const a = new SvgCanvas(document.createElement('div'), config)
+    const b = new SvgCanvas(document.createElement('div'), config)
+    expect(Object.keys(a.booleanOps).sort()).toEqual(['divide', 'exclude', 'intersect', 'subtract', 'union'])
+    expect(a.booleanOps).not.toBe(b.booleanOps)
+    for (const name of ['booleanUnion', 'booleanIntersect', 'booleanSubtract', 'booleanExclude', 'booleanDivide']) expect(a[name]).toBeUndefined()
+  })
+})

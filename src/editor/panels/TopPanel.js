@@ -488,63 +488,63 @@ class TopPanel {
    * @returns {void}
    */
   clickBoolUnion () {
-    this.editor.svgCanvas.booleanUnion()
+    this.editor.svgCanvas.booleanOps.union()
   }
 
   /**
    * @returns {void}
    */
   clickBoolIntersect () {
-    this.editor.svgCanvas.booleanIntersect()
+    this.editor.svgCanvas.booleanOps.intersect()
   }
 
   /**
    * @returns {void}
    */
   clickBoolSubtract () {
-    this.editor.svgCanvas.booleanSubtract()
+    this.editor.svgCanvas.booleanOps.subtract()
   }
 
   /**
    * @returns {void}
    */
   clickBoolExclude () {
-    this.editor.svgCanvas.booleanExclude()
+    this.editor.svgCanvas.booleanOps.exclude()
   }
 
   /**
    * @returns {void}
    */
   clickBoolDivide () {
-    this.editor.svgCanvas.booleanDivide()
+    this.editor.svgCanvas.booleanOps.divide()
   }
 
   /**
    * @returns {void}
    */
   clickClipSet () {
-    this.editor.svgCanvas.setClip()
+    this.editor.svgCanvas.clipMask.setClip()
   }
 
   /**
    * @returns {void}
    */
   clickMaskSet () {
-    this.editor.svgCanvas.setMask()
+    this.editor.svgCanvas.clipMask.setMask()
   }
 
   /**
    * @returns {void}
    */
   clickClipRelease () {
-    this.editor.svgCanvas.releaseClipMask()
+    this.editor.svgCanvas.clipMask.releaseClipMask()
   }
 
   /**
    * @returns {void}
    */
   changeFeather (e) {
-    this.editor.svgCanvas.setFeather(Number(e.target.value))
+    this.editor.svgCanvas.clipMask.setFeather(Number(e.target.value))
   }
 
   /**
@@ -984,8 +984,8 @@ class TopPanel {
    */
   clickImageCrop () {
     const [elem] = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
-    if (!this.editor.svgCanvas.isImageCropEligible(elem)) return
-    this.editor.svgCanvas.startImageCrop(elem)
+    if (!this.editor.svgCanvas.imageCrop.isEligible(elem)) return
+    this.editor.svgCanvas.imageCrop.start(elem)
   }
 
   /**
@@ -995,7 +995,7 @@ class TopPanel {
    */
   async applyImageCrop () {
     try {
-      await this.editor.svgCanvas.applyImageCrop()
+      await this.editor.svgCanvas.imageCrop.apply()
     } catch (err) {
       logError('Image crop failed', err, 'TopPanel')
       seAlert(this.editor.i18next.t('tools.image_crop_error'))

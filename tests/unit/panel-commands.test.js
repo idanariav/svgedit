@@ -16,11 +16,13 @@ describe('panel commands', () => {
         getColor: (k) => state[k],
         getSelectedElements: () => state.selected,
         hasVisibleStroke: (el) => el.getAttribute('stroke') !== 'none',
-        cancelImageCrop: vi.fn(),
+        imageCrop: {
+          cancel: vi.fn(),
+          isEligible: (el) => el.tagName === 'image',
+          isCropping: () => state.cropping
+        },
         getCurrentDrawing: () => ({ getNumLayers: () => state.layers }),
         indexCurrentLayer: () => state.layer,
-        isImageCropEligible: (el) => el.tagName === 'image',
-        isImageCropping: () => state.cropping
       },
       leftPanel: spyOn('clickSelect', 'clickFHPath', 'clickText', 'clickPath', 'clickLine', 'clickRect', 'clickEllipse', 'clickImage'),
       topPanel: {

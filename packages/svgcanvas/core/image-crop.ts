@@ -84,9 +84,24 @@ const handlePoint = (rect: Rect, dir: string): { x: number, y: number } => {
   }
 }
 
-export const init = (canvas: SvgCanvas): void => {
-  const svgCanvas = canvas
+/** The image-crop session of one canvas (`svgCanvas.imageCrop`): an overlay on one `<image>` with draggable handles. */
+export interface ImageCrop {
+  /** Open the overlay on an eligible image and enter the `imagecrop` mode (a no-op for an ineligible one). */
+  start (imageElem: Element): void
+  /** Bake the crop into the image as one undo step; a rect left unchanged just cancels. Rejects when the source cannot be loaded. */
+  apply (): Promise<void>
+  /** Drop the overlay without touching history. */
+  cancel (): void
+  /** Whether an image can be cropped (a plain imported image, not vault-linked or transformed). */
+  isEligible (elem: Element | null | undefined): boolean
+  /** Whether a crop session is open. */
+  isCropping (): boolean
+}
 
+/** What the crop session reads from its canvas. */
+type Host = Pick<SvgCanvas, 'history' | 'destroyAbort' | 'selectorManager' | 'getMode' | 'setMode' | 'getZoom' | 'getSvgContent' | 'call' | 'addCommandToHistory'>
+
+export const createImageCrop = (svgCanvas: Host): ImageCrop => {
   interface Session {
     imageElem: Element
     origBounds: Rect
@@ -313,9 +328,11 @@ export const init = (canvas: SvgCanvas): void => {
     if (evt.key === 'Escape' && svgCanvas.getMode() === 'imagecrop') cancelImageCrop()
   }, { signal: svgCanvas.destroyAbort.signal })
 
-  svgCanvas.startImageCrop = startImageCrop
-  svgCanvas.applyImageCrop = applyImageCrop
-  svgCanvas.cancelImageCrop = cancelImageCrop
-  svgCanvas.isImageCropEligible = isCropEligible
-  svgCanvas.isImageCropping = () => session !== null
+  return {
+    start: startImageCrop,
+    apply: applyImageCrop,
+    cancel: cancelImageCrop,
+    isEligible: isCropEligible,
+    isCropping: () => session !== null
+  }
 }

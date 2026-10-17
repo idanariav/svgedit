@@ -61,7 +61,7 @@ const makeTopPanel = (container, { elem = null, multiselected = false, selectedE
       getCurrentDrawing: () => ({ getCurrentLayerName: () => 'Layer 1' }),
       getMode: () => 'select',
       getSelectedElements: () => selectedElements,
-      isImageCropEligible,
+      imageCrop: { isEligible: isImageCropEligible },
       hasVisibleStroke: () => false,
       undoMgr: { getUndoStackSize: () => 0, getRedoStackSize: () => 0 }
     }

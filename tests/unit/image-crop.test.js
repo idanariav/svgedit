@@ -5,7 +5,7 @@ import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import {
-  init as initImageCrop,
+  createImageCrop,
   clampCropRect,
   computeSourceRect,
   isCropEligible
@@ -91,6 +91,7 @@ describe('image-crop: pure geometry', () => {
 describe('image-crop: apply/cancel', () => {
   /** @type {any} */
   let canvas
+  let imageCrop
   /** @type {any[]} */
   let historyStack
   /** @type {SVGSVGElement} */
@@ -124,7 +125,7 @@ describe('image-crop: apply/cancel', () => {
         historyStack.push(cmd)
       }
     }
-    initImageCrop(canvas)
+    imageCrop = createImageCrop(canvas)
 
     // Stub Image to resolve immediately with a fixed natural size.
     originalImage = globalThis.Image
@@ -172,7 +173,7 @@ describe('image-crop: apply/cancel', () => {
 
   it('startImageCrop seeds an overlay and enters imagecrop mode', () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
+    imageCrop.start(image)
     expect(canvas.getMode()).toBe('imagecrop')
     expect(svgContent.querySelector('#se-imagecrop-overlay')).not.toBeNull()
   })
@@ -180,15 +181,15 @@ describe('image-crop: apply/cancel', () => {
   it('startImageCrop is a no-op for an ineligible image', () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
     image.setAttribute('data-vault-link', 'notes/foo.png')
-    canvas.startImageCrop(image)
+    imageCrop.start(image)
     expect(canvas.getMode()).toBe('select')
     expect(svgContent.querySelector('#se-imagecrop-overlay')).toBeNull()
   })
 
   it('cancelImageCrop removes the overlay without touching history', () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
-    canvas.cancelImageCrop()
+    imageCrop.start(image)
+    imageCrop.cancel()
     expect(canvas.getMode()).toBe('select')
     expect(svgContent.querySelector('#se-imagecrop-overlay')).toBeNull()
     expect(historyStack).toHaveLength(0)
@@ -196,15 +197,15 @@ describe('image-crop: apply/cancel', () => {
 
   it('applyImageCrop is a no-op (cancels) when the crop rect is unchanged', async () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
-    await canvas.applyImageCrop()
+    imageCrop.start(image)
+    await imageCrop.apply()
     expect(historyStack).toHaveLength(0)
     expect(canvas.getMode()).toBe('select')
   })
 
   it('dragging the se handle then applying resamples just the cropped region into one undoable BatchCommand', async () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
+    imageCrop.start(image)
 
     const overlay = svgContent.querySelector('#se-imagecrop-overlay')
     // Identity CTM so clientX/clientY map 1:1 onto local (image) coordinates.
@@ -218,7 +219,7 @@ describe('image-crop: apply/cancel', () => {
     document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 60, clientY: 30 }))
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 60, clientY: 30 }))
 
-    await canvas.applyImageCrop()
+    await imageCrop.apply()
 
     expect(historyStack).toHaveLength(1)
     expect(image.getAttribute('x')).toBe('0')
@@ -249,7 +250,7 @@ describe('image-crop: apply/cancel', () => {
     // in-flight apply must not resurrect it by mutating the image and
     // pushing an undo command for a crop the user already backed out of.
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
+    imageCrop.start(image)
 
     const overlay = svgContent.querySelector('#se-imagecrop-overlay')
     const identityCTM = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse () { return identityCTM } }
@@ -259,8 +260,8 @@ describe('image-crop: apply/cancel', () => {
     document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 60, clientY: 30 }))
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 60, clientY: 30 }))
 
-    const applyPromise = canvas.applyImageCrop() // starts, suspends on the (pending) image load
-    canvas.cancelImageCrop() // Escape, while the image is still "loading"
+    const applyPromise = imageCrop.apply() // starts, suspends on the (pending) image load
+    imageCrop.cancel() // Escape, while the image is still "loading"
     await applyPromise
 
     expect(historyStack).toHaveLength(0)
@@ -272,7 +273,7 @@ describe('image-crop: apply/cancel', () => {
 
   it('applyImageCrop rejects and leaves the element untouched when the source cannot be loaded', async () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
-    canvas.startImageCrop(image)
+    imageCrop.start(image)
 
     const overlay = svgContent.querySelector('#se-imagecrop-overlay')
     const identityCTM = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse () { return identityCTM } }
@@ -294,7 +295,7 @@ describe('image-crop: apply/cancel', () => {
       }
     }
 
-    await expect(canvas.applyImageCrop()).rejects.toThrow()
+    await expect(imageCrop.apply()).rejects.toThrow()
     expect(historyStack).toHaveLength(0)
     expect(image.getAttribute('href')).toBe('data:image/png;base64,AAA')
     expect(image.getAttribute('width')).toBe('100')
@@ -302,7 +303,7 @@ describe('image-crop: apply/cancel', () => {
 
   it('stops listening for Escape once the canvas is destroyed', () => {
     const esc = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    const start = () => canvas.startImageCrop(
+    const start = () => imageCrop.start(
       makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
     )
     start()

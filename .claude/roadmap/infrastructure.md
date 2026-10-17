@@ -22,7 +22,7 @@ Not started. Each is built with the first feature that needs it; do not build th
   previews: ext-curvature, ext-cutter (both already ephemeral).
 - **Precise `enabled` on commands.** Done for everything with a selection, clipboard or layer precondition
   (`commandGates.js`: the shortcut table, the panel commands, paste, the layer buttons; path, text and Convert to Path
-  had theirs earlier; crop Apply / Cancel follow `svgCanvas.isImageCropping()`, Remove glow / outline the selection's
+  had theirs earlier; crop Apply / Cancel follow `svgCanvas.imageCrop.isCropping()`, Remove glow / outline the selection's
   effects, `corner_kind_*` a shape with corners); new commands get a gate from day one. Left "always": the
   drawing-tool mode commands (switching tools is always allowed) and extension commands that register without a
   check. A hotkey on a gated command is inert and no longer

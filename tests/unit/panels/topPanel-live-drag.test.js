@@ -54,7 +54,7 @@ const makeTopPanel = (container, { elem = null, getStrokedBBox = () => null } = 
       getSelectedElements: () => (elem ? [elem] : []),
       getStrokedBBox,
       hasVisibleStroke: () => false,
-      isImageCropEligible: () => false,
+      imageCrop: { isEligible: () => false },
       undoMgr: { getUndoStackSize: () => 0, getRedoStackSize: () => 0 }
     }
   }

@@ -68,7 +68,7 @@ import { init as coordsInit } from './core/coords.ts'
 import { init as recalculateInit } from './core/recalculate.ts'
 import { init as selectInit } from './core/select.ts'
 import { clearSvgContentElement } from './core/clear.ts'
-import { init as booleanOpsInit } from './core/boolean-ops.ts'
+import { createBooleanOps } from './core/boolean-ops.ts'
 import { init as pathOffsetInit } from './core/path-offset.ts'
 import { init as pathSimplifyInit } from './core/path-simplify.ts'
 import { init as cornerRadiusInit } from './core/corner-radius.ts'
@@ -89,10 +89,10 @@ import { init as warpInit } from './core/warp.ts'
 import { init as distortInit } from './core/distort.ts'
 import { init as textPathInit } from './core/text-path.ts'
 import { init as shapeBuilderInit } from './core/shape-builder.ts'
-import { init as clipMaskInit } from './core/clip-mask.ts'
+import { createClipMask } from './core/clip-mask.ts'
 import { init as cutterInit } from './core/cutter.ts'
 import { init as segmentInit } from './core/segment.ts'
-import { init as imageCropInit } from './core/image-crop.ts'
+import { createImageCrop } from './core/image-crop.ts'
 import {
   getClosest,
   getParents,
@@ -497,7 +497,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
 
     runGuardedInit(this, 'blur', blurInit, initGuardRegistry)
     runGuardedInit(this, 'selectedElem', selectedElemInit, initGuardRegistry)
-    runGuardedInit(this, 'booleanOps', booleanOpsInit, initGuardRegistry)
+    this.booleanOps = createBooleanOps(this)
     runGuardedInit(this, 'pathOffset', pathOffsetInit, initGuardRegistry)
     runGuardedInit(this, 'pathSimplify', pathSimplifyInit, initGuardRegistry)
     runGuardedInit(this, 'liveStack', liveStackInit, initGuardRegistry)
@@ -507,6 +507,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     runGuardedInit(this, 'blend', blendInit, initGuardRegistry)
     runGuardedInit(this, 'objectState', objectStateInit, initGuardRegistry)
     this.drawSnap = createDrawSnap(this)
+    this.clipMask = createClipMask(this)
     runGuardedInit(this, 'guides', guidesInit, initGuardRegistry)
     runGuardedInit(this, 'dashFit', dashFitInit, initGuardRegistry)
     runGuardedInit(this, 'arrowAlign', arrowAlignInit, initGuardRegistry)
@@ -517,10 +518,9 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     runGuardedInit(this, 'distort', distortInit, initGuardRegistry)
     runGuardedInit(this, 'textPath', textPathInit, initGuardRegistry)
     runGuardedInit(this, 'shapeBuilder', shapeBuilderInit, initGuardRegistry)
-    runGuardedInit(this, 'clipMask', clipMaskInit, initGuardRegistry)
     runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
     runGuardedInit(this, 'segment', segmentInit, initGuardRegistry)
-    runGuardedInit(this, 'imageCrop', imageCropInit, initGuardRegistry)
+    this.imageCrop = createImageCrop(this)
 
     /**
      * Transfers sessionStorage from one tab to another.

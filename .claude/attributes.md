@@ -314,7 +314,7 @@ Clone, Delete, Group, Hyperlink, Align L/C/R/T/M/B, Distribute H/V, Boolean ops 
 | `clipmask_feather` | `data-feather` on the element + inline `filter:blur()` on the mask silhouette (negative also sets a white stroke band + grey fill) | Right panel `#clipmask_panel`; −50…50; auto-converts a clip to a mask |
 | `clipmask_release` | removes `clip-path`/`mask` and discards the clone definition | Right panel `#clipmask_panel`; section hidden unless the element has a `clip-path`/`mask` attr |
 
-These are **action buttons**, not `attrChanger`-driven inputs — they call `svgCanvas.setClip()` / `setMask()` / `releaseClipMask()` directly.
+These are **action buttons**, not `attrChanger`-driven inputs — they call `svgCanvas.clipMask.setClip()` / `setMask()` / `releaseClipMask()` directly.
 
 ---
 

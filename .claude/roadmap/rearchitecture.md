@@ -194,14 +194,17 @@ a while). Rules that made it work:
 - A stateless module needs no service: export the functions, take `host` as the first argument (`clear.ts`'s
   `clearSvgContentElement(host)` and `sanitize.js`'s `sanitizeSvg(host, node)` went this way; their two members left
   `svgcanvas-members.d.ts`).
-**Which members move and which stay (2026-10-16).** Move a member when its callers are core modules, built-in extensions
-and unit tests of the module itself (they import the function and pass the canvas). Keep it on the canvas, typed
-properly, when editor panels or components call it or their unit tests mock it through `svgCanvas` (`offsetPath`,
-`strokeToPath`, `hasVisibleStroke`, `segmentSelection`, `getSegmentParams`, `cutShapes`: the mock canvas is how those tests
-isolate the UI, and the e2e specs use `window.svgEditor.svgCanvas.x` as their handle). Those members are the facade; the
-thin `canvas.x = (...a) => x(canvas, ...a)` shims in `cutter.js` and `segment.js` stay until the facade is written
-down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentElement`, `sanitizeSvg`, `findSameAs`,
-`selectSameAs`, `splitIntoGrid`, `transformEach`. The gesture state that `event-*` modules parked on the canvas
+**Which members move and which stay (2026-10-17).** A module with a handful of related canvas members becomes a service:
+`createX(host)` returns one object and the canvas holds it as one member (`svgCanvas.clipMask.setClip()`), with no flat
+compatibility members. Editor panels and their unit-test mocks are no reason to keep a member flat any more:
+`npm run check-canvas-calls` fails on a stale editor call, and a mock canvas gets the nested object (mechanical).
+Members whose callers are only core modules and the module's own tests take the plain-function route (export the function,
+pass the host). What still stays flat, typed properly, is what the e2e specs and hosts use as their handle
+(`window.svgEditor.svgCanvas.x`: `offsetPath`, `strokeToPath`, `hasVisibleStroke`, `segmentSelection`, `getSegmentParams`,
+`cutShapes`); the thin `canvas.x = (...a) => x(canvas, ...a)` shims in `cutter.js` and `segment.js` stay until the facade
+is written down as one typed object. Moved so far: `drawSnap`, `clipMask` (5 members), `booleanOps` (5) and `imageCrop` (5)
+as services, and `clearSvgContentElement`, `sanitizeSvg`, `findSameAs`, `selectSameAs`, `splitIntoGrid`, `transformEach`
+as functions. The gesture state that `event-*` modules parked on the canvas
 (`groupRotateCenter`, `dragStartTransforms`, `spaceKey`, `addedNew`, …: fourteen loose members) is now one object,
 `svgCanvas.gesture` (`core/gesture-state.ts`: `GestureState` and `createGestureState()`, every field at rest from the
 constructor, so no reader sees `undefined`); unit-test canvases that run the event modules get

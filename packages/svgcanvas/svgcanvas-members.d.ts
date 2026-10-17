@@ -63,6 +63,12 @@ export type { ToolMods, ToolEvent, ToolContext, ToolOption, ToolDef } from './co
 export interface AttachedMembers {
   /** Snapping of the point a drawing tool places (`core/draw-snap.ts`). */
   drawSnap: import('./core/draw-snap.ts').DrawSnap
+  /** Clip / mask / feather of the selection (`core/clip-mask.ts`). */
+  clipMask: import('./core/clip-mask.ts').ClipMask
+  /** Union / intersect / subtract / exclude / divide of two selected shapes (`core/boolean-ops.ts`). */
+  booleanOps: import('./core/boolean-ops.ts').BooleanOps
+  /** The image-crop session (`core/image-crop.ts`). */
+  imageCrop: import('./core/image-crop.ts').ImageCrop
   /** Pointer-gesture state (rotate / resize / drag starts, alt-clone, pending new element, space-pan). */
   gesture: import('./core/gesture-state.ts').GestureState
   /** Remove the canvas's global listeners; call before discarding the instance. */
@@ -375,8 +381,6 @@ export interface AttachedMembers {
   getVisibleElements(parentElement?: Element): Element[]
   getRefElem(attrVal: string | null): Element | null
   setBlur(val: number, complete?: boolean): void
-  setFeather(px: number): void
-  releaseClipMask(): void
   makeHyperlink(url: string): void
   removeHyperlink(): void
   setLinkURL(val: string): void
@@ -460,8 +464,6 @@ export interface AttachedMembers {
   expandLiveEffects(): Element | null
 
   // Image crop
-  applyImageCrop(): Promise<void>
-  cancelImageCrop(): void
 
   // Layers / document
   setLayerComment(layerName: string, comment: boolean): void
@@ -529,14 +531,6 @@ export interface AttachedMembers {
   rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: RasterExportOptions): Promise<RasterExportResult>
 
   // Clip / mask / boolean / segment / taper / crop
-  setClip(): void
-  setMask(): void
-  getFeather(elem: Element): number
-  booleanUnion(): void
-  booleanSubtract(): void
-  booleanIntersect(): void
-  booleanExclude(): void
-  booleanDivide(): void
   canSegment(elem: Element): boolean
   segmentSelection(params: SegmentParams): void
   getSegmentParams(): SegmentParams | null
@@ -545,7 +539,4 @@ export interface AttachedMembers {
   canTextOnPath(): boolean
   simplifyPathD(d: string, tolerance?: number): string | null
   cutShapes(points: Array<{ x: number, y: number }>): void
-  startImageCrop(imageElem: Element): void
-  isImageCropEligible(elem: Element): boolean
-  isImageCropping(): boolean
 }

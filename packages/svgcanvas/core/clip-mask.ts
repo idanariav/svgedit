@@ -103,14 +103,28 @@ const getFeather = (elem: Element | null | undefined): number => {
   return v ? Number(v) : 0
 }
 
+/** What the clip / mask operations read from their canvas. */
+type Host = Pick<SvgCanvas, 'getElement' | 'getSvgContent' | 'getNextId' | 'addSVGElementsFromJson' | 'findDefs' | 'history' | 'clearSelection' | 'addCommandToHistory' | 'selectOnly' | 'getSelectedElements'>
+
+/** The clip / mask / feather operations of one canvas (`svgCanvas.clipMask`). */
+export interface ClipMask {
+  /** Confine the top of two selected shapes to the silhouette of the bottom one (a `<clipPath>`). */
+  setClip (): void
+  /** Same, with a `<mask>` (the silhouette can be feathered). */
+  setMask (): void
+  /** Drop the clip / mask reference of the selected element and its definition. */
+  releaseClipMask (): void
+  /** Feather the confinement edge of the selected clipped / masked element; 0 removes it. */
+  setFeather (px: number): void
+  /** Current (signed) feather amount of an element, or 0. */
+  getFeather (elem: Element): number
+}
+
 /**
- * Reentrant init: the canvas-dependent operations are created per SvgCanvas
- * instance, closed over its own `svgCanvas`, so several editors can coexist in
+ * The clip / mask operations of one canvas, closed over its own `svgCanvas`, so several editors can coexist in
  * one realm. The stateless helpers above are shared.
  */
-export const init = (canvas: SvgCanvas): void => {
-  const svgCanvas = canvas
-
+export const createClipMask = (svgCanvas: Host): ClipMask => {
   /**
    * The silhouette children of the element's mask, or [] if it has no mask.
    */
@@ -325,9 +339,11 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.selectOnly([elem], true)
   }
 
-  svgCanvas.setClip = () => performSet('clip')
-  svgCanvas.setMask = () => performSet('mask')
-  svgCanvas.releaseClipMask = releaseClipMask
-  svgCanvas.setFeather = setFeather
-  svgCanvas.getFeather = getFeather
+  return {
+    setClip: () => performSet('clip'),
+    setMask: () => performSet('mask'),
+    releaseClipMask,
+    setFeather,
+    getFeather
+  }
 }

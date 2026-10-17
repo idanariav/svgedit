@@ -258,11 +258,19 @@ const performBooleanOp = (type: 'union' | 'intersect' | 'subtract' | 'exclude' |
   canvas.selectOnly(newPaths, true)
 }
 
-export const init = (canvas: SvgCanvas): void => {
-  const svgCanvas = canvas
-  svgCanvas.booleanUnion = () => performBooleanOp('union', svgCanvas)
-  svgCanvas.booleanIntersect = () => performBooleanOp('intersect', svgCanvas)
-  svgCanvas.booleanSubtract = () => performBooleanOp('subtract', svgCanvas)
-  svgCanvas.booleanExclude = () => performBooleanOp('exclude', svgCanvas)
-  svgCanvas.booleanDivide = () => performBooleanOp('divide', svgCanvas)
+/** The boolean path operations of one canvas (`svgCanvas.booleanOps`); each acts on exactly two selected shapes. */
+export interface BooleanOps {
+  union (): void
+  intersect (): void
+  subtract (): void
+  exclude (): void
+  divide (): void
 }
+
+export const createBooleanOps = (svgCanvas: SvgCanvas): BooleanOps => ({
+  union: () => performBooleanOp('union', svgCanvas),
+  intersect: () => performBooleanOp('intersect', svgCanvas),
+  subtract: () => performBooleanOp('subtract', svgCanvas),
+  exclude: () => performBooleanOp('exclude', svgCanvas),
+  divide: () => performBooleanOp('divide', svgCanvas)
+})

@@ -77,7 +77,7 @@ export const updateContextPanel = (topPanel) => {
           topPanel.setSidepanelVisible('sidepanel_advanced', true)
           if (elem.getAttribute('clip-path') || elem.getAttribute('mask')) {
             topPanel.setSidepanelVisible('clipmask_panel', true)
-            $id('clipmask_feather').value = topPanel.editor.svgCanvas.getFeather(elem)
+            $id('clipmask_feather').value = topPanel.editor.svgCanvas.clipMask.getFeather(elem)
           }
           // Elements in this array already have coord fields
           const hasOwnCoords = ['line', 'circle', 'ellipse', 'polygon'].includes(elname) || isArcPath
@@ -228,7 +228,7 @@ export const updateContextPanel = (topPanel) => {
 
           if (tagName === 'image') {
             $id('tool_image_crop').style.display =
-              topPanel.editor.svgCanvas.isImageCropEligible(elem) ? '' : 'none'
+              topPanel.editor.svgCanvas.imageCrop.isEligible(elem) ? '' : 'none'
           }
 
           if (tagName === 'circle') {
