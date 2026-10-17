@@ -68,7 +68,6 @@ class Editor extends EditorStartup {
      */
     this.title = 'untitled.svg'
 
-    this.svgCanvas = null
     this.$click = $click
     this.isReady = false
     this.customExportImage = false
@@ -419,7 +418,7 @@ class Editor extends EditorStartup {
         editor.applyBackgroundState(prev.color, prev.url, editor.gradientElemFromXml(prev.gradient))
       })
     }
-    this.svgCanvas.undoMgr.addCommandToHistory(cmd)
+    this.svgCanvas.undoMgr.addCommandToHistory(/** @type {import('@svgedit/svgcanvas').HistoryCommand} */ (/** @type {unknown} */ (cmd)))
   }
 
   /**
@@ -712,7 +711,7 @@ class Editor extends EditorStartup {
       ['perElementUpdates', () => {
         elems.forEach((elem) => {
           const isSvgElem = elem?.tagName === 'svg'
-          if (isSvgElem || this.svgCanvas.isLayer(elem)) {
+          if (isSvgElem || this.svgCanvas.isLayer(/** @type {Element} */ (elem))) {
             this.rightPanel.populateLayers()
             // if the element changed was the svg, then it could be a resolution change
             if (isSvgElem) {
@@ -1079,7 +1078,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   selectNext () {
-    this.svgCanvas.cycleElement(1)
+    this.svgCanvas.cycleElement(true)
   }
 
   /**
@@ -1087,7 +1086,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   selectPrev () {
-    this.svgCanvas.cycleElement(0)
+    this.svgCanvas.cycleElement(false)
   }
 
   /**
@@ -1314,7 +1313,7 @@ class Editor extends EditorStartup {
   /**
    * Invokes the callbacks previous set by `svgthis.ready`
    * @function module:SVGthis.runCallbacks
-   * @returns {Promise<void>} Resolves to `undefined` if all callbacks succeeded and rejects otherwise
+   * @returns {Promise<unknown>} Resolves once the extension is added if all callbacks succeeded and rejects otherwise
    */
   async runCallbacks () {
     try {
@@ -1365,7 +1364,7 @@ class Editor extends EditorStartup {
    * @param {PlainObject} [opts={}] May contain properties: `cache`, `callback`
    * @param {boolean} [opts.cache]
    * @param {boolean} [opts.noAlert]
-   * @returns {Promise<void>} Resolves to `undefined` or rejects upon bad loading of
+   * @returns {Promise<unknown>} Resolves once the extension is added or rejects upon bad loading of
    *   the SVG (or upon failure to parse the loaded string) when `noAlert` is
    *   enabled
    */
@@ -1407,7 +1406,7 @@ class Editor extends EditorStartup {
    * @param {string} str The Data URI to base64-decode (if relevant) and load
    * @param {PlainObject} [opts={}]
    * @param {boolean} [opts.noAlert]
-   * @returns {Promise<void>} Resolves to `undefined` and rejects if loading SVG string fails and `noAlert` is enabled
+   * @returns {Promise<unknown>} Resolves once the extension is added and rejects if loading SVG string fails and `noAlert` is enabled
    */
   loadFromDataURI (str, { noAlert } = {}) {
     return this.ready(() => {
@@ -1435,7 +1434,7 @@ class Editor extends EditorStartup {
    * @param {module:svgcanvas.ExtensionInitCallback} initfn Config to be invoked on this module
    * @param {module:svgcanvas.ExtensionInitArgs} initArgs
    * @throws {Error} If called too early
-   * @returns {Promise<void>} Resolves to `undefined`
+   * @returns {Promise<unknown>} Resolves once the extension is added
    */
   addExtension (name, initfn, initArgs) {
     // Note that we don't want this on this.ready since some extensions

@@ -24,7 +24,7 @@ const loadExtensionTranslation = function (svgEditor) {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { ChangeElementCommand } = svgCanvas.history
     const addToHistory = (cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }

@@ -267,7 +267,9 @@ import `src/editor`, read `window.svgEditor` or define custom elements) and
 `check-ts-imports` (a module converted to `.ts` must be imported as `./x.ts`; `--fix` rewrites),
 `check-file-map` (every source file has a header comment, the generated map is current) and
 `typecheck` (`tsc` over the JSDoc- and TypeScript-typed modules, a strict config for the
-cleanest ones, and the host API conformance check).
+cleanest ones, and the host API conformance check) and `check-canvas-calls` (the editor and
+extensions' calls into `svgCanvas`, checked against the canvas types: a member that does not
+exist on `SvgCanvas`, or arguments its signature rejects; the rest of the editor is not typed yet).
 
 Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
 (`tests/e2e/fixtures.js`) and fails on structural corruption; opt out with

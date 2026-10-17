@@ -1521,8 +1521,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     }
   }
 
-  getColor (type: string) {
-    return (this.state.style.properties as unknown as Record<string, unknown>)[type]
+  getColor<K extends keyof StyleProps> (type: K): StyleProps[K] {
+    return this.state.style.properties[type]
   }
 
   /**

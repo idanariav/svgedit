@@ -78,6 +78,8 @@ class EditorStartup {
    *
    */
   constructor (div) {
+    /** @type {SvgCanvas} The canvas; created by `init()`, `null` before. */
+    this.svgCanvas = null
     this.extensionsAdded = false
     this.messageQueue = []
     // Document/window-level listeners this editor registers (modeChange, key
@@ -354,7 +356,7 @@ class EditorStartup {
     this.svgCanvas.bind('beforeClear', this.beforeClear.bind(this))
     this.svgCanvas.bind('afterClear', this.afterClear.bind(this))
 
-    this.svgCanvas.textActions.setInputElem($id('text'))
+    this.svgCanvas.textActions.setInputElem(/** @type {HTMLTextAreaElement} */ ($id('text')))
 
     const bkgdColor = this.configObj.pref('bkgd_color')
     if (bkgdColor === 'gradient') {
@@ -377,7 +379,7 @@ class EditorStartup {
       res.h = this.svgCanvas.convertUnit(res.h) + this.configObj.curConfig.baseUnit
     }
     $id('se-img-prop').setAttribute('dialog', 'close')
-    $id('se-img-prop').setAttribute('title', this.svgCanvas.getDocumentTitle())
+    $id('se-img-prop').setAttribute('title', String(this.svgCanvas.getDocumentTitle()))
     $id('se-img-prop').setAttribute('width', res.w)
     $id('se-img-prop').setAttribute('height', res.h)
     $id('se-img-prop').setAttribute('save', this.configObj.pref('img_save'))

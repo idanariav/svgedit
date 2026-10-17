@@ -37,7 +37,7 @@ const humanize = (key) => {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas

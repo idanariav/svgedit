@@ -147,6 +147,8 @@ parser, serializer, typed view); the typed features and the headless fixes follo
 
 ## R2. Canvas composition instead of attached members
 
+**Safety net (2026-10-17).** `npm run check-canvas-calls` (`scripts/check-canvas-calls.mjs`, `src/editor/tsconfig.canvas-calls.json`) runs `checkJs` over `src/editor` and fails on an error naming `SvgCanvas` or an argument error on a line that touches `svgCanvas`, so moving a member off the canvas is compiler-checked for the ~80 editor files and extensions that call it. The other ~1,700 `checkJs` errors in the editor (DOM typing: `Element.style`, `EventTarget.value`, …) are not gated; clearing them is the editor half of R3.
+
 **Status (2026-10-16).** Typed, not yet composed. The facade is fully typed except ten members (eight internal, two public, listed
 in `tests/unit/svgcanvas-facade.test.js`), and `tsc` checks every module against it. Members have moved off the canvas only for
 `drawSnap` (a service), `gesture` (state) and a handful of stateless helpers; the other ~530 are still attached, and the

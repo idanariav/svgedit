@@ -19,7 +19,7 @@ const name = 'fonts'
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const canv = svgEditor.svgCanvas
     const { $id } = canv
 

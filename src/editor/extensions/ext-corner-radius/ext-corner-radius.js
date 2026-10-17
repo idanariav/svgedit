@@ -39,7 +39,7 @@ const loadExtensionTranslation = function (svgEditor) {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
@@ -133,7 +133,7 @@ export default {
           // it (or none is cut yet): a mixed set keeps its per-corner kinds.
           const cut = elem ? svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0) : []
           const uniform = new Set(cut.map((c) => c.kind)).size <= 1
-          svgCanvas.applyCornerRadius(r, uniform ? { kind: curKind } : {})
+          svgCanvas.applyCornerRadius(r, uniform ? { kind: /** @type {'r' | 'i' | 'c'} */ (curKind) } : {})
         })
         for (const k of CORNER_KINDS) {
           svgEditor.commands.register({

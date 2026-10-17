@@ -32,7 +32,7 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 export default {
   name: 'markers',
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand, RemoveElementCommand, InsertElementCommand } = svgCanvas.history
     const { $id, addSVGElementsFromJson: addElem } = svgCanvas

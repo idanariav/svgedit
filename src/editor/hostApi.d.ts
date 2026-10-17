@@ -31,10 +31,10 @@ export interface HostCanvas {
   /** Whether the active drawing tool stays armed after each object. */
   getToolLocked(): boolean
   /**
-   * Attach a handler to a canvas event; returns the previous handler for that
-   * event, if any.
+   * Attach a handler to a canvas event. Handlers stack (the canvas is a native
+   * `EventTarget`); nothing is returned and a bound handler is never replaced.
    */
-  bind(event: string, cb: CanvasEventHandler): CanvasEventHandler | undefined
+  bind(event: string, cb: CanvasEventHandler): void
   /**
    * The single `CustomEvent` this canvas reuses for every `setMode()`
    * dispatch, so hosts can tell their own editor's `modeChange` events apart

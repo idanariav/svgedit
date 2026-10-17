@@ -84,7 +84,7 @@ const parseParams = (str) => {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
@@ -247,7 +247,7 @@ export default {
       // would decompose the rotates).
       for (const tf of transforms) {
         for (const src of sources) {
-          const clone = src.cloneNode(true)
+          const clone = /** @type {Element} */ (src.cloneNode(true))
           clone.removeAttribute(SOURCE_ATTR)
           clone.removeAttribute(PARAMS_ATTR)
           svgCanvas.remapElementIdsAndRefs([clone], () => svgCanvas.getNextId())

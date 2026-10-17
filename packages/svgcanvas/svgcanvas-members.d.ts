@@ -274,7 +274,7 @@ export interface AttachedMembers {
   setTextPerspectiveX(val: number): void
   setTextPerspectiveY(val: number): void
   /** Move the selected text-on-path start offset to `pct` percent. */
-  textPathOffset(pct: number): void
+  textPathOffset(pct?: number): number | null
   attachTextToPath(): void
 
   // Attributes / metadata
@@ -479,6 +479,13 @@ export interface AttachedMembers {
   SelectorClass: SelectorClassApi
   updateGroupSelector(elem?: Element): void
   getDisabledElems(): Element[]
+  // --- attached by built-in extensions (absent when the extension is left out) ---
+  setMirrorAxis?(axis: 'v' | 'h' | null): void
+  getMirrorAxis?(): 'v' | 'h' | null
+  mirrorSelection?(): void
+  repeatSelection?(params: Record<string, unknown>): void
+  getRepeatParams?(): Record<string, unknown> | null
+  armRepeatCenterPick?(onPicked: (x: number, y: number) => void): void
   /** The path being edited (`null` outside path editing). */
   getPathObj(): PathObject | null
   /** The host's debug-event sink, or null while the debug log is off. */

@@ -63,7 +63,7 @@ const loadExtensionTranslation = function (svgEditor) {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
 
@@ -211,7 +211,7 @@ export default {
      */
     const cut = (t, radius, corners, fresh) => {
       if (svgCanvas.getSelectedElements().filter(Boolean)[0] !== t.el) svgCanvas.selectOnly([t.el], true)
-      const el = svgCanvas.applyCornerRadius(radius, fresh ? { kind: preferredKind, corners } : { corners })
+      const el = svgCanvas.applyCornerRadius(radius, fresh ? { kind: /** @type {'r' | 'i' | 'c'} */ (preferredKind), corners } : { corners })
       if (el && el !== t.el) pickedEl = el // a rect became a path: the picks carry over
       return el || t.el
     }

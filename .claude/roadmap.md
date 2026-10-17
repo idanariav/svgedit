@@ -34,6 +34,9 @@ short: details belong in the area files.
 - **Persisted `se:` state** needs a round-trip fixture saved by the real tool (`tests/e2e/fixtures/roundtrip/`); keep
   the command sweep green, `SWEEP=full` before closing a larger batch.
 - **Agent docs:** say what a thing is and why, not how it got there (history is in git). Give every source file a header comment (the file map is generated from it, `npm run file-map`); regenerate `commands.md` when a command changes; put user-facing behaviour in `tools.md` and construction notes in `extensions.md`, one fact in one place.
+- **Calling the canvas from the editor:** `check-canvas-calls` (`pretest`) type-checks every `svgCanvas.x(…)` in `src/editor` against the
+  facade, so a new canvas member is declared in `svgcanvas-members.d.ts` (or exists on the class) before the editor calls it; an
+  extension reaches the editor through `const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))`.
 - **Layering:** `packages/svgcanvas` never imports `src/editor`, reads `window.svgEditor` or defines custom elements
   (`check-layers`).
 

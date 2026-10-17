@@ -148,7 +148,7 @@ const PAINTABLE_TAGS = new Set([
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const { $id } = svgCanvas

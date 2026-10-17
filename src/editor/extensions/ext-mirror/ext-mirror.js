@@ -51,7 +51,7 @@ const loadExtensionTranslation = function (svgEditor) {
 export default {
   name,
   async init () {
-    const svgEditor = this
+    const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id, NS, assignAttributes } = svgCanvas
@@ -112,7 +112,7 @@ export default {
       // elementChanged after it left the document; there is nothing to mirror then.
       if (!src.parentNode) return null
       const res = svgCanvas.getResolution()
-      const clone = src.cloneNode(true)
+      const clone = /** @type {Element} */ (src.cloneNode(true))
       svgCanvas.remapElementIdsAndRefs([clone], () => svgCanvas.getNextId())
       // Namespaced (not plain setAttribute) so svgToString's xmlns:se
       // detection picks it up — otherwise a saved drawing with only mirror
