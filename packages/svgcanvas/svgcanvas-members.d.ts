@@ -1,8 +1,8 @@
 /**
  * Members that core modules attach to a canvas at runtime (`svgCanvas.foo = …`
- * in `core/*.js`), so TypeScript can't see them on the class. Declared once
- * here: `svgcanvas.d.ts` merges it into the public class, and `svgcanvas.js`
- * extends it through its base-class type so `@ts-check` knows the surface.
+ * in `core/*.ts`), so TypeScript can't see them on the class. Declared once
+ * here: `svgcanvas.ts` extends it through its base-class type, so the class
+ * and every module typed against it know the surface.
  */
 import type { Config, SVGElementJSON, Resolution, BBox, UndoManager, HistoryCommand } from './svgcanvas.js'
 import type { ToolDef, ToolOption } from './core/tool-registry.ts'

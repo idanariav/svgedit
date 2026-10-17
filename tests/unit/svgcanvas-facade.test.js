@@ -4,7 +4,7 @@ import path from 'node:path'
 
 // The canvas's facade is what hosts, the editor and the extensions call through `svgCanvas`. A member in
 // svgcanvas-internal.d.ts is plumbing that core modules share; once the editor reads it, it is part of the facade and
-// needs a declaration in svgcanvas-members.d.ts (or the class in svgcanvas.d.ts). Same for the host API: the slice
+// needs a declaration in svgcanvas-members.d.ts (or the class in svgcanvas.ts). Same for the host API: the slice
 // the plugin uses (src/editor/hostApi.d.ts) must be declared as public. Members are typed; the few still `any` are
 // listed below and only get shorter.
 
