@@ -54,14 +54,24 @@ export default {
     assignAttributes(overlay, { id: 'rulerGuides', overflow: 'visible', style: 'pointer-events: none;' })
     svgCanvas.getSvgRoot().append(overlay)
 
-    /** The drag in progress: `{ axis, original, pos, copy, outside }`; `original` is null for a new guide. */
+    /** @typedef {'v'|'h'} Axis */
+    /**
+     * The drag in progress; `original` is null for a new guide.
+     * @typedef {object} Drag
+     * @property {Axis} axis
+     * @property {{axis: Axis, pos: number}|null} original
+     * @property {number} pos
+     * @property {boolean} copy
+     * @property {boolean} outside
+     */
+    /** @type {Drag|null} */
     let drag = null
 
     const interactive = () => config.showGuides && !config.lockGuides && svgCanvas.getMode() === 'select'
 
     // ---- drawing ------------------------------------------------------------
 
-    const line = (/** @type {string} */ axis, /** @type {number} */ pos, /** @type {Record<string, string | number | undefined>} */ attrs) => {
+    const line = (/** @type {Axis} */ axis, /** @type {number} */ pos, /** @type {Record<string, string | number | undefined>} */ attrs) => {
       const zoom = svgCanvas.getZoom()
       const p = pos * zoom
       const ln = svgdoc.createElementNS(NS.SVG, 'line')
@@ -74,13 +84,13 @@ export default {
 
     const render = () => {
       const content = svgCanvas.getSvgContent()
-      for (const attr of ['x', 'y', 'width', 'height']) overlay.setAttribute(attr, content.getAttribute(attr))
+      for (const attr of ['x', 'y', 'width', 'height']) overlay.setAttribute(attr, content.getAttribute(attr) ?? '')
       overlay.replaceChildren()
       if (!config.showGuides) return
       const guides = svgCanvas.getGuides()
       const canGrab = interactive() && !drag
       const frag = svgdoc.createDocumentFragment()
-      for (const axis of ['v', 'h']) {
+      for (const axis of /** @type {Axis[]} */ (['v', 'h'])) {
         guides[axis].forEach((/** @type {number} */ pos) => {
           if (drag && !drag.copy && drag.original && drag.original.axis === axis && drag.original.pos === pos) return // being dragged: the preview stands in
           frag.append(line(axis, pos, { stroke: GUIDE_COLOR, 'stroke-width': 1 }))
@@ -103,19 +113,19 @@ export default {
 
     const workareaRect = () => svgEditor.workarea.getBoundingClientRect()
 
-    const position = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {string} */ axis) => {
+    const position = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {Axis} */ axis) => {
       const p = clientToDoc(svgEditor.automation.frame(), e.clientX, e.clientY)
       const raw = axis === 'v' ? p.x : p.y
       if (config.gridSnapping) return svgCanvas.snapToGrid(raw)
       return Math.round(raw) // whole units: guides are for aligning, not for sub-pixel placement
     }
 
-    const isOutside = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {string} */ axis) => {
+    const isOutside = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {Axis} */ axis) => {
       const r = workareaRect()
       return axis === 'v' ? (e.clientX < r.left || e.clientX > r.right) : (e.clientY < r.top || e.clientY > r.bottom)
     }
 
-    const onMove = (e) => {
+    const onMove = (/** @type {MouseEvent} */ e) => {
       if (!drag) return
       drag.pos = position(e, drag.axis)
       drag.outside = isOutside(e, drag.axis)
@@ -131,9 +141,10 @@ export default {
     }
 
     const commit = () => {
+      if (!drag) return
       const { axis, original, pos, copy, outside } = drag
       const guides = svgCanvas.getGuides()
-      const list = guides[axis].filter((p) => !(original && !copy && p === original.pos))
+      const list = guides[axis].filter((/** @type {number} */ p) => !(original && !copy && p === original.pos))
       if (outside) {
         // Dropped back on the ruler: a new guide is never made; an old one is deleted (a copy is just not made).
         if (original && !copy) svgCanvas.setGuides({ ...guides, [axis]: list }, t('undo.remove'))
@@ -143,7 +154,7 @@ export default {
       svgCanvas.setGuides({ ...guides, [axis]: list }, t(original ? (copy ? 'undo.copy' : 'undo.move') : 'undo.add'))
     }
 
-    function onUp (e) {
+    function onUp (/** @type {MouseEvent} */ e) {
       if (!drag) return
       onMove(e)
       try { commit() } finally {
@@ -163,7 +174,7 @@ export default {
       render()
     }
 
-    const begin = (/** @type {string} */ axis, /** @type {{ axis: string; pos: number; } | null} */ original, /** @type {MouseEvent} */ e) => {
+    const begin = (/** @type {Axis} */ axis, /** @type {Drag['original']} */ original, /** @type {MouseEvent} */ e) => {
       drag = { axis, original, pos: position(e, axis), copy: false, outside: isOutside(e, axis) }
       window.addEventListener('mousemove', onMove, true)
       window.addEventListener('mouseup', onUp, true)
@@ -173,7 +184,7 @@ export default {
 
     /**
 * @param {MouseEvent} e
-* @param {string} axis
+* @param {Axis} axis
 * @param {number} pos
 */
     function startMove (e, axis, pos) {
@@ -183,7 +194,7 @@ export default {
       begin(axis, { axis, pos }, e)
     }
 
-    const startCreate = (/** @type {string} */ axis) => (/** @type {{ button: number; preventDefault: () => void; }} */ e) => {
+    const startCreate = (/** @type {Axis} */ axis) => (/** @type {MouseEvent} */ e) => {
       if (e.button !== 0 || !config.showGuides) return
       e.preventDefault()
       begin(axis, null, e)
@@ -235,7 +246,7 @@ export default {
       name: t('name'),
       callback () {
         const rulers = svgEditor.rulers
-        for (const [ruler, axis, cursor] of [[rulers.rulerX, 'h', 'ns-resize'], [rulers.rulerY, 'v', 'ew-resize']]) {
+        for (const [ruler, axis, cursor] of /** @type {Array<[HTMLElement, Axis, string]>} */ ([[rulers.rulerX, 'h', 'ns-resize'], [rulers.rulerY, 'v', 'ew-resize']])) {
           ruler.style.cursor = cursor
           ruler.addEventListener('mousedown', startCreate(axis), { signal: svgEditor.listenerAbort.signal })
         }

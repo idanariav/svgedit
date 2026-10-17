@@ -9,11 +9,11 @@ const { getTypeMap } = SvgCanvas
  */
 class Rulers {
   /**
-* @type {Module}
-* @param {this} editor
-*/
+   * @param {import('./EditorStartup.js').default} editor
+   */
   constructor (editor) {
     // Make [1,2,5] array
+    /** @type {number[]} */
     this.rulerIntervals = []
     for (let i = 0.1; i < 1e5; i *= 10) {
       this.rulerIntervals.push(i)
@@ -26,12 +26,16 @@ class Rulers {
     const template = document.createElement('template')
     template.innerHTML = rulersTemplate
     this.editor.$svgEditor.append(template.content.cloneNode(true))
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    this.rulerX = $id('ruler_x')
-    this.rulerY = $id('ruler_y')
-    this.rulerCorner = $id('ruler_corner')
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    this.rulerX = $req('ruler_x')
+    this.rulerY = $req('ruler_y')
+    this.rulerCorner = $req('ruler_corner')
   }
 
+  /**
+   * @param {boolean} on
+   * @returns {void}
+   */
   display (on) {
     if (on) {
       this.rulerX.style.removeProperty('display')
@@ -45,8 +49,8 @@ class Rulers {
   }
 
   /**
-   * @type {Module}
-  */
+   * @returns {void}
+   */
   manageScroll () {
     if (this.rulerX) this.rulerX.scrollLeft = this.editor.workarea.scrollLeft
     if (this.rulerY) this.rulerY.scrollTop = this.editor.workarea.scrollTop
@@ -59,9 +63,9 @@ class Rulers {
    * @returns {void}
    */
   updateRulers (scanvas, zoom) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    if (!zoom) { zoom = this.svgCanvas.getZoom() }
-    if (!scanvas) { scanvas = $id('svgcanvas') }
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const zoomFactor = zoom || this.svgCanvas.getZoom()
+    const canvasElem = scanvas || $req('svgcanvas')
 
     let d; let i
     const limit = 30000
@@ -75,31 +79,30 @@ class Rulers {
       const dim = isX ? 'x' : 'y'
       const lentype = isX ? 'width' : 'height'
       const contentDim = Number(contentElem.getAttribute(dim))
-      const $hcanvOrig = $id('ruler_' + dim).querySelector('canvas')
+      const $hcanvOrig = /** @type {HTMLCanvasElement} */ ($req('ruler_' + dim).querySelector('canvas'))
 
       // Bit of a hack to fully clear the canvas in Safari & IE9
-      const $hcanv = $hcanvOrig.cloneNode(true)
+      const $hcanv = /** @type {HTMLCanvasElement} */ ($hcanvOrig.cloneNode(true))
       $hcanvOrig.replaceWith($hcanv)
 
       const hcanv = $hcanv
 
       // Set the canvas size to the width of the container
-      let rulerLen
-      if (lentype === 'width') {
-        rulerLen = parseFloat(getComputedStyle(scanvas, null).width.replace('px', ''))
-      } else if (lentype === 'height') {
-        rulerLen = parseFloat(getComputedStyle(scanvas, null).height.replace('px', ''))
-      }
+      let rulerLen = parseFloat(getComputedStyle(canvasElem, null)[lentype].replace('px', ''))
       const totalLen = rulerLen
-      hcanv.parentNode.style[lentype] = totalLen + 'px'
-      let ctx = hcanv.getContext('2d')
-      let ctxArr; let num; let ctxArrNum
+      const holder = /** @type {HTMLElement} */ (hcanv.parentNode)
+      holder.style[lentype] = totalLen + 'px'
+      let ctx = /** @type {CanvasRenderingContext2D} */ (hcanv.getContext('2d'))
+      /** @type {CanvasRenderingContext2D[]|undefined} */
+      let ctxArr
+      let num
+      let ctxArrNum = 0
 
       ctx.fillStyle = 'rgb(200,0,0)'
       ctx.fillRect(0, 0, hcanv.width, hcanv.height)
 
       // Remove any existing canvasses
-      const elements = Array.prototype.filter.call($hcanv.parentNode.children, function (child) {
+      const elements = Array.prototype.filter.call(holder.children, function (child) {
         return child !== $hcanv
       })
       Array.from(elements).forEach(function (element) {
@@ -108,15 +111,15 @@ class Rulers {
 
       // Create multiple canvases when necessary (due to browser limits)
       if (rulerLen >= limit) {
-        ctxArrNum = Number.parseInt(rulerLen / limit) + 1
+        ctxArrNum = Math.trunc(rulerLen / limit) + 1
         ctxArr = []
         ctxArr[0] = ctx
-        let copy
+        let copy = hcanv
         for (i = 1; i < ctxArrNum; i++) {
           hcanv[lentype] = limit
-          copy = hcanv.cloneNode(true)
-          hcanv.parentNode.append(copy)
-          ctxArr[i] = copy.getContext('2d')
+          copy = /** @type {HTMLCanvasElement} */ (hcanv.cloneNode(true))
+          holder.append(copy)
+          ctxArr[i] = /** @type {CanvasRenderingContext2D} */ (copy.getContext('2d'))
         }
 
         copy[lentype] = rulerLen % limit
@@ -127,7 +130,7 @@ class Rulers {
 
       hcanv[lentype] = rulerLen
 
-      const uMulti = unit * zoom
+      const uMulti = unit * zoomFactor
 
       // Calculate the main number interval
       const rawM = 50 / uMulti
@@ -162,6 +165,7 @@ class Rulers {
         }
 
         num = (labelPos - contentDim) / uMulti
+        /** @type {number|string} */
         let label
         if (multi >= 1) {
           label = Math.round(num)
@@ -171,12 +175,12 @@ class Rulers {
         }
 
         // Change 1000s to Ks
-        if (label !== 0 && label !== 1000 && label % 1000 === 0) {
-          label = (label / 1000) + 'K'
+        if (label !== 0 && label !== 1000 && Number(label) % 1000 === 0) {
+          label = (Number(label) / 1000) + 'K'
         }
 
         if (isX) {
-          ctx.fillText(label, rulerD + 2, 8)
+          ctx.fillText(String(label), rulerD + 2, 8)
         } else {
           // draw label vertically
           const str = String(label).split('')

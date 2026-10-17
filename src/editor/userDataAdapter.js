@@ -77,6 +77,8 @@
  * @property {(defaults: *) => void} [setDefaultClasses]
  * @property {() => *} [getCanvasPresets]
  * @property {(presets: *) => void} [setCanvasPresets]
+ * @property {() => *} [getCanvasLayouts]
+ * @property {(layouts: *) => void} [setCanvasLayouts]
  * @property {() => Promise<*>} [getFonts]
  * @property {(family: string, woff2Base64: string) => Promise<void>} [saveFont]
  * @property {() => *} [getBrushes]

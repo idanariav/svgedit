@@ -65,7 +65,7 @@ const invert = (m) => {
 }
 
 /** `p ↦ x · y · p` (apply `y`, then `x`). */
-const multiply = (x, y) => ({
+const multiply = (/** @type {Matrix} */ x, /** @type {Matrix} */ y) => ({
   a: x.a * y.a + x.c * y.b,
   b: x.b * y.a + x.d * y.b,
   c: x.a * y.c + x.c * y.d,
@@ -74,7 +74,7 @@ const multiply = (x, y) => ({
   f: x.b * y.e + x.d * y.f + x.f
 })
 
-const apply = (m, p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+const apply = (/** @type {Matrix} */ m, /** @type {{x: number, y: number}} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
 
 /**
  * Points along the polyline `pts`, at most `spacing` apart, so no part of a
@@ -111,19 +111,20 @@ export const strokeTouches = (el, samples, base) => {
   if (el.tagName === 'g' || el.tagName === 'a') {
     return [...el.children].some((child) => strokeTouches(child, samples, base))
   }
-  const ctm = el.getScreenCTM?.()
+  const geom = /** @type {SVGGeometryElement} */ (el)
+  const ctm = geom.getScreenCTM?.()
   if (!ctm || !Number.isFinite(ctm.a * ctm.d - ctm.b * ctm.c) || ctm.a * ctm.d - ctm.b * ctm.c === 0) return false
   const toLocal = multiply(invert(ctm), base)
   const local = samples.map((p) => apply(toLocal, p))
-  if (typeof el.isPointInFill !== 'function') {
-    if (typeof el.getBBox !== 'function') return false
-    const box = el.getBBox()
+  if (typeof geom.isPointInFill !== 'function') {
+    if (typeof geom.getBBox !== 'function') return false
+    const box = geom.getBBox()
     return local.some((p) => p.x >= box.x && p.x <= box.x + box.width && p.y >= box.y && p.y <= box.y + box.height)
   }
   const style = getComputedStyle(el)
   const filled = style.fill !== 'none' && style.fill !== ''
   const stroked = style.stroke !== 'none' && style.stroke !== '' && parseFloat(style.strokeWidth) !== 0
-  return local.some((p) => (filled && el.isPointInFill(p)) || (stroked && el.isPointInStroke(p)))
+  return local.some((p) => (filled && geom.isPointInFill(p)) || (stroked && geom.isPointInStroke(p)))
 }
 
 // ---- mapping a recognized shape to an element --------------------------------
@@ -180,9 +181,11 @@ export default {
     await loadExtensionTranslation(svgEditor)
 
     /** In-progress stroke: document points, the preview polyline and the last client point kept. */
+    /** @type {{points: {x: number, y: number}[], line: SVGPolylineElement, lastScreen: {x: number, y: number}}|null} */
     let stroke = null
 
-    const createShape = (/** @type {{ element: string; attr: object; open?: boolean; } | null} */ desc) => {
+    const createShape = (/** @type {{ element: string; attr: object; open?: boolean; }} */ desc) => {
+      /** @type {Record<string, *>} */
       const attr = { id: svgCanvas.getNextId(), ...desc.attr }
       // An open line is only visible with a stroke; the others take the current paint.
       if (desc.open) {
@@ -196,7 +199,7 @@ export default {
     /** The elements a scribble covers: children of the current group / layer it touches. */
     const covered = (/** @type {{ x: number; y: number; }[]} */ points) => {
       const parent = svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()
-      const base = parent?.getScreenCTM?.()
+      const base = /** @type {SVGGraphicsElement|null} */ (parent)?.getScreenCTM?.()
       if (!parent || !base) return []
       const samples = sampleStroke(points)
       const box = samples.reduce((b, p) => ({
@@ -236,7 +239,7 @@ export default {
         if (Math.hypot(ev.screenX - stroke.lastScreen.x, ev.screenY - stroke.lastScreen.y) < 1) return
         stroke.lastScreen = { x: ev.screenX, y: ev.screenY }
         stroke.points.push({ x: ev.rawX, y: ev.rawY })
-        stroke.line.setAttribute('points', stroke.points.map((p) => `${p.x},${p.y}`).join(' '))
+        stroke.line.setAttribute('points', stroke.points.map((/** @type {{x: number, y: number}} */ p) => `${p.x},${p.y}`).join(' '))
       },
 
       pointerUp (ctx, ev) {
@@ -254,7 +257,9 @@ export default {
           svgCanvas.deleteSelectedElements()
           return undefined
         }
-        return { created: createShape(describeShape(shape)) }
+        const desc = describeShape(shape)
+        if (!desc) return 'cancel'
+        return { created: createShape(desc) }
       },
 
       cancel () { stroke = null }

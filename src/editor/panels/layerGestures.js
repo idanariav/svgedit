@@ -67,7 +67,7 @@ export class LayerGestures {
   }
 
   get canvas () { return this.editor.svgCanvas }
-  get table () { return this.editor.$id('layerlist') }
+  get table () { return this.editor.$req('layerlist') }
   get panel () { return this.editor.rightPanel }
 
   /** Wire the table's events once. @returns {void} */
@@ -80,12 +80,13 @@ export class LayerGestures {
 
   /**
 * @returns {string} the name a layer row stands for
-* @param {Element | null} tr
+* @param {Element} tr
 */
   nameOf (tr) { return tr.querySelector('td.layername')?.textContent ?? '' }
 
   // ── Alt-click ────────────────────────────────────────────────────────────
 
+  /** @param {MouseEvent} evt */
   onAltClick (evt) {
     if (!evt.altKey || evt.button > 0) return
     const target = /** @type {Element} */ (evt.target)
@@ -93,7 +94,7 @@ export class LayerGestures {
     if (!cell) return
     evt.preventDefault()
     evt.stopPropagation()
-    const tr = /** @type {HTMLElement|null} */ (/** @type {Element} */ (cell.closest('tr')))
+    const tr = /** @type {HTMLElement & {_el: Element}} */ (/** @type {unknown} */ (cell.closest('tr')))
     if (cell.matches('td.layercomment')) {
       this.panel.toggleLayerTemplate(this.nameOf(tr))
     } else if (tr.classList.contains('layer')) {
@@ -110,7 +111,7 @@ export class LayerGestures {
    */
   layerOthers (tr, col) {
     const drawing = this.canvas.getCurrentDrawing()
-    const rows = this.panel.layerTree.layerRows().map((/** @type {Element | null} */ row) => {
+    const rows = this.panel.layerTree.layerRows().map((/** @type {Element} */ row) => {
       const name = this.nameOf(row)
       return {
         key: name,
@@ -132,7 +133,7 @@ export class LayerGestures {
    * @returns {void}
    */
   objectOthers (el, col) {
-    const sibs = Array.from(el.parentNode.children).filter(isPanelObject)
+    const sibs = Array.from(/** @type {ParentNode} */ (el.parentNode).children).filter(isPanelObject)
     const rows = sibs.map((e) => ({ key: e, on: col === 'vis' ? isObjectHidden(e) : hasLockMark(e) }))
     const plan = planOthers(rows, el, col === 'vis')
     if (!plan.length) return
@@ -221,28 +222,29 @@ export class LayerGestures {
    */
   startPaint (evt, cell) {
     const col = cell.matches('td.layervis, td.objvis') ? 'vis' : 'lock'
-    const first = cell.closest('tr')
+    const first = /** @type {HTMLTableRowElement} */ (cell.closest('tr'))
     const flagOf = (/** @type {Element} */ c) => c.classList.contains(col === 'vis' ? (c.matches('td.layervis') ? 'layerinvis' : 'objinvis') : 'locked')
     const goOn = !flagOf(cell)
     const sel = col === 'vis' ? 'td.layervis, td.objvis' : 'td.layerlock, td.objlock'
     /** @type {Element[]} */
     let painted = []
     const clear = () => { painted.forEach((c) => c.classList.remove('colpaint')); painted = [] }
-    const rowsBetween = (/** @type {HTMLTableRowElement | null} */ a, /** @type {HTMLTableRowElement | null} */ b) => {
+    const rowsBetween = (/** @type {Element} */ a, /** @type {Element} */ b) => {
       const all = Array.from(this.table.querySelectorAll('tbody > tr.layer, tbody > tr.object'))
       const i = all.indexOf(a)
       const j = all.indexOf(b)
       return i < 0 || j < 0 ? [] : all.slice(Math.min(i, j), Math.max(i, j) + 1)
     }
+    /** @type {Element} */
     let last = first
     this.track(evt, () => {}, (e) => {
       const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('#layerlist tr.layer, #layerlist tr.object')
       if (under) last = under
       clear()
-      painted = rowsBetween(first, last).map((tr) => tr.querySelector(sel)).filter(Boolean)
+      painted = /** @type {Element[]} */ (rowsBetween(first, last).map((tr) => tr.querySelector(sel)).filter(Boolean))
       painted.forEach((c) => c.classList.add('colpaint'))
     }, (commit) => {
-      const rows = painted.map((c) => c.closest('tr'))
+      const rows = /** @type {Element[]} */ (painted.map((c) => c.closest('tr')))
       clear()
       this.swallowNext('click')
       if (commit) this.paint(col, goOn, rows)
@@ -258,7 +260,7 @@ export class LayerGestures {
    */
   paint (col, on, rows) {
     const names = rows.filter((r) => r.classList.contains('layer')).map((r) => this.nameOf(r))
-    const objs = rows.filter((r) => r.classList.contains('object')).map((r) => r._el)
+    const objs = rows.filter((r) => r.classList.contains('object')).map((r) => /** @type {Element & {_el: Element}} */ (r)._el)
     const layerStates = Object.fromEntries(names.map((n) => [n, col === 'vis' ? !on : on]))
     this.canvas.transact(col === 'vis' ? 'Layer Visibility' : 'Lock', () => {
       if (col === 'vis') this.panel.applyLayerVisibility(layerStates)

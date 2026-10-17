@@ -369,7 +369,7 @@ registerLiveStage({
 export interface LiveEffectsApi {
   // Live effects (se:fx stack)
   registerLiveEffect(name: string, def: object): void
-  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }> }>
+  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }>, strokeOutput?: { widthParam: string } }>
   canApplyLiveEffect(elem: Element): boolean
   reconcileLiveEffects(elem: Element): boolean
   getLiveEffects(elem?: Element | null): Array<{ name: string, params: Record<string, number | boolean | string> }>

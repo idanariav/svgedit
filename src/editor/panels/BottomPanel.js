@@ -22,8 +22,10 @@ class BottomPanel {
     return this.editor.multiselected
   }
 
+  /** @param {Event} e */
   changeStrokeWidth (e) {
-    let val = e.target.value
+    /** @type {*} */
+    let val = /** @type {HTMLInputElement} */ (e.target).value
     if (
       val === 0 &&
       this.editor.selectedElement &&
@@ -34,6 +36,7 @@ class BottomPanel {
     this.editor.svgCanvas.setStrokeWidth(val)
   }
 
+  /** @param {string|number} value */
   changeZoom (value) {
     switch (value) {
       case 'canvas':
@@ -73,7 +76,7 @@ class BottomPanel {
    * @returns {void}
    */
   updateToolButtonState () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const bNoFill = this.editor.svgCanvas.getColor('fill') === 'none'
     const bNoStroke = this.editor.svgCanvas.getColor('stroke') === 'none'
     const buttonsNeedingStroke = ['tool_fhpath', 'tool_line']
@@ -86,27 +89,27 @@ class BottomPanel {
     if (bNoStroke) {
       buttonsNeedingStroke.forEach(btn => {
         // if btn is pressed, change to select button
-        if ($id(btn).pressed) {
+        if (/** @type {*} */ ($req(btn)).pressed) {
           this.editor.leftPanel.clickSelect()
         }
-        $id(btn).disabled = true
+        /** @type {*} */ ($req(btn)).disabled = true
       })
     } else {
       buttonsNeedingStroke.forEach(btn => {
-        $id(btn).disabled = false
+        /** @type {*} */ ($req(btn)).disabled = false
       })
     }
     if (bNoStroke && bNoFill) {
       buttonsNeedingFillAndStroke.forEach(btn => {
         // if btn is pressed, change to select button
-        if ($id(btn).pressed) {
+        if (/** @type {*} */ ($req(btn)).pressed) {
           this.editor.leftPanel.clickSelect()
         }
-        $id(btn).disabled = true
+        /** @type {*} */ ($req(btn)).disabled = true
       })
     } else {
       buttonsNeedingFillAndStroke.forEach(btn => {
-        $id(btn).disabled = false
+        /** @type {*} */ ($req(btn)).disabled = false
       })
     }
     this.editor.svgCanvas.runExtensions(
@@ -118,14 +121,19 @@ class BottomPanel {
     )
   }
 
+  /**
+   * @param {string} type
+   * @param {Event} evt
+   */
   handleColorPicker (type, evt) {
-    const { paint } = evt.detail
+    const { paint } = /** @type {CustomEvent} */ (evt).detail
     this.editor.svgCanvas.setPaint(type, paint)
     this.updateToolButtonState()
   }
 
+  /** @param {Event} evt */
   handleBgColorPicker (evt) {
-    const { paint } = evt.detail
+    const { paint } = /** @type {CustomEvent} */ (evt).detail
     if (paint.type === 'solidColor') {
       const color = paint.solidColor === 'none' ? 'none' : '#' + paint.solidColor
       this.editor.commands.tryRun('canvas_set_background', { color }, 'bg-picker')
@@ -134,10 +142,15 @@ class BottomPanel {
     }
   }
 
+  /**
+   * @param {string} type
+   * @param {Event} evt
+   */
   handleStrokeAttr (type, evt) {
     // A fitted dash takes the new pattern as the one to fit.
-    if (type === 'stroke-dasharray' && this.editor.svgCanvas.setDashPattern(evt.detail.value)) return
-    this.editor.svgCanvas.setStrokeAttr(type, evt.detail.value)
+    const { value } = /** @type {CustomEvent} */ (evt).detail
+    if (type === 'stroke-dasharray' && this.editor.svgCanvas.setDashPattern(value)) return
+    this.editor.svgCanvas.setStrokeAttr(type, value)
   }
 
   /**
@@ -148,11 +161,12 @@ class BottomPanel {
     this.editor.svgCanvas.setOpacity(val / 100)
   }
 
+  /** @param {Event} e */
   handlePalette (e) {
-    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
     // `picker` is the destination chosen by the palette (Alt/Shift-click = stroke).
-    const { picker, color, paint: incomingPaint } = e.detail
+    const { picker, color, paint: incomingPaint } = /** @type {CustomEvent} */ (e).detail
     // Gradient swatches dispatch a ready-made Paint instead of a color string.
     if (incomingPaint) {
       if (picker === 'background') {
@@ -162,7 +176,7 @@ class BottomPanel {
         }
         return
       }
-      $id(picker === 'fill' ? 'fill_color' : 'stroke_color').setPaint(incomingPaint)
+      $req(picker === 'fill' ? 'fill_color' : 'stroke_color').setPaint(incomingPaint)
       this.editor.svgCanvas.setPaint(picker, incomingPaint)
       this.updateToolButtonState()
       return

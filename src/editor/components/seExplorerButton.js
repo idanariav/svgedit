@@ -9,6 +9,9 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  * @class ExplorerButton
  */
 export class ExplorerButton extends HTMLElement {
+  /** @type {Record<string, string>} shape key → path data of the open library */ data = {}
+  /** @type {HTMLElement|null} */ currentAction = null
+
   /**
     * @function constructor
     */
@@ -36,7 +39,7 @@ export class ExplorerButton extends HTMLElement {
 
     // Closes opened (pressed) lib menu on click on the canvas
     const workarea = closestRoot(this).querySelector('[id="workarea"]')
-    workarea.addEventListener('click', (e) => {
+    workarea?.addEventListener('click', () => {
       this.$menu.classList.remove('open')
       this.$lib.classList.remove('open-lib')
     })
@@ -164,7 +167,7 @@ export class ExplorerButton extends HTMLElement {
    * @param {string} name
    * @param {string} oldValue
    * @param {string} newValue
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
@@ -194,7 +197,7 @@ export class ExplorerButton extends HTMLElement {
           const response = await fetch(`${newValue}index.json`)
           const json = await response.json()
           const { lib } = json
-          this.$menu.innerHTML = lib.map((menu, i) => (
+          this.$menu.innerHTML = lib.map((/** @type {string} */ menu, /** @type {number} */ i) => (
           `<div data-menu="${menu}" class="menu-item ${(i === 0) ? 'pressed' : ''} ">${menu}</div>`
           )).join('')
           await this.updateLib(lib[0])
@@ -244,7 +247,7 @@ export class ExplorerButton extends HTMLElement {
     if (value) {
       this.setAttribute('pressed', 'true')
     } else {
-      this.removeAttribute('pressed', '')
+      this.removeAttribute('pressed')
     }
   }
 
@@ -265,7 +268,7 @@ export class ExplorerButton extends HTMLElement {
     if (value) {
       this.setAttribute('disabled', 'true')
     } else {
-      this.removeAttribute('disabled', '')
+      this.removeAttribute('disabled')
     }
   }
 
@@ -275,37 +278,38 @@ export class ExplorerButton extends HTMLElement {
    */
   connectedCallback () {
     // capture click event on the button to manage the logic
-    const onClickHandler = (/** @type {{ stopPropagation: () => void; target: unknown; }} */ ev) => {
+    const onClickHandler = (/** @type {Event} */ ev) => {
       ev.stopPropagation()
-      switch (ev.target.nodeName) {
+      const target = /** @type {HTMLElement} */ (ev.target)
+      switch (target.nodeName) {
         case 'SE-EXPLORERBUTTON':
           this.$menu.classList.toggle('open')
           this.$lib.classList.toggle('open-lib')
           break
         case 'SE-BUTTON':
         // change to the current action
-          this.currentAction = ev.target
-          this.$img.setAttribute('src', this.currentAction.getAttribute('src'))
-          this.dataset.draw = this.data[this.currentAction.dataset.shape]
-          this._shadowRoot.querySelectorAll('.image-lib [pressed]').forEach((b) => { b.pressed = false })
-          this.currentAction.setAttribute('pressed', 'pressed')
+          this.currentAction = target
+          this.$img.setAttribute('src', target.getAttribute('src') ?? '')
+          this.dataset.draw = this.data[target.dataset.shape ?? '']
+          this._shadowRoot.querySelectorAll('.image-lib [pressed]').forEach((b) => { /** @type {*} */ (b).pressed = false })
+          target.setAttribute('pressed', 'pressed')
           // and close the menu
           this.$menu.classList.remove('open')
           this.$lib.classList.remove('open-lib')
           break
         case 'DIV':
-          if (ev.target.classList[0] === 'handle') {
+          if (target.classList[0] === 'handle') {
           // this is a click on the handle so let's open/close the menu.
             this.$menu.classList.toggle('open')
             this.$lib.classList.toggle('open-lib')
           } else {
             this._shadowRoot.querySelectorAll('.menu > .pressed').forEach((b) => { b.classList.remove('pressed') })
-            ev.target.classList.add('pressed')
-            this.updateLib(ev.target.dataset.menu)
+            target.classList.add('pressed')
+            this.updateLib(target.dataset.menu ?? '')
           }
           break
         default:
-          logError('unknown nodeName for: ' + ev.target.className, ev.target, 'seExplorerButton')
+          logError('unknown nodeName for: ' + target.className, target, 'seExplorerButton')
       }
     }
     // capture event from slots
@@ -318,7 +322,7 @@ export class ExplorerButton extends HTMLElement {
   /**
    * @function updateLib
    * @param {string} lib
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async updateLib (lib) {
     const libDir = this.getAttribute('lib')

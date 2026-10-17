@@ -113,25 +113,27 @@ button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--cp-focus-ring,
 `
 
 export class SeFontLibrary extends HTMLElement {
+  /** @type {Array<{family: string, category: string}>} */ _fonts = []
+  /** @type {string[]} */ _categories = []
+  /** @type {((e: Event) => void)|null} */ _outsideClick = null
+  /** @type {((e: KeyboardEvent) => void)|null} */ _keyHandler = null
+  /** @type {IntersectionObserver|null} */ _io = null
+  /** @type {ReturnType<typeof setTimeout>|undefined} */ _searchTimer
+
   constructor () {
     super()
     this._shadow = this.attachShadow({ mode: 'open' })
     this._open = false
-    this._fonts = []
-    this._categories = []
     this._catId = 'handwriting'
     this._query = ''
     this._catalogPath = ''
     this._loaded = false
-    this._outsideClick = null
-    this._keyHandler = null
     this._previewRequested = new Set()
-    this._io = null
   }
 
   static get observedAttributes () { return ['catalog', 'title'] }
 
-  attributeChangedCallback (name, oldVal, newVal) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldVal, /** @type {string} */ newVal) {
     if (oldVal === newVal) return
     if (name === 'catalog') {
       this._catalogPath = newVal
@@ -221,7 +223,7 @@ export class SeFontLibrary extends HTMLElement {
     pop.style.display = ''
     this._position(pop)
     this._attachListeners()
-    requestAnimationFrame(() => this._shadow.querySelector('.fl-search input')?.focus())
+    requestAnimationFrame(() => /** @type {HTMLInputElement|null} */ (this._shadow.querySelector('.fl-search input'))?.focus())
   }
 
   _close () {
@@ -233,10 +235,10 @@ export class SeFontLibrary extends HTMLElement {
   }
 
   /**
-* @param {Element | null} pop
+* @param {HTMLElement} pop
 */
   _position (pop) {
-    const btn = /** @type {HTMLElement} */ (this.getBoundingClientRect())
+    const btn = this.getBoundingClientRect()
     const rect = pop.getBoundingClientRect()
     const gap = 8
     let left = btn.left
@@ -290,7 +292,7 @@ export class SeFontLibrary extends HTMLElement {
       <div class="fl-cats">
         ${this._categories.map(id => `
           <button class="fl-cat${id === this._catId && !this._query ? ' is-active' : ''}" data-cat="${id}">
-            ${this._esc(CAT_LABELS[id] || id)}
+            ${this._esc(CAT_LABELS[/** @type {keyof typeof CAT_LABELS} */ (id)] || id)}
           </button>`).join('')}
       </div>
       <div class="fl-list"></div>
@@ -300,7 +302,7 @@ export class SeFontLibrary extends HTMLElement {
     pop.querySelectorAll('.fl-cat[data-cat]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation()
-        this._catId = btn.dataset.cat
+        this._catId = /** @type {HTMLElement} */ (btn).dataset.cat ?? ''
         this._query = ''
         // A category click is a fresh selection: rebuild fully so the search
         // box clears and the active-tab highlight resets.
@@ -317,7 +319,7 @@ export class SeFontLibrary extends HTMLElement {
         // characters.
         this._query = input.value
         pop.querySelectorAll('.fl-cat[data-cat]').forEach(c => {
-          c.classList.toggle('is-active', c.dataset.cat === this._catId && !this._query)
+          c.classList.toggle('is-active', /** @type {HTMLElement} */ (c).dataset.cat === this._catId && !this._query)
         })
         this._renderItems()
       }, 180)
@@ -337,13 +339,13 @@ export class SeFontLibrary extends HTMLElement {
       ? fonts.map(f => `
         <button class="fl-item${isCached(f.family) ? ' is-cached' : ''}" data-family="${this._escAttr(f.family)}">
           <span class="fl-item-preview" style="font-family:'${this._escAttr(f.family)}', sans-serif">${this._esc(f.family)}</span>
-          <span class="fl-item-name">${this._esc(CAT_LABELS[f.category] || f.category)}</span>
+          <span class="fl-item-name">${this._esc(CAT_LABELS[/** @type {keyof typeof CAT_LABELS} */ (f.category)] || f.category)}</span>
           <span class="fl-dot" title="Downloaded"></span>
         </button>`).join('')
       : '<div class="fl-empty">No fonts found</div>'
 
     list.querySelectorAll('.fl-item[data-family]').forEach(btn => {
-      btn.addEventListener('click', () => this._pick(btn))
+      btn.addEventListener('click', () => this._pick(/** @type {HTMLElement} */ (btn)))
     })
 
     // Lazily load in-font previews for rows as they scroll into view
@@ -351,19 +353,19 @@ export class SeFontLibrary extends HTMLElement {
     this._io = new IntersectionObserver((entries) => {
       entries.forEach(en => {
         if (en.isIntersecting) {
-          this._loadPreview(en.target.dataset.family)
-          this._io.unobserve(en.target)
+          this._loadPreview(/** @type {HTMLElement} */ (en.target).dataset.family ?? '')
+          this._io?.unobserve(en.target)
         }
       })
     }, { root: list, rootMargin: '120px' })
-    list.querySelectorAll('.fl-item[data-family]').forEach(el => this._io.observe(el))
+    list.querySelectorAll('.fl-item[data-family]').forEach(el => this._io?.observe(el))
   }
 
   /**
-* @param {Element} btn
+* @param {HTMLElement} btn
 */
   async _pick (btn) {
-    const family = btn.dataset.family
+    const family = btn.dataset.family ?? ''
     btn.classList.add('is-loading')
     try {
       await ensureFont(family, ownerEditor(this))
@@ -381,12 +383,12 @@ export class SeFontLibrary extends HTMLElement {
   }
 
   _attachListeners () {
-    this._outsideClick = e => {
+    this._outsideClick = (/** @type {Event} */ e) => {
       const path = e.composedPath()
-      if (!path.includes(this) && !path.some(el => el.classList?.contains('fl-popover'))) this._close()
+      if (!path.includes(this) && !path.some(el => /** @type {Element} */ (el).classList?.contains('fl-popover'))) this._close()
     }
-    setTimeout(() => document.addEventListener('click', this._outsideClick, true), 0)
-    this._keyHandler = /** @type {{ key: string; }} */ (/** @type {{ key: string; }} */ e) => { if (e.key === 'Escape') this._close() }
+    setTimeout(() => { if (this._outsideClick) document.addEventListener('click', this._outsideClick, true) }, 0)
+    this._keyHandler = (/** @type {KeyboardEvent} */ e) => { if (e.key === 'Escape') this._close() }
     document.addEventListener('keydown', this._keyHandler)
   }
 

@@ -27,11 +27,11 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, $req, NS } = svgCanvas
+    const { $req, NS } = svgCanvas
     const svgdoc = $req('svgcanvas').ownerDocument
     const { assignAttributes } = svgCanvas
     const hcanvas = document.createElement('canvas')
-    const canvBG = $id('canvasBackground')
+    const canvBG = $req('canvasBackground')
     const units = svgCanvas.getTypeMap()
     const intervals = [0.01, 0.1, 1, 10, 100, 1000]
     const curConfig = svgEditor.configObj.curConfig
@@ -119,6 +119,7 @@ export default {
      * @returns {Array<[number,number,number,number]>}
      */
     const buildShapeLines = (shape, w, h, d) => {
+      /** @type {Array<[number,number,number,number]>} */
       const lines = []
       // Parallel lines at `angleDeg`, spaced `d`, long enough to cross the
       // whole canvas (clipped to it by #gridclip).
@@ -216,8 +217,8 @@ export default {
         d = stepPx
         while (d > 0 && d < 8) { d *= 2 }
       }
-      gridClipRect.setAttribute('width', w)
-      gridClipRect.setAttribute('height', h)
+      gridClipRect.setAttribute('width', String(w))
+      gridClipRect.setAttribute('height', String(h))
       const segs = buildShapeLines(shape, w, h, d)
       const frag = svgdoc.createDocumentFragment()
       segs.forEach(([x1, y1, x2, y2]) => {
@@ -251,7 +252,7 @@ export default {
       // Set the canvas size to the width of the container
       hcanvas.width = bigInt
       hcanvas.height = bigInt
-      const ctx = hcanvas.getContext('2d')
+      const ctx = /** @type {CanvasRenderingContext2D} */ (hcanvas.getContext('2d'))
       const curD = 0.5
       const part = bigInt / 10
 
@@ -277,10 +278,11 @@ export default {
       ctx.stroke()
 
       const datauri = hcanvas.toDataURL('image/png')
-      gridimg.setAttribute('width', bigInt)
-      gridimg.setAttribute('height', bigInt)
-      gridimg.parentNode.setAttribute('width', bigInt)
-      gridimg.parentNode.setAttribute('height', bigInt)
+      gridimg.setAttribute('width', String(bigInt))
+      gridimg.setAttribute('height', String(bigInt))
+      const tile = /** @type {Element} */ (gridimg.parentNode)
+      tile.setAttribute('width', String(bigInt))
+      tile.setAttribute('height', String(bigInt))
       svgCanvas.setHref(gridimg, datauri)
     }
 
@@ -320,7 +322,7 @@ export default {
     svgEditor.updateGrid = gridUpdate
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged (zoom) {
+      zoomChanged (/** @type {number} */ zoom) {
         if (curConfig.showGrid) { updateGrid(zoom) }
       },
       callback () {

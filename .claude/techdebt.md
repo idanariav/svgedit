@@ -193,3 +193,6 @@ Typing `Editor.js`, `EditorStartup.js` and `contextmenu.js` strictly turned up c
 - **Extension context-menu items are never shown.** `contextmenu.js` appends them to a `#cmenu_canvas` list that the
   template no longer has (the canvas menu is the `<se-cmenu_canvas-dialog>`); no built-in extension adds one. Either wire
   `add()` into the dialog or delete the registry.
+- **`LeftPanel.updateLeftPanel`'s disabled check never fires.** It reads `.disabled` off its argument, but every caller passes a tool
+  id (a string), so a disabled button is never refused here. Resolve the id and check the element (commands already gate on
+  `enabled`), or drop the check.

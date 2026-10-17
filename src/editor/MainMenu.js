@@ -2,6 +2,8 @@
 import { applyUiMode, isTabletMode } from './uiMode.js'
 import { applyTheme } from './themeUtil.js'
 
+/** @typedef {import('./dialogs/editorPreferencesDialog.js').SeEditPrefsDialog} PrefsDialog */
+
 /**
  *
  */
@@ -29,9 +31,8 @@ class MainMenu {
    * @returns {void}
    */
   hidePreferences () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    const $editDialog = $id('se-edit-prefs')
-    $editDialog.setAttribute('dialog', 'close')
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $req('se-edit-prefs').setAttribute('dialog', 'close')
     this.editor.configObj.preferences = false
   }
 
@@ -106,7 +107,7 @@ class MainMenu {
      */
     const openExportWindow = () => {
       if (this.editor.configObj.curConfig.exportWindowType === 'new') {
-        this.editor.exportWindowCt++
+        this.editor.exportWindowCt = (this.editor.exportWindowCt ?? 0) + 1
       }
       this.editor.exportWindowName =
         this.editor.configObj.curConfig.canvasName + this.editor.exportWindowCt
@@ -118,7 +119,7 @@ class MainMenu {
     /* const results = */ await this.editor.svgCanvas.rasterExport(
       imgType,
       quality,
-      this.editor.exportWindowName,
+      this.editor.exportWindowName ?? undefined,
       { includeBg, bgcolor: bkgdColor, crop, ...(scale !== 1 && { scale }) }
     )
   }
@@ -142,7 +143,7 @@ class MainMenu {
     let w = num('width')
     let h = num('height')
     if (!w || !h) {
-      const bb = frame.getBBox()
+      const bb = /** @type {SVGGraphicsElement} */ (frame).getBBox()
       x = bb.x; y = bb.y; w = bb.width; h = bb.height
     }
     return { x, y, w, h }
@@ -153,13 +154,13 @@ class MainMenu {
    * @returns {void}
    */
   showPreferences () {
-    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (this.editor.configObj.preferences) {
       return
     }
     this.editor.configObj.preferences = true
     $req('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
-    const $editDialog = $id('se-edit-prefs')
+    const $editDialog = /** @type {PrefsDialog} */ (/** @type {unknown} */ ($req('se-edit-prefs')))
     $editDialog.scrubFields = String(this.editor.configObj.pref('scrub_numeric_fields')) !== 'false'
     $editDialog.selectSameTolerance = parseFloat(this.editor.configObj.pref('select_same_tolerance')) || 0
     const { pencilStabilization, pencilFidelity } = this.editor.configObj.curConfig
@@ -193,17 +194,17 @@ class MainMenu {
     // The menu entries are views of registry commands (`command=` below, panelCommands.js).
     $req('se-export-dialog').addEventListener(
       'change',
-      this.clickExport.bind(this)
+      /** @type {EventListener} */ (/** @type {unknown} */ (this.clickExport.bind(this)))
     )
     $req('se-edit-prefs').addEventListener(
       'change',
-      (/** @type {CustomEvent} */ e) => {
+      /** @type {EventListener} */ (/** @type {unknown} */ ((/** @type {CustomEvent} */ e) => {
         if (e.detail.dialog === 'closed') {
           this.hidePreferences()
         } else {
           this.savePreferences(e)
         }
-      }
+      }))
     )
   }
 }

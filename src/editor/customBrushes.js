@@ -18,7 +18,7 @@ export const BRUSH_SLOT_COUNT = 5
 
 /**
  * Read the raw slot map from storage.
- * @returns {Object<number, Object>} Sparse map, keys `0`-`4`.
+ * @returns {Record<number, Record<string, *>>} Sparse map, keys `0`-`4`.
  */
 export const loadBrushSlots = () => {
   const adapter = getUserDataAdapter()
@@ -55,7 +55,7 @@ const writeBrushSlots = (/** @type {Object<number, Object>} */ slots) => {
 
 /**
  * @param {number} index - 0-4.
- * @returns {?Object} The saved brush params, or null if the slot is empty.
+ * @returns {?Record<string, *>} The saved brush params, or null if the slot is empty.
  */
 export const getBrushSlot = (index) => loadBrushSlots()[index] ?? null
 

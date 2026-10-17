@@ -36,10 +36,13 @@ const REMOVED_KEY = 'removed'
 const KEEP_INDEX = 0
 const RECENT_LIMIT = 5
 
+/** @typedef {Record<string, *>} Overrides */
+
+/** @returns {Overrides} */
 const loadOverrides = () => {
   const adapter = getUserDataAdapter()
   if (adapter) {
-    const parsed = adapter.getPalette()
+    const parsed = adapter.getPalette?.()
     return parsed && typeof parsed === 'object' ? parsed : {}
   }
   try {
@@ -57,7 +60,7 @@ const saveOverrides = (/** @type {{}} */ overrides) => {
   if (adapter) {
     // Always hand the host the full overrides map (including `{}` on reset);
     // the host decides how to clear its own store.
-    adapter.setPalette(overrides)
+    adapter.setPalette?.(overrides)
     return
   }
   if (Object.keys(overrides).length === 0) {
@@ -71,12 +74,12 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 
 // A solid override is a hex/'none' string; a gradient override is a JSON-safe
 // object so it survives the localStorage / host-adapter round-trip.
-const isGradientOverride = (val) =>
+const isGradientOverride = (/** @type {*} */ val) =>
   !!val && typeof val === 'object' && typeof val.xml === 'string'
 
 // Rehydrate a stored gradient definition into a live SVG element. Wrapping the
 // markup in an <svg> guarantees the element lands in the SVG namespace.
-const gradientElFromXml = (xml) => {
+const gradientElFromXml = (/** @type {string} */ xml) => {
   try {
     const doc = new DOMParser().parseFromString(
       `<svg xmlns="${SVG_NS}">${xml}</svg>`, 'image/svg+xml'
@@ -113,14 +116,14 @@ const gradientToCss = (/** @type {Element | null} */ el) => {
 }
 
 // Reconstruct a Paint from a stored override (gradient object or color string).
-const paintFromOverride = (val) => {
+const paintFromOverride = (/** @type {*} */ val) => {
   if (isGradientOverride(val)) {
     const el = gradientElFromXml(val.xml)
     if (el) {
       return new Paint(
         val.type === 'radialGradient'
-          ? { radialGradient: el, alpha: val.alpha ?? 100 }
-          : { linearGradient: el, alpha: val.alpha ?? 100 }
+          ? { radialGradient: /** @type {SVGRadialGradientElement} */ (el), alpha: val.alpha ?? 100 }
+          : { linearGradient: /** @type {SVGLinearGradientElement} */ (el), alpha: val.alpha ?? 100 }
       )
     }
   }
@@ -403,6 +406,9 @@ export class SEPalette extends HTMLElement {
     }, { passive: false })
     this.$editBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('button.palette_edit_btn'))
     this.$resetBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.reset_btn'))
+    /** @type {string|undefined} */
+    this._docKey = undefined
+    /** @type {Overrides} */
     this._overrides = loadOverrides()
     this._editMode = false
 
@@ -434,7 +440,7 @@ export class SEPalette extends HTMLElement {
 
   attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (name === 'ui-palette_info') {
-      this._shadowRoot.getElementById('palette_holder').setAttribute('title', newValue)
+      this._shadowRoot.getElementById('palette_holder')?.setAttribute('title', newValue)
     }
   }
 
@@ -589,7 +595,7 @@ export class SEPalette extends HTMLElement {
   }
 
   /**
-* @param {string | number} i
+* @param {number} i
 */
   _revert (i) {
     if (!this.isCustomised(i)) return
@@ -608,7 +614,7 @@ export class SEPalette extends HTMLElement {
 
   /**
 * @param {Event} evt
-* @param {string | number} i
+* @param {number} i
 */
   _onSwatchClick (evt, i) {
     evt.preventDefault()
@@ -641,7 +647,7 @@ export class SEPalette extends HTMLElement {
 
   /**
 * @param {PointerEvent} evt
-* @param {string | number} i
+* @param {number} i
 */
   _onSwatchContextMenu (evt, i) {
     if (!this._editMode || this.isRemoved(i)) return
@@ -650,7 +656,7 @@ export class SEPalette extends HTMLElement {
   }
 
   /**
-* @param {string | number} i
+* @param {number} i
 */
   _openEditDialog (i) {
     const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
@@ -661,8 +667,8 @@ export class SEPalette extends HTMLElement {
     dialog.paint = paintFromOverride(this.getColor(i))
     dialog.type = 'fill'
     dialog.i18next = requireOwnerEditor(this).i18next
-    ;(root.body ?? root).appendChild(dialog)
-    dialog.addEventListener('change', (/** @type {CustomEvent} */ evt) => {
+    ;(/** @type {Document} */ (root).body ?? root).appendChild(dialog)
+    dialog.addEventListener('change', /** @type {EventListener} */ (/** @type {unknown} */ ((/** @type {CustomEvent} */ evt) => {
       const paint = evt.detail.paint
       if (paint?.type === 'solidColor' && paint.solidColor) {
         this._overrides[i] = '#' + paint.solidColor
@@ -675,7 +681,7 @@ export class SEPalette extends HTMLElement {
       }
       saveOverrides(this._overrides)
       this.renderSwatches()
-    }, { once: true })
+    })), { once: true })
   }
 
   _resetAll () {

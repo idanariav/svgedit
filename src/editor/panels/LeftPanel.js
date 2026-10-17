@@ -35,23 +35,23 @@ class LeftPanel {
    * - Removes the pressed button from whatever tool currently has it.
    * - Adds the the pressed button  to the button passed in.
    * @function this.updateLeftPanel
-   * @param {string|Element} button The DOM element or string selector representing the toolbar button
+   * @param {string} button The id of the toolbar button
    * @returns {boolean} Whether the button was disabled or not
    */
   updateLeftPanel (button) {
-    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    if (/** @type {HTMLButtonElement} */ (button).disabled) return false
+    const { $req, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    if (/** @type {{ disabled?: boolean }} */ (/** @type {unknown} */ (button)).disabled) return false
     // switching tools exits lock mode (see lockTool / double-click gesture)
     this.editor.svgCanvas.setToolLocked(false)
     $qa('#tools_left *[locked]').forEach((/** @type {{ removeAttribute: (arg0: string) => void; }} */ b) => {
       b.removeAttribute('locked')
     })
     // remove the pressed state on other(s) button(s)
-    $qa('#tools_left *[pressed]').forEach((/** @type {{ pressed: boolean; }} */ b) => {
-      b.pressed = false
+    $qa('#tools_left *[pressed]').forEach((b) => {
+      /** @type {*} */ (b).pressed = false
     })
     // pressed state for the clicked button
-    $id(button).pressed = true
+    ;/** @type {*} */ ($req(button)).pressed = true
     return true
   }
 
@@ -184,12 +184,12 @@ class LeftPanel {
   }
 
   /**
-* @param {string | Element} id
+* @param {string} id
 * @param {() => void} handler
 */
   add (id, handler) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $click($id(id), () => {
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $click($req(id), () => {
       if (this.updateLeftPanel(id)) {
         handler()
       }
@@ -208,8 +208,8 @@ class LeftPanel {
    * @returns {void}
    */
   finalizeToolOrder () {
-    const { $id } = this.editor
-    const container = $id('tools_left')
+    const { $req } = this.editor
+    const container = $req('tools_left')
     const currentIds = Array.from(container.children).map((el) => el.id).filter(Boolean)
     const stored = loadToolOrder()
     // Never-customised order (null, or a snapshot of the natural DOM order saved
@@ -225,8 +225,8 @@ class LeftPanel {
     overflowEl.setAttribute('src', 'more_tools.svg')
     container.appendChild(overflowEl)
 
-    main.forEach((id) => container.insertBefore($id(id), overflowEl))
-    overflow.forEach((id) => overflowEl.appendChild($id(id)))
+    main.forEach((id) => container.insertBefore($req(id), overflowEl))
+    overflow.forEach((id) => overflowEl.appendChild($req(id)))
     saveToolOrder({ main, overflow })
     markToolGroups(container)
 
@@ -261,14 +261,14 @@ class LeftPanel {
   }
 
   init () {
-    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Left panel
     const template = document.createElement('template')
     template.innerHTML = leftPanelHTML
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     this.editor.svgCanvas.bind('extensions_added', () => this.finalizeToolOrder())
     // the tool buttons are views of registry commands (`command=` in LeftPanel.html, panelCommands.js)
-    $req('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
+    $req('se-image-import-dialog').addEventListener('change', /** @type {EventListener} */ (/** @type {unknown} */ (this.handleImageImport.bind(this))))
 
     // flyout
 
@@ -277,7 +277,7 @@ class LeftPanel {
     // (the variant buttons live in a menu that's hidden when collapsed), which
     // locks whatever variant is currently active.
     LOCKABLE_TOOL_IDS.forEach((id) => {
-      const el = $id(id)
+      const el = $req(id)
       el.addEventListener('dblclick', () => this.lockTool(el))
     })
   }

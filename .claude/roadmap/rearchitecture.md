@@ -222,15 +222,12 @@ Per module: `git mv x.js x.ts`, move the JSDoc types into syntax (TypeScript's o
 no enums or parameter properties, and no hand-written declaration file describes the canvas any more (R2).
 Retire the d.ts and the drift test only with R2.
 
-**The editor (2026-10-17).** `src/editor` is JavaScript with JSDoc, 222 files (locale data included). Under `strict` it had 5,862 errors in 159 files (almost all
+**The editor (2026-10-17).** `src/editor` is JavaScript with JSDoc, 223 files. Under `strict` it had 5,862 errors in 159 files (almost all
 DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
 runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
 that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
-200 of 222 files are on the list; about 440 errors remain in the other 22, spread thin (none above 28): the small extensions (`ext-layer_view`, `ext-grid`,
-`ext-live-effects`, `ext-cutter`, `ext-shaper`, `ext-ruler-guides`, `ext-distort-tool`, `fontStore`), a few components/dialogs (`seFontSelect`,
-`seFontLibrary`, `seBrushSettings`, `hotkeyDialog`, `sePalette`) and `Rulers`, `MainMenu`, `LeftPanel`, `BottomPanel`, `layerGestures`, `addToShapeLibrary`.
-`Editor.js`, `EditorStartup.js`, `TopPanel`, `RightPanel`, `TabletShell`, `layerTree`, `seShapeLibrary` and the colour picker are clean.
-What made the first 3,000 cheap, and is what the rest should use:
+Every file is on the list, so a new editor file is strict from its first commit; what is left is the `.ts` conversion below.
+What made the first 3,000 cheap, and is what new code should use:
 - `$id('x')` returns the element type of that id (`src/editor/ui-ids.d.ts`, generated from the panels' HTML and the templates inside the JS sources by
   `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.
 - `querySelector('se-…')` and `HTMLElementTagNameMap['se-…']` are typed through `src/editor/element-tags.d.ts` (kept in step with the

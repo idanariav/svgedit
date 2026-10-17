@@ -187,6 +187,8 @@ export interface Config {
   smartSnapping?: boolean
   /** Ruler guides are drawn; only `false` hides them. */
   showGuides?: boolean
+  /** Ruler guides cannot be grabbed; only `true` locks them. */
+  lockGuides?: boolean
   showRulers?: boolean
   /** Output viewBox + xmlns instead of fixed width / height. */
   dynamicOutput?: boolean
@@ -282,7 +284,7 @@ export type ExtensionResult = Record<string, unknown>
 export interface RasterExportOptions {
   includeBg?: boolean
   bgcolor?: string
-  crop?: { x: number, y: number, w: number, h: number }
+  crop?: { x: number, y: number, w: number, h: number } | null
   scale?: number
   avoidEvent?: boolean
 }

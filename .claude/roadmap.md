@@ -47,8 +47,8 @@ short: details belong in the area files.
 
 ## Background tracks
 
-- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, typed by the `check-editor-strict` ratchet, 200 of 222 files so far): burn
-  the remaining files down, biggest wins first, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
+- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, typed by the `check-editor-strict` ratchet, every file is on the list): the
+  next step is the `.ts` conversion, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48): one "Run editor command…" palette picker
   over `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette
   entries, by decision. The picker asks for a command's `params` (2026-10-15); no editor command declares any yet.

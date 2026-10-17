@@ -41,9 +41,9 @@ export const addSelectedToShapeLibrary = async (editor) => {
   }
   let bbox
   try {
-    bbox = editor.svgCanvas.getStrokedBBox(elems) || elems[0].getBBox()
+    bbox = editor.svgCanvas.getStrokedBBox(elems) || /** @type {SVGGraphicsElement} */ (elems[0]).getBBox()
   } catch {
-    bbox = elems[0].getBBox()
+    bbox = /** @type {SVGGraphicsElement} */ (elems[0]).getBBox()
   }
 
   const result = await showAddToLibraryDialog(editor)
@@ -100,7 +100,7 @@ const stripBackdropRects = (editor, elems) => {
   const eps = 1
   const isBackdrop = (/** @type {Element} */ el) => {
     if (el.tagName !== 'rect') return false
-    const fill = el.getAttribute('fill') ?? el.style?.fill
+    const fill = el.getAttribute('fill') ?? /** @type {SVGElement} */ (el).style?.fill
     if (fill === 'none' || fill === 'transparent') return false
     let b
     try {
@@ -130,7 +130,7 @@ const showAddToLibraryDialog = async (editor) => {
   // picker. Delegating opened a second modal that rendered *behind* this
   // top-layer <dialog>; an inline datalist popup shares the top layer instead.
   const hasVault = typeof window.svgEditHost?.listVaultFiles === 'function'
-  const vaultFiles = hasVault ? (await window.svgEditHost.listVaultFiles()) || [] : []
+  const vaultFiles = hasVault ? (await window.svgEditHost?.listVaultFiles?.()) || [] : []
   return new Promise((resolve) => {
     const userCats = getUserCategories()
     const capitalize = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -238,7 +238,7 @@ const showAddToLibraryDialog = async (editor) => {
 
     document.body.appendChild(dlg)
     dlg.showModal()
-    dlg.querySelector('#_asl_label').focus()
+    ;/** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_label')).focus()
 
     const select = /** @type {HTMLSelectElement} */ (dlg.querySelector('#_asl_cat_select'))
     const newInput = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_cat_new'))
@@ -271,7 +271,7 @@ const showAddToLibraryDialog = async (editor) => {
 
       const closeLabelMenu = () => { labelMenu.style.display = 'none'; labelActiveIdx = -1 }
       const highlightLabel = () => {
-        [...labelMenu.children].forEach((li, i) => {
+        ;/** @type {HTMLElement[]} */ (Array.from(labelMenu.children)).forEach((li, i) => {
           li.style.background = i === labelActiveIdx ? 'var(--accent,#2962FF)' : 'transparent'
           li.style.color = i === labelActiveIdx ? '#FFF' : 'var(--fg,#1B1F24)'
         })
@@ -324,7 +324,7 @@ const showAddToLibraryDialog = async (editor) => {
     // Only a path the host actually offered counts; free text is ignored.
     const getLinkedFile = () => {
       if (!hasVault) return null
-      const path = dlg.querySelector('#_asl_vault_link').value.trim()
+      const path = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_vault_link')).value.trim()
       return path ? (linkByPath.get(path) || null) : null
     }
 
@@ -345,7 +345,7 @@ const showAddToLibraryDialog = async (editor) => {
 
       const closeMenu = () => { menu.style.display = 'none'; activeIdx = -1 }
       const highlight = () => {
-        [...menu.children].forEach((li, i) => {
+        ;/** @type {HTMLElement[]} */ (Array.from(menu.children)).forEach((li, i) => {
           li.style.background = i === activeIdx ? 'var(--accent,#2962FF)' : 'transparent'
           li.style.color = i === activeIdx ? '#FFF' : 'var(--fg,#1B1F24)'
         })
@@ -399,10 +399,10 @@ const showAddToLibraryDialog = async (editor) => {
       resolve(value)
     }
 
-    dlg.querySelector('#_asl_cancel').addEventListener('click', () => cleanup(null))
+    dlg.querySelector('#_asl_cancel')?.addEventListener('click', () => cleanup(null))
 
-    dlg.querySelector('#_asl_ok').addEventListener('click', () => {
-      const label = dlg.querySelector('#_asl_label').value.trim()
+    dlg.querySelector('#_asl_ok')?.addEventListener('click', () => {
+      const label = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_label')).value.trim()
       const category = getCategory()
       if (!label || !category) return
       const existing = getUserShapesForCategory(category.trim().toLowerCase())

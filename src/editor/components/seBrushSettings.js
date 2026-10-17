@@ -102,8 +102,15 @@ const TEMPLATE_HTML = `
   .slot-btn.filled {
     border-color: var(--accent-border, #C7D7FF);
   }
+  /* the brush in use: solid, unmistakable */
   .slot-btn.active {
-    border-color: var(--accent-border, #C7D7FF);
+    border-color: var(--accent, #2962FF);
+    background: var(--accent, #2962FF);
+    color: var(--chrome-bg, #fff);
+  }
+  /* the slot last loaded or saved, whose values were edited since: dashed outline */
+  .slot-btn.modified {
+    border: 1px dashed var(--accent, #2962FF);
     background: var(--accent-soft, #E8EFFF);
     color: var(--accent, #2962FF);
   }
@@ -177,34 +184,41 @@ class SeBrushSettings extends SeSettingsPopover {
     super(TEMPLATE_HTML)
 
     this.$slots = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.slots'))
+    /** @type {number|null} the slot last loaded or saved, to mark it `modified` once the fields drift from it */
+    this._lastSlot = null
     this._buildSlots()
 
     for (const [key, id, scale] of FIELDS) {
-      this._shadowRoot.querySelector(`#${id}`).addEventListener('change', () => {
+      this._input(id).addEventListener('change', () => {
         requireOwnerEditor(this).svgCanvas.setBrushParams?.({ [key]: this._readField(id, scale) })
         this._refreshSlots()
       })
     }
   }
 
+  /** @param {string} id */
+  _input (id) {
+    return /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector(`#${id}`))
+  }
+
   /**
-* @param {string | number} id
+* @param {string} id
 * @param {number} scale
 */
   _readField (id, scale) {
-    const raw = parseFloat(this._shadowRoot.querySelector(`#${id}`).value)
+    const raw = parseFloat(this._input(id).value)
     const val = Number.isFinite(raw) ? raw : 0
     return scale === 1 ? val : val / scale
   }
 
   /**
-* @param {import("@svgedit/svgcanvas/core/canvas-state.ts").BrushParams} params
+* @param {Record<string, number>} params
 */
   _writeFields (params) {
     for (const [key, id, scale] of FIELDS) {
       const val = params[key]
       if (val === undefined) continue
-      this._shadowRoot.querySelector(`#${id}`).value = scale === 1 ? val : val * scale
+      this._input(id).value = String(scale === 1 ? val : val * scale)
     }
   }
 
@@ -220,13 +234,15 @@ class SeBrushSettings extends SeSettingsPopover {
           <button class="slot-del" title="Delete slot ${i + 1}">Del</button>
         </div>
       `
-      slot.querySelector('.slot-btn').addEventListener('click', () => this._loadSlot(i))
-      slot.querySelector('.slot-btn').addEventListener('dblclick', (e) => {
+      const on = (/** @type {string} */ sel, /** @type {string} */ type, /** @type {(e: Event) => void} */ fn) =>
+        /** @type {Element} */ (slot.querySelector(sel)).addEventListener(type, fn)
+      on('.slot-btn', 'click', () => this._loadSlot(i))
+      on('.slot-btn', 'dblclick', (e) => {
         e.stopPropagation()
         this._renameSlot(i)
       })
-      slot.querySelector('.slot-save').addEventListener('click', () => this._saveSlot(i))
-      slot.querySelector('.slot-del').addEventListener('click', () => this._deleteSlot(i))
+      on('.slot-save', 'click', () => this._saveSlot(i))
+      on('.slot-del', 'click', () => this._deleteSlot(i))
       this.$slots.append(slot)
     }
     this._refreshSlots()
@@ -237,23 +253,27 @@ class SeBrushSettings extends SeSettingsPopover {
   // recomputed on every refresh rather than tracked as separate state that
   // could drift out of sync with edits/loads/saves/deletes.
   /**
-* @param {Object | null} a
-* @param {import("@svgedit/svgcanvas/core/canvas-state.ts").BrushParams} b
+* @param {Record<string, *> | null} a
+* @param {unknown} b
 */
   _paramsEqual (a, b) {
-    return Boolean(a) && Boolean(b) && FIELDS.every(([key]) => Number(a[key]) === Number(b[key]))
+    return Boolean(a) && Boolean(b) && FIELDS.every(([key]) => Number(/** @type {Record<string, *>} */ (a)[key]) === Number(/** @type {Record<string, *>} */ (b)[key]))
   }
 
   _refreshSlots () {
     const active = requireOwnerEditor(this).svgCanvas.getBrushParams?.()
+    const saved = Array.from({ length: BRUSH_SLOT_COUNT }, (_, i) => getBrushSlot(i))
+    const anyActive = saved.some((slot) => this._paramsEqual(slot, active))
     this.$slots.querySelectorAll('.slot').forEach((slot, i) => {
-      const saved = getBrushSlot(i)
       const btn = /** @type {HTMLButtonElement} */ (slot.querySelector('.slot-btn'))
-      btn.classList.toggle('filled', Boolean(saved))
-      btn.classList.toggle('active', this._paramsEqual(saved, active))
-      btn.textContent = saved?.name || String(i + 1)
-      btn.title = saved
-        ? `${saved.name || `Brush ${i + 1}`} — double-click to rename`
+      const isActive = this._paramsEqual(saved[i], active)
+      btn.classList.toggle('filled', Boolean(saved[i]))
+      btn.classList.toggle('active', isActive)
+      btn.classList.toggle('modified', !anyActive && this._lastSlot === i && Boolean(saved[i]))
+      btn.setAttribute('aria-pressed', String(isActive))
+      btn.textContent = saved[i]?.name || String(i + 1)
+      btn.title = saved[i]
+        ? `${saved[i]?.name || `Brush ${i + 1}`}${isActive ? ' (in use)' : btn.classList.contains('modified') ? ' (edited)' : ''} — double-click to rename`
         : `Load brush ${i + 1}`
     })
   }
@@ -265,10 +285,12 @@ class SeBrushSettings extends SeSettingsPopover {
     const saved = getBrushSlot(i)
     if (!saved) return
     // Strip `name` — it's slot metadata, not a live brush param.
+    /** @type {Record<string, *>} */
     const params = {}
     for (const [key] of FIELDS) if (saved[key] !== undefined) params[key] = saved[key]
     requireOwnerEditor(this).svgCanvas.setBrushParams?.(params)
     this._writeFields(params)
+    this._lastSlot = i
     this._refreshSlots()
   }
 
@@ -276,11 +298,13 @@ class SeBrushSettings extends SeSettingsPopover {
 * @param {number} i
 */
   _saveSlot (i) {
+    /** @type {Record<string, *>} */
     const params = {}
     for (const [key, id, scale] of FIELDS) params[key] = this._readField(id, scale)
     const existingName = getBrushSlot(i)?.name
     if (existingName) params.name = existingName
     saveBrushSlot(i, params)
+    this._lastSlot = i
     this._refreshSlots()
   }
 
@@ -289,6 +313,7 @@ class SeBrushSettings extends SeSettingsPopover {
 */
   _deleteSlot (i) {
     deleteBrushSlot(i)
+    if (this._lastSlot === i) this._lastSlot = null
     this._refreshSlots()
   }
 
@@ -305,7 +330,7 @@ class SeBrushSettings extends SeSettingsPopover {
   }
 
   open () {
-    this._writeFields(requireOwnerEditor(this).svgCanvas.getBrushParams?.() ?? {})
+    this._writeFields(/** @type {Record<string, number>} */ (/** @type {unknown} */ (requireOwnerEditor(this).svgCanvas.getBrushParams?.() ?? {})))
     this._refreshSlots()
     super.open()
   }

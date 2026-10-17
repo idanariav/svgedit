@@ -24,8 +24,14 @@ const buildContainer = () => {
 
 const makeBottomPanel = (container, { fill = '#000000', stroke = '#000000' } = {}) => {
   const $id = (id) => container.querySelector(`[id="${id}"]`)
+  const $req = (id) => {
+    const el = $id(id)
+    if (!el) throw new Error(`#${id} is missing`)
+    return el
+  }
   const editor = {
     $id,
+    $req,
     leftPanel: { clickSelect: () => {} },
     svgCanvas: {
       getColor: (type) => (type === 'fill' ? fill : stroke),

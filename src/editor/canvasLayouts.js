@@ -22,7 +22,7 @@ const LAYER_PREFIX = 'Layout: '
 
 /**
  * Keep only well-formed layout entries.
- * @param {Array} arr
+ * @param {*} arr
  * @returns {Array<{name:string,w:number,h:number,bg:string,svg:string}>}
  */
 const sanitizeLayouts = (arr) =>
@@ -59,7 +59,7 @@ export const loadLayouts = () => {
 
 /**
  * Persist layouts via the host adapter, else localStorage.
- * @param {Array} layouts
+ * @param {Array<*>} layouts
  * @returns {void}
  */
 export const saveLayouts = (layouts) => {
@@ -117,21 +117,17 @@ export const applyLayout = (editor, layout) => {
     logError('Failed to parse layout SVG', layout.name, 'canvasLayouts')
     return
   }
-  /**
-* @type {ChildNode[]}
-*/
+  /** @type {Element[]} */
   const drawables = []
   doc.querySelectorAll('g.layer').forEach(layer => {
     layer.childNodes.forEach(node => {
-      if (node.nodeType === 1 && node.localName !== 'title') drawables.push(node)
+      if (node instanceof Element && node.localName !== 'title') drawables.push(node)
     })
   })
-  /**
-* @type {ChildNode[]}
-*/
+  /** @type {Element[]} */
   const defs = []
   doc.querySelector('defs')?.childNodes.forEach(node => {
-    if (node.nodeType === 1) defs.push(node)
+    if (node instanceof Element) defs.push(node)
   })
   if (!drawables.length && !defs.length) return
 
@@ -140,15 +136,16 @@ export const applyLayout = (editor, layout) => {
   //    (packages/svgcanvas/core/paste-elem.js).
   const defsJson = defs.map(n => svgCanvas.getJsonFromSvgElements(n))
   const drawJson = drawables.map(n => svgCanvas.getJsonFromSvgElements(n))
+  /** @type {Record<string, string>} */
   const changedIDs = {}
-  const checkIDs = (elem) => {
+  const checkIDs = (/** @type {import('@svgedit/svgcanvas').SVGElementJSON} */ elem) => {
     if (elem?.attr?.id) {
-      changedIDs[elem.attr.id] = svgCanvas.getNextId()
-      elem.attr.id = changedIDs[elem.attr.id]
+      changedIDs[String(elem.attr.id)] = svgCanvas.getNextId()
+      elem.attr.id = changedIDs[String(elem.attr.id)]
     }
     elem?.children?.forEach(checkIDs)
   }
-  const remapReferences = (elem) => {
+  const remapReferences = (/** @type {import('@svgedit/svgcanvas').SVGElementJSON} */ elem) => {
     const attrs = elem?.attr
     if (attrs) {
       for (const [attrName, attrVal] of Object.entries(attrs)) {

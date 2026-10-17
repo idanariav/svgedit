@@ -46,7 +46,7 @@ const loadExtensionTranslation = function (svgEditor) {
 
 export default {
   name,
-  async init (_S) {
+  async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
@@ -54,13 +54,13 @@ export default {
 
     // Lock state of every layer captured when focus mode is enabled, so exiting
     // restores exactly what the user had rather than blanket-unlocking.
+    /** @type {Record<string, boolean>|null} */
     let savedLocks = null
     // The document keydown listener installed only while the mode is active.
+    /** @type {((e: KeyboardEvent) => void)|null} */
     let keyHandler = null
     // The on-canvas "current layer" badge (created lazily, reused thereafter).
-    /**
-* @type {string | Node | null}
-*/
+    /** @type {HTMLDivElement | null} */
     let badge = null
     // Which badge sub-mode is active: 'current' (Focus, default) or 'all'
     // (All Layers). Reset to 'current' every time the mode is (re-)entered.
@@ -72,7 +72,7 @@ export default {
     // Comment layers sit outside Focus/All-Layers mode entirely — their
     // lock/dim/selectability state is managed solely via the layers panel,
     // not swept up by this extension's bulk operations.
-    const eachLayer = (fn) => {
+    const eachLayer = (/** @type {(lname: string, drawing: ReturnType<typeof svgCanvas.getCurrentDrawing>) => void} */ fn) => {
       const drawing = svgCanvas.getCurrentDrawing()
       let i = drawing.getNumLayers()
       while (i--) {
@@ -94,8 +94,8 @@ export default {
 
       const switchEl = document.createElement('span')
       switchEl.id = 'layer_focus_badge_switch'
-      const makeSegment = (/** @type {string | undefined} */ mode, /** @type {string} */ labelKey, /** @type {string} */ titleKey) => {
-        const btn = /** @type {HTMLElement} */ (document.createElement('button'))
+      const makeSegment = (/** @type {string} */ mode, /** @type {string} */ labelKey, /** @type {string} */ titleKey) => {
+        const btn = document.createElement('button')
         btn.type = 'button'
         btn.dataset.mode = mode
         btn.textContent = svgEditor.i18next.t(`${name}:all.${labelKey}`)
@@ -108,7 +108,7 @@ export default {
       )
       switchEl.addEventListener('click', (e) => {
         const btn = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('button[data-mode]'))
-        if (btn) setSubMode(btn.dataset.mode)
+        if (btn) setSubMode(btn.dataset.mode ?? '')
       })
 
       badge.append(text, switchEl)
@@ -119,11 +119,11 @@ export default {
     const updateBadge = () => {
       const el = ensureBadge()
       const cur = svgCanvas.getCurrentDrawing().getCurrentLayerName()
-      el.querySelector('#layer_focus_badge_text').textContent = subMode === 'all'
+      ;/** @type {Element} */ (el.querySelector('#layer_focus_badge_text')).textContent = subMode === 'all'
         ? svgEditor.i18next.t(`${name}:all.badge`)
         : svgEditor.i18next.t(`${name}:focus.badge`, { name: cur })
-      el.querySelectorAll('#layer_focus_badge_switch button').forEach((/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; dataset: { mode: string; }; }} */ btn) => {
-        btn.classList.toggle('active', btn.dataset.mode === subMode)
+      el.querySelectorAll('#layer_focus_badge_switch button').forEach((btn) => {
+        btn.classList.toggle('active', /** @type {HTMLElement} */ (btn).dataset.mode === subMode)
       })
       el.classList.toggle('visible', isPressed())
     }
@@ -169,8 +169,9 @@ export default {
 
     const enterFocus = () => {
       subMode = 'current'
-      savedLocks = {}
-      eachLayer((lname, drawing) => { savedLocks[lname] = drawing.getLayerLocked(lname) })
+      const locks = /** @type {Record<string, boolean>} */ ({})
+      savedLocks = locks
+      eachLayer((lname, drawing) => { locks[lname] = drawing.getLayerLocked(lname) })
       applyFocus()
       addKeys()
     }
@@ -189,7 +190,7 @@ export default {
     }
 
     const clickLayerView = () => {
-      const btn = $id('tool_layerView')
+      const btn = $req('tool_layerView')
       btn.pressed = !btn.pressed
       if (btn.pressed) enterFocus()
       else exitFocus()
@@ -239,10 +240,10 @@ export default {
       let el = document.activeElement
       while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement
       const tag = el?.nodeName
-      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable === true
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || /** @type {HTMLElement|null} */ (el)?.isContentEditable === true
     }
 
-    const onKey = (e) => {
+    const onKey = (/** @type {KeyboardEvent} */ e) => {
       // Focused-layer navigation doesn't apply in All Layers mode — there's
       // no single focused layer to switch away from.
       if (!isActiveEditor(svgEditor) || isTyping() || subMode === 'all') return

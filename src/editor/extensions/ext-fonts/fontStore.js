@@ -29,12 +29,17 @@ const STORE = 'fonts'
 const REC_VERSION = 2
 
 // In-memory mirror of cached fonts (family -> base64 woff2) for fast sync checks.
+/** @typedef {{ family: string, woff2Base64: string, v?: number }} FontRecord */
+/** @typedef {{ svgCanvas?: { setEncodableFont: (family: string, base64: string) => void } }} FontEditor */
+
+/** @type {Map<string, string>} */
 const _cache = new Map()
+/** @type {Promise<IDBDatabase>|null} */
 let _dbPromise = null
 
 const openDB = () => {
   if (_dbPromise) return _dbPromise
-  _dbPromise = new Promise((resolve, reject) => {
+  _dbPromise = new Promise((/** @type {(db: IDBDatabase) => void} */ resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1)
     req.onupgradeneeded = () => {
       const db = req.result
@@ -48,9 +53,9 @@ const openDB = () => {
   return _dbPromise
 }
 
-const putRecord = async (record) => {
+const putRecord = async (/** @type {FontRecord} */ record) => {
   const db = await openDB()
-  return new Promise((resolve, reject) => {
+  return new Promise((/** @type {(value?: undefined) => void} */ resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.objectStore(STORE).put(record)
     tx.oncomplete = () => resolve()
@@ -60,7 +65,7 @@ const putRecord = async (record) => {
 
 const getRecord = async (/** @type {string} */ family) => {
   const db = await openDB()
-  return new Promise((resolve, reject) => {
+  return new Promise((/** @type {(record: FontRecord|null) => void} */ resolve, reject) => {
     const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(family)
     req.onsuccess = () => resolve(req.result || null)
     req.onerror = () => reject(req.error)
@@ -69,7 +74,7 @@ const getRecord = async (/** @type {string} */ family) => {
 
 const getAllRecords = async () => {
   const db = await openDB()
-  return new Promise((resolve, reject) => {
+  return new Promise((/** @type {(records: FontRecord[]) => void} */ resolve, reject) => {
     const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
     req.onsuccess = () => resolve(req.result || [])
     req.onerror = () => reject(req.error)
@@ -81,7 +86,7 @@ const arrayBufferToBase64 = (/** @type {ArrayBuffer} */ buf) => {
   const bytes = new Uint8Array(buf)
   const chunk = 0x8000
   for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)))
   }
   return btoa(binary)
 }
@@ -138,7 +143,7 @@ const pickLatinWoff2 = (css) => {
  * Safe to call repeatedly.
  * @param {string} family
  * @param {string} base64 woff2
- * @param {object} [editor] Owning Editor whose canvas should embed the font on export
+ * @param {FontEditor|null} [editor] Owning Editor whose canvas should embed the font on export
  * @returns {Promise<void>}
  */
 export const registerFont = async (family, base64, editor) => {
@@ -162,7 +167,7 @@ export const registerFont = async (family, base64, editor) => {
  */
 export const ensureFont = async (family, /** @type {object | null | undefined} */ editor) => {
   if (_cache.has(family)) {
-    await registerFont(family, _cache.get(family), editor)
+    await registerFont(family, /** @type {string} */ (_cache.get(family)), editor)
     return
   }
   const adapter = getUserDataAdapter()
@@ -171,7 +176,7 @@ export const ensureFont = async (family, /** @type {object | null | undefined} *
     // restoreAll() at startup, so a cache miss here means the font is new:
     // download once, hand the binary to the host to persist, then register.
     const woff2Base64 = await downloadGoogleFont(family)
-    await adapter.saveFont(family, woff2Base64)
+    await adapter.saveFont?.(family, woff2Base64)
     await registerFont(family, woff2Base64, editor)
     return
   }
@@ -191,22 +196,24 @@ export const ensureFont = async (family, /** @type {object | null | undefined} *
  * cached fonts render and export without any network access.
  * @returns {Promise<string[]>} families restored
  */
-export const restoreAll = async (/** @type {object | null | undefined} */ editor) => {
+export const restoreAll = async (/** @type {FontEditor | null | undefined} */ editor) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
+    /** @type {FontRecord[]} */
     let records = []
     try {
-      records = await adapter.getFonts()
+      records = (await adapter.getFonts?.()) ?? []
     } catch (e) {
       logWarn('fontStore: failed to read host fonts', e, 'fontStore')
       return []
     }
-    await Promise.all((records || []).map(/** @type {{ family: string; woff2Base64: string; }} */ (/** @type {{ family: string; woff2Base64: string; }} */ r) =>
+    await Promise.all((records || []).map((/** @type {FontRecord} */ r) =>
       registerFont(r.family, r.woff2Base64, editor).catch(e =>
-        logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
+        logWarn(`fontStore: failed to restore "${r.family}"`, e, 'fontStore'))
     ))
     return (records || []).map(r => r.family)
   }
+  /** @type {FontRecord[]} */
   let records = []
   try {
     records = await getAllRecords()
@@ -216,10 +223,10 @@ export const restoreAll = async (/** @type {object | null | undefined} */ editor
   }
   // Ignore stale-version entries; they get re-downloaded (and overwritten) when
   // the user next picks that font.
-  const fresh = records.filter(/** @type {{ v: number; }} */ (/** @type {{ v: number; }} */ r) => r.v === REC_VERSION)
-  await Promise.all(fresh.map(/** @type {{ family: string; woff2Base64: string; }} */ (/** @type {{ family: string; woff2Base64: string; }} */ r) =>
+  const fresh = records.filter((/** @type {FontRecord} */ r) => r.v === REC_VERSION)
+  await Promise.all(fresh.map((/** @type {FontRecord} */ r) =>
     registerFont(r.family, r.woff2Base64, editor).catch(e =>
-      logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
+      logWarn(`fontStore: failed to restore "${r.family}"`, e, 'fontStore'))
   ))
   return fresh.map(r => r.family)
 }

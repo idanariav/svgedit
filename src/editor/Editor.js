@@ -341,7 +341,7 @@ class Editor extends EditorStartup {
   /**
    *
    * @param {string} color
-   * @param {string} url
+   * @param {string} [url]
    * @param {Element} [gradientElem]
    * @param {boolean} [recordUndo] - When true, push the change onto the undo stack
    *   so it can be reverted with the Undo button. Programmatic callers (init,
@@ -392,7 +392,7 @@ class Editor extends EditorStartup {
    * Apply a background state to the canvas, prefs, and bottom-panel swatch.
    * Does not touch the undo stack.
    * @param {string} color
-   * @param {string} url
+   * @param {string} [url]
    * @param {Element} [gradientElem]
    * @returns {void}
    */
@@ -400,7 +400,7 @@ class Editor extends EditorStartup {
     const { $id } = this // container-scoped lookup (see EditorStartup constructor)
     // if (color == this.configObj.pref('bkgd_color') && url == this.configObj.pref('bkgd_url')) { return; }
     this.configObj.pref('bkgd_color', color)
-    this.configObj.pref('bkgd_url', url, true)
+    this.configObj.pref('bkgd_url', /** @type {string} */ (url), true)
     // Persist the gradient XML so it can be restored on next load.
     if (gradientElem) {
       this.configObj.pref('bkgd_gradient', new XMLSerializer().serializeToString(gradientElem))

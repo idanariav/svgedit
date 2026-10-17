@@ -207,4 +207,32 @@ describe('se-brush-settings', () => {
     expect(active(0)).toBe(true)
     expect(active(1)).toBe(false)
   })
+
+  it('a loaded slot whose values were edited is marked modified (not active); an exact match makes it active again', () => {
+    let liveParams = { ...DEFAULT_PARAMS }
+    installMockSvgEditor({
+      svgCanvas: {
+        getBrushParams: () => liveParams,
+        setBrushParams: (p) => { liveParams = { ...liveParams, ...p } }
+      }
+    })
+    const el = mountElement('se-brush-settings')
+    const btn = (i) => el.shadowRoot.querySelectorAll('.slot')[i].querySelector('.slot-btn')
+    el.shadowRoot.querySelectorAll('.slot')[0].querySelector('.slot-save').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(btn(0).classList.contains('active')).toBe(true)
+    expect(btn(0).getAttribute('aria-pressed')).toBe('true')
+    expect(btn(0).classList.contains('modified')).toBe(false)
+
+    const thickness = el.shadowRoot.querySelector('#brush_thickness')
+    thickness.value = '42'
+    thickness.dispatchEvent(new Event('change'))
+    expect(btn(0).classList.contains('active')).toBe(false)
+    expect(btn(0).classList.contains('modified')).toBe(true)
+    expect(btn(1).classList.contains('modified')).toBe(false)
+
+    thickness.value = String(DEFAULT_PARAMS.thickness)
+    thickness.dispatchEvent(new Event('change'))
+    expect(btn(0).classList.contains('active')).toBe(true)
+    expect(btn(0).classList.contains('modified')).toBe(false)
+  })
 })

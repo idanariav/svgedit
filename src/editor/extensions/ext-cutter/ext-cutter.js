@@ -55,7 +55,9 @@ export default {
     // ── Drawing state ────────────────────────────────────────────────────────
     let active = false // true from the first mousedown until finish/cancel
     let drawing = false // true once committed to multi-point mode
+    /** @type {{x: number, y: number}|null} */
     let pendingStart = null // first click/drag-start point, while active && !drawing
+    /** @type {{x: number, y: number}[]} */
     let points = [] // committed vertices, once drawing
     // The selection when multi-point mode started, so it can be restored
     // right before the actual cut (cutShapes scopes to it) after being
@@ -63,13 +65,14 @@ export default {
     // mouseUp for why it's cleared: the global Backspace/Delete "delete
     // selected shape" hotkey would otherwise also fire on the same keypress
     // used here to remove the last vertex.
+    /** @type {Element[]} */
     let selectionAtStart = []
     /** @type {SVGPathElement|null} */
     let previewPath = null
 
     // ── Preview path helpers ─────────────────────────────────────────────────
 
-    const buildD = (pts, tail) => {
+    const buildD = (/** @type {{x: number, y: number}[]} */ pts, /** @type {{x: number, y: number}|undefined} */ tail) => {
       if (pts.length === 0) return ''
       let d = `M${pts[0].x},${pts[0].y}`
       for (let i = 1; i < pts.length; i++) d += ` L${pts[i].x},${pts[i].y}`
@@ -84,7 +87,7 @@ export default {
     const createPreviewPath = (/** @type {{ x: number; y: number; }} */ start) => {
       const svgNS = 'http://www.w3.org/2000/svg'
       const path = document.createElementNS(svgNS, 'path')
-      path.setAttribute('d', buildD([start]))
+      path.setAttribute('d', buildD([start], undefined))
       path.setAttribute('fill', 'none')
       path.setAttribute('stroke', '#e00')
       path.setAttribute('stroke-width', String(1.5 / svgCanvas.getZoom()))
@@ -100,12 +103,12 @@ export default {
     }
 
     const updateRubberBand = (/** @type {number} */ x, /** @type {number} */ y) => {
-      const committed = drawing ? points : [pendingStart]
+      const committed = drawing ? points : (pendingStart ? [pendingStart] : [])
       previewPath?.setAttribute('d', buildD(committed, { x, y }))
     }
 
     const updatePreviewPath = () => {
-      previewPath?.setAttribute('d', buildD(points))
+      previewPath?.setAttribute('d', buildD(points, undefined))
     }
 
     const removePreviewPath = () => {
@@ -164,7 +167,7 @@ export default {
       if (!active) return
       let { x, y } = ev
       const anchor = drawing ? points[points.length - 1] : pendingStart
-      if (ev.mods.shift) ({ x, y } = snapToAngle(anchor.x, anchor.y, x, y))
+      if (ev.mods.shift && anchor) ({ x, y } = snapToAngle(anchor.x, anchor.y, x, y))
       updateRubberBand(x, y)
     }
 
@@ -213,15 +216,17 @@ export default {
       pointerUp (ctx, ev) {
         if (!active) return
         if (drawing) return // vertices commit on mouseDown; nothing more to do per click
+        const start = pendingStart
+        if (!start) return
 
         let { x, y } = ev
-        if (ev.mods.shift) ({ x, y } = snapToAngle(pendingStart.x, pendingStart.y, x, y))
-        const dx = x - pendingStart.x
-        const dy = y - pendingStart.y
+        if (ev.mods.shift) ({ x, y } = snapToAngle(start.x, start.y, x, y))
+        const dx = x - start.x
+        const dy = y - start.y
 
         if (Math.sqrt(dx * dx + dy * dy) >= MIN_SEGMENT) {
           // A real drag: instant straight cut, exactly like before.
-          const cutPoints = [pendingStart, { x, y }]
+          const cutPoints = [start, { x, y }]
           removePreviewPath()
           reset()
           svgCanvas.cutShapes(cutPoints)
@@ -236,7 +241,7 @@ export default {
         // here. Restored right before the cut (or on cancel) in finish/cancel.
         selectionAtStart = svgCanvas.getSelectedElements().filter(Boolean)
         svgCanvas.clearSelection()
-        points = [pendingStart]
+        points = [start]
         drawing = true
       }
     })

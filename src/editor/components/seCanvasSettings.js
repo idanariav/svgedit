@@ -27,7 +27,7 @@ const STORAGE_KEY = 'svg-edit-canvas-presets'
 
 /**
  * Keep only well-formed preset entries (finite positive w/h, string ratio).
- * @param {Array} arr
+ * @param {*} arr
  * @returns {Array<{ratio:string,w:number,h:number}>}
  */
 const sanitizePresets = (arr) =>
@@ -63,7 +63,7 @@ const loadPresets = () => {
 
 /**
  * Persist the canvas presets via the host adapter, else localStorage.
- * @param {Array} presets
+ * @param {Array<*>} presets
  * @returns {void}
  */
 const savePresets = (presets) => {
@@ -79,7 +79,8 @@ const savePresets = (presets) => {
   }
 }
 
-const gcd = (/** @type {number} */ a, /** @type {number} */ b) => (b ? gcd(b, a % b) : a)
+/** @type {(a: number, b: number) => number} */
+const gcd = (a, b) => (b ? gcd(b, a % b) : a)
 
 /**
  * Reduce w:h to a ratio label, e.g. 800x1000 → "4:5".
@@ -434,8 +435,10 @@ class SeCanvasSettings extends SeSettingsPopover {
     this.$layoutName = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('.layout-name'))
     this.$saveLayout = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.save-layout'))
     // Current preset list; (re)loaded on open so host/plugin edits are picked up.
+    /** @type {Array<{ratio:string,w:number,h:number}>} */
     this.presets = []
     // Current saved-layout list; (re)loaded on open.
+    /** @type {Array<{name:string,w:number,h:number,bg:string,svg:string}>} */
     this.layouts = []
 
     this.$apply.addEventListener('click', () => this.apply())
@@ -558,14 +561,14 @@ class SeCanvasSettings extends SeSettingsPopover {
     wInput.type = 'number'
     wInput.min = '1'
     wInput.placeholder = 'W'
-    wInput.value = w
+    wInput.value = String(w)
 
     const hInput = document.createElement('input')
     hInput.className = 'r-h'
     hInput.type = 'number'
     hInput.min = '1'
     hInput.placeholder = 'H'
-    hInput.value = h
+    hInput.value = String(h)
 
     const refreshLabel = () => {
       if (labelInput.dataset.autoLabel !== 'true') return
@@ -591,11 +594,13 @@ class SeCanvasSettings extends SeSettingsPopover {
    * Collect valid rows into `this.presets`, persist, and leave manage mode.
    */
   saveManage () {
+    /** @type {Array<{ratio:string,w:number,h:number}>} */
     const next = []
     this.$manageRows.querySelectorAll('.manage-row').forEach(row => {
-      const w = parseInt(row.querySelector('.r-w').value, 10)
-      const h = parseInt(row.querySelector('.r-h').value, 10)
-      let ratio = row.querySelector('.r-label').value.trim()
+      const field = (/** @type {string} */ sel) => /** @type {HTMLInputElement} */ (row.querySelector(sel)).value
+      const w = parseInt(field('.r-w'), 10)
+      const h = parseInt(field('.r-h'), 10)
+      let ratio = field('.r-label').trim()
       if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return
       if (!ratio) ratio = computeRatio(w, h)
       next.push({ ratio, w, h })

@@ -42,9 +42,11 @@ export default {
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
+    /** @typedef {{name: string, params: Record<string, *>}} FxEntry */
+    /** @typedef {ReturnType<typeof svgCanvas.listLiveEffects>[number]} FxDef */
     const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
-    /** @type {?{index: number, stack: Array<{name: string, params: Object}>}} */
+    /** @type {?{index: number, stack: FxEntry[]}} */
     let editing = null
 
     const randomSeed = () => 1 + Math.floor(Math.random() * 1e9)
@@ -68,7 +70,7 @@ export default {
     }
 
     const renderRows = () => {
-      const rows = $id(`${P}-rows`)
+      const rows = $req(`${P}-rows`)
       const stack = svgCanvas.getLiveEffects()
       rows.replaceChildren(...stack.map((entry, index) => {
         const row = document.createElement('div')
@@ -99,11 +101,11 @@ export default {
     }
 
     // --- parameter editor -------------------------------------------------
-    const buildField = (def, key, entry) => {
+    const buildField = (/** @type {FxDef} */ def, /** @type {string} */ key, /** @type {FxEntry} */ entry) => {
       const dflt = def.defaults[key]
       const onValue = (/** @type {string | number | boolean} */ value) => {
         entry.params[key] = value
-        svgCanvas.previewLiveEffects(editing.stack)
+        if (editing) svgCanvas.previewLiveEffects(editing.stack)
       }
       if (typeof dflt === 'boolean') {
         const label = document.createElement('label')
@@ -119,9 +121,9 @@ export default {
         const range = def.ranges?.[key] ?? {}
         const field = document.createElement('se-spin-input')
         field.setAttribute('label', humanize(key))
-        field.setAttribute('min', range.min ?? -10000)
-        field.setAttribute('max', range.max ?? 10000)
-        field.setAttribute('step', range.step ?? (Number.isInteger(dflt) ? 1 : 0.1))
+        field.setAttribute('min', String(range.min ?? -10000))
+        field.setAttribute('max', String(range.max ?? 10000))
+        field.setAttribute('step', String(range.step ?? (Number.isInteger(dflt) ? 1 : 0.1)))
         field.setAttribute('value', entry.params[key])
         field.addEventListener('change', () => {
           const v = Number(field.value)
@@ -145,7 +147,7 @@ export default {
       return input
     }
 
-    const openEditor = (index, stack) => {
+    const openEditor = (/** @type {number} */ index, /** @type {FxEntry[]} */ stack) => {
       const entry = stack[index]
       const def = entry && effectDef(entry.name)
       if (!def) return
@@ -153,12 +155,13 @@ export default {
       // Work on a copy so Cancel leaves the element untouched.
       editing = { index, stack: stack.map((e) => ({ name: e.name, params: { ...e.params } })) }
       const working = editing.stack[index]
-      const host = $id(`${P}-editor`)
+      const host = $req(`${P}-editor`)
       const title = document.createElement('div')
       title.className = `${P}-editor-title`
       title.textContent = def.label
       const grid = document.createElement('div')
       grid.className = 'sidepanel_section_grid'
+      /** @type {Record<string, *>} */
       const fields = {}
       for (const key of Object.keys(def.defaults)) {
         fields[key] = buildField(def, key, working)
@@ -171,6 +174,7 @@ export default {
       apply.className = `${P}-btn ${P}-btn-primary`
       apply.textContent = tr('apply')
       apply.addEventListener('click', () => {
+        if (!editing) return
         const stackToApply = editing.stack
         closeEditor()
         svgCanvas.applyLiveEffects(stackToApply)
@@ -191,7 +195,7 @@ export default {
         randomize.addEventListener('click', () => {
           working.params.seed = randomSeed()
           fields.seed.value = working.params.seed
-          svgCanvas.previewLiveEffects(editing.stack)
+          if (editing) svgCanvas.previewLiveEffects(editing.stack)
         })
         footer.append(randomize)
       }
@@ -201,7 +205,7 @@ export default {
     }
 
     const refillAddSelect = () => {
-      const select = $id(`${P}-add`)
+      const select = $req(`${P}-add`)
       select.addOption('', tr('addPlaceholder'))
       svgCanvas.listLiveEffects().forEach((e) => select.addOption(e.name, e.label))
       select.value = ''
@@ -251,7 +255,7 @@ export default {
             </div>
           </div>
         `
-        const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
+        const host = $id('tab_effects') || $id('sidepanel_content') || $req('tools_top')
         host.appendChild(panelTemplate.content)
         refillAddSelect()
 

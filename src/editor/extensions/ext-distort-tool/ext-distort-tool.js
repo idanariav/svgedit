@@ -46,9 +46,12 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
-const apply = (m, p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+/** @typedef {{a: number, b: number, c: number, d: number, e: number, f: number}} Mat */
+/** @typedef {{x: number, y: number}} Pt */
 
-const mk = (tag, attrs) => {
+const apply = (/** @type {Mat} */ m, /** @type {Pt} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+
+const mk = (/** @type {string} */ tag, /** @type {Record<string, string|number>} */ attrs) => {
   const e = document.createElementNS(SVG_NS, tag)
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
   return e
@@ -110,7 +113,7 @@ export default {
         stack,
         index,
         name: index >= 0 ? stack[index].name : preferred,
-        corners: index >= 0 ? cornersFromParams(stack[index].params) : IDENTITY_CORNERS.map((c) => ({ ...c })),
+        corners: index >= 0 ? cornersFromParams(/** @type {Record<string, number>} */ (stack[index].params)) : IDENTITY_CORNERS.map((c) => ({ ...c })),
         matrix: m || identity,
         inverse: m ? m.inverse() : identity
       }
@@ -122,9 +125,9 @@ export default {
     }
 
     /** The corners in the layer's coordinates (document units). */
-    const docCorners = (t) => t.corners.map((/** @type {{ x: number; y: number; }} */ c) => apply(t.matrix, { x: t.frame.x + c.x * t.frame.w, y: t.frame.y + c.y * t.frame.h }))
+    const docCorners = (/** @type {Target} */ t) => t.corners.map((/** @type {Pt} */ c) => apply(t.matrix, { x: t.frame.x + c.x * t.frame.w, y: t.frame.y + c.y * t.frame.h }))
 
-    const hitCorner = (/** @type {{ el: Element; frame: { x: number; y: number; w: number; h: number; }; stack: { name: string; params: Object; }[]; index: number; name: string; corners: { x: number; y: number; }[]; matrix: { a: number; b: number; c: number; d: number; e: number; f: number; }; inverse: { a: number; b: number; c: number; d: number; e: number; f: number; }; }} */ t, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev, /** @type {number} */ zoom) => {
+    const hitCorner = (/** @type {Target} */ t, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev, /** @type {number} */ zoom) => {
       const grab = GRAB_PX / zoom
       let best = -1
       let bestDist = grab
@@ -139,7 +142,7 @@ export default {
     }
 
     /** A document point as unit coordinates of the target's frame. */
-    const toUnit = (t, p) => {
+    const toUnit = (/** @type {Target} */ t, /** @type {Pt} */ p) => {
       const q = apply(t.inverse, p)
       return { x: (q.x - t.frame.x) / t.frame.w, y: (q.y - t.frame.y) / t.frame.h }
     }
@@ -157,7 +160,7 @@ export default {
         { x: t.frame.x, y: t.frame.y }, { x: t.frame.x + t.frame.w, y: t.frame.y },
         { x: t.frame.x + t.frame.w, y: t.frame.y + t.frame.h }, { x: t.frame.x, y: t.frame.y + t.frame.h }
       ].map((p) => apply(t.matrix, p))
-      const poly = (list) => list.map((p) => `${p.x},${p.y}`).join(' ')
+      const poly = (/** @type {Pt[]} */ list) => list.map((p) => `${p.x},${p.y}`).join(' ')
       g.append(
         mk('polygon', { points: poly(frame), fill: 'none', stroke: '#8a8a8a', 'stroke-width': 1, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }),
         mk('polygon', { points: poly(pts), fill: 'none', stroke: INK, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' })
@@ -187,7 +190,7 @@ export default {
     // ---- editing ---------------------------------------------------------------
 
     /** The target's stack with the distort entry set to `corners`. */
-    const stackWith = (t, corners) => {
+    const stackWith = (/** @type {Target} */ t, /** @type {Pt[]} */ corners) => {
       const entry = { name: t.name, params: paramsFromCorners(corners) }
       const stack = t.stack.map((e) => ({ name: e.name, params: { ...e.params } }))
       if (t.index >= 0) stack[t.index] = entry
@@ -196,7 +199,7 @@ export default {
     }
 
     /** Write `corners` into the shape (inside the gesture's transaction). Returns false when it cannot. */
-    const write = (t, corners) => {
+    const write = (/** @type {Target} */ t, /** @type {Pt[]} */ corners) => {
       if (t.name === 'perspective' && !isConvexQuad(corners)) return false // the projective map folds over
       const stack = stackWith(t, corners)
       const el = svgCanvas.applyLiveEffectsTo(t.el, stack)
@@ -210,7 +213,7 @@ export default {
     }
 
     const finish = (/** @type {Element | null | undefined} */ el) => {
-      if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
+      if (el && svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
       svgCanvas.call('changed', [el])
     }
 

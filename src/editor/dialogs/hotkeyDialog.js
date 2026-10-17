@@ -9,8 +9,8 @@ import { syncDialogTheme } from '../themeUtil.js'
 const template = document.createElement('template')
 template.innerHTML = hotkeyDialogHTML
 
-const escapeHtml = (/** @type {string} */ s) => String(s).replace(/[&<>"']/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+const escapeHtml = (/** @type {unknown} */ s) => String(s).replace(/[&<>"']/g, (c) => (
+  /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
 ))
 
 /**
@@ -127,7 +127,7 @@ export class SeHotkeyDialog extends HTMLElement {
     }).join('')
   }
 
-  /** @param {object} a a UI action snapshot */
+  /** @param {{id: string, label: string, keys: string[], decorative: ?string, readonly: boolean, customised: boolean}} a a UI action snapshot */
   _rowHtml (a) {
     const recording = this._recording && this._recording.id === a.id
     let keysHtml
@@ -154,8 +154,8 @@ export class SeHotkeyDialog extends HTMLElement {
           `${escapeHtml(t('hotkeys.reset'))}</button>`
       }
     }
-    const conflict = (recording && this._recording.error)
-      ? `<div class="hk-conflict">${escapeHtml(this._recording.error)}</div>`
+    const conflict = (recording && this._recording?.error)
+      ? `<div class="hk-conflict">${escapeHtml(this._recording?.error)}</div>`
       : ''
     return '<div class="hk-row">' +
       `<span class="hk-label">${escapeHtml(a.label)}</span>` +
@@ -171,18 +171,21 @@ export class SeHotkeyDialog extends HTMLElement {
     const { act, id, key } = btn.dataset
     const hk = requireOwnerEditor(this).hotkeys
     if (act === 'remove') {
-      hk.removeKey(id, key)
+      hk.removeKey(id ?? '', key ?? '')
       this._render()
     } else if (act === 'reset') {
-      hk.resetAction(id)
+      hk.resetAction(id ?? '')
       this._render()
     } else if (act === 'add') {
       if (this._recording && this._recording.id === id) this._cancelRecording()
-      else this._startRecording(id)
+      else this._startRecording(id ?? '')
     }
   }
 
-  /** Begin capturing a key combination for action `id`. */
+  /**
+   * Begin capturing a key combination for action `id`.
+   * @param {string} id
+   */
   _startRecording (id) {
     this._cancelRecording()
     this._recording = { id, error: '' }
@@ -197,14 +200,15 @@ export class SeHotkeyDialog extends HTMLElement {
     e.stopPropagation()
     if (e.key === 'Escape') { this._cancelRecording(); this._render(); return }
     const hk = requireOwnerEditor(this).hotkeys
-    const key = hk.constructor.keyFromEvent(e)
+    const key = /** @type {typeof import('../Hotkeys.js').default} */ (hk.constructor).keyFromEvent(e)
     if (!key) return // lone modifier — keep waiting for the full combo
+    if (!this._recording) return
     const { id } = this._recording
     const result = hk.addKey(id, key)
     if (!result.ok) {
-      const a = hk.actions.get(result.conflict)
+      const a = hk.actions.get(result.conflict ?? '')
       const name = a ? hk.labelFor(a) : result.conflict
-      this._recording.error = t('hotkeys.conflict').replace('%s', name)
+      this._recording.error = t('hotkeys.conflict').replace('%s', name ?? '')
       this._render()
       return
     }
