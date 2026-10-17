@@ -50,7 +50,7 @@ export interface CommandSpec {
   params?: Record<string, ParamSpec>
   /** `true`, or a human-readable reason it is unavailable */
   enabled?: (editor: EditorInstance) => true | string
-  run: (editor: EditorInstance, params: Record<string, any>) => unknown
+  run: (editor: EditorInstance, params: never) => unknown
   /** opens a dialog / file picker / prompt (excluded from sweeps and automation) */
   interactive?: boolean
   /** list in host command palettes (default true) */
@@ -94,7 +94,7 @@ export class CommandError extends Error {
  */
 const valuesOf = (spec: ParamSpec): string[] | undefined => typeof spec.values === 'function' ? spec.values() : spec.values
 
-const coerceParam = (id: string, name: string, spec: ParamSpec, value: any) => {
+const coerceParam = (id: string, name: string, spec: ParamSpec, value: unknown) => {
   const bad = (why: string) => new CommandError('badParams', id, `${id}: parameter "${name}" ${why}`)
   switch (spec.type) {
     case 'number': {
@@ -107,7 +107,7 @@ const coerceParam = (id: string, name: string, spec: ParamSpec, value: any) => {
       if (value === false || value === 'false' || value === 0) return false
       throw bad('must be a boolean')
     case 'enum':
-      if (!valuesOf(spec)?.includes(value)) throw bad(`must be one of ${JSON.stringify(valuesOf(spec))}`)
+      if (!valuesOf(spec)?.includes(value as string)) throw bad(`must be one of ${JSON.stringify(valuesOf(spec))}`)
       return value
     default:
       if (value === null || typeof value === 'object') throw bad('must be a string')
@@ -176,7 +176,7 @@ export class CommandRegistry {
     const adapter = Boolean(spec.adapter)
     if (existing && !existing.adapter && !adapter && !replace) {
       const msg = `Duplicate command id "${spec.id}"`
-      if ((import.meta as any).env?.PROD) { logError(msg, undefined, 'commands'); return }
+      if (import.meta.env?.PROD) { logError(msg, undefined, 'commands'); return }
       throw new Error(msg)
     }
     if (existing && !existing.adapter && adapter) {
@@ -348,7 +348,7 @@ export class CommandRegistry {
     const args = this.validate(rec, params)
     try {
       const canvas = this.editor?.svgCanvas
-      const exec = () => rec.run(this.editor, args)
+      const exec = () => rec.run(this.editor, args as never)
       return rec.atomic && canvas?.transact ? canvas.transact(this.labelFor(rec), exec) : exec()
     } catch (err) {
       if (err instanceof CommandError) throw err

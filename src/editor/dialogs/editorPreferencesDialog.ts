@@ -136,33 +136,33 @@ export class SeEditPrefsDialog extends HTMLElement {
   }
 
   /** @function get */
-  get dialog (): any {
+  get dialog (): string | null {
     return this.getAttribute('dialog')
   }
 
   /** @function set */
-  set dialog (value) {
-    this.setAttribute('dialog', value)
+  set dialog (value: string | number) {
+    this.setAttribute('dialog', String(value))
   }
 
   /** @function get */
-  get showrulers (): any {
+  get showrulers (): string | null {
     return this.getAttribute('showrulers')
   }
 
   /** @function set */
-  set showrulers (value) {
-    this.setAttribute('showrulers', value)
+  set showrulers (value: string | number) {
+    this.setAttribute('showrulers', String(value))
   }
 
   /** @function get */
-  get baseunit (): any {
+  get baseunit (): string | null {
     return this.getAttribute('baseunit')
   }
 
   /** @function set */
-  set baseunit (value) {
-    this.setAttribute('baseunit', value)
+  set baseunit (value: string | number) {
+    this.setAttribute('baseunit', String(value))
   }
 
   /**

@@ -16,7 +16,7 @@ const GEOMETRY_ATTRS = ['x', 'y', 'width', 'height', 'cx', 'cy', 'r', 'rx', 'ry'
  * @param doc - Owning document for createElementNS.
  * @returns The new `<path>`, or the original element if not convertible.
  */
-const shapeToPath = (el: Element, doc: Document, svgCanvas: any): Element => {
+const shapeToPath = (el: Element, doc: Document, svgCanvas: { NS: { SVG: string } }): Element => {
   const d = getPathDFromElement(el)
   if (!d) return el
   const path = doc.createElementNS(svgCanvas.NS.SVG, 'path')
@@ -35,7 +35,7 @@ const shapeToPath = (el: Element, doc: Document, svgCanvas: any): Element => {
  * @param node - A top-level imported drawable, in the DOM.
  * @returns The node to keep referencing (a new path if it was a shape).
  */
-const convertShapesToPaths = (node: Element, doc: Document, svgCanvas: unknown): Element => {
+const convertShapesToPaths = (node: Element, doc: Document, svgCanvas: { NS: { SVG: string } }): Element => {
   if (SHAPE_TO_PATH_TAGS.includes(node.localName)) {
     return shapeToPath(node, doc, svgCanvas)
   }

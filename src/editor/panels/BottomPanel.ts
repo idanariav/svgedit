@@ -23,7 +23,7 @@ class BottomPanel {
   }
 
   changeStrokeWidth (e: Event) {
-    let val: any = (e.target as HTMLInputElement).value
+    let val = (e.target as unknown as { value: number }).value
     if (
       val === 0 &&
       this.editor.selectedElement &&
@@ -83,27 +83,27 @@ class BottomPanel {
     if (bNoStroke) {
       buttonsNeedingStroke.forEach(btn => {
         // if btn is pressed, change to select button
-        if (($req(btn) as any).pressed) {
+        if (($req(btn) as unknown as { pressed: boolean, disabled: boolean }).pressed) {
           this.editor.leftPanel.clickSelect()
         }
-        ($req(btn) as any).disabled = true
+        ($req(btn) as unknown as { pressed: boolean, disabled: boolean }).disabled = true
       })
     } else {
       buttonsNeedingStroke.forEach(btn => {
-        ($req(btn) as any).disabled = false
+        ($req(btn) as unknown as { pressed: boolean, disabled: boolean }).disabled = false
       })
     }
     if (bNoStroke && bNoFill) {
       buttonsNeedingFillAndStroke.forEach(btn => {
         // if btn is pressed, change to select button
-        if (($req(btn) as any).pressed) {
+        if (($req(btn) as unknown as { pressed: boolean, disabled: boolean }).pressed) {
           this.editor.leftPanel.clickSelect()
         }
-        ($req(btn) as any).disabled = true
+        ($req(btn) as unknown as { pressed: boolean, disabled: boolean }).disabled = true
       })
     } else {
       buttonsNeedingFillAndStroke.forEach(btn => {
-        ($req(btn) as any).disabled = false
+        ($req(btn) as unknown as { pressed: boolean, disabled: boolean }).disabled = false
       })
     }
   }
@@ -221,7 +221,7 @@ class BottomPanel {
     $req('stroke_color').init(i18next)
     $req('bg_color').init(i18next)
     // Initialize background color picker from saved preference
-    const initBgColor = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
+    const initBgColor = String(this.editor.configObj.curPrefs.bkgd_color || '#ffffff')
     $req('bg_color').setPaint(
       new Paint({ alpha: 100, solidColor: initBgColor.replace('#', '') })
     )

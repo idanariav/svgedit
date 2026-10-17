@@ -265,13 +265,13 @@ class SeZoom extends HTMLElement {
   }
 
   /** @function get */
-  get value (): any {
-    return this.getAttribute('value')
+  get value (): string {
+    return this.getAttribute('value') as string
   }
 
   /** @function set */
-  set value (value) {
-    this.setAttribute('value', value)
+  set value (value: string | number) {
+    this.setAttribute('value', String(value))
   }
 
   /** @function attributeChangedCallback */
@@ -321,7 +321,7 @@ class SeZoom extends HTMLElement {
 
   /** @function handleSelect */
   handleSelect (e: Event): void {
-    this.value = (e.target as Element).getAttribute('value')
+    this.value = (e.target as Element).getAttribute('value') as string
     this.title = (e.target as Element).getAttribute('text') ?? ''
   }
 
@@ -378,7 +378,7 @@ class SeZoom extends HTMLElement {
 
   /** @function decrement */
   decrement (): void {
-    if (this.value - 10 <= 0) {
+    if (Number(this.value) - 10 <= 0) {
       this.value = 10
     } else {
       this.value = parseInt(this.value) - 10

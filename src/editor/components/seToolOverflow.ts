@@ -19,7 +19,7 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  */
 export class ToolOverflow extends HTMLElement {
   imgPath: unknown
-  template: any
+  template: HTMLTemplateElement
   _shadowRoot: ShadowRoot
   $button: HTMLDivElement
   $overall: HTMLDivElement
@@ -56,7 +56,7 @@ export class ToolOverflow extends HTMLElement {
    * @function createTemplate
  * @returns template
    */
-  createTemplate (): unknown {
+  createTemplate (): HTMLTemplateElement {
     const template = document.createElement('template')
     template.innerHTML = `
       <style>

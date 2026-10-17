@@ -29,7 +29,10 @@ const SOURCE_ATTR = 'se:repeat-source'
 const COPY_ATTR = 'se:repeat-copy'
 const PARAMS_ATTR = 'se:repeat'
 
-export type RepeatParams = Record<string, any> & { mode: string }
+export type RepeatParams =
+  | { mode: 'radial', count: number, sweep: number, center: 'canvas' | 'selection' | 'custom', centerX?: number, centerY?: number }
+  | { mode: 'grid', rows: number, cols: number, gapX: number, gapY: number }
+  | { mode: 'path', count: number, offset: number, span: number, follow: boolean | number, rail?: string }
 /**
  * How a repeat is laid out; `mode` says which of the other fields count (radial: count, sweep, center, centerX, centerY;
  * grid: rows, cols, gapX, gapY; path: count, offset, span, follow, rail).
@@ -128,12 +131,12 @@ export default defineFeature({
       // is never cloned or stamped.
       let rail: SVGPathElement | null = null
       if (params.mode === 'path') {
-        const byId = (id: string) => id
+        const byId = (id: string | undefined) => id
           ? svgCanvas.getSvgContent().querySelector(`#${CSS.escape(id)}`)
           : null
         rail = (byId(params.rail) as SVGPathElement | null)
         if (!rail && uid && sources[0]) {
-          rail = (byId(parseParams(sources[0].getAttribute(PARAMS_ATTR))?.rail) as SVGPathElement | null)
+          rail = (byId((parseParams(sources[0].getAttribute(PARAMS_ATTR)) as { rail?: string } | null)?.rail) as SVGPathElement | null)
         }
         if (!rail) {
           const paths = sources.filter((el) => el.tagName === 'path').sort((a, b) =>
@@ -258,7 +261,7 @@ export default defineFeature({
       svgCanvas.call('changed', sources)
     }
 
-    svgCanvas.repeatSelection = repeatSelection
+    svgCanvas.repeatSelection = repeatSelection as typeof svgCanvas.repeatSelection
     svgCanvas.getRepeatParams = getRepeatParams
 
     // One-shot canvas interaction for picking a custom radial-repeat center:

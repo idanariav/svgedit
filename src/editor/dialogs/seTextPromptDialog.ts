@@ -49,7 +49,7 @@ export class SeTextPromptDialog extends HTMLElement {
   }
 
   /** @function init */
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this._okText = i18next.t('common.ok')
     this._cancelText = i18next.t('common.cancel')
     this.$okBtn.textContent = this._okText

@@ -180,63 +180,63 @@ export class SeImgPropDialog extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */
-  get width (): any {
+  get width (): string | null {
     return this.getAttribute('width')
   }
 
   /** @function set */
-  set width (value) {
-    this.setAttribute('width', value)
+  set width (value: string | number) {
+    this.setAttribute('width', String(value))
   }
 
   /** @function get */
-  get height (): any {
+  get height (): string | null {
     return this.getAttribute('height')
   }
 
   /** @function set */
-  set height (value) {
-    this.setAttribute('height', value)
+  set height (value: string | number) {
+    this.setAttribute('height', String(value))
   }
 
   /** @function get */
-  get save (): any {
+  get save (): string | null {
     return this.getAttribute('save')
   }
 
   /** @function set */
-  set save (value) {
-    this.setAttribute('save', value)
+  set save (value: string | number) {
+    this.setAttribute('save', String(value))
   }
 
   /** @function get */
-  get dialog (): any {
+  get dialog (): string | null {
     return this.getAttribute('dialog')
   }
 
   /** @function set */
-  set dialog (value) {
-    this.setAttribute('dialog', value)
+  set dialog (value: string | number) {
+    this.setAttribute('dialog', String(value))
   }
 
   /** @function get */
-  get embed (): any {
+  get embed (): string | null {
     return this.getAttribute('embed')
   }
 
   /** @function set */
-  set embed (value) {
-    this.setAttribute('embed', value)
+  set embed (value: string | number) {
+    this.setAttribute('embed', String(value))
   }
 
   /** @function connectedCallback */

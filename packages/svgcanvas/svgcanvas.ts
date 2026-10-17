@@ -1563,7 +1563,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     this.call('afterClear')
   }
 
-  async addExtension (name: string, extInitFunc: (arg: object) => unknown, { importLocale }: { importLocale: unknown }): Promise<unknown> {
+  async addExtension (name: string, extInitFunc: (arg: object) => unknown, { importLocale }: { importLocale?: unknown, langParam?: string }): Promise<unknown> {
     if (typeof extInitFunc !== 'function') {
       throw new TypeError(
         'Function argument expected for `svgcanvas.addExtension`'

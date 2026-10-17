@@ -25,15 +25,58 @@ export const regexEscape = function (str: string): string {
  */
 export const SESSION_ONLY_PREFS = new Set(['bkgd_color', 'bkgd_url', 'bkgd_gradient'])
 
+/** The settings a host passes to `setConfig` / `init`; unknown keys are kept (extensions read their own). */
+export interface EditorConfig {
+  canvasName: string
+  canvas_expansion: number
+  initFill: { color: string, opacity: number }
+  initStroke: { width: number, color: string, opacity: number }
+  text: { stroke_width: number, font_size: number, font_family: string }
+  initOpacity: number
+  initTool: string
+  exportWindowType: string
+  wireframe: boolean
+  showlayers: boolean
+  no_save_warning: boolean
+  imgPath: string
+  extPath: string
+  dimensions: [number, number]
+  gridSnapping: boolean
+  wireframeSnapping: boolean
+  gridColor: string
+  baseUnit: string
+  snappingStep: number
+  showRulers: boolean
+  hideTabletToggle: boolean
+  hideTitle: boolean
+  dynamicOutput: boolean
+  noDefaultExtensions: boolean
+  disabledFeatures: string[]
+  showGrid: boolean
+  gridShape: string
+  avoidClientSide: boolean
+  avoidClientSideDownload: boolean
+  avoidClientSideOpen: boolean
+  layerView: boolean
+  pencilStabilization: number
+  pencilFidelity: number
+  userDataAdapter: import('./userDataAdapter.ts').UserDataAdapter | null
+  extensions?: string[]
+  [key: string]: unknown
+}
+
+/** Preferences persisted per user (localStorage or the host adapter). */
+export type EditorPrefs = Record<string, string | number | boolean>
+
 /**
  * @class configObj
  */
 export default class ConfigObj {
-  defaultPrefs: Record<string, any>
-  defaultConfig: Record<string, unknown>
-  curPrefs: Record<string, any>
+  defaultPrefs: EditorPrefs
+  defaultConfig: EditorConfig
+  curPrefs: Partial<EditorPrefs>
   defaultExtensions: string[]
-  curConfig: Record<string, any>
+  curConfig: EditorConfig
   editor: EditorInstance
 
   /** Whether the preferences dialog is open (the editor sets it). */ preferences: boolean
@@ -267,7 +310,7 @@ export default class ConfigObj {
       // We do not put on defaultConfig to simplify object copying
       //   procedures (we obtain instead from defaultExtensions)
       extensions: []
-    }
+    } as Partial<EditorConfig> as EditorConfig
     this.editor = editor
   }
 
@@ -288,7 +331,7 @@ export default class ConfigObj {
     }
     if (curConfig.disabledFeatures?.length) {
       const off = new Set(curConfig.disabledFeatures.map((name: string) => (name.startsWith('ext-') ? name : `ext-${name}`)))
-      curConfig.extensions = curConfig.extensions.filter((name: string) => !off.has(name))
+      curConfig.extensions = (curConfig.extensions ?? []).filter((name: string) => !off.has(name))
     }
     // Export updated config
     this.curConfig = curConfig
@@ -328,11 +371,11 @@ you supply as the default; note that it will be too late if you make
 such calls in extension code because preference storage will already
 have been read.
    */
-  setConfig (opts: Record<string, any>, cfgCfg: { allowInitialUserOverride?: boolean } = {}): void {
+  setConfig (opts: Partial<EditorConfig> & Record<string, unknown>, cfgCfg: { allowInitialUserOverride?: boolean } = {}): void {
     /** @param val See {@link module :SVGEditor.Config} or {@link module :SVGEditor.Prefs} */
-    const extendOrAdd = (cfgObj: Record<string, unknown>, key: string, val: any): void => {
+    const extendOrAdd = (cfgObj: Record<string, unknown>, key: string, val: unknown): void => {
       if (cfgObj[key] && typeof cfgObj[key] === 'object' && !Array.isArray(cfgObj[key])) {
-        cfgObj[key] = mergeDeep(cfgObj[key], val)
+        cfgObj[key] = mergeDeep(cfgObj[key] as object, val as object)
       } else {
         cfgObj[key] = val
       }
@@ -343,14 +386,14 @@ have been read.
       // (e.g. `tabletMode: false`, `bkgd_url: ''`) must still be settable here.
       if (key in this.defaultPrefs) {
         if (cfgCfg.allowInitialUserOverride === true) {
-          this.defaultPrefs[key] = val
+          this.defaultPrefs[key] = val as string | number | boolean
         } else {
           // mayBeEmpty=true so an explicit falsy value (false/'') is written
           // rather than treated as a getter (see pref()).
-          this.pref(key, val, true)
+          this.pref(key, val as string | number | boolean, true)
         }
       } else if (key === 'extensions') {
-        this.curConfig[key] = this.curConfig[key].concat(val) // We will handle any dupes later
+        this.curConfig[key] = (this.curConfig[key] as string[]).concat(val as string[]) // We will handle any dupes later
       // Only allow other configObj.curConfig if defined in configObj.defaultConfig
       } else if ({}.hasOwnProperty.call(this.defaultConfig, key)) {
         // Potentially overwriting of previously set config
@@ -360,7 +403,7 @@ have been read.
           extendOrAdd(this.defaultConfig, key, val)
         } else if (this.defaultConfig[key] && typeof this.defaultConfig[key] === 'object' && !Array.isArray(this.defaultConfig[key])) {
           this.curConfig[key] = {}
-          this.curConfig[key] = mergeDeep(this.curConfig[key], val)
+          this.curConfig[key] = mergeDeep(this.curConfig[key] as object, val as object)
         } else {
           this.curConfig[key] = val
         }
@@ -398,7 +441,7 @@ have been read.
       }
       return undefined
     }
-    return (key in this.curPrefs) ? this.curPrefs[key] : this.defaultPrefs[key]
+    return ((key in this.curPrefs) ? this.curPrefs[key] : this.defaultPrefs[key]) as string
   }
 
   /** @function load load Config */

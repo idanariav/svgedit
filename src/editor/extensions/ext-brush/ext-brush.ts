@@ -51,7 +51,7 @@ export default defineFeature({
 
     const brushOptions = createBrushOptions({
       slotCount: BRUSH_SLOT_COUNT,
-      getParams: () => svgCanvas.getBrushParams(),
+      getParams: () => ({ ...svgCanvas.getBrushParams() }),
       setParams: (params) => svgCanvas.setBrushParams(params),
       getSlot: getBrushSlot,
       saveSlot: saveBrushSlot,

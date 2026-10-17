@@ -9,8 +9,8 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  * @class ExplorerButton
  */
 export class ExplorerButton extends HTMLElement {
-  imgPath: any
-  template: any
+  imgPath: string
+  template: HTMLTemplateElement
   _shadowRoot: ShadowRoot
   $button: HTMLDivElement
   $overall: HTMLDivElement
@@ -59,7 +59,7 @@ export class ExplorerButton extends HTMLElement {
  * @returns template
    */
 
-  createTemplate (imgPath: string): unknown {
+  createTemplate (imgPath: string): HTMLTemplateElement {
     const template = document.createElement('template')
     template.innerHTML = `
     <style>
@@ -217,13 +217,13 @@ export class ExplorerButton extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */
@@ -272,7 +272,7 @@ export class ExplorerButton extends HTMLElement {
           this.currentAction = target
           this.$img.setAttribute('src', target.getAttribute('src') ?? '')
           this.dataset.draw = this.data[target.dataset.shape ?? '']
-          this._shadowRoot.querySelectorAll('.image-lib [pressed]').forEach((b) => { (b as any).pressed = false })
+          this._shadowRoot.querySelectorAll('.image-lib [pressed]').forEach((b) => { (b as unknown as { pressed: boolean }).pressed = false })
           target.setAttribute('pressed', 'pressed')
           // and close the menu
           this.$menu.classList.remove('open')

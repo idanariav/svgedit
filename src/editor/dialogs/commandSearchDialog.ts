@@ -46,7 +46,7 @@ export class SeCommandSearchDialog extends HTMLElement {
     this._query = ''
   }
 
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.$search.setAttribute('placeholder', i18next.t('command_search.search'))
     this.$dialog.setAttribute('aria-label', i18next.t('command_search.title'))
     this.$hint.textContent = i18next.t('command_search.hint')

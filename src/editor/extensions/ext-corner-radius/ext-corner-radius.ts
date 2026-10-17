@@ -67,7 +67,7 @@ export default defineFeature({
       $req('corner_radius_value').value = shownRadius(elem, cut)
       for (const k of CORNER_KINDS) {
         const btn = $id(`corner_kind_${k}`)
-        if (btn) (btn as any).pressed = kinds.size ? kinds.has(k) : k === curKind
+        if (btn) (btn as unknown as { pressed: boolean }).pressed = kinds.size ? kinds.has(k) : k === curKind
       }
     }
 

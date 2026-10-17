@@ -23,7 +23,7 @@ export const loadToolOrder = (): { main: string[], overflow: string[] } | null =
   try {
     const adapter = getUserDataAdapter()
     if (adapter && typeof adapter.getToolOrder === 'function') {
-      return adapter.getToolOrder() || null
+      return (adapter.getToolOrder() as { main: string[], overflow: string[] } | undefined) || null
     }
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(STORAGE_KEY)

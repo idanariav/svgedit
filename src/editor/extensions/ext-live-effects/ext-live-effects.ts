@@ -33,7 +33,7 @@ export default defineFeature({
     addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
-    type FxEntry = { name: string, params: Record<string, any> }
+    type FxEntry = { name: string, params: Record<string, unknown> }
 
     type FxDef = ReturnType<typeof svgCanvas.listLiveEffects>[number]
 
@@ -116,7 +116,7 @@ export default defineFeature({
         field.setAttribute('min', String(range.min ?? -10000))
         field.setAttribute('max', String(range.max ?? 10000))
         field.setAttribute('step', String(range.step ?? (Number.isInteger(dflt) ? 1 : 0.1)))
-        field.setAttribute('value', entry.params[key])
+        field.setAttribute('value', String(entry.params[key]))
         field.addEventListener('change', () => {
           const v = Number(field.value)
           if (Number.isFinite(v)) onValue(v)
@@ -128,13 +128,13 @@ export default defineFeature({
         const field = document.createElement('se-select')
         field.setAttribute('label', humanize(key))
         choices.forEach((c: string) => field.addOption(c, humanize(c)))
-        field.value = entry.params[key]
+        field.value = entry.params[key] as string
         field.addEventListener('change', () => onValue(field.value))
         return field
       }
       const input = document.createElement('input')
       input.type = 'text'
-      input.value = entry.params[key]
+      input.value = String(entry.params[key])
       input.addEventListener('change', () => onValue(input.value))
       return input
     }
@@ -153,7 +153,7 @@ export default defineFeature({
       title.textContent = def.label
       const grid = document.createElement('div')
       grid.className = 'sidepanel_section_grid'
-      const fields: Record<string, any> = {}
+      const fields: Record<string, HTMLElement> = {}
       for (const key of Object.keys(def.defaults)) {
         fields[key] = buildField(def, key, working)
         grid.append(fields[key])
@@ -185,7 +185,7 @@ export default defineFeature({
         randomize.textContent = tr('randomize')
         randomize.addEventListener('click', () => {
           working.params.seed = randomSeed()
-          fields.seed.value = working.params.seed
+          ;(fields.seed as unknown as { value: unknown }).value = working.params.seed
           if (editing) svgCanvas.previewLiveEffects(editing.stack)
         })
         footer.append(randomize)

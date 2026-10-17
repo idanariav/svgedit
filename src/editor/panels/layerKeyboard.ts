@@ -14,6 +14,14 @@
  */
 
 import { isPanelObject } from '@svgedit/svgcanvas/core/object-state.ts'
+import type { LayerTree } from './layerTree.ts'
+
+/** What identifies a row: the layer or object element, or `{more: parent}` for a "N more…" row. */
+type RowKey = Element | { more: unknown } | null
+const moreOf = (k: RowKey): unknown => (k && 'more' in k ? k.more : undefined)
+
+/** A row of the layers table, with the fields the tree hangs on it. */
+type Row = HTMLTableRowElement & { _el: Element, _more?: unknown, _depth?: number }
 
 export interface NavRow {
   /** 1 for a layer, deeper for objects */
@@ -52,11 +60,15 @@ export const planNav = (rows: NavRow[], i: number, key: string): { focus: number
 const ROW_SELECTOR = 'tbody > tr.layer, tbody > tr.object, tbody > tr.objmore'
 
 export class LayerKeyboard {
-  tree: any
-  active: any
+  tree: LayerTree
+  /** a layer / object element, `{more: parent}` for a "N more…" row, or null */
+  active: RowKey | null
+
+  /** The layers table (the tree builds it before the keyboard is attached). */
+  get table (): HTMLTableElement { return this.tree.table as HTMLTableElement }
 
   /** @param tree the LayerTree this drives */
-  constructor (tree: unknown) {
+  constructor (tree: LayerTree) {
     this.tree = tree
     /** the active row's layer / object element, or `{more: parent}` for a "N more…" row */
     this.active = null
@@ -64,28 +76,28 @@ export class LayerKeyboard {
 
   /** Make the table focusable and wire its events once. */
   attach (): void {
-    const table = this.tree.table
+    const table = this.table
     table.setAttribute('tabindex', '0')
     table.setAttribute('role', 'treegrid')
     table.addEventListener('keydown', (evt: KeyboardEvent) => this.onKeyDown(evt))
     table.addEventListener('focus', () => this.onFocus())
     // A click moves the keyboard's place too.
     table.addEventListener('click', (evt: MouseEvent) => {
-      const tr = (evt.target as Element).closest?.('tr.layer, tr.object, tr.objmore')
+      const tr = (evt.target as Element).closest?.('tr.layer, tr.object, tr.objmore') as Row | null | undefined
       if (tr) this.active = this.keyOf(tr)
       this.mark()
     }, true)
   }
 
   /** @returns the rows in display order (with the tree's `_el` / `_more` / `_depth` fields) */
-  rows (): any[] { return Array.from(this.tree.table.querySelectorAll(ROW_SELECTOR)) }
+  rows (): Row[] { return Array.from(this.table.querySelectorAll(ROW_SELECTOR)) }
 
-  keyOf (tr: any): any {
+  keyOf (tr: Row): RowKey {
     if (tr.classList.contains('objmore')) return { more: tr._more }
     return tr.classList.contains('layer') ? this.tree.layerOf(tr) : tr._el
   }
 
-  describe (tr: any): NavRow {
+  describe (tr: Row): NavRow {
     const tree = this.tree
     if (tr.classList.contains('layer')) {
       const layer = tree.layerOf(tr)
@@ -98,12 +110,12 @@ export class LayerKeyboard {
   }
 
   /** @returns index of the active row, -1 when it has none */
-  indexOfActive (rows: unknown[]): number {
+  indexOfActive (rows: Row[]): number {
     const a = this.active
     if (!a) return -1
     return rows.findIndex((tr) => {
       const k = this.keyOf(tr)
-      return a.more ? k?.more === a.more : k === a
+      return moreOf(a) ? moreOf(k) === moreOf(a) : k === a
     })
   }
 
@@ -127,7 +139,7 @@ export class LayerKeyboard {
       if (tr.classList.contains('layer')) tr.setAttribute('aria-selected', String(tr.classList.contains('layersel')))
       else if (tr.classList.contains('object')) tr.setAttribute('aria-selected', String(tr.classList.contains('objsel')))
     })
-    if (at >= 0 && this.tree.table.contains(document.activeElement)) rows[at].scrollIntoView?.({ block: 'nearest' })
+    if (at >= 0 && this.table.contains(document.activeElement)) rows[at].scrollIntoView?.({ block: 'nearest' })
   }
 
   onKeyDown (evt: KeyboardEvent): void {
@@ -164,7 +176,7 @@ export class LayerKeyboard {
         this.mark()
       } else {
         const el = this.keyOf(rows['open' in plan ? plan.open : plan.close])
-        tree.setOpen(el, 'open' in plan)
+        tree.setOpen(el as Element, 'open' in plan)
       }
       return
     }
@@ -193,42 +205,42 @@ export class LayerKeyboard {
 
   /** Selecting can move the keyboard focus to the canvas; keep it in the panel. */
   focusTable (): void {
-    const table = this.tree.table
+    const table = this.table
     if (!table.contains(document.activeElement)) table.focus({ preventScroll: true })
   }
 
   /** Select the row's layer or object, as a click would. */
-  activate (tr: any, mods: any = {}): void {
+  activate (tr: Row, mods: { shiftKey?: boolean, metaKey?: boolean, ctrlKey?: boolean } = {}): void {
     if (tr.classList.contains('layer')) {
-      tr.querySelector('td.layername')?.click() // RightPanel makes it the current layer
+      (tr.querySelector('td.layername') as HTMLElement | null)?.click() // RightPanel makes it the current layer
     } else {
       const target = tr.classList.contains('objmore') ? tr : tr.querySelector('td.objname')
-      this.tree.onClick({ target, shiftKey: !!mods.shiftKey, metaKey: !!mods.metaKey, ctrlKey: !!mods.ctrlKey, detail: 1 })
+      this.tree.onClick({ target, shiftKey: !!mods.shiftKey, metaKey: !!mods.metaKey, ctrlKey: !!mods.ctrlKey, detail: 1 } as unknown as MouseEvent)
     }
     this.focusTable()
     this.mark()
   }
 
-  toggle (tr: any, what: 'vis' | 'lock'): void {
+  toggle (tr: Row, what: 'vis' | 'lock'): void {
     if (tr.classList.contains('layer')) {
-      tr.querySelector(what === 'vis' ? 'td.layervis' : 'td.layerlock')?.click()
+      (tr.querySelector(what === 'vis' ? 'td.layervis' : 'td.layerlock') as HTMLElement | null)?.click()
     } else if (tr.classList.contains('object')) {
-      this.tree.onClick({ target: tr.querySelector(what === 'vis' ? 'td.objvis' : 'td.objlock'), detail: 1 })
+      this.tree.onClick({ target: tr.querySelector(what === 'vis' ? 'td.objvis' : 'td.objlock'), detail: 1 } as unknown as MouseEvent)
     }
     this.focusTable()
   }
 
-  rename (tr: any): void {
+  rename (tr: Row): void {
     if (tr.classList.contains('layer')) {
       this.activate(tr)
       this.tree.editor.rightPanel.layerRename()
     } else if (tr.classList.contains('object')) {
-      this.tree.onDblClick({ target: tr.querySelector('.objlabel') })
+      this.tree.onDblClick({ target: tr.querySelector('.objlabel') } as unknown as Event)
     }
   }
 
   /** Move a layer or object one place up / down the stacking order. */
-  reorder (tr: any, up: boolean): void {
+  reorder (tr: Row, up: boolean): void {
     const tree = this.tree
     if (tr.classList.contains('layer')) {
       this.activate(tr)
@@ -236,9 +248,9 @@ export class LayerKeyboard {
     } else if (tr.classList.contains('object')) {
       // The rows run front to back: "up" is later in the document, past the next object.
       const el = tr._el
-      const siblings = Array.from(el.parentNode.children as HTMLCollection).filter(isPanelObject)
+      const siblings = Array.from((el.parentNode as Element).children).filter(isPanelObject)
       const neighbour = siblings[siblings.indexOf(el) + (up ? 1 : -1)]
-      if (neighbour && tree.canvas.moveObjects([el], el.parentNode, up ? neighbour.nextSibling : neighbour)) {
+      if (neighbour && tree.canvas.moveObjects([el], el.parentNode as Element, up ? neighbour.nextSibling : neighbour)) {
         tree.selectObjects([el])
       }
     }

@@ -115,7 +115,7 @@ green. Converting more of them is a roadmap guideline, not debt.
   open; nothing in that tool's flow does today (the selection is cleared).
 
 **Tool contract (compromises)**
-- `ext-connector` augments the built-in line and select modes (not a tool; it keeps the `mouseDown/Move/Up` hooks). Built-in modes (select/path/text/resize/rotate/zoom/shape) stay in `event.js`.
+- `ext-connector` augments the built-in line and select modes (not a tool; it binds the `gestureStarted/Moved/Released` canvas events). Built-in modes (select/path/text/resize/rotate/zoom/shape) stay in `event.js`.
 - Behaviour changes in the ported tools: with grid snapping on the dragged end snaps too (legacy hooks snapped only
   the start point); polystar's size was wrong at zoom != 100% and is fixed; `cancelTool` now includes `curvature`.
 - A hotkey on a disabled command is inert and does not `preventDefault` (before, the button's own guard swallowed it
@@ -171,17 +171,3 @@ deliberate: text on accent buttons, colour-picker maths, danger red, grid defaul
 `svgCanvas.getPathObj()` is honest (`PathObject | null`). Make the handlers take the path from a `requirePath()` that
 throws (or pass it in from the session) when `PathActions` is next reworked; the same applies to the `Path` / `Segment`
 fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
-
-## Latent faults the editor ratchet surfaced (2026-10-17)
-
-Typing `Editor.ts`, `EditorStartup.ts` and `contextmenu.ts` strictly turned up code that is wrong today but not reachable
-(or not noticed) in normal use. Fixed where the fix was a typing consequence; the rest is left for a deliberate change:
-
-- **`ext-connector`'s marker block is dead.** `handleOneChangedElement` destructures `{ markerStart, markerMid, markerEnd }` from
-  `elem.attributes`, but a `NamedNodeMap` is keyed by attribute *name* (`marker-start`), so all three are always `undefined` and the
-  block (track marker presence for the endpoint offsets; turn a `<line>` with a mid-marker into a polyline) never runs. Typing it
-  kept the behaviour (a cast, with a comment). Reading `marker-start`/`marker-mid`/`marker-end` would switch the feature on, which
-  needs its own tests (and a look at `getOffset`, which already reads the attributes directly).
-- **Extension context-menu items are never shown.** `contextmenu.ts` appends them to a `#cmenu_canvas` list that the
-  template no longer has (the canvas menu is the `<se-cmenu_canvas-dialog>`); no built-in extension adds one. Either wire
-  `add()` into the dialog or delete the registry.

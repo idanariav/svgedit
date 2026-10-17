@@ -49,7 +49,7 @@ export const registerCanvasCommands = (commands: import('./commands.ts').Command
     params: {
       name: { type: 'enum', required: true, values: () => loadLayouts().map((l) => l.name) }
     },
-    run: (editor, { name }) => applyLayout(editor, (loadLayouts().find((l) => l.name === name) as any))
+    run: (editor, { name }: { name: string }) => applyLayout(editor, loadLayouts().find((l) => l.name === name)!)
   })
   commands.register({
     id: 'canvas_save_layout',
@@ -58,7 +58,7 @@ export const registerCanvasCommands = (commands: import('./commands.ts').Command
     params: {
       name: { type: 'string', required: true }
     },
-    run: (editor, { name }) => {
+    run: (editor, { name }: { name: string }) => {
       const trimmed = name.trim()
       if (!trimmed) throw new CommandError('badParams', 'canvas_save_layout', 'canvas_save_layout: parameter "name" must not be empty')
       const layouts = loadLayouts()

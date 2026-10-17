@@ -341,7 +341,7 @@ export default defineFeature({
       const subpaths: Array<{ pts: Array<{ x: number, y: number }>, closed: boolean }> = []
       const step = sampleStepFor(diag)
       for (const item of children) {
-        const ch = item as any
+        const ch = item as unknown as { length: number, segments?: Array<{ point?: { x: number, y: number } }>, closed?: boolean, getPointAt(len: number): { x: number, y: number } | null }
         const len = ch.length
         if (!len) {
           // Degenerate (a lone moveto) — keep its single point.
@@ -359,7 +359,7 @@ export default defineFeature({
           const pt = ch.getPointAt((i / n) * len)
           if (pt) pts.push(transformPoint(pt.x, pt.y, m))
         }
-        if (pts.length) subpaths.push({ pts, closed: ch.closed })
+        if (pts.length) subpaths.push({ pts, closed: !!ch.closed })
       }
       compound.remove()
       return subpaths

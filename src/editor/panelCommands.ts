@@ -140,7 +140,7 @@ const MODE_BUTTONS = [
 ]
 
 /** [id, group, TopPanel method, extra spec] */
-const TOP_PANEL = [
+const TOP_PANEL: Array<[string, string, string, { enabled?: (editor: EditorInstance) => true | string, interactive?: boolean }?]> = [
   ['tool_frame', 'View', 'clickFrame'],
   ['tool_wireframe', 'View', 'clickWireframe'],
   ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
@@ -233,7 +233,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     run: (editor) => editor.leftPanel.clickImage()
   })
 
-  for (const [id, group, method, extra] of (TOP_PANEL as any[])) {
+  for (const [id, group, method, extra] of TOP_PANEL) {
     commands.register({
       id,
       label: LABELS[id] ?? id,
@@ -312,7 +312,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     run: (editor) => {
       // A host that owns exporting (window.svgEditHost.exportDrawing) takes over;
       // standalone svgedit keeps its own dialog.
-      const host = (window as any).svgEditHost
+      const host = (window as unknown as { svgEditHost?: { exportDrawing?: () => void } }).svgEditHost
       if (typeof host?.exportDrawing === 'function') {
         host.exportDrawing()
         return

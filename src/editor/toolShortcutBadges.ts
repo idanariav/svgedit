@@ -19,7 +19,7 @@ const TOOL_SELECTOR = 'se-button[id], se-flyingbutton[id], se-shape-library[id]'
 export const badgeFor = (hotkeys: import('./Hotkeys.ts').default, el: Element): string => {
   const own = hotkeys.effectiveKeys(el.id)[0]
   if (own) return formatBadgeKey(own)
-  const slot = (el as any).activeSlot
+  const slot = (el as unknown as { activeSlot?: Element }).activeSlot
   return slot?.id ? formatBadgeKey(hotkeys.effectiveKeys(slot.id)[0]) : ''
 }
 

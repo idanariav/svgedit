@@ -3,7 +3,7 @@
  *
  * A new drawing/editing tool plugs into the canvas through ONE interface
  * instead of adding cases to `event.js`'s mode `switch` or juggling the
- * `runExtensions('mouseDown' | …)` protocol. What the registry gives a tool:
+ * `mouseDown` / `mouseMove` / `mouseUp` extension hooks (now the `gesture*` canvas events). What the registry gives a tool:
  *
  *  - **One coordinate convention.** Events carry `x, y` in document (content)
  *    units, unzoomed, grid-snapped and mapped into the current group's local

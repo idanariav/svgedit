@@ -66,33 +66,33 @@ export class SeText extends HTMLElement {
   }
 
   /** @function get */
-  get text (): any {
-    return this.$div.textContent
+  get text (): string {
+    return this.$div.textContent as string
   }
 
   /** @function set */
-  set text (value) {
-    this.$div.textContent = t(value)
+  set text (value: string | number) {
+    this.$div.textContent = t(String(value))
   }
 
   /** @function get */
-  get value (): any {
+  get value (): string {
     return this.$div.value
   }
 
   /** @function set */
-  set value (value) {
-    this.$div.value = value
+  set value (value: string | number) {
+    this.$div.value = value as string
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function connectedCallback */

@@ -116,7 +116,7 @@ export const strokeTouches = (el: Element, samples: { x: number, y: number }[], 
  * What to draw for a recognized shape, as `addSVGElementsFromJson` takes it
  * (minus id and paint).
  */
-export const describeShape = (shape: import('@svgedit/svgcanvas/core/shape-recognize.ts').Recognized): { element: string, attr: unknown, open?: boolean } | null => {
+export const describeShape = (shape: import('@svgedit/svgcanvas/core/shape-recognize.ts').Recognized): { element: string, attr: Record<string, string | number | undefined>, open?: boolean } | null => {
   const rotate = (rotation: number, cx: number, cy: number) => (rotation ? { transform: `rotate(${rotation} ${round(cx)} ${round(cy)})` } : {})
   switch (shape.type) {
     case 'line':
@@ -163,15 +163,15 @@ export default defineFeature({
     /** In-progress stroke: document points, the preview polyline and the last client point kept. */
     let stroke: { points: { x: number, y: number }[], line: SVGPolylineElement, lastScreen: { x: number, y: number } } | null = null
 
-    const createShape = (desc: { element: string; attr: any; open?: boolean; }) => {
-      const attr: Record<string, any> = { id: svgCanvas.getNextId(), ...desc.attr }
+    const createShape = (desc: { element: string; attr: Record<string, string | number | undefined>; open?: boolean; }) => {
+      const attr: Record<string, string | number | undefined> = { id: svgCanvas.getNextId(), ...desc.attr }
       // An open line is only visible with a stroke; the others take the current paint.
       if (desc.open) {
         attr.fill = 'none'
         const color = svgCanvas.getColor('stroke')
         if (!color || color === 'none') attr.stroke = '#000000'
       }
-      return svgCanvas.addSVGElementsFromJson({ element: desc.element, curStyles: true, attr })
+      return svgCanvas.addSVGElementsFromJson({ element: desc.element, curStyles: true, attr: attr as Record<string, string | number> })
     }
 
     /** The elements a scribble covers: children of the current group / layer it touches. */

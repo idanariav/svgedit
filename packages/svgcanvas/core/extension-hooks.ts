@@ -8,24 +8,27 @@
  *
  * Return values (only where noted) are collected by the dispatcher.
  *
- * Not hooks: `selectedChanged` ({@link SelectedChangedPayload}), `elementChanged` ({@link ElementsPayload}) and `zoomChanged`
- * ({@link ZoomChangedPayload}) are canvas events a feature `bind`s in its `init`; the editor `call`s them, so they are not here.
+ * Not hooks: `selectedChanged` ({@link SelectedChangedPayload}), `elementChanged` ({@link ElementsPayload}), `zoomChanged`
+ * ({@link ZoomChangedPayload}) and the pointer gesture events `gestureStarted` / `gestureMoved` / `gestureReleased`
+ * ({@link GestureStartedPayload}, {@link GestureMovedPayload}, {@link GestureReleasedPayload}) are canvas events a feature
+ * `bind`s in its `init`; the canvas `call`s them, so they are not here.
  * @module extension-hooks
  * @license MIT
  */
 
 import type { SVGElementJSON } from '../svgcanvas.ts'
 
-export interface MouseDownPayload {
+/** `gestureStarted`: the main button went down on the canvas (after the mode's own handling). */
+export interface GestureStartedPayload {
   event: MouseEvent
   /** canvas coordinates */
   start_x: number
   start_y: number
   selectedElements: Element[]
-  // Return `{ started: true }` to claim the gesture.
 }
 
-export interface MouseMovePayload {
+/** `gestureMoved`: the pointer moved during a gesture (after the mode's own handling). */
+export interface GestureMovedPayload {
   event: MouseEvent
   /** canvas coordinates */
   mouse_x: number
@@ -34,14 +37,17 @@ export interface MouseMovePayload {
   selected: Element
 }
 
-export interface MouseUpPayload {
+/**
+ * `gestureReleased`: the button went up, the mode has handled it and the drawn element is not yet kept or discarded
+ * (`gestureEnded` is the one that comes after, in every mode).
+ */
+export interface GestureReleasedPayload {
   event: MouseEvent
   /** canvas coordinates */
   mouse_x: number
   mouse_y: number
   /** the element being drawn, if any */
-  element: Element | null
-  // Return `{ keep, element, started }` to commit/replace the drawn element.
+  element: Element | null | undefined
 }
 
 /**
@@ -94,16 +100,12 @@ export interface OpenedDocumentPayload {
  * payload (`vars` is `undefined`).
  */
 export interface ExtensionHookPayloads {
-  mouseDown: MouseDownPayload
-  mouseMove: MouseMovePayload
-  mouseUp: MouseUpPayload
   keyDown: KeyDownPayload
   IDsUpdated: IDsUpdatedPayload
 }
 
 export const EXTENSION_HOOKS: ReadonlyArray<keyof ExtensionHookPayloads> = Object.freeze([
-  'mouseDown', 'mouseMove', 'mouseUp', 'keyDown',
-  'IDsUpdated'
+  'keyDown', 'IDsUpdated'
 ] as const)
 
 export const isExtensionHook = (name: string): boolean => (EXTENSION_HOOKS as readonly string[]).includes(name)

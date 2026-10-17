@@ -48,17 +48,18 @@ export interface UserShapeStore {
  * { categories, shapes, categoryLabels, hidden } shape. Returns a safe default
  * if the data is missing or corrupt.
  */
-function normalizeStore (raw: any): UserShapeStore {
+function normalizeStore (raw: unknown): UserShapeStore {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return { categories: [], shapes: {}, categoryLabels: {}, hidden: [] }
   }
 
-  const categories = Array.isArray(raw.categories)
-    ? raw.categories.filter((c: unknown) => typeof c === 'string')
+  const store = raw as Partial<Record<keyof UserShapeStore, unknown>>
+  const categories: string[] = Array.isArray(store.categories)
+    ? store.categories.filter((c: unknown) => typeof c === 'string')
     : []
 
-  const rawShapes = (raw.shapes && typeof raw.shapes === 'object' && !Array.isArray(raw.shapes))
-    ? raw.shapes
+  const rawShapes = (store.shapes && typeof store.shapes === 'object' && !Array.isArray(store.shapes))
+    ? store.shapes as Record<string, unknown>
     : {}
 
   // Validate each shape entry
@@ -67,7 +68,7 @@ function normalizeStore (raw: any): UserShapeStore {
     const catData = rawShapes[cat]
     if (catData && typeof catData === 'object' && !Array.isArray(catData)) {
       shapes[cat] = {}
-      for (const [label, entry] of Object.entries(catData as Record<string, any>)) {
+      for (const [label, entry] of Object.entries(catData as Record<string, UserShape>)) {
         if (
           entry &&
           typeof entry.svgContent === 'string' &&
@@ -85,15 +86,15 @@ function normalizeStore (raw: any): UserShapeStore {
 
   // Display-name overrides for any category (built-in id or raw user cat name)
   const categoryLabels: Record<string, string> = {}
-  if (raw.categoryLabels && typeof raw.categoryLabels === 'object' && !Array.isArray(raw.categoryLabels)) {
-    for (const [id, label] of Object.entries(raw.categoryLabels)) {
+  if (store.categoryLabels && typeof store.categoryLabels === 'object' && !Array.isArray(store.categoryLabels)) {
+    for (const [id, label] of Object.entries(store.categoryLabels as Record<string, unknown>)) {
       if (typeof label === 'string' && label.trim()) categoryLabels[id] = label
     }
   }
 
   // Built-in category ids hidden from the library
-  const hidden = Array.isArray(raw.hidden)
-    ? raw.hidden.filter((c: unknown) => typeof c === 'string')
+  const hidden = Array.isArray(store.hidden)
+    ? store.hidden.filter((c: unknown) => typeof c === 'string')
     : []
 
   return { categories, shapes, categoryLabels, hidden }
@@ -132,7 +133,7 @@ export function saveUserShapes (store: UserShapeStore) {
 }
 
 /** Add (or overwrite) a shape. Creates the category if it doesn't exist. */
-export function addUserShape ({ category, label, svgContent, bbox, linkedFile }: { category: string, label: string, svgContent: string, bbox: { x: any, y: any, width: any, height: any }, linkedFile?: (string | null) }) {
+export function addUserShape ({ category, label, svgContent, bbox, linkedFile }: { category: string, label: string, svgContent: string, bbox: UserShape['bbox'], linkedFile?: (string | null) }) {
   const store = loadUserShapes()
 
   // Normalize: trim whitespace and lowercase so "Animals" and "animals" merge
@@ -299,7 +300,7 @@ export function getUserCategories (): string[] {
  * Return all shapes for a given category.
  * @returns { [label]: { svgContent, bbox } }
  */
-export function getUserShapesForCategory (category: string): any {
+export function getUserShapesForCategory (category: string): Record<string, UserShape> {
   return loadUserShapes().shapes[category] || {}
 }
 

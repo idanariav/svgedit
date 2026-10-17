@@ -89,7 +89,7 @@ export const activateCommandSearchResult = (editor: EditorInstance, id: string):
 
   if (isValueControl(id)) {
     if (COLOR_VALUE_CONTROLS.has(id)) {
-      (editor.$id(id) as any)?.openColorDialog()
+      (editor.$id(id) as { openColorDialog?: () => void } | null)?.openColorDialog?.()
     } else {
       revealField(editor.$id(id))
     }

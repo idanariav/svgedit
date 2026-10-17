@@ -89,7 +89,7 @@ export class SeImageImportDialog extends HTMLElement {
   }
 
   /** @function init */
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.setAttribute('title', i18next.t('tools.import_image_title'))
     this.setAttribute('drop-text', i18next.t('tools.import_drop_image'))
     this.setAttribute('browse-text', i18next.t('tools.import_browse'))
@@ -155,13 +155,13 @@ export class SeImageImportDialog extends HTMLElement {
   }
 
   /** @function get */
-  get dialog (): any {
+  get dialog (): string | null {
     return this.getAttribute('dialog')
   }
 
   /** @function set */
-  set dialog (value) {
-    this.setAttribute('dialog', value)
+  set dialog (value: string | number) {
+    this.setAttribute('dialog', String(value))
   }
 
   /** Clear all pending state and UI back to the empty dialog. */

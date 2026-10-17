@@ -57,7 +57,7 @@ export class SeCMenuDialog extends HTMLElement {
     this.i18next = null
   }
 
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.i18next = i18next
   }
 

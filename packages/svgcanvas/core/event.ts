@@ -28,6 +28,7 @@ import { init as eventSelectInit } from './event-select.ts'
 import { describeElement, describePointer } from './debug-events.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { DrawSnapOptions } from './draw-snap.ts'
+import type { GestureStartedPayload, GestureMovedPayload, GestureReleasedPayload } from './extension-hooks.ts'
 
 const {
   InsertElementCommand
@@ -36,19 +37,13 @@ const {
 /**
  * The detail of the canvas event `gestureEnded`: a pointer gesture on the canvas has finished and its result (a move baked into the
  * geometry, a resize, a drawn shape) is in the document. Fires once per release, in every mode, after the mode's own handling
- * (the `mouseUp` extension hook, by contrast, is skipped for select, resize, zoom and `registerTool` tools).
+ * (`gestureReleased`, by contrast, comes before the keep-or-discard decision and is skipped for select, resize, zoom and
+ * `registerTool` tools).
  */
 export interface GestureEndedDetail {
   /** the mode the gesture ran in */
   mode: string
   event: MouseEvent
-}
-
-/** What an extension's `mouseUp` hook may return to keep, replace or start an element. */
-interface MouseUpHookResult {
-  keep?: boolean
-  element?: Element | null
-  started?: boolean
 }
 
 /** The members `event.ts` gives its canvas. */
@@ -126,7 +121,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
   /**
  * @fires module:svgcanvas.SvgCanvas#event:transition
- * @fires module:svgcanvas.SvgCanvas#event:ext_mouseMove
+ * @fires module:svgcanvas.SvgCanvas#event:gestureMoved
  */
   const mouseMoveEvent = (evt: MouseEvent): void => {
     if (press) press.moves++
@@ -229,19 +224,19 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
     /**
   * The mouse has moved on the canvas area.
-  * @event module:svgcanvas.SvgCanvas#event:ext_mouseMove
+  * @event module:svgcanvas.SvgCanvas#event:gestureMoved
   * @type {PlainObject}
   * @property {MouseEvent} event The event object
   * @property {number} mouse_x x coordinate on canvas
   * @property {number} mouse_y y coordinate on canvas
   * @property {Element} selected Refers to the first selected element
   */
-    svgCanvas.runExtensions('mouseMove', {
+    svgCanvas.call('gestureMoved', {
       event: evt,
       mouse_x: mouseX,
       mouse_y: mouseY,
       selected
-    })
+    } satisfies GestureMovedPayload)
   } // mouseMove()
 
   const mouseOutEvent = (evt: MouseEvent): void => {
@@ -280,7 +275,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 * @fires module:svgcanvas.SvgCanvas#event:zoomed
 * @fires module:svgcanvas.SvgCanvas#event:elementInserted
 * @fires module:svgcanvas.SvgCanvas#event:changed
-* @fires module:svgcanvas.SvgCanvas#event:ext_mouseUp
+* @fires module:svgcanvas.SvgCanvas#event:gestureReleased
 */
   const mouseUpEvent = (evt: MouseEvent): void => {
     const mode = svgCanvas.getCurrentMode() // the release may switch it (a finished path goes back to select)
@@ -411,27 +406,18 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
     /**
 * The main (left) mouse button is released (anywhere).
-* @event module:svgcanvas.SvgCanvas#event:ext_mouseUp
+* @event module:svgcanvas.SvgCanvas#event:gestureReleased
 * @type {PlainObject}
 * @property {MouseEvent} event The event object
 * @property {number} mouse_x x coordinate on canvas
 * @property {number} mouse_y y coordinate on canvas
 */
-    const extResult = svgCanvas.runExtensions('mouseUp', {
+    svgCanvas.call('gestureReleased', {
       event: evt,
       mouse_x: mouseX,
       mouse_y: mouseY,
       element
-    }, true)
-
-    extResult.forEach((res) => {
-      const r = res as MouseUpHookResult | undefined
-      if (r) {
-        keep = r.keep || keep;
-        ({ element } = r)
-        svgCanvas.setStarted(r.started || svgCanvas.getStarted())
-      }
-    })
+    } satisfies GestureReleasedPayload)
 
     if (!keep && element) {
       svgCanvas.getCurrentDrawing().releaseId(svgCanvas.getId())
@@ -718,7 +704,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
  * try/catch: it's a single data-flow pipeline (not independent steps), so a
  * throw partway through must still leave drag state recoverable for the next
  * gesture rather than silently wedged.
- * @fires module:svgcanvas.SvgCanvas#event:ext_mouseDown
+ * @fires module:svgcanvas.SvgCanvas#event:gestureStarted
  */
   const mouseDownEvent = (evt: MouseEvent): void => {
     logPress('pointer-down', evt)
@@ -1011,25 +997,19 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
     /**
 * The main (left) mouse button is held down on the canvas area.
-* @event module:svgcanvas.SvgCanvas#event:ext_mouseDown
+* @event module:svgcanvas.SvgCanvas#event:gestureStarted
 * @type {PlainObject}
 * @property {MouseEvent} event The event object
 * @property {number} start_x x coordinate on canvas
 * @property {number} start_y y coordinate on canvas
 * @property {Element[]} selectedElements An array of the selected Elements
 */
-    const extResult = svgCanvas.runExtensions('mouseDown', {
+    svgCanvas.call('gestureStarted', {
       event: evt,
       start_x: svgCanvas.getStartX(),
       start_y: svgCanvas.getStartY(),
       selectedElements
-    }, true)
-
-    extResult.forEach((r) => {
-      if (r?.started) {
-        svgCanvas.setStarted(true)
-      }
-    })
+    } satisfies GestureStartedPayload)
   }
   /**
  * @fires module:event.SvgCanvas#event:updateCanvas

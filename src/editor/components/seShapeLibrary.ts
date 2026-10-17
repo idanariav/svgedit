@@ -67,7 +67,7 @@ export class SeShapeLibrary extends HTMLElement {
   _libPath: string
   _allLoaded: boolean
   _themeObserver: MutationObserver | null
-  _hiddenExpanded: any
+  _hiddenExpanded: boolean
 
   _catalog: Record<string, Category>
   _categories: string[]

@@ -72,16 +72,16 @@ export default defineFeature({
       $req(`${P}-brushed`).style.display = brush ? '' : 'none'
       for (const type of ['art', 'pattern']) $req(`${P}-${type}-opts`).style.display = brush?.type === type ? '' : 'none'
       if (!brush) return
-      const o = brush.opts as Record<string, any>
+      const o = brush.opts as { scale: number | string, width: number | string, dir: string, flipAlong: boolean, flipAcross: boolean, spacing: number | string, fit: string }
       if (brush.type === 'art') {
-        field('scale').value = o.scale
-        field('width').value = o.width
+        field('scale').value = String(o.scale)
+        field('width').value = String(o.width)
         field('dir').value = o.dir
         field('flipAlong').checked = o.flipAlong
         field('flipAcross').checked = o.flipAcross
       } else {
-        field('tileScale').value = o.scale
-        field('spacing').value = o.spacing
+        field('tileScale').value = String(o.scale)
+        field('spacing').value = String(o.spacing)
         field('fit').value = o.fit
         field('pflipAlong').checked = o.flipAlong
         field('pflipAcross').checked = o.flipAcross

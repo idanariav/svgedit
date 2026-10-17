@@ -128,33 +128,33 @@ export class SEInput extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */
-  get label (): any {
+  get label (): string | null {
     return this.getAttribute('label')
   }
 
   /** @function set */
-  set label (value) {
-    this.setAttribute('label', value)
+  set label (value: string | number) {
+    this.setAttribute('label', String(value))
   }
 
   /** @function get */
-  get value (): any {
+  get value (): string {
     return this.$input.value
   }
 
   /** @function set */
-  set value (value) {
-    this.$input.value = value
+  set value (value: string | number) {
+    this.$input.value = value as string
   }
 
   /** Greys the field out and stops it taking input. */
@@ -167,23 +167,23 @@ export class SEInput extends HTMLElement {
   }
 
   /** @function get */
-  get src (): any {
+  get src (): string | null {
     return this.getAttribute('src')
   }
 
   /** @function set */
-  set src (value) {
-    this.setAttribute('src', value)
+  set src (value: string | number) {
+    this.setAttribute('src', String(value))
   }
 
   /** @function get */
-  get size (): any {
+  get size (): string | null {
     return this.getAttribute('size')
   }
 
   /** @function set */
-  set size (value) {
-    this.setAttribute('size', value)
+  set size (value: string | number) {
+    this.setAttribute('size', String(value))
   }
 
   /** @function connectedCallback */

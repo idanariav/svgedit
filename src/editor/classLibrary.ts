@@ -146,7 +146,7 @@ export const getDefaultClasses = (): Record<string, string> => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     const parsed = adapter.getDefaultClasses?.()
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {}
   }
   try {
     const raw = window.localStorage.getItem(DEFAULTS_STORAGE_KEY)
@@ -233,7 +233,7 @@ export const nextClassString = (elem: Element, name: string): string | null => {
  * Shadow/outline/glow (structured, filter-based) presets are not applied here —
  * defaults only cover the flat attribute set.
  */
-export const applyDefaultClassAttrs = (elem: Element, preset: { name: string, attrs: any }): void => {
+export const applyDefaultClassAttrs = (elem: Element, preset: { name: string, attrs?: Record<string, string> | null }): void => {
   const cls = nextClassString(elem, preset.name)
   if (cls) elem.setAttribute('class', cls)
   else elem.removeAttribute('class')

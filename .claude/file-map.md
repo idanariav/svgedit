@@ -181,7 +181,6 @@
 | `commands.ts` | The editor's command registry ("everything is a command") |
 | `commandSearch.ts` | Data + activation logic for the Command Search popup |
 | `ConfigObj.ts` | `pref(key)`, `setConfig(obj)`, localStorage persistence |
-| `contextmenu.ts` | Adds context menu functionality |
 | `coreCommands.ts` | The pilot commands that live in the command registry as real commands (one implementation shared by hotkey, toolbar button, favorites / quick-action menu, tablet shell and the host API) |
 | `customBrushes.ts` | Custom brush presets — up to 5 saved slots for the freehand brush tool's settings (thickness, angle, roundness, taper start/end, opacity, smoothness) |
 | `DebugActionStream.ts` | The debug log's *action* channel |

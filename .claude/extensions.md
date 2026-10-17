@@ -28,19 +28,23 @@ export default defineFeature({
     svgCanvas.bind('selectedChanged', (_win: Window, { elems, selectedElement }: SelectedChangedPayload) => { })
     svgCanvas.bind('elementChanged', (_win: Window, { elems }: ElementsPayload) => { })   // any element changed
     svgCanvas.bind('zoomChanged', (_win: Window, zoom: ZoomChangedPayload) => { })        // the zoom factor (1 = 100%)
-    // Also events: canvasUpdated, elementTransition, layersChanged, layerVisChanged, afterClear, onOpenedDocument, gestureEnded.
+    // Also events: canvasUpdated, elementTransition, layersChanged, layerVisChanged, afterClear, onOpenedDocument.
+
+    // Pointer gestures on the canvas (payload types: core/extension-hooks.ts, GestureEndedDetail in core/event.ts). They watch the
+    // BUILT-IN modes the way the old mouse hooks did (ext-connector binds a drawn line to shapes, and tracks select drags); a tool of
+    // your own is registerTool, not these. They mix coordinate spaces (start_x unzoomed, mouse_x ZOOMED):
+    svgCanvas.bind('gestureStarted', (_win: Window, { event, start_x, start_y, selectedElements }: GestureStartedPayload) => { })
+    svgCanvas.bind('gestureMoved', (_win: Window, { event, mouse_x, mouse_y }: GestureMovedPayload) => { })
+    //   gestureReleased: the release was handled, the drawn `element` is not yet kept or discarded (not for select, resize, zoom, registerTool tools)
+    svgCanvas.bind('gestureReleased', (_win: Window, { event, element }: GestureReleasedPayload) => { })
+    //   gestureEnded: once after EVERY release in every mode (registerTool tools and select included), the result is in the document
+    svgCanvas.bind('gestureEnded', (_win: Window, { mode, event }: GestureEndedDetail) => { })
 
     return {
       // Hooks, all optional, each typed with its payload (core/extension-hooks.ts):
       keyDown ({ event }) { },                  // an Editor-owned keydown; return { preventDefault: true } to swallow it
 
-      // Not a hook: svgCanvas.bind('gestureEnded', (_win, { mode, event }: GestureEndedDetail) => …) fires once after every canvas pointer
-      // release (any mode, registerTool tools and select included, which the mouseUp hook skips); use it to react to a finished gesture.
-
-      // Mouse hooks: observers of the BUILT-IN modes only (ext-connector watches line drawing and select drags). They mix
-      // coordinate spaces (start_x unzoomed, mouse_x ZOOMED) and never run for registerTool tools, select release or zoom.
-      // A tool of your own is registerTool, not these:
-      mouseDown (opts) { }, mouseMove (opts) { }, mouseUp (opts) { },
+      // IDsUpdated ({ elems, changes }) { }   // a paste re-numbered ids; return { remove: ids } to drop elements
 
       // Runs once, after every extension has been added
       callback () { }

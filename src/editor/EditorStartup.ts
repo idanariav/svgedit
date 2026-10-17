@@ -2,7 +2,6 @@
 import {
   putLocale
 } from './locale.ts'
-import { createContextMenu } from './contextmenu.ts'
 import { addSelectedToShapeLibrary } from './addToShapeLibrary.ts'
 import { initToolShortcutBadges } from './toolShortcutBadges.ts'
 import { initTooltips } from './tooltips.ts'
@@ -23,8 +22,6 @@ import { refreshToolOptions } from './panels/toolOptionsBar.ts'
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 import type { IdLookup, IdRequire } from '@svgedit/svgcanvas/core/dom-utils.ts'
-import type { MenuItem } from './contextmenu.ts'
-import type { MenuItemAction } from './contextmenu.ts'
 
 /** @fires module:svgcanvas.SvgCanvas#event:svgEditorReady */
 const readySignal = (): void => {
@@ -77,7 +74,6 @@ class EditorStartup {
   $req: IdRequire
   $qa: (sel: string) => Element[]
   $qq: (sel: string) => Element | null
-  contextMenu: { add: (menuItem: MenuItem) => void; hasCustomHandler: (handlerKey: string) => boolean; getCustomHandler: (handlerKey: string) => MenuItemAction; injectExtendedContextMenuItemsIntoDom: () => void; resetCustomMenus: () => void; }
 
   // Members the `Editor` subclass creates in its constructor, declared here so the startup code that uses them is typed.
   configObj: import('./ConfigObj.ts').default
@@ -90,10 +86,10 @@ class EditorStartup {
   hotkeys: import('./Hotkeys.ts').default
   goodLangs: string[]
   // Seams the built-in extensions fill in when they load (undefined otherwise).
-  shadowApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
-  outlineApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
-  glowApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
-  armShapeInsert: ((detail?: any, target?: Element) => void) | undefined
+  shadowApi: { read(el: Element | null): import('./classLibrary.ts').ClassPreset['shadow'] | null, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
+  outlineApi: { read(el: Element | null): import('./classLibrary.ts').ClassPreset['outline'] | null, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
+  glowApi: { read(el: Element | null): import('./classLibrary.ts').ClassPreset['glow'] | null, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
+  armShapeInsert: ((detail?: import('./extensions/ext-shapes/ext-shapes.ts').ShapeInsertDetail, target?: Element) => void) | undefined
   fxFilter: ReturnType<typeof import('./extensions/fx-filter.ts').createFxComposer> | undefined
   updateGrid: ((zoom?: number) => void) | undefined
   updateProportionMarkers: (() => void) | undefined
@@ -120,7 +116,7 @@ class EditorStartup {
   /** 'toolbars' while a toolbar field has focus, 'canvas' after */ uiContext: string
   defaultImageURL: string
   modeEvent: unknown
-  /** Messages sent before the extensions finished loading. */ messageQueue: any[]
+  /** Messages sent before the extensions finished loading. */ messageQueue: unknown[]
   extensionsAdded: boolean
   showSaveWarning: boolean
 
@@ -197,10 +193,6 @@ class EditorStartup {
     this.$req = scopedReq(this.$container)
     this.$qa = scopedQa(this.$container)
     this.$qq = scopedQq(this.$container)
-    // Own registry per editor instance (see contextmenu.js) — a shared one
-    // would collide across panes on both the id-uniqueness check and the
-    // #cmenu_canvas DOM injection.
-    this.contextMenu = createContextMenu(this.$id)
   }
 
   /**
@@ -416,10 +408,10 @@ class EditorStartup {
     }
 
     // update resolution option with actual resolution
-    const res = this.svgCanvas.getResolution()
+    const res: { w: number | string, h: number | string } = { ...this.svgCanvas.getResolution() }
     if (this.configObj.curConfig.baseUnit !== 'px') {
-      res.w = this.svgCanvas.convertUnit(res.w) + this.configObj.curConfig.baseUnit
-      res.h = this.svgCanvas.convertUnit(res.h) + this.configObj.curConfig.baseUnit
+      res.w = this.svgCanvas.convertUnit(res.w as number) + this.configObj.curConfig.baseUnit
+      res.h = this.svgCanvas.convertUnit(res.h as number) + this.configObj.curConfig.baseUnit
     }
     $req('se-img-prop').setAttribute('dialog', 'close')
     $req('se-img-prop').setAttribute('title', String(this.svgCanvas.getDocumentTitle()))
@@ -878,11 +870,6 @@ class EditorStartup {
         case 'add_to_shape_library':
           this._addSelectedToShapeLibrary()
           break
-        default:
-          if (this.contextMenu.hasCustomHandler(action)) {
-            this.contextMenu.getCustomHandler(action)()
-          }
-          break
       }
     })
 
@@ -969,11 +956,6 @@ class EditorStartup {
     this.updateCanvas(true)
     // Load extensions
     this.extAndLocaleFunc()
-    // Defer injection to wait out initial menu processing. This probably goes
-    //    away once all context menu behavior is brought to context menu.
-    this.ready(() => {
-      this.contextMenu.injectExtendedContextMenuItemsIntoDom()
-    })
     // run callbacks stored by this.ready
     await this.runCallbacks()
     // Signal readiness to same-document listeners (tests/debugging hooks)
@@ -997,7 +979,7 @@ class EditorStartup {
     try {
       // load standard extensions
       await Promise.all(
-        this.configObj.curConfig.extensions.map(async (extname: string) => {
+        (this.configObj.curConfig.extensions ?? []).map(async (extname: string) => {
           /**
            * @tutorial ExtensionDocs
            * @property {string} [name] Name of the extension. Used internally; no need for i18n. Defaults to extension name without beginning "ext-" or ending ".js".
@@ -1006,11 +988,11 @@ class EditorStartup {
           try {
             // Extensions are inlined into the bundle via extensionRegistry.js
             // (statically resolved), so no runtime fetch from extPath is needed.
-            const imported: any = getExtension(extname)
+            const imported = getExtension(extname) as { default?: { name?: string, init?: (editor: unknown) => unknown } } | undefined
             if (!imported) throw new Error(`Unknown extension: ${extname}`)
             if (!imported.default) throw new Error(`Extension ${extname} has no default export`)
             const { name = extname, init: initfn } = imported.default
-            return this.addExtension(name, initfn && (() => initfn(this)), { langParam: 'en' }) /** @todo  change to current lng */
+            return this.addExtension(name, (initfn && (() => initfn(this))) as () => unknown, { langParam: 'en' }) /** @todo  change to current lng */
           } catch (err) {
             // Todo: Add config to alert any errors
             logError('Extension failed to load: ' + extname + '; ', err, 'EditorStartup')

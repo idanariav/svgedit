@@ -95,7 +95,7 @@ export default defineFeature({
     const t = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
     /** Options remembered between uses (drag keys and the popover both write them). */
-    const options: Record<Mode, Record<string, any>> = {
+    const options: Record<Mode, Record<string, number | boolean>> = {
       spiral: { decay: 80, segments: 10, clockwise: true, radius: 50 },
       arc: { slope: 0, closed: false, width: 100, height: 100 },
       rectgrid: { rows: 5, columns: 5, frame: true, width: 100, height: 100 },
@@ -115,7 +115,11 @@ export default defineFeature({
      * What to draw for a mode from the dragged start / end points.
  * @returns Mode-specific geometry (see {@link describe}).
      */
-    const geometry = (mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, mods: { shift: boolean, alt: boolean }): unknown => {
+    type SpiralGeom = { cx: number, cy: number, radius: number }
+    type ArcGeom = { x1: number, y1: number, x2: number, y2: number }
+    type BoxGeom = { x: number, y: number, width: number, height: number }
+    type Geom = SpiralGeom | ArcGeom | BoxGeom
+    const geometry = (mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, mods: { shift: boolean, alt: boolean }): Geom => {
       if (mode === 'spiral') return { cx: start.x, cy: start.y, radius: Math.hypot(end.x - start.x, end.y - start.y) }
       if (mode === 'arc') return arcDragEnds(start, end, mods)
       return dragRect(start, end, mods)
@@ -125,21 +129,23 @@ export default defineFeature({
      * The element description for a mode and geometry, in the shape
      * `addSVGElementsFromJson` takes (minus id and paint).
      */
-    const describe = (mode: Mode, geom: any): FamilyDescription => {
-      const o = options[mode]
+    const describe = (mode: Mode, geom: Geom): FamilyDescription => {
+      const opt = options[mode]
+      const n = (key: string) => opt[key] as number
+      const flag = (key: string) => opt[key] as boolean
       if (mode === 'spiral') {
-        return { element: 'path', d: spiralD({ ...geom, decay: o.decay, segments: o.segments, clockwise: o.clockwise }) }
+        return { element: 'path', d: spiralD({ ...(geom as SpiralGeom), decay: n('decay'), segments: n('segments'), clockwise: flag('clockwise') }) }
       }
       if (mode === 'arc') {
-        return { element: 'path', d: arcD({ ...geom, slope: o.slope / 100, closed: o.closed }), closedFill: o.closed }
+        return { element: 'path', d: arcD({ ...(geom as ArcGeom), slope: n('slope') / 100, closed: flag('closed') }), closedFill: flag('closed') }
       }
       if (mode === 'rectgrid') {
-        return { element: 'g', children: rectangularGridParts({ ...geom, rows: o.rows, columns: o.columns, frame: o.frame }) }
+        return { element: 'g', children: rectangularGridParts({ ...(geom as BoxGeom), rows: n('rows'), columns: n('columns'), frame: flag('frame') }) }
       }
-      return { element: 'g', children: polarGridParts({ ...geom, concentric: o.concentric, radial: o.radial }) }
+      return { element: 'g', children: polarGridParts({ ...(geom as BoxGeom), concentric: n('concentric'), radial: n('radial') }) }
     }
 
-    const isDegenerate = (geom: any) => {
+    const isDegenerate = (geom: Geom) => {
       if ('radius' in geom) return !(geom.radius > 0)
       if ('x1' in geom) return geom.x1 === geom.x2 && geom.y1 === geom.y2
       return !(geom.width > 0) && !(geom.height > 0)
@@ -225,9 +231,9 @@ export default defineFeature({
       Object.assign(options[mode], values)
       const o = options[mode]
       let geom
-      if (mode === 'spiral') geom = { cx: at.x, cy: at.y, radius: o.radius }
-      else if (mode === 'arc') geom = { x1: at.x, y1: at.y, x2: at.x + o.width, y2: at.y + o.height }
-      else geom = { x: at.x, y: at.y, width: o.width, height: o.height }
+      if (mode === 'spiral') geom = { cx: at.x, cy: at.y, radius: o.radius as number }
+      else if (mode === 'arc') geom = { x1: at.x, y1: at.y, x2: at.x + (o.width as number), y2: at.y + (o.height as number) }
+      else geom = { x: at.x, y: at.y, width: o.width as number, height: o.height as number }
       insertCreated(mode, describe(mode, geom))
     }
 
@@ -253,7 +259,7 @@ export default defineFeature({
         if (field.type === 'checkbox') {
           input.checked = !!options[mode][field.key]
         } else {
-          input.value = options[mode][field.key]
+          input.value = String(options[mode][field.key])
           if (field.min !== undefined) input.min = String(field.min)
           if (field.max !== undefined) input.max = String(field.max)
           input.step = String(field.step)
@@ -365,7 +371,7 @@ export default defineFeature({
           openPopover(mode, start, ev.event)
           return undefined
         }
-        if (isDegenerate(geom)) {
+        if (isDegenerate(geom as Geom)) {
           svgCanvas.getCurrentDrawing().releaseId(el.id)
           return 'cancel'
         }
@@ -387,7 +393,7 @@ export default defineFeature({
         const key = arrow[axis[0]]
         if (!key) return true
         const o = options[drag.mode]
-        o[key] = key === 'segments' ? clampSegments(o[key] + axis[1]) : clampDividers(o[key] + axis[1])
+        o[key] = key === 'segments' ? clampSegments((o[key] as number) + axis[1]) : clampDividers((o[key] as number) + axis[1])
         drag.mods = { shift: e.shiftKey, alt: e.altKey }
         render()
         return true

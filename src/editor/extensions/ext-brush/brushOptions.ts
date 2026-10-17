@@ -25,9 +25,9 @@ export const sameBrush = (a: Record<string, unknown> | null | undefined, b: Reco
 export interface BrushDeps {
   slotCount: number
   /** the live brush */
-  getParams: () => Record<string, any>
+  getParams: () => Record<string, unknown>
   setParams: (params: Record<string, unknown>) => void
-  getSlot: (i: number) => Record<string, any> | null
+  getSlot: (i: number) => Record<string, unknown> | null
   saveSlot: (i: number, params: Record<string, unknown>) => void
   deleteSlot: (i: number) => void
   renameSlot: (i: number, name: string) => void
@@ -91,7 +91,7 @@ export const createBrushOptions = (deps: BrushDeps): { options: () => import('@s
         const i = Number(text.slice('dblclick:'.length))
         const existing = deps.getSlot(i)
         if (existing) {
-          deps.askName(i, existing.name ?? '').then((name) => { if (name !== null) deps.renameSlot(i, name.trim()) })
+          deps.askName(i, String(existing.name ?? '')).then((name) => { if (name !== null) deps.renameSlot(i, name.trim()) })
         }
         return
       }

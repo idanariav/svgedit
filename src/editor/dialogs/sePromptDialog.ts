@@ -51,13 +51,13 @@ export class SePromptDialog extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */

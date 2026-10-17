@@ -91,10 +91,10 @@ export default defineFeature({
     const applyGlowToElement = (elem: Element, params: GlowParams, batchCmd: InstanceType<typeof BatchCommand>) => {
       if (!elem) return
       const spec = fx.readEffects(elem)
-      const keep = (g: any) => (g && Number(g.blur) > 0 ? g : null)
+      const keep = <G extends { blur: unknown }>(g: G | null | undefined) => (g && Number(g.blur) > 0 ? g : null)
       spec.glow = params.remove
         ? { outer: null, inner: null }
-        : { outer: keep(params.outer), inner: keep(params.inner) }
+        : { outer: keep(params.outer), inner: keep(params.inner) as InnerGlow | null }
       spec.feather = !params.remove && params.feather && params.feather.radius > 0 ? params.feather : null
       fx.writeEffects(elem, spec, batchCmd)
     }

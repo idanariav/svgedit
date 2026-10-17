@@ -11,8 +11,8 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  */
 export class FlyingButton extends HTMLElement {
   staticIcon: boolean
-  imgPath: any
-  template: any
+  imgPath: string
+  template: HTMLTemplateElement
   _shadowRoot: ShadowRoot
   $button: HTMLDivElement
   $handle: HTMLDivElement
@@ -53,7 +53,7 @@ export class FlyingButton extends HTMLElement {
  * @returns template
    */
 
-  createTemplate (imgPath: string): unknown {
+  createTemplate (imgPath: string): HTMLTemplateElement {
     const template = document.createElement('template')
     template.innerHTML = `
       <style>
@@ -225,13 +225,13 @@ export class FlyingButton extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */

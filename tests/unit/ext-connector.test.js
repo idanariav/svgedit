@@ -134,4 +134,63 @@ describe('ext-connector', () => {
     expect(ownListener).toHaveBeenCalledWith('mousemove', expect.any(Function))
     expect(foreignListener).not.toHaveBeenCalled()
   })
+  describe('line binding from the canvas gesture events', () => {
+    const seNs = 'http://svg-edit.googlecode.com'
+    let boxA, boxB, line
+
+    // The press lands on boxA and the release on boxB (elementsFromPoint answers in turn).
+    const setup = async (mode) => {
+      boxA = document.createElementNS(NS.SVG, 'rect')
+      boxA.id = 'boxA'
+      boxB = document.createElementNS(NS.SVG, 'rect')
+      boxB.id = 'boxB'
+      line = document.createElementNS(NS.SVG, 'line')
+      line.id = 'newLine'
+      line.setAttribute('x1', '5')
+      line.setAttribute('y1', '5')
+      line.setAttribute('x2', '95')
+      line.setAttribute('y2', '5')
+      svgContent.append(boxA, boxB, line)
+      svgroot.append(svgContent)
+      svgCanvas.getMode = () => mode
+      svgCanvas.getElement = (id) => svgContent.querySelector(`#${id}`)
+      svgCanvas.getStrokedBBox = vi.fn(([el]) => (el === boxA ? { x: 0, y: 0, width: 20, height: 20 } : { x: 80, y: 0, width: 20, height: 20 }))
+      const store = new Map()
+      svgCanvas.getDataStorage = () => ({
+        put: (el, key, val) => store.set(`${el.id}:${key}`, val),
+        get: (el, key) => store.get(`${el.id}:${key}`),
+        has: (el, key) => store.has(`${el.id}:${key}`)
+      })
+      document.elementsFromPoint = vi.fn().mockReturnValueOnce([boxA]).mockReturnValueOnce([boxB])
+      await extConnector.init(svgEditor)
+    }
+    const press = () => svgCanvas.call('gestureStarted', { event: { clientX: 10, clientY: 10 }, start_x: 10, start_y: 10, selectedElements: [] })
+    const release = (altKey = false) => svgCanvas.call('gestureReleased', { event: { clientX: 90, clientY: 10, altKey }, mouse_x: 90, mouse_y: 10, element: line })
+
+    afterEach(() => { delete document.elementsFromPoint })
+
+    it('binds the start to the shape the line began on and the end to the one it was released on', async () => {
+      await setup('line')
+      press()
+      release()
+      expect(line.getAttributeNS(seNs, 'bind-start')).toBe('boxA')
+      expect(line.getAttributeNS(seNs, 'bind-end')).toBe('boxB')
+    })
+
+    it('keeps both ends free when Alt is held', async () => {
+      await setup('line')
+      press()
+      release(true)
+      expect(line.hasAttributeNS(seNs, 'bind-start')).toBe(false)
+      expect(line.hasAttributeNS(seNs, 'bind-end')).toBe(false)
+    })
+
+    it('binds nothing outside the Line tool', async () => {
+      await setup('rect')
+      press()
+      release()
+      expect(line.hasAttributeNS(seNs, 'bind-start')).toBe(false)
+      expect(line.hasAttributeNS(seNs, 'bind-end')).toBe(false)
+    })
+  })
 })

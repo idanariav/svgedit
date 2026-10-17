@@ -192,7 +192,7 @@ class SeGridSettings extends SeSettingsPopover {
     this.$show.checked = !!cfg.showGrid
     this.$snap.checked = !!cfg.gridSnapping
     this.$shape.value = cfg.gridShape || 'square'
-    this.$step.value = cfg.snappingStep ?? 10
+    this.$step.value = String(cfg.snappingStep ?? 10)
     this.$color.value = this._toHex(cfg.gridColor || '#000000')
     this._updateTriggerState()
   }

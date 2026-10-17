@@ -49,7 +49,7 @@ export class SeTraceDialog extends HTMLElement {
     this.$okBtn = (this._shadowRoot.querySelector('#trace_ok') as HTMLButtonElement)
   }
 
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.setAttribute('title', i18next.t('tools.trace_image_title'))
     this.setAttribute('preset-label', i18next.t('tools.trace_style'))
     this.setAttribute('colors-label', i18next.t('tools.trace_colors'))

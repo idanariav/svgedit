@@ -203,23 +203,23 @@ export class SeMenu extends HTMLElement {
   }
 
   /** @function get */
-  get label (): any {
+  get label (): string | null {
     return this.getAttribute('label')
   }
 
   /** @function set */
-  set label (value) {
-    this.setAttribute('label', value)
+  set label (value: string | number) {
+    this.setAttribute('label', String(value))
   }
 
   /** @function get */
-  get src (): any {
+  get src (): string | null {
     return this.getAttribute('src')
   }
 
   /** @function set */
-  set src (value) {
-    this.setAttribute('src', value)
+  set src (value: string | number) {
+    this.setAttribute('src', String(value))
   }
 }
 

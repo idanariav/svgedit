@@ -40,7 +40,7 @@ export interface ValueControl {
   /** a fresh widget */
   create: (editor?: EditorInstance) => HTMLElement
   /** set it from the selection */
-  seed: (el: any, editor: EditorInstance) => void
+  seed: (el: HTMLElement, editor: EditorInstance) => void
   /** the handler of its `change` event */
   onChange: (editor: EditorInstance) => EventListener
 }
@@ -56,9 +56,10 @@ const makeColorControl = (type: ('fill' | 'stroke'), labelKey: string, src: stri
     el.setAttribute('src', src)
     return el
   },
-  seed: (el: any, editor: EditorInstance) => {
-    el.init(editor.i18next)
-    el.update(editor.svgCanvas, editor.selectedElement)
+  seed: (el: HTMLElement, editor: EditorInstance) => {
+    const picker = el as HTMLElement & { init(i18next: unknown): void, update(canvas: unknown, selected: unknown): void }
+    picker.init(editor.i18next)
+    picker.update(editor.svgCanvas, editor.selectedElement)
   },
   onChange: (editor: EditorInstance) => (evt) => editor.bottomPanel.handleColorPicker(type, evt)
 })
@@ -83,9 +84,9 @@ export const VALUE_CONTROLS: Record<string, ValueControl> = {
       el.setAttribute('src', 'stroke-width.svg')
       return el
     },
-    seed: (el: HTMLInputElement, editor: EditorInstance) => {
+    seed: (el: HTMLElement, editor: EditorInstance) => {
       const sel = editor.selectedElement
-      el.value = String((sel && sel.getAttribute('stroke-width')) || 1)
+      ;(el as HTMLInputElement).value = String((sel && sel.getAttribute('stroke-width')) || 1)
     },
     onChange: (editor: EditorInstance) => (e) => editor.bottomPanel.changeStrokeWidth(e)
   },

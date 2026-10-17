@@ -100,7 +100,7 @@ class MainMenu {
     if (!this.editor.customExportImage) {
       openExportWindow()
     }
-    const bkgdColor = this.editor.configObj.curPrefs.bkgd_color
+    const bkgdColor = this.editor.configObj.curPrefs.bkgd_color as string | undefined
     /* const results = */ await this.editor.svgCanvas.rasterExport(
       imgType,
       quality,

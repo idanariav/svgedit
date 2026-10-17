@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
+import { parseAnchors, anchorsToD, type SubPath } from '@svgedit/svgcanvas/core/anchor-path.ts'
 import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
@@ -55,7 +55,7 @@ export default defineFeature({
     const tolerance = () => numberPref(TOLERANCE_PREF, TOLERANCE_PX, 0.5)
 
     /** The paths being brushed, each with its state at the press and its screen → local mapping. */
-    let targets: Array<{ el: Element, d0: string, subpaths: any[], marks: boolean[][], inverse: DOMMatrix, scale: number, touched: boolean }> = []
+    let targets: Array<{ el: Element, d0: string, subpaths: SubPath[], marks: boolean[][], inverse: DOMMatrix, scale: number, touched: boolean }> = []
     let last: { x: number; y: number; } | null = null
     let ring: SVGCircleElement | null = null
 

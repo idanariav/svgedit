@@ -158,7 +158,7 @@ export const registerFont = async (family: string, base64: string, editor?: Font
  * Ensure a font is available: downloading + persisting it on first use, then
  * registering it. After the first call (online) the font works offline forever.
  */
-export const ensureFont = async (family: string, editor: any | null | undefined): Promise<void> => {
+export const ensureFont = async (family: string, editor: FontEditor | null | undefined): Promise<void> => {
   if (_cache.has(family)) {
     await registerFont(family, (_cache.get(family) as string), editor)
     return
@@ -194,7 +194,7 @@ export const restoreAll = async (editor: FontEditor | null | undefined): Promise
   if (adapter) {
     let records: FontRecord[] = []
     try {
-      records = (await adapter.getFonts?.()) ?? []
+      records = ((await adapter.getFonts?.()) as FontRecord[] | undefined) ?? []
     } catch (e) {
       logWarn('fontStore: failed to read host fonts', e, 'fontStore')
       return []

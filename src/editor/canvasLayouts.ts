@@ -57,7 +57,7 @@ export const loadLayouts = (): Array<{ name: string, w: number, h: number, bg: s
 /**
  * Persist layouts via the host adapter, else localStorage.
  * */
-export const saveLayouts = (layouts: Array<any>): void => {
+export const saveLayouts = (layouts: ReturnType<typeof loadLayouts>): void => {
   try {
     const adapter = getUserDataAdapter()
     if (adapter && typeof adapter.setCanvasLayouts === 'function') {

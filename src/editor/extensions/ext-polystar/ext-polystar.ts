@@ -325,16 +325,16 @@ export default defineFeature({
         const elem = selElems[i]
         if (elem?.getAttribute('shape') === 'star') {
           if (opts.selectedElement && !opts.multiselected) {
-            $req('starNumPoints').value = elem.getAttribute('point')
-            $req('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
-            $req('radialShift').value = elem.getAttribute('radialshift')
+            $req('starNumPoints').value = elem.getAttribute('point') as string
+            $req('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier') as string
+            $req('radialShift').value = elem.getAttribute('radialshift') as string
             showPanel(true, 'star')
           } else {
             showPanel(false, 'star')
           }
         } else if (elem?.getAttribute('shape') === 'regularPoly') {
           if (opts.selectedElement && !opts.multiselected) {
-            $req('polySides').value = elem.getAttribute('sides')
+            $req('polySides').value = elem.getAttribute('sides') as string
             showPanel(true, 'polygon')
           } else {
             showPanel(false, 'polygon')

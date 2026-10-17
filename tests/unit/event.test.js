@@ -186,6 +186,21 @@ describe('event', () => {
     expect(rubberBox.getAttribute('y')).toBe('20')
   })
 
+  it("mouseDownEvent() announces 'gestureStarted' with the press point and the selection", () => {
+    const calls = []
+    canvas.call = vi.fn((name, detail) => calls.push([name, detail]))
+    canvas.setCurrentMode('some-extension-mode')
+    const evt = { clientX: 10, clientY: 20, button: 0, altKey: false, shiftKey: false, preventDefault () {}, target: contentGroup }
+
+    canvas.mouseDownEvent(evt)
+
+    const started = calls.find(([name]) => name === 'gestureStarted')
+    expect(started).toBeTruthy()
+    expect(started[1]).toMatchObject({ event: evt })
+    expect(Array.isArray(started[1].selectedElements)).toBe(true)
+    expect(typeof started[1].start_x).toBe('number')
+  })
+
   it('mouseDownEvent() arms alt-clone intent instead of cloning immediately', () => {
     // Regression guard: cloneSelectedElements() used to be called right here,
     // unconditionally, on any mousedown with altKey held -- even a plain
@@ -262,6 +277,45 @@ describe('event', () => {
     expect(ended).toBeGreaterThanOrEqual(0)
     expect(order[ended][1]).toEqual({ mode: 'some-extension-mode', event: evt })
     errSpy.mockRestore()
+  })
+
+  it("mouseUpEvent() announces 'gestureReleased' with the drawn element, before 'gestureEnded'", () => {
+    const order = []
+    canvas.call = vi.fn((name, detail) => order.push([name, detail]))
+    canvas.setCurrentMode('some-extension-mode')
+    canvas.setStarted(true)
+    canvas.textActions = { init () {}, mouseUp () {} }
+    canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const evt = { clientX: 10, clientY: 20, button: 0, shiftKey: false, preventDefault () {}, target: contentGroup }
+
+    canvas.mouseUpEvent(evt)
+
+    const released = order.findIndex(([name]) => name === 'gestureReleased')
+    expect(released).toBeGreaterThanOrEqual(0)
+    expect(order[released][1]).toMatchObject({ event: evt, element: null })
+    expect(released).toBeLessThan(order.findIndex(([name]) => name === 'gestureEnded'))
+    errSpy.mockRestore()
+  })
+
+  it("mouseMoveEvent() announces 'gestureMoved' with the canvas coordinates while a gesture runs", () => {
+    const order = []
+    canvas.call = vi.fn((name, detail) => order.push([name, detail]))
+    canvas.setCurrentMode('some-extension-mode')
+    canvas.setStarted(true)
+    canvas.textActions = { init () {} }
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
+    const evt = { clientX: 10, clientY: 20, button: 0, shiftKey: false, preventDefault () {}, target: contentGroup }
+
+    canvas.mouseMoveEvent(evt)
+
+    const moved = order.find(([name]) => name === 'gestureMoved')
+    expect(moved).toBeTruthy()
+    expect(moved[1]).toMatchObject({ event: evt })
+    expect(typeof moved[1].mouse_x).toBe('number')
   })
 
   it('mouseDownEvent() ignores stale selection grips outside select mode', () => {
@@ -525,6 +579,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getToolLocked = () => false
     canvas.getElement = () => null
@@ -578,6 +634,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getToolLocked = () => false
     canvas.getElement = () => null
@@ -612,6 +670,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getToolLocked = () => true
     canvas.getElement = () => rectElement
@@ -655,6 +715,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getToolLocked = () => false
     canvas.getElement = () => rectElement
@@ -702,6 +764,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getElement = () => null
     canvas.getId = () => ''
@@ -743,6 +807,8 @@ describe('event', () => {
 
     canvas.textActions = { init () {}, mouseUp () {} }
     canvas.getJustSelected = () => null
+    canvas.getId = () => 'svg_1'
+    canvas.getElement = () => null
     canvas.getOpacAni = () => ({})
     canvas.getToolLocked = () => false
     canvas.getElement = () => null

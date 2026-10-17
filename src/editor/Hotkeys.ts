@@ -434,7 +434,7 @@ export default class HotkeyManager {
     })
     return ordered.map((g) => ({
       group: g,
-      actions: (groups.get(g) as Array<any>).sort((a, b) => a.label.localeCompare(b.label))
+      actions: (groups.get(g) ?? []).sort((a, b) => a.label.localeCompare(b.label))
     }))
   }
 
@@ -547,7 +547,7 @@ export default class HotkeyManager {
     try {
       const adapter = getUserDataAdapter()
       if (adapter && typeof adapter.getHotkeys === 'function') {
-        this.overrides = adapter.getHotkeys() || {}
+        this.overrides = (adapter.getHotkeys() as Record<string, string[]> | undefined) || {}
       } else if (typeof localStorage !== 'undefined') {
         const raw = localStorage.getItem(STORAGE_KEY)
         this.overrides = raw ? JSON.parse(raw) : {}

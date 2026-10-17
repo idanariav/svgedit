@@ -58,7 +58,7 @@ const loadPresets = (): Array<{ ratio: string, w: number, h: number }> => {
 }
 
 /** Persist the canvas presets via the host adapter, else localStorage. */
-const savePresets = (presets: Array<any>): void => {
+const savePresets = (presets: ReturnType<typeof loadPresets>): void => {
   try {
     const adapter = getUserDataAdapter()
     if (adapter && typeof adapter.setCanvasPresets === 'function') {

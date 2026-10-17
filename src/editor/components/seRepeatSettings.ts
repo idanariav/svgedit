@@ -311,7 +311,7 @@ class SeRepeatSettings extends SeSettingsPopover {
     }
 
     // Seed from an existing repeat on the selection so Apply re-edits it.
-    const existing = requireOwnerEditor(this).svgCanvas.getRepeatParams?.() as Record<string, any> | null | undefined
+    const existing = requireOwnerEditor(this).svgCanvas.getRepeatParams?.() as import('../extensions/ext-repeat/ext-repeat.ts').RepeatParams | null | undefined
     if (existing) {
       this._setMode(existing.mode)
       if (existing.mode === 'radial') {
@@ -319,8 +319,8 @@ class SeRepeatSettings extends SeSettingsPopover {
         ;(this._shadowRoot.querySelector('#repeat_sweep') as HTMLElementTagNameMap['se-spin-input']).value = existing.sweep
         this._setCenter(existing.center)
         if (existing.center === 'custom') {
-          this._centerX = existing.centerX
-          this._centerY = existing.centerY
+          this._centerX = existing.centerX ?? null
+          this._centerY = existing.centerY ?? null
         }
       } else if (existing.mode === 'grid') {
         ;(this._shadowRoot.querySelector('#repeat_rows') as HTMLElementTagNameMap['se-spin-input']).value = existing.rows

@@ -22,15 +22,18 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
-import type { ElementsPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
+import type { ElementsPayload, GestureStartedPayload, GestureMovedPayload, GestureReleasedPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
 
 const name = 'connector'
+
+type BBox = { x: number, y: number, width: number, height: number }
+type Pt = { x: number, y: number }
 
 export default defineFeature({
   name,
   async init (svgEditor) {
     const { svgCanvas } = svgEditor
-    const { getElement, $id, addSVGElementsFromJson } = svgCanvas
+    const { getElement, $id } = svgCanvas
     const svgroot = svgCanvas.getSvgRoot()
     const { selectorManager } = svgCanvas
     const seNs = svgCanvas.getEditorNS()
@@ -108,7 +111,7 @@ export default defineFeature({
      * Returns the midpoint of the face of `bb` that faces toward (fromX, fromY),
      * pushed outward by `offset` px. Used for clean N/S/E/W connector exits.
      */
-    const getCardinalPoint = (fromX: number, fromY: number, bb: any, offset: number = 0): any => {
+    const getCardinalPoint = (fromX: number, fromY: number, bb: BBox, offset: number = 0): Pt => {
       const cx = bb.x + bb.width / 2
       const cy = bb.y + bb.height / 2
       const dx = fromX - cx
@@ -341,7 +344,7 @@ export default defineFeature({
      * getBBintersect — finds the intersection of the line from bb-center to (x,y)
      * with the bounding box perimeter, optionally inflated by `offset`.
      */
-    const getBBintersect = (x: number, y: number, bb: any, offset: number): any => {
+    const getBBintersect = (x: number, y: number, bb: BBox, offset: number): Pt => {
       // Adjust bounding box if offset is provided
       if (offset) {
         bb = { ...bb } // Create a shallow copy
@@ -408,7 +411,7 @@ export default defineFeature({
      * computeConnectorPoints — point list for a legacy `<polyline>` connector.
  * @param line - The connector polyline (for mode + marker offsets).
      */
-    const computeConnectorPoints = (startBB: any, endBB: any, line: Element): any[] => {
+    const computeConnectorPoints = (startBB: BBox, endBB: BBox, line: Element): Pt[] => {
       const sc = { x: startBB.x + startBB.width / 2, y: startBB.y + startBB.height / 2 }
       const ec = { x: endBB.x + endBB.width / 2, y: endBB.y + endBB.height / 2 }
 
@@ -450,7 +453,7 @@ export default defineFeature({
      * routeConnector — recompute a legacy polyline's geometry from both bboxes.
  * @param line - The connector polyline.
      */
-    const routeConnector = (line: Element, startBB: unknown, endBB: unknown): void => {
+    const routeConnector = (line: Element, startBB: BBox | null | undefined, endBB: BBox | null | undefined): void => {
       if (!startBB || !endBB) return
       const pts = computeConnectorPoints(startBB, endBB, line)
       // An aligned polyline is trimmed from its real ends.
@@ -656,50 +659,6 @@ export default defineFeature({
         reset()
       }
 
-      // Track marker presence for endpoint offsets; convert a line to a
-      // polyline when a mid-marker is applied (SVG <line> has no mid vertex).
-      // (never set: an `attributes` map is keyed by attribute name, i.e. `marker-start`)
-      const markerAttrs = (elem.attributes as unknown) as Record<string, Attr | undefined>
-      const { markerStart, markerMid, markerEnd } = markerAttrs
-      if (markerStart || markerMid || markerEnd) {
-        dataStorage.put(elem, 'start_off', Boolean(markerStart))
-        dataStorage.put(elem, 'end_off', Boolean(markerEnd))
-
-        if (elem.tagName === 'line' && markerMid) {
-          const { x1, x2, y1, y2, id } = markerAttrs as Record<string, Attr>
-          const bindStart = elem.getAttributeNS(seNs, 'bind-start')
-          const bindEnd = elem.getAttributeNS(seNs, 'bind-end')
-
-          const midPt = `${(Number(x1.value) + Number(x2.value)) / 2},${
-            (Number(y1.value) + Number(y2.value)) / 2
-          }`
-          const pline = addSVGElementsFromJson({
-            element: 'polyline',
-            attr: {
-              points: `${x1.value},${y1.value} ${midPt} ${x2.value},${y2.value}`,
-              stroke: elem.getAttribute('stroke') ?? 'none',
-              // A missing stroke-width means the SVG initial value of 1 — pass
-              // that through explicitly, since assignAttributes would otherwise
-              // set the attribute to the literal string "null".
-              'stroke-width': elem.getAttribute('stroke-width') ?? 1,
-              'marker-mid': markerMid?.value,
-              fill: 'none',
-              opacity: elem.getAttribute('opacity') || 1
-            }
-          })
-          // Preserve per-endpoint bindings across the conversion.
-          if (bindStart) pline.setAttributeNS(seNs, 'se:bind-start', bindStart)
-          if (bindEnd) pline.setAttributeNS(seNs, 'se:bind-end', bindEnd)
-
-          elem.insertAdjacentElement('afterend', pline)
-          elem.remove()
-          svgCanvas.clearSelection()
-          pline.id = id.value
-          svgCanvas.addToSelection([pline])
-          elem = pline
-        }
-      }
-
       // If the changed element is itself a connector, re-route it (e.g. a new
       // marker changed its endpoint offset). Otherwise re-route lines bound to it.
       const ids = getBindIds(elem)
@@ -761,14 +720,111 @@ export default defineFeature({
       if (elems.length) updateConnectors(elems)
     })
 
+    svgCanvas.bind('gestureStarted', (_win: Window, opts: GestureStartedPayload) => {
+      const { event: e } = opts
+      const mode = svgCanvas.getMode()
+
+      if (mode === 'line') {
+        // Core creates the <line>; we only record which shape (if any) the
+        // start point landed on, for binding when the line is released.
+        started = true
+        startElem = findConnectableAt(e.clientX, e.clientY)
+        hideHoverHighlight()
+        return
+      }
+
+      if (mode === 'select') {
+        // Record drag-start so the select-mode move computes the right delta.
+        startX = opts.start_x
+        startY = opts.start_y
+        findConnectors(opts.selectedElements)
+      }
+    })
+
+    svgCanvas.bind('gestureMoved', (_win: Window, opts: GestureMovedPayload) => {
+      const zoom = svgCanvas.getZoom()
+      const x = opts.mouse_x / zoom
+      const y = opts.mouse_y / zoom
+      const mode = svgCanvas.getMode()
+
+      if (mode === 'line') {
+        if (started) {
+          // Highlight the shape the end point would bind to.
+          const screenPt = svgContentToScreen(x, y)
+          const candidate = findConnectableAt(screenPt.x, screenPt.y)
+          const hovered = (candidate && candidate !== startElem) ? candidate : null
+          if (hovered !== currentHoverElem) {
+            currentHoverElem = hovered
+            if (hovered) showHoverHighlight(hovered, screenPt.x, screenPt.y)
+            else hideHoverHighlight()
+          } else if (hovered) {
+            updateSnapHighlight(screenPt.x, screenPt.y, hovered)
+          }
+        }
+        return
+      }
+
+      // SELECT mode: update bound lines while their shapes are dragged.
+      if (!connections.length) return
+      if (!startX || !startY) return
+
+      const dataStorage = svgCanvas.getDataStorage()
+      const diffX = x - startX
+      const diffY = y - startY
+
+      for (const elem of svgCanvas.getSelectedElements()) {
+        if (elem && dataStorage.has(elem, 'c_start')) {
+          svgCanvas.removeFromSelection([elem])
+          ;(elem as SVGGraphicsElement).transform.baseVal.clear()
+        }
+      }
+      if (connections.length) updateLine(diffX, diffY)
+    })
+
+    svgCanvas.bind('gestureReleased', (_win: Window, opts: GestureReleasedPayload) => {
+      const { event: e, element: line } = opts
+      if (svgCanvas.getMode() !== 'line') return
+
+      started = false
+      hideHoverHighlight()
+
+      if (!line || line.tagName !== 'line') { startElem = null; return }
+
+      // Alt held → keep both endpoints free regardless of nearby shapes.
+      if (e.altKey) { startElem = null; return }
+
+      const dataStorage = svgCanvas.getDataStorage()
+      const endElem = findConnectableAt(e.clientX, e.clientY)
+      const startBind = (startElem && startElem.parentNode) ? startElem : null
+      const endBind = (endElem && endElem.parentNode && endElem !== startBind) ? endElem : null
+      startElem = null
+
+      let bound = false
+      if (startBind) {
+        line.setAttributeNS(seNs, 'se:bind-start', startBind.id)
+        dataStorage.put(line, 'c_start', startBind.id)
+        dataStorage.put(line, 'start_bb', svgCanvas.getStrokedBBox([startBind]))
+        bound = true
+      }
+      if (endBind) {
+        line.setAttributeNS(seNs, 'se:bind-end', endBind.id)
+        dataStorage.put(line, 'c_end', endBind.id)
+        dataStorage.put(line, 'end_bb', svgCanvas.getStrokedBBox([endBind]))
+        bound = true
+      }
+      if (bound) routeLineBinding(line)
+
+      // Leave keep/element to core (a non-zero line is already kept).
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
         // Create the SVG hover-highlight overlay (outline + snap dots).
         createHighlightLayer()
 
-        // Pre-draw hover highlight: the extension's mouseMove hook only fires
-        // while the mouse button is held, so we attach a direct DOM listener
+        // Pre-draw hover highlight: `gestureMoved` only fires while the mouse
+        // button is held, so we attach a direct DOM listener
         // on the workarea for idle hover detection in line mode. $id is scoped
         // to this editor's own container (see EditorStartup) and already falls
         // back to a plain document lookup when unscoped (standalone use), so
@@ -787,102 +843,6 @@ export default defineFeature({
           if (hovered) showHoverHighlight(hovered, e.clientX, e.clientY)
           else hideHoverHighlight()
         })
-      },
-      mouseDown (opts: { event: MouseEvent, start_x: number, start_y: number, selectedElements: Element[] }) {
-        const { event: e } = opts
-        const mode = svgCanvas.getMode()
-
-        if (mode === 'line') {
-          // Core creates the <line>; we only record which shape (if any) the
-          // start point landed on, for binding at mouseUp.
-          started = true
-          startElem = findConnectableAt(e.clientX, e.clientY)
-          hideHoverHighlight()
-          return undefined
-        }
-
-        if (mode === 'select') {
-          // Record drag-start so the select-mode mouseMove computes the right delta.
-          startX = opts.start_x
-          startY = opts.start_y
-          findConnectors(opts.selectedElements)
-        }
-        return undefined
-      },
-      mouseMove (opts: { mouse_x: number; mouse_y: number; }) {
-        const zoom = svgCanvas.getZoom()
-        const x = opts.mouse_x / zoom
-        const y = opts.mouse_y / zoom
-        const mode = svgCanvas.getMode()
-
-        if (mode === 'line') {
-          if (started) {
-            // Highlight the shape the end point would bind to.
-            const screenPt = svgContentToScreen(x, y)
-            const candidate = findConnectableAt(screenPt.x, screenPt.y)
-            const hovered = (candidate && candidate !== startElem) ? candidate : null
-            if (hovered !== currentHoverElem) {
-              currentHoverElem = hovered
-              if (hovered) showHoverHighlight(hovered, screenPt.x, screenPt.y)
-              else hideHoverHighlight()
-            } else if (hovered) {
-              updateSnapHighlight(screenPt.x, screenPt.y, hovered)
-            }
-          }
-          return
-        }
-
-        // SELECT mode: update bound lines while their shapes are dragged.
-        if (!connections.length) return
-        if (!startX || !startY) return
-
-        const dataStorage = svgCanvas.getDataStorage()
-        const diffX = x - startX
-        const diffY = y - startY
-
-        for (const elem of svgCanvas.getSelectedElements()) {
-          if (elem && dataStorage.has(elem, 'c_start')) {
-            svgCanvas.removeFromSelection([elem])
-            ;(elem as SVGGraphicsElement).transform.baseVal.clear()
-          }
-        }
-        if (connections.length) updateLine(diffX, diffY)
-      },
-      mouseUp (opts: { event: MouseEvent, element: Element | null }) {
-        const { event: e, element: line } = opts
-        if (svgCanvas.getMode() !== 'line') return undefined
-
-        started = false
-        hideHoverHighlight()
-
-        if (!line || line.tagName !== 'line') { startElem = null; return undefined }
-
-        // Alt held → keep both endpoints free regardless of nearby shapes.
-        if (e.altKey) { startElem = null; return undefined }
-
-        const dataStorage = svgCanvas.getDataStorage()
-        const endElem = findConnectableAt(e.clientX, e.clientY)
-        const startBind = (startElem && startElem.parentNode) ? startElem : null
-        const endBind = (endElem && endElem.parentNode && endElem !== startBind) ? endElem : null
-        startElem = null
-
-        let bound = false
-        if (startBind) {
-          line.setAttributeNS(seNs, 'se:bind-start', startBind.id)
-          dataStorage.put(line, 'c_start', startBind.id)
-          dataStorage.put(line, 'start_bb', svgCanvas.getStrokedBBox([startBind]))
-          bound = true
-        }
-        if (endBind) {
-          line.setAttributeNS(seNs, 'se:bind-end', endBind.id)
-          dataStorage.put(line, 'c_end', endBind.id)
-          dataStorage.put(line, 'end_bb', svgCanvas.getStrokedBBox([endBind]))
-          bound = true
-        }
-        if (bound) routeLineBinding(line)
-
-        // Leave keep/element to core (a non-zero line is already kept).
-        return undefined
       },
       IDsUpdated (input) {
         const remove: string[] = []

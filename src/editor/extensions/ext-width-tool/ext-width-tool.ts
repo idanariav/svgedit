@@ -19,8 +19,8 @@
  * @license MIT
  */
 
-import { centerline, pointAt, locate } from '@svgedit/svgcanvas/core/width-outline.ts'
-import { profileAt, withPoint, withoutPoint, movedPoint, isProfile } from '@svgedit/svgcanvas/core/width-profile.ts'
+import { centerline, pointAt, locate, type Centerline } from '@svgedit/svgcanvas/core/width-outline.ts'
+import { profileAt, withPoint, withoutPoint, movedPoint, isProfile, type WidthPoint } from '@svgedit/svgcanvas/core/width-profile.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
@@ -47,7 +47,7 @@ export default defineFeature({
     interface Target {
       el: Element
       /** the centerline (see `centerline`) */
-      line: any
+      line: Centerline
       /** half the stroke's full width */
       half: number
       /** `[t, left, right]` per width point */
@@ -64,10 +64,10 @@ export default defineFeature({
     let target: Target | null = null
     /** The width point a click selected (index into the target's profile), and the element it belongs to. */
     let selected: { el: Element | null, index: number } = { el: null, index: -1 }
-    let drag: { mode: 'width' | 'move', index: number, side: (('left' | 'right') | null), t: number, points0: any[], moved: boolean, press: { x: number, y: number } } | null = null
+    let drag: { mode: 'width' | 'move', index: number, side: (('left' | 'right') | null), t: number, points0: WidthPoint[], moved: boolean, press: { x: number, y: number } } | null = null
     type Pt = { x: number, y: number }
     type Mark = { index: number, t: number, p: Pt, n: Pt, l: Pt, r: Pt }
-    type Hit = { kind: 'center', m: Mark } | { kind: 'handle', side: 'left' | 'right', m: Mark } | { kind: 'stroke', loc: any }
+    type Hit = { kind: 'center', m: Mark } | { kind: 'handle', side: 'left' | 'right', m: Mark } | { kind: 'stroke', loc: ReturnType<typeof locate> }
     /**
      * A point's mark: where, and the two side edges (local coordinates).
      * */
@@ -272,7 +272,7 @@ export default defineFeature({
           return
         }
         const press = { x: ev.screenX, y: ev.screenY }
-        const points0 = target.points.map((p) => [...p])
+        const points0 = target.points.map((p): WidthPoint => [p[0], p[1], p[2]])
         svgCanvas.setCursorHint(h.kind === 'center' ? 'grabbing' : null)
         if (h.kind === 'center') {
           drag = { mode: 'move', index: h.m.index, side: null, t: h.m.t, points0, moved: false, press }

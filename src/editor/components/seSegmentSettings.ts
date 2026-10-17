@@ -219,8 +219,8 @@ class SeSegmentSettings extends SeSettingsPopover {
       this._setMode(existing.mode)
       this._setSplit(existing.split)
       if (existing.mode === 'radial') {
-        ;(this._shadowRoot.querySelector('#segment_count') as HTMLElementTagNameMap['se-spin-input']).value = existing.count
-        ;(this._shadowRoot.querySelector('#segment_start_angle') as HTMLElementTagNameMap['se-spin-input']).value = existing.startAngle
+        ;(this._shadowRoot.querySelector('#segment_count') as HTMLElementTagNameMap['se-spin-input']).value = existing.count as number
+        ;(this._shadowRoot.querySelector('#segment_start_angle') as HTMLElementTagNameMap['se-spin-input']).value = existing.startAngle as number
       } else {
         ;(this._shadowRoot.querySelector('#segment_grid_count') as HTMLElementTagNameMap['se-spin-input']).value = existing.count
         this._setAxis(existing.axis)

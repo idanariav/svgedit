@@ -110,43 +110,43 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
   }
 
   /** @function get */
-  get dialog (): any {
+  get dialog (): string | null {
     return this.getAttribute('dialog')
   }
 
   /** @function set */
-  set dialog (value) {
-    this.setAttribute('dialog', value)
+  set dialog (value: string | number) {
+    this.setAttribute('dialog', String(value))
   }
 
   /** @function get */
-  get value (): any {
+  get value (): string | null {
     return this.getAttribute('value')
   }
 
   /** @function set */
-  set value (value) {
-    this.setAttribute('value', value)
+  set value (value: string | number) {
+    this.setAttribute('value', String(value))
   }
 
   /** @function get */
-  get applysec (): any {
+  get applysec (): string | null {
     return this.getAttribute('applysec')
   }
 
   /** @function set */
-  set applysec (value) {
-    this.setAttribute('applysec', value)
+  set applysec (value: string | number) {
+    this.setAttribute('applysec', String(value))
   }
 
   /** @function get */
-  get copysec (): any {
+  get copysec (): string | null {
     return this.getAttribute('copysec')
   }
 
   /** @function set */
-  set copysec (value) {
-    this.setAttribute('copysec', value)
+  set copysec (value: string | number) {
+    this.setAttribute('copysec', String(value))
   }
 
   /** @function connectedCallback */

@@ -47,10 +47,10 @@ class LeftPanel {
     })
     // remove the pressed state on other(s) button(s)
     $qa('#tools_left *[pressed]').forEach((b) => {
-      (b as any).pressed = false
+      (b as unknown as { pressed: boolean }).pressed = false
     })
     // pressed state for the clicked button
-    ;($req(button) as any).pressed = true
+    ;($req(button) as unknown as { pressed: boolean }).pressed = true
     return true
   }
 
@@ -68,7 +68,7 @@ or the se-flyingbutton host for a shape variant)
     this.editor.svgCanvas.setToolLocked(true)
     visibleEl.setAttribute('locked', 'true')
     // close the flyout menu that a double-click may have opened
-    if (visibleEl.tagName === 'SE-FLYINGBUTTON') (visibleEl as any).opened = false
+    if (visibleEl.tagName === 'SE-FLYINGBUTTON') (visibleEl as unknown as { opened: boolean }).opened = false
   }
 
   /**

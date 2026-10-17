@@ -21,7 +21,7 @@ short: details belong in the area files.
   syntax only: no enums, namespaces or parameter properties; no `any`, use `unknown` and narrow) and is listed in
   `tsconfig.strict.json`. Import a `.ts` module with its `.ts` extension (`./x.ts`): plain Node runs the headless engine and
   does not map `.js` to `.ts`. After renaming a module run `node scripts/check-ts-imports.mjs --fix`. A new *editor* module
-  is a `.ts` file too (the `check-editor-strict` ratchet covers it; `no-explicit-any` is off under `src/editor` only until the explicit `any`s are narrowed). When you touch a core module's `init`,
+  is a `.ts` file too (the `check-editor-strict` ratchet covers it; `no-explicit-any` is an error there too, so narrow with `unknown` and a guard, not `any`). When you touch a core module's `init`,
   type its `canvas` parameter as `SvgCanvas` (`import type SvgCanvas from '../svgcanvas.ts'`); convert a module you are rewriting anyway.
 - **No new `canvas.foo = …` attachments** ([R2](roadmap/rearchitecture.md#r2-canvas-composition-instead-of-attached-members)):
   a new core module exports `XApi` (its interface) and `createX(canvas): XApi`; `svgcanvas.ts` attaches it with `attachApi` and
@@ -47,7 +47,7 @@ short: details belong in the area files.
 
 ## Background tracks
 
-- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, strict on every file and now `.ts`, except the CSS / data / locale modules, `browser-not-supported.js` and the `Editor.ts` re-export): narrow the explicit `any`s, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
+- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, strict on every file and now `.ts`, except the CSS / data / locale modules, `browser-not-supported.js` and the `Editor.ts` re-export): the explicit `any`s are gone, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48): one "Run editor command…" palette picker
   over `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette
   entries, by decision. The picker asks for a command's `params` (2026-10-15); no editor command declares any yet.

@@ -24,7 +24,7 @@ import { redact, describeElement } from '@svgedit/svgcanvas/core/debug-events.ts
 /** Findings listed per action; the rest are only counted. */
 const MAX_FINDINGS = 5
 
-const drawingHealth = (svgCanvas: any): { ok: true } | { ok: false, count: number, findings: object[] } => {
+const drawingHealth = (svgCanvas: import('@svgedit/svgcanvas').default): { ok: true } | { ok: false, count: number, findings: object[] } => {
   try {
     const found = svgCanvas.checkDrawing()
     return found.length ? { ok: false, count: found.length, findings: found.slice(0, MAX_FINDINGS) } : { ok: true }
@@ -34,7 +34,7 @@ const drawingHealth = (svgCanvas: any): { ok: true } | { ok: false, count: numbe
 }
 
 /** What the drawing is made of, for the start of a log. */
-const describeDrawing = (svgCanvas: any): object => {
+const describeDrawing = (svgCanvas: import('@svgedit/svgcanvas').default): object => {
   const tags: Record<string, number> = {}
   const content = svgCanvas.getSvgContent()
   for (const el of content.querySelectorAll('*')) tags[el.tagName] = (tags[el.tagName] ?? 0) + 1

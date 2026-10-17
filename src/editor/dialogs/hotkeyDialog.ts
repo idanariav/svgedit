@@ -58,7 +58,7 @@ export class SeHotkeyDialog extends HTMLElement {
     this._assignedOnly = false
   }
 
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.$title.textContent = i18next.t('hotkeys.title')
     this.$done.textContent = i18next.t('common.ok')
     this.$resetAll.textContent = i18next.t('hotkeys.reset_all')

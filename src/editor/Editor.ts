@@ -300,13 +300,13 @@ class Editor extends EditorStartup {
  * @param sink - `(level, { message, data })`
  * @param level - A `LogLevel` value; defaults to leaving the level unchanged
    */
-  setLogSink (sink: (arg0: string, arg1: { message: string, data: unknown }) => void | null, level?: import('@svgedit/svgcanvas/common/logger.ts').LogLevelValue): void {
+  setLogSink (sink: ((arg0: string, arg1: { message: string, data: unknown }) => void) | null, level?: import('@svgedit/svgcanvas/common/logger.ts').LogLevelValue): void {
     setLogSink(sink)
     if (level !== undefined) setLogLevel(level)
   }
 
   /** @listens module:svgcanvas.SvgCanvas#event:exported */
-  exportHandler (win: Window, data: any): void {
+  exportHandler (win: Window, data: { issues: string[], exportWindowName: string, bloburl?: string, datauri?: string, [key: string]: unknown }): void {
     const { issues, exportWindowName } = data
     this.exportWindow = window.open('', exportWindowName) // A hack to get the window via JSON-able name without opening a new one
     if (!this.exportWindow || this.exportWindow.closed) {
@@ -314,7 +314,7 @@ class Editor extends EditorStartup {
       return
     }
 
-    this.exportWindow.location.href = data.bloburl || data.datauri
+    this.exportWindow.location.href = (data.bloburl || data.datauri) as string
     const done = this.configObj.pref('export_notice_done')
     if (done !== 'all') {
       let note = this.i18next.t('notification.saveFromBrowser', {
@@ -536,7 +536,7 @@ host restore) leave this false to avoid polluting history.
  * @param elems Array of elements that were selected@listens module:svgcanvas.SvgCanvas#event:selected
    * @fires module:svgcanvas.SvgCanvas#event:ext_selectedChanged
    */
-  selectedChanged (win: Window, elems: any): void {
+  selectedChanged (win: Window, elems: Array<Element | null>): void {
     const mode = this.svgCanvas.getMode()
     const isNode = mode === 'pathedit'
     // if this.elems[1] is present, then we have more than one element
@@ -560,7 +560,7 @@ host restore) leave this false to avoid polluting history.
         if (!this.selectedElement && !this.multiselected) blurActiveField()
       }],
       // Deal with pathedit mode
-      ['topPanel.togglePathEditMode', () => this.topPanel.togglePathEditMode(isNode, elems)],
+      ['topPanel.togglePathEditMode', () => this.topPanel.togglePathEditMode(isNode, elems as Element[])],
       ['topPanel.updateContextPanel', () => this.topPanel.updateContextPanel()],
       // Switch the right-panel tab to match the selection (text → Text, else
       // Design). Done here, on selection change only — not in
@@ -592,7 +592,7 @@ host restore) leave this false to avoid polluting history.
    * @listens module:svgcanvas.SvgCanvas#event:transition
    * @fires module:svgcanvas.SvgCanvas#event:ext_elementTransition
    */
-  elementTransition (win: Window, elems: any): void {
+  elementTransition (win: Window, elems: Array<Element | null>): void {
     const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const mode = this.svgCanvas.getMode()
     const elem = elems[0]
@@ -804,7 +804,7 @@ host restore) leave this false to avoid polluting history.
   }
 
   /** @listens module:svgcanvas.SvgCanvas#event:contextset */
-  contextChanged (win: Window, context: any): void {
+  contextChanged (win: Window, context: Element | null): void {
     const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     let linkStr = ''
     if (context) {
@@ -837,7 +837,7 @@ host restore) leave this false to avoid polluting history.
    * @listens module:svgcanvas.SvgCanvas#event:extension_added
  * @returns Resolves to `undefined`
    */
-  async extAdded (win: Window, ext: any): Promise<void> {
+  async extAdded (win: Window, ext: (import('@svgedit/svgcanvas/svgcanvas.ts').ExtensionObject & { callback?: () => void, events?: { id: string, click: () => void } }) | null | undefined): Promise<void> {
     if (!ext) {
       return undefined
     }
@@ -1067,13 +1067,13 @@ confirm dialog (`'Cancel'` to stop; anything else to go on).
  * @param cb Callback to be queued to invoke
  * @returns Resolves when all callbacks, including the supplied have resolved
    */
-  ready (cb: ReadyCallback): Promise<any> {
+  ready<T> (cb: () => T): Promise<Awaited<T>> {
     return new Promise((resolve, reject) => {
       if (this.isReady) {
-        resolve(cb())
+        resolve(cb() as Awaited<T>)
         return
       }
-      this.callbacks.push([cb, resolve, reject])
+      this.callbacks.push([cb, resolve as (value?: unknown) => void, reject])
     })
   }
 
@@ -1189,7 +1189,7 @@ enabled
  * @param initfn Config to be invoked on this module@throws {Error} If called too early
  * @returns Resolves once the extension is added
    */
-  addExtension (name: string, initfn: any, initArgs: any): Promise<unknown> {
+  addExtension (name: string, initfn: (arg: object) => unknown, initArgs: { importLocale?: unknown, langParam?: string }): Promise<unknown> {
     // Note that we don't want this on this.ready since some extensions
     // may want to run before then (like server_opensave).
     if (!this.svgCanvas) {

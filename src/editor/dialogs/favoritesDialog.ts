@@ -68,7 +68,7 @@ export class SeFavoritesDialog extends HTMLElement {
     this._dragId = null
   }
 
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.$title.textContent = i18next.t('favorites.title')
     this.$hint.textContent = i18next.t('favorites.hint')
     this.$done.textContent = i18next.t('common.ok')

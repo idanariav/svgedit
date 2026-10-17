@@ -46,7 +46,7 @@ export default defineFeature({
     // the geometry is normalized to a 100x100 box with the origin at lower left
     // Safari did not like negative values for low left of viewBox
     // remember that the coordinate system has +y downward
-    const markerTypes: Record<string, any> = {
+    const markerTypes: Record<string, { element?: string, attr?: Record<string, string | number>, children?: unknown[] } & Record<string, unknown>> = {
       nomarker: {},
       leftarrow:
         { element: 'path', attr: { d: 'M0,50 L100,90 L70,50 L100,10 Z' } },
@@ -152,7 +152,7 @@ export default defineFeature({
       // so bail explicitly rather than either.
       if (!marker) return undefined
 
-      const mel = addElem(markerTypes[seType])
+      const mel = addElem(markerTypes[seType] as import('@svgedit/svgcanvas').SVGElementJSON)
       const fillcolor = (seType.substr(-2) === '_o' || strokeOnly.includes(seType))
         ? 'none'
         : color

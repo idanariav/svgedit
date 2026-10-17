@@ -258,7 +258,7 @@ export class Automation {
           break
         }
         default:
-          throw new Error(`Unknown pointer event kind "${(spec as any).kind}"`)
+          throw new Error(`Unknown pointer event kind "${(spec as { kind: string }).kind}"`)
       }
     }
   }

@@ -184,33 +184,33 @@ export class SeColorPicker extends HTMLElement {
   }
 
   /** @function get */
-  get label (): any {
+  get label (): string | null {
     return this.$label.getAttribute('title')
   }
 
   /** @function set */
-  set label (value) {
-    this.setAttribute('label', value)
+  set label (value: string | number) {
+    this.setAttribute('label', String(value))
   }
 
   /** @function get */
-  get type (): any {
+  get type (): string | null {
     return this.getAttribute('type')
   }
 
   /** @function set */
-  set type (value) {
-    this.setAttribute('type', value)
+  set type (value: string | number) {
+    this.setAttribute('type', String(value))
   }
 
   /** @function get */
-  get src (): any {
+  get src (): string | null {
     return this.getAttribute('src')
   }
 
   /** @function set */
-  set src (value) {
-    this.setAttribute('src', value)
+  set src (value: string | number) {
+    this.setAttribute('src', String(value))
   }
 
   /** The paint box, which exists once the element is connected. */
@@ -235,7 +235,7 @@ export class SeColorPicker extends HTMLElement {
     existing?.remove()
     const dialog = document.createElement('se-color-dialog')
     dialog.paint = this.requirePaintBox().paint
-    dialog.type = this.type
+    dialog.type = this.type as string
     dialog.i18next = this.i18next
     // Open as a popover beside the swatch when it is actually on screen; the touch
     // shell and hidden swatches (command search, tablet) keep the centred modal.
@@ -348,7 +348,7 @@ export class SeColorPicker extends HTMLElement {
 
   /** @function connectedCallback */
   connectedCallback (): void {
-    this.paintBox = new PaintBox(this.$block, this.type)
+    this.paintBox = new PaintBox(this.$block, this.type as string)
     $click(this.$picker, () => {
       this.openColorDialog()
     })

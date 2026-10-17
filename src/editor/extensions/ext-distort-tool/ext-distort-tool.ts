@@ -60,7 +60,7 @@ export default defineFeature({
     interface Target {
       el: Element
       frame: { x: number, y: number, w: number, h: number }
-      stack: Array<{ name: string, params: any }>
+      stack: Array<{ name: string, params: Record<string, unknown> }>
       index: number
       /** `freeDistort` or `perspective` */
       name: string

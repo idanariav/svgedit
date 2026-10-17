@@ -36,13 +36,15 @@ const REMOVED_KEY = 'removed'
 const KEEP_INDEX = 0
 const RECENT_LIMIT = 5
 
-export type Overrides = Record<string, any>
+/** `{ index: color | gradient }`, plus `removed: number[]` (see REMOVED_KEY). */
+export type GradientOverride = { xml: string, type?: string, alpha?: number }
+export type Overrides = Record<string, unknown>
 
 const loadOverrides = (): Overrides => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     const parsed = adapter.getPalette?.()
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    return parsed && typeof parsed === 'object' ? parsed as Overrides : {}
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -73,8 +75,8 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 
 // A solid override is a hex/'none' string; a gradient override is a JSON-safe
 // object so it survives the localStorage / host-adapter round-trip.
-const isGradientOverride = (val: any) =>
-  !!val && typeof val === 'object' && typeof val.xml === 'string'
+const isGradientOverride = (val: unknown): val is GradientOverride =>
+  !!val && typeof val === 'object' && typeof (val as { xml?: unknown }).xml === 'string'
 
 // Rehydrate a stored gradient definition into a live SVG element. Wrapping the
 // markup in an <svg> guarantees the element lands in the SVG namespace.
@@ -115,7 +117,7 @@ const gradientToCss = (el: Element | null) => {
 }
 
 // Reconstruct a Paint from a stored override (gradient object or color string).
-const paintFromOverride = (val: any) => {
+const paintFromOverride = (val: unknown) => {
   if (isGradientOverride(val)) {
     const el = gradientElFromXml(val.xml)
     if (el) {
@@ -434,7 +436,7 @@ export class SEPalette extends HTMLElement {
   }
 
   /** @function init */
-  init (i18next: any): void {
+  init (i18next: import('i18next').i18n): void {
     this.setAttribute('ui-palette_info', i18next.t('ui.palette_info'))
   }
 
@@ -461,8 +463,8 @@ export class SEPalette extends HTMLElement {
   }
 
   // ── Palette state ────────────────────────────────────────────────────────
-  getColor (i: number) {
-    const override = this._overrides[i]
+  getColor (i: number): string | GradientOverride {
+    const override = this._overrides[i] as string | GradientOverride | undefined
     return override ?? DEFAULT_PALETTE[i]
   }
 
@@ -477,7 +479,7 @@ export class SEPalette extends HTMLElement {
 
   _setRemoved (i: number, removed: boolean) {
     if (i === KEEP_INDEX) return
-    const list = (this._overrides[REMOVED_KEY] || []).filter((n: number) => n !== i)
+    const list = ((this._overrides[REMOVED_KEY] as number[] | undefined) || []).filter((n: number) => n !== i)
     if (removed) list.push(i)
     if (list.length) this._overrides[REMOVED_KEY] = list.sort((a: number, b: number) => a - b)
     else delete this._overrides[REMOVED_KEY]

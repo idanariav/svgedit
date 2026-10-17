@@ -187,33 +187,33 @@ export class SeSelect extends HTMLElement {
   }
 
   /** @function get */
-  get label (): any {
+  get label (): string | null {
     return this.getAttribute('label')
   }
 
   /** @function set */
-  set label (value) {
-    this.setAttribute('label', value)
+  set label (value: string | number) {
+    this.setAttribute('label', String(value))
   }
 
   /** @function get */
-  get width (): any {
+  get width (): string | null {
     return this.getAttribute('width')
   }
 
   /** @function set */
-  set width (value) {
-    this.setAttribute('width', value)
+  set width (value: string | number) {
+    this.setAttribute('width', String(value))
   }
 
   /** @function get */
-  get height (): any {
+  get height (): string | null {
     return this.getAttribute('height')
   }
 
   /** @function set */
-  set height (value) {
-    this.setAttribute('height', value)
+  set height (value: string | number) {
+    this.setAttribute('height', String(value))
   }
 
   /**
@@ -230,23 +230,23 @@ export class SeSelect extends HTMLElement {
   }
 
   /** @function get */
-  get value (): any {
+  get value (): string {
     return this.$select.value
   }
 
   /** @function set */
-  set value (value) {
-    this.$select.value = value
+  set value (value: string | number) {
+    this.$select.value = value as string
   }
 
   /** @function get */
-  get disabled (): any {
+  get disabled (): string | null {
     return this.$select.getAttribute('disabled')
   }
 
   /** @function set */
-  set disabled (value) {
-    this.$select.setAttribute('disabled', value)
+  set disabled (value: string | number) {
+    this.$select.setAttribute('disabled', String(value))
   }
 
   async _loadIcon (src: string | null) {

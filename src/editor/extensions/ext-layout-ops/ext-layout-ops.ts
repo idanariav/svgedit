@@ -52,7 +52,7 @@ export default defineFeature({
  * @param kind `each` | `grid`
  * @param apply runs the operation (inside the preview transaction)
      */
-    const openForm = (kind: string, fields: Array<Omit<import('../../dialogs/seParamsDialog.ts').ParamField, 'label'>>, apply: (values: Record<string, any>) => void) => {
+    const openForm = (kind: string, fields: Array<Omit<import('../../dialogs/seParamsDialog.ts').ParamField, 'label'>>, apply: (values: Record<string, unknown>) => void) => {
       let tx: { commit(): unknown, cancel(): void } | null = null
       const rollBack = () => {
         tx?.cancel()
@@ -102,7 +102,7 @@ export default defineFeature({
         num('rows', 2, 1),
         num('cols', 2, 1),
         num('gutter', 0, 0)
-      ], (values) => splitGrid(svgCanvas, { rows: values.rows, cols: values.cols, gutter: values.gutter }))
+      ], (values) => splitGrid(svgCanvas, { rows: values.rows as number, cols: values.cols as number, gutter: values.gutter as number }))
     }
 
     const updateVisibility = () => {

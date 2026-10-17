@@ -250,43 +250,43 @@ export class SeList extends HTMLElement {
   }
 
   /** @function get */
-  get title (): any {
-    return this.getAttribute('title')
+  get title (): string {
+    return this.getAttribute('title') as string
   }
 
   /** @function set */
-  set title (value) {
-    this.setAttribute('title', value)
+  set title (value: string | number) {
+    this.setAttribute('title', String(value))
   }
 
   /** @function get */
-  get label (): any {
+  get label (): string | null {
     return this.getAttribute('label')
   }
 
   /** @function set */
-  set label (value) {
-    this.setAttribute('label', value)
+  set label (value: string | number) {
+    this.setAttribute('label', String(value))
   }
 
   /** @function get */
-  get width (): any {
+  get width (): string | null {
     return this.getAttribute('width')
   }
 
   /** @function set */
-  set width (value) {
-    this.setAttribute('width', value)
+  set width (value: string | number) {
+    this.setAttribute('width', String(value))
   }
 
   /** @function get */
-  get height (): any {
+  get height (): string | null {
     return this.getAttribute('height')
   }
 
   /** @function set */
-  set height (value) {
-    this.setAttribute('height', value)
+  set height (value: string | number) {
+    this.setAttribute('height', String(value))
   }
 
   openDropdown = () => {
@@ -344,7 +344,7 @@ export class SeList extends HTMLElement {
         const value = e.detail.selectedItem
         const closeEvent = new CustomEvent('change', { detail: { value } })
         currentObj.dispatchEvent(closeEvent)
-        ;(currentObj as any).value = value
+        ;(currentObj as unknown as { value: unknown }).value = value
         currentObj.setAttribute('value', value)
       }
     })

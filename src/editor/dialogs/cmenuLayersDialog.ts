@@ -89,23 +89,23 @@ export class SeCMenuLayerDialog extends HTMLElement {
   }
 
   /** @function get */
-  get value (): any {
+  get value (): string | null {
     return this.getAttribute('value')
   }
 
   /** @function set */
-  set value (value) {
-    this.setAttribute('value', value)
+  set value (value: string | number) {
+    this.setAttribute('value', String(value))
   }
 
   /** @function get */
-  get leftclick (): any {
+  get leftclick (): string | null {
     return this.getAttribute('leftclick')
   }
 
   /** @function set */
-  set leftclick (value) {
-    this.setAttribute('leftclick', value)
+  set leftclick (value: string | number) {
+    this.setAttribute('leftclick', String(value))
   }
 
   /** @function connectedCallback */

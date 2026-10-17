@@ -296,7 +296,7 @@ export const updateContextPanel = (topPanel: import('./TopPanel.ts').default): v
             const title = topPanel.editor.svgCanvas.getTitle()
             const label = $id('g_title')
             if (label) {
-              label.value = title
+              label.value = title as string
               $req('g_title').disabled = tagName === 'use'
             }
           }

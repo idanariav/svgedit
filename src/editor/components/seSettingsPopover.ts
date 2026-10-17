@@ -145,7 +145,7 @@ export class SeSettingsPopover extends HTMLElement {
       // the native light-dismiss algorithm doesn't treat clicking it again
       // (to toggle closed) as an outside click, and Escape returns focus to
       // it — matching the previous manual handleKeyDown behavior.
-      (this.$popup as any).showPopover({ source: this.$trigger })
+      (this.$popup as HTMLElement & { showPopover(opts?: { source?: Element }): void }).showPopover({ source: this.$trigger })
     }
     this.$popup.style.display = 'flex'
     this.$trigger.setAttribute('aria-expanded', 'true')

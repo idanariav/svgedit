@@ -32,11 +32,11 @@ const CELLS = 'td.layervis, td.layerlock, td.objvis, td.objlock'
  * @param clicked the key of the clicked row
  * @returns key → new `on`
  */
-export const planOthers = (rows: Array<{ key: unknown, on: boolean, skip?: boolean }>, clicked: unknown, revealClicked: boolean = false): Array<[any, boolean]> => {
+export const planOthers = <K>(rows: Array<{ key: K, on: boolean, skip?: boolean }>, clicked: K, revealClicked: boolean = false): Array<[K, boolean]> => {
   const others = rows.filter((r) => r.key !== clicked && !r.skip)
   if (!others.length) return []
   const turnOn = others.some((r) => !r.on)
-  const out: Array<[unknown, boolean]> = others.filter((r) => r.on !== turnOn).map((r) => [r.key, turnOn])
+  const out: Array<[K, boolean]> = others.filter((r) => r.on !== turnOn).map((r) => [r.key, turnOn])
   if (revealClicked && rows.find((r) => r.key === clicked)?.on) out.push([clicked, false])
   return out
 }

@@ -94,13 +94,13 @@ export class SeExportDialog extends HTMLElement {
   }
 
   /** @function get */
-  get dialog (): any {
+  get dialog (): string | null {
     return this.getAttribute('dialog')
   }
 
   /** @function set */
-  set dialog (value) {
-    this.setAttribute('dialog', value)
+  set dialog (value: string | number) {
+    this.setAttribute('dialog', String(value))
   }
 
   /**

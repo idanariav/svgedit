@@ -160,7 +160,7 @@ export class SePaletteDialog extends HTMLElement {
     slot.replaceChildren(...palette.map((color) => this._buildSwatch(color)))
   }
 
-  _buildSwatch (color: any) {
+  _buildSwatch (color: { name: string, hex: string, oklch: string, meetsContrastFloor: boolean, contrast: number }) {
     const card = document.createElement('div')
     card.className = 'pd-swatch'
     card.dataset.hue = color.name

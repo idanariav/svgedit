@@ -24,13 +24,13 @@ export const loadBrushSlots = (): Record<number, Record<string, unknown>> => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     const parsed = adapter.getBrushes?.()
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    return parsed && typeof parsed === 'object' ? parsed as Record<number, Record<string, unknown>> : {}
   }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
     const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    return parsed && typeof parsed === 'object' ? parsed as Record<number, Record<string, unknown>> : {}
   } catch {
     return {}
   }
@@ -64,7 +64,7 @@ export const getBrushSlot = (index: number): Record<string, unknown> | null => l
  * @param index - 0-4.
  * @param params - Brush params to store.
  */
-export const saveBrushSlot = (index: number, params: any): void => {
+export const saveBrushSlot = (index: number, params: Record<string, unknown>): void => {
   const slots = loadBrushSlots()
   slots[index] = { ...params }
   writeBrushSlots(slots)
