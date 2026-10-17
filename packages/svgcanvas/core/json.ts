@@ -20,6 +20,8 @@ export interface JsonApi {
   getJsonFromSvgElements(data: Element): SVGElementJSON
   // Element creation / lookup
   addSVGElementsFromJson(data: SVGElementJSON): Element
+  /** The element `data` describes, styled and cleaned up like `addSVGElementsFromJson` makes it, but loose: in no document and no layer. */
+  buildElementFromJson(data: SVGElementJSON): Element | null
 }
 
 export const createJson = (canvas: SvgCanvas): JsonApi => {
@@ -145,7 +147,40 @@ export const createJson = (canvas: SvgCanvas): JsonApi => {
   // The canvas types promise element-only JSON (`SVGElementJSON`); text children are strings here, which no caller relies on.
   // (declared as Element; a string or null argument yields a text node / null, which no caller relies on)
 
+  const buildElementFromJson = (data: JsonNode | null | undefined): Node | null => {
+    if (!svgdoc_) return null
+    if (data === null || data === undefined) return svgdoc_.createTextNode('')
+    if (typeof data === 'string') return svgdoc_.createTextNode(data)
+    const shape = svgdoc_.createElementNS(data.namespace || NS.SVG, data.element)
+    const curShape: Partial<StyleProps> = svgCanvas.getCurShape?.() || {}
+    if (data.curStyles) {
+      const curOpacity = Number(curShape.opacity)
+      const opacity = Number.isFinite(curOpacity) ? (curOpacity / 2) : 0.5
+      assignAttributes(shape, {
+        fill: curShape.fill,
+        stroke: curShape.stroke,
+        'stroke-width': curShape.stroke_width,
+        'stroke-dasharray': curShape.stroke_dasharray,
+        'stroke-linejoin': curShape.stroke_linejoin,
+        'stroke-linecap': curShape.stroke_linecap,
+        'stroke-opacity': curShape.stroke_opacity,
+        'fill-opacity': curShape.fill_opacity,
+        'paint-order': 'stroke',
+        opacity,
+        style: 'pointer-events:inherit'
+      }, 100)
+    }
+    assignAttributes(shape, data.attr || {}, 100)
+    cleanupElement(shape)
+    for (const child of data.children ?? []) {
+      const node = buildElementFromJson(child)
+      if (node) shape.append(node)
+    }
+    return shape
+  }
+
   return {
+    buildElementFromJson: buildElementFromJson as unknown as SvgCanvas['buildElementFromJson'],
     getJsonFromSvgElements: getJsonFromSvgElements as unknown as SvgCanvas['getJsonFromSvgElements'],
     addSVGElementsFromJson: addSVGElementsFromJson as unknown as SvgCanvas['addSVGElementsFromJson']
   }

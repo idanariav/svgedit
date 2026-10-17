@@ -30,11 +30,12 @@ describe('ext-brush', () => {
       getColor: () => '#000000',
       getNextId: () => 'brush_1',
       svgroot: document.createElement('div'),
-      addSVGElementsFromJson: ({ attr }) => {
+      buildElementFromJson: ({ attr }) => {
         const el = document.createElementNS(NS.SVG, 'path')
         Object.entries(attr).forEach(([k, v]) => el.setAttribute(k, v))
         return el
-      }
+      },
+      getJsonFromSvgElements: (el) => ({ element: el.tagName, attr: Object.fromEntries([...el.attributes].map((a) => [a.name, a.value])) })
     }
 
     svgEditor = { svgCanvas }
@@ -49,7 +50,7 @@ describe('ext-brush', () => {
   // The registry hands tools document-space events (unzoomed), so the brush no
   // longer divides by zoom itself: the first point is the (snapped) press, the rest are raw.
   const ev = (x, y) => ({ x, y, rawX: x, rawY: y })
-  const ctx = {}
+  const ctx = { addOverlay: vi.fn() }
 
   it('registers itself as the brush tool, keeping its own opacity', () => {
     expect(svgCanvas.registerTool).toHaveBeenCalledTimes(1)
@@ -57,22 +58,23 @@ describe('ext-brush', () => {
     expect(tool.keepOpacity).toBe(true)
   })
 
-  it('draws in document coordinates and hands the stroke back as created', () => {
+  it('draws in document coordinates and hands the stroke back to be created through the model', () => {
     tool.pointerDown(ctx, ev(10, 20))
     tool.pointerMove(ctx, ev(40, 80))
-    const { created } = tool.pointerUp(ctx, ev(40, 80))
+    const { create } = tool.pointerUp(ctx, ev(40, 80))
 
-    const pts = parsePoints(created.getAttribute('d'))
+    expect(ctx.addOverlay).toHaveBeenCalledTimes(1) // the stroke is shown as an overlay while it is drawn
+    const pts = parsePoints(create.attr.d)
     expect(Math.max(...pts.map((p) => p.x))).toBeCloseTo(40, 1)
     expect(Math.max(...pts.map((p) => p.y))).toBeCloseTo(80, 1)
-    expect(created.getAttribute('opacity')).toBe('1') // the brush's own opacity param
+    expect(create.attr.opacity).toBe('1') // the brush's own opacity param
   })
 
   it('uses the raw pointer position (not the grid-snapped one) after the press', () => {
     tool.pointerDown(ctx, { x: 10, y: 20, rawX: 11, rawY: 21 })
     tool.pointerMove(ctx, { x: 40, y: 80, rawX: 43, rawY: 83 })
-    const { created } = tool.pointerUp(ctx, ev(0, 0))
-    expect(Math.max(...parsePoints(created.getAttribute('d')).map((p) => p.x))).toBeCloseTo(43, 1)
+    const { create } = tool.pointerUp(ctx, ev(0, 0))
+    expect(Math.max(...parsePoints(create.attr.d).map((p) => p.x))).toBeCloseTo(43, 1)
   })
 
   it('a cancelled gesture forgets its stroke; a stray release cancels', () => {

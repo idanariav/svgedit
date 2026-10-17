@@ -128,8 +128,11 @@ test.describe('shape-family tools', () => {
     await page.mouse.move(...at(100, 100))
     await page.mouse.down()
     await page.mouse.move(...at(160, 150), { steps: 4 })
-    await expect(layer(page).locator('> g')).toHaveCount(1)
+    // the half-drawn shape is a preview overlay: the drawing is untouched until the gesture ends
+    await expect(layer(page).locator('> g')).toHaveCount(0)
+    await expect(page.locator('#toolOverlay > g')).toHaveCount(1)
     await page.keyboard.press('Escape')
+    await expect(page.locator('#toolOverlay > g')).toHaveCount(0)
     await expect(layer(page).locator('> g')).toHaveCount(0)
     await page.mouse.up()
     await expect(layer(page).locator('> g')).toHaveCount(0)

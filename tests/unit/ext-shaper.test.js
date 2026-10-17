@@ -236,24 +236,24 @@ describe('ext-shaper', () => {
     assert.equal(overlays.length, 0)
   })
 
-  it('turns a rough square into a rect with the current paint and hands it back as created', () => {
+  it('turns a rough square into a rect with the current paint and hands it back to be created through the model', () => {
     const result = stroke(square(100, 100, 100))
-    assert.equal(svgContent.children.length, 1)
-    const rect = svgContent.firstElementChild
-    assert.equal(rect.tagName, 'rect')
-    assert.equal(result.created, rect)
-    assert.equal(rect.id, 'svg_1')
-    assert.ok(Math.abs(Number(rect.getAttribute('width')) - 100) < 5)
-    assert.equal(rect.getAttribute('transform'), null)
+    // nothing is drawn by the tool: the registry creates the element from this description
+    assert.equal(svgContent.children.length, 0)
+    const { create } = result
+    assert.equal(create.element, 'rect')
+    assert.equal(create.curStyles, true)
+    assert.equal(create.attr.id, 'svg_1')
+    assert.ok(Math.abs(Number(create.attr.width) - 100) < 5)
+    assert.equal(create.attr.transform, undefined)
   })
 
   it('gives a recognized line a fill of none and a visible stroke', () => {
     svgCanvas.getColor = () => 'none'
-    stroke(Array.from({ length: 31 }, (_, i) => P(i * 8, i * 2)))
-    const line = svgContent.firstElementChild
-    assert.equal(line.tagName, 'line')
-    assert.equal(line.getAttribute('fill'), 'none')
-    assert.equal(line.getAttribute('stroke'), '#000000')
+    const { create } = stroke(Array.from({ length: 31 }, (_, i) => P(i * 8, i * 2)))
+    assert.equal(create.element, 'line')
+    assert.equal(create.attr.fill, 'none')
+    assert.equal(create.attr.stroke, '#000000')
   })
 
   it('discards a stroke that is not a shape: nothing created, the gesture rolls back', () => {

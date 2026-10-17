@@ -50,9 +50,12 @@ test.describe('registered tools', () => {
     await page.evaluate(() => window.svgEditor.automation.pointer([
       { kind: 'down', x: 300, y: 200 }, { kind: 'move', x: 340, y: 230 }
     ]))
-    expect(await paths(page)).toBe(1)
+    // the stroke being drawn is a preview overlay: the drawing gets it when the gesture ends
+    expect(await paths(page)).toBe(0)
+    expect(await page.evaluate(() => document.querySelectorAll('#toolOverlay path').length)).toBe(1)
     await page.evaluate(() => window.svgEditor.automation.key('escape'))
     expect(await paths(page)).toBe(0)
+    expect(await page.evaluate(() => document.querySelectorAll('#toolOverlay path').length)).toBe(0)
     expect(await undoSize(page)).toBe(0)
     expect(await page.evaluate(() => window.svgEditor.svgCanvas.inTransaction())).toBe(false)
   })
@@ -122,9 +125,10 @@ test.describe('registered tools', () => {
     expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(0)
     await page.evaluate(() => window.svgEditor.commands.run('tool_polygon'))
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 300, y: 200 }, { kind: 'move', x: 340, y: 230 }]))
-    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(1)
-    await page.evaluate(() => window.svgEditor.automation.key('escape'))
     expect(await page.evaluate(() => document.querySelectorAll('#svgcontent polygon').length)).toBe(0)
+    expect(await page.evaluate(() => document.querySelectorAll('#toolOverlay polygon').length)).toBe(1) // the preview overlay
+    await page.evaluate(() => window.svgEditor.automation.key('escape'))
+    expect(await page.evaluate(() => document.querySelectorAll('#toolOverlay polygon').length)).toBe(0)
     expect(await undoSize(page)).toBe(0)
   })
 

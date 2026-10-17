@@ -180,6 +180,28 @@ export class SnapshotHistory {
     this.dirty = false
   }
 
+  /**
+   * The model path of an element of the drawing (child indexes from the content root, ephemeral overlays not counted), or
+   * undefined when it is not inside the content.
+   */
+  pathOf (el: Element): number[] | undefined {
+    const content = this.target.content()
+    const path: number[] = []
+    let node: Node | null = el
+    while (node && node !== content) {
+      const parent: Node | null = node.parentNode
+      if (!parent) return undefined
+      let index = 0
+      for (const sibling of Array.from(parent.childNodes)) {
+        if (sibling === node) break
+        if (sibling.nodeType !== 1 || !(sibling as Element).hasAttribute(EPHEMERAL_ATTR)) index++
+      }
+      path.unshift(index)
+      node = parent
+    }
+    return node === content ? path : undefined
+  }
+
   /** The drawing as the DOM shows it now, sharing what it has in common with the state being shown; nothing is recorded. */
   current (): ModelElement {
     return this.read(this.states[this.at])

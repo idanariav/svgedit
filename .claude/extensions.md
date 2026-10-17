@@ -175,7 +175,7 @@ svgCanvas.registerTool({
   undoLabel: 'Draw spiral',                    // one undo step per press→release
   pointerDown (ctx, ev) { /* ev.x, ev.y: document units, unzoomed, grid-snapped; return false to decline */ },
   pointerMove (ctx, ev) { /* ev.dragDistance (screen px), ev.mods.{shift,alt,ctrl,meta,mod} */ },
-  pointerUp (ctx, ev) { return { created: el } /* or 'cancel' to roll back */ },
+  pointerUp (ctx, ev) { return { create: json } /* the element to make (addSVGElementsFromJson's JSON), or { created: el } for one you drew in the tree, or 'cancel' */ },
   keyDown (ctx, e) { return true /* handled */ },   // Escape never reaches it: the registry cancels
   cancel (ctx) { /* reset your own state: Escape / tool switch / error rolled the drawing back */ },
   snap: true   // optional: ev.x / ev.y also snap to other objects' anchors, boxes and the page (grid wins; rawX / rawY stay raw)
@@ -184,11 +184,16 @@ svgCanvas.registerTool({
 
 `snap: true` only for a tool that places points with `ev.x` / `ev.y` on press **and** drag (shape-family, polystar do); a tool that ignores them during the drag (brush, shaper) would show guides for points it never uses.
 
-Rules: the gesture runs inside an undo transaction, so mutate the drawing freely and **never call
-`addCommandToHistory`**; put previews/guides in `ctx.addOverlay(el)` (outside `#svgcontent`) or mark
-them `data-se-ephemeral`; hand a finished new element back as `{ created }` (or call
-`svgCanvas.finishCreatedElement(el)` for shapes created outside a drag, e.g. from a popover, inside
-`svgCanvas.transact`). ext-shape-family is the reference implementation.
+Rules: a tool is Begin / Preview / Commit over the model. `pointerDown` begins; while the pointer moves, **show the shape as an
+overlay** (`ctx.addOverlay(svgCanvas.buildElementFromJson(json))`, or a loose element you keep updating; nothing is in the drawing
+yet); `pointerUp` commits by returning `{ create: json }`, and the registry makes the element through the model
+(`svgCanvas.insertElementFromJson`: last child of the current group or layer, one undo step, the id taken then) and finishes it like a
+drawn shape. Take the id (`svgCanvas.getNextId()`) when you build the final JSON, not for the preview. The gesture still runs inside
+an undo transaction, so anything else you change is the same step, and you **never call `addCommandToHistory`**. A tool that must
+measure the live tree while it draws (the shape library: `recalculateDimensions`, `getBBox`) can still draw into the layer and hand
+the element back as `{ created }`; for a shape made outside a drag (a popover) call `svgCanvas.insertElementFromJson(json)` and then
+`svgCanvas.finishCreatedElement(el)`. Mark anything else that lives inside `#svgcontent` without being content `data-se-ephemeral`.
+ext-shape-family is the reference implementation (shaper, polystar and brush are the same shape).
 
 ## Recording undo
 

@@ -35,6 +35,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
+import type { SVGElementJSON } from '../svgcanvas.ts'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
@@ -130,9 +131,10 @@ export interface ToolDef {
   pointerMove?: (ctx: ToolContext, ev: ToolEvent) => void
   /**
    * return `'cancel'` to roll the gesture back instead of committing, or
-   * `{ created }` for a new element to finish (opacity, events, select it, …)
+   * `{ created }` for a new element to finish (opacity, events, select it, …), or `{ create }` for one the registry makes through the
+   * model (the JSON `addSVGElementsFromJson` takes; nothing is drawn until then, so the tool's preview is an overlay)
    */
-  pointerUp?: (ctx: ToolContext, ev: ToolEvent) => void | 'cancel' | { created?: Element }
+  pointerUp?: (ctx: ToolContext, ev: ToolEvent) => void | 'cancel' | { created?: Element, create?: SVGElementJSON }
   /**
    * return true when handled.
    * Escape never reaches this: the registry cancels the gesture and lets the editor leave the tool.
@@ -410,9 +412,18 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
       try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
       return true
     }
+    let created = result && typeof result === 'object' ? result.created : undefined
+    if (result && typeof result === 'object' && result.create) {
+      created = svgCanvas.insertElementFromJson(result.create) ?? undefined
+      if (!created) {
+        tx.cancel()
+        try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
+        return true
+      }
+    }
     tx.commit()
-    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'commit', created: result && typeof result === 'object' ? result.created?.id : undefined })
-    if (result && typeof result === 'object' && result.created) finishCreated(result.created, evt, { keepOpacity: tool.keepOpacity })
+    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'commit', created: created?.id })
+    if (created) finishCreated(created, evt, { keepOpacity: tool.keepOpacity })
     return true
   }
 

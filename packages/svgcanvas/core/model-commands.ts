@@ -10,11 +10,14 @@
  * @license MIT
  */
 import { BatchCommand } from './history.js'
-import { moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
+import { readDom } from './model-render.ts'
+import { withChildren, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
 import { getRotationAngle } from './dom-utils.ts'
 import { BBOX_AFFECTING_ATTRS } from './history.js'
 import { LAYOUT_ATTRS, isAreaText } from './text-rows.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { SVGElementJSON } from '../svgcanvas.ts'
+import type { ModelElement } from './model/node.ts'
 
 /** The members `model-commands.ts` gives its canvas. */
 export interface ModelCommandsApi {
@@ -29,6 +32,11 @@ export interface ModelCommandsApi {
    * rotated element's box, an area text's layout.
    */
   changeSelectedAttributeByModel(attr: string, val: string | number, elems: Element[]): boolean
+  /**
+   * Create the element `data` describes (styled with the current paint when it asks for `curStyles`) as the last child of the
+   * current group or layer, through the model, as one step. The element it returns is the one the renderer put in the DOM.
+   */
+  insertElementFromJson(data: SVGElementJSON): Element | null
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -161,7 +169,20 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
+  const insertElementFromJson = (data: SVGElementJSON): Element | null => {
+    const attr = { ...data.attr } as Record<string, string | number>
+    attr.id ??= svgCanvas.getNextId()
+    const built = svgCanvas.buildElementFromJson({ ...data, attr })
+    const container = svgCanvas.getCurrentGroup() || svgCanvas.getDrawing().getTargetLayerGroup()
+    const at = container && svgCanvas.snapshotHistory.pathOf(container)
+    if (!built || !at) return null
+    const model = readDom(built) as ModelElement
+    svgCanvas.snapshotHistory.edit(`Create ${data.element}`, (root) => withChildren(root, at, (kids) => [...kids, model]))
+    return svgCanvas.getElement(String(attr.id)) ?? null
+  }
+
   return {
+    insertElementFromJson,
     changeSelectedAttributeByModel,
     moveToTopSelectedElement,
     moveToBottomSelectedElement,

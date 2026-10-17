@@ -165,4 +165,36 @@ describe('model-first commands', () => {
       expect(canvas.changeSelectedAttributeByModel('fill', '#000', [els[0]])).toBe(true)
     })
   })
+
+  describe('insertElementFromJson', () => {
+    it('creates the element in the current layer through the model, in one step, with the current paint', () => {
+      const el = canvas.insertElementFromJson({ element: 'circle', curStyles: true, attr: { id: 'n1', cx: 5, cy: 6, r: 7 } })
+      expect(el.parentNode).toBe(layer)
+      expect(layer.lastElementChild).toBe(el)
+      expect(el.getAttribute('r')).toBe('7')
+      expect(el.hasAttribute('fill')).toBe(true) // curStyles
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(1)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Create circle')
+      canvas.undoMgr.undo()
+      expect(layer.querySelector('[id="n1"]')).toBeNull()
+      canvas.undoMgr.redo()
+      expect(layer.querySelector('[id="n1"]')).toBe(el)
+    })
+
+    it('gives the element an id when the description has none', () => {
+      const el = canvas.insertElementFromJson({ element: 'rect', attr: { width: 1, height: 1 } })
+      expect(el.id).toMatch(/^svg_/)
+    })
+
+    it('joins a transaction: one step for the insertion and the change next to it', () => {
+      canvas.transact('both', () => {
+        canvas.insertElementFromJson({ element: 'rect', attr: { id: 'n2', width: 1, height: 1 } })
+        els[0].setAttribute('x', '9')
+      })
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(1)
+      canvas.undoMgr.undo()
+      expect(layer.querySelector('[id="n2"]')).toBeNull()
+      expect(els[0].getAttribute('x')).toBe('0')
+    })
+  })
 })

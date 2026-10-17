@@ -102,8 +102,8 @@ export default defineFeature({
       polargrid: { concentric: 5, radial: 5, width: 100, height: 100 }
     }
 
-    /** In-progress drag: `{ mode, start, end, last, mods, el }`; `el` appears after the threshold. */
-    let drag: { mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, last: { x: number, y: number }, mods: { shift: boolean, alt: boolean }, el: Element | null } | null = null
+    /** In-progress drag: `{ mode, start, end, last, mods, drawing }`; `drawing` turns true after the threshold (the preview is an overlay). */
+    let drag: { mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, last: { x: number, y: number }, mods: { shift: boolean, alt: boolean }, drawing: boolean } | null = null
     let spaceHeld = false
     let popover: { el: HTMLFormElement, cleanup: () => void } | null = null
 
@@ -163,34 +163,23 @@ export default defineFeature({
       return attr
     }
 
-    const createElement = (desc: FamilyDescription) => svgCanvas.addSVGElementsFromJson({
+    /** The element a description stands for, as `addSVGElementsFromJson` takes it; `id` and the children's ids come with the final one. */
+    const elementJson = (desc: FamilyDescription, final: boolean): import('@svgedit/svgcanvas').SVGElementJSON => ({
       element: desc.element,
       curStyles: true,
-      attr: { id: svgCanvas.getNextId(), ...paintFor(desc), ...(desc.d ? { d: desc.d } : {}) },
-      ...(desc.children ? { children: desc.children } : {})
+      attr: { ...(final ? { id: svgCanvas.getNextId() } : {}), ...paintFor(desc), ...(desc.d ? { d: desc.d } : {}) },
+      // every element in a drawing has an id, a grid's children included
+      ...(desc.children ? { children: final ? desc.children.map((c) => ({ ...c, attr: { id: svgCanvas.getNextId(), ...c.attr } })) : desc.children } : {})
     })
 
-    const updateElement = (el: Element, desc: FamilyDescription) => {
-      if (desc.d !== undefined) {
-        el.setAttribute('d', desc.d)
-        return
-      }
-      el.replaceChildren(...(desc.children ?? []).map((child: import('@svgedit/svgcanvas').SVGElementJSON) => svgCanvas.addSVGElementsFromJson(child)))
-    }
-
-    /** Give a freshly built grid's children ids, as every element in a drawing has one. */
-    const assignChildIds = (el: Element) => {
-      el.querySelectorAll(':scope > *').forEach((child) => {
-        if (!child.id) child.setAttribute('id', svgCanvas.getNextId())
-      })
-    }
-
-    const render = () => {
+    /** Show the shape as it would be drawn: an overlay, nothing in the drawing until the gesture ends. */
+    const preview = (ctx: import('@svgedit/svgcanvas').ToolContext) => {
       if (!drag) return
-      const geom = geometry(drag.mode, drag.start, drag.end, drag.mods)
-      const desc = describe(drag.mode, geom)
-      if (!drag.el) drag.el = createElement(desc)
-      else updateElement(drag.el, desc)
+      const desc = describe(drag.mode, geometry(drag.mode, drag.start, drag.end, drag.mods))
+      const el = svgCanvas.buildElementFromJson(elementJson(desc, false))
+      ctx.clearOverlays()
+      if (el) ctx.addOverlay(el)
+      drag.drawing = true
     }
 
     // ---- options popover (click without a drag) ----------------------------
@@ -208,12 +197,8 @@ export default defineFeature({
  * @param desc what to draw, from {@link describe}
      */
     const insertCreated = (mode: Mode, desc: FamilyDescription): void => {
-      const el = svgCanvas.transact(UNDO_LABEL[mode], () => {
-        const created = createElement(desc)
-        if (created.tagName === 'g') assignChildIds(created)
-        return created
-      })
-      svgCanvas.finishCreatedElement(el)
+      const el = svgCanvas.insertElementFromJson(elementJson(desc, true))
+      if (el) svgCanvas.finishCreatedElement(el)
     }
 
     const readField = (input: HTMLInputElement, field: Field) => {
@@ -335,7 +320,7 @@ export default defineFeature({
         // below, and the editor's own arrow-key nudge would move the selection.
         svgCanvas.clearSelection()
         const start = { x: ev.x, y: ev.y }
-        drag = { mode, start, end: start, last: start, mods: { shift: ev.mods.shift, alt: ev.mods.alt }, el: null }
+        drag = { mode, start, end: start, last: start, mods: { shift: ev.mods.shift, alt: ev.mods.alt }, drawing: false }
         spaceHeld = false
       },
 
@@ -343,7 +328,7 @@ export default defineFeature({
         if (!drag) return
         const p = { x: ev.x, y: ev.y }
         drag.mods = { shift: ev.mods.shift, alt: ev.mods.alt }
-        if (!drag.el && ev.dragDistance < DRAG_THRESHOLD) {
+        if (!drag.drawing && ev.dragDistance < DRAG_THRESHOLD) {
           drag.last = p
           return
         }
@@ -357,26 +342,23 @@ export default defineFeature({
           drag.end = p
         }
         drag.last = p
-        render()
+        preview(ctx)
       },
 
       pointerUp (ctx, ev) {
         if (!drag) return undefined
-        const { el, start } = drag
-        const geom = el && geometry(mode, drag.start, drag.end, drag.mods)
+        const { drawing, start } = drag
+        const geom = drawing && geometry(mode, drag.start, drag.end, drag.mods)
+        const desc = drawing ? describe(mode, geom as Geom) : null
         drag = null
         spaceHeld = false
-        if (!el) {
+        if (!desc) {
           // A click: ask for the options instead of drawing.
           openPopover(mode, start, ev.event)
           return undefined
         }
-        if (isDegenerate(geom as Geom)) {
-          svgCanvas.getCurrentDrawing().releaseId(el.id)
-          return 'cancel'
-        }
-        if (el.tagName === 'g') assignChildIds(el)
-        return { created: el }
+        if (isDegenerate(geom as Geom)) return 'cancel'
+        return { create: elementJson(desc, true) }
       },
 
       keyDown (ctx, e) {
@@ -385,7 +367,7 @@ export default defineFeature({
           spaceHeld = true
           return true
         }
-        if (!drag.el) return false
+        if (!drag.drawing) return false
         const arrow = ARROW_OPTION[drag.mode]
         const axes: Record<string, ['vertical' | 'horizontal', number]> = { ArrowUp: ['vertical', 1], ArrowDown: ['vertical', -1], ArrowRight: ['horizontal', 1], ArrowLeft: ['horizontal', -1] }
         const axis = axes[e.key]
@@ -395,7 +377,7 @@ export default defineFeature({
         const o = options[drag.mode]
         o[key] = key === 'segments' ? clampSegments((o[key] as number) + axis[1]) : clampDividers((o[key] as number) + axis[1])
         drag.mods = { shift: e.shiftKey, alt: e.altKey }
-        render()
+        preview(ctx)
         return true
       },
 

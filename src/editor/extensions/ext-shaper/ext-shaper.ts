@@ -171,7 +171,8 @@ export default defineFeature({
         const color = svgCanvas.getColor('stroke')
         if (!color || color === 'none') attr.stroke = '#000000'
       }
-      return svgCanvas.addSVGElementsFromJson({ element: desc.element, curStyles: true, attr: attr as Record<string, string | number> })
+      // the registry makes it through the model when the gesture ends: until then the stroke is only an overlay
+      return { element: desc.element, curStyles: true, attr: attr as Record<string, string | number> }
     }
 
     /** The elements a scribble covers: children of the current group / layer it touches. */
@@ -237,7 +238,7 @@ export default defineFeature({
         }
         const desc = describeShape(shape)
         if (!desc) return 'cancel'
-        return { created: createShape(desc) }
+        return { create: createShape(desc) }
       },
 
       cancel () { stroke = null }

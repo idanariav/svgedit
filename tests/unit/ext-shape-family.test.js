@@ -14,19 +14,19 @@ describe('ext-shape-family', () => {
   let tools
   let ctx
   let down
-  let transacted
+  let inserted
+  let overlayHost
   let finished
-  let released
   let setMode
   let selectOnly
 
   const JSON_NS = NS.SVG
-  const addFromJson = (data) => {
+  // a loose element, as buildElementFromJson makes it
+  const build = (data) => {
     const el = document.createElementNS(JSON_NS, data.element)
     for (const [k, v] of Object.entries(data.attr || {})) el.setAttribute(k, v)
     if (data.curStyles) el.setAttribute('stroke-width', '2')
-    ;(data.children || []).forEach((c) => el.append(addFromJson(c)))
-    if (!el.parentNode && !data.child) svgContent.append(el)
+    ;(data.children || []).forEach((c) => el.append(build(c)))
     return el
   }
 
@@ -65,9 +65,10 @@ describe('ext-shape-family', () => {
     svgContent = document.createElementNS(NS.SVG, 'svg')
     document.body.append(svgContent)
     nextId = 1
-    transacted = []
+    inserted = []
+    overlayHost = document.createElementNS(NS.SVG, 'svg')
+    document.body.append(overlayHost)
     finished = []
-    released = []
     tools = {}
     down = null
     setMode = vi.fn((m) => { mode = m })
@@ -86,13 +87,18 @@ describe('ext-shape-family', () => {
       selectOnly,
       clearSelection: vi.fn(),
       call: vi.fn(),
-      addSVGElementsFromJson: addFromJson,
+      buildElementFromJson: build,
+      // what the tool registry does with a `create` result (and what the popover asks for): make it through the model
+      insertElementFromJson: (data) => {
+        const el = build(data)
+        svgContent.append(el)
+        inserted.push(data)
+        return el
+      },
       registerTool: (def) => { tools[def.id] = def },
-      transact: (label, fn) => { transacted.push(label); return fn() },
       finishCreatedElement: (el) => finished.push(el),
-      getCurrentDrawing: () => ({ releaseId: (id) => released.push(id) })
     }
-    ctx = { canvas: svgCanvas, zoom: 1, start: null }
+    ctx = { canvas: svgCanvas, zoom: 1, start: null, addOverlay: (el) => overlayHost.append(el), clearOverlays: () => overlayHost.replaceChildren() }
     svgEditor = {
       svgCanvas,
       workarea: document.body,
@@ -115,7 +121,8 @@ describe('ext-shape-family', () => {
     vi.useRealTimers()
   })
 
-  const shape = () => svgContent.lastElementChild
+  // the shape being dragged is an overlay; a finished one is in the drawing
+  const shape = () => overlayHost.lastElementChild ?? svgContent.lastElementChild
 
   it('adds the four tools to the shapes flyout and arms the right mode', () => {
     const ids = [...document.querySelectorAll('#tools_shapes > se-button')].map((b) => b.id)
@@ -150,7 +157,10 @@ describe('ext-shape-family', () => {
     assert.equal(path.tagName, 'path')
     assert.equal(path.getAttribute('fill'), 'none')
     assert.ok(/^M/.test(path.getAttribute('d')))
-    assert.deepEqual(release(160, 100), { created: path })
+    const { create } = release(160, 100)
+    assert.equal(create.element, 'path')
+    assert.equal(create.attr.id, 'svg_1') // the id is taken when the shape is made, not for the preview
+    assert.equal(svgContent.children.length, 0, 'the tool draws nothing in the drawing: the registry makes the element')
   })
 
   it('a spiral has segments + 1 nodes and ↑/↓ change that mid-drag', () => {
@@ -197,8 +207,9 @@ describe('ext-shape-family', () => {
       ['x', 'y', 'width', 'height'].map((a) => Number(rect.getAttribute(a))),
       [10, 10, 60, 30]
     )
-    assert.deepEqual(release(70, 40), { created: g })
-    assert.ok([...g.children].every((c) => c.id), 'every grid member has an id')
+    const { create } = release(70, 40)
+    assert.equal(create.element, 'g')
+    assert.ok(create.children.every((c) => c.attr.id), 'every grid member has an id')
   })
 
   it('arrow keys step grid rows / columns, keeping the minimum at zero', () => {
@@ -285,12 +296,12 @@ describe('ext-shape-family', () => {
     release(0, 0)
   })
 
-  it('a zero-size drag is rolled back (and its id released) instead of left behind', () => {
+  it('a zero-size drag is rolled back instead of left behind, and takes no id', () => {
     press('spiral', 50, 50)
-    move(54, 50) // past the threshold: an element exists
+    move(54, 50) // past the threshold: a preview exists
     move(50, 50) // ... then back to the centre: radius 0
     assert.equal(release(50, 50), 'cancel')
-    assert.equal(released.length, 1)
+    assert.equal(nextId, 1)
   })
 
   it('a click without a drag opens the options popover and draws nothing', () => {
@@ -321,8 +332,8 @@ describe('ext-shape-family', () => {
     assert.equal(g.tagName, 'g')
     assert.equal(g.querySelectorAll('path').length, 3)
     assert.equal(g.querySelectorAll('rect').length, 0)
-    // created inside one transaction (= one undo step), then finished like a drawn shape
-    assert.deepEqual(transacted, ['Draw rectangular grid'])
+    // made through the model (= one undo step), then finished like a drawn shape
+    assert.equal(inserted.length, 1)
     assert.deepEqual(finished, [g])
     assert.equal(document.querySelector('.shape_family_popover'), null)
     assert.ok([...g.children].every((c) => c.id))
@@ -353,7 +364,7 @@ describe('ext-shape-family', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     assert.equal(document.querySelector('.shape_family_popover'), null)
     assert.equal(svgContent.children.length, 0)
-    assert.equal(transacted.length, 0)
+    assert.equal(inserted.length, 0)
   })
 
   it('switching to another tool dismisses an open popover', () => {

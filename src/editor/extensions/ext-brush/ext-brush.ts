@@ -70,7 +70,8 @@ export default defineFeature({
       pointerDown (ctx, ev) {
         smoother = createSmoother(svgCanvas.getBrushParams().smoothness)
         points = [smoother.push({ x: ev.x, y: ev.y, pressure: pressureNow() })]
-        element = svgCanvas.addSVGElementsFromJson({
+        // a loose element shown in the tool overlay; the registry makes it through the model when the stroke ends
+        element = svgCanvas.buildElementFromJson({
           element: 'path',
           attr: {
             id: svgCanvas.getNextId(),
@@ -84,6 +85,7 @@ export default defineFeature({
             style: 'pointer-events:none'
           }
         })
+        if (element) ctx.addOverlay(element)
         redraw()
       },
       pointerMove (ctx, ev) {
@@ -98,7 +100,7 @@ export default defineFeature({
         element = null
         points = []
         smoother = null
-        return { created: el }
+        return { create: svgCanvas.getJsonFromSvgElements(el) }
       },
       cancel () {
         element = null

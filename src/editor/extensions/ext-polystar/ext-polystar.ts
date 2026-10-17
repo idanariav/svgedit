@@ -10,6 +10,7 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { ToolContext } from '@svgedit/svgcanvas'
 
 const name = 'polystar'
 
@@ -148,11 +149,12 @@ export default defineFeature({
     }
 
     // Both shapes are drawn by dragging from the centre; the pointer is in document units.
-    const startStar = (ev: { x: number, y: number }) => {
+    const startStar = (ctx: ToolContext, ev: { x: number, y: number }) => {
       const fill = svgCanvas.getColor('fill')
       const stroke = svgCanvas.getColor('stroke')
       const strokeWidth = svgCanvas.getStrokeWidth()
-      newFO = svgCanvas.addSVGElementsFromJson({
+      // drawn as a loose element shown in the tool overlay; the registry makes it through the model when the gesture ends
+      newFO = svgCanvas.buildElementFromJson({
         element: 'polygon',
         attr: {
           cx: ev.x,
@@ -169,6 +171,7 @@ export default defineFeature({
           'stroke-width': strokeWidth
         }
       })
+      if (newFO) ctx.addOverlay(newFO)
     }
     const updateStar = (px: number, py: number) => {
       const fo = newFO as Element
@@ -232,11 +235,12 @@ export default defineFeature({
       fo.setAttribute('stroke-width', String(strokeWidth))
       /* const shape = */ fo.getAttribute('shape')
     }
-    const startPolygon = (ev: { x: number, y: number }) => {
+    const startPolygon = (ctx: ToolContext, ev: { x: number, y: number }) => {
       const fill = svgCanvas.getColor('fill')
       const stroke = svgCanvas.getColor('stroke')
       const strokeWidth = svgCanvas.getStrokeWidth()
-      newFO = svgCanvas.addSVGElementsFromJson({
+      // drawn as a loose element shown in the tool overlay; the registry makes it through the model when the gesture ends
+      newFO = svgCanvas.buildElementFromJson({
         element: 'polygon',
         attr: {
           cx: ev.x,
@@ -251,6 +255,7 @@ export default defineFeature({
           'stroke-width': strokeWidth
         }
       })
+      if (newFO) ctx.addOverlay(newFO)
     }
     const updatePolygon = (px: number, py: number) => {
       const fo = newFO as Element
@@ -294,18 +299,18 @@ export default defineFeature({
     for (const [mode, start, update, emptyAttr, emptyValue] of ([
       ['star', startStar, updateStar, 'r', '0'],
       ['polygon', startPolygon, updatePolygon, 'edge', '0']
-    ] as Array<[string, (ev: { x: number, y: number }) => void, (px: number, py: number) => void, string, string]>)) {
+    ] as Array<[string, (ctx: ToolContext, ev: { x: number, y: number }) => void, (px: number, py: number) => void, string, string]>)) {
       svgCanvas.registerTool({
         id: mode,
         undoLabel: `Draw ${mode}`,
         snap: true, // the centre and the dragged point snap to other objects
-        pointerDown (ctx, ev) { start(ev) },
+        pointerDown (ctx, ev) { start(ctx, ev) },
         pointerMove (ctx, ev) { if (newFO) update(ev.x, ev.y) },
         pointerUp () {
           const el = newFO
           newFO = null
           // a click without a drag leaves a zero-size shape: drop it
-          return el && el.getAttribute(emptyAttr) !== emptyValue ? { created: el } : 'cancel'
+          return el && el.getAttribute(emptyAttr) !== emptyValue ? { create: svgCanvas.getJsonFromSvgElements(el) } : 'cancel'
         },
         cancel () { newFO = null }
       })
