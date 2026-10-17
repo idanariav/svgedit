@@ -226,7 +226,7 @@ Retire the d.ts and the drift test only with R2.
 DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
 runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
 that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
-182 of 222 files are on the list; about 1,300 errors remain in the other 40, concentrated in the extensions (`ext-repeat`, `ext-polystar`,
+188 of 222 files are on the list; about 930 errors remain in the other 34, concentrated in the extensions (`ext-repeat`, `ext-polystar`,
 `ext-shape-family`, `ext-gradient-tool`, `ext-width-tool`, `ext-markers`, `ext-connector`, …) and a few components/dialogs (`seClassSelect`, `seRecolorDialog`,
 `addToShapeLibrary`). `Editor.js`, `EditorStartup.js`, `TopPanel`, `RightPanel`, `TabletShell`, `layerTree`, `seShapeLibrary` and the colour picker are clean.
 What made the first 3,000 cheap, and is what the rest should use:

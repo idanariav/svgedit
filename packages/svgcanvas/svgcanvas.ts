@@ -455,7 +455,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare setMirrorAxis?: (axis: 'v' | 'h' | null) => void
   declare getMirrorAxis?: () => 'v' | 'h' | null
   declare mirrorSelection?: () => void
-  declare repeatSelection?: (params: Record<string, unknown>) => void
+  declare repeatSelection?: (params: { mode: string } & Record<string, unknown>) => void
   declare getRepeatParams?: () => Record<string, unknown> | null
   declare armRepeatCenterPick?: (onPicked: (x: number, y: number) => void) => void
   /** The host's debug-event sink, or null while the debug log is off. */

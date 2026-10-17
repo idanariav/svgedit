@@ -37,7 +37,13 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
-const serializeParams = (/** @type {Object} */ p) => {
+/**
+ * How a repeat is laid out; `mode` says which of the other fields count (radial: count, sweep, center, centerX, centerY;
+ * grid: rows, cols, gapX, gapY; path: count, offset, span, follow, rail).
+ * @typedef {Record<string, *> & {mode: string}} RepeatParams
+ */
+
+const serializeParams = (/** @type {RepeatParams} */ p) => {
   if (p.mode === 'radial') {
     return `radial;count=${p.count};sweep=${p.sweep};center=${p.center}` +
       (p.center === 'custom' ? `;centerX=${p.centerX};centerY=${p.centerY}` : '')
@@ -46,6 +52,7 @@ const serializeParams = (/** @type {Object} */ p) => {
   return `path;count=${p.count};offset=${p.offset};span=${p.span};follow=${p.follow ? 1 : 0};rail=${p.rail || ''}`
 }
 
+/** @returns {RepeatParams|null} */
 const parseParams = (/** @type {string | null} */ str) => {
   if (!str) return null
   const [mode, ...pairs] = str.split(';')
@@ -112,7 +119,7 @@ export default {
 
     /**
      * Seed params for the popover from an existing repeat on the selection.
-     * @returns {?Object}
+     * @returns {?RepeatParams}
      */
     const getRepeatParams = () => {
       const { uid, sources } = resolveUnit()
@@ -122,7 +129,7 @@ export default {
 
     /**
      * Apply (or re-apply) a repeat to the current selection as one undo step.
-     * @param {Object} params - `{mode:'radial',count,sweep,center}` or
+     * @param {RepeatParams} params - `{mode:'radial',count,sweep,center}` or
      *   `{mode:'grid',rows,cols,gapX,gapY}`.
      * @returns {void}
      */
@@ -135,20 +142,21 @@ export default {
       // the rail id stored in the stamped params (re-edit). The rail itself
       // is never cloned or stamped.
       /**
-* @type {Element | null}
+* @type {SVGPathElement | null}
 */
       let rail = null
       if (params.mode === 'path') {
-        const byId = (/** @type {string} */ id) => id &&
-          svgCanvas.getSvgContent().querySelector(`#${CSS.escape(id)}`)
-        rail = byId(params.rail)
+        const byId = (/** @type {string} */ id) => id
+          ? svgCanvas.getSvgContent().querySelector(`#${CSS.escape(id)}`)
+          : null
+        rail = /** @type {SVGPathElement|null} */ (byId(params.rail))
         if (!rail && uid && sources[0]) {
-          rail = byId(parseParams(sources[0].getAttribute(PARAMS_ATTR))?.rail)
+          rail = /** @type {SVGPathElement|null} */ (byId(parseParams(sources[0].getAttribute(PARAMS_ATTR))?.rail))
         }
         if (!rail) {
           const paths = sources.filter((el) => el.tagName === 'path').sort((a, b) =>
             a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
-          rail = paths[paths.length - 1] || null
+          rail = /** @type {SVGPathElement|null} */ (paths[paths.length - 1] || null)
         }
         sources = sources.filter((el) => el !== rail)
         if (!rail || rail.tagName !== 'path' || !sources.length) return
@@ -186,7 +194,7 @@ export default {
         let cx
         let cy
         if (params.center === 'selection') {
-          const bb = svgCanvas.getStrokedBBox(sources)
+          const bb = /** @type {import('@svgedit/svgcanvas').BBox} */ (svgCanvas.getStrokedBBox(sources))
           cx = bb.x + bb.width / 2
           cy = bb.y + bb.height / 2
         } else if (params.center === 'custom' && Number.isFinite(params.centerX) && Number.isFinite(params.centerY)) {
@@ -205,9 +213,10 @@ export default {
       } else if (params.mode === 'path') {
         // Distribute copies along the rail by arc length; the source unit
         // stays where it is. `follow` rotates each copy to the tangent.
+        if (!rail) return
         const total = rail.getTotalLength()
         if (!total) return
-        const bb = svgCanvas.getStrokedBBox(sources)
+        const bb = /** @type {import('@svgedit/svgcanvas').BBox} */ (svgCanvas.getStrokedBBox(sources))
         const cx = bb.x + bb.width / 2
         const cy = bb.y + bb.height / 2
         const m = rail.transform?.baseVal?.consolidate?.()?.matrix || null
@@ -235,7 +244,7 @@ export default {
           transforms.push(tf)
         }
       } else {
-        const bb = svgCanvas.getStrokedBBox(sources)
+        const bb = /** @type {import('@svgedit/svgcanvas').BBox} */ (svgCanvas.getStrokedBBox(sources))
         const stepX = bb.width + params.gapX
         const stepY = bb.height + params.gapY
         for (let i = 0; i < params.rows; ++i) {
@@ -258,7 +267,7 @@ export default {
           clone.setAttribute(COPY_ATTR, uid)
           const own = clone.getAttribute('transform')
           clone.setAttribute('transform', own ? `${tf} ${own}` : tf)
-          src.parentNode.append(clone)
+          ;/** @type {Element} */ (src.parentNode).append(clone)
           batchCmd.addSubCommand(new InsertElementCommand(clone))
         }
       }
@@ -309,7 +318,7 @@ export default {
         }
       },
 
-      mouseDown (opts) {
+      mouseDown (/** @type {{start_x: number, start_y: number}} */ opts) {
         if (svgCanvas.getMode() !== 'repeat-pick-center') return undefined
         const x = opts.start_x
         const y = opts.start_y

@@ -29,6 +29,17 @@
 
 import { getUserDataAdapter } from './userDataAdapter.js'
 
+/**
+ * One preset (see the shape above).
+ * @typedef {object} ClassPreset
+ * @property {string} name
+ * @property {string} scope `'text'`, `'shape'` or `'any'`
+ * @property {Record<string, string>} attrs
+ * @property {{angle: number, length: number, blur: number, opacity: number, color: string}} [shadow]
+ * @property {{width: number, color: string, opacity: number}} [outline]
+ * @property {{outer: {blur: number, color: string, opacity: number}|null, inner: {blur: number, color: string, opacity: number, source: string}|null}} [glow]
+ */
+
 const STORAGE_KEY = 'svg-edit-class-library'
 const DEFAULTS_STORAGE_KEY = 'svg-edit-default-classes'
 
@@ -82,7 +93,7 @@ export const attrCatalog = scope =>
 
 /**
  * Read the raw preset array from storage.
- * @returns {Array<{name:string,scope:string,attrs:Object}>}
+ * @returns {ClassPreset[]}
  */
 export const getClasses = () => {
   const adapter = getUserDataAdapter()
@@ -101,7 +112,7 @@ export const getClasses = () => {
 
 /**
  * Persist the full preset array.
- * @param {Array<{name:string,scope:string,attrs:Object}>} classes
+ * @param {ClassPreset[]} classes
  * @returns {void}
  */
 const writeClasses = classes => {
@@ -121,7 +132,7 @@ const writeClasses = classes => {
  * Presets visible for a given element scope: those tagged with the same scope
  * plus universal (`any`) presets.
  * @param {'text'|'shape'} scope
- * @returns {Array<{name:string,scope:string,attrs:Object}>}
+ * @returns {ClassPreset[]}
  */
 export const getClassesForScope = scope =>
   getClasses().filter(c => c.scope === scope || c.scope === 'any')
@@ -129,14 +140,14 @@ export const getClassesForScope = scope =>
 /**
  * Look up a single preset by name.
  * @param {string} name
- * @returns {{name:string,scope:string,attrs:Object}|undefined}
+ * @returns {ClassPreset|undefined}
  */
 export const getClass = name => getClasses().find(c => c.name === name)
 
 /**
  * Upsert a preset by name — an existing preset with the same name is replaced,
  * enabling "update". Returns the stored preset.
- * @param {{name:string,scope:string,attrs:Object}} preset
+ * @param {ClassPreset} preset
  * @returns {Object}
  */
 export const saveClass = preset => {

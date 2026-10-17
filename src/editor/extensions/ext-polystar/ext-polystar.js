@@ -30,7 +30,8 @@ export default {
     const { ChangeElementCommand } = svgCanvas.history
     const addToHistory = (/** @type {import("@svgedit/svgcanvas").HistoryCommand} */ cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
     const { $id, $req } = svgCanvas
-    let selElems
+    /** @type {Element[]} */
+    let selElems = []
     /**
 * @type {Element | null}
 */
@@ -67,7 +68,7 @@ export default {
 
     /**
      * @param {number} n angle
-     * @return {Float} cotangeante
+     * @returns {number} cotangeante
      */
     const cot = (n) => 1 / Math.tan(n)
 
@@ -84,13 +85,14 @@ export default {
      * @returns {string|null} new points string, or null if not rebuildable
      */
     const buildStarPoints = (elem) => {
-      if (!elem.points || !elem.points.numberOfItems) return null
+      const polygon = /** @type {SVGPolygonElement} */ (elem)
+      if (!polygon.points || !polygon.points.numberOfItems) return null
       const point = Number(elem.getAttribute('point'))
       const orient = elem.getAttribute('orient')
       const radialshift = Number(elem.getAttribute('radialshift'))
       const circumradius = Number(elem.getAttribute('r'))
-      const inradius = circumradius / elem.getAttribute('starRadiusMultiplier')
-      const list = elem.points
+      const inradius = circumradius / Number(elem.getAttribute('starRadiusMultiplier'))
+      const list = polygon.points
       const len = list.numberOfItems
       // The points list closes by repeating the first outer vertex (and the
       // first inner vertex when a star has inner points). Averaging those
@@ -102,8 +104,8 @@ export default {
       let ypos = 0
       for (let i = 0; i < used; ++i) {
         const pt = list.getItem(i)
-        xpos += parseFloat(pt.x)
-        ypos += parseFloat(pt.y)
+        xpos += pt.x
+        ypos += pt.y
       }
       const cx = xpos / used
       const cy = ypos / used
@@ -167,7 +169,7 @@ export default {
     }
 
     // Both shapes are drawn by dragging from the centre; the pointer is in document units.
-    const startStar = (ev) => {
+    const startStar = (/** @type {{x: number, y: number}} */ ev) => {
       const fill = svgCanvas.getColor('fill')
       const stroke = svgCanvas.getColor('stroke')
       const strokeWidth = svgCanvas.getStrokeWidth()
@@ -189,19 +191,20 @@ export default {
         }
       })
     }
-    const updateStar = (px, py) => {
-      const cx = Number(newFO.getAttribute('cx'))
-      const cy = Number(newFO.getAttribute('cy'))
-      const point = Number(newFO.getAttribute('point'))
-      const orient = newFO.getAttribute('orient')
-      const fill = newFO.getAttribute('fill')
-      const stroke = newFO.getAttribute('stroke')
+    const updateStar = (/** @type {number} */ px, /** @type {number} */ py) => {
+      const fo = /** @type {Element} */ (newFO)
+      const cx = Number(fo.getAttribute('cx'))
+      const cy = Number(fo.getAttribute('cy'))
+      const point = Number(fo.getAttribute('point'))
+      const orient = fo.getAttribute('orient')
+      const fill = fo.getAttribute('fill')
+      const stroke = fo.getAttribute('stroke')
       // A missing stroke-width means the SVG initial value of 1, not 0 —
       // cleanupElement strips the attribute at that value (writing 0 back
       // below would make the shape invisible mid-draw).
-      const strokeWidthAttr = newFO.getAttribute('stroke-width')
+      const strokeWidthAttr = fo.getAttribute('stroke-width')
       const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
-      const radialshift = Number(newFO.getAttribute('radialshift'))
+      const radialshift = Number(fo.getAttribute('radialshift'))
 
       let x = px
       let y = py
@@ -210,10 +213,10 @@ export default {
       Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
       const RadiusMultiplier = $req('RadiusMultiplier').value
       const inradius =
-      circumradius / RadiusMultiplier
-      newFO.setAttribute('r', circumradius)
-      newFO.setAttribute('r2', inradius)
-      newFO.setAttribute('starRadiusMultiplier', RadiusMultiplier)
+      circumradius / Number(RadiusMultiplier)
+      fo.setAttribute('r', String(circumradius))
+      fo.setAttribute('r2', String(inradius))
+      fo.setAttribute('starRadiusMultiplier', RadiusMultiplier)
 
       let polyPoints = ''
       for (let s = 0; point >= s; s++) {
@@ -244,13 +247,13 @@ export default {
           polyPoints += x + ',' + y + ' '
         }
       }
-      newFO.setAttribute('points', polyPoints)
-      newFO.setAttribute('fill', fill)
-      newFO.setAttribute('stroke', stroke)
-      newFO.setAttribute('stroke-width', strokeWidth)
-      /* const shape = */ newFO.getAttribute('shape')
+      fo.setAttribute('points', polyPoints)
+      fo.setAttribute('fill', String(fill))
+      fo.setAttribute('stroke', String(stroke))
+      fo.setAttribute('stroke-width', String(strokeWidth))
+      /* const shape = */ fo.getAttribute('shape')
     }
-    const startPolygon = (ev) => {
+    const startPolygon = (/** @type {{x: number, y: number}} */ ev) => {
       const fill = svgCanvas.getColor('fill')
       const stroke = svgCanvas.getColor('stroke')
       const strokeWidth = svgCanvas.getStrokeWidth()
@@ -270,17 +273,18 @@ export default {
         }
       })
     }
-    const updatePolygon = (px, py) => {
-      const cx = Number(newFO.getAttribute('cx'))
-      const cy = Number(newFO.getAttribute('cy'))
-      const sides = Number(newFO.getAttribute('sides'))
-      // const orient = newFO.getAttribute('orient');
-      const fill = newFO.getAttribute('fill')
-      const stroke = newFO.getAttribute('stroke')
+    const updatePolygon = (/** @type {number} */ px, /** @type {number} */ py) => {
+      const fo = /** @type {Element} */ (newFO)
+      const cx = Number(fo.getAttribute('cx'))
+      const cy = Number(fo.getAttribute('cy'))
+      const sides = Number(fo.getAttribute('sides'))
+      // const orient = fo.getAttribute('orient');
+      const fill = fo.getAttribute('fill')
+      const stroke = fo.getAttribute('stroke')
       // A missing stroke-width means the SVG initial value of 1, not 0 —
       // cleanupElement strips the attribute at that value (writing 0 back
       // below would make the shape invisible mid-draw).
-      const strokeWidthAttr = newFO.getAttribute('stroke-width')
+      const strokeWidthAttr = fo.getAttribute('stroke-width')
       const strokeWidth = strokeWidthAttr === null ? 1 : Number(strokeWidthAttr)
 
       let x = px
@@ -288,7 +292,7 @@ export default {
 
       const edg =
       Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
-      newFO.setAttribute('edge', edg)
+      fo.setAttribute('edge', String(edg))
 
       const inradius = (edg / 2) * cot(Math.PI / sides)
       const circumradius = inradius * sec(Math.PI / sides)
@@ -301,17 +305,17 @@ export default {
         points += x + ',' + y + ' '
       }
 
-      // const poly = newFO.createElementNS(NS.SVG, 'polygon');
-      newFO.setAttribute('points', points)
-      newFO.setAttribute('fill', fill)
-      newFO.setAttribute('stroke', stroke)
-      newFO.setAttribute('stroke-width', strokeWidth)
+      // const poly = fo.createElementNS(NS.SVG, 'polygon');
+      fo.setAttribute('points', points)
+      fo.setAttribute('fill', String(fill))
+      fo.setAttribute('stroke', String(stroke))
+      fo.setAttribute('stroke-width', String(strokeWidth))
     }
 
-    for (const [mode, start, update, emptyAttr, emptyValue] of [
+    for (const [mode, start, update, emptyAttr, emptyValue] of /** @type {Array<[string, (ev: {x: number, y: number}) => void, (px: number, py: number) => void, string, string]>} */ ([
       ['star', startStar, updateStar, 'r', '0'],
       ['polygon', startPolygon, updatePolygon, 'edge', '0']
-    ]) {
+    ])) {
       svgCanvas.registerTool({
         id: mode,
         undoLabel: `Draw ${mode}`,
@@ -363,8 +367,8 @@ export default {
         // so keep a panel visible while its shape is selected — setMode('select')
         // also fires on canvas clicks / attribute edits with the shape still
         // selected, and selectedChanged owns the selection-driven display.
-        document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
-          const mode = evt.detail.getMode()
+        document.addEventListener('modeChange', (evt) => {
+          const mode = /** @type {CustomEvent} */ (evt).detail.getMode()
           const shapes = (selElems || []).filter(Boolean).map((el) => el.getAttribute?.('shape'))
           if (mode !== 'star' && !shapes.includes('star')) showPanel(false, 'star')
           if (mode !== 'polygon' && !shapes.includes('regularPoly')) showPanel(false, 'polygon')
@@ -409,7 +413,7 @@ export default {
         })
         $req('polySides').addEventListener('change', (event) => {
           setAttr('sides', /** @type {HTMLInputElement} */ (event.target).value)
-          const sides = /** @type {HTMLInputElement} */ (event.target).value
+          const sides = Number(/** @type {HTMLInputElement} */ (event.target).value)
           /**
 * @type {number}
 */
@@ -421,17 +425,18 @@ export default {
               const oldPoints = elem.getAttribute('points')
               let xpos = 0
               let ypos = 0
-              if (elem.points) {
-                const list = elem.points
+              const polygon = /** @type {SVGPolygonElement} */ (elem)
+              if (polygon.points) {
+                const list = polygon.points
                 const len = list.numberOfItems
                 for (let i = 0; i < len; ++i) {
                   const pt = list.getItem(i)
-                  xpos += parseFloat(pt.x)
-                  ypos += parseFloat(pt.y)
+                  xpos += pt.x
+                  ypos += pt.y
                 }
                 const cx = xpos / len
                 const cy = ypos / len
-                const edg = elem.getAttribute('edge')
+                const edg = Number(elem.getAttribute('edge'))
                 const inradius = (edg / 2) * cot(Math.PI / sides)
                 const circumradius = inradius * sec(Math.PI / sides)
                 let points = ''
@@ -448,7 +453,7 @@ export default {
           }
         })
       },
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{elems: Element[], selectedElement: Element|null, multiselected: boolean}} */ opts) {
         // Use this to update the current selected elements
         selElems = opts.elems
         let i = selElems.length

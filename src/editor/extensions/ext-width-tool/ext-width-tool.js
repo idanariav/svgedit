@@ -45,6 +45,7 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
+/** @type {Array<[number, number, number]>} */
 const UNIFORM = [[0, 1, 1], [1, 1, 1]]
 
 export default {
@@ -62,17 +63,28 @@ export default {
      * @property {Element} el
      * @property {any} line the centerline (see `centerline`)
      * @property {number} half half the stroke's full width
-     * @property {Array<[number, number, number]>} points
-     * @property {DOMMatrix|SVGMatrix} matrix local → layer
-     * @property {DOMMatrix|SVGMatrix} inverse
+     * @property {Array<[number, number, number]>} points `[t, left, right]` per width point
+     * @property {{a: number, b: number, c: number, d: number, e: number, f: number}} matrix local → layer
+     * @property {{a: number, b: number, c: number, d: number, e: number, f: number}} inverse
      */
 
     /** @type {?Target} */
     let target = null
-    /** The width point a click selected (index into the target's profile), and the element it belongs to. */
+    /**
+     * The width point a click selected (index into the target's profile), and the element it belongs to.
+     * @type {{el: Element|null, index: number}}
+     */
     let selected = { el: null, index: -1 }
     /** @type {?{mode: 'width'|'move', index: number, side: ?('left'|'right'), t: number, points0: any[], moved: boolean, press: {x: number, y: number}}} */
     let drag = null
+    /**
+     * A point's mark: where, and the two side edges (local coordinates).
+     * @typedef {{x: number, y: number}} Pt
+     * @typedef {{index: number, t: number, p: Pt, n: Pt, l: Pt, r: Pt}} Mark
+     * @typedef {{kind: 'center', m: Mark}|{kind: 'handle', side: 'left'|'right', m: Mark}|{kind: 'stroke', loc: *}} Hit
+     */
+
+    /** @type {?{p: Pt, l: Pt, r: Pt}} the diamond shown where a press would add a point */
     let hover = null
 
     const matrixOf = (/** @type {Element} */ el) => {
@@ -80,7 +92,10 @@ export default {
       return tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
     }
 
-    /** The target for an element, or null when it cannot take a width profile. */
+    /**
+     * The target for an element, or null when it cannot take a width profile.
+     * @returns {?Target}
+     */
     const targetFor = (/** @type {Element | null | undefined} */ el) => {
       if (!el || !svgCanvas.canWidthStroke(el)) return null
       let d
@@ -91,24 +106,24 @@ export default {
       } else {
         const real = svgCanvas.getArrowSourcePoints(el)
         const pts = real || (el.tagName === 'line'
-          ? [{ x: +el.getAttribute('x1'), y: +el.getAttribute('y1') }, { x: +el.getAttribute('x2'), y: +el.getAttribute('y2') }]
+          ? [{ x: Number(el.getAttribute('x1')), y: Number(el.getAttribute('y1')) }, { x: Number(el.getAttribute('x2')), y: Number(el.getAttribute('y2')) }]
           : el.tagName === 'polyline'
-            ? (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).reduce((acc, v, i, a) => (i % 2 ? acc : [...acc, { x: v, y: a[i + 1] }]), [])
+            ? (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number).reduce((acc, v, i, a) => (i % 2 ? acc : [...acc, { x: v, y: a[i + 1] }]), /** @type {Pt[]} */ ([]))
             : null)
         d = pts ? pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ') : el.getAttribute('d')
-        width = parseFloat(el.getAttribute('stroke-width'))
+        width = parseFloat(el.getAttribute('stroke-width') ?? '')
       }
-      const line = centerline(d)
+      const line = centerline(d ?? '')
       if (!line || !(width > 0)) return null
       const m = matrixOf(el)
       const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
       const matrix = m || identity
       const inverse = m ? m.inverse() : identity
-      return { el, line, half: width / 2, points: svgCanvas.getWidthProfile(el) ?? UNIFORM.map((p) => [...p]), matrix, inverse }
+      return { el, line, half: width / 2, points: svgCanvas.getWidthProfile(el) ?? UNIFORM.map((p) => /** @type {[number, number, number]} */ ([...p])), matrix, inverse }
     }
 
-    const apply = (m, p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
-    const toLocal = (t, ev) => apply(t.inverse, { x: ev.rawX, y: ev.rawY })
+    const apply = (/** @type {{a: number, b: number, c: number, d: number, e: number, f: number}} */ m, /** @type {Pt} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+    const toLocal = (/** @type {Target} */ t, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => apply(t.inverse, { x: ev.rawX, y: ev.rawY })
 
     /** The stroke a press or hover is about: the selected one, else the one under the pointer. */
     const pickTarget = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
@@ -120,7 +135,8 @@ export default {
     }
 
     /** The width points as the tool shows them: where, the left normal and the two side edges (local coordinates). */
-    const marks = (t) => t.points.map(([pt, l, r], index) => {
+    /** @returns {Mark[]} */
+    const marks = (/** @type {Target} */ t) => t.points.map(([pt, l, r], index) => {
       const { p, n } = pointAt(t.line, pt)
       return {
         index,
@@ -135,7 +151,8 @@ export default {
     const near = (/** @type {{ x: number; y: number; }} */ a, /** @type {{ x: number; y: number; }} */ b, /** @type {number} */ radius) => Math.hypot(a.x - b.x, a.y - b.y) <= radius
 
     /** What is under the pointer: a point's diamond, one of its side handles, the stroke, or nothing. */
-    const hit = (t, q, zoom) => {
+    /** @returns {?Hit} */
+    const hit = (/** @type {Target} */ t, /** @type {Pt} */ q, /** @type {number} */ zoom) => {
       const grab = GRAB_PX / zoom
       const list = marks(t)
       for (const m of list) {
@@ -153,13 +170,13 @@ export default {
 
     // ---- overlay ---------------------------------------------------------------
 
-    const mk = (tag, attrs) => {
+    const mk = (/** @type {string} */ tag, /** @type {Record<string, *>} */ attrs) => {
       const e = document.createElementNS(SVG_NS, tag)
       for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
       return e
     }
 
-    const diamond = (/** @type {{ x: number; y: number; }} */ p, /** @type {number} */ s, /** @type {{ fill: string; stroke: string; "stroke-width": number; "vector-effect": string; "fill-opacity"?: number; }} */ attrs) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
+    const diamond = (/** @type {{ x: number; y: number; }} */ p, /** @type {number} */ s, /** @type {Record<string, *>} */ attrs) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
 
     const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
@@ -186,7 +203,7 @@ export default {
       ctx.addOverlay(g)
     }
 
-    const hoverAt = (t, hitResult) => {
+    const hoverAt = (/** @type {Target} */ t, /** @type {?Hit} */ hitResult) => {
       if (!hitResult || hitResult.kind !== 'stroke') return null
       const { loc } = hitResult
       const [l, r] = profileAt(t.points, loc.t)
@@ -200,8 +217,8 @@ export default {
     // ---- editing ---------------------------------------------------------------
 
     /** The profile for the drag at pointer `q` (local coordinates). */
-    const profileFor = (t, q, alt) => {
-      const d = drag
+    const profileFor = (/** @type {Target} */ t, /** @type {Pt} */ q, /** @type {boolean} */ alt) => {
+      const d = /** @type {NonNullable<typeof drag>} */ (drag)
       if (d.mode === 'move') {
         return movedPoint(d.points0, d.index, locate(t.line, q).t)
       }
@@ -222,7 +239,7 @@ export default {
       return withPoint(d.points0, d.t, left, right)
     }
 
-    const redraw = (t, points) => {
+    const redraw = (/** @type {Target} */ t, /** @type {Array<[number, number, number]>} */ points) => {
       if (!isProfile(points)) return
       const el = t.el.tagName === 'path' ? t.el : svgCanvas.widthStrokeAsPath(t.el)
       if (!svgCanvas.drawWidthProfile(el, points)) return
@@ -231,7 +248,7 @@ export default {
       t.points = points
     }
 
-    const finish = (changed) => {
+    const finish = (/** @type {Element[]} */ changed) => {
       for (const el of changed) {
         if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
       }
@@ -294,7 +311,9 @@ export default {
           const over = t ? hit(t, toLocal(t, ev), ctx.zoom) : null
           hover = t ? hoverAt(t, over) : null
           // The cursor says what a press would do: add a point, grab a point, or take a side handle.
-          svgCanvas.setCursorHint(over ? { stroke: 'add', center: 'grab', handle: 'pointer' }[over.kind] : null)
+          /** @type {Record<string, string>} */
+          const cursors = { stroke: 'add', center: 'grab', handle: 'pointer' }
+          svgCanvas.setCursorHint(over ? cursors[over.kind] : null)
           draw(ctx)
           return
         }
@@ -302,7 +321,8 @@ export default {
         if (!drag.moved && Math.hypot(ev.screenX - drag.press.x, ev.screenY - drag.press.y) < CLICK_PX) return
         drag.moved = true
         const points = profileFor(target, toLocal(target, ev), ev.mods.alt)
-        if (drag.index < 0) drag.index = points.findIndex((p) => Math.abs(p[0] - drag.t) < 1e-6)
+        const { t: dragT } = drag
+        if (drag.index < 0) drag.index = points.findIndex((p) => Math.abs(p[0] - dragT) < 1e-6)
         redraw(target, points)
         draw(ctx)
       },
@@ -323,15 +343,16 @@ export default {
       },
 
       keyDown (ctx, ev) {
-        if ((ev.key !== 'Delete' && ev.key !== 'Backspace') || !selected.el || selected.index < 0 || !selected.el.isConnected) return false
-        const t = targetFor(selected.el)
-        const profile = svgCanvas.getWidthProfile(selected.el)
+        const el = selected.el
+        if ((ev.key !== 'Delete' && ev.key !== 'Backspace') || !el || selected.index < 0 || !el.isConnected) return false
+        const t = targetFor(el)
+        const profile = svgCanvas.getWidthProfile(el)
         if (!t || !profile || profile.length <= 2) return false
         const next = withoutPoint(profile, selected.index)
-        svgCanvas.transact('Delete width point', () => svgCanvas.drawWidthProfile(selected.el, next))
-        selected = { el: selected.el, index: -1 }
-        target = targetFor(selected.el)
-        finish([selected.el])
+        svgCanvas.transact('Delete width point', () => svgCanvas.drawWidthProfile(el, next))
+        selected = { el, index: -1 }
+        target = targetFor(el)
+        finish([el])
         draw(ctx)
         ev.preventDefault()
         return true

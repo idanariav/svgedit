@@ -30,12 +30,21 @@ import { positionContextMenu } from '../../dialogs/positionContextMenu.js'
 
 const name = 'shape-family'
 
+/** @typedef {'spiral'|'arc'|'rectgrid'|'polargrid'} Mode */
+/** @typedef {{element: string, d?: string, children?: import('@svgedit/svgcanvas').SVGElementJSON[], closedFill?: boolean}} FamilyDescription what to draw, in the shape `addSVGElementsFromJson` takes (minus id and paint) */
+/** @typedef {{key: string, type: 'number'|'checkbox', min?: number, max?: number, step?: number, size?: boolean}} Field one input of the options popover */
+
+/** @type {Mode[]} */
 const MODES = ['spiral', 'arc', 'rectgrid', 'polargrid']
+/** @type {Record<Mode, string>} */
 const UNDO_LABEL = { spiral: 'Draw spiral', arc: 'Draw arc', rectgrid: 'Draw rectangular grid', polargrid: 'Draw polar grid' }
+/** @type {Record<Mode, number>} */
 const MODE_TITLE = { spiral: 0, arc: 1, rectgrid: 2, polargrid: 3 }
+/** @type {Record<Mode, string>} */
 const BUTTON_ICON = { spiral: 'spiral.svg', arc: 'arc.svg', rectgrid: 'grid_rect.svg', polargrid: 'grid_polar.svg' }
 
 /** Which option an arrow key steps, per mode. `vertical` = ↑/↓, `horizontal` = ←/→. */
+/** @type {Record<string, {vertical?: string, horizontal?: string}>} */
 const ARROW_OPTION = {
   spiral: { vertical: 'segments' },
   rectgrid: { vertical: 'rows', horizontal: 'columns' },
@@ -48,6 +57,7 @@ const DRAG_THRESHOLD = 3
 /**
  * Popover fields per mode. `size` fields are geometry (not remembered between
  * uses beyond the popover's own defaults); the rest are tool options.
+ * @type {Record<Mode, Field[]>}
  */
 const FIELDS = {
   spiral: [
@@ -97,7 +107,10 @@ export default {
     await loadExtensionTranslation(svgEditor)
     const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
-    /** Options remembered between uses (drag keys and the popover both write them). */
+    /**
+     * Options remembered between uses (drag keys and the popover both write them).
+     * @type {Record<Mode, Record<string, *>>}
+     */
     const options = {
       spiral: { decay: 80, segments: 10, clockwise: true, radius: 50 },
       arc: { slope: 0, closed: false, width: 100, height: 100 },
@@ -105,22 +118,26 @@ export default {
       polargrid: { concentric: 5, radial: 5, width: 100, height: 100 }
     }
 
-    /** In-progress drag: `{ mode, start, end, last, mods, el }`; `el` appears after the threshold. */
+    /**
+     * In-progress drag: `{ mode, start, end, last, mods, el }`; `el` appears after the threshold.
+     * @type {{mode: Mode, start: {x: number, y: number}, end: {x: number, y: number}, last: {x: number, y: number}, mods: {shift: boolean, alt: boolean}, el: Element|null}|null}
+     */
     let drag = null
     let spaceHeld = false
+    /** @type {{el: HTMLFormElement, cleanup: () => void}|null} */
     let popover = null
 
-    const isFamilyMode = (/** @type {string} */ mode) => MODES.includes(mode)
+    const isFamilyMode = (/** @type {string} */ mode) => MODES.includes(/** @type {Mode} */ (mode))
 
     // ---- geometry -------------------------------------------------------
 
     /**
      * What to draw for a mode from the dragged start / end points.
-     * @param {string} mode
+     * @param {Mode} mode
      * @param {{x: number, y: number}} start
      * @param {{x: number, y: number}} end
      * @param {{shift: boolean, alt: boolean}} mods
-     * @returns {object} Mode-specific geometry (see {@link describe}).
+     * @returns {*} Mode-specific geometry (see {@link describe}).
      */
     const geometry = (mode, start, end, mods) => {
       if (mode === 'spiral') return { cx: start.x, cy: start.y, radius: Math.hypot(end.x - start.x, end.y - start.y) }
@@ -131,9 +148,9 @@ export default {
     /**
      * The element description for a mode and geometry, in the shape
      * `addSVGElementsFromJson` takes (minus id and paint).
-     * @param {string} mode
-     * @param {object} geom
-     * @returns {{element: string, d?: string, children?: object[], closedFill?: boolean}}
+     * @param {Mode} mode
+     * @param {*} geom
+     * @returns {FamilyDescription}
      */
     const describe = (mode, geom) => {
       const o = options[mode]
@@ -149,7 +166,7 @@ export default {
       return { element: 'g', children: polarGridParts({ ...geom, concentric: o.concentric, radial: o.radial }) }
     }
 
-    const isDegenerate = (geom) => {
+    const isDegenerate = (/** @type {*} */ geom) => {
       if ('radius' in geom) return !(geom.radius > 0)
       if ('x1' in geom) return geom.x1 === geom.x2 && geom.y1 === geom.y2
       return !(geom.width > 0) && !(geom.height > 0)
@@ -158,7 +175,8 @@ export default {
     // ---- element creation -------------------------------------------------
 
     /** Paint attributes for a new shape; a stroke of `none` would make it invisible. */
-    const paintFor = (/** @type {object} */ desc) => {
+    const paintFor = (/** @type {FamilyDescription} */ desc) => {
+      /** @type {Record<string, string>} */
       const attr = {}
       const stroke = svgCanvas.getColor('stroke')
       if (!stroke || stroke === 'none') attr.stroke = '#000000'
@@ -167,19 +185,19 @@ export default {
       return attr
     }
 
-    const createElement = (/** @type {object} */ desc) => svgCanvas.addSVGElementsFromJson({
+    const createElement = (/** @type {FamilyDescription} */ desc) => svgCanvas.addSVGElementsFromJson({
       element: desc.element,
       curStyles: true,
       attr: { id: svgCanvas.getNextId(), ...paintFor(desc), ...(desc.d ? { d: desc.d } : {}) },
       ...(desc.children ? { children: desc.children } : {})
     })
 
-    const updateElement = (el, desc) => {
+    const updateElement = (/** @type {Element} */ el, /** @type {FamilyDescription} */ desc) => {
       if (desc.d !== undefined) {
         el.setAttribute('d', desc.d)
         return
       }
-      el.replaceChildren(...desc.children.map((/** @type {import("@svgedit/svgcanvas").SVGElementJSON} */ child) => svgCanvas.addSVGElementsFromJson(child)))
+      el.replaceChildren(...(desc.children ?? []).map((/** @type {import("@svgedit/svgcanvas").SVGElementJSON} */ child) => svgCanvas.addSVGElementsFromJson(child)))
     }
 
     /** Give a freshly built grid's children ids, as every element in a drawing has one. */
@@ -190,6 +208,7 @@ export default {
     }
 
     const render = () => {
+      if (!drag) return
       const geom = geometry(drag.mode, drag.start, drag.end, drag.mods)
       const desc = describe(drag.mode, geom)
       if (!drag.el) drag.el = createElement(desc)
@@ -208,8 +227,8 @@ export default {
     /**
      * Add a shape created outside a drag (the popover) as one undo step and
      * finish it like a drawn one.
-     * @param {string} mode
-     * @param {object} desc what to draw, from {@link describe}
+     * @param {Mode} mode
+     * @param {FamilyDescription} desc what to draw, from {@link describe}
      * @returns {void}
      */
     const insertCreated = (mode, desc) => {
@@ -221,7 +240,7 @@ export default {
       svgCanvas.finishCreatedElement(el)
     }
 
-    const readField = (input, field) => {
+    const readField = (/** @type {HTMLInputElement} */ input, /** @type {Field} */ field) => {
       if (field.type === 'checkbox') return input.checked
       const n = Number(input.value)
       if (!Number.isFinite(n)) return undefined
@@ -231,9 +250,9 @@ export default {
     /**
      * Create the shape from the popover's values: spirals are centred on the
      * click, the others have it as their top-left corner.
-     * @param {string} mode
+     * @param {Mode} mode
      * @param {{x: number, y: number}} at
-     * @param {object} values
+     * @param {Record<string, *>} values
      * @returns {void}
      */
     const createFromOptions = (mode, at, values) => {
@@ -246,7 +265,7 @@ export default {
       insertCreated(mode, describe(mode, geom))
     }
 
-    const openPopover = (mode, at, evt) => {
+    const openPopover = (/** @type {Mode} */ mode, /** @type {{x: number, y: number}} */ at, /** @type {MouseEvent|undefined} */ evt) => {
       closePopover()
       const root = svgEditor.workarea?.closest?.('.svg_editor') || document.body
       const el = document.createElement('form')
@@ -257,6 +276,7 @@ export default {
       title.textContent = t(`popoverTitle.${mode}`)
       el.append(title)
 
+      /** @type {Record<string, {input: HTMLInputElement, field: Field}>} */
       const inputs = {}
       for (const field of FIELDS[mode]) {
         const label = document.createElement('label')
@@ -269,9 +289,9 @@ export default {
           input.checked = !!options[mode][field.key]
         } else {
           input.value = options[mode][field.key]
-          if (field.min !== undefined) input.min = field.min
-          if (field.max !== undefined) input.max = field.max
-          input.step = field.step
+          if (field.min !== undefined) input.min = String(field.min)
+          if (field.max !== undefined) input.max = String(field.max)
+          input.step = String(field.step)
         }
         inputs[field.key] = { input, field }
         label.append(text, input)
@@ -291,6 +311,7 @@ export default {
 
       el.addEventListener('submit', (e) => {
         e.preventDefault()
+        /** @type {Record<string, *>} */
         const values = {}
         for (const { input, field } of Object.values(inputs)) {
           const v = readField(input, field)
@@ -304,13 +325,13 @@ export default {
         createFromOptions(mode, at, values)
       })
 
-      const onKey = (/** @type {{ key: string; preventDefault: () => void; }} */ e) => {
+      const onKey = (/** @type {KeyboardEvent} */ e) => {
         if (e.key === 'Escape') {
           e.preventDefault()
           closePopover()
         }
       }
-      const onOutside = (/** @type {{ composedPath: () => HTMLFormElement[]; }} */ e) => {
+      const onOutside = (/** @type {MouseEvent} */ e) => {
         if (!e.composedPath().includes(el)) closePopover()
       }
       // Deferred so the click that opened the popover does not close it at once.
@@ -332,8 +353,12 @@ export default {
 
     // ---- tools ----------------------------------------------------------------
 
-    /** The tool for one mode; the four share their handlers and differ only in id and undo label. */
-    const toolFor = (/** @type {string} */ mode) => ({
+    /**
+     * The tool for one mode; the four share their handlers and differ only in id and undo label.
+     * @param {Mode} mode
+     * @returns {import('@svgedit/svgcanvas').ToolDef}
+     */
+    const toolFor = (mode) => ({
       id: mode,
       undoLabel: UNDO_LABEL[mode],
       snap: true, // the start and the dragged corner snap to other objects
@@ -396,7 +421,9 @@ export default {
         }
         if (!drag.el) return false
         const arrow = ARROW_OPTION[drag.mode]
-        const axis = { ArrowUp: ['vertical', 1], ArrowDown: ['vertical', -1], ArrowRight: ['horizontal', 1], ArrowLeft: ['horizontal', -1] }[e.key]
+        /** @type {Record<string, ['vertical'|'horizontal', number]>} */
+        const axes = { ArrowUp: ['vertical', 1], ArrowDown: ['vertical', -1], ArrowRight: ['horizontal', 1], ArrowLeft: ['horizontal', -1] }
+        const axis = axes[e.key]
         if (!axis) return false
         const key = arrow[axis[0]]
         if (!key) return true
@@ -434,8 +461,8 @@ export default {
           if (e.code === 'Space') spaceHeld = false
         }, { signal: svgEditor.listenerAbort?.signal })
         // Leaving the tool drops a popover that was never confirmed.
-        document.addEventListener('modeChange', (/** @type {CustomEvent} */ e) => {
-          if (popover && !isFamilyMode(e.detail?.getMode?.())) closePopover()
+        document.addEventListener('modeChange', (e) => {
+          if (popover && !isFamilyMode(/** @type {CustomEvent} */ (e).detail?.getMode?.())) closePopover()
         }, { signal: svgEditor.listenerAbort?.signal })
       }
     }
