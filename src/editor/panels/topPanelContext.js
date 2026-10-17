@@ -275,12 +275,15 @@ export const updateContextPanel = (topPanel) => {
               topPanel.editor.svgCanvas.getTextPerspectiveX(elem)
             $id('tool_perspective_y').value =
               topPanel.editor.svgCanvas.getTextPerspectiveY(elem)
-            $id('text').value = topPanel.editor.svgCanvas.getTextWithNewlines(elem)
+            const textValue = topPanel.editor.svgCanvas.getTextWithNewlines(elem)
+            $id('text').value = textValue
             if (topPanel.editor.svgCanvas.gesture.addedNew) {
-              // Timeout needed for IE9
+              // Timeout needed for IE9. Select the starting content only if the user has not typed since (a late
+              // select-all would make the next key replace what they had already typed); a new text has none.
               setTimeout(() => {
-                $id('text').focus()
-                $id('text').select()
+                const input = $id('text')
+                input.focus()
+                if (textValue && input.value === textValue) input.select()
               }, 100)
             }
             // text

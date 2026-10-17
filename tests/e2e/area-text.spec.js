@@ -25,9 +25,14 @@ test.describe('Area text', () => {
   const undoSize = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())
   const undo = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
   const redo = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+  /** The text is placed and the edit buffer has focus after the release; keys sent before are lost (under load, the first letters). */
+  const editBufferFocused = (page) => expect.poll(() => page.evaluate(() =>
+    document.activeElement?.id === 'text' && window.svgEditor.svgCanvas.getMode() === 'textedit' && Boolean(document.querySelector('#svgcontent text'))
+  )).toBe(true)
   const drawBox = async (page, from, to) => {
     await page.evaluate(() => window.svgEditor.commands.run('tool_text'))
     await pointer(page, [{ kind: 'drag', ...from, to, steps: 10 }])
+    await editBufferFocused(page)
   }
   /** The state of the (only) text in the drawing. */
   const info = (page) => page.evaluate(() => {
@@ -92,6 +97,7 @@ test.describe('Area text', () => {
   test('a click still places point text', async ({ page }) => {
     await page.evaluate(() => window.svgEditor.commands.run('tool_text'))
     await pointer(page, [{ kind: 'click', x: 200, y: 200 }])
+    await editBufferFocused(page)
     await page.keyboard.type('hello')
     await page.keyboard.press('Enter')
     const t = await info(page)
@@ -144,11 +150,15 @@ test.describe('Area text', () => {
   })
 
   test('Area text on / off converts without moving the text', async ({ page }) => {
+    const stepsBefore = await undoSize(page)
     await page.evaluate(() => window.svgEditor.commands.run('tool_text'))
     await pointer(page, [{ kind: 'click', x: 200, y: 200 }])
+    await editBufferFocused(page)
     await page.keyboard.type('one two')
     await page.keyboard.press('Enter')
     await page.evaluate(() => window.svgEditor.commands.run('tool_select'))
+    // the creation's undo step lands from a timer (see makeAreaText)
+    await expect.poll(() => undoSize(page)).toBeGreaterThan(stepsBefore)
     await select(page)
     const point = await info(page)
     await page.evaluate(() => window.svgEditor.commands.run('tool_text_area'))
@@ -279,6 +289,14 @@ test.describe('Area text', () => {
     await put(starts[rows.length - 1] + 1)
     await page.keyboard.press('End')
     expect((await sel())[0]).toBe(SENTENCE.length)
+  })
+
+  test('typing across the first 100 ms after drawing the box keeps every letter (no late select-all)', async ({ page }) => {
+    await drawBox(page, { x: 100, y: 100 }, { x: 300, y: 260 })
+    // the context panel used to select the whole edit buffer 100 ms after the box was drawn, so the next key replaced what was typed
+    await page.keyboard.type('abcdefghij', { delay: 30 })
+    await page.keyboard.press('Enter')
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getTextWithNewlines(document.querySelector('#svgcontent text')))).toBe('abcdefghij')
   })
 
   test('area text survives save and load', async ({ page }) => {
