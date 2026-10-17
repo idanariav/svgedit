@@ -115,6 +115,13 @@ export default defineFeature({
       }
     }
 
+    // The effect filter region is an absolute box (see fx-filter setRegion), so it is re-derived after a move: a move bakes the
+    // drag transform into the geometry without firing 'changed', and 'gestureEnded' comes after that bake.
+    // elementChanged (below) covers attribute edits and (re)load.
+    svgCanvas.bind('gestureEnded', () => {
+      svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
 
@@ -171,15 +178,6 @@ export default defineFeature({
         }
         const show = outlineElems.includes(opts.selectedElement.tagName)
         showPanel(show, show ? opts.selectedElement : null)
-      },
-
-      // The effect filter region is an absolute box (see fx-filter setRegion),
-      // so it must be re-derived after the element moves. A move bakes the drag
-      // transform into the geometry without firing 'changed', but the mouseUp
-      // extension hook runs after that bake — refresh every selected element's
-      // region here. elementChanged covers attribute edits and (re)load.
-      mouseUp () {
-        svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
       },
 
       elementChanged (opts: { elems: Element[] }) {

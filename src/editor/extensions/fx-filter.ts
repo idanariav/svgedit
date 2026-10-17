@@ -192,8 +192,8 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
    * box, which collapses a bbox-relative region to nothing and renders the
    * filtered line invisible — and lines are this feature's whole point. The
    * tradeoff is that an absolute region does not follow the element on its own;
-   * {@link refreshRegion} re-derives it on move (see the extensions' mouseUp /
-   * elementChanged hooks). Must be called after the element has layout.
+   * {@link refreshRegion} re-derives it on move (see the extensions' `gestureEnded` /
+   * elementChanged handlers). Must be called after the element has layout.
    */
   const setRegion = (filter: Element, elem: Element, spec: FxSpec) => {
     const bbox = (elem as SVGGraphicsElement).getBBox()

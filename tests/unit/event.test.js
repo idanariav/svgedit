@@ -155,6 +155,7 @@ describe('event', () => {
       runExtensions () {
         return []
       },
+      call () {},
       cloneSelectedElements (dx, dy) {
         this.cloneSelectedElementsCalls = this.cloneSelectedElementsCalls || []
         this.cloneSelectedElementsCalls.push({ dx, dy })
@@ -243,6 +244,23 @@ describe('event', () => {
     })
 
     expect(canvas.gesture.altCloneArmed).toBe(false)
+    errSpy.mockRestore()
+  })
+
+  it("mouseUpEvent() announces 'gestureEnded' once, with the mode the gesture ran in, after the release was handled", () => {
+    const order = []
+    canvas.call = vi.fn((name, detail) => order.push([name, detail]))
+    canvas.runExtensions = vi.fn(() => { order.push(['hooks']); return [] })
+    canvas.setCurrentMode('some-extension-mode')
+    canvas.setStarted(true)
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const evt = { clientX: 10, clientY: 20, button: 0, shiftKey: false, preventDefault () {}, target: contentGroup }
+
+    canvas.mouseUpEvent(evt)
+
+    const ended = order.findIndex(([name]) => name === 'gestureEnded')
+    expect(ended).toBeGreaterThanOrEqual(0)
+    expect(order[ended][1]).toEqual({ mode: 'some-extension-mode', event: evt })
     errSpy.mockRestore()
   })
 

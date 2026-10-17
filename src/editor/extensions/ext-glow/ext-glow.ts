@@ -139,6 +139,13 @@ export default defineFeature({
       ;(panel.querySelector('[data-glow="feather"]') as Element).toggleAttribute('data-off', !feather)
     }
 
+    // The effect filter region is an absolute box (see fx-filter setRegion), so it is re-derived after a move: a move bakes the
+    // drag transform into the geometry without firing 'changed', and 'gestureEnded' comes after that bake.
+    // elementChanged (below) covers attribute edits and (re)load.
+    svgCanvas.bind('gestureEnded', () => {
+      svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
+    })
+
     return {
       name: t('name'),
 
@@ -235,12 +242,6 @@ export default defineFeature({
           return
         }
         showPanel(true, opts.selectedElement)
-      },
-
-      // The effect filter region is an absolute box (see fx-filter setRegion),
-      // so it is re-derived after the element moves.
-      mouseUp () {
-        svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
       },
 
       elementChanged (opts: { elems: Element[] }) {

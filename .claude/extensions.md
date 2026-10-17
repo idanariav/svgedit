@@ -31,6 +31,9 @@ export default defineFeature({
       zoomChanged (zoom) { },                   // the zoom factor (1 = 100%)
       keyDown ({ event }) { },                  // an Editor-owned keydown; return { preventDefault: true } to swallow it
 
+      // Not a hook: svgCanvas.bind('gestureEnded', (_win, { mode, event }: GestureEndedDetail) => …) fires once after every canvas pointer
+      // release (any mode, registerTool tools and select included, which the mouseUp hook skips); use it to react to a finished gesture.
+
       // Legacy mouse hooks (mix coordinate spaces: start_x unzoomed, mouse_x ZOOMED); use registerTool instead:
       mouseDown (opts) { }, mouseMove (opts) { }, mouseUp (opts) { },
 

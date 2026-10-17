@@ -33,6 +33,17 @@ const {
   InsertElementCommand
 } = hstry
 
+/**
+ * The detail of the canvas event `gestureEnded`: a pointer gesture on the canvas has finished and its result (a move baked into the
+ * geometry, a resize, a drawn shape) is in the document. Fires once per release, in every mode, after the mode's own handling
+ * (the `mouseUp` extension hook, by contrast, is skipped for select, resize, zoom and `registerTool` tools).
+ */
+export interface GestureEndedDetail {
+  /** the mode the gesture ran in */
+  mode: string
+  event: MouseEvent
+}
+
 /** What an extension's `mouseUp` hook may return to keep, replace or start an element. */
 interface MouseUpHookResult {
   keep?: boolean
@@ -272,6 +283,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 * @fires module:svgcanvas.SvgCanvas#event:ext_mouseUp
 */
   const mouseUpEvent = (evt: MouseEvent): void => {
+    const mode = svgCanvas.getCurrentMode() // the release may switch it (a finished path goes back to select)
     try {
       mouseUpEventImpl(evt)
       logPress('pointer-up', evt) // after the release ran, so `undoSize` shows what it committed
@@ -288,6 +300,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.gesture.groupRotateBBox = null
       svgCanvas.setStartTransform(null)
     }
+    svgCanvas.call('gestureEnded', { mode, event: evt } satisfies GestureEndedDetail)
   }
 
   const mouseUpEventImpl = (evt: MouseEvent): void => {
