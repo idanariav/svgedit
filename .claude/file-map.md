@@ -83,6 +83,7 @@
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |
 | `measure.ts` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
+| `model-commands.ts` | Commands that edit the drawing through the document model (R1 step c): stacking order and deletion |
 | `model-render.ts` | Document model → SVG DOM (R1 step b): the renderer that makes the DOM a view of the model |
 | `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.ts` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
@@ -142,6 +143,7 @@
 | File | What it is |
 |---|---|
 | `drawing.ts` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.ts` |
+| `edit.ts` | Document model, layer 4: edits |
 | `features.ts` | Document model, layer 2b: the `se:*` features of one element as typed fields |
 | `index.ts` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.ts`, `parse.ts`, `serialize.ts`) and a typed read-only view of a drawing over it (`drawing.ts`) |
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |

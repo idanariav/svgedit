@@ -15,5 +15,15 @@ export default [
   // `standard` made `no-var` an error; neostandard only warns
   { rules: { 'no-var': 'error' } },
   // R3: converted modules are typed for real, no `any` to silence the compiler (use `unknown` and narrow)
-  { files: ['**/*.ts'], ignores: ['**/*.d.ts'], rules: { '@typescript-eslint/no-explicit-any': 'error' } }
+  { files: ['**/*.ts'], ignores: ['**/*.d.ts'], rules: { '@typescript-eslint/no-explicit-any': 'error' } },
+  // R1 (c): a command in model-commands.ts edits the model and lets the renderer show it; it never writes to the live DOM
+  {
+    files: ['packages/svgcanvas/core/model-commands.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: 'CallExpression[callee.property.name=/^(append|prepend|remove|before|after|insertBefore|appendChild|removeChild|replaceChild|replaceChildren|replaceWith|insertAdjacentElement|insertAdjacentHTML|setAttribute|setAttributeNS|removeAttribute|removeAttributeNS|toggleAttribute)$/]',
+        message: 'model-commands.ts edits the document model (snapshotHistory.edit with a function of model/edit.ts); the renderer writes the DOM.'
+      }]
+    }
+  }
 ]

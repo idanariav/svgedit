@@ -16,10 +16,8 @@ import type { BBoxObject } from './bbox-utils.ts'
 import type { HistoryCommand } from '../svgcanvas.ts'
 
 const {
-  MoveElementCommand,
   BatchCommand,
   InsertElementCommand,
-  RemoveElementCommand,
   ChangeElementCommand
 } = hstry
 
@@ -28,10 +26,6 @@ type Box = BBoxObject
 /** The members `selected-elem.ts` gives its canvas. */
 export interface SelectedElemApi {
   copySelectedElements(): void
-  moveToTopSelectedElement(): void
-  moveToBottomSelectedElement(): void
-  moveUpDownSelected(dir: 'Up' | 'Down'): void
-  switchSelectedZorder(): void
   // Element manipulation
   moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): (HistoryCommand & { isEmpty(): boolean }) | undefined
   cloneSelectedElements(x: number, y: number): void
@@ -41,246 +35,12 @@ export interface SelectedElemApi {
   updateCanvas(w: number, h: number): { x: number, y: number, old_x: number, old_y: number, d_x: number, d_y: number }
   /** Select the next (true) or previous (false) element in the current layer. */
   cycleElement(next: boolean): void
-  deleteSelectedElements(): void
   flipSelectedElements(scaleX: number, scaleY: number): void
 }
 
 export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   Object.assign(canvas, createGroupOps(canvas))
-  /**
- * Ascending document-order comparator (a before b in the DOM sorts first).
- * getSelectedElements() does not guarantee this order (it's kept sorted for
- * grip-drawing purposes, topmost-first), so callers that care about relative
- * stacking order must sort explicitly rather than trust the incoming array.
- */
-  const _byDocumentOrder = (a: Element, b: Element): number => {
-    const position = a.compareDocumentPosition(b)
-    if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
-      return -1
-    }
-    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
-      return 1
-    }
-    return 0
-  }
-
-  /**
- * Groups selected elements by their parent node, with each group sorted in
- * ascending document order (bottom-most stacking first). Elements normally
- * share one parent (a layer or a group being edited), but grouping keeps
- * this correct even when a selection spans multiple parents.
-  */
-  const _groupSelectedByParent = (selected: Element[]): Map<Element, Element[]> => {
-    const byParent = new Map<Element, Element[]>()
-    selected.forEach(el => {
-      const parent = el.parentNode as Element
-      if (!byParent.has(parent)) {
-        byParent.set(parent, [])
-      }
-      (byParent.get(parent) as Element[]).push(el)
-    })
-    byParent.forEach(els => els.sort(_byDocumentOrder))
-    return byParent
-  }
-
-  /**
- * Repositions all selected elements to the bottom in the DOM to appear on
- * top of other elements, preserving their relative stacking order (works
- * for a single element, a multi-selection, or a selected group).
- */
-  const moveToTopSelectedElem = (): void => {
-    const selected = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!selected.length) {
-      return
-    }
-    const batchCmd = new BatchCommand('Move to Top')
-    const changedEls: Element[] = []
-    _groupSelectedByParent(selected).forEach(els => {
-      els.forEach(t => {
-        const oldParent = t.parentNode as ParentNode
-        const oldNextSibling = t.nextSibling
-        oldParent.append(t)
-        // If the element actually moved position, add the command and fire the changed
-        // event handler.
-        if (oldNextSibling !== t.nextSibling) {
-          batchCmd.addSubCommand(
-            new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, 'top')
-          )
-          changedEls.push(t)
-        }
-      })
-    })
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', changedEls)
-    }
-  }
-
-  /**
- * Repositions all selected elements to the top in the DOM to appear under
- * other elements, preserving their relative stacking order (works for a
- * single element, a multi-selection, or a selected group).
- */
-  const moveToBottomSelectedElem = (): void => {
-    const selected = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!selected.length) {
-      return
-    }
-    const batchCmd = new BatchCommand('Move to Bottom')
-    const changedEls: Element[] = []
-    _groupSelectedByParent(selected).forEach((els, parent) => {
-      let firstChild = parent.firstElementChild
-      if (firstChild?.tagName === 'title') {
-        firstChild = firstChild.nextElementSibling
-      }
-      // This can probably be removed, as the defs should not ever apppear
-      // inside a layer group
-      if (firstChild?.tagName === 'defs') {
-        firstChild = firstChild.nextElementSibling
-      }
-      if (!firstChild) {
-        return
-      }
-      // Insert in reverse document order, each one right before the previous
-      // insertion point, so the group ends up at the bottom with its
-      // original relative order preserved.
-      let ref: Element = firstChild
-    ;[...els].reverse().forEach(t => {
-        const oldParent = t.parentNode
-        const oldNextSibling = t.nextSibling
-        parent.insertBefore(t, ref)
-        ref = t
-        // If the element actually moved position, add the command and fire the changed
-        // event handler.
-        if (oldNextSibling !== t.nextSibling) {
-          batchCmd.addSubCommand(
-            new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, 'bottom')
-          )
-          changedEls.push(t)
-        }
-      })
-    })
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', changedEls)
-    }
-  }
-
-  /**
- * Moves one selected element up or down the stack by a single step, based
- * on the visibly intersecting elements.
- * @param dir - String that's either 'Up' or 'Down'
- */
-  const _moveUpDownOne = (selected: Element, dir: 'Up' | 'Down'): hstry.MoveElementCommand | undefined => {
-    svgCanvas.setCurBBoxes([])
-    let closest: Element | undefined
-    let foundCur = false
-    // jQuery sorts this list
-    const list = svgCanvas.getIntersectionList(
-      svgCanvas.getStrokedBBoxDefaultVisible([selected])
-    ) as Element[]
-    if (dir === 'Down') {
-      list.reverse()
-    }
-
-    for (const el of list) {
-      if (!foundCur) {
-        if (el === selected) {
-          foundCur = true
-        }
-        continue
-      }
-      if (closest === undefined) {
-        closest = el
-      }
-    }
-    if (!closest) {
-      return undefined
-    }
-
-    const t = selected
-    const oldParent = t.parentNode
-    const oldNextSibling = t.nextSibling
-    if (dir === 'Down') {
-      closest.insertAdjacentElement('beforebegin', t)
-    } else {
-      closest.insertAdjacentElement('afterend', t)
-    }
-    // If the element actually moved position, return the command so the caller
-    // can add it to history and report it as changed.
-    if (oldNextSibling !== t.nextSibling) {
-      return new MoveElementCommand(t, oldNextSibling as Element, oldParent as Element, `Move ${dir}`)
-    }
-    return undefined
-  }
-
-  /**
- * Moves all selected elements up or down the stack by a single step each,
- * based on the visibly intersecting elements (works for a single element or
- * a multi-selection).
- * @param dir - String that's either 'Up' or 'Down'
- */
-  const moveUpDownSelected = (dir: 'Up' | 'Down'): void => {
-    const selectedElements = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!selectedElements.length) {
-      return
-    }
-
-    // Process the bottommost selected element first when moving down, and the
-    // topmost first when moving up, so multiply-selected elements step past
-    // non-selected elements rather than blocking each other. getSelectedElements
-    // does not guarantee document order, so sort explicitly.
-    const ascending = [...selectedElements].sort(_byDocumentOrder)
-    const ordered = dir === 'Down' ? ascending : ascending.reverse()
-
-    const batchCmd = new BatchCommand(`Move ${dir}`)
-    const changedEls: Element[] = []
-    ordered.forEach(selected => {
-      const cmd = _moveUpDownOne(selected, dir)
-      if (cmd) {
-        batchCmd.addSubCommand(cmd)
-        changedEls.push(selected)
-      }
-    })
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', changedEls)
-    }
-  }
-
-  /**
- * Reverses the z-order (DOM stacking) of exactly two selected elements that
- * share the same parent layer. If one was behind the other, they swap.
- */
-  const switchSelectedZorder = (): void => {
-    const selected = svgCanvas.getSelectedElements().filter(Boolean)
-    if (selected.length !== 2) {
-      return
-    }
-    const [a, b] = selected
-    const parent = a.parentNode as Element
-    if (parent !== b.parentNode) {
-      return
-    }
-    const aOldNext = a.nextSibling as Element | null
-    const bOldNext = b.nextSibling as Element | null
-    // Swap the two siblings' DOM positions via a placeholder
-    const tmp = document.createComment('swap')
-    parent.replaceChild(tmp, a)
-    parent.replaceChild(a, b)
-    parent.replaceChild(b, tmp)
-    const batchCmd = new BatchCommand('Switch Layers')
-    batchCmd.addSubCommand(
-      new MoveElementCommand(a, aOldNext, parent, 'Switch Layers')
-    )
-    batchCmd.addSubCommand(
-      new MoveElementCommand(b, bOldNext, parent, 'Switch Layers')
-    )
-    svgCanvas.addCommandToHistory(batchCmd)
-    svgCanvas.call('changed', [a, b])
-  }
-
   /**
  * Moves selected elements on the X/Y axis.
  * @param dx - number with the distance to move on the x-axis (or one distance per selected element)
@@ -809,47 +569,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
   }
 
   /**
- * Removes all selected elements from the DOM and adds the change to the
- * history stack.
- */
-  const deleteSelectedElements = (): void => {
-    const selectedElements = svgCanvas.getSelectedElements()
-    const batchCmd = new BatchCommand('Delete Elements')
-    const selectedCopy: Element[] = [] // selectedElements is being deleted
-
-    // Text that follows a path being deleted becomes plain text (needs the rail still in place).
-    svgCanvas.releaseTextOnPath?.(selectedElements.filter(Boolean), batchCmd)
-
-    selectedElements.forEach((selected) => {
-      if (selected) {
-        let parent = selected.parentNode as Element | null
-        let t = selected
-        // this will unselect the element and remove the selectedOutline
-        svgCanvas.selectorManager.releaseSelector(t)
-        // Remove the path if present.
-        svgCanvas.removePath_(t.id)
-        // Get the parent if it's a single-child anchor
-        if (parent && parent.tagName === 'a' && parent.childNodes.length === 1) {
-          t = parent
-          parent = parent.parentNode as Element | null
-        }
-        const { nextSibling } = t
-        t.remove()
-        const elem = t
-        selectedCopy.push(selected) // for the copy
-        batchCmd.addSubCommand(new RemoveElementCommand(elem, nextSibling, parent as Element))
-      }
-    })
-    svgCanvas.setEmptySelectedElements()
-
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-    }
-    svgCanvas.call('changed', selectedCopy)
-    svgCanvas.clearSelection()
-  }
-
-  /**
  * Flips selected elements horizontally or vertically by transforming actual coordinates.
  * @param scaleX - Scale factor for X axis (-1 for horizontal flip, 1 for no flip)
  * @param scaleY - Scale factor for Y axis (1 for no flip, -1 for vertical flip)
@@ -1062,10 +781,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
 
   return {
     copySelectedElements,
-    moveToTopSelectedElement: moveToTopSelectedElem, // Repositions the selected element to the bottom in the DOM to appear on top
-    moveToBottomSelectedElement: moveToBottomSelectedElem, // Repositions the selected element to the top in the DOM to appear under other elements
-    moveUpDownSelected, // Moves the select element up or down the stack, based on the visibly
-    switchSelectedZorder, // Reverses the z-order (stacking) of exactly two selected elements
     moveSelectedElements, // Moves selected elements on the X/Y axis.
     cloneSelectedElements, // Create deep DOM copies (clones) of all selected elements and move them slightly
     transformAgain, // Repeat the last duplicate+transform (clone offset by the last committed move delta)
@@ -1073,7 +788,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     alignSelectedElements, // Aligns selected elements.
     updateCanvas, // Updates the editor canvas width/height/position after a zoom has occurred.
     cycleElement, // Select the next/previous element within the current layer.
-    deleteSelectedElements, // Removes all selected elements from the DOM and adds the change to the history
     flipSelectedElements // Flips selected elements horizontally or vertically
   }
 }

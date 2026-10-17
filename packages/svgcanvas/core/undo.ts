@@ -245,6 +245,7 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
     const history = new SnapshotHistory({
       count: () => svgCanvas.undoMgr.getUndoStackSize(),
       held: () => svgCanvas.inTransaction(),
+      record: (label) => svgCanvas.addCommandToHistory(new hstry.BatchCommand(label)),
       signal: () => svgCanvas.destroyAbort.signal,
       content: () => svgCanvas.getSvgContent(),
       before: () => {

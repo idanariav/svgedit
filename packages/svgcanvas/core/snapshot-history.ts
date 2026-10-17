@@ -57,6 +57,8 @@ export const share = (prev: ModelNode | undefined, next: ModelNode): ModelNode =
 }
 
 export interface SnapshotTarget {
+  /** push an entry for a step that landed (`edit`) */
+  record: (label: string) => void
   /** aborted when the canvas is destroyed */
   signal: () => AbortSignal
   /** a transaction is open: it owns the drawing until it commits (its start is the baseline, not each change inside it) */
@@ -198,10 +200,13 @@ export class SnapshotHistory {
     this.show(leaving, want)
   }
 
-  /** Make the DOM show `want`, which differs from `shown`, the model of what the DOM shows now. Nothing is recorded. */
-  show (shown: ModelElement, want: ModelElement): void {
+  /**
+   * Make the DOM show `want`, which differs from `shown` (the model of what the DOM shows now), and nothing else: no selection
+   * is dropped and nothing is announced. Nothing is recorded either.
+   * @returns the elements that were created or changed
+   */
+  render (shown: ModelElement, want: ModelElement): Element[] {
     const content = this.target.content()
-    this.target.before()
     // Overlays are not part of the drawing: lift them out while the DOM is patched, and put them back
     const parked = Array.from(content.querySelectorAll(`[${EPHEMERAL_ATTR}]`))
       .filter((el) => !el.parentElement?.closest(`[${EPHEMERAL_ATTR}]`))
@@ -212,6 +217,30 @@ export class SnapshotHistory {
     for (const { el, parent, next } of parked) parent.insertBefore(el, next && next.parentNode === parent ? next : null)
     this.take()
     this.dirty = false
-    this.target.patched([...touched])
+    return [...touched]
+  }
+
+  /** Make the DOM show `want`, which differs from `shown`: drop the selection first, announce the step after. Nothing is recorded. */
+  show (shown: ModelElement, want: ModelElement): void {
+    this.target.before()
+    this.target.patched(this.render(shown, want))
+  }
+
+  /**
+   * Change the drawing through the model: `fn` gets the model of the drawing as it is and returns the one it should become (a
+   * function of `model/edit.ts`, say). The DOM is made to show the result by the renderer, and the step is recorded as `label`;
+   * inside a transaction the step is the transaction's. Returns false when `fn` changed nothing (and so nothing is recorded).
+   *
+   * This is the write path R1 is moving every command onto: the model is what is edited, the DOM is what shows it.
+   */
+  edit (label: string, fn: (root: ModelElement) => ModelElement): boolean {
+    this.baseline()
+    const shown = this.current()
+    const next = fn(shown)
+    if (next === shown) return false
+    this.render(shown, next)
+    if (!this.target.held()) this.stage(next) // a transaction stages its own, at commit
+    this.target.record(label)
+    return true
   }
 }

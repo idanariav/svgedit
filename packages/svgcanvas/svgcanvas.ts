@@ -34,6 +34,8 @@ import { createJson } from './core/json.ts'
 import type { JsonApi } from './core/json.ts'
 import * as elemGetSet from './core/elem-get-set.ts'
 import { createSelectedElem } from './core/selected-elem.ts'
+import { createModelCommands } from './core/model-commands.ts'
+import type { ModelCommandsApi } from './core/model-commands.ts'
 import type { SelectedElemApi } from './core/selected-elem.ts'
 import { createBlurEvent } from './core/blur-event.ts'
 import type { BlurEventApi } from './core/blur-event.ts'
@@ -336,6 +338,7 @@ type ModuleApis =
   GroupOpsApi &
   SelectionApi &
   SelectedElemApi &
+  ModelCommandsApi &
   PathMethodApi &
   PathStateApi &
   EventApi &
@@ -728,6 +731,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
     attachApi(this, 'blur', createBlurEvent(this), initGuardRegistry)
     attachApi(this, 'selectedElem', createSelectedElem(this), initGuardRegistry)
+    attachApi(this, 'modelCommands', createModelCommands(this), initGuardRegistry)
     this.booleanOps = createBooleanOps(this)
     attachApi(this, 'pathOffset', createPathOffset(this), initGuardRegistry)
     attachApi(this, 'pathSimplify', createPathSimplify(this), initGuardRegistry)

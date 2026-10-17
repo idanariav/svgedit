@@ -160,9 +160,37 @@ const reconcileChildren = (el: Element, prev: readonly ModelNode[], next: readon
     removed = true
   })
   if (removed) options.touched?.(el)
-  out.forEach((k, i) => {
-    if (el.childNodes[i] !== k) el.insertBefore(k, el.childNodes[i] ?? null)
+  // Put the children in order moving as few as possible: the ones that are already in the right order relative to each other
+  // (the longest increasing run of old positions) stay, the others are inserted before their next sibling, last to first.
+  const oldAt = new Map<Node, number>(domKids.map((k, i) => [k, i]))
+  const stay = longestRun(out.map((k) => oldAt.get(k) ?? -1))
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (stay.has(i)) continue
+    el.insertBefore(out[i], out[i + 1] ?? null)
+  }
+}
+
+/**
+ * The indexes of a longest strictly increasing subsequence of `values` (negative values, nodes that are new, never belong to it).
+ */
+const longestRun = (values: readonly number[]): Set<number> => {
+  const tails: number[] = [] // index into values of the smallest tail of a run of each length
+  const prev: number[] = new Array(values.length).fill(-1)
+  values.forEach((v, i) => {
+    if (v < 0) return
+    let lo = 0
+    let hi = tails.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (values[tails[mid]] < v) lo = mid + 1
+      else hi = mid
+    }
+    if (lo > 0) prev[i] = tails[lo - 1]
+    tails[lo] = i
   })
+  const keep = new Set<number>()
+  for (let i = tails.length ? tails[tails.length - 1] : -1; i >= 0; i = prev[i]) keep.add(i)
+  return keep
 }
 
 /** The model of a DOM subtree (the inverse of `renderNode`): names as the DOM has them, attributes in DOM order. */
