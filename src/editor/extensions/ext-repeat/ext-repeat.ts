@@ -272,6 +272,32 @@ export default defineFeature({
       svgCanvas.setMode('repeat-pick-center')
     }
 
+    // The pick is a tool of its own: a press records the point, the release leaves the tool and hands the point over.
+    let pickedPoint: { x: number, y: number } | null = null
+    svgCanvas.registerTool({
+      id: 'repeat-pick-center',
+      pointerDown (_ctx, ev) {
+        pickedPoint = { x: ev.x, y: ev.y }
+      },
+      pointerUp () {
+        const point = pickedPoint
+        const cb = pickCenterCallback
+        pickedPoint = null
+        pickCenterCallback = null
+        svgEditor.leftPanel.clickSelect()
+        // `cb` reopens the repeat popover, a native `popover="auto"` whose light dismiss also evaluates on the release:
+        // opened inside it, the popover would be closed again. Reopen once the gesture has finished (the timeout lets the dismiss pass run).
+        if (point && cb) setTimeout(() => cb(point.x, point.y), 0)
+      },
+      cancel () {
+        pickedPoint = null
+        pickCenterCallback = null
+      },
+      deactivate () {
+        pickCenterCallback = null
+      }
+    })
+
     return {
       name: svgEditor.i18next.t(`${name}:name`),
       callback () {
@@ -295,23 +321,6 @@ export default defineFeature({
           btn.setAttribute('src', 'repeat.svg')
           multi.append(btn)
         }
-      },
-
-      mouseDown (opts: { start_x: number, start_y: number }) {
-        if (svgCanvas.getMode() !== 'repeat-pick-center') return undefined
-        const x = opts.start_x
-        const y = opts.start_y
-        const cb = pickCenterCallback
-        pickCenterCallback = null
-        svgEditor.leftPanel.clickSelect()
-
-        // `cb` reopens the repeat popover, a native `popover="auto"` whose light
-        // dismiss also evaluates on `pointerup`: opened now (mid-gesture) it
-        // would be closed again by this very press's release. Reopen once the
-        // gesture has finished instead (the timeout lets the dismiss pass run).
-        document.addEventListener('pointerup', () => setTimeout(() => cb?.(x, y), 0), { once: true, capture: true })
-
-        return { keep: false, started: false }
       }
     }
   }

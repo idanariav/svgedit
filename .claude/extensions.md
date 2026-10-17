@@ -34,7 +34,9 @@ export default defineFeature({
       // Not a hook: svgCanvas.bind('gestureEnded', (_win, { mode, event }: GestureEndedDetail) => …) fires once after every canvas pointer
       // release (any mode, registerTool tools and select included, which the mouseUp hook skips); use it to react to a finished gesture.
 
-      // Legacy mouse hooks (mix coordinate spaces: start_x unzoomed, mouse_x ZOOMED); use registerTool instead:
+      // Mouse hooks: observers of the BUILT-IN modes only (ext-connector watches line drawing and select drags). They mix
+      // coordinate spaces (start_x unzoomed, mouse_x ZOOMED) and never run for registerTool tools, select release or zoom.
+      // A tool of your own is registerTool, not these:
       mouseDown (opts) { }, mouseMove (opts) { }, mouseUp (opts) { },
 
       // Runs once, after every extension has been added
