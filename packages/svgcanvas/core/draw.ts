@@ -6,7 +6,7 @@
  */
 
 import Layer from './layer.ts'
-import { init as layerOpsInit } from './layer-ops.ts'
+import { createLayerOps } from './layer-ops.ts'
 
 import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.ts'
@@ -984,15 +984,25 @@ export const randomizeIds = (enableRandomization: boolean, currentDrawing: Drawi
 
 // Layer API Functions
 
+/** The members `draw.ts` gives its canvas. */
+export interface DrawContextApi {
+  leaveContext(): void
+  setContext(elem: Element | string): void
+  withContextUndimmed<T>(fn: () => T): T
+  /** Undo the in-group dimming; call the returned function to re-apply it. */
+  suspendContextDimming(): () => void
+  getDisabledElems(): Element[]
+}
+
 /**
  * Reentrant init: the layer/context operations below are created per SvgCanvas
  * instance (closed over `svgCanvas` and a per-instance `disabledElems`) and
  * attached to the canvas, so several editors coexist in one realm. The Drawing
  * and Layer classes above are stateless w.r.t. the canvas and stay shared.
  */
-export const init = (canvas: SvgCanvas): void => {
+export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
   const svgCanvas = canvas
-  layerOpsInit(canvas)
+  Object.assign(canvas, createLayerOps(canvas))
   // Disabled elements during in-group editing (per instance).
   let disabledElems: Element[] = []
 
@@ -1164,13 +1174,15 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.call('contextset', svgCanvas.getCurrentGroup())
   }
 
-  // Attach the per-instance layer/context operations to the canvas.
-  svgCanvas.leaveContext = leaveContext
-  svgCanvas.setContext = setContext
-  svgCanvas.withContextUndimmed = withContextUndimmed
-  svgCanvas.suspendContextDimming = suspendContextDimming
-  // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
-  // exposes the per-instance `disabledElems` closure var without letting
-  // callers mutate it directly.
-  svgCanvas.getDisabledElems = () => disabledElems.slice()
+  return {
+    // Attach the per-instance layer/context operations to the canvas.
+    leaveContext,
+    setContext,
+    withContextUndimmed,
+    suspendContextDimming,
+    // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
+    // exposes the per-instance `disabledElems` closure var without letting
+    // callers mutate it directly.
+    getDisabledElems: () => disabledElems.slice()
+  }
 }

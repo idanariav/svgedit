@@ -30,7 +30,7 @@ describe('json', () => {
     layer.id = 'layer1'
     svgRoot.append(layer)
 
-    domUtils.init({
+    domUtils.createDomUtils({
       getSvgRoot: () => svgRoot
     })
     bboxUtils.createBBoxUtils({

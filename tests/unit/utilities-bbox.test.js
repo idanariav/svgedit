@@ -133,7 +133,7 @@ describe('utilities bbox', function () {
     }
     attachUnits(mockSvgCanvas)
 
-    path.init(mockSvgCanvas)
+    Object.assign(mockSvgCanvas, path.createPathState(mockSvgCanvas))
     mockaddSVGElementsFromJsonCallCount = 0
   })
 

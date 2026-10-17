@@ -59,13 +59,22 @@ export interface SelectorClassApi {
 // Bigger handles whenever the primary pointer is a finger (not only where `ontouchstart` exists).
 export const gripRadius = (window.ontouchstart || window.matchMedia?.('(pointer: coarse)').matches) ? 10 : 4
 
+/** The members `select.ts` gives its canvas. */
+export interface SelectApi {
+  /** Per-canvas selector box manager (core/select.js). */
+  selectorManager: SelectorManagerApi
+  getSelectorManager(): SelectorManagerApi
+  SelectorClass: SelectorClassApi
+  SelectorManagerClass: new () => SelectorManagerApi
+}
+
 /**
  * Reentrant init: the Selector/SelectorManager classes are defined per
  * SvgCanvas instance (closed over `svgCanvas` and the per-instance
  * `selectorManager` created at the end of init), so several editors can coexist
  * in one realm. The manager + Selector class are attached to the canvas.
  */
-export const init = (canvas: SvgCanvas): void => {
+export const createSelect = (canvas: SvgCanvas): SelectApi => {
   const svgCanvas = canvas
 
   /**
@@ -670,8 +679,11 @@ export const init = (canvas: SvgCanvas): void => {
   }
 
   const selectorManager = new SelectorManager()
-  svgCanvas.selectorManager = selectorManager
-  svgCanvas.getSelectorManager = () => selectorManager
-  svgCanvas.SelectorClass = Selector
-  svgCanvas.SelectorManagerClass = SelectorManager
+
+  return {
+    selectorManager,
+    getSelectorManager: () => selectorManager,
+    SelectorClass: Selector,
+    SelectorManagerClass: SelectorManager
+  }
 }

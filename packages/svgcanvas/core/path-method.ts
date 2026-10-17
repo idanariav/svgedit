@@ -17,10 +17,24 @@ import {
 import type SvgCanvas from '../svgcanvas.ts'
 import type { XY } from './canvas-state.ts'
 import type {
-  CtrlPoints, PathElement, PathObject, PathSegItem, PathSegment
+  CtrlPoints, PathClassApi, PathElement, PathObject, PathSegItem, PathSegment, SegmentClassApi
 } from './path-types.ts'
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `path-method.ts` gives its canvas. */
+export interface PathMethodApi {
+  replacePathSeg(type: number, index: number, pts: number[], elem?: Element): void
+  addPointGrip(index: number, x?: number | undefined, y?: number | undefined): SVGRectElement
+  addCtrlGrip(id: string | number): SVGCircleElement
+  /** Hover tooltips of the path editor's node and control-point grips (a `<title>` child; the editor passes translated text). */
+  setPathGripTitles(titles: { node?: string, ctrl?: string }): void
+  getCtrlLine(id: string | number): SVGLineElement
+  getGripPt(seg: PathSegment, altPt?: XY): XY
+  getPointFromGrip(pt: XY, pth: PathObject): XY
+  PathClass: PathClassApi
+  SegmentClass: SegmentClassApi
+}
+
+export const createPathMethod = (canvas: SvgCanvas): PathMethodApi => {
   const svgCanvas = canvas // per-instance; the methods + classes below close over it
 
   /** @todo See if this should just live in `replacePathSeg` */
@@ -1024,15 +1038,17 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  // Attach the per-instance path helpers + Path class to the canvas (path.js
-  // used to import and attach these; it now reads them off the instance).
-  svgCanvas.replacePathSeg = replacePathSegMethod
-  svgCanvas.addPointGrip = addPointGripMethod
-  svgCanvas.addCtrlGrip = addCtrlGripMethod
-  svgCanvas.setPathGripTitles = setPathGripTitlesMethod
-  svgCanvas.getCtrlLine = getCtrlLineMethod
-  svgCanvas.getGripPt = getGripPtMethod
-  svgCanvas.getPointFromGrip = getPointFromGripMethod
-  svgCanvas.PathClass = Path
-  svgCanvas.SegmentClass = Segment
+  return {
+    // Attach the per-instance path helpers + Path class to the canvas (path.js
+    // used to import and attach these; it now reads them off the instance).
+    replacePathSeg: replacePathSegMethod,
+    addPointGrip: addPointGripMethod,
+    addCtrlGrip: addCtrlGripMethod,
+    setPathGripTitles: setPathGripTitlesMethod,
+    getCtrlLine: getCtrlLineMethod,
+    getGripPt: getGripPtMethod,
+    getPointFromGrip: getPointFromGripMethod,
+    PathClass: Path,
+    SegmentClass: Segment
+  }
 }

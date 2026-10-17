@@ -65,7 +65,7 @@ describe('recalculate', function () {
       setStartTransform () { /* empty fn */ }
     }
     attachUnits(recalculateCanvas)
-    domUtils.init(recalculateCanvas)
+    Object.assign(recalculateCanvas, domUtils.createDomUtils(recalculateCanvas))
     Object.assign(recalculateCanvas, bboxUtils.createBBoxUtils(recalculateCanvas))
     Object.assign(recalculateCanvas, coords.createCoords(recalculateCanvas))
     Object.assign(recalculateCanvas, recalculate.createRecalculate(recalculateCanvas))

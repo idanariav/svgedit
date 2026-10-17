@@ -104,11 +104,11 @@ describe('select', function () {
     // instanceof checks) onto the canvas rather than exporting module-level
     // singletons, so several editors can coexist in one realm.
     assert.ok(select)
-    assert.ok(select.init)
+    assert.ok(select.createSelect)
     assert.equal(typeof select, typeof {})
-    assert.equal(typeof select.init, typeof function () { /* empty fn */ })
+    assert.equal(typeof select.createSelect, typeof function () { /* empty fn */ })
 
-    select.init(mockSvgCanvas)
+    Object.assign(mockSvgCanvas, select.createSelect(mockSvgCanvas))
     assert.ok(mockSvgCanvas.getSelectorManager)
     assert.ok(mockSvgCanvas.SelectorClass)
     assert.ok(mockSvgCanvas.SelectorManagerClass)
@@ -127,8 +127,7 @@ describe('select', function () {
     assert.equal(svgroot.childNodes.item(0), svgContent)
     assert.ok(!svgroot.querySelector('#selectorParentGroup'))
 
-    select.init(mockSvgCanvas)
-
+    Object.assign(mockSvgCanvas, select.createSelect(mockSvgCanvas))
     assert.equal(svgroot.childNodes.length, 3)
 
     // Verify existence of canvas background.
@@ -169,7 +168,7 @@ describe('select', function () {
     // nothing will ever look it up under its new id either. See getDebugSnapshot()
     // in svgcanvas.js, which is what first surfaced this as a `stale` selector
     // (elemId no longer in the live selection, but display still "inline").
-    select.init(mockSvgCanvas)
+    Object.assign(mockSvgCanvas, select.createSelect(mockSvgCanvas))
     const rect = svgContent.querySelector('#rect')
 
     const sel = mockSvgCanvas.getSelectorManager().requestSelector(rect)

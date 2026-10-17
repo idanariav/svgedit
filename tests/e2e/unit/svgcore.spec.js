@@ -132,7 +132,7 @@ test.describe('SVG core modules in browser', () => {
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
       const canvas = { units: u }
-      pathModule.init(canvas)
+      Object.assign(canvas, pathModule.createPathState(canvas))
       return canvas.pathActions.convertPath(path, true)
     })
     expect(dRel?.length > 0).toBe(true)
@@ -152,7 +152,7 @@ test.describe('SVG core modules in browser', () => {
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
       const canvas = { units: u }
-      pathModule.init(canvas)
+      Object.assign(canvas, pathModule.createPathState(canvas))
       const abs = canvas.pathActions.convertPath(path)
       const rel = canvas.pathActions.convertPath(path, true)
       return { abs, rel }

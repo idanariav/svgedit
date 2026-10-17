@@ -16,7 +16,45 @@ import {
 } from './text-rows.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `text-attrs.ts` gives its canvas. */
+export interface TextAttrsApi {
+  /** Vertical alignment of the selected area texts inside their box (`se:valign`). */
+  setTextValign(value: 'top' | 'middle' | 'bottom'): void
+  getTextValign(elem: Element): 'top' | 'middle' | 'bottom'
+  /** Selected point texts become area texts of their current width (one undo step); false when nothing changed. */
+  /** Whether a `<text>` wraps to a box (`se:wrap-width`). */
+  isAreaText(elem: Element | null | undefined): boolean
+  makeAreaText(): boolean
+  /** Selected area texts become point texts, the rows as drawn turning into hard rows (one undo step). */
+  makePointText(): boolean
+  // Text
+  getBold(): boolean
+  // Text (continued)
+  setBold(b: boolean): void
+  getItalic(): boolean
+  setItalic(i: boolean): void
+  hasTextDecoration(value: string): boolean
+  addTextDecoration(value: string): void
+  removeTextDecoration(value: string): void
+  setTextAnchor(value: string): void
+  setLetterSpacing(value: number | string): void
+  setWordSpacing(value: number | string): void
+  setTextLength(value: number | string): void
+  setLengthAdjust(value: string): void
+  setTextPerspectiveX(val: number): void
+  setTextPerspectiveY(val: number): void
+  getTextPerspectiveX(elem: Element): number
+  getTextPerspectiveY(elem: Element): number
+  setFontFamily(val: string): void
+  setFontColor(val: string): void
+  setFontSize(val: number): void
+  getText(): string
+  getTextWithNewlines(elem: Element): string
+  setMultilineText(elem: Element, value: string): void
+  setTextContent(val: string): void
+}
+
+export const createTextAttrs = (canvas: SvgCanvas): TextAttrsApi => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
 
   // A transform bake that scales the type (a group scale, a rotated resize) scales an area text's box with
@@ -549,32 +587,34 @@ export const init = (canvas: SvgCanvas): void => {
     return true
   }
 
-  svgCanvas.setTextValign = setTextValignMethod
-  svgCanvas.getTextValign = getValign
-  svgCanvas.isAreaText = isAreaText // whether a `<text>` wraps to a box (`se:wrap-width`)
-  svgCanvas.makeAreaText = makeAreaTextMethod
-  svgCanvas.makePointText = makePointTextMethod
-  svgCanvas.getBold = getBoldMethod // Check whether selected element is bold or not.
-  svgCanvas.setBold = setBoldMethod // Make the selected element bold or normal.
-  svgCanvas.getItalic = getItalicMethod // Check whether selected element is in italics or not.
-  svgCanvas.setItalic = setItalicMethod // Make the selected element italic or normal.
-  svgCanvas.hasTextDecoration = hasTextDecorationMethod // Check whether the selected element has the given text decoration or not.
-  svgCanvas.addTextDecoration = addTextDecorationMethod // Adds the given value to the text decoration
-  svgCanvas.removeTextDecoration = removeTextDecorationMethod // Removes the given value from the text decoration
-  svgCanvas.setTextAnchor = setTextAnchorMethod // Set the new text anchor.
-  svgCanvas.setLetterSpacing = setLetterSpacingMethod // Set the new letter spacing.
-  svgCanvas.setWordSpacing = setWordSpacingMethod // Set the new word spacing.
-  svgCanvas.setTextLength = setTextLengthMethod // Set the new text length.
-  svgCanvas.setLengthAdjust = setLengthAdjustMethod // Set the new length adjust.
-  svgCanvas.setTextPerspectiveX = setTextPerspectiveXMethod // Set horizontal perspective on text.
-  svgCanvas.setTextPerspectiveY = setTextPerspectiveYMethod // Set vertical perspective on text.
-  svgCanvas.getTextPerspectiveX = getTextPerspectiveXMethod // Get current horizontal perspective value.
-  svgCanvas.getTextPerspectiveY = getTextPerspectiveYMethod // Get current vertical perspective value.
-  svgCanvas.setFontFamily = setFontFamilyMethod // Set the new font family.
-  svgCanvas.setFontColor = setFontColorMethod // Set the new font color.
-  svgCanvas.setFontSize = setFontSizeMethod // Applies the given font size to the selected element.
-  svgCanvas.getText = getTextMethod // current text (newline-joined for multiline) of the selected element
-  svgCanvas.getTextWithNewlines = getTextWithNewlinesMethod // newline-joined content of a `<text>` element
-  svgCanvas.setMultilineText = setMultilineTextMethod // renders a `\n`-separated string as tspans
-  svgCanvas.setTextContent = setTextContentMethod // Updates the text element with the given string.
+  return {
+    setTextValign: setTextValignMethod,
+    getTextValign: getValign,
+    isAreaText, // whether a `<text>` wraps to a box (`se:wrap-width`)
+    makeAreaText: makeAreaTextMethod,
+    makePointText: makePointTextMethod,
+    getBold: getBoldMethod, // Check whether selected element is bold or not.
+    setBold: setBoldMethod, // Make the selected element bold or normal.
+    getItalic: getItalicMethod, // Check whether selected element is in italics or not.
+    setItalic: setItalicMethod, // Make the selected element italic or normal.
+    hasTextDecoration: hasTextDecorationMethod, // Check whether the selected element has the given text decoration or not.
+    addTextDecoration: addTextDecorationMethod, // Adds the given value to the text decoration
+    removeTextDecoration: removeTextDecorationMethod, // Removes the given value from the text decoration
+    setTextAnchor: setTextAnchorMethod, // Set the new text anchor.
+    setLetterSpacing: setLetterSpacingMethod, // Set the new letter spacing.
+    setWordSpacing: setWordSpacingMethod, // Set the new word spacing.
+    setTextLength: setTextLengthMethod, // Set the new text length.
+    setLengthAdjust: setLengthAdjustMethod, // Set the new length adjust.
+    setTextPerspectiveX: setTextPerspectiveXMethod, // Set horizontal perspective on text.
+    setTextPerspectiveY: setTextPerspectiveYMethod, // Set vertical perspective on text.
+    getTextPerspectiveX: getTextPerspectiveXMethod, // Get current horizontal perspective value.
+    getTextPerspectiveY: getTextPerspectiveYMethod, // Get current vertical perspective value.
+    setFontFamily: setFontFamilyMethod, // Set the new font family.
+    setFontColor: setFontColorMethod, // Set the new font color.
+    setFontSize: setFontSizeMethod, // Applies the given font size to the selected element.
+    getText: getTextMethod, // current text (newline-joined for multiline) of the selected element
+    getTextWithNewlines: getTextWithNewlinesMethod, // newline-joined content of a `<text>` element
+    setMultilineText: setMultilineTextMethod, // renders a `\n`-separated string as tspans
+    setTextContent: setTextContentMethod // Updates the text element with the given string.
+  }
 }

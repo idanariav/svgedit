@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { createUnits } from '../../packages/svgcanvas/core/units.ts'
-import {
-  init as initUtilities,
-  assignAttributes,
-  getHref,
-  setHref
-} from '../../packages/svgcanvas/core/dom-utils.ts'
+import { createDomUtils as initUtilities, assignAttributes, getHref, setHref } from '../../packages/svgcanvas/core/dom-utils.ts'
 import { dropXMLInternalSubset, encodeUTF8, decodeUTF8 } from '../../packages/svgcanvas/core/encoding-utils.ts'
 
 describe('utilities extra coverage', () => {
@@ -33,7 +28,7 @@ describe('utilities extra coverage', () => {
       getBaseUnit: () => 'cm',
       getSnappingStep: () => 0.5
     }
-    initUtilities(canvas)
+    Object.assign(canvas, initUtilities(canvas))
   })
 
   it('creates defs and removes namespaced attributes via assignAttributes', () => {

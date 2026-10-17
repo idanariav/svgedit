@@ -10,6 +10,19 @@ import { NS } from './namespaces.ts'
 import { setUnitAttr, getTypeMap } from './units.ts'
 import { getTransformList } from './math.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { XY } from './canvas-state.ts'
+
+/** The members `dom-utils.ts` gives its canvas. */
+export interface DomUtilsApi {
+  getElement(id: string): Element | null | undefined
+  findDefs(): Element
+  getRefElem(attrVal: string | null): Element | null
+  getReferencedDefElements(elems: Element[]): Element[]
+  /** Round a value to the grid step. */
+  snapToGrid(value: number): number
+  snapPointToGrid(x: number, y: number): XY
+  getRotationAngle(elem?: Element, toRad?: boolean): number
+}
 
 /**
  * Attaches the canvas-state-dependent helpers (element/defs lookup, grid
@@ -20,7 +33,7 @@ import type SvgCanvas from '../svgcanvas.ts'
  * which stay bare+pure and only get an instance-scoped selection-fallback
  * wrapper here.
  */
-export const init = (canvas: SvgCanvas): void => {
+export const createDomUtils = (canvas: SvgCanvas): DomUtilsApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /** Get a DOM element by ID within the SVG root element. */
@@ -148,16 +161,18 @@ export const init = (canvas: SvgCanvas): void => {
     return { x: snapToGrid(x), y: snapToGrid(y) }
   }
 
-  canvas.getElement = getElement
-  canvas.findDefs = findDefs
-  canvas.getRefElem = getRefElem
-  canvas.getReferencedDefElements = getReferencedDefElements
-  canvas.snapToGrid = snapToGrid
-  canvas.snapPointToGrid = snapPointToGrid
-  // getRotationAngle stays a bare, pure (elem-required) export below — every
-  // call site already passes an elem — but the public per-instance API keeps
-  // the "default to current selection" convenience, correctly scoped now.
-  canvas.getRotationAngle = (elem?: Element, toRad?: boolean) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
+  return {
+    getElement,
+    findDefs,
+    getRefElem,
+    getReferencedDefElements,
+    snapToGrid,
+    snapPointToGrid,
+    // getRotationAngle stays a bare, pure (elem-required) export below — every
+    // call site already passes an elem — but the public per-instance API keeps
+    // the "default to current selection" convenience, correctly scoped now.
+    getRotationAngle: (elem?: Element, toRad?: boolean) => getRotationAngle(elem || svgCanvas.getSelectedElements()[0], toRad)
+  }
 }
 
 // Row storage and area-text layout live in text-rows.js; re-exported so existing imports keep working.

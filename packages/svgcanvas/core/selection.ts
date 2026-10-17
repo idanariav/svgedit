@@ -24,6 +24,7 @@ import { isExtensionHook } from './extension-hooks.ts'
 import { sanitizeSvg } from './sanitize.ts'
 import { warn, error as logError } from '../common/logger.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { ExtensionResult } from '../svgcanvas-members.js'
 import type { BBox } from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { ElementAndBBox } from './canvas-state.ts'
@@ -33,7 +34,27 @@ type ExtensionHook = (vars: unknown) => unknown
 
 const { BatchCommand } = hstry
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `selection.ts` gives its canvas. */
+export interface SelectionApi {
+  /** The element a pointer event is on, as the selection logic sees it (the svg root for "nothing"). */
+  getMouseTarget(evt: Event): Element
+  getMouseTarget(evt: Event | null | undefined): Element | null
+  getMouseTargetFromNode(node: Element): Element
+  getMouseTargetFromNode(node: Element | null | undefined): Element | null
+  clearSelection(noCall?: boolean): void
+  /** Strip disallowed elements/attributes from `node` in place (per-instance). */
+  addToSelection(elemsToAdd: ArrayLike<Element>, showGrips?: boolean): void
+  getIntersectionList(rect?: BBox): Element[] | null
+  runExtensions(action: keyof ExtensionHookPayloads, vars: unknown, returnArray: true): ExtensionResult[]
+  runExtensions(action: keyof ExtensionHookPayloads, vars?: unknown, returnArray?: false): ExtensionResult | false
+  groupSvgElem(elem: Element): void
+  prepareSvg(newDoc: XMLDocument): void
+  recalculateAllSelectedDimensions(): void
+  setRotationAngle(val: number, preventUndo?: boolean): void
+  updateGroupSelector(elem?: Element): void
+}
+
+export const createSelection = (canvas: SvgCanvas): SelectionApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -520,16 +541,18 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  // null only for a missing event / node; the declaration overloads that (members.d.ts)
-  svgCanvas.getMouseTarget = getMouseTargetMethod as SvgCanvas['getMouseTarget']
-  svgCanvas.getMouseTargetFromNode = getMouseTargetFromNode as SvgCanvas['getMouseTargetFromNode']
-  svgCanvas.clearSelection = clearSelectionMethod
-  svgCanvas.addToSelection = addToSelectionMethod
-  svgCanvas.getIntersectionList = getIntersectionListMethod
-  svgCanvas.runExtensions = runExtensionsMethod
-  svgCanvas.groupSvgElem = groupSvgElem
-  svgCanvas.prepareSvg = prepareSvg
-  svgCanvas.recalculateAllSelectedDimensions = recalculateAllSelectedDimensions
-  svgCanvas.setRotationAngle = setRotationAngle
-  svgCanvas.updateGroupSelector = updateGroupSelectorMethod
+  return {
+    // null only for a missing event / node; the declaration overloads that (members.d.ts)
+    getMouseTarget: getMouseTargetMethod as SvgCanvas['getMouseTarget'],
+    getMouseTargetFromNode: getMouseTargetFromNode as SvgCanvas['getMouseTargetFromNode'],
+    clearSelection: clearSelectionMethod,
+    addToSelection: addToSelectionMethod,
+    getIntersectionList: getIntersectionListMethod,
+    runExtensions: runExtensionsMethod,
+    groupSvgElem,
+    prepareSvg,
+    recalculateAllSelectedDimensions,
+    setRotationAngle,
+    updateGroupSelector: updateGroupSelectorMethod
+  }
 }

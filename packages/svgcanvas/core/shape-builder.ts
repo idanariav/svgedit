@@ -47,7 +47,16 @@ const elemToItem = (elem: Element, scope: paper.PaperScope): Geometry | null => 
 
 const getStyleAttrs = (elem: Element): Record<string, string> => getBaseStyleAttrs(elem, ['stroke-linejoin', 'stroke-linecap'])
 
-export const init = (canvas: SvgCanvas): void => {
+/** Interactive region-merge session over the given (or selected) elements (`svgCanvas.shapeBuilder`). */
+export interface ShapeBuilder {
+  begin(elems?: Element[]): Array<{ index: number, d: string }> | null
+  /** Index of the region under (x, y), or -1. */
+  hitTest(x: number, y: number): number
+  apply(indices: number[], mode?: 'merge' | string): Element[] | null
+  end(): void
+}
+
+export const createShapeBuilder = (canvas: SvgCanvas): ShapeBuilder => {
   const svgCanvas = canvas
 
   let session: { entries: Array<{ elem: Element, item: Geometry }>, regions: Region[] } | null = null
@@ -214,5 +223,5 @@ export const init = (canvas: SvgCanvas): void => {
 
   const end = () => disposeSession()
 
-  svgCanvas.shapeBuilder = { begin, hitTest, apply, end }
+  return { begin, hitTest, apply, end }
 }

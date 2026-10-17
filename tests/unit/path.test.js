@@ -3,13 +3,13 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
-import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.ts'
+import { createPathActions as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.ts'
 import * as pathModule from '../../packages/svgcanvas/core/path.ts'
 import { attachUnits } from './unitsMock.js'
 
 const utilities = {
   init: (canvas) => {
-    domUtils.init(canvas)
+    Object.assign(canvas, domUtils.createDomUtils(canvas))
     Object.assign(canvas, bboxUtils.createBBoxUtils(canvas))
   },
   getBBox: bboxUtils.getBBox
@@ -27,7 +27,7 @@ describe('path', function () {
   */
   function getConvertPath () {
     const canvas = attachUnits({ getRoundDigits: () => 5 })
-    pathActionsInit(canvas)
+    canvas.pathActions = pathActionsInit(canvas)
     return canvas.pathActions.convertPath
   }
   const convertPath = getConvertPath()
@@ -69,7 +69,7 @@ describe('path', function () {
 
   it('Test svgedit.path.init exposes recalcRotatedPath', function () {
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     assert.equal(typeof mockPathContext.recalcRotatedPath, 'function')
   })
 
@@ -78,7 +78,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 L10,11 L20,21Z')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     new mockPathContext.PathClass(path) // eslint-disable-line no-new
 
@@ -98,7 +98,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 L10,11 L20,21Z')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     new mockPathContext.PathClass(path) // eslint-disable-line no-new
 
@@ -126,7 +126,7 @@ describe('path', function () {
     svg.append(path)
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts(svg)
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const segment = new mockPathContext.SegmentClass(1, path.pathSegList.getItem(1))
     segment.path = new mockPathContext.PathClass(path)
@@ -154,7 +154,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 L10,11 L20,21Z')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     new mockPathContext.PathClass(path) // eslint-disable-line no-new
 
@@ -174,7 +174,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 Q11,12 15,16')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const pathObj = new mockPathContext.PathClass(path)
 
@@ -193,7 +193,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 S13,14 15,16')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const pathObj = new mockPathContext.PathClass(path)
 
@@ -212,7 +212,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 Q10,0 20,0')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const pathObj = new mockPathContext.PathClass(path)
 
@@ -231,7 +231,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 C11,12 13,14 15,16 Z')
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     new mockPathContext.PathClass(path) // eslint-disable-line no-new
 
@@ -282,7 +282,7 @@ describe('path', function () {
     svg.append(path)
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts(svg)
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const pathObj = new mockPathContext.PathClass(path)
     pathObj.oldbbox = utilities.getBBox(path)
@@ -312,7 +312,7 @@ describe('path', function () {
 
   it('Test recalcRotatedPath with no current path', function () {
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     // path is null initially after init
     mockPathContext.recalcRotatedPath()
     // Should not throw
@@ -325,7 +325,7 @@ describe('path', function () {
     svg.append(path)
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts(svg)
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     utilities.init(mockUtilitiesContext)
     const pathObj = new mockPathContext.PathClass(path)
     pathObj.oldbbox = utilities.getBBox(path)
@@ -343,7 +343,7 @@ describe('path', function () {
     svg.append(path)
 
     const [mockPathContext] = getMockContexts(svg)
-    pathModule.init(mockPathContext)
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     const pathObj = new mockPathContext.PathClass(path)
     pathObj.oldbbox = null
 
@@ -356,8 +356,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 H10 V10 Z')
 
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
-
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     const seg1 = new mockPathContext.SegmentClass(0, path.pathSegList.getItem(0))
     assert.equal(seg1.index, 0)
 
@@ -391,8 +390,7 @@ describe('path', function () {
 
     const [mockPathContext, mockUtilitiesContext] = getMockContexts(svg)
     utilities.init(mockUtilitiesContext)
-    pathModule.init(mockPathContext)
-
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     try {
       const pathObj = new mockPathContext.PathClass(rect)
       pathObj.update()
@@ -434,8 +432,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 A10,10 0 0 1 20,20')
 
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
-
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     const seg = new mockPathContext.SegmentClass(1, path.pathSegList.getItem(1))
     assert.equal(seg.type, 10) // PATHSEG_ARC_ABS
   })
@@ -493,8 +490,7 @@ describe('path', function () {
     path.setAttribute('d', 'M0,0 L10,10 L20,20')
 
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
-
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     const seg = new mockPathContext.SegmentClass(1, path.pathSegList.getItem(1))
     assert.ok(seg.type)
   })
@@ -528,8 +524,7 @@ describe('path', function () {
     path.setAttribute('d', 'M10,10 L20,20')
 
     const [mockPathContext] = getMockContexts()
-    pathModule.init(mockPathContext)
-
+    Object.assign(mockPathContext, pathModule.createPathState(mockPathContext))
     const seg = new mockPathContext.SegmentClass(0, path.pathSegList.getItem(0))
     assert.equal(seg.type, 2) // PATHSEG_MOVETO_ABS
   })

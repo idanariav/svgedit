@@ -298,7 +298,37 @@ const madeFrom = new WeakMap<Element, string>()
 const earlier = new WeakMap<Element, Map<string, Element[]>>()
 const KEEP_EARLIER = 4
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `blend-canvas.ts` gives its canvas. */
+export interface BlendApi {
+  /** Blends (`core/blend-canvas.js`). */
+  canBlend(elems?: Element[]): boolean
+  makeBlend(elems?: Element[], options?: Record<string, unknown>): Element | null
+  getBlend(elem?: Element): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number } | null
+  setBlendOptions(changes: Record<string, unknown>, elems?: Element[]): Element[]
+  expandBlend(): Element[]
+  releaseBlend(): Element[]
+  /** One blend and one path of the same parent (the selection by default): the path can become the blend's spine. */
+  canReplaceBlendSpine(elems?: Element[]): boolean
+  /** The spine of a blend (path data in the group's coordinates), null when it goes straight. */
+  getBlendSpine(elem?: Element): string | null
+  /** Make the path selected with a blend its spine; the keys move onto it. One undo step. */
+  replaceBlendSpine(elems?: Element[]): Element | null
+  /** Run the selected blends' keys the other way along their spines. */
+  reverseBlendSpine(): Element[]
+  /** Turn the selected blend's spine back into a path; the blend goes straight. */
+  detachBlendSpine(): Element | null
+  /** Whether the selected blend is turned to its spine's direction (null: it has no spine). */
+  getBlendAlign(elem?: Element): boolean | null
+  /** Turn the selected blends' shapes to the direction of their spines, or back. One undo step. */
+  alignBlendToPath(on?: boolean): Element[]
+  refreshBlend(elem: Element | null): boolean
+  getBlendGroup(elem: Element | null): Element | null
+  isBlendKeyCandidate(elem: Element | null): boolean
+  getBlendDefaults(): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
+  setBlendDefaults(changes: Record<string, unknown>): { mode: 'steps' | 'distance' | 'smooth', steps: number, distance: number }
+}
+
+export const createBlend = (canvas: SvgCanvas): BlendApi => {
   const svgCanvas = canvas
 
   registerAttrValidator(BLEND_ATTR, (value) => (parseBlend(value) ? true : 'is not blend(…)'))
@@ -801,7 +831,7 @@ export const init = (canvas: SvgCanvas): void => {
     return released
   }
 
-  Object.assign(svgCanvas, {
+  return {
     canBlend,
     makeBlend,
     getBlend,
@@ -820,5 +850,5 @@ export const init = (canvas: SvgCanvas): void => {
     isBlendKeyCandidate: isKeyCandidate,
     getBlendDefaults,
     setBlendDefaults
-  })
+  }
 }

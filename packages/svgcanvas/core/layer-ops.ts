@@ -23,7 +23,38 @@ const historyRecordingService = (svgCanvas: SvgCanvas, hrService?: HrService): H
   return hrService || new HistoryRecordingService(svgCanvas.undoMgr as ConstructorParameters<typeof HistoryRecordingService>[0])
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `layer-ops.ts` gives its canvas. */
+export interface LayerOpsApi {
+  identifyLayers(): void
+  indexCurrentLayer(): number
+  // Layers / content
+  createLayer(name?: string, hrService?: unknown): unknown
+  cloneLayer(name?: string, hrService?: unknown): void
+  deleteCurrentLayer(): boolean
+  setCurrentLayer(name: string): boolean
+  renameCurrentLayer(newName: string): boolean
+  setCurrentLayerPosition(newPos: number): boolean
+  setLayerVisibility(name: string, bVisible: boolean): void
+  // Layers
+  setLayerLocked(layerName: string, locked: boolean): void
+  getLayerLocked(layerName: string): boolean
+  setLayersVisibility(states: Record<string, boolean>): boolean
+  setLayersLocked(states: Record<string, boolean>): boolean
+  setLayerTemplate(layerName: string, template: boolean): boolean
+  getLayerTemplate(layerName: string): boolean
+  // Layers / document
+  setLayerComment(layerName: string, comment: boolean): void
+  getLayerComment(layerName: string): boolean
+  // Layers
+  /** Show/dim layers other than the current one (all-layers editing mode). */
+  setAllLayersMode(bAllLayers: boolean): void
+  getAllLayersMode(): boolean
+  moveSelectedToLayer(layerName: string): void
+  mergeLayer(hrService?: unknown): void
+  mergeAllLayers(hrService?: unknown): void
+}
+
+export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
   const svgCanvas = canvas
 
   /**
@@ -353,26 +384,28 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.changeSvgContent()
   }
 
-  svgCanvas.identifyLayers = identifyLayers
-  svgCanvas.indexCurrentLayer = indexCurrentLayer
-  svgCanvas.createLayer = createLayer
-  svgCanvas.cloneLayer = cloneLayer
-  svgCanvas.deleteCurrentLayer = deleteCurrentLayer
-  svgCanvas.setCurrentLayer = setCurrentLayer
-  svgCanvas.renameCurrentLayer = renameCurrentLayer
-  svgCanvas.setCurrentLayerPosition = setCurrentLayerPosition
-  svgCanvas.setLayerVisibility = setLayerVisibility
-  svgCanvas.setLayerLocked = setLayerLocked
-  svgCanvas.getLayerLocked = getLayerLocked
-  svgCanvas.setLayersVisibility = setLayersVisibility
-  svgCanvas.setLayersLocked = setLayersLocked
-  svgCanvas.setLayerTemplate = setLayerTemplate
-  svgCanvas.getLayerTemplate = getLayerTemplate
-  svgCanvas.setLayerComment = setLayerComment
-  svgCanvas.getLayerComment = getLayerComment
-  svgCanvas.setAllLayersMode = setAllLayersMode
-  svgCanvas.getAllLayersMode = getAllLayersMode
-  svgCanvas.moveSelectedToLayer = moveSelectedToLayer
-  svgCanvas.mergeLayer = mergeLayer
-  svgCanvas.mergeAllLayers = mergeAllLayers
+  return {
+    identifyLayers,
+    indexCurrentLayer,
+    createLayer,
+    cloneLayer,
+    deleteCurrentLayer,
+    setCurrentLayer,
+    renameCurrentLayer,
+    setCurrentLayerPosition,
+    setLayerVisibility,
+    setLayerLocked,
+    getLayerLocked,
+    setLayersVisibility,
+    setLayersLocked,
+    setLayerTemplate,
+    getLayerTemplate,
+    setLayerComment,
+    getLayerComment,
+    setAllLayersMode,
+    getAllLayersMode,
+    moveSelectedToLayer,
+    mergeLayer,
+    mergeAllLayers
+  }
 }

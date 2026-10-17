@@ -10,9 +10,10 @@ import * as hstry from './history.js'
 import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
-import { init as groupOpsInit } from './group-ops.ts'
+import { createGroupOps } from './group-ops.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
+import type { HistoryCommand } from '../svgcanvas.ts'
 
 const {
   MoveElementCommand,
@@ -24,10 +25,29 @@ const {
 
 type Box = BBoxObject
 
-export const init = (canvas: SvgCanvas): void => {
-  const svgCanvas = canvas // per-instance; functions below are closed over it
-  groupOpsInit(canvas)
+/** The members `selected-elem.ts` gives its canvas. */
+export interface SelectedElemApi {
+  copySelectedElements(): void
+  moveToTopSelectedElement(): void
+  moveToBottomSelectedElement(): void
+  moveUpDownSelected(dir: 'Up' | 'Down'): void
+  switchSelectedZorder(): void
+  // Element manipulation
+  moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): HistoryCommand | void
+  cloneSelectedElements(x: number, y: number): void
+  transformAgain(): void
+  matchStrokes(): void
+  alignSelectedElements(type: string, relativeTo: string): void
+  updateCanvas(w: number, h: number): { x: number, y: number, old_x: number, old_y: number, d_x: number, d_y: number }
+  /** Select the next (true) or previous (false) element in the current layer. */
+  cycleElement(next: boolean): void
+  deleteSelectedElements(): void
+  flipSelectedElements(scaleX: number, scaleY: number): void
+}
 
+export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
+  const svgCanvas = canvas // per-instance; functions below are closed over it
+  Object.assign(canvas, createGroupOps(canvas))
   /**
  * Ascending document-order comparator (a before b in the DOM sorts first).
  * getSelectedElements() does not guarantee this order (it's kept sorted for
@@ -1041,18 +1061,20 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.call('selected', selectedElements)
   }
 
-  svgCanvas.copySelectedElements = copySelectedElements
-  svgCanvas.moveToTopSelectedElement = moveToTopSelectedElem // Repositions the selected element to the bottom in the DOM to appear on top
-  svgCanvas.moveToBottomSelectedElement = moveToBottomSelectedElem // Repositions the selected element to the top in the DOM to appear under other elements
-  svgCanvas.moveUpDownSelected = moveUpDownSelected // Moves the select element up or down the stack, based on the visibly
-  svgCanvas.switchSelectedZorder = switchSelectedZorder // Reverses the z-order (stacking) of exactly two selected elements
-  svgCanvas.moveSelectedElements = moveSelectedElements // Moves selected elements on the X/Y axis.
-  svgCanvas.cloneSelectedElements = cloneSelectedElements // Create deep DOM copies (clones) of all selected elements and move them slightly
-  svgCanvas.transformAgain = transformAgain // Repeat the last duplicate+transform (clone offset by the last committed move delta)
-  svgCanvas.matchStrokes = matchStrokes // Uniform stroke-width + round joins/caps across the selection
-  svgCanvas.alignSelectedElements = alignSelectedElements // Aligns selected elements.
-  svgCanvas.updateCanvas = updateCanvas // Updates the editor canvas width/height/position after a zoom has occurred.
-  svgCanvas.cycleElement = cycleElement // Select the next/previous element within the current layer.
-  svgCanvas.deleteSelectedElements = deleteSelectedElements // Removes all selected elements from the DOM and adds the change to the history
-  svgCanvas.flipSelectedElements = flipSelectedElements // Flips selected elements horizontally or vertically
+  return {
+    copySelectedElements,
+    moveToTopSelectedElement: moveToTopSelectedElem, // Repositions the selected element to the bottom in the DOM to appear on top
+    moveToBottomSelectedElement: moveToBottomSelectedElem, // Repositions the selected element to the top in the DOM to appear under other elements
+    moveUpDownSelected, // Moves the select element up or down the stack, based on the visibly
+    switchSelectedZorder, // Reverses the z-order (stacking) of exactly two selected elements
+    moveSelectedElements, // Moves selected elements on the X/Y axis.
+    cloneSelectedElements, // Create deep DOM copies (clones) of all selected elements and move them slightly
+    transformAgain, // Repeat the last duplicate+transform (clone offset by the last committed move delta)
+    matchStrokes, // Uniform stroke-width + round joins/caps across the selection
+    alignSelectedElements, // Aligns selected elements.
+    updateCanvas, // Updates the editor canvas width/height/position after a zoom has occurred.
+    cycleElement, // Select the next/previous element within the current layer.
+    deleteSelectedElements, // Removes all selected elements from the DOM and adds the change to the history
+    flipSelectedElements // Flips selected elements horizontally or vertically
+  }
 }

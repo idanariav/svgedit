@@ -23,7 +23,7 @@ describe('sanitize', function () {
     canvas = {
       getSvgRoot: () => svg
     }
-    utilities.init(canvas)
+    Object.assign(canvas, utilities.createDomUtils(canvas))
   })
 
   afterEach(() => {

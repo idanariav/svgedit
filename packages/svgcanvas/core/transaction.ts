@@ -44,42 +44,50 @@ import {
 } from './history.js'
 import { getHref } from './dom-utils.ts'
 import { debug, error, warn } from '../common/logger.ts'
+import type SvgCanvas from '../svgcanvas.ts'
+import type { HistoryCommand } from '../svgcanvas.ts'
 
 const LOG = 'transaction'
 
-/**
- * @typedef {object} Transaction
- * @property {string} label
- * @property {() => ?BatchCommand} commit Push the recorded changes as one undo step (null when nothing net-changed).
- * @property {() => void} cancel Revert the drawing and restore the selection.
- */
+/** An open transaction (`beginTransaction`). */
+export interface Transaction {
+  label: string
+  /** Push the recorded changes as one undo step (null when nothing net-changed). */
+  commit: () => BatchCommand | null
+  /** Revert the drawing and restore the selection. */
+  cancel: () => void
+}
 
-/**
- * @typedef {object} TransactionOptions
- * @property {boolean} [selection] `false` skips capturing/restoring the selection.
- * @property {() => void} [onAbort] Called when the transaction is ended *for* its owner, not by it:
- *   undo/redo cancelled it (the drawing is already reverted), or the drawing was replaced
- *   (`clear`/`setSvgString`). A transaction held across many pointer gestures (a tool session)
- *   uses it to drop its own state; it is not called by the owner's own `commit()`/`cancel()`.
- */
+export interface TransactionOptions {
+  /** `false` skips capturing/restoring the selection. */
+  selection?: boolean
+  /**
+   * Called when the transaction is ended *for* its owner, not by it: undo/redo cancelled it (the drawing is already
+   * reverted), or the drawing was replaced (`clear`/`setSvgString`). A transaction held across many pointer gestures
+   * (a tool session) uses it to drop its own state; it is not called by the owner's own `commit()`/`cancel()`.
+   */
+  onAbort?: () => void
+}
 
-/**
- * @typedef {object} Snapshot
- * @property {Map<Element, Map<string, string>>} attrs every element → its attributes
- * @property {Map<CharacterData, string>} text every text/comment node → its data
- * @property {Map<Node, Node[]>} kids every element → its child nodes (ephemeral ones excluded)
- */
+interface Snapshot {
+  /** Every element → its attributes. */
+  attrs: Map<Element, Map<string, string | null>>
+  /** Every text/comment node → its data. */
+  text: Map<CharacterData, string>
+  /** Every element → its child nodes (ephemeral ones excluded). */
+  kids: Map<Node, Node[]>
+}
 
-/**
- * @typedef {object} Session
- * @property {string} label
- * @property {number} depth
- * @property {boolean} doomed An inner transaction was cancelled.
- * @property {boolean} closed
- * @property {Element[]} selection
- * @property {Snapshot} before
- * @property {(() => void)|undefined} onAbort
- */
+interface Session {
+  label: string
+  depth: number
+  /** An inner transaction was cancelled. */
+  doomed: boolean
+  closed: boolean
+  selection: Element[]
+  before: Snapshot
+  onAbort: (() => void) | undefined
+}
 
 /** Attributes written through native SVG lists; reading one forces the browser to sync it. */
 const NATIVE_LIST_ATTRS = ['transform', 'gradientTransform', 'patternTransform']
@@ -87,14 +95,12 @@ const NATIVE_LIST_ATTRS = ['transform', 'gradientTransform', 'patternTransform']
 /**
  * An element's attributes by qualified name. `href` / `xlink:href` collapse
  * into the `#href` pseudo-attribute `ChangeElementCommand` understands.
- * @param {Element} el
- * @returns {Map<string, string>}
  */
-const readAttrs = (el) => {
+const readAttrs = (el: Element): Map<string, string | null> => {
   // Reading an attribute makes the browser write back a pending native-list
   // edit into the attribute; do it before enumerating.
   for (const name of NATIVE_LIST_ATTRS) if (name in el) el.getAttribute(name)
-  const out = new Map()
+  const out = new Map<string, string | null>()
   let hasHref = false
   for (const a of Array.from(el.attributes)) {
     if (a.name === 'href' || a.name === 'xlink:href') hasHref = true
@@ -107,69 +113,70 @@ const readAttrs = (el) => {
 /**
  * Capture the state a diff needs: attributes, text data and child lists of
  * everything under `root` (inclusive), skipping ephemeral subtrees.
- * @param {Element} root
- * @returns {Snapshot}
  */
-const takeSnapshot = (root) => {
-  /** @type {Snapshot} */
-  const snap = { attrs: new Map(), text: new Map(), kids: new Map() }
+const takeSnapshot = (root: Element): Snapshot => {
+  const snap: Snapshot = { attrs: new Map(), text: new Map(), kids: new Map() }
   const stack = [root]
   while (stack.length) {
-    const el = /** @type {Element} */ (stack.pop())
+    const el = stack.pop() as Element
     snap.attrs.set(el, readAttrs(el))
-    const kids = []
+    const kids: Node[] = []
     for (const node of Array.from(el.childNodes)) {
       if (isEphemeral(node)) continue
       kids.push(node)
-      if (node.nodeType === 1) stack.push(/** @type {Element} */ (node))
-      else if (/** @type {CharacterData} */ (node).data !== undefined) snap.text.set(/** @type {CharacterData} */ (node), /** @type {CharacterData} */ (node).data)
+      if (node.nodeType === 1) stack.push((node as Element))
+      else if ((node as CharacterData).data !== undefined) snap.text.set((node as CharacterData), (node as CharacterData).data)
     }
     snap.kids.set(el, kids)
   }
   return snap
 }
 
-/**
- * @param {import('../svgcanvas.ts').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+/** The members `transaction.ts` gives its canvas. */
+export interface TransactionApi {
+  /**
+   * Start recording every change to the drawing as ONE undo step (core/transaction.js).
+   * Nested calls join the outermost transaction. `commit()` returns the pushed
+   * batch, or null when nothing net-changed; `cancel()` restores the drawing and selection.
+   */
+  beginTransaction(label: string, options?: { selection?: boolean, onAbort?: () => void }): { label: string, commit(): HistoryCommand | null, cancel(): void }
+  /** Run `fn` as one undo step; a throw rolls the drawing back and rethrows. `fn` must be synchronous. */
+  transact<T>(label: string, fn: () => T): T
+  inTransaction(): boolean
+}
+
+export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
   const svgCanvas = canvas
   const undoMgr = svgCanvas.undoMgr
   const rawAddCommand = undoMgr.addCommandToHistory.bind(undoMgr)
 
-  /** @type {?Session} */
-  let session = null
+  let session: Session | null = null
 
   /**
    * Build the single batch for everything that differs from the snapshot taken
    * at begin. Structure first, then attributes, then text: `BatchCommand.unapply`
    * runs in reverse, so attribute values are restored while elements are still
    * attached.
-   * @param {boolean} [forCancel] cancel applies the batch with a null handler, so
+   * @param forCancel cancel applies the batch with a null handler, so
    *   undo.js's text handler never re-shifts the tspans: keep their own x/y.
-   * @returns {BatchCommand}
    */
-  const buildBatch = (forCancel = false) => {
-    const s = /** @type {Session} */ (session)
+  const buildBatch = (forCancel: boolean = false): BatchCommand => {
+    const s = session as Session
     const { attrs, text, kids } = s.before
     const batch = new BatchCommand(s.label)
 
     // Elements present now that were not at begin ("born"), found by walking
     // the live tree (a node added and removed again is simply not in it).
-    /** @type {Element[]} */
-    const born = []
-    /** @type {Element[]} */
-    const stack = [svgCanvas.getSvgContent()]
+    const born: Element[] = []
+    const stack: Element[] = [svgCanvas.getSvgContent()]
     while (stack.length) {
-      const el = /** @type {Element} */ (stack.pop())
+      const el = stack.pop() as Element
       if (!attrs.has(el)) born.push(el)
       for (const node of Array.from(el.children)) if (!isEphemeral(node)) stack.push(node)
     }
 
     // --- structure -------------------------------------------------------
-    /** @type {import('./history.js').ChildListChange[]} */
-    const changes = []
+    const changes: import('./history.js').ChildListChange[] = []
     for (const [parent, before] of kids) {
       const after = Array.from(parent.childNodes).filter((n) => !isEphemeral(n))
       if (before.length !== after.length || before.some((n, i) => n !== after[i])) {
@@ -180,20 +187,18 @@ export const init = (canvas) => {
     // them back into it, after undo pulled them out.
     for (const el of born) {
       const after = Array.from(el.childNodes).filter((n) => !isEphemeral(n))
-      if (after.some((n) => attrs.has(/** @type {Element} */ (n)) || text.has(/** @type {CharacterData} */ (n)))) {
+      if (after.some((n) => attrs.has((n as Element)) || text.has((n as CharacterData)))) {
         changes.push({ parent: el, before: [], after })
       }
     }
     if (changes.length) batch.addSubCommand(new ChildListCommand(changes, s.label))
 
     // --- attributes ------------------------------------------------------
-    /** @type {Array<[Element, Object<string, ?string>]>} */
-    const changed = []
+    const changed: Array<[Element, { [s: string]: string | null }]> = []
     for (const [elem, was] of attrs) {
       if (isEphemeral(elem)) continue
       const now = readAttrs(elem)
-      /** @type {Object<string, ?string>} */
-      const old = {}
+      const old: { [s: string]: string | null } = {}
       for (const name of new Set([...was.keys(), ...now.keys()])) {
         if ((was.get(name) ?? null) !== (now.get(name) ?? null)) old[name] = was.get(name) ?? null
       }
@@ -221,26 +226,26 @@ export const init = (canvas) => {
   }
 
   /** @param {Element[]} elems */
-  const restoreSelection = (elems) => {
+  const restoreSelection = (elems: Element[]) => {
     const live = elems.filter((el) => el.isConnected)
     if (live.length) svgCanvas.selectOnly(live)
     else svgCanvas.clearSelection()
   }
 
   const end = () => {
-    /** @type {Session} */ (session).closed = true
+    (session as Session).closed = true
     session = null
   }
 
   /**
    * End the open transaction on its owner's behalf (undo/redo, drawing replaced) and tell it.
-   * @param {boolean} revert Put the drawing back (undo/redo) or leave it (it is being replaced).
+   * @param revert Put the drawing back (undo/redo) or leave it (it is being replaced).
    */
-  const abort = (revert) => {
-    const { onAbort } = /** @type {Session} */ (session)
+  const abort = (revert: boolean) => {
+    const { onAbort } = session as Session
     try {
       if (revert) {
-        /** @type {Session} */ (session).depth = 0
+        (session as Session).depth = 0
         doCancel()
       } else {
         end()
@@ -251,7 +256,7 @@ export const init = (canvas) => {
   }
 
   const doCommit = () => {
-    const s = /** @type {Session} */ (session)
+    const s = session as Session
     let batch = null
     try {
       batch = buildBatch()
@@ -265,7 +270,7 @@ export const init = (canvas) => {
   }
 
   const doCancel = () => {
-    const s = /** @type {Session} */ (session)
+    const s = session as Session
     let batch = null
     try {
       batch = buildBatch(true)
@@ -281,11 +286,9 @@ export const init = (canvas) => {
   }
 
   /**
-   * @param {string} label Undo-menu text of the resulting step.
-   * @param {TransactionOptions} [options]
-   * @returns {Transaction}
+   * @param label Undo-menu text of the resulting step.
    */
-  const beginTransaction = (label, options = {}) => {
+  const beginTransaction = (label: string, options: TransactionOptions = {}): Transaction => {
     if (!session) {
       session = {
         label,
@@ -323,11 +326,8 @@ export const init = (canvas) => {
    * Run `fn` as one undo step. If it throws the drawing is rolled back and the
    * error rethrown. `fn` must be synchronous.
    * @template T
-   * @param {string} label
-   * @param {() => T} fn
-   * @returns {T}
    */
-  const transact = (label, fn) => {
+  const transact = <T>(label: string, fn: () => T): T => {
     const tx = beginTransaction(label)
     let result
     try {
@@ -336,7 +336,7 @@ export const init = (canvas) => {
       tx.cancel()
       throw err
     }
-    if (result && typeof (/** @type {any} */ (result)).then === 'function') {
+    if (result && typeof (result as { then?: unknown }).then === 'function') {
       warn(`transact("${label}") callback returned a promise; only its synchronous part is recorded`, undefined, LOG)
     }
     tx.commit()
@@ -353,12 +353,12 @@ export const init = (canvas) => {
     rawAddCommand(cmd)
   }
 
-  for (const method of /** @type {const} */ (['undo', 'redo'])) {
+  for (const method of (['undo', 'redo'] as const)) {
     const raw = undoMgr[method].bind(undoMgr)
     undoMgr[method] = () => {
       // A registered tool's gesture owns the session: let it cancel itself so
       // its own state resets and a later mouseup does not "finish" a dead gesture.
-      /** @type {any} */ (svgCanvas).cancelToolGesture?.()
+      svgCanvas.cancelToolGesture?.()
       if (session) {
         try { abort(true) } catch (err) { error('failed to cancel transaction before undo/redo', err, LOG) }
       }
@@ -374,7 +374,9 @@ export const init = (canvas) => {
     rawReset()
   }
 
-  svgCanvas.beginTransaction = beginTransaction
-  svgCanvas.transact = transact
-  svgCanvas.inTransaction = () => session !== null
+  return {
+    beginTransaction,
+    transact,
+    inTransaction: () => session !== null
+  }
 }

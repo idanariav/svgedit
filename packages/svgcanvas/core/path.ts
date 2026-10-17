@@ -17,8 +17,8 @@ import {
 import type SvgCanvas from '../svgcanvas.ts'
 import type { XY } from './canvas-state.ts'
 import type { PathObject } from './path-types.ts'
-import { init as pathMethodInit } from './path-method.ts'
-import { init as pathActionsInit } from './path-actions.ts'
+import { createPathMethod } from './path-method.ts'
+import { createPathActions } from './path-actions.ts'
 
 const segData: Record<number, string[]> = {
   2: ['x', 'y'], // PATHSEG_MOVETO_ABS
@@ -32,13 +32,30 @@ const segData: Record<number, string[]> = {
   18: ['x', 'y'] // PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS
 }
 
+/** The members `path.ts` gives its canvas. */
+export interface PathStateApi {
+  removePath_(id: string): void
+  getPath_(elem: SVGPathElement): PathObject
+  setLinkControlPoints(lcp: boolean): void
+  smoothControlPoints(ct1: XY, ct2: XY, pt: XY): XY[] | undefined
+  reorientGrads(elem: Element, m: DOMMatrix): void
+  recalcRotatedPath(): void
+  clearData(): void
+  getSegData(): Record<number, string[]>
+  /** The path being edited (`null` outside path editing). */
+  getPathObj(): PathObject | null
+  setPathObj(obj: PathObject | null): void
+  getPathFuncs(): (string | number)[]
+  getLinkControlPts(): boolean
+}
+
 /**
  * Reentrant init: all path state (current path, pathData, pathFuncs,
  * linkControlPts) and the helpers/classes below are created per
  * SvgCanvas instance, closed over `svgCanvas`, so several editors coexist in one
  * realm. The init body (attachments + sub-inits) is at the end of this closure.
  */
-export const init = (canvas: SvgCanvas): void => {
+export const createPathState = (canvas: SvgCanvas): PathStateApi => {
   const svgCanvas = canvas
   let pathFuncs: Array<string | number> = []
 
@@ -285,19 +302,6 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  // ── init body (relocated here so it runs after the declarations above) ──
-  svgCanvas.removePath_ = removePath_
-  svgCanvas.getPath_ = getPath_
-  svgCanvas.setLinkControlPoints = setLinkControlPoints
-  svgCanvas.smoothControlPoints = smoothControlPoints
-  svgCanvas.reorientGrads = reorientGrads
-  svgCanvas.recalcRotatedPath = recalcRotatedPath
-  svgCanvas.clearData = clearData
-  svgCanvas.getSegData = () => { return segData }
-  svgCanvas.getPathObj = () => { return path }
-  svgCanvas.setPathObj = (obj: PathObject | null) => { path = obj }
-  svgCanvas.getPathFuncs = () => { return pathFuncs }
-  svgCanvas.getLinkControlPts = () => { return linkControlPts }
   pathFuncs = [0, 'ClosePath']
   const pathFuncsStrs = [
     'Moveto', 'Lineto', 'CurvetoCubic', 'CurvetoQuadratic', 'Arc',
@@ -308,6 +312,22 @@ export const init = (canvas: SvgCanvas): void => {
     pathFuncs.push(s + 'Rel')
   })
   // Sub-modules attach their own per-instance helpers/classes to this canvas.
-  pathActionsInit(svgCanvas)
-  pathMethodInit(svgCanvas)
+  svgCanvas.pathActions = createPathActions(svgCanvas)
+  Object.assign(svgCanvas, createPathMethod(svgCanvas))
+
+  return {
+    // ── init body (relocated here so it runs after the declarations above) ──
+    removePath_,
+    getPath_,
+    setLinkControlPoints,
+    smoothControlPoints,
+    reorientGrads,
+    recalcRotatedPath,
+    clearData,
+    getSegData: () => { return segData },
+    getPathObj: () => { return path },
+    setPathObj: (obj: PathObject | null) => { path = obj },
+    getPathFuncs: () => { return pathFuncs },
+    getLinkControlPts: () => { return linkControlPts }
+  }
 }

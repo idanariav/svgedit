@@ -5,6 +5,8 @@
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
+import type SvgCanvas from '../svgcanvas.ts'
+import type { HistoryCommand } from '../svgcanvas.ts'
 import * as hstry from './history.js'
 import { BBOX_AFFECTING_ATTRS } from './history.js'
 import {
@@ -23,12 +25,26 @@ const {
   UndoManager, HistoryEventTypes
 } = hstry
 
-/**
-* @function module:undo.init
-* @param {import('../svgcanvas.ts').default} canvas
-* @returns {void}
-*/
-export const init = (canvas) => {
+/** The fields the concrete commands carry that the event handler reads, by `cmd.type()`. */
+interface CommandFields {
+  elem: Element
+  newValues: Record<string, string | null>
+  oldValues: Record<string, string | null>
+  newParent: Node | null
+  oldParent: Node | null
+  parent: Node | null
+  changes: Array<{ parent: Node }>
+  attachedElements: (apply: boolean) => Element[]
+}
+
+/** The members `undo.ts` gives its canvas. */
+export interface UndoApi {
+  changeSelectedAttributeNoUndo(attr: string, val: string | number, elems?: Element[]): void
+  // Attribute manipulation
+  changeSelectedAttribute(attr: string, val: string | number, elems?: Element[]): void
+}
+
+export const createUndo = (canvas: SvgCanvas): UndoApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   // Batch coalescing (see BatchCommand.runBatched): while a batch is being
@@ -39,7 +55,7 @@ export const init = (canvas) => {
   const batchChanged = new Set()
   // Area texts whose attributes an undo/redo changed. Their rows are settled once the whole batch has been
   // (un)applied: in between, a batch can hold the new attributes next to the old rows (or the reverse).
-  const batchAreaTexts = new Set()
+  const batchAreaTexts = new Set<Element>()
   const settleAreaTexts = () => {
     for (const el of batchAreaTexts) settleAreaText(el)
     batchAreaTexts.clear()
@@ -59,12 +75,11 @@ export const init = (canvas) => {
         if (elems.length) svgCanvas.call('changed', elems)
       },
       /**
-       * @param {string} eventType One of the HistoryEvent types
-       * @param {module:history.HistoryCommand} cmd Fulfills the HistoryCommand interface
+       * @param eventType One of the HistoryEvent types
+       * @param cmd Fulfills the HistoryCommand interface
        * @fires module:undo.SvgCanvas#event:changed
-       * @returns {void}
        */
-      handleHistoryEvent (eventType, cmd) {
+      handleHistoryEvent (eventType: string, cmd: HistoryCommand & CommandFields): void {
         const EventTypes = HistoryEventTypes
         // TODO: handle setBlurOffsets.
         if (eventType === EventTypes.BEFORE_UNAPPLY || eventType === EventTypes.BEFORE_APPLY) {
@@ -115,7 +130,7 @@ export const init = (canvas) => {
             direction: isApply ? 'redo' : 'undo',
             cmdType,
             text: cmd.getText?.(),
-            elemIds: elems.map((/** @type {Element|null} */ el) => el?.id ?? null),
+            elemIds: elems.map((el: Element | null) => el?.id ?? null),
             mode: svgCanvas.getCurrentMode(),
             refreshedInPlace
           })
@@ -132,7 +147,7 @@ export const init = (canvas) => {
           } else if (cmdType === 'ChildListCommand') {
             // Same side effects as Insert/Remove/Move, for a transaction's
             // before/after child lists.
-            if (cmd.changes.some((/** @type {{parent: Node}} */ c) => c.parent === svgCanvas.getSvgContent())) {
+            if (cmd.changes.some((c) => c.parent === svgCanvas.getSvgContent())) {
               svgCanvas.identifyLayers()
             }
             for (const el of cmd.attachedElements(isApply)) {
@@ -156,7 +171,7 @@ export const init = (canvas) => {
           } else if (cmdType === 'ChangeElementCommand') {
           // if we are changing layer names, re-identify all layers
             if (cmd.elem.tagName === 'title' &&
-            cmd.elem.parentNode.parentNode === svgCanvas.getSvgContent()
+            cmd.elem.parentNode?.parentNode === svgCanvas.getSvgContent()
             ) {
               svgCanvas.identifyLayers()
             }
@@ -166,7 +181,7 @@ export const init = (canvas) => {
             svgCanvas.restoreRefElements(cmd.elem)
             // If stdDeviation was changed, update the blur.
             if (values.stdDeviation) {
-              svgCanvas.setBlurOffsets(cmd.elem.parentNode, values.stdDeviation)
+              svgCanvas.setBlurOffsets(cmd.elem.parentNode as Element, Number(values.stdDeviation))
             }
             if (isAreaText(cmd.elem)) {
               // The rows of an area text are derived from its attributes (box, font,
@@ -179,9 +194,8 @@ export const init = (canvas) => {
               // Only an x/y change moves the tspans. A command that touched
               // neither (fill, font-size, …) used to compute NaN here and
               // write x="NaN" y="NaN" into every tspan on undo/redo.
-              /** @param {string} k */
-              const delta = (k) => {
-                const d = (k in cmd.newValues && k in cmd.oldValues) ? cmd.newValues[k] - cmd.oldValues[k] : 0
+              const delta = (k: string) => {
+                const d = (k in cmd.newValues && k in cmd.oldValues) ? Number(cmd.newValues[k]) - Number(cmd.oldValues[k]) : 0
                 return Number.isFinite(d) ? d : 0
               }
               const [dx, dy] = [delta('x'), delta('y')]
@@ -197,8 +211,8 @@ export const init = (canvas) => {
                 x = unapply ? x - dx : x + dx
                 y = unapply ? y - dy : y + dy
 
-                tspans[i].setAttribute('x', x)
-                tspans[i].setAttribute('y', y)
+                tspans[i].setAttribute('x', String(x))
+                tspans[i].setAttribute('y', String(y))
               }
             }
           }
@@ -211,15 +225,14 @@ export const init = (canvas) => {
 * Hack for Firefox bugs where text element features aren't updated or get
 * messed up. See issue 136 and issue 137.
 * This function clones the element and re-selects it.
-* @function module:svgcanvas~ffClone
 * @todo Test for this bug on load and add it to "support" object instead of
 * browser sniffing
-* @param {Element} elem - The (text) DOM element to clone
-* @returns {Element} Cloned element
+* @param elem The (text) DOM element to clone
+* @returns Cloned element
 */
-  const ffClone = (elem) => {
+  const ffClone = (elem: Element): Element => {
     if (!isGecko()) { return elem }
-    const clone = /** @type {Element} */ (elem.cloneNode(true))
+    const clone = elem.cloneNode(true) as Element
     elem.before(clone)
     elem.remove()
     svgCanvas.selectorManager.releaseSelector(elem)
@@ -231,12 +244,11 @@ export const init = (canvas) => {
   /**
 * This function makes the changes to the elements. It does not add the change
 * to the history stack.
-* @param {string} attr - Attribute name
-* @param {string|number} newValue - String or number with the new attribute value
-* @param {Element[]} elems - The DOM elements to apply the change to
-* @returns {void}
+* @param attr Attribute name
+* @param newValue String or number with the new attribute value
+* @param elems The DOM elements to apply the change to
 */
-  const changeSelectedAttributeNoUndoMethod = (attr, newValue, elems) => {
+  const changeSelectedAttributeNoUndoMethod = (attr: string, newValue: string | number, elems: Element[]): void => {
     if (attr === 'id') {
     // if the user is changing the id, then de-select the element first
     // change the ID, then re-select it with the new ID
@@ -342,7 +354,7 @@ export const init = (canvas) => {
         // BBOX_AFFECTING_ATTRS is imported from history.js to keep the list in one place.
         const angle = getRotationAngle(elem)
         if (angle !== 0 && attr !== 'transform' && BBOX_AFFECTING_ATTRS.has(attr)) {
-          const tlist = /** @type {SVGTransformList} */ (getTransformList(elem))
+          const tlist = getTransformList(elem) as SVGTransformList
           let n = tlist.numberOfItems
           while (n--) {
             const xform = tlist.getItem(n)
@@ -383,13 +395,11 @@ export const init = (canvas) => {
 * If you want to change all `selectedElements`, ignore the `elems` argument.
 * If you want to change only a subset of `selectedElements`, then send the
 * subset to this function in the `elems` argument.
-* @function module:svgcanvas.SvgCanvas#changeSelectedAttribute
-* @param {string} attr - String with the attribute name
-* @param {string|number} val - String or number with the new attribute value
-* @param {Element[]} elems - The DOM elements to apply the change to
-* @returns {void}
+* @param attr String with the attribute name
+* @param val String or number with the new attribute value
+* @param elems The DOM elements to apply the change to
 */
-  const changeSelectedAttributeMethod = (attr, val, elems) => {
+  const changeSelectedAttributeMethod = (attr: string, val: string | number, elems: Element[]): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     elems = elems || selectedElements
     svgCanvas.undoMgr.beginUndoableChange(attr, elems)
@@ -404,13 +414,16 @@ export const init = (canvas) => {
   }
 
   svgCanvas.undoMgr = getUndoManager()
-  svgCanvas.undoMgr.onPush = (/** @type {any} */ cmd) => {
+  svgCanvas.undoMgr.onPush = (cmd: HistoryCommand) => {
     svgCanvas.logDebugEvent?.('history-push', {
       text: cmd.getText?.(),
       type: cmd.type?.() ?? cmd.constructor?.name,
       undoSize: svgCanvas.undoMgr.getUndoStackSize()
     })
   }
-  svgCanvas.changeSelectedAttributeNoUndo = changeSelectedAttributeNoUndoMethod
-  svgCanvas.changeSelectedAttribute = changeSelectedAttributeMethod
+
+  return {
+    changeSelectedAttributeNoUndo: changeSelectedAttributeNoUndoMethod,
+    changeSelectedAttribute: changeSelectedAttributeMethod
+  }
 }

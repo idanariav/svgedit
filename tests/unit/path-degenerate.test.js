@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { init as pathInit } from '../../packages/svgcanvas/core/path.ts'
+import { createPathState as pathInit } from '../../packages/svgcanvas/core/path.ts'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { attachUnits } from './unitsMock.js'
 
@@ -19,7 +19,7 @@ const makeBareCanvas = () => {
     addPtsToSelection () {}
   }
   attachUnits(svgCanvas)
-  pathInit(svgCanvas)
+  Object.assign(svgCanvas, pathInit(svgCanvas))
   return { svgCanvas, svg }
 }
 

@@ -29,7 +29,7 @@ describe('draw context', () => {
   }
 
   beforeEach(() => {
-    draw.init(canvas)
+    Object.assign(canvas, draw.createDrawContext(canvas))
     canvas.leaveContext()
 
     currentGroup = null

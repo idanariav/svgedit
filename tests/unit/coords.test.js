@@ -52,7 +52,7 @@ describe('coords', function () {
         getDataStorage () { return mockDataStorage }
       }
     attachUnits(coordsCanvas)
-    domUtils.init(coordsCanvas)
+    Object.assign(coordsCanvas, domUtils.createDomUtils(coordsCanvas))
     Object.assign(coordsCanvas, bboxUtils.createBBoxUtils(coordsCanvas))
     Object.assign(coordsCanvas, coords.createCoords(coordsCanvas))
   })

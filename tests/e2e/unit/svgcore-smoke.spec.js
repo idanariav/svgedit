@@ -55,7 +55,7 @@ test.describe('SVG core smoke', () => {
       svg.append(path)
       // convertPath is attached to canvas.pathActions by path.js's init.
       const canvas = { units: u }
-      pathModule.init(canvas)
+      Object.assign(canvas, pathModule.createPathState(canvas))
       const dRel = canvas.pathActions.convertPath(path, true)
       path.setAttribute('d', dRel)
       return path.getAttribute('d')

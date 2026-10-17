@@ -31,7 +31,23 @@ const {
   BatchCommand
 } = history
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `svg-exec.ts` gives its canvas. */
+export interface SvgExecApi {
+  setSvgString(xmlString: string, preventUndo?: boolean): boolean
+  importSvgString(xmlString: string, preserveDimension?: boolean): Element | null
+  // Content
+  /** Insert raw SVG child markup into the current layer/group as one undoable
+   *  step (selects it, fires `changed`). Returns the new elements, or null if
+   *  the markup couldn't be parsed. */
+  insertSvgFragment(xmlFragment: string): Element[] | null
+  /** Serialise the content to an SVG string (without `getSvgString` wrapping). */
+  svgCanvasToString(): string
+  svgToString(elem: Element, indent: number): string
+  embedImage(src: string): Promise<string | false>
+  rasterExport(imgType?: string, quality?: number, windowName?: string, opts?: RasterExportOptions): Promise<RasterExportResult>
+}
+
+export const createSvgExec = (canvas: SvgCanvas): SvgExecApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const { convertUnit, shortFloat, convertToNum } = getUnits(canvas)
 
@@ -1185,11 +1201,13 @@ export const init = (canvas: SvgCanvas): void => {
     })
   }
 
-  svgCanvas.setSvgString = setSvgString
-  svgCanvas.importSvgString = importSvgString
-  svgCanvas.insertSvgFragment = insertSvgFragment
-  svgCanvas.svgCanvasToString = svgCanvasToString // Main function to set up the SVG content for output.
-  svgCanvas.svgToString = svgToString // Sub function ran on each SVG element to convert it to a string as desired.
-  svgCanvas.embedImage = embedImage // Converts a given image file to a data URL when possibl
-  svgCanvas.rasterExport = rasterExport // Generates a PNG (or JPG, BMP, WEBP) Data URL based on the current image
+  return {
+    setSvgString,
+    importSvgString,
+    insertSvgFragment,
+    svgCanvasToString, // Main function to set up the SVG content for output.
+    svgToString, // Sub function ran on each SVG element to convert it to a string as desired.
+    embedImage, // Converts a given image file to a data URL when possibl
+    rasterExport // Generates a PNG (or JPG, BMP, WEBP) Data URL based on the current image
+  }
 }

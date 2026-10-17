@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { init as textAttrsInit } from '../../packages/svgcanvas/core/text-attrs.ts'
+import { createTextAttrs as textAttrsInit } from '../../packages/svgcanvas/core/text-attrs.ts'
 import { setMultilineText, getTextWithNewlines } from '../../packages/svgcanvas/core/text-rows.ts'
 import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
@@ -47,7 +47,7 @@ describe('area text attributes', () => {
       changeSelectedAttributeNoUndo: (attr, value, elems) => elems.forEach((el) => el.setAttribute(attr, value)),
       transact: (label, fn) => { history.push(label); return fn() }
     }
-    textAttrsInit(canvas)
+    Object.assign(canvas, textAttrsInit(canvas))
   })
 
   afterEach(() => canvas.destroyAbort.abort())
@@ -134,7 +134,7 @@ describe('area text attributes', () => {
     try {
       canvas.destroyAbort.abort()
       canvas.destroyAbort = new AbortController()
-      textAttrsInit(canvas)
+      Object.assign(canvas, textAttrsInit(canvas))
       const t = makeArea({ 'se:wrap-width': CHAR * 11 + 1 })
       setMultilineText(t, 'aaa bbb ccc')
       expect(rows(t)).toEqual(['aaa bbb ccc'])

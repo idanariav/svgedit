@@ -7,7 +7,7 @@
 
 import Paint from './paint.ts'
 import { NS } from './namespaces.ts'
-import { init as textAttrsInit } from './text-attrs.ts'
+import { createTextAttrs } from './text-attrs.ts'
 import {
   walkTree, getHref, setHref
 } from './dom-utils.ts'
@@ -16,16 +16,45 @@ import { getParents } from '../common/util.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { BatchCommand as BatchCommandType } from './history.js'
+import type { Resolution } from '../svgcanvas.ts'
+import type { BBox } from '../svgcanvas.ts'
 
 /** A bounding box to zoom to, optionally with the zoom/factor to use when the box is empty. */
 type ZoomBox = BBoxObject & { zoom?: number, factor?: number }
 type ZoomTarget = 'selection' | 'canvas' | 'content' | 'layer' | ZoomBox
 interface ZoomAndBBox { zoom: number, bbox: ZoomBox }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `elem-get-set.ts` gives its canvas. */
+export interface ElemGetSetApi {
+  setImageURL(val: string): void
+  setLinkURL(val: string): void
+  setRectRadius(val: number): void
+  makeHyperlink(url: string): void
+  removeHyperlink(): void
+  setSegType(newType: number): void
+  setStrokeWidth(val: number): void
+  getResolution(): Resolution
+  // Attributes / metadata
+  getTitle(elem?: Element): string | undefined
+  setGroupTitle(val: string): void
+  setStrokeAttr(attr: string, val: string | number): void
+  setBackground(color: string, url?: string, gradientElem?: Element): void
+  setDocumentTitle(newTitle: string): void
+  getEditorNS(add?: boolean): string
+  setResolution(width: number | string, height: number | string): boolean
+  setBBoxZoom(val: 'selection' | 'canvas' | 'content' | 'layer' | object, editorW: number, editorH: number): { zoom: number, bbox: BBox } | void
+  setCurrentZoom(zoomLevel: number): void
+  setColor(type: 'fill' | 'stroke' | string, val: string, preventUndo?: boolean): void
+  setGradient(type: 'fill' | 'stroke'): void
+  setPaint(type: 'fill' | 'stroke' | string, paint: unknown): void
+  setCircleArc(arcDegrees: number): void
+  setCircleArcAttr(attr: string, val: number): void
+}
+
+export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
   const svgCanvas = canvas // per-instance; methods below are closed over it
   const { convertToNum } = getUnits(canvas)
-  textAttrsInit(canvas)
+  Object.assign(canvas, createTextAttrs(canvas))
   // The method attachments are at the end of init (after the function
   // declarations) so each instance binds its own closures.
 
@@ -1014,26 +1043,28 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.call('changed', [selected])
   }
 
-  svgCanvas.setImageURL = setImageURLMethod // Sets the new image URL for the selected image element
-  svgCanvas.setLinkURL = setLinkURLMethod // Sets the new link URL for the selected anchor element.
-  svgCanvas.setRectRadius = setRectRadiusMethod // Sets the `rx` and `ry` values to the selected `rect` element
-  svgCanvas.makeHyperlink = makeHyperlinkMethod // Wraps the selected element(s) in an anchor element or converts group to one.
-  svgCanvas.removeHyperlink = removeHyperlinkMethod
-  svgCanvas.setSegType = setSegTypeMethod // Sets the new segment type to the selected segment(s).
-  svgCanvas.setStrokeWidth = setStrokeWidthMethod // Sets the stroke width for the current selected elements.
-  svgCanvas.getResolution = getResolutionMethod // The current dimensions and zoom level in an object
-  svgCanvas.getTitle = getTitleMethod // the current group/SVG's title contents or `undefined` if no element
-  svgCanvas.setGroupTitle = setGroupTitleMethod // Sets the group/SVG's title content.
-  svgCanvas.setStrokeAttr = setStrokeAttrMethod // Set the given stroke-related attribute the given value for selected elements.
-  svgCanvas.setBackground = setBackgroundMethod // Set the background of the editor (NOT the actual document).
-  svgCanvas.setDocumentTitle = setDocumentTitleMethod // Adds/updates a title element for the document with the given name.
-  svgCanvas.getEditorNS = getEditorNSMethod // Returns the editor's namespace URL, optionally adding it to the root element.
-  svgCanvas.setResolution = setResolutionMethod // Changes the document's dimensions to the given size.
-  svgCanvas.setBBoxZoom = setBBoxZoomMethod // Sets the zoom level on the canvas-side based on the given value.
-  svgCanvas.setCurrentZoom = setZoomMethod // Sets the zoom to the given level.
-  svgCanvas.setColor = setColorMethod // Change the current stroke/fill color/gradien
-  svgCanvas.setGradient = setGradientMethod // Apply the current gradient to selected element's fill or stroke.
-  svgCanvas.setPaint = setPaintMethod // Set a color/gradient to a fill/stroke.
-  svgCanvas.setCircleArc = setCircleArcMethod // Convert a circle/ellipse to a pie-sector arc path (or back) with the given arc angle.
-  svgCanvas.setCircleArcAttr = setCircleArcAttrMethod // Update cx/cy/r/rx/ry on an arc path element.
+  return {
+    setImageURL: setImageURLMethod, // Sets the new image URL for the selected image element
+    setLinkURL: setLinkURLMethod, // Sets the new link URL for the selected anchor element.
+    setRectRadius: setRectRadiusMethod, // Sets the `rx` and `ry` values to the selected `rect` element
+    makeHyperlink: makeHyperlinkMethod, // Wraps the selected element(s) in an anchor element or converts group to one.
+    removeHyperlink: removeHyperlinkMethod,
+    setSegType: setSegTypeMethod, // Sets the new segment type to the selected segment(s).
+    setStrokeWidth: setStrokeWidthMethod, // Sets the stroke width for the current selected elements.
+    getResolution: getResolutionMethod, // The current dimensions and zoom level in an object
+    getTitle: getTitleMethod, // the current group/SVG's title contents or `undefined` if no element
+    setGroupTitle: setGroupTitleMethod, // Sets the group/SVG's title content.
+    setStrokeAttr: setStrokeAttrMethod, // Set the given stroke-related attribute the given value for selected elements.
+    setBackground: setBackgroundMethod, // Set the background of the editor (NOT the actual document).
+    setDocumentTitle: setDocumentTitleMethod, // Adds/updates a title element for the document with the given name.
+    getEditorNS: getEditorNSMethod, // Returns the editor's namespace URL, optionally adding it to the root element.
+    setResolution: setResolutionMethod, // Changes the document's dimensions to the given size.
+    setBBoxZoom: setBBoxZoomMethod, // Sets the zoom level on the canvas-side based on the given value.
+    setCurrentZoom: setZoomMethod, // Sets the zoom to the given level.
+    setColor: setColorMethod, // Change the current stroke/fill color/gradien
+    setGradient: setGradientMethod, // Apply the current gradient to selected element's fill or stroke.
+    setPaint: setPaintMethod, // Set a color/gradient to a fill/stroke.
+    setCircleArc: setCircleArcMethod, // Convert a circle/ellipse to a pie-sector arc path (or back) with the given arc angle.
+    setCircleArcAttr: setCircleArcAttrMethod // Update cx/cy/r/rx/ry on an arc path element.
+  }
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { init as pathMethodInit } from '../../packages/svgcanvas/core/path-method.ts'
-import { init as pathInit } from '../../packages/svgcanvas/core/path.ts'
+import { createPathMethod as pathMethodInit } from '../../packages/svgcanvas/core/path-method.ts'
+import { createPathState as pathInit } from '../../packages/svgcanvas/core/path.ts'
 import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
@@ -14,8 +14,7 @@ const makeCanvas = () => {
     getUIStrings () { return {} },
     getPathObj () { return null }
   }
-  pathMethodInit(svgCanvas)
-
+  Object.assign(svgCanvas, pathMethodInit(svgCanvas))
   const parentGroup = createSvgElement('g')
   parentGroup.id = 'selectorParentGroup'
   byId.set('selectorParentGroup', parentGroup)
@@ -74,7 +73,7 @@ describe('path-method grip tooltips', () => {
       getElement: (id) => document.getElementById(id),
       getPathObj: () => null
     }
-    pathMethodInit(svgCanvas)
+    Object.assign(svgCanvas, pathMethodInit(svgCanvas))
     return svgCanvas
   }
   const titleOf = (el) => [...el.children].filter((c) => c.localName === 'title').map((c) => c.textContent)
@@ -135,8 +134,7 @@ describe('path-method Path#addPtsToSelection', () => {
       addPtsToSelection () {} // canvas-level UI hook, irrelevant to sort order
     }
     attachUnits(svgCanvas)
-    pathInit(svgCanvas)
-
+    Object.assign(svgCanvas, pathInit(svgCanvas))
     const pathEl = createSvgElement('path')
     // M + 11 line segments => segment indexes 0..11, so index 10 exists and
     // sorts before index 2 under a lexicographic (string) comparator.
@@ -165,7 +163,7 @@ describe('path-method Path#smoothSelectedNodes', () => {
       endChanges () {}
     }
     attachUnits(svgCanvas)
-    pathInit(svgCanvas)
+    Object.assign(svgCanvas, pathInit(svgCanvas))
     return svgCanvas
   }
 
@@ -253,8 +251,7 @@ describe('path-method Path#endChanges', () => {
       logDebugEvent
     }
     attachUnits(svgCanvas)
-    pathInit(svgCanvas)
-
+    Object.assign(svgCanvas, pathInit(svgCanvas))
     const pathEl = createSvgElement('path')
     pathEl.setAttribute('id', 'path1')
     pathEl.setAttribute('d', 'M0,0 L10,10')
@@ -288,8 +285,7 @@ describe('path-method Path#endChanges', () => {
       // no logDebugEvent -- mirrors an older bundle or a bare test fixture
     }
     attachUnits(svgCanvas)
-    pathInit(svgCanvas)
-
+    Object.assign(svgCanvas, pathInit(svgCanvas))
     const pathEl = createSvgElement('path')
     pathEl.setAttribute('d', 'M0,0 L10,10')
     const path = new svgCanvas.PathClass(pathEl)

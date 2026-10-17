@@ -22,7 +22,25 @@ import type SvgCanvas from '../svgcanvas.ts'
 interface CharBox { x: number, y: number, height: number }
 interface Point { x: number, y: number }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The text-edit session (`core/text-actions.ts`): the caret, the selection and the hidden textarea behind them. */
+export interface TextActionsApi {
+  select(target: SVGTextElement, x: number, y: number): void
+  start(elem: SVGTextElement): void
+  mouseDown(evt: MouseEvent, mouseTarget: Element, startX: number, startY: number): void
+  mouseMove(mouseX: number, mouseY: number): void
+  mouseUp(evt: MouseEvent, mouseX: number, mouseY: number): void
+  /** Whether the key was handled (only area text is). */
+  verticalMove(dir: -1 | 1, extend?: boolean): boolean
+  lineEdge(edge: 'start' | 'end', extend?: boolean): boolean
+  setCursor(index?: number): void
+  toEditMode(x?: number, y?: number): void
+  toSelectMode(selectElem?: boolean | Element): void
+  setInputElem(elem: HTMLTextAreaElement): void
+  clear(): void
+  init(inputElem?: Element): void
+}
+
+export const createTextActions = (canvas: SvgCanvas): TextActionsApi => {
   const svgCanvas = canvas // per-instance; the TextActions class below closes over it
 
   /**
@@ -632,6 +650,5 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  // Per-instance TextActions, attached to this canvas.
-  svgCanvas.textActions = new TextActions()
+  return new TextActions()
 }

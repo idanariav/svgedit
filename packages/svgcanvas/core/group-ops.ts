@@ -32,7 +32,14 @@ const {
   ChangeElementCommand
 } = hstry
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `group-ops.ts` gives its canvas. */
+export interface GroupOpsApi {
+  groupSelectedElements(type?: string, urlArg?: string): void
+  pushGroupProperties(g: SVGAElement | SVGGElement, undoable: boolean): void | import('./history.js').BatchCommand
+  ungroupSelectedElement(): void
+}
+
+export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -645,7 +652,9 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  svgCanvas.groupSelectedElements = groupSelectedElements // Wraps all the selected elements in a group (`g`) element.
-  svgCanvas.pushGroupProperties = pushGroupProperty // Pushes all appropriate parent group properties down to its children
-  svgCanvas.ungroupSelectedElement = ungroupSelectedElement // Unwraps all the elements in a selected group (`g`) element
+  return {
+    groupSelectedElements, // Wraps all the selected elements in a group (`g`) element.
+    pushGroupProperties: pushGroupProperty, // Pushes all appropriate parent group properties down to its children
+    ungroupSelectedElement // Unwraps all the elements in a selected group (`g`) element
+  }
 }

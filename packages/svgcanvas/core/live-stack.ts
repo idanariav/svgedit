@@ -217,11 +217,18 @@ export const rebuildAfterRemap = (elem: Element, canvas?: object): void => {
   if (plan) commitPlan(elem, plan)
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `live-stack.ts` gives its canvas. */
+export interface LiveStackApi {
+  /** Live stack (`core/live-stack.js`): null when the element is not stacked, else whether its stack is still current (stale stacks are dropped). */
+  reconcileLiveStack(elem: Element): boolean | null
+  isLiveStacked(elem: Element): boolean
+}
+
+export const createLiveStack = (canvas: SvgCanvas): LiveStackApi => {
   registerElementCheck('se-stack', stackProblems)
-  Object.assign(canvas, {
+  return {
     /** @see module:live-stack.reconcileStack */
     reconcileLiveStack: (elem: Element) => reconcileStack(elem, canvas),
     isLiveStacked: isStacked
-  })
+  }
 }

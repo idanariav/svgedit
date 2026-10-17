@@ -2,8 +2,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
-import { init as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.ts'
-import * as undo from '../../packages/svgcanvas/core/undo.js'
+import { createElemGetSet as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.ts'
+import * as undo from '../../packages/svgcanvas/core/undo.ts'
 import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => {
@@ -64,7 +64,7 @@ describe('elem-get-set', () => {
     svgContent.setAttribute('width', '100')
     svgContent.setAttribute('height', '100')
     attachUnits(canvas)
-    initElemGetSet(canvas)
+    Object.assign(canvas, initElemGetSet(canvas))
   })
 
   afterEach(() => {
@@ -227,8 +227,7 @@ describe('elem-get-set', () => {
       restoreRefElements () {},
       call () {}
     }
-    undo.init(localCanvas)
-
+    Object.assign(localCanvas, undo.createUndo(localCanvas))
     svg.setAttribute('width', '200')
     svg.setAttribute('height', '150')
     localCanvas.contentW = 200
@@ -306,9 +305,8 @@ describe('elem-get-set', () => {
       getSvgContent () { return svgContent }
     }
     attachUnits(localCanvas)
-    undo.init(localCanvas)
-    initElemGetSet(localCanvas)
-
+    Object.assign(localCanvas, undo.createUndo(localCanvas))
+    Object.assign(localCanvas, initElemGetSet(localCanvas))
     localCanvas.setColor('fill', '#ff0000')
 
     expect(rect.getAttribute('fill')).toBe('#ff0000')

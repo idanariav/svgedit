@@ -127,9 +127,9 @@
 | `text-wrap.ts` | Greedy line breaking for area text |
 | `tool-registry.ts` | Tool contract: `svgCanvas.registerTool({ id, pointerDown, pointerMove, pointerUp, … })` |
 | `touch.ts` | Http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/ |
-| `transaction.js` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
+| `transaction.ts` | Undo transactions: `begin → (mutate freely / preview) → commit \| cancel` |
 | `transform-each.ts` | Transform Each: scale, move, rotate and reflect every selected object about **its own** reference point (one of nine points of its own bounding box), optionally with a random amount per object and optionally on copies |
-| `undo.js` | Tools for undo |
+| `undo.ts` | Tools for undo |
 | `units.ts` | Tools for working with units |
 | `warp.ts` | Warp live effect: 15 envelope styles plus horizontal/vertical perspective-like distortion |
 | `width-outline.ts` | Variable-width strokes: the filled outline of a path stroked with a width profile |

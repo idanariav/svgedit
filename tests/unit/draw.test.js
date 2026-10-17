@@ -37,7 +37,7 @@ describe('draw.Drawing', function () {
     return currentDrawing_
   }
   const setCurrentGroup = () => { /* empty fn */ }
-  draw.init(
+  draw.createDrawContext(
     /**
      * @implements {module:draw.DrawCanvasInit}
      */

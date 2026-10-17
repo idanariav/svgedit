@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as history from '../../packages/svgcanvas/core/history.js'
-import { init as initUndo } from '../../packages/svgcanvas/core/undo.js'
+import { createUndo as initUndo } from '../../packages/svgcanvas/core/undo.ts'
 
 const createSvgElement = (name) => document.createElementNS(NS.SVG, name)
 
@@ -21,7 +21,7 @@ const makeCanvas = ({ mode, trackedPath, logDebugEvent }) => {
       clear () { clearCalls.push(true) }
     }
   }
-  initUndo(canvas)
+  Object.assign(canvas, initUndo(canvas))
   canvas.clearCalls = clearCalls
   return canvas
 }
@@ -180,7 +180,7 @@ describe('changeSelectedAttributeNoUndo', () => {
         }
       }
     }
-    initUndo(canvas)
+    Object.assign(canvas, initUndo(canvas))
     canvas.resizeCalls = resizeCalls
     return canvas
   }

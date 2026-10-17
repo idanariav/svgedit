@@ -41,7 +41,7 @@ describe('file-map coverage', () => {
   it('lists files from the editor, the canvas and the scripts', () => {
     const files = listFiles()
     expect(files).toContain('src/editor/commands.js')
-    expect(files).toContain('packages/svgcanvas/core/transaction.js')
+    expect(files).toContain('packages/svgcanvas/core/transaction.ts')
     expect(files).toContain('scripts/file-map.mjs')
     expect(files.some(f => f.includes('node_modules') || f.includes('/dist/'))).toBe(false)
     // TypeScript sources are listed, declaration files are not

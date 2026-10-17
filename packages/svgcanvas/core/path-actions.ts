@@ -47,7 +47,35 @@ interface ConvertSeg {
   sweepFlag?: boolean
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The path-drawing and node-editing gestures of one canvas (`svgCanvas.pathActions`). */
+export interface PathActionsApi {
+  select: (target: Element) => void
+  mouseDown: (evt: MouseEvent, target: Element, startX: number, startY: number) => void
+  mouseMove: (mouseX: number, mouseY: number) => void
+  mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => { keep: boolean, element?: Element | null } | void
+  clear: (keepSelection?: boolean) => void
+  canDeleteNodes?: boolean
+  closed_subpath?: boolean
+  resetOrientation: (path: Element | null) => false | void
+  zoomChange: () => void
+  getNodePoint: () => { x: number, y: number }
+  linkControlPoints: (linkPoints: boolean) => void
+  clonePathNode: () => void
+  deletePathNode: () => void
+  averageSelectedNodes: (axis?: 'h' | 'v' | 'both') => void
+  addAnchorPoints: () => void
+  smoothPolylineIntoPath: (element: Element) => Element
+  setSegType: (type: number) => void
+  moveNode: (attr: string, newValue: number) => void
+  toEditMode: (element: Element) => void
+  toSelectMode: (elem?: Element | null) => void
+  fixEnd: (elem: Element) => void
+  convertPath: (pth: SVGPathElement, toRel: boolean) => string
+  opencloseSubPath: () => void
+  hover: (mouseX: number | null, mouseY: number | null, mode?: string) => void
+}
+
+export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
   const svgCanvas = canvas // per-instance; PathActions + convertPath below close over it
   const { shortFloat } = getUnits(canvas)
   /** Screen pixels within which a press counts as on an open path's end. */
@@ -1598,7 +1626,6 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  // Per-instance PathActions, attached to this canvas.
-  svgCanvas.pathActions = new PathActions()
+  return new PathActions()
 }
 // end pathActions

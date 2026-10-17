@@ -13,10 +13,10 @@ import type { SVGElementJSON, BBox } from './svgcanvas.js'
 import type { StyleProps, XY, ElementAndBBox, CanvasState } from './core/canvas-state.ts'
 import type { BatchCommand, ChangeElementCommand } from './core/history.js'
 import type { BBoxObject } from './core/bbox-utils.ts'
-import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
+import type { SelectorClassApi } from './core/select.ts'
 import type { Drawing } from './core/draw.js'
 import type { Units } from './core/units.ts'
-import type { PathClassApi, SegmentClassApi, PathObject, PathSegment, PathElement } from './core/path-types.ts'
+import type { PathElement } from './core/path-types.ts'
 
 /** What `importSvgString` remembers per imported file, to reuse its `<symbol>`. */
 export interface ImportEntry { symbol: Element, xform: string }
@@ -168,64 +168,7 @@ export interface InternalMembers {
   svgdoc: Document
   transformListToTransform(tlist: SVGTransformList | null | undefined, min?: number, max?: number | null): SVGTransform
   units: Units
-  // --- `core/dom-utils.ts` ---
-  snapPointToGrid(x: number, y: number): XY
-  // --- `core/draw.js` ---
-  withContextUndimmed<T>(fn: () => T): T
-  // --- `core/elem-get-set.js` ---
-  setDocumentTitle(newTitle: string): void
-  setGradient(type: 'fill' | 'stroke'): void
-  // --- `core/group-ops.js` ---
-  pushGroupProperties(g: SVGAElement | SVGGElement, undoable: boolean): void | BatchCommand
-  // --- `core/layer-ops.ts` ---
-  getAllLayersMode(): boolean
-  getLayerComment(layerName: string): boolean
-  getLayerLocked(layerName: string): boolean
-  identifyLayers(): void
-  // --- `core/path-method.js` ---
-  addCtrlGrip(id: string | number): SVGCircleElement
-  addPointGrip(index: number, x?: number | undefined, y?: number | undefined): SVGRectElement
-  getCtrlLine(id: string | number): SVGLineElement
-  replacePathSeg(type: number, index: number, pts: number[], elem?: Element): void
-  // --- `core/path.ts` ---
-  clearData(): void
-  getLinkControlPts(): boolean
-  getPathFuncs(): (string | number)[]
-  getSegData(): Record<number, string[]>
-  recalcRotatedPath(): void
-  removePath_(id: string): void
-  reorientGrads(elem: Element, m: DOMMatrix): void
-  setLinkControlPoints(lcp: boolean): void
-  smoothControlPoints(ct1: XY, ct2: XY, pt: XY): XY[] | undefined
-  // --- `core/selection.js` ---
-  getIntersectionList(rect?: BBox): Element[] | null
-  groupSvgElem(elem: Element): void
-  prepareSvg(newDoc: XMLDocument): void
-  recalculateAllSelectedDimensions(): void
-  // --- `core/svg-exec.js` ---
-  svgToString(elem: Element, indent: number): string
-  // --- `core/text-attrs.js` ---
-  getText(): string
-  setFontColor(val: string): void
-  setMultilineText(elem: Element, value: string): void
-  // --- `core/tool-registry.ts` ---
-  activeToolSnaps(): boolean
-  cancelToolGesture(): void
-  toolHover(evt: MouseEvent): void
-  toolModeChanged(prev: string, next: string): void
-  toolPointerDown(evt: MouseEvent): boolean
-  toolPointerMove(evt: MouseEvent): boolean
-  toolPointerUp(evt: MouseEvent): boolean
-  // --- typed with their module (see the header) ---
-  PathClass: PathClassApi
-  SegmentClass: SegmentClassApi
-  SelectorManagerClass: new () => SelectorManagerApi
   getSelector(): SelectorClassApi
-  getSelectorManager(): SelectorManagerApi
-  getPath_(elem: SVGPathElement): PathObject
-  setPathObj(obj: PathObject | null): void
-  getGripPt(seg: PathSegment, altPt?: XY): XY
-  getPointFromGrip(pt: XY, pth: PathObject): XY
   /** The path being drawn, which still uses the legacy `pathSegList` API (`path-seg-shim`). */
   getDrawnPath(): PathElement | null
   setDrawnPath(dp: PathElement | null): PathElement | null

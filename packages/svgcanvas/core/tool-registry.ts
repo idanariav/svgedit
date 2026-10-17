@@ -164,7 +164,32 @@ export interface ToolDef {
   snap?: boolean
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `tool-registry.ts` gives its canvas. */
+export interface ToolRegistryApi {
+  /**
+   * Register a tool whose id is the mode name `setMode(id)` switches to (core/tool-registry.js).
+   * Events arrive in document units; each press-to-release gesture is one undo step.
+   */
+  registerTool(def: ToolDef): void
+  /** The options bar of the current tool (or tool `id`): empty when it has none. */
+  getToolOptions(id?: string): ToolOption[]
+  setToolOption(optionId: string, value: number | string | boolean, id?: string): boolean
+  unregisterTool(id: string): boolean
+  hasTool(id: string): boolean
+  /** Finish a newly created element like a drawn shape (opacity, events, select it unless locked). */
+  finishCreatedElement(el: Element, evt?: { altKey?: boolean }, opts?: { keepOpacity?: boolean }): void
+  toolPointerDown(evt: MouseEvent): boolean
+  toolPointerMove(evt: MouseEvent): boolean
+  toolPointerUp(evt: MouseEvent): boolean
+  toolHover(evt: MouseEvent): void
+  activeToolSnaps(): boolean
+  /** Offer a key to the active registered tool; true when it was handled (the caller should preventDefault). */
+  toolKeyDown(evt: KeyboardEvent): boolean
+  toolModeChanged(prev: string, next: string): void
+  cancelToolGesture(): void
+}
+
+export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const svgCanvas = canvas
 
   const tools = new Map<string, ToolDef>()
@@ -460,25 +485,27 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  svgCanvas.registerTool = registerTool
-  svgCanvas.getToolOptions = getToolOptions
-  svgCanvas.setToolOption = setToolOption
-  svgCanvas.unregisterTool = unregisterTool
-  svgCanvas.hasTool = (id: string) => tools.has(id)
-  svgCanvas.finishCreatedElement = finishCreated
-  // Called from event.js / setMode / the editor's key handler.
-  svgCanvas.toolPointerDown = toolPointerDown
-  svgCanvas.toolPointerMove = toolPointerMove
-  svgCanvas.toolPointerUp = toolPointerUp
-  svgCanvas.toolHover = toolHover
-  svgCanvas.activeToolSnaps = () => Boolean(tools.get(svgCanvas.getCurrentMode())?.snap)
-  svgCanvas.toolKeyDown = toolKeyDown
-  svgCanvas.toolModeChanged = toolModeChanged
-  svgCanvas.cancelToolGesture = cancelGesture
-
   // A release outside the window / an alt-tab mid-drag never delivers a mouseup:
   // roll the gesture back instead of leaving its transaction open (which would
   // silently swallow every other edit's undo step).
   const signal = svgCanvas.destroyAbort?.signal
   window.addEventListener('blur', cancelGesture, signal ? { signal } : undefined)
+
+  return {
+    registerTool,
+    getToolOptions,
+    setToolOption,
+    unregisterTool,
+    hasTool: (id: string) => tools.has(id),
+    finishCreatedElement: finishCreated,
+    // Called from event.js / setMode / the editor's key handler.
+    toolPointerDown,
+    toolPointerMove,
+    toolPointerUp,
+    toolHover,
+    activeToolSnaps: () => Boolean(tools.get(svgCanvas.getCurrentMode())?.snap),
+    toolKeyDown,
+    toolModeChanged,
+    cancelToolGesture: cancelGesture
+  }
 }

@@ -252,7 +252,24 @@ const artFor = (p: Pick<BrushParts, 'group' | 'spine' | 'src'>): ArtPath[] => {
   return brush.type === 'art' ? artAlongPath(d, art, brush.opts) : patternAlongPath(d, art, brush.opts)
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `art-brush-canvas.ts` gives its canvas. */
+export interface ArtBrushApi {
+  /** Art and pattern brushes (`core/art-brush-canvas.js`). */
+  getArtBrushLibrary(): Array<{ id: string, name: string, type: 'art' | 'pattern' }>
+  canMakeArtBrush(): boolean
+  makeArtBrush(type: 'art' | 'pattern', name?: string): string | null
+  deleteArtBrush(id: string): boolean
+  canApplyArtBrush(elem: Element | null): boolean
+  applyArtBrush(brushId: string): Element[]
+  getArtBrush(elem?: Element): { type: 'art' | 'pattern', opts: Record<string, unknown> } | null
+  setArtBrushOptions(changes: Record<string, unknown>): Element[]
+  expandArtBrush(): Element[]
+  releaseArtBrush(): Element[]
+  refreshArtBrush(elem: Element | null): boolean
+  getArtBrushGroup(elem: Element | null): Element | null
+}
+
+export const createArtBrush = (canvas: SvgCanvas): ArtBrushApi => {
   const svgCanvas = canvas
 
   registerAttrValidator(BRUSH_ATTR, (value) => (parseBrush(value) ? true : 'is not art(…) or pattern(…)'))
@@ -514,7 +531,7 @@ export const init = (canvas: SvgCanvas): void => {
     return paths
   }
 
-  Object.assign(svgCanvas, {
+  return {
     getArtBrushLibrary,
     canMakeArtBrush,
     makeArtBrush,
@@ -527,5 +544,5 @@ export const init = (canvas: SvgCanvas): void => {
     releaseArtBrush,
     refreshArtBrush,
     getArtBrushGroup: brushGroupOf
-  })
+  }
 }

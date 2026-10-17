@@ -40,7 +40,21 @@ interface MouseUpHookResult {
   started?: boolean
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `event.ts` gives its canvas. */
+export interface EventApi {
+  // Event handlers (core/event.js) and selection internals
+  mouseDownEvent(evt: Event): void
+  mouseMoveEvent(evt: Event): void
+  dblClickEvent(evt: Event): void
+  mouseUpEvent(evt: Event): void
+  mouseOutEvent(evt: Event): void
+  DOMMouseScrollEvent(evt: Event): void
+  // View
+  /** Zoom to `zoomlevel`, keeping the point under (clientX, clientY) fixed. */
+  zoomAtPoint(zoomlevel: number, clientX: number, clientY: number): void
+}
+
+export const createEvent = (canvas: SvgCanvas): EventApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -1125,11 +1139,13 @@ export const init = (canvas: SvgCanvas): void => {
     svgCanvas.call('zoomDone')
   }
 
-  svgCanvas.mouseDownEvent = mouseDownEvent
-  svgCanvas.mouseMoveEvent = mouseMoveEvent
-  svgCanvas.dblClickEvent = dblClickEvent
-  svgCanvas.mouseUpEvent = mouseUpEvent
-  svgCanvas.mouseOutEvent = mouseOutEvent
-  svgCanvas.DOMMouseScrollEvent = DOMMouseScrollEvent
-  svgCanvas.zoomAtPoint = zoomAtPoint
+  return {
+    mouseDownEvent,
+    mouseMoveEvent,
+    dblClickEvent,
+    mouseUpEvent,
+    mouseOutEvent,
+    DOMMouseScrollEvent,
+    zoomAtPoint
+  }
 }
