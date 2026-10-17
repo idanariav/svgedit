@@ -121,4 +121,48 @@ describe('model-first commands', () => {
     walk(shown)
     expect(ids).toEqual(order())
   })
+
+  describe('changeSelectedAttribute', () => {
+    it('sets a plain attribute on the selection as one step; undo and redo; the same nodes', () => {
+      canvas.selectOnly([els[0], els[1]], true)
+      canvas.changeSelectedAttribute('fill', '#00ff00')
+      expect(els[0].getAttribute('fill')).toBe('#00ff00')
+      expect(els[1].getAttribute('fill')).toBe('#00ff00')
+      expect(els[2].hasAttribute('fill')).toBe(false)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(1)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Change fill')
+      canvas.undoMgr.undo()
+      expect(els[0].hasAttribute('fill')).toBe(false)
+      expect(layer.querySelector('[id="a"]')).toBe(els[0])
+      canvas.undoMgr.redo()
+      expect(els[1].getAttribute('fill')).toBe('#00ff00')
+    })
+
+    it('normalises numbers, keeps zero and removes the attribute for an empty value', () => {
+      canvas.selectOnly([els[0]], true)
+      canvas.changeSelectedAttribute('stroke-width', '3.5px')
+      expect(els[0].getAttribute('stroke-width')).toBe('3.5')
+      canvas.changeSelectedAttribute('opacity', 0)
+      expect(els[0].getAttribute('opacity')).toBe('0')
+      canvas.changeSelectedAttribute('stroke-width', '')
+      expect(els[0].hasAttribute('stroke-width')).toBe(false)
+    })
+
+    it('records nothing when the value is the one it has', () => {
+      els[0].setAttribute('fill', '#f00')
+      canvas.undoMgr.resetUndoStack()
+      canvas.selectOnly([els[0]], true)
+      canvas.changeSelectedAttribute('fill', '#f00')
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(0)
+    })
+
+    it('leaves the attributes that need the DOM to the DOM path', () => {
+      canvas.selectOnly([els[0]], true)
+      expect(canvas.changeSelectedAttributeByModel('id', 'z', [els[0]])).toBe(false)
+      expect(canvas.changeSelectedAttributeByModel('#text', 'z', [els[0]])).toBe(false)
+      const path = canvas.addSVGElementsFromJson({ element: 'path', attr: { id: 'p', d: 'M0,0 L5,5' } })
+      expect(canvas.changeSelectedAttributeByModel('x', 20, [path])).toBe(false) // a path has no x: the DOM path moves it
+      expect(canvas.changeSelectedAttributeByModel('fill', '#000', [els[0]])).toBe(true)
+    })
+  })
 })

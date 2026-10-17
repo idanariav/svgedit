@@ -217,6 +217,8 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
   const changeSelectedAttributeMethod = (attr: string, val: string | number, elems: Element[]): void => {
     const selectedElements = svgCanvas.getSelectedElements()
     elems = elems || selectedElements
+    // A plain attribute is an edit of the model (core/model-commands.ts); what needs the DOM's help goes the old way below
+    if (svgCanvas.changeSelectedAttributeByModel(attr, val, elems)) return
     svgCanvas.undoMgr.beginUndoableChange(attr, elems)
 
     changeSelectedAttributeNoUndoMethod(attr, val, elems)

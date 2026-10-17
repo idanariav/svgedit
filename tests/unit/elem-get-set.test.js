@@ -4,6 +4,7 @@ import * as history from '../../packages/svgcanvas/core/history.js'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
 import { createElemGetSet as initElemGetSet } from '../../packages/svgcanvas/core/elem-get-set.ts'
 import * as undo from '../../packages/svgcanvas/core/undo.ts'
+import { createModelCommands } from '../../packages/svgcanvas/core/model-commands.ts'
 import { attachUnits } from './unitsMock.js'
 
 const createSvgElement = (name) => {
@@ -283,6 +284,7 @@ describe('elem-get-set', () => {
     }
     attachUnits(localCanvas)
     Object.assign(localCanvas, undo.createUndo(localCanvas))
+    Object.assign(localCanvas, createModelCommands(localCanvas))
     Object.assign(localCanvas, initElemGetSet(localCanvas))
     localCanvas.undoMgr.resetUndoStack() // the rect was made outside any command
     localCanvas.setColor('fill', '#ff0000')

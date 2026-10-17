@@ -9,7 +9,7 @@
  * @module model/edit
  * @license MIT
  */
-import { element, getAt } from './node.ts'
+import { element, getAt, setAttr, updateAt } from './node.ts'
 import type { ModelElement, ModelNode, NodePath } from './node.ts'
 
 const idOf = (n: ModelNode): string | undefined => (n.kind === 'element' ? n.attrs.find((a) => a.name === 'id')?.value : undefined)
@@ -145,4 +145,19 @@ export const removeIds = (root: ModelElement, ids: readonly string[]): ModelElem
     out = withChildren(out, path.slice(0, -1), (kids) => kids.filter((k) => k !== node))
   }
   return out
+}
+
+/**
+ * Set attributes on the element with this id: a string sets (keeping the attribute where it is, appending a new one), `null`
+ * removes. Returns `root` when the element is not there or already has these values.
+ */
+export const setAttrsById = (root: ModelElement, id: string, attrs: Readonly<Record<string, string | null>>): ModelElement => {
+  const path = pathOfId(root, id)
+  if (!path) return root
+  return updateAt(root, path, (n) => {
+    if (n.kind !== 'element') return n
+    let out: ModelElement = n
+    for (const [name, value] of Object.entries(attrs)) out = setAttr(out, name, value)
+    return out
+  })
 }

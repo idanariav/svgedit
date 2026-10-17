@@ -10,7 +10,10 @@
  * @license MIT
  */
 import { BatchCommand } from './history.js'
-import { moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds } from './model/edit.ts'
+import { moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
+import { getRotationAngle } from './dom-utils.ts'
+import { BBOX_AFFECTING_ATTRS } from './history.js'
+import { LAYOUT_ATTRS, isAreaText } from './text-rows.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 
 /** The members `model-commands.ts` gives its canvas. */
@@ -20,6 +23,12 @@ export interface ModelCommandsApi {
   moveUpDownSelected(dir: 'Up' | 'Down'): void
   switchSelectedZorder(): void
   deleteSelectedElements(): void
+  /**
+   * Set one attribute on these elements through the model, as one step. Returns false, having done nothing, for the attributes
+   * and situations that still go through the DOM (`undo.ts`): ids, text, hrefs, x / y of a group or path, node editing, a
+   * rotated element's box, an area text's layout.
+   */
+  changeSelectedAttributeByModel(attr: string, val: string | number, elems: Element[]): boolean
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -117,7 +126,43 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     svgCanvas.clearSelection()
   }
 
+  /** The value an attribute gets from `val`: a number-like string is normalised, an empty one removes the attribute (0 stays). */
+  const attributeValue = (val: string | number): string | null => {
+    if (val) return String(Number.isNaN(parseFloat(String(val))) ? val : parseFloat(String(val)))
+    if (typeof val === 'number') return String(val)
+    return null
+  }
+
+  const changeSelectedAttributeByModel = (attr: string, val: string | number, elems: Element[]): boolean => {
+    if (attr === 'id' || attr === '#text' || attr === '#href') return false
+    if (svgCanvas.getCurrentMode() === 'pathedit' || svgCanvas.getCurrentMode() === 'textedit') return false
+    const targets = elems.filter(Boolean)
+    if (!targets.length || targets.some((el) => !el.id)) return false
+    if ((attr === 'x' || attr === 'y') && targets.some((el) => ['g', 'polyline', 'path'].includes(el.tagName))) return false
+    if (LAYOUT_ATTRS.has(attr) && targets.some(isAreaText)) return false
+    if (attr !== 'transform' && BBOX_AFFECTING_ATTRS.has(attr) && targets.some((el) => getRotationAngle(el) !== 0)) return false
+    const value = attributeValue(val)
+    const changing = targets.filter((el) => (el.getAttribute(attr) ?? '') !== String(val))
+    if (!changing.length) return true
+    const set = Object.fromEntries(changing.map((el) => [el.id, value]))
+    svgCanvas.snapshotHistory.edit(`Change ${attr}`, (root) => {
+      let out = root
+      for (const [id, v] of Object.entries(set)) out = setAttrsById(out, id, { [attr]: v })
+      return out
+    })
+    // The selection boxes follow the new geometry (deferred, as the DOM path does)
+    const selected = svgCanvas.getSelectedElements()
+    for (const el of changing) {
+      if (!selected.includes(el)) continue
+      setTimeout(() => {
+        if (el.parentNode && svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
+      }, 0)
+    }
+    return true
+  }
+
   return {
+    changeSelectedAttributeByModel,
     moveToTopSelectedElement,
     moveToBottomSelectedElement,
     moveUpDownSelected,
