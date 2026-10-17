@@ -464,7 +464,7 @@ export const init = (canvas: SvgCanvas): void => {
         // Building the path leaves its in-progress point/control grips visible
         // in the shared pathpointgrip_container; getPath_().show(false) rebuilds
         // and hides them so they don't linger after the element is moved/deleted.
-          svgCanvas.getPath_(element).show(false)
+          svgCanvas.getPath_(element as SVGPathElement).show(false)
           svgCanvas.setMode('select')
           svgCanvas.selectOnly([element], true)
         }

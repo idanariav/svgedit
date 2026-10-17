@@ -7,6 +7,7 @@
  */
 import type { BBox } from '../svgcanvas.js'
 import type { BatchCommand } from './history.js'
+import type { PathElement } from './path-types.ts'
 
 export interface XY { x: number, y: number }
 
@@ -63,7 +64,7 @@ export interface CanvasState {
     textFreshCreate: boolean
     currentResizeMode: string
     lastClickPoint: XY | null
-    drawnPath: SVGPathElement | null
+    drawnPath: PathElement | null
     freehand: { minx: number, miny: number, maxx: number, maxy: number }
     dAttr: string | null
     startX: number

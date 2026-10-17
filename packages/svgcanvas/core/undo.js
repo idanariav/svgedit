@@ -100,7 +100,7 @@ export const init = (canvas) => {
           // element, or no active pathedit session) keeps the old behavior.
           const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
           const refreshedInPlace = Boolean(editedPath && elems.includes(editedPath.elem))
-          if (refreshedInPlace) {
+          if (editedPath && refreshedInPlace) {
             editedPath.dragging = false
             editedPath.dragctrl = false
             editedPath.init().show(true)

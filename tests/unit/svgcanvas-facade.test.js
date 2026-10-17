@@ -31,14 +31,10 @@ const editorSources = () => {
   return out
 }
 
-// Waiting for the conversion of the module that owns the type (see the header of svgcanvas-internal.d.ts), or for R1
-// to delete it (`history`).
+// Waiting for R1 to delete the module that owns the type (`history`).
 const UNTYPED = {
-  'packages/svgcanvas/svgcanvas-internal.d.ts': [
-    'PathClass', 'SegmentClass', 'getPath_', 'setPathObj',
-    'getGripPt', 'getPointFromGrip', 'getDrawnPath', 'setDrawnPath'
-  ],
-  'packages/svgcanvas/svgcanvas-members.d.ts': ['getPathObj', 'history']
+  'packages/svgcanvas/svgcanvas-internal.d.ts': [],
+  'packages/svgcanvas/svgcanvas-members.d.ts': ['history']
 }
 
 describe('svgCanvas facade', () => {

@@ -576,7 +576,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
     const path = this.getPathObj?.()
     const pathElemId = drawnPath?.id ?? path?.elem?.id ?? null
     const segCount = drawnPath
-      ? /** @type {any} */ (drawnPath).pathSegList.numberOfItems
+      ? drawnPath.pathSegList.numberOfItems
       : (path?.segs?.length ?? 0)
     const mode = this.getMode?.() ?? null
     const gripContainer = this.getElement('pathpointgrip_container')
@@ -819,7 +819,7 @@ class SvgCanvas extends /** @type {new () => EventTarget & import("./svgcanvas-m
   }
 
   /**
-   * @param {?SVGPathElement} dp
+   * @param {?import('./core/path-types.ts').PathElement} dp
    */
   setDrawnPath (dp) {
     this.state.drawing.drawnPath = dp

@@ -7,9 +7,7 @@
  * declared either there or here, and `tsc` checks each module's assignment (`svgCanvas.x = fn`) and each class
  * method against these types.
  *
- * Grouped by the file that owns the member. The typed `any` at the end wait for their module's conversion
- * (rearchitecture R3): the `Path` and `Segment` classes are defined inside the `init` of `path-method.js`, and the drawn-path accessors hand out a path element that still uses the legacy
- * `pathSegList` API (`path-seg-shim`).
+ * Grouped by the file that owns the member.
  */
 import type { SVGElementJSON, BBox } from './svgcanvas.js'
 import type { StyleProps, XY, ElementAndBBox, CanvasState } from './core/canvas-state.ts'
@@ -20,6 +18,7 @@ import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { Drawing } from './core/draw.js'
 import type { PenEnd } from './core/pen-continue.ts'
 import type { Units } from './core/units.ts'
+import type { PathClassApi, SegmentClassApi, PathObject, PathSegment, PathElement } from './core/path-types.ts'
 
 /** What `importSvgString` remembers per imported file, to reuse its `<symbol>`. */
 export interface ImportEntry { symbol: Element, xform: string }
@@ -238,25 +237,18 @@ export interface InternalMembers {
   toolPointerMove(evt: MouseEvent): boolean
   toolPointerUp(evt: MouseEvent): boolean
   // --- typed with their module (see the header) ---
-  /** @internal (path-method.js) */
-  PathClass: any
-  /** @internal (path-method.js) */
-  SegmentClass: any
+  PathClass: PathClassApi
+  SegmentClass: SegmentClassApi
   SelectorManagerClass: new () => SelectorManagerApi
   getSelector(): SelectorClassApi
   getSelectorManager(): SelectorManagerApi
-  /** @internal (path.js) */
-  getPath_(...args: any[]): any
-  /** @internal (path.js) */
-  setPathObj(...args: any[]): any
-  /** @internal (path-method.js) */
-  getGripPt(...args: any[]): any
-  /** @internal (path-method.js) */
-  getPointFromGrip(...args: any[]): any
-  /** @internal (path-seg-shim legacy API) */
-  getDrawnPath(...args: any[]): any
-  /** @internal (path-seg-shim legacy API) */
-  setDrawnPath(...args: any[]): any
+  getPath_(elem: SVGPathElement): PathObject
+  setPathObj(obj: PathObject | null): void
+  getGripPt(seg: PathSegment, altPt?: XY): XY
+  getPointFromGrip(pt: XY, pth: PathObject): XY
+  /** The path being drawn, which still uses the legacy `pathSegList` API (`path-seg-shim`). */
+  getDrawnPath(): PathElement | null
+  setDrawnPath(dp: PathElement | null): PathElement | null
   // --- EventTarget (the class extends it; declared so `svgcanvas-dts-drift` sees them) ---
   addEventListener: EventTarget['addEventListener']
   dispatchEvent: EventTarget['dispatchEvent']

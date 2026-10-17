@@ -149,7 +149,7 @@ export const init = (canvas) => {
       return output
     } finally {
       if (drawnPath && drawnPathParent) {
-        drawnPathParent.insertBefore(drawnPath, drawnPathNextSibling)
+        drawnPathParent.insertBefore(drawnPath, drawnPathNextSibling ?? null)
       }
     }
   }

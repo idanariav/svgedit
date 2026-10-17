@@ -14,6 +14,7 @@ import type { PathNodeGuidesPayload } from './core/path-node-guides.ts'
 import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { ProportionSnapGuides } from './core/proportions.ts'
 import type { SegmentParams } from './core/segment.ts'
+import type { PathObject } from './core/path-types.ts'
 
 /** The text-edit session (`core/text-actions.ts`): the caret, the selection and the hidden textarea behind them. */
 export interface TextActionsApi {
@@ -478,7 +479,8 @@ export interface AttachedMembers {
   SelectorClass: SelectorClassApi
   updateGroupSelector(elem?: Element): void
   getDisabledElems(): Element[]
-  getPathObj(): any
+  /** The path being edited (`null` outside path editing). */
+  getPathObj(): PathObject | null
 
   // Host-facing helpers (called from the editor and extensions)
   /** History helpers (`HistoryCommand` classes, `UndoManager`, …). Untyped on purpose: R1 deletes `core/history.js`. */

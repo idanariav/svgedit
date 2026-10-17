@@ -383,7 +383,7 @@ export const init = (canvas) => {
           opacity: svgCanvas.getOpacity() / 2
         }
       })
-      svgCanvas.setDrawnPath(drawn)
+      svgCanvas.setDrawnPath(/** @type {import('./path-types.ts').PathElement} */ (drawn))
       this.#continued = { elem: end.elem, display: end.elem.getAttribute('display'), count: /** @type {any} */ (drawn).pathSegList.numberOfItems }
       end.elem.setAttribute('display', 'none')
       const x = end.point.x * zoom
@@ -572,7 +572,7 @@ export const init = (canvas) => {
             }
           }
           const dAttr = `M${x},${y} `
-          /* drawnPath = */ svgCanvas.setDrawnPath(svgCanvas.addSVGElementsFromJson({
+          /* drawnPath = */ svgCanvas.setDrawnPath(/** @type {import('./path-types.ts').PathElement} */ (svgCanvas.addSVGElementsFromJson({
             element: 'path',
             curStyles: true,
             attr: {
@@ -580,7 +580,7 @@ export const init = (canvas) => {
               id: svgCanvas.getNextId('path'),
               opacity: svgCanvas.getOpacity() / 2
             }
-          }))
+          })))
           // set stretchy line to first point
           stretchy.setAttribute('d', `M${mouseX} ${mouseY} ${mouseX} ${mouseY}`)
           index = this.#subpath ? path.segs.length : 0
@@ -691,7 +691,7 @@ export const init = (canvas) => {
             // in that gap sees this path's nodes with no path considered
             // "current" to own them. Hiding them here, synchronously, closes
             // both gaps regardless of tool-lock state or mouseup timing.
-            svgCanvas.getPath_(newpath).show(false)
+            svgCanvas.getPath_(/** @type {SVGPathElement} */ (newpath)).show(false)
           // else, create a new point, update path element
           } else {
           // Checks if current target or parents are #svgcontent
@@ -1083,7 +1083,7 @@ export const init = (canvas) => {
     * @returns {void}
     */
     toEditMode (element) {
-      path = svgCanvas.getPath_(element)
+      path = svgCanvas.getPath_(/** @type {SVGPathElement} */ (element))
       // getPath_() caches this wrapper by element id for the session's whole
       // lifetime. If `element`'s `d` changed while some other path was being
       // tracked (e.g. a node was added/removed here, then undone/redone while

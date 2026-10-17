@@ -92,11 +92,12 @@
 | `path-edit.ts` | Path-editing operations on the anchor model (`anchor-path.js`): Remove Anchor (keeps the shape by refitting the neighbours' handles), Add Anchor Points, Average and Join |
 | `path-fit.ts` | Corner-keeping path simplification, on the anchor model (`anchor-path.js`) |
 | `path-join.ts` | Join for the select tool: two selected open paths become one (the upper one is merged into the lower one, which keeps its id and style), or one open path is closed |
-| `path-method.js` | Path functionality |
+| `path-method.ts` | The path node editor's model: the `Segment` and `Path` wrappers over a path's segment list, and the grip helpers they use |
 | `path-node-guides.ts` | Path-node alignment guides — node-to-node alignment math for pathedit mode |
 | `path-offset.ts` | Path offset / inset and stroke-to-path operations |
 | `path-seg-shim.js` | Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API, removed from browsers around 2016 and previously restored here via the `pathseg` npm polyfill |
 | `path-simplify.ts` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
+| `path-types.ts` | Types of the path node editor: a path segment as `path-seg-shim.js` models it, the `Segment` and `Path` wrappers that `path-method.ts` builds over it, and the `pathSegList` API of a path element |
 | `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
 | `path.ts` | Path functionality |
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |

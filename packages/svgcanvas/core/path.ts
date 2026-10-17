@@ -16,14 +16,9 @@ import {
 } from './bbox-utils.ts'
 import type SvgCanvas from '../svgcanvas.js'
 import type { XY } from './canvas-state.ts'
-import { init as pathMethodInit } from './path-method.js'
+import type { PathObject } from './path-types.ts'
+import { init as pathMethodInit } from './path-method.ts'
 import { init as pathActionsInit } from './path-actions.js'
-
-/** The legacy `pathSegList` of a path, as `path-seg-shim.js` provides it. */
-interface PathSegListLike {
-  numberOfItems: number
-  getItem(index: number): Record<string, number | null | undefined> & { pathSegType: number }
-}
 
 const segData: Record<number, string[]> = {
   2: ['x', 'y'], // PATHSEG_MOVETO_ABS
@@ -51,15 +46,14 @@ export const init = (canvas: SvgCanvas): void => {
 
   // Stores references to paths via IDs.
   // TODO: Make this cross-document happy.
-  // The `Path` class lives in `path-method.js` (still JSDoc), so a path object is opaque here.
-  let pathData: Record<string, unknown> = {}
+  let pathData: Record<string, PathObject> = {}
 
   const setLinkControlPoints = (lcp: boolean): void => {
     linkControlPts = lcp
   }
 
   /** The path being edited, with its bbox from before a rotation (see `recalcRotatedPath`). */
-  let path: { elem: SVGPathElement, oldbbox?: { x: number, y: number, width: number, height: number } | null } | null = null
+  let path: PathObject | null = null
 
   /**
  * Takes three points and creates a smoother line based on them: returns the two "smoothed"
@@ -179,7 +173,7 @@ export const init = (canvas: SvgCanvas): void => {
     newcx = r * Math.cos(theta) + oldcx
     newcy = r * Math.sin(theta) + oldcy
 
-    const list = (currentPath as SVGPathElement & { pathSegList?: PathSegListLike }).pathSegList
+    const list = path?.elem.pathSegList
     if (!list) { return }
 
     let i = list.numberOfItems
@@ -301,7 +295,7 @@ export const init = (canvas: SvgCanvas): void => {
   svgCanvas.clearData = clearData
   svgCanvas.getSegData = () => { return segData }
   svgCanvas.getPathObj = () => { return path }
-  svgCanvas.setPathObj = (obj: typeof path) => { path = obj }
+  svgCanvas.setPathObj = (obj: PathObject | null) => { path = obj }
   svgCanvas.getPathFuncs = () => { return pathFuncs }
   svgCanvas.getLinkControlPts = () => { return linkControlPts }
   pathFuncs = [0, 'ClosePath']
