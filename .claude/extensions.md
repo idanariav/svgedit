@@ -9,7 +9,7 @@
 Every extension lives in `src/editor/extensions/ext-name/` and exports a single default object:
 
 ```js
-// src/editor/extensions/ext-myname/ext-myname.js
+// src/editor/extensions/ext-myname/ext-myname.ts
 export default {
   name: 'ext-myname',      // must be unique; used as identifier
 
@@ -61,8 +61,8 @@ export default {
 Extensions are **inlined into the bundle** (no runtime fetch from `extPath`).
 They are statically resolved through
 [`extensions/extensionRegistry.ts`](../src/editor/extensions/extensionRegistry.ts),
-which eagerly globs every `ext-*/ext-*.js` so Rollup bundles them into the
-single `Editor.js`.
+which eagerly globs every `ext-*/ext-*.{js,ts}` so Rollup bundles them into the
+single `Editor.ts`.
 
 1. Host calls `editor.setConfig({ extensions: ['ext-polystar', 'ext-grid', ...] })`
 2. `EditorStartup.extAndLocaleFunc()` iterates the list and resolves each from
@@ -117,7 +117,7 @@ User-facing behaviour (what a control does, its keys) is in [`tools.md`](tools.m
 | Extension folder | What it adds / how it works | Key file |
 |-----------------|--------------|---------|
 | `ext-connector` | Line-binding engine behind the core **Line tool**, no button or mode of its own *(tools.md)*. Excludes bound lines from group ops; still recognises legacy `se:connector` polylines | `ext-connector.ts` |
-| `ext-eyedropper` | Samples the **fill only**. A click-anchored `<se-eyedropper-menu>` (placed by `dialogs/positionContextMenu.ts`, not the favorites-driven `SeCMenuDialog`) offers set as fill / outline / background colour, which each switch back to Select mode *before* calling `svgCanvas.setColor` / `svgEditor.setBackground` (the toolbar swatch re-syncs only when `mode === 'select'` as the `changed` event fires), Apply style to selection / Apply selection's style to this (`styleCopy.ts`, one undo step, always an explicit menu choice), and **Generate matching palette**: `<se-palette-dialog>` over `palette/generatePalette.js`, an OKLCH optimiser (`culori`) that searches per-hue (L, max in-gamut chroma) curves against a WCAG contrast floor, then a mandatory whole-palette harmonisation (equal visual weight for icons / text / buttons / notifications, pairwise-distinctiveness hill-climb for charts, shared-target variance minimisation for illustrations) | `ext-eyedropper.ts` |
+| `ext-eyedropper` | Samples the **fill only**. A click-anchored `<se-eyedropper-menu>` (placed by `dialogs/positionContextMenu.ts`, not the favorites-driven `SeCMenuDialog`) offers set as fill / outline / background colour, which each switch back to Select mode *before* calling `svgCanvas.setColor` / `svgEditor.setBackground` (the toolbar swatch re-syncs only when `mode === 'select'` as the `changed` event fires), Apply style to selection / Apply selection's style to this (`styleCopy.ts`, one undo step, always an explicit menu choice), and **Generate matching palette**: `<se-palette-dialog>` over `palette/generatePalette.ts`, an OKLCH optimiser (`culori`) that searches per-hue (L, max in-gamut chroma) curves against a WCAG contrast floor, then a mandatory whole-palette harmonisation (equal visual weight for icons / text / buttons / notifications, pairwise-distinctiveness hill-climb for charts, shared-target variance minimisation for illustrations) | `ext-eyedropper.ts` |
 | `ext-grid` | Grid overlay + snap via `<se-grid-settings>` *(tools.md)*. Non-square shapes share `curConfig.gridColor`; the composition guides (thirds / golden ratio / centre cross) are a fixed vertical + horizontal line pair per fraction (`fractionalCross()` in `buildShapeLines`). Persists via `grid_*` prefs; exposes `svgEditor.updateGrid` for resize redraws | `ext-grid.ts` |
 | `ext-layer_view` | **Layer mode** (`#tool_layerView`) with two mutually exclusive sub-modes switched by a 2-segment control in the on-canvas badge (`#layer_focus_badge`, a grid-cell sibling of `#workarea`). **Layer** (Focus, default) isolates the current layer: every other layer is **locked** (`setLayerLocked`, so new and pasted objects land only on the focused layer) and **dimmed** (inline `style.opacity` on the layer `<g>`); the badge reads `Layer: {{name}}`; `[` / `]` switch the focused layer, `PageUp` / `PageDown` move the selection to the adjacent layer and follow it. **All** calls `svgCanvas.setAllLayersMode(true)`: every layer is selectable at once (click, rubber band), no dim or lock, no hotkeys, the badge reads "All Layers" (to group across layers without merging them). Each layer's lock state is snapshotted on entry and restored on exit; the sub-mode resets to Layer on every entry; nothing persists. Re-derives on `layersChanged`, drops out on a manual `layerVisChanged`; honours the `curConfig.layerView` startup flag | `ext-layer_view.ts` |
 | `ext-markers` | Start / mid / end markers on lines, polylines, paths, polygons, and the **Head position** picker (`core/arrow-align.js`) *(tools.md)* | `ext-markers.ts` |

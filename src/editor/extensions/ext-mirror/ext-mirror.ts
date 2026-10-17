@@ -51,7 +51,7 @@ const loadExtensionTranslation = function (svgEditor: EditorInstance) {
 export default {
   name,
   async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.js').default
+    const svgEditor = (this as unknown) as import('../../Editor.ts').default
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id, $req, NS, assignAttributes } = svgCanvas

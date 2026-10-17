@@ -5,9 +5,9 @@
 
 import { css } from './ColorDialog.css.js'
 import { stateToPaint } from './PaintModel.ts'
-import { createSolidPanel } from './panels/SolidPanel.js'
-import { createLinearPanel } from './panels/LinearPanel.js'
-import { createRadialPanel } from './panels/RadialPanel.js'
+import { createSolidPanel } from './panels/SolidPanel.ts'
+import { createLinearPanel } from './panels/LinearPanel.ts'
+import { createRadialPanel } from './panels/RadialPanel.ts'
 import { fetchSvgEl } from '../svgIconLoader.ts'
 import { closestRoot, ownerEditor } from '../../domScope.ts'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'

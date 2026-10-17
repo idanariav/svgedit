@@ -48,7 +48,7 @@ const svgNS = 'http://www.w3.org/2000/svg'
 const REST_D_ATTR = 'se:puppet-rest-d'
 const PINS_ATTR = 'se:puppet-pins'
 
-const loadExtensionTranslation = async function (svgEditor: import('../../Editor.js').default) {
+const loadExtensionTranslation = async function (svgEditor: import('../../Editor.ts').default) {
   const lang = svgEditor.configObj.pref('lang')
   const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
@@ -264,7 +264,7 @@ export const computeCommitPatch = ({ origD, hasRestD, oldPinsJson, newPinsJson, 
 export default {
   name,
   async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.js').default
+    const svgEditor = (this as unknown) as import('../../Editor.ts').default
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
 

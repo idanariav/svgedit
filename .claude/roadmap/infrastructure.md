@@ -68,7 +68,7 @@ editor-layer Tier 0 modules (`commands.js`, `coreCommands.ts`, `automation.ts`, 
 checked through `src/editor/tsconfig.hostapi.json`. The class is `svgcanvas.ts` (2026-10-17) and the members the core modules give it are typed by the interfaces those modules export
 (R2): no hand-written declaration file describes the canvas.
 
-**Don't break:** `src/editor/hostApi.d.ts`, which the Obsidian plugin consumes, and the self-contained `dist/editor/Editor.js` bundle.
+**Don't break:** `src/editor/hostApi.d.ts`, which the Obsidian plugin consumes, and the self-contained `dist/editor/Editor.ts` bundle.
 The fork is not published to npm and the plugin copies only those two files, so the canvas's own types are internal.
 
 **New code meanwhile:** see the Typing guideline in [`roadmap.md`](../roadmap.md): a new engine module is `.ts`; a new editor module

@@ -1,5 +1,5 @@
 /**
- * HsvBox.js — HSV color picker with hue strip, alpha strip, numeric inputs,
+ * HsvBox.ts — HSV color picker with hue strip, alpha strip, numeric inputs,
  * and preset palette. Factory function — not a custom element.
  */
 
@@ -29,16 +29,15 @@ const PRESETS = [
   '#737373', '#5C5C5C', '#454545', '#2E2E2E', '#171717', '#000000'
 ]
 
-/** @typedef {HTMLDivElement & { hex: string, alpha: number, setHex(h:string):void, setAlpha(a:number):void }} HsvBoxElement */
+export type HsvBoxElement = HTMLDivElement & { hex: string, alpha: number, setHex(h:string):void, setAlpha(a:number):void }
 
 /**
  * Create an HSV color picker widget.
- * @param {string} initialHex  6-char hex without #
- * @param {number} initialAlpha  0-100
- * @param {string|null} [currentHex]  original/current color for the split preview
- * @returns {HsvBoxElement}
+ * @param initialHex 6-char hex without #
+ * @param initialAlpha 0-100
+ * @param currentHex original/current color for the split preview
  */
-export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null) {
+export function createHsvBox (initialHex: string, initialAlpha: number = 100, currentHex: string | null = null): HsvBoxElement {
   const safeHex = /^[0-9a-fA-F]{6}$/.test(initialHex) ? initialHex : '2962ff'
   const { h: initH, s: initS, v: initV } = hexToHsv(safeHex)
   // `hex` is the canonical exact color; h/s/v are rounded integers kept only
@@ -48,7 +47,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   const origHex = currentHex || safeHex
 
   // ── DOM structure ──────────────────────────────────────────────────────────
-  const container = /** @type {HsvBoxElement} */ (document.createElement('div'))
+  const container = document.createElement('div') as HsvBoxElement
   container.style.cssText = 'display:flex;flex:1;min-width:0;gap:22px;align-items:flex-start;'
   container.innerHTML = `
     <div class="cp-canvas-col">
@@ -110,22 +109,21 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   `
 
   // ── Element refs ───────────────────────────────────────────────────────────
-  const hsvBox = /** @type {HTMLElement} */ (container.querySelector('.cp-hsv'))
-  const hsvHue = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-hue'))
-  const hsvDot = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-dot'))
-  const hueStrip = /** @type {HTMLElement} */ (container.querySelector('.cp-hue'))
-  const hueMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hue-marker'))
-  const alphaStrip = /** @type {HTMLElement} */ (container.querySelector('.cp-alpha'))
-  const alphaGrad = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-grad'))
-  const alphaMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-marker'))
-  const currentFill = /** @type {HTMLElement} */ (container.querySelector('[data-role="current-fill"]'))
-  const newFill = /** @type {HTMLElement} */ (container.querySelector('[data-role="new-fill"]'))
-  const presetGrid = /** @type {HTMLDivElement} */ (container.querySelector('.cp-preset'))
+  const hsvBox = container.querySelector('.cp-hsv') as HTMLElement
+  const hsvHue = container.querySelector('.cp-hsv-hue') as HTMLDivElement
+  const hsvDot = container.querySelector('.cp-hsv-dot') as HTMLDivElement
+  const hueStrip = container.querySelector('.cp-hue') as HTMLElement
+  const hueMarker = container.querySelector('.cp-hue-marker') as HTMLDivElement
+  const alphaStrip = container.querySelector('.cp-alpha') as HTMLElement
+  const alphaGrad = container.querySelector('.cp-alpha-grad') as HTMLDivElement
+  const alphaMarker = container.querySelector('.cp-alpha-marker') as HTMLDivElement
+  const currentFill = container.querySelector('[data-role="current-fill"]') as HTMLElement
+  const newFill = container.querySelector('[data-role="new-fill"]') as HTMLElement
+  const presetGrid = container.querySelector('.cp-preset') as HTMLDivElement
 
   // Input refs by field name
-  /** @type {Record<string, HTMLInputElement|null>} */
-  const inputs = {}
-  ;/** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll('.cp-num')).forEach(label => {
+  const inputs: Record<string, HTMLInputElement | null> = {}
+  ;(container.querySelectorAll('.cp-num') as NodeListOf<HTMLElement>).forEach(label => {
     const field = String(label.dataset.field)
     inputs[field] = label.querySelector('input')
   })
@@ -180,7 +178,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     if (inputs.hex && document.activeElement !== inputs.hex) inputs.hex.value = String(hex)
 
     // Selected preset highlight
-    ;/** @type {NodeListOf<HTMLElement>} */ (presetGrid.querySelectorAll('.cp-preset-swatch')).forEach(btn => {
+    ;(presetGrid.querySelectorAll('.cp-preset-swatch') as NodeListOf<HTMLElement>).forEach(btn => {
       btn.classList.toggle('is-selected', btn.title.toLowerCase() === '#' + hex.toLowerCase())
     })
   }
@@ -199,26 +197,19 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     state.h = h; state.s = s; state.v = v
   }
 
-  /**
-* @param {string} hex
-*/
-  function setHexInternal (hex) {
+  function setHexInternal (hex: string) {
     state.hex = hex
     _syncHsvFromHex()
     _updateVisuals()
   }
 
   // ── Drag helpers ───────────────────────────────────────────────────────────
-  /**
-   * @param {HTMLElement} el
-   * @param {(e: PointerEvent) => void} onMove
-   */
-  function makeDrag (el, onMove) {
+  function makeDrag (el: HTMLElement, onMove: (e: PointerEvent) => void) {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       el.setPointerCapture(e.pointerId)
       onMove(e)
-      const move = (/** @type {PointerEvent} */ me) => { onMove(me); _emit() }
+      const move = (me: PointerEvent) => { onMove(me); _emit() }
       el.addEventListener('pointermove', move)
       el.addEventListener('pointerup', () => el.removeEventListener('pointermove', move), { once: true })
     })
@@ -270,13 +261,8 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // ── Number input wiring ────────────────────────────────────────────────────
-  /**
-   * @param {string} field the `data-field` of the input
-   * @param {(text: string) => *} parse
-   * @param {(raw: *) => *} clamp
-   * @param {(value: *) => void} apply
-   */
-  function wireInput (field, parse, clamp, apply) {
+  /** @param field the `data-field` of the input */
+  function wireInput (field: string, parse: (text: string) => any, clamp: (raw: any) => any, apply: (value: any) => void) {
     const input = inputs[field]
     if (!input) return
     input.addEventListener('input', () => {
@@ -297,32 +283,32 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     })
   }
 
-  wireInput('h', parseFloat, (/** @type {number} */ v) => Math.min(360, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.h = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('s', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.s = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('v', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.v = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('r', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
+  wireInput('h', parseFloat, (v: number) => Math.min(360, Math.max(0, Math.round(v))), (v: number) => { state.h = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('s', parseFloat, (v: number) => Math.min(100, Math.max(0, Math.round(v))), (v: number) => { state.s = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('v', parseFloat, (v: number) => Math.min(100, Math.max(0, Math.round(v))), (v: number) => { state.v = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('r', parseFloat, (v: number) => Math.min(255, Math.max(0, Math.round(v))), (v: number) => {
     const { g: cg, b: cb } = hexToRgb(state.hex)
     state.hex = rgbToHex(v, cg, cb)
     _syncHsvFromHex()
   })
-  wireInput('g', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
+  wireInput('g', parseFloat, (v: number) => Math.min(255, Math.max(0, Math.round(v))), (v: number) => {
     const { r: cr, b: cb } = hexToRgb(state.hex)
     state.hex = rgbToHex(cr, v, cb)
     _syncHsvFromHex()
   })
-  wireInput('b', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
+  wireInput('b', parseFloat, (v: number) => Math.min(255, Math.max(0, Math.round(v))), (v: number) => {
     const { r: cr, g: cg } = hexToRgb(state.hex)
     state.hex = rgbToHex(cr, cg, v)
     _syncHsvFromHex()
   })
-  wireInput('a', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.a = v })
+  wireInput('a', parseFloat, (v: number) => Math.min(100, Math.max(0, Math.round(v))), (v: number) => { state.a = v })
   wireInput('hex',
-    (/** @type {string} */ s) => {
+    (s: string) => {
       const clean = s.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
       return clean.length === 6 ? clean : null
     },
     v => v, // clamp is identity; parse already validates length
-    (/** @type {string} */ v) => { state.hex = v; _syncHsvFromHex() }
+    (v: string) => { state.hex = v; _syncHsvFromHex() }
   )
   const hexInput = inputs.hex
   hexInput?.addEventListener('paste', (e) => {
@@ -342,11 +328,11 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     get: () => state.a
   })
 
-  container.setHex = (/** @type {string} */ hex) => {
+  container.setHex = (hex: string) => {
     setHexInternal(hex.replace('#', ''))
     _emit()
   }
-  container.setAlpha = (/** @type {number} */ a) => {
+  container.setAlpha = (a: number) => {
     state.a = Math.min(100, Math.max(0, Math.round(a)))
     _updateVisuals()
     _emit()

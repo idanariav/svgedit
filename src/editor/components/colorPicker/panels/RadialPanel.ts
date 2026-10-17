@@ -1,29 +1,23 @@
 /**
- * RadialPanel.js — radial gradient tab panel. Factory function.
+ * RadialPanel.ts — radial gradient tab panel. Factory function.
  */
 
-import { createStopBar } from './shared/StopBar.js'
-import { createSlider } from './shared/Slider.js'
-import { createHsvBox } from './shared/HsvBox.js'
+import { createStopBar } from './shared/StopBar.ts'
+import { createSlider } from './shared/Slider.ts'
+import { createHsvBox } from './shared/HsvBox.ts'
 import { paintToState } from '../PaintModel.ts'
 
-/** @typedef {import('../PaintModel.ts').GradientStop} GradientStop */
+export type GradientStop = import('../PaintModel.ts').GradientStop
 
 const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>'
 
-/**
- * @param {import('@svgedit/svgcanvas/core/paint.ts').default|null} paint
- * @param {import('i18next').i18n|null|undefined} i18next
- * @returns {import('../PaintModel.ts').PaintPanel}
- */
-export function createRadialPanel (paint, i18next) {
-  const t = (/** @type {string} */ key) => {
+export function createRadialPanel (paint: import('@svgedit/svgcanvas/core/paint.ts').default | null, i18next: import('i18next').i18n | null | undefined): import('../PaintModel.ts').PaintPanel {
+  const t = (key: string) => {
     try { return i18next?.t(key) || key } catch { return key }
   }
 
   const state = paintToState(paint)
-  /** @type {{mode: 'two'|'mono'|'multi', stops: GradientStop[], cx: number, cy: number, fx: number, fy: number, r: number, ellip: number, angle: number, spreadMethod: string, alpha: number, matchCenter: boolean, monoMode: string}} */
-  let panelState = {
+  let panelState: { mode: 'two' | 'mono' | 'multi', stops: GradientStop[], cx: number, cy: number, fx: number, fy: number, r: number, ellip: number, angle: number, spreadMethod: string, alpha: number, matchCenter: boolean, monoMode: string } = {
     mode: (state.tab === 'radial' ? state.mode : 'two') || 'two',
     stops: (state.tab === 'radial' ? state.stops : null) || [
       { color: '2962ff', position: 0, alpha: 100 },
@@ -42,7 +36,7 @@ export function createRadialPanel (paint, i18next) {
     monoMode: state.monoMode || 'white'
   }
 
-  const panel = /** @type {import('../PaintModel.ts').PaintPanel} */ (document.createElement('div'))
+  const panel = document.createElement('div') as import('../PaintModel.ts').PaintPanel
   panel.className = 'cp-body cp-body-grad'
 
   // ── Left column ────────────────────────────────────────────────────────────
@@ -52,8 +46,7 @@ export function createRadialPanel (paint, i18next) {
   // Mode toggle
   const modeToggle = document.createElement('div')
   modeToggle.className = 'cp-mode'
-  /** @type {Array<{key: 'two'|'mono'|'multi', label: string}>} */
-  const modes = [
+  const modes: Array<{ key: 'two' | 'mono' | 'multi', label: string }> = [
     { key: 'two', label: t('config.gradient_mode_two') || 'Two color' },
     { key: 'mono', label: t('config.gradient_mode_mono') || 'Mono' },
     { key: 'multi', label: t('config.gradient_mode_multi') || 'Multi-stop' }
@@ -85,23 +78,22 @@ export function createRadialPanel (paint, i18next) {
       <span class="cp-radial-pt-label">Focal</span>
     </div>
   `
-  const previewFill = /** @type {HTMLElement} */ (previewWrap.querySelector('.cp-preview-fill'))
-  const centerMarker = /** @type {HTMLElement} */ (previewWrap.querySelector('.cp-radial-center'))
-  const focalMarker = /** @type {HTMLElement} */ (previewWrap.querySelector('.cp-radial-focal'))
-  const radialHandle = /** @type {HTMLElement} */ (previewWrap.querySelector('.cp-radial-handle'))
+  const previewFill = previewWrap.querySelector('.cp-preview-fill') as HTMLElement
+  const centerMarker = previewWrap.querySelector('.cp-radial-center') as HTMLElement
+  const focalMarker = previewWrap.querySelector('.cp-radial-focal') as HTMLElement
+  const radialHandle = previewWrap.querySelector('.cp-radial-handle') as HTMLElement
   leftCol.appendChild(previewWrap)
 
   /**
    * Draggable center marker
-   * @param {HTMLElement} markerEl
-   * @param {(x: number, y: number) => void} onUpdate the pointer's place in the preview, 0-1
+ * @param onUpdate the pointer's place in the preview, 0-1
    */
-  function _makeMarkerDraggable (markerEl, onUpdate) {
-    const pt = /** @type {HTMLElement} */ (markerEl.querySelector('.cp-radial-pt'))
+  function _makeMarkerDraggable (markerEl: HTMLElement, onUpdate: (x: number, y: number) => void) {
+    const pt = markerEl.querySelector('.cp-radial-pt') as HTMLElement
     pt.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       pt.setPointerCapture(e.pointerId)
-      const onMove = (/** @type {PointerEvent} */ me) => {
+      const onMove = (me: PointerEvent) => {
         const rect = previewWrap.getBoundingClientRect()
         const x = Math.min(1, Math.max(0, (me.clientX - rect.left) / rect.width))
         const y = Math.min(1, Math.max(0, (me.clientY - rect.top) / rect.height))
@@ -137,10 +129,7 @@ export function createRadialPanel (paint, i18next) {
   colorsCol.className = 'cp-grad-colors'
   const stopColorSection = document.createElement('div')
   stopColorSection.className = 'cp-stop-color-editor'
-  /**
-* @type {(HTMLElement & { hex: string; alpha: number; setHex(h: string): void; setAlpha(a: number): void; }) | null}
-*/
-  let stopHsvBox = null
+  let stopHsvBox: (HTMLElement & { hex: string; alpha: number; setHex(h: string): void; setAlpha(a: number): void; }) | null = null
   colorsCol.appendChild(stopColorSection)
 
   // ── Bottom row — Shape + Focal Point + Settings ─────────────────────────────
@@ -155,9 +144,9 @@ export function createRadialPanel (paint, i18next) {
   const radiusSlider = createSlider({ label: t('config.jgraduate_radius') || 'Radius', min: 0, max: 100, value: panelState.r, unit: '%' })
   const ellipSlider = createSlider({ label: t('config.jgraduate_ellip') || 'Ellipse', min: 0, max: 200, value: panelState.ellip, unit: '%' })
   const angleSlider = createSlider({ label: t('config.jgraduate_angle') || 'Angle', min: 0, max: 360, value: panelState.angle, unit: '°' })
-  radiusSlider.addEventListener('change', (e) => { panelState.r = /** @type {CustomEvent} */ (e).detail.value; _updatePreview(); _updateMarkers() })
-  ellipSlider.addEventListener('change', (e) => { panelState.ellip = /** @type {CustomEvent} */ (e).detail.value; _updatePreview() })
-  angleSlider.addEventListener('change', (e) => { panelState.angle = /** @type {CustomEvent} */ (e).detail.value; _updatePreview() })
+  radiusSlider.addEventListener('change', (e) => { panelState.r = (e as CustomEvent).detail.value; _updatePreview(); _updateMarkers() })
+  ellipSlider.addEventListener('change', (e) => { panelState.ellip = (e as CustomEvent).detail.value; _updatePreview() })
+  angleSlider.addEventListener('change', (e) => { panelState.angle = (e as CustomEvent).detail.value; _updatePreview() })
   shapeSection.appendChild(radiusSlider)
   shapeSection.appendChild(ellipSlider)
   shapeSection.appendChild(angleSlider)
@@ -170,7 +159,7 @@ export function createRadialPanel (paint, i18next) {
   const matchLabel = document.createElement('label')
   matchLabel.className = 'cp-check'
   matchLabel.innerHTML = `<input type="checkbox" ${panelState.matchCenter ? 'checked' : ''}><span class="cp-check-box"></span><span class="cp-check-label">${t('config.jgraduate_match_center') || 'Match center'}</span>`
-  const matchCheckbox = /** @type {HTMLInputElement} */ (matchLabel.querySelector('input'))
+  const matchCheckbox = matchLabel.querySelector('input') as HTMLInputElement
   matchCheckbox.addEventListener('change', () => {
     panelState.matchCenter = matchCheckbox.checked
     if (panelState.matchCenter) {
@@ -207,15 +196,15 @@ export function createRadialPanel (paint, i18next) {
     if (val === panelState.spreadMethod) opt.selected = true
     spreadSelect.appendChild(opt)
   })
-  ;/** @type {HTMLElement} */ (selectWrap.querySelector('.cp-select-btn')).appendChild(spreadSelect)
+  ;(selectWrap.querySelector('.cp-select-btn') as HTMLElement).appendChild(spreadSelect)
   spreadSelect.addEventListener('change', () => {
     panelState.spreadMethod = spreadSelect.value
-    ;/** @type {HTMLElement} */ (selectWrap.querySelector('.cp-select-val')).textContent = spreadSelect.value
+    ;(selectWrap.querySelector('.cp-select-val') as HTMLElement).textContent = spreadSelect.value
   })
   settingsSection.appendChild(selectWrap)
 
   const opacSlider = createSlider({ label: t('config.jgraduate_opac') || 'Opacity', min: 0, max: 100, value: panelState.alpha, unit: '%' })
-  opacSlider.addEventListener('change', (e) => { panelState.alpha = /** @type {CustomEvent} */ (e).detail.value })
+  opacSlider.addEventListener('change', (e) => { panelState.alpha = (e as CustomEvent).detail.value })
   settingsSection.appendChild(opacSlider)
   bottomRow.appendChild(settingsSection)
 
@@ -234,7 +223,7 @@ export function createRadialPanel (paint, i18next) {
       </div>
     </div>
   `
-  ;/** @type {NodeListOf<HTMLElement>} */ (monoSection.querySelectorAll('[data-mono]')).forEach(btn => {
+  ;(monoSection.querySelectorAll('[data-mono]') as NodeListOf<HTMLElement>).forEach(btn => {
     btn.addEventListener('click', () => {
       panelState.monoMode = btn.dataset.mono ?? 'white'
       monoSection.querySelectorAll('[data-mono]').forEach(b => b.classList.toggle('is-active', b === btn))
@@ -253,10 +242,7 @@ export function createRadialPanel (paint, i18next) {
   panel.appendChild(topRow)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  /**
-* @param {string} hex
-*/
-  function _hexToRgb (hex) {
+  function _hexToRgb (hex: string) {
     const c = hex.replace('#', '')
     return `${parseInt(c.slice(0, 2), 16)},${parseInt(c.slice(2, 4), 16)},${parseInt(c.slice(4, 6), 16)}`
   }
@@ -291,10 +277,7 @@ export function createRadialPanel (paint, i18next) {
     panel.dispatchEvent(new CustomEvent('color-change', { bubbles: true }))
   }
 
-  /**
-* @param {'two'|'mono'|'multi'} newMode
-*/
-  function setMode (newMode) {
+  function setMode (newMode: 'two' | 'mono' | 'multi') {
     panelState.mode = newMode
     modeToggle.querySelectorAll('.cp-mode-btn').forEach(b => {
       b.classList.toggle('is-active', b.textContent === modes.find(m => m.key === newMode)?.label)
@@ -305,21 +288,18 @@ export function createRadialPanel (paint, i18next) {
   }
 
   stopBar.addEventListener('stops-change', (e) => {
-    panelState.stops = /** @type {CustomEvent} */ (e).detail.stops
+    panelState.stops = (e as CustomEvent).detail.stops
     _updatePreview()
   })
 
-  /**
-* @param {number} idx
-*/
-  function _mountStopEditor (idx) {
+  function _mountStopEditor (idx: number) {
     const stop = panelState.stops[idx]
     if (!stop) return
     stopColorSection.innerHTML = ''
     stopHsvBox = createHsvBox(stop.color, stop.alpha)
     stopColorSection.appendChild(stopHsvBox)
     stopHsvBox.addEventListener('color-change', (event) => {
-      const ce = /** @type {CustomEvent} */ (event)
+      const ce = event as CustomEvent
       const sidx = stopBar.getSelectedIndex()
       if (sidx >= 0 && sidx < panelState.stops.length) {
         panelState.stops[sidx].color = ce.detail.hex
@@ -330,12 +310,12 @@ export function createRadialPanel (paint, i18next) {
     })
   }
 
-  stopBar.addEventListener('stop-select', (e) => _mountStopEditor(/** @type {CustomEvent} */ (e).detail.index))
+  stopBar.addEventListener('stop-select', (e) => _mountStopEditor((e as CustomEvent).detail.index))
 
   _mountStopEditor(stopBar.getSelectedIndex())
   _updatePreview()
 
-  panel.setFromHex = (/** @type {string} */ hex) => {
+  panel.setFromHex = (hex: string) => {
     const clean = hex.replace('#', '')
     let idx = stopBar.getSelectedIndex()
     if (idx < 0 || idx >= panelState.stops.length) idx = 0
@@ -364,7 +344,7 @@ export function createRadialPanel (paint, i18next) {
     monoMode: panelState.monoMode
   })
 
-  panel.setFromPaint = (/** @type {import("@svgedit/svgcanvas/core/paint.ts").default} */ p) => {
+  panel.setFromPaint = (p: import('@svgedit/svgcanvas/core/paint.ts').default) => {
     const s = paintToState(p)
     if (s.tab === 'radial') {
       panelState = {
@@ -389,7 +369,7 @@ export function createRadialPanel (paint, i18next) {
       angleSlider.setValue(panelState.angle)
       opacSlider.setValue(panelState.alpha)
       spreadSelect.value = panelState.spreadMethod
-      ;/** @type {HTMLElement} */ (selectWrap.querySelector('.cp-select-val')).textContent = panelState.spreadMethod
+      ;(selectWrap.querySelector('.cp-select-val') as HTMLElement).textContent = panelState.spreadMethod
       matchCheckbox.checked = panelState.matchCenter
       monoSection.style.display = panelState.mode === 'mono' ? '' : 'none'
       setMode(panelState.mode)

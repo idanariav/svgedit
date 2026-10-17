@@ -60,7 +60,7 @@ const mk = (tag: string, attrs: Record<string, string | number>) => {
 export default {
   name,
   async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.js').default
+    const svgEditor = (this as unknown) as import('../../Editor.ts').default
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)

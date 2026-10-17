@@ -1,15 +1,11 @@
 /**
- * SolidPanel.js — solid-color tab panel. Factory function.
+ * SolidPanel.ts — solid-color tab panel. Factory function.
  */
 
-import { createHsvBox } from './shared/HsvBox.js'
+import { createHsvBox } from './shared/HsvBox.ts'
 import { paintToState } from '../PaintModel.ts'
 
-/**
- * @param {import('@svgedit/svgcanvas/core/paint.ts').default|null} paint
- * @returns {import('../PaintModel.ts').PaintPanel}
- */
-export function createSolidPanel (paint) {
+export function createSolidPanel (paint: import('@svgedit/svgcanvas/core/paint.ts').default | null): import('../PaintModel.ts').PaintPanel {
   const state = paintToState(paint)
   const hex = state.tab === 'solid' ? (state.hex || '2962ff') : '2962ff'
   const alpha = state.tab === 'solid' ? (state.alpha ?? 100) : 100
@@ -17,13 +13,13 @@ export function createSolidPanel (paint) {
 
   const hsvBox = createHsvBox(hex, alpha, origHex)
 
-  const panel = /** @type {import('../PaintModel.ts').PaintPanel} */ (document.createElement('div'))
+  const panel = document.createElement('div') as import('../PaintModel.ts').PaintPanel
   panel.className = 'cp-body cp-body-solid'
   panel.appendChild(hsvBox)
 
   // Forward color-change events
   hsvBox.addEventListener('color-change', (e) => {
-    panel.dispatchEvent(new CustomEvent('color-change', { detail: /** @type {CustomEvent} */ (e).detail, bubbles: true }))
+    panel.dispatchEvent(new CustomEvent('color-change', { detail: (e as CustomEvent).detail, bubbles: true }))
   })
 
   panel.getPaintState = () => ({
@@ -32,13 +28,13 @@ export function createSolidPanel (paint) {
     alpha: hsvBox.alpha
   })
 
-  panel.setFromPaint = (/** @type {import("@svgedit/svgcanvas/core/paint.ts").default} */ p) => {
+  panel.setFromPaint = (p: import('@svgedit/svgcanvas/core/paint.ts').default) => {
     const s = paintToState(p)
     if (s.hex) hsvBox.setHex(s.hex)
     if (s.alpha !== undefined) hsvBox.setAlpha(s.alpha)
   }
 
-  panel.setFromHex = (/** @type {string} */ hex) => {
+  panel.setFromHex = (hex: string) => {
     hsvBox.setHex(hex.replace('#', ''))
   }
 

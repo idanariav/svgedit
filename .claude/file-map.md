@@ -188,9 +188,10 @@
 | `DebugSnapshotLogger.ts` | Polls a snapshot function (svgCanvas.getDebugSnapshot()) and forwards it to a host-provided sink whenever it changes, instead of rendering it in a UI panel (see Editor.js's setDebugLogger()) |
 | `documentColors.ts` | The distinct solid colours a drawing already uses, for the palette's "Recent" row |
 | `domScope.ts` | Resolve the editor container that owns a given element. svgedit's chrome uses fixed element IDs (workarea, fill_color, the se-* dialogs, …), so a global `getElementById`/`querySelector` returns the first match when… |
-| `Editor.js` | The main module for the visual SVG this |
+| `Editor.js` | The package entry: re-exports the `Editor` class from Editor.ts (the HTML entry and the library build name this file, and `dist/editor/Editor.js` is the bundle hosts load) |
+| `Editor.ts` | The main module for the visual SVG this |
 | `editorShortcuts.ts` | Editor-level shortcuts (not associated with a toolbar button) |
-| `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions |
+| `EditorStartup.ts` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions |
 | `favoriteActions.ts` | The catalog of favoritable actions and their execution |
 | `favorites.ts` | Persistence for the user's quick-action favorites |
 | `hostApi.check.ts` | Compile-time conformance check: fails `npm run typecheck` if `Editor` stops satisfying the declared host API |
@@ -266,18 +267,18 @@
 
 | File | What it is |
 |---|---|
-| `LinearPanel.js` | Linear gradient tab panel |
-| `RadialPanel.js` | Radial gradient tab panel |
-| `SolidPanel.js` | Solid-color tab panel |
+| `LinearPanel.ts` | Linear gradient tab panel |
+| `RadialPanel.ts` | Radial gradient tab panel |
+| `SolidPanel.ts` | Solid-color tab panel |
 
 ### `src/editor/components/colorPicker/panels/shared/`
 
 | File | What it is |
 |---|---|
-| `Dial.js` | Direction dial for linear gradient angle |
-| `HsvBox.js` | HSV color picker with hue strip, alpha strip, numeric inputs, and preset palette |
-| `Slider.js` | Reusable horizontal slider factory (not a custom element) |
-| `StopBar.js` | Gradient stop bar + detail list factory |
+| `Dial.ts` | Direction dial for linear gradient angle |
+| `HsvBox.ts` | HSV color picker with hue strip, alpha strip, numeric inputs, and preset palette |
+| `Slider.ts` | Reusable horizontal slider factory (not a custom element) |
+| `StopBar.ts` | Gradient stop bar + detail list factory |
 
 ### `src/editor/components/eyedropper/`
 

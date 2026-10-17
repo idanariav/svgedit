@@ -1,5 +1,5 @@
 /**
- * Dial.js — direction dial for linear gradient angle. Factory function.
+ * Dial.ts — direction dial for linear gradient angle. Factory function.
  * Returns a container element with getAngle/setAngle methods.
  */
 
@@ -14,14 +14,11 @@ const PRESETS = [
   { angle: 315, label: '↖' }
 ]
 
-/**
- * @param {number} initialAngle  0-359 (0 = up)
- * @returns {HTMLElement & { getAngle():number, setAngle(deg:number):void }}
- */
-export function createDial (initialAngle = 0) {
+/** @param initialAngle 0-359 (0 = up) */
+export function createDial (initialAngle: number = 0): HTMLElement & { getAngle():number, setAngle(deg:number):void } {
   let angle = ((initialAngle % 360) + 360) % 360
 
-  const container = /** @type {HTMLDivElement & {getAngle():number, setAngle(deg:number):void}} */ (document.createElement('div'))
+  const container = document.createElement('div') as HTMLDivElement & { getAngle():number, setAngle(deg:number):void }
   container.innerHTML = `
     <div class="cp-dial">
       <svg class="cp-dial-svg" viewBox="0 0 72 72" width="72" height="72" style="cursor:pointer;flex-shrink:0;" aria-label="Direction dial" role="slider">
@@ -52,11 +49,11 @@ export function createDial (initialAngle = 0) {
     </div>
   `
 
-  const svg = /** @type {SVGSVGElement} */ (container.querySelector('.cp-dial-svg'))
-  const dialLine = /** @type {HTMLElement} */ (container.querySelector('.dial-line'))
-  const dialThumb = /** @type {HTMLElement} */ (container.querySelector('.dial-thumb'))
-  const readout = /** @type {HTMLSpanElement} */ (container.querySelector('.cp-dial-readout'))
-  const presetBtns = /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll('.cp-dir-preset'))
+  const svg = container.querySelector('.cp-dial-svg') as SVGSVGElement
+  const dialLine = container.querySelector('.dial-line') as HTMLElement
+  const dialThumb = container.querySelector('.dial-thumb') as HTMLElement
+  const readout = container.querySelector('.cp-dial-readout') as HTMLSpanElement
+  const presetBtns = container.querySelectorAll('.cp-dir-preset') as NodeListOf<HTMLElement>
 
   function _updateVisuals () {
     const rad = (angle - 90) * (Math.PI / 180)
@@ -76,10 +73,7 @@ export function createDial (initialAngle = 0) {
     container.dispatchEvent(new CustomEvent('change', { detail: { angle }, bubbles: true }))
   }
 
-  /**
-* @param {Event} e
-*/
-  function _angleFromPointer (/** @type {MouseEvent} */ e) {
+  function _angleFromPointer (e: MouseEvent) {
     const rect = svg.getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
@@ -91,7 +85,7 @@ export function createDial (initialAngle = 0) {
   }
 
   // Drag on SVG
-  svg.addEventListener('pointerdown', (/** @type {PointerEvent} */ e) => {
+  svg.addEventListener('pointerdown', (e: PointerEvent) => {
     e.preventDefault()
     svg.setPointerCapture(e.pointerId)
     angle = _angleFromPointer(e)
@@ -118,7 +112,7 @@ export function createDial (initialAngle = 0) {
   _updateVisuals()
 
   container.getAngle = () => angle
-  container.setAngle = (/** @type {number} */ deg) => {
+  container.setAngle = (deg: number) => {
     angle = ((deg % 360) + 360) % 360
     _updateVisuals()
   }

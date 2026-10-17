@@ -20,7 +20,7 @@ const editorDir = join(rootDir, 'src', 'editor')
 // Files with a documented, reviewed reason to touch the document directly.
 const ALLOWLIST = new Set([
   'src/editor/domScope.ts', // defines closestRoot()/getActiveRoot() themselves
-  'src/editor/EditorStartup.js', // initial container resolution + one-time global <style> injection guard
+  'src/editor/EditorStartup.ts', // initial container resolution + one-time global <style> injection guard
   'src/editor/contextmenu.ts' // documented default-param fallback for standalone/single-editor use (e.g. tests)
 ])
 
@@ -33,8 +33,8 @@ const BARE_LOOKUP = /\bdocument\.(querySelector|querySelectorAll|getElementById)
 const GLOBAL_EDITOR = /\bwindow\.svgEditor\b|\/\*\s*globals[^*]*\bsvgEditor\b/
 const GLOBAL_ALLOWLIST = new Set([
   'src/editor/domScope.ts', // ownerEditor()'s documented last-resort fallback
-  'src/editor/Editor.js', // publishes the global for hosts/e2e
-  'src/editor/EditorStartup.js' // repoints it on interaction (compat for hosts)
+  'src/editor/Editor.ts', // publishes the global for hosts/e2e
+  'src/editor/EditorStartup.ts' // repoints it on interaction (compat for hosts)
 ])
 
 function walk (dir, files = []) {

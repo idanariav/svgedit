@@ -146,9 +146,9 @@ all 55 verified to load identically. The two load-time sanitizers it replaced ar
 
 ## Oversized modules (remaining)
 
-All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
+All eight files that were over ~1,500 lines are now under it (Editor.ts 1,451,
 seShapeLibrary.ts 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
-1,172, TopPanel.ts 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
+1,172, TopPanel.ts 1,161, elem-get-set.js 1,110, EditorStartup.ts 1,092), by
 moving cohesive blocks into `addToShapeLibrary.ts`, `editorShortcuts.ts`,
 `seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`,
 `core/layer-ops.js`, `core/text-attrs.js`, `core/group-ops.js` and
@@ -178,7 +178,7 @@ fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
 
 ## Latent faults the editor ratchet surfaced (2026-10-17)
 
-Typing `Editor.js`, `EditorStartup.js` and `contextmenu.ts` strictly turned up code that is wrong today but not reachable
+Typing `Editor.ts`, `EditorStartup.ts` and `contextmenu.ts` strictly turned up code that is wrong today but not reachable
 (or not noticed) in normal use. Fixed where the fix was a typing consequence; the rest is left for a deliberate change:
 
 - **`ext-connector`'s marker block is dead.** `handleOneChangedElement` destructures `{ markerStart, markerMid, markerEnd }` from

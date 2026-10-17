@@ -21,7 +21,7 @@ short: details belong in the area files.
   syntax only: no enums, namespaces or parameter properties; no `any`, use `unknown` and narrow) and is listed in
   `tsconfig.strict.json`. Import a `.ts` module with its `.ts` extension (`./x.ts`): plain Node runs the headless engine and
   does not map `.js` to `.ts`. After renaming a module run `node scripts/check-ts-imports.mjs --fix`. A new *editor* module
-  stays `// @ts-check` with strict JSDoc until the editor has its own strict tsconfig. When you touch a core module's `init`,
+  is a `.ts` file too (the `check-editor-strict` ratchet covers it; `no-explicit-any` is off under `src/editor` only until the explicit `any`s are narrowed). When you touch a core module's `init`,
   type its `canvas` parameter as `SvgCanvas` (`import type SvgCanvas from '../svgcanvas.ts'`); convert a module you are rewriting anyway.
 - **No new `canvas.foo = …` attachments** ([R2](roadmap/rearchitecture.md#r2-canvas-composition-instead-of-attached-members)):
   a new core module exports `XApi` (its interface) and `createX(canvas): XApi`; `svgcanvas.ts` attaches it with `attachApi` and
@@ -37,7 +37,7 @@ short: details belong in the area files.
 - **Agent docs:** say what a thing is and why, not how it got there (history is in git). Give every source file a header comment (the file map is generated from it, `npm run file-map`); regenerate `commands.md` when a command changes; put user-facing behaviour in `tools.md` and construction notes in `extensions.md`, one fact in one place.
 - **Calling the canvas from the editor:** `check-canvas-calls` (`pretest`) type-checks every `svgCanvas.x(…)` in `src/editor` against the
   facade, so a new canvas member is on the class or in a module interface before the editor calls it; an
-  extension reaches the editor through `const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))`.
+  extension reaches the editor through `const svgEditor = /** @type {import('../../Editor.ts').default} */ (/** @type {unknown} */ (this))`.
 - **Editor typing is a ratchet:** `check-editor-strict` (`pretest`) runs `tsc --strict` over `src/editor` and fails on any error in a file
   listed in `src/editor/strict-files.json`. Write new editor code so it is clean and add the file to the list (`node
   scripts/check-editor-strict.mjs --report` shows the error count per file). `$req('id')` is `$id` for an element that must exist (it throws, and the
@@ -47,8 +47,7 @@ short: details belong in the area files.
 
 ## Background tracks
 
-- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, typed by the `check-editor-strict` ratchet, every file is on the list): the
-  next step is the `.ts` conversion, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
+- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, strict on every file and now `.ts`, except the CSS / data / locale modules, `browser-not-supported.js` and the `Editor.ts` re-export): narrow the explicit `any`s, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48): one "Run editor command…" palette picker
   over `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette
   entries, by decision. The picker asks for a command's `params` (2026-10-15); no editor command declares any yet.
@@ -64,7 +63,7 @@ the per-area follow-ups below.
 Raised 2026-10-15 from a "what would we build differently from scratch" review. Everything is open, including a rewrite
 of the canvas engine; the stable seams to keep are the **saved file format** (SVG + `se:` attributes, read by the
 plugin's drawings), **`src/editor/hostApi.d.ts`** (the plugin's contract), the **command ids**, and the single
-self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migration paths: [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md).
+self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migration paths: [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md).
 
 | # | Change | Size | Depends on |
 |---|---|---|---|

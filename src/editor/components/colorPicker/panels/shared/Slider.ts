@@ -1,16 +1,12 @@
 /**
- * Slider.js — reusable horizontal slider factory (not a custom element).
+ * Slider.ts — reusable horizontal slider factory (not a custom element).
  * Returns a <div class="cp-slider"> element with getValue/setValue methods.
  */
 
-/**
- * @param {{label:string, min:number, max:number, value:number, unit?:string, step?:number}} opts
- * @returns {HTMLDivElement & {getValue():number, setValue(n:number):void}}
- */
-export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
+export function createSlider ({ label, min, max, value, unit = '', step = 1 }: { label: string, min: number, max: number, value: number, unit?: string, step?: number }): HTMLDivElement & { getValue():number, setValue(n:number):void } {
   let current = Math.min(max, Math.max(min, value))
 
-  const el = /** @type {HTMLDivElement & {getValue():number, setValue(n:number):void}} */ (document.createElement('div'))
+  const el = document.createElement('div') as HTMLDivElement & { getValue():number, setValue(n:number):void }
   el.className = 'cp-slider'
   el.innerHTML = `
     <span class="cp-slider-label">${label}</span>
@@ -21,10 +17,10 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     <span class="cp-slider-readout">${current}${unit}</span>
   `
 
-  const track = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-track'))
-  const fill = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-fill'))
-  const thumb = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-thumb'))
-  const readout = /** @type {HTMLSpanElement} */ (el.querySelector('.cp-slider-readout'))
+  const track = el.querySelector('.cp-slider-track') as HTMLDivElement
+  const fill = el.querySelector('.cp-slider-fill') as HTMLDivElement
+  const thumb = el.querySelector('.cp-slider-thumb') as HTMLDivElement
+  const readout = el.querySelector('.cp-slider-readout') as HTMLSpanElement
 
   function updateVisuals () {
     const pct = ((current - min) / (max - min)) * 100
@@ -33,10 +29,7 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     readout.textContent = `${current}${unit}`
   }
 
-  /**
-* @param {Event} e
-*/
-  function setFromPointer (/** @type {MouseEvent} */ e) {
+  function setFromPointer (e: MouseEvent) {
     const rect = track.getBoundingClientRect()
     const raw = (e.clientX - rect.left) / rect.width
     const clamped = Math.min(1, Math.max(0, raw))
@@ -48,7 +41,7 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     }
   }
 
-  thumb.addEventListener('pointerdown', (/** @type {PointerEvent} */ e) => {
+  thumb.addEventListener('pointerdown', (e: PointerEvent) => {
     e.preventDefault()
     thumb.setPointerCapture(e.pointerId)
     thumb.addEventListener('pointermove', setFromPointer)

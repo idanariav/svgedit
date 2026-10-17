@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import Editor from '../../src/editor/Editor.js'
+import Editor from '../../src/editor/Editor.ts'
 
 /** The methods under test only read a few members of `this`, so they run on a stand-in. */
 const call = (name, self, ...args) => Editor.prototype[name].call(self, ...args)

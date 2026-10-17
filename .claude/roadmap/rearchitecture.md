@@ -9,7 +9,7 @@ is scheduled; each item says what it would take and where to start.
   written losslessly (the round-trip corpus, `scripts/repair-drawings.mjs`'s reader and `scripts/check-model-roundtrip.mjs` are the oracle);
 - **`src/editor/hostApi.d.ts`**, the plugin's contract (typechecked against `Editor`);
 - the **command ids** (hotkey overrides and favorites store them) and the command registry's run/enabled/params shape;
-- one self-contained **`dist/editor/Editor.js`** (the plugin copies only that file; see R6).
+- one self-contained **`dist/editor/Editor.ts`** (the plugin copies only that file; see R6).
 
 VectorCraft (`../vectorcraft`) is the reference for most of this; take the ideas, not the Rust (`CLAUDE.md` ›
 VectorCraft).
@@ -131,7 +131,7 @@ parser, serializer, typed view); the typed features and the headless fixes follo
 - **Measurement is untouched.** (a) never needed a bounding box. The "hard parts" above (text layout, stroked bboxes) are
   still all ahead and are the real risk of (b)/(c); a spike on one of them (area text) before committing to (b) is
   worth more than more typed fields.
-- **Bundle:** wiring the model into `Editor.js` adds `saxes` (and `xmlchars`), about 84 KB of source before
+- **Bundle:** wiring the model into `Editor.ts` adds `saxes` (and `xmlchars`), about 84 KB of source before
   minification (the minified size is not measured); the model's own code is small. Count it against the R6 budget, or use
   the browser's `DOMParser` for the editor build and keep `saxes` for Node (the infoset tests already show the two
   agree).
@@ -226,7 +226,7 @@ Retire the d.ts and the drift test only with R2.
 DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
 runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
 that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
-Every file is on the list, so a new editor file is strict from its first commit; what is left is the `.ts` conversion below.
+Every file is on the list, so a new editor file is strict from its first commit. The editor is also TypeScript now (2026-10-17, a JSDoc-to-TS codemod plus hand fixes where TS is stricter than checkJs: `object` and `Object` are `any` in a JS file, `new Set()` is `Set<any>`, a `@returns {string|void}` collapses): all of `src/editor` is `.ts` except the CSS / data / locale modules, `browser-not-supported.js` (copied to `dist` as a classic script) and `Editor.ts`, a one-line re-export of `Editor.ts` that stays the HTML entry, the library entry and the bundle's name. What is left: about 300 explicit `any`s (the JSDoc `*` and `{Object}` of the old types; `no-explicit-any` is off for `src/editor/**/*.ts` until they are narrowed), the typedef comments whose `module:` pseudo-types became `any`, and some leftover `@fires` / `@function` doc blocks that describe nothing.
 What made the first 3,000 cheap, and is what new code should use:
 - `$id('x')` returns the element type of that id (`src/editor/ui-ids.d.ts`, generated from the panels' HTML and the templates inside the JS sources by
   `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.
@@ -279,19 +279,19 @@ Size: L, incremental, low risk per feature.
 
 ## R6. Bundle size and startup
 
-**Today.** `dist/editor/Editor.js` is 3.33 MB (2026-10-15, after the svgcanvas alias removed the duplicated core
+**Today.** `dist/editor/Editor.ts` is 3.33 MB (2026-10-15, after the svgcanvas alias removed the duplicated core
 modules; it was 3.83 MB) with paper.js, clipper-lib, imagetracerjs, spiro, the shape library JSON, the Google-fonts
 catalog and all 45 extensions in one file. The build sets `inlineDynamicImports`, which turns every `import()` back
-into an inline module, because the plugin ships only `Editor.js` (`fetch-svgedit-dist.mjs`); so code splitting cannot
+into an inline module, because the plugin ships only `Editor.ts` (`fetch-svgedit-dist.mjs`); so code splitting cannot
 help without a plugin change.
 
-**Measured (2026-10-16, `npm run bundle-report`, `npm run bundle-size`).** `Editor.js` is 3249 KB minified (4844 KB rendered
+**Measured (2026-10-16, `npm run bundle-report`, `npm run bundle-size`).** `Editor.ts` is 3249 KB minified (4844 KB rendered
 across 775 modules). By share of the rendered size: `packages/svgcanvas/core` 29% (1411 KB, 105 files), `src/editor/components`
 10%, `paper` 8.5% (413 KB), the editor's top-level files 8%, **`ext-shapes` 7.4% (360 KB: the shape library data)**,
 `clipper-lib` 4.4%, panels and dialogs 4% each, the toolbar icons 3.7% (241 files), `ext-fonts` 2.4% (the font catalog),
 `culori` 2%, `i18next` 1.6%, the 43 other extensions together about 8% (10–35 KB each). Startup (uninstrumented build,
 `vite preview` on this machine, median of 7): `#svgroot` at 234 ms and extensions added at 243 ms from navigation; with the
-CPU throttled 4x, 620 / 644 ms. The Editor.js fetch is 96 ms of that on localhost. **So startup is not a problem, and
+CPU throttled 4x, 620 / 644 ms. The Editor.ts fetch is 96 ms of that on localhost. **So startup is not a problem, and
 splitting the bundle would not buy a visible win**; what is left to weigh is the plugin's main.js parse cost at Obsidian
 launch (the whole editor sits in `main.js`), which this machine cannot show and a phone would.
 

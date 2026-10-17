@@ -47,7 +47,7 @@ explicitly out of scope.
 - **Crash recovery / Data Recovery copies** (`ui-egui/src/recovery.rs`). The
   Obsidian plugin already autosaves (`autosaveSeconds` in
   `../obsidian-svgedit-plugin/src/main.ts`), and the standalone editor has a
-  `beforeunload` warning (`EditorStartup.js` ≈ line 883). Not worth it here.
+  `beforeunload` warning (`EditorStartup.ts` ≈ line 883). Not worth it here.
 - **The TCP control channel / MCP server.** T0.5 provides an in-page API
   instead. No network listener, so there's no attack surface.
 

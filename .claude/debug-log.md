@@ -1,6 +1,6 @@
 # Debug log — event vocabulary
 
-`editor.setDebugLogger(sink)` (Editor.js) turns the log on; `sink(event, detail)` is the host's log (the Obsidian plugin
+`editor.setDebugLogger(sink)` (Editor.ts) turns the log on; `sink(event, detail)` is the host's log (the Obsidian plugin
 writes `<ISO time> <event> <json detail>` lines to a file). `null` turns it off. Everything below goes through that one
 sink. Written so a person or an LLM can read a log top to bottom as **the user's session**: what they pressed, which
 command ran from where, what a gesture committed, and what the editor looked like afterwards.

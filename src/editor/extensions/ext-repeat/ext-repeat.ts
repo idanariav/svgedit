@@ -90,7 +90,7 @@ const parseParams = (str: string | null): RepeatParams | null => {
 export default {
   name,
   async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.js').default
+    const svgEditor = (this as unknown) as import('../../Editor.ts').default
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas

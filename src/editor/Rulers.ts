@@ -10,12 +10,12 @@ const { getTypeMap } = SvgCanvas
 class Rulers {
   rulerIntervals: number[]
   svgCanvas: SvgCanvas
-  editor: import('./EditorStartup.js').default
+  editor: import('./EditorStartup.ts').default
   rulerX: HTMLDivElement
   rulerY: HTMLDivElement
   rulerCorner: HTMLDivElement
 
-  constructor (editor: import('./EditorStartup.js').default) {
+  constructor (editor: import('./EditorStartup.ts').default) {
     // Make [1,2,5] array
     this.rulerIntervals = []
     for (let i = 0.1; i < 1e5; i *= 10) {

@@ -1,5 +1,5 @@
 /**
- * StopBar.js — gradient stop bar + detail list factory.
+ * StopBar.ts — gradient stop bar + detail list factory.
  * Not a custom element — returns a container div with API methods.
  */
 
@@ -14,17 +14,12 @@ const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
   <path d="M12 5v14M5 12h14"/>
 </svg>`
 
-/**
- * @param {import('../../PaintModel.ts').GradientStop[]} initialStops
- * @param {'two'|'mono'|'multi'} initialMode
- * @returns {import('../../PaintModel.ts').StopBarElement}
- */
-export function createStopBar (initialStops, initialMode = 'two') {
+export function createStopBar (initialStops: import('../../PaintModel.ts').GradientStop[], initialMode: 'two' | 'mono' | 'multi' = 'two'): import('../../PaintModel.ts').StopBarElement {
   let stops = initialStops.map(s => ({ ...s }))
   let mode = initialMode
   let selectedIndex = 0
 
-  const container = /** @type {import('../../PaintModel.ts').StopBarElement} */ (document.createElement('div'))
+  const container = document.createElement('div') as import('../../PaintModel.ts').StopBarElement
   container.className = 'cp-stopbar-wrap'
   container.innerHTML = `
     <div class="cp-stopbar">
@@ -38,10 +33,10 @@ export function createStopBar (initialStops, initialMode = 'two') {
     <div class="cp-stop-list"></div>
   `
 
-  const stopsContainer = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-stops'))
-  const trackFill = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-track-fill'))
-  const addBtn = /** @type {HTMLButtonElement} */ (container.querySelector('.cp-stopbar-add'))
-  const stopList = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stop-list'))
+  const stopsContainer = container.querySelector('.cp-stopbar-stops') as HTMLDivElement
+  const trackFill = container.querySelector('.cp-stopbar-track-fill') as HTMLDivElement
+  const addBtn = container.querySelector('.cp-stopbar-add') as HTMLButtonElement
+  const stopList = container.querySelector('.cp-stop-list') as HTMLDivElement
 
   function _gradientCSS () {
     if (!stops.length) return 'transparent'
@@ -57,20 +52,14 @@ export function createStopBar (initialStops, initialMode = 'two') {
     }))
   }
 
-  /**
-* @param {number} index
-*/
-  function _emitSelect (index) {
+  function _emitSelect (index: number) {
     container.dispatchEvent(new CustomEvent('stop-select', {
       detail: { index },
       bubbles: true
     }))
   }
 
-  /**
-* @param {number} idx
-*/
-  function _selectStop (idx) {
+  function _selectStop (idx: number) {
     selectedIndex = idx
     _render()
     _emitSelect(idx)
@@ -100,7 +89,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
         if (e.button !== 0) return
         e.preventDefault()
         chip.setPointerCapture(e.pointerId)
-        const bar = /** @type {HTMLElement} */ (stopsContainer.parentElement)
+        const bar = stopsContainer.parentElement as HTMLElement
         const rect = bar.getBoundingClientRect()
         const padding = 8 // matches CSS padding: 0 8px on .cp-stopbar
         chip.addEventListener('pointermove', (me) => {
@@ -141,11 +130,11 @@ export function createStopBar (initialStops, initialMode = 'two') {
       `
 
       row.addEventListener('click', (e) => {
-        if (/** @type {Element} */ (e.target).closest('.cp-stop-del')) return
+        if ((e.target as Element).closest('.cp-stop-del')) return
         _selectStop(idx)
       })
 
-      const chipBtn = /** @type {HTMLButtonElement} */ (row.querySelector('.cp-stop-chipbig'))
+      const chipBtn = row.querySelector('.cp-stop-chipbig') as HTMLButtonElement
       chipBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         _selectStop(idx)
@@ -155,7 +144,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
         }))
       })
 
-      const delBtn = /** @type {HTMLButtonElement} */ (row.querySelector('.cp-stop-del'))
+      const delBtn = row.querySelector('.cp-stop-del') as HTMLButtonElement
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         const minStops = mode === 'mono' ? 1 : 2
@@ -205,7 +194,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
     _render()
   }
 
-  container.setSelectedStop = (/** @type {number} */ idx, /** @type {string} */ colorHex, /** @type {number | undefined} */ alpha) => {
+  container.setSelectedStop = (idx: number, colorHex: string, alpha: number | undefined) => {
     if (idx >= 0 && idx < stops.length) {
       stops[idx].color = colorHex
       if (alpha !== undefined) stops[idx].alpha = alpha

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { createHsvBox } from '../../../src/editor/components/colorPicker/panels/shared/HsvBox.js'
+import { createHsvBox } from '../../../src/editor/components/colorPicker/panels/shared/HsvBox.ts'
 
 function paste (input, text) {
   const event = new Event('paste', { bubbles: true, cancelable: true })

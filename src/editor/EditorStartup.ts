@@ -1,4 +1,4 @@
-// EditorStartup.js — Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions
+// EditorStartup.ts — Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions
 import {
   putLocale
 } from './locale.ts'
@@ -22,12 +22,12 @@ import { refreshToolOptions } from './panels/toolOptionsBar.ts'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
+import type { IdLookup, IdRequire } from '@svgedit/svgcanvas/core/dom-utils.ts'
+import type { MenuItem } from './contextmenu.ts'
+import type { MenuItemAction } from './contextmenu.ts'
 
-/**
-   * @fires module:svgcanvas.SvgCanvas#event:svgEditorReady
-   * @returns {void}
-   */
-const readySignal = () => {
+/** @fires module:svgcanvas.SvgCanvas#event:svgEditorReady */
+const readySignal = (): void => {
   // let the opener know SVG Edit is ready (now that config is set up)
   const w = window.opener || window.parent
   if (w) {
@@ -40,11 +40,8 @@ const readySignal = () => {
          * @property {true} bubbles
          * @property {true} cancelable
          */
-      /**
-         * @name module:SVGthis.svgEditorReadyEvent
-         * @type {module:SVGEditor#event:svgEditorReadyEvent}
-         */
-      const svgEditorReadyEvent = new w.CustomEvent('svgEditorReady', {
+      /** @name module:SVGthis.svgEditorReadyEvent */
+      const svgEditorReadyEvent: any = new w.CustomEvent('svgEditorReady', {
         bubbles: true,
         cancelable: true
       })
@@ -59,9 +56,8 @@ const readySignal = () => {
  * Inject the editor stylesheet (inlined into the bundle) into the document head
  * once. Replaces the former `<link href="svgedit.css">` so the editor needs no
  * runtime CSS file. Idempotent.
- * @returns {void}
  */
-const injectSvgeditStyles = () => {
+const injectSvgeditStyles = (): void => {
   if (document.querySelector('style[data-svgedit-css]')) return
   const styleEl = document.createElement('style')
   styleEl.setAttribute('data-svgedit-css', '')
@@ -75,55 +71,61 @@ const { $click, scopedId, scopedReq, scopedQa, scopedQq } = SvgCanvas
  *
  */
 class EditorStartup {
-  // Members the `Editor` subclass creates in its constructor, declared here so the startup code that uses them is typed.
-  /** @type {import('./ConfigObj.ts').default} */ configObj
-  /** @type {import('./panels/LeftPanel.ts').default} */ leftPanel
-  /** @type {import('./panels/TopPanel.ts').default} */ topPanel
-  /** @type {import('./panels/BottomPanel.ts').default} */ bottomPanel
-  /** @type {import('./panels/RightPanel.ts').default} */ rightPanel
-  /** @type {import('./panels/TabletShell.ts').default} */ tabletShell
-  /** @type {import('./MainMenu.ts').default} */ mainMenu
-  /** @type {import('./Hotkeys.ts').default} */ hotkeys
-  /** @type {string[]} */ goodLangs
-  // Seams the built-in extensions fill in when they load (undefined otherwise).
-  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ shadowApi
-  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ outlineApi
-  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ glowApi
-  /** @type {((detail?: object, target?: Element) => void)|undefined} */ armShapeInsert
-  /** @type {ReturnType<typeof import('./extensions/fx-filter.ts').createFxComposer>|undefined} */ fxFilter
-  /** @type {((zoom?: number) => void)|undefined} */ updateGrid
-  /** @type {(() => void)|undefined} */ updateProportionMarkers
-  /** @type {number|undefined} */ exportWindowCt
-  /** @type {import('i18next').i18n} */ i18next
-  // Members `init()` creates (a field is set once the editor is up; nothing reads them before).
-  /** @type {SvgCanvas} The canvas; created by `init()`. */ svgCanvas
-  /** @type {HTMLDivElement} The scrolling area around the canvas. */ workarea
-  /** @type {HTMLElement} The `.svg_editor` root the template adds to the container. */ $svgEditor
-  /** @type {HTMLElement} The element the editor is mounted in. */ $container
-  /** @type {HTMLElement} The canvas right-click menu. */ canvMenu
-  /** @type {Window|null} The window an export opens. */ exportWindow
-  /** @type {Element|null} The one selected element, `null` for none or several. */ selectedElement
-  /** @type {boolean} Several elements are selected. */ multiselected
-  /** @type {Storage|undefined} */ storage
-  /** @type {Rulers} */ rulers
-  /** @type {?string} What a tool says is under the pointer (see `cursorForMode`). */ cursorHint
-  /** @type {?((e: ClipboardEvent) => void)} */ pasteHandler
-  /** @type {?ReturnType<typeof createPasteFallbackArmer>} */ pasteFallbackArmer
-  /** @type {(text: string | undefined) => boolean} */ applyClipboardText
-  /** @type {(active: boolean) => void} */ setPanning
-  /** @type {ReturnType<typeof initToolShortcutBadges>|undefined} */ toolShortcutBadges
-  /** @type {boolean} */ enableToolCancel
-  /** @type {string} 'toolbars' while a toolbar field has focus, 'canvas' after */ uiContext
-  /** @type {string} */ defaultImageURL
-  /** @type {*} */ modeEvent
-  /** @type {*[]} Messages sent before the extensions finished loading. */ messageQueue
-  /** @type {boolean} */ extensionsAdded
-  /** @type {boolean} */ showSaveWarning
+  listenerAbort: AbortController
+  activate: () => void
+  $id: IdLookup
+  $req: IdRequire
+  $qa: (sel: string) => Element[]
+  $qq: (sel: string) => Element | null
+  contextMenu: { add: (menuItem: MenuItem) => void; hasCustomHandler: (handlerKey: string) => boolean; getCustomHandler: (handlerKey: string) => MenuItemAction; injectExtendedContextMenuItemsIntoDom: () => void; resetCustomMenus: () => void; }
 
-  /**
-   * @param {?HTMLElement} [div] the editor's container
-   */
-  constructor (div) {
+  // Members the `Editor` subclass creates in its constructor, declared here so the startup code that uses them is typed.
+  configObj: import('./ConfigObj.ts').default
+  leftPanel: import('./panels/LeftPanel.ts').default
+  topPanel: import('./panels/TopPanel.ts').default
+  bottomPanel: import('./panels/BottomPanel.ts').default
+  rightPanel: import('./panels/RightPanel.ts').default
+  tabletShell: import('./panels/TabletShell.ts').default
+  mainMenu: import('./MainMenu.ts').default
+  hotkeys: import('./Hotkeys.ts').default
+  goodLangs: string[]
+  // Seams the built-in extensions fill in when they load (undefined otherwise).
+  shadowApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
+  outlineApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
+  glowApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
+  armShapeInsert: ((detail?: any, target?: Element) => void) | undefined
+  fxFilter: ReturnType<typeof import('./extensions/fx-filter.ts').createFxComposer> | undefined
+  updateGrid: ((zoom?: number) => void) | undefined
+  updateProportionMarkers: (() => void) | undefined
+  exportWindowCt: number | undefined
+  i18next: import('i18next').i18n
+  // Members `init()` creates (a field is set once the editor is up; nothing reads them before).
+  /** The canvas; created by `init()`. */ svgCanvas: SvgCanvas
+  /** The scrolling area around the canvas. */ workarea: HTMLDivElement
+  /** The `.svg_editor` root the template adds to the container. */ $svgEditor: HTMLElement
+  /** The element the editor is mounted in. */ $container: HTMLElement
+  /** The canvas right-click menu. */ canvMenu: HTMLElement
+  /** The window an export opens. */ exportWindow: Window | null
+  /** The one selected element, `null` for none or several. */ selectedElement: Element | null
+  /** Several elements are selected. */ multiselected: boolean
+  storage: Storage | undefined
+  rulers: Rulers
+  /** What a tool says is under the pointer (see `cursorForMode`). */ cursorHint: string | null
+  pasteHandler: ((e: ClipboardEvent) => void) | null
+  pasteFallbackArmer: ReturnType<typeof createPasteFallbackArmer> | null
+  applyClipboardText: (text: string | undefined) => boolean
+  setPanning: (active: boolean) => void
+  toolShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
+  enableToolCancel: boolean
+  /** 'toolbars' while a toolbar field has focus, 'canvas' after */ uiContext: string
+  defaultImageURL: string
+  modeEvent: any
+  /** Messages sent before the extensions finished loading. */ messageQueue: any[]
+  extensionsAdded: boolean
+  showSaveWarning: boolean
+
+  /** @param div the editor's container */
+  constructor (div?: HTMLElement | null) {
     this.extensionsAdded = false
     this.messageQueue = []
     // Document/window-level listeners this editor registers (modeChange, key
@@ -141,7 +143,7 @@ class EditorStartup {
     // their owning editor via closestRoot() (see domScope.js).
     this.$container.setAttribute('data-svgedit-root', '')
     // The constructor runs on the base class; every holder of the editor wants the `Editor` this becomes.
-    const editor = /** @type {EditorInstance} */ (/** @type {unknown} */ (this))
+    const editor = (this as unknown) as EditorInstance
     registerEditorRoot(this.$container, editor)
     // Make the container itself focusable (script-only, not tab-reachable) so
     // `activate()` below can move real DOM focus into it. Canvas clicks (e.g.
@@ -204,10 +206,9 @@ class EditorStartup {
   /**
   * Auto-run after a Promise microtask.
   * @function module:SVGthis.init
-  * @this {EditorInstance} the subclass: `init()` calls the members it defines (`selectedChanged`, `updateCanvas`, …)
-  * @returns {Promise<void>}
-  */
-  async init () {
+  * (`this` is the subclass): `init()` calls the members it defines (`selectedChanged`, `updateCanvas`, …)
+   */
+  async init (this: EditorInstance): Promise<void> {
     const { $id, $req } = this // container-scoped lookup (see constructor)
     // Register the optional host storage adapter before any component is
     // constructed (the editor template below instantiates <se-palette> and the
@@ -228,7 +229,7 @@ class EditorStartup {
       const template = document.createElement('template')
       template.innerHTML = editorTemplate
       this.$container.append(template.content.cloneNode(true))
-      this.$svgEditor = /** @type {HTMLElement} */ (this.$container.querySelector('.svg_editor'))
+      this.$svgEditor = (this.$container.querySelector('.svg_editor') as HTMLElement)
       // Apply saved theme + UI mode before any rendering
       applyTheme(this.configObj.pref('theme') || 'light', this.$svgEditor)
       applyUiMode(this.configObj.pref('tabletMode'), this.$svgEditor)
@@ -329,11 +330,7 @@ class EditorStartup {
     // (e.g. a stale DOM id after a template refactor) doesn't abort the
     // remaining panels, the svgCanvas event bindings, and extension loading
     // that all follow later in this method.
-    /**
-     * @param {string} label
-     * @param {() => void} fn
-     */
-    const initPanel = (label, fn) => {
+    const initPanel = (label: string, fn: () => void) => {
       try {
         fn()
       } catch (err) {
@@ -367,7 +364,7 @@ class EditorStartup {
     const aLink = $req('cur_context_panel')
 
     $click(aLink, (evt) => {
-      const link = /** @type {Element} */ (evt.target)
+      const link = evt.target as Element
       if (link.hasAttribute('data-root')) {
         this.svgCanvas.leaveContext()
       } else {
@@ -385,20 +382,15 @@ class EditorStartup {
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))
     // A tool says what is under the pointer (a pen end to carry on, a width point): its cursor follows.
-    this.svgCanvas.bind('cursorHint', (_win, /** @type {?string} */ hint) => {
+    this.svgCanvas.bind('cursorHint', (_win, hint: string | null) => {
       this.cursorHint = hint
       this.setCursorStyle(this.svgCanvas.getMode())
     })
     this.svgCanvas.bind('zoomDone', this.zoomDone.bind(this))
     this.svgCanvas.bind(
       'updateCanvas',
-      /**
-     * @param {Window} _win
-     * @param {{center?: boolean, newCtr?: {x: number, y: number}}} centerInfo
-     * @listens module:svgcanvas.SvgCanvas#event:updateCanvas
-     * @returns {void}
-     */
-      (_win, { center, newCtr }) => {
+      /** @listens module:svgcanvas.SvgCanvas#event:updateCanvas */
+      (_win: Window, { center, newCtr }: { center?: boolean, newCtr?: { x: number, y: number } }): void => {
         this.updateCanvas(center, newCtr)
       }
     )
@@ -409,7 +401,7 @@ class EditorStartup {
     this.svgCanvas.bind('beforeClear', this.beforeClear.bind(this))
     this.svgCanvas.bind('afterClear', this.afterClear.bind(this))
 
-    this.svgCanvas.textActions.setInputElem(/** @type {HTMLTextAreaElement} */ ($id('text')))
+    this.svgCanvas.textActions.setInputElem(($id('text') as HTMLTextAreaElement))
 
     const bkgdColor = this.configObj.pref('bkgd_color')
     if (bkgdColor === 'gradient') {
@@ -441,13 +433,13 @@ class EditorStartup {
     const selElements = this.$qa('select') // container-scoped (see constructor)
     Array.from(selElements).forEach(function (element) {
       element.addEventListener('change', function (evt) {
-        ;/** @type {HTMLElement} */ (evt.currentTarget).blur()
+        ;(evt.currentTarget as HTMLElement).blur()
       })
     })
 
     // fired when user wants to move elements to another layer
     $req('selLayerNames').addEventListener('change', (evt) => {
-      const destLayer = /** @type {CustomEvent} */ (evt).detail.value
+      const destLayer = (evt as CustomEvent).detail.value
       if (destLayer === NEW_LAYER_OPTION_VALUE) {
         this.rightPanel.moveSelectedToNewLayer()
         return
@@ -459,25 +451,20 @@ class EditorStartup {
       }
     })
     $req('tool_font_family').addEventListener('change', (evt) => {
-      this.svgCanvas.setFontFamily(/** @type {CustomEvent} */ (evt).detail.value)
+      this.svgCanvas.setFontFamily((evt as CustomEvent).detail.value)
     })
 
     $req('seg_type').addEventListener('change', (evt) => {
-      this.svgCanvas.setSegType(/** @type {CustomEvent} */ (evt).detail.value)
+      this.svgCanvas.setSegType((evt as CustomEvent).detail.value)
     })
 
-    /**
-     * @param {EventTarget} element
-     * @param {string} eventNames space-separated
-     * @param {EventListener} listener
-     * @param {boolean|AddEventListenerOptions} [options]
-     */
-    const addListenerMulti = (element, eventNames, listener, options = false) => {
+    /** @param eventNames space-separated */
+    const addListenerMulti = (element: EventTarget, eventNames: string, listener: EventListener, options: boolean | AddEventListenerOptions = false) => {
       eventNames.split(' ').forEach((eventName) => element.addEventListener(eventName, listener, options))
     }
 
     addListenerMulti($req('text'), 'keyup input', (evt) => {
-      this.svgCanvas.setTextContent(/** @type {HTMLTextAreaElement} */ (evt.currentTarget).value)
+      this.svgCanvas.setTextContent((evt.currentTarget as HTMLTextAreaElement).value)
     })
 
     // Shift+Enter inserts a new row (default textarea behavior); plain Enter
@@ -495,22 +482,22 @@ class EditorStartup {
     })
 
     $req('link_url').addEventListener('change', (evt) => {
-      if (/** @type {HTMLInputElement} */ (evt.currentTarget).value.length) {
-        this.svgCanvas.setLinkURL(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
+      if ((evt.currentTarget as HTMLInputElement).value.length) {
+        this.svgCanvas.setLinkURL((evt.currentTarget as HTMLInputElement).value)
       } else {
         this.svgCanvas.removeHyperlink()
       }
     })
 
     $req('g_title').addEventListener('change', (evt) => {
-      this.svgCanvas.setGroupTitle(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
+      this.svgCanvas.setGroupTitle((evt.currentTarget as HTMLInputElement).value)
     })
 
     // Frame name reuses the <title>-child mechanism (setGroupTitle works on any
     // selected element, with undo). The name labels the frame in the export
     // region picker.
     $req('frame_name').addEventListener('change', (evt) => {
-      this.svgCanvas.setGroupTitle(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
+      this.svgCanvas.setGroupTitle((evt.currentTarget as HTMLInputElement).value)
     })
 
     let lastX = 0; let lastY = 0
@@ -702,7 +689,7 @@ class EditorStartup {
       // later and double-paste.
       this.pasteFallbackArmer?.disarm()
       // Let editable fields (inputs, text areas) keep their native paste.
-      const t = /** @type {HTMLElement|null} */ (e.target)
+      const t = e.target as HTMLElement | null
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
       const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain')
       if (this.applyClipboardText(text)) e.preventDefault()
@@ -739,29 +726,20 @@ class EditorStartup {
       }
     }, { signal: this.listenerAbort.signal })
 
-    /**
-     * @function module:SVGthis.setPanning
-     * @param {boolean} active
-     * @returns {void}
-     */
-    this.setPanning = (active) => {
+    /** @function module:SVGthis.setPanning */
+    this.setPanning = (active: boolean): void => {
       this.svgCanvas.gesture.spaceKey = keypan = active
     }
-    /** @type {HTMLElement|undefined} */
-    let inp
-    /**
-      *
-      * @returns {void}
-      */
-    const unfocus = () => {
+    let inp: HTMLElement | undefined
+    const unfocus = (): void => {
       inp?.blur()
     }
 
     const liElems = this.$svgEditor.querySelectorAll('button, select, input:not(#text)')
     const self = this
     Array.prototype.forEach.call(liElems, function (el) {
-      el.addEventListener('focus', (/** @type {Event} */ e) => {
-        inp = /** @type {HTMLElement} */ (e.currentTarget)
+      el.addEventListener('focus', (e: Event) => {
+        inp = (e.currentTarget as HTMLElement)
         self.uiContext = 'toolbars'
         self.workarea.addEventListener('mousedown', unfocus)
       })
@@ -802,8 +780,8 @@ class EditorStartup {
     window.addEventListener('resize', () => {
       Object.entries(winWh).forEach(([type, val]) => {
         const curval = (type === 'width') ? window.innerWidth - 15 : window.innerHeight
-        this.workarea[/** @type {'scrollLeft'|'scrollTop'} */ ('scroll' + (type === 'width' ? 'Left' : 'Top'))] -= (curval - val) / 2
-        winWh[/** @type {'width'|'height'} */ (type)] = curval
+        this.workarea[('scroll' + (type === 'width' ? 'Left' : 'Top')) as 'scrollLeft' | 'scrollTop'] -= (curval - val) / 2
+        winWh[type as 'width' | 'height'] = curval
       })
     }, { signal: this.listenerAbort.signal })
 
@@ -816,18 +794,18 @@ class EditorStartup {
     const elements = document.getElementsByClassName('push_button')
     Array.from(elements).forEach(function (element) {
       element.addEventListener('mousedown', function (event) {
-        if (!(/** @type {Element} */ (event.currentTarget)).classList.contains('disabled')) {
-          ;/** @type {Element} */ (event.currentTarget).classList.add('push_button_pressed')
-          ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button')
+        if (!((event.currentTarget as Element)).classList.contains('disabled')) {
+          ;(event.currentTarget as Element).classList.add('push_button_pressed')
+          ;(event.currentTarget as Element).classList.remove('push_button')
         }
       })
       element.addEventListener('mouseout', function (event) {
-        ;/** @type {Element} */ (event.currentTarget).classList.add('push_button')
-        ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button_pressed')
+        ;(event.currentTarget as Element).classList.add('push_button')
+        ;(event.currentTarget as Element).classList.remove('push_button_pressed')
       })
       element.addEventListener('mouseup', function (event) {
-        ;/** @type {Element} */ (event.currentTarget).classList.add('push_button')
-        ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button_pressed')
+        ;(event.currentTarget as Element).classList.add('push_button')
+        ;(event.currentTarget as Element).classList.remove('push_button_pressed')
       })
     })
 
@@ -851,7 +829,7 @@ class EditorStartup {
     })
 
     $req('se-svg-editor-dialog').addEventListener('change', (evt) => {
-      const e = /** @type {CustomEvent} */ (evt)
+      const e = evt as CustomEvent
       if (e?.detail?.copy === 'click') {
         this.cancelOverlays(e)
       } else if (e?.detail?.dialog === 'dynamic') {
@@ -863,7 +841,7 @@ class EditorStartup {
       }
     })
     $req('se-cmenu_canvas').addEventListener('change', (e) => {
-      const action = /** @type {CustomEvent} */ (e)?.detail?.trigger
+      const action = (e as CustomEvent)?.detail?.trigger
       switch (action) {
         case 'delete':
           this.svgCanvas.deleteSelectedElements()
@@ -1004,42 +982,33 @@ class EditorStartup {
     document.dispatchEvent(new CustomEvent('svgedit:ready', { detail: this }))
   }
 
-  /**
-   * Handle "Add to Shape Library" context menu action (see addToShapeLibrary.js).
-   * @returns {Promise<void>}
-   */
-  _addSelectedToShapeLibrary () {
-    return addSelectedToShapeLibrary(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
+  /** Handle "Add to Shape Library" context menu action (see addToShapeLibrary.js). */
+  _addSelectedToShapeLibrary (): Promise<void> {
+    return addSelectedToShapeLibrary(((this as unknown) as EditorInstance))
   }
 
   /**
    * @fires module:svgcanvas.SvgCanvas#event:ext_addLangData
    * @fires module:svgcanvas.SvgCanvas#event:ext_langReady
    * @fires module:svgcanvas.SvgCanvas#event:extensions_added
-   * @this {EditorInstance}
-   * @returns {Promise<void>}
    */
-  async extAndLocaleFunc () {
+  async extAndLocaleFunc (this: EditorInstance): Promise<void> {
     this.$svgEditor.style.visibility = 'visible'
     // Show the brand watermark on the initially-empty canvas.
     this.updateCanvasWatermark()
     try {
       // load standard extensions
       await Promise.all(
-        this.configObj.curConfig.extensions.map(async (/** @type {string} */ extname) => {
+        this.configObj.curConfig.extensions.map(async (extname: string) => {
           /**
            * @tutorial ExtensionDocs
-           * @typedef {PlainObject} module:SVGthis.ExtensionObject
            * @property {string} [name] Name of the extension. Used internally; no need for i18n. Defaults to extension name without beginning "ext-" or ending ".js".
            * @property {module:svgcanvas.ExtensionInitCallback} [init]
            */
           try {
-            /**
-             * @type {module:SVGthis.ExtensionObject}
-             */
             // Extensions are inlined into the bundle via extensionRegistry.js
             // (statically resolved), so no runtime fetch from extPath is needed.
-            const imported = getExtension(extname)
+            const imported: any = getExtension(extname)
             if (!imported) throw new Error(`Unknown extension: ${extname}`)
             if (!imported.default) throw new Error(`Extension ${extname} has no default export`)
             const { name = extname, init: initfn } = imported.default
@@ -1053,18 +1022,14 @@ class EditorStartup {
       )
       // load user extensions (given as pathNames)
       await Promise.all(
-        this.configObj.curConfig.userExtensions.map(async (/** @type {{pathName: string, config: *}} */ { pathName, config }) => {
+        this.configObj.curConfig.userExtensions.map(async ({ pathName, config }: { pathName: string, config: any }) => {
           /**
            * @tutorial ExtensionDocs
-           * @typedef {PlainObject} module:SVGthis.ExtensionObject
            * @property {string} [name] Name of the extension. Used internally; no need for i18n. Defaults to extension name without beginning "ext-" or ending ".js".
            * @property {module:svgcanvas.ExtensionInitCallback} [init]
            */
           try {
-            /**
-             * @type {module:SVGthis.ExtensionObject}
-             */
-            const imported = await import(/* @vite-ignore */ encodeURI(pathName))
+            const imported: any = await import(/* @vite-ignore */ encodeURI(pathName))
             if (!imported.default) throw new Error(`Extension ${pathName} has no default export`)
             const { name, init: initfn } = imported.default
             return this.addExtension(name, (initfn && initfn.bind(this, config)), {})
@@ -1077,13 +1042,8 @@ class EditorStartup {
       )
       this.svgCanvas.bind(
         'extensions_added',
-        /**
-        * @param {Window} _win
-        * @param {*} _data
-        * @listens module:SvgCanvas#event:extensions_added
-        * @returns {void}
-        */
-        (_win, _data) => {
+        /** @listens module:SvgCanvas#event:extensions_added */
+        (_win: Window, _data: any): void => {
           this.extensionsAdded = true
           this.setAll()
           // the key of each tool, drawn on its icon (all tools exist now; later ones are picked up by the observer)
@@ -1092,12 +1052,8 @@ class EditorStartup {
           this.updateCanvas(true)
 
           this.messageQueue.forEach(
-            /**
-             * @param {module:svgcanvas.SvgCanvas#event:message} messageObj
-             * @fires module:svgcanvas.SvgCanvas#event:message
-             * @returns {void}
-             */
-            (messageObj) => {
+            /** @fires module:svgcanvas.SvgCanvas#event:message */
+            (messageObj: any): void => {
               this.svgCanvas.call('message', messageObj)
             }
           )
@@ -1112,9 +1068,9 @@ class EditorStartup {
 
   /**
  * Listens to the mode change, listener is to be added on document
-* @param {Event} evt custom modeChange event
-*/
-  modeListener (evt) {
+ * @param evt custom modeChange event
+   */
+  modeListener (evt: Event) {
     const { $id } = this // container-scoped lookup (see constructor)
     const mode = this.svgCanvas.getMode()
 
@@ -1125,14 +1081,11 @@ class EditorStartup {
     const frameBtn = $id('tool_frame')
     if (frameBtn) frameBtn.pressed = mode === 'frame'
     this.topPanel.toggleImageCropMode(mode === 'imagecrop')
-    refreshToolOptions(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
+    refreshToolOptions(((this as unknown) as EditorInstance))
   }
 
-  /**
-   * sets cursor styling for workarea depending on the current mode
-   * @param {string} mode
-   */
-  setCursorStyle (mode) {
+  /** sets cursor styling for workarea depending on the current mode */
+  setCursorStyle (mode: string) {
     // A torn-down editor whose listeners survived would reach here with no
     // workarea; bail rather than throw on `this.workarea.style` (defence in
     // depth — destroy() should already have removed those listeners).
