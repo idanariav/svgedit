@@ -1,5 +1,9 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.11
+- Fix: after `clear()` the selection overlay and the drag rectangle (and its hit-test) sat left of the cursor by the canvas margin, because the rebuilt selector group lost the `translate(x,y)` that `updateCanvas()` sets.
+- UI: the layer fold arrow is a larger drawn triangle, vertically centred in its row.
+
 ## 7.4.1-fork.10
 - Fix: a saved user shape that carries `se:` attributes is parsed with the `se` namespace declared, so inserting it no longer fails or drops them.
 

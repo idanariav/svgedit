@@ -183,4 +183,12 @@ describe('select', function () {
     assert.equal(sel.selectedElement, null)
     assert.equal(sel.selectorGroup.getAttribute('display'), 'none')
   })
+
+  it('rebuilding the selector group keeps the content offset (clear() must not shift the overlay)', function () {
+    Object.assign(mockSvgCanvas, select.createSelect(mockSvgCanvas))
+    svgContent.setAttribute('x', '640')
+    svgContent.setAttribute('y', '480')
+    mockSvgCanvas.getSelectorManager().initGroup()
+    assert.equal(svgroot.querySelector('#selectorParentGroup').getAttribute('transform'), 'translate(640,480)')
+  })
 })

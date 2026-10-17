@@ -990,19 +990,25 @@ hr {
 
 /* Object rows (layerTree.js): a tree under each expanded layer */
 #layerlist td.layertoggle {
-  width: 20px;
-  padding: 9px 0 9px 6px;
+  width: 22px;
+  padding: 0 0 0 6px;
   text-align: center;
+  vertical-align: middle;
+  line-height: 0;
 }
+/* A drawn triangle rather than a text glyph: a glyph sits low in its line box, this is centred in the row. */
 #layerlist td.layertoggle::before {
-  content: '\25B8';
+  content: '';
   display: inline-block;
-  font-size: 16px;
-  color: var(--muted);
+  vertical-align: middle;
+  border-style: solid;
+  border-width: 6px 0 6px 9px;
+  border-color: transparent transparent transparent var(--muted);
+  transform-origin: 30% 50%;
   transition: transform 0.12s;
 }
 #layerlist td.layertoggle.open::before { transform: rotate(90deg); }
-#layerlist td.layertoggle:hover::before { color: var(--fg); }
+#layerlist td.layertoggle:hover::before { border-left-color: var(--fg); }
 #layerlist tr.object { background: transparent; }
 #layerlist tr.object td { padding: 4px 6px; border-top: 1px solid var(--section-rule, #EEF0F3); }
 #layerlist tr.object td.objlead { width: 14px; padding: 0; }

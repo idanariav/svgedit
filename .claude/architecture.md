@@ -130,11 +130,13 @@ setConfig({ userDataAdapter: {
   getPalette (), setPalette (overrides),       // sync read / fire-and-forget write
   getUserShapes (), setUserShapes (store),
   getHotkeys (), setHotkeys (overrides),       // hotkey overrides { id: [keys] }
-  getFavorites (), setFavorites (ids)          // quick-action favorites [id, …]
+  getFavorites (), setFavorites (ids),         // quick-action favorites [id, …]
+  getClasses (), setClasses (presets),         // style-preset class library
+  getDefaultClasses (), setDefaultClasses (m)  // per-tag default class { text: 'title' }
 }})
 ```
 
-`EditorStartup.init()` registers it once into the `userDataAdapter.js` registry **before** any component is constructed; the consumers resolve it through `getUserDataAdapter()`. Reads are synchronous; writes receive the full current state on every edit. Each method is independent and optional; with none set, that data falls back to localStorage and standalone svgedit is unchanged.
+`EditorStartup.init()` registers it once into the `userDataAdapter.js` registry **before** any component is constructed; the consumers resolve it through `getUserDataAdapter()`. Reads are synchronous; writes receive the full current state on every edit. Each method is independent and optional; with none set, that data falls back to localStorage and standalone svgedit is unchanged. Once an adapter is registered a *missing* method does not fall back: reads give the empty value and writes are dropped, so a host must implement both halves of every pair it uses (a host without `setDefaultClasses` loses every "default class for new objects" choice).
 
 **Live refresh across instances: `svgEditor.reloadUserData()`.** When several instances share one store, a write by one leaves the others stale. `reloadUserData()` re-reads **both** stores (adapter, else localStorage) and re-renders the palette (`sePalette.reload()`) and shape library (the `user-shapes-updated` event on each `se-shape-library`, desktop and tablet) **for that instance only**; the host calls it on every *other* open instance after a write. It resolves components through the instance's own root (`this.$svgEditor`), never a document-wide query, and no-ops when a component isn't mounted.
 

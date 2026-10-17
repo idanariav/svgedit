@@ -400,6 +400,15 @@ export const createSelect = (canvas: SvgCanvas): SelectApi => {
       })
       this.selectorParentGroup.append(this.selectorGripsGroup)
       svgCanvas.getSvgRoot().append(this.selectorParentGroup)
+      // The group lives in svgroot space, so it follows the content's x/y offset (set by `updateCanvas`, which only
+      // runs on zoom / resize). A rebuild (`clear()`) must keep that offset or the selection overlay, the rubber
+      // band and its hit-test sit left of / above the cursor by the canvas margin.
+      const content = svgCanvas.getSvgContent?.()
+      const x = Number(content?.getAttribute('x'))
+      const y = Number(content?.getAttribute('y'))
+      if (Number.isFinite(x) && Number.isFinite(y) && (x || y)) {
+        this.selectorParentGroup.setAttribute('transform', `translate(${x},${y})`)
+      }
 
       this.selectorMap = {}
       this.selectors = []
