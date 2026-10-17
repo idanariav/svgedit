@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveWarpableShapes, computeCommitPatch } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
+import { resolveWarpableShapes, computeCommitPatch } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.ts'
 
 const NS_SVG = 'http://www.w3.org/2000/svg'
 const el = (tag) => document.createElementNS(NS_SVG, tag)

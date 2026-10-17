@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSelect.ts'
-import extPathEdit from '../../src/editor/extensions/ext-path-edit/ext-path-edit.js'
+import extPathEdit from '../../src/editor/extensions/ext-path-edit/ext-path-edit.ts'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import { mockCommands } from './helpers/commands.js'

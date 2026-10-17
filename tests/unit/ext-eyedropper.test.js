@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extEyedropper from '../../src/editor/extensions/ext-eyedropper/ext-eyedropper.js'
+import extEyedropper from '../../src/editor/extensions/ext-eyedropper/ext-eyedropper.ts'
 import { mockCommands } from './helpers/commands.js'
 
 describe('ext-eyedropper', () => {

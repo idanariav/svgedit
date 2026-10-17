@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extCutter from '../../src/editor/extensions/ext-cutter/ext-cutter.js'
+import extCutter from '../../src/editor/extensions/ext-cutter/ext-cutter.ts'
 import { mockCommands } from './helpers/commands.js'
 
 describe('ext-cutter', () => {

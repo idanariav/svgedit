@@ -13,7 +13,7 @@ import Rulers from './Rulers.ts'
 import { applyTheme } from './themeUtil.ts'
 import { applyUiMode } from './uiMode.ts'
 import { cursorForMode } from './toolCursors.ts'
-import { getExtension } from './extensions/extensionRegistry.js'
+import { getExtension } from './extensions/extensionRegistry.ts'
 import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.ts'
 import { createPasteFallbackArmer } from './pasteFallbackArmer.ts'
 import { classifyClipboardText } from './pasteClipboardText.ts'
@@ -90,7 +90,7 @@ class EditorStartup {
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ outlineApi
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ glowApi
   /** @type {((detail?: object, target?: Element) => void)|undefined} */ armShapeInsert
-  /** @type {ReturnType<typeof import('./extensions/fx-filter.js').createFxComposer>|undefined} */ fxFilter
+  /** @type {ReturnType<typeof import('./extensions/fx-filter.ts').createFxComposer>|undefined} */ fxFilter
   /** @type {((zoom?: number) => void)|undefined} */ updateGrid
   /** @type {(() => void)|undefined} */ updateProportionMarkers
   /** @type {number|undefined} */ exportWindowCt

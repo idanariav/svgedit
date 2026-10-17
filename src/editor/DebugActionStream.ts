@@ -1,5 +1,5 @@
 /**
- * @file DebugActionStream.js
+ * @file DebugActionStream.ts
  *
  * The debug log's *action* channel. Where `DebugSnapshotLogger` reports what the
  * editor looks like, this reports what was done to it, so a log can be read

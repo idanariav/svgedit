@@ -4,7 +4,7 @@ import {
   serializePins,
   parsePins,
   remapPuppetPins
-} from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
+} from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.ts'
 
 const NS_SVG = 'http://www.w3.org/2000/svg'
 

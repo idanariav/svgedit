@@ -1,4 +1,4 @@
-import { deformPoint, deformPoints } from '../../src/editor/extensions/ext-puppet-warp/mls.js'
+import { deformPoint, deformPoints } from '../../src/editor/extensions/ext-puppet-warp/mls.ts'
 
 /**
  * Build a pin set whose deformed positions `q` are a single global

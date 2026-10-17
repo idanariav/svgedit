@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createBrushOptions, sameBrush } from '../../src/editor/extensions/ext-brush/brushOptions.js'
+import { createBrushOptions, sameBrush } from '../../src/editor/extensions/ext-brush/brushOptions.ts'
 
 const DEFAULT = { thickness: 6, angle: 45, roundness: 1 * 100, taperStart: 100, taperEnd: 100, opacity: 1, smoothness: 0.3 }
 

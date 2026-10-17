@@ -279,7 +279,7 @@ Upgrade `ext-corner-radius` from "one radius, straight-only paths" to:
 `packages/svgcanvas/core/corner-radius.js` (`se:orig-d`, `se:corner-radius`,
 `parseStraightSubpaths`, `roundedPathD`, `canRoundCorners`,
 `applyCornerRadius`, `remapCornerSource`) and
-`src/editor/extensions/ext-corner-radius/ext-corner-radius.js` (single
+`src/editor/extensions/ext-corner-radius/ext-corner-radius.ts` (single
 `corner_radius_value` spin input, `reconcile()`).
 
 ### Data model (backward compatible)
@@ -429,7 +429,7 @@ popover (size + counts).
   grid moves as one; frame rect optional.
 
 ### svgedit integration
-- Follow `ext-polystar` exactly (`src/editor/extensions/ext-polystar/ext-polystar.js`):
+- Follow `ext-polystar` exactly (`src/editor/extensions/ext-polystar/ext-polystar.ts`):
   buttons appended into `$id('tools_shapes')`, `setMode('spiral'|…)`,
   `mouseDown`/`mouseMove`/`mouseUp` hooks returning `{ started: true }` /
   `{ keep, element }`. New extension `ext-shape-family` (add to
@@ -549,7 +549,7 @@ halo is a hard-edged `feMorphology` dilate.
   composites normally. Do the same; don't try to emulate screen.
 
 ### svgedit integration
-- **Composer:** extend `src/editor/extensions/fx-filter.js`
+- **Composer:** extend `src/editor/extensions/fx-filter.ts`
   (`createFxComposer` → `readEffects`, `buildFilter`, `writeEffects`,
   `setRegion`). The spec gains
   `glow: { outer: {blur,color,opacity} | null, inner: {blur,color,opacity,source} | null }`
@@ -592,7 +592,7 @@ halo is a hard-edged `feMorphology` dilate.
 - **UI:** new extension `ext-glow` (add to `defaultExtensions` in
   `ConfigObj.ts`), injecting `#glow_panel` into `#tab_effects` after
   `#outline_panel`, copying ext-outline's structure
-  (`src/editor/extensions/ext-outline/ext-outline.js`): an *Outer glow* row
+  (`src/editor/extensions/ext-outline/ext-outline.ts`): an *Outer glow* row
   (Blur, Opacity, Color swatch) and an *Inner glow* row (Blur, Opacity,
   Color, Edge/Centre toggle), plus Remove. Same on/off convention as the
   others: **blur 0 = no glow**. Shown for any single selected element.

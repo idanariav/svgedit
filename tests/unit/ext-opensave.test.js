@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 vi.mock('browser-fs-access', () => ({ fileOpen: vi.fn(), fileSave: vi.fn() }))
 
-const { default: extOpenSave } = await import('../../src/editor/extensions/ext-opensave/ext-opensave.js')
+const { default: extOpenSave } = await import('../../src/editor/extensions/ext-opensave/ext-opensave.ts')
 const { fileSave } = await import('browser-fs-access')
 const { mockCommands } = await import('./helpers/commands.js')
 

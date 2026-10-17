@@ -64,10 +64,10 @@ describe('command id stability', () => {
   })
 
   it('the templated ids still match the source that builds them', () => {
-    const shapes = fs.readFileSync(path.join(SRC, 'extensions/ext-shape-family/ext-shape-family.js'), 'utf8')
-    expect(shapes).toContain("const MODES = ['spiral', 'arc', 'rectgrid', 'polargrid']")
+    const shapes = fs.readFileSync(path.join(SRC, 'extensions/ext-shape-family/ext-shape-family.ts'), 'utf8')
+    expect(shapes).toContain("const MODES: Mode[] = ['spiral', 'arc', 'rectgrid', 'polargrid']")
     expect(shapes).toContain('id="tool_$' + '{mode}"')
-    const corners = fs.readFileSync(path.join(SRC, 'extensions/ext-corner-radius/ext-corner-radius.js'), 'utf8')
+    const corners = fs.readFileSync(path.join(SRC, 'extensions/ext-corner-radius/ext-corner-radius.ts'), 'utf8')
     expect(corners).toContain('id="corner_kind_$' + '{k}"')
   })
 

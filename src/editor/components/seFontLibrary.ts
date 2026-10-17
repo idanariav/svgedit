@@ -14,7 +14,7 @@
  *   font-pick — { detail: { family } } after the font is downloaded + registered
  */
 
-import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.js'
+import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.ts'
 import { closestRoot, ownerEditor } from '../domScope.ts'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.

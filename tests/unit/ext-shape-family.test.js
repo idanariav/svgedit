@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extShapeFamily from '../../src/editor/extensions/ext-shape-family/ext-shape-family.js'
+import extShapeFamily from '../../src/editor/extensions/ext-shape-family/ext-shape-family.ts'
 import en from '../../src/editor/extensions/ext-shape-family/locale/en.js'
 import { mockCommands } from './helpers/commands.js'
 

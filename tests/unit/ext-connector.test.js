@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extConnector from '../../src/editor/extensions/ext-connector/ext-connector.js'
+import extConnector from '../../src/editor/extensions/ext-connector/ext-connector.ts'
 
 describe('ext-connector', () => {
   let svgCanvas

@@ -257,7 +257,7 @@ Size: M for the toolchain (done), L for the conversion (small per module).
 `ext-grid`, `ext-markers`, `ext-connector`, `ext-layer_view`, `ext-eyedropper`…), all loaded through upstream's
 third-party extension API: `runExtensions` hook fan-out over every extension (which once let one extension's
 `undefined` cancel another's `preventDefault`), `addLangData`, a `defaultExtensions` list in `ConfigObj`, and the eager
-glob in `extensionRegistry.js`. Hosts choose features by name: the plugin's `SvgView.ts` sets `noDefaultExtensions`
+glob in `extensionRegistry.ts`. Hosts choose features by name: the plugin's `SvgView.ts` sets `noDefaultExtensions`
 and repeats 43 of the 45 names by hand (leaving out `ext-opensave` and `ext-theme-toggle`), so every new built-in tool
 also needs a plugin release. Puppet warp still uses the legacy mouse hooks.
 

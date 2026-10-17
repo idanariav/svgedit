@@ -4,7 +4,7 @@
  * EditorStartup.js, which keeps a thin `_addSelectedToShapeLibrary()` wrapper.
  */
 
-import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory } from './extensions/ext-shapes/userShapes.js'
+import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory } from './extensions/ext-shapes/userShapes.ts'
 
 /**
  * Handle "Add to Shape Library" context menu action.

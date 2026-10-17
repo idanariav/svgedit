@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSpinInput.ts'
-import extCornerRadius from '../../src/editor/extensions/ext-corner-radius/ext-corner-radius.js'
+import extCornerRadius from '../../src/editor/extensions/ext-corner-radius/ext-corner-radius.ts'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import { mockCommands } from './helpers/commands.js'
 import en from '../../src/editor/extensions/ext-corner-radius/locale/en.js'

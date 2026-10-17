@@ -1,5 +1,5 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
-import { createFxComposer } from '../../src/editor/extensions/fx-filter.js'
+import { createFxComposer } from '../../src/editor/extensions/fx-filter.ts'
 
 describe('fx-filter glow', () => {
   let svgCanvas

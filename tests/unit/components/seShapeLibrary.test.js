@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
 import '../../../src/editor/components/seShapeLibrary.ts'
-import * as userShapes from '../../../src/editor/extensions/ext-shapes/userShapes.js'
+import * as userShapes from '../../../src/editor/extensions/ext-shapes/userShapes.ts'
 
 vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
-vi.mock('../../../src/editor/extensions/ext-shapes/userShapes.js', () => ({
+vi.mock('../../../src/editor/extensions/ext-shapes/userShapes.ts', () => ({
   loadUserShapes: vi.fn(() => ({ categories: [], shapes: {}, categoryLabels: {}, hidden: [] })),
   removeUserShape: vi.fn(),
   renameUserShape: vi.fn(),

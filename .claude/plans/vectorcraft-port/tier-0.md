@@ -623,7 +623,7 @@ Control bar renders `options()` generically.
   `event.js` ≈ line 796), while `mouseMove`/`mouseUp`'s `mouse_x/mouse_y`
   are **zoomed** (`pt.x * zoom`, ≈ lines 69, 237, 673). Every extension
   tool divides by zoom in move/up but not in down; see
-  `ext-shape-family.js` `mouseDown` / `mouseMove` ≈ lines 361–404. This is
+  `ext-shape-family.ts` `mouseDown` / `mouseMove` ≈ lines 361–404. This is
   exactly the bug class a normalised contract removes.
 - Touch is converted to synthetic `MouseEvent`s by `core/touch.js`, so the
   mouse pipeline is the single entry point. Keep it that way.

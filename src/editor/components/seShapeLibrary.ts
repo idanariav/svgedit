@@ -19,15 +19,15 @@ import { closestRoot, ownerEditor } from '../domScope.ts'
 import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
-} from '../extensions/ext-shapes/userShapes.js'
+} from '../extensions/ext-shapes/userShapes.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 import { CSS } from './seShapeLibrary.css.js'
 import { shapeLibData, CAT_LABELS, ALL_CAT, STAR_SVG, STAR18, SEARCH16, SEARCH13, CLOSE18, CLOSE12, GRID_SVG, ROWS_SVG } from './seShapeLibrary.data.js'
 
-export type UserShape = import('../extensions/ext-shapes/userShapes.js').UserShape
+export type UserShape = import('../extensions/ext-shapes/userShapes.ts').UserShape
 
-export type UserShapeStore = import('../extensions/ext-shapes/userShapes.js').UserShapeStore
+export type UserShapeStore = import('../extensions/ext-shapes/userShapes.ts').UserShapeStore
 
 /** a built-in shape is its path data; a user shape is an entry */
 export type ShapeData = string | UserShape

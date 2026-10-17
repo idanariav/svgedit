@@ -327,282 +327,282 @@
 
 | File | What it is |
 |---|---|
-| `extensionRegistry.js` | ExtensionRegistry.js |
-| `fx-filter.js` | Shared per-element SVG filter composer for the editor's filter-based effects (outline halo, outer/inner glow and drop shadow) |
+| `extensionRegistry.ts` | ExtensionRegistry.ts |
+| `fx-filter.ts` | Shared per-element SVG filter composer for the editor's filter-based effects (outline halo, outer/inner glow and drop shadow) |
 
 ### `src/editor/extensions/ext-art-brush/`
 
 | File | What it is |
 |---|---|
-| `ext-art-brush.js` | "Brush" section in the right-panel Design tab: art brushes (one copy of some artwork stretched along a path) and pattern brushes (a tile repeated along it) |
+| `ext-art-brush.ts` | "Brush" section in the right-panel Design tab: art brushes (one copy of some artwork stretched along a path) and pattern brushes (a tile repeated along it) |
 
 ### `src/editor/extensions/ext-blend/`
 
 | File | What it is |
 |---|---|
-| `ext-blend.js` | Blend: steps that morph shape, colour, stroke width and opacity between two (or more) key shapes |
+| `ext-blend.ts` | Blend: steps that morph shape, colour, stroke width and opacity between two (or more) key shapes |
 
 ### `src/editor/extensions/ext-brush/`
 
 | File | What it is |
 |---|---|
-| `brushOptions.js` | The Brush tool's options bar: the five saved brushes as a row of buttons (the one in use is highlighted, one edited since it was loaded is dashed), the live brush parameters, and Save / Delete for the current slot |
-| `ext-brush.js` | Configurable freehand "brush" tool |
+| `brushOptions.ts` | The Brush tool's options bar: the five saved brushes as a row of buttons (the one in use is highlighted, one edited since it was loaded is dashed), the live brush parameters, and Save / Delete for the current slot |
+| `ext-brush.ts` | Configurable freehand "brush" tool |
 
 ### `src/editor/extensions/ext-color-shift/`
 
 | File | What it is |
 |---|---|
-| `ext-color-shift.js` | Adds a "Color Shift" section to the right-hand side panel (next to Layers) |
+| `ext-color-shift.ts` | Adds a "Color Shift" section to the right-hand side panel (next to Layers) |
 
 ### `src/editor/extensions/ext-connector/`
 
 | File | What it is |
 |---|---|
-| `ext-connector.js` | Line-binding engine |
+| `ext-connector.ts` | Line-binding engine |
 
 ### `src/editor/extensions/ext-corner-radius/`
 
 | File | What it is |
 |---|---|
-| `ext-corner-radius.js` | "Corners" section in the right-panel Design tab (Live Corners): cuts the corners of the selected `<path>` / `<polygon>` / `<polyline>` / `<rect>` — every anchor where two straight sides meet, even on a path that curves… |
+| `ext-corner-radius.ts` | "Corners" section in the right-panel Design tab (Live Corners): cuts the corners of the selected `<path>` / `<polygon>` / `<polyline>` / `<rect>` — every anchor where two straight sides meet, even on a path that curves… |
 
 ### `src/editor/extensions/ext-corner-tool/`
 
 | File | What it is |
 |---|---|
-| `ext-corner-tool.js` | The Corners tool (`tool_corners`, mode `corners`): a widget inside each corner of the selected shape |
+| `ext-corner-tool.ts` | The Corners tool (`tool_corners`, mode `corners`): a widget inside each corner of the selected shape |
 
 ### `src/editor/extensions/ext-curvature/`
 
 | File | What it is |
 |---|---|
-| `ext-curvature.js` | Curvature tool — click to place anchor points and draw smooth curves automatically (Spiro/clothoid curves), similar to Adobe Illustrator's Curvature Tool |
+| `ext-curvature.ts` | Curvature tool — click to place anchor points and draw smooth curves automatically (Spiro/clothoid curves), similar to Adobe Illustrator's Curvature Tool |
 
 ### `src/editor/extensions/ext-cutter/`
 
 | File | What it is |
 |---|---|
-| `ext-cutter.js` | Cutter (knife) tool — cut shapes along a straight line or a multi-point zigzag line |
+| `ext-cutter.ts` | Cutter (knife) tool — cut shapes along a straight line or a multi-point zigzag line |
 
 ### `src/editor/extensions/ext-distort-tool/`
 
 | File | What it is |
 |---|---|
-| `ext-distort-tool.js` | Distort tool: drag the four corners of a shape's box to distort it |
+| `ext-distort-tool.ts` | Distort tool: drag the four corners of a shape's box to distort it |
 
 ### `src/editor/extensions/ext-eyedropper/`
 
 | File | What it is |
 |---|---|
-| `ext-eyedropper.js` | Toolbar eyedropper tool: click an element on canvas to sample its fill color, then choose what to do with it from a small action menu (set as fill/outline/background, generate a matching OKLCH palette, or copy the whole… |
+| `ext-eyedropper.ts` | Toolbar eyedropper tool: click an element on canvas to sample its fill color, then choose what to do with it from a small action menu (set as fill/outline/background, generate a matching OKLCH palette, or copy the whole… |
 
 ### `src/editor/extensions/ext-fonts/`
 
 | File | What it is |
 |---|---|
-| `ext-fonts.js` | Wires the <se-font-library> Google Fonts browser into the text panel: - points it at the bundled catalog, - applies a picked font (adds it to the font-family dropdown, selects it, and sets it on the current text), -… |
-| `fontStore.js` | Persistent custom-font cache + live registration for the ext-fonts feature |
+| `ext-fonts.ts` | Wires the <se-font-library> Google Fonts browser into the text panel: - points it at the bundled catalog, - applies a picked font (adds it to the font-family dropdown, selects it, and sets it on the current text), -… |
+| `fontStore.ts` | Persistent custom-font cache + live registration for the ext-fonts feature |
 
 ### `src/editor/extensions/ext-frame-labels/`
 
 | File | What it is |
 |---|---|
-| `ext-frame-labels.js` | Draws a small name label above every frame (`<rect data-frame>`) on the canvas |
+| `ext-frame-labels.ts` | Draws a small name label above every frame (`<rect data-frame>`) on the canvas |
 
 ### `src/editor/extensions/ext-glow/`
 
 | File | What it is |
 |---|---|
-| `ext-glow.js` | Outer and inner glow, and feather, for any selected element, text included, in the Effects tab |
+| `ext-glow.ts` | Outer and inner glow, and feather, for any selected element, text included, in the Effects tab |
 
 ### `src/editor/extensions/ext-gradient-tool/`
 
 | File | What it is |
 |---|---|
-| `ext-gradient-tool.js` | Gradient tool: edit the gradient of the selected shape on the canvas |
+| `ext-gradient-tool.ts` | Gradient tool: edit the gradient of the selected shape on the canvas |
 
 ### `src/editor/extensions/ext-grid/`
 
 | File | What it is |
 |---|---|
-| `ext-grid.js` | Grid overlay + snap, incl. thirds/golden-ratio/center-cross composition-guide shapes (formerly the separate ext-guides overlays) |
+| `ext-grid.ts` | Grid overlay + snap, incl. thirds/golden-ratio/center-cross composition-guide shapes (formerly the separate ext-guides overlays) |
 
 ### `src/editor/extensions/ext-layer_view/`
 
 | File | What it is |
 |---|---|
-| `ext-layer_view.js` | Layer mode |
+| `ext-layer_view.ts` | Layer mode |
 
 ### `src/editor/extensions/ext-layout-ops/`
 
 | File | What it is |
 |---|---|
-| `ext-layout-ops.js` | Two dialogs that rework the selection as a whole: **Transform Each** (scale / move / rotate / reflect every selected object about its own reference point, optionally random, optionally on copies) and **Split Into Grid**… |
+| `ext-layout-ops.ts` | Two dialogs that rework the selection as a whole: **Transform Each** (scale / move / rotate / reflect every selected object about its own reference point, optionally random, optionally on copies) and **Split Into Grid**… |
 
 ### `src/editor/extensions/ext-live-effects/`
 
 | File | What it is |
 |---|---|
-| `ext-live-effects.js` | UI glue for live (re-editable) path effects — the engine, `se:fx` format and effect registry live in `@svgedit/svgcanvas/core/live-effects.js` |
+| `ext-live-effects.ts` | UI glue for live (re-editable) path effects — the engine, `se:fx` format and effect registry live in `@svgedit/svgcanvas/core/live-effects.js` |
 
 ### `src/editor/extensions/ext-magic-wand/`
 
 | File | What it is |
 |---|---|
-| `ext-magic-wand.js` | Magic Wand tool: click a shape to select every shape that shares something with it (fill, stroke, both, stroke weight, opacity or shape type, optionally within a colour tolerance) |
+| `ext-magic-wand.ts` | Magic Wand tool: click a shape to select every shape that shares something with it (fill, stroke, both, stroke weight, opacity or shape type, optionally within a colour tolerance) |
 
 ### `src/editor/extensions/ext-markers/`
 
 | File | What it is |
 |---|---|
-| `ext-markers.js` | Arrow/marker decorators |
+| `ext-markers.ts` | Arrow/marker decorators |
 
 ### `src/editor/extensions/ext-measure/`
 
 | File | What it is |
 |---|---|
-| `ext-measure.js` | Measure tool: drag between two points to read the distance, angle and horizontal / vertical offsets |
+| `ext-measure.ts` | Measure tool: drag between two points to read the distance, angle and horizontal / vertical offsets |
 
 ### `src/editor/extensions/ext-mirror/`
 
 | File | What it is |
 |---|---|
-| `ext-mirror.js` | Mirror drawing mode: while active, every newly drawn element gets a reflected twin across the canvas center axis (vertical by default; Shift+click the toggle for horizontal) |
+| `ext-mirror.ts` | Mirror drawing mode: while active, every newly drawn element gets a reflected twin across the canvas center axis (vertical by default; Shift+click the toggle for horizontal) |
 
 ### `src/editor/extensions/ext-opensave/`
 
 | File | What it is |
 |---|---|
-| `ext-opensave.js` | File open/save/import/append |
+| `ext-opensave.ts` | File open/save/import/append |
 
 ### `src/editor/extensions/ext-outline/`
 
 | File | What it is |
 |---|---|
-| `ext-outline.js` | Adds a second outline (halo / casing) color around a line's own stroke — e.g. a white line with a thin black outline so it stays readable on any background, analogous to a text outline |
+| `ext-outline.ts` | Adds a second outline (halo / casing) color around a line's own stroke — e.g. a white line with a thin black outline so it stays readable on any background, analogous to a text outline |
 
 ### `src/editor/extensions/ext-panning/`
 
 | File | What it is |
 |---|---|
-| `ext-panning.js` | Pan/hand tool |
+| `ext-panning.ts` | Pan/hand tool |
 
 ### `src/editor/extensions/ext-path-edit/`
 
 | File | What it is |
 |---|---|
-| `ext-path-edit.js` | UI for the path edits that live in `@svgedit/svgcanvas/core/path-edit.js` / `path-join.js` (geometry, undo and eligibility are the canvas's job): |
+| `ext-path-edit.ts` | UI for the path edits that live in `@svgedit/svgcanvas/core/path-edit.js` / `path-join.js` (geometry, undo and eligibility are the canvas's job): |
 
 ### `src/editor/extensions/ext-polystar/`
 
 | File | What it is |
 |---|---|
-| `ext-polystar.js` | Star and polygon tools |
+| `ext-polystar.ts` | Star and polygon tools |
 
 ### `src/editor/extensions/ext-proportion-markers/`
 
 | File | What it is |
 |---|---|
-| `ext-proportion-markers.js` | Draws small triangle tick markers along all four canvas edges at canonical proportion points of the canvas width/height (1/2, thirds, quarters, fifths) |
+| `ext-proportion-markers.ts` | Draws small triangle tick markers along all four canvas edges at canonical proportion points of the canvas width/height (1/2, thirds, quarters, fifths) |
 
 ### `src/editor/extensions/ext-puppet-warp/`
 
 | File | What it is |
 |---|---|
-| `ext-puppet-warp.js` | Puppet Warp tool — Illustrator-style mesh deformation |
-| `mls.js` | Moving Least Squares (MLS) **rigid** point deformation |
+| `ext-puppet-warp.ts` | Puppet Warp tool — Illustrator-style mesh deformation |
+| `mls.ts` | Moving Least Squares (MLS) **rigid** point deformation |
 
 ### `src/editor/extensions/ext-recolor/`
 
 | File | What it is |
 |---|---|
-| `ext-recolor.js` | Recolor Artwork: a "Recolor" button in the Effects tab (command `tool_recolor`) opens `se-recolor-dialog`, which lists the distinct colours of the selection (fills, strokes, gradient stops, filter flood colours) as rows… |
+| `ext-recolor.ts` | Recolor Artwork: a "Recolor" button in the Effects tab (command `tool_recolor`) opens `se-recolor-dialog`, which lists the distinct colours of the selection (fills, strokes, gradient stops, filter flood colours) as rows… |
 
 ### `src/editor/extensions/ext-repeat/`
 
 | File | What it is |
 |---|---|
-| `ext-repeat.js` | Radial / grid repeat (array) tool |
+| `ext-repeat.ts` | Radial / grid repeat (array) tool |
 
 ### `src/editor/extensions/ext-ruler-guides/`
 
 | File | What it is |
 |---|---|
-| `ext-ruler-guides.js` | Ruler guides: drag from the top ruler for a horizontal guide, from the left ruler for a vertical one |
+| `ext-ruler-guides.ts` | Ruler guides: drag from the top ruler for a horizontal guide, from the left ruler for a vertical one |
 
 ### `src/editor/extensions/ext-segment/`
 
 | File | What it is |
 |---|---|
-| `ext-segment.js` | UI glue for the Segment tool (geometry + data model live in `@svgedit/svgcanvas/core/segment.js`) |
+| `ext-segment.ts` | UI glue for the Segment tool (geometry + data model live in `@svgedit/svgcanvas/core/segment.js`) |
 
 ### `src/editor/extensions/ext-shadow/`
 
 | File | What it is |
 |---|---|
-| `ext-shadow.js` | Adds a drop shadow to any selected shape via a composed SVG filter |
+| `ext-shadow.ts` | Adds a drop shadow to any selected shape via a composed SVG filter |
 
 ### `src/editor/extensions/ext-shape-builder/`
 
 | File | What it is |
 |---|---|
-| `ext-shape-builder.js` | Interactive shape builder (Illustrator-style paint-to-merge), the UI/mode for `@svgedit/svgcanvas/core/shape-builder.js` |
+| `ext-shape-builder.ts` | Interactive shape builder (Illustrator-style paint-to-merge), the UI/mode for `@svgedit/svgcanvas/core/shape-builder.js` |
 
 ### `src/editor/extensions/ext-shape-family/`
 
 | File | What it is |
 |---|---|
-| `ext-shape-family.js` | Four drag tools in the shapes flyout, after Illustrator's Line Segment family and ported from VectorCraft: Spiral, Arc, Rectangular Grid and Polar Grid |
+| `ext-shape-family.ts` | Four drag tools in the shapes flyout, after Illustrator's Line Segment family and ported from VectorCraft: Spiral, Arc, Rectangular Grid and Polar Grid |
 
 ### `src/editor/extensions/ext-shaper/`
 
 | File | What it is |
 |---|---|
-| `ext-shaper.js` | Shaper tool, after Illustrator's: draw a rough rectangle, ellipse, triangle, polygon or line with the pen / mouse / finger and it becomes a clean native shape; a zig-zag scribbled over existing objects deletes them |
+| `ext-shaper.ts` | Shaper tool, after Illustrator's: draw a rough rectangle, ellipse, triangle, polygon or line with the pen / mouse / finger and it becomes a clean native shape; a zig-zag scribbled over existing objects deletes them |
 
 ### `src/editor/extensions/ext-shapes/`
 
 | File | What it is |
 |---|---|
-| `ext-shapes.js` | Pre-made shape library (incl. the stroke-based Accents decoration category — droplets, sparkles, motion arcs, speed lines, puffs — in `shapelib/accents.json`) |
-| `userShapes.js` | Persistence utilities for user-saved shape library entries |
+| `ext-shapes.ts` | Pre-made shape library (incl. the stroke-based Accents decoration category — droplets, sparkles, motion arcs, speed lines, puffs — in `shapelib/accents.json`) |
+| `userShapes.ts` | Persistence utilities for user-saved shape library entries |
 
 ### `src/editor/extensions/ext-smart-guides/`
 
 | File | What it is |
 |---|---|
-| `ext-smart-guides.js` | Renders the smart alignment guides: while dragging a selection, core `event.js` snaps it to other elements' edges/centers (or the page) and to equal spacing between neighbors — see… |
+| `ext-smart-guides.ts` | Renders the smart alignment guides: while dragging a selection, core `event.js` snaps it to other elements' edges/centers (or the page) and to equal spacing between neighbors — see… |
 
 ### `src/editor/extensions/ext-smooth-tool/`
 
 | File | What it is |
 |---|---|
-| `ext-smooth-tool.js` | Smooth tool: brush over part of a path and only that part is smoothed |
+| `ext-smooth-tool.ts` | Smooth tool: brush over part of a path and only that part is smoothed |
 
 ### `src/editor/extensions/ext-taper/`
 
 | File | What it is |
 |---|---|
-| `ext-taper.js` | UI glue for tapered strokes (geometry + data model live in `@svgedit/svgcanvas/core/taper-stroke.js`) |
+| `ext-taper.ts` | UI glue for tapered strokes (geometry + data model live in `@svgedit/svgcanvas/core/taper-stroke.js`) |
 
 ### `src/editor/extensions/ext-text-path/`
 
 | File | What it is |
 |---|---|
-| `ext-text-path.js` | UI glue for text on path (logic in `@svgedit/svgcanvas/core/text-path.js`) |
+| `ext-text-path.ts` | UI glue for text on path (logic in `@svgedit/svgcanvas/core/text-path.js`) |
 
 ### `src/editor/extensions/ext-theme-toggle/`
 
 | File | What it is |
 |---|---|
-| `ext-theme-toggle.js` | Adds a theme-toggle button to the top panel (#theme_panel) that lets users quickly switch between light and dark themes |
+| `ext-theme-toggle.ts` | Adds a theme-toggle button to the top panel (#theme_panel) that lets users quickly switch between light and dark themes |
 
 ### `src/editor/extensions/ext-width-tool/`
 
 | File | What it is |
 |---|---|
-| `ext-width-tool.js` | Width tool: variable-width strokes edited on the canvas |
+| `ext-width-tool.ts` | Width tool: variable-width strokes edited on the canvas |
 
 ### `src/editor/images/`
 

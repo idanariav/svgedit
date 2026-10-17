@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import ext, { isSmoothable, BRUSH_RADIUS_PX, TOLERANCE_PX } from '../../src/editor/extensions/ext-smooth-tool/ext-smooth-tool.js'
+import ext, { isSmoothable, BRUSH_RADIUS_PX, TOLERANCE_PX } from '../../src/editor/extensions/ext-smooth-tool/ext-smooth-tool.ts'
 
 const el = (tag, attrs = {}) => {
   const e = document.createElementNS('http://www.w3.org/2000/svg', tag)

@@ -91,7 +91,7 @@ What is recorded here is what was found on the way and the compromises that rema
 - `data-se-ephemeral` nodes (a live-effects preview clone) are no longer serialised.
 - Layer lock / dim (`tool_layerView`) is not an undo step (documented in `draw.js`), so the sweep excludes it.
 - Fixed on the way (all "ChangeElementCommand constructed before the mutation" — redo re-applied the old
-  value and left dangling refs): `fx-filter.js` `writeEffects` (glow / outline / shadow removal), `clip-mask.js`
+  value and left dangling refs): `fx-filter.ts` `writeEffects` (glow / outline / shadow removal), `clip-mask.js`
   `releaseClipMask`, `text-attrs.js` text-decoration toggles. Also: `paste` before the first right-click threw
   (`getLastClickPoint` on `null`), `ext-mirror` threw on a source replaced by Object-to-Path, move / delete /
   cut didn't record `se:*` source attributes (now `atomic`).
@@ -134,7 +134,7 @@ green. Converting more of them is a roadmap guideline, not debt.
   subpaths itself; it is not corruption) and a layer without `<title>` is not flagged (external SVGs have them).
 - `tests/e2e/unit/*` (the browser harness) was failing on HEAD: `anchor-path.js`'s bare `import 'svgpath'`
   was unresolvable in the harness page. Fixed by bundling it (`copy-static.mjs`) and mapping it in
-  `unit-harness.html`. `check-dom-scope` was also failing on HEAD (`ext-path-edit.js`); fixed.
+  `unit-harness.html`. `check-dom-scope` was also failing on HEAD (`ext-path-edit.ts`); fixed.
 
 - Fixed on the way: `EditorStartup` read only the last extension's answer to the `keyDown` hook (`runExtensions` without `returnArray` keeps the last result), so another extension's `undefined` could cancel an earlier `preventDefault` (e.g. curvature's Escape); it now collects all answers. The editor's Space `keyup` also unconditionally reset the mode to the previous one (a bare Space tap in any drawing tool switched to Select); it now only does so when Space had armed pan.
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extCurvature from '../../src/editor/extensions/ext-curvature/ext-curvature.js'
+import extCurvature from '../../src/editor/extensions/ext-curvature/ext-curvature.ts'
 
 describe('ext-curvature', () => {
   let svgCanvas

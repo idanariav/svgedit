@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import extShaper, { describeShape, sampleStroke, strokeTouches } from '../../src/editor/extensions/ext-shaper/ext-shaper.js'
+import extShaper, { describeShape, sampleStroke, strokeTouches } from '../../src/editor/extensions/ext-shaper/ext-shaper.ts'
 import en from '../../src/editor/extensions/ext-shaper/locale/en.js'
 import { mockCommands } from './helpers/commands.js'
 

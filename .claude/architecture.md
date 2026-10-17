@@ -10,7 +10,7 @@
 |---|---|
 | `src/editor/` | The editor application (UI layer): `Editor.js` / `EditorStartup.js`, panels, components (shadow-DOM custom elements), dialogs, extensions, the command registry, hotkeys |
 | `src/editor/panels/` | Four panels, each a `.js` + `.html` (Top, Left, Bottom, Right), plus the tablet shell and the Layers panel helpers (`layerTree.ts`, `layerGestures.ts`, `layerKeyboard.ts`) |
-| `src/editor/extensions/` | `ext-*` folders (see [`extensions.md`](extensions.md)); inlined into the bundle by `extensionRegistry.js` |
+| `src/editor/extensions/` | `ext-*` folders (see [`extensions.md`](extensions.md)); inlined into the bundle by `extensionRegistry.ts` |
 | `src/editor/hostApi.d.ts` | The host API types (`EditorHostApi`), typechecked against `Editor` and shipped to `dist/editor` |
 | `packages/svgcanvas/` | The drawing engine (a separate npm workspace): `svgcanvas.ts` aggregates `core/` (~100 modules, each attached to the canvas by its `init(canvas)`) and `common/` |
 | `packages/svgcanvas/core/model/` | The document model (R1 step a, below): a persistent XML tree, DOM-free |
@@ -67,7 +67,7 @@ src/editor/index.html
                     │     exported   → exportHandler()
                     │     ... (15+ events)
                     ├── readySignal()                // fire 'svgEditorReady' event
-                    ├── resolve each extension from extensionRegistry.js (inlined)
+                    ├── resolve each extension from extensionRegistry.ts (inlined)
                     └── setBackground()
 ```
 
@@ -111,7 +111,7 @@ One file, one job: the per-file list is [`file-map.md`](file-map.md). These are 
 ## Extension Plugin Lifecycle
 
 1. Host sets `setConfig({ extensions: [...] })` (or takes the defaults in `ConfigObj.defaultExtensions`).
-2. `EditorStartup` resolves each from the inlined `extensionRegistry.js` (an eager glob, bundled into `Editor.js`; no runtime fetch from `extPath`).
+2. `EditorStartup` resolves each from the inlined `extensionRegistry.ts` (an eager glob, bundled into `Editor.js`; no runtime fetch from `extPath`).
 3. Each extension default-exports `{ name: 'ext-name', init(S) { ... } }`; `init(S)` receives `svgCanvas`, `editor`, `addLangData`, etc.
 4. An extension can add buttons to panels, register tools and commands, listen for canvas events, inject UI.
 
@@ -121,7 +121,7 @@ See [`extensions.md`](extensions.md) for the contract and the per-extension note
 
 ## Host data persistence (`userDataAdapter`)
 
-The editor persists four pieces of user customisation to its own `localStorage`: the **custom palette** (`sePalette.ts`, `svg-edit-custom-palette`), the **saved shape library** (`userShapes.js`, `svg-edit-user-shapes`; store `{ categories, shapes, categoryLabels, hidden }`, see `tools.md` › ext-shapes), **hotkey overrides** (`Hotkeys.ts`, `svg-edit-hotkeys`) and **quick-action favorites** (`favorites.ts`, `svg-edit-favorites`); the tool order, canvas presets and layouts have their own keys (see `tools.md`).
+The editor persists four pieces of user customisation to its own `localStorage`: the **custom palette** (`sePalette.ts`, `svg-edit-custom-palette`), the **saved shape library** (`userShapes.ts`, `svg-edit-user-shapes`; store `{ categories, shapes, categoryLabels, hidden }`, see `tools.md` › ext-shapes), **hotkey overrides** (`Hotkeys.ts`, `svg-edit-hotkeys`) and **quick-action favorites** (`favorites.ts`, `svg-edit-favorites`); the tool order, canvas presets and layouts have their own keys (see `tools.md`).
 
 A host that wants this data in *its own* store passes an adapter through `setConfig`:
 
@@ -162,7 +162,7 @@ npm start           → Vite dev server on http://localhost:8000 (editor and can
 | Asset | Inlined via | Entry point |
 |---|---|---|
 | Toolbar icons + cursors | `import.meta.glob('*.svg', '?raw')` | [`images/iconRegistry.ts`](../src/editor/images/iconRegistry.ts) → `svgIconLoader.ts` |
-| Extensions | `import.meta.glob('ext-*/ext-*.js', eager)` | [`extensions/extensionRegistry.js`](../src/editor/extensions/extensionRegistry.js) |
+| Extensions | `import.meta.glob('ext-*/ext-*.js', eager)` | [`extensions/extensionRegistry.ts`](../src/editor/extensions/extensionRegistry.ts) |
 | Extension + UI locales | `import.meta.glob('locale/*.js', eager)` | each `ext-*.js`; `locale.ts` |
 | `svgedit.css` (+ tablet) | `import css from './svgedit.css?inline'` | `EditorStartup.injectSvgeditStyles()` |
 | Shape library JSON | `import.meta.glob('shapelib/*.json', eager)` | `components/seShapeLibrary.ts` |
@@ -186,17 +186,17 @@ An **optional, feature-detected** global a host (the Obsidian plugin) may instal
 - **Embed (locked / raster / frame crop)**, `{ dataUrl, link, locked? }`: a single `<image>` through `insertImageFromHref`; `locked` also stamps `data-vault-locked` so the host re-bakes content from source.
 - **Editable (whole-drawing unlocked)**, `{ dataUrl, link, editableSvg }` with `editableSvg` the full `<svg>…</svg>` source: inserted as **real, editable elements** by `insertSvgElements` (`dialogs/insertImage.ts`). The drawable top-level elements go into the current layer as **individual, directly selectable** elements, not wrapped in one group (a wrapper makes a multi-object drawing select as one giant group with grips in empty canvas); paint-server and defs content goes to the canvas `<defs>`. Ids are uniquified together, the import is centred on the page and multi-selected (so it still moves as a unit right after), and recorded as one undoable `BatchCommand`. `editable` implies unlocked (`locked` is ignored, `data-vault-locked` is never set); `dataUrl` still feeds the dialog's preview.
 
-**Provenance stamping, `data-vault-link`.** Every flow records the returned `link` on the inserted element(s): an image import stamps the single `<image>`; an editable import stamps each inserted top-level element (the host's backlink reconciler dedupes by link value, so repeats collapse to one backlink; never re-baked); a shape insert stamps the imported root **and every descendant** (`ext-shapes.js`) so the link survives ungroup and partial deletion and goes away only with the last stamped element. `data-*` attributes round-trip through sanitize (an explicit bypass in `core/sanitize.js`) and `getSvgString()`, the same mechanism `data-frame` relies on; the host reads the attribute from the serialized SVG on save and svgedit emits no event for it.
+**Provenance stamping, `data-vault-link`.** Every flow records the returned `link` on the inserted element(s): an image import stamps the single `<image>`; an editable import stamps each inserted top-level element (the host's backlink reconciler dedupes by link value, so repeats collapse to one backlink; never re-baked); a shape insert stamps the imported root **and every descendant** (`ext-shapes.ts`) so the link survives ungroup and partial deletion and goes away only with the last stamped element. `data-*` attributes round-trip through sanitize (an explicit bypass in `core/sanitize.js`) and `getSvgString()`, the same mechanism `data-frame` relies on; the host reads the attribute from the serialized SVG on save and svgedit emits no event for it.
 
 **System-clipboard paste (Ctrl/Cmd+V).** One native `paste` listener in `EditorStartup.js` (`this.pasteHandler`, registered with a remove-before-add guard like `keydownHandler`) is the sole arbiter of paste; there is **no** `v` shortcut in `Editor.js`. The system clipboard decides the path: an internal copy mirrors its JSON array onto the clipboard (`copySelectedElements`, `core/selected-elem.js` → `navigator.clipboard.writeText`), so the handler can tell svgedit's own clipboard (a JSON array → `pasteInCenter()` → `pasteElements`, reading `sessionStorage`) from an external SVG document (`<svg>…</svg>` text, e.g. another editor's "Copy as SVG" → `importSvgString`, then `selectOnly` + `ungroupSelectedElement` to turn the non-editable `<use>` / `<symbol>` reference into a real editable group, then centred; without the ungroup it lands as one opaque object). Editable fields (`INPUT` / `TEXTAREA` / contentEditable) are skipped so their native paste works. One arbiter avoids double-pasting when an internal copy and an external SVG are both present.
 
 **Referenced `<defs>` travel with a copy.** A selection that uses gradients, filters, markers, masks or clip-paths references them by `url(#id)` into the canvas `<defs>`, and those defs are **not** selected, so a naive copy leaves dangling references (and `restoreRefElements` once appended a literal `"undefined"` text node into `<defs>`). Every copy path collects the transitively referenced defs with `getReferencedDefElements(elems)` (`core/dom-utils.js`):
 - **Clipboard copy / paste:** `copySelectedElements` tags each def's JSON `_defs:true` and prepends it; `pasteElements` recreates the `_defs` entries **first** (so the shapes' refs resolve), with the id remap keeping references consistent.
-- **Shape library:** `_addSelectedToShapeLibrary` (`EditorStartup.js`) serialises the defs into a leading `<defs>…</defs>` so `svgContent` is self-contained; on insert `ext-shapes.js` splits it off, imports both and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)`.
-- **Duplicate:** `cloneSelectedElements` (`core/selected-elem.js`) clones the defs (`def.cloneNode(true)`) and remaps each duplicate's own `url(#…)` / `href` onto the clones before `copyElem` builds the shape clones. Sharing the original's node is a bug: a drop-shadow filter's region is a bbox snapshot (`fx-filter.js` `setRegion`), so the duplicate rendered clipped to the original's position.
+- **Shape library:** `_addSelectedToShapeLibrary` (`EditorStartup.js`) serialises the defs into a leading `<defs>…</defs>` so `svgContent` is self-contained; on insert `ext-shapes.ts` splits it off, imports both and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)`.
+- **Duplicate:** `cloneSelectedElements` (`core/selected-elem.js`) clones the defs (`def.cloneNode(true)`) and remaps each duplicate's own `url(#…)` / `href` onto the clones before `copyElem` builds the shape clones. Sharing the original's node is a bug: a drop-shadow filter's region is a bbox snapshot (`fx-filter.ts` `setRegion`), so the duplicate rendered clipped to the original's position.
 - `restoreRefElements` (`svgcanvas.ts`) restores a missing ref only when it was tracked in `this.removedElements`.
 
-**Effect-filter ownership does not depend on its id.** `fx-filter.js` `buildFilter` stamps `data-fx="1"` on every filter it creates and `isOurFilter` checks that first, falling back to the `${elem.id}_fx` suffix for filters saved before the marker. A duplicate's `remapElementIdsAndRefs` and paste's `checkIDs` both rename filters, so the id convention can't be relied on. `convertDropShadowFilters` (`svg-exec.js`, the load-time region repair) retrofits the marker onto legacy filters.
+**Effect-filter ownership does not depend on its id.** `fx-filter.ts` `buildFilter` stamps `data-fx="1"` on every filter it creates and `isOurFilter` checks that first, falling back to the `${elem.id}_fx` suffix for filters saved before the marker. A duplicate's `remapElementIdsAndRefs` and paste's `checkIDs` both rename filters, so the id convention can't be relied on. `convertDropShadowFilters` (`svg-exec.js`, the load-time region repair) retrofits the marker onto legacy filters.
 
 **Copy / paste and duplicate keep the source id prefix** (`ellipse_1` → `ellipse_2`, a renamed `foo_1` → `foo_2`, `svg_18` → `svg_19`): both strip the trailing digits of the source id and call `Drawing.getNextIdWithPrefix(prefix)` (`core/draw.js`), which bumps the shared `obj_num` counter until the id is unused (the number follows the global counter, not literally source + 1). Paste does it in `checkIDs` (`core/paste-elem.js`); duplicate through the `copyElem(el, getNextId)` closure (`core/copy-elem.js` passes the source element to `getNextId`).
 

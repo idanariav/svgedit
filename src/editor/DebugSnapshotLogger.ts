@@ -1,5 +1,5 @@
 /**
- * @file DebugSnapshotLogger.js
+ * @file DebugSnapshotLogger.ts
  *
  * Polls a snapshot function (svgCanvas.getDebugSnapshot()) and forwards it
  * to a host-provided sink whenever it changes, instead of rendering it in a

@@ -1,4 +1,4 @@
-import { sampleStepFor, refitToleranceFor } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
+import { sampleStepFor, refitToleranceFor } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.ts'
 
 /**
  * `sampleStepFor`/`refitToleranceFor` derive the warp polyline's sample

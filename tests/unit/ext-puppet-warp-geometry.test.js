@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { attachPinToRest, buildD, warpSubpaths } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.js'
+import { attachPinToRest, buildD, warpSubpaths } from '../../src/editor/extensions/ext-puppet-warp/ext-puppet-warp.ts'
 
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 

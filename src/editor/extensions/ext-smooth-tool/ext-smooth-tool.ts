@@ -1,0 +1,202 @@
+/**
+ * @file ext-smooth-tool.ts
+ *
+ * Smooth tool: brush over part of a path and only that part is smoothed. Anchors within a
+ * radius of the drag are refit with as few cubics as stay within a tolerance; the rest of
+ * the path is untouched, so it is safe on any plain path (unlike Smooth Path, which refits
+ * the whole of it). The geometry is `smoothRegion` / `markAnchorsNear` in
+ * {@link module:path-fit}; this file is the gesture.
+ *
+ * It acts on the selected paths, or, with none selected, on the path under the press. The
+ * radius and the tolerance are in screen pixels, so the brush feels the same at any zoom.
+ * The path is re-smoothed from its state at the press as the brush reaches more of it (so a
+ * long drag never compounds), live, inside the tool gesture's single undo step.
+ *
+ * Paths with live geometry (`se:taper-d`, `se:orig-d`, `se:fx-d`) are skipped: rewriting `d`
+ * would orphan their source. Ported from VectorCraft (https://github.com/storytold/vectorcraft),
+ * `crates/engine/src/cmd/draw2.rs` (`smooth_region`), MIT OR Apache-2.0.
+ *
+ * @license MIT
+ */
+
+import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
+import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
+import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
+
+const name = 'smooth-tool'
+
+/** Brush radius: anchors this close (screen px) to the drag are smoothed (the default; the options bar changes it). */
+export const BRUSH_RADIUS_PX = 18
+/** How far (screen px) the smoothed part may stray from the original (the default; the options bar changes it). */
+export const TOLERANCE_PX = 2.5
+/** Preference keys of the options bar's two fields. */
+const RADIUS_PREF = 'smooth_radius'
+const TOLERANCE_PREF = 'smooth_tolerance'
+/** The brush ring's ink; the overlay is never saved. */
+const RING_STROKE = '#2b7fff'
+
+const loadExtensionTranslation = function (svgEditor: EditorInstance) {
+  const lang = svgEditor.configObj.pref('lang')
+  // Locale files are inlined into the bundle (statically resolved glob).
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
+  if (translationModule) {
+    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
+  }
+}
+
+/** Can the tool rewrite this element's geometry? */
+export const isSmoothable = (el: Element | null): boolean =>
+  Boolean(el) && (el as Element).tagName === 'path' && !LIVE_ATTRS.some((a) => (el as Element).hasAttribute(a))
+
+export default {
+  name,
+  async init () {
+    const svgEditor = (this as unknown) as import('../../Editor.js').default
+    const { svgCanvas } = svgEditor
+    const { $req } = svgCanvas
+    await loadExtensionTranslation(svgEditor)
+    const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
+    const numberPref = (key: string, fallback: number, min: number): number => {
+      const v = parseFloat(svgEditor.configObj.pref(key))
+      return Number.isFinite(v) && v >= min ? v : fallback
+    }
+    const radius = () => numberPref(RADIUS_PREF, BRUSH_RADIUS_PX, 1)
+    const tolerance = () => numberPref(TOLERANCE_PREF, TOLERANCE_PX, 0.5)
+
+    /** The paths being brushed, each with its state at the press and its screen → local mapping. */
+    let targets: Array<{ el: Element, d0: string, subpaths: any[], marks: boolean[][], inverse: DOMMatrix, scale: number, touched: boolean }> = []
+    let last: { x: number; y: number; } | null = null
+    let ring: SVGCircleElement | null = null
+
+    /** The paths a press brushes: the smoothable ones among the selection, else the one under the pointer. */
+    const pickTargets = (ev: import('@svgedit/svgcanvas').ToolEvent) => {
+      const selected = svgCanvas.getSelectedElements().filter(isSmoothable)
+      if (selected.length) return selected
+      const under = svgCanvas.getMouseTarget(ev.event)
+      return isSmoothable(under) ? [under] : []
+    }
+
+    const prepare = (el: Element) => {
+      const ctm = (el as SVGGraphicsElement).getScreenCTM?.()
+      const det = ctm ? ctm.a * ctm.d - ctm.b * ctm.c : 0
+      if (!ctm || !Number.isFinite(det) || det === 0) return null
+      const d0 = el.getAttribute('d') || ''
+      const subpaths = parseAnchors(d0, 0.1)
+      if (!subpaths.length) return null
+      return {
+        el,
+        d0,
+        subpaths,
+        marks: subpaths.map((sp) => sp.anchors.map(() => false)),
+        inverse: ctm.inverse(),
+        scale: Math.sqrt(Math.abs(det)),
+        touched: false
+      }
+    }
+
+    /** Brush the step `from` → `to` (client coordinates) over every target. */
+    const brush = (from: { x: number, y: number }, to: { x: number, y: number }) => {
+      for (const t of targets) {
+        const a = new DOMPoint(from.x, from.y).matrixTransform(t.inverse)
+        const b = new DOMPoint(to.x, to.y).matrixTransform(t.inverse)
+        if (!markAnchorsNear(t.subpaths, t.marks, a, b, radius() / t.scale)) continue
+        t.touched = true
+        t.el.setAttribute('d', anchorsToD(smoothRegion(t.subpaths, t.marks, tolerance() / t.scale)))
+      }
+    }
+
+    const moveRing = (ctx: import('@svgedit/svgcanvas').ToolContext, ev: import('@svgedit/svgcanvas').ToolEvent) => {
+      if (!ring) {
+        ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        ring.setAttribute('fill', 'none')
+        ring.setAttribute('stroke', RING_STROKE)
+        ring.setAttribute('stroke-width', '1')
+        ring.setAttribute('vector-effect', 'non-scaling-stroke')
+        ring.setAttribute('stroke-dasharray', '4 3')
+      }
+      // The overlay is emptied when a gesture ends: put the ring back.
+      if (!ring.isConnected) ctx.addOverlay(ring)
+      ring.setAttribute('cx', String(ev.rawX))
+      ring.setAttribute('cy', String(ev.rawY))
+      ring.setAttribute('r', String(radius() / ctx.zoom))
+    }
+
+    const reset = () => {
+      targets = []
+      last = null
+    }
+
+    svgCanvas.registerTool({
+      id: 'smooth',
+      undoLabel: 'Smooth path',
+      wantsHover: true,
+
+      activate () { reset() },
+
+      deactivate (ctx) {
+        reset()
+        ctx.clearOverlays()
+        ring = null
+      },
+
+      pointerDown (ctx, ev) {
+        targets = pickTargets(ev).flatMap((el) => prepare(el) ?? [])
+        last = { x: ev.screenX, y: ev.screenY }
+        brush(last, last)
+        moveRing(ctx, ev)
+      },
+
+      pointerMove (ctx, ev) {
+        moveRing(ctx, ev)
+        // Hover (no press): only the ring follows.
+        if (!last) return
+        const here = { x: ev.screenX, y: ev.screenY }
+        brush(last, here)
+        last = here
+      },
+
+      pointerUp (ctx, ev) {
+        if (!last) return 'cancel'
+        brush(last, { x: ev.screenX, y: ev.screenY })
+        const touched = targets.filter((t) => t.touched)
+        reset()
+        if (!touched.length) return 'cancel'
+        const selected = svgCanvas.getSelectedElements()
+        for (const { el } of touched) {
+          if (selected.includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
+        }
+        svgCanvas.call('changed', touched.map((t) => t.el))
+        return undefined
+      },
+
+      cancel () { reset() },
+
+      options: () => [
+        { id: 'radius', type: 'number', label: tr('radius'), title: tr('radiusTitle'), value: radius(), min: 1, max: 200, step: 1 },
+        { id: 'tolerance', type: 'number', label: tr('tolerance'), title: tr('toleranceTitle'), value: tolerance(), min: 0.5, max: 20, step: 0.5 }
+      ],
+      setOption: (id, value) => {
+        const n = Number(value)
+        if (!Number.isFinite(n)) return
+        if (id === 'radius') svgEditor.configObj.pref(RADIUS_PREF, Math.min(200, Math.max(1, n)), true)
+        else if (id === 'tolerance') svgEditor.configObj.pref(TOLERANCE_PREF, Math.min(20, Math.max(0.5, n)), true)
+      }
+    })
+
+    return {
+      name: svgEditor.i18next.t(`${name}:name`),
+
+      callback () {
+        const title = `${name}:buttons.0.title`
+        // Beside the other freehand tools: after the pencil and the Shaper.
+        svgCanvas.insertChildAtIndex(
+          $req('tools_left'),
+          `<se-button id="tool_smooth" command="tool_smooth" title="${title}" src="smooth-tool.svg"></se-button>`,
+          3
+        )
+        svgEditor.leftPanel.addModeCommand('tool_smooth', 'smooth', { label: title })
+      }
+    }
+  }
+}

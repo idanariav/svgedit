@@ -127,7 +127,7 @@ Effort: M.
 ## T2.4 — Arrowheads with tip-on-end alignment
 
 ### Problem today
-`src/editor/extensions/ext-markers/ext-markers.js` builds markers with
+`src/editor/extensions/ext-markers/ext-markers.ts` builds markers with
 `viewBox 0 0 100 100`, `refX=50` (≈ line 131): the **centre** of the head
 sits on the endpoint, so the line overshoots the drawn end and pokes through
 hollow heads. SVG can't clip a stroke under a marker (the `marker-knockout`
@@ -155,7 +155,7 @@ wall of hollow ones, at the chevron's inner corner. Two alignments:
 
 ### Pitfalls
 - **ext-connector** rewrites `<line>` `x1/y1/x2/y2` when bound shapes move
-  (`ext-connector.js` ≈ lines 514–521). It must write the **source** attrs
+  (`ext-connector.ts` ≈ lines 514–521). It must write the **source** attrs
   and re-trim, or bound arrows will drift. This is the main risk — read
   ext-connector fully before starting.
 - Node editing a trimmed path: reconcile (drop the source) like
@@ -322,7 +322,7 @@ Effort: L.
 ## T2.9 — Eyedropper "Copy style" action
 
 ### Context — read first
-`src/editor/extensions/ext-eyedropper/ext-eyedropper.js` was **deliberately
+`src/editor/extensions/ext-eyedropper/ext-eyedropper.ts` was **deliberately
 narrowed** to sample fill only and show an action menu ("does not stamp a
 whole style … the way the tool historically did" — see its header comment).
 Do not revert that. Instead add actions to the existing menu
@@ -475,7 +475,7 @@ editable and steps regenerate when a key changes.
 
 ### svgedit integration
 - Data model, following ext-repeat's source/copy pattern
-  (`src/editor/extensions/ext-repeat/ext-repeat.js`, `se:repeat-source`,
+  (`src/editor/extensions/ext-repeat/ext-repeat.ts`, `se:repeat-source`,
   `se:repeat-copy`): wrap in `<g se:blend="steps=5">`; the two keys keep
   their elements (tagged `se:blend-key`), generated steps tagged
   `se:blend-step` and inserted between them in z-order.

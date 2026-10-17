@@ -128,7 +128,7 @@ oracle available.
 SVG has no live effects, so svgedit stores the source geometry in an `se:`
 attribute and renders the baked result in `d`. Precedents to copy:
 - `packages/svgcanvas/core/taper-stroke.js` (`se:taper`, `se:taper-d`,
-  `se:taper-style`), UI glue `src/editor/extensions/ext-taper/ext-taper.js`.
+  `se:taper-style`), UI glue `src/editor/extensions/ext-taper/ext-taper.ts`.
 - `packages/svgcanvas/core/corner-radius.js` (`se:orig-d`,
   `se:corner-radius`), UI `src/editor/extensions/ext-corner-radius/`.
 - Transform bakes keep the source in sync through
@@ -138,7 +138,7 @@ attribute and renders the baked result in `d`. Precedents to copy:
   (`core/sanitize.js`) and get `xmlns:se` declared by `core/se-namespace.js`.
 - Node-editing a live path makes the stored source stale; corner-radius
   handles that with a `reconcile()` that drops the attrs when `d` no longer
-  equals the regenerated output (`ext-corner-radius.js`). Follow the same
+  equals the regenerated output (`ext-corner-radius.ts`). Follow the same
   rule unless a plan says otherwise.
 
 ## Research notes (web searches run 2026-10-09)

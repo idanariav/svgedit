@@ -146,7 +146,7 @@ Done: **Apply style to selection** / **Apply selection's style to this** on the 
 - **Filters other than shadow / outline / glow / feather** (the Blur slider's `{id}_blur`, imported filters) are not copied.
 - **Not a registry command**: the actions need a clicked source, so they live on the menu only; there is no keyless palette entry or hotkey for them.
 
-## Glow (`fx-filter.js` / ext-glow): follow-ups from T1.7
+## Glow (`fx-filter.ts` / ext-glow): follow-ups from T1.7
 
 Done: outer and inner (edge / centre) glow and feather in the shared composer, on any element incl. text; shadow-only and outline-only filters are byte-identical to before. Remaining:
 - **Feather is a hard-radius feather only**: it fades by the shape's own blurred alpha, so very thin shapes (thin strokes, small text) fade almost entirely at large radii. No separate feather shape / gradient control.

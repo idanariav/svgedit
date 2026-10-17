@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import extLayerView from '../../src/editor/extensions/ext-layer_view/ext-layer_view.js'
+import extLayerView from '../../src/editor/extensions/ext-layer_view/ext-layer_view.ts'
 import { mockCommands } from './helpers/commands.js'
 
 describe('ext-layer_view', () => {
