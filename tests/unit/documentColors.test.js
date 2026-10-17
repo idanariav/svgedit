@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { collectDocumentColors, normalizeColor } from '../../src/editor/documentColors.js'
+import { collectDocumentColors, normalizeColor } from '../../src/editor/documentColors.ts'
 
 describe('documentColors', () => {
   it('normalises solid colours and rejects everything else', () => {

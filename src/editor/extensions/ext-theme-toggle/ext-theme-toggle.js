@@ -11,7 +11,7 @@
  * @license MIT
  */
 
-import { applyTheme } from '../../themeUtil.js'
+import { applyTheme } from '../../themeUtil.ts'
 
 const name = 'theme_toggle'
 

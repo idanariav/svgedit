@@ -232,7 +232,7 @@ What made the first 3,000 cheap, and is what new code should use:
   `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.
 - `querySelector('se-…')` and `HTMLElementTagNameMap['se-…']` are typed through `src/editor/element-tags.d.ts` (kept in step with the
   `customElements.define` calls by `tests/unit/element-tags.test.js`); a component's `this.$x = /** @type {T} */ (this._shadowRoot.querySelector(…))`
-  fields carry their tag's type; `requireOwnerEditor(el)` (domScope.js) is `ownerEditor` for code that only runs inside a mounted editor.
+  fields carry their tag's type; `requireOwnerEditor(el)` (domScope.ts) is `ownerEditor` for code that only runs inside a mounted editor.
 - `src/editor/globals.d.ts` types the `window` globals (`seAlert`, `sePrompt`, `svgEditHost`, …), `.html` imports and `EditorInstance`.
 - TypeScript's own "infer from usage" code fix (`getCodeFixesAtPosition`, fix name `inferFromUsage`) writes plausible JSDoc for implicit-any
   parameters; skip the results that come out `any`/`undefined`/`never`/`null` and read the rest (it narrows to the argument types it saw, and it

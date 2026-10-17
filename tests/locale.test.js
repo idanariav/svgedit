@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { putLocale, t } from '../src/editor/locale.js'
+import { putLocale, t } from '../src/editor/locale.ts'
 
 const goodLangs = ['en']
 const originalNavigator = {

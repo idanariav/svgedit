@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
 import '../../../src/editor/components/seCanvasSettings.js'
-import { CommandRegistry } from '../../../src/editor/commands.js'
-import { registerCanvasCommands } from '../../../src/editor/canvasCommands.js'
+import { CommandRegistry } from '../../../src/editor/commands.ts'
+import { registerCanvasCommands } from '../../../src/editor/canvasCommands.ts'
 
 // The popover's Apply / layout buttons run canvas commands, so the mock editor carries a real registry.
 const install = (overrides) => {
@@ -12,7 +12,7 @@ const install = (overrides) => {
   return mock
 }
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // seCanvasSettings persists presets/layouts via localStorage (no userDataAdapter
 // is registered in these tests), so clear it between tests to avoid bleed.

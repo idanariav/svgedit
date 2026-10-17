@@ -19,9 +19,9 @@ const editorDir = join(rootDir, 'src', 'editor')
 
 // Files with a documented, reviewed reason to touch the document directly.
 const ALLOWLIST = new Set([
-  'src/editor/domScope.js', // defines closestRoot()/getActiveRoot() themselves
+  'src/editor/domScope.ts', // defines closestRoot()/getActiveRoot() themselves
   'src/editor/EditorStartup.js', // initial container resolution + one-time global <style> injection guard
-  'src/editor/contextmenu.js' // documented default-param fallback for standalone/single-editor use (e.g. tests)
+  'src/editor/contextmenu.ts' // documented default-param fallback for standalone/single-editor use (e.g. tests)
 ])
 
 const BARE_LOOKUP = /\bdocument\.(querySelector|querySelectorAll|getElementById)\(/
@@ -32,7 +32,7 @@ const BARE_LOOKUP = /\bdocument\.(querySelector|querySelectorAll|getElementById)
 // instead. Only the files that publish/repoint the global may touch it.
 const GLOBAL_EDITOR = /\bwindow\.svgEditor\b|\/\*\s*globals[^*]*\bsvgEditor\b/
 const GLOBAL_ALLOWLIST = new Set([
-  'src/editor/domScope.js', // ownerEditor()'s documented last-resort fallback
+  'src/editor/domScope.ts', // ownerEditor()'s documented last-resort fallback
   'src/editor/Editor.js', // publishes the global for hosts/e2e
   'src/editor/EditorStartup.js' // repoints it on interaction (compat for hosts)
 ])

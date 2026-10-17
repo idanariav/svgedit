@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { setUserDataAdapter } from '../../src/editor/userDataAdapter.js'
+import { setUserDataAdapter } from '../../src/editor/userDataAdapter.ts'
 import {
   BRUSH_SLOT_COUNT,
   loadBrushSlots,
@@ -7,7 +7,7 @@ import {
   saveBrushSlot,
   deleteBrushSlot,
   renameBrushSlot
-} from '../../src/editor/customBrushes.js'
+} from '../../src/editor/customBrushes.ts'
 
 const STORAGE_KEY = 'svg-edit-custom-brushes'
 

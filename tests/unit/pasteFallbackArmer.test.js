@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPasteFallbackArmer } from '../../src/editor/pasteFallbackArmer.js'
+import { createPasteFallbackArmer } from '../../src/editor/pasteFallbackArmer.ts'
 
 describe('createPasteFallbackArmer', () => {
   beforeEach(() => {

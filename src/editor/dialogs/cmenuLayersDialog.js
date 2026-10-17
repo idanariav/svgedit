@@ -1,8 +1,8 @@
 // cmenuLayersDialog.js — `<se-cmenu-layers>` — right-click menu of the Layers panel
 import cMenuLayersDialog from './cmenuLayersDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
-import { closestRoot } from '../domScope.js'
-import { syncDialogTheme } from '../themeUtil.js'
+import { closestRoot } from '../domScope.ts'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 const template = document.createElement('template')

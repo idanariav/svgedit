@@ -3,7 +3,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './te
 import '../../../src/editor/components/seShapeLibrary.js'
 import * as userShapes from '../../../src/editor/extensions/ext-shapes/userShapes.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 vi.mock('../../../src/editor/extensions/ext-shapes/userShapes.js', () => ({
   loadUserShapes: vi.fn(() => ({ categories: [], shapes: {}, categoryLabels: {}, hidden: [] })),
   removeUserShape: vi.fn(),

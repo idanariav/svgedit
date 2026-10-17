@@ -1,9 +1,9 @@
 // seColorPicker.js — `<se-color-picker>` — Color selection modal
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import PaintBox from './PaintBox.js'
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot, requireOwnerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import './colorPicker/index.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'

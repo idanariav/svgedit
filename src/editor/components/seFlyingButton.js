@@ -1,9 +1,9 @@
 // seFlyingButton.js — `<se-flying-button>` — Button with sub-tool flyout
-import { boundTooltipText } from '../Hotkeys.js'
-import { t } from '../locale.js'
+import { boundTooltipText } from '../Hotkeys.ts'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor, requireOwnerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 /**

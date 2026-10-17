@@ -9,8 +9,8 @@ Not started. Each is built with the first feature that needs it; do not build th
 
 - **Tool cursors by position** are done through `svgCanvas.setCursorHint` (see [ui-polish](ui-polish.md) › "Tool cursors"), not a `ToolDef.cursor()` by
   position; `ToolDef.cursor` (a CSS cursor, or a function of the context) is still applied on activate and removed on
-  deactivate (Measure uses `crosshair`). Every drawing tool, old and new, now has a static cursor (`toolCursors.js`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
-  editor draws the bar from the descriptors, `panels/toolOptionsBar.js`. Other tools opt in by adding `options()`;
+  deactivate (Measure uses `crosshair`). Every drawing tool, old and new, now has a static cursor (`toolCursors.ts`, below). `wantsHover` exists and is used by the cutter. (`options()/setOption()` was built with T2.13: the Blend tool; the
+  editor draws the bar from the descriptors, `panels/toolOptionsBar.ts`. Other tools opt in by adding `options()`;
   the Magic Wand has one too (Match, Tolerance), and so has the Smooth tool (Radius, Tolerance).)
 - **Live-effects preview on transactions.** The apply-without-re-select path exists now (`applyLiveEffectsTo`, built
   for the Distort tool, which mutates the real element on every pointer move inside its gesture's transaction). What is
@@ -21,7 +21,7 @@ Not started. Each is built with the first feature that needs it; do not build th
   causes a real problem (a selection box that keeps the original's bbox is the known cosmetic one). Other hand-rolled
   previews: ext-curvature, ext-cutter (both already ephemeral).
 - **Precise `enabled` on commands.** Done for everything with a selection, clipboard or layer precondition
-  (`commandGates.js`: the shortcut table, the panel commands, paste, the layer buttons; path, text and Convert to Path
+  (`commandGates.ts`: the shortcut table, the panel commands, paste, the layer buttons; path, text and Convert to Path
   had theirs earlier; crop Apply / Cancel follow `svgCanvas.imageCrop.isCropping()`, Remove glow / outline the selection's
   effects, `corner_kind_*` a shape with corners); new commands get a gate from day one. Left "always": the
   drawing-tool mode commands (switching tools is always allowed) and extension commands that register without a
@@ -64,7 +64,7 @@ call inside it is checked against the real class, and the object it returns agai
 Decided and under way as [R3](rearchitecture.md#r3-typescript) (2026-10-16): the toolchain (ESLint + neostandard, `.ts` through
 Vite / vitest / tsc / coverage, the `./x.ts` import rule and its gate) is done and four leaf modules are converted. State of
 the types: every `core/` and `common/` module is `// @ts-check` or `.ts` and strict-clean (`tsconfig.strict.json`, 2026-10-12 / 13);
-editor-layer Tier 0 modules (`commands.js`, `coreCommands.js`, `automation.js`, `components/commandBinding.js`) are `// @ts-check`,
+editor-layer Tier 0 modules (`commands.js`, `coreCommands.ts`, `automation.ts`, `components/commandBinding.js`) are `// @ts-check`,
 checked through `src/editor/tsconfig.hostapi.json`. The class is `svgcanvas.ts` (2026-10-17) and the members the core modules give it are typed by the interfaces those modules export
 (R2): no hand-written declaration file describes the canvas.
 

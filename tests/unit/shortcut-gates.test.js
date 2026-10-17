@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
-import { canPaste } from '../../src/editor/commandGates.js'
+import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
+import { canPaste } from '../../src/editor/commandGates.ts'
 
 const svg = (tag, attrs = {}) => {
   const e = document.createElementNS('http://www.w3.org/2000/svg', tag)

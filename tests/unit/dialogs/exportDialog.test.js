@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from '../components/testUtils.js'
 import '../../../src/editor/dialogs/exportDialog.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 if (!HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }

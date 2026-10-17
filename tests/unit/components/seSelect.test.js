@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
 import '../../../src/editor/components/seSelect.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('se-select', () => {
   beforeEach(() => installMockSvgEditor())

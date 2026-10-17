@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { planOthers, layerDropIndex } from '../../src/editor/panels/layerGestures.js'
+import { planOthers, layerDropIndex } from '../../src/editor/panels/layerGestures.ts'
 
 const rows = (...on) => on.map((o, i) => ({ key: 'L' + i, on: o }))
 

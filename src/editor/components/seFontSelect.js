@@ -1,5 +1,5 @@
 // seFontSelect.js — `<se-font-select>` — Google-style font-family picker: themed popover with a search box and per-font previews (each option rendered in its own typeface)
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.ts'
 /**
  * SeFontSelect — <se-font-select> web component.
  *
@@ -19,7 +19,7 @@ import { closestRoot, ownerEditor } from '../domScope.js'
  * @license MIT
  */
 
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 
 const SEARCH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg>'

@@ -7,7 +7,7 @@ import { createFxComposer } from '../../src/editor/extensions/fx-filter.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import { mockCommands } from './helpers/commands.js'
 
-vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('ext-glow', function () {
   let svgCanvas

@@ -1,0 +1,71 @@
+/**
+ * favorites.ts — persistence for the user's quick-action favorites.
+ *
+ * Stores an ordered array of action IDs (hotkey-registry IDs plus the
+ * catalog-only value-control / paste IDs defined in `favoriteActions.js`). The
+ * order is the display order in the right-click quick-action menu. Persists
+ * through the host `userDataAdapter` when it implements `getFavorites` /
+ * `setFavorites`, else falls back to `localStorage` under `svg-edit-favorites`
+ * (the same pattern as palette / hotkey persistence).
+ *
+ * @module favorites
+ */
+import { getUserDataAdapter } from './userDataAdapter.ts'
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+
+const STORAGE_KEY = 'svg-edit-favorites'
+
+// Seeded when the user has not curated a list yet, so the right-click menu is
+// never empty (mirrors the original context-menu essentials).
+export const DEFAULT_FAVORITES = ['paste', 'select_all', 'zoom_fit']
+
+/** Read the raw stored list (no default seeding). */
+const readStored = (): string[] => {
+  try {
+    const adapter = getUserDataAdapter()
+    if (adapter && typeof adapter.getFavorites === 'function') {
+      return adapter.getFavorites() || []
+    }
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      return raw ? JSON.parse(raw) : []
+    }
+  } catch (err) {
+    logError('Failed to load favorites', err, 'favorites')
+  }
+  return []
+}
+
+/** The user's favorites, falling back to `DEFAULT_FAVORITES` when none are set. */
+export const loadFavorites = (): string[] => {
+  const stored = readStored()
+  return stored.length ? stored : [...DEFAULT_FAVORITES]
+}
+
+/** Persist the favorites list. */
+export const saveFavorites = (ids: string[]): void => {
+  try {
+    const adapter = getUserDataAdapter()
+    if (adapter && typeof adapter.setFavorites === 'function') {
+      adapter.setFavorites([...ids])
+    } else if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+    }
+  } catch (err) {
+    logError('Failed to persist favorites', err, 'favorites')
+  }
+}
+
+/**
+ * Toggle an action's favorite state, preserving order on add. When the user has
+ * not curated a list yet, the default seed is materialised first so their edit
+ * starts from the defaults they can see in the menu.
+ * @returns the new list
+ */
+export const toggleFavorite = (id: string): string[] => {
+  const stored = readStored()
+  const base = stored.length ? stored : [...DEFAULT_FAVORITES]
+  const next = base.includes(id) ? base.filter((x) => x !== id) : [...base, id]
+  saveFavorites(next)
+  return next
+}

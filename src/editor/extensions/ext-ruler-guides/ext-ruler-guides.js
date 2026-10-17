@@ -17,7 +17,7 @@
  * @license MIT
  */
 
-import { clientToDoc } from '../../automation.js'
+import { clientToDoc } from '../../automation.ts'
 
 const name = 'ruler-guides'
 

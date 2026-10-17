@@ -8,7 +8,7 @@ vi.mock('@svgedit/svgcanvas', () => ({
   default: { $click: () => {} }
 }))
 
-const { default: RightPanel } = await import('../../../src/editor/panels/RightPanel.js')
+const { default: RightPanel } = await import('../../../src/editor/panels/RightPanel.ts')
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
-import { CommandRegistry, CommandError } from '../../src/editor/commands.js'
-import { registerCanvasCommands } from '../../src/editor/canvasCommands.js'
+import { CommandRegistry, CommandError } from '../../src/editor/commands.ts'
+import { registerCanvasCommands } from '../../src/editor/canvasCommands.ts'
 
 const LAYOUTS_KEY = 'svg-edit-canvas-layouts'
 

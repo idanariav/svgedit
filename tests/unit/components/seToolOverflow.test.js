@@ -4,7 +4,7 @@ import '../../../src/editor/components/seToolOverflow.js'
 import '../../../src/editor/components/seButton.js'
 import '../../../src/editor/components/seFlyingButton.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 /**
  * Mirrors seFlyingButton.test.js's mount pattern: build the subtree via

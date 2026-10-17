@@ -6,7 +6,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testU
 import { mockCommands } from './helpers/commands.js'
 import en from '../../src/editor/extensions/ext-corner-radius/locale/en.js'
 
-vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('ext-corner-radius', function () {
   let svgCanvas

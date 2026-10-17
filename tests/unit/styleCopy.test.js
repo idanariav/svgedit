@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { copyStyle, readStyle, styleSourceOf, styleTargetsOf } from '../../src/editor/styleCopy.js'
+import { copyStyle, readStyle, styleSourceOf, styleTargetsOf } from '../../src/editor/styleCopy.ts'
 
 describe('styleCopy', () => {
   let root

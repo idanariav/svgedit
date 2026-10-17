@@ -3,7 +3,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './te
 import '../../../src/editor/components/seExplorerButton.js'
 import '../../../src/editor/components/seButton.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // se-explorerbutton's constructor looks up `[id="workarea"]` from the
 // closest editor root (falls back to `document` — see domScope.js) and

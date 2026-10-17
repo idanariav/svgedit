@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { applyLayout } from '../../src/editor/canvasLayouts.js'
+import { applyLayout } from '../../src/editor/canvasLayouts.ts'
 
 // Regression test: applyLayout() overwrites both the canvas resolution and
 // the background color, but only ever recorded the resolution change to

@@ -1,10 +1,10 @@
 // seCanvasSettings.js — `<se-canvas-settings>` — Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset)
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { getUserDataAdapter } from '../userDataAdapter.js'
-import { loadLayouts } from '../canvasLayouts.js'
+import { getUserDataAdapter } from '../userDataAdapter.ts'
+import { loadLayouts } from '../canvasLayouts.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 import './seSpinInput.js'
 
 // Built-in canvas size presets, used when the user has not curated their own

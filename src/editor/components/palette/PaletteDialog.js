@@ -7,7 +7,7 @@
 
 import { css } from './PaletteDialog.css.js'
 import { generatePalette } from '../../palette/generatePalette.ts'
-import { closestRoot } from '../../domScope.js'
+import { closestRoot } from '../../domScope.ts'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
 const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg>'

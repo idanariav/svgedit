@@ -1,5 +1,5 @@
 // seInput.js — `<se-input>` — Text input with icon/label
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 

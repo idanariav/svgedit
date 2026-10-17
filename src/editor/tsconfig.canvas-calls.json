@@ -11,6 +11,6 @@
     "paths": { "@svgedit/svgcanvas": ["packages/svgcanvas/svgcanvas.ts"] }
   },
   "files": ["../../packages/svgcanvas/legacy-jsdoc-types.d.ts"],
-  "include": ["./**/*.js"],
+  "include": ["./**/*.js", "./**/*.ts"],
   "exclude": ["./locale/**", "./tests/**", "./**/node_modules/**"]
 }

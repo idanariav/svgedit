@@ -1,7 +1,7 @@
 // seExplorerButton.js — `<se-explorerbutton>` — toolbar button that opens a library explorer (the shape library, through its `lib` attribute)
-import { tooltipText } from '../Hotkeys.js'
+import { tooltipText } from '../Hotkeys.ts'
 import { getIconDataUri } from '../images/iconRegistry.js'
-import { closestRoot, requireOwnerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 

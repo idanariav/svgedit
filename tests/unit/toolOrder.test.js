@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { setUserDataAdapter } from '../../src/editor/userDataAdapter.js'
-import { loadToolOrder, saveToolOrder, reconcileToolOrder } from '../../src/editor/toolOrder.js'
+import { setUserDataAdapter } from '../../src/editor/userDataAdapter.ts'
+import { loadToolOrder, saveToolOrder, reconcileToolOrder } from '../../src/editor/toolOrder.ts'
 
 const STORAGE_KEY = 'svg-edit-tool-order'
 

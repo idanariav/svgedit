@@ -1,5 +1,5 @@
 // SePlainAlertDialog.js — Native-`<dialog>` choice-prompt base class (`se-plain-alert-dialog`) — renders light-DOM content + one button per `choices` entry, resolves via `whenClosed()`
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
 
 const template = document.createElement('template')

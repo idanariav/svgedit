@@ -9,13 +9,13 @@ let mockCatalog = () => [
   { group: 'Style', actions: [{ id: 'fill_color', label: 'Fill color' }] }
 ]
 
-vi.mock('../../../src/editor/commandSearch.js', async (importOriginal) => ({
+vi.mock('../../../src/editor/commandSearch.ts', async (importOriginal) => ({
   ...(await importOriginal()),
   buildCommandSearchCatalog: (...args) => mockCatalog(...args),
   activateCommandSearchResult: (...args) => activateCommandSearchResult(...args)
 }))
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // jsdom doesn't implement <dialog>'s showModal()/close() (only the plain
 // `open` attribute reflection). Polyfill just enough for the component's

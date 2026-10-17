@@ -38,7 +38,7 @@ Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's li
 ## Shaper (ext-shaper): follow-ups from T1.6
 
 Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-delete, one undo step per stroke (`core/shape-recognize.js`, `ext-shaper`). Remaining:
-- **In the tablet shell's More tools flyout** (`TabletShell.js` `MORE_TOOLS`).
+- **In the tablet shell's More tools flyout** (`TabletShell.ts` `MORE_TOOLS`).
 - **Shaper Groups** (VectorCraft's live compound results that re-recognise when a stroke is added) are deliberately skipped; results are plain shapes.
 - **Polygons are plain `<polygon>`s**, not polystar polygons. Making them editable with the polystar sides field means teaching `ext-polystar` to keep an orientation instead of rebuilding from angle 0.
 - **Returns to Select after a created shape**, like every drawing tool (Alt at release or tool lock keeps it). A Shaper-specific "stay in the tool" preference would suit sketching several shapes in a row.
@@ -122,6 +122,6 @@ Done: rect / ellipse / line / frame / image / text corners, pen anchors, shape-f
 Done: Spiral, Arc, Rectangular Grid and Polar Grid drag tools with Shift / Alt / Space / arrow-key modifiers and a click-for-options popover. Remaining:
 - **Shapes are plain paths / groups, not re-editable.** VectorCraft keeps no parameters either, but the plan floated `se:shape="spiral(decay=80,segments=10)"` so the popover could regenerate a selected shape; not stored. Changing a count means redrawing (undo, then arrow keys while dragging).
 - **No measurement label while drawing** (VectorCraft shows one next to the snapped corner). Snapping itself is done (T2.1).
-- **In the tablet shell's Shapes flyout** (`TabletShell.js` `SHAPES`, shown when `ext-shape-family` is loaded).
+- **In the tablet shell's Shapes flyout** (`TabletShell.ts` `SHAPES`, shown when `ext-shape-family` is loaded).
 - **No keyboard shortcuts** (their cursors are the static arrow-plus-glyph ones).
 - **Alt held at release keeps the tool** — core `mouseUpEvent` skips `setMode('select')` when `evt.altKey` is set for every shape tool; with Alt now meaning "from the centre" for arc/grids, releasing the mouse before Alt leaves the tool active (the shape is still selected). Pre-existing core rule, only more visible here.

@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { CommandRegistry } from '../../src/editor/commands.js'
-import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
-import { registerCoreCommands } from '../../src/editor/coreCommands.js'
+import { CommandRegistry } from '../../src/editor/commands.ts'
+import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
+import { registerCoreCommands } from '../../src/editor/coreCommands.ts'
 import { CORNER_KINDS } from '../../packages/svgcanvas/core/corner-radius.ts'
 
 // Command ids are persisted user data: hotkey overrides (`svg-edit-hotkeys`) and

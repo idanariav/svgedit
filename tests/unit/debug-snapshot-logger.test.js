@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import DebugSnapshotLogger from '../../src/editor/DebugSnapshotLogger.js'
+import DebugSnapshotLogger from '../../src/editor/DebugSnapshotLogger.ts'
 
 // Replaces the old <se-debug-overlay> UI panel: instead of rendering
 // svgCanvas.getDebugSnapshot() in a DOM overlay, Editor.setDebugLogger()

@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { getUserDataAdapter } from '../../userDataAdapter.js'
+import { getUserDataAdapter } from '../../userDataAdapter.ts'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
 const DB_NAME = 'svgedit-fonts'

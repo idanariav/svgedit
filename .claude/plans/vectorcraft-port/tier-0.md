@@ -105,31 +105,31 @@ views over it.
   panel, toggle rulers) live in the same namespace as document commands.
 
 ### svgedit today: three overlapping partial catalogs
-1. **`src/editor/editorShortcuts.js`**: `buildEditorShortcuts(editor)`, 88
+1. **`src/editor/editorShortcuts.ts`**: `buildEditorShortcuts(editor)`, 88
    keyboard-only entries `{id, group, label, key, fn}`.
 2. **`se-button` / `se-menu-item` self-registration**:
    `components/seButton.js` ≈ line 226 and `seMenuItem.js` ≈ line 170 call
    `hotkeys.registerEl({id, el, label, rawKey})`. These actions run by
-   **`el.click()`** (`Hotkeys.js` `register()` ≈ line 501).
-3. **`src/editor/favoriteActions.js`**: `EXTRA_TRIGGERS` (paste, paste in
+   **`el.click()`** (`Hotkeys.ts` `register()` ≈ line 501).
+3. **`src/editor/favoriteActions.ts`**: `EXTRA_TRIGGERS` (paste, paste in
    place, zoom fit, which the hotkey registry lacks) and `VALUE_CONTROLS`
    (stroke width / fill / stroke colour widgets). `runFavoriteTrigger`
    duplicates the hotkey dispatch (`a.run` else `a.el.click()`).
 
-`HotkeyManager` (`src/editor/Hotkeys.js`) already merges 1 and 2 into
+`HotkeyManager` (`src/editor/Hotkeys.ts`) already merges 1 and 2 into
 `this.actions: Map<id, {id, group, defaultKeys, pd, run, el, labelKey,
 decorative}>`. **That map is the seed of the registry.** Don't build a
 second, parallel one.
 
 The same action is wired three different ways. Example, Duplicate:
-- the toolbar button runs `TopPanel.clickClone()` (`TopPanel.js` ≈ line
+- the toolbar button runs `TopPanel.clickClone()` (`TopPanel.ts` ≈ line
   532, bound ≈ line 1031)
 - the hotkey runs the button's `el.click()`
 - the tablet shell calls `svgCanvas.cloneSelectedElements(20, 20)` directly
-  (`TabletShell.js` ≈ line 365)
+  (`TabletShell.ts` ≈ line 365)
 
 Enablement is imperative DOM toggling spread through
-`panels/topPanelContext.js` (e.g. `$id('tool_node_delete').disabled = …` ≈
+`panels/topPanelContext.ts` (e.g. `$id('tool_node_delete').disabled = …` ≈
 line 150, undo/redo ≈ line 363), so no surface can ask "why is this
 disabled?".
 
@@ -148,7 +148,7 @@ panels/dialogs, so it doesn't belong in `packages/svgcanvas`):
  * @typedef {object} CommandSpec
  * @property {string} id            stable, persisted (see pitfalls) — never rename
  * @property {string} label         i18n key
- * @property {string} group         one of GROUP_ORDER (Hotkeys.js)
+ * @property {string} group         one of GROUP_ORDER (Hotkeys.ts)
  * @property {string|string[]} [keys]  default binding(s), authoring form ('mod+d')
  * @property {string} [icon]        images/ filename for menus without a button
  * @property {Object<string, ParamSpec>} [params]
@@ -172,7 +172,7 @@ export class CommandRegistry {
 - **Per editor instance**, created in `Editor`'s constructor next to
   `this.hotkeys`. The Obsidian plugin mounts one editor per pane. A module
   singleton would run commands on the wrong drawing, the same bug class
-  `domScope.js` / `check-dom-scope.mjs` exist to prevent.
+  `domScope.ts` / `check-dom-scope.mjs` exist to prevent.
 - **Errors:** `run` returns the command's result or throws a `CommandError
   {code: 'unknown'|'disabled'|'badParams'|'internal', id, message}`. Wrap
   `spec.run` in try/catch. On an unexpected throw, log through
@@ -185,7 +185,7 @@ export class CommandRegistry {
   pull in a JSON-schema library.
 
 **Make `HotkeyManager` a view over the registry:**
-- `ingestEditorShortcuts` becomes "register each `editorShortcuts.js` entry
+- `ingestEditorShortcuts` becomes "register each `editorShortcuts.ts` entry
   as a command". The table's shape barely changes: `fn` → `run`, `key` →
   `keys`. Keep the `pd` (preventDefault) flag on the hotkey side.
 - Keydown dispatch calls `editor.commands.run(id)` instead of `a.run()` /
@@ -209,7 +209,7 @@ export class CommandRegistry {
   migration is per-button with no flag day.
 - **Enablement refresh:** one `refreshEnablement()` on the editor, called
   from the existing `selectedChanged` / `elementChanged` / `changed` /
-  undo-stack-change paths. Move logic out of `topPanelContext.js` into
+  undo-stack-change paths. Move logic out of `topPanelContext.ts` into
   `enabled` functions only for commands you migrate. Don't rewrite that file
   wholesale.
 
@@ -246,7 +246,7 @@ transitional adapter.
 
 ### Implementation notes (T0.1, done 2026-10-10)
 
-- `src/editor/commands.js` (`CommandRegistry`, `CommandError`), `coreCommands.js` (9 pilot commands),
+- `src/editor/commands.js` (`CommandRegistry`, `CommandError`), `coreCommands.ts` (9 pilot commands),
   `components/commandBinding.js`. `HotkeyManager.actions` **is** `editor.commands.table`; there is no second catalogue.
 - Registration order is irrelevant: a real command declared before or after its button's adapter keeps the button
   as `el` and takes its key from the command, falling back to the button's `shortcut`.
@@ -264,7 +264,7 @@ transitional adapter.
 - **Ids are persisted user data. Never rename one.** Hotkey overrides
   (`svg-edit-hotkeys` / `userDataAdapter.getHotkeys`) and favorites
   (`svg-edit-favorites` / `getFavorites`) store action ids. Existing ids
-  (`tool_clone`, `tool_rect`, `paste`, `zoom_fit`, every `editorShortcuts.js`
+  (`tool_clone`, `tool_rect`, `paste`, `zoom_fit`, every `editorShortcuts.ts`
   id) **are** the command ids. New commands may use dotted ids
   (`style.strokeWidth`), but no existing id changes. Add a unit test that
   snapshots the id set, so a removal or rename fails loudly.
@@ -281,7 +281,7 @@ transitional adapter.
   `undoMgr.getUndoStackSize()` / `getRedoStackSize()` exactly, or undo
   hotkeys break.
 - **Multiple editors on a page:** keydown already routes through
-  `isActiveEditor` / `ownsKeyEvent` (`domScope.js`). Keep that check *in
+  `isActiveEditor` / `ownsKeyEvent` (`domScope.ts`). Keep that check *in
   front of* `commands.run`, not inside it: host calls must work on an
   inactive pane.
 
@@ -890,7 +890,7 @@ down|drag|up|move|doubleclick, x, y, space: "doc"|"screen", mods}]}`,
 `ui.key`, `ui.text`, `ui.dialog.*`.
 
 ### What to build
-`src/editor/automation.js`, exposed as `editor.automation` (and so as
+`src/editor/automation.ts`, exposed as `editor.automation` (and so as
 `window.svgEditor.automation` for Playwright):
 
 ```js
@@ -928,7 +928,7 @@ at the API, keeping the raw formula as background.
 
 ### Implementation notes (T0.5, done 2026-10-10)
 
-`src/editor/automation.js` as designed. `pointer` resolves coordinates once per gesture (the canvas keeps the
+`src/editor/automation.ts` as designed. `pointer` resolves coordinates once per gesture (the canvas keeps the
 root CTM from `mousedown`, so scrolling mid-drag would skew the move events) and scrolls the point into view
 first. `tests/e2e/helpers.js` `clickCanvas`/`dragOnCanvas` are rebuilt on it (same svgroot-relative screen
 coordinates), plus a new document-space `dragInDocument`; CLAUDE.md's Playwright section points at the API.
@@ -987,6 +987,6 @@ gates are listed.
 
 
 ## Status update (2026-10-10)
-- T0.1: complete for commands - panel, main-menu and extension buttons register real commands (`panelCommands.js`, `registerModeCommand`); `layer_moreopts` remains an adapter (menu anchor). Enablement now reflects context (path editor open, text selected, stroke/fill gating); calling handlers directly exposed errors that click listeners had been swallowing.
+- T0.1: complete for commands - panel, main-menu and extension buttons register real commands (`panelCommands.ts`, `registerModeCommand`); `layer_moreopts` remains an adapter (menu anchor). Enablement now reflects context (path editor open, text selected, stroke/fill gating); calling handlers directly exposed errors that click listeners had been swallowing.
 - T0.3: complete for standalone tools - shape-family, brush (new `keepOpacity` flag), panning, eyedropper, cutter (`wantsHover`, `deactivate`), polystar, shapes, curvature and shape-builder run on `registerTool`. Puppet-warp (session across gestures) and connector (augments built-in modes) stay on the legacy hooks on purpose; see `.claude/techdebt.md`.
 - Known issues from T0.4: all fixed; the sweep's `KNOWN_ISSUES` is empty.

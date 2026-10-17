@@ -188,7 +188,7 @@ export default {
           if (id) $req(`${P}-pick`).value = id
           refresh()
         }
-        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.js").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
+        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.ts").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
         reg('brush_new_art', 'newArt', { enabled: needArt, run: () => make('art') })
         reg('brush_new_pattern', 'newPattern', { enabled: needArt, run: () => make('pattern') })
         reg('brush_delete', 'remove', {

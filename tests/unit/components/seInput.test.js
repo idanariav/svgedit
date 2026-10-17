@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mountElement } from './testUtils.js'
 import '../../../src/editor/components/seInput.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('se-input', () => {
   afterEach(() => { document.body.innerHTML = '' })

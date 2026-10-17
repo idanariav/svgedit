@@ -1,4 +1,4 @@
-import ConfigObj, { regexEscape } from '../../src/editor/ConfigObj.js'
+import ConfigObj, { regexEscape } from '../../src/editor/ConfigObj.ts'
 
 describe('ConfigObj', () => {
   const stubEditor = () => ({

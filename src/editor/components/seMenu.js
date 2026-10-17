@@ -2,7 +2,7 @@
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `

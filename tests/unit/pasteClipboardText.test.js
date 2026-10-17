@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyClipboardText } from '../../src/editor/pasteClipboardText.js'
+import { classifyClipboardText } from '../../src/editor/pasteClipboardText.ts'
 
 describe('classifyClipboardText', () => {
   it('classifies an internal clipboard JSON array', () => {

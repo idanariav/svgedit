@@ -7,11 +7,11 @@ import {
   deleteClass,
   getDefaultClassForTag,
   setDefaultClassForTag
-} from '../../../src/editor/classLibrary.js'
+} from '../../../src/editor/classLibrary.ts'
 import '../../../src/editor/components/seClassSelect.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
-vi.mock('../../../src/editor/classLibrary.js', () => ({
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/classLibrary.ts', () => ({
   getClass: vi.fn(),
   getClassesForScope: vi.fn(() => []),
   saveClass: vi.fn(),

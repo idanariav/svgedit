@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { badgeFor, initToolShortcutBadges } from '../../src/editor/toolShortcutBadges.js'
+import { badgeFor, initToolShortcutBadges } from '../../src/editor/toolShortcutBadges.ts'
 
 // A stand-in for the hotkey manager: effective keys by action id, and the change hook.
 const makeHotkeys = (keys) => {

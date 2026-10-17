@@ -14,7 +14,7 @@
  * the top level (vi.mock calls are hoisted above imports, so this cannot
  * live in a helper function):
  *
- *   vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+ *   vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
  */
 
 /**

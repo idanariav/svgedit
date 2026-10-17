@@ -10,7 +10,7 @@ when you finish an item, delete it (git history keeps the record).
 
 Done: narrow-pane work (top bar two-tier collapse + "⋯" tray, tablet command bar shedding by
 container width, palette keeps a 14px swatch minimum and scrolls) and, in a short pane, the left
-column's last tools fold into "Additional tools" (`toolAutoFold.js`) and return when there is room;
+column's last tools fold into "Additional tools" (`toolAutoFold.ts`) and return when there is room;
 the saved order never records the fold. Covered by `tests/e2e/top-bar-layout.spec.js`,
 `tests/e2e/tool-auto-fold.spec.js`, `tests/unit/toolAutoFold.test.js`. Remaining:
 - Folding is strictly from the end of the main list: the user cannot say which tools matter most
@@ -32,7 +32,7 @@ Done: a polish sweep (2026-10-13: the bar's width tiers moved up so Done is no l
 Done: Tab/Shift+Tab cycle, `V` select, Duplicate `D`, platform-formatted tooltips, default
 keys for Image (M), Brush (W), Cutter (C), Curvature (Y), Puppet warp (X). Tab / Shift+Tab
 cycle the drawing's elements only when the canvas has the keyboard; on a focused toolbar
-control (`isFocusControl` in `Hotkeys.js`) they move focus normally. The Shapes flyout (`tools_shapes`) and the Shape library (`tool_shapelib`) register with the hotkey manager like `se-button`s, so both can be bound (no default keys). Nothing further planned.
+control (`isFocusControl` in `Hotkeys.ts`) they move focus normally. The Shapes flyout (`tools_shapes`) and the Shape library (`tool_shapelib`) register with the hotkey manager like `se-button`s, so both can be bound (no default keys). Nothing further planned.
 
 ### Side panel and top bar: remaining polish
 
@@ -44,14 +44,14 @@ don't fit the tight bar). Nothing further planned.
 
 ### Tool cursors
 
-Done: `toolCursors.js` `cursorForMode(mode)` — a mode has a cursor when `images/cursors/<mode>_cursor.svg` exists (32px, white
+Done: `toolCursors.ts` `cursorForMode(mode)` — a mode has a cursor when `images/cursors/<mode>_cursor.svg` exists (32px, white
 halo for the dark canvas; the file names its hotspot in `data-hotspot="x y"`). The cursor *replaces* the pointer: tools with a
 working tip are drawn as the tool with its tip at the hotspot (Pencil `fhpath`, Pen `path`, Curvature, Brush, Smooth, Eyedropper,
 Cutter); shape and effect tools are a crosshair (hotspot at its centre) with a small glyph of the tool beside it (rect/square/ellipse/
 circle/polygon/star, line, arc, spiral, rect/polar grid, shape builder, gradient, distort, corners, width, blend, shaper). Zoom, shape
 library, puppet warp and repeat-pick-center keep a crosshair, text its I-beam, pan a hand; Measure's `ToolDef.cursor` is a crosshair.
 Cursors by position: a tool says what the pointer is over with `svgCanvas.setCursorHint(hint)` (a short name, `null` for none; a mode
-change clears it; the `cursorHint` event fires on change). The editor turns the hint into a cursor (`toolCursors.js`): `grab`,
+change clears it; the `cursorHint` event fires on change). The editor turns the hint into a cursor (`toolCursors.ts`): `grab`,
 `grabbing` and `pointer` are system cursors in every tool, anything else is `cursors/<mode>_<hint>_cursor.svg`, else the mode's own.
 Used by: the Pen (`path_continue`: an open end a press would carry on; `path_join`: the same end while a drawing is under way), the
 Pencil (`fhpath_continue`), the Width tool (`width_add` on the stroke, `grab` on a diamond, `grabbing` while dragging it, `pointer` on

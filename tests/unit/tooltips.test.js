@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { initTooltips } from '../../src/editor/tooltips.js'
+import { initTooltips } from '../../src/editor/tooltips.ts'
 
 describe('tooltips', () => {
   let root, host, btn, other, ctl, abort

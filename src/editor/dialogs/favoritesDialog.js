@@ -1,11 +1,11 @@
 // favoritesDialog.js — Favorites manager modal (`se-favorites-dialog`) — grouped list of every favoritable action (via `buildFavoritesCatalog`) with a star toggle each
-import { t } from '../locale.js'
-import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.js'
-import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.js'
+import { t } from '../locale.ts'
+import { buildFavoritesCatalog, getFavoriteMeta } from '../favoriteActions.ts'
+import { loadFavorites, saveFavorites, toggleFavorite } from '../favorites.ts'
 import favoritesDialogHTML from './favoritesDialog.html'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 
 const template = document.createElement('template')
 template.innerHTML = favoritesDialogHTML

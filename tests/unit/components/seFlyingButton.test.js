@@ -3,7 +3,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 import '../../../src/editor/components/seFlyingButton.js'
 import '../../../src/editor/components/seButton.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 /**
  * se-flyingbutton reads its slotted <se-button> children (via

@@ -1,8 +1,8 @@
 // seListItem.js — `<se-list-item>` — Item inside `<se-list>`
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `

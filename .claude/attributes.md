@@ -4,7 +4,7 @@
 
 **Code references:**
 - Panel markup: [src/editor/panels/TopPanel.html](../src/editor/panels/TopPanel.html)
-- Attribute change handler: [src/editor/panels/TopPanel.js](../src/editor/panels/TopPanel.js) (`attrChanger`)
+- Attribute change handler: [src/editor/panels/TopPanel.ts](../src/editor/panels/TopPanel.ts) (`attrChanger`)
 - Paint / opacity: [src/editor/panels/BottomPanel.html](../src/editor/panels/BottomPanel.html)
 
 ---
@@ -266,7 +266,7 @@ Plus [common attributes](#common-attributes-all-shapes).
 
 ## `<polyline>` and `<polygon>`
 
-No dedicated panel — these shapes show only [common attributes](#common-attributes-all-shapes). **No x/y panel** (excluded in `TopPanel.js`).
+No dedicated panel — these shapes show only [common attributes](#common-attributes-all-shapes). **No x/y panel** (excluded in `TopPanel.ts`).
 
 **Extension:** `ext-markers` adds Marker Start / Middle / End controls and the **Head position** picker (`marker_align` → `se:arrow-align`: absent = centred, `tip`, `extend`). With Tip the real geometry is kept in `se:arrow-pts` (`x,y x,y …`, line/polyline) or `se:arrow-d` (path) and `se:arrow-trim` (`start,end` user units); `x1…y2` / `points` / `d` hold the trimmed stroke. Do not edit those by hand: `svgCanvas.syncArrowAlign` re-derives them.
 
@@ -281,7 +281,7 @@ These controls are always available when any element is selected.
 | Control ID | SVG Attribute / Property | Range |
 |------------|--------------------------|-------|
 | `elem_id` | `id` | Free text |
-| `elem_class` | `class` | **`<se-class-select>`** style-preset picker (not free text). Scope-filtered dropdown of saved classes + save/update popover + delete. Picking a class **stamps the preset's captured attributes inline** onto the selection (one undo step) and tags `class="<name>"`. Does **not** go through `attrChanger` — see `seClassSelect.js` / `classLibrary.js` |
+| `elem_class` | `class` | **`<se-class-select>`** style-preset picker (not free text). Scope-filtered dropdown of saved classes + save/update popover + delete. Picking a class **stamps the preset's captured attributes inline** onto the selection (one undo step) and tags `class="<name>"`. Does **not** go through `attrChanger` — see `seClassSelect.js` / `classLibrary.ts` |
 | `angle` | `transform: rotate(…)` | −180 to 180°, step 5 |
 | `blur` | `filter: blur(…)` | 0–100, step 5 (multiplied ×10 to compute σ) |
 | `tool_position` | `transform` | Align to page: L/C/R/T/M/B + distribute H/V |
@@ -321,7 +321,7 @@ These are **action buttons**, not `attrChanger`-driven inputs — they call `svg
 ## How Attribute Changes Are Applied
 
 All shape-specific spin/input controls carry a `data-attr` attribute on the element.
-The `attrChanger` function in `TopPanel.js`:
+The `attrChanger` function in `TopPanel.ts`:
 1. Reads `data-attr` from the fired input
 2. Validates the value with `isValidUnit()`
 3. Converts units if the canvas is not in px mode
@@ -329,7 +329,7 @@ The `attrChanger` function in `TopPanel.js`:
 
 The `changeSelectedAttribute` method in `packages/svgcanvas/core/elem-get-set.js` applies the change to the live SVG DOM and records it in undo history.
 
-**Exception — `elem_class`:** the `<se-class-select>` component is not bound to `attrChanger`. Applying a class builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) that stamps the preset's saved attributes plus the `class` token, then refreshes the panels (`topPanel.update()` + `updateContextPanel()`). Storage and catalog: `src/editor/classLibrary.js`. A drop shadow can't be stamped as a flat attribute, so a preset may also carry `shadow` (`{angle,length,blur,opacity,color}`), `outline` and `glow` (`{outer, inner, feather}`) blocks, captured and re-applied through `svgEditor.shadowApi` / `outlineApi` / `glowApi` (the effect extensions) and rebuilt per element in the same undo batch.
+**Exception — `elem_class`:** the `<se-class-select>` component is not bound to `attrChanger`. Applying a class builds its own `BatchCommand` of `ChangeElementCommand`s (one undo step) that stamps the preset's saved attributes plus the `class` token, then refreshes the panels (`topPanel.update()` + `updateContextPanel()`). Storage and catalog: `src/editor/classLibrary.ts`. A drop shadow can't be stamped as a flat attribute, so a preset may also carry `shadow` (`{angle,length,blur,opacity,color}`), `outline` and `glow` (`{outer, inner, feather}`) blocks, captured and re-applied through `svgEditor.shadowApi` / `outlineApi` / `glowApi` (the effect extensions) and rebuilt per element in the same undo batch.
 
 **Exception — custom palette swatches (`se-palette` / `BottomPanel.handlePalette`):**
 a plain palette swatch has no alpha channel. Clicking one only changes
@@ -338,7 +338,7 @@ a plain palette swatch has no alpha channel. Clicking one only changes
 
 ### Live position/dimension readout while dragging (move/resize)
 
-During a select-mode move or resize the geometry exists only as a temporary `transform`; the real x / y / width / height attributes are baked on mouseup (`recalculateDimensions`). So `mouseMoveEvent` (`core/event.js`) stashes the live delta or scale on the canvas just before firing `'transition'`: `svgCanvas.dragLiveMoveDelta = {dx, dy}` (`select`) or `svgCanvas.dragLiveResizeBox = {left, top, width, height, tx, ty, sx, sy}` (`resize`, the same anchor and scale values that build the temporary translate-scale-translate). `Editor.js` `elementTransition` reads them (as it does for `rotate`) and calls `TopPanel.updateLiveMove(elem, dx, dy)` / `updateLiveResize(elem, box)`, which write straight into the fields; a full `updateContextPanel()` would re-read the unbaked attributes and show stale values. `mouseUpEvent` fires `'changed'` after every committed move, so the panel refreshes with the baked values when the drag ends. Panel values are rounded to 1 decimal (`round1`, `TopPanel.js`, as for `font_size`) because resize math leaves long float tails; display only.
+During a select-mode move or resize the geometry exists only as a temporary `transform`; the real x / y / width / height attributes are baked on mouseup (`recalculateDimensions`). So `mouseMoveEvent` (`core/event.js`) stashes the live delta or scale on the canvas just before firing `'transition'`: `svgCanvas.dragLiveMoveDelta = {dx, dy}` (`select`) or `svgCanvas.dragLiveResizeBox = {left, top, width, height, tx, ty, sx, sy}` (`resize`, the same anchor and scale values that build the temporary translate-scale-translate). `Editor.js` `elementTransition` reads them (as it does for `rotate`) and calls `TopPanel.updateLiveMove(elem, dx, dy)` / `updateLiveResize(elem, box)`, which write straight into the fields; a full `updateContextPanel()` would re-read the unbaked attributes and show stale values. `mouseUpEvent` fires `'changed'` after every committed move, so the panel refreshes with the baked values when the drag ends. Panel values are rounded to 1 decimal (`round1`, `TopPanel.ts`, as for `font_size`) because resize math leaves long float tails; display only.
 
 `recalculateDimensions` (`core/recalculate.js`) deliberately returns `null` and leaves the transform in place only when the tlist is a lone matrix + rotation (2 items), since rotation must stay a separate transform. A lone plain matrix (1 item, what a consolidated drag-move's temporary translate becomes) must still be baked, or the element keeps a `transform="matrix(…)"` forever with `x` / `y` never updated.
 

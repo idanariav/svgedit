@@ -18,7 +18,7 @@
  * @license MIT
  */
 
-import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../../customBrushes.js'
+import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../../customBrushes.ts'
 import { createBrushOptions } from './brushOptions.js'
 import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.ts'
 

@@ -3,7 +3,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 import '../../../src/editor/components/colorPicker/index.js'
 import Paint from '../../../packages/svgcanvas/core/paint.ts'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('se-color-dialog as a popover', () => {
   let anchor

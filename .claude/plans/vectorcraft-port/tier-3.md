@@ -34,7 +34,7 @@ stepping). Implementation is egui-specific, so port the behaviour only.
   create one undo step per tick (grep `addEventListener('input'` on spin
   inputs). If a consumer can't be made single-step, wrap with
   `svgCanvas.undoMgr.beginUndoableChange`/`finishUndoableChange` ❓.
-- Pref: `ConfigObj.js` (e.g. `scrubNumericFields`), toggle in
+- Pref: `ConfigObj.ts` (e.g. `scrubNumericFields`), toggle in
   `editorPreferencesDialog.js`.
 - Tablet shell: disable scrubbing on touch pointers (conflicts with scrolling).
 
@@ -60,7 +60,7 @@ never changed. Endpoints snap (uses T2.1 targets when available).
 ### svgedit integration
 Extension `ext-measure`, mode `'measure'`, overlay line + label in
 `svgroot` (not exported); units via `core/units.js` and the `baseUnit` pref
-(`ConfigObj.js`). Position: left panel after the eyedropper, or the
+(`ConfigObj.ts`). Position: left panel after the eyedropper, or the
 "Additional tools" overflow bucket by default ❓.
 
 ### Tests
@@ -208,7 +208,7 @@ gestures), `crates/engine/src/cmd/layerpanel.rs` (`hideOthers`,
 `showAll`, `lockOthers`, `unlockAll`, `template`).
 
 ### svgedit integration
-- Rows are built in `src/editor/panels/RightPanel.js` `populateLayers()`
+- Rows are built in `src/editor/panels/RightPanel.ts` `populateLayers()`
   (≈ line 386); visibility goes through `setLayerVisibility` in
   `core/layer-ops.js`, which records a `ChangeElementCommand` per layer
   (≈ line 208) — wrap several in one `BatchCommand` for Alt-click and
@@ -268,7 +268,7 @@ selected open path continues it").
   as in T2.3. Reuse T2.3's endpoint hit test if it has landed.
 - Show a "continue" cursor when hovering a continuable end with the pencil.
 - Settings UI ❓: double-click on a tool button already means **lock mode**
-  (`LeftPanel.js`, `LOCKABLE_TOOL_IDS`), so VectorCraft's "double-click opens
+  (`LeftPanel.ts`, `LOCKABLE_TOOL_IDS`), so VectorCraft's "double-click opens
   Tool Options" can't be copied. Options: a small popover in the Design tab
   while the pencil is active, or rows in Preferences. Recommended: the
   Preferences dialog (`dialogs/editorPreferencesDialog.js`), since these

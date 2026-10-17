@@ -10,7 +10,7 @@ vi.mock('@svgedit/svgcanvas', () => ({
   }
 }))
 
-const { default: LeftPanel } = await import('../../../src/editor/panels/LeftPanel.js')
+const { default: LeftPanel } = await import('../../../src/editor/panels/LeftPanel.ts')
 
 /**
  * Builds a real LeftPanel, running its actual init() (using the real

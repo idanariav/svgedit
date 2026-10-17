@@ -15,7 +15,7 @@
  */
 
 import { ensureFont, isCached, restoreAll } from '../extensions/ext-fonts/fontStore.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.ts'
 // Inlined Google-fonts catalog (bundled at build time) — removes the runtime
 // fetch. The `catalog` attribute is still honoured as a fallback.
 import googleFontsCatalog from '../extensions/ext-fonts/google-fonts-catalog.json'

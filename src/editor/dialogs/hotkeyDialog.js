@@ -1,10 +1,10 @@
 // hotkeyDialog.js — Hotkey Manager modal (`se-hotkey-dialog`) — grouped list of every action with add (key recorder) / remove / reset / reset-all, conflict feedback
-import { t } from '../locale.js'
-import { formatHotkey } from '../Hotkeys.js'
+import { t } from '../locale.ts'
+import { formatHotkey } from '../Hotkeys.ts'
 import hotkeyDialogHTML from './hotkeyDialog.html'
-import { ownerEditor, requireOwnerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 
 const template = document.createElement('template')
 template.innerHTML = hotkeyDialogHTML
@@ -200,7 +200,7 @@ export class SeHotkeyDialog extends HTMLElement {
     e.stopPropagation()
     if (e.key === 'Escape') { this._cancelRecording(); this._render(); return }
     const hk = requireOwnerEditor(this).hotkeys
-    const key = /** @type {typeof import('../Hotkeys.js').default} */ (hk.constructor).keyFromEvent(e)
+    const key = /** @type {typeof import('../Hotkeys.ts').default} */ (hk.constructor).keyFromEvent(e)
     if (!key) return // lone modifier — keep waiting for the full combo
     if (!this._recording) return
     const { id } = this._recording

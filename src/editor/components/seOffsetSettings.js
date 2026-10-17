@@ -1,6 +1,6 @@
 // seOffsetSettings.js — `<se-offset-settings>` — Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`)
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `

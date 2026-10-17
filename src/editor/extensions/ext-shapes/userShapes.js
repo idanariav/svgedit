@@ -23,7 +23,7 @@
  *   }
  */
 
-import { getUserDataAdapter } from '../../userDataAdapter.js'
+import { getUserDataAdapter } from '../../userDataAdapter.ts'
 
 const STORAGE_KEY = 'svg-edit-user-shapes'
 

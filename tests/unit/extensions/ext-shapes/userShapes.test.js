@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { setUserDataAdapter } from '../../../../src/editor/userDataAdapter.js'
+import { setUserDataAdapter } from '../../../../src/editor/userDataAdapter.ts'
 import {
   addUserShape, getUserShapesForCategory, getAllUserShapeLabels
 } from '../../../../src/editor/extensions/ext-shapes/userShapes.js'

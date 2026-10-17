@@ -1,6 +1,6 @@
 // seSettingsPopover.js — `SeSettingsPopover` — shared base for the seven toolbar-button-plus-popover settings components below (incl
 import { fetchSvgEl } from './svgIconLoader.js'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 
 /**
  * @class SeSettingsPopover

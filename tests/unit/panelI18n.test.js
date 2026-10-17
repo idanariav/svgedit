@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { panelKey, localizePanelFragment } from '../../src/editor/panelI18n.js'
+import { panelKey, localizePanelFragment } from '../../src/editor/panelI18n.ts'
 import en from '../../src/editor/locale/lang.en.js'
 
 const fake = (dict) => ({ exists: (k) => k in dict, t: (k) => dict[k] })

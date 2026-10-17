@@ -10,7 +10,7 @@ vi.mock('@svgedit/svgcanvas', () => ({
   }
 }))
 
-const { default: TopPanel } = await import('../../../src/editor/panels/TopPanel.js')
+const { default: TopPanel } = await import('../../../src/editor/panels/TopPanel.ts')
 const { hasVisibleStroke } = await import('../../../packages/svgcanvas/core/path-offset.ts')
 
 /**

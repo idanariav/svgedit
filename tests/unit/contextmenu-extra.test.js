@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 
-import { createContextMenu } from '../../src/editor/contextmenu.js'
+import { createContextMenu } from '../../src/editor/contextmenu.ts'
 
 describe('contextmenu helpers', () => {
   let contextmenu

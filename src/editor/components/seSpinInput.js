@@ -1,10 +1,10 @@
 // seSpinInput.js — `<se-spin-input>` — Numeric input with icon/label/spinner; hold-repeat buttons, arrow keys, scrubby label (drag = one undo step via a canvas transaction, Shift x10 / Ctrl x0.1, Escape restores) and…
-import { tooltipText } from '../Hotkeys.js'
-import { t } from '../locale.js'
+import { tooltipText } from '../Hotkeys.ts'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor, requireOwnerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 
 // Press-and-hold auto-repeat: first repeat after HOLD_DELAY_MS, then every
 // HOLD_INTERVAL_MS until the mouse is released or the limit is reached.

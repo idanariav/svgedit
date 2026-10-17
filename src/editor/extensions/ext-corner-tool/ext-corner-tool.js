@@ -27,7 +27,7 @@ import {
   CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, cornerRadiusChange, isCornerStateCurrent, cornerWidgetAt, fittedCornerRadius, maxCornerRadius
 } from '@svgedit/svgcanvas/core/corner-radius.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
-import { refreshToolOptions } from '../../panels/toolOptionsBar.js'
+import { refreshToolOptions } from '../../panels/toolOptionsBar.ts'
 
 /** How close (screen px) the pointer must be to a widget to take it. */
 export const GRAB_PX = 8

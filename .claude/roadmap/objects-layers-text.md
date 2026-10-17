@@ -14,12 +14,12 @@ Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %
 - **A path's cells carry its fill / stroke but not its markers**, rounded corners are kept for rects only.
 - Not in the tablet shell; the dialog is modal (the canvas cannot be panned while it is open).
 
-## Layers panel object rows (`panels/layerTree.js`, `core/object-state.js`): follow-ups from T2.17
+## Layers panel object rows (`panels/layerTree.ts`, `core/object-state.js`): follow-ups from T2.17
 
 Done: a tree under each layer (objects and plain groups, front to back; layers open, groups closed), eye / lock / name per row, click / Shift-range / Cmd-toggle selection that enters the object's layer and group, double-click rename (`data-name`), drag to reorder or move into another layer or group (one undo step, position kept), Locate Object (`layer_locate`), locked objects refused by clicks, rubber bands and `addToSelection`, hidden ones by the rubber band. Remaining:
 - **Capped, not virtualized.** A parent lists at most 200 children ("N more…" adds 200); measured at 5,000 objects in a layer: 200 rows, ≈ 23 ms to rebuild, ≈ 1 ms when nothing changed. Real windowing only if a drawing needs to scroll through thousands of rows.
-- **Not in the tablet shell** (`TabletShell.js` has its own layers UI). **Keyboard access** is `panels/layerKeyboard.js`: the table is one tab stop (`role=treegrid`), an active row (`kbfocus`) moves with ↑ ↓ Home End, → ← open / close / go to the parent, Enter / Space select (Shift range, Ctrl / Cmd toggle), F2 rename, H / L eye and padlock, Alt+↑↓ reorder; handled keys stop at the table. Not done: Shift+arrow range only among siblings, no type-ahead, and the active row is a class (no `aria-activedescendant`), so a screen reader hears the table, not the row.
-- **A locked object is not a click target at all**, so a press on it starts a rubber band instead of selecting what is under it (Illustrator picks the next object down). Lock / hide from the canvas are the commands `object_lock_selection` (mod+2), `object_hide_selection` (mod+3), `object_unlock_all` (mod+alt+2) and `object_show_all` (mod+alt+3) (`coreCommands.js`; the *all* pair is gated on `hasLockedObjects()` / `hasHiddenObjects()`, which walk the objects the panel lists, never a layer's own visibility).
+- **Not in the tablet shell** (`TabletShell.ts` has its own layers UI). **Keyboard access** is `panels/layerKeyboard.ts`: the table is one tab stop (`role=treegrid`), an active row (`kbfocus`) moves with ↑ ↓ Home End, → ← open / close / go to the parent, Enter / Space select (Shift range, Ctrl / Cmd toggle), F2 rename, H / L eye and padlock, Alt+↑↓ reorder; handled keys stop at the table. Not done: Shift+arrow range only among siblings, no type-ahead, and the active row is a class (no `aria-activedescendant`), so a screen reader hears the table, not the row.
+- **A locked object is not a click target at all**, so a press on it starts a rubber band instead of selecting what is under it (Illustrator picks the next object down). Lock / hide from the canvas are the commands `object_lock_selection` (mod+2), `object_hide_selection` (mod+3), `object_unlock_all` (mod+alt+2) and `object_show_all` (mod+alt+3) (`coreCommands.ts`; the *all* pair is gated on `hasLockedObjects()` / `hasHiddenObjects()`, which walk the objects the panel lists, never a layer's own visibility).
 - Object thumbnails: rows have none.
 - **Moving between parents folds the parents' transforms into the object's own `transform`** (as one matrix). A `clip-path` / `mask` or a `userSpaceOnUse` gradient on the moved object is not compensated, and a rotation held as `rotate()` becomes part of the matrix.
 - **Shift-range and Cmd-toggle work among siblings only** (the selection cannot span two parents); a row click in another parent starts a new selection.
@@ -28,7 +28,7 @@ Done: a tree under each layer (objects and plain groups, front to back; layers o
 - **The layer context menu** (right-click in the list) acts on layers and also opens on object rows.
 - The group-name field in `#objects_panel` (shown when a group is selected) stays; it duplicates the row rename.
 
-## Layers panel gestures (`panels/layerGestures.js`): follow-ups from T3.6
+## Layers panel gestures (`panels/layerGestures.ts`): follow-ups from T3.6
 
 Done: Alt-click an eye / padlock (others, or an object's siblings), drag down a column (one undo step for visibility), drag a layer row to reorder, tracing-template comment layers (`se:template`, `layer_template`, Alt-click the comment icon). Remaining:
 - **Pointer only**: touch scrolls the panel instead of dragging; the tablet shell has its own layers UI without any of this. The keyboard route is Alt+↑↓ in the panel (see above); the Move Layer Up / Down buttons stay.

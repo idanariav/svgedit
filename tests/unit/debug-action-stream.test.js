@@ -1,5 +1,5 @@
-import { attachDebugActionStream } from '../../src/editor/DebugActionStream.js'
-import { CommandRegistry } from '../../src/editor/commands.js'
+import { attachDebugActionStream } from '../../src/editor/DebugActionStream.ts'
+import { CommandRegistry } from '../../src/editor/commands.ts'
 
 const makeEditor = (findings = []) => {
   let sink = null

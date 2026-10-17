@@ -148,11 +148,11 @@ all 55 verified to load identically. The two load-time sanitizers it replaced ar
 
 All eight files that were over ~1,500 lines are now under it (Editor.js 1,451,
 seShapeLibrary.js 1,358, svg-exec.js 1,249, draw.js 1,209, selected-elem.js
-1,172, TopPanel.js 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
-moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
+1,172, TopPanel.ts 1,161, elem-get-set.js 1,110, EditorStartup.js 1,092), by
+moving cohesive blocks into `addToShapeLibrary.ts`, `editorShortcuts.ts`,
 `seShapeLibrary.css.js`/`.data.js`, `core/svg-defs.js`,
 `core/layer-ops.js`, `core/text-attrs.js`, `core/group-ops.js` and
-`panels/topPanelContext.js`. What's left is still big in one place each:
+`panels/topPanelContext.ts`. What's left is still big in one place each:
 `EditorStartup.init()` (~770 lines of listener wiring), `SeShapeLibrary` (one
 ~1,300-line class: store/view/menu not separated), `Drawing` in `draw.js`
 (~880 lines), and `TopPanel.init()`. Split those only with a concrete reason.
@@ -162,7 +162,7 @@ moving cohesive blocks into `addToShapeLibrary.js`, `editorShortcuts.js`,
 Every dialog follows the editor's light/dark theme (`svgedit.css` lists each dialog tag in its
 light and dark token blocks; each calls `syncDialogTheme()` on open;
 `tests/unit/dialog-theme-tokens.test.js` guards it). `syncDialogTheme()` also copies the
-resolved design tokens (`DIALOG_TOKENS` in `themeUtil.js`) from the owning `.svg_editor`, so a
+resolved design tokens (`DIALOG_TOKENS` in `themeUtil.ts`) from the owning `.svg_editor`, so a
 host that overrides tokens there reaches the dialogs too — a token added to the design set
 must be added to that list. The ~50 remaining hard-coded hex values in components/dialogs are
 deliberate: text on accent buttons, colour-picker maths, danger red, grid default. The
@@ -178,7 +178,7 @@ fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
 
 ## Latent faults the editor ratchet surfaced (2026-10-17)
 
-Typing `Editor.js`, `EditorStartup.js` and `contextmenu.js` strictly turned up code that is wrong today but not reachable
+Typing `Editor.js`, `EditorStartup.js` and `contextmenu.ts` strictly turned up code that is wrong today but not reachable
 (or not noticed) in normal use. Fixed where the fix was a typing consequence; the rest is left for a deliberate change:
 
 - **`ext-connector`'s marker block is dead.** `handleOneChangedElement` destructures `{ markerStart, markerMid, markerEnd }` from
@@ -186,11 +186,11 @@ Typing `Editor.js`, `EditorStartup.js` and `contextmenu.js` strictly turned up c
   block (track marker presence for the endpoint offsets; turn a `<line>` with a mid-marker into a polyline) never runs. Typing it
   kept the behaviour (a cast, with a comment). Reading `marker-start`/`marker-mid`/`marker-end` would switch the feature on, which
   needs its own tests (and a look at `getOffset`, which already reads the attributes directly).
-- **`#g_title` is never disabled for a `<use>`.** `topPanelContext.js` sets `.disabled` on the `se-input`, which has no such property
+- **`#g_title` is never disabled for a `<use>`.** `topPanelContext.ts` sets `.disabled` on the `se-input`, which has no such property
   (a plain expando), so the box stays editable. Give `se-input` a `disabled` attribute, or drop the line.
 - **`loadFromURL` carries on after a failed fetch** (`!response.ok` and not `noAlert`): it alerts and resolves, then falls
   through to `response.text()` and tries to load the error body as SVG (a second alert). Add the missing `return`.
-- **Extension context-menu items are never shown.** `contextmenu.js` appends them to a `#cmenu_canvas` list that the
+- **Extension context-menu items are never shown.** `contextmenu.ts` appends them to a `#cmenu_canvas` list that the
   template no longer has (the canvas menu is the `<se-cmenu_canvas-dialog>`); no built-in extension adds one. Either wire
   `add()` into the dialog or delete the registry.
 - **`LeftPanel.updateLeftPanel`'s disabled check never fires.** It reads `.disabled` off its argument, but every caller passes a tool

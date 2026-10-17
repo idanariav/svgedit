@@ -1,7 +1,7 @@
 // editorPreferencesDialog.js — Editor preferences modal (units, rulers, theme; grid settings moved to the grid-settings popover)
 import editorPreferencesDialog from './editorPreferencesDialog.html'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
 const template = document.createElement('template')
 template.innerHTML = `<style>${dialogSkin('#svg_prefs_container')}</style>${editorPreferencesDialog}`

@@ -3,7 +3,7 @@ import { installMockSvgEditor, uninstallMockSvgEditor } from './testUtils.js'
 import '../../../src/editor/components/seListItem.js'
 import '../../../src/editor/components/seList.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // SeList's constructor reads `this.items[0]` (its se-list-item children) to
 // seed the initial selected value, so the items must already exist in the

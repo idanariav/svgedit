@@ -12,7 +12,7 @@ short: details belong in the area files.
 ## Standing guidelines for new code
 
 - **Everything is a command.** A user-visible action is a command with a stable id (never rename one: hotkey overrides
-  and favorites store them), typed `params` and an `enabled` gate from day one (`commandGates.js`). Buttons are views
+  and favorites store them), typed `params` and an `enabled` gate from day one (`commandGates.ts`). Buttons are views
   (`command="<id>"`, no `$click`). See `CLAUDE.md` › Key source locations.
 - **Drawing tools use `svgCanvas.registerTool`** (document-space events, one undo step per gesture, `options()` for an
   options bar). No new legacy mouse hooks.

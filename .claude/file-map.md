@@ -171,48 +171,48 @@
 
 | File | What it is |
 |---|---|
-| `addToShapeLibrary.js` | "Add to Shape Library": serialize the selection, ask for a label/category, store it, and tell the shape library component to refresh |
-| `automation.js` | A stable in-page API for driving and inspecting the editor in **document coordinates**: `editor.automation` (also reachable as `window.svgEditor.automation`) |
+| `addToShapeLibrary.ts` | "Add to Shape Library": serialize the selection, ask for a label/category, store it, and tell the shape library component to refresh |
+| `automation.ts` | A stable in-page API for driving and inspecting the editor in **document coordinates**: `editor.automation` (also reachable as `window.svgEditor.automation`) |
 | `browser-not-supported.js` | Redirects to `browser-not-supported.html` when the browser has no SVG support |
-| `canvasCommands.js` | The canvas page itself (size, background colour, saved layouts) as commands, so the Canvas Settings popover, the bottom panel's background swatch, a host and a debug log / LLM all go through one named, typed, logged… |
-| `canvasLayouts.js` | Saved canvas "layouts" (templates) for the Canvas Settings popover (`seCanvasSettings.js`) |
-| `classLibrary.js` | Class library — a global, browser-persisted store of named style presets ("classes") |
-| `commandGates.js` | Shared `enabled` checks for registry commands (see commands.js) |
-| `commands.js` | The editor's command registry ("everything is a command") |
-| `commandSearch.js` | Data + activation logic for the Command Search popup |
-| `ConfigObj.js` | `pref(key)`, `setConfig(obj)`, localStorage persistence |
-| `contextmenu.js` | Adds context menu functionality |
-| `coreCommands.js` | The pilot commands that live in the command registry as real commands (one implementation shared by hotkey, toolbar button, favorites / quick-action menu, tablet shell and the host API) |
-| `customBrushes.js` | Custom brush presets — up to 5 saved slots for the freehand brush tool's settings (thickness, angle, roundness, taper start/end, opacity, smoothness) |
-| `DebugActionStream.js` | The debug log's *action* channel |
-| `DebugSnapshotLogger.js` | Polls a snapshot function (svgCanvas.getDebugSnapshot()) and forwards it to a host-provided sink whenever it changes, instead of rendering it in a UI panel (see Editor.js's setDebugLogger()) |
-| `documentColors.js` | The distinct solid colours a drawing already uses, for the palette's "Recent" row |
-| `domScope.js` | Resolve the editor container that owns a given element |
+| `canvasCommands.ts` | The canvas page itself (size, background colour, saved layouts) as commands, so the Canvas Settings popover, the bottom panel's background swatch, a host and a debug log / LLM all go through one named, typed, logged… |
+| `canvasLayouts.ts` | Saved canvas "layouts" (templates) for the Canvas Settings popover (`seCanvasSettings.js`) |
+| `classLibrary.ts` | Class library — a global, browser-persisted store of named style presets ("classes") |
+| `commandGates.ts` | Shared `enabled` checks for registry commands (see commands.js) |
+| `commands.ts` | The editor's command registry ("everything is a command") |
+| `commandSearch.ts` | Data + activation logic for the Command Search popup |
+| `ConfigObj.ts` | `pref(key)`, `setConfig(obj)`, localStorage persistence |
+| `contextmenu.ts` | Adds context menu functionality |
+| `coreCommands.ts` | The pilot commands that live in the command registry as real commands (one implementation shared by hotkey, toolbar button, favorites / quick-action menu, tablet shell and the host API) |
+| `customBrushes.ts` | Custom brush presets — up to 5 saved slots for the freehand brush tool's settings (thickness, angle, roundness, taper start/end, opacity, smoothness) |
+| `DebugActionStream.ts` | The debug log's *action* channel |
+| `DebugSnapshotLogger.ts` | Polls a snapshot function (svgCanvas.getDebugSnapshot()) and forwards it to a host-provided sink whenever it changes, instead of rendering it in a UI panel (see Editor.js's setDebugLogger()) |
+| `documentColors.ts` | The distinct solid colours a drawing already uses, for the palette's "Recent" row |
+| `domScope.ts` | Resolve the editor container that owns a given element. svgedit's chrome uses fixed element IDs (workarea, fill_color, the se-* dialogs, …), so a global `getElementById`/`querySelector` returns the first match when… |
 | `Editor.js` | The main module for the visual SVG this |
-| `editorShortcuts.js` | Editor-level shortcuts (not associated with a toolbar button) |
+| `editorShortcuts.ts` | Editor-level shortcuts (not associated with a toolbar button) |
 | `EditorStartup.js` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions |
-| `favoriteActions.js` | The catalog of favoritable actions and their execution |
-| `favorites.js` | Persistence for the user's quick-action favorites |
+| `favoriteActions.ts` | The catalog of favoritable actions and their execution |
+| `favorites.ts` | Persistence for the user's quick-action favorites |
 | `hostApi.check.ts` | Compile-time conformance check: fails `npm run typecheck` if `Editor` stops satisfying the declared host API |
-| `Hotkeys.js` | Central keyboard-shortcut registry for the editor |
-| `locale.js` | Localizing script for SVG-edit UI |
-| `MainMenu.js` | Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`) |
-| `panelCommands.js` | The commands behind the panel / menu buttons, as real registry commands (see commands.js, coreCommands.js) |
-| `panelI18n.js` | Localise the literal English labels in the static panel templates (RightPanel.html / TopPanel.html) |
-| `pasteClipboardText.js` | Shared parsing rule for pasted clipboard text |
-| `pasteFallbackArmer.js` | Timing-coordinated fallback for Cmd/Ctrl+V paste |
-| `Rulers.js` | Canvas ruler rendering and tick marks |
-| `runSteps.js` | `runSteps(steps)`: runs labeled, independent steps so one that throws is logged and skipped instead of aborting the chain |
-| `styleCopy.js` | Copy the look of one element onto others (the eyedropper's "Apply style" actions) |
-| `themeUtil.js` | `applyTheme(theme, rootEl)` — canonical theme helper |
-| `toolAutoFold.js` | Fold the left column's last tools into "Additional tools" while the pane is too short to show them all, and bring them back when it grows |
-| `toolCursors.js` | The canvas cursor of each tool (mode) |
-| `toolDragReorder.js` | Drag-to-reorder for the left panel's tools |
-| `toolOrder.js` | Persistence for the left panel's user-customized tool order |
-| `toolShortcutBadges.js` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same… |
-| `tooltips.js` | Hover tooltips for the editor chrome: a short-delay replacement for the browser's native `title` tooltip, which waits about a second (longer on some platforms) and sometimes never shows |
-| `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell) |
-| `userDataAdapter.js` | Module-level registry for an optional host storage adapter used to persist user customizations (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage` |
+| `Hotkeys.ts` | Central keyboard-shortcut registry for the editor |
+| `locale.ts` | Localizing script for SVG-edit UI |
+| `MainMenu.ts` | Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`) |
+| `panelCommands.ts` | The commands behind the panel / menu buttons, as real registry commands (see commands.js, coreCommands.js) |
+| `panelI18n.ts` | Localise the literal English labels in the static panel templates (RightPanel.html / TopPanel.html) |
+| `pasteClipboardText.ts` | Shared parsing rule for pasted clipboard text |
+| `pasteFallbackArmer.ts` | Timing-coordinated fallback for Cmd/Ctrl+V paste |
+| `Rulers.ts` | Canvas ruler rendering and tick marks |
+| `runSteps.ts` | `runSteps(steps)`: runs labeled, independent steps so one that throws is logged and skipped instead of aborting the chain |
+| `styleCopy.ts` | Copy the look of one element onto others (the eyedropper's "Apply style" actions) |
+| `themeUtil.ts` | `applyTheme(theme, rootEl)` — canonical theme helper |
+| `toolAutoFold.ts` | Fold the left column's last tools into "Additional tools" while the pane is too short to show them all, and bring them back when it grows |
+| `toolCursors.ts` | The canvas cursor of each tool (mode) |
+| `toolDragReorder.ts` | Drag-to-reorder for the left panel's tools |
+| `toolOrder.ts` | Persistence for the left panel's user-customized tool order |
+| `toolShortcutBadges.ts` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same… |
+| `tooltips.ts` | Hover tooltips for the editor chrome: a short-delay replacement for the browser's native `title` tooltip, which waits about a second (longer on some platforms) and sometimes never shows |
+| `uiMode.ts` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell) |
+| `userDataAdapter.ts` | Module-level registry for an optional host storage adapter used to persist user customizations (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage` |
 
 ### `src/editor/components/`
 
@@ -622,16 +622,16 @@
 
 | File | What it is |
 |---|---|
-| `BottomPanel.js` | Color-picker handlers + zoom/stroke/opacity handler methods (listeners bound in TopPanel) |
-| `layerGestures.js` | Gestures of the Layers panel's eye / lock columns and layer rows: - **Alt-click an eye or a padlock** acts on every *other* row (the siblings, for an object row): hide / lock them all, or, when they already are, show /… |
-| `layerKeyboard.js` | Keyboard access to the Layers panel (the layer rows and the object tree under them, see layerTree.js) |
-| `layerTree.js` | Object rows of the Layers panel: under each expanded layer, a row per object and group (groups expand), with an eye (hide), a lock, the name (double-click renames), the selection highlight, and drag to reorder or move… |
-| `LeftPanel.js` | Drawing tool button handlers; mode switching |
-| `RightPanel.js` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
-| `TabletShell.js` | Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native… |
-| `toolOptionsBar.js` | The options bar of the current tool: a tray in the top panel (and, in tablet mode, a strip in the shell) drawn from the tool's `options()` descriptors (`ToolDef.options` / `setOption`, core/tool-registry.js) |
-| `TopPanel.js` | Quick-action handlers + `updateContextPanel` (shows/hides trays & tab sections); binds relocated zoom/stroke/opacity listeners; `attrChanger()` |
-| `topPanelContext.js` | The top panel's context-panel refresh (which tools/fields show for the current selection), split out of TopPanel.js, whose `updateContextPanel()` delegates here |
+| `BottomPanel.ts` | Color-picker handlers + zoom/stroke/opacity handler methods (listeners bound in TopPanel) |
+| `layerGestures.ts` | Gestures of the Layers panel's eye / lock columns and layer rows: - **Alt-click an eye or a padlock** acts on every *other* row (the siblings, for an object row): hide / lock them all, or, when they already are, show /… |
+| `layerKeyboard.ts` | Keyboard access to the Layers panel (the layer rows and the object tree under them, see layerTree.js) |
+| `layerTree.ts` | Object rows of the Layers panel: under each expanded layer, a row per object and group (groups expand), with an eye (hide), a lock, the name (double-click renames), the selection highlight, and drag to reorder or move… |
+| `LeftPanel.ts` | Drawing tool button handlers; mode switching |
+| `RightPanel.ts` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
+| `TabletShell.ts` | Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native… |
+| `toolOptionsBar.ts` | The options bar of the current tool: a tray in the top panel (and, in tablet mode, a strip in the shell) drawn from the tool's `options()` descriptors (`ToolDef.options` / `setOption`, core/tool-registry.js) |
+| `TopPanel.ts` | Quick-action handlers + `updateContextPanel` (shows/hides trays & tab sections); binds relocated zoom/stroke/opacity listeners; `attrChanger()` |
+| `topPanelContext.ts` | The top panel's context-panel refresh (which tools/fields show for the current selection), split out of TopPanel.js, whose `updateContextPanel()` delegates here |
 
 <!-- file-map:end -->
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { applyUiMode, isTabletMode } from '../../src/editor/uiMode.js'
-import { setActiveEditor } from '../../src/editor/domScope.js'
+import { applyUiMode, isTabletMode } from '../../src/editor/uiMode.ts'
+import { setActiveEditor } from '../../src/editor/domScope.ts'
 
 describe('uiMode.applyUiMode', () => {
   afterEach(() => {

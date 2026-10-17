@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot, registerEditorRoot, ownerEditor, requireOwnerEditor } from '../../src/editor/domScope.js'
+import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot, registerEditorRoot, ownerEditor, requireOwnerEditor } from '../../src/editor/domScope.ts'
 
 describe('domScope active-editor tracking', () => {
   afterEach(() => {

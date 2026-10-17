@@ -83,7 +83,7 @@ next to `taperStrokeInit`), plus a small anchor model
   regenerate(`se:fx-d`, `se:fx`), drop both attributes.
 
 **UI:** new extension `src/editor/extensions/ext-live-effects/` (add to
-`defaultExtensions` in `ConfigObj.js`). Injects a section **"Effects ›
+`defaultExtensions` in `ConfigObj.ts`). Injects a section **"Effects ›
 Distort"** into the right panel's Effects tab (`#tab_effects`, same injection
 style as ext-shadow), showing the current stack as rows (name, ✎ edit,
 ✕ remove) and an "Add effect" `se-list`. Editing opens a popover/dialog with
@@ -590,7 +590,7 @@ halo is a hard-edged `feMorphology` dilate.
   `feComposite`, `feGaussianBlur`, `feMerge`/`feMergeNode`, filter
   `color-interpolation-filters`). Verify with a round-trip test.
 - **UI:** new extension `ext-glow` (add to `defaultExtensions` in
-  `ConfigObj.js`), injecting `#glow_panel` into `#tab_effects` after
+  `ConfigObj.ts`), injecting `#glow_panel` into `#tab_effects` after
   `#outline_panel`, copying ext-outline's structure
   (`src/editor/extensions/ext-outline/ext-outline.js`): an *Outer glow* row
   (Blur, Opacity, Color swatch) and an *Inner glow* row (Blur, Opacity,

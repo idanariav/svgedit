@@ -26,7 +26,7 @@
  * @license MIT
  */
 
-import { isActiveEditor } from '../../domScope.js'
+import { isActiveEditor } from '../../domScope.ts'
 
 const name = 'layer_view'
 // How much to fade the non-focused layers (inline style, so it survives the

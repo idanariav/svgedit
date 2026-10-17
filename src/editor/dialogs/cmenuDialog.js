@@ -1,17 +1,17 @@
 // cmenuDialog.js — Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
-import { closestRoot, requireOwnerEditor } from '../domScope.js'
-import { syncDialogTheme } from '../themeUtil.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.ts'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
-import { loadFavorites } from '../favorites.js'
-import { formatHotkey } from '../Hotkeys.js'
+import { loadFavorites } from '../favorites.ts'
+import { formatHotkey } from '../Hotkeys.ts'
 import {
   getFavoriteMeta,
   isValueControl,
   VALUE_CONTROLS,
   runFavoriteTrigger
-} from '../favoriteActions.js'
+} from '../favoriteActions.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 

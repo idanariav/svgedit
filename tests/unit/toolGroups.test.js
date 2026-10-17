@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   defaultToolOrder, groupOf, isUncustomisedOrder, reconcileToolOrder, markToolGroups, TOOL_GROUPS
-} from '../../src/editor/toolOrder.js'
+} from '../../src/editor/toolOrder.ts'
 
 const natural = ['tool_select', 'ext-panning', 'tool_fhpath', 'tool_line', 'tool_path', 'tools_shapes', 'tool_text', 'tool_image',
   'tool_brush', 'tool_shapelib', 'tool_cutter', 'tool_curvature', 'tool_eyedropper', 'tool_puppet_warp', 'tool_thirdparty']

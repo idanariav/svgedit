@@ -2,11 +2,11 @@ import { vi } from 'vitest'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSelect.js'
 import extPathEdit from '../../src/editor/extensions/ext-path-edit/ext-path-edit.js'
-import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
+import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import { mockCommands } from './helpers/commands.js'
 
-vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('ext-path-edit', function () {
   let svgCanvas

@@ -1,9 +1,9 @@
 // seMenuItem.js — `<se-menu-item>` — one row of a `<se-menu>` popup, with an icon, a label and a shortcut hint
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor, requireOwnerEditor } from '../domScope.js'
-import { formatShortcutAttr } from '../Hotkeys.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
+import { formatShortcutAttr } from '../Hotkeys.ts'
 import { onCommandClick } from './commandBinding.js'
 const template = document.createElement('template')
 template.innerHTML = `

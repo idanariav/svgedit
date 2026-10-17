@@ -1,5 +1,5 @@
-import { CommandRegistry } from '../../../src/editor/commands.js'
-import { registerModeCommand } from '../../../src/editor/panelCommands.js'
+import { CommandRegistry } from '../../../src/editor/commands.ts'
+import { registerModeCommand } from '../../../src/editor/panelCommands.ts'
 
 let current = null
 let installed = false

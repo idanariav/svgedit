@@ -1,6 +1,6 @@
 // seGridSettings.js — `<se-grid-settings>` — Grid-settings popover (show/snap toggles, shape select — square/isometric/triangle/1pt/2pt perspective plus the thirds/golden ratio/center cross composition-guide shapes,…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 
 // Grid shapes offered in the popover. `value` is stored in
 // `curConfig.gridShape`; `label` is shown in the <select>.

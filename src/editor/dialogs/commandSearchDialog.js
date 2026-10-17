@@ -1,9 +1,9 @@
 // commandSearchDialog.js — `<se-command-search-dialog>` — command search: type to find a command by name or key and run it
-import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../commandSearch.js'
-import { formatHotkey } from '../Hotkeys.js'
+import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../commandSearch.ts'
+import { formatHotkey } from '../Hotkeys.ts'
 import commandSearchDialogHTML from './commandSearchDialog.html'
-import { requireOwnerEditor } from '../domScope.js'
-import { syncDialogTheme } from '../themeUtil.js'
+import { requireOwnerEditor } from '../domScope.ts'
+import { syncDialogTheme } from '../themeUtil.ts'
 
 const template = document.createElement('template')
 template.innerHTML = commandSearchDialogHTML

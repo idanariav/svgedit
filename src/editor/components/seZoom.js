@@ -1,7 +1,7 @@
 // seZoom.js — `<se-zoom>` — Zoom percentage selector
 import { fetchSvgEl } from './svgIconLoader.js'
-import { requireOwnerEditor } from '../domScope.js'
-import { t } from '../locale.js'
+import { requireOwnerEditor } from '../domScope.ts'
+import { t } from '../locale.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `

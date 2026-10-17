@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { planNav } from '../../src/editor/panels/layerKeyboard.js'
+import { planNav } from '../../src/editor/panels/layerKeyboard.ts'
 
 // layer A (open) > group G (closed) , rect R ; layer B (closed)
 const L = (open) => ({ level: 1, expandable: true, open })

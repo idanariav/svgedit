@@ -39,10 +39,10 @@ switch to the plugin repo instead.
 | `src/editor/images/` | SVG toolbar icons (source of truth — `dist/` is gitignored) |
 | `src/editor/svgedit.css` | Editor base stylesheet |
 | `src/editor/Editor.js` | Main editor entry point |
-| `src/editor/commands.js`, `coreCommands.js` | **Command registry** (`editor.commands`): every user-visible action is a command with a stable id (never rename one — hotkey overrides and favorites store them). New toolbar action = register a command (panel buttons: `panelCommands.js`; extensions: `svgEditor.commands.register`, drawing tools: `leftPanel.addModeCommand`) + `command="<id>"` on the button, no `$click` |
-| `src/editor/automation.js` | `editor.automation`: `inspect()`, `pointer()` (document coordinates), `key()` |
+| `src/editor/commands.js`, `coreCommands.ts` | **Command registry** (`editor.commands`): every user-visible action is a command with a stable id (never rename one — hotkey overrides and favorites store them). New toolbar action = register a command (panel buttons: `panelCommands.ts`; extensions: `svgEditor.commands.register`, drawing tools: `leftPanel.addModeCommand`) + `command="<id>"` on the button, no `$click` |
+| `src/editor/automation.ts` | `editor.automation`: `inspect()`, `pointer()` (document coordinates), `key()` |
 | `packages/svgcanvas/core/transaction.js` | `svgCanvas.transact(label, fn)` — prefer it over hand-built `BatchCommand`s (one undo step, rolls back on throw). Never construct a `ChangeElementCommand` *before* the mutation |
-| `packages/svgcanvas/core/tool-registry.js` | `svgCanvas.registerTool` — the contract for new drawing tools (document-space events, automatic undo; `options()/setOption()` give a tool an options bar, drawn by `src/editor/panels/toolOptionsBar.js`) |
+| `packages/svgcanvas/core/tool-registry.js` | `svgCanvas.registerTool` — the contract for new drawing tools (document-space events, automatic undo; `options()/setOption()` give a tool an options bar, drawn by `src/editor/panels/toolOptionsBar.ts`) |
 | `packages/svgcanvas/core/drawing-invariants.js` | `checkDrawing()` structural health check |
 | `dist/` | **Build output — gitignored, never commit** |
 
@@ -140,7 +140,7 @@ colors in shadow DOM templates.
 `--icon-bg-color-hover`, `--hover-highlight`, `--dropdown-bg`, `--workarea-bg` (→ `--canvas-bg`) (and a few others) no longer exist;
 use the tokens above. `tests/unit/dialog-theme-tokens.test.js` fails if one is referenced again.
 
-> Dialogs sit outside `.svg_editor`; `syncDialogTheme()` (themeUtil.js) copies the tokens
+> Dialogs sit outside `.svg_editor`; `syncDialogTheme()` (themeUtil.ts) copies the tokens
 > listed in `DIALOG_TOKENS` onto each dialog on open. Add any new design token to that list.
 
 ### Light / Dark themes
@@ -163,7 +163,7 @@ editorEl.classList.toggle('theme-light', !isDark)
 ```
 The Obsidian plugin can use this instead of `injectThemeGuard()` for full
 theme support. The `applyTheme(theme, rootEl)` helper in
-`src/editor/themeUtil.js` is the canonical way to do this from JS.
+`src/editor/themeUtil.ts` is the canonical way to do this from JS.
 
 ### Icon recoloring
 
@@ -305,7 +305,7 @@ only a page reload. `packages/svgcanvas/dist/` is no longer used by anything her
 
 ### Prefer the automation API
 
-`window.svgEditor.automation` (`src/editor/automation.js`) does the next three sections for you:
+`window.svgEditor.automation` (`src/editor/automation.ts`) does the next three sections for you:
 `automation.pointer([{ kind: 'drag', x, y, to: { x, y } }])` takes **document** coordinates (any zoom,
 scrolls the point into view, dispatches real mouse events), `automation.inspect()` returns mode / zoom /
 selection / layers / undo state / open dialog, `automation.key('mod+d')` goes through the hotkey path, and

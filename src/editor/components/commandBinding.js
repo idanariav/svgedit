@@ -6,7 +6,7 @@
  * `disabled` state in sync with the command (`CommandRegistry.refreshEnablement`).
  * @module commandBinding
  */
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor } from '../domScope.ts'
 
 /**
  * @param {HTMLElement} el

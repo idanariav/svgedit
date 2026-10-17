@@ -1,8 +1,8 @@
 // svgSourceDialog.js — View/edit raw SVG source
 import svgSourceDialogHTML from './svgSourceDialog.html'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
 
 const template = document.createElement('template')

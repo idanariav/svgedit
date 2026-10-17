@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { initToolAutoFold, withoutFold } from '../../src/editor/toolAutoFold.js'
+import { initToolAutoFold, withoutFold } from '../../src/editor/toolAutoFold.ts'
 
 describe('withoutFold', () => {
   it('counts the folded tools as main tools again, after the others', () => {

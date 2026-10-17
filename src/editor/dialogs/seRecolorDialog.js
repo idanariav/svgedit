@@ -1,6 +1,6 @@
 // seRecolorDialog.js — Recolor Artwork dialog (`se-recolor-dialog`): rows "current → new", method / harmony / reduce / hue turn / keep white-black-grays; knows nothing of the drawing, hands `ext-recolor` an old → new `Map`
 import { dialogSkin } from './dialogSkin.css.js'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 import {
   buildRows, planMap, harmonyColors, shiftHue, keyColor, HARMONIES, METHODS, DEFAULT_PRESERVE
 } from '@svgedit/svgcanvas/core/recolor.ts'

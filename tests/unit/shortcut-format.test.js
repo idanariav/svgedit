@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { formatShortcutAttr, tooltipText } from '../../src/editor/Hotkeys.js'
-import { CommandRegistry } from '../../src/editor/commands.js'
-import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
-import { DEFAULT_FAVORITES } from '../../src/editor/favorites.js'
+import { formatShortcutAttr, tooltipText } from '../../src/editor/Hotkeys.ts'
+import { CommandRegistry } from '../../src/editor/commands.ts'
+import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
+import { DEFAULT_FAVORITES } from '../../src/editor/favorites.ts'
 
 describe('shortcut formatting', () => {
   it('formats a component shortcut per platform (jsdom is non-Mac)', () => {
@@ -47,7 +47,7 @@ describe('action labels', () => {
 
 describe('isFocusControl (Tab stays free for focus navigation)', () => {
   it('is true for native controls and se-* hosts, false for the body and the editor container', async () => {
-    const { isFocusControl } = await import('../../src/editor/Hotkeys.js')
+    const { isFocusControl } = await import('../../src/editor/Hotkeys.ts')
     const make = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild }
     expect(isFocusControl(make('<button></button>'))).toBe(true)
     expect(isFocusControl(make('<input>'))).toBe(true)

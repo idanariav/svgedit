@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initToolDragReorder } from '../../src/editor/toolDragReorder.js'
+import { initToolDragReorder } from '../../src/editor/toolDragReorder.ts'
 
 /**
  * jsdom has no DataTransfer/DragEvent implementation, so tests build plain

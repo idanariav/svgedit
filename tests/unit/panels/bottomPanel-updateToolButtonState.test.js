@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-const { default: BottomPanel } = await import('../../../src/editor/panels/BottomPanel.js')
+const { default: BottomPanel } = await import('../../../src/editor/panels/BottomPanel.ts')
 
 // Buttons referenced by updateToolButtonState must match the real ids in
 // LeftPanel.html. The left-panel "merge shape tools" refactor collapsed the

@@ -15,7 +15,7 @@
  */
 
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, ownerEditor } from '../domScope.ts'
 import {
   loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory

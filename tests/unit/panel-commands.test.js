@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { CommandRegistry } from '../../src/editor/commands.js'
-import { registerPanelCommands } from '../../src/editor/panelCommands.js'
+import { CommandRegistry } from '../../src/editor/commands.ts'
+import { registerPanelCommands } from '../../src/editor/panelCommands.ts'
 
 describe('panel commands', () => {
   let editor

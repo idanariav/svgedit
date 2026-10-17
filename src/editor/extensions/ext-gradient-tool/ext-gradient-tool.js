@@ -28,7 +28,7 @@ import {
   addStop, copyStop, placeStop, removeStop, setStopColor
 } from '@svgedit/svgcanvas/core/gradient-edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
-import { closestRoot } from '../../domScope.js'
+import { closestRoot } from '../../domScope.ts'
 
 const name = 'gradient-tool'
 

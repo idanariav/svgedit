@@ -5,7 +5,7 @@ import '../../src/editor/components/seSelect.js'
 import extLiveEffects from '../../src/editor/extensions/ext-live-effects/ext-live-effects.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 
-vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 const P = 'ext-live-effects'
 

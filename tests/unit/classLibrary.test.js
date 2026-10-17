@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { setUserDataAdapter } from '../../src/editor/userDataAdapter.js'
+import { setUserDataAdapter } from '../../src/editor/userDataAdapter.ts'
 import {
   getClasses,
   saveClass,
@@ -10,7 +10,7 @@ import {
   internalClassTokens,
   nextClassString,
   applyDefaultClassAttrs
-} from '../../src/editor/classLibrary.js'
+} from '../../src/editor/classLibrary.ts'
 
 const CLASSES_KEY = 'svg-edit-class-library'
 const DEFAULTS_KEY = 'svg-edit-default-classes'

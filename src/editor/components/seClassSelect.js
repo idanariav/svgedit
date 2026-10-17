@@ -1,5 +1,5 @@
 // seClassSelect.js — `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for…
-import { t } from '../locale.js'
+import { t } from '../locale.ts'
 import { fetchSvgEl } from './svgIconLoader.js'
 import {
   getClass,
@@ -11,8 +11,8 @@ import {
   nextClassString,
   getDefaultClassForTag,
   setDefaultClassForTag
-} from '../classLibrary.js'
-import { ownerEditor, requireOwnerEditor } from '../domScope.js'
+} from '../classLibrary.ts'
+import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 
 /**
  * Replacement for the old free-text class input. Presents the saved class
@@ -263,7 +263,7 @@ const currentUserClass = (/** @type {Element} */ elem) =>
 class SeClassSelect extends HTMLElement {
   /** @type {HTMLSelectElement} */ $select
   /** @type {Element|null} the selected element the control describes */ _elem
-  /** @type {import('../classLibrary.js').ClassPreset|null} the preset the popover is editing */ _editingPreset
+  /** @type {import('../classLibrary.ts').ClassPreset|null} the preset the popover is editing */ _editingPreset
   /** @type {string|null} lowercase tag the "default for new objects" toggle refers to */ _defaultTag
   /** @type {AbortController|undefined} */ _globalAbort
 
@@ -459,7 +459,7 @@ class SeClassSelect extends HTMLElement {
 
   /**
 * @param {string} scope
-* @param {import('../classLibrary.js').ClassPreset | null | undefined} editing
+* @param {import('../classLibrary.ts').ClassPreset | null | undefined} editing
 */
   _renderChecklist (scope, editing) {
     const elem = this._elem
@@ -584,7 +584,7 @@ class SeClassSelect extends HTMLElement {
         return
       }
     }
-    /** @type {import('../classLibrary.js').ClassPreset} */
+    /** @type {import('../classLibrary.ts').ClassPreset} */
     const preset = { name, scope, attrs }
     if (shadow) preset.shadow = shadow
     if (outline) preset.outline = outline

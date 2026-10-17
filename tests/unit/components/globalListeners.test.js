@@ -6,7 +6,7 @@ import '../../../src/editor/components/seToolOverflow.js'
 import '../../../src/editor/components/seListItem.js'
 import '../../../src/editor/components/seList.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // Components that listen on document/window must release those listeners when
 // removed, otherwise every closed editor pane leaks handlers (and the DOM).

@@ -1,6 +1,6 @@
 // seRepeatSettings.js — `<se-repeat-settings>` — Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `

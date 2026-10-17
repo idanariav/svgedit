@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor, mountElement } from './testUtils.js'
 import { SeSettingsPopover } from '../../../src/editor/components/seSettingsPopover.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 // Minimal throwaway subclass so we can exercise the base class's own logic
 // (open/close/toggle, positioning, light-dismiss, icon loading) without any

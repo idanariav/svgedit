@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { ownsKeyEvent } from '../../src/editor/domScope.js'
+import { ownsKeyEvent } from '../../src/editor/domScope.ts'
 
 // ownsKeyEvent() gates the document-level keydown/keyup handlers (EditorStartup.js)
 // and the HotkeyManager dispatcher (Hotkeys.js) -- including the Cmd/Ctrl+V

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { applyTheme, syncDialogTheme } from '../../src/editor/themeUtil.js'
-import { setActiveEditor } from '../../src/editor/domScope.js'
+import { applyTheme, syncDialogTheme } from '../../src/editor/themeUtil.ts'
+import { setActiveEditor } from '../../src/editor/domScope.ts'
 
 describe('themeUtil.applyTheme', () => {
   afterEach(() => {

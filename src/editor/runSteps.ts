@@ -1,0 +1,19 @@
+// runSteps.ts — `runSteps(steps)`: runs labeled, independent steps so one that throws is logged and skipped instead of aborting the chain
+import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+/**
+ * Run a sequence of labeled, independent steps, isolating each from the
+ * others: a step that throws (e.g. a stale DOM id after a panel refactor) is
+ * logged and skipped, but every later step still runs. Used for
+ * event-handler chains (selectedChanged, elementChanged, zoomChanged, ...)
+ * where the steps are unrelated UI updates and one broken step must not
+ * silently abort the rest of the chain, leaving other panels stuck stale.
+ */
+export const runSteps = (steps: Array<[string, () => void]>): void => {
+  for (const [label, fn] of steps) {
+    try {
+      fn()
+    } catch (err) {
+      logError(`Step failed: ${label}; `, err, 'runSteps')
+    }
+  }
+}

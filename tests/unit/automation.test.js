@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { Automation, docToClient, clientToDoc, parseKeyCombo } from '../../src/editor/automation.js'
+import { Automation, docToClient, clientToDoc, parseKeyCombo } from '../../src/editor/automation.ts'
 
 describe('document <-> client mapping (the single definition of the origin formula)', () => {
   // #svgroot at (100, 50) on screen; #svgcontent offset by (200, 200) inside it

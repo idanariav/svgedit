@@ -70,7 +70,7 @@ export default defineConfig({
     htmlTemplatePlugin,
     {
       ...dynamicImportVars({
-        include: ['src/editor/locale.js', 'src/editor/extensions/*/*.js']
+        include: ['src/editor/locale.{js,ts}', 'src/editor/extensions/*/*.{js,ts}']
       }),
       apply: 'build'
     },

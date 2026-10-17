@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
-import HotkeyManager, { boundTooltipText, formatBadgeKey } from '../../src/editor/Hotkeys.js'
-import { CommandRegistry } from '../../src/editor/commands.js'
-import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'
-import { registerCoreCommands } from '../../src/editor/coreCommands.js'
+import HotkeyManager, { boundTooltipText, formatBadgeKey } from '../../src/editor/Hotkeys.ts'
+import { CommandRegistry } from '../../src/editor/commands.ts'
+import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
+import { registerCoreCommands } from '../../src/editor/coreCommands.ts'
 
 // HotkeyManager is a key-binding VIEW over editor.commands: it must not keep a
 // second catalogue, and keydown dispatch must go through the registry.

@@ -66,7 +66,7 @@ targets (T2.1 and select-mode moves); View toggles: show/hide, lock.
 targets).
 
 ### svgedit integration
-- Rulers: `src/editor/Rulers.js` (canvas-drawn rulers in `#ruler_x`/`#ruler_y`).
+- Rulers: `src/editor/Rulers.ts` (canvas-drawn rulers in `#ruler_x`/`#ruler_y`).
   Add pointerdown on the ruler elements → enter a guide-drag gesture.
 - Storage ❓ — recommended: a single attribute on the root `<svg>`
   (`se:guides="v:120;h:300.5"`); `se:` attrs bypass sanitize. **Verify** that
@@ -569,10 +569,10 @@ numbers (`DEFAULT_TOLERANCE = 2.5`, strength → 1…25) aren't pixels.
   `simplifyFreehand` with the `fit_freehand` port. Keep svgedit's own
   real-time stabiliser (`pencilStabilization`, EMA in
   `event-shape-draw.js`); VectorCraft has nothing equivalent and it helps.
-  Config: add `pencilFidelity` (px, default 2) in `ConfigObj.js`; keep
+  Config: add `pencilFidelity` (px, default 2) in `ConfigObj.ts`; keep
   `pencilSimplify: false` (legacy every-3-points path) working; decide what
   to do with `pencilSimplifyTolerance` (paper units) — map it or deprecate
-  it, and say which in `ConfigObj.js`'s JSDoc.
+  it, and say which in `ConfigObj.ts`'s JSDoc.
 - **Smooth Path popover:** switch `smoothPathD` to `simplifyWith`, remap
   `strengthToTolerance` to real pixels (e.g. 0.25 → 8 px), and add a corner
   threshold (fixed 30–60° in v1, or a "Keep corners" toggle). ❓ Once
@@ -653,7 +653,7 @@ Defaults worth copying: a document opens with only its top-level layers
 expanded; only rows scrolled into view are laid out.
 
 ### What svgedit already has (build on it)
-- `src/editor/panels/RightPanel.js` `populateLayers()` (≈ line 386) builds
+- `src/editor/panels/RightPanel.ts` `populateLayers()` (≈ line 386) builds
   the layer table (`#layerlist`: eye `td.layervis`, lock `td.layerlock`,
   thumbnail `td.layerpreview`, name).
 - **`updateObjectList(elem)`** (≈ line 586) and `#objects_panel` /
@@ -701,7 +701,7 @@ expanded; only rows scrolled into view are laid out.
 - Elements that aren't user objects must not get rows: `<title>`,
   `<defs>`, generated pieces (`se:repeat-copy`, `se:segment-line`,
   `se:blend-step` from T2.13) — show them under their source, or not at all.
-- The tablet shell (`panels/TabletShell.js`) has its own layers UI; decide
+- The tablet shell (`panels/TabletShell.ts`) has its own layers UI; decide
   whether it gets the tree too (❓, probably later).
 
 ### Tests

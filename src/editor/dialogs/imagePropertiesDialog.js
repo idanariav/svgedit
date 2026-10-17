@@ -1,8 +1,8 @@
 // imagePropertiesDialog.js — Modal for image element properties
-import { requireOwnerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
-import { syncDialogTheme } from '../themeUtil.js'
+import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
 
 const template = document.createElement('template')

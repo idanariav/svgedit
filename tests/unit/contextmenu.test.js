@@ -1,4 +1,4 @@
-import { createContextMenu } from '../../src/editor/contextmenu.js'
+import { createContextMenu } from '../../src/editor/contextmenu.ts'
 
 describe('contextmenu', function () {
   let contextmenu

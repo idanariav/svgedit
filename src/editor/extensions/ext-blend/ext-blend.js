@@ -259,7 +259,7 @@ export default {
           refresh()
         })
 
-        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.js").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
+        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.ts").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
         reg('blend_make', 'make', {
           enabled: () => (svgCanvas.canBlend() ? true : tr('needShapes')),
           run: () => { svgCanvas.makeBlend(); refresh() }

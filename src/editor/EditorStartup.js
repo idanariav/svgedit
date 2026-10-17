@@ -1,24 +1,24 @@
 // EditorStartup.js — Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions
 import {
   putLocale
-} from './locale.js'
-import { createContextMenu } from './contextmenu.js'
-import { addSelectedToShapeLibrary } from './addToShapeLibrary.js'
-import { initToolShortcutBadges } from './toolShortcutBadges.js'
-import { initTooltips } from './tooltips.js'
-import { setUserDataAdapter } from './userDataAdapter.js'
+} from './locale.ts'
+import { createContextMenu } from './contextmenu.ts'
+import { addSelectedToShapeLibrary } from './addToShapeLibrary.ts'
+import { initToolShortcutBadges } from './toolShortcutBadges.ts'
+import { initTooltips } from './tooltips.ts'
+import { setUserDataAdapter } from './userDataAdapter.ts'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
-import Rulers from './Rulers.js'
-import { applyTheme } from './themeUtil.js'
-import { applyUiMode } from './uiMode.js'
-import { cursorForMode } from './toolCursors.js'
+import Rulers from './Rulers.ts'
+import { applyTheme } from './themeUtil.ts'
+import { applyUiMode } from './uiMode.ts'
+import { cursorForMode } from './toolCursors.ts'
 import { getExtension } from './extensions/extensionRegistry.js'
-import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.js'
-import { createPasteFallbackArmer } from './pasteFallbackArmer.js'
-import { classifyClipboardText } from './pasteClipboardText.js'
-import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.js'
-import { refreshToolOptions } from './panels/toolOptionsBar.js'
+import { setActiveEditor, isActiveEditor, ownsKeyEvent, registerEditorRoot } from './domScope.ts'
+import { createPasteFallbackArmer } from './pasteFallbackArmer.ts'
+import { classifyClipboardText } from './pasteClipboardText.ts'
+import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.ts'
+import { refreshToolOptions } from './panels/toolOptionsBar.ts'
 // svgedit.css `@import`s tablet.css, so this single inline import carries both.
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
@@ -76,14 +76,14 @@ const { $click, scopedId, scopedReq, scopedQa, scopedQq } = SvgCanvas
  */
 class EditorStartup {
   // Members the `Editor` subclass creates in its constructor, declared here so the startup code that uses them is typed.
-  /** @type {import('./ConfigObj.js').default} */ configObj
-  /** @type {import('./panels/LeftPanel.js').default} */ leftPanel
-  /** @type {import('./panels/TopPanel.js').default} */ topPanel
-  /** @type {import('./panels/BottomPanel.js').default} */ bottomPanel
-  /** @type {import('./panels/RightPanel.js').default} */ rightPanel
-  /** @type {import('./panels/TabletShell.js').default} */ tabletShell
-  /** @type {import('./MainMenu.js').default} */ mainMenu
-  /** @type {import('./Hotkeys.js').default} */ hotkeys
+  /** @type {import('./ConfigObj.ts').default} */ configObj
+  /** @type {import('./panels/LeftPanel.ts').default} */ leftPanel
+  /** @type {import('./panels/TopPanel.ts').default} */ topPanel
+  /** @type {import('./panels/BottomPanel.ts').default} */ bottomPanel
+  /** @type {import('./panels/RightPanel.ts').default} */ rightPanel
+  /** @type {import('./panels/TabletShell.ts').default} */ tabletShell
+  /** @type {import('./MainMenu.ts').default} */ mainMenu
+  /** @type {import('./Hotkeys.ts').default} */ hotkeys
   /** @type {string[]} */ goodLangs
   // Seams the built-in extensions fill in when they load (undefined otherwise).
   /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ shadowApi

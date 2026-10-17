@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../../src/editor/commandSearch.js'
+import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../../src/editor/commandSearch.ts'
 
 const runFavoriteTrigger = vi.fn()
 let mockIsValueControl = () => false
 const buildFavoritesCatalog = vi.fn(() => [{ group: 'Tools', actions: [{ id: 'undo', label: 'Undo' }] }])
 
-vi.mock('../../src/editor/favoriteActions.js', () => ({
+vi.mock('../../src/editor/favoriteActions.ts', () => ({
   buildFavoritesCatalog: (...args) => buildFavoritesCatalog(...args),
   isValueControl: (id) => mockIsValueControl(id),
   runFavoriteTrigger: (...args) => runFavoriteTrigger(...args)

@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'
 import '../../src/editor/components/seSelect.js'
 import '../../src/editor/components/seSpinInput.js'
-import { refreshToolOptions } from '../../src/editor/panels/toolOptionsBar.js'
+import { refreshToolOptions } from '../../src/editor/panels/toolOptionsBar.ts'
 
 // The bar is drawn from the current tool's options(); controls are kept while the visible set stays the same.
-vi.mock('../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('tool options bar', () => {
   let tray

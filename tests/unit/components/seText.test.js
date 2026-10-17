@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mountElement } from './testUtils.js'
 import '../../../src/editor/components/seText.js'
 
-vi.mock('../../../src/editor/locale.js', () => ({ t: (key) => key }))
+vi.mock('../../../src/editor/locale.ts', () => ({ t: (key) => key }))
 
 describe('se-text', () => {
   afterEach(() => { document.body.innerHTML = '' })
