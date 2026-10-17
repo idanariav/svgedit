@@ -2,50 +2,38 @@
 /**
  * Undo transactions: `begin → (mutate freely / preview) → commit | cancel`.
  *
- * Everything that changes the drawing between `beginTransaction()` and
- * `commit()` becomes ONE undo step, without hand-building a `BatchCommand`, so
- * "forgot to record the undo" bugs can't happen inside a transaction.
- * `cancel()` puts the drawing (and the selection) back exactly as it was.
+ * Everything that changes the drawing between `beginTransaction()` and `commit()` becomes ONE undo step, without
+ * hand-building a `BatchCommand`, so "forgot to record the undo" bugs can't happen inside a transaction. `cancel()` puts the
+ * drawing (and the selection) back exactly as it was.
  *
- * How it records: **snapshot and diff**. `begin` captures every element's
- * attributes, every text node's data and every parent's child list; `commit`
- * diffs that against the live drawing. (The first design observed the DOM with
- * a MutationObserver. It was dropped: browsers don't report edits made through
- * the SVG list APIs — `elem.transform.baseVal.appendItem(…)`, how the canvas
- * moves things — and edits made to an element while it is *detached*
- * (remove → modify → re-attach) are invisible to an observer too, so undo
- * restored the modified state. Diffing the state has neither hole, needs no
- * async record delivery, and costs nothing while the user drags.) The price is
- * an O(elements) pass at begin and at commit/cancel (≈14 ms and ≈22 ms at
- * 5,000 elements).
+ * How it records: the drawing is a model snapshot (core/snapshot-history.ts). `begin` takes the model of the drawing,
+ * `commit` takes it again: the two are the same object when nothing changed (snapshots share what an edit did not touch), so
+ * "nothing net-changed" is an identity check, and the step the history keeps is the snapshot. `cancel` makes the DOM show the
+ * begin model again (a `reconcile`, so only what changed is touched). This replaces an earlier diff of every element's
+ * attributes, text and child lists against a copy taken at begin (a hand-built `BatchCommand` of `ChangeElementCommand`s,
+ * ≈14 ms and ≈22 ms at 5,000 elements), and a MutationObserver design before that, dropped because browsers don't report
+ * edits made through the SVG list APIs (`elem.transform.baseVal.appendItem(…)`).
  *
  * Inspired by VectorCraft (https://github.com/storytold/vectorcraft),
- * `crates/engine/src/lib.rs` (`Interaction`, `UndoGroup`) and `guard.rs`
- * (roll back on panic), MIT OR Apache-2.0 — rebuilt on the live DOM instead of
- * an immutable document snapshot.
+ * `crates/engine/src/lib.rs` (`Interaction`, `UndoGroup`) and `guard.rs` (roll back on panic), MIT OR Apache-2.0.
  *
  * Rules worth knowing:
- *  - Transactions nest by depth count; only the outermost one records and
- *    commits. An inner `cancel()` dooms the whole transaction.
- *  - While one is open `undoMgr.addCommandToHistory()` swallows incoming
- *    commands (the diff already covers their mutations), so existing canvas
- *    methods can be called inside a transaction unchanged.
+ *  - Transactions nest by depth count; only the outermost one records and commits. An inner `cancel()` dooms the whole
+ *    transaction.
+ *  - While one is open `undoMgr.addCommandToHistory()` swallows incoming commands (the snapshot already covers their
+ *    mutations), so existing canvas methods can be called inside a transaction unchanged.
  *  - `undo()`/`redo()` while one is open cancel it first.
- *  - Nodes that are not document content but live inside `#svgcontent` must
- *    carry `data-se-ephemeral`; they (and their subtrees) are never recorded.
- *  - Elements created during the transaction are recorded whole (with their
- *    parent's child list), not attribute by attribute.
+ *  - Nodes that are not document content but live inside `#svgcontent` must carry `data-se-ephemeral`; they (and their
+ *    subtrees) are never part of a snapshot.
  * @module transaction
  * @license MIT
  */
 
-import {
-  BatchCommand, ChangeElementCommand, ChildListCommand, CharacterDataCommand, isEphemeral
-} from './history.js'
-import { getHref } from './dom-utils.ts'
+import { BatchCommand } from './history.js'
 import { debug, error, warn } from '../common/logger.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { HistoryCommand } from '../svgcanvas.ts'
+import type { ModelElement } from './model/node.ts'
 
 const LOG = 'transaction'
 
@@ -69,15 +57,6 @@ export interface TransactionOptions {
   onAbort?: () => void
 }
 
-interface Snapshot {
-  /** Every element → its attributes. */
-  attrs: Map<Element, Map<string, string | null>>
-  /** Every text/comment node → its data. */
-  text: Map<CharacterData, string>
-  /** Every element → its child nodes (ephemeral ones excluded). */
-  kids: Map<Node, Node[]>
-}
-
 interface Session {
   label: string
   depth: number
@@ -85,51 +64,9 @@ interface Session {
   doomed: boolean
   closed: boolean
   selection: Element[]
-  before: Snapshot
+  /** the drawing at begin (a model snapshot) */
+  before: ModelElement
   onAbort: (() => void) | undefined
-}
-
-/** Attributes written through native SVG lists; reading one forces the browser to sync it. */
-const NATIVE_LIST_ATTRS = ['transform', 'gradientTransform', 'patternTransform']
-
-/**
- * An element's attributes by qualified name. `href` / `xlink:href` collapse
- * into the `#href` pseudo-attribute `ChangeElementCommand` understands.
- */
-const readAttrs = (el: Element): Map<string, string | null> => {
-  // Reading an attribute makes the browser write back a pending native-list
-  // edit into the attribute; do it before enumerating.
-  for (const name of NATIVE_LIST_ATTRS) if (name in el) el.getAttribute(name)
-  const out = new Map<string, string | null>()
-  let hasHref = false
-  for (const a of Array.from(el.attributes)) {
-    if (a.name === 'href' || a.name === 'xlink:href') hasHref = true
-    else out.set(a.name, a.value)
-  }
-  if (hasHref) out.set('#href', getHref(el))
-  return out
-}
-
-/**
- * Capture the state a diff needs: attributes, text data and child lists of
- * everything under `root` (inclusive), skipping ephemeral subtrees.
- */
-const takeSnapshot = (root: Element): Snapshot => {
-  const snap: Snapshot = { attrs: new Map(), text: new Map(), kids: new Map() }
-  const stack = [root]
-  while (stack.length) {
-    const el = stack.pop() as Element
-    snap.attrs.set(el, readAttrs(el))
-    const kids: Node[] = []
-    for (const node of Array.from(el.childNodes)) {
-      if (isEphemeral(node)) continue
-      kids.push(node)
-      if (node.nodeType === 1) stack.push((node as Element))
-      else if ((node as CharacterData).data !== undefined) snap.text.set((node as CharacterData), (node as CharacterData).data)
-    }
-    snap.kids.set(el, kids)
-  }
-  return snap
 }
 
 /** The members `transaction.ts` gives its canvas. */
@@ -151,79 +88,6 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
   const rawAddCommand = undoMgr.addCommandToHistory.bind(undoMgr)
 
   let session: Session | null = null
-
-  /**
-   * Build the single batch for everything that differs from the snapshot taken
-   * at begin. Structure first, then attributes, then text: `BatchCommand.unapply`
-   * runs in reverse, so attribute values are restored while elements are still
-   * attached.
-   * @param forCancel cancel applies the batch with a null handler, so
-   *   undo.js's text handler never re-shifts the tspans: keep their own x/y.
-   */
-  const buildBatch = (forCancel: boolean = false): BatchCommand => {
-    const s = session as Session
-    const { attrs, text, kids } = s.before
-    const batch = new BatchCommand(s.label)
-
-    // Elements present now that were not at begin ("born"), found by walking
-    // the live tree (a node added and removed again is simply not in it).
-    const born: Element[] = []
-    const stack: Element[] = [svgCanvas.getSvgContent()]
-    while (stack.length) {
-      const el = stack.pop() as Element
-      if (!attrs.has(el)) born.push(el)
-      for (const node of Array.from(el.children)) if (!isEphemeral(node)) stack.push(node)
-    }
-
-    // --- structure -------------------------------------------------------
-    const changes: import('./history.js').ChildListChange[] = []
-    for (const [parent, before] of kids) {
-      const after = Array.from(parent.childNodes).filter((n) => !isEphemeral(n))
-      if (before.length !== after.length || before.some((n, i) => n !== after[i])) {
-        changes.push({ parent, before, after })
-      }
-    }
-    // A new container that adopted existing nodes (grouping): redo has to put
-    // them back into it, after undo pulled them out.
-    for (const el of born) {
-      const after = Array.from(el.childNodes).filter((n) => !isEphemeral(n))
-      if (after.some((n) => attrs.has((n as Element)) || text.has((n as CharacterData)))) {
-        changes.push({ parent: el, before: [], after })
-      }
-    }
-    if (changes.length) batch.addSubCommand(new ChildListCommand(changes, s.label))
-
-    // --- attributes ------------------------------------------------------
-    const changed: Array<[Element, { [s: string]: string | null }]> = []
-    for (const [elem, was] of attrs) {
-      if (isEphemeral(elem)) continue
-      const now = readAttrs(elem)
-      const old: { [s: string]: string | null } = {}
-      for (const name of new Set([...was.keys(), ...now.keys()])) {
-        if ((was.get(name) ?? null) !== (now.get(name) ?? null)) old[name] = was.get(name) ?? null
-      }
-      if (Object.keys(old).length) changed.push([elem, old])
-    }
-    // A <text>'s undo/redo handler shifts its tspans by the text's own x/y
-    // delta (undo.js), so the tspans' recorded x/y would be applied twice.
-    for (const [elem, old] of changed) {
-      if (forCancel || elem.tagName !== 'text' || !('x' in old || 'y' in old)) continue
-      for (const [child, childOld] of changed) {
-        if (child.parentNode !== elem) continue
-        delete childOld.x
-        delete childOld.y
-      }
-    }
-    for (const [elem, old] of changed) {
-      if (Object.keys(old).length) batch.addSubCommand(new ChangeElementCommand(elem, old))
-    }
-
-    // --- text ------------------------------------------------------------
-    for (const [node, oldData] of text) {
-      if (node.data !== oldData) batch.addSubCommand(new CharacterDataCommand(node, oldData))
-    }
-    return batch
-  }
 
   /** @param {Element[]} elems */
   const restoreSelection = (elems: Element[]) => {
@@ -255,33 +119,28 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
     }
   }
 
+  /** The history of snapshots (every canvas has one: `createUndo` makes it). */
+  const history = () => undoMgr.snapshots as NonNullable<typeof undoMgr.snapshots>
+
   const doCommit = () => {
     const s = session as Session
-    let batch = null
-    try {
-      batch = buildBatch()
-    } finally {
-      end()
-    }
-    if (batch.isEmpty()) return null
+    const after = history().current()
+    end()
+    // The two are the same object when nothing net-changed (snapshots share what an edit did not touch)
+    if (after === s.before) return null
+    history().stage(after)
+    const batch = new BatchCommand(s.label)
     rawAddCommand(batch)
-    debug(`committed "${s.label}" (${batch.stack.length} sub-commands)`, undefined, LOG)
+    debug(`committed "${s.label}"`, undefined, LOG)
     return batch
   }
 
   const doCancel = () => {
     const s = session as Session
-    let batch = null
-    try {
-      batch = buildBatch(true)
-    } finally {
-      end()
-    }
-    // A null handler: undo's clearSelection/changed side effects must not
-    // fire mid-cancel; we restore the selection and fire `changed` once.
-    batch.unapply(null)
+    const shown = history().current()
+    end()
+    if (shown !== s.before) history().show(shown, s.before)
     restoreSelection(s.selection)
-    svgCanvas.call('changed', batch.elements())
     debug(`cancelled "${s.label}"`, undefined, LOG)
   }
 
@@ -298,7 +157,7 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
         closed: false,
         onAbort: options.onAbort,
         selection: options.selection === false ? [] : svgCanvas.getSelectedElements().filter(Boolean),
-        before: takeSnapshot(svgCanvas.getSvgContent())
+        before: history().current()
       }
     }
     const owner = session

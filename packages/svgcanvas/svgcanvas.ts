@@ -250,30 +250,24 @@ export interface BBox {
 
 // History command types
 export interface HistoryCommand {
-  apply(handler: HistoryEventHandler): void | true
-  unapply(handler: HistoryEventHandler): void | true
+  /** Only a `domless` command runs these (undo is by snapshot, see core/snapshot-history.ts) */
+  apply(handler?: unknown, applyFunction?: () => void): void | true
+  unapply(handler?: unknown, unapplyFunction?: () => void): void | true
+  /** A command that changes no element (the canvas background is a preference) runs itself instead of a snapshot step. */
+  domless?: boolean
   elements(): Element[]
   type(): string
   getText(): string
-}
-
-export interface HistoryEventHandler {
-  handleHistoryEvent(eventType: string, cmd: HistoryCommand): void
-  /** Optional: called around a BatchCommand's (un)apply so global notifications fire once per batch. */
-  beginBatch?(): void
-  endBatch?(): void
 }
 
 export interface UndoManager {
   addCommandToHistory(cmd: HistoryCommand): void
   /** Debug hook, called after every command lands on the stack. */
   onPush: ((cmd: HistoryCommand) => void) | null
-  /** Debug hooks (snapshot-mirror.ts): after an undo / redo step, and after the stack was cleared. */
-  onUndo: ((cmd: HistoryCommand) => void) | null
-  onRedo: ((cmd: HistoryCommand) => void) | null
+  /** Called after the stack was cleared. */
   onReset: (() => void) | null
-  /** Undo / redo by model snapshot instead of command (core/snapshot-history.ts). */
-  snapshots: { step(count: number): void, baseline(): void } | null
+  /** Undo / redo by model snapshot (core/snapshot-history.ts). */
+  snapshots: import('./core/snapshot-history.ts').SnapshotHistory | null
   undo(): void
   redo(): void
   getUndoStackSize(): number
@@ -446,12 +440,10 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare showPathNodeGuides?: (payload: PathNodeGuidesPayload | null) => void
   // Undo/Redo
   declare undoMgr: UndoManager
-  /** The undo history as model snapshots, when `globalThis.__SE_SNAPSHOT_MIRROR` was set (core/snapshot-mirror.ts). */
-  /** Undo / redo by model snapshot, when `globalThis.__SE_SNAPSHOT_UNDO` was set (core/snapshot-history.ts). */
-  declare snapshotHistory?: import('./core/snapshot-history.ts').SnapshotHistory
+  /** Undo / redo by model snapshot (core/snapshot-history.ts). */
+  declare snapshotHistory: import('./core/snapshot-history.ts').SnapshotHistory
   /** An undo / redo is restoring a snapshot (set while it announces `changed`, see core/snapshot-history.ts). */
   restoring = false
-  declare snapshotMirror?: import('./core/snapshot-mirror.ts').SnapshotMirror
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
   declare checkDrawing: () => Array<{ code: string, message: string, id?: string }>
   // Canvas properties

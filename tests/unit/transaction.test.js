@@ -65,7 +65,6 @@ describe('undo transactions', () => {
       expect(after).not.toBe(before)
       expect(batch.getText()).toBe('Nudge')
       expect(undoSize()).toBe(1)
-      expect(batch.stack.map((c) => c.type())).toEqual(['ChangeElementCommand', 'ChangeElementCommand'])
       canvas.undoMgr.undo()
       expect(html()).toBe(before)
       canvas.undoMgr.redo()
@@ -139,14 +138,14 @@ describe('undo transactions', () => {
       expect(circle.hasAttribute('transform')).toBe(false)
     })
 
-    it('maps xlink:href onto the #href pseudo-attribute', () => {
+    it('undoes a change of an image href (xlink:href)', () => {
       const image = make('image', { id: 'i1', width: 10, height: 10 })
       image.setAttributeNS(NS.XLINK, 'xlink:href', 'a.png')
       canvas.undoMgr.resetUndoStack()
-      const tx = canvas.beginTransaction('href')
-      image.setAttributeNS(NS.XLINK, 'xlink:href', 'b.png')
-      const batch = tx.commit()
-      expect(batch.stack[0].oldValues).toHaveProperty('#href')
+      canvas.transact('href', () => image.setAttributeNS(NS.XLINK, 'xlink:href', 'b.png'))
+      expect(image.getAttributeNS(NS.XLINK, 'href')).toBe('b.png')
+      canvas.undoMgr.undo()
+      expect(image.getAttributeNS(NS.XLINK, 'href')).toBe('a.png')
     })
   })
 
@@ -395,9 +394,7 @@ describe('undo transactions', () => {
       preview.setAttribute('data-se-ephemeral', '')
       layer.append(preview)
       rect.setAttribute('x', '1')
-      const cmd = batch.commit()
-      expect(cmd.stack).toHaveLength(1)
-      expect(cmd.stack[0].type()).toBe('ChangeElementCommand')
+      expect(batch.commit()).not.toBeNull()
       canvas.undoMgr.undo()
       expect(rect.getAttribute('x')).toBe('10')
       expect(preview.parentNode).toBe(layer)

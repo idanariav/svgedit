@@ -66,6 +66,8 @@ describe('selected-elem', () => {
 
     svgCanvas.selectOnly([rect], true)
 
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
+
     expect(() => svgCanvas.copySelectedElements()).not.toThrow()
 
     const raw = sessionStorage.getItem(svgCanvas.getClipboardID())
@@ -82,6 +84,7 @@ describe('selected-elem', () => {
       attr: { id: 'rect-copy-event', x: 0, y: 0, width: 10, height: 10 }
     })
     svgCanvas.selectOnly([rect], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
 
     const listener = vi.fn()
     document.addEventListener('svgedit:clipboardchange', listener)
@@ -129,6 +132,8 @@ describe('selected-elem', () => {
     parent.insertBefore(defs, rect1)
 
     svgCanvas.selectOnly([rect2], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const undoSize = svgCanvas.undoMgr.getUndoStackSize()
 
     expect(() => svgCanvas.moveToBottomSelectedElement()).not.toThrow()
@@ -163,6 +168,8 @@ describe('selected-elem', () => {
     })
 
     svgCanvas.selectOnly([rect1, rect3], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const undoSize = svgCanvas.undoMgr.getUndoStackSize()
 
     svgCanvas.moveToTopSelectedElement()
@@ -189,6 +196,8 @@ describe('selected-elem', () => {
     })
 
     svgCanvas.selectOnly([rect1, rect3], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const undoSize = svgCanvas.undoMgr.getUndoStackSize()
 
     svgCanvas.moveToBottomSelectedElement()
@@ -216,6 +225,8 @@ describe('selected-elem', () => {
     group.append(memberRect)
 
     svgCanvas.selectOnly([group], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     svgCanvas.moveToTopSelectedElement()
 
     expect(layerOrder()).toEqual(['group-front-outside', 'group-front-group'])
@@ -239,6 +250,7 @@ describe('selected-elem', () => {
 
     // Select the bottom (rect1) and top (rect3) elements, skipping rect2.
     svgCanvas.selectOnly([rect1, rect3], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const undoSize = svgCanvas.undoMgr.getUndoStackSize()
 
     // Send Backward: rect1 is already at the bottom of its overlap set (no-op),
@@ -276,6 +288,7 @@ describe('selected-elem', () => {
     container.append(use)
     svgCanvas.setUseData(use)
     svgCanvas.selectOnly([use], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
 
     expect(() => svgCanvas.ungroupSelectedElement()).not.toThrow()
 
@@ -292,6 +305,7 @@ describe('selected-elem', () => {
       attr: { id: 'use-no-href' }
     })
     svgCanvas.selectOnly([use], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
 
     const originalWarn = console.warn
     console.warn = () => {}
@@ -322,6 +336,8 @@ describe('selected-elem', () => {
     expect(svgCanvas.getDataStorage().has(group, 'gsvg')).toBe(true)
 
     svgCanvas.selectOnly([group], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const undoSize = svgCanvas.undoMgr.getUndoStackSize()
 
     svgCanvas.ungroupSelectedElement()
@@ -357,6 +373,8 @@ describe('selected-elem', () => {
     group.append(rect)
 
     svgCanvas.selectOnly([rect], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const originalBox = svgCanvas.getStrokedBBoxDefaultVisible([rect])
 
     svgCanvas.cloneSelectedElements(0, 0)
@@ -397,6 +415,8 @@ describe('selected-elem', () => {
     inner.append(rect)
 
     svgCanvas.selectOnly([rect], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     const originalBox = svgCanvas.getStrokedBBoxDefaultVisible([rect])
 
     svgCanvas.cloneSelectedElements(0, 0)
@@ -430,6 +450,7 @@ describe('selected-elem', () => {
     })
     group.append(rect)
     svgCanvas.selectOnly([group], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
 
     for (let i = 0; i < 5; i++) {
       svgCanvas.moveSelectedElements(1, 0)
@@ -450,6 +471,7 @@ describe('selected-elem', () => {
       attr: { id: 'nudge-masked', x: 0, y: 0, width: 10, height: 10, mask: 'url(#nudge-mask)' }
     })
     svgCanvas.selectOnly([rect], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
 
     for (let i = 0; i < 4; i++) {
       svgCanvas.moveSelectedElements(2, 0)
@@ -469,6 +491,7 @@ describe('selected-elem', () => {
       attr: { id: 'nudge-transformed', x: 40, y: 40, width: 50, height: 30, transform: 'translate(75 0)' }
     })
     svgCanvas.selectOnly([rect], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     svgCanvas.moveSelectedElements(10, 0)
     const moved = { x: rect.getAttribute('x'), transform: rect.getAttribute('transform') }
     expect(moved).not.toEqual({ x: '40', transform: 'translate(75 0)' })
@@ -486,6 +509,7 @@ describe('selected-elem', () => {
     })
     text.textContent = 'hi'
     svgCanvas.selectOnly([text], true)
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     svgCanvas.moveSelectedElements(5, 0)
     svgCanvas.undoMgr.undo()
     expect(text.hasAttribute('x')).toBe(false)
@@ -507,6 +531,8 @@ describe('selected-elem', () => {
     svgCanvas.findDefs().append(filter)
 
     svgCanvas.selectOnly([rect], true)
+
+    svgCanvas.undoMgr.snapshots.baseline() // what the test set up outside any command is where the step starts from
     svgCanvas.cloneSelectedElements(0, 0)
 
     const clone = svgCanvas.getSelectedElements()[0]

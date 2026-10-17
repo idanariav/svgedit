@@ -102,6 +102,7 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
     // First move: inserts the dummy drag transform and snapshots each
     // element's pre-drag transform into svgCanvas.gesture.dragStartTransforms via
     // the live transform-list API (as a real drag would).
+    svgCanvas.undoMgr.snapshots.baseline() // what was set up outside any command is where the step starts from
     move({}, moveCtx)
     // Second move: drags the selection by (60, 40) using the same live API.
     move({}, { ...moveCtx, x: 130, y: 110 })

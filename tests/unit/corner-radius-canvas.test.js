@@ -45,6 +45,7 @@ describe('corner-radius on the canvas', () => {
     const rect = add('rect', { x: 10, y: 20, width: 100, height: 60 })
     const parent = rect.parentNode
     const before = svgCanvas.undoMgr.getUndoStackSize()
+    svgCanvas.undoMgr.snapshots.baseline() // what was set up outside any command is where the step starts from
     const path = svgCanvas.applyCornerRadius(12)
     assert.equal(path.tagName, 'path')
     assert.equal(path.getAttribute('se:orig-d'), 'M10,20 L110,20 L110,80 L10,80 Z')

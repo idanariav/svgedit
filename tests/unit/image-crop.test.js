@@ -203,7 +203,7 @@ describe('image-crop: apply/cancel', () => {
     expect(canvas.getMode()).toBe('select')
   })
 
-  it('dragging the se handle then applying resamples just the cropped region into one undoable BatchCommand', async () => {
+  it('dragging the se handle then applying resamples just the cropped region and records one step', async () => {
     const image = makeImage({ x: 0, y: 0, width: 100, height: 50, href: 'data:image/png;base64,AAA' })
     imageCrop.start(image)
 
@@ -229,17 +229,6 @@ describe('image-crop: apply/cancel', () => {
     expect(image.getAttribute('href')).toBe('data:image/png;base64,CROPPED')
     expect(canvas.getMode()).toBe('select')
     expect(svgContent.querySelector('#se-imagecrop-overlay')).toBeNull()
-
-    // Undo restores the original image; redo re-applies the crop.
-    historyStack[0].unapply(null)
-    expect(image.getAttribute('href')).toBe('data:image/png;base64,AAA')
-    expect(image.getAttribute('width')).toBe('100')
-    expect(image.getAttribute('height')).toBe('50')
-
-    historyStack[0].apply(null)
-    expect(image.getAttribute('href')).toBe('data:image/png;base64,CROPPED')
-    expect(image.getAttribute('width')).toBe('60')
-    expect(image.getAttribute('height')).toBe('30')
   })
 
   it('applyImageCrop discards the result if the crop was cancelled while the image was loading', async () => {

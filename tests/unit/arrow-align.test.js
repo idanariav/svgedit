@@ -340,6 +340,7 @@ describe('on the canvas', () => {
   it('moving the selection records the source, so undo gives back a consistent element', () => {
     const { el } = aLine()
     svgCanvas.setArrowAlign(el, 'tip')
+    svgCanvas.undoMgr.snapshots.baseline() // what was set up outside any command is where the step starts from
     svgCanvas.selectOnly([el], true)
     svgCanvas.moveSelectedElements(10, 20, true)
     expect(el.getAttribute(ARROW_PTS_ATTR)).toBe('10,20 110,20')

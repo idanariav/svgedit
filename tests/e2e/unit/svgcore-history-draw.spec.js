@@ -20,6 +20,7 @@ test.describe('SVG core history and draw', () => {
         unapply () { lastCalled = `${this.text}:unapply` }
         elements () { return [] }
       }
+      MockCommand.prototype.domless = true // a command that is not in a snapshot runs itself
       const um = new history.UndoManager()
       ;['First', 'Second', 'Third'].forEach((label) => {
         um.addCommandToHistory(new MockCommand(label))
@@ -67,65 +68,19 @@ test.describe('SVG core history and draw', () => {
     expect(result.afterRedo.lastCalled).toBe('Second:apply')
   })
 
-  test('history commands move, insert and remove elements in the DOM', async ({ page }) => {
+  test('history commands carry a label and the element they are about', async ({ page }) => {
     const result = await page.evaluate(() => {
       const { history } = window.svgHarness
-      const makeParent = () => {
-        const parent = document.createElement('div')
-        parent.id = 'parent'
-        const children = ['div1', 'div2', 'div3'].map((id) => {
-          const el = document.createElement('div')
-          el.id = id
-          parent.append(el)
-          return el
-        })
-        document.body.append(parent)
-        return { parent, children }
-      }
-      const order = (parent) => [...parent.children].map((el) => el.id)
-
-      const { parent: parentMove, children: moveChildren } = makeParent()
-      const move = new history.MoveElementCommand(
-        moveChildren[2],
-        moveChildren[0],
-        parentMove
-      )
-      move.unapply()
-      const orderAfterMoveUnapply = order(parentMove)
-      move.apply()
-      const orderAfterMoveApply = order(parentMove)
-
-      const { parent: parentInsert, children: insertChildren } = makeParent()
-      const insert = new history.InsertElementCommand(insertChildren[2])
-      insert.unapply()
-      const orderAfterInsertUnapply = order(parentInsert)
-      insert.apply()
-      const orderAfterInsertApply = order(parentInsert)
-
-      const { parent: parentRemove } = makeParent()
-      const extra = document.createElement('div')
-      extra.id = 'div4'
-      const remove = new history.RemoveElementCommand(extra, null, parentRemove)
-      remove.unapply()
-      const orderAfterRemoveUnapply = order(parentRemove)
-      remove.apply()
-      const orderAfterRemoveApply = order(parentRemove)
-
+      const el = document.createElement('div')
       return {
-        orderAfterMoveUnapply,
-        orderAfterMoveApply,
-        orderAfterInsertUnapply,
-        orderAfterInsertApply,
-        orderAfterRemoveUnapply,
-        orderAfterRemoveApply
+        move: new history.MoveElementCommand(el, null, null).getText(),
+        insert: new history.InsertElementCommand(el).getText(),
+        remove: new history.RemoveElementCommand(el, null, null).getText(),
+        change: new history.ChangeElementCommand(el, { a: '1' }, 'Fill').getText(),
+        elements: new history.InsertElementCommand(el).elements()[0] === el
       }
     })
-    expect(result.orderAfterMoveUnapply).toEqual(['div3', 'div1', 'div2'])
-    expect(result.orderAfterMoveApply).toEqual(['div1', 'div2', 'div3'])
-    expect(result.orderAfterInsertUnapply).toEqual(['div1', 'div2'])
-    expect(result.orderAfterInsertApply).toEqual(['div1', 'div2', 'div3'])
-    expect(result.orderAfterRemoveUnapply).toEqual(['div1', 'div2', 'div3', 'div4'])
-    expect(result.orderAfterRemoveApply).toEqual(['div1', 'div2', 'div3'])
+    expect(result).toEqual({ move: 'Move DIV', insert: 'Create DIV', remove: 'Delete DIV', change: 'Change DIV Fill', elements: true })
   })
 
   test('BatchCommand applies and unapplies subcommands in order', async ({ page }) => {

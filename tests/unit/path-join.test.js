@@ -41,6 +41,7 @@ describe('path-join on the canvas', () => {
     const b = add('M10,0 L20,0', { stroke: '#00f' })
     select(a, b)
     assert.ok(svgCanvas.canJoinPaths([a, b]))
+    svgCanvas.undoMgr.snapshots.baseline() // what was set up outside any command is where the step starts from
     const before = svgCanvas.undoMgr.getUndoStackSize()
     const out = svgCanvas.joinSelectedPaths()
     assert.equal(out, a)

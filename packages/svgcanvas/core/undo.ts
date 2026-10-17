@@ -13,9 +13,8 @@ import {
   getRotationAngle, setHref
 } from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.ts'
-import { SnapshotMirror, readContent } from './snapshot-mirror.ts'
 import { SnapshotHistory } from './snapshot-history.ts'
-import { isAreaText, reflowAreaText, settleAreaText, LAYOUT_ATTRS } from './text-rows.ts'
+import { reflowAreaText, LAYOUT_ATTRS } from './text-rows.ts'
 import {
   isGecko
 } from '../common/browser.ts'
@@ -23,21 +22,7 @@ import {
   transformPoint, transformListToTransform, getTransformList
 } from './math.ts'
 
-const {
-  UndoManager, HistoryEventTypes
-} = hstry
-
-/** The fields the concrete commands carry that the event handler reads, by `cmd.type()`. */
-interface CommandFields {
-  elem: Element
-  newValues: Record<string, string | null>
-  oldValues: Record<string, string | null>
-  newParent: Node | null
-  oldParent: Node | null
-  parent: Node | null
-  changes: Array<{ parent: Node }>
-  attachedElements: (apply: boolean) => Element[]
-}
+const { UndoManager } = hstry
 
 /** The members `undo.ts` gives its canvas. */
 export interface UndoApi {
@@ -49,179 +34,7 @@ export interface UndoApi {
 export const createUndo = (canvas: SvgCanvas): UndoApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
-  // Batch coalescing (see BatchCommand.runBatched): while a batch is being
-  // (un)applied, the selection is cleared once and `changed` fires once with
-  // every element the batch touched.
-  let batchDepth = 0
-  let batchCleared = false
-  const batchChanged = new Set()
-  // Area texts whose attributes an undo/redo changed. Their rows are settled once the whole batch has been
-  // (un)applied: in between, a batch can hold the new attributes next to the old rows (or the reverse).
-  const batchAreaTexts = new Set<Element>()
-  const settleAreaTexts = () => {
-    for (const el of batchAreaTexts) settleAreaText(el)
-    batchAreaTexts.clear()
-  }
-
-  const getUndoManager = () => {
-    return new UndoManager({
-      beginBatch () {
-        batchDepth++
-      },
-      endBatch () {
-        if (--batchDepth > 0) return
-        batchCleared = false
-        settleAreaTexts()
-        const elems = [...batchChanged]
-        batchChanged.clear()
-        if (elems.length) svgCanvas.call('changed', elems)
-      },
-      /**
-       * @param eventType One of the HistoryEvent types
-       * @param cmd Fulfills the HistoryCommand interface
-       * @fires module:undo.SvgCanvas#event:changed
-       */
-      handleHistoryEvent (eventType: string, cmd: HistoryCommand & CommandFields): void {
-        const EventTypes = HistoryEventTypes
-        // TODO: handle setBlurOffsets.
-        if (eventType === EventTypes.BEFORE_UNAPPLY || eventType === EventTypes.BEFORE_APPLY) {
-          if (batchDepth > 0) {
-            if (batchCleared) return
-            batchCleared = true
-          }
-          svgCanvas.clearSelection()
-        } else if (eventType === EventTypes.AFTER_APPLY || eventType === EventTypes.AFTER_UNAPPLY) {
-          const cmdType = cmd.type()
-          const isApply = (eventType === EventTypes.AFTER_APPLY)
-          if (cmdType === 'ChangeElementCommand' && cmd.elem === svgCanvas.getSvgContent()) {
-            const values = isApply ? cmd.newValues : cmd.oldValues
-            if (values.width !== null && values.width !== undefined && values.width !== '') {
-              const newContentW = Number(values.width)
-              if (Number.isFinite(newContentW) && newContentW > 0) {
-                svgCanvas.contentW = newContentW
-              }
-            }
-            if (values.height !== null && values.height !== undefined && values.height !== '') {
-              const newContentH = Number(values.height)
-              if (Number.isFinite(newContentH) && newContentH > 0) {
-                svgCanvas.contentH = newContentH
-              }
-            }
-          }
-          const elems = cmd.elements()
-          // Undoing/redoing a change to the path currently being node-edited
-          // must not kick the user out of pathedit mode the way a normal tool
-          // switch's clear() does -- refresh the tracked path's segs/grips from
-          // the (now reverted/reapplied) live pathSegList in place instead, so
-          // editing continues seamlessly. Any other undo/redo (a different
-          // element, or no active pathedit session) keeps the old behavior.
-          const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
-          const refreshedInPlace = Boolean(editedPath && elems.includes(editedPath.elem))
-          if (editedPath && refreshedInPlace) {
-            editedPath.dragging = false
-            editedPath.dragctrl = false
-            editedPath.init().show(true)
-          } else {
-            svgCanvas.pathActions.clear()
-          }
-          // Several past "path node grip" bugs traced back to exactly this
-          // undo/redo boundary -- logging it
-          // unconditionally, not just for path commands, since a bug can also
-          // stem from an unrelated undo landing while pathedit mode is active.
-          svgCanvas.logDebugEvent?.('history-apply', {
-            direction: isApply ? 'redo' : 'undo',
-            cmdType,
-            text: cmd.getText?.(),
-            elemIds: elems.map((el: Element | null) => el?.id ?? null),
-            mode: svgCanvas.getCurrentMode(),
-            refreshedInPlace
-          })
-          if (batchDepth > 0) {
-            for (const el of elems) batchChanged.add(el)
-          } else {
-            svgCanvas.call('changed', elems)
-          }
-          if (cmdType === 'MoveElementCommand') {
-            const parent = isApply ? cmd.newParent : cmd.oldParent
-            if (parent === svgCanvas.getSvgContent()) {
-              svgCanvas.identifyLayers()
-            }
-          } else if (cmdType === 'ChildListCommand') {
-            // Same side effects as Insert/Remove/Move, for a transaction's
-            // before/after child lists.
-            if (cmd.changes.some((c) => c.parent === svgCanvas.getSvgContent())) {
-              svgCanvas.identifyLayers()
-            }
-            for (const el of cmd.attachedElements(isApply)) {
-              svgCanvas.restoreRefElements(el)
-              if (el.tagName === 'use') svgCanvas.setUseData(el)
-            }
-          } else if (cmdType === 'InsertElementCommand' || cmdType === 'RemoveElementCommand') {
-            if (cmd.parent === svgCanvas.getSvgContent()) {
-              svgCanvas.identifyLayers()
-            }
-            if (cmdType === 'InsertElementCommand') {
-              if (isApply) {
-                svgCanvas.restoreRefElements(cmd.elem)
-              }
-            } else if (!isApply) {
-              svgCanvas.restoreRefElements(cmd.elem)
-            }
-            if (cmd.elem?.tagName === 'use') {
-              svgCanvas.setUseData(cmd.elem)
-            }
-          } else if (cmdType === 'ChangeElementCommand') {
-          // if we are changing layer names, re-identify all layers
-            if (cmd.elem.tagName === 'title' &&
-            cmd.elem.parentNode?.parentNode === svgCanvas.getSvgContent()
-            ) {
-              svgCanvas.identifyLayers()
-            }
-            const values = isApply ? cmd.newValues : cmd.oldValues
-            // The value coming back may point at a gradient/filter that a save
-            // purged as unused (svg-defs.js removeUnusedDefElems).
-            svgCanvas.restoreRefElements(cmd.elem)
-            // If stdDeviation was changed, update the blur.
-            if (values.stdDeviation) {
-              svgCanvas.setBlurOffsets(cmd.elem.parentNode as Element, Number(values.stdDeviation))
-            }
-            if (isAreaText(cmd.elem)) {
-              // The rows of an area text are derived from its attributes (box, font,
-              // anchor, position) and its content: lay them out again rather than shift them.
-              if (Object.keys(values).some((k) => LAYOUT_ATTRS.has(k))) {
-                batchAreaTexts.add(cmd.elem)
-                if (batchDepth === 0) settleAreaTexts()
-              }
-            } else if (cmd.elem.tagName === 'text') {
-              // Only an x/y change moves the tspans. A command that touched
-              // neither (fill, font-size, …) used to compute NaN here and
-              // write x="NaN" y="NaN" into every tspan on undo/redo.
-              const delta = (k: string) => {
-                const d = (k in cmd.newValues && k in cmd.oldValues) ? Number(cmd.newValues[k]) - Number(cmd.oldValues[k]) : 0
-                return Number.isFinite(d) ? d : 0
-              }
-              const [dx, dy] = [delta('x'), delta('y')]
-
-              // (only the rows: a `<textPath>` child has no x / y of its own to shift)
-              const tspans = (dx || dy) ? Array.from(cmd.elem.children).filter((c) => c.tagName === 'tspan') : []
-
-              for (let i = 0; i < tspans.length; i++) {
-                let x = Number(tspans[i].getAttribute('x'))
-                let y = Number(tspans[i].getAttribute('y'))
-
-                const unapply = (eventType === EventTypes.AFTER_UNAPPLY)
-                x = unapply ? x - dx : x + dx
-                y = unapply ? y - dy : y + dy
-
-                tspans[i].setAttribute('x', String(x))
-                tspans[i].setAttribute('y', String(y))
-              }
-            }
-          }
-        }
-      }
-    })
-  }
+  const getUndoManager = () => new UndoManager()
 
   /**
 * Hack for Firefox bugs where text element features aren't updated or get
@@ -424,15 +237,20 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
     })
   }
 
-  // Undo and redo as model snapshots (R1 step d, core/snapshot-history.ts). `globalThis.__SE_SNAPSHOT_UNDO = false` before the
-  // canvas is built keeps the commands' own (un)apply instead.
-  if ((globalThis as { __SE_SNAPSHOT_UNDO?: boolean }).__SE_SNAPSHOT_UNDO !== false) {
+  // Undo and redo are model snapshots (R1 step d, core/snapshot-history.ts)
+  {
+    let layersBefore = ''
+    const layerSignature = (content: Element): string[] =>
+      Array.from(content.children).filter((el) => el.tagName === 'g').map((el, i) => `${i}:${el.getAttribute('id') ?? ''}:${el.querySelector(':scope > title')?.textContent ?? ''}`)
     const history = new SnapshotHistory({
       count: () => svgCanvas.undoMgr.getUndoStackSize(),
       held: () => svgCanvas.inTransaction(),
       signal: () => svgCanvas.destroyAbort.signal,
       content: () => svgCanvas.getSvgContent(),
-      before: () => svgCanvas.clearSelection(),
+      before: () => {
+        svgCanvas.clearSelection()
+        layersBefore = layerSignature(svgCanvas.getSvgContent()).join('\n')
+      },
       patched: (touched) => {
         const content = svgCanvas.getSvgContent()
         // The document size is the viewBox; the width / height follow the zoom
@@ -452,7 +270,8 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
         } else {
           svgCanvas.pathActions.clear()
         }
-        svgCanvas.identifyLayers()
+        // The layer list follows the layers themselves: one added, removed, moved or renamed
+        if (layerSignature(content).join('\n') !== layersBefore) svgCanvas.identifyLayers()
         for (const el of touched) if (el.tagName === 'use') svgCanvas.setUseData(el)
         svgCanvas.logDebugEvent?.('history-apply', { direction: 'snapshot', elemIds: touched.map((el) => el.id || null), mode: svgCanvas.getCurrentMode() })
         if (touched.length) {
@@ -467,18 +286,6 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
     mgr.onPush = (cmd) => { prevPush?.(cmd); history.pushed(mgr.getUndoStackSize()) }
     mgr.onReset = () => history.reset()
     mgr.snapshots = history
-  }
-
-  // Oracle for R1 (core/snapshot-mirror.ts): off unless a test or a developer asks for it before the canvas is built.
-  if ((globalThis as { __SE_SNAPSHOT_MIRROR?: boolean }).__SE_SNAPSHOT_MIRROR) {
-    const mirror = new SnapshotMirror(() => readContent(svgCanvas.getSvgContent()))
-    svgCanvas.snapshotMirror = mirror
-    const mgr = svgCanvas.undoMgr
-    const prevPush = mgr.onPush
-    mgr.onPush = (cmd) => { prevPush?.(cmd); mirror.pushed() }
-    mgr.onUndo = (cmd) => mirror.undone(cmd.getText?.() ?? '')
-    mgr.onRedo = (cmd) => mirror.redone(cmd.getText?.() ?? '')
-    mgr.onReset = () => mirror.reset()
   }
 
   return {

@@ -71,11 +71,11 @@ Size: XL (months). Step (a) is in; decide on (b)–(e) with it in hand (see "Wha
 matched by id, removed elements pooled so the same node comes back), with `readDom` as its inverse and the 32 round-trip fixtures as the oracle;
 **(d) is in:** undo and redo are model snapshots (`core/snapshot-history.ts`, on by default; see `architecture.md` › Undo), the whole e2e suite
 (592 specs, including the every-command-undoable sweep over 32 fixtures) passes on it, and an undo or redo costs about what the commands cost (≈25 ms
-at 5,000 elements in the instrumented build). What it did **not** do yet is remove the commands: they are still built at the 57 `BatchCommand` and
-88 `ChangeElementCommand` sites, still give the stack its labels, and still run for the one non-element command (the background). Left of R1:
-**(c)** port commands to `(doc, params) → doc'` so the DOM is no longer the place edits are made (the model-first direction), then delete
-`history.js`'s command types, `transaction.js`'s snapshot diff and `undo.js`'s type-keyed side effects (the snapshot history makes the diff
-redundant: a command only has to say *what it was called* and the snapshot says what it did); **(e)** tools as Begin / Preview / Commit over the
+at 5,000 elements in the instrumented build). The old machinery is gone (2026-10-18): `transaction.js`'s snapshot-and-diff is a model comparison, `undo.js`'s type-keyed handler is deleted, and
+`history.js` shrank from 900 lines to 300 (the command types are labels; `ChildListCommand` and `CharacterDataCommand` went). What remains of the
+commands is at the 57 `BatchCommand` and 88 `ChangeElementCommand` sites: they say *that* a step landed and what it is called, and
+`isEmpty()` still decides whether a step landed. Left of R1: **(c)** port commands to `(doc, params) → doc'` so the DOM is no longer the place
+edits are made (the model-first direction), and then the command types disappear for a one-call `commit(label)`; **(e)** tools as Begin / Preview / Commit over the
 model; and the derived-data features that regenerate on `elementChanged` (art-brush, corner radius, glow / outline / shadow regions, markers, mirror,
 taper, text-on-path, connector) should learn `restored` as blend did, so an undo never re-derives what the snapshot already holds (nothing fails
 without it today). (c) and (e) touch the 94 `getBBox`, 55 `getStrokedBBox` and 51 `transact` sites and are the months; start them with the

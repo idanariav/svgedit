@@ -235,300 +235,60 @@ describe('history', function () {
     assert.equal(undoMgr.getNextRedoCommandText(), '')
   })
 
-  it('Test UndoManager.undo() and redo() functions', function () {
-    let lastCalled = null
-    const cmd1 = new MockCommand()
-    const cmd2 = new MockCommand()
-    const cmd3 = new MockCommand()
-    cmd1.apply = function () { lastCalled = 'cmd1.apply' }
-    cmd2.apply = function () { lastCalled = 'cmd2.apply' }
-    cmd3.apply = function () { lastCalled = 'cmd3.apply' }
-    cmd1.unapply = function () { lastCalled = 'cmd1.unapply' }
-    cmd2.unapply = function () { lastCalled = 'cmd2.unapply' }
-    cmd3.unapply = function () { lastCalled = 'cmd3.unapply' }
-
-    undoMgr.addCommandToHistory(cmd1)
-    undoMgr.addCommandToHistory(cmd2)
-    undoMgr.addCommandToHistory(cmd3)
-
-    assert.ok(!lastCalled)
+  it('Test UndoManager.undo() and redo() functions: a snapshot step to the number of applied commands', function () {
+    const steps = []
+    undoMgr.snapshots = { step: (count) => steps.push(count), baseline () {} }
+    undoMgr.addCommandToHistory(new MockCommand())
+    undoMgr.addCommandToHistory(new MockCommand())
+    undoMgr.addCommandToHistory(new MockCommand())
 
     undoMgr.undo()
-    assert.equal(lastCalled, 'cmd3.unapply')
-
     undoMgr.redo()
-    assert.equal(lastCalled, 'cmd3.apply')
-
     undoMgr.undo()
     undoMgr.undo()
-    assert.equal(lastCalled, 'cmd2.unapply')
-
     undoMgr.undo()
-    assert.equal(lastCalled, 'cmd1.unapply')
-    lastCalled = null
-
-    undoMgr.undo()
-    assert.ok(!lastCalled)
-
+    undoMgr.undo() // nothing left to undo
     undoMgr.redo()
-    assert.equal(lastCalled, 'cmd1.apply')
-
     undoMgr.redo()
-    assert.equal(lastCalled, 'cmd2.apply')
-
     undoMgr.redo()
-    assert.equal(lastCalled, 'cmd3.apply')
-    lastCalled = null
-
-    undoMgr.redo()
-    assert.ok(!lastCalled)
+    undoMgr.redo() // nothing left to redo
+    assert.deepEqual(steps, [2, 3, 2, 1, 0, 1, 2, 3])
   })
 
-  it('Test MoveElementCommand', function () {
-    let move = new history.MoveElementCommand(div3, div1, divparent)
-    assert.ok(move.unapply)
-    assert.ok(move.apply)
-    assert.equal(typeof move.unapply, typeof function () { /* empty fn */ })
-    assert.equal(typeof move.apply, typeof function () { /* empty fn */ })
-
-    move.unapply()
-    assert.equal(divparent.firstElementChild, div3)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div1)
-    assert.equal(divparent.lastElementChild, div2)
-
-    move.apply()
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div2)
-    assert.equal(divparent.lastElementChild, div3)
-
-    move = new history.MoveElementCommand(div1, null, divparent)
-
-    move.unapply()
-    assert.equal(divparent.firstElementChild, div2)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div3)
-    assert.equal(divparent.lastElementChild, div1)
-
-    move.apply()
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div2)
-    assert.equal(divparent.lastElementChild, div3)
-
-    move = new history.MoveElementCommand(div2, div5, div4)
-
-    move.unapply()
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div3)
-    assert.equal(divparent.lastElementChild, div3)
-    assert.equal(div4.firstElementChild, div2)
-    assert.equal(div4.firstElementChild.nextElementSibling, div5)
-
-    move.apply()
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(divparent.firstElementChild.nextElementSibling, div2)
-    assert.equal(divparent.lastElementChild, div3)
-    assert.equal(div4.firstElementChild, div5)
-    assert.equal(div4.lastElementChild, div5)
+  it('Test UndoManager: a domless command runs itself instead of a snapshot step', function () {
+    const steps = []
+    undoMgr.snapshots = { step: (count) => steps.push(count), baseline () {} }
+    const calls = []
+    const cmd = new MockCommand()
+    cmd.domless = true
+    cmd.apply = () => calls.push('apply')
+    cmd.unapply = () => calls.push('unapply')
+    undoMgr.addCommandToHistory(cmd)
+    undoMgr.undo()
+    undoMgr.redo()
+    assert.deepEqual(calls, ['unapply', 'apply'])
+    assert.deepEqual(steps, [])
   })
 
-  it('Test InsertElementCommand', function () {
-    let insert = new history.InsertElementCommand(div3)
-    assert.ok(insert.unapply)
-    assert.ok(insert.apply)
-    assert.equal(typeof insert.unapply, typeof function () { /* empty fn */ })
-    assert.equal(typeof insert.apply, typeof function () { /* empty fn */ })
+  it('Test the element commands: a label and the element they are about', function () {
+    const move = new history.MoveElementCommand(div3, div1, divparent)
+    assert.equal(move.getText(), 'Move DIV')
+    assert.deepEqual(move.elements(), [div3])
+    assert.equal(new history.MoveElementCommand(div3, div1, divparent, 'the top').getText(), 'Move DIV to the top')
 
-    insert.unapply()
-    assert.equal(divparent.childElementCount, 2)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(divparent.lastElementChild, div2)
+    const insert = new history.InsertElementCommand(div3)
+    assert.equal(insert.getText(), 'Create DIV')
+    assert.deepEqual(insert.elements(), [div3])
+    assert.equal(new history.InsertElementCommand(div3, 'Draw').getText(), 'Draw')
 
-    insert.apply()
-    assert.equal(divparent.childElementCount, 3)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
+    const remove = new history.RemoveElementCommand(div3, div1, divparent)
+    assert.equal(remove.getText(), 'Delete DIV')
+    assert.deepEqual(remove.elements(), [div3])
 
-    insert = new history.InsertElementCommand(div2)
-
-    insert.unapply()
-    assert.equal(divparent.childElementCount, 2)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div3)
-    assert.equal(divparent.lastElementChild, div3)
-
-    insert.apply()
-    assert.equal(divparent.childElementCount, 3)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
-  })
-
-  it('Test RemoveElementCommand', function () {
-    const div6 = document.createElement('div')
-    div6.id = 'div6'
-
-    let remove = new history.RemoveElementCommand(div6, null, divparent)
-    assert.ok(remove.unapply)
-    assert.ok(remove.apply)
-    assert.equal(typeof remove.unapply, typeof function () { /* empty fn */ })
-    assert.equal(typeof remove.apply, typeof function () { /* empty fn */ })
-
-    remove.unapply()
-    assert.equal(divparent.childElementCount, 4)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
-    assert.equal(div3.nextElementSibling, div6)
-
-    remove.apply()
-    assert.equal(divparent.childElementCount, 3)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
-
-    remove = new history.RemoveElementCommand(div6, div2, divparent)
-
-    remove.unapply()
-    assert.equal(divparent.childElementCount, 4)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div6)
-    assert.equal(div6.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
-
-    remove.apply()
-    assert.equal(divparent.childElementCount, 3)
-    assert.equal(divparent.firstElementChild, div1)
-    assert.equal(div1.nextElementSibling, div2)
-    assert.equal(div2.nextElementSibling, div3)
-  })
-
-  it('Test ChangeElementCommand', function () {
-    div1.setAttribute('title', 'new title')
-    let change = new history.ChangeElementCommand(div1,
-      { title: 'old title', class: 'foo' })
-    assert.ok(change.unapply)
-    assert.ok(change.apply)
-    assert.equal(typeof change.unapply, typeof function () { /* empty fn */ })
-    assert.equal(typeof change.apply, typeof function () { /* empty fn */ })
-
-    change.unapply()
-    assert.equal(div1.getAttribute('title'), 'old title')
-    assert.equal(div1.getAttribute('class'), 'foo')
-
-    change.apply()
-    assert.equal(div1.getAttribute('title'), 'new title')
-    assert.ok(!div1.getAttribute('class'))
-
-    div1.textContent = 'inner text'
-    change = new history.ChangeElementCommand(div1,
-      { '#text': null })
-
-    change.unapply()
-    assert.ok(!div1.textContent)
-
-    change.apply()
-    assert.equal(div1.textContent, 'inner text')
-
-    div1.textContent = ''
-    change = new history.ChangeElementCommand(div1,
-      { '#text': 'old text' })
-
-    change.unapply()
-    assert.equal(div1.textContent, 'old text')
-
-    change.apply()
-    assert.ok(!div1.textContent)
-
-    // TODO(codedread): Refactor this #href stuff in history.js and svgcanvas.js
-    const rect = document.createElementNS(NS.SVG, 'rect')
-    let justCalled = null
-    let gethrefvalue = null
-    let sethrefvalue = null
-    utilities.mock({
-      getHref (elem) {
-        assert.equal(elem, rect)
-        justCalled = 'getHref'
-        return gethrefvalue
-      },
-      setHref (elem, val) {
-        assert.equal(elem, rect)
-        assert.equal(val, sethrefvalue)
-        justCalled = 'setHref'
-      },
-      getRotationAngle () { return 0 }
-    })
-
-    gethrefvalue = '#newhref'
-    change = new history.ChangeElementCommand(rect,
-      { '#href': '#oldhref' })
-    assert.equal(justCalled, 'getHref')
-
-    justCalled = null
-    sethrefvalue = '#oldhref'
-    change.unapply()
-    assert.equal(justCalled, 'setHref')
-
-    justCalled = null
-    sethrefvalue = '#newhref'
-    change.apply()
-    assert.equal(justCalled, 'setHref')
-
-    // Ensure numeric zero values are not treated like "remove attribute".
-    const rectZero = document.createElementNS(NS.SVG, 'rect')
-    rectZero.setAttribute('x', '5')
-    change = new history.ChangeElementCommand(rectZero, { x: 0 })
-    change.unapply()
-    assert.equal(rectZero.getAttribute('x'), '0')
-    change.apply()
-    assert.equal(rectZero.getAttribute('x'), '5')
-
-    // Ensure "#href" can be removed when the previous value was null.
-    const rectHref = document.createElementNS(NS.SVG, 'rect')
-    rectHref.setAttribute('href', '#newhref')
-    let calls = []
-    utilities.mock({
-      getHref (elem) {
-        assert.equal(elem, rectHref)
-        calls.push('getHref')
-        return rectHref.getAttribute('href')
-      },
-      setHref (elem, val) {
-        assert.equal(elem, rectHref)
-        calls.push('setHref')
-        rectHref.setAttribute('href', val)
-      },
-      getRotationAngle () { return 0 }
-    })
-
-    calls = []
-    change = new history.ChangeElementCommand(rectHref, { '#href': null })
-    assert.deepEqual(calls, ['getHref'])
-
-    calls = []
-    change.unapply()
-    assert.equal(rectHref.hasAttribute('href'), false)
-    assert.deepEqual(calls, [])
-
-    calls = []
-    change.apply()
-    assert.equal(rectHref.getAttribute('href'), '#newhref')
-    assert.deepEqual(calls, ['setHref'])
-
-    const line = document.createElementNS(NS.SVG, 'line')
-    line.setAttribute('class', 'newClass')
-    change = new history.ChangeElementCommand(line, { class: 'oldClass' })
-
-    assert.ok(change.unapply)
-    assert.ok(change.apply)
-    assert.equal(typeof change.unapply, typeof function () { /* empty fn */ })
-    assert.equal(typeof change.apply, typeof function () { /* empty fn */ })
-
-    change.unapply()
-    assert.equal(line.getAttribute('class'), 'oldClass')
-
-    change.apply()
-    assert.equal(line.getAttribute('class'), 'newClass')
+    const change = new history.ChangeElementCommand(div3, { a: '1' })
+    assert.equal(change.getText(), 'Change DIV')
+    assert.deepEqual(change.oldValues, { a: '1' })
+    assert.equal(new history.ChangeElementCommand(div3, { a: '1' }, 'Fill').getText(), 'Change DIV Fill')
   })
 
   it('Test BatchCommand', function () {

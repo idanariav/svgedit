@@ -11,7 +11,6 @@
  * kept in a pool by id, so undoing a removal brings back the same node, and with it what is attached to it (data storage,
  * listeners, selectors).
  *
- * Off by default: `globalThis.__SE_SNAPSHOT_UNDO = true` before the canvas is built turns it on.
  * @module snapshot-history
  * @license MIT
  */
@@ -80,6 +79,8 @@ export class SnapshotHistory {
   /** the content root the observer is attached to (loading a document replaces the root) */
   private watched: Element | null = null
   private listening = false
+  /** a snapshot already taken for the command about to land (a transaction's commit) */
+  private staged: ModelElement | null = null
   /** the DOM changed since the current snapshot was taken */
   private dirty = false
   /** the snapshot the DOM is showing: how many commands are applied */
@@ -169,11 +170,22 @@ export class SnapshotHistory {
     if (!this.states.length) this.reset()
     this.watch(this.target.content())
     this.states.length = count
-    this.states.push(this.read(this.states[count - 1]))
+    this.states.push(this.staged ?? this.read(this.states[count - 1]))
+    this.staged = null
     this.at = count
     // what the command itself changed is not drift
     this.take()
     this.dirty = false
+  }
+
+  /** The drawing as the DOM shows it now, sharing what it has in common with the state being shown; nothing is recorded. */
+  current (): ModelElement {
+    return this.read(this.states[this.at])
+  }
+
+  /** The next command to land is the one that produced `model` (a snapshot `current()` gave), so it need not be read again. */
+  stage (model: ModelElement): void {
+    this.staged = model
   }
 
   /** Make the DOM show the drawing as it was after `count` commands. */
@@ -181,9 +193,13 @@ export class SnapshotHistory {
     this.refresh()
     const want = this.states[count]
     if (!want) return
-    // the state being left is what the DOM shows (refresh took in whatever changed since it was recorded)
     const leaving = this.states[this.at]
     this.at = count
+    this.show(leaving, want)
+  }
+
+  /** Make the DOM show `want`, which differs from `shown`, the model of what the DOM shows now. Nothing is recorded. */
+  show (shown: ModelElement, want: ModelElement): void {
     const content = this.target.content()
     this.target.before()
     // Overlays are not part of the drawing: lift them out while the DOM is patched, and put them back
@@ -192,7 +208,7 @@ export class SnapshotHistory {
       .map((el) => ({ el, parent: el.parentNode as Node, next: el.nextSibling }))
     parked.forEach((p) => p.el.remove())
     const touched = new Set<Element>()
-    reconcile(content, leaving, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) })
+    reconcile(content, shown, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) })
     for (const { el, parent, next } of parked) parent.insertBefore(el, next && next.parentNode === parent ? next : null)
     this.take()
     this.dirty = false

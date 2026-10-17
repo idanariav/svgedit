@@ -1,9 +1,5 @@
 import { AssertionError, strict as assert } from 'node:assert'
 
-// The unit tests of undo, transactions and the commands exercise the commands' own (un)apply; undo by model snapshot is the
-// default of a real canvas (core/snapshot-history.ts) and is tested on its own, opting in before it builds a canvas.
-globalThis.__SE_SNAPSHOT_UNDO = false
-
 // Node 22+ defines its own (non-functional without --localstorage-file)
 // globalThis.localStorage getter, which shadows jsdom's working Storage
 // implementation since window === globalThis under vitest's jsdom

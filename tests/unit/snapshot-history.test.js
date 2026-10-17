@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { SnapshotHistory, readSnapshot, share } from '../../packages/svgcanvas/core/snapshot-history.ts'
-import { SnapshotMirror, firstDifference } from '../../packages/svgcanvas/core/snapshot-mirror.ts'
 import { parseSvg, element } from '../../packages/svgcanvas/core/model/index.ts'
 
 const SVG = 'http://www.w3.org/2000/svg'
@@ -137,24 +136,5 @@ describe('SnapshotHistory', () => {
     expect(content.getAttribute('width')).toBe('200')
     expect(content.contains(overlay)).toBe(true)
     expect(readSnapshot(content).attrs.some((a) => a.name === 'width')).toBe(false)
-  })
-})
-
-describe('SnapshotMirror', () => {
-  it('reports an undo that does not restore the drawing, and nothing otherwise', () => {
-    const content = document.createElementNS(SVG, 'svg')
-    const r = document.createElementNS(SVG, 'rect')
-    r.setAttribute('id', 'a')
-    content.append(r)
-    const mirror = new SnapshotMirror(() => readSnapshot(content))
-    mirror.reset()
-    r.setAttribute('x', '1')
-    mirror.pushed()
-    mirror.undone('good') // the command's undo forgot to put x back
-    expect(mirror.problems).toHaveLength(1)
-    expect(mirror.problems[0]).toMatch(/undo of "good" did not restore the drawing/)
-    r.removeAttribute('x')
-    mirror.redone('fine')
-    expect(firstDifference(readSnapshot(content), readSnapshot(content))).toBeNull()
   })
 })

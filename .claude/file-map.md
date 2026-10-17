@@ -71,7 +71,7 @@
 | `group-detach.ts` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.ts` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
-| `history.js` | For command history tracking and undo functionality |
+| `history.js` | The undo stack and the entries on it |
 | `historyrecording.js` | HistoryRecordingService component of history |
 | `image-crop.ts` | Destructive crop for imported raster `<image>` elements |
 | `json.ts` | Tools for SVG handle on JSON format |
@@ -117,7 +117,6 @@
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `snapshot-history.ts` | Undo and redo as model snapshots (R1 step d): the drawing after every command, and a step is `reconcile(dom, now, snapshot)` |
-| `snapshot-mirror.ts` | The undo stack as document-model snapshots, kept beside the command stack as an oracle (R1 step d, observer mode) |
 | `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.ts` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.ts` | SVG text in and out of the canvas: serializing the drawing (`svgToString`, `svgCanvasToString`), loading it (`setSvgString`), importing and inserting fragments, embedding images and fonts, and rasterising the result |

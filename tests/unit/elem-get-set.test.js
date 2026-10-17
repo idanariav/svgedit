@@ -73,7 +73,7 @@ describe('elem-get-set', () => {
     }
   })
 
-  it('setGroupTitle() inserts title and undo removes it', () => {
+  it('setGroupTitle() inserts a title and records one step', () => {
     const g = createSvgElement('g')
     svgContent.append(g)
     canvas.selectedElements = [g]
@@ -82,15 +82,9 @@ describe('elem-get-set', () => {
     expect(g.firstChild?.nodeName).toBe('title')
     expect(g.firstChild?.textContent).toBe('Hello')
     expect(historyStack).toHaveLength(1)
-
-    historyStack[0].unapply(null)
-    expect(g.querySelector('title')).toBeNull()
-
-    historyStack[0].apply(null)
-    expect(g.querySelector('title')?.textContent).toBe('Hello')
   })
 
-  it('setGroupTitle() updates title text with undo/redo', () => {
+  it('setGroupTitle() updates the title text and records one step', () => {
     const g = createSvgElement('g')
     const title = createSvgElement('title')
     title.textContent = 'Old'
@@ -101,15 +95,9 @@ describe('elem-get-set', () => {
     canvas.setGroupTitle('New')
     expect(g.querySelector('title')?.textContent).toBe('New')
     expect(historyStack).toHaveLength(1)
-
-    historyStack[0].unapply(null)
-    expect(g.querySelector('title')?.textContent).toBe('Old')
-
-    historyStack[0].apply(null)
-    expect(g.querySelector('title')?.textContent).toBe('New')
   })
 
-  it('setGroupTitle() removes title and undo restores it', () => {
+  it('setGroupTitle() removes the title and records one step', () => {
     const g = createSvgElement('g')
     const title = createSvgElement('title')
     title.textContent = 'Label'
@@ -120,25 +108,13 @@ describe('elem-get-set', () => {
     canvas.setGroupTitle('')
     expect(g.querySelector('title')).toBeNull()
     expect(historyStack).toHaveLength(1)
-
-    historyStack[0].unapply(null)
-    expect(g.querySelector('title')?.textContent).toBe('Label')
-
-    historyStack[0].apply(null)
-    expect(g.querySelector('title')).toBeNull()
   })
 
-  it('setDocumentTitle() inserts and removes title with undo/redo', () => {
+  it('setDocumentTitle() inserts the title and records one step', () => {
     canvas.setDocumentTitle('Doc')
     const docTitle = svgContent.querySelector(':scope > title')
     expect(docTitle?.textContent).toBe('Doc')
     expect(historyStack).toHaveLength(1)
-
-    historyStack[0].unapply(null)
-    expect(svgContent.querySelector(':scope > title')).toBeNull()
-
-    historyStack[0].apply(null)
-    expect(svgContent.querySelector(':scope > title')?.textContent).toBe('Doc')
   })
 
   it('setDocumentTitle() does nothing when empty and no title exists', () => {
@@ -158,7 +134,7 @@ describe('elem-get-set', () => {
     expect(canvas.getZoom()).toBe(2)
   })
 
-  it('setImageURL() records undo even when image fails to load', () => {
+  it('setImageURL() records a step even when the image fails to load', () => {
     const originalImage = globalThis.Image
     try {
       globalThis.Image = class FakeImage {
@@ -187,18 +163,12 @@ describe('elem-get-set', () => {
       canvas.setImageURL('bad.png')
       expect(image.getAttribute('href')).toBe('bad.png')
       expect(historyStack).toHaveLength(1)
-
-      historyStack[0].unapply(null)
-      expect(image.getAttribute('href')).toBe('old.png')
-
-      historyStack[0].apply(null)
-      expect(image.getAttribute('href')).toBe('bad.png')
     } finally {
       globalThis.Image = originalImage
     }
   })
 
-  it('setRectRadius() preserves attribute absence on undo', () => {
+  it('setRectRadius() sets rx and ry and records one step', () => {
     const rect = createSvgElement('rect')
     svgContent.append(rect)
     canvas.selectedElements = [rect]
@@ -207,43 +177,48 @@ describe('elem-get-set', () => {
     expect(rect.getAttribute('rx')).toBe('5')
     expect(rect.getAttribute('ry')).toBe('5')
     expect(historyStack).toHaveLength(1)
-
-    historyStack[0].unapply(null)
-    expect(rect.hasAttribute('rx')).toBe(false)
-    expect(rect.hasAttribute('ry')).toBe(false)
   })
 
-  it('undo updates contentW/contentH for svgContent size changes', () => {
+  it('undo and redo of a document size change update contentW/contentH (the document size is the viewBox)', () => {
     const svg = createSvgElement('svg')
+    svg.setAttribute('viewBox', '0 0 100 100')
+    const root = createSvgElement('svg')
+    root.setAttribute('width', '800')
+    root.setAttribute('height', '600')
 
     const localCanvas = {
       contentW: 100,
       contentH: 100,
       getSvgContent () { return svg },
+      getSvgRoot () { return root },
+      updateCanvas: vi.fn(),
       clearSelection () {},
       getCurrentMode () { return 'select' },
       getPathObj () { return null },
       pathActions: { clear () {} },
       restoreRefElements () {},
+      identifyLayers () {},
+      inTransaction: () => false,
+      destroyAbort: new AbortController(),
       call () {}
     }
     Object.assign(localCanvas, undo.createUndo(localCanvas))
-    svg.setAttribute('width', '200')
-    svg.setAttribute('height', '150')
+    localCanvas.undoMgr.resetUndoStack()
+    svg.setAttribute('viewBox', '0 0 200 150')
     localCanvas.contentW = 200
     localCanvas.contentH = 150
-    const cmd = new history.ChangeElementCommand(svg, { width: 100, height: 100 })
-    localCanvas.undoMgr.addCommandToHistory(cmd)
+    localCanvas.undoMgr.addCommandToHistory(new history.ChangeElementCommand(svg, { viewBox: '0 0 100 100' }))
 
     localCanvas.undoMgr.undo()
+    expect(svg.getAttribute('viewBox')).toBe('0 0 100 100')
     expect(localCanvas.contentW).toBe(100)
     expect(localCanvas.contentH).toBe(100)
+    expect(localCanvas.updateCanvas).toHaveBeenCalledWith(800, 600)
 
     localCanvas.undoMgr.redo()
     expect(localCanvas.contentW).toBe(200)
     expect(localCanvas.contentH).toBe(150)
   })
-
   it('setBold() emits changed only for modified text elements', () => {
     const text = createSvgElement('text')
     text.textContent = 'Hello'
@@ -302,11 +277,14 @@ describe('elem-get-set', () => {
       call () {},
       setCurShape () {},
       setCurProperties () {},
-      getSvgContent () { return svgContent }
+      getSvgContent () { return svgContent },
+      inTransaction: () => false,
+      destroyAbort: new AbortController()
     }
     attachUnits(localCanvas)
     Object.assign(localCanvas, undo.createUndo(localCanvas))
     Object.assign(localCanvas, initElemGetSet(localCanvas))
+    localCanvas.undoMgr.resetUndoStack() // the rect was made outside any command
     localCanvas.setColor('fill', '#ff0000')
 
     expect(rect.getAttribute('fill')).toBe('#ff0000')

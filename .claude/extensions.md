@@ -192,14 +192,15 @@ them `data-se-ephemeral`; hand a finished new element back as `{ created }` (or 
 
 ## Recording undo
 
-New code should prefer `svgCanvas.transact(label, () => { … })` over hand-built
-`BatchCommand`s: everything that changes in the callback becomes ONE undo step, a throw rolls the
-drawing back, and "forgot to record this attribute" bugs cannot happen. If you must build commands by
-hand, remember `ChangeElementCommand(elem, oldValues)` reads the **new** values from the DOM *when it is
-constructed* — construct it **after** mutating, or redo re-applies the old value (this exact bug was in
-glow/outline removal, clip release and the text-decoration toggles). Text edited in place and structure
-changes are covered by transactions too. While a transaction is open, `addCommandToHistory` is
-swallowed, so existing canvas methods can be called inside one unchanged.
+Undo and redo are model snapshots (`architecture.md` › Undo): whatever is in the DOM when a step lands is what undo brings back,
+so there is no old value to record and no order to get right. New code should still prefer
+`svgCanvas.transact(label, () => { … })` over hand-built `BatchCommand`s: everything that changes in the callback becomes ONE
+undo step (and a step that changed nothing is not pushed), a throw rolls the drawing back, and a step you forget to push cannot
+happen inside it. If you must push by hand, `svgCanvas.addCommandToHistory(new BatchCommand(label))` after the change is enough
+(the batch needs at least one sub-command, or it is empty and is not pushed; `ChangeElementCommand(elem, oldValues)` is only a
+label now). While a transaction is open, `addCommandToHistory` is swallowed, so existing canvas methods can be called inside one
+unchanged. Derived data you regenerate on `elementChanged` (steps, filter regions, mirrored twins) must skip the event when
+`opts.restored` is true: the snapshot brought it back.
 
 ## Commands
 

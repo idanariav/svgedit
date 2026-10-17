@@ -89,6 +89,7 @@ describe('flipSelectedElements', () => {
       }
     })
 
+    svgCanvas.undoMgr.snapshots.baseline() // the line was made outside any command: it is where the flip starts from
     svgCanvas.selectOnly([line], true)
     svgCanvas.flipSelectedElements(-1, 1)
 

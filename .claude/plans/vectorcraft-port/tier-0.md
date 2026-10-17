@@ -1,5 +1,7 @@
 # Tier 0 — architecture borrowed from VectorCraft
 
+> **Note (2026-10-18):** the undo transaction described below (a snapshot and diff into `ChildListCommand` / `CharacterDataCommand`) was replaced by model snapshots (`core/snapshot-history.ts`; see `architecture.md` › Undo). The command types it names are gone.
+
 Read [README.md](README.md) first (rules, porting conventions). VectorCraft
 paths below are relative to `/Users/idanariav/GitProjects/vectorcraft/`;
 svgedit paths are relative to this repo.
