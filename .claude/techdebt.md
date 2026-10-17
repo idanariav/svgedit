@@ -186,13 +186,6 @@ Typing `Editor.ts`, `EditorStartup.ts` and `contextmenu.ts` strictly turned up c
   block (track marker presence for the endpoint offsets; turn a `<line>` with a mid-marker into a polyline) never runs. Typing it
   kept the behaviour (a cast, with a comment). Reading `marker-start`/`marker-mid`/`marker-end` would switch the feature on, which
   needs its own tests (and a look at `getOffset`, which already reads the attributes directly).
-- **`#g_title` is never disabled for a `<use>`.** `topPanelContext.ts` sets `.disabled` on the `se-input`, which has no such property
-  (a plain expando), so the box stays editable. Give `se-input` a `disabled` attribute, or drop the line.
-- **`loadFromURL` carries on after a failed fetch** (`!response.ok` and not `noAlert`): it alerts and resolves, then falls
-  through to `response.text()` and tries to load the error body as SVG (a second alert). Add the missing `return`.
 - **Extension context-menu items are never shown.** `contextmenu.ts` appends them to a `#cmenu_canvas` list that the
   template no longer has (the canvas menu is the `<se-cmenu_canvas-dialog>`); no built-in extension adds one. Either wire
   `add()` into the dialog or delete the registry.
-- **`LeftPanel.updateLeftPanel`'s disabled check never fires.** It reads `.disabled` off its argument, but every caller passes a tool
-  id (a string), so a disabled button is never refused here. Resolve the id and check the element (commands already gate on
-  `enabled`), or drop the check.

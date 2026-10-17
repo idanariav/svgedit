@@ -69,3 +69,25 @@ describe('Editor.zoomChanged', () => {
     expect(self.bottomPanel.changeZoom).toHaveBeenCalledWith(0.1)
   })
 })
+
+describe('Editor.loadFromURL', () => {
+  const ready = (cb) => Promise.resolve().then(cb)
+  const make = () => ({ ready, loadSvgString: vi.fn(), i18next: { t: (key) => key } })
+
+  it('loads the fetched text', async () => {
+    globalThis.fetch = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve('<svg id="a"/>') }))
+    const self = make()
+    await call('loadFromURL', self, 'x.svg')
+    expect(self.loadSvgString).toHaveBeenCalledWith('<svg id="a"/>', { noAlert: undefined })
+  })
+
+  it('alerts once and loads nothing when the response is not ok', async () => {
+    globalThis.seAlert = vi.fn()
+    globalThis.fetch = vi.fn(() => Promise.resolve({ ok: false, text: () => Promise.resolve('<html>404</html>') }))
+    const self = make()
+    await call('loadFromURL', self, 'missing.svg')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(globalThis.seAlert).toHaveBeenCalledTimes(1)
+    expect(self.loadSvgString).not.toHaveBeenCalled()
+  })
+})

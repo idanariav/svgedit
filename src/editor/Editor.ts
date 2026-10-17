@@ -1152,10 +1152,12 @@ enabled
               }
               seAlert(this.i18next.t('notification.URLLoadFail'))
               resolve()
+              return null // nothing to load: the error page is not an SVG
             }
             return response.text()
           })
           .then((str) => {
+            if (str === null) return
             this.loadSvgString((str as string), { noAlert })
             resolve(str)
           })

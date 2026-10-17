@@ -91,7 +91,7 @@ export class SEInput extends HTMLElement {
  * @returns observed
    */
   static get observedAttributes (): string[] {
-    return ['value', 'label', 'src', 'size', 'title']
+    return ['value', 'label', 'src', 'size', 'title', 'disabled']
   }
 
   /** @function attributeChangedCallback */
@@ -117,6 +117,9 @@ export class SEInput extends HTMLElement {
         break
       case 'value':
         this.$input.value = newValue
+        break
+      case 'disabled':
+        this.$input.disabled = newValue !== null
         break
       default:
         logError(`unknown attribute: ${name}`, undefined, 'seInput')
@@ -152,6 +155,15 @@ export class SEInput extends HTMLElement {
   /** @function set */
   set value (value) {
     this.$input.value = value
+  }
+
+  /** Greys the field out and stops it taking input. */
+  get disabled (): boolean {
+    return this.hasAttribute('disabled')
+  }
+
+  set disabled (value: boolean) {
+    this.toggleAttribute('disabled', Boolean(value))
   }
 
   /** @function get */

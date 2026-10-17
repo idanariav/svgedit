@@ -297,8 +297,7 @@ export const updateContextPanel = (topPanel: import('./TopPanel.ts').default): v
             const label = $id('g_title')
             if (label) {
               label.value = title
-              // (`se-input` has no `disabled`: this sets a plain property and disables nothing — see techdebt.md)
-              ;(($req('g_title') as unknown) as HTMLInputElement).disabled = tagName === 'use'
+              $req('g_title').disabled = tagName === 'use'
             }
           }
         }

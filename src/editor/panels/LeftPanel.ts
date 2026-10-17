@@ -36,11 +36,10 @@ class LeftPanel {
    * - Adds the the pressed button  to the button passed in.
    * @function this.updateLeftPanel
  * @param button The id of the toolbar button
- * @returns Whether the button was disabled or not
+ * @returns `true` (kept as a boolean for the callers that branch on it)
    */
   updateLeftPanel (button: string): boolean {
     const { $req, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    if (((button as unknown) as { disabled?: boolean }).disabled) return false
     // switching tools exits lock mode (see lockTool / double-click gesture)
     this.editor.svgCanvas.setToolLocked(false)
     $qa('#tools_left *[locked]').forEach((b: { removeAttribute: (arg0: string) => void; }) => {

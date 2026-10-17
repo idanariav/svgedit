@@ -20,6 +20,17 @@ describe('se-input', () => {
     expect(el.value).toBe('hello')
   })
 
+  it('disables the inner input with the disabled attribute or property', () => {
+    const el = mountElement('se-input')
+    expect(el.$input.disabled).toBe(false)
+    el.disabled = true
+    expect(el.hasAttribute('disabled')).toBe(true)
+    expect(el.$input.disabled).toBe(true)
+    el.removeAttribute('disabled')
+    expect(el.$input.disabled).toBe(false)
+    expect(el.disabled).toBe(false)
+  })
+
   it('sets the value property directly on the input', () => {
     const el = mountElement('se-input')
     el.value = 'world'
