@@ -1,6 +1,6 @@
 // seZoom.js — `<se-zoom>` — Zoom percentage selector
 import { fetchSvgEl } from './svgIconLoader.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { t } from '../locale.js'
 
 const template = document.createElement('template')
@@ -148,7 +148,7 @@ template.innerHTML = `
 `
 
 /** Display form of a zoom value: "100.0" → "100" (other decimals are kept). */
-const showZoom = (v) => (/^-?\d+\.0+$/.test(String(v)) ? String(v).replace(/\.0+$/, '') : v)
+const showZoom = (/** @type {string} */ v) => (/^-?\d+\.0+$/.test(String(v)) ? String(v).replace(/\.0+$/, '') : v)
 
 class SeZoom extends HTMLElement {
   constructor () {
@@ -166,24 +166,23 @@ class SeZoom extends HTMLElement {
     this._shadowRoot.append(template.content.cloneNode(true))
 
     // prepare the slot element
-    this.slotElement = this._shadowRoot.querySelector('slot')
+    this.slotElement = /** @type {HTMLSlotElement} */ (this._shadowRoot.querySelector('slot'))
     this.slotElement.addEventListener(
       'slotchange',
       this.handleOptionsChange.bind(this)
     )
 
     // hookup events for the input box
-    this.inputElement = this._shadowRoot.querySelector('input')
+    this.inputElement = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('input'))
     this.inputElement.addEventListener('click', this.handleClick.bind(this))
     this.inputElement.addEventListener('change', this.handleInput)
     this.inputElement.addEventListener('keydown', this.handleKeyDown)
 
-    this.clickArea = this._shadowRoot.querySelector('#down')
+    this.clickArea = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#down'))
     this.clickArea.addEventListener('click', this.handleClick.bind(this))
 
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
-    this.$icon = this._shadowRoot.querySelector('#icon')
-
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
+    this.$icon = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#icon'))
     // Load zoom icon
     const srcAttr = this.getAttribute('src')
     if (srcAttr) {
@@ -191,7 +190,7 @@ class SeZoom extends HTMLElement {
     }
 
     // hookup events for arrow buttons
-    this.arrowUp = this._shadowRoot.querySelector('#arrow-up')
+    this.arrowUp = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#arrow-up'))
     this.arrowUp.title = this.arrowUp.ariaLabel = t('hotkeys.zoom_in')
     this.arrowUp.addEventListener('click', this.increment.bind(this))
     this.arrowUp.addEventListener('mousedown', e =>
@@ -200,7 +199,7 @@ class SeZoom extends HTMLElement {
     this.arrowUp.addEventListener('mouseleave', e => this.handleMouseUp('up'))
     this.arrowUp.addEventListener('mouseup', e => this.handleMouseUp('up'))
 
-    this.arrowDown = this._shadowRoot.querySelector('#arrow-down')
+    this.arrowDown = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#arrow-down'))
     this.arrowDown.title = this.arrowDown.ariaLabel = t('hotkeys.zoom_out')
     this.arrowDown.addEventListener('click', this.decrement.bind(this))
     this.arrowDown.addEventListener('mousedown', e =>
@@ -231,6 +230,10 @@ class SeZoom extends HTMLElement {
     document.addEventListener('click', e => this.handleClose(e), { signal: this._globalAbort.signal })
   }
 
+  /**
+* @param {string} src
+* @param {HTMLSpanElement} container
+*/
   async _loadIcon (src, container, size = 18) {
     if (!src || !container) return
     const url = `${this.imgPath}/${src}`
@@ -274,7 +277,7 @@ class SeZoom extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) {
       switch (name) {
         case 'value':
@@ -330,8 +333,8 @@ class SeZoom extends HTMLElement {
    * @returns {void}
    */
   handleSelect (e) {
-    this.value = e.target.getAttribute('value')
-    this.title = e.target.getAttribute('text')
+    this.value = /** @type {Element} */ (e.target).getAttribute('value')
+    this.title = /** @type {Element} */ (e.target).getAttribute('text')
   }
 
   /**
@@ -473,3 +476,5 @@ class SeZoom extends HTMLElement {
 
 // Register
 customElements.define('se-zoom', SeZoom)
+
+export default SeZoom

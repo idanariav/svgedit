@@ -52,7 +52,7 @@ const dashFittable = (editor) => {
   const list = editor.svgCanvas.getSelectedElements().filter(Boolean)
   if (!list.length) return 'Select a line, circle, ellipse or path first'
   if (editor.svgCanvas.isDashFitted(list)) return true
-  const issues = list.map((el) => editor.svgCanvas.dashFitIssue(el))
+  const issues = list.map((/** @type {Element} */ el) => editor.svgCanvas.dashFitIssue(el))
   return issues.includes(null) ? true : issues[0]
 }
 
@@ -88,7 +88,10 @@ const traceable = (editor) => {
   return list.length === 1 && list[0].tagName === 'image' ? true : 'Select one image'
 }
 
-/** i18n keys of the buttons' titles (the live `title` of the button wins once it is rendered). */
+/**
+ * i18n keys of the buttons' titles (the live `title` of the button wins once it is rendered).
+ * @type {Object<string, string>}
+ */
 const LABELS = {
   clipmask_release: 'tools.clip_release',
   layer_delete: 'layers.del',
@@ -334,7 +337,7 @@ export const registerPanelCommands = (commands) => {
         host.exportDrawing()
         return
       }
-      editor.$id('se-export-dialog').setAttribute('dialog', 'open')
+      editor.$req('se-export-dialog').setAttribute('dialog', 'open')
     }
   })
   commands.register({
@@ -350,7 +353,7 @@ export const registerPanelCommands = (commands) => {
     group: 'Tools',
     pd: true,
     interactive: true,
-    run: (editor) => editor.$id('se-command-search-dialog').open()
+    run: (editor) => editor.$req('se-command-search-dialog').open()
   })
   commands.register({
     id: 'tool_hotkeys',
@@ -358,7 +361,7 @@ export const registerPanelCommands = (commands) => {
     group: 'Tools',
     pd: true,
     interactive: true,
-    run: (editor) => editor.$id('se-hotkey-dialog').setAttribute('dialog', 'open')
+    run: (editor) => editor.$req('se-hotkey-dialog').setAttribute('dialog', 'open')
   })
   commands.register({
     id: 'tool_favorites',
@@ -366,7 +369,7 @@ export const registerPanelCommands = (commands) => {
     group: 'Tools',
     pd: true,
     interactive: true,
-    run: (editor) => editor.$id('se-favorites-dialog').setAttribute('dialog', 'open')
+    run: (editor) => editor.$req('se-favorites-dialog').setAttribute('dialog', 'open')
   })
   commands.register({
     id: 'tool_editor_prefs',

@@ -1,6 +1,6 @@
 // seGridSettings.js — `<se-grid-settings>` — Grid-settings popover (show/snap toggles, shape select — square/isometric/triangle/1pt/2pt perspective plus the thirds/golden ratio/center cross composition-guide shapes,…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 // Grid shapes offered in the popover. `value` is stored in
 // `curConfig.gridShape`; `label` is shown in the <select>.
@@ -142,12 +142,11 @@ class SeGridSettings extends SeSettingsPopover {
   constructor () {
     super(TEMPLATE_HTML)
 
-    this.$show = this._shadowRoot.querySelector('#grid_show')
-    this.$shape = this._shadowRoot.querySelector('#grid_shape_sel')
-    this.$snap = this._shadowRoot.querySelector('#grid_snap')
-    this.$step = this._shadowRoot.querySelector('#grid_step')
-    this.$color = this._shadowRoot.querySelector('#grid_col')
-
+    this.$show = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#grid_show'))
+    this.$shape = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#grid_shape_sel'))
+    this.$snap = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#grid_snap'))
+    this.$step = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#grid_step'))
+    this.$color = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#grid_col'))
     SHAPES.forEach(({ value, label }) => {
       const opt = document.createElement('option')
       opt.value = value
@@ -178,14 +177,14 @@ class SeGridSettings extends SeSettingsPopover {
    * @returns {void}
    */
   _commit (cfgKey, prefKey, value) {
-    ownerEditor(this).configObj.curConfig[cfgKey] = value
-    ownerEditor(this).configObj.pref(prefKey, String(value), true)
+    requireOwnerEditor(this).configObj.curConfig[cfgKey] = value
+    requireOwnerEditor(this).configObj.pref(prefKey, String(value), true)
     this._updateTriggerState()
     this.dispatchEvent(new CustomEvent('change', { detail: { key: cfgKey, value } }))
   }
 
   _syncFromConfig () {
-    const cfg = ownerEditor(this).configObj.curConfig
+    const cfg = requireOwnerEditor(this).configObj.curConfig
     this.$show.checked = !!cfg.showGrid
     this.$snap.checked = !!cfg.gridSnapping
     this.$shape.value = cfg.gridShape || 'square'
@@ -195,6 +194,9 @@ class SeGridSettings extends SeSettingsPopover {
   }
 
   // <input type="color"> requires a 6-digit hex; expand shorthand like #000.
+  /**
+* @param {string} c
+*/
   _toHex (c) {
     const m = /^#([0-9a-f]{3})$/i.exec(c)
     if (m) return '#' + m[1].split('').map(ch => ch + ch).join('')
@@ -202,7 +204,7 @@ class SeGridSettings extends SeSettingsPopover {
   }
 
   _updateTriggerState () {
-    this.$trigger.setAttribute('data-active', String(!!ownerEditor(this).configObj.curConfig.showGrid))
+    this.$trigger.setAttribute('data-active', String(!!requireOwnerEditor(this).configObj.curConfig.showGrid))
   }
 
   open () {
@@ -213,3 +215,5 @@ class SeGridSettings extends SeSettingsPopover {
 
 // Register
 customElements.define('se-grid-settings', SeGridSettings)
+
+export default SeGridSettings

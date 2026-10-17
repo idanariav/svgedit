@@ -20,6 +20,7 @@ const inPathEdit = (editor) => editor.svgCanvas.getMode() === 'pathedit' ? true 
  * below would otherwise silently ignore. Applied at the end of `buildEditorShortcuts`
  * to every entry that doesn't declare its own.
  */
+/** @type {Object<string, (editor: EditorInstance) => true|string>} */
 const GATES = {
   ...Object.fromEntries(['rotate_ccw_fine', 'rotate_cw_fine', 'rotate_ccw', 'rotate_cw'].map((id) => [id, canRotate])),
   ...Object.fromEntries(['raise', 'lower', 'move_to_front', 'move_to_back',
@@ -38,7 +39,7 @@ const GATES = {
   cycle_next: hasObjects
 }
 
-export const buildEditorShortcuts = (editor) => [
+export const buildEditorShortcuts = (/** @type {EditorInstance} */ editor) => [
   {
     id: 'rotate_ccw_fine',
     group: 'Rotate',
@@ -81,7 +82,7 @@ export const buildEditorShortcuts = (editor) => [
     label: 'hotkeys.cycle_prev',
     key: 'shift+o/shift+tab',
     fn: () => {
-      editor.svgCanvas.cycleElement(0)
+      editor.svgCanvas.cycleElement(false)
     }
   },
   {
@@ -90,7 +91,7 @@ export const buildEditorShortcuts = (editor) => [
     label: 'hotkeys.cycle_next',
     key: 'shift+p/tab',
     fn: () => {
-      editor.svgCanvas.cycleElement(1)
+      editor.svgCanvas.cycleElement(true)
     }
   },
   {

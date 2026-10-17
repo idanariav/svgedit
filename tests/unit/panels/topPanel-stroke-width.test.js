@@ -37,6 +37,7 @@ const makeTopPanel = (container, elem) => {
   const $qa = (sel) => [...container.querySelectorAll(sel)]
   const editor = {
     $id,
+    $req: $id,
     $qa,
     selectedElement: elem,
     bottomPanel: {

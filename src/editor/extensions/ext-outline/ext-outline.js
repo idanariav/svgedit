@@ -27,10 +27,11 @@ const name = 'outline'
 // Elements that may carry an outline (mirrors ext-markers' marker scope).
 const outlineElems = ['line', 'polyline', 'path', 'polygon']
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -43,7 +44,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand } = svgCanvas.history
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     // Shared filter composer (one instance for all effect extensions).
@@ -53,16 +54,16 @@ export default {
      * Read outline params from an element's shared effect filter.
      * Returns null if no outline is set.
      */
-    const getOutlineFromElement = (elem) => {
+    const getOutlineFromElement = (/** @type {Element} */ elem) => {
       if (!elem) return null
       return fx.readEffects(elem).outline
     }
 
     /** Read current panel values. */
     const getOutlinePanelValues = () => ({
-      width: Number($id('outline_width').value),
-      opacity: Number($id('outline_opacity').value),
-      color: $id('outline_color').value
+      width: Number($req('outline_width').value),
+      opacity: Number($req('outline_opacity').value),
+      color: $req('outline_color').value
     })
 
     /**
@@ -93,7 +94,7 @@ export default {
      * Apply/update/remove the outline on the current selection, committing the
      * change as one undo step. Thin wrapper over {@link applyOutlineToElement}.
      */
-    const setOutline = (params) => {
+    const setOutline = (/** @type {object} */ params) => {
       const elem = svgCanvas.getSelectedElements()[0]
       if (!elem) return
       const batchCmd = new BatchCommand('Set outline')
@@ -113,7 +114,7 @@ export default {
     }
 
     /** Show/hide the outline panel and populate controls from the element. */
-    const showPanel = (on, elem) => {
+    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null|undefined} */ elem) => {
       const panel = $id('outline_panel')
       if (!panel) return
       panel.style.display = on ? '' : 'none'
@@ -121,9 +122,9 @@ export default {
         const p = getOutlineFromElement(elem)
         // Default width 0 when the element has no outline, so the panel clearly
         // reflects "no outline" rather than showing phantom active values.
-        $id('outline_width').value = p?.width ?? 0
-        $id('outline_opacity').value = p?.opacity ?? 1
-        $id('outline_color').value = p?.color ?? '#000000'
+        $req('outline_width').value = p?.width ?? 0
+        $req('outline_opacity').value = p?.opacity ?? 1
+        $req('outline_color').value = p?.color ?? '#000000'
       }
     }
 
@@ -164,7 +165,7 @@ export default {
         ;['outline_width', 'outline_opacity'].forEach((id) => {
           $id(id).addEventListener('change', () => setOutline(getOutlinePanelValues()))
         })
-        $id('outline_color').addEventListener('change', () => setOutline(getOutlinePanelValues()))
+        $req('outline_color').addEventListener('change', () => setOutline(getOutlinePanelValues()))
         svgEditor.commands.register({
           id: 'outline_remove',
           label: `${name}:contextTools.remove.title`,

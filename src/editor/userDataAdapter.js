@@ -62,11 +62,37 @@
  * back to `localStorage` key `svg-edit-tool-order`.
  */
 
+/**
+ * The adapter's methods, all optional; payloads are owned by the module that stores them.
+ * @typedef {object} UserDataAdapter
+ * @property {() => *} [getPalette]
+ * @property {(overrides: *) => void} [setPalette]
+ * @property {() => *} [getUserShapes]
+ * @property {(store: *) => void} [setUserShapes]
+ * @property {() => *} [getHotkeys]
+ * @property {(overrides: *) => void} [setHotkeys]
+ * @property {() => *} [getClasses]
+ * @property {(classes: *) => void} [setClasses]
+ * @property {() => *} [getDefaultClasses]
+ * @property {(defaults: *) => void} [setDefaultClasses]
+ * @property {() => *} [getCanvasPresets]
+ * @property {(presets: *) => void} [setCanvasPresets]
+ * @property {() => Promise<*>} [getFonts]
+ * @property {(family: string, woff2Base64: string) => Promise<void>} [saveFont]
+ * @property {() => *} [getBrushes]
+ * @property {(slots: *) => void} [setBrushes]
+ * @property {() => *} [getToolOrder]
+ * @property {(order: *) => void} [setToolOrder]
+ * @property {() => string[]} [getFavorites]
+ * @property {(ids: string[]) => void} [setFavorites]
+ */
+
+/** @type {?UserDataAdapter} */
 let _adapter = null
 
 /**
  * Register (or clear) the host storage adapter. Called once during editor init.
- * @param {object|null} adapter
+ * @param {?UserDataAdapter} adapter
  * @returns {void}
  */
 export const setUserDataAdapter = (adapter) => {
@@ -74,6 +100,6 @@ export const setUserDataAdapter = (adapter) => {
 }
 
 /**
- * @returns {object|null} The registered adapter, or `null` for localStorage fallback.
+ * @returns {?UserDataAdapter} The registered adapter, or `null` for localStorage fallback.
  */
 export const getUserDataAdapter = () => _adapter

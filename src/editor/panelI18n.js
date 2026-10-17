@@ -28,7 +28,7 @@ export const panelKey = (text) =>
  * @returns {void}
  */
 export const localizePanelFragment = (root, i18next) => {
-  const tr = (text) => {
+  const tr = (/** @type {string} */ text) => {
     const key = panelKey(text)
     return i18next.exists(key) ? i18next.t(key) : text
   }
@@ -37,7 +37,7 @@ export const localizePanelFragment = (root, i18next) => {
     el.textContent = tr(el.textContent)
   })
   root.querySelectorAll('[data-caption]').forEach((el) => {
-    el.setAttribute('data-caption', tr(el.getAttribute('data-caption')))
+    el.setAttribute('data-caption', tr(el.getAttribute('data-caption') ?? ''))
   })
   root.querySelectorAll('[label], [title]').forEach((el) => {
     for (const attr of ['label', 'title']) {

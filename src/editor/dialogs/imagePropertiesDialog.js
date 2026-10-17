@@ -1,5 +1,5 @@
 // imagePropertiesDialog.js — Modal for image element properties
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
 import { syncDialogTheme } from '../themeUtil.js'
@@ -20,20 +20,20 @@ export class SeImgPropDialog extends HTMLElement {
     this.eventlisten = false
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$saveBtn = this._shadowRoot.querySelector('#tool_docprops_save')
-    this.$cancelBtn = this._shadowRoot.querySelector('#tool_docprops_cancel')
-    this.$resolution = this._shadowRoot.querySelector('#resolution')
-    this.$canvasTitle = this._shadowRoot.querySelector('#canvas_title')
-    this.$canvasWidth = this._shadowRoot.querySelector('#canvas_width')
-    this.$canvasHeight = this._shadowRoot.querySelector('#canvas_height')
-    this.$imageOptEmbed = this._shadowRoot.querySelector('#image_embed')
-    this.$imageOptRef = this._shadowRoot.querySelector('#image_ref')
-    this.$dialog = this._shadowRoot.querySelector('#svg_docprops')
+    this.$saveBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_docprops_save'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_docprops_cancel'))
+    this.$resolution = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#resolution'))
+    this.$canvasTitle = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#canvas_title'))
+    this.$canvasWidth = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#canvas_width'))
+    this.$canvasHeight = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#canvas_height'))
+    this.$imageOptEmbed = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#image_embed'))
+    this.$imageOptRef = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#image_ref'))
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#svg_docprops'))
   }
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -70,7 +70,7 @@ export class SeImgPropDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     let node
     switch (name) {
@@ -120,9 +120,9 @@ export class SeImgPropDialog extends HTMLElement {
         if (newValue.includes('one')) {
           const data = newValue.split('|')
           if (data.length > 1) {
-            this._shadowRoot.querySelector('#image_opt_embed').setAttribute('title', data[1])
-            this._shadowRoot.querySelector('#image_opt_embed').setAttribute('disabled', 'disabled')
-            this._shadowRoot.querySelector('#image_opt_embed').style.color = '#666'
+            ;/** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_opt_embed')).setAttribute('title', data[1])
+            ;/** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_opt_embed')).setAttribute('disabled', 'disabled')
+            ;/** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_opt_embed')).style.color = '#666'
           }
         }
         break
@@ -133,47 +133,46 @@ export class SeImgPropDialog extends HTMLElement {
         this.$cancelBtn.textContent = newValue
         break
       case 'config-image_props':
-        node = this._shadowRoot.querySelector('#svginfo_image_props')
+        node = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('#svginfo_image_props'))
         node.textContent = newValue
         break
       case 'config-doc_title':
-        node = this._shadowRoot.querySelector('#svginfo_title')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_title'))
         node.textContent = newValue
         break
       case 'config-doc_dims':
-        node = this._shadowRoot.querySelector('#svginfo_dim')
+        node = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('#svginfo_dim'))
         node.textContent = newValue
         break
       case 'common-width':
-        node = this._shadowRoot.querySelector('#svginfo_width')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_width'))
         node.textContent = newValue
         break
       case 'common-height':
-        node = this._shadowRoot.querySelector('#svginfo_height')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_height'))
         node.textContent = newValue
         break
       case 'config-select_predefined':
-        node = this._shadowRoot.querySelector('#selectedPredefined')
+        node = /** @type {HTMLOptionElement} */ (this._shadowRoot.querySelector('#selectedPredefined'))
         node.textContent = newValue
         break
       case 'tools-fit-to-content':
-        node = this._shadowRoot.querySelector('#fitToContent')
+        node = /** @type {HTMLOptionElement} */ (this._shadowRoot.querySelector('#fitToContent'))
         node.textContent = newValue
         break
       case 'config-included_images':
-        node = this._shadowRoot.querySelector('#includedImages')
+        node = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('#includedImages'))
         node.textContent = newValue
         break
       case 'config-image_opt_embed':
-        node = this._shadowRoot.querySelector('#image_opt_embed')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_opt_embed'))
         node.textContent = newValue
         break
       case 'config-image_opt_ref':
-        node = this._shadowRoot.querySelector('#image_opt_ref')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_opt_ref'))
         node.textContent = newValue
         break
       default:
-        super.attributeChangedCallback(name, oldValue, newValue)
         break
     }
   }
@@ -304,12 +303,12 @@ export class SeImgPropDialog extends HTMLElement {
       let saveOpt = ''
       const w = this.$canvasWidth.value
       const h = this.$canvasHeight.value
-      if (w !== 'fit' && !ownerEditor(this).svgCanvas.isValidUnit('width', w)) {
+      if (w !== 'fit' && !requireOwnerEditor(this).svgCanvas.isValidUnit('width', w)) {
         this.$canvasWidth.parentElement.classList.add('error')
       } else {
         this.$canvasWidth.parentElement.classList.remove('error')
       }
-      if (h !== 'fit' && !ownerEditor(this).svgCanvas.isValidUnit('height', h)) {
+      if (h !== 'fit' && !requireOwnerEditor(this).svgCanvas.isValidUnit('height', h)) {
         this.$canvasHeight.parentElement.classList.add('error')
       } else {
         this.$canvasHeight.parentElement.classList.remove('error')

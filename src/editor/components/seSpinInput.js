@@ -4,7 +4,7 @@ import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { attachIdleBlur } from './fieldAutoBlur.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 
 // Press-and-hold auto-repeat: first repeat after HOLD_DELAY_MS, then every
 // HOLD_INTERVAL_MS until the mouse is released or the limit is reached.
@@ -151,14 +151,14 @@ export class SESpinInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('.field')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$label = this._shadowRoot.querySelector('.top-label')
+    this.$div = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.field'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('.top-label'))
     this.$event = new CustomEvent('change')
-    this.$input = this._shadowRoot.querySelector('.num-input')
-    this.$upBtn = this._shadowRoot.querySelector('.spin-up')
-    this.$downBtn = this._shadowRoot.querySelector('.spin-down')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.$input = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('.num-input'))
+    this.$upBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.spin-up'))
+    this.$downBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.spin-down'))
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
 
     // Matches the previous spin-box template's hardcoded defaults
     // (min="1" step="1") for consumers that don't set their own
@@ -192,7 +192,7 @@ export class SESpinInput extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -240,6 +240,9 @@ export class SESpinInput extends HTMLElement {
     }
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
@@ -262,6 +265,10 @@ export class SESpinInput extends HTMLElement {
   }
 
   // Mirrors NumberSpinBox.parseValue: whole steps parse as integers, else float.
+  /**
+* @param {string} value
+* @param {number} precision
+*/
   _parseValue (value, precision) {
     const parsed = precision === 0 ? parseInt(value) : parseFloat(value)
     return isNaN(parsed) ? 0 : parsed
@@ -328,12 +335,18 @@ export class SESpinInput extends HTMLElement {
     }, { passive: false })
   }
 
-  /** Shift steps by 10, Ctrl/Cmd by a tenth. */
+  /**
+* Shift steps by 10, Ctrl/Cmd by a tenth.
+* @param {WheelEvent} e
+*/
   _modifierScale (e) {
     if (e.shiftKey) return 10
     return e.ctrlKey || e.metaKey ? 0.1 : 1
   }
 
+  /**
+* @param {PointerEvent} e
+*/
   _onScrubDown (e) {
     // Touch would fight page scrolling; the text box itself never scrubs.
     if (e.button !== 0 || e.pointerType === 'touch' || this._scrub || !this._scrubEnabled()) return
@@ -356,6 +369,9 @@ export class SESpinInput extends HTMLElement {
     window.addEventListener('keydown', this._onScrubKey, true)
   }
 
+  /**
+* @param {{ pointerId: number; clientX: number; }} e
+*/
   _onScrubMove (e) {
     const s = this._scrub
     if (!s || e.pointerId !== s.id) return
@@ -378,6 +394,9 @@ export class SESpinInput extends HTMLElement {
   }
 
   // Escape during the drag puts the original value back and rolls the drawing back with it.
+  /**
+* @param {{ key: string; preventDefault: () => void; stopPropagation: () => void; }} e
+*/
   _onScrubKey (e) {
     if (e.key !== 'Escape' || !this._scrub) return
     e.preventDefault()
@@ -416,6 +435,10 @@ export class SESpinInput extends HTMLElement {
   // One step now, then keep stepping while the button stays pressed. Stops on
   // mouseup anywhere (the pointer may have left the button) or once the
   // button's limit disables it.
+  /**
+* @param {number} direction
+* @param {HTMLButtonElement} btn
+*/
   _startHold (direction, btn) {
     this._stopHold()
     this._step(direction)
@@ -539,14 +562,14 @@ export class SESpinInput extends HTMLElement {
     })
     this.$input.addEventListener('keyup', (e) => {
       e.preventDefault()
-      if (!isNaN(e.target.value)) {
-        this.value = e.target.value
+      if (!isNaN(/** @type {HTMLInputElement} */ (e.target).value)) {
+        this.value = /** @type {HTMLInputElement} */ (e.target).value
         this.dispatchEvent(this.$event)
       }
     })
     this.$input.addEventListener('change', (e) => {
       e.preventDefault()
-      this.value = e.target.value
+      this.value = /** @type {HTMLInputElement} */ (e.target).value
       this.dispatchEvent(this.$event)
     })
     // Release focus after a short idle period so tool shortcuts / Delete reach

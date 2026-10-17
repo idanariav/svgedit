@@ -21,12 +21,16 @@ import { insertImageFromHref } from '../../dialogs/insertImage.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const name = 'opensave'
+/**
+* @type {FileSystemFileHandle | null | undefined}
+*/
 let handle = null
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, 'translation', translationModule.default, true, true)
@@ -38,7 +42,7 @@ export default {
   async init (_S) {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
     /**
     * @param {Event} e
@@ -54,13 +58,13 @@ export default {
       // only import files
       if (e.dataTransfer && !e.dataTransfer.types?.includes('Files')) return
 
-      $id('se-prompt-dialog').title = this.i18next.t('notification.loadingImage')
-      $id('se-prompt-dialog').setAttribute('close', false)
+      $req('se-prompt-dialog').title = this.i18next.t('notification.loadingImage')
+      $req('se-prompt-dialog').setAttribute('close', false)
       e.stopPropagation()
       e.preventDefault()
-      const file = (e.type === 'drop') ? e.dataTransfer.files[0] : e.currentTarget.files[0]
+      const file = (e.type === 'drop') ? e.dataTransfer.files[0] : /** @type {HTMLInputElement} */ (e.currentTarget).files[0]
       if (!file) {
-        $id('se-prompt-dialog').setAttribute('close', true)
+        $req('se-prompt-dialog').setAttribute('close', true)
         resetFileInput()
         return
       }
@@ -81,7 +85,7 @@ export default {
           this.svgCanvas.alignSelectedElements('c', 'page')
           // highlight imported element, otherwise we get strange empty selectbox
           this.svgCanvas.selectOnly([newElement])
-          $id('se-prompt-dialog').setAttribute('close', true)
+          $req('se-prompt-dialog').setAttribute('close', true)
           resetFileInput()
         }
         reader.readAsText(file)
@@ -90,7 +94,7 @@ export default {
         reader = new FileReader()
         reader.onloadend = ({ target: { result } }) => {
           insertImageFromHref(svgEditor, result)
-          $id('se-prompt-dialog').setAttribute('close', true)
+          $req('se-prompt-dialog').setAttribute('close', true)
           resetFileInput()
         }
         reader.readAsDataURL(file)
@@ -152,7 +156,7 @@ export default {
         }
       }
     }
-    const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
+    const b64toBlob = (/** @type {string} */ b64Data, contentType = '', sliceSize = 512) => {
       const byteCharacters = atob(b64Data)
       const byteArrays = []
       for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
@@ -172,7 +176,7 @@ export default {
      *
      * @returns {void}
      */
-    const clickSave = async function (type) {
+    const clickSave = async function (/** @type {string} */ type) {
       const $editorDialog = $id('se-svg-editor-dialog')
       const editingsource = $editorDialog.getAttribute('dialog') === 'open'
       if (editingsource) {
@@ -230,18 +234,18 @@ export default {
       callback () {
         const buttonTemplate = `
         <se-menu-item id="tool_clear" command="tool_clear" label="opensave.new_doc" shortcut="N" src="new.svg"></se-menu-item>`
-        svgCanvas.insertChildAtIndex($id('main_button'), buttonTemplate, 0)
+        svgCanvas.insertChildAtIndex($req('main_button'), buttonTemplate, 0)
         const openButtonTemplate = '<se-menu-item id="tool_open" command="tool_open" label="opensave.open_image_doc" src="open.svg"></se-menu-item>'
-        svgCanvas.insertChildAtIndex($id('main_button'), openButtonTemplate, 1)
+        svgCanvas.insertChildAtIndex($req('main_button'), openButtonTemplate, 1)
         const saveButtonTemplate = '<se-menu-item id="tool_save" command="tool_save" label="opensave.save_doc" shortcut="S" src="saveImg.svg"></se-menu-item>'
-        svgCanvas.insertChildAtIndex($id('main_button'), saveButtonTemplate, 2)
+        svgCanvas.insertChildAtIndex($req('main_button'), saveButtonTemplate, 2)
         const saveAsButtonTemplate = '<se-menu-item id="tool_save_as" command="tool_save_as" label="opensave.save_as_doc" src="saveImg.svg"></se-menu-item>'
-        svgCanvas.insertChildAtIndex($id('main_button'), saveAsButtonTemplate, 3)
+        svgCanvas.insertChildAtIndex($req('main_button'), saveAsButtonTemplate, 3)
         const importButtonTemplate = '<se-menu-item id="tool_import" command="tool_import" label="tools.import_doc" src="importImg.svg"></se-menu-item>'
-        svgCanvas.insertChildAtIndex($id('main_button'), importButtonTemplate, 4)
+        svgCanvas.insertChildAtIndex($req('main_button'), importButtonTemplate, 4)
 
         // The menu entries are views of these commands (`command=` above).
-        const register = (id, label, run, extra = {}) =>
+        const register = (/** @type {string} */ id, /** @type {string} */ label, /** @type {{ (): Promise<void>; (): void; (): void; (): void; (): void; }} */ run, extra = {}) =>
           this.commands.register({ id, label, group: 'Tools', pd: true, run, ...extra })
         register('tool_clear', 'opensave.new_doc', () => clickClear.call(this), { group: 'File' })
         register('tool_open', 'opensave.open_image_doc', () => clickOpen.call(this), { interactive: true })
@@ -250,7 +254,7 @@ export default {
         // tool_import pressed with shiftKey will not scale the SVG: the menu entry's
         // click tells us whether shift was held; any other route (hotkey, commands.run) scales.
         let shiftHeld = false
-        $id('tool_import').addEventListener('click', (ev) => { shiftHeld = ev.shiftKey }, { capture: true })
+        $req('tool_import').addEventListener('click', (ev) => { shiftHeld = ev.shiftKey }, { capture: true })
         register('tool_import', 'tools.import_doc', () => {
           imgImport.shiftKey = shiftHeld
           shiftHeld = false

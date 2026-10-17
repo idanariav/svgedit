@@ -10,7 +10,7 @@
 export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
   let current = Math.min(max, Math.max(min, value))
 
-  const el = document.createElement('div')
+  const el = /** @type {HTMLDivElement & {getValue():number, setValue(n:number):void}} */ (document.createElement('div'))
   el.className = 'cp-slider'
   el.innerHTML = `
     <span class="cp-slider-label">${label}</span>
@@ -21,10 +21,10 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     <span class="cp-slider-readout">${current}${unit}</span>
   `
 
-  const track = el.querySelector('.cp-slider-track')
-  const fill = el.querySelector('.cp-slider-fill')
-  const thumb = el.querySelector('.cp-slider-thumb')
-  const readout = el.querySelector('.cp-slider-readout')
+  const track = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-track'))
+  const fill = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-fill'))
+  const thumb = /** @type {HTMLDivElement} */ (el.querySelector('.cp-slider-thumb'))
+  const readout = /** @type {HTMLSpanElement} */ (el.querySelector('.cp-slider-readout'))
 
   function updateVisuals () {
     const pct = ((current - min) / (max - min)) * 100
@@ -33,7 +33,10 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     readout.textContent = `${current}${unit}`
   }
 
-  function setFromPointer (e) {
+  /**
+* @param {Event} e
+*/
+  function setFromPointer (/** @type {MouseEvent} */ e) {
     const rect = track.getBoundingClientRect()
     const raw = (e.clientX - rect.left) / rect.width
     const clamped = Math.min(1, Math.max(0, raw))
@@ -45,7 +48,7 @@ export function createSlider ({ label, min, max, value, unit = '', step = 1 }) {
     }
   }
 
-  thumb.addEventListener('pointerdown', (e) => {
+  thumb.addEventListener('pointerdown', (/** @type {PointerEvent} */ e) => {
     e.preventDefault()
     thumb.setPointerCapture(e.pointerId)
     thumb.addEventListener('pointermove', setFromPointer)

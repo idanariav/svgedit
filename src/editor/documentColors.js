@@ -44,7 +44,7 @@ export const collectDocumentColors = (root, limit = 5) => {
     pos++
     if (el.closest('defs')) return
     for (const prop of ['fill', 'stroke']) {
-      for (const v of [el.getAttribute(prop), el.style?.getPropertyValue(prop)]) {
+      for (const v of [el.getAttribute(prop), /** @type {HTMLElement} */ (el).style?.getPropertyValue(prop)]) {
         const c = normalizeColor(v)
         if (c) lastSeen.set(c, pos)
       }

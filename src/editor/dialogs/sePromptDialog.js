@@ -30,7 +30,7 @@ export class SePromptDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     switch (name) {
       case 'title':
         if (this.dialog.opened) {

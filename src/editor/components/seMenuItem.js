@@ -2,7 +2,7 @@
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 import { formatShortcutAttr } from '../Hotkeys.js'
 import { onCommandClick } from './commandBinding.js'
 const template = document.createElement('template')
@@ -69,13 +69,15 @@ export class SeMenuItem extends HTMLElement {
     */
   constructor () {
     super()
+    /** @type {(() => void) | undefined} the `command=` click listener, made once */
+    this._onCommandClick = undefined
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$label = this._shadowRoot.querySelector('.item-label')
-    this.$shortcut = this._shadowRoot.querySelector('.item-shortcut')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$label = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.item-label'))
+    this.$shortcut = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.item-shortcut'))
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
   }
 
   /**
@@ -93,7 +95,7 @@ export class SeMenuItem extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     let shortcut = ''
     if (oldValue === newValue) return
     switch (name) {
@@ -101,7 +103,7 @@ export class SeMenuItem extends HTMLElement {
         this._loadIcon(newValue)
         break
       case 'label':
-        shortcut = this.getAttribute('shortcut')
+        shortcut = this.getAttribute('shortcut') ?? ''
         this.$label.textContent = t(newValue)
         this.$shortcut.textContent = formatShortcutAttr(shortcut)
         break
@@ -111,6 +113,9 @@ export class SeMenuItem extends HTMLElement {
     }
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`

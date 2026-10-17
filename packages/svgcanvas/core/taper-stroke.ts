@@ -216,7 +216,7 @@ export interface TaperStrokeApi {
   /** Draw a path with a width profile from its stored centerline, without history; false if nothing could be drawn. */
   drawWidthProfile(elem: Element, points: Array<[number, number, number]>): boolean
   /** Give the selected strokes a width profile as one undo step; returns the elements that took it. */
-  applyWidthProfile(points: Array<[number, number, number]>): Element[]
+  applyWidthProfile(points: WidthPoint[]): Element[]
   applyTaperStroke(opts?: { start?: number, end?: number }): void
   removeTaperStroke(): void
   getTaperParams(): { start: number, end: number } | null

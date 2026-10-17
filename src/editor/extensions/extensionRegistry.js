@@ -11,6 +11,7 @@
 
 const modules = import.meta.glob('./*/ext-*.js', { eager: true })
 
+/** @type {Object<string, any>} */
 const registry = {}
 for (const [path, mod] of Object.entries(modules)) {
   // './ext-shapes/ext-shapes.js' -> 'ext-shapes'

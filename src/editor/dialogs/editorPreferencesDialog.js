@@ -17,21 +17,21 @@ export class SeEditPrefsDialog extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#svg_prefs')
-    this.$saveBtn = this._shadowRoot.querySelector('#tool_prefs_save')
-    this.$cancelBtn = this._shadowRoot.querySelector('#tool_prefs_cancel')
-    this.$showRulers = this._shadowRoot.querySelector('#show_rulers')
-    this.$baseUnit = this._shadowRoot.querySelector('#base_unit')
-    this.$theme = this._shadowRoot.querySelector('#theme_select')
-    this.$scrub = this._shadowRoot.querySelector('#scrub_fields')
-    this.$selectSame = this._shadowRoot.querySelector('#select_same_tolerance')
-    this.$pencilStabilization = this._shadowRoot.querySelector('#pencil_stabilization')
-    this.$pencilFidelity = this._shadowRoot.querySelector('#pencil_fidelity')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#svg_prefs'))
+    this.$saveBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_prefs_save'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_prefs_cancel'))
+    this.$showRulers = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#show_rulers'))
+    this.$baseUnit = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#base_unit'))
+    this.$theme = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#theme_select'))
+    this.$scrub = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#scrub_fields'))
+    this.$selectSame = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#select_same_tolerance'))
+    this.$pencilStabilization = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#pencil_stabilization'))
+    this.$pencilFidelity = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#pencil_fidelity'))
   }
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -63,7 +63,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     let node
     switch (name) {
@@ -94,42 +94,41 @@ export class SeEditPrefsDialog extends HTMLElement {
         this.$cancelBtn.textContent = newValue
         break
       case 'config-editor_prefs':
-        node = this._shadowRoot.querySelector('#svginfo_editor_prefs')
+        node = /** @type {HTMLHeadingElement} */ (this._shadowRoot.querySelector('#svginfo_editor_prefs'))
         node.textContent = newValue
         break
       case 'theme':
         this.$theme.value = newValue
         break
       case 'config-theme':
-        node = this._shadowRoot.querySelector('#svginfo_theme')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_theme'))
         node.textContent = newValue
         break
       case 'config-show_rulers':
-        node = this._shadowRoot.querySelector('#svginfo_rulers_onoff')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_rulers_onoff'))
         node.textContent = newValue
         break
       case 'config-base_unit':
-        node = this._shadowRoot.querySelector('#svginfo_unit')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_unit'))
         node.textContent = newValue
         break
       case 'config-select_same_tolerance':
-        node = this._shadowRoot.querySelector('#svginfo_select_same')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_select_same'))
         node.textContent = newValue
         break
       case 'config-pencil_stabilization':
-        node = this._shadowRoot.querySelector('#svginfo_pencil_stabilization')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_pencil_stabilization'))
         node.textContent = newValue
         break
       case 'config-pencil_fidelity':
-        node = this._shadowRoot.querySelector('#svginfo_pencil_fidelity')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_pencil_fidelity'))
         node.textContent = newValue
         break
       case 'config-scrub_fields':
-        node = this._shadowRoot.querySelector('#svginfo_scrub')
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#svginfo_scrub'))
         node.textContent = newValue
         break
       default:
-        super.attributeChangedCallback(name, oldValue, newValue)
         break
     }
   }

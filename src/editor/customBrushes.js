@@ -36,7 +36,7 @@ export const loadBrushSlots = () => {
   }
 }
 
-const writeBrushSlots = (slots) => {
+const writeBrushSlots = (/** @type {Object<number, Object>} */ slots) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     adapter.setBrushes?.(slots)

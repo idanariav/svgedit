@@ -10,10 +10,11 @@
 
 const name = 'grid'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -26,8 +27,8 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, NS } = svgCanvas
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const { $id, $req, NS } = svgCanvas
+    const svgdoc = $req('svgcanvas').ownerDocument
     const { assignAttributes } = svgCanvas
     const hcanvas = document.createElement('canvas')
     const canvBG = $id('canvasBackground')
@@ -83,7 +84,7 @@ export default {
     assignAttributes(gridClipRect, { x: 0, y: 0, width: 100, height: 100 })
     gridClip.append(gridClipRect)
     gridDefs.append(gridClip)
-    $id('canvasGrid').appendChild(gridDefs)
+    $req('canvasGrid').appendChild(gridDefs)
 
     // grid-box (used by the square pattern grid)
     const gridBox = svgdoc.createElementNS(NS.SVG, 'rect')
@@ -97,7 +98,7 @@ export default {
       fill: `url(#${gridPatternId})`,
       style: 'pointer-events: none; display:visible;'
     })
-    $id('canvasGrid').appendChild(gridBox)
+    $req('canvasGrid').appendChild(gridBox)
 
     // grid-lines group (used by the non-square line grids)
     const gridLines = svgdoc.createElementNS(NS.SVG, 'g')
@@ -106,22 +107,22 @@ export default {
       'clip-path': `url(#${gridClipId})`,
       style: 'pointer-events: none;'
     })
-    $id('canvasGrid').appendChild(gridLines)
+    $req('canvasGrid').appendChild(gridLines)
 
     /**
      * Build the line segments for the active non-square grid shape.
      * Coordinates are in the canvasGrid pixel space (canvas resolution × zoom).
      * @param {string} shape
-     * @param {Float} w canvas width in px
-     * @param {Float} h canvas height in px
-     * @param {Float} d line spacing in px
-     * @returns {Array<[Float,Float,Float,Float]>}
+     * @param {number} w canvas width in px
+     * @param {number} h canvas height in px
+     * @param {number} d line spacing in px
+     * @returns {Array<[number,number,number,number]>}
      */
     const buildShapeLines = (shape, w, h, d) => {
       const lines = []
       // Parallel lines at `angleDeg`, spaced `d`, long enough to cross the
       // whole canvas (clipped to it by #gridclip).
-      const parallel = (angleDeg) => {
+      const parallel = (/** @type {number} */ angleDeg) => {
         const a = (angleDeg * Math.PI) / 180
         const dir = { x: Math.cos(a), y: Math.sin(a) }
         const n = { x: -Math.sin(a), y: Math.cos(a) }
@@ -145,7 +146,7 @@ export default {
       }
       // A vertical + horizontal line at each fractional position (composition
       // guide shapes: thirds/golden/center).
-      const fractionalCross = (fractions) => {
+      const fractionalCross = (/** @type {number[]} */ fractions) => {
         for (const f of fractions) {
           lines.push([w * f, 0, w * f, h])
           lines.push([0, h * f, w, h * f])
@@ -195,7 +196,7 @@ export default {
     /**
      * Render the active non-square grid as <line> elements.
      * @param {string} shape
-     * @param {Float} zoom
+     * @param {number} zoom
      * @returns {void}
      */
     const updateLineGrid = (shape, zoom) => {
@@ -231,7 +232,7 @@ export default {
 
     /**
      * Render the classic square grid as a repeating canvas→PNG pattern tile.
-     * @param {Float} zoom
+     * @param {number} zoom
      * @returns {void}
      */
     const updateSquareGrid = (zoom) => {
@@ -286,7 +287,7 @@ export default {
     /**
      * Render the grid for the active shape, toggling between the square pattern
      * tile and the explicit line grids used by every other shape.
-     * @param {Float} zoom
+     * @param {number} zoom
      * @returns {void}
      */
     const updateGrid = (zoom) => {
@@ -312,7 +313,7 @@ export default {
       if (showGrid) {
         updateGrid(svgCanvas.getZoom())
       }
-      $id('canvasGrid').style.display = (showGrid) ? 'block' : 'none'
+      $req('canvasGrid').style.display = (showGrid) ? 'block' : 'none'
     }
     // Expose so the editor can refresh the grid after a canvas resize, which
     // changes the extent the non-square line grids are drawn over.
@@ -329,8 +330,8 @@ export default {
         buttonTemplate.innerHTML = `
           <se-grid-settings id="grid_settings" title="${title}" src="grid.svg"></se-grid-settings>
         `
-        $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
-        $id('grid_settings').addEventListener('change', () => {
+        $req('editor_panel').append(buttonTemplate.content.cloneNode(true))
+        $req('grid_settings').addEventListener('change', () => {
           gridUpdate()
         })
         if (curConfig.showGrid) {

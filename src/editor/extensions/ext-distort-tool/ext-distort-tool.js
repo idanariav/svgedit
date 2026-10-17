@@ -36,9 +36,10 @@ export const CLICK_PX = 3
 const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -58,9 +59,9 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /**
      * The shape being distorted: its element, the frame the unit corners refer to (its source box, local
@@ -84,15 +85,18 @@ export default {
     /** @type {?{i: number, corners0: Array<{x: number, y: number}>, press: {x: number, y: number}, moved: boolean}} */
     let drag = null
     let hover = -1
+    /**
+* @type {import("@svgedit/svgcanvas").ToolContext | null}
+*/
     let toolCtx = null
 
-    const matrixOf = (el) => {
+    const matrixOf = (/** @type {Element} */ el) => {
       const tlist = getTransformList(el)
       return tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
     }
 
     /** @returns {?Target} */
-    const targetFor = (el) => {
+    const targetFor = (/** @type {Element | null | undefined} */ el) => {
       if (!el || !svgCanvas.canApplyLiveEffect(el)) return null
       const box = svgCanvas.getLiveEffectsBox(el)
       if (!box) return null
@@ -118,13 +122,13 @@ export default {
     }
 
     /** The corners in the layer's coordinates (document units). */
-    const docCorners = (t) => t.corners.map((c) => apply(t.matrix, { x: t.frame.x + c.x * t.frame.w, y: t.frame.y + c.y * t.frame.h }))
+    const docCorners = (t) => t.corners.map((/** @type {{ x: number; y: number; }} */ c) => apply(t.matrix, { x: t.frame.x + c.x * t.frame.w, y: t.frame.y + c.y * t.frame.h }))
 
-    const hitCorner = (t, ev, zoom) => {
+    const hitCorner = (/** @type {{ el: Element; frame: { x: number; y: number; w: number; h: number; }; stack: { name: string; params: Object; }[]; index: number; name: string; corners: { x: number; y: number; }[]; matrix: { a: number; b: number; c: number; d: number; e: number; f: number; }; inverse: { a: number; b: number; c: number; d: number; e: number; f: number; }; }} */ t, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev, /** @type {number} */ zoom) => {
       const grab = GRAB_PX / zoom
       let best = -1
       let bestDist = grab
-      docCorners(t).forEach((p, i) => {
+      docCorners(t).forEach((/** @type {{ x: number; y: number; }} */ p, /** @type {number} */ i) => {
         const dist = Math.hypot(p.x - ev.rawX, p.y - ev.rawY)
         if (dist <= bestDist) {
           best = i
@@ -142,7 +146,7 @@ export default {
 
     // ---- overlay ---------------------------------------------------------------
 
-    const draw = (ctx) => {
+    const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
       const t = target
       if (!t) return
@@ -158,7 +162,7 @@ export default {
         mk('polygon', { points: poly(frame), fill: 'none', stroke: '#8a8a8a', 'stroke-width': 1, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }),
         mk('polygon', { points: poly(pts), fill: 'none', stroke: INK, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' })
       )
-      pts.forEach((p, i) => {
+      pts.forEach((/** @type {{ x: number; y: number; }} */ p, /** @type {number} */ i) => {
         g.append(mk('rect', {
           x: p.x - s,
           y: p.y - s,
@@ -205,7 +209,7 @@ export default {
       return true
     }
 
-    const finish = (el) => {
+    const finish = (/** @type {Element | null | undefined} */ el) => {
       if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
       svgCanvas.call('changed', [el])
     }
@@ -327,7 +331,7 @@ export default {
         const title = `${name}:buttons.0.title`
         // Beside the other path-reshaping tools: after the Width tool.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_distort" command="tool_distort" title="${title}" src="distort-tool.svg"></se-button>`,
           5
         )

@@ -67,11 +67,11 @@ export class SeParamsDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('dialog')
-    this.$title = this._shadowRoot.querySelector('#pd_title')
-    this.$fields = this._shadowRoot.querySelector('#pd_fields')
-    this.$cancel = this._shadowRoot.querySelector('#pd_cancel')
-    this.$ok = this._shadowRoot.querySelector('#pd_ok')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('dialog'))
+    this.$title = /** @type {HTMLHeadingElement} */ (this._shadowRoot.querySelector('#pd_title'))
+    this.$fields = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#pd_fields'))
+    this.$cancel = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#pd_cancel'))
+    this.$ok = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#pd_ok'))
     /** @type {ParamsOptions|null} */
     this._opts = null
     /** @type {ParamField[]} */

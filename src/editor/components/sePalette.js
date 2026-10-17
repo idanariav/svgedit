@@ -2,7 +2,7 @@
 /* eslint-disable max-len */
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { getUserDataAdapter } from '../userDataAdapter.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 // Curated default: "none", five neutrals, then twelve hues in three tones (mid, deep,
@@ -52,7 +52,7 @@ const loadOverrides = () => {
   }
 }
 
-const saveOverrides = (overrides) => {
+const saveOverrides = (/** @type {{}} */ overrides) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     // Always hand the host the full overrides map (including `{}` on reset);
@@ -88,7 +88,7 @@ const gradientElFromXml = (xml) => {
 }
 
 // Build a CSS gradient string so a swatch can preview the stored gradient.
-const gradientToCss = (el) => {
+const gradientToCss = (/** @type {Element | null} */ el) => {
   if (!el) return null
   const stops = Array.from(el.querySelectorAll('stop')).map((stop) => {
     const offset = parseFloat(stop.getAttribute('offset') || '0')
@@ -407,20 +407,19 @@ export class SEPalette extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$holder = this._shadowRoot.getElementById('palette_holder')
-    this.$strip = this._shadowRoot.getElementById('js-se-palette')
-    this.$doc = this._shadowRoot.getElementById('js-se-doc')
-    this.$recent = this._shadowRoot.getElementById('js-se-recent')
+    this.$holder = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('palette_holder'))
+    this.$strip = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('js-se-palette'))
+    this.$doc = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('js-se-doc'))
+    this.$recent = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('js-se-recent'))
     // Narrow panes: the strip scrolls; let the plain mouse wheel do it.
     this.$strip.addEventListener('wheel', (e) => {
       if (this.$strip.scrollWidth <= this.$strip.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
       this.$strip.scrollLeft += e.deltaY
       e.preventDefault()
     }, { passive: false })
-    this.$editBtn = this._shadowRoot.querySelector('button.palette_edit_btn')
-    this.$targetBtn = this._shadowRoot.querySelector('button.palette_target_btn')
-    this.$resetBtn = this._shadowRoot.querySelector('.reset_btn')
-
+    this.$editBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('button.palette_edit_btn'))
+    this.$targetBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('button.palette_target_btn'))
+    this.$resetBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.reset_btn'))
     this._overrides = loadOverrides()
     this._editMode = false
     this._target = 'fill'
@@ -449,7 +448,7 @@ export class SEPalette extends HTMLElement {
    * @param {any} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.setAttribute('ui-palette_info', i18next.t('ui.palette_info'))
   }
 
@@ -457,7 +456,7 @@ export class SEPalette extends HTMLElement {
     return ['ui-palette_info']
   }
 
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (name === 'ui-palette_info') {
       this._shadowRoot.getElementById('palette_holder').setAttribute('title', newValue)
     }
@@ -477,25 +476,38 @@ export class SEPalette extends HTMLElement {
   }
 
   // ── Palette state ────────────────────────────────────────────────────────
+  /**
+* @param {number} i
+*/
   getColor (i) {
     const override = this._overrides[i]
     return override ?? DEFAULT_PALETTE[i]
   }
 
+  /**
+* @param {number} i
+*/
   isCustomised (i) {
     return Object.prototype.hasOwnProperty.call(this._overrides, i)
   }
 
+  /**
+* @param {number} i
+*/
   isRemoved (i) {
     const removed = this._overrides[REMOVED_KEY]
     return Array.isArray(removed) && removed.includes(i)
   }
 
+  /**
+* @param {number} i
+* @param {boolean} removed
+*/
   _setRemoved (i, removed) {
     if (i === KEEP_INDEX) return
-    const list = (this._overrides[REMOVED_KEY] || []).filter((n) => n !== i)
+    const list = (this._overrides[REMOVED_KEY] || []).filter((/** @type {number} */ n) => n !== i)
     if (removed) list.push(i)
-    if (list.length) this._overrides[REMOVED_KEY] = list.sort((a, b) => a - b)
+    if (list.length) this._overrides[REMOVED_KEY] = list.sort((/** @type {number} */ a, /** @type {number} */ b) => a - b)
     else delete this._overrides[REMOVED_KEY]
     saveOverrides(this._overrides)
     this.renderSwatches()
@@ -542,6 +554,9 @@ export class SEPalette extends HTMLElement {
     this.$doc.classList.toggle('has-colors', list.length > 0)
   }
 
+  /**
+* @param {number} i
+*/
   _buildSwatch (i) {
     const color = this.getColor(i)
     const swatch = document.createElement('div')
@@ -597,6 +612,9 @@ export class SEPalette extends HTMLElement {
     return swatch
   }
 
+  /**
+* @param {string | number} i
+*/
   _revert (i) {
     if (!this.isCustomised(i)) return
     delete this._overrides[i]
@@ -612,6 +630,10 @@ export class SEPalette extends HTMLElement {
     this.$editBtn.setAttribute('aria-pressed', String(this._editMode))
   }
 
+  /**
+* @param {Event} evt
+* @param {string | number} i
+*/
   _onSwatchClick (evt, i) {
     evt.preventDefault()
     if (this.isRemoved(i)) {
@@ -641,12 +663,19 @@ export class SEPalette extends HTMLElement {
     }))
   }
 
+  /**
+* @param {PointerEvent} evt
+* @param {string | number} i
+*/
   _onSwatchContextMenu (evt, i) {
     if (!this._editMode || this.isRemoved(i)) return
     evt.preventDefault()
     this._revert(i)
   }
 
+  /**
+* @param {string | number} i
+*/
   _openEditDialog (i) {
     const root = closestRoot(this) // keep the dialog within this editor (see domScope.js)
     root.querySelector('se-color-dialog')?.remove()
@@ -655,9 +684,9 @@ export class SEPalette extends HTMLElement {
     // tab (solid / linear / radial) and gradients stay editable.
     dialog.paint = paintFromOverride(this.getColor(i))
     dialog.type = 'fill'
-    dialog.i18next = ownerEditor(this).i18next
+    dialog.i18next = requireOwnerEditor(this).i18next
     ;(root.body ?? root).appendChild(dialog)
-    dialog.addEventListener('change', (evt) => {
+    dialog.addEventListener('change', (/** @type {CustomEvent} */ evt) => {
       const paint = evt.detail.paint
       if (paint?.type === 'solidColor' && paint.solidColor) {
         this._overrides[i] = '#' + paint.solidColor

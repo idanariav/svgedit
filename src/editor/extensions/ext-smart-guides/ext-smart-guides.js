@@ -25,9 +25,10 @@ const name = 'smart-guides'
 const GUIDE_COLOR = '#e11d48'
 const TICK = 4 // spacing-segment end tick half-length, screen px
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -40,8 +41,8 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, NS, assignAttributes } = svgCanvas
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const { $id, $req, NS, assignAttributes } = svgCanvas
+    const svgdoc = $req('svgcanvas').ownerDocument
     const svgroot = svgCanvas.getSvgRoot()
 
     // Seed the config flag from the persisted pref (default: on).
@@ -56,7 +57,7 @@ export default {
     })
     svgroot.append(overlay)
 
-    const addLine = (frag, x1, y1, x2, y2, dash) => {
+    const addLine = (/** @type {DocumentFragment} */ frag, /** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string | undefined} */ dash) => {
       const ln = svgdoc.createElementNS(NS.SVG, 'line')
       assignAttributes(ln, {
         x1, y1, x2, y2, stroke: GUIDE_COLOR, 'stroke-width': 1, ...(dash ? { 'stroke-dasharray': dash } : {})
@@ -69,7 +70,7 @@ export default {
     // than just "somewhere along this line" (relevant on curvy paths, where
     // several nodes can sit near the same line).
     const NODE_TARGET_RING_RADIUS = 7
-    const addNodeTargetRing = (frag, x, y) => {
+    const addNodeTargetRing = (/** @type {DocumentFragment} */ frag, /** @type {number} */ x, /** @type {number} */ y) => {
       const ring = svgdoc.createElementNS(NS.SVG, 'circle')
       assignAttributes(ring, {
         cx: x, cy: y, r: NODE_TARGET_RING_RADIUS, fill: 'none', stroke: GUIDE_COLOR, 'stroke-width': 1.5
@@ -118,7 +119,7 @@ export default {
       }
 
       // Equal-spacing gap segments with end ticks.
-      const drawSpacing = (spacing, vertical) => {
+      const drawSpacing = (/** @type {Object} */ spacing, /** @type {boolean} */ vertical) => {
         for (const seg of spacing.segments) {
           const x1 = seg.x1 * zoom
           const y1 = seg.y1 * zoom
@@ -144,7 +145,7 @@ export default {
      * Draw the snap state of a point being drawn (core/draw-snap.js): a ring on the anchor / box corner /
      * midpoint / centre it snapped to, or a guide line along each box edge or centre line it snapped to,
      * from the snapped point out to the object's extent. `null` clears the overlay.
-     * @param {?{at: {x: Float, y: Float}, point: ?{x: Float, y: Float},
+     * @param {?{at: {x: number, y: number}, point: ?{x: number, y: number},
      *   xLine: ?{pos: Float, lo: Float, hi: Float}, yLine: ?{pos: Float, lo: Float, hi: Float}}} payload
      * @returns {void}
      */
@@ -181,7 +182,7 @@ export default {
      * see `@svgedit/svgcanvas/core/path-node-guides.js`. Called from core
      * `path-actions.js` on every pathedit drag move; `null` (or a payload
      * with no matches) clears the overlay.
-     * @param {?{x: ?Object, y: ?Object, from: {x: Float, y: Float}}} payload
+     * @param {?{x: ?Object, y: ?Object, from: {x: number, y: number}}} payload
      * @returns {void}
      */
     svgCanvas.showPathNodeGuides = (payload) => {
@@ -228,7 +229,7 @@ export default {
         buttonTemplate.innerHTML = `
           <se-button id="tool_smart_snap" command="tool_smart_snap" title="${title}" src="smart_snap.svg"></se-button>
         `
-        $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
+        $req('editor_panel').append(buttonTemplate.content.cloneNode(true))
         const btn = $id('tool_smart_snap')
         btn.pressed = svgCanvas.getCurConfig().smartSnapping
         svgEditor.commands.register({

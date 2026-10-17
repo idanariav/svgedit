@@ -17,15 +17,15 @@ const name = 'theme_toggle'
 
 export default {
   name,
-  async init (_S) {
+  async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { $id, $click } = svgCanvas
 
     const getTheme = () => svgEditor.configObj.pref('theme') || 'light'
 
-    const iconFor = (theme) => theme === 'dark' ? 'light_theme.svg' : 'dark_theme.svg'
-    const titleFor = (theme) => theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+    const iconFor = (/** @type {string} */ theme) => theme === 'dark' ? 'light_theme.svg' : 'dark_theme.svg'
+    const titleFor = (/** @type {string} */ theme) => theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
 
     const updateButton = () => {
       const btn = $id('tool_theme_toggle')
@@ -50,10 +50,11 @@ export default {
         const theme = getTheme()
         buttonTemplate.innerHTML = `
           <se-button id="tool_theme_toggle" title="${titleFor(theme)}" src="${iconFor(theme)}"></se-button>`
-        $id('theme_panel').append(buttonTemplate.content.cloneNode(true))
-        $click($id('tool_theme_toggle'), clickThemeToggle)
+        $id('theme_panel')?.append(buttonTemplate.content.cloneNode(true))
+        const toggle = $id('tool_theme_toggle')
+        if (toggle) $click(toggle, clickThemeToggle)
         // The Preferences dialog can change the theme too; keep the icon in sync.
-        svgEditor.$svgEditor.addEventListener('svgedit-themechange', updateButton)
+        svgEditor.$svgEditor?.addEventListener('svgedit-themechange', updateButton)
       }
     }
   }

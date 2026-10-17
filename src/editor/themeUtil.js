@@ -31,9 +31,9 @@ export const applyTheme = (theme, rootEl) => {
 export const editorRootFor = (el) => {
   let node = el
   while (node) {
-    const container = node.closest?.('[data-svgedit-root]')
+    const container = /** @type {Element} */ (node).closest?.('[data-svgedit-root]')
     if (container) return container.querySelector('.svg_editor')
-    node = node.getRootNode?.().host
+    node = /** @type {ShadowRoot} */ (node.getRootNode?.()).host
   }
   return getActiveRoot()
 }
@@ -66,7 +66,7 @@ export const syncDialogTheme = (host) => {
     const computed = getComputedStyle(root)
     for (const token of DIALOG_TOKENS) {
       const value = computed.getPropertyValue(token).trim()
-      if (value) host.style.setProperty(token, value)
+      if (value) /** @type {HTMLElement} */ (host).style.setProperty(token, value)
     }
   }
 }

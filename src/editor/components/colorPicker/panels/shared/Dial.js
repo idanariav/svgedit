@@ -21,7 +21,7 @@ const PRESETS = [
 export function createDial (initialAngle = 0) {
   let angle = ((initialAngle % 360) + 360) % 360
 
-  const container = document.createElement('div')
+  const container = /** @type {HTMLDivElement & {getAngle():number, setAngle(deg:number):void}} */ (document.createElement('div'))
   container.innerHTML = `
     <div class="cp-dial">
       <svg class="cp-dial-svg" viewBox="0 0 72 72" width="72" height="72" style="cursor:pointer;flex-shrink:0;" aria-label="Direction dial" role="slider">
@@ -52,11 +52,11 @@ export function createDial (initialAngle = 0) {
     </div>
   `
 
-  const svg = container.querySelector('.cp-dial-svg')
-  const dialLine = container.querySelector('.dial-line')
-  const dialThumb = container.querySelector('.dial-thumb')
-  const readout = container.querySelector('.cp-dial-readout')
-  const presetBtns = container.querySelectorAll('.cp-dir-preset')
+  const svg = /** @type {SVGSVGElement} */ (container.querySelector('.cp-dial-svg'))
+  const dialLine = /** @type {HTMLElement} */ (container.querySelector('.dial-line'))
+  const dialThumb = /** @type {HTMLElement} */ (container.querySelector('.dial-thumb'))
+  const readout = /** @type {HTMLSpanElement} */ (container.querySelector('.cp-dial-readout'))
+  const presetBtns = /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll('.cp-dir-preset'))
 
   function _updateVisuals () {
     const rad = (angle - 90) * (Math.PI / 180)
@@ -68,7 +68,7 @@ export function createDial (initialAngle = 0) {
     dialThumb.setAttribute('cy', y.toFixed(2))
     readout.textContent = `${angle}°`
     presetBtns.forEach(btn => {
-      btn.classList.toggle('is-active', parseInt(btn.dataset.angle) === angle)
+      btn.classList.toggle('is-active', parseInt(btn.dataset.angle ?? '') === angle)
     })
   }
 
@@ -76,7 +76,10 @@ export function createDial (initialAngle = 0) {
     container.dispatchEvent(new CustomEvent('change', { detail: { angle }, bubbles: true }))
   }
 
-  function _angleFromPointer (e) {
+  /**
+* @param {Event} e
+*/
+  function _angleFromPointer (/** @type {MouseEvent} */ e) {
     const rect = svg.getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
@@ -88,7 +91,7 @@ export function createDial (initialAngle = 0) {
   }
 
   // Drag on SVG
-  svg.addEventListener('pointerdown', (e) => {
+  svg.addEventListener('pointerdown', (/** @type {PointerEvent} */ e) => {
     e.preventDefault()
     svg.setPointerCapture(e.pointerId)
     angle = _angleFromPointer(e)
@@ -106,7 +109,7 @@ export function createDial (initialAngle = 0) {
   // Preset buttons
   presetBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      angle = parseInt(btn.dataset.angle)
+      angle = parseInt(btn.dataset.angle ?? '')
       _updateVisuals()
       _emitChange()
     })
@@ -115,7 +118,7 @@ export function createDial (initialAngle = 0) {
   _updateVisuals()
 
   container.getAngle = () => angle
-  container.setAngle = (deg) => {
+  container.setAngle = (/** @type {number} */ deg) => {
     angle = ((deg % 360) + 360) % 360
     _updateVisuals()
   }

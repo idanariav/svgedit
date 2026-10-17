@@ -32,10 +32,11 @@ const name = 'cutter'
 // second mousedown of a double-click used to finish a multi-point line).
 const MIN_SEGMENT = 2
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -47,7 +48,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -80,7 +81,7 @@ export default {
      * Append a dashed red guide path directly to svgcontent so its coordinates
      * match canvas space. It is removed on finish/cancel without touching history.
      */
-    const createPreviewPath = (start) => {
+    const createPreviewPath = (/** @type {{ x: number; y: number; }} */ start) => {
       const svgNS = 'http://www.w3.org/2000/svg'
       const path = document.createElementNS(svgNS, 'path')
       path.setAttribute('d', buildD([start]))
@@ -98,7 +99,7 @@ export default {
       previewPath = path
     }
 
-    const updateRubberBand = (x, y) => {
+    const updateRubberBand = (/** @type {number} */ x, /** @type {number} */ y) => {
       const committed = drawing ? points : [pendingStart]
       previewPath?.setAttribute('d', buildD(committed, { x, y }))
     }
@@ -159,7 +160,7 @@ export default {
 
     // ── The tool ─────────────────────────────────────────────────────────────
 
-    const rubberBand = (ev) => {
+    const rubberBand = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       if (!active) return
       let { x, y } = ev
       const anchor = drawing ? points[points.length - 1] : pendingStart
@@ -251,7 +252,7 @@ export default {
       callback () {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_cutter" command="tool_cutter" title="${title}" src="cutter.svg" shortcut="C"></se-button>`,
           11
         )

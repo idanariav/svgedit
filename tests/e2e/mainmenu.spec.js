@@ -27,6 +27,7 @@ test.describe('Main menu logic', () => {
 
       const editor = {
         $id: (id) => document.getElementById(id),
+        $req: (id) => document.getElementById(id),
         configObj: {
           pref: (key, val) => {
             if (val !== undefined) prefsStore[key] = val

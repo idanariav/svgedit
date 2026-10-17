@@ -21,12 +21,9 @@ const LOCKABLE_TOOL_IDS = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text',
 /*
  * register actions for left panel
  */
-/**
- * @type {module}
- */
 class LeftPanel {
   /**
-   * @param {PlainObject} editor svgedit handler
+   * @param {EditorInstance} editor svgedit handler
    */
   constructor (editor) {
     this.editor = editor
@@ -43,14 +40,14 @@ class LeftPanel {
    */
   updateLeftPanel (button) {
     const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    if (button.disabled) return false
+    if (/** @type {HTMLButtonElement} */ (button).disabled) return false
     // switching tools exits lock mode (see lockTool / double-click gesture)
     this.editor.svgCanvas.setToolLocked(false)
-    $qa('#tools_left *[locked]').forEach((b) => {
+    $qa('#tools_left *[locked]').forEach((/** @type {{ removeAttribute: (arg0: string) => void; }} */ b) => {
       b.removeAttribute('locked')
     })
     // remove the pressed state on other(s) button(s)
-    $qa('#tools_left *[pressed]').forEach((b) => {
+    $qa('#tools_left *[pressed]').forEach((/** @type {{ pressed: boolean; }} */ b) => {
       b.pressed = false
     })
     // pressed state for the clicked button
@@ -73,7 +70,7 @@ class LeftPanel {
     this.editor.svgCanvas.setToolLocked(true)
     visibleEl.setAttribute('locked', 'true')
     // close the flyout menu that a double-click may have opened
-    if (visibleEl.tagName === 'SE-FLYINGBUTTON') visibleEl.opened = false
+    if (visibleEl.tagName === 'SE-FLYINGBUTTON') /** @type {*} */ (visibleEl).opened = false
   }
 
   /**
@@ -136,7 +133,7 @@ class LeftPanel {
   clickImage () {
     // Open the import dialog instead of entering a draw mode; selection tool
     // stays active and the image is inserted centered on the canvas.
-    this.editor.$id('se-image-import-dialog').setAttribute('dialog', 'open')
+    this.editor.$req('se-image-import-dialog').setAttribute('dialog', 'open')
   }
 
   /**
@@ -187,8 +184,9 @@ class LeftPanel {
   }
 
   /**
-   * @type {module}
-   */
+* @param {string | Element} id
+* @param {() => void} handler
+*/
   add (id, handler) {
     const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $click($id(id), () => {
@@ -253,7 +251,7 @@ class LeftPanel {
     // — which selects the tool and, via updateLeftPanel, clears any existing
     // lock — has already run by the time this locks it, mirroring how a mouse
     // double-click's two `click` events fire before the trailing `dblclick`.
-    container.addEventListener('keydown', (evt) => {
+    container.addEventListener('keydown', (/** @type {KeyboardEvent} */ evt) => {
       if (evt.key !== 'Enter' || !evt.shiftKey) return
       const el = evt.target
       if (!(el instanceof Element) || !LOCKABLE_TOOL_IDS.includes(el.id)) return
@@ -262,18 +260,15 @@ class LeftPanel {
     })
   }
 
-  /**
-   * @type {module}
-   */
   init () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Left panel
     const template = document.createElement('template')
     template.innerHTML = leftPanelHTML
     this.editor.$svgEditor.append(template.content.cloneNode(true))
     this.editor.svgCanvas.bind('extensions_added', () => this.finalizeToolOrder())
     // the tool buttons are views of registry commands (`command=` in LeftPanel.html, panelCommands.js)
-    $id('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
+    $req('se-image-import-dialog').addEventListener('change', this.handleImageImport.bind(this))
 
     // flyout
 

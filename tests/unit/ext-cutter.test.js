@@ -29,6 +29,7 @@ describe('ext-cutter', () => {
 
     svgCanvas = {
       $id: vi.fn(),
+      $req: vi.fn(),
       $click: vi.fn(),
       getZoom: () => 1,
       getSvgContent: () => svgContent,

@@ -77,7 +77,7 @@ export const saveLayouts = (layouts) => {
 
 /**
  * Capture the current canvas (size, page background, and full SVG) as a layout.
- * @param {object} editor The owning Editor instance
+ * @param {EditorInstance} editor The owning Editor instance
  * @param {string} name
  * @returns {{name:string,w:number,h:number,bg:string,svg:string}}
  */
@@ -97,7 +97,7 @@ export const captureCurrentLayout = (editor, name) => {
  * Apply a layout: overwrite canvas proportions + background, then re-inject the
  * saved objects onto a fresh `Layout: <name>` layer (replacing any same-named
  * layer from a previous apply). Existing canvas objects are preserved.
- * @param {object} editor The owning Editor instance
+ * @param {EditorInstance} editor The owning Editor instance
  * @param {{name:string,w:number,h:number,bg:string,svg:string}} layout
  * @returns {void}
  */
@@ -117,12 +117,18 @@ export const applyLayout = (editor, layout) => {
     logError('Failed to parse layout SVG', layout.name, 'canvasLayouts')
     return
   }
+  /**
+* @type {ChildNode[]}
+*/
   const drawables = []
   doc.querySelectorAll('g.layer').forEach(layer => {
     layer.childNodes.forEach(node => {
       if (node.nodeType === 1 && node.localName !== 'title') drawables.push(node)
     })
   })
+  /**
+* @type {ChildNode[]}
+*/
   const defs = []
   doc.querySelector('defs')?.childNodes.forEach(node => {
     if (node.nodeType === 1) defs.push(node)

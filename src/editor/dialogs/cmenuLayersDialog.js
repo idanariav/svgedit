@@ -22,18 +22,20 @@ export class SeCMenuLayerDialog extends HTMLElement {
     this.source = ''
     // Resolved in connectedCallback once attached (see domScope.js); the
     // element isn't in the DOM yet at construction time.
+    /** @type {HTMLElement|null|undefined} */
     this._workarea = undefined
+    /** @type {HTMLElement|null} */
     this.$sidePanels = null
-    this.$dialog = this._shadowRoot.querySelector('#cmenu_layers')
-    this.$duplicateLink = this._shadowRoot.querySelector('#se-dupe')
-    this.$deleteLink = this._shadowRoot.querySelector('#se-layer-delete')
-    this.$mergeDownLink = this._shadowRoot.querySelector('#se-merge-down')
-    this.$mergeAllLink = this._shadowRoot.querySelector('#se-merge-all')
+    this.$dialog = /** @type {HTMLUListElement} */ (this._shadowRoot.querySelector('#cmenu_layers'))
+    this.$duplicateLink = /** @type {HTMLAnchorElement} */ (this._shadowRoot.querySelector('#se-dupe'))
+    this.$deleteLink = /** @type {HTMLAnchorElement} */ (this._shadowRoot.querySelector('#se-layer-delete'))
+    this.$mergeDownLink = /** @type {HTMLAnchorElement} */ (this._shadowRoot.querySelector('#se-merge-down'))
+    this.$mergeAllLink = /** @type {HTMLAnchorElement} */ (this._shadowRoot.querySelector('#se-merge-all'))
   }
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -58,7 +60,7 @@ export class SeCMenuLayerDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'value':
@@ -67,7 +69,7 @@ export class SeCMenuLayerDialog extends HTMLElement {
         // not be attached yet, and a global getElementById would pick another
         // editor's element when several are open).
         if (this.isConnected && newValue !== '' && newValue !== undefined) {
-          this._workarea = closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`)
+          this._workarea = /** @type {HTMLElement|null} */ (closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`))
         }
         break
       case 'layers-dupe':
@@ -128,20 +130,20 @@ export class SeCMenuLayerDialog extends HTMLElement {
     const current = this
     // Now attached: resolve this editor's own elements (see domScope.js).
     if (this.source) {
-      this._workarea = closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`)
+      this._workarea = /** @type {HTMLElement|null} */ (closestRoot(this).querySelector(`[id="${CSS.escape(this.source)}"]`))
     }
     this.$sidePanels = closestRoot(this).querySelector('[id="sidepanels"]')
-    const onMenuOpenHandler = (e) => {
+    const onMenuOpenHandler = (/** @type {MouseEvent} */ e) => {
       e.preventDefault()
       syncDialogTheme(current)
       positionContextMenu(current.$dialog, e.clientX, e.clientY, -126)
     }
-    const onMenuCloseHandler = (e) => {
+    const onMenuCloseHandler = (/** @type {MouseEvent} */ e) => {
       if (e.button !== 2) {
         current.$dialog.style.display = 'none'
       }
     }
-    const onMenuClickHandler = (e, action, id) => {
+    const onMenuClickHandler = (/** @type {Event} */ e, /** @type {string} */ action, /** @type {string} */ id) => {
       const triggerEvent = new CustomEvent('change', {
         detail: {
           trigger: action,
@@ -152,12 +154,12 @@ export class SeCMenuLayerDialog extends HTMLElement {
       current.$dialog.style.display = 'none'
     }
     if (this._workarea !== undefined) {
-      this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
+      this._workarea?.addEventListener('contextmenu', onMenuOpenHandler)
       if (this.getAttribute('leftclick') === 'true') {
-        $click(this._workarea, onMenuOpenHandler)
+        if (this._workarea) $click(this._workarea, /** @type {EventListener} */ (onMenuOpenHandler))
       }
-      this._workarea.addEventListener('mousedown', onMenuCloseHandler)
-      this.$sidePanels.addEventListener('mousedown', onMenuCloseHandler)
+      this._workarea?.addEventListener('mousedown', onMenuCloseHandler)
+      this.$sidePanels?.addEventListener('mousedown', onMenuCloseHandler)
     }
     $click(this.$duplicateLink, (evt) => onMenuClickHandler(evt, 'dupe', this.source))
     $click(this.$deleteLink, (evt) => onMenuClickHandler(evt, 'delete', this.source))

@@ -3,7 +3,7 @@
 import { SeSettingsPopover } from './seSettingsPopover.js'
 import './seSpinInput.js'
 import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../customBrushes.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 const TEMPLATE_HTML = `
   <style>
@@ -152,6 +152,7 @@ const TEMPLATE_HTML = `
   </div>
 `
 
+/** @type {[string, string, number][]} each brush field: its brush param, the input id and the display scale */
 const FIELDS = [
   ['thickness', 'brush_thickness', 1],
   ['angle', 'brush_angle', 1],
@@ -175,23 +176,30 @@ class SeBrushSettings extends SeSettingsPopover {
   constructor () {
     super(TEMPLATE_HTML)
 
-    this.$slots = this._shadowRoot.querySelector('.slots')
+    this.$slots = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.slots'))
     this._buildSlots()
 
     for (const [key, id, scale] of FIELDS) {
       this._shadowRoot.querySelector(`#${id}`).addEventListener('change', () => {
-        ownerEditor(this).svgCanvas.setBrushParams?.({ [key]: this._readField(id, scale) })
+        requireOwnerEditor(this).svgCanvas.setBrushParams?.({ [key]: this._readField(id, scale) })
         this._refreshSlots()
       })
     }
   }
 
+  /**
+* @param {string | number} id
+* @param {number} scale
+*/
   _readField (id, scale) {
     const raw = parseFloat(this._shadowRoot.querySelector(`#${id}`).value)
     const val = Number.isFinite(raw) ? raw : 0
     return scale === 1 ? val : val / scale
   }
 
+  /**
+* @param {import("@svgedit/svgcanvas/core/canvas-state.ts").BrushParams} params
+*/
   _writeFields (params) {
     for (const [key, id, scale] of FIELDS) {
       const val = params[key]
@@ -228,15 +236,19 @@ class SeBrushSettings extends SeSettingsPopover {
   // exactly matches the live brush right now — not "the last one clicked" —
   // recomputed on every refresh rather than tracked as separate state that
   // could drift out of sync with edits/loads/saves/deletes.
+  /**
+* @param {Object | null} a
+* @param {import("@svgedit/svgcanvas/core/canvas-state.ts").BrushParams} b
+*/
   _paramsEqual (a, b) {
     return Boolean(a) && Boolean(b) && FIELDS.every(([key]) => Number(a[key]) === Number(b[key]))
   }
 
   _refreshSlots () {
-    const active = ownerEditor(this).svgCanvas.getBrushParams?.()
+    const active = requireOwnerEditor(this).svgCanvas.getBrushParams?.()
     this.$slots.querySelectorAll('.slot').forEach((slot, i) => {
       const saved = getBrushSlot(i)
-      const btn = slot.querySelector('.slot-btn')
+      const btn = /** @type {HTMLButtonElement} */ (slot.querySelector('.slot-btn'))
       btn.classList.toggle('filled', Boolean(saved))
       btn.classList.toggle('active', this._paramsEqual(saved, active))
       btn.textContent = saved?.name || String(i + 1)
@@ -246,17 +258,23 @@ class SeBrushSettings extends SeSettingsPopover {
     })
   }
 
+  /**
+* @param {number} i
+*/
   _loadSlot (i) {
     const saved = getBrushSlot(i)
     if (!saved) return
     // Strip `name` — it's slot metadata, not a live brush param.
     const params = {}
     for (const [key] of FIELDS) if (saved[key] !== undefined) params[key] = saved[key]
-    ownerEditor(this).svgCanvas.setBrushParams?.(params)
+    requireOwnerEditor(this).svgCanvas.setBrushParams?.(params)
     this._writeFields(params)
     this._refreshSlots()
   }
 
+  /**
+* @param {number} i
+*/
   _saveSlot (i) {
     const params = {}
     for (const [key, id, scale] of FIELDS) params[key] = this._readField(id, scale)
@@ -266,11 +284,17 @@ class SeBrushSettings extends SeSettingsPopover {
     this._refreshSlots()
   }
 
+  /**
+* @param {number} i
+*/
   _deleteSlot (i) {
     deleteBrushSlot(i)
     this._refreshSlots()
   }
 
+  /**
+* @param {number} i
+*/
   async _renameSlot (i) {
     const existing = getBrushSlot(i)
     if (!existing) return
@@ -281,7 +305,7 @@ class SeBrushSettings extends SeSettingsPopover {
   }
 
   open () {
-    this._writeFields(ownerEditor(this).svgCanvas.getBrushParams?.() ?? {})
+    this._writeFields(requireOwnerEditor(this).svgCanvas.getBrushParams?.() ?? {})
     this._refreshSlots()
     super.open()
   }
@@ -289,3 +313,5 @@ class SeBrushSettings extends SeSettingsPopover {
 
 // Register
 customElements.define('se-brush-settings', SeBrushSettings)
+
+export default SeBrushSettings

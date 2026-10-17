@@ -9,7 +9,7 @@
  * container and keep light-DOM lookups within the owning editor.
  *
  * Falls back to the whole document for standalone (single-editor) use.
- * @param {Element} el A component/dialog element somewhere inside an editor.
+ * @param {?Element} el A component/dialog element somewhere inside an editor.
  * @returns {Element|Document}
  */
 export const closestRoot = (el) => el?.closest?.('[data-svgedit-root]') ?? document
@@ -24,11 +24,12 @@ export const closestRoot = (el) => el?.closest?.('[data-svgedit-root]') ?? docum
  * live DOM focus when it's available and only consults this cached pointer
  * when nothing is currently focused inside any editor.
  */
+/** @type {?EditorInstance} */
 let activeEditor = null
 
 /**
  * Mark an editor instance as the active one.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @returns {void}
  */
 export const setActiveEditor = (editor) => { activeEditor = editor }
@@ -40,7 +41,7 @@ export const setActiveEditor = (editor) => { activeEditor = editor }
  * make every remaining editor pass `isActiveEditor` (which treats `null` as
  * "unclaimed, all editors allowed") until the next interaction — a
  * background editor that was never focused would start handling shortcuts.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @returns {void}
  */
 export const clearActiveEditor = (editor) => {
@@ -63,7 +64,7 @@ export const clearActiveEditor = (editor) => {
  * container is clicked/focused again. `activeEditor` is only consulted when
  * nothing is focused inside *any* editor (e.g. focus sits on `document.body`,
  * the common case right after a plain click on the canvas).
- * @param {object} editor
+ * @param {?EditorInstance} editor
  * @returns {boolean}
  */
 export const isActiveEditor = (editor) => {
@@ -95,7 +96,7 @@ export const isTypingTarget = () => {
   const el = deepActiveElement()
   if (!el) return false
   const tag = el.nodeName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || /** @type {HTMLElement} */ (el).isContentEditable === true
 }
 
 /**
@@ -120,7 +121,7 @@ export const isTypingTarget = () => {
  * @returns {boolean}
  */
 export const ownsKeyEvent = (container, target) => {
-  const owned = target === document.body || target === container || !!container?.contains(target)
+  const owned = target === document.body || target === container || !!container?.contains(/** @type {Node} */ (target))
   return owned && !isTypingTarget()
 }
 
@@ -140,7 +141,7 @@ export const getActiveRoot = () => activeEditor?.$container?.querySelector('.svg
 /**
  * container element -> the Editor instance mounted in it. Weak, so a destroyed
  * editor's entry disappears with its container.
- * @type {WeakMap<Element, object>}
+ * @type {WeakMap<Element, EditorInstance>}
  */
 const editorsByRoot = new WeakMap()
 
@@ -148,7 +149,7 @@ const editorsByRoot = new WeakMap()
  * Record which editor owns `container` (called once from the editor
  * constructor, next to the `data-svgedit-root` tagging).
  * @param {Element} container
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @returns {void}
  */
 export const registerEditorRoot = (container, editor) => { editorsByRoot.set(container, editor) }
@@ -166,14 +167,26 @@ export const registerEditorRoot = (container, editor) => { editorsByRoot.set(con
  * running before it is attached, or a dialog appended to `document.body` — so
  * the single-editor/standalone case behaves exactly as before.
  * @param {?Node} el
- * @returns {?object}
+ * @returns {?EditorInstance}
  */
 export const ownerEditor = (el) => {
   let node = el
   while (node) {
-    const root = node.closest?.('[data-svgedit-root]')
+    const root = /** @type {Element} */ (node).closest?.('[data-svgedit-root]')
     if (root) return editorsByRoot.get(root) ?? activeEditor ?? window.svgEditor ?? null
-    node = node.getRootNode?.().host
+    node = /** @type {ShadowRoot} */ (node.getRootNode?.()).host
   }
   return activeEditor ?? window.svgEditor ?? null
+}
+
+/**
+ * `ownerEditor(el)` for code that only runs inside a mounted editor (a component's event handlers, after it is attached):
+ * the editor, or an error that names the element instead of a `TypeError` on `null`.
+ * @param {?Node} el
+ * @returns {EditorInstance}
+ */
+export const requireOwnerEditor = (el) => {
+  const editor = ownerEditor(el)
+  if (!editor) throw new Error(`No editor owns <${el?.nodeName?.toLowerCase() ?? 'element'}>`)
+  return editor
 }

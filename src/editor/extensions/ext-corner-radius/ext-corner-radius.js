@@ -27,9 +27,10 @@ import {
 const name = 'corner-radius'
 const KIND_ICONS = { r: 'round', i: 'inverted', c: 'chamfer' }
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -42,7 +43,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
 
     // Last kind picked / seen; applied to corners when a radius is first set.
     let curKind = 'r'
@@ -64,34 +65,34 @@ export default {
 
     // The value the R field shows: a rect's own rounding until it is cut,
     // otherwise the first cut corner's radius.
-    const shownRadius = (elem, cut) => {
+    const shownRadius = (/** @type {Element} */ elem, /** @type {{radius: number}[]} */ cut) => {
       if (cut.length) return cut[0].radius
-      return elem.tagName === 'rect' ? parseFloat(elem.getAttribute('rx')) || 0 : 0
+      return elem.tagName === 'rect' ? parseFloat(elem.getAttribute('rx') ?? '') || 0 : 0
     }
 
-    const refresh = (elem) => {
+    const refresh = (/** @type {Element} */ elem) => {
       const cut = svgCanvas.getCornerSettings(elem).filter((c) => c.radius > 0)
       const kinds = new Set(cut.map((c) => c.kind))
       if (kinds.size === 1) curKind = [...kinds][0]
-      $id('corner_radius_value').value = shownRadius(elem, cut)
+      $req('corner_radius_value').value = shownRadius(elem, cut)
       for (const k of CORNER_KINDS) {
         const btn = $id(`corner_kind_${k}`)
-        if (btn) btn.pressed = kinds.size ? kinds.has(k) : k === curKind
+        if (btn) /** @type {*} */ (btn).pressed = kinds.size ? kinds.has(k) : k === curKind
       }
     }
 
-    const showPanel = (on, elem) => {
+    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null|undefined} */ elem) => {
       const panel = $id('corner_panel')
       if (!panel) return
       panel.style.display = on ? 'block' : 'none'
       if (on && elem) refresh(elem)
     }
 
-    const update = (opts) => {
+    const update = (/** @type {{elems: Element[]}} */ opts) => {
       const elems = opts.elems.filter(Boolean)
       const elem = elems[0]
       if (!elem || elems.length > 1 || svgCanvas.getMode() === 'pathedit') {
-        showPanel(false)
+        showPanel(false, undefined)
         return
       }
       if (elem.tagName === 'path' && elem.hasAttribute(CORNER_SOURCE_ATTR)) {
@@ -124,10 +125,10 @@ export default {
         if (designTab && objectPanel) {
           designTab.insertBefore(panelTemplate.content, objectPanel)
         } else {
-          (designTab || $id('tools_top')).appendChild(panelTemplate.content)
+          (designTab || $req('tools_top')).appendChild(panelTemplate.content)
         }
-        $id('corner_radius_value').addEventListener('change', (e) => {
-          const r = Math.max(0, parseFloat(e.target.value) || 0)
+        $req('corner_radius_value').addEventListener('change', (e) => {
+          const r = Math.max(0, parseFloat(/** @type {HTMLInputElement} */ (e.target).value) || 0)
           const [elem] = svgCanvas.getSelectedElements().filter(Boolean)
           // Only impose the panel's kind when every cut corner already shares
           // it (or none is cut yet): a mixed set keeps its per-corner kinds.
@@ -155,10 +156,10 @@ export default {
           })
         }
       },
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{elems: Element[]}} */ opts) {
         update(opts)
       },
-      elementChanged (opts) {
+      elementChanged (/** @type {{elems: Element[]}} */ opts) {
         const elem = opts.elems.filter(Boolean)[0]
         const panel = $id('corner_panel')
         if (elem && panel && panel.style.display !== 'none') refresh(elem)

@@ -22,9 +22,10 @@ const MODE = 'wand'
 const TOLERANCE_PREF = 'select_same_tolerance'
 const COLOUR_CRITERIA = new Set(['fill', 'stroke', 'fillstroke'])
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -36,9 +37,9 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     let criterion = 'fill'
     let clickMode = 'replace'
@@ -50,7 +51,7 @@ export default {
      * shape that is already selected can still be clicked (to subtract it); the canvas reports locked shapes as
      * empty canvas.
      */
-    const targetOf = (ev) => {
+    const targetOf = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       const { selectorParentGroup } = svgCanvas.selectorManager
       for (const node of document.elementsFromPoint(ev.screenX, ev.screenY)) {
         const target = svgCanvas.getMouseTargetFromNode(node)
@@ -130,7 +131,7 @@ export default {
         const button = `<se-button id="tool_wand" command="tool_wand" title="${title}" src="magic-wand.svg"></se-button>`
         const anchor = $id('tool_measure') ?? $id('tool_eyedropper')
         if (anchor) anchor.insertAdjacentHTML('afterend', button)
-        else svgCanvas.insertChildAtIndex($id('tools_left'), button, 13)
+        else svgCanvas.insertChildAtIndex($req('tools_left'), button, 13)
         svgEditor.leftPanel.addModeCommand('tool_wand', MODE, { label: title })
       }
     }

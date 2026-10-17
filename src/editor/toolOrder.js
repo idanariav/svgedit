@@ -131,6 +131,7 @@ export const isUncustomisedOrder = (currentIds, stored) =>
  * @returns {void}
  */
 export const markToolGroups = (container) => {
+  /** @type {?number} */
   let prev = null
   Array.from(container.children).forEach((el) => {
     if (!el.id || el.id === 'tools_overflow') return

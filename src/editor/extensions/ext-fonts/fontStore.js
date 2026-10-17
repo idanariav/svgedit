@@ -58,7 +58,7 @@ const putRecord = async (record) => {
   })
 }
 
-const getRecord = async (family) => {
+const getRecord = async (/** @type {string} */ family) => {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(family)
@@ -76,7 +76,7 @@ const getAllRecords = async () => {
   })
 }
 
-const arrayBufferToBase64 = (buf) => {
+const arrayBufferToBase64 = (/** @type {ArrayBuffer} */ buf) => {
   let binary = ''
   const bytes = new Uint8Array(buf)
   const chunk = 0x8000
@@ -160,7 +160,7 @@ export const registerFont = async (family, base64, editor) => {
  * @param {string} family
  * @returns {Promise<void>}
  */
-export const ensureFont = async (family, editor) => {
+export const ensureFont = async (family, /** @type {object | null | undefined} */ editor) => {
   if (_cache.has(family)) {
     await registerFont(family, _cache.get(family), editor)
     return
@@ -191,7 +191,7 @@ export const ensureFont = async (family, editor) => {
  * cached fonts render and export without any network access.
  * @returns {Promise<string[]>} families restored
  */
-export const restoreAll = async (editor) => {
+export const restoreAll = async (/** @type {object | null | undefined} */ editor) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     let records = []
@@ -201,7 +201,7 @@ export const restoreAll = async (editor) => {
       logWarn('fontStore: failed to read host fonts', e, 'fontStore')
       return []
     }
-    await Promise.all((records || []).map(r =>
+    await Promise.all((records || []).map(/** @type {{ family: string; woff2Base64: string; }} */ (/** @type {{ family: string; woff2Base64: string; }} */ r) =>
       registerFont(r.family, r.woff2Base64, editor).catch(e =>
         logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
     ))
@@ -216,8 +216,8 @@ export const restoreAll = async (editor) => {
   }
   // Ignore stale-version entries; they get re-downloaded (and overwritten) when
   // the user next picks that font.
-  const fresh = records.filter(r => r.v === REC_VERSION)
-  await Promise.all(fresh.map(r =>
+  const fresh = records.filter(/** @type {{ v: number; }} */ (/** @type {{ v: number; }} */ r) => r.v === REC_VERSION)
+  await Promise.all(fresh.map(/** @type {{ family: string; woff2Base64: string; }} */ (/** @type {{ family: string; woff2Base64: string; }} */ r) =>
     registerFont(r.family, r.woff2Base64, editor).catch(e =>
       logWarn(`fontStore: failed to restore "${r.family}"`, e), 'fontStore')
   ))

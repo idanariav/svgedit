@@ -69,6 +69,7 @@ const loadImageData = async (href) => {
   canvas.width = img.naturalWidth || img.width
   canvas.height = img.naturalHeight || img.height
   const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('No 2D canvas context to trace with.')
   ctx.drawImage(img, 0, 0)
   try {
     return ctx.getImageData(0, 0, canvas.width, canvas.height)
@@ -82,6 +83,7 @@ const loadImageData = async (href) => {
  * over the original. The original image is left untouched (non-destructive); the
  * traced paths are inserted as one undo step and left selected.
  *
+ * @param {EditorInstance} editor
  * @param {Element} imageElem - The selected SVG `<image>` to trace.
  * @param {{ preset?: string, numberofcolors?: number }} [opts]
  *   `preset` is one of `lineart`/`detailed`/`posterized`/`color`, or `centerline`
@@ -109,5 +111,5 @@ export const traceImageToSvg = async (editor, imageElem, opts = {}) => {
   // transform-aware). insertSvgElements maps the trace's intrinsic pixel size
   // onto this rect instead of centering it on the page.
   const bbox = svgCanvas.getStrokedBBox([imageElem])
-  insertSvgElements(editor, svgString, { asPaths: true, fitTo: bbox })
+  insertSvgElements(editor, svgString, { asPaths: true, fitTo: bbox ?? undefined })
 }

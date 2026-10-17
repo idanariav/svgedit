@@ -4,7 +4,7 @@ import { fetchSvgEl } from './svgIconLoader.js'
 import { getUserDataAdapter } from '../userDataAdapter.js'
 import { loadLayouts } from '../canvasLayouts.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 // Built-in canvas size presets, used when the user has not curated their own
@@ -79,7 +79,7 @@ const savePresets = (presets) => {
   }
 }
 
-const gcd = (a, b) => (b ? gcd(b, a % b) : a)
+const gcd = (/** @type {number} */ a, /** @type {number} */ b) => (b ? gcd(b, a % b) : a)
 
 /**
  * Reduce w:h to a ratio label, e.g. 800x1000 → "4:5".
@@ -418,22 +418,21 @@ class SeCanvasSettings extends SeSettingsPopover {
   constructor () {
     super(TEMPLATE_HTML)
 
-    this.$w = this._shadowRoot.querySelector('#canvas_w')
-    this.$h = this._shadowRoot.querySelector('#canvas_h')
-    this.$presets = this._shadowRoot.querySelector('.presets')
-    this.$apply = this._shadowRoot.querySelector('.apply')
-    this.$reset = this._shadowRoot.querySelector('.reset')
-    this.$manageToggle = this._shadowRoot.querySelector('.manage-toggle')
-    this.$manage = this._shadowRoot.querySelector('.manage')
-    this.$manageRows = this._shadowRoot.querySelector('.manage-rows')
-    this.$addPreset = this._shadowRoot.querySelector('.add-preset')
-    this.$applyActions = this._shadowRoot.querySelector('.actions:not(.manage-actions)')
-    this.$manageActions = this._shadowRoot.querySelector('.manage-actions')
-    this.$layoutsSection = this._shadowRoot.querySelector('.layouts-section')
-    this.$layoutsList = this._shadowRoot.querySelector('.layouts-list')
-    this.$layoutName = this._shadowRoot.querySelector('.layout-name')
-    this.$saveLayout = this._shadowRoot.querySelector('.save-layout')
-
+    this.$w = /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#canvas_w'))
+    this.$h = /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#canvas_h'))
+    this.$presets = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.presets'))
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
+    this.$reset = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.reset'))
+    this.$manageToggle = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.manage-toggle'))
+    this.$manage = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.manage'))
+    this.$manageRows = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.manage-rows'))
+    this.$addPreset = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.add-preset'))
+    this.$applyActions = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.actions:not(.manage-actions)'))
+    this.$manageActions = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.manage-actions'))
+    this.$layoutsSection = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.layouts-section'))
+    this.$layoutsList = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.layouts-list'))
+    this.$layoutName = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('.layout-name'))
+    this.$saveLayout = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.save-layout'))
     // Current preset list; (re)loaded on open so host/plugin edits are picked up.
     this.presets = []
     // Current saved-layout list; (re)loaded on open.
@@ -443,14 +442,17 @@ class SeCanvasSettings extends SeSettingsPopover {
     this.$reset.addEventListener('click', () => this.reset())
     this.$manageToggle.addEventListener('click', () => this.enterManageMode())
     this.$addPreset.addEventListener('click', () => this.addManageRow())
-    this._shadowRoot.querySelector('.save-manage').addEventListener('click', () => this.saveManage())
-    this._shadowRoot.querySelector('.cancel-manage').addEventListener('click', () => this.exitManageMode())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.save-manage')).addEventListener('click', () => this.saveManage())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cancel-manage')).addEventListener('click', () => this.exitManageMode())
     this.$saveLayout.addEventListener('click', () => this.saveCurrentLayout())
     this.$layoutName.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); this.saveCurrentLayout() }
     })
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
@@ -472,7 +474,7 @@ class SeCanvasSettings extends SeSettingsPopover {
   open () {
     // Pre-fill inputs with the current canvas resolution and remember it so
     // Reset can restore the size the canvas had when the popover was opened.
-    const res = ownerEditor(this).svgCanvas.getResolution()
+    const res = requireOwnerEditor(this).svgCanvas.getResolution()
     this._original = { w: Math.round(res.w), h: Math.round(res.h) }
     this.$w.value = this._original.w
     this.$h.value = this._original.h
@@ -633,7 +635,7 @@ class SeCanvasSettings extends SeSettingsPopover {
       applyBtn.textContent = 'Apply'
       applyBtn.title = 'Apply this layout'
       applyBtn.addEventListener('click', () => {
-        ownerEditor(this).commands.tryRun('canvas_apply_layout', { name: layout.name }, 'popover')
+        requireOwnerEditor(this).commands.tryRun('canvas_apply_layout', { name: layout.name }, 'popover')
         this.close()
       })
 
@@ -661,27 +663,33 @@ class SeCanvasSettings extends SeSettingsPopover {
     const name = this.$layoutName.value.trim()
     if (!name) return
     // Overwrites in place if the name already exists, else appends.
-    if (!ownerEditor(this).commands.tryRun('canvas_save_layout', { name }, 'popover')) return
+    if (!requireOwnerEditor(this).commands.tryRun('canvas_save_layout', { name }, 'popover')) return
     this.layouts = loadLayouts()
     this.$layoutName.value = ''
     this.renderLayouts()
     this.positionPopup()
   }
 
-  /** Re-capture the current canvas into an existing layout, keeping its name. */
+  /**
+* Re-capture the current canvas into an existing layout, keeping its name.
+* @param {number} index
+*/
   overwriteLayout (index) {
     const existing = this.layouts[index]
     if (!existing) return
-    ownerEditor(this).commands.tryRun('canvas_save_layout', { name: existing.name }, 'popover')
+    requireOwnerEditor(this).commands.tryRun('canvas_save_layout', { name: existing.name }, 'popover')
     this.layouts = loadLayouts()
     this.renderLayouts()
   }
 
-  /** Delete a saved layout. */
+  /**
+* Delete a saved layout.
+* @param {number} index
+*/
   removeLayout (index) {
     const existing = this.layouts[index]
     if (!existing) return
-    ownerEditor(this).commands.tryRun('canvas_delete_layout', { name: existing.name }, 'popover')
+    requireOwnerEditor(this).commands.tryRun('canvas_delete_layout', { name: existing.name }, 'popover')
     this.layouts = loadLayouts()
     this.renderLayouts()
     this.positionPopup()
@@ -693,7 +701,7 @@ class SeCanvasSettings extends SeSettingsPopover {
     if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
       return
     }
-    ownerEditor(this).commands.tryRun('canvas_set_size', { width: w, height: h }, 'popover')
+    requireOwnerEditor(this).commands.tryRun('canvas_set_size', { width: w, height: h }, 'popover')
     this.close()
   }
 
@@ -710,3 +718,5 @@ class SeCanvasSettings extends SeSettingsPopover {
 
 // Register
 customElements.define('se-canvas-settings', SeCanvasSettings)
+
+export default SeCanvasSettings

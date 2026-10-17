@@ -58,7 +58,7 @@ export const initToolAutoFold = ({ container, overflowHost }) => {
     // Fold the last main tool until the column fits (or nothing is left to fold).
     while (overflows()) {
       const main = Array.from(container.children).filter((el) => el !== overflowHost && el.id)
-      const el = main[main.length - 1]
+      const el = /** @type {HTMLElement|undefined} */ (main[main.length - 1])
       if (!el) break
       if (el.tabIndex === 0) { el.tabIndex = -1; overflowHost.tabIndex = 0 }
       el.setAttribute(FOLDED, '')

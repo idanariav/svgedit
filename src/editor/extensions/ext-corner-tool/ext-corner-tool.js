@@ -41,7 +41,7 @@ const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
-const apply = (m, p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+const apply = (/** @type {object} */ m, /** @type {import("@svgedit/svgcanvas/core/anchor-path.ts").Pt} */ p) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
 
 const mk = (tag, attrs) => {
   const e = document.createElementNS(SVG_NS, tag)
@@ -51,9 +51,10 @@ const mk = (tag, attrs) => {
 
 const name = 'corner-tool'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -65,7 +66,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /**
      * Drop stale corner attributes when the element's `d` was rewritten outside the corner pipeline (the panel's
@@ -83,7 +84,7 @@ export default {
     }
 
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
 
     /**
      * The shape being edited: its element, its corners (`getCornerSettings`) with their widgets' places in the
@@ -104,14 +105,20 @@ export default {
     let target = null
     /** Picked corners (anchor indices) of `target.el`; empty = every corner that shows a widget. */
     let picked = new Set()
+    /**
+* @type {Element | null}
+*/
     let pickedEl = null
     let hover = -1
+    /**
+* @type {import("@svgedit/svgcanvas").ToolContext | null}
+*/
     let toolCtx = null
     /** @type {?{w: object, press: {x: number, y: number}, start: {x: number, y: number}, radius0: number, targets: number[], fresh: boolean, alt: boolean, shift: boolean, moved: boolean, radius: number, at: {x: number, y: number}}} */
     let drag = null
 
     /** @returns {?Target} */
-    const targetFor = (el) => {
+    const targetFor = (/** @type {Element | null | undefined} */ el) => {
       if (!el || el.nodeType !== 1) return null
       if (el.tagName === 'path' && el.hasAttribute(CORNER_SOURCE_ATTR)) reconcile(el)
       if (!svgCanvas.canRoundCorners(el)) return null
@@ -160,7 +167,7 @@ export default {
 
     // ---- overlay ---------------------------------------------------------------
 
-    const draw = (ctx) => {
+    const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
       const t = target
       if (!t) return
@@ -221,7 +228,7 @@ export default {
     /** Every targeted corner is still square: they get the preferred kind. */
     const isFresh = (t, corners) => corners.every((i) => radiusOf(t, i) === 0)
 
-    const nextKind = (kind) => CORNER_KINDS[(CORNER_KINDS.indexOf(kind) + 1) % CORNER_KINDS.length]
+    const nextKind = (/** @type {string} */ kind) => CORNER_KINDS[(CORNER_KINDS.indexOf(kind) + 1) % CORNER_KINDS.length]
 
     /** Change only the kind of the cut `corners` of `t`. */
     const setKind = (t, kind, corners) => {
@@ -410,7 +417,7 @@ export default {
         const title = `${name}:tool`
         // After the Gradient tool, the last of the on-canvas shape editors.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_corners" command="tool_corners" title="${title}" src="corner-tool.svg"></se-button>`,
           7
         )

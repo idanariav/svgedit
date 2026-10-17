@@ -20,26 +20,26 @@ export class SeImageImportDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#image_import_box')
-    this.$title = this._shadowRoot.querySelector('#image_import_title')
-    this.$closeBtn = this._shadowRoot.querySelector('#image_import_close')
-    this.$dropzone = this._shadowRoot.querySelector('#image_dropzone')
-    this.$dropzoneText = this._shadowRoot.querySelector('#image_dropzone_text')
-    this.$browseBtn = this._shadowRoot.querySelector('#image_browse_btn')
-    this.$fileInput = this._shadowRoot.querySelector('#image_file_input')
-    this.$orText = this._shadowRoot.querySelector('#image_import_or_text')
-    this.$urlLabel = this._shadowRoot.querySelector('#image_url_label')
-    this.$urlInput = this._shadowRoot.querySelector('#image_url_input')
-    this.$previewRow = this._shadowRoot.querySelector('#image_preview_row')
-    this.$preview = this._shadowRoot.querySelector('#image_preview')
-    this.$previewName = this._shadowRoot.querySelector('#image_preview_name')
-    this.$error = this._shadowRoot.querySelector('#image_import_error')
-    this.$cancelBtn = this._shadowRoot.querySelector('#image_import_cancel')
-    this.$okBtn = this._shadowRoot.querySelector('#image_import_ok')
-    this.$vaultOr = this._shadowRoot.querySelector('#image_vault_or')
-    this.$vaultBtn = this._shadowRoot.querySelector('#image_vault_btn')
-    this.$pathsRow = this._shadowRoot.querySelector('#image_paths_row')
-    this.$pathsToggle = this._shadowRoot.querySelector('#image_paths_toggle')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#image_import_box'))
+    this.$title = /** @type {HTMLParagraphElement} */ (this._shadowRoot.querySelector('#image_import_title'))
+    this.$closeBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#image_import_close'))
+    this.$dropzone = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#image_dropzone'))
+    this.$dropzoneText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_dropzone_text'))
+    this.$browseBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#image_browse_btn'))
+    this.$fileInput = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#image_file_input'))
+    this.$orText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_import_or_text'))
+    this.$urlLabel = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('#image_url_label'))
+    this.$urlInput = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#image_url_input'))
+    this.$previewRow = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#image_preview_row'))
+    this.$preview = /** @type {HTMLImageElement} */ (this._shadowRoot.querySelector('#image_preview'))
+    this.$previewName = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#image_preview_name'))
+    this.$error = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#image_import_error'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#image_import_cancel'))
+    this.$okBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#image_import_ok'))
+    this.$vaultOr = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#image_vault_or'))
+    this.$vaultBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#image_vault_btn'))
+    this.$pathsRow = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('#image_paths_row'))
+    this.$pathsToggle = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#image_paths_toggle'))
     // pending href to insert (data URL for files, raw URL for the URL field)
     this.href = ''
     // optional provenance link carried alongside a vault-imported image
@@ -64,7 +64,7 @@ export class SeImageImportDialog extends HTMLElement {
    * @param {any} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.setAttribute('title', i18next.t('tools.import_image_title'))
     this.setAttribute('drop-text', i18next.t('tools.import_drop_image'))
     this.setAttribute('browse-text', i18next.t('tools.import_browse'))
@@ -90,7 +90,7 @@ export class SeImageImportDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     switch (name) {
       case 'dialog':
         if (newValue === 'open') {
@@ -246,11 +246,11 @@ export class SeImageImportDialog extends HTMLElement {
     })
 
     this.$fileInput.addEventListener('change', (e) => {
-      this.handleFile(e.target.files[0])
+      this.handleFile(/** @type {FileList} */ (/** @type {HTMLInputElement} */ (e.target).files)[0])
     })
 
     // Drag & drop onto the zone
-    const stop = (e) => {
+    const stop = (/** @type {DragEvent} */ e) => {
       e.preventDefault()
       e.stopPropagation()
     }
@@ -265,7 +265,7 @@ export class SeImageImportDialog extends HTMLElement {
     this.$dropzone.addEventListener('drop', (e) => {
       stop(e)
       this.$dropzone.classList.remove('dragover')
-      this.handleFile(e.dataTransfer.files[0])
+      this.handleFile(/** @type {DataTransfer} */ (e.dataTransfer).files[0])
     })
 
     // URL field

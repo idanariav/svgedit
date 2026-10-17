@@ -10,8 +10,8 @@ import { syncDialogTheme } from '../themeUtil.js'
 const template = document.createElement('template')
 template.innerHTML = favoritesDialogHTML
 
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+const escapeHtml = (/** @type {string} */ s) => String(s).replace(/[&<>"']/g, (c) => (
+  /** @type {Object<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
 ))
 
 // Inline star (currentColor, fill toggled via the .is-fav class).
@@ -36,16 +36,16 @@ export class SeFavoritesDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#favorites_dialog')
-    this.$list = this._shadowRoot.querySelector('#fav_list')
-    this.$title = this._shadowRoot.querySelector('#fav_title')
-    this.$hint = this._shadowRoot.querySelector('#fav_hint')
-    this.$close = this._shadowRoot.querySelector('#fav_close')
-    this.$done = this._shadowRoot.querySelector('#fav_done')
-    this.$search = this._shadowRoot.querySelector('#fav_search')
-    this.$filterFav = this._shadowRoot.querySelector('#fav_filter_fav')
-    this.$filterText = this._shadowRoot.querySelector('#fav_filter_text')
-    this.$reorderHint = this._shadowRoot.querySelector('#fav_reorder_hint')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#favorites_dialog'))
+    this.$list = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#fav_list'))
+    this.$title = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#fav_title'))
+    this.$hint = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#fav_hint'))
+    this.$close = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#fav_close'))
+    this.$done = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#fav_done'))
+    this.$search = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#fav_search'))
+    this.$filterFav = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#fav_filter_fav'))
+    this.$filterText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#fav_filter_text'))
+    this.$reorderHint = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#fav_reorder_hint'))
     // Search / filter state.
     this._query = ''
     this._favOnly = false
@@ -57,7 +57,7 @@ export class SeFavoritesDialog extends HTMLElement {
    * @param {object} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.$title.textContent = i18next.t('favorites.title')
     this.$hint.textContent = i18next.t('favorites.hint')
     this.$done.textContent = i18next.t('common.ok')
@@ -71,7 +71,7 @@ export class SeFavoritesDialog extends HTMLElement {
     return ['dialog']
   }
 
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     if (name === 'dialog') {
       if (newValue === 'open') {
@@ -84,7 +84,10 @@ export class SeFavoritesDialog extends HTMLElement {
     }
   }
 
+  /** @returns {?string} */
   get dialog () { return this.getAttribute('dialog') }
+
+  /** @param {string} value */
   set dialog (value) { this.setAttribute('dialog', value) }
 
   connectedCallback () {
@@ -162,7 +165,11 @@ export class SeFavoritesDialog extends HTMLElement {
     }).join('')
   }
 
-  /** Row for the reorder (favorites-only) view — always starred, has drag handle. */
+  /**
+* Row for the reorder (favorites-only) view — always starred, has drag handle.
+* @param {string} id
+* @param {string} label
+*/
   _reorderRowHtml (id, label) {
     return '<div class="fav-row" draggable="true" data-id="' + escapeHtml(id) + '">' +
       '<span class="fav-drag" aria-hidden="true">⠿</span>' +
@@ -183,43 +190,55 @@ export class SeFavoritesDialog extends HTMLElement {
 
   /** @param {MouseEvent} e */
   _onListClick (e) {
-    const btn = e.target.closest('.fav-star')
+    const btn = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('.fav-star'))
     if (!btn) return
-    toggleFavorite(btn.dataset.id)
+    toggleFavorite(btn.dataset.id ?? '')
     this._render()
   }
 
   // ── Drag-to-reorder handlers ────────────────────────────────────────────────
 
+  /**
+* @param {DragEvent} e
+*/
   _onDragStart (e) {
-    const row = e.target.closest('.fav-row[draggable]')
+    const row = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('.fav-row[draggable]'))
     if (!row) return
     this._dragId = row.dataset.id
     row.classList.add('dragging')
-    e.dataTransfer.effectAllowed = 'move'
+    ;/** @type {DataTransfer} */ (e.dataTransfer).effectAllowed = 'move'
   }
 
+  /**
+* @param {DragEvent} e
+*/
   _onDragOver (e) {
     if (!this._dragId) return
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    const row = e.target.closest('.fav-row[draggable]')
+    ;/** @type {DataTransfer} */ (e.dataTransfer).dropEffect = 'move'
+    const row = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('.fav-row[draggable]'))
     if (!row || row.dataset.id === this._dragId) return
     this.$list.querySelectorAll('.fav-row.drag-over')
       .forEach((r) => r.classList.remove('drag-over'))
     row.classList.add('drag-over')
   }
 
+  /**
+* @param {DragEvent} e
+*/
   _onDragLeave (e) {
-    const row = e.target.closest('.fav-row[draggable]')
+    const row = /** @type {Element} */ (e.target).closest('.fav-row[draggable]')
     if (row) row.classList.remove('drag-over')
   }
 
+  /**
+* @param {DragEvent} e
+*/
   _onDrop (e) {
     e.preventDefault()
-    const targetRow = e.target.closest('.fav-row[draggable]')
+    const targetRow = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('.fav-row[draggable]'))
     if (!targetRow || !this._dragId || targetRow.dataset.id === this._dragId) return
-    const targetId = targetRow.dataset.id
+    const targetId = targetRow.dataset.id ?? ''
     const favs = loadFavorites()
     const reordered = favs.filter((id) => id !== this._dragId)
     const toIdx = reordered.indexOf(targetId)

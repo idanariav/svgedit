@@ -195,7 +195,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   setAll () {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
 
     // All keyboard-shortcut dispatch (editor-level and component buttons) is
     // owned by the central HotkeyManager. register() installs a single document
@@ -213,7 +213,7 @@ class Editor extends EditorStartup {
         evt.preventDefault()
       })
     })
-    $id('image_url').addEventListener('keydown', function (evt) {
+    $req('image_url').addEventListener('keydown', function (evt) {
       evt.currentTarget.dispatchEvent(new Event('change'))
       evt.preventDefault()
     })
@@ -642,7 +642,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   elementTransition (win, elems) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const mode = this.svgCanvas.getMode()
     const elem = elems[0]
 
@@ -663,7 +663,7 @@ class Editor extends EditorStartup {
         switch (mode) {
           case 'rotate': {
             const ang = this.svgCanvas.getRotationAngle(elem)
-            $id('angle').value = ang
+            $req('angle').value = ang
             break
           }
           case 'select': {
@@ -830,12 +830,12 @@ class Editor extends EditorStartup {
 
   /**
    * @typedef {PlainObject} module:SVGthis.BBoxObjectWithFactor (like `DOMRect`)
-   * @property {Float} x
-   * @property {Float} y
-   * @property {Float} width
-   * @property {Float} height
-   * @property {Float} [factor] Needed if width or height are 0
-   * @property {Float} [zoom]
+   * @property {number} x
+   * @property {number} y
+   * @property {number} width
+   * @property {number} height
+   * @property {number} [factor] Needed if width or height are 0
+   * @property {number} [zoom]
    * @see module:svgcanvas.SvgCanvas#event:zoomed
    */
 
@@ -849,7 +849,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   zoomChanged (win, bbox, autoCenter) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const scrbar = 15
     const zInfo = this.svgCanvas.setBBoxZoom(
       bbox,
@@ -875,7 +875,7 @@ class Editor extends EditorStartup {
     // selectedChanged() above for why).
     runSteps([
       ['zoomInput', () => {
-        $id('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
+        $req('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
       }],
       ['updateCanvas', () => {
         if (autoCenter) {
@@ -906,7 +906,7 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   contextChanged (win, context) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     let linkStr = ''
     if (context) {
       let str = ''
@@ -930,8 +930,8 @@ class Editor extends EditorStartup {
       this.curContext = null
     }
     // The layer > group breadcrumb is not useful in this fork — keep it hidden.
-    $id('cur_context_panel').style.display = 'none'
-    $id('cur_context_panel').innerHTML = linkStr
+    $req('cur_context_panel').style.display = 'none'
+    $req('cur_context_panel').innerHTML = linkStr
   }
 
   /**
@@ -987,15 +987,15 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @param {Float} multiplier
+   * @param {number} multiplier
    * @returns {void}
    */
   zoomImage (multiplier) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const resolution = this.svgCanvas.getResolution()
     multiplier = multiplier ? resolution.zoom * multiplier : 1
     // setResolution(res.w * multiplier, res.h * multiplier, true);
-    $id('zoom').value = (multiplier * 100).toFixed(1)
+    $req('zoom').value = (multiplier * 100).toFixed(1)
     this.svgCanvas.setCurrentZoom(multiplier)
     this.zoomDone()
     this.updateCanvas(true)
@@ -1056,8 +1056,8 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @param {Float} dx
-   * @param {Float} dy
+   * @param {number} dx
+   * @param {number} dy
    * @returns {void}
    */
   moveSelected (dx, dy) {
@@ -1091,18 +1091,18 @@ class Editor extends EditorStartup {
 
   /**
    * @param {0|1} cw
-   * @param {Integer} step
+   * @param {number} step
    * @returns {void}
    */
   rotateSelected (cw, step) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     if (!this.selectedElement || this.multiselected) {
       return
     }
     if (!cw) {
       step *= -1
     }
-    const angle = Number.parseFloat($id('angle').value) + step
+    const angle = Number.parseFloat($req('angle').value) + step
     this.svgCanvas.setRotationAngle(angle)
     this.topPanel.updateContextPanel()
   }
@@ -1262,13 +1262,13 @@ class Editor extends EditorStartup {
    * @returns {void} A Promise which resolves to `undefined`
    */
   setLang (lang) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $id, $req } = this // container-scoped lookup (see EditorStartup constructor)
     this.langChanged = true
     this.configObj.pref('lang', lang)
     const $editDialog = $id('se-edit-prefs')
     $editDialog.setAttribute('lang', lang)
     const oldLayerName = $id('#layerlist')
-      ? $id('#layerlist').querySelector('tr.layersel td.layername').textContent
+      ? $req('#layerlist').querySelector('tr.layersel td.layername').textContent
       : ''
     const renameLayer =
       oldLayerName === this.i18next.t('layers.layer') + ' 1'

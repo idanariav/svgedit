@@ -27,10 +27,11 @@
 
 const name = 'color-shift'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -39,10 +40,13 @@ const loadExtensionTranslation = function (svgEditor) {
 
 // ── Colour helpers ────────────────────────────────────────────────────────
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
+const clamp = (/** @type {number} */ v, /** @type {number} */ a, /** @type {number} */ b) => Math.max(a, Math.min(b, v))
 
+/**
+* @type {CanvasRenderingContext2D | null}
+*/
 let _namedColorCtx
-const parseNamedColor = (str) => {
+const parseNamedColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) => {
   if (!_namedColorCtx) _namedColorCtx = document.createElement('canvas').getContext('2d')
   _namedColorCtx.fillStyle = '#000'
   try { _namedColorCtx.fillStyle = str } catch { return null }
@@ -56,7 +60,7 @@ const parseNamedColor = (str) => {
   return null
 }
 
-const parseColor = (str) => {
+const parseColor = (/** @type {string | CanvasGradient | CanvasPattern} */ str) => {
   if (!str) return null
   const s = String(str).trim().toLowerCase()
   if (s === 'none' || s === 'transparent') return null
@@ -107,7 +111,7 @@ const rgbToHsl = ({ r, g, b }) => {
   return { h: h * 60, s: s * 100, l: l * 100 }
 }
 
-const hue2rgb = (p, q, t) => {
+const hue2rgb = (/** @type {number} */ p, /** @type {number} */ q, /** @type {number} */ t) => {
   if (t < 0) t += 1
   if (t > 1) t -= 1
   if (t < 1 / 6) return p + (q - p) * 6 * t
@@ -151,7 +155,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     // Per-element baseline. Keyed by element node so multi-select works even
@@ -163,7 +167,7 @@ export default {
 
     const isZeroDelta = (d) => !d || (!d.h && !d.s && !d.l && !d.t)
 
-    const isPaintable = (el) => el && PAINTABLE_TAGS.has(el.tagName)
+    const isPaintable = (/** @type {{ tagName: string; }} */ el) => el && PAINTABLE_TAGS.has(el.tagName)
 
     // Expand a selected node into the paintable elements it represents. A
     // paintable leaf is itself; a `<g>` (possibly nested) yields its paintable
@@ -177,12 +181,15 @@ export default {
     }
 
     const paintableSelection = () => {
+      /**
+* @type {never[]}
+*/
       const out = []
       for (const el of svgCanvas.getSelectedElements()) collectPaintable(el, out)
       return out
     }
 
-    const captureSnapshot = (elem) => {
+    const captureSnapshot = (/** @type {object} */ elem) => {
       const fillRaw = elem.getAttribute('fill')
       const strokeRaw = elem.getAttribute('stroke')
       const fill = fillRaw ?? '#000000' // SVG default for non-stroked paints
@@ -203,7 +210,7 @@ export default {
       }
     }
 
-    const ensureSnapshot = (elem) => {
+    const ensureSnapshot = (/** @type {object} */ elem) => {
       let s = snapshots.get(elem)
       if (!s) {
         s = captureSnapshot(elem)
@@ -213,12 +220,12 @@ export default {
     }
 
     const getValues = () => ({
-      h: Number($id('color_shift_h').value) || 0,
-      s: Number($id('color_shift_s').value) || 0,
-      l: Number($id('color_shift_l').value) || 0,
-      t: Number($id('color_shift_t').value) || 0,
-      applyFill: $id('color_shift_fill').checked,
-      applyStroke: $id('color_shift_stroke').checked
+      h: Number($req('color_shift_h').value) || 0,
+      s: Number($req('color_shift_s').value) || 0,
+      l: Number($req('color_shift_l').value) || 0,
+      t: Number($req('color_shift_t').value) || 0,
+      applyFill: $req('color_shift_fill').checked,
+      applyStroke: $req('color_shift_stroke').checked
     })
 
     /**
@@ -299,10 +306,10 @@ export default {
     }
 
     const resetInputs = () => {
-      $id('color_shift_h').value = 0
-      $id('color_shift_s').value = 0
-      $id('color_shift_l').value = 0
-      $id('color_shift_t').value = 0
+      $req('color_shift_h').value = 0
+      $req('color_shift_s').value = 0
+      $req('color_shift_l').value = 0
+      $req('color_shift_t').value = 0
     }
 
     /**
@@ -322,10 +329,10 @@ export default {
         }
       }
       const d = (elems[0] && deltas.get(elems[0])) || { h: 0, s: 0, l: 0, t: 0 }
-      $id('color_shift_h').value = d.h || 0
-      $id('color_shift_s').value = d.s || 0
-      $id('color_shift_l').value = d.l || 0
-      $id('color_shift_t').value = d.t || 0
+      $req('color_shift_h').value = d.h || 0
+      $req('color_shift_s').value = d.s || 0
+      $req('color_shift_l').value = d.l || 0
+      $req('color_shift_t').value = d.t || 0
     }
 
     const updateVisibility = () => {
@@ -338,7 +345,7 @@ export default {
       body.style.display = hasPaintable ? '' : 'none'
     }
 
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     return {
       name: t('name'),
@@ -388,7 +395,7 @@ export default {
         ;['color_shift_fill', 'color_shift_stroke']
           .forEach((id) => $id(id).addEventListener('change', applyShift))
 
-        $id('color_shift_reset').addEventListener('click', () => {
+        $req('color_shift_reset').addEventListener('click', () => {
           resetInputs()
           applyShift() // delta=0 → restores snapshot values
         })

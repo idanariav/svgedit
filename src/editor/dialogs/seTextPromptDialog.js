@@ -22,13 +22,13 @@ export class SeTextPromptDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#text_prompt_box')
-    this.$title = this._shadowRoot.querySelector('#text_prompt_title')
-    this.$closeBtn = this._shadowRoot.querySelector('#text_prompt_close')
-    this.$message = this._shadowRoot.querySelector('#text_prompt_message')
-    this.$input = this._shadowRoot.querySelector('#text_prompt_input')
-    this.$cancelBtn = this._shadowRoot.querySelector('#text_prompt_cancel')
-    this.$okBtn = this._shadowRoot.querySelector('#text_prompt_ok')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#text_prompt_box'))
+    this.$title = /** @type {HTMLParagraphElement} */ (this._shadowRoot.querySelector('#text_prompt_title'))
+    this.$closeBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#text_prompt_close'))
+    this.$message = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('#text_prompt_message'))
+    this.$input = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#text_prompt_input'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#text_prompt_cancel'))
+    this.$okBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#text_prompt_ok'))
     // resolver for the in-flight prompt() promise
     this._resolve = null
     // default footer labels (overridable via init / prompt options)
@@ -41,7 +41,7 @@ export class SeTextPromptDialog extends HTMLElement {
    * @param {any} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this._okText = i18next.t('common.ok')
     this._cancelText = i18next.t('common.cancel')
     this.$okBtn.textContent = this._okText
@@ -142,7 +142,7 @@ const sePrompt = (message, value = '', opts = {}, scopeEl) => {
   // couldn't be found (e.g. called before EditorStartup finishes mounting
   // it), silently fell through to whichever editor's dialog the document-wide
   // query happened to hit first.
-  const el = closestRoot(scopeEl).querySelector('se-text-prompt-dialog')
+  const el = closestRoot(scopeEl ?? null).querySelector('se-text-prompt-dialog')
   if (!el) return Promise.resolve(null)
   return el.prompt(message, value, opts)
 }

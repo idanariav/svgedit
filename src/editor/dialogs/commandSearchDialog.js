@@ -2,14 +2,14 @@
 import { buildCommandSearchCatalog, filterCommandCatalog, activateCommandSearchResult } from '../commandSearch.js'
 import { formatHotkey } from '../Hotkeys.js'
 import commandSearchDialogHTML from './commandSearchDialog.html'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = commandSearchDialogHTML
 
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+const escapeHtml = (/** @type {string} */ s) => String(s).replace(/[&<>"']/g, (c) => (
+  /** @type {Object<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
 ))
 
 /**
@@ -26,12 +26,13 @@ export class SeCommandSearchDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#cs_dialog')
-    this.$search = this._shadowRoot.querySelector('#cs_search')
-    this.$list = this._shadowRoot.querySelector('#cs_list')
-    this.$hint = this._shadowRoot.querySelector('#cs_hint')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#cs_dialog'))
+    this.$search = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#cs_search'))
+    this.$list = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#cs_list'))
+    this.$hint = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#cs_hint'))
     // Flat, in-render-order list of result ids, kept in sync with `_render()`
     // so arrow-key navigation can move a single index into it.
+    /** @type {string[]} */
     this._flatIds = []
     this._selectedIndex = 0
     this._query = ''
@@ -41,7 +42,7 @@ export class SeCommandSearchDialog extends HTMLElement {
    * @param {object} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.$search.setAttribute('placeholder', i18next.t('command_search.search'))
     this.$dialog.setAttribute('aria-label', i18next.t('command_search.title'))
     this.$hint.textContent = i18next.t('command_search.hint')
@@ -96,28 +97,28 @@ export class SeCommandSearchDialog extends HTMLElement {
 
   /** @param {MouseEvent} e */
   _onListClick (e) {
-    const row = e.target.closest('[data-id]')
+    const row = /** @type {Element} */ (e.target).closest('[data-id]')
     if (!row) return
-    this._activate(row.dataset.id)
+    this._activate(/** @type {HTMLElement} */ (row).dataset.id ?? '')
   }
 
   /** @param {string} id */
   _activate (id) {
     if (!id) return
-    activateCommandSearchResult(ownerEditor(this), id)
+    activateCommandSearchResult(requireOwnerEditor(this), id)
     this.close()
   }
 
   /** Build the grouped, filtered result list and keep `_flatIds` in sync. */
   _render () {
-    if (!ownerEditor(this)) return
-    const groups = filterCommandCatalog(buildCommandSearchCatalog(ownerEditor(this)), this._query)
+    if (!requireOwnerEditor(this)) return
+    const groups = filterCommandCatalog(buildCommandSearchCatalog(requireOwnerEditor(this)), this._query)
 
     this._flatIds = groups.flatMap((g) => g.actions.map((a) => a.id))
     if (this._selectedIndex >= this._flatIds.length) this._selectedIndex = 0
 
     if (!groups.length) {
-      this.$list.innerHTML = `<div class="cs-empty">${escapeHtml(ownerEditor(this).i18next.t('command_search.no_results'))}</div>`
+      this.$list.innerHTML = `<div class="cs-empty">${escapeHtml(requireOwnerEditor(this).i18next.t('command_search.no_results'))}</div>`
       return
     }
 
@@ -140,7 +141,7 @@ export class SeCommandSearchDialog extends HTMLElement {
    * @returns {string}
    */
   _rowHtml (a, selected) {
-    const key = ownerEditor(this).hotkeys?.effectiveKeys(a.id)?.[0]
+    const key = requireOwnerEditor(this).hotkeys?.effectiveKeys(a.id)?.[0]
     return `<div class="cs-row${selected ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">` +
       `<span class="cs-label">${escapeHtml(a.label)}</span>` +
       (key ? `<span class="cs-shortcut">${escapeHtml(formatHotkey(key))}</span>` : '') +

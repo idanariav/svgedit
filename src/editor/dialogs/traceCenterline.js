@@ -142,7 +142,7 @@ export const distanceTransform = (ink, w, h) => {
   const INF = 65000
   const d = new Uint16Array(w * h)
   for (let i = 0; i < d.length; i++) d[i] = ink[i] ? INF : 0
-  const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? INF : d[y * w + x])
+  const at = (/** @type {number} */ x, /** @type {number} */ y) => (x < 0 || y < 0 || x >= w || y >= h ? INF : d[y * w + x])
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x
@@ -161,7 +161,7 @@ export const distanceTransform = (ink, w, h) => {
 }
 
 /** Width in pixels of a stroke whose centre pixel has chamfer distance `d` (exact for odd widths). */
-const widthOfDistance = (d) => 2 * (d / 3) - 1
+const widthOfDistance = (/** @type {number} */ d) => 2 * (d / 3) - 1
 
 /**
  * The ink pixels of the components that are lines: 8-connected, widest point at most `maxWidth`, and at
@@ -224,9 +224,9 @@ export const lineComponents = (ink, dist, w, h, maxWidth, minPixels) => {
 export const thin = async (img, w, h) => {
   let live = []
   for (let i = 0; i < img.length; i++) if (img[i]) live.push(i)
-  const get = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : img[y * w + x])
+  const get = (/** @type {number} */ x, /** @type {number} */ y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : img[y * w + x])
   const ring = new Array(8)
-  const neighbours = (i) => {
+  const neighbours = (/** @type {number} */ i) => {
     const x = i % w
     const y = (i - x) / w
     for (let k = 0; k < 8; k++) ring[k] = get(x + DX8[k], y + DY8[k]) // N, NE, E, SE, S, SW, W, NW
@@ -299,7 +299,7 @@ export const thin = async (img, w, h) => {
  * @property {boolean} alive
  */
 
-const center = (i, w) => ({ x: (i % w) + 0.5, y: Math.floor(i / w) + 0.5 })
+const center = (/** @type {number} */ i, /** @type {number} */ w) => ({ x: (i % w) + 0.5, y: Math.floor(i / w) + 0.5 })
 
 /**
  * Break a skeleton into runs between ends and junctions.
@@ -309,7 +309,7 @@ const center = (i, w) => ({ x: (i % w) + 0.5, y: Math.floor(i / w) + 0.5 })
  * @returns {{nodes: Node[], edges: Edge[], rings: Array<{points: {x: number, y: number}[], seeds: number[]}>}}
  */
 export const skeletonGraph = (skel, w, h) => {
-  const neigh = (i) => {
+  const neigh = (/** @type {number} */ i) => {
     const x = i % w
     const y = (i - x) / w
     const out = []
@@ -547,7 +547,7 @@ const assignInk = (lineInk, rgb, w, h, seeds) => {
     sum[id][2] += rgb[i * 3 + 2]
     sum[id][3]++
   }
-  const hex = (v) => Math.round(v).toString(16).padStart(2, '0')
+  const hex = (/** @type {number} */ v) => Math.round(v).toString(16).padStart(2, '0')
   return {
     count,
     color: sum.map(([r, g, b, n]) => `#${hex(r / (n || 1))}${hex(g / (n || 1))}${hex(b / (n || 1))}`)
@@ -608,7 +608,7 @@ export const runToD = (run, tolerance = DEFAULTS.tolerance) => {
   return anchorsToD(run.closed ? joinSubpaths([fitted], Math.max(2, tolerance * 2)) : [fitted])
 }
 
-const round = (v) => Math.round(v * 100) / 100
+const round = (/** @type {number} */ v) => Math.round(v * 100) / 100
 
 /**
  * Trace an image's strokes into an SVG document (one stroked `<path>` per run, in pixel units).

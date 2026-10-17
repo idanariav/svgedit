@@ -82,7 +82,7 @@ export class SeColorDialog extends HTMLElement {
     document.addEventListener('pointerdown', this._outsideHandler, true)
     this._resizeHandler = () => this._position()
     window.addEventListener('resize', this._resizeHandler)
-    const modal = this._shadowRoot.querySelector('.cp-modal')
+    const modal = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.cp-modal'))
     if (typeof ResizeObserver !== 'undefined') {
       // Switching tabs changes the popover's height: keep it on screen.
       this._sizeObserver = new ResizeObserver(this._resizeHandler)
@@ -100,7 +100,7 @@ export class SeColorDialog extends HTMLElement {
 
   /** Place the popover beside its swatch: above it in the lower half of the window, else below; clamped on-screen. */
   _position () {
-    const modal = this._shadowRoot.querySelector('.cp-modal')
+    const modal = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.cp-modal'))
     if (!modal || !this._anchor?.isConnected) return
     const a = this._anchor.getBoundingClientRect()
     const M = 8
@@ -108,7 +108,7 @@ export class SeColorDialog extends HTMLElement {
     const mh = modal.offsetHeight
     const vw = window.innerWidth
     const vh = window.innerHeight
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi))
+    const clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) => Math.max(lo, Math.min(v, hi))
     const left = clamp(a.left, M, vw - mw - M)
     const below = a.bottom + M
     const above = a.top - M - mh
@@ -147,6 +147,9 @@ export class SeColorDialog extends HTMLElement {
     return 'solid'
   }
 
+  /**
+* @param {string} key
+*/
   _t (key) {
     try { return this._i18next?.t(key) || key } catch { return key }
   }
@@ -202,7 +205,7 @@ export class SeColorDialog extends HTMLElement {
     })
 
     // Wire eyedropper button and load icon
-    const eyedropperBtn = this._shadowRoot.querySelector('.cp-eyedropper')
+    const eyedropperBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cp-eyedropper'))
     eyedropperBtn.addEventListener('click', () => this._startEyedropper())
     const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (imgPath) {
@@ -216,20 +219,20 @@ export class SeColorDialog extends HTMLElement {
     }
 
     // Wire header close
-    this._shadowRoot.querySelector('.cp-head-close').addEventListener('click', () => (this._popover ? this._commit() : this._onCancel()))
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cp-head-close')).addEventListener('click', () => (this._popover ? this._commit() : this._onCancel()))
 
     // Wire footer
-    this._shadowRoot.querySelector('.cp-btn-ghost').addEventListener('click', () => this._onCancel())
-    this._shadowRoot.querySelector('.cp-btn-primary').addEventListener('click', () => this._onApply())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cp-btn-ghost')).addEventListener('click', () => this._onCancel())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cp-btn-primary')).addEventListener('click', () => this._onApply())
 
     // Wire backdrop (close only if no field has focus)
-    this._shadowRoot.querySelector('.cp-backdrop').addEventListener('click', () => {
+    ;/** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.cp-backdrop')).addEventListener('click', () => {
       if (!this._shadowRoot.activeElement) this._onCancel()
     })
 
     // Live preview: report every colour tweak (solid or gradient) so the host can
     // show it on the drawing before Apply (Cancel/Escape reverts).
-    this._shadowRoot.querySelector('.cp-body-slot').addEventListener('color-change', () => {
+    ;/** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.cp-body-slot')).addEventListener('color-change', () => {
       if (!this._currentPanel) return
       this._dirty = true
       this.dispatchEvent(new CustomEvent('preview', {
@@ -242,6 +245,9 @@ export class SeColorDialog extends HTMLElement {
   }
 
   // ── Tab switching ──────────────────────────────────────────────────────────
+  /**
+* @param {string} tab
+*/
   _switchTab (tab) {
     if (this._currentPanel) this._dirty = true // choosing another paint type is a change
     this._activeTab = tab
@@ -264,7 +270,7 @@ export class SeColorDialog extends HTMLElement {
     }
 
     // Mount panel
-    const slot = this._shadowRoot.querySelector('.cp-body-slot')
+    const slot = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.cp-body-slot'))
     slot.innerHTML = ''
     slot.appendChild(panel)
     this._currentPanel = panel
@@ -313,11 +319,11 @@ export class SeColorDialog extends HTMLElement {
 
   // ── Keyboard ───────────────────────────────────────────────────────────────
   _bindKeys () {
-    this._keyHandler = (e) => {
+    this._keyHandler = (/** @type {{ key: string; preventDefault: () => void; composedPath: () => { tagName: string; }[]; }} */ e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this._onCancel()
-      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some(n => n.tagName === 'INPUT' || n.tagName === 'BUTTON')) {
+      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some(/** @type {{ tagName: string; }} */ (/** @type {{ tagName: string; }} */ n) => n.tagName === 'INPUT' || n.tagName === 'BUTTON')) {
         // Enter inside a field commits that field; elsewhere it commits the popover.
         e.preventDefault()
         this._commit()

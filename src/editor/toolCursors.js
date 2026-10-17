@@ -36,13 +36,13 @@ const SYSTEM_HINT_CURSORS = {
  */
 export const cursorForMode = (mode, hint = null) => {
   if (hint) {
-    if (Object.prototype.hasOwnProperty.call(SYSTEM_HINT_CURSORS, hint)) return SYSTEM_HINT_CURSORS[hint]
+    if (Object.prototype.hasOwnProperty.call(SYSTEM_HINT_CURSORS, hint)) return /** @type {Object<string, string>} */ (SYSTEM_HINT_CURSORS)[hint]
     if (getIconDataUri(`cursors/${mode}_${hint}_cursor.svg`)) return cursorForMode(`${mode}_${hint}`)
   }
-  if (Object.prototype.hasOwnProperty.call(SYSTEM_CURSORS, mode)) return SYSTEM_CURSORS[mode]
+  if (Object.prototype.hasOwnProperty.call(SYSTEM_CURSORS, mode)) return /** @type {Object<string, string>} */ (SYSTEM_CURSORS)[mode]
   const file = `cursors/${mode}_cursor.svg`
   const uri = getIconDataUri(file)
   if (!uri) return 'auto'
-  const [, x = 0, y = 0] = /data-hotspot="(\d+) (\d+)"/.exec(getRawIcon(file)) ?? []
+  const [, x = 0, y = 0] = /data-hotspot="(\d+) (\d+)"/.exec(getRawIcon(file) ?? '') ?? []
   return `url("${uri}") ${x} ${y}, crosshair`
 }

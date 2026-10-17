@@ -50,7 +50,7 @@ export const objectRows = (parent, depth, ctx, out = []) => {
   return out
 }
 
-const svgIcon = (file) => {
+const svgIcon = (/** @type {string} */ file) => {
   const span = document.createElement('span')
   span.className = 'tree-icon'
   fetchSvgEl(file).then(svg => { if (svg) span.appendChild(svg) })
@@ -59,7 +59,7 @@ const svgIcon = (file) => {
 
 /** The Layers panel's object tree. */
 export class LayerTree {
-  /** @param {PlainObject} editor */
+  /** @param {EditorInstance} editor */
   constructor (editor) {
     this.editor = editor
     /** @type {Map<Element, boolean>} explicit expand / collapse of layers and groups */
@@ -86,7 +86,7 @@ export class LayerTree {
   attach () {
     const table = this.table
     table.addEventListener('click', (evt) => this.onClick(evt))
-    table.addEventListener('dblclick', (evt) => this.onDblClick(evt))
+    table.addEventListener('dblclick', (/** @type {{ target: Element; }} */ evt) => this.onDblClick(evt))
     table.addEventListener('pointerdown', (evt) => this.onPointerDown(evt))
     this.keyboard.attach()
     this.canvas.bind('selected', (_win, elems) => this.reveal(elems))
@@ -116,12 +116,18 @@ export class LayerTree {
     this.refresh()
   }
 
+  /**
+* @param {object} el
+*/
   uid (el) {
     if (!this.ids.has(el)) this.ids.set(el, this.nextId++)
     return this.ids.get(el)
   }
 
-  /** Layers start open (at most `ROW_LIMIT` rows each); groups start closed. */
+  /**
+* Layers start open (at most `ROW_LIMIT` rows each); groups start closed.
+* @param {ParentNode} el
+*/
   isOpen (el) {
     return this.expanded.get(el) ?? true
   }
@@ -129,6 +135,9 @@ export class LayerTree {
   /** @returns {HTMLElement[]} the layer rows, top first */
   layerRows () { return Array.from(this.table.querySelectorAll('tbody > tr.layer')) }
 
+  /**
+* @param {Element | null} tr
+*/
   layerOf (tr) {
     const name = tr.querySelector('td.layername')?.textContent
     return name ? this.canvas.getCurrentDrawing().getLayerByName(name) : null
@@ -144,8 +153,8 @@ export class LayerTree {
     if (table.offsetParent === null) return
     this.dirty = false
     const ctx = {
-      isExpanded: (el) => this.expanded.get(el) === true,
-      limitOf: (el) => this.limits.get(el) ?? ROW_LIMIT
+      isExpanded: (/** @type {Element} */ el) => this.expanded.get(el) === true,
+      limitOf: (/** @type {Element} */ el) => this.limits.get(el) ?? ROW_LIMIT
     }
     const plan = this.layerRows().map((tr) => {
       const layer = this.layerOf(tr)
@@ -312,13 +321,13 @@ export class LayerTree {
       if (layer) this.setOpen(layer, !this.isOpen(layer))
       return
     }
-    const more = target.closest('tr.objmore')
+    const more = /** @type {HTMLElement|null} */ (target.closest('tr.objmore'))
     if (more) {
       this.limits.set(more._more, (this.limits.get(more._more) ?? ROW_LIMIT) + ROW_LIMIT)
       this.invalidate()
       return
     }
-    const tr = target.closest('tr.object')
+    const tr = /** @type {HTMLElement|null} */ (target.closest('tr.object'))
     if (!tr || target.closest('input')) return
     const el = tr._el
     const c = this.canvas
@@ -354,15 +363,22 @@ export class LayerTree {
     this.markSelection()
   }
 
+  /**
+* @param {Element} el
+* @param {boolean} open
+*/
   setOpen (el, open) {
     this.expanded.set(el, open)
     this.invalidate()
   }
 
+  /**
+* @param {{ target: Element; }} evt
+*/
   onDblClick (evt) {
     const label = /** @type {Element} */ (evt.target).closest('tr.object .objlabel')
     if (!label) return
-    const tr = label.closest('tr.object')
+    const tr = /** @type {HTMLElement|null} */ (/** @type {Element} */ (label.closest('tr.object')))
     const el = tr._el
     const input = document.createElement('input')
     input.type = 'text'
@@ -370,7 +386,7 @@ export class LayerTree {
     input.value = el.getAttribute('data-name') ?? ''
     input.placeholder = this.label(el)
     let done = false
-    const finish = (commit) => {
+    const finish = (/** @type {boolean} */ commit) => {
       if (done) return
       done = true
       if (commit) this.canvas.setObjectName(el, input.value)
@@ -453,7 +469,7 @@ export class LayerTree {
   onPointerDown (evt) {
     if (evt.button !== 0) return
     const target = /** @type {Element} */ (evt.target)
-    const tr = target.closest('tr.object')
+    const tr = /** @type {HTMLElement|null} */ (target.closest('tr.object'))
     if (!tr || target.closest('td.objvis, td.objlock, .disclosure, input')) return
     const start = { x: evt.clientX, y: evt.clientY }
     const move = (e) => {
@@ -469,12 +485,15 @@ export class LayerTree {
       document.removeEventListener('keydown', key, true)
       if (this.drag) this.finishDrag(e.type === 'pointerup')
     }
-    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); end({ type: 'cancel' }) } }
+    const key = (/** @type {{ key: string; stopPropagation: () => void; }} */ e) => { if (e.key === 'Escape') { e.stopPropagation(); end({ type: 'cancel' }) } }
     document.addEventListener('pointermove', move)
     document.addEventListener('pointerup', end)
     document.addEventListener('keydown', key, true)
   }
 
+  /**
+* @param {Element} tr
+*/
   beginDrag (tr) {
     const el = tr._el
     const selected = this.canvas.getSelectedElements().filter(Boolean)
@@ -508,6 +527,9 @@ export class LayerTree {
     return this.canvas.objectMoveIssue(this.drag.movers, found.parent, found.before) ? null : found
   }
 
+  /**
+* @param {{ clientX: number; clientY: number; }} evt
+*/
   dragOver (evt) {
     const under = document.elementFromPoint(evt.clientX, evt.clientY)
     const tr = under?.closest?.('#layerlist tr.layer, #layerlist tr.object')
@@ -517,6 +539,9 @@ export class LayerTree {
     if (this.drag.drop) this.drag.drop.tr.classList.add(`drop-${this.drag.drop.mode}`)
   }
 
+  /**
+* @param {boolean} commit
+*/
   finishDrag (commit) {
     const { drop, movers, tr } = this.drag
     this.drag = null

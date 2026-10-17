@@ -28,10 +28,11 @@ const DEFAULTS = {
   inner: { color: '#ffffff', opacity: 0.75, source: 'edge' }
 }
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -44,9 +45,9 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand } = svgCanvas.history
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     // Shared filter composer (one instance for all effect extensions).
     const fx = svgEditor.fxFilter || (svgEditor.fxFilter = createFxComposer(svgCanvas))
@@ -64,21 +65,21 @@ export default {
     }
 
     /** Current panel values for one glow; null when its blur is 0 (off). */
-    const readPanel = (kind) => {
-      const blur = Number($id(`glow_${kind}_blur`).value)
+    const readPanel = (/** @type {string} */ kind) => {
+      const blur = Number($req(`glow_${kind}_blur`).value)
       if (!(blur > 0)) return null
       const glow = {
         blur,
-        color: $id(`glow_${kind}_color`).value,
-        opacity: Math.min(1, Math.max(0, Number($id(`glow_${kind}_opacity`).value) / 100))
+        color: $req(`glow_${kind}_color`).value,
+        opacity: Math.min(1, Math.max(0, Number($req(`glow_${kind}_opacity`).value) / 100))
       }
-      if (kind === 'inner') glow.source = $id('glow_inner_source').value === 'centre' ? 'centre' : 'edge'
+      if (kind === 'inner') glow.source = $req('glow_inner_source').value === 'centre' ? 'centre' : 'edge'
       return glow
     }
 
     /** Current panel value of the feather; null when its radius is 0 (off). */
     const readFeather = () => {
-      const radius = Number($id('glow_feather_radius').value)
+      const radius = Number($req('glow_feather_radius').value)
       return radius > 0 ? { radius } : null
     }
 
@@ -104,7 +105,7 @@ export default {
     }
 
     /** Apply the panel's values to the selection as one undo step. */
-    const setGlow = (params) => {
+    const setGlow = (/** @type {object} */ params) => {
       const elem = svgCanvas.getSelectedElements()[0]
       if (!elem) return
       const batchCmd = new BatchCommand('Set glow')
@@ -122,6 +123,10 @@ export default {
     }
 
     // Shows/hides the panel and fills the controls from the element.
+    /**
+* @param {boolean} on
+* @param {Element | undefined} [elem]
+*/
     function showPanel (on, elem) {
       const panel = $id('glow_panel')
       if (!panel) return
@@ -132,14 +137,14 @@ export default {
         const g = glow[kind]
         // Blur 0 when off, so the panel reads "no glow" rather than showing
         // phantom active values.
-        $id(`glow_${kind}_blur`).value = g?.blur ?? 0
-        $id(`glow_${kind}_opacity`).value = Math.round((g?.opacity ?? DEFAULTS[kind].opacity) * 100)
-        $id(`glow_${kind}_color`).value = g?.color ?? DEFAULTS[kind].color
+        $req(`glow_${kind}_blur`).value = g?.blur ?? 0
+        $req(`glow_${kind}_opacity`).value = Math.round((g?.opacity ?? DEFAULTS[kind].opacity) * 100)
+        $req(`glow_${kind}_color`).value = g?.color ?? DEFAULTS[kind].color
         panel.querySelector(`[data-glow="${kind}"]`).toggleAttribute('data-off', !g)
       }
-      $id('glow_inner_source').value = glow.inner?.source ?? DEFAULTS.inner.source
+      $req('glow_inner_source').value = glow.inner?.source ?? DEFAULTS.inner.source
       const { feather } = fx.readEffects(elem)
-      $id('glow_feather_radius').value = feather?.radius ?? 0
+      $req('glow_feather_radius').value = feather?.radius ?? 0
       panel.querySelector('[data-glow="feather"]').toggleAttribute('data-off', !feather)
     }
 
@@ -147,7 +152,7 @@ export default {
       name: t('name'),
 
       callback () {
-        const group = (kind) => `
+        const group = (/** @type {string} */ kind) => `
           <div class="glow_group" data-glow="${kind}" data-off>
             <div class="glow_group_label">${t(kind)}</div>
             <div class="sidepanel_section_grid">
@@ -201,22 +206,22 @@ export default {
           // Editing opacity / colour of a glow that is off switches it on at a
           // visible default blur (a zero blur would mean "no glow").
           const switchOn = () => {
-            if (!(Number($id(`glow_${kind}_blur`).value) > 0)) $id(`glow_${kind}_blur`).value = DEFAULT_BLUR
+            if (!(Number($req(`glow_${kind}_blur`).value) > 0)) $req(`glow_${kind}_blur`).value = DEFAULT_BLUR
           }
-          $id(`glow_${kind}_blur`).addEventListener('change', commit)
+          $req(`glow_${kind}_blur`).addEventListener('change', commit)
           for (const part of ['opacity', 'color']) {
-            $id(`glow_${kind}_${part}`).addEventListener('change', () => {
+            $req(`glow_${kind}_${part}`).addEventListener('change', () => {
               switchOn()
               commit()
             })
           }
         }
         source.addEventListener('change', () => {
-          const blur = $id('glow_inner_' + 'blur')
+          const blur = /** @type {HTMLInputElement} */ ($id('glow_inner_' + 'blur'))
           if (!(Number(blur.value) > 0)) blur.value = DEFAULT_BLUR
           commit()
         })
-        $id('glow_feather_radius').addEventListener('change', commit)
+        $req('glow_feather_radius').addEventListener('change', commit)
         svgEditor.commands.register({
           id: 'glow_remove',
           label: t('contextTools.remove.title'),

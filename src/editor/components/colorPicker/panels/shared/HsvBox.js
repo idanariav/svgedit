@@ -109,16 +109,16 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
 
   // ── Element refs ───────────────────────────────────────────────────────────
   const hsvBox = container.querySelector('.cp-hsv')
-  const hsvHue = container.querySelector('.cp-hsv-hue')
-  const hsvDot = container.querySelector('.cp-hsv-dot')
+  const hsvHue = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-hue'))
+  const hsvDot = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-dot'))
   const hueStrip = container.querySelector('.cp-hue')
-  const hueMarker = container.querySelector('.cp-hue-marker')
+  const hueMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hue-marker'))
   const alphaStrip = container.querySelector('.cp-alpha')
-  const alphaGrad = container.querySelector('.cp-alpha-grad')
-  const alphaMarker = container.querySelector('.cp-alpha-marker')
-  const currentFill = container.querySelector('[data-role="current-fill"]')
-  const newFill = container.querySelector('[data-role="new-fill"]')
-  const presetGrid = container.querySelector('.cp-preset')
+  const alphaGrad = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-grad'))
+  const alphaMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-marker'))
+  const currentFill = /** @type {HTMLElement} */ (container.querySelector('[data-role="current-fill"]'))
+  const newFill = /** @type {HTMLElement} */ (container.querySelector('[data-role="new-fill"]'))
+  const presetGrid = /** @type {HTMLDivElement} */ (container.querySelector('.cp-preset'))
 
   // Input refs by field name
   const inputs = {}
@@ -130,7 +130,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   // ── Preset palette ─────────────────────────────────────────────────────────
   presetGrid.className = 'cp-preset'
   PRESETS.forEach(color => {
-    const btn = document.createElement('button')
+    const btn = /** @type {HTMLElement} */ (document.createElement('button'))
     btn.type = 'button'
     btn.className = 'cp-preset-swatch'
     btn.style.background = color
@@ -196,6 +196,9 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     state.h = h; state.s = s; state.v = v
   }
 
+  /**
+* @param {string} hex
+*/
   function setHexInternal (hex) {
     state.hex = hex
     _syncHsvFromHex()
@@ -215,7 +218,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   }
 
   // HSV box drag
-  makeDrag(hsvBox, (e) => {
+  makeDrag(hsvBox, (/** @type {{ clientX: number; clientY: number; }} */ e) => {
     const rect = hsvBox.getBoundingClientRect()
     state.s = Math.round(Math.min(100, Math.max(0, (e.clientX - rect.left) / rect.width * 100)))
     state.v = Math.round(Math.min(100, Math.max(0, (1 - (e.clientY - rect.top) / rect.height) * 100)))
@@ -224,7 +227,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // Hue strip drag
-  makeDrag(hueStrip, (e) => {
+  makeDrag(hueStrip, (/** @type {{ clientY: number; }} */ e) => {
     const rect = hueStrip.getBoundingClientRect()
     state.h = Math.round(Math.min(360, Math.max(0, (e.clientY - rect.top) / rect.height * 360)))
     state.hex = hsvToHex(state.h, state.s, state.v)
@@ -232,14 +235,14 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // Alpha strip drag
-  makeDrag(alphaStrip, (e) => {
+  makeDrag(alphaStrip, (/** @type {{ clientX: number; }} */ e) => {
     const rect = alphaStrip.getBoundingClientRect()
     state.a = Math.round(Math.min(100, Math.max(0, (e.clientX - rect.left) / rect.width * 100)))
     _updateVisuals()
   })
 
   // HSV box keyboard navigation
-  hsvBox.addEventListener('keydown', (e) => {
+  hsvBox.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
     const step = e.key.startsWith('Page') ? 10 : 1
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       state.s = Math.min(100, Math.max(0, state.s + (e.key === 'ArrowRight' ? step : -step)))
@@ -251,7 +254,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     _updateVisuals(); _emit()
   })
 
-  hueStrip.addEventListener('keydown', (e) => {
+  hueStrip.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
     const step = e.key.startsWith('Page') ? 36 : 1
     if (e.key === 'ArrowUp') { state.h = Math.max(0, state.h - step) } else if (e.key === 'ArrowDown') { state.h = Math.min(360, state.h + step) } else { return }
     e.preventDefault()
@@ -281,34 +284,34 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     })
   }
 
-  wireInput('h', parseFloat, v => Math.min(360, Math.max(0, Math.round(v))), v => { state.h = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('s', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.s = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('v', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.v = v; state.hex = hsvToHex(state.h, state.s, state.v) })
-  wireInput('r', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
+  wireInput('h', parseFloat, (/** @type {number} */ v) => Math.min(360, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.h = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('s', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.s = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('v', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.v = v; state.hex = hsvToHex(state.h, state.s, state.v) })
+  wireInput('r', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
     const { g: cg, b: cb } = hexToRgb(state.hex)
     state.hex = rgbToHex(v, cg, cb)
     _syncHsvFromHex()
   })
-  wireInput('g', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
+  wireInput('g', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
     const { r: cr, b: cb } = hexToRgb(state.hex)
     state.hex = rgbToHex(cr, v, cb)
     _syncHsvFromHex()
   })
-  wireInput('b', parseFloat, v => Math.min(255, Math.max(0, Math.round(v))), v => {
+  wireInput('b', parseFloat, (/** @type {number} */ v) => Math.min(255, Math.max(0, Math.round(v))), (/** @type {number} */ v) => {
     const { r: cr, g: cg } = hexToRgb(state.hex)
     state.hex = rgbToHex(cr, cg, v)
     _syncHsvFromHex()
   })
-  wireInput('a', parseFloat, v => Math.min(100, Math.max(0, Math.round(v))), v => { state.a = v })
+  wireInput('a', parseFloat, (/** @type {number} */ v) => Math.min(100, Math.max(0, Math.round(v))), (/** @type {number} */ v) => { state.a = v })
   wireInput('hex',
-    s => {
+    (/** @type {string} */ s) => {
       const clean = s.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
       return clean.length === 6 ? clean : null
     },
     v => v, // clamp is identity; parse already validates length
-    v => { state.hex = v; _syncHsvFromHex() }
+    (/** @type {string} */ v) => { state.hex = v; _syncHsvFromHex() }
   )
-  inputs.hex?.addEventListener('paste', (e) => {
+  inputs.hex?.addEventListener('paste', (/** @type {{ clipboardData: { getData: (arg0: string) => string; }; preventDefault: () => void; }} */ e) => {
     const text = e.clipboardData?.getData('text') ?? ''
     const clean = text.replace(/#/g, '').slice(0, 6)
     if (!clean) return
@@ -325,11 +328,11 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     get: () => state.a
   })
 
-  container.setHex = (hex) => {
+  container.setHex = (/** @type {string} */ hex) => {
     setHexInternal(hex.replace('#', ''))
     _emit()
   }
-  container.setAlpha = (a) => {
+  container.setAlpha = (/** @type {number} */ a) => {
     state.a = Math.min(100, Math.max(0, Math.round(a)))
     _updateVisuals()
     _emit()

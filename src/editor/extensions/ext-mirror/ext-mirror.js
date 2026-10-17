@@ -39,9 +39,10 @@ const name = 'mirror'
 const MIRROR_OF_ATTR = 'se:mirror-of'
 const AXIS_ATTR = 'se:mirror-axis'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -54,11 +55,15 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, NS, assignAttributes } = svgCanvas
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const { $id, $req, NS, assignAttributes } = svgCanvas
+    const svgdoc = $req('svgcanvas').ownerDocument
     const canvBG = $id('canvasBackground')
 
-    let axis = null // null | 'v' | 'h'
+    /**
+* @type {string | null}
+*/
+    /** @type {'v' | 'h' | null} */
+    let axis = null
     let busy = false // reentrancy guard while creating a twin
 
     // Dashed center-axis overlay (proportion-markers overlay pattern).
@@ -73,7 +78,7 @@ export default {
       display: 'none',
       style: 'pointer-events: none;'
     })
-    canvBG.appendChild(overlay)
+    canvBG?.appendChild(overlay)
 
     const drawAxis = () => {
       if (!axis) {
@@ -144,7 +149,7 @@ export default {
     }
 
     /** Find the live twin of an element (the element mirroring `src`). */
-    const findTwin = (src) => {
+    const findTwin = (/** @type {Element} */ src) => {
       if (!src.id) return null
       for (const el of svgCanvas.getSvgContent().querySelectorAll('g > *')) {
         if (el.getAttribute(MIRROR_OF_ATTR) === src.id) return el
@@ -237,7 +242,7 @@ export default {
       }
       const elem = cmd.elem
       const parent = elem?.parentNode
-      const isLayerChild = parent?.tagName === 'g' &&
+      const isLayerChild = /** @type {Element|null|undefined} */ (parent)?.tagName === 'g' &&
         parent.parentNode === svgCanvas.getSvgContent()
       if (!isLayerChild || elem.hasAttribute(MIRROR_OF_ATTR) ||
         elem.hasAttribute('data-frame') || svgCanvas.getCurrentGroup()) {
@@ -268,6 +273,9 @@ export default {
     const origDeleteSelected = svgCanvas.deleteSelectedElements.bind(svgCanvas)
     svgCanvas.deleteSelectedElements = () => {
       const selected = svgCanvas.getSelectedElements().filter(Boolean)
+      /**
+* @type {Element[]}
+*/
       const extra = []
       for (const el of selected) {
         const partner = findLinkedPartner(el)
@@ -279,7 +287,7 @@ export default {
       origDeleteSelected()
     }
 
-    const setAxis = (ax) => {
+    const setAxis = (/** @type {'v' | 'h' | null} */ ax) => {
       axis = ax
       drawAxis()
     }
@@ -319,19 +327,25 @@ export default {
       zoomChanged () {
         drawAxis()
       },
+      /**
+* @param {{ elems: Element[] | { tagName: string; }[]; }} opts
+*/
       elementChanged (opts) {
         // Canvas resize fires elementChanged with the <svg> element — the
         // axis position depends on the resolution.
-        if (opts.elems.some((el) => el?.tagName === 'svg')) drawAxis()
-        handleLinkedElems(opts.elems, false)
+        if (opts.elems.some((/** @type {{ tagName: string; }} */ el) => el?.tagName === 'svg')) drawAxis()
+        handleLinkedElems(/** @type {Element[]} */ (opts.elems), false)
       },
+      /**
+* @param {{ elems: Element[]; }} opts
+*/
       elementTransition (opts) {
         handleLinkedElems(opts.elems, true)
       },
       callback () {
         // Mirror-copy buttons in the Object (single) + Combine (multi) rows.
         const title = svgEditor.i18next.t(`${name}:mirrorSelection`)
-        const addBtn = (id, anchor, after) => {
+        const addBtn = (/** @type {string} */ id, /** @type {HTMLElement | null | undefined} */ anchor, /** @type {boolean} */ after) => {
           if (!anchor) return
           const btn = document.createElement('se-button')
           btn.id = id

@@ -57,6 +57,7 @@ describe('MainMenu', () => {
       $svgEditor: document.getElementById('app'),
       // Container-scoped lookups (see EditorStartup constructor).
       $id: (id) => document.getElementById(id),
+      $req: (id) => document.getElementById(id),
       rulers: { updateRulers: vi.fn(), display: vi.fn() },
       setBackground: vi.fn(),
       updateCanvas: vi.fn(),

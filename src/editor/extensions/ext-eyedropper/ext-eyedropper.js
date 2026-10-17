@@ -23,10 +23,11 @@ import { copyStyle } from '../../styleCopy.js'
 
 const name = 'eyedropper'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -39,7 +40,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     await loadExtensionTranslation(svgEditor)
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
 
     /**
      * Open the action menu at the click point, sampling the target's fill.
@@ -49,8 +50,8 @@ export default {
      */
     const openActionMenu = (e, target) => {
       const hex = normalizeFillToHex(target.getAttribute('fill'))
-      const root = closestRoot(svgEditor.workarea)
-      const host = root.body ?? root
+      const root = closestRoot(svgEditor.workarea ?? null)
+      const host = /** @type {Document} */ (root).body ?? root
 
       host.querySelector('se-eyedropper-menu')?.remove()
       const menu = document.createElement('se-eyedropper-menu')
@@ -100,7 +101,7 @@ export default {
     svgCanvas.registerTool({
       id: name,
       pointerDown (ctx, ev) {
-        const { target } = ev.event
+        const target = /** @type {Element} */ (ev.event.target)
         if (['svg', 'g', 'use'].includes(target.nodeName)) return false
         openActionMenu(ev.event, target)
       }
@@ -115,7 +116,7 @@ export default {
         const buttonTemplate = `
         <se-button id="tool_eyedropper" command="tool_eyedropper" title="${title}" src="eye_dropper.svg" shortcut=${key}></se-button>
         `
-        svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 12)
+        svgCanvas.insertChildAtIndex($req('tools_left'), buttonTemplate, 12)
         svgEditor.leftPanel.addModeCommand('tool_eyedropper', name, { label: title })
 
         // Escape while the tool is active (and no menu is capturing it)

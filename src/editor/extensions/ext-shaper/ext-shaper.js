@@ -31,17 +31,18 @@ const MIN_SAMPLE_SPACING = 0.5
 /** …and into at most this many samples, so a very long scribble stays cheap. */
 const MAX_SAMPLES = 2000
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
 }
 
-const round = (v) => Math.round(v * 100) / 100
+const round = (/** @type {number} */ v) => Math.round(v * 100) / 100
 
 // ---- scribble hit-testing ---------------------------------------------------
 
@@ -134,7 +135,7 @@ export const strokeTouches = (el, samples, base) => {
  * @returns {{element: string, attr: object, open?: boolean}|null}
  */
 export const describeShape = (shape) => {
-  const rotate = (rotation, cx, cy) => (rotation ? { transform: `rotate(${rotation} ${round(cx)} ${round(cy)})` } : {})
+  const rotate = (/** @type {number} */ rotation, /** @type {number} */ cx, /** @type {number} */ cy) => (rotation ? { transform: `rotate(${rotation} ${round(cx)} ${round(cy)})` } : {})
   switch (shape.type) {
     case 'line':
       return {
@@ -175,13 +176,13 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     /** In-progress stroke: document points, the preview polyline and the last client point kept. */
     let stroke = null
 
-    const createShape = (desc) => {
+    const createShape = (/** @type {{ element: string; attr: object; open?: boolean; } | null} */ desc) => {
       const attr = { id: svgCanvas.getNextId(), ...desc.attr }
       // An open line is only visible with a stroke; the others take the current paint.
       if (desc.open) {
@@ -193,7 +194,7 @@ export default {
     }
 
     /** The elements a scribble covers: children of the current group / layer it touches. */
-    const covered = (points) => {
+    const covered = (/** @type {{ x: number; y: number; }[]} */ points) => {
       const parent = svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()
       const base = parent?.getScreenCTM?.()
       if (!parent || !base) return []
@@ -266,7 +267,7 @@ export default {
         const title = `${name}:buttons.0.title`
         // Beside the other freehand tools: right after the pencil.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_shaper" command="tool_shaper" title="${title}" src="shaper.svg" shortcut="shift+N"></se-button>`,
           2
         )

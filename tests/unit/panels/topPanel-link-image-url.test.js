@@ -55,6 +55,7 @@ const makeTopPanel = (container, elem, extraSvgCanvas = {}) => {
   const $qa = (sel) => [...container.querySelectorAll(sel)]
   const editor = {
     $id,
+    $req: $id,
     $qa,
     selectedElement: elem,
     multiselected: false,

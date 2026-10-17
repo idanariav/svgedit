@@ -34,7 +34,7 @@ export default {
 
         // Apply a picked font to the selected text and surface it in the dropdown
         fontLib.addEventListener('font-pick', (e) => {
-          const { family } = e.detail
+          const { family } = /** @type {CustomEvent} */ (e).detail
           fontSelect.addOption(family, family)
           fontSelect.value = family
           canv.setFontFamily(family)

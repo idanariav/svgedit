@@ -19,9 +19,10 @@
 const name = 'live-effects'
 const P = 'ext-live-effects'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -29,7 +30,7 @@ const loadExtensionTranslation = function (svgEditor) {
 }
 
 /** `roughenSize` → `Roughen size`. */
-const humanize = (key) => {
+const humanize = (/** @type {string} */ key) => {
   const s = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -40,15 +41,15 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const { $id, $req } = svgCanvas
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /** @type {?{index: number, stack: Array<{name: string, params: Object}>}} */
     let editing = null
 
     const randomSeed = () => 1 + Math.floor(Math.random() * 1e9)
 
-    const effectDef = (effectName) => svgCanvas.listLiveEffects().find((e) => e.name === effectName)
+    const effectDef = (/** @type {string} */ effectName) => svgCanvas.listLiveEffects().find((e) => e.name === effectName)
 
     const selectedElem = () => {
       const elems = svgCanvas.getSelectedElements().filter(Boolean)
@@ -57,8 +58,8 @@ export default {
 
     const closeEditor = () => {
       editing = null
-      $id(`${P}-editor`).replaceChildren()
-      $id(`${P}-editor`).style.display = 'none'
+      $req(`${P}-editor`).replaceChildren()
+      $req(`${P}-editor`).style.display = 'none'
     }
 
     const cancelEdit = () => {
@@ -94,13 +95,13 @@ export default {
         row.append(label, edit, remove)
         return row
       }))
-      $id(`${P}-expand`).style.display = stack.length ? '' : 'none'
+      $req(`${P}-expand`).style.display = stack.length ? '' : 'none'
     }
 
     // --- parameter editor -------------------------------------------------
     const buildField = (def, key, entry) => {
       const dflt = def.defaults[key]
-      const onValue = (value) => {
+      const onValue = (/** @type {string | number | boolean} */ value) => {
         entry.params[key] = value
         svgCanvas.previewLiveEffects(editing.stack)
       }
@@ -132,7 +133,7 @@ export default {
       if (choices) {
         const field = document.createElement('se-select')
         field.setAttribute('label', humanize(key))
-        choices.forEach((c) => field.addOption(c, humanize(c)))
+        choices.forEach((/** @type {string} */ c) => field.addOption(c, humanize(c)))
         field.value = entry.params[key]
         field.addEventListener('change', () => onValue(field.value))
         return field
@@ -206,8 +207,8 @@ export default {
       select.value = ''
     }
 
-    const showPanel = (on) => {
-      $id(`${P}-panel`).style.display = on ? '' : 'none'
+    const showPanel = (/** @type {boolean} */ on) => {
+      $req(`${P}-panel`).style.display = on ? '' : 'none'
     }
 
     /** Re-evaluate visibility and rows for the current selection. */
@@ -221,11 +222,11 @@ export default {
       // so instead of silently hiding the section.
       const isText = elem?.tagName === 'text' && svgCanvas.getMode() !== 'pathedit'
       showPanel(available && (usable || isText))
-      $id(`${P}-body`).style.display = usable ? '' : 'none'
-      $id(`${P}-hint`).style.display = isText && !usable ? '' : 'none'
+      $req(`${P}-body`).style.display = usable ? '' : 'none'
+      $req(`${P}-hint`).style.display = isText && !usable ? '' : 'none'
       // A stroke-output effect (Scribble) paints its own stroke, so it cannot go on a variable-width stroke.
       const noteShown = usable && elem.hasAttribute('se:taper-d') && svgCanvas.listLiveEffects().some((e) => e.strokeOutput)
-      $id(`${P}-note`).style.display = noteShown ? '' : 'none'
+      $req(`${P}-note`).style.display = noteShown ? '' : 'none'
       if (!editing) renderRows()
     }
 
@@ -254,8 +255,8 @@ export default {
         host.appendChild(panelTemplate.content)
         refillAddSelect()
 
-        $id(`${P}-add`).addEventListener('change', (e) => {
-          const effectName = e.target.value
+        $req(`${P}-add`).addEventListener('change', (e) => {
+          const effectName = /** @type {HTMLInputElement} */ (e.target).value
           if (!effectName) return
           const def = effectDef(effectName)
           // se-select assigns its own value after dispatching 'change'; reset
@@ -271,7 +272,7 @@ export default {
           stack.push({ name: effectName, params })
           openEditor(stack.length - 1, stack)
         })
-        $id(`${P}-expand`).addEventListener('click', () => {
+        $req(`${P}-expand`).addEventListener('click', () => {
           cancelEdit()
           svgCanvas.expandLiveEffects()
           refresh()

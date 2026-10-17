@@ -18,16 +18,17 @@ const SVG = 'http://www.w3.org/2000/svg'
 /** The line's ink; the overlay is never saved or exported. */
 const INK = '#00a6c8'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
 }
 
-const el = (tag, attrs) => {
+const el = (/** @type {string} */ tag, /** @type {Object<string, *>} */ attrs) => {
   const node = document.createElementNS(SVG, tag)
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v))
   return node
@@ -38,23 +39,27 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     /** The line being measured, or the last one (it stays until the next press). */
+    /** @type {?{a: {x: number, y: number}, b: {x: number, y: number}}} */
     let line = null
     /** The "45° steps" option: Shift held for good, for a screen with no Shift key. In memory until reload. */
     let angleSnap = false
-    const stepped = (ev) => ev.mods.shift || angleSnap
-    /** The tool context of the last gesture, to redraw the readout when the zoom changes. */
+    const stepped = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => ev.mods.shift || angleSnap
+    /**
+* The tool context of the last gesture, to redraw the readout when the zoom changes.
+* @type {import("@svgedit/svgcanvas").ToolContext | null}
+*/
     let toolCtx = null
 
     /** px → the base unit (the number only), and the unit's name. */
     const unit = () => svgEditor.configObj.curConfig.baseUnit || 'px'
-    const toUnit = (px) => (unit() === 'px' ? px : Number(svgCanvas.convertUnit(px, unit())))
+    const toUnit = (/** @type {number} */ px) => (unit() === 'px' ? px : Number(svgCanvas.convertUnit(px, unit())))
 
     /** Draw the line and its readout into the tool overlay, at the current zoom. */
-    const draw = (ctx) => {
+    const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
       if (!line) return
       const { a, b } = line
@@ -140,7 +145,7 @@ export default {
         const button = `<se-button id="tool_measure" command="tool_measure" title="${title}" src="measure.svg"></se-button>`
         const anchor = $id('tool_eyedropper')
         if (anchor) anchor.insertAdjacentHTML('afterend', button)
-        else svgCanvas.insertChildAtIndex($id('tools_left'), button, 13)
+        else svgCanvas.insertChildAtIndex($req('tools_left'), button, 13)
         svgEditor.leftPanel.addModeCommand('tool_measure', name, { label: title })
       }
     }

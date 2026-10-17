@@ -180,7 +180,7 @@ Size: done; the rest is optional.
 
 **Status (2026-10-17).** 113 of the 118 engine modules are `.ts` (with `svgcanvas.ts`) (the 5 left: the shim `path-seg-shim`, and
 `history`/`historyrecording`/`transaction`/`undo`, which R1 deletes); every
-converted module is in the strict typecheck. Then `src/editor`.
+converted module is in the strict typecheck. `src/editor` is next and is being typed as a ratchet (see "The editor" below).
 
 **Decision (2026-10-16): `.ts` for the engine, incrementally.** The toolchain is in and proven on four leaf modules
 (`proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`). The case for `.ts` that the document model's JSDoc
@@ -221,6 +221,28 @@ Per module: `git mv x.js x.ts`, move the JSDoc types into syntax (TypeScript's o
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,
 no enums or parameter properties, and no hand-written declaration file describes the canvas any more (R2).
 Retire the d.ts and the drift test only with R2.
+
+**The editor (2026-10-17).** `src/editor` is JavaScript with JSDoc, 179 files. Under `strict` it had 5,862 errors in 159 files (almost all
+DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
+runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
+that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
+95 of 179 files are on the list; about 2,700 errors remain in the other 84, concentrated in `EditorStartup.js`, `Editor.js` and the big
+components/dialogs (`seShapeLibrary`, `seClassSelect`, `RadialPanel`, `HsvBox`, `addToShapeLibrary`) and the extensions (`ext-repeat`, `ext-polystar`,
+`ext-connector`, `ext-gradient-tool`, …). What made the first 3,000 cheap, and is what the rest should use:
+- `$id('x')` returns the element type of that id (`src/editor/ui-ids.d.ts`, generated from the panels' HTML and the templates inside the JS sources by
+  `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.
+- `querySelector('se-…')` and `HTMLElementTagNameMap['se-…']` are typed through `src/editor/element-tags.d.ts` (kept in step with the
+  `customElements.define` calls by `tests/unit/element-tags.test.js`); a component's `this.$x = /** @type {T} */ (this._shadowRoot.querySelector(…))`
+  fields carry their tag's type; `requireOwnerEditor(el)` (domScope.js) is `ownerEditor` for code that only runs inside a mounted editor.
+- `src/editor/globals.d.ts` types the `window` globals (`seAlert`, `sePrompt`, `svgEditHost`, …), `.html` imports and `EditorInstance`.
+- TypeScript's own "infer from usage" code fix (`getCodeFixesAtPosition`, fix name `inferFromUsage`) writes plausible JSDoc for implicit-any
+  parameters; skip the results that come out `any`/`undefined`/`never`/`null` and read the rest (it narrows to the argument types it saw, and it
+  wrote a few `import("packages/…")` paths and duplicate `@param`s that had to be fixed by hand).
+- Pitfall: a statement that starts with a cast, `/** @type {T} */ (x).y = …`, parses as a call of the line above in a semicolon-free file; start it
+  with `;`.
+- Not done: `EditorStartup` calls members that only its subclass `Editor` defines (18 `configObj`, the panels, `updateCanvas`, …); the clean
+  fix is one class (or an explicit interface) rather than casts. After the ratchet reaches the big files, the conversion to `.ts` is mechanical
+  (`annotateWithTypeFromJSDoc`), as it was for the engine.
 
 Size: M for the toolchain (done), L for the conversion (small per module).
 

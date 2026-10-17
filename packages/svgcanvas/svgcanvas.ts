@@ -47,9 +47,11 @@ import {
   remapElementIdsAndRefs,
   createDomUtils,
   $id,
+  $req,
   $qa,
   $qq,
   scopedId,
+  scopedReq,
   scopedQa,
   scopedQq,
   $click,
@@ -359,9 +361,11 @@ export interface ExtensionObject {
  */
 class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   static $id = $id
+  static $req = $req
   static $qq = $qq
   static $qa = $qa
   static scopedId = scopedId
+  static scopedReq = scopedReq
   static scopedQq = scopedQq
   static scopedQa = scopedQa
   static $click = $click
@@ -400,6 +404,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   mergeDeep = mergeDeep
 
   $id = $id
+  $req = $req
   $qq = $qq
   $qa = $qa
   $click = $click
@@ -645,7 +650,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     // extensions read these off the instance, so they inherit the scoping.
     this.scopeRoot = scopeRoot
     if (scopeRoot) {
-      this.$id = scopedId(scopeRoot) as typeof this.$id
+      this.$id = scopedId(scopeRoot)
+      this.$req = scopedReq(scopeRoot)
       this.$qq = scopedQq(scopeRoot)
       this.$qa = scopedQa(scopeRoot)
     }

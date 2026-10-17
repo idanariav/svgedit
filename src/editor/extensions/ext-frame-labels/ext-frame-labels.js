@@ -33,15 +33,18 @@ export default {
 
     /** @type {Map<Element, HTMLElement>} frame rect -> its label */
     const labels = new Map()
+    /**
+* @type {Element | null}
+*/
     let editing = null // the frame whose label is currently an <input>
     let raf = 0
 
-    const frameName = (frame, index) =>
+    const frameName = (/** @type {Element} */ frame, /** @type {number} */ index) =>
       frame.querySelector(':scope > title')?.textContent?.trim() || `Frame ${index + 1}`
 
-    const isHidden = (frame) => {
+    const isHidden = (/** @type {Element} */ frame) => {
       const layer = frame.closest('g.layer')
-      return !!layer && layer.style.display === 'none'
+      return !!layer && /** @type {SVGElement} */ (layer).style.display === 'none'
     }
 
     const paint = () => {
@@ -79,14 +82,14 @@ export default {
 
     const schedule = () => { if (!raf) raf = requestAnimationFrame(paint) }
 
-    const commit = (frame, value) => {
+    const commit = (/** @type {Element} */ frame, /** @type {string} */ value) => {
       svgCanvas.selectOnly([frame], true)
       svgCanvas.setGroupTitle(value.trim())
       const panelField = $id('frame_name')
       if (panelField) panelField.value = value.trim()
     }
 
-    const startEdit = (frame, label) => {
+    const startEdit = (/** @type {Element} */ frame, /** @type {HTMLElement} */ label) => {
       if (editing) return
       editing = frame
       const input = host.ownerDocument.createElement('input')
@@ -97,7 +100,7 @@ export default {
       input.focus()
       input.select()
       let done = false
-      const finish = (save) => {
+      const finish = (/** @type {boolean} */ save) => {
         if (done) return
         done = true
         editing = null
@@ -112,7 +115,7 @@ export default {
       input.addEventListener('blur', () => finish(true))
     }
 
-    const wire = (label, frame) => {
+    const wire = (/** @type {HTMLElement} */ label, /** @type {Element} */ frame) => {
       // Keep canvas-level handlers (rubber-band, panning) from seeing label events.
       for (const type of ['mousedown', 'mouseup', 'click', 'contextmenu']) {
         label.addEventListener(type, (e) => e.stopPropagation())
@@ -120,7 +123,7 @@ export default {
       label.addEventListener('mousedown', () => {
         if (editing !== frame) svgCanvas.selectOnly([frame], true)
       })
-      label.addEventListener('dblclick', (e) => {
+      label.addEventListener('dblclick', (/** @type {{ stopPropagation: () => void; }} */ e) => {
         e.stopPropagation()
         if (svgCanvas.getMode() === 'select') startEdit(frame, label)
       })

@@ -2,7 +2,7 @@
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -80,10 +80,10 @@ export class SeListItem extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$menuitem = this._shadowRoot.querySelector('[aria-label=option]')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$labelText = this._shadowRoot.querySelector('.label-text')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.$menuitem = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('[aria-label=option]'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$labelText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.label-text'))
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
     this.$menuitem.addEventListener('mousedown', e => {
       this.$menuitem.dispatchEvent(new CustomEvent('selectedindexchange', {
         bubbles: true,
@@ -97,7 +97,7 @@ export class SeListItem extends HTMLElement {
     return ['option', 'src', 'title', 'img-height', 'selected']
   }
 
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'option':
@@ -126,7 +126,7 @@ export class SeListItem extends HTMLElement {
     }
   }
 
-  async _loadIcon (src) {
+  async _loadIcon (/** @type {string} */ src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
@@ -140,16 +140,28 @@ export class SeListItem extends HTMLElement {
     }
   }
 
+  /** @returns {?string} */
   get option () { return this.getAttribute('option') }
+
+  /** @param {string} value */
   set option (value) { this.setAttribute('option', value) }
 
-  get title () { return this.getAttribute('title') }
+  /** @returns {string} */
+  get title () { return /** @type {string} */ (this.getAttribute('title')) }
+
+  /** @param {string} value */
   set title (value) { this.setAttribute('title', value) }
 
+  /** @returns {?string} */
   get imgHeight () { return this.getAttribute('img-height') }
+
+  /** @param {string} value */
   set imgHeight (value) { this.setAttribute('img-height', value) }
 
+  /** @returns {?string} */
   get src () { return this.getAttribute('src') }
+
+  /** @param {string} value */
   set src (value) { this.setAttribute('src', value) }
 }
 

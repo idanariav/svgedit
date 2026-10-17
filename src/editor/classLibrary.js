@@ -87,7 +87,7 @@ export const attrCatalog = scope =>
 export const getClasses = () => {
   const adapter = getUserDataAdapter()
   if (adapter) {
-    const parsed = adapter.getClasses()
+    const parsed = adapter.getClasses?.()
     return Array.isArray(parsed) ? parsed : []
   }
   try {
@@ -101,13 +101,13 @@ export const getClasses = () => {
 
 /**
  * Persist the full preset array.
- * @param {Array} classes
+ * @param {Array<{name:string,scope:string,attrs:Object}>} classes
  * @returns {void}
  */
 const writeClasses = classes => {
   const adapter = getUserDataAdapter()
   if (adapter) {
-    adapter.setClasses(classes)
+    adapter.setClasses?.(classes)
     return
   }
   try {
@@ -121,7 +121,7 @@ const writeClasses = classes => {
  * Presets visible for a given element scope: those tagged with the same scope
  * plus universal (`any`) presets.
  * @param {'text'|'shape'} scope
- * @returns {Array}
+ * @returns {Array<{name:string,scope:string,attrs:Object}>}
  */
 export const getClassesForScope = scope =>
   getClasses().filter(c => c.scope === scope || c.scope === 'any')
@@ -173,7 +173,7 @@ export const getDefaultClasses = () => {
   }
 }
 
-const writeDefaultClasses = defaults => {
+const writeDefaultClasses = (/** @type {Object<string, string>} */ defaults) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     adapter.setDefaultClasses?.(defaults)

@@ -34,10 +34,11 @@ export const CLICK_PX = 3
 const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -51,7 +52,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     /**
@@ -74,13 +75,13 @@ export default {
     let drag = null
     let hover = null
 
-    const matrixOf = (el) => {
+    const matrixOf = (/** @type {Element} */ el) => {
       const tlist = getTransformList(el)
       return tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
     }
 
     /** The target for an element, or null when it cannot take a width profile. */
-    const targetFor = (el) => {
+    const targetFor = (/** @type {Element | null | undefined} */ el) => {
       if (!el || !svgCanvas.canWidthStroke(el)) return null
       let d
       let width
@@ -110,7 +111,7 @@ export default {
     const toLocal = (t, ev) => apply(t.inverse, { x: ev.rawX, y: ev.rawY })
 
     /** The stroke a press or hover is about: the selected one, else the one under the pointer. */
-    const pickTarget = (ev) => {
+    const pickTarget = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       for (const el of svgCanvas.getSelectedElements().filter(Boolean)) {
         const t = targetFor(el)
         if (t) return t
@@ -131,7 +132,7 @@ export default {
       }
     })
 
-    const near = (a, b, radius) => Math.hypot(a.x - b.x, a.y - b.y) <= radius
+    const near = (/** @type {{ x: number; y: number; }} */ a, /** @type {{ x: number; y: number; }} */ b, /** @type {number} */ radius) => Math.hypot(a.x - b.x, a.y - b.y) <= radius
 
     /** What is under the pointer: a point's diamond, one of its side handles, the stroke, or nothing. */
     const hit = (t, q, zoom) => {
@@ -158,9 +159,9 @@ export default {
       return e
     }
 
-    const diamond = (p, s, attrs) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
+    const diamond = (/** @type {{ x: number; y: number; }} */ p, /** @type {number} */ s, /** @type {{ fill: string; stroke: string; "stroke-width": number; "vector-effect": string; "fill-opacity"?: number; }} */ attrs) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
 
-    const draw = (ctx) => {
+    const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
       const t = target
       if (!t) return
@@ -348,7 +349,7 @@ export default {
         const title = `${name}:buttons.0.title`
         // Beside the other stroke tools: after the Smooth tool.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_width" command="tool_width" title="${title}" src="width-tool.svg"></se-button>`,
           4
         )

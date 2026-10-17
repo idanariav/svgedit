@@ -14,7 +14,7 @@ const TRAYS = ['tool_options_panel', 'ts_tool_options']
  * @param {any} editor
  * @returns {void}
  */
-export const refreshToolOptions = (editor) => {
+export const refreshToolOptions = (/** @type {EditorInstance} */ editor) => {
   const { $id, svgCanvas } = editor
   const options = svgCanvas.getToolOptions().filter((o) => !o.hidden)
   const signature = `${svgCanvas.getMode()}|${options.map((o) => `${o.id}:${o.type}:${(o.choices ?? []).map((c) => c.value).join('/')}`).join(',')}`
@@ -44,10 +44,10 @@ const fillTray = (editor, tray, options, signature) => {
   }
   tray.style.display = ''
   for (const o of options) {
-    const control = tray.querySelector(`[data-option="${o.id}"]`)
+    const control = /** @type {HTMLInputElement} */ (tray.querySelector(`[data-option="${o.id}"]`))
     if (!control) continue
-    if (o.type === 'checkbox') control.querySelector('input').checked = Boolean(o.value)
-    else if (String(control.value) !== String(o.value) && document.activeElement !== control) control.value = o.value
+    if (o.type === 'checkbox') /** @type {HTMLInputElement} */ (control.querySelector('input')).checked = Boolean(o.value)
+    else if (String(control.value) !== String(o.value) && document.activeElement !== control) control.value = String(o.value)
   }
 }
 
@@ -58,7 +58,7 @@ const fillTray = (editor, tray, options, signature) => {
  */
 const buildControl = (editor, o) => {
   const { svgCanvas } = editor
-  const send = (value) => {
+  const send = (/** @type {number | boolean} */ value) => {
     svgCanvas.setToolOption(o.id, value)
     refreshToolOptions(editor)
   }
@@ -83,7 +83,7 @@ const buildControl = (editor, o) => {
       for (const c of o.choices ?? []) select.addOption(c.value, c.label)
       select.value = String(o.value)
     })
-    select.addEventListener('change', (e) => send(e.target.value))
+    select.addEventListener('change', (e) => send(/** @type {HTMLInputElement} */ (e.target).value))
     return select
   }
   const spin = document.createElement('se-spin-input')
@@ -94,7 +94,7 @@ const buildControl = (editor, o) => {
     if (v !== undefined) spin.setAttribute(attr, String(v))
   }
   spin.addEventListener('change', (e) => {
-    const n = parseFloat(e.target.value)
+    const n = parseFloat(/** @type {HTMLInputElement} */ (e.target).value)
     if (Number.isFinite(n)) send(n)
   })
   return spin

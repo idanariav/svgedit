@@ -269,7 +269,8 @@ import `src/editor`, read `window.svgEditor` or define custom elements) and
 `typecheck` (`tsc` over the JSDoc- and TypeScript-typed modules, a strict config for the
 cleanest ones, and the host API conformance check) and `check-canvas-calls` (the editor and
 extensions' calls into `svgCanvas`, checked against the canvas types: a member that does not
-exist on `SvgCanvas`, or arguments its signature rejects; the rest of the editor is not typed yet).
+exist on `SvgCanvas`, or arguments its signature rejects) and `check-editor-strict` (the editor files listed in
+`src/editor/strict-files.json` must stay clean under `strict`; the list only grows, see `.claude/roadmap/rearchitecture.md` › R3).
 
 Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
 (`tests/e2e/fixtures.js`) and fails on structural corruption; opt out with

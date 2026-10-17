@@ -64,12 +64,12 @@ const convertShapesToPaths = (node, doc, svgCanvas) => {
  *   host should re-resolve to a fresh href on every load.
  * @returns {void}
  */
-export const insertImageFromHref = (editor, href, opts = {}) => {
+export const insertImageFromHref = (/** @type {EditorInstance} */ editor, href, opts = {}) => {
   const svgCanvas = editor.svgCanvas
 
   /**
-   * @param {Float} imageWidth
-   * @param {Float} imageHeight
+   * @param {number} imageWidth
+   * @param {number} imageHeight
    * @returns {void}
    */
   const insertNewImage = (imageWidth, imageHeight) => {
@@ -139,7 +139,7 @@ export const insertImageFromHref = (editor, href, opts = {}) => {
  *   drop the vectorized paths directly over the source image.
  * @returns {void}
  */
-export const insertSvgElements = (editor, svgString, opts = {}) => {
+export const insertSvgElements = (/** @type {EditorInstance} */ editor, svgString, opts = {}) => {
   const svgCanvas = editor.svgCanvas
   const doc = svgCanvas.getDOMDocument()
 
@@ -153,16 +153,22 @@ export const insertSvgElements = (editor, svgString, opts = {}) => {
   // Split the source into defs/paint-server content (goes to <defs>) and
   // drawable top-level elements (go to the layer). `<defs>` may sit at the root
   // or, rarely, inside a layer group — route its children to defs either way.
+  /**
+* @type {Element[]}
+*/
   const defsNodes = []
+  /**
+* @type {Element[]}
+*/
   const drawNodes = []
-  const collectDefs = (container) => {
+  const collectDefs = (/** @type {HTMLElement} */ container) => {
     Array.from(container.children).forEach((node) => {
       if (node.localName === 'defs') {
         Array.from(node.children).forEach((d) => defsNodes.push(d))
       }
     })
   }
-  const collectDrawables = (container) => {
+  const collectDrawables = (/** @type {HTMLElement} */ container) => {
     Array.from(container.children).forEach((node) => {
       const tag = node.localName
       if (tag === 'title' || tag === 'metadata' || tag === 'defs') return

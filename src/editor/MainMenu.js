@@ -7,13 +7,10 @@ import { applyTheme } from './themeUtil.js'
  */
 class MainMenu {
   /**
-   * @param {PlainObject} editor svgedit handler
+   * @param {EditorInstance} editor svgedit handler
    */
   constructor (editor) {
     this.editor = editor
-    /**
-     * @type {Integer}
-     */
     this.editor.exportWindowCt = 0
   }
 
@@ -40,7 +37,7 @@ class MainMenu {
 
   /**
    * Save user preferences based on current values in the UI.
-   * @param {Event} e
+   * @param {CustomEvent} e
    * @function module:SVGthis.savePreferences
    * @returns {Promise<void>}
    */
@@ -92,7 +89,7 @@ class MainMenu {
    * @param e
    * @returns {Promise<void>} Resolves to `undefined`
    */
-  async clickExport (e) {
+  async clickExport (/** @type {CustomEvent} */ e) {
     if (e?.detail?.trigger !== 'ok' || e?.detail?.imgType === undefined) {
       return
     }
@@ -139,7 +136,7 @@ class MainMenu {
     const content = this.editor.svgCanvas.getSvgContent()
     const frame = content?.querySelector(`#${CSS.escape(frameId)}`)
     if (!frame) return null
-    const num = (attr) => Number(frame.getAttribute(attr))
+    const num = (/** @type {string} */ attr) => Number(frame.getAttribute(attr))
     let x = num('x')
     let y = num('y')
     let w = num('width')
@@ -156,12 +153,12 @@ class MainMenu {
    * @returns {void}
    */
   showPreferences () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (this.editor.configObj.preferences) {
       return
     }
     this.editor.configObj.preferences = true
-    $id('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
+    $req('se-edit-prefs').setAttribute('theme', this.editor.configObj.pref('theme') || 'light')
     const $editDialog = $id('se-edit-prefs')
     $editDialog.scrubFields = String(this.editor.configObj.pref('scrub_numeric_fields')) !== 'false'
     $editDialog.selectSameTolerance = parseFloat(this.editor.configObj.pref('select_same_tolerance')) || 0
@@ -171,11 +168,8 @@ class MainMenu {
     $editDialog.setAttribute('dialog', 'open')
   }
 
-  /**
-   * @type {module}
-   */
   init () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Top panel
     const hideTabletToggle = this.editor.configObj.curConfig.hideTabletToggle
     const tabletItem = hideTabletToggle
@@ -197,19 +191,19 @@ class MainMenu {
     this.editor.$svgEditor.append(template.content.cloneNode(true))
 
     // The menu entries are views of registry commands (`command=` below, panelCommands.js).
-    $id('se-export-dialog').addEventListener(
+    $req('se-export-dialog').addEventListener(
       'change',
       this.clickExport.bind(this)
     )
-    $id('se-edit-prefs').addEventListener(
+    $req('se-edit-prefs').addEventListener(
       'change',
-      function (e) {
+      (/** @type {CustomEvent} */ e) => {
         if (e.detail.dialog === 'closed') {
           this.hidePreferences()
         } else {
           this.savePreferences(e)
         }
-      }.bind(this)
+      }
     )
   }
 }

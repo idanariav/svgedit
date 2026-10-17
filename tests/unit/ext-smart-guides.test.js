@@ -29,6 +29,7 @@ describe('ext-smart-guides', () => {
 
     svgCanvas = {
       $id: vi.fn((id) => document.getElementById(id)),
+      $req: vi.fn((id) => document.getElementById(id)),
       NS,
       assignAttributes,
       getCurConfig: vi.fn(() => ({})),

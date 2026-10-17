@@ -136,7 +136,7 @@ export class SeFontLibrary extends HTMLElement {
     if (name === 'catalog') {
       this._catalogPath = newVal
     } else if (name === 'title') {
-      const btn = this._shadow.querySelector('.fl-tool')
+      const btn = /** @type {HTMLElement} */ (this._shadow.querySelector('.fl-tool'))
       if (btn) btn.title = newVal
     }
   }
@@ -151,7 +151,7 @@ export class SeFontLibrary extends HTMLElement {
       </button>
       <div class="fl-popover" style="display:none" role="dialog" aria-label="Fonts"></div>
     `
-    this._shadow.querySelector('.fl-tool').addEventListener('click', e => {
+    ;/** @type {HTMLButtonElement} */ (this._shadow.querySelector('.fl-tool')).addEventListener('click', e => {
       e.stopPropagation()
       this._toggle()
     })
@@ -215,9 +215,9 @@ export class SeFontLibrary extends HTMLElement {
     await this._loadCatalog()
     this._open = true
     this._syncTheme()
-    this._shadow.querySelector('.fl-tool').classList.add('pressed')
+    ;/** @type {HTMLButtonElement} */ (this._shadow.querySelector('.fl-tool')).classList.add('pressed')
     this._render()
-    const pop = this._shadow.querySelector('.fl-popover')
+    const pop = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.fl-popover'))
     pop.style.display = ''
     this._position(pop)
     this._attachListeners()
@@ -227,13 +227,16 @@ export class SeFontLibrary extends HTMLElement {
   _close () {
     this._open = false
     this._query = ''
-    this._shadow.querySelector('.fl-tool').classList.remove('pressed')
-    this._shadow.querySelector('.fl-popover').style.display = 'none'
+    ;/** @type {HTMLButtonElement} */ (this._shadow.querySelector('.fl-tool')).classList.remove('pressed')
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.fl-popover')).style.display = 'none'
     this._removeListeners()
   }
 
+  /**
+* @param {Element | null} pop
+*/
   _position (pop) {
-    const btn = this.getBoundingClientRect()
+    const btn = /** @type {HTMLElement} */ (this.getBoundingClientRect())
     const rect = pop.getBoundingClientRect()
     const gap = 8
     let left = btn.left
@@ -275,7 +278,7 @@ export class SeFontLibrary extends HTMLElement {
   /** Render the popover chrome (search box, category tabs, list container) once
    *  on open. The category tabs and list are refreshed in place afterwards. */
   _render () {
-    const pop = this._shadow.querySelector('.fl-popover')
+    const pop = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.fl-popover'))
     pop.innerHTML = `
       <div class="fl-head">
         <div class="fl-search">
@@ -305,7 +308,7 @@ export class SeFontLibrary extends HTMLElement {
       })
     })
 
-    const input = pop.querySelector('.fl-search input')
+    const input = /** @type {HTMLInputElement} */ (pop.querySelector('.fl-search input'))
     input?.addEventListener('input', () => {
       clearTimeout(this._searchTimer)
       this._searchTimer = setTimeout(() => {
@@ -326,7 +329,7 @@ export class SeFontLibrary extends HTMLElement {
   /** Build the filtered font list, bind item clicks and set up lazy previews,
    *  leaving the search input untouched so typing isn't disrupted. */
   _renderItems () {
-    const pop = this._shadow.querySelector('.fl-popover')
+    const pop = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.fl-popover'))
     const list = pop.querySelector('.fl-list')
     if (!list) return
     const fonts = this._visibleFonts()
@@ -356,6 +359,9 @@ export class SeFontLibrary extends HTMLElement {
     list.querySelectorAll('.fl-item[data-family]').forEach(el => this._io.observe(el))
   }
 
+  /**
+* @param {Element} btn
+*/
   async _pick (btn) {
     const family = btn.dataset.family
     btn.classList.add('is-loading')
@@ -380,7 +386,7 @@ export class SeFontLibrary extends HTMLElement {
       if (!path.includes(this) && !path.some(el => el.classList?.contains('fl-popover'))) this._close()
     }
     setTimeout(() => document.addEventListener('click', this._outsideClick, true), 0)
-    this._keyHandler = e => { if (e.key === 'Escape') this._close() }
+    this._keyHandler = /** @type {{ key: string; }} */ (/** @type {{ key: string; }} */ e) => { if (e.key === 'Escape') this._close() }
     document.addEventListener('keydown', this._keyHandler)
   }
 
@@ -389,7 +395,13 @@ export class SeFontLibrary extends HTMLElement {
     if (this._keyHandler) { document.removeEventListener('keydown', this._keyHandler); this._keyHandler = null }
   }
 
+  /**
+* @param {string} s
+*/
   _esc (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+  /**
+* @param {string} s
+*/
   _escAttr (s) { return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
 }
 

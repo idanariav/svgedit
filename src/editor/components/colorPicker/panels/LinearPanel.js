@@ -16,7 +16,7 @@ const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
  * @returns {HTMLElement}
  */
 export function createLinearPanel (paint, i18next) {
-  const t = key => {
+  const t = (/** @type {string} */ key) => {
     try { return i18next?.t(key) || key } catch { return key }
   }
 
@@ -74,6 +74,9 @@ export function createLinearPanel (paint, i18next) {
   colorsCol.className = 'cp-grad-colors'
   const stopColorSection = document.createElement('div')
   stopColorSection.className = 'cp-stop-color-editor'
+  /**
+* @type {(HTMLElement & { hex: string; alpha: number; setHex(h: string): void; setAlpha(a: number): void; }) | null}
+*/
   let stopHsvBox = null
   colorsCol.appendChild(stopColorSection)
 
@@ -114,7 +117,7 @@ export function createLinearPanel (paint, i18next) {
     if (val === panelState.spreadMethod) opt.selected = true
     spreadSelect.appendChild(opt)
   })
-  const selectBtn = selectWrap.querySelector('.cp-select-btn')
+  const selectBtn = /** @type {HTMLButtonElement} */ (selectWrap.querySelector('.cp-select-btn'))
   selectBtn.style.position = 'relative'
   selectBtn.appendChild(spreadSelect)
   spreadSelect.addEventListener('change', () => {
@@ -131,7 +134,7 @@ export function createLinearPanel (paint, i18next) {
     value: panelState.alpha,
     unit: '%'
   })
-  opacSlider.addEventListener('change', e => { panelState.alpha = e.detail.value })
+  opacSlider.addEventListener('change', (/** @type {CustomEvent} */ e) => { panelState.alpha = e.detail.value })
   settingsSection.appendChild(opacSlider)
   bottomRow.appendChild(settingsSection)
 
@@ -189,11 +192,17 @@ export function createLinearPanel (paint, i18next) {
     panel.dispatchEvent(new CustomEvent('color-change', { bubbles: true }))
   }
 
+  /**
+* @param {string} hex
+*/
   function _hexToRgb (hex) {
     const c = hex.replace('#', '')
     return `${parseInt(c.slice(0, 2), 16)},${parseInt(c.slice(2, 4), 16)},${parseInt(c.slice(4, 6), 16)}`
   }
 
+  /**
+* @param {string} newMode
+*/
   function setMode (newMode) {
     panelState.mode = newMode
     modeToggle.querySelectorAll('.cp-mode-btn').forEach(b => {
@@ -204,19 +213,22 @@ export function createLinearPanel (paint, i18next) {
     _updatePreview()
   }
 
-  stopBar.addEventListener('stops-change', (e) => {
+  stopBar.addEventListener('stops-change', (/** @type {CustomEvent} */ e) => {
     panelState.stops = e.detail.stops
     _updatePreview()
   })
 
   // Build/rebuild the inline HsvBox in the colors column for a given stop.
+  /**
+* @param {string | number} idx
+*/
   function _mountStopEditor (idx) {
     const stop = panelState.stops[idx]
     if (!stop) return
     stopColorSection.innerHTML = ''
     stopHsvBox = createHsvBox(stop.color, stop.alpha)
     stopColorSection.appendChild(stopHsvBox)
-    stopHsvBox.addEventListener('color-change', (ce) => {
+    stopHsvBox.addEventListener('color-change', (/** @type {CustomEvent} */ ce) => {
       const sidx = stopBar.getSelectedIndex()
       if (sidx >= 0 && sidx < panelState.stops.length) {
         panelState.stops[sidx].color = ce.detail.hex
@@ -227,9 +239,9 @@ export function createLinearPanel (paint, i18next) {
     })
   }
 
-  stopBar.addEventListener('stop-select', (e) => _mountStopEditor(e.detail.index))
+  stopBar.addEventListener('stop-select', (/** @type {CustomEvent} */ e) => _mountStopEditor(e.detail.index))
 
-  dial.addEventListener('change', (e) => {
+  dial.addEventListener('change', (/** @type {CustomEvent} */ e) => {
     panelState.angle = e.detail.angle
     _updatePreview()
   })
@@ -237,7 +249,7 @@ export function createLinearPanel (paint, i18next) {
   _mountStopEditor(stopBar.getSelectedIndex())
   _updatePreview()
 
-  panel.setFromHex = (hex) => {
+  panel.setFromHex = (/** @type {string} */ hex) => {
     const clean = hex.replace('#', '')
     let idx = stopBar.getSelectedIndex()
     if (idx < 0 || idx >= panelState.stops.length) idx = 0
@@ -259,7 +271,7 @@ export function createLinearPanel (paint, i18next) {
     monoMode: panelState.monoMode
   })
 
-  panel.setFromPaint = (p) => {
+  panel.setFromPaint = (/** @type {import("@svgedit/svgcanvas/core/paint.ts").default} */ p) => {
     const s = paintToState(p)
     if (s.tab === 'linear') {
       panelState = {

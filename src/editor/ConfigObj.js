@@ -32,7 +32,7 @@ export const SESSION_ONLY_PREFS = new Set(['bkgd_color', 'bkgd_url', 'bkgd_gradi
  */
 export default class ConfigObj {
   /**
-   * @param {PlainObject} editor
+   * @param {EditorInstance} editor
    */
   constructor (editor) {
     /**
@@ -100,24 +100,24 @@ export default class ConfigObj {
       *   Although previous versions of this list would entirely override the default list, as of version 2.7, the defaults will always be added to this explicit list unless the configuration `noDefaultExtensions` is included.
       *   See {@link module:SVGEditor~defaultExtensions}.
       * @property {string[]} [disabledFeatures=[]] Built-in features to leave out, by name with or without the `ext-` prefix (`['opensave', 'ext-grid']`). Applies on top of the default list, so a host that wants everything except a few names lists only those, and new built-in tools reach it without a change. Also removes the names from an explicit `extensions` list. Can only be meaningfully set before `init()`.
-      * @property {Float} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
+      * @property {number} [canvas_expansion=3] The minimum area visible outside the canvas, as a multiple of the image dimensions. The larger the number, the more one can scroll outside the canvas.
       * @property {PlainObject} [initFill] Init fill properties
       * @property {string} [initFill.color="FFFFFF"] The initial fill color. Must be a hex code string. Defaults to solid white.
-      * @property {Float} [initFill.opacity=1] The initial fill opacity. Must be a number between 0 and 1
+      * @property {number} [initFill.opacity=1] The initial fill opacity. Must be a number between 0 and 1
       * @property {PlainObject} [initStroke] Init stroke properties
-      * @property {Float} [initStroke.width=5] The initial stroke width. Must be a positive number.
+      * @property {number} [initStroke.width=5] The initial stroke width. Must be a positive number.
       * @property {string} [initStroke.color="000000"] The initial stroke color. Must be a hex code. Defaults to solid black.
-      * @property {Float} [initStroke.opacity=1] The initial stroke opacity. Must be a number between 0 and 1.
+      * @property {number} [initStroke.opacity=1] The initial stroke opacity. Must be a number between 0 and 1.
       * @property {PlainObject} text Text style properties
-      * @property {Float} [text.stroke_width=0] Text stroke width
-      * @property {Float} [text.font_size=24] Text font size
+      * @property {number} [text.stroke_width=0] Text stroke width
+      * @property {number} [text.font_size=24] Text font size
       * @property {string} [text.font_family="serif"] Text font family
-      * @property {Float} [initOpacity=1] Initial opacity (multiplied by 100)
+      * @property {number} [initOpacity=1] Initial opacity (multiplied by 100)
       * @property {module:SVGEditor.XYDimensions} [dimensions=[640, 480]] The default width/height of a new document. Use an array in `setConfig` (e.g., `[800, 600]`).
       * @property {boolean} [gridSnapping=false] Enable snap to grid by default. Set in Editor Options.
       * @property {string} [gridColor="#000"] Accepts hex, e.g., '#000'. Set in Editor Options. Defaults to black.
       * @property {string} [baseUnit="px"] Set in Editor Options.
-      * @property {Float} [snappingStep=10] Set the default grid snapping value. Set in Editor Options.
+      * @property {number} [snappingStep=10] Set the default grid snapping value. Set in Editor Options.
       * @property {boolean} [showRulers=true] Initial state of ruler display (v2.6). Set in Editor Options.
       * @property {string} [initTool="select"] The initially selected tool. Must be either the ID of the button for the tool, or the ID without `tool_` prefix (e.g., "select").
       * @property {boolean} [wireframe=false] Start in wireframe mode
@@ -262,6 +262,7 @@ export default class ConfigObj {
       'ext-measure',
       'ext-magic-wand'
     ]
+    /** @type {Record<string, any>} */
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying
       //   procedures (we obtain instead from defaultExtensions)
@@ -294,7 +295,7 @@ export default class ConfigObj {
     }
     if (curConfig.disabledFeatures?.length) {
       const off = new Set(curConfig.disabledFeatures.map((name) => (name.startsWith('ext-') ? name : `ext-${name}`)))
-      curConfig.extensions = curConfig.extensions.filter((name) => !off.has(name))
+      curConfig.extensions = curConfig.extensions.filter((/** @type {string} */ name) => !off.has(name))
     }
     // Export updated config
     this.curConfig = curConfig
@@ -383,20 +384,30 @@ export default class ConfigObj {
   }
 
   /**
-  * Store and retrieve preferences.
-  * @function pref
-  * @param {string} key The preference name to be retrieved or set
-  * @param {string} [val] The value. If the value supplied is missing or falsey, no change to the preference will
-  * be made unless `mayBeEmpty` is set.
+  * Store and retrieve preferences. With only a key it reads the preference (the stored one, else the default); with a
+  * value it stores it (an empty value is ignored unless `mayBeEmpty` is set, and then reads, as before).
+  * @overload
+  * @param {string} key The preference name to be read
+  * @returns {string}
+  */
+  /**
+  * @overload
+  * @param {string} key The preference name to be set
+  * @param {string|boolean|number} val The value
   * @param {boolean} [mayBeEmpty] If value may be falsey.
-  * @returns {string|void} If val is missing or falsey and `mayBeEmpty` is not set, the
-  * value of the previously stored preference will be returned.
+  * @returns {void}
   * @todo Review whether any remaining existing direct references to
   *  getting `curPrefs` can be changed to use `svgEditor.configObj.pref()` getting to ensure
   *  `defaultPrefs` fallback (also for sake of `allowInitialUserOverride`);
   *  specifically, `bkgd_color` could be changed so that the pref dialog has a
   *  button to auto-calculate background, but otherwise uses `svgEditor.configObj.pref()` to
   *  be able to get default prefs or overridable settings
+  */
+  /**
+  * @param {string} key
+  * @param {string|boolean|number} [val]
+  * @param {boolean} [mayBeEmpty]
+  * @returns {string|void}
   */
   pref (key, val, mayBeEmpty) {
     if (mayBeEmpty || val) {
@@ -429,7 +440,7 @@ export default class ConfigObj {
    * @returns {void}
    */
   seedGridConfigFromPrefs () {
-    const asBool = v => v === true || v === 'true'
+    const asBool = (/** @type {string | boolean | void} */ v) => v === true || v === 'true'
     this.curConfig.showGrid = asBool(this.pref('grid_show'))
     this.curConfig.gridSnapping = asBool(this.pref('grid_snapping'))
     this.curConfig.gridColor = this.pref('grid_color') || this.curConfig.gridColor

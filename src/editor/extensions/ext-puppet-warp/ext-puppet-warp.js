@@ -48,16 +48,16 @@ const svgNS = 'http://www.w3.org/2000/svg'
 const REST_D_ATTR = 'se:puppet-rest-d'
 const PINS_ATTR = 'se:puppet-pins'
 
-const loadExtensionTranslation = async function (svgEditor) {
+const loadExtensionTranslation = async function (/** @type {import("../../Editor.js").default} */ svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
 }
 
-const fmt = (n) => Math.round(n * 100) / 100
+const fmt = (/** @type {number} */ n) => Math.round(n * 100) / 100
 
 // Element types that carry warp-able geometry (everything convertToPath handles).
 const WARPABLE = new Set(['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'])
@@ -68,9 +68,9 @@ const WARPABLE = new Set(['path', 'rect', 'circle', 'ellipse', 'line', 'polyline
 // derive both as a fraction of the target's content-space bbox diagonal — the
 // ratios are chosen so a "typical" mid-size shape (~300 unit diagonal) lands on
 // the previous fixed defaults (6 units/sample, tolerance 2).
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
-export const sampleStepFor = (diag) => clamp(diag / 50, 1, 20)
-export const refitToleranceFor = (diag) => clamp(diag / 150, 0.5, 10)
+const clamp = (/** @type {number} */ v, /** @type {number} */ min, /** @type {number} */ max) => Math.max(min, Math.min(max, v))
+export const sampleStepFor = (/** @type {number} */ diag) => clamp(diag / 50, 1, 20)
+export const refitToleranceFor = (/** @type {number} */ diag) => clamp(diag / 150, 0.5, 10)
 
 // ── Persistent-rig helpers ──────────────────────────────────────────────────
 // Pure/DOM-light functions, kept at module scope (like corner-radius.js's
@@ -94,14 +94,14 @@ export const remapAffine = (remap) => {
 
 /** Serialize pins to the `se:puppet-pins` JSON form (rounded, compact). */
 export const serializePins = (pinList) =>
-  JSON.stringify(pinList.map((p) => [fmt(p.px), fmt(p.py), fmt(p.qx), fmt(p.qy)]))
+  JSON.stringify(pinList.map((/** @type {{ px: number; py: number; qx: number; qy: number; }} */ p) => [fmt(p.px), fmt(p.py), fmt(p.qx), fmt(p.qy)]))
 
 /**
  * Parse `se:puppet-pins` JSON back into `{px,py,qx,qy}` objects.
  * @returns {?Array<{px:number,py:number,qx:number,qy:number}>} null on
  *   missing/corrupt input — callers fall back to a fresh empty-pins rig.
  */
-export const parsePins = (json) => {
+export const parsePins = (/** @type {string | null} */ json) => {
   if (!json) return null
   try {
     const parsed = JSON.parse(json)
@@ -282,7 +282,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -314,7 +314,7 @@ export default {
     /** @type {SVGCircleElement[]} */
     let pinDots = []
 
-    const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by)
+    const dist = (/** @type {number} */ ax, /** @type {number} */ ay, /** @type {number} */ bx, /** @type {number} */ by) => Math.hypot(ax - bx, ay - by)
 
     // Pin overlay lives in #svgroot, outside #svgcontent, so a host autosave /
     // getSvgString() firing mid-session never serializes the pin dots into the
@@ -339,7 +339,7 @@ export default {
     }
 
     /** Content-space bbox diagonal of `el` (local `getBBox()` mapped through `m`). */
-    const bboxDiagonal = (el, m) => {
+    const bboxDiagonal = (/** @type {SVGGraphicsElement} */ el, /** @type {DOMMatrix} */ m) => {
       const b = el.getBBox()
       const p1 = transformPoint(b.x, b.y, m)
       const p2 = transformPoint(b.x + b.width, b.y + b.height, m)
@@ -360,7 +360,7 @@ export default {
      * @param {?string} [dOverride]
      * @returns {Array<{pts:Array<{x:number,y:number}>, closed:boolean}>}
      */
-    const sampleRest = (el, m, diag, dOverride) => {
+    const sampleRest = (/** @type {SVGGraphicsElement} */ el, /** @type {DOMMatrix} */ m, /** @type {number} */ diag, dOverride) => {
       const d = dOverride ?? getPathDFromElement(el)
       if (!d) return []
       const scope = getPaperScope()
@@ -401,7 +401,7 @@ export default {
 
     // ── Pin overlay ──────────────────────────────────────────────────────────
 
-    const addPinDot = (i) => {
+    const addPinDot = (/** @type {number} */ i) => {
       const zoom = svgCanvas.getZoom()
       const p = pins[i]
       const dot = document.createElementNS(svgNS, 'circle')
@@ -433,7 +433,7 @@ export default {
       pinDots = []
     }
 
-    const hitTestPin = (x, y) => {
+    const hitTestPin = (/** @type {number} */ x, /** @type {number} */ y) => {
       const r = 8 / svgCanvas.getZoom()
       for (let i = 0; i < pins.length; i++) {
         if (dist(x, y, pins[i].qx, pins[i].qy) <= r) return i
@@ -566,7 +566,7 @@ export default {
 
     // Any exit from puppetwarp mode commits the pose (mirrors ext-curvature's
     // modeChange teardown; critical so overlay dots aren't serialized).
-    document.addEventListener('modeChange', (evt) => {
+    document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
       if (evt.detail.getMode() !== name && targets.length) {
         commit()
       }
@@ -594,7 +594,7 @@ export default {
       callback () {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_puppet_warp" command="tool_puppet_warp" title="${title}" src="pin.svg" shortcut="X"></se-button>`,
           13
         )
@@ -650,6 +650,9 @@ export default {
         if (pins.length) redrawPins()
       },
 
+      /**
+* @param {{ mouse_x: number; mouse_y: number; }} opts
+*/
       mouseMove (opts) {
         if (svgCanvas.getMode() !== name) return undefined
         if (dragIndex < 0) return undefined

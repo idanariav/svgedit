@@ -466,7 +466,23 @@ export const insertChildAtIndex = (parent: Element, child: string, index = 0): v
 }
 
 // shortcuts to common DOM functions
-export const $id = (id: string): HTMLElement | null => document.getElementById(id)
+/** Element types by id, filled in by the host (the editor's `ui-ids.d.ts` lists the ids of its panels), so `$id('angle')` knows what it returns. */
+declare global { interface ElementIdMap {} }
+export interface IdLookup {
+  <K extends keyof ElementIdMap>(id: K): ElementIdMap[K] | null
+  (id: string): HTMLElement | null
+}
+/** `$id` for code that only runs once the element exists: the element, or an error that names the id. */
+export interface IdRequire {
+  <K extends keyof ElementIdMap>(id: K): ElementIdMap[K]
+  (id: string): HTMLElement
+}
+export const $id: IdLookup = (id: string): HTMLElement | null => document.getElementById(id)
+export const $req: IdRequire = (id: string): HTMLElement => {
+  const el = document.getElementById(id)
+  if (!el) throw new Error(`No element #${id}`)
+  return el
+}
 export const $qq = (sel: string): Element | null => document.querySelector(sel)
 export const $qa = (sel: string): Element[] => [...document.querySelectorAll(sel)]
 // Scoped variants: resolve within a given root element instead of the whole
@@ -475,7 +491,12 @@ export const $qa = (sel: string): Element[] => [...document.querySelectorAll(sel
 // getElementById returns the first instance's element. Binding $id/$qq/$qa to
 // the owning editor's container lets multiple editors coexist (see svgcanvas.js
 // and the editor's per-instance $id).
-export const scopedId = (root: ParentNode) => (id: string): Element | null => root.querySelector(`[id="${CSS.escape(id)}"]`)
+export const scopedId = (root: ParentNode): IdLookup => (id: string): HTMLElement | null => root.querySelector(`[id="${CSS.escape(id)}"]`)
+export const scopedReq = (root: ParentNode): IdRequire => (id: string): HTMLElement => {
+  const el = root.querySelector<HTMLElement>(`[id="${CSS.escape(id)}"]`)
+  if (!el) throw new Error(`No element #${id}`)
+  return el
+}
 export const scopedQq = (root: ParentNode) => (sel: string): Element | null => root.querySelector(sel)
 export const scopedQa = (root: ParentNode) => (sel: string): Element[] => [...root.querySelectorAll(sel)]
 export const $click = (element: EventTarget, handler: EventListener): void => {

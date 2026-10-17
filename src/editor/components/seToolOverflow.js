@@ -2,7 +2,7 @@
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 /**
@@ -23,16 +23,16 @@ export class ToolOverflow extends HTMLElement {
     */
   constructor () {
     super()
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
-    this.$button = this._shadowRoot.querySelector('.menu-button')
-    this.$overall = this._shadowRoot.querySelector('.overall')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$menu = this._shadowRoot.querySelector('.menu')
-    this.$badge = this._shadowRoot.querySelector('.badge')
-    this._shadowRoot.querySelector('slot').addEventListener('slotchange', () => this._updateBadge())
+    this.$button = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu-button'))
+    this.$overall = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.overall'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$menu = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu'))
+    this.$badge = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.badge'))
+    this._shadowRoot.querySelector('slot')?.addEventListener('slotchange', () => this._updateBadge())
   }
 
   /**
@@ -165,7 +165,7 @@ export class ToolOverflow extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -243,9 +243,9 @@ export class ToolOverflow extends HTMLElement {
     // SE-TOOL-OVERFLOW, since that click originates inside the shadow root)
     // and clicks on the slotted content (un-retargeted, same light DOM tree)
     // — mirroring se-flyingbutton's identical single-listener pattern.
-    const onClickHandler = (ev) => {
+    const onClickHandler = (/** @type {Event} */ ev) => {
       ev.stopPropagation()
-      if (ev.target.nodeName === 'SE-TOOL-OVERFLOW') {
+      if (/** @type {Element} */ (ev.target).nodeName === 'SE-TOOL-OVERFLOW') {
         this.opened = !this.opened
         if (this.opened) {
           const rect = this.getBoundingClientRect()
@@ -256,7 +256,7 @@ export class ToolOverflow extends HTMLElement {
             : rect.top
           this.$menu.style.top = top + 'px'
         }
-      } else if (ev.target.nodeName !== 'SE-FLYINGBUTTON') {
+      } else if (/** @type {Element} */ (ev.target).nodeName !== 'SE-FLYINGBUTTON') {
         // A slotted leaf tool handled its own click — close the drawer after,
         // mirroring se-flyingbutton's close-after-pick behavior. A slotted
         // se-flyingbutton's own trigger click is retargeted to SE-FLYINGBUTTON

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.canvas-calls.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "include": ["./**/*.js", "./globals.d.ts", "./element-tags.d.ts", "./ui-ids.d.ts"]
+}

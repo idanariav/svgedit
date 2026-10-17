@@ -60,7 +60,7 @@ export const layerDropIndex = (names, dragged, target, above) => {
 }
 
 export class LayerGestures {
-  /** @param {PlainObject} editor */
+  /** @param {EditorInstance} editor */
   constructor (editor) {
     this.editor = editor
     this.drag = null
@@ -75,10 +75,13 @@ export class LayerGestures {
     const table = this.table
     // Capture, so an Alt-click never reaches the cells' own (plain click) handlers.
     table.addEventListener('click', (evt) => this.onAltClick(evt), true)
-    table.addEventListener('pointerdown', (evt) => this.onPointerDown(evt))
+    table.addEventListener('pointerdown', (/** @type {PointerEvent} */ evt) => this.onPointerDown(evt))
   }
 
-  /** @returns {string} the name a layer row stands for */
+  /**
+* @returns {string} the name a layer row stands for
+* @param {Element | null} tr
+*/
   nameOf (tr) { return tr.querySelector('td.layername')?.textContent ?? '' }
 
   // ── Alt-click ────────────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ export class LayerGestures {
     if (!cell) return
     evt.preventDefault()
     evt.stopPropagation()
-    const tr = cell.closest('tr')
+    const tr = /** @type {HTMLElement|null} */ (/** @type {Element} */ (cell.closest('tr')))
     if (cell.matches('td.layercomment')) {
       this.panel.toggleLayerTemplate(this.nameOf(tr))
     } else if (tr.classList.contains('layer')) {
@@ -107,7 +110,7 @@ export class LayerGestures {
    */
   layerOthers (tr, col) {
     const drawing = this.canvas.getCurrentDrawing()
-    const rows = this.panel.layerTree.layerRows().map((row) => {
+    const rows = this.panel.layerTree.layerRows().map((/** @type {Element | null} */ row) => {
       const name = this.nameOf(row)
       return {
         key: name,
@@ -152,6 +155,9 @@ export class LayerGestures {
 
   // ── Pointer: column paint and layer reorder ──────────────────────────────
 
+  /**
+* @param {PointerEvent} evt
+*/
   onPointerDown (evt) {
     if (evt.button !== 0 || evt.altKey) return
     const target = /** @type {Element} */ (evt.target)
@@ -172,7 +178,7 @@ export class LayerGestures {
   track (evt, begin, move, end) {
     const start = { x: evt.clientX, y: evt.clientY }
     let began = false
-    const onMove = (e) => {
+    const onMove = (/** @type {PointerEvent} */ e) => {
       if (!began) {
         if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_THRESHOLD) return
         began = true
@@ -180,23 +186,26 @@ export class LayerGestures {
       }
       move(e)
     }
-    const finish = (commit) => {
+    const finish = (/** @type {boolean} */ commit) => {
       document.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerup', onUp)
       document.removeEventListener('keydown', onKey, true)
       if (began) end(commit)
     }
     const onUp = () => finish(true)
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); finish(false) } }
+    const onKey = (/** @type {{ key: string; stopPropagation: () => void; }} */ e) => { if (e.key === 'Escape') { e.stopPropagation(); finish(false) } }
     document.addEventListener('pointermove', onMove)
     document.addEventListener('pointerup', onUp)
     document.addEventListener('keydown', onKey, true)
   }
 
-  /** The click / mouseup that ends a drag must not act as a plain click. */
+  /**
+* The click / mouseup that ends a drag must not act as a plain click.
+* @param {string[]} types
+*/
   swallowNext (...types) {
     const table = this.table
-    const stop = (e) => { e.stopPropagation(); e.preventDefault() }
+    const stop = (/** @type {{ stopPropagation: () => void; preventDefault: () => void; }} */ e) => { e.stopPropagation(); e.preventDefault() }
     for (const type of types) {
       table.addEventListener(type, stop, true)
       setTimeout(() => table.removeEventListener(type, stop, true), 0)
@@ -213,13 +222,13 @@ export class LayerGestures {
   startPaint (evt, cell) {
     const col = cell.matches('td.layervis, td.objvis') ? 'vis' : 'lock'
     const first = cell.closest('tr')
-    const flagOf = (c) => c.classList.contains(col === 'vis' ? (c.matches('td.layervis') ? 'layerinvis' : 'objinvis') : 'locked')
+    const flagOf = (/** @type {Element} */ c) => c.classList.contains(col === 'vis' ? (c.matches('td.layervis') ? 'layerinvis' : 'objinvis') : 'locked')
     const goOn = !flagOf(cell)
     const sel = col === 'vis' ? 'td.layervis, td.objvis' : 'td.layerlock, td.objlock'
     /** @type {Element[]} */
     let painted = []
     const clear = () => { painted.forEach((c) => c.classList.remove('colpaint')); painted = [] }
-    const rowsBetween = (a, b) => {
+    const rowsBetween = (/** @type {HTMLTableRowElement | null} */ a, /** @type {HTMLTableRowElement | null} */ b) => {
       const all = Array.from(this.table.querySelectorAll('tbody > tr.layer, tbody > tr.object'))
       const i = all.indexOf(a)
       const j = all.indexOf(b)
@@ -272,6 +281,9 @@ export class LayerGestures {
   startReorder (evt, tr) {
     const name = this.nameOf(tr)
     if (!name) return
+    /**
+* @type {{ tr: Element; above: boolean; index: number; } | null}
+*/
     let drop = null
     const clear = () => this.table.querySelectorAll('.drop-above, .drop-below').forEach((r) =>
       r.classList.remove('drop-above', 'drop-below'))

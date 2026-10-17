@@ -12,7 +12,7 @@ import {
   getDefaultClassForTag,
   setDefaultClassForTag
 } from '../classLibrary.js'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 
 /**
  * Replacement for the old free-text class input. Presents the saved class
@@ -254,10 +254,10 @@ const setAttrIfChanged = (elem, attr, value, oldAttrs) => {
 }
 
 /** The user-facing (library) class token currently on an element. */
-const currentUserClass = elem =>
+const currentUserClass = (/** @type {Element} */ elem) =>
   (elem.getAttribute('class') || '')
     .split(/\s+/)
-    .filter(tk => tk && !tk.startsWith('se_'))
+    .filter((/** @type {string} */ tk) => tk && !tk.startsWith('se_'))
     .join(' ')
 
 class SeClassSelect extends HTMLElement {
@@ -269,18 +269,17 @@ class SeClassSelect extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
 
-    this.$label = this._shadowRoot.querySelector('.top-label')
-    this.$select = this._shadowRoot.querySelector('.field select')
-    this.$add = this._shadowRoot.querySelector('.add')
-    this.$del = this._shadowRoot.querySelector('.del')
-    this.$row = this._shadowRoot.querySelector('.row')
-    this.$popover = this._shadowRoot.querySelector('.popover')
-    this.$name = this._shadowRoot.querySelector('.cl-name')
-    this.$scope = this._shadowRoot.querySelector('.cl-scope')
-    this.$checklist = this._shadowRoot.querySelector('.checklist')
-    this.$default = this._shadowRoot.querySelector('.cl-default')
-    this.$defaultText = this._shadowRoot.querySelector('.default-text')
-
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('.top-label'))
+    this.$select = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.field select'))
+    this.$add = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.add'))
+    this.$del = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.del'))
+    this.$row = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.row'))
+    this.$popover = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.popover'))
+    this.$name = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('.cl-name'))
+    this.$scope = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('.cl-scope'))
+    this.$checklist = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.checklist'))
+    this.$default = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('.cl-default'))
+    this.$defaultText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.default-text'))
     this._elem = null
     this._editingPreset = null
     this._defaultTag = null
@@ -297,8 +296,8 @@ class SeClassSelect extends HTMLElement {
     this.$scope.addEventListener('change', () =>
       this._renderChecklist(this.$scope.value, this._editingPreset)
     )
-    this._shadowRoot.querySelector('.cancel').addEventListener('click', () => this.closeSave())
-    this._shadowRoot.querySelector('.save').addEventListener('click', () => this.save())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.cancel')).addEventListener('click', () => this.closeSave())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.save')).addEventListener('click', () => this.save())
 
     this.addEventListener('keydown', this.handleKeyDown)
   }
@@ -320,15 +319,15 @@ class SeClassSelect extends HTMLElement {
   async _loadIcons () {
     const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
     if (!imgPath) return
-    const set = async (host, src) => {
+    const set = async (/** @type {{ replaceChildren: (arg0: SVGElement) => void; }} */ host, /** @type {string} */ src) => {
       const svgEl = await fetchSvgEl(`${imgPath}/${src}`)
       if (svgEl) {
         svgEl.style.cssText = 'width:16px;height:16px;display:block;'
         host.replaceChildren(svgEl)
       }
     }
-    set(this._shadowRoot.querySelector('.ic-add'), 'new.svg')
-    set(this._shadowRoot.querySelector('.ic-del'), 'delete.svg')
+    set(/** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.ic-add')), 'new.svg')
+    set(/** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.ic-del')), 'delete.svg')
   }
 
   /**
@@ -354,6 +353,10 @@ class SeClassSelect extends HTMLElement {
     this._updateDelState()
   }
 
+  /**
+* @param {string} value
+* @param {string | null} text
+*/
   _option (value, text) {
     const opt = document.createElement('option')
     opt.value = value
@@ -374,7 +377,7 @@ class SeClassSelect extends HTMLElement {
    * @returns {void}
    */
   applyClass (name) {
-    const svgCanvas = ownerEditor(this).svgCanvas
+    const svgCanvas = requireOwnerEditor(this).svgCanvas
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
     if (!elems.length) return
     const preset = name ? getClass(name) : null
@@ -400,21 +403,21 @@ class SeClassSelect extends HTMLElement {
       // rebuild the per-element effect filter via the extension APIs, adding the
       // undo subcommands to this same batch. Both share one filter (fx-filter),
       // so order doesn't matter; each preserves the others' slices.
-      if (preset?.shadow && ownerEditor(this).shadowApi) {
-        ownerEditor(this).shadowApi.apply(elem, preset.shadow, batch)
+      if (preset?.shadow && requireOwnerEditor(this).shadowApi) {
+        requireOwnerEditor(this).shadowApi.apply(elem, preset.shadow, batch)
       }
-      if (preset?.outline && ownerEditor(this).outlineApi) {
-        ownerEditor(this).outlineApi.apply(elem, preset.outline, batch)
+      if (preset?.outline && requireOwnerEditor(this).outlineApi) {
+        requireOwnerEditor(this).outlineApi.apply(elem, preset.outline, batch)
       }
-      if (preset?.glow && ownerEditor(this).glowApi) {
-        ownerEditor(this).glowApi.apply(elem, preset.glow, batch)
+      if (preset?.glow && requireOwnerEditor(this).glowApi) {
+        requireOwnerEditor(this).glowApi.apply(elem, preset.glow, batch)
       }
     })
     if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
     // Refresh the panels so the stamped fill/size/etc. are reflected. These
     // also re-run refresh() on this control, keeping the dropdown in sync.
-    ownerEditor(this).topPanel.update()
-    ownerEditor(this).topPanel.updateContextPanel()
+    requireOwnerEditor(this).topPanel.update()
+    requireOwnerEditor(this).topPanel.updateContextPanel()
   }
 
   /* ── Save / update popover ─────────────────────────────────────── */
@@ -444,6 +447,10 @@ class SeClassSelect extends HTMLElement {
     this.$popover.style.display = 'none'
   }
 
+  /**
+* @param {string} scope
+* @param {Object | null | undefined} editing
+*/
   _renderChecklist (scope, editing) {
     const elem = this._elem
     this.$checklist.replaceChildren()
@@ -469,7 +476,7 @@ class SeClassSelect extends HTMLElement {
     // Drop shadow is captured as structured params, not a flat attribute, so it
     // gets a dedicated row — shown only when there is a shadow to capture (on
     // the element or already on the preset being edited).
-    const shadowApi = ownerEditor(this).shadowApi
+    const shadowApi = requireOwnerEditor(this).shadowApi
     const elemShadow = shadowApi?.read(elem)
     const presetShadow = editing?.shadow
     const shadow = elemShadow || presetShadow
@@ -490,11 +497,11 @@ class SeClassSelect extends HTMLElement {
     }
 
     // Outline is likewise captured as structured params, not a flat attribute.
-    const outline = ownerEditor(this).outlineApi?.read(elem) || editing?.outline
+    const outline = requireOwnerEditor(this).outlineApi?.read(elem) || editing?.outline
     if (outline) {
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = document.createElement('input')
+      const cb = /** @type {HTMLElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.outline = 'true'
       cb.checked = true
@@ -508,11 +515,11 @@ class SeClassSelect extends HTMLElement {
     }
 
     // Glow (outer / inner) and feather are captured as structured params too.
-    const glow = ownerEditor(this).glowApi?.read(elem) || editing?.glow
+    const glow = requireOwnerEditor(this).glowApi?.read(elem) || editing?.glow
     if (glow) {
       const row = document.createElement('label')
       row.className = 'checkrow'
-      const cb = document.createElement('input')
+      const cb = /** @type {HTMLElement} */ (document.createElement('input'))
       cb.type = 'checkbox'
       cb.dataset.glow = 'true'
       cb.checked = true
@@ -545,17 +552,17 @@ class SeClassSelect extends HTMLElement {
     // reading live values off the element or falling back to the edited preset.
     const shadowCb = this.$checklist.querySelector('input[data-shadow]')
     const shadow = shadowCb?.checked
-      ? (ownerEditor(this).shadowApi?.read(elem) || this._editingPreset?.shadow)
+      ? (requireOwnerEditor(this).shadowApi?.read(elem) || this._editingPreset?.shadow)
       : undefined
     // Capture the outline (structured params) when its row is checked.
     const outlineCb = this.$checklist.querySelector('input[data-outline]')
     const outline = outlineCb?.checked
-      ? (ownerEditor(this).outlineApi?.read(elem) || this._editingPreset?.outline)
+      ? (requireOwnerEditor(this).outlineApi?.read(elem) || this._editingPreset?.outline)
       : undefined
     // Capture the glow (structured params) when its row is checked.
     const glowCb = this.$checklist.querySelector('input[data-glow]')
     const glow = glowCb?.checked
-      ? (ownerEditor(this).glowApi?.read(elem) || this._editingPreset?.glow)
+      ? (requireOwnerEditor(this).glowApi?.read(elem) || this._editingPreset?.glow)
       : undefined
     const existing = getClass(name)
     if (existing && this._editingPreset?.name !== name) {
@@ -636,6 +643,9 @@ class SeClassSelect extends HTMLElement {
     }
   }
 
+  /**
+* @param {{ key: string; }} e
+*/
   handleKeyDown (e) {
     if (e.key === 'Escape' && this.isOpen) {
       this.closeSave()
@@ -644,3 +654,5 @@ class SeClassSelect extends HTMLElement {
 }
 
 customElements.define('se-class-select', SeClassSelect)
+
+export default SeClassSelect

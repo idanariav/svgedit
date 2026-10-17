@@ -47,13 +47,15 @@ export default class SePlainAlertDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('dialog')
-    this.$buttonContainer = this._shadowRoot.querySelector('#choiceButtonContainer')
-
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('dialog'))
+    this.$buttonContainer = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#choiceButtonContainer'))
     this._choices = ['OK']
     this.keyChoice = null
     this._pendingResult = undefined
     this._autoAttached = false
+    /**
+* @type {((value: { choice?: string; } | PromiseLike<{ choice?: string; }>) => void)[]}
+*/
     this._closeResolvers = []
 
     // Lets the user pick a choice by its initial letter; Escape records a

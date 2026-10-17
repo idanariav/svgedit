@@ -84,7 +84,7 @@ export const createFxComposer = (svgCanvas) => {
   const prevFilterMap = {}
 
   /** Resolve the <filter> element an element currently references, or null. */
-  const getRefFilter = (elem) => {
+  const getRefFilter = (/** @type {Element} */ elem) => {
     const attr = elem.getAttribute('filter')
     if (!attr) return null
     const m = /url\(["']?#([^"')]+)["']?\)/.exec(attr)
@@ -105,7 +105,7 @@ export const createFxComposer = (svgCanvas) => {
   const isOurFilter = (elem, filter) =>
     !!filter && (filter.hasAttribute('data-fx') || filter.id === `${elem.id}_fx` || filter.id === `${elem.id}_shadow`)
 
-  const featherOf = (spec) => (spec.feather && spec.feather.radius > 0 ? spec.feather : null)
+  const featherOf = (/** @type {{ feather: { radius: number; }; }} */ spec) => (spec.feather && spec.feather.radius > 0 ? spec.feather : null)
 
   const hasEffects = (spec) => {
     const { outer, inner } = glowOf(spec)

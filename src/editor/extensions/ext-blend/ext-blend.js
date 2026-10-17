@@ -27,9 +27,10 @@ const name = 'blend'
 const P = 'ext-blend'
 const INK = '#2b7fff'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -42,8 +43,8 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const { $id, $req } = svgCanvas
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selected = () => svgCanvas.getSelectedElements().filter(Boolean)
     const blendedSelection = () => (selected().length ? svgCanvas.getBlendGroup(selected()[0]) : null)
@@ -58,24 +59,33 @@ export default {
     ]
 
     /** A change of the spacing: remembered for new blends, and applied to the selected blend. */
-    const setSpacing = (changes) => {
+    const setSpacing = (/** @type {Record<string, unknown>} */ changes) => {
       svgCanvas.setBlendDefaults(changes)
       svgCanvas.setBlendOptions(changes)
     }
 
     // --- the tool -------------------------------------------------------
 
-    /** The shape (or blend) the Blend tool picked first, and the one under the press. */
+    /**
+* The shape (or blend) the Blend tool picked first, and the one under the press.
+* @type {Element | null}
+*/
     let first = null
+    /**
+* @type {Element | null}
+*/
     let pending = null
+    /**
+* @type {SVGRectElement | null}
+*/
     let marker = null
 
-    const pick = (ev) => {
+    const pick = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       const target = svgCanvas.getMouseTarget(ev.event)
       return svgCanvas.getBlendGroup(target) ?? (svgCanvas.isBlendKeyCandidate(target) ? target : null)
     }
 
-    const mark = (ctx) => {
+    const mark = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       if (!first) return
       if (!marker) {
         marker = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -101,7 +111,7 @@ export default {
       if (!marker.isConnected) ctx.addOverlay(marker)
     }
 
-    const reset = (ctx) => {
+    const reset = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       first = null
       pending = null
       ctx?.clearOverlays()
@@ -167,21 +177,21 @@ export default {
       const group = blendedSelection()
       panel.style.display = (group || svgCanvas.canBlend() || svgCanvas.canReplaceBlendSpine()) && svgCanvas.getMode() !== 'pathedit' ? '' : 'none'
       // The spine buttons show for a blend; Replace needs a path selected with it (a disabled button says so in its command).
-      $id(`${P}-spine-actions`).style.display = group || svgCanvas.canReplaceBlendSpine() ? '' : 'none'
+      $req(`${P}-spine-actions`).style.display = group || svgCanvas.canReplaceBlendSpine() ? '' : 'none'
       for (const [id, ok] of [['replace-spine', svgCanvas.canReplaceBlendSpine()], ['reverse-spine', !!group && !!svgCanvas.getBlendSpine()], ['detach-spine', !!group && !!svgCanvas.getBlendSpine()]]) {
-        $id(`${P}-${id}`).disabled = !ok
+        $req(`${P}-${id}`).disabled = !ok
       }
       const aligned = group ? svgCanvas.getBlendAlign(group) : null
-      $id(`${P}-align-row`).style.display = aligned === null ? 'none' : ''
-      $id(`${P}-align`).checked = !!aligned
-      $id(`${P}-blended`).style.display = group ? '' : 'none'
+      $req(`${P}-align-row`).style.display = aligned === null ? 'none' : ''
+      $req(`${P}-align`).checked = !!aligned
+      $req(`${P}-blended`).style.display = group ? '' : 'none'
       if (!group) return
       const o = current()
-      $id(`${P}-mode`).value = o.mode
-      $id(`${P}-steps`).value = o.steps
-      $id(`${P}-distance`).value = o.distance
-      $id(`${P}-row-steps`).style.display = o.mode === 'steps' ? '' : 'none'
-      $id(`${P}-row-distance`).style.display = o.mode === 'distance' ? '' : 'none'
+      $req(`${P}-mode`).value = o.mode
+      $req(`${P}-steps`).value = o.steps
+      $req(`${P}-distance`).value = o.distance
+      $req(`${P}-row-steps`).style.display = o.mode === 'steps' ? '' : 'none'
+      $req(`${P}-row-distance`).style.display = o.mode === 'distance' ? '' : 'none'
     }
 
     const needBlend = () => (blendedSelection() ? true : tr('needBlend'))
@@ -193,7 +203,7 @@ export default {
         const title = `${name}:toolTitle`
         // Beside the other stroke tools: after the Width tool.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_blend" command="tool_blend" title="${title}" src="blend-tool.svg"></se-button>`,
           5
         )
@@ -228,28 +238,28 @@ export default {
         if (designTab && objectPanel) designTab.insertBefore(template.content, objectPanel)
         else (designTab || $id('tools_top')).appendChild(template.content)
 
-        for (const c of modeChoices()) $id(`${P}-mode`).addOption(c.value, c.label)
-        const onChange = (id, read) => $id(`${P}-${id}`).addEventListener('change', (e) => {
+        for (const c of modeChoices()) $req(`${P}-mode`).addOption(c.value, c.label)
+        const onChange = (id, read) => $req(`${P}-${id}`).addEventListener('change', (e) => {
           setSpacing(read(e.target))
           refresh()
         })
         onChange('mode', (t) => ({ mode: t.value }))
-        onChange('steps', (t) => ({ steps: parseFloat(t.value) || 1 }))
-        onChange('distance', (t) => ({ distance: parseFloat(t.value) || 1 }))
+        onChange('steps', (/** @type {{ value: string; }} */ t) => ({ steps: parseFloat(t.value) || 1 }))
+        onChange('distance', (/** @type {{ value: string; }} */ t) => ({ distance: parseFloat(t.value) || 1 }))
 
-        const run = (id) => svgEditor.commands.run(id)
-        $id(`${P}-make`).addEventListener('click', () => run('blend_make'))
-        $id(`${P}-expand`).addEventListener('click', () => run('blend_expand'))
-        $id(`${P}-release`).addEventListener('click', () => run('blend_release'))
-        $id(`${P}-replace-spine`).addEventListener('click', () => run('blend_replace_spine'))
-        $id(`${P}-reverse-spine`).addEventListener('click', () => run('blend_reverse_spine'))
-        $id(`${P}-detach-spine`).addEventListener('click', () => run('blend_detach_spine'))
-        $id(`${P}-align`).addEventListener('change', (e) => {
-          svgCanvas.alignBlendToPath(e.target.checked)
+        const run = (/** @type {string} */ id) => svgEditor.commands.run(id)
+        $req(`${P}-make`).addEventListener('click', () => run('blend_make'))
+        $req(`${P}-expand`).addEventListener('click', () => run('blend_expand'))
+        $req(`${P}-release`).addEventListener('click', () => run('blend_release'))
+        $req(`${P}-replace-spine`).addEventListener('click', () => run('blend_replace_spine'))
+        $req(`${P}-reverse-spine`).addEventListener('click', () => run('blend_reverse_spine'))
+        $req(`${P}-detach-spine`).addEventListener('click', () => run('blend_detach_spine'))
+        $req(`${P}-align`).addEventListener('change', (e) => {
+          svgCanvas.alignBlendToPath(/** @type {HTMLInputElement} */ (e.target).checked)
           refresh()
         })
 
-        const reg = (id, label, spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
+        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.js").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
         reg('blend_make', 'make', {
           enabled: () => (svgCanvas.canBlend() ? true : tr('needShapes')),
           run: () => { svgCanvas.makeBlend(); refresh() }

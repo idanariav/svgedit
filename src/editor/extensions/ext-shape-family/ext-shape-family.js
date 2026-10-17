@@ -77,10 +77,11 @@ const FIELDS = {
   ]
 }
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -92,9 +93,9 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /** Options remembered between uses (drag keys and the popover both write them). */
     const options = {
@@ -109,7 +110,7 @@ export default {
     let spaceHeld = false
     let popover = null
 
-    const isFamilyMode = (mode) => MODES.includes(mode)
+    const isFamilyMode = (/** @type {string} */ mode) => MODES.includes(mode)
 
     // ---- geometry -------------------------------------------------------
 
@@ -157,7 +158,7 @@ export default {
     // ---- element creation -------------------------------------------------
 
     /** Paint attributes for a new shape; a stroke of `none` would make it invisible. */
-    const paintFor = (desc) => {
+    const paintFor = (/** @type {object} */ desc) => {
       const attr = {}
       const stroke = svgCanvas.getColor('stroke')
       if (!stroke || stroke === 'none') attr.stroke = '#000000'
@@ -166,7 +167,7 @@ export default {
       return attr
     }
 
-    const createElement = (desc) => svgCanvas.addSVGElementsFromJson({
+    const createElement = (/** @type {object} */ desc) => svgCanvas.addSVGElementsFromJson({
       element: desc.element,
       curStyles: true,
       attr: { id: svgCanvas.getNextId(), ...paintFor(desc), ...(desc.d ? { d: desc.d } : {}) },
@@ -178,11 +179,11 @@ export default {
         el.setAttribute('d', desc.d)
         return
       }
-      el.replaceChildren(...desc.children.map((child) => svgCanvas.addSVGElementsFromJson(child)))
+      el.replaceChildren(...desc.children.map((/** @type {import("@svgedit/svgcanvas").SVGElementJSON} */ child) => svgCanvas.addSVGElementsFromJson(child)))
     }
 
     /** Give a freshly built grid's children ids, as every element in a drawing has one. */
-    const assignChildIds = (el) => {
+    const assignChildIds = (/** @type {Element} */ el) => {
       el.querySelectorAll(':scope > *').forEach((child) => {
         if (!child.id) child.setAttribute('id', svgCanvas.getNextId())
       })
@@ -303,13 +304,13 @@ export default {
         createFromOptions(mode, at, values)
       })
 
-      const onKey = (e) => {
+      const onKey = (/** @type {{ key: string; preventDefault: () => void; }} */ e) => {
         if (e.key === 'Escape') {
           e.preventDefault()
           closePopover()
         }
       }
-      const onOutside = (e) => {
+      const onOutside = (/** @type {{ composedPath: () => HTMLFormElement[]; }} */ e) => {
         if (!e.composedPath().includes(el)) closePopover()
       }
       // Deferred so the click that opened the popover does not close it at once.
@@ -332,7 +333,7 @@ export default {
     // ---- tools ----------------------------------------------------------------
 
     /** The tool for one mode; the four share their handlers and differ only in id and undo label. */
-    const toolFor = (mode) => ({
+    const toolFor = (/** @type {string} */ mode) => ({
       id: mode,
       undoLabel: UNDO_LABEL[mode],
       snap: true, // the start and the dragged corner snap to other objects
@@ -423,7 +424,7 @@ export default {
         template.innerHTML = MODES.map((mode) =>
           `<se-button id="tool_${mode}" command="tool_${mode}" title="${name}:buttons.${MODE_TITLE[mode]}.title" src="${BUTTON_ICON[mode]}"></se-button>`
         ).join('')
-        $id('tools_shapes').append(template.content.cloneNode(true))
+        $req('tools_shapes').append(template.content.cloneNode(true))
         for (const mode of MODES) {
           svgEditor.leftPanel.addModeCommand(`tool_${mode}`, mode, { label: `${name}:buttons.${MODE_TITLE[mode]}.title` })
         }
@@ -433,7 +434,7 @@ export default {
           if (e.code === 'Space') spaceHeld = false
         }, { signal: svgEditor.listenerAbort?.signal })
         // Leaving the tool drops a popover that was never confirmed.
-        document.addEventListener('modeChange', (e) => {
+        document.addEventListener('modeChange', (/** @type {CustomEvent} */ e) => {
           if (popover && !isFamilyMode(e.detail?.getMode?.())) closePopover()
         }, { signal: svgEditor.listenerAbort?.signal })
       }

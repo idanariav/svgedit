@@ -29,10 +29,11 @@ import { spiroToBezierOnContext } from 'spiro'
 
 const name = 'curvature'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -41,7 +42,7 @@ const loadExtensionTranslation = function (svgEditor) {
 
 // ── Path builders (one per smoothing mode) ───────────────────────────────────
 
-const fmt = (n) => Math.round(n * 100) / 100
+const fmt = (/** @type {number} */ n) => Math.round(n * 100) / 100
 
 /**
  * Catmull-Rom → cubic Bézier (interpolating: the curve passes through every
@@ -88,8 +89,24 @@ class SpiroPathContext {
   constructor () { this.d = '' }
   beginShape () {}
   endShape () {}
+  /**
+* @param {number} x
+* @param {number} y
+*/
   moveTo (x, y) { this.d += `M ${fmt(x)},${fmt(y)}` }
+  /**
+* @param {number} x
+* @param {number} y
+*/
   lineTo (x, y) { this.d += ` L ${fmt(x)},${fmt(y)}` }
+  /**
+* @param {number} x1
+* @param {number} y1
+* @param {number} x2
+* @param {number} y2
+* @param {number} x
+* @param {number} y
+*/
   cubicTo (x1, y1, x2, y2, x, y) {
     this.d += ` C ${fmt(x1)},${fmt(y1)} ${fmt(x2)},${fmt(y2)} ${fmt(x)},${fmt(y)}`
   }
@@ -229,7 +246,7 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
 
     await loadExtensionTranslation(svgEditor)
 
@@ -239,7 +256,7 @@ export default {
     // leaving the tool visually selected but inert. We finalize paths via our
     // own dblclick (detail>=2) logic in mouseDown, so swallow the native
     // dblclick over the canvas to keep the mode intact between shapes.
-    const suppressNativeDblClick = (evt) => {
+    const suppressNativeDblClick = (/** @type {{ target: Node | null; stopPropagation: () => void; }} */ evt) => {
       if (svgCanvas.getMode() !== 'curvature') return
       const root = $id('svgcanvas')
       if (!root || root.contains(evt.target)) {
@@ -252,7 +269,7 @@ export default {
     // preview / anchor dots behind in the layer (they'd otherwise be real
     // content, serialized by getSvgString() and persisted by a host
     // autosave). Mirrors the Escape-key behavior: finalize as an open path.
-    document.addEventListener('modeChange', (evt) => {
+    document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
       if (evt.detail.getMode() !== 'curvature' && isDrawing) {
         finalize(false)
       }
@@ -278,14 +295,14 @@ export default {
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    const dist = (ax, ay, bx, by) => Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)
+    const dist = (/** @type {number} */ ax, /** @type {number} */ ay, /** @type {number} */ bx, /** @type {number} */ by) => Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)
 
     const getLayer = () => svgCanvas.getCurrentDrawing().getCurrentLayer()
 
     const getMoveThreshold = () => 3 / svgCanvas.getZoom()
 
     /** Return the index of the first placed anchor within hit range of (x, y), or -1. */
-    const hitTestAnchor = (x, y) => {
+    const hitTestAnchor = (/** @type {number} */ x, /** @type {number} */ y) => {
       const hitRadius = 8 / svgCanvas.getZoom()
       for (let i = 0; i < points.length; i++) {
         if (dist(x, y, points[i].x, points[i].y) <= hitRadius) return i
@@ -294,7 +311,7 @@ export default {
     }
 
     /** Create a dashed preview path appended directly to the current layer. */
-    const createPreview = (x, y) => {
+    const createPreview = (/** @type {number} */ x, /** @type {number} */ y) => {
       const svgNS = 'http://www.w3.org/2000/svg'
       const el = document.createElementNS(svgNS, 'path')
       const zoom = svgCanvas.getZoom()
@@ -311,7 +328,7 @@ export default {
       previewEl = el
     }
 
-    const updatePreview = (tentative, closed) => {
+    const updatePreview = (/** @type {{ x: number; y: number; } | null | undefined} */ tentative, /** @type {boolean | undefined} */ closed) => {
       if (!previewEl) return
       previewEl.setAttribute('d', buildPathD(points, tentative, closed))
     }
@@ -332,7 +349,7 @@ export default {
       dragMoved = false
     }
 
-    const finalize = (closed) => {
+    const finalize = (/** @type {boolean | undefined} */ closed) => {
       removeAnchorDots()
       resetDragState()
       if (points.length < 2) {
@@ -375,9 +392,9 @@ export default {
 
     /** Whether points[i] behaves as an implicit segment "start": index 0, or
      * immediately follows an `end`-flagged point. */
-    const isImplicitStart = (i) => i === 0 || points[i - 1].end
+    const isImplicitStart = (/** @type {number} */ i) => i === 0 || points[i - 1].end
 
-    const addAnchorDot = (i) => {
+    const addAnchorDot = (/** @type {number} */ i) => {
       const p = points[i]
       const zoom = svgCanvas.getZoom()
       const isBoundary = p.end || isImplicitStart(i)
@@ -535,7 +552,7 @@ export default {
       callback () {
         const title = `${name}:buttons.0.title`
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_curvature" command="tool_curvature" title="${title}" src="curvature.svg" shortcut="Y"></se-button>`,
           12
         )

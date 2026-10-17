@@ -35,10 +35,10 @@ const NAMED_KEYS = new Set([
   'pageup', 'pagedown', 'insert',
   'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12'
 ])
-const isValidKeyToken = (k) => /^[a-z0-9]$/.test(k) || NAMED_KEYS.has(k)
+const isValidKeyToken = (/** @type {string | undefined} */ k) => /^[a-z0-9]$/.test(k) || NAMED_KEYS.has(k)
 // A human-readable display hint (e.g. "Z / Ctrl + wheel", "Delete/Backspace")
 // rather than a single bindable combo.
-const isDisplayString = (raw) => /[\s/]/.test(raw)
+const isDisplayString = (/** @type {string} */ raw) => /[\s/]/.test(raw)
 
 // The platform "command" modifier expanded to its physical key: Cmd (meta) on
 // Mac, Ctrl elsewhere. Authoring specs use the `mod` token; it is expanded here
@@ -197,7 +197,7 @@ export const tooltipText = (name, rawShortcut) => {
  * a read-only hint such as "Z / Ctrl + wheel", keeps the authored `shortcut` attribute.
  * @param {string} name already-translated name
  * @param {?string} rawShortcut the authored `shortcut` attribute
- * @param {?HotkeyManager} hotkeys
+ * @param {?HotkeyManager|undefined} hotkeys
  * @param {string} [id] the action id
  * @returns {string}
  */
@@ -303,7 +303,7 @@ export const isFocusControl = (target) =>
  */
 export default class HotkeyManager {
   /**
-   * @param {object} editor the SVGEditor instance
+   * @param {EditorInstance} editor the SVGEditor instance
    */
   constructor (editor) {
     this.editor = editor
@@ -368,8 +368,8 @@ export default class HotkeyManager {
    * @param {object} opts
    * @param {string} opts.id
    * @param {Element} opts.el element whose `click()` performs the action
-   * @param {string} [opts.label] i18n key (defaults to the element's title)
-   * @param {string} [opts.rawKey] the raw `shortcut` attribute
+   * @param {?string} [opts.label] i18n key (defaults to the element's title)
+   * @param {?string} [opts.rawKey] the raw `shortcut` attribute
    * @returns {void}
    */
   registerEl ({ id, el, label, rawKey }) {
@@ -556,7 +556,7 @@ export default class HotkeyManager {
   register () {
     this._load()
     if (this._handler) document.removeEventListener('keydown', this._handler)
-    this._handler = (e) => {
+    this._handler = (/** @type {KeyboardEvent} */ e) => {
       if (!isActiveEditor(this.editor)) return
       // Fire only when this editor owns the keystroke. In the standalone editor a
       // canvas click drops focus to `<body>`; when embedded (e.g. the Obsidian

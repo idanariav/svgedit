@@ -1,6 +1,6 @@
 // seSegmentSettings.js — `<se-segment-settings>` — Radial/grid Segment popover (mode tabs, count/start-angle/center or count/axis, Split/Non-split toggle + Apply/Update → `svgCanvas.segmentSelection`); seeded from…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -159,16 +159,15 @@ class SeSegmentSettings extends SeSettingsPopover {
     this._split = false
     this._axis = 'vertical'
 
-    this.$radial = this._shadowRoot.querySelector('.mode-radial')
-    this.$grid = this._shadowRoot.querySelector('.mode-grid')
-    this.$splitOff = this._shadowRoot.querySelector('.split-off')
-    this.$splitOn = this._shadowRoot.querySelector('.split-on')
-    this.$fieldsRadial = this._shadowRoot.querySelector('.fields-radial')
-    this.$fieldsGrid = this._shadowRoot.querySelector('.fields-grid')
-    this.$axisVertical = this._shadowRoot.querySelector('.axis-vertical')
-    this.$axisHorizontal = this._shadowRoot.querySelector('.axis-horizontal')
-    this.$apply = this._shadowRoot.querySelector('.apply')
-
+    this.$radial = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.mode-radial'))
+    this.$grid = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.mode-grid'))
+    this.$splitOff = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.split-off'))
+    this.$splitOn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.split-on'))
+    this.$fieldsRadial = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.fields-radial'))
+    this.$fieldsGrid = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.fields-grid'))
+    this.$axisVertical = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.axis-vertical'))
+    this.$axisHorizontal = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.axis-horizontal'))
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
     this.$radial.addEventListener('click', () => this._setMode('radial'))
     this.$grid.addEventListener('click', () => this._setMode('grid'))
     this.$splitOff.addEventListener('click', () => this._setSplit(false))
@@ -179,6 +178,9 @@ class SeSegmentSettings extends SeSettingsPopover {
     this.$apply.addEventListener('click', () => this.apply())
   }
 
+  /**
+* @param {string} mode
+*/
   _setMode (mode) {
     this._mode = mode
     this.$radial.setAttribute('aria-pressed', String(mode === 'radial'))
@@ -187,14 +189,20 @@ class SeSegmentSettings extends SeSettingsPopover {
     this.$fieldsGrid.style.display = mode === 'grid' ? 'flex' : 'none'
   }
 
+  /**
+* @param {boolean} [split]
+*/
   _setSplit (split) {
-    this._split = split
-    this.$splitOff.setAttribute('aria-pressed', String(!split))
-    this.$splitOn.setAttribute('aria-pressed', String(split))
+    this._split = split ?? false
+    this.$splitOff.setAttribute('aria-pressed', String(!this._split))
+    this.$splitOn.setAttribute('aria-pressed', String(this._split))
   }
 
+  /**
+* @param {string} [axis]
+*/
   _setAxis (axis) {
-    this._axis = axis
+    this._axis = axis ?? 'vertical'
     this.$axisVertical.setAttribute('aria-pressed', String(axis === 'vertical'))
     this.$axisHorizontal.setAttribute('aria-pressed', String(axis === 'horizontal'))
   }
@@ -202,15 +210,15 @@ class SeSegmentSettings extends SeSettingsPopover {
   open () {
     // Seed from an existing non-split segment result on the selection, so
     // Apply re-edits it (split results have no live params to seed from).
-    const existing = ownerEditor(this).svgCanvas.getSegmentParams?.()
+    const existing = requireOwnerEditor(this).svgCanvas.getSegmentParams?.()
     if (existing) {
       this._setMode(existing.mode)
       this._setSplit(existing.split)
       if (existing.mode === 'radial') {
-        this._shadowRoot.querySelector('#segment_count').value = existing.count
-        this._shadowRoot.querySelector('#segment_start_angle').value = existing.startAngle
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#segment_count')).value = existing.count
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#segment_start_angle')).value = existing.startAngle
       } else {
-        this._shadowRoot.querySelector('#segment_grid_count').value = existing.count
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#segment_grid_count')).value = existing.count
         this._setAxis(existing.axis)
       }
     }
@@ -219,8 +227,8 @@ class SeSegmentSettings extends SeSettingsPopover {
   }
 
   apply () {
-    const num = (id, fallback) => {
-      const v = parseFloat(this._shadowRoot.querySelector(id).value)
+    const num = (/** @type {string} */ id, /** @type {number} */ fallback) => {
+      const v = parseFloat(/** @type {HTMLInputElement} */ (this._shadowRoot.querySelector(id)).value)
       return Number.isFinite(v) ? v : fallback
     }
     let params
@@ -239,10 +247,12 @@ class SeSegmentSettings extends SeSettingsPopover {
         axis: this._axis
       }
     }
-    ownerEditor(this).svgCanvas.segmentSelection?.(params)
+    requireOwnerEditor(this).svgCanvas.segmentSelection?.(params)
     this.close()
   }
 }
 
 // Register
 customElements.define('se-segment-settings', SeSegmentSettings)
+
+export default SeSegmentSettings

@@ -37,6 +37,10 @@ export class SeEyedropperMenu extends HTMLElement {
   set i18next (i) { this._i18next = i }
   get i18next () { return this._i18next }
 
+  /**
+* @param {string} key
+* @param {string} fallback
+*/
   _t (key, fallback) {
     try { return this._i18next?.t(key) || fallback } catch { return fallback }
   }
@@ -71,6 +75,9 @@ export class SeEyedropperMenu extends HTMLElement {
     this.$menu = list
   }
 
+  /**
+* @param {string} id
+*/
   _runAction (id) {
     const action = ACTIONS.find((a) => a.id === id)
     if (this._disabled.has(id)) return
@@ -89,7 +96,7 @@ export class SeEyedropperMenu extends HTMLElement {
   open (clientX, clientY, callbacks = {}, options = {}) {
     this._callbacks = callbacks
     this._disabled = new Set(options.disabled ?? [])
-    this._shadowRoot.querySelectorAll('a[data-action]').forEach((a) => {
+    this._shadowRoot.querySelectorAll('a[data-action]').forEach((/** @type {HTMLElement} */ a) => {
       const off = this._disabled.has(a.dataset.action)
       a.parentElement.classList.toggle('disabled', off)
       a.setAttribute('aria-disabled', String(off))
@@ -101,7 +108,7 @@ export class SeEyedropperMenu extends HTMLElement {
       if (e.composedPath().includes(this)) return
       this.close()
     }
-    this._keyHandler = (e) => {
+    this._keyHandler = (/** @type {{ key: string; preventDefault: () => void; }} */ e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this.close()

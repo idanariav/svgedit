@@ -2,7 +2,7 @@
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -108,12 +108,12 @@ export class SeList extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dropdown = this._shadowRoot.querySelector('#select-container')
-    this.$label = this._shadowRoot.querySelector('label')
-    this.$selection = this.$dropdown.querySelector('#selected-value')
+    this.$dropdown = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#select-container'))
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('label'))
+    this.$selection = /** @type {HTMLDivElement} */ (this.$dropdown.querySelector('#selected-value'))
     this.items = this.querySelectorAll('se-list-item')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
-    this.$optionsContainer = this._shadowRoot.querySelector('#options-container')
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
+    this.$optionsContainer = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#options-container'))
     this.$optionsContainer.classList.add('closed')
     this.$selection.addEventListener('click', this.toggleList)
     // When a `src` is set on the list itself, the trigger shows a fixed icon
@@ -134,13 +134,13 @@ export class SeList extends HTMLElement {
     this.isDropdownOpen = false
   }
 
-  highlightItem = (newValue) => {
+  highlightItem = (/** @type {string | null} */ newValue) => {
     for (const element of Array.from(this.items)) {
-      element.setAttribute('selected', element.getAttribute('value') === newValue)
+      element.setAttribute('selected', String(element.getAttribute('value') === newValue))
     }
   }
 
-  renderStaticIcon = async (src) => {
+  renderStaticIcon = async (/** @type {string | null} */ src) => {
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
     while (this.$selection.firstChild) { this.$selection.removeChild(this.$selection.firstChild) }
@@ -155,7 +155,7 @@ export class SeList extends HTMLElement {
     }
   }
 
-  toggleList = (e) => {
+  toggleList = (/** @type {Event} */ e) => {
     if (!this.isDropdownOpen) {
       this.openDropdown()
       this.setDropdownListPosition()
@@ -164,7 +164,7 @@ export class SeList extends HTMLElement {
     }
   }
 
-  updateSelectedValue = async (newValue) => {
+  updateSelectedValue = async (/** @type {string | null} */ newValue) => {
     // Static-icon lists keep a fixed trigger face; only opted-in "setting"
     // lists (track-selection) also highlight the last-picked item.
     if (this.staticIcon) {
@@ -173,7 +173,7 @@ export class SeList extends HTMLElement {
     }
     for (const element of Array.from(this.items)) {
       if (element.getAttribute('value') === newValue) {
-        element.setAttribute('selected', true)
+        element.setAttribute('selected', 'true')
         if (element.hasAttribute('src')) {
           // empty current selection children
           while (this.$selection.firstChild) { this.$selection.removeChild(this.$selection.firstChild) }
@@ -196,7 +196,7 @@ export class SeList extends HTMLElement {
           this.$selection.textContent = t(element.getAttribute('option') || '')
         }
       } else {
-        element.setAttribute('selected', false)
+        element.setAttribute('selected', 'false')
       }
     }
   }
@@ -216,7 +216,7 @@ export class SeList extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -356,12 +356,13 @@ export class SeList extends HTMLElement {
   connectedCallback () {
     const currentObj = this
     this._globalAbort = new AbortController()
-    this.$dropdown.addEventListener('selectedindexchange', (e) => {
+    this.$dropdown.addEventListener('selectedindexchange', (ev) => {
+      const e = /** @type {CustomEvent} */ (ev)
       if (e?.detail?.selectedItem !== undefined) {
         const value = e.detail.selectedItem
         const closeEvent = new CustomEvent('change', { detail: { value } })
         currentObj.dispatchEvent(closeEvent)
-        currentObj.value = value
+        ;/** @type {*} */ (currentObj).value = value
         currentObj.setAttribute('value', value)
       }
     })
@@ -373,7 +374,7 @@ export class SeList extends HTMLElement {
     window.addEventListener('mousedown', e => {
       // When we click on the canvas and if the dropdown is open, then just close the dropdown and stop the event
       if (this.isDropdownOpen) {
-        if (!e.target.closest('se-list')) {
+        if (!(/** @type {Element} */ (e.target)).closest('se-list')) {
           e.stopPropagation()
           this.closeDropdown()
         }

@@ -51,6 +51,7 @@ const makeTopPanel = (container, { elem = null, multiselected = false, selectedE
   const $qa = (sel) => [...container.querySelectorAll(sel)]
   const editor = {
     $id,
+    $req: $id,
     $qa,
     selectedElement: elem,
     multiselected,

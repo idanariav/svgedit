@@ -1,6 +1,6 @@
 // seRepeatSettings.js — `<se-repeat-settings>` — Radial/grid repeat popover (mode tabs, count/sweep/center or rows/cols/gaps + Apply/Update → `svgCanvas.repeatSelection`); seeded from `svgCanvas.getRepeatParams()`; injected…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -192,21 +192,20 @@ class SeRepeatSettings extends SeSettingsPopover {
     this._centerY = null
     this._pendingReopen = null
 
-    this.$radial = this._shadowRoot.querySelector('.mode-radial')
-    this.$grid = this._shadowRoot.querySelector('.mode-grid')
-    this.$path = this._shadowRoot.querySelector('.mode-path')
-    this.$fieldsRadial = this._shadowRoot.querySelector('.fields-radial')
-    this.$fieldsGrid = this._shadowRoot.querySelector('.fields-grid')
-    this.$fieldsPath = this._shadowRoot.querySelector('.fields-path')
-    this.$centerCanvas = this._shadowRoot.querySelector('.center-canvas')
-    this.$centerSelection = this._shadowRoot.querySelector('.center-selection')
-    this.$centerCustom = this._shadowRoot.querySelector('.center-custom')
-    this.$customCenterRow = this._shadowRoot.querySelector('.custom-center-row')
-    this.$pickCenter = this._shadowRoot.querySelector('.pick-center')
-    this.$centerReadout = this._shadowRoot.querySelector('.center-readout')
-    this.$follow = this._shadowRoot.querySelector('.path-follow')
-    this.$apply = this._shadowRoot.querySelector('.apply')
-
+    this.$radial = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.mode-radial'))
+    this.$grid = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.mode-grid'))
+    this.$path = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.mode-path'))
+    this.$fieldsRadial = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.fields-radial'))
+    this.$fieldsGrid = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.fields-grid'))
+    this.$fieldsPath = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.fields-path'))
+    this.$centerCanvas = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.center-canvas'))
+    this.$centerSelection = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.center-selection'))
+    this.$centerCustom = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.center-custom'))
+    this.$customCenterRow = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.custom-center-row'))
+    this.$pickCenter = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.pick-center'))
+    this.$centerReadout = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.center-readout'))
+    this.$follow = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.path-follow'))
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
     this.$radial.addEventListener('click', () => this._setMode('radial'))
     this.$grid.addEventListener('click', () => this._setMode('grid'))
     this.$path.addEventListener('click', () => this._setMode('path'))
@@ -222,7 +221,7 @@ class SeRepeatSettings extends SeSettingsPopover {
     this.$apply.addEventListener('click', () => this.apply())
   }
 
-  _setMode (mode) {
+  _setMode (/** @type {string} */ mode) {
     this._mode = mode
     this.$radial.setAttribute('aria-pressed', String(mode === 'radial'))
     this.$grid.setAttribute('aria-pressed', String(mode === 'grid'))
@@ -248,11 +247,11 @@ class SeRepeatSettings extends SeSettingsPopover {
   _beginPickCenter () {
     const pending = {
       mode: this._mode,
-      count: this._shadowRoot.querySelector('#repeat_count').value,
-      sweep: this._shadowRoot.querySelector('#repeat_sweep').value
+      count: /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_count')).value,
+      sweep: /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_sweep')).value
     }
     this.close()
-    ownerEditor(this).svgCanvas.armRepeatCenterPick?.((x, y) => {
+    requireOwnerEditor(this).svgCanvas.armRepeatCenterPick?.((x, y) => {
       this._centerX = x
       this._centerY = y
       this._pendingReopen = pending
@@ -263,7 +262,7 @@ class SeRepeatSettings extends SeSettingsPopover {
     })
   }
 
-  _setCenter (center) {
+  _setCenter (/** @type {{x: number, y: number}|null} */ center) {
     this._center = center
     this.$centerCanvas.setAttribute('aria-pressed', String(center === 'canvas'))
     this.$centerSelection.setAttribute('aria-pressed', String(center === 'selection'))
@@ -280,36 +279,36 @@ class SeRepeatSettings extends SeSettingsPopover {
       this._pendingReopen = null
       this._setMode(p.mode)
       if (p.mode === 'radial') {
-        this._shadowRoot.querySelector('#repeat_count').value = p.count
-        this._shadowRoot.querySelector('#repeat_sweep').value = p.sweep
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_count')).value = p.count
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_sweep')).value = p.sweep
       }
       this._updateCenterReadout()
-      this.$apply.textContent = ownerEditor(this).svgCanvas.getRepeatParams?.() ? 'Update' : 'Apply'
+      this.$apply.textContent = requireOwnerEditor(this).svgCanvas.getRepeatParams?.() ? 'Update' : 'Apply'
       super.open()
       return
     }
 
     // Seed from an existing repeat on the selection so Apply re-edits it.
-    const existing = ownerEditor(this).svgCanvas.getRepeatParams?.()
+    const existing = requireOwnerEditor(this).svgCanvas.getRepeatParams?.()
     if (existing) {
       this._setMode(existing.mode)
       if (existing.mode === 'radial') {
-        this._shadowRoot.querySelector('#repeat_count').value = existing.count
-        this._shadowRoot.querySelector('#repeat_sweep').value = existing.sweep
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_count')).value = existing.count
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_sweep')).value = existing.sweep
         this._setCenter(existing.center)
         if (existing.center === 'custom') {
           this._centerX = existing.centerX
           this._centerY = existing.centerY
         }
       } else if (existing.mode === 'grid') {
-        this._shadowRoot.querySelector('#repeat_rows').value = existing.rows
-        this._shadowRoot.querySelector('#repeat_cols').value = existing.cols
-        this._shadowRoot.querySelector('#repeat_gap_x').value = existing.gapX
-        this._shadowRoot.querySelector('#repeat_gap_y').value = existing.gapY
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_rows')).value = existing.rows
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_cols')).value = existing.cols
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_gap_x')).value = existing.gapX
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_gap_y')).value = existing.gapY
       } else {
-        this._shadowRoot.querySelector('#repeat_path_count').value = existing.count
-        this._shadowRoot.querySelector('#repeat_path_offset').value = existing.offset
-        this._shadowRoot.querySelector('#repeat_path_span').value = existing.span
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_path_count')).value = existing.count
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_path_offset')).value = existing.offset
+        ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#repeat_path_span')).value = existing.span
         this.$follow.setAttribute('aria-pressed', String(!!existing.follow))
       }
     }
@@ -319,8 +318,8 @@ class SeRepeatSettings extends SeSettingsPopover {
   }
 
   apply () {
-    const num = (id, fallback) => {
-      const v = parseFloat(this._shadowRoot.querySelector(id).value)
+    const num = (/** @type {string} */ id, /** @type {number} */ fallback) => {
+      const v = parseFloat(/** @type {HTMLInputElement} */ (this._shadowRoot.querySelector(id)).value)
       return Number.isFinite(v) ? v : fallback
     }
     let params
@@ -350,10 +349,12 @@ class SeRepeatSettings extends SeSettingsPopover {
         follow: this.$follow.getAttribute('aria-pressed') === 'true'
       }
     }
-    ownerEditor(this).svgCanvas.repeatSelection?.(params)
+    requireOwnerEditor(this).svgCanvas.repeatSelection?.(params)
     this.close()
   }
 }
 
 // Register
 customElements.define('se-repeat-settings', SeRepeatSettings)
+
+export default SeRepeatSettings

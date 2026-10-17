@@ -24,7 +24,7 @@ export const FIELD_IDLE_BLUR_MS = 3000
 export const blurActiveField = () => {
   let el = document.activeElement
   while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement
-  if (el && el !== document.body && typeof el.blur === 'function') el.blur()
+  if (el && el !== document.body && typeof /** @type {HTMLElement} */ (el).blur === 'function') /** @type {HTMLElement} */ (el).blur()
 }
 
 /**
@@ -35,9 +35,10 @@ export const blurActiveField = () => {
  * @returns {void}
  */
 export const attachIdleBlur = (host) => {
+  /** @type {?ReturnType<typeof setTimeout>} */
   let timer = null
   const arm = () => {
-    clearTimeout(timer)
+    if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       // `document.activeElement` resolves to the outermost shadow host that
       // contains the focus, so this is true while the field is still focused.

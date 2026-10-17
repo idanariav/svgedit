@@ -20,15 +20,15 @@ const { getTypeMap } = SvgCanvas
  */
 class TopPanel {
   /**
-   * @param {PlainObject} editor svgedit handler
+   * @param {EditorInstance} editor svgedit handler
    */
   constructor (editor) {
     this.editor = editor
   }
 
   /**
-   * @type {module}
-   */
+* @param {string} className
+*/
   displayTool (className) {
     const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // default display is 'none' so removing the property will make the panel visible
@@ -36,11 +36,11 @@ class TopPanel {
   }
 
   /**
-   * @type {module}
-   */
+* @param {string} className
+*/
   hideTool (className) {
     const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $qa(`.${className}`).forEach(el => {
+    $qa(`.${className}`).forEach(/** @type {{ style: { display: string; }; }} */ (/** @type {{ style: { display: string; }; }} */ el) => {
       el.style.display = 'none'
     })
   }
@@ -56,23 +56,14 @@ class TopPanel {
     if (el) el.style.display = visible ? '' : 'none'
   }
 
-  /**
-   * @type {module}
-   */
   get selectedElement () {
     return this.editor.selectedElement
   }
 
-  /**
-   * @type {module}
-   */
   get multiselected () {
     return this.editor.multiselected
   }
 
-  /**
-   * @type {module}
-   */
   get path () {
     return this.editor.svgCanvas.pathActions
   }
@@ -110,7 +101,7 @@ class TopPanel {
    * @returns {void}
    */
   update () {
-    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     let i
     let len
 
@@ -149,18 +140,18 @@ class TopPanel {
               }
             }
 
-            $id('stroke_width').value = gWidth === null ? '' : gWidth
+            $req('stroke_width').value = gWidth === null ? '' : gWidth
             this.editor.bottomPanel.updateColorpickers(false)
             break
           }
           default: {
             this.editor.bottomPanel.updateColorpickers(false)
 
-            $id('stroke_width').value =
+            $req('stroke_width').value =
               this.selectedElement.getAttribute('stroke-width') || 1
-            $id('stroke_style').value =
+            $req('stroke_style').value =
               this.selectedElement.getAttribute('stroke-dasharray') || 'none'
-            $id('stroke_style').setAttribute('value', $id('stroke_style').value)
+            $req('stroke_style').setAttribute('value', $req('stroke_style').value)
             this.updateDashFitButton()
 
             let attr =
@@ -168,13 +159,13 @@ class TopPanel {
 
             if ($id('linejoin_' + attr)) {
               this.setStrokeOpt($id('linejoin_' + attr))
-              $id('stroke_linejoin').setAttribute('value', attr)
+              $req('stroke_linejoin').setAttribute('value', attr)
             }
 
             attr = this.selectedElement.getAttribute('stroke-linecap') || 'butt'
             if ($id('linecap_' + attr)) {
               this.setStrokeOpt($id('linecap_' + attr))
-              $id('stroke_linecap').setAttribute('value', attr)
+              $req('stroke_linecap').setAttribute('value', attr)
             }
           }
         }
@@ -184,9 +175,9 @@ class TopPanel {
         if (this.selectedElement) {
           const opacPerc =
             (this.selectedElement.getAttribute('opacity') || 1.0) * 100
-          $id('opacity').value = opacPerc
-          $id('elem_id').value = this.selectedElement.id
-          $id('elem_class').refresh(this.selectedElement)
+          $req('opacity').value = opacPerc
+          $req('elem_id').value = this.selectedElement.id
+          $req('elem_class').refresh(this.selectedElement)
         }
       }],
       ['bottomPanel.updateToolButtonState', () => this.editor.bottomPanel.updateToolButtonState()]
@@ -213,27 +204,27 @@ class TopPanel {
    * @returns {void}
    */
   updateLiveMove (elem, dx, dy) {
-    const { $id } = this.editor
+    const { $req } = this.editor
     const { tagName } = elem
-    const num = (v) => (parseFloat(v) || 0)
+    const num = (/** @type {string | null} */ v) => (parseFloat(v) || 0)
 
     if (['circle', 'ellipse'].includes(tagName)) {
-      $id(`${tagName}_cx`).value = round1(num(elem.getAttribute('cx')) + dx)
-      $id(`${tagName}_cy`).value = round1(num(elem.getAttribute('cy')) + dy)
+      $req(`${tagName}_cx`).value = round1(num(elem.getAttribute('cx')) + dx)
+      $req(`${tagName}_cy`).value = round1(num(elem.getAttribute('cy')) + dy)
     } else if (tagName === 'line') {
-      $id('line_x1').value = round1(num(elem.getAttribute('x1')) + dx)
-      $id('line_y1').value = round1(num(elem.getAttribute('y1')) + dy)
-      $id('line_x2').value = round1(num(elem.getAttribute('x2')) + dx)
-      $id('line_y2').value = round1(num(elem.getAttribute('y2')) + dy)
+      $req('line_x1').value = round1(num(elem.getAttribute('x1')) + dx)
+      $req('line_y1').value = round1(num(elem.getAttribute('y1')) + dy)
+      $req('line_x2').value = round1(num(elem.getAttribute('x2')) + dx)
+      $req('line_y2').value = round1(num(elem.getAttribute('y2')) + dy)
     } else if (['g', 'polyline', 'path'].includes(tagName)) {
       const bb = this.editor.svgCanvas.getStrokedBBox([elem])
       if (bb) {
-        $id('selected_x').value = round1(bb.x + dx)
-        $id('selected_y').value = round1(bb.y + dy)
+        $req('selected_x').value = round1(bb.x + dx)
+        $req('selected_y').value = round1(bb.y + dy)
       }
     } else if (tagName !== 'polygon') {
-      $id('selected_x').value = round1(num(elem.getAttribute('x')) + dx)
-      $id('selected_y').value = round1(num(elem.getAttribute('y')) + dy)
+      $req('selected_x').value = round1(num(elem.getAttribute('x')) + dx)
+      $req('selected_y').value = round1(num(elem.getAttribute('y')) + dy)
     }
   }
 
@@ -248,23 +239,23 @@ class TopPanel {
    * @returns {void}
    */
   updateLiveResize (elem, box) {
-    const { $id } = this.editor
+    const { $req } = this.editor
     const { tagName } = elem
     const anchorX = box.left + box.tx
     const anchorY = box.top + box.ty
-    const scalePt = (px, py) => ({
+    const scalePt = (/** @type {number} */ px, /** @type {number} */ py) => ({
       x: anchorX + (px - anchorX) * box.sx,
       y: anchorY + (py - anchorY) * box.sy
     })
-    const num = (v) => (parseFloat(v) || 0)
+    const num = (/** @type {string | null} */ v) => (parseFloat(v) || 0)
 
     if (tagName === 'line') {
       const p1 = scalePt(num(elem.getAttribute('x1')), num(elem.getAttribute('y1')))
       const p2 = scalePt(num(elem.getAttribute('x2')), num(elem.getAttribute('y2')))
-      $id('line_x1').value = round1(p1.x)
-      $id('line_y1').value = round1(p1.y)
-      $id('line_x2').value = round1(p2.x)
-      $id('line_y2').value = round1(p2.y)
+      $req('line_x1').value = round1(p1.x)
+      $req('line_y1').value = round1(p1.y)
+      $req('line_x2').value = round1(p2.x)
+      $req('line_y2').value = round1(p2.y)
       return
     }
 
@@ -273,22 +264,22 @@ class TopPanel {
     const { x, y } = scalePt(box.left, box.top)
 
     if (tagName === 'circle') {
-      $id('circle_cx').value = round1(x + width / 2)
-      $id('circle_cy').value = round1(y + height / 2)
-      $id('circle_r').value = round1((width + height) / 4)
+      $req('circle_cx').value = round1(x + width / 2)
+      $req('circle_cy').value = round1(y + height / 2)
+      $req('circle_r').value = round1((width + height) / 4)
     } else if (tagName === 'ellipse') {
-      $id('ellipse_cx').value = round1(x + width / 2)
-      $id('ellipse_cy').value = round1(y + height / 2)
-      $id('ellipse_rx').value = round1(width / 2)
-      $id('ellipse_ry').value = round1(height / 2)
+      $req('ellipse_cx').value = round1(x + width / 2)
+      $req('ellipse_cy').value = round1(y + height / 2)
+      $req('ellipse_rx').value = round1(width / 2)
+      $req('ellipse_ry').value = round1(height / 2)
     } else {
       if (['rect', 'image'].includes(tagName)) {
-        $id(`${tagName}_width`).value = round1(width)
-        $id(`${tagName}_height`).value = round1(height)
+        $req(`${tagName}_width`).value = round1(width)
+        $req(`${tagName}_height`).value = round1(height)
       }
       if (tagName !== 'polygon') {
-        $id('selected_x').value = round1(x)
-        $id('selected_y').value = round1(y)
+        $req('selected_x').value = round1(x)
+        $req('selected_y').value = round1(y)
       }
     }
   }
@@ -317,9 +308,9 @@ class TopPanel {
    * @returns {void}
    */
   clickFrame () {
-    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $qa('#tools_left *[pressed]').forEach((b) => { b.pressed = false })
-    $id('tool_frame').pressed = true
+    const { $req, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $qa('#tools_left *[pressed]').forEach((/** @type {{ pressed: boolean; }} */ b) => { b.pressed = false })
+    $req('tool_frame').pressed = true
     this.editor.svgCanvas.setMode('frame')
   }
 
@@ -347,8 +338,8 @@ class TopPanel {
    * @returns {void}
    */
   clickWireframe () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $id('tool_wireframe').pressed = !$id('tool_wireframe').pressed
+    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $req('tool_wireframe').pressed = !$req('tool_wireframe').pressed
     this.editor.workarea.classList.toggle('wireframe')
 
     const wfRules = $id('wireframe_rules')
@@ -368,7 +359,7 @@ class TopPanel {
     // Markers + proportion snapping ride along with wireframe mode. Write the
     // snap flag to the canvas-side config object (svgCanvas.curConfig is a
     // separate object from the editor's configObj.curConfig after mergeDeep).
-    const on = $id('tool_wireframe').pressed
+    const on = $req('tool_wireframe').pressed
     this.editor.svgCanvas.getCurConfig().wireframeSnapping = on
     this.editor.updateProportionMarkers?.()
   }
@@ -400,16 +391,10 @@ class TopPanel {
     }
   }
 
-  /**
-   * @type {module}
-   */
   changeRectRadius (e) {
     this.editor.svgCanvas.setRectRadius(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeCircleArc (e) {
     // Crossing 360° swaps <circle>/<ellipse> for an arc <path> (or back), which
     // clears + re-adds the selection; the panel briefly collapses and the
@@ -422,16 +407,10 @@ class TopPanel {
     scroller.scrollTop = scrollTop
   }
 
-  /**
-   * @type {module}
-   */
   changeFontSize (e) {
     this.editor.svgCanvas.setFontSize(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeRotationAngle (e) {
     this.editor.svgCanvas.setRotationAngle(e.target.value)
   }
@@ -560,8 +539,8 @@ class TopPanel {
    * @returns {void}
    */
   clickAlign (pos) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    let value = $id('tool_align_relative').value
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    let value = $req('tool_align_relative').value
     if (!value) {
       value = 'selected'
     }
@@ -579,7 +558,6 @@ class TopPanel {
 
   /**
    *
-   * @type {module}
    */
   attrChanger (e) {
     const attr = e.target.getAttribute('data-attr')
@@ -655,7 +633,7 @@ class TopPanel {
 
   /**
    * Select every element sharing a property with the current selection.
-   * @param {Event} evt - `change` event from the select-same dropdown.
+   * @param {{detail: {value: string}}} evt - `change` event from the select-same dropdown.
    * @returns {void}
    */
   clickSelectSame (evt) {
@@ -711,9 +689,9 @@ class TopPanel {
    * @returns {void}
    */
   linkControlPoints () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $id('tool_node_link').pressed = !$id('tool_node_link').pressed
-    const linked = !!$id('tool_node_link').pressed
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $req('tool_node_link').pressed = !$req('tool_node_link').pressed
+    const linked = !!$req('tool_node_link').pressed
     this.path.linkControlPoints(linked)
   }
 
@@ -808,7 +786,7 @@ class TopPanel {
    */
   get anyTextSelected () {
     const selected = this.editor.svgCanvas.getSelectedElements()
-    return selected.filter(el => el.tagName === 'text').length > 0
+    return selected.filter(/** @type {{ tagName: string; }} */ (/** @type {{ tagName: string; }} */ el) => el.tagName === 'text').length > 0
   }
 
   /**
@@ -883,44 +861,26 @@ class TopPanel {
     return false
   }
 
-  /**
-   * @type {module}
-   */
   changeLetterSpacing (e) {
     this.editor.svgCanvas.setLetterSpacing(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeWordSpacing (e) {
     this.editor.svgCanvas.setWordSpacing(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeTextLength (e) {
     this.editor.svgCanvas.setTextLength(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeTextPerspectiveX (e) {
     this.editor.svgCanvas.setTextPerspectiveX(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeTextPerspectiveY (e) {
     this.editor.svgCanvas.setTextPerspectiveY(e.target.value)
   }
 
-  /**
-   * @type {module}
-   */
   changeLengthAdjust (evt) {
     this.editor.svgCanvas.setLengthAdjust(evt.detail.value)
   }
@@ -932,13 +892,13 @@ class TopPanel {
    * @returns {void}
    */
   setImageURL (url) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const { editor } = this
     if (!url) {
       url = editor.defaultImageURL
     }
     editor.svgCanvas.setImageURL(url)
-    $id('image_url').value = url
+    $req('image_url').value = url
 
     if (url.startsWith('data:')) {
       // data URI found
@@ -969,8 +929,8 @@ class TopPanel {
   }
 
   /**
-   *
-   */
+* @param {string | undefined} [title]
+*/
   updateTitle (title) {
     const { $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (title) this.editor.title = title
@@ -1016,12 +976,12 @@ class TopPanel {
   }
 
   /**
-   * @param {boolean} editmode
-   * @param {module:svgcanvas.SvgCanvas#event:selected} elems
+   * @param {boolean} editMode
+   * @param {Element[]} elems
    * @returns {void}
    */
   togglePathEditMode (editMode, elems) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     if (editMode) {
       this.displayTool('path_node_panel')
     } else {
@@ -1029,25 +989,22 @@ class TopPanel {
     }
     if (editMode) {
       // Change select icon
-      $id('tool_path').pressed = false
-      $id('tool_select').pressed = true
-      $id('tool_select').setAttribute('src', 'select_node.svg')
+      $req('tool_path').pressed = false
+      $req('tool_select').pressed = true
+      $req('tool_select').setAttribute('src', 'select_node.svg')
       this.editor.multiselected = false
       if (elems.length) {
         this.editor.selectedElement = elems[0]
       }
     } else {
       setTimeout(() => {
-        $id('tool_select').setAttribute('src', 'select.svg')
+        $req('tool_select').setAttribute('src', 'select.svg')
       }, 1000)
     }
   }
 
-  /**
-   * @type {module}
-   */
   init () {
-    const { $id, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req, $qa } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // add Top panel
     const template = document.createElement('template')
     const { i18next } = this.editor
@@ -1067,26 +1024,26 @@ class TopPanel {
     this.editor.$container.append(newSeEditorDialog)
     this.updateTitle()
     newSeEditorDialog.init(i18next)
-    $id('tool_link_url').setAttribute('title', i18next.t('tools.set_link_url'))
+    $req('tool_link_url').setAttribute('title', i18next.t('tools.set_link_url'))
     // The panel's buttons are views of registry commands (`command=` in the markup,
     // panelCommands.js); only inputs / selects are bound here.
     // tool_undo / tool_redo / tool_clone(_multi) / tool_delete(_multi) /
     // tool_group_elements / tool_ungroup are views of registry commands
     // (`command=` in TopPanel.html, see coreCommands.js) -- no direct binding.
-    $id('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
-    $id('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
-    $id('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
-    $id('tool_bool_ops').addEventListener('change', this.clickBoolOps.bind(this))
-    $id('clipmask_feather').addEventListener('change', this.changeFeather.bind(this))
-    $id('tool_position').addEventListener('change', evt =>
+    $req('tool_arrange').addEventListener('change', this.clickArrange.bind(this))
+    $req('tool_arrange_multi').addEventListener('change', this.clickArrange.bind(this))
+    $req('tool_select_same').addEventListener('change', this.clickSelectSame.bind(this))
+    $req('tool_bool_ops').addEventListener('change', this.clickBoolOps.bind(this))
+    $req('clipmask_feather').addEventListener('change', this.changeFeather.bind(this))
+    $req('tool_position').addEventListener('change', evt =>
       this.clickAlignEle.bind(this)(evt)
     )
-    $id('tool_align_multi').addEventListener('change', this.clickAlignMulti.bind(this))
-    $id('angle').addEventListener('change', this.changeRotationAngle.bind(this))
-    $id('blur').addEventListener('change', this.changeBlur.bind(this))
-    $id('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
-    $id('circle_arc').addEventListener('change', this.changeCircleArc.bind(this))
-    $id('ellipse_arc').addEventListener('change', this.changeCircleArc.bind(this))
+    $req('tool_align_multi').addEventListener('change', this.clickAlignMulti.bind(this))
+    $req('angle').addEventListener('change', this.changeRotationAngle.bind(this))
+    $req('blur').addEventListener('change', this.changeBlur.bind(this))
+    $req('rect_rx').addEventListener('change', this.changeRectRadius.bind(this))
+    $req('circle_arc').addEventListener('change', this.changeCircleArc.bind(this))
+    $req('ellipse_arc').addEventListener('change', this.changeCircleArc.bind(this))
     // Quick-pick buttons: set the field and fire its own change so the normal
     // changeCircleArc path (incl. circle <-> arc path swap) does the work.
     $qa('.arc_preset').forEach(btn => btn.addEventListener('click', () => {
@@ -1094,37 +1051,37 @@ class TopPanel {
       field.value = btn.dataset.arc
       field.dispatchEvent(new CustomEvent('change'))
     }))
-    $id('font_size').addEventListener('change', this.changeFontSize.bind(this))
-    $id('tool_text_anchor').addEventListener('change', evt =>
+    $req('font_size').addEventListener('change', this.changeFontSize.bind(this))
+    $req('tool_text_anchor').addEventListener('change', evt =>
       this.clickTextAnchor.bind(this)(evt)
     )
-    $id('tool_text_valign').addEventListener('change', evt =>
+    $req('tool_text_valign').addEventListener('change', evt =>
       this.changeTextValign(evt)
     )
-    $id('tool_letter_spacing').addEventListener(
+    $req('tool_letter_spacing').addEventListener(
       'change',
       this.changeLetterSpacing.bind(this)
     )
-    $id('tool_word_spacing').addEventListener(
+    $req('tool_word_spacing').addEventListener(
       'change',
       this.changeWordSpacing.bind(this)
     )
-    $id('tool_text_length').addEventListener(
+    $req('tool_text_length').addEventListener(
       'change',
       this.changeTextLength.bind(this)
     )
-    $id('tool_length_adjust').addEventListener('change', evt =>
+    $req('tool_length_adjust').addEventListener('change', evt =>
       this.changeLengthAdjust.bind(this)(evt)
     )
-    $id('tool_perspective_x').addEventListener(
+    $req('tool_perspective_x').addEventListener(
       'change',
       this.changeTextPerspectiveX.bind(this)
     )
-    $id('tool_perspective_y').addEventListener(
+    $req('tool_perspective_y').addEventListener(
       'change',
       this.changeTextPerspectiveY.bind(this)
     )
-    $id('image_url').addEventListener('change', evt => {
+    $req('image_url').addEventListener('change', /** @type {{ currentTarget: { value: string; }; }} */ (/** @type {{ currentTarget: { value: string; }; }} */ evt) => {
       this.setImageURL(evt.currentTarget.value)
     })
 
@@ -1132,7 +1089,7 @@ class TopPanel {
     // stroke + opacity in the right "Design" tab. They are bound here (TopPanel
     // initialises last) and delegate to the BottomPanel handlers.
     const bp = this.editor.bottomPanel
-    $id('zoom').addEventListener('change', e => bp.changeZoom(e.detail.value))
+    $req('zoom').addEventListener('change', e => bp.changeZoom(e.detail.value))
     // Narrow panes, two tiers. When the bar overflows: (1) drop the low-priority
     // items (file-name chip, theme toggle — also in Preferences) → `tt-compact`;
     // (2) if it still overflows, fold the object trays (clone/arrange/align…)
@@ -1144,7 +1101,7 @@ class TopPanel {
     const OBJECT_TRAYS = '.selected_panel, .multiselected_panel, .g_panel, .image_panel'
     const pop = $id('top_more_pop')
     const topEnd = $id('top_end')
-    const setMoreOpen = (open) => {
+    const setMoreOpen = (/** @type {boolean} */ open) => {
       bar.classList.toggle('tt-more-open', open)
       more.setAttribute('aria-expanded', String(open))
     }
@@ -1165,14 +1122,14 @@ class TopPanel {
       more.hidden = !(tight && trays().some(el => el.style.display !== 'none'))
       if (more.hidden) setMoreOpen(false)
     }
-    more.addEventListener('click', (e) => {
+    more.addEventListener('click', (/** @type {{ stopPropagation: () => void; }} */ e) => {
       e.stopPropagation()
       setMoreOpen(!bar.classList.contains('tt-more-open'))
     })
     document.addEventListener('click', (e) => {
       if (bar.classList.contains('tt-more-open') && !e.composedPath().some(n => n === bar)) setMoreOpen(false)
     }, { signal: this.editor.listenerAbort.signal })
-    bar.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMoreOpen(false) })
+    bar.addEventListener('keydown', (/** @type {{ key: string; }} */ e) => { if (e.key === 'Escape') setMoreOpen(false) })
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(fitBar)
       ro.observe(bar)
@@ -1186,23 +1143,23 @@ class TopPanel {
       }).observe(bar, { attributes: true, subtree: true, attributeFilter: ['style'] })
     }
     // In narrow panes the bar scrolls horizontally; let the plain mouse wheel do it.
-    $id('tools_top').addEventListener('wheel', e => {
+    $req('tools_top').addEventListener('wheel', e => {
       const bar = e.currentTarget
       if (bar.scrollWidth <= bar.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
       bar.scrollLeft += e.deltaY
       e.preventDefault()
     }, { passive: false })
-    $id('stroke_width').addEventListener('change', e => bp.changeStrokeWidth(e))
-    $id('stroke_style').addEventListener('change', evt =>
+    $req('stroke_width').addEventListener('change', e => bp.changeStrokeWidth(e))
+    $req('stroke_style').addEventListener('change', evt =>
       bp.handleStrokeAttr('stroke-dasharray', evt)
     )
-    $id('stroke_linejoin').addEventListener('change', evt =>
+    $req('stroke_linejoin').addEventListener('change', evt =>
       bp.handleStrokeAttr('stroke-linejoin', evt)
     )
-    $id('stroke_linecap').addEventListener('change', evt =>
+    $req('stroke_linecap').addEventListener('change', evt =>
       bp.handleStrokeAttr('stroke-linecap', evt)
     )
-    $id('opacity').addEventListener('change', e => bp.handleOpacity(e))
+    $req('opacity').addEventListener('change', e => bp.handleOpacity(e))
 
     // all top panel attributes
     ;[

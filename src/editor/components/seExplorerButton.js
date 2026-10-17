@@ -1,7 +1,7 @@
 // seExplorerButton.js — `<se-explorerbutton>` — toolbar button that opens a library explorer (the shape library, through its `lib` attribute)
 import { tooltipText } from '../Hotkeys.js'
 import { getIconDataUri } from '../images/iconRegistry.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
@@ -16,20 +16,23 @@ export class ExplorerButton extends HTMLElement {
     super()
     // create the shadowDom and insert the template
     // create the shadowDom and insert the template
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate(this.imgPath)
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
     // locate the component
-    this.$button = this._shadowRoot.querySelector('.menu-button')
-    this.$overall = this._shadowRoot.querySelector('.overall')
-    this.$img = this._shadowRoot.querySelector('.menu-button img')
-    this.$menu = this._shadowRoot.querySelector('.menu')
-    this.$handle = this._shadowRoot.querySelector('.handle')
-    this.$lib = this._shadowRoot.querySelector('.image-lib')
+    this.$button = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu-button'))
+    this.$overall = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.overall'))
+    this.$img = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.menu-button img'))
+    this.$menu = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu'))
+    this.$handle = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.handle'))
+    this.$lib = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.image-lib'))
+    /**
+* @type {never[]}
+*/
     this.files = []
     this.request = new XMLHttpRequest()
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
 
     // Closes opened (pressed) lib menu on click on the canvas
     const workarea = closestRoot(this).querySelector('[id="workarea"]')
@@ -163,7 +166,7 @@ export class ExplorerButton extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  async attributeChangedCallback (name, oldValue, newValue) {
+  async attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -272,7 +275,7 @@ export class ExplorerButton extends HTMLElement {
    */
   connectedCallback () {
     // capture click event on the button to manage the logic
-    const onClickHandler = (ev) => {
+    const onClickHandler = (/** @type {{ stopPropagation: () => void; target: unknown; }} */ ev) => {
       ev.stopPropagation()
       switch (ev.target.nodeName) {
         case 'SE-EXPLORERBUTTON':

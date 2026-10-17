@@ -24,10 +24,11 @@ import { createFxComposer } from '../fx-filter.js'
 
 const name = 'shadow'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -40,7 +41,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand } = svgCanvas.history
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     // Shared filter composer (one instance for all effect extensions, so they
@@ -50,13 +51,13 @@ export default {
     // --- Polar/Cartesian helpers ---
 
     // Angle 0° = 12 o'clock (shadow points up), clockwise; SVG Y-axis is down.
-    const toOffset = (angle, length) => {
+    const toOffset = (/** @type {number} */ angle, /** @type {number} */ length) => {
       const r = angle * Math.PI / 180
       return { dx: length * Math.sin(r), dy: -length * Math.cos(r) }
     }
 
     // Inverse: dx/dy → { angle: 0–360, length }
-    const toPolar = (dx, dy) => {
+    const toPolar = (/** @type {number} */ dx, /** @type {number} */ dy) => {
       const length = Math.sqrt(dx * dx + dy * dy)
       const angle = length > 0
         ? ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360
@@ -68,7 +69,7 @@ export default {
      * Read shadow params from an element's shared effect filter.
      * Returns null if no shadow is set.
      */
-    const getShadowFromElement = (elem) => {
+    const getShadowFromElement = (/** @type {?Element} */ elem) => {
       if (!elem) return null
       const { shadow } = fx.readEffects(elem)
       if (!shadow) return null
@@ -86,12 +87,12 @@ export default {
      * Read current panel values.
      */
     const getShadowPanelValues = () => ({
-      angle: Number($id('shadow_angle').value),
-      length: Number($id('shadow_length').value),
-      blur: Number($id('shadow_blur').value),
+      angle: Number($req('shadow_angle').value),
+      length: Number($req('shadow_length').value),
+      blur: Number($req('shadow_blur').value),
       // Panel shows opacity as 0–100 (same scale as the Design tab); the filter stores 0–1.
-      opacity: Number($id('shadow_opacity').value) / 100,
-      color: $id('shadow_color').value
+      opacity: Number($req('shadow_opacity').value) / 100,
+      color: $req('shadow_color').value
     })
 
     /**
@@ -147,21 +148,21 @@ export default {
     /**
      * Show/hide the shadow panel and populate controls from the element.
      */
-    const showPanel = (on, elem) => {
+    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null|undefined} */ elem) => {
       const panel = $id('shadow_panel')
       if (!panel) return
       panel.style.display = on ? '' : 'none'
       if (on && elem) {
         const p = getShadowFromElement(elem)
-        $id('shadow_angle').value = p?.angle ?? 150
+        $req('shadow_angle').value = p?.angle ?? 150
         // Default length 0 when the element has no shadow, so the panel clearly
         // reflects "no shadow" rather than showing phantom active values.
-        $id('shadow_length').value = p?.length ?? 0
-        $id('shadow_blur').value = p?.blur ?? 4
-        $id('shadow_opacity').value = Math.round((p?.opacity ?? 0.5) * 100)
-        $id('shadow_enabled').checked = !!p
+        $req('shadow_length').value = p?.length ?? 0
+        $req('shadow_blur').value = p?.blur ?? 4
+        $req('shadow_opacity').value = Math.round((p?.opacity ?? 0.5) * 100)
+        $req('shadow_enabled').checked = !!p
         panel.toggleAttribute('data-off', !p)
-        $id('shadow_color').value = p?.color ?? '#000000'
+        $req('shadow_color').value = p?.color ?? '#000000'
       }
     }
 
@@ -202,15 +203,15 @@ export default {
 
         // Wire event listeners
         const DEFAULT_LENGTH = 8
-        const setEnabledUi = (on) => {
-          $id('shadow_enabled').checked = on
-          $id('shadow_panel').toggleAttribute('data-off', !on)
+        const setEnabledUi = (/** @type {boolean} */ on) => {
+          $req('shadow_enabled').checked = on
+          $req('shadow_panel').toggleAttribute('data-off', !on)
         }
         // Editing any field while the shadow is off switches it on (a zero
         // distance would mean "no shadow", so give it a visible default).
         const applyFromPanel = () => {
-          if (!$id('shadow_enabled').checked || Number($id('shadow_length').value) === 0) {
-            if (Number($id('shadow_length').value) === 0) $id('shadow_length').value = DEFAULT_LENGTH
+          if (!$req('shadow_enabled').checked || Number($req('shadow_length').value) === 0) {
+            if (Number($req('shadow_length').value) === 0) $req('shadow_length').value = DEFAULT_LENGTH
             setEnabledUi(true)
           }
           setShadow(getShadowPanelValues())
@@ -218,8 +219,8 @@ export default {
         ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity', 'shadow_color'].forEach((id) => {
           $id(id).addEventListener('change', applyFromPanel)
         })
-        $id('shadow_enabled').addEventListener('change', (e) => {
-          if (e.target.checked) {
+        $req('shadow_enabled').addEventListener('change', (e) => {
+          if (/** @type {HTMLInputElement} */ (e.target).checked) {
             applyFromPanel()
           } else {
             setEnabledUi(false)

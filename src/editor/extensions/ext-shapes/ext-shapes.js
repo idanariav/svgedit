@@ -9,10 +9,11 @@
  */
 const name = 'shapes'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -24,17 +25,32 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const canv = svgEditor.svgCanvas
-    const { $id } = canv
+    const { $id, $req } = canv
     const svgroot = canv.getSvgRoot()
     let lastBBox = {}
     loadExtensionTranslation(svgEditor)
 
     const modeId = 'shapelib'
 
+    /**
+* @type {Node | null}
+*/
     let curShape
+    /**
+* @type {number}
+*/
     let startX
+    /**
+* @type {number}
+*/
     let startY
+    /**
+* @type {object | null}
+*/
     let _userShapeData = null // non-null when a user shape is selected for insertion
+    /**
+* @type {?string}
+*/
     let _armedDraw = null // path `d` of the armed built-in shape (null for user shapes)
 
     /**
@@ -115,7 +131,7 @@ export default {
           // through ungroup / partial deletion — the embedding host's save-time
           // scan only drops the link once the last stamped element is gone.
           if (_userShapeData.linkedFile) {
-            const stamp = el => {
+            const stamp = (/** @type {Node} */ el) => {
               el.setAttribute('data-vault-link', _userShapeData.linkedFile)
               for (const child of el.children) stamp(child)
             }
@@ -258,12 +274,12 @@ export default {
             lib="${extPath}/ext-shapes/shapelib/"
             src="shapelib.svg"></se-shape-library>
           `
-          canv.insertChildAtIndex($id('tools_left'), buttonTemplate, 9)
+          canv.insertChildAtIndex($req('tools_left'), buttonTemplate, 9)
 
           // `shape-insert` bubbles + is composed, so a single document-level
           // listener catches every `se-shape-library` instance (desktop or
           // tablet). `e.target` is retargeted to the dispatching host element.
-          document.addEventListener('shape-insert', (e) => {
+          document.addEventListener('shape-insert', (/** @type {CustomEvent} */ e) => {
             armShapeInsert(e.detail, e.target)
           }, { signal: svgEditor.listenerAbort.signal })
         }

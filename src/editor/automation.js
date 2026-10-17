@@ -96,7 +96,7 @@ const NAMED_KEYS = {
 export const parseKeyCombo = (combo) => {
   const parts = String(combo).split('+').map((p) => p.trim()).filter(Boolean)
   const last = (parts.pop() ?? '').toLowerCase()
-  const init = { key: NAMED_KEYS[last] ?? last, code: last === 'space' ? 'Space' : undefined, ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }
+  const init = { key: /** @type {Object<string, string>} */ (NAMED_KEYS)[last] ?? last, code: last === 'space' ? 'Space' : undefined, ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }
   for (const p of parts.map((m) => m.toLowerCase())) {
     if (p === 'mod') init[isMac() ? 'metaKey' : 'ctrlKey'] = true
     else if (p === 'ctrl' || p === 'control') init.ctrlKey = true
@@ -127,7 +127,7 @@ export class Automation {
    */
   frame () {
     const { editor } = this
-    const root = editor.$id('svgroot').getBoundingClientRect()
+    const root = editor.$req('svgroot').getBoundingClientRect()
     const content = editor.$id('svgcontent')
     return {
       rootLeft: root.left,
@@ -176,7 +176,7 @@ export class Automation {
       mode: canvas.getMode(),
       zoom: canvas.getZoom(),
       toolLocked: canvas.getToolLocked(),
-      selection: canvas.getSelectedElements().filter(Boolean).map((el) => ({
+      selection: canvas.getSelectedElements().filter(Boolean).map((/** @type {Element} */ el) => ({
         id: el.id,
         tag: el.localName,
         bbox: canvas.getStrokedBBoxDefaultVisible([el]) ?? null

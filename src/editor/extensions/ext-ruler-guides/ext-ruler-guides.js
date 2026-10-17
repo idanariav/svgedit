@@ -26,9 +26,10 @@ const HIT_WIDTH = 8 // screen px, the grab zone around a guide
 /** Guides are drawn this far each way from the page; the pasteboard around it is finite anyway. */
 const EXTENT = 100000
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -40,10 +41,10 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id, NS, assignAttributes } = svgCanvas
+    const { $req, NS, assignAttributes } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
+    const svgdoc = $req('svgcanvas').ownerDocument
     const config = svgCanvas.getCurConfig()
 
     config.showGuides = svgEditor.configObj.pref('guides_show') !== 'off'
@@ -60,7 +61,7 @@ export default {
 
     // ---- drawing ------------------------------------------------------------
 
-    const line = (axis, pos, attrs) => {
+    const line = (/** @type {string} */ axis, /** @type {number} */ pos, /** @type {Record<string, string | number | undefined>} */ attrs) => {
       const zoom = svgCanvas.getZoom()
       const p = pos * zoom
       const ln = svgdoc.createElementNS(NS.SVG, 'line')
@@ -80,7 +81,7 @@ export default {
       const canGrab = interactive() && !drag
       const frag = svgdoc.createDocumentFragment()
       for (const axis of ['v', 'h']) {
-        guides[axis].forEach((pos) => {
+        guides[axis].forEach((/** @type {number} */ pos) => {
           if (drag && !drag.copy && drag.original && drag.original.axis === axis && drag.original.pos === pos) return // being dragged: the preview stands in
           frag.append(line(axis, pos, { stroke: GUIDE_COLOR, 'stroke-width': 1 }))
           if (canGrab) {
@@ -102,14 +103,14 @@ export default {
 
     const workareaRect = () => svgEditor.workarea.getBoundingClientRect()
 
-    const position = (e, axis) => {
+    const position = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {string} */ axis) => {
       const p = clientToDoc(svgEditor.automation.frame(), e.clientX, e.clientY)
       const raw = axis === 'v' ? p.x : p.y
       if (config.gridSnapping) return svgCanvas.snapToGrid(raw)
       return Math.round(raw) // whole units: guides are for aligning, not for sub-pixel placement
     }
 
-    const isOutside = (e, axis) => {
+    const isOutside = (/** @type {{ clientX: number; clientY: number; }} */ e, /** @type {string} */ axis) => {
       const r = workareaRect()
       return axis === 'v' ? (e.clientX < r.left || e.clientX > r.right) : (e.clientY < r.top || e.clientY > r.bottom)
     }
@@ -151,6 +152,9 @@ export default {
       }
     }
 
+    /**
+* @param {{ key: string; preventDefault: () => void; stopPropagation: () => void; }} e
+*/
     function onKey (e) {
       if (e.key !== 'Escape' || !drag) return
       e.preventDefault()
@@ -159,7 +163,7 @@ export default {
       render()
     }
 
-    const begin = (axis, original, e) => {
+    const begin = (/** @type {string} */ axis, /** @type {{ axis: string; pos: number; } | null} */ original, /** @type {MouseEvent} */ e) => {
       drag = { axis, original, pos: position(e, axis), copy: false, outside: isOutside(e, axis) }
       window.addEventListener('mousemove', onMove, true)
       window.addEventListener('mouseup', onUp, true)
@@ -167,6 +171,11 @@ export default {
       render()
     }
 
+    /**
+* @param {MouseEvent} e
+* @param {string} axis
+* @param {number} pos
+*/
     function startMove (e, axis, pos) {
       if (e.button !== 0 || !interactive()) return
       e.preventDefault()
@@ -174,7 +183,7 @@ export default {
       begin(axis, { axis, pos }, e)
     }
 
-    const startCreate = (axis) => (e) => {
+    const startCreate = (/** @type {string} */ axis) => (/** @type {{ button: number; preventDefault: () => void; }} */ e) => {
       if (e.button !== 0 || !config.showGuides) return
       e.preventDefault()
       begin(axis, null, e)
@@ -182,12 +191,12 @@ export default {
 
     // ---- commands -----------------------------------------------------------
 
-    const setShown = (on) => {
+    const setShown = (/** @type {boolean | undefined} */ on) => {
       config.showGuides = on
       svgEditor.configObj.pref('guides_show', on ? 'on' : 'off')
       render()
     }
-    const setLocked = (on) => {
+    const setLocked = (/** @type {boolean} */ on) => {
       config.lockGuides = on
       svgEditor.configObj.pref('guides_lock', on ? 'on' : 'off')
       render()

@@ -74,6 +74,7 @@ describe('ext-shape-family', () => {
     selectOnly = vi.fn()
     svgCanvas = {
       $id: (id) => document.getElementById(id),
+      $req: (id) => document.getElementById(id),
       $click: (el, fn) => el.addEventListener('click', fn),
       getMode: () => mode,
       setMode,

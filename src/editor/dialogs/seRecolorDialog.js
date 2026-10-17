@@ -78,8 +78,8 @@ export class SeRecolorDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    const $ = (id) => this._shadowRoot.querySelector('#' + id)
-    this.$dialog = this._shadowRoot.querySelector('dialog')
+    const $ = (/** @type {string} */ id) => this._shadowRoot.querySelector('#' + id)
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('dialog'))
     for (const id of ['title', 'method', 'harmony', 'reduce', 'hue_in', 'hue_out', 'white', 'black', 'grays', 'rows', 'cancel', 'ok']) {
       this['$' + id] = $('rc_' + id)
     }

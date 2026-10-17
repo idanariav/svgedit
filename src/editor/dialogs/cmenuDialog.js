@@ -1,7 +1,7 @@
 // cmenuDialog.js — Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu
 import cMenuDialogHTML from './cmenuDialog.html'
 import { positionContextMenu } from './positionContextMenu.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.js'
 import { syncDialogTheme } from '../themeUtil.js'
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { loadFavorites } from '../favorites.js'
@@ -45,7 +45,7 @@ export class SeCMenuDialog extends HTMLElement {
     // Resolved in connectedCallback (the element isn't attached yet here, so
     // its owning editor container can't be found at construction time).
     this._workarea = null
-    this.$dialog = this._shadowRoot.querySelector('#cmenu_canvas')
+    this.$dialog = /** @type {HTMLUListElement} */ (this._shadowRoot.querySelector('#cmenu_canvas'))
     this.i18next = null
   }
 
@@ -53,7 +53,7 @@ export class SeCMenuDialog extends HTMLElement {
    * @param {object} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.i18next = i18next
   }
 
@@ -65,20 +65,20 @@ export class SeCMenuDialog extends HTMLElement {
     const current = this
     // Now attached: bind to this editor's own workarea (see domScope.js).
     this._workarea = closestRoot(this).querySelector('[id="workarea"]')
-    const onMenuOpenHandler = (e) => {
+    const onMenuOpenHandler = (/** @type {{ preventDefault: () => void; clientX: number; clientY: number; }} */ e) => {
       e.preventDefault()
       syncDialogTheme(current)
       current._build()
       positionContextMenu(current.$dialog, e.clientX, e.clientY)
     }
-    const onMenuCloseHandler = (e) => {
+    const onMenuCloseHandler = (/** @type {{ button: number; }} */ e) => {
       // Right-clicks (button 2) reposition rather than close.
       if (e.button !== 2) current._hide()
     }
     this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
     this._workarea.addEventListener('mousedown', onMenuCloseHandler)
     // Escape dismisses an open menu (capture, so it wins over other Escape handlers).
-    this._onKeydown = (e) => {
+    this._onKeydown = (/** @type {{ key: string; stopPropagation: () => void; }} */ e) => {
       if (e.key === 'Escape' && current.$dialog.style.display === 'block') {
         current._hide()
         e.stopPropagation()
@@ -99,7 +99,7 @@ export class SeCMenuDialog extends HTMLElement {
 
   /** Rebuild the menu contents from the user's favorites. */
   _build () {
-    const editor = ownerEditor(this)
+    const editor = requireOwnerEditor(this)
     this.$dialog.replaceChildren()
     const hasSelection = !!(editor.selectedElement || editor.multiselected)
     let rendered = 0
@@ -125,7 +125,7 @@ export class SeCMenuDialog extends HTMLElement {
    * A one-shot trigger row (icon + label).
    * @returns {HTMLLIElement}
    */
-  _triggerRow (editor, id, meta, disabled) {
+  _triggerRow (/** @type {EditorInstance} */ editor, id, meta, disabled) {
     const li = document.createElement('li')
     if (disabled) li.classList.add('disabled')
     const a = document.createElement('a')
@@ -158,7 +158,7 @@ export class SeCMenuDialog extends HTMLElement {
    * A value-control row hosting a live widget seeded from the selection.
    * @returns {HTMLLIElement}
    */
-  _valueRow (editor, id, meta, disabled) {
+  _valueRow (/** @type {EditorInstance} */ editor, id, meta, disabled) {
     const li = document.createElement('li')
     li.className = 'qa-value'
     if (disabled) li.classList.add('disabled')
@@ -186,7 +186,7 @@ export class SeCMenuDialog extends HTMLElement {
    * @returns {Promise<void>}
    */
   async _loadIcon (host, src) {
-    const url = `${ownerEditor(this).configObj.curConfig.imgPath}/${src}`
+    const url = `${requireOwnerEditor(this).configObj.curConfig.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
     if (svgEl) {
       host.replaceChildren(svgEl)

@@ -11,10 +11,11 @@
 
 const name = 'polystar'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -27,9 +28,12 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { ChangeElementCommand } = svgCanvas.history
-    const addToHistory = (cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
-    const { $id } = svgCanvas
+    const addToHistory = (/** @type {import("@svgedit/svgcanvas").HistoryCommand} */ cmd) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
+    const { $id, $req } = svgCanvas
     let selElems
+    /**
+* @type {Element | null}
+*/
     let newFO
     await loadExtensionTranslation(svgEditor)
 
@@ -53,7 +57,7 @@ export default {
     /**
      *
      * @param {string} attr attribute to change
-     * @param {string|Float} val new value
+     * @param {string|number} val new value
      * @returns {void}
      */
     const setAttr = (attr, val) => {
@@ -62,14 +66,14 @@ export default {
     }
 
     /**
-     * @param {Float} n angle
+     * @param {number} n angle
      * @return {Float} cotangeante
      */
     const cot = (n) => 1 / Math.tan(n)
 
     /**
-     * @param {Float} n angle
-     * @returns {Float} sec
+     * @param {number} n angle
+     * @returns {number} sec
      */
     const sec = (n) => 1 / Math.cos(n)
 
@@ -140,11 +144,14 @@ export default {
      * Apply a star attribute change to the selected star(s) and live-rebuild
      * their geometry so the canvas updates immediately (not only on next draw).
      * @param {string} attr attribute to change
-     * @param {string|Float} val new value
+     * @param {string|number} val new value
      * @returns {void}
      */
     const applyStarAttr = (attr, val) => {
       setAttr(attr, val)
+      /**
+* @type {number}
+*/
       let i = selElems.length
       while (i--) {
         const elem = selElems[i]
@@ -171,9 +178,9 @@ export default {
           cy: ev.y,
           id: svgCanvas.getNextId(),
           shape: 'star',
-          point: $id('starNumPoints').value,
+          point: $req('starNumPoints').value,
           r: 0,
-          radialshift: $id('radialShift').value,
+          radialshift: $req('radialShift').value,
           r2: 0,
           orient: 'point',
           fill,
@@ -201,7 +208,7 @@ export default {
 
       const circumradius =
       Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / 1.5
-      const RadiusMultiplier = $id('RadiusMultiplier').value
+      const RadiusMultiplier = $req('RadiusMultiplier').value
       const inradius =
       circumradius / RadiusMultiplier
       newFO.setAttribute('r', circumradius)
@@ -254,7 +261,7 @@ export default {
           cy: ev.y,
           id: svgCanvas.getNextId(),
           shape: 'regularPoly',
-          sides: $id('polySides').value,
+          sides: $req('polySides').value,
           orient: 'x',
           edge: 0,
           fill,
@@ -339,7 +346,7 @@ export default {
             <se-button id="tool_polygon" command="tool_polygon" title="${titlePolygon}" src="polygon.svg">
             </se-button>
           `
-        $id('tools_shapes').append(buttonTemplate.content.cloneNode(true))
+        $req('tools_shapes').append(buttonTemplate.content.cloneNode(true))
         // handler
         svgEditor.leftPanel.addModeCommand('tool_star', 'star', {
           label: titleStar,
@@ -356,7 +363,7 @@ export default {
         // so keep a panel visible while its shape is selected — setMode('select')
         // also fires on canvas clicks / attribute edits with the shape still
         // selected, and selectedChanged owns the selection-driven display.
-        document.addEventListener('modeChange', (evt) => {
+        document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
           const mode = evt.detail.getMode()
           const shapes = (selElems || []).filter(Boolean).map((el) => el.getAttribute?.('shape'))
           if (mode !== 'star' && !shapes.includes('star')) showPanel(false, 'star')
@@ -387,22 +394,25 @@ export default {
           </div>
         `
         // add handlers for the panel
-        $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+        $req('tools_top').appendChild(panelTemplate.content.cloneNode(true))
         // don't display the panels on start
         showPanel(false, 'star')
         showPanel(false, 'polygon')
-        $id('starNumPoints').addEventListener('change', (event) => {
-          applyStarAttr('point', event.target.value)
+        $req('starNumPoints').addEventListener('change', (event) => {
+          applyStarAttr('point', /** @type {HTMLInputElement} */ (event.target).value)
         })
-        $id('RadiusMultiplier').addEventListener('change', (event) => {
-          applyStarAttr('starRadiusMultiplier', event.target.value)
+        $req('RadiusMultiplier').addEventListener('change', (event) => {
+          applyStarAttr('starRadiusMultiplier', /** @type {HTMLInputElement} */ (event.target).value)
         })
-        $id('radialShift').addEventListener('change', (event) => {
-          applyStarAttr('radialshift', event.target.value)
+        $req('radialShift').addEventListener('change', (event) => {
+          applyStarAttr('radialshift', /** @type {HTMLInputElement} */ (event.target).value)
         })
-        $id('polySides').addEventListener('change', (event) => {
-          setAttr('sides', event.target.value)
-          const sides = event.target.value
+        $req('polySides').addEventListener('change', (event) => {
+          setAttr('sides', /** @type {HTMLInputElement} */ (event.target).value)
+          const sides = /** @type {HTMLInputElement} */ (event.target).value
+          /**
+* @type {number}
+*/
           let i = selElems.length
           while (i--) {
             const elem = selElems[i]
@@ -452,16 +462,16 @@ export default {
           const elem = selElems[i]
           if (elem?.getAttribute('shape') === 'star') {
             if (opts.selectedElement && !opts.multiselected) {
-              $id('starNumPoints').value = elem.getAttribute('point')
-              $id('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
-              $id('radialShift').value = elem.getAttribute('radialshift')
+              $req('starNumPoints').value = elem.getAttribute('point')
+              $req('RadiusMultiplier').value = elem.getAttribute('starRadiusMultiplier')
+              $req('radialShift').value = elem.getAttribute('radialshift')
               showPanel(true, 'star')
             } else {
               showPanel(false, 'star')
             }
           } else if (elem?.getAttribute('shape') === 'regularPoly') {
             if (opts.selectedElement && !opts.multiselected) {
-              $id('polySides').value = elem.getAttribute('sides')
+              $req('polySides').value = elem.getAttribute('sides')
               showPanel(true, 'polygon')
             } else {
               showPanel(false, 'polygon')

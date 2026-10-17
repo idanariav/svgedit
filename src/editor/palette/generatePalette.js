@@ -129,7 +129,13 @@ export function generatePalette ({
     ? Math.max(1.0, minContrast * 0.85)
     : minContrast
 
+  /**
+* @type {number[]}
+*/
   const hueMaxChromas = []
+  /**
+* @type {object[][]}
+*/
   const shortlists = []
   const meetsFloorFlags = []
 

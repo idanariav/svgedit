@@ -124,6 +124,9 @@ export class SeFontSelect extends HTMLElement {
   constructor () {
     super()
     this._shadow = this.attachShadow({ mode: 'open' })
+    /**
+* @type {{ value: string; }[]}
+*/
     this._options = [] // [{ value, label }]
     this._value = ''
     this._open = false
@@ -144,7 +147,7 @@ export class SeFontSelect extends HTMLElement {
         this._trigger?.setAttribute('title', t(newVal))
         break
       case 'options':
-        this._labels = newVal === '' ? [] : newVal.split(',').map(o => t(o))
+        this._labels = newVal === '' ? [] : newVal.split(',').map((/** @type {string} */ o) => t(o))
         this._rebuildOptions()
         break
       case 'values':
@@ -168,9 +171,9 @@ export class SeFontSelect extends HTMLElement {
       </div>
       <div class="fl-popover" style="display:none" role="listbox" aria-label="Fonts"></div>
     `
-    this._trigger = this._shadow.querySelector('.trigger')
-    this._iconWrap = this._shadow.querySelector('.icon-wrap')
-    this._popover = this._shadow.querySelector('.fl-popover')
+    this._trigger = /** @type {HTMLButtonElement} */ (this._shadow.querySelector('.trigger'))
+    this._iconWrap = /** @type {HTMLSpanElement} */ (this._shadow.querySelector('.icon-wrap'))
+    this._popover = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.fl-popover'))
     this._trigger.addEventListener('click', e => { e.stopPropagation(); this._toggle() })
 
     if (this.getAttribute('src') && !this._iconWrap.firstChild) this._loadIcon(this.getAttribute('src'))
@@ -209,13 +212,16 @@ export class SeFontSelect extends HTMLElement {
     if (this._open) this._renderItems()
   }
 
+  /**
+* @param {string} value
+*/
   _labelFor (value) {
     return this._options.find(o => o.value === value)?.label || value || '—'
   }
 
   _renderTrigger () {
     if (!this._trigger) return
-    const label = this._shadow.querySelector('.trigger-label')
+    const label = /** @type {HTMLSpanElement} */ (this._shadow.querySelector('.trigger-label'))
     label.textContent = this._labelFor(this._value)
     label.style.fontFamily = this._value ? `'${this._value.replace(/'/g, '')}', sans-serif` : 'inherit'
   }
@@ -303,7 +309,7 @@ export class SeFontSelect extends HTMLElement {
     `
     this._renderItems()
 
-    const input = this._popover.querySelector('.fl-search input')
+    const input = /** @type {HTMLInputElement} */ (this._popover.querySelector('.fl-search input'))
     input?.addEventListener('input', () => {
       clearTimeout(this._searchTimer)
       this._searchTimer = setTimeout(() => {
@@ -335,6 +341,9 @@ export class SeFontSelect extends HTMLElement {
     })
   }
 
+  /**
+* @param {string} value
+*/
   _pick (value) {
     this.value = value
     this.dispatchEvent(new CustomEvent('change', { detail: { value } }))
@@ -347,7 +356,7 @@ export class SeFontSelect extends HTMLElement {
       if (!path.includes(this)) this._close()
     }
     setTimeout(() => document.addEventListener('click', this._outsideClick, true), 0)
-    this._keyHandler = e => { if (e.key === 'Escape') this._close() }
+    this._keyHandler = /** @type {{ key: string; }} */ (/** @type {{ key: string; }} */ e) => { if (e.key === 'Escape') this._close() }
     document.addEventListener('keydown', this._keyHandler)
   }
 
@@ -356,6 +365,9 @@ export class SeFontSelect extends HTMLElement {
     if (this._keyHandler) { document.removeEventListener('keydown', this._keyHandler); this._keyHandler = null }
   }
 
+  /**
+* @param {string | null} src
+*/
   async _loadIcon (src) {
     if (!src || !this._iconWrap) return
     this.imgPath = this.imgPath || ownerEditor(this)?.configObj?.curConfig?.imgPath
@@ -373,6 +385,9 @@ export class SeFontSelect extends HTMLElement {
   }
 
   _esc (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+  /**
+* @param {string} s
+*/
   _escAttr (s) { return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
 }
 

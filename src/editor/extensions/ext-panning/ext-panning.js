@@ -13,10 +13,11 @@
 
 const name = 'panning'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -31,16 +32,16 @@ export default {
     const {
       svgCanvas
     } = svgEditor
-    const { $id } = svgCanvas
-    const insertAfter = (referenceNode, newNode) => {
-      referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling)
+    const { $req } = svgCanvas
+    const insertAfter = (/** @type {HTMLElement} */ referenceNode, /** @type {Node} */ newNode) => {
+      referenceNode.parentNode?.insertBefore(newNode, referenceNode.nextSibling)
     }
     // The drag itself pans the workarea (editor.setPanning); nothing is drawn.
     svgCanvas.registerTool({
       id: 'ext-panning',
-      pointerDown () { svgEditor.setPanning(true) },
-      pointerUp () { svgEditor.setPanning(false) },
-      cancel () { svgEditor.setPanning(false) }
+      pointerDown () { svgEditor.setPanning?.(true) },
+      pointerUp () { svgEditor.setPanning?.(false) },
+      cancel () { svgEditor.setPanning?.(false) }
     })
 
     return {
@@ -52,7 +53,7 @@ export default {
         buttonTemplate.innerHTML = `
         <se-button id="ext-panning" command="ext-panning" title="${btitle}" src="panning.svg"></se-button>
         `
-        insertAfter($id('tool_select'), buttonTemplate.content.cloneNode(true))
+        insertAfter($req('tool_select'), buttonTemplate.content.cloneNode(true))
         svgEditor.leftPanel.addModeCommand('ext-panning', 'ext-panning', { label: btitle })
       }
     }

@@ -1132,7 +1132,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     }
 
     svgCanvas.setZoom(zoomlevel)
-    const zoomField = svgCanvas.$id('zoom') as HTMLInputElement
+    const zoomField = svgCanvas.$id('zoom') as unknown as HTMLInputElement
     zoomField.value = ((zoomlevel * 100).toFixed(1))
 
     svgCanvas.call('updateCanvas', { center: false, newCtr })

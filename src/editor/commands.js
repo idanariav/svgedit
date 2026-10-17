@@ -97,7 +97,7 @@ export class CommandError extends Error {
 /** @param {ParamSpec} spec @returns {string[]|undefined} */
 const valuesOf = (spec) => typeof spec.values === 'function' ? spec.values() : spec.values
 
-const coerceParam = (id, name, spec, value) => {
+const coerceParam = (/** @type {string} */ id, /** @type {string} */ name, /** @type {ParamSpec} */ spec, /** @type {*} */ value) => {
   const bad = (/** @type {string} */ why) => new CommandError('badParams', id, `${id}: parameter "${name}" ${why}`)
   switch (spec.type) {
     case 'number': {

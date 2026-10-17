@@ -6,34 +6,22 @@ import { collectDocumentColors } from '../documentColors.js'
 /*
  * register actions for left panel
  */
-/**
- * @type {module}
- */
 class BottomPanel {
   /**
-   * @param {PlainObject} editor svgedit handler
+   * @param {EditorInstance} editor svgedit handler
    */
   constructor (editor) {
     this.editor = editor
   }
 
-  /**
-   * @type {module}
-   */
   get selectedElement () {
     return this.editor.selectedElement
   }
 
-  /**
-   * @type {module}
-   */
   get multiselected () {
     return this.editor.multiselected
   }
 
-  /**
-   * @type {module}
-   */
   changeStrokeWidth (e) {
     let val = e.target.value
     if (
@@ -46,9 +34,6 @@ class BottomPanel {
     this.editor.svgCanvas.setStrokeWidth(val)
   }
 
-  /**
-   * @type {module}
-   */
   changeZoom (value) {
     switch (value) {
       case 'canvas':
@@ -133,18 +118,12 @@ class BottomPanel {
     )
   }
 
-  /**
-   * @type {module}
-   */
   handleColorPicker (type, evt) {
     const { paint } = evt.detail
     this.editor.svgCanvas.setPaint(type, paint)
     this.updateToolButtonState()
   }
 
-  /**
-   * @type {module}
-   */
   handleBgColorPicker (evt) {
     const { paint } = evt.detail
     if (paint.type === 'solidColor') {
@@ -155,9 +134,6 @@ class BottomPanel {
     }
   }
 
-  /**
-   * @type {module}
-   */
   handleStrokeAttr (type, evt) {
     // A fitted dash takes the new pattern as the one to fit.
     if (type === 'stroke-dasharray' && this.editor.svgCanvas.setDashPattern(evt.detail.value)) return
@@ -165,25 +141,22 @@ class BottomPanel {
   }
 
   /**
-   * @type {module}
-   */
+* @param {{ currentTarget: { value: string; }; }} evt
+*/
   handleOpacity (evt) {
     const val = Number.parseInt(evt.currentTarget.value.split('%')[0])
     this.editor.svgCanvas.setOpacity(val / 100)
   }
 
-  /**
-   * @type {module}
-   */
   handlePalette (e) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
     // `picker` is the destination chosen via the palette's target button.
     const { picker, color, paint: incomingPaint } = e.detail
     // Gradient swatches dispatch a ready-made Paint instead of a color string.
     if (incomingPaint) {
       if (picker === 'background') {
-        $id('bg_color').setPaint(incomingPaint)
+        $req('bg_color').setPaint(incomingPaint)
         if (incomingPaint.type === 'linearGradient' || incomingPaint.type === 'radialGradient') {
           this.editor.setBackground('gradient', '', incomingPaint[incomingPaint.type], true)
         }
@@ -200,32 +173,29 @@ class BottomPanel {
         ? new Paint()
         : new Paint({ alpha: 100, solidColor: color.substr(1) })
     if (picker === 'background') {
-      $id('bg_color').setPaint(paint)
+      $req('bg_color').setPaint(paint)
       this.editor.commands.tryRun('canvas_set_background', { color }, 'palette')
       return
     }
     if (picker === 'fill') {
-      $id('fill_color').setPaint(paint)
+      $req('fill_color').setPaint(paint)
     } else {
-      $id('stroke_color').setPaint(paint)
+      $req('stroke_color').setPaint(paint)
     }
     this.editor.svgCanvas.setColor(picker, color)
     this.updateToolButtonState()
   }
 
-  /**
-   * @type {module}
-   */
   init () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // register actions for Bottom panel
     const template = document.createElement('template')
     const { i18next } = this.editor
 
     template.innerHTML = BottomPanelHtml
     this.editor.$svgEditor.append(template.content.cloneNode(true))
-    $id('palette').addEventListener('change', this.handlePalette.bind(this))
-    $id('palette').init(i18next)
+    $req('palette').addEventListener('change', this.handlePalette.bind(this))
+    $req('palette').init(i18next)
     // "Colors in this drawing" row: refresh (coalesced to one scan per frame) whenever
     // the drawing, the selection or the loaded document changes.
     let docColorsQueued = false
@@ -240,49 +210,49 @@ class BottomPanel {
     ;['changed', 'elementInserted', 'selected', 'updateCanvas'].forEach(ev =>
       this.editor.svgCanvas.bind(ev, refreshDocColors))
     const { curConfig } = this.editor.configObj
-    $id('fill_color').setPaint(
+    $req('fill_color').setPaint(
       new Paint({ alpha: 100, solidColor: curConfig.initFill.color })
     )
-    $id('stroke_color').setPaint(
+    $req('stroke_color').setPaint(
       new Paint({
         alpha: 100,
         solidColor: curConfig.initStroke.color
       })
     )
-    $id('stroke_color').addEventListener('change', evt =>
+    $req('stroke_color').addEventListener('change', evt =>
       this.handleColorPicker.bind(this)('stroke', evt)
     )
-    $id('fill_color').addEventListener('change', evt =>
+    $req('fill_color').addEventListener('change', evt =>
       this.handleColorPicker.bind(this)('fill', evt)
     )
     // NOTE: zoom, stroke_width/style/linejoin/linecap and opacity now live in the
     // top bar / right panel. Their `change` listeners are bound in TopPanel.init()
     // (the last panel to initialise) so the elements exist by then; they still call
     // back into these BottomPanel handlers.
-    $id('fill_color').init(i18next)
-    $id('stroke_color').init(i18next)
-    $id('bg_color').init(i18next)
+    $req('fill_color').init(i18next)
+    $req('stroke_color').init(i18next)
+    $req('bg_color').init(i18next)
     // Initialize background color picker from saved preference
     const initBgColor = this.editor.configObj.curPrefs.bkgd_color || '#ffffff'
-    $id('bg_color').setPaint(
+    $req('bg_color').setPaint(
       new Paint({ alpha: 100, solidColor: initBgColor.replace('#', '') })
     )
-    $id('bg_color').addEventListener('change', (evt) => {
+    $req('bg_color').addEventListener('change', (evt) => {
       this.handleBgColorPicker(evt)
     })
   }
 
   /**
-   * @type {module}
+   * @param {boolean} [apply]
    */
   updateColorpickers (apply) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    $id('fill_color').update(
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    $req('fill_color').update(
       this.editor.svgCanvas,
       this.editor.selectedElement,
       apply
     )
-    $id('stroke_color').update(
+    $req('stroke_color').update(
       this.editor.svgCanvas,
       this.editor.selectedElement,
       apply
@@ -291,7 +261,7 @@ class BottomPanel {
 }
 
 // Helper function to get the center of the workarea
-const getWorkareaCenter = (workarea, zoom) => {
+const getWorkareaCenter = (/** @type {Element} */ workarea, /** @type {number} */ zoom) => {
   const width = parseFloat(getComputedStyle(workarea).width.replace('px', ''))
   const height = parseFloat(getComputedStyle(workarea).height.replace('px', ''))
   return {

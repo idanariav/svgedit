@@ -1,6 +1,6 @@
 // seSmoothPathSettings.js — `<se-smooth-path-settings>` — Smooth-path popover (0-100% strength spin-input, live-previews on every change via `svgCanvas.previewSmoothPath`, Apply → `svgCanvas.commitSmoothPath`,…
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -108,9 +108,8 @@ class SeSmoothPathSettings extends SeSettingsPopover {
     super(TEMPLATE_HTML)
     this._applied = false
 
-    this.$strength = this._shadowRoot.querySelector('#smooth_strength')
-    this.$apply = this._shadowRoot.querySelector('.apply')
-
+    this.$strength = /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#smooth_strength'))
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
     this.$strength.addEventListener('change', () => this._preview())
     this.$apply.addEventListener('click', () => this.apply())
   }
@@ -118,7 +117,7 @@ class SeSmoothPathSettings extends SeSettingsPopover {
   _preview () {
     const strength = parseFloat(this.$strength.value)
     if (!Number.isFinite(strength)) return
-    ownerEditor(this).svgCanvas.previewSmoothPath?.(Math.max(0, Math.min(100, strength)) / 100)
+    requireOwnerEditor(this).svgCanvas.previewSmoothPath?.(Math.max(0, Math.min(100, strength)) / 100)
   }
 
   open () {
@@ -129,13 +128,13 @@ class SeSmoothPathSettings extends SeSettingsPopover {
 
   apply () {
     this._applied = true
-    ownerEditor(this).svgCanvas.commitSmoothPath?.()
+    requireOwnerEditor(this).svgCanvas.commitSmoothPath?.()
     this.close()
   }
 
   close () {
     if (!this._applied) {
-      ownerEditor(this).svgCanvas.cancelSmoothPath?.()
+      requireOwnerEditor(this).svgCanvas.cancelSmoothPath?.()
     }
     super.close()
   }
@@ -143,3 +142,5 @@ class SeSmoothPathSettings extends SeSettingsPopover {
 
 // Register
 customElements.define('se-smooth-path-settings', SeSmoothPathSettings)
+
+export default SeSmoothPathSettings

@@ -121,7 +121,7 @@ export function saveUserShapes (store) {
 
 /**
  * Add (or overwrite) a shape. Creates the category if it doesn't exist.
- * @param {{ category: string, label: string, svgContent: string, bbox: {x,y,width,height}, linkedFile?: ?string }} opts
+ * @param {{ category: string, label: string, svgContent: string, bbox: {x: any,y: any,width: any,height: any}, linkedFile?: ?string }} opts
  */
 export function addUserShape ({ category, label, svgContent, bbox, linkedFile }) {
   const store = loadUserShapes()
@@ -289,7 +289,7 @@ export function hideCategory ({ category }) {
  */
 export function unhideCategory ({ category }) {
   const store = loadUserShapes()
-  store.hidden = store.hidden.filter(c => c !== category)
+  store.hidden = store.hidden.filter((/** @type {string} */ c) => c !== category)
   saveUserShapes(store)
 }
 

@@ -35,10 +35,11 @@ const TOLERANCE_PREF = 'smooth_tolerance'
 /** The brush ring's ink; the overlay is never saved. */
 const RING_STROKE = '#2b7fff'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -50,17 +51,17 @@ const loadExtensionTranslation = function (svgEditor) {
  * @param {?Element} el
  * @returns {boolean}
  */
-export const isSmoothable = (el) =>
-  Boolean(el) && el.tagName === 'path' && !LIVE_ATTRS.some((a) => el.hasAttribute(a))
+export const isSmoothable = (/** @type {?Element|undefined} */ el) =>
+  Boolean(el) && /** @type {Element} */ (el).tagName === 'path' && !LIVE_ATTRS.some((a) => /** @type {Element} */ (el).hasAttribute(a))
 
 export default {
   name,
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
     /** @param {string} key @param {number} fallback @param {number} min @returns {number} */
     const numberPref = (key, fallback, min) => {
       const v = parseFloat(svgEditor.configObj.pref(key))
@@ -74,19 +75,25 @@ export default {
      * @type {Array<{el: Element, d0: string, subpaths: any[], marks: boolean[][], inverse: DOMMatrix, scale: number, touched: boolean}>}
      */
     let targets = []
+    /**
+* @type {{ x: number; y: number; } | null}
+*/
     let last = null
+    /**
+* @type {SVGCircleElement | null}
+*/
     let ring = null
 
     /** The paths a press brushes: the smoothable ones among the selection, else the one under the pointer. */
-    const pickTargets = (ev) => {
+    const pickTargets = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       const selected = svgCanvas.getSelectedElements().filter(isSmoothable)
       if (selected.length) return selected
       const under = svgCanvas.getMouseTarget(ev.event)
       return isSmoothable(under) ? [under] : []
     }
 
-    const prepare = (el) => {
-      const ctm = el.getScreenCTM?.()
+    const prepare = (/** @type {Element} */ el) => {
+      const ctm = /** @type {SVGGraphicsElement} */ (el).getScreenCTM?.()
       const det = ctm ? ctm.a * ctm.d - ctm.b * ctm.c : 0
       if (!ctm || !Number.isFinite(det) || det === 0) return null
       const d0 = el.getAttribute('d') || ''
@@ -104,7 +111,7 @@ export default {
     }
 
     /** Brush the step `from` → `to` (client coordinates) over every target. */
-    const brush = (from, to) => {
+    const brush = (/** @type {{x: number, y: number}} */ from, /** @type {{x: number, y: number}} */ to) => {
       for (const t of targets) {
         const a = new DOMPoint(from.x, from.y).matrixTransform(t.inverse)
         const b = new DOMPoint(to.x, to.y).matrixTransform(t.inverse)
@@ -114,7 +121,7 @@ export default {
       }
     }
 
-    const moveRing = (ctx, ev) => {
+    const moveRing = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       if (!ring) {
         ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
         ring.setAttribute('fill', 'none')
@@ -125,9 +132,9 @@ export default {
       }
       // The overlay is emptied when a gesture ends: put the ring back.
       if (!ring.isConnected) ctx.addOverlay(ring)
-      ring.setAttribute('cx', ev.rawX)
-      ring.setAttribute('cy', ev.rawY)
-      ring.setAttribute('r', radius() / ctx.zoom)
+      ring.setAttribute('cx', String(ev.rawX))
+      ring.setAttribute('cy', String(ev.rawY))
+      ring.setAttribute('r', String(radius() / ctx.zoom))
     }
 
     const reset = () => {
@@ -199,7 +206,7 @@ export default {
         const title = `${name}:buttons.0.title`
         // Beside the other freehand tools: after the pencil and the Shaper.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_smooth" command="tool_smooth" title="${title}" src="smooth-tool.svg"></se-button>`,
           3
         )

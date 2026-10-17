@@ -65,10 +65,10 @@ export class LayerKeyboard {
     const table = this.tree.table
     table.setAttribute('tabindex', '0')
     table.setAttribute('role', 'treegrid')
-    table.addEventListener('keydown', (evt) => this.onKeyDown(evt))
+    table.addEventListener('keydown', (/** @type {KeyboardEvent} */ evt) => this.onKeyDown(evt))
     table.addEventListener('focus', () => this.onFocus())
     // A click moves the keyboard's place too.
-    table.addEventListener('click', (evt) => {
+    table.addEventListener('click', (/** @type {MouseEvent} */ evt) => {
       const tr = /** @type {Element} */ (evt.target).closest?.('tr.layer, tr.object, tr.objmore')
       if (tr) this.active = this.keyOf(tr)
       this.mark()

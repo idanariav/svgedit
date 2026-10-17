@@ -25,7 +25,7 @@ export class SeText extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('div')
+    this.$div = /** @type {HTMLDivElement & {value: string}} */ (this._shadowRoot.querySelector('div'))
   }
 
   /**
@@ -43,7 +43,7 @@ export class SeText extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'text':

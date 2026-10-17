@@ -107,10 +107,10 @@ export class SeSelect extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$select = this._shadowRoot.querySelector('select')
-    this.$label = this._shadowRoot.querySelector('.top-label')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$wrap = this._shadowRoot.querySelector('.field')
+    this.$select = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('select'))
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('.top-label'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$wrap = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.field'))
   }
 
   /**
@@ -128,7 +128,7 @@ export class SeSelect extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     let options
     if (oldValue === newValue) return
     switch (name) {
@@ -162,7 +162,7 @@ export class SeSelect extends HTMLElement {
         } else {
           options = newValue.split(',')
           options.forEach((option) => {
-            const optionNode = document.createElement('OPTION')
+            const optionNode = document.createElement('option')
             const text = document.createTextNode(t(option))
             optionNode.appendChild(text)
             this.$select.appendChild(optionNode)
@@ -243,7 +243,7 @@ export class SeSelect extends HTMLElement {
   addOption (value, text = value) {
     const exists = Array.from(this.$select.options).some(o => o.value === value)
     if (exists) return
-    const optionNode = document.createElement('OPTION')
+    const optionNode = document.createElement('option')
     optionNode.value = value
     optionNode.appendChild(document.createTextNode(text))
     this.$select.appendChild(optionNode)
@@ -281,6 +281,9 @@ export class SeSelect extends HTMLElement {
     this.$select.setAttribute('disabled', value)
   }
 
+  /**
+* @param {string | null} src
+*/
   async _loadIcon (src) {
     if (!src) return
     this.imgPath = this.imgPath || ownerEditor(this)?.configObj?.curConfig?.imgPath

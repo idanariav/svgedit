@@ -20,10 +20,11 @@ import { PROPORTION_TIERS } from '@svgedit/svgcanvas/core/proportions.ts'
 
 const name = 'proportion-markers'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -36,8 +37,8 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, NS, assignAttributes } = svgCanvas
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const { $id, $req, NS, assignAttributes } = svgCanvas
+    const svgdoc = $req('svgcanvas').ownerDocument
     const canvBG = $id('canvasBackground')
 
     // Overlay layer for the edge markers, sibling to #canvasGrid.
@@ -52,7 +53,7 @@ export default {
       display: 'none',
       style: 'pointer-events: none;'
     })
-    canvBG.appendChild(markers)
+    canvBG?.appendChild(markers)
 
     // Overlay layer for the transient snap guide lines (drawn on top of markers).
     const guides = svgdoc.createElementNS(NS.SVG, 'svg')
@@ -65,7 +66,7 @@ export default {
       overflow: 'visible',
       style: 'pointer-events: none;'
     })
-    canvBG.appendChild(guides)
+    canvBG?.appendChild(guides)
 
     const isWireframe = () => svgEditor.workarea?.classList.contains('wireframe')
 
@@ -73,7 +74,7 @@ export default {
      * Render the proportion triangles in pixel space (resolution × zoom). Each
      * triangle sits on an edge with its base on the edge and apex pointing into
      * the canvas, centered on the proportion coordinate.
-     * @param {Float} zoom
+     * @param {number} zoom
      * @returns {void}
      */
     const drawMarkers = (zoom) => {
@@ -81,7 +82,7 @@ export default {
       const w = res.w * zoom
       const h = res.h * zoom
       const frag = svgdoc.createDocumentFragment()
-      const addTri = (points, color) => {
+      const addTri = (/** @type {string} */ points, /** @type {string} */ color) => {
         const tri = svgdoc.createElementNS(NS.SVG, 'polygon')
         assignAttributes(tri, { points, fill: color, 'fill-opacity': 0.9 })
         frag.append(tri)
@@ -122,7 +123,7 @@ export default {
     /**
      * Draw the snap guide line(s) for the currently snapped axes. Called from
      * core `event.js` during a drag; `null`/empty clears the guides.
-     * @param {{x?: {pos: Float, color: string}, y?: {pos: Float, color: string}}|null} snap
+     * @param {{x?: {pos: number, color: string}, y?: {pos: number, color: string}}|null} snap
      * @returns {void}
      */
     svgCanvas.showSnapGuides = (snap) => {
@@ -135,7 +136,7 @@ export default {
       const w = res.w * zoom
       const h = res.h * zoom
       const frag = svgdoc.createDocumentFragment()
-      const addLine = (x1, y1, x2, y2, color) => {
+      const addLine = (/** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string} */ color) => {
         const ln = svgdoc.createElementNS(NS.SVG, 'line')
         assignAttributes(ln, {
           x1, y1, x2, y2, stroke: color, 'stroke-width': 1.5, 'stroke-dasharray': '5 3', 'stroke-opacity': 0.9
@@ -149,7 +150,7 @@ export default {
 
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      zoomChanged (zoom) {
+      zoomChanged (/** @type {number} */ zoom) {
         if (isWireframe()) {
           drawMarkers(zoom)
         }

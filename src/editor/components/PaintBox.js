@@ -6,9 +6,10 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
  */
 class PaintBox {
   /**
-     * @param {string|Element|external:jQuery} container
-     * @param {"fill"} type
-     */
+* @param {string | Element | external}  :jQuery} container
+* @param {"fill"} type
+* @param {HTMLDivElement} container
+*/
   constructor (container, type) {
     // set up gradients to be used for the buttons
     const svgdocbox = new DOMParser().parseFromString(
@@ -64,7 +65,7 @@ class PaintBox {
   /**
    * @param {PlainObject} svgCanvas
   * @param {string} color
-  * @param {Float} opac
+  * @param {number} opac
   * @param {string} type
   * @returns {module:jGraduate~Paint}
   */

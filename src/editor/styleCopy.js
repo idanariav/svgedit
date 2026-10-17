@@ -43,7 +43,7 @@ const GROUP_TAGS = new Set(['g', 'a'])
 
 const NOT_SHAPES = new Set(['title', 'desc', 'defs'])
 
-const tag = (el) => el.tagName.toLowerCase()
+const tag = (/** @type {Element} */ el) => el.tagName.toLowerCase()
 
 /**
  * The element's own look, or the first shape inside a group.
@@ -92,14 +92,14 @@ export const readStyle = (source) => {
 }
 
 /** The `<marker>` an element's `marker-<pos>` points at, if it is in the drawing. */
-const linkedMarker = (svgCanvas, el, attr) => {
+const linkedMarker = (/** @type {import('@svgedit/svgcanvas').default} */ svgCanvas, /** @type {Element} */ el, /** @type {string} */ attr) => {
   const m = (el.getAttribute(attr) || '').match(/\(#(.*)\)/)
   return m ? svgCanvas.getElement(m[1]) : null
 }
 
 /**
  * Give `target` a copy of `source`'s markers (cloned: marker ids are per element).
- * @param {object} svgCanvas
+ * @param {import('@svgedit/svgcanvas').default} svgCanvas
  * @param {Element} source
  * @param {Element} target
  * @returns {void}
@@ -115,11 +115,11 @@ const copyMarkers = (svgCanvas, source, target) => {
     if (!from) {
       target.removeAttribute(attr)
     } else if (!from.hasAttribute('se_type')) {
-      target.setAttribute(attr, source.getAttribute(attr)) // not ours (imported): share it
+      target.setAttribute(attr, source.getAttribute(attr) ?? '') // not ours (imported): share it
     } else {
       const id = `mkr_${pos}_${target.id}`
       svgCanvas.getElement(id)?.remove()
-      const clone = from.cloneNode(true)
+      const clone = /** @type {Element} */ (from.cloneNode(true))
       clone.setAttribute('id', id)
       from.after(clone)
       target.setAttribute(attr, `url(#${id})`)
@@ -129,7 +129,7 @@ const copyMarkers = (svgCanvas, source, target) => {
 
 /**
  * Copy shadow, outline, glow and feather through the effect extensions.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @param {Element} source
  * @param {Element} target
  * @returns {void}
@@ -148,7 +148,7 @@ const copyEffects = (editor, source, target) => {
 
 /**
  * Copy `source`'s look onto `targets` as one undo step.
- * @param {object} editor the Editor (needs `svgCanvas`; `shadowApi`/`outlineApi`/`glowApi` when those extensions are loaded)
+ * @param {EditorInstance} editor the Editor (needs `svgCanvas`; `shadowApi`/`outlineApi`/`glowApi` when those extensions are loaded)
  * @param {Element} source
  * @param {Element[]} targets
  * @returns {number} how many shapes were restyled

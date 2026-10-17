@@ -35,6 +35,7 @@ const buildLeftPanel = () => {
   const editor = {
     $svgEditor: root,
     $id,
+    $req: $id,
     $qa,
     svgCanvas: {
       bind: (evt, cb) => { if (evt === 'extensions_added') extensionsAddedHandlers.push(cb) },

@@ -2,14 +2,14 @@
 import { t } from '../locale.js'
 import { formatHotkey } from '../Hotkeys.js'
 import hotkeyDialogHTML from './hotkeyDialog.html'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
 const template = document.createElement('template')
 template.innerHTML = hotkeyDialogHTML
 
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
+const escapeHtml = (/** @type {string} */ s) => String(s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ))
 
@@ -25,15 +25,15 @@ export class SeHotkeyDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#hotkey_dialog')
-    this.$list = this._shadowRoot.querySelector('#hk_list')
-    this.$title = this._shadowRoot.querySelector('#hk_title')
-    this.$close = this._shadowRoot.querySelector('#hk_close')
-    this.$done = this._shadowRoot.querySelector('#hk_done')
-    this.$resetAll = this._shadowRoot.querySelector('#hk_reset_all')
-    this.$search = this._shadowRoot.querySelector('#hk_search')
-    this.$filterAssigned = this._shadowRoot.querySelector('#hk_filter_assigned')
-    this.$filterText = this._shadowRoot.querySelector('#hk_filter_text')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#hotkey_dialog'))
+    this.$list = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#hk_list'))
+    this.$title = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#hk_title'))
+    this.$close = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#hk_close'))
+    this.$done = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#hk_done'))
+    this.$resetAll = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#hk_reset_all'))
+    this.$search = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#hk_search'))
+    this.$filterAssigned = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#hk_filter_assigned'))
+    this.$filterText = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#hk_filter_text'))
     // When set, the dialog is recording a new key for { id }; { error } holds
     // a transient conflict message to show under that row.
     this._recording = null
@@ -47,7 +47,7 @@ export class SeHotkeyDialog extends HTMLElement {
    * @param {object} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.$title.textContent = i18next.t('hotkeys.title')
     this.$done.textContent = i18next.t('common.ok')
     this.$resetAll.textContent = i18next.t('hotkeys.reset_all')
@@ -60,7 +60,7 @@ export class SeHotkeyDialog extends HTMLElement {
     return ['dialog']
   }
 
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     if (name === 'dialog') {
       if (newValue === 'open') {
@@ -74,7 +74,10 @@ export class SeHotkeyDialog extends HTMLElement {
     }
   }
 
+  /** @returns {?string} */
   get dialog () { return this.getAttribute('dialog') }
+
+  /** @param {string} value */
   set dialog (value) { this.setAttribute('dialog', value) }
 
   connectedCallback () {
@@ -83,7 +86,7 @@ export class SeHotkeyDialog extends HTMLElement {
     $click(this.$done, close)
     this.$dialog.addEventListener('close', () => this._cancelRecording())
     $click(this.$resetAll, () => {
-      ownerEditor(this).hotkeys.resetAll()
+      requireOwnerEditor(this).hotkeys.resetAll()
       this._render()
     })
     // Delegate row actions (add / remove / reset).
@@ -133,7 +136,7 @@ export class SeHotkeyDialog extends HTMLElement {
     } else if (recording) {
       keysHtml = `<span class="hk-recording">${escapeHtml(t('hotkeys.press_key'))}</span>`
     } else if (a.keys.length) {
-      keysHtml = a.keys.map((k) => (
+      keysHtml = a.keys.map((/** @type {string} */ k) => (
         `<span class="hk-chip">${escapeHtml(formatHotkey(k))}` +
         `<button class="hk-chip-remove" data-act="remove" data-id="${escapeHtml(a.id)}" ` +
         `data-key="${escapeHtml(k)}" title="${escapeHtml(t('hotkeys.remove'))}">✕</button></span>`
@@ -163,10 +166,10 @@ export class SeHotkeyDialog extends HTMLElement {
 
   /** @param {MouseEvent} e */
   _onListClick (e) {
-    const btn = e.target.closest('[data-act]')
+    const btn = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('[data-act]'))
     if (!btn) return
     const { act, id, key } = btn.dataset
-    const hk = ownerEditor(this).hotkeys
+    const hk = requireOwnerEditor(this).hotkeys
     if (act === 'remove') {
       hk.removeKey(id, key)
       this._render()
@@ -183,7 +186,7 @@ export class SeHotkeyDialog extends HTMLElement {
   _startRecording (id) {
     this._cancelRecording()
     this._recording = { id, error: '' }
-    this._captureHandler = (e) => this._onCapture(e)
+    this._captureHandler = (/** @type {KeyboardEvent} */ e) => this._onCapture(e)
     document.addEventListener('keydown', this._captureHandler, true)
     this._render()
   }
@@ -193,7 +196,7 @@ export class SeHotkeyDialog extends HTMLElement {
     e.preventDefault()
     e.stopPropagation()
     if (e.key === 'Escape') { this._cancelRecording(); this._render(); return }
-    const hk = ownerEditor(this).hotkeys
+    const hk = requireOwnerEditor(this).hotkeys
     const key = hk.constructor.keyFromEvent(e)
     if (!key) return // lone modifier — keep waiting for the full combo
     const { id } = this._recording

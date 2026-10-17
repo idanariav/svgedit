@@ -68,14 +68,34 @@ const injectSvgeditStyles = () => {
   document.head.append(styleEl)
 }
 
-const { $click, scopedId, scopedQa, scopedQq } = SvgCanvas
+const { $click, scopedId, scopedReq, scopedQa, scopedQq } = SvgCanvas
 
 /**
  *
  */
 class EditorStartup {
+  // Members the `Editor` subclass creates in its constructor, declared here so the startup code that uses them is typed.
+  /** @type {import('./ConfigObj.js').default} */ configObj
+  /** @type {import('./panels/LeftPanel.js').default} */ leftPanel
+  /** @type {import('./panels/TopPanel.js').default} */ topPanel
+  /** @type {import('./panels/BottomPanel.js').default} */ bottomPanel
+  /** @type {import('./panels/RightPanel.js').default} */ rightPanel
+  /** @type {import('./panels/TabletShell.js').default} */ tabletShell
+  /** @type {import('./MainMenu.js').default} */ mainMenu
+  /** @type {import('./Hotkeys.js').default} */ hotkeys
+  /** @type {string[]} */ goodLangs
+  // Seams the built-in extensions fill in when they load (undefined otherwise).
+  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ shadowApi
+  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ outlineApi
+  /** @type {{read(el: Element): *, apply(el: Element, spec: *, cmd: *): void}|undefined} */ glowApi
+  /** @type {ReturnType<typeof import('./extensions/fx-filter.js').createFxComposer>|undefined} */ fxFilter
+  /** @type {((zoom?: number) => void)|undefined} */ updateGrid
+  /** @type {(() => void)|undefined} */ updateProportionMarkers
+  /** @type {number|undefined} */ exportWindowCt
+  /** @type {import('i18next').i18n} */ i18next
+
   /**
-   *
+   * @param {?HTMLElement} [div] the editor's container
    */
   constructor (div) {
     /** @type {SvgCanvas} The canvas; created by `init()`, `null` before. */
@@ -94,7 +114,7 @@ class EditorStartup {
     // Mark this container so web components / dialogs nested under it can resolve
     // their owning editor via closestRoot() (see domScope.js).
     this.$container.setAttribute('data-svgedit-root', '')
-    registerEditorRoot(this.$container, this)
+    registerEditorRoot(this.$container, /** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
     // Make the container itself focusable (script-only, not tab-reachable) so
     // `activate()` below can move real DOM focus into it. Canvas clicks (e.g.
     // on an SVG shape) don't focus anything on their own, so without this,
@@ -114,7 +134,7 @@ class EditorStartup {
     // a second drawing has ever been opened in the document. Repointing on every
     // interaction keeps the global tracking the drawing the user is actually in.
     const activate = () => {
-      setActiveEditor(this)
+      setActiveEditor(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
       window.svgEditor = this
       // Move live focus into this container so isActiveEditor()'s live-focus
       // check (domScope.js) can identify this editor even when the click
@@ -129,7 +149,7 @@ class EditorStartup {
     // element the user just clicked into, making it impossible to type or
     // double-click-select text in any field.
     this.$container.addEventListener('focusin', () => {
-      setActiveEditor(this)
+      setActiveEditor(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
       window.svgEditor = this
     }, true)
     // Exposed so a host that mounts several editors outside a single browser
@@ -144,6 +164,7 @@ class EditorStartup {
     // IDs baked into the template (svgcanvas, workarea, the se-* dialogs, …).
     // Methods read these off `this`; nested callbacks capture them lexically.
     this.$id = scopedId(this.$container)
+    this.$req = scopedReq(this.$container)
     this.$qa = scopedQa(this.$container)
     this.$qq = scopedQq(this.$container)
     // Own registry per editor instance (see contextmenu.js) — a shared one
@@ -158,7 +179,7 @@ class EditorStartup {
   * @returns {Promise<void>}
   */
   async init () {
-    const { $id } = this // container-scoped lookup (see constructor)
+    const { $id, $req } = this // container-scoped lookup (see constructor)
     // Register the optional host storage adapter before any component is
     // constructed (the editor template below instantiates <se-palette> and the
     // shape library, which read user data on creation). Falls back to
@@ -178,7 +199,7 @@ class EditorStartup {
       const template = document.createElement('template')
       template.innerHTML = editorTemplate
       this.$container.append(template.content.cloneNode(true))
-      this.$svgEditor = this.$container.querySelector('.svg_editor')
+      this.$svgEditor = /** @type {HTMLElement} */ (/** @type {HTMLElement} */ (/** @type {HTMLElement} */ (this.$container.querySelector('.svg_editor'))))
       // Apply saved theme + UI mode before any rendering
       applyTheme(this.configObj.pref('theme') || 'light', this.$svgEditor)
       applyUiMode(this.configObj.pref('tabletMode'), this.$svgEditor)
@@ -254,7 +275,7 @@ class EditorStartup {
     * @type {module:svgcanvas.SvgCanvas}
     */
     this.svgCanvas = new SvgCanvas(
-      $id('svgcanvas'),
+      $req('svgcanvas'),
       this.configObj.curConfig,
       this.$container // scope canvas element lookups to this editor's container
     )
@@ -378,22 +399,22 @@ class EditorStartup {
       res.w = this.svgCanvas.convertUnit(res.w) + this.configObj.curConfig.baseUnit
       res.h = this.svgCanvas.convertUnit(res.h) + this.configObj.curConfig.baseUnit
     }
-    $id('se-img-prop').setAttribute('dialog', 'close')
-    $id('se-img-prop').setAttribute('title', String(this.svgCanvas.getDocumentTitle()))
-    $id('se-img-prop').setAttribute('width', res.w)
-    $id('se-img-prop').setAttribute('height', res.h)
-    $id('se-img-prop').setAttribute('save', this.configObj.pref('img_save'))
+    $req('se-img-prop').setAttribute('dialog', 'close')
+    $req('se-img-prop').setAttribute('title', String(this.svgCanvas.getDocumentTitle()))
+    $req('se-img-prop').setAttribute('width', res.w)
+    $req('se-img-prop').setAttribute('height', res.h)
+    $req('se-img-prop').setAttribute('save', this.configObj.pref('img_save'))
 
     // Lose focus for select elements when changed (Allows keyboard shortcuts to work better)
     const selElements = this.$qa('select') // container-scoped (see constructor)
     Array.from(selElements).forEach(function (element) {
       element.addEventListener('change', function (evt) {
-        evt.currentTarget.blur()
+        ;/** @type {HTMLElement} */ (evt.currentTarget).blur()
       })
     })
 
     // fired when user wants to move elements to another layer
-    $id('selLayerNames').addEventListener('change', (evt) => {
+    $req('selLayerNames').addEventListener('change', (/** @type {CustomEvent} */ evt) => {
       const destLayer = evt.detail.value
       if (destLayer === NEW_LAYER_OPTION_VALUE) {
         this.rightPanel.moveSelectedToNewLayer()
@@ -405,11 +426,11 @@ class EditorStartup {
         this.rightPanel.populateLayers()
       }
     })
-    $id('tool_font_family').addEventListener('change', (evt) => {
+    $req('tool_font_family').addEventListener('change', (/** @type {CustomEvent} */ evt) => {
       this.svgCanvas.setFontFamily(evt.detail.value)
     })
 
-    $id('seg_type').addEventListener('change', (evt) => {
+    $req('seg_type').addEventListener('change', (/** @type {CustomEvent} */ evt) => {
       this.svgCanvas.setSegType(evt.detail.value)
     })
 
@@ -423,7 +444,7 @@ class EditorStartup {
 
     // Shift+Enter inserts a new row (default textarea behavior); plain Enter
     // commits the text and exits edit mode (no newline inserted).
-    $id('text').addEventListener('keydown', (evt) => {
+    $req('text').addEventListener('keydown', (evt) => {
       if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault()
         this.svgCanvas.textActions.toSelectMode(true)
@@ -435,30 +456,30 @@ class EditorStartup {
       }
     })
 
-    $id('link_url').addEventListener('change', (evt) => {
-      if (evt.currentTarget.value.length) {
-        this.svgCanvas.setLinkURL(evt.currentTarget.value)
+    $req('link_url').addEventListener('change', (evt) => {
+      if (/** @type {HTMLInputElement} */ (evt.currentTarget).value.length) {
+        this.svgCanvas.setLinkURL(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
       } else {
         this.svgCanvas.removeHyperlink()
       }
     })
 
-    $id('g_title').addEventListener('change', (evt) => {
-      this.svgCanvas.setGroupTitle(evt.currentTarget.value)
+    $req('g_title').addEventListener('change', (evt) => {
+      this.svgCanvas.setGroupTitle(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
     })
 
     // Frame name reuses the <title>-child mechanism (setGroupTitle works on any
     // selected element, with undo). The name labels the frame in the export
     // region picker.
-    $id('frame_name').addEventListener('change', (evt) => {
-      this.svgCanvas.setGroupTitle(evt.currentTarget.value)
+    $req('frame_name').addEventListener('change', (evt) => {
+      this.svgCanvas.setGroupTitle(/** @type {HTMLInputElement} */ (evt.currentTarget).value)
     })
 
     let lastX = null; let lastY = null
     let panning = false; let keypan = false
     let previousMode = 'select'
 
-    $id('svgcanvas').addEventListener('mouseup', (evt) => {
+    $req('svgcanvas').addEventListener('mouseup', (evt) => {
       if (panning === false) { return true }
 
       this.workarea.scrollLeft -= (evt.clientX - lastX)
@@ -470,7 +491,7 @@ class EditorStartup {
       if (evt.type === 'mouseup') { panning = false }
       return false
     })
-    $id('svgcanvas').addEventListener('mousemove', (evt) => {
+    $req('svgcanvas').addEventListener('mousemove', (evt) => {
       if (panning === false) { return true }
 
       this.workarea.scrollLeft -= (evt.clientX - lastX)
@@ -487,7 +508,7 @@ class EditorStartup {
     // anywhere inside the current selection's bbox (bbox-drag). Only in select
     // mode while not already dragging/panning, so it never fights the
     // drawing/resize/rotate cursors.
-    $id('svgcanvas').addEventListener('mousemove', (evt) => {
+    $req('svgcanvas').addEventListener('mousemove', (evt) => {
       const canv = this.svgCanvas
       if (panning || canv.gesture.spaceKey || canv.getStarted() || canv.getMode() !== 'select') { return }
       const svgRoot = canv.getSvgRoot()
@@ -512,7 +533,7 @@ class EditorStartup {
       // The 'move' hint swaps in the select tool's move cursor (cursors/select_move_cursor.svg, see toolCursors.js).
       this.svgCanvas.setCursorHint(movable ? 'move' : null)
     })
-    $id('svgcanvas').addEventListener('mousedown', (evt) => {
+    $req('svgcanvas').addEventListener('mousedown', (evt) => {
       this.enableToolCancel = false
       if (evt.button === 1 || keypan === true) {
         // prDefault to avoid firing of browser's panning on mousewheel
@@ -710,7 +731,7 @@ class EditorStartup {
         self.workarea.removeEventListener('mousedown', unfocus)
         // Go back to selecting text if in textedit mode
         if (self.svgCanvas.getMode() === 'textedit') {
-          $id('text').focus()
+          $req('text').focus()
         }
       })
     })
@@ -751,23 +772,23 @@ class EditorStartup {
       this.rulers.manageScroll()
     })
 
-    $id('stroke_width').value = this.configObj.curConfig.initStroke.width
-    $id('opacity').value = this.configObj.curConfig.initOpacity * 100
+    $req('stroke_width').value = this.configObj.curConfig.initStroke.width
+    $req('opacity').value = this.configObj.curConfig.initOpacity * 100
     const elements = document.getElementsByClassName('push_button')
     Array.from(elements).forEach(function (element) {
       element.addEventListener('mousedown', function (event) {
-        if (!event.currentTarget.classList.contains('disabled')) {
-          event.currentTarget.classList.add('push_button_pressed')
-          event.currentTarget.classList.remove('push_button')
+        if (!(event.currentTarget).classList.contains('disabled')) {
+          ;/** @type {Element} */ (event.currentTarget).classList.add('push_button_pressed')
+          ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button')
         }
       })
       element.addEventListener('mouseout', function (event) {
-        event.currentTarget.classList.add('push_button')
-        event.currentTarget.classList.remove('push_button_pressed')
+        ;/** @type {Element} */ (event.currentTarget).classList.add('push_button')
+        ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button_pressed')
       })
       element.addEventListener('mouseup', function (event) {
-        event.currentTarget.classList.add('push_button')
-        event.currentTarget.classList.remove('push_button_pressed')
+        ;/** @type {Element} */ (event.currentTarget).classList.add('push_button')
+        ;/** @type {Element} */ (event.currentTarget).classList.remove('push_button_pressed')
       })
     })
 
@@ -790,7 +811,7 @@ class EditorStartup {
       inputEle.setAttribute('autocomplete', 'off')
     })
 
-    $id('se-svg-editor-dialog').addEventListener('change', function (e) {
+    $req('se-svg-editor-dialog').addEventListener('change', function (e) {
       if (e?.detail?.copy === 'click') {
         this.cancelOverlays(e)
       } else if (e?.detail?.dialog === 'dynamic') {
@@ -801,7 +822,7 @@ class EditorStartup {
         this.saveSourceEditor(e)
       }
     }.bind(this))
-    $id('se-cmenu_canvas').addEventListener('change', function (e) {
+    $req('se-cmenu_canvas').addEventListener('change', function (e) {
       const action = e?.detail?.trigger
       switch (action) {
         case 'delete':
@@ -865,7 +886,7 @@ class EditorStartup {
       }
 
       if (this.configObj.curConfig.wireframe) {
-        $id('tool_wireframe').click()
+        $req('tool_wireframe').click()
       }
 
       if (this.configObj.curConfig.showRulers) {
@@ -886,7 +907,7 @@ class EditorStartup {
     }.bind(this))
 
     // zoom
-    $id('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
+    $req('zoom').value = (this.svgCanvas.getZoom() * 100).toFixed(1)
     this.canvMenu.setAttribute('disableallmenu', true)
     this.canvMenu.setAttribute('enablemenuitems', '#delete,#cut,#copy')
 
@@ -948,7 +969,7 @@ class EditorStartup {
    * @returns {Promise<void>}
    */
   _addSelectedToShapeLibrary () {
-    return addSelectedToShapeLibrary(this)
+    return addSelectedToShapeLibrary(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
   }
 
   /**
@@ -1064,7 +1085,7 @@ class EditorStartup {
     const frameBtn = $id('tool_frame')
     if (frameBtn) frameBtn.pressed = mode === 'frame'
     this.topPanel.toggleImageCropMode(mode === 'imagecrop')
-    refreshToolOptions(this)
+    refreshToolOptions(/** @type {EditorInstance} */ (/** @type {unknown} */ (this)))
   }
 
   /**

@@ -8,6 +8,7 @@
 // fetch of `shapelib/*.json`; the `lib` attribute is still honoured as a
 // fallback for custom external libraries.
 const shapeLibModules = import.meta.glob('../extensions/ext-shapes/shapelib/*.json', { eager: true, import: 'default' })
+/** @type {Object<string, any>} */
 export const shapeLibData = {}
 for (const [p, data] of Object.entries(shapeLibModules)) {
   shapeLibData[p.slice(p.lastIndexOf('/') + 1).replace(/\.json$/, '')] = data

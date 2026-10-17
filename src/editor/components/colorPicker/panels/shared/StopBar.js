@@ -38,8 +38,8 @@ export function createStopBar (initialStops, initialMode = 'two') {
     <div class="cp-stop-list"></div>
   `
 
-  const stopsContainer = container.querySelector('.cp-stopbar-stops')
-  const trackFill = container.querySelector('.cp-stopbar-track-fill')
+  const stopsContainer = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-stops'))
+  const trackFill = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-track-fill'))
   const addBtn = container.querySelector('.cp-stopbar-add')
   const stopList = container.querySelector('.cp-stop-list')
 
@@ -57,6 +57,9 @@ export function createStopBar (initialStops, initialMode = 'two') {
     }))
   }
 
+  /**
+* @param {number} index
+*/
   function _emitSelect (index) {
     container.dispatchEvent(new CustomEvent('stop-select', {
       detail: { index },
@@ -64,6 +67,9 @@ export function createStopBar (initialStops, initialMode = 'two') {
     }))
   }
 
+  /**
+* @param {number} idx
+*/
   function _selectStop (idx) {
     selectedIndex = idx
     _render()
@@ -135,11 +141,11 @@ export function createStopBar (initialStops, initialMode = 'two') {
       `
 
       row.addEventListener('click', (e) => {
-        if (e.target.closest('.cp-stop-del')) return
+        if (/** @type {Element} */ (e.target).closest('.cp-stop-del')) return
         _selectStop(idx)
       })
 
-      const chipBtn = row.querySelector('.cp-stop-chipbig')
+      const chipBtn = /** @type {HTMLButtonElement} */ (row.querySelector('.cp-stop-chipbig'))
       chipBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         _selectStop(idx)
@@ -149,7 +155,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
         }))
       })
 
-      const delBtn = row.querySelector('.cp-stop-del')
+      const delBtn = /** @type {HTMLButtonElement} */ (row.querySelector('.cp-stop-del'))
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         const minStops = mode === 'mono' ? 1 : 2
@@ -199,7 +205,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
     _render()
   }
 
-  container.setSelectedStop = (idx, colorHex, alpha) => {
+  container.setSelectedStop = (/** @type {number} */ idx, /** @type {string} */ colorHex, /** @type {number | undefined} */ alpha) => {
     if (idx >= 0 && idx < stops.length) {
       stops[idx].color = colorHex
       if (alpha !== undefined) stops[idx].alpha = alpha
@@ -210,7 +216,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
 
   container.getSelectedIndex = () => selectedIndex
 
-  container.setMode = (newMode) => {
+  container.setMode = (/** @type {string} */ newMode) => {
     mode = newMode
     _render()
   }

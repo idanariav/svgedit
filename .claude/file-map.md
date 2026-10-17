@@ -153,12 +153,14 @@
 | `bundle-report.mjs` | What is in `dist/editor/Editor.js`, by package and by source folder (R6 in .claude/roadmap/rearchitecture.md) |
 | `check-canvas-calls.mjs` | Fails when editor code calls the canvas wrongly: a member that does not exist on `SvgCanvas`, or arguments / assignments on a line that touches `svgCanvas` that its signature rejects |
 | `check-dom-scope.mjs` | Guards against the "wrong owning editor" bug class: svgedit mounts one editor per pane/drawing in the same document, but its chrome uses fixed element ids (workarea, fill_color, the se-* dialogs, ...), so a bare… |
+| `check-editor-strict.mjs` | Fails when a file on the editor's strict list (`src/editor/strict-files.json`) has a type error under `strict` |
 | `check-layers.mjs` | Keeps the canvas engine (packages/svgcanvas) independent of the editor UI (src/editor), the way VectorCraft's `cargo xtask layers` enforces its crate layering |
 | `check-model-roundtrip.mjs` | Oracle for the document model (R1): parse every saved drawing into the model and serialize it back |
 | `check-ts-imports.mjs` | Fails when an import names a `.js` file that exists only as `.ts` |
 | `commands-doc.mjs` | Renders `.claude/commands.md` (every command id, label, default keys and params) from `editor.commands.list({ includeHidden: true })` |
 | `copy-static.mjs` | Postbuild: copies HTML entries + Playwright test harness to `dist/editor/` (CSS/images/extensions are now inlined into `Editor.js`, so they are not copied) |
 | `file-map.mjs` | Generates the code tables of `.claude/file-map.md` from each source file's header comment, and checks that every file has one (R7 in .claude/roadmap/rearchitecture.md: docs say what a thing is, the file says it first) |
+| `gen-ui-ids.mjs` | Generates `src/editor/ui-ids.d.ts`, the element type of every id in the editor's markup, so `svgCanvas.$id('angle')` and `$req('angle')` return `se-spin-input`'s class instead of a bare `HTMLElement` |
 | `html-template.mjs` | Compaction for the editor's HTML templates (panels, dialogs, editor shell), applied by the `svgedit-html-templates` plugin in `vite.config.mjs` when a template is imported as a string |
 | `publish.mjs` | Interactive release helper: confirms the version bump and CHANGES.md, optionally commits and tags the release, then publishes the packages |
 | `repair-drawings.mjs` | One-off repair of already-saved drawings: rewrites the .svg files themselves, so the editor never has to carry a load-time sanitizer for old corruption |

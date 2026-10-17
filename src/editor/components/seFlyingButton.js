@@ -3,7 +3,7 @@ import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 
 /**
@@ -18,16 +18,16 @@ export class FlyingButton extends HTMLElement {
     // Fixed trigger icon opt-in (see the 'src' case in attributeChangedCallback)
     this.staticIcon = false
     // create the shadowDom and insert the template
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
     this.template = this.createTemplate(this.imgPath)
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(this.template.content.cloneNode(true))
     // locate the component
-    this.$button = this._shadowRoot.querySelector('.menu-button')
-    this.$handle = this._shadowRoot.querySelector('.handle')
-    this.$overall = this._shadowRoot.querySelector('.overall')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.$menu = this._shadowRoot.querySelector('.menu')
+    this.$button = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu-button'))
+    this.$handle = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.handle'))
+    this.$overall = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.overall'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.$menu = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu'))
     // the last element of the div is the slot
     // we retrieve all elements added in the slot (i.e. se-buttons)
     this.$elements = this.$menu.lastElementChild.assignedElements()
@@ -168,7 +168,7 @@ export class FlyingButton extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -298,9 +298,10 @@ export class FlyingButton extends HTMLElement {
   }
 
   /**
-   * @function connectedCallback
-   * @returns {void}
-   */
+* @function connectedCallback
+* @returns {void}
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
@@ -328,6 +329,9 @@ export class FlyingButton extends HTMLElement {
   disconnectedCallback () {
     this._globalAbort?.abort()
     this._unsubscribeHotkeys?.()
+    /**
+* @type {(() => void) | undefined}
+*/
     this._unsubscribeHotkeys = undefined
   }
 
@@ -350,7 +354,7 @@ export class FlyingButton extends HTMLElement {
         this.opened = false
       }
     }, { signal: this._globalAbort.signal })
-    this.activeSlot = this.shadowRoot.querySelector('slot').assignedElements()[0]
+    this.activeSlot = /** @type {HTMLSlotElement} */ (/** @type {HTMLSlotElement} */ (this.shadowRoot.querySelector('slot'))).assignedElements()[0]
     // A static-icon flyout (see the 'src' case above) already has its fixed
     // face icon loaded — don't let the first sub-tool's icon override it.
     if (!this.staticIcon) {
@@ -359,7 +363,7 @@ export class FlyingButton extends HTMLElement {
     }
 
     // capture click event on the button to manage the logic
-    const onClickHandler = (ev) => {
+    const onClickHandler = (/** @type {{ stopPropagation: () => void; target: unknown; }} */ ev) => {
       ev.stopPropagation()
       switch (ev.target.nodeName) {
         case 'SE-FLYINGBUTTON':

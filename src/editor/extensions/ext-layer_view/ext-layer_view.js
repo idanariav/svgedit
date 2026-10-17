@@ -33,10 +33,11 @@ const name = 'layer_view'
 // attribute-based hover highlight in the layers panel).
 const DIM_OPACITY = 0.35
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -48,7 +49,7 @@ export default {
   async init (_S) {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
 
     // Lock state of every layer captured when focus mode is enabled, so exiting
@@ -57,6 +58,9 @@ export default {
     // The document keydown listener installed only while the mode is active.
     let keyHandler = null
     // The on-canvas "current layer" badge (created lazily, reused thereafter).
+    /**
+* @type {string | Node | null}
+*/
     let badge = null
     // Which badge sub-mode is active: 'current' (Focus, default) or 'all'
     // (All Layers). Reset to 'current' every time the mode is (re-)entered.
@@ -90,8 +94,8 @@ export default {
 
       const switchEl = document.createElement('span')
       switchEl.id = 'layer_focus_badge_switch'
-      const makeSegment = (mode, labelKey, titleKey) => {
-        const btn = document.createElement('button')
+      const makeSegment = (/** @type {string | undefined} */ mode, /** @type {string} */ labelKey, /** @type {string} */ titleKey) => {
+        const btn = /** @type {HTMLElement} */ (document.createElement('button'))
         btn.type = 'button'
         btn.dataset.mode = mode
         btn.textContent = svgEditor.i18next.t(`${name}:all.${labelKey}`)
@@ -103,7 +107,7 @@ export default {
         makeSegment('all', 'switchAll', 'switchAllTitle')
       )
       switchEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-mode]')
+        const btn = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('button[data-mode]'))
         if (btn) setSubMode(btn.dataset.mode)
       })
 
@@ -118,7 +122,7 @@ export default {
       el.querySelector('#layer_focus_badge_text').textContent = subMode === 'all'
         ? svgEditor.i18next.t(`${name}:all.badge`)
         : svgEditor.i18next.t(`${name}:focus.badge`, { name: cur })
-      el.querySelectorAll('#layer_focus_badge_switch button').forEach((btn) => {
+      el.querySelectorAll('#layer_focus_badge_switch button').forEach((/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; dataset: { mode: string; }; }} */ btn) => {
         btn.classList.toggle('active', btn.dataset.mode === subMode)
       })
       el.classList.toggle('visible', isPressed())
@@ -127,7 +131,7 @@ export default {
     // Switch the badge's sub-mode ('current' Focus vs. 'all' All Layers).
     // applyFocus() below is the single place that reflects whichever
     // sub-mode is active, so switching just re-runs it.
-    const setSubMode = (mode) => {
+    const setSubMode = (/** @type {string} */ mode) => {
       if (subMode === mode) return
       subMode = mode
       applyFocus()
@@ -204,7 +208,7 @@ export default {
     }
 
     // Switch the focused layer by a z-order delta (+1 = up toward the top).
-    const switchLayer = (delta) => {
+    const switchLayer = (/** @type {number} */ delta) => {
       const drawing = svgCanvas.getCurrentDrawing()
       const target = svgCanvas.indexCurrentLayer() + delta
       if (target < 0 || target >= drawing.getNumLayers()) return
@@ -215,7 +219,7 @@ export default {
 
     // Move the current selection to the adjacent layer, then follow the focus
     // there so the moved objects stay lit and editable.
-    const moveSelection = (delta) => {
+    const moveSelection = (/** @type {number} */ delta) => {
       const drawing = svgCanvas.getCurrentDrawing()
       const target = svgCanvas.indexCurrentLayer() + delta
       if (target < 0 || target >= drawing.getNumLayers()) return
@@ -271,7 +275,7 @@ export default {
         // Honour a host config that asks the editor to start in focus mode.
         if (svgEditor.configObj.curConfig.layerView && !isPressed()) {
           svgEditor.configObj.curConfig.layerView = false
-          $id('tool_layerView').pressed = true
+          $req('tool_layerView').pressed = true
           enterFocus()
           return
         }
@@ -282,7 +286,7 @@ export default {
         // Manually toggling a layer's visibility means the user is taking control
         // of what's shown, so drop out of focus mode.
         if (isPressed()) {
-          $id('tool_layerView').pressed = false
+          $req('tool_layerView').pressed = false
           exitFocus()
         }
       },
@@ -292,7 +296,7 @@ export default {
         const key = `${name}:buttons.0.key`
         buttonTemplate.innerHTML = `
       <se-button id="tool_layerView" command="tool_layerView" title="${title}" shortcut="${key}" src="layer_view.svg"></se-button>`
-        $id('editor_panel').append(buttonTemplate.content.cloneNode(true))
+        $req('editor_panel').append(buttonTemplate.content.cloneNode(true))
         svgEditor.commands.register({
           id: 'tool_layerView',
           label: title,

@@ -2,7 +2,7 @@
 import { fetchSvgEl } from './svgIconLoader.js'
 import { getRawIcon } from '../images/iconRegistry.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -96,10 +96,10 @@ export class SeMenu extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$toggle = this._shadowRoot.querySelector('#popupToggle')
-    this.$popup = this._shadowRoot.querySelector('#menuPopup')
+    this.$toggle = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#popupToggle'))
+    this.$popup = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#menuPopup'))
     this.$label = this.$toggle
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
   }
 
   /**
@@ -107,13 +107,13 @@ export class SeMenu extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    this._closeOnItemClick = (e) => {
-      if (e.target.closest('se-menu-item')) this.$popup.hidePopover()
+    this._closeOnItemClick = (/** @type {Event} */ e) => {
+      if (/** @type {Element} */ (e.target).closest('se-menu-item')) this.$popup.hidePopover()
     }
     this.addEventListener('click', this._closeOnItemClick)
     this._positionPopup = () => this.positionPopup()
     this.$popup.addEventListener('toggle', (e) => {
-      if (e.newState === 'open') this.positionPopup()
+      if (/** @type {ToggleEvent} */ (e).newState === 'open') this.positionPopup()
     })
   }
 
@@ -122,7 +122,7 @@ export class SeMenu extends HTMLElement {
    * @returns {void}
    */
   disconnectedCallback () {
-    this.removeEventListener('click', this._closeOnItemClick)
+    this.removeEventListener('click', /** @type {EventListener} */ (this._closeOnItemClick))
   }
 
   /**
@@ -156,7 +156,7 @@ export class SeMenu extends HTMLElement {
   /**
    * @function attributeChangedCallback
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'src':
@@ -171,7 +171,7 @@ export class SeMenu extends HTMLElement {
     }
   }
 
-  async _loadIcon (src) {
+  async _loadIcon (/** @type {string} */ src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
     // The brand logo is a full-color mark — inline it raw so it keeps its own

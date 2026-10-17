@@ -43,7 +43,10 @@ export function rgbToHsv (r, g, b) {
   }
 }
 
-/** Hex string (without #) → { r, g, b } */
+/**
+* Hex string (without #) → { r, g, b }
+* @param {string} hex
+*/
 export function hexToRgb (hex) {
   return {
     r: parseInt(hex.slice(0, 2), 16),
@@ -52,29 +55,50 @@ export function hexToRgb (hex) {
   }
 }
 
-/** Hex string (without #) → { h, s, v } */
+/**
+* Hex string (without #) → { h, s, v }
+* @param {string} hex
+*/
 export function hexToHsv (hex) {
   const { r, g, b } = hexToRgb(hex)
   return rgbToHsv(r, g, b)
 }
 
-/** { r, g, b } → hex string (without #) */
+/**
+* { r, g, b } → hex string (without #)
+* @param {number} r
+* @param {number} g
+* @param {number} b
+*/
 export function rgbToHex (r, g, b) {
   return [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
 }
 
-/** { h, s, v } → hex string (without #) */
+/**
+* { h, s, v } → hex string (without #)
+* @param {number} h
+* @param {number} s
+* @param {number} v
+*/
 export function hsvToHex (h, s, v) {
   const { r, g, b } = hsvToRgb(h, s, v)
   return [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
 }
 
-/** alpha 0-100 → 2-char hex (e.g. 100→'ff', 50→'80', 0→'00') */
+/**
+* alpha 0-100 → 2-char hex (e.g. 100→'ff', 50→'80', 0→'00')
+* @param {number} alpha
+*/
 export function alphaToHex (alpha) {
   return Math.round((alpha / 100) * 255).toString(16).padStart(2, '0')
 }
 
-/** Blend two hex colors (without #) by fraction t 0-1 (0 = a, 1 = b) */
+/**
+* Blend two hex colors (without #) by fraction t 0-1 (0 = a, 1 = b)
+* @param {string} a
+* @param {string} b
+* @param {number} t
+*/
 function blendHex (a, b, t) {
   const ra = parseInt(a.slice(0, 2), 16)
   const ga = parseInt(a.slice(2, 4), 16)

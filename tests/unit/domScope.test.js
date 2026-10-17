@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot, registerEditorRoot, ownerEditor } from '../../src/editor/domScope.js'
+import { setActiveEditor, clearActiveEditor, isActiveEditor, getActiveRoot, registerEditorRoot, ownerEditor, requireOwnerEditor } from '../../src/editor/domScope.js'
 
 describe('domScope active-editor tracking', () => {
   afterEach(() => {
@@ -185,5 +185,12 @@ describe('ownerEditor', () => {
     expect(ownerEditor(root)).toBeNull()
     window.svgEditor = { name: 'global' }
     expect(ownerEditor(root)).toBe(window.svgEditor)
+  })
+
+  it('requireOwnerEditor gives the editor, or throws an error that names the element', () => {
+    const a = { name: 'a' }
+    const inA = mount(a).appendChild(document.createElement('span'))
+    expect(requireOwnerEditor(inA)).toBe(a)
+    expect(() => requireOwnerEditor(document.createElement('se-spin-input'))).toThrow('No editor owns <se-spin-input>')
   })
 })

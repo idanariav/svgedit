@@ -49,11 +49,11 @@ const makeColorControl = (type, labelKey, src) => ({
     el.setAttribute('src', src)
     return el
   },
-  seed: (el, editor) => {
+  seed: (el, /** @type {EditorInstance} */ editor) => {
     el.init(editor.i18next)
     el.update(editor.svgCanvas, editor.selectedElement)
   },
-  onChange: (editor) => (evt) => editor.bottomPanel.handleColorPicker(type, evt)
+  onChange: (/** @type {EditorInstance} */ editor) => (evt) => editor.bottomPanel.handleColorPicker(type, evt)
 })
 
 /**
@@ -76,11 +76,11 @@ export const VALUE_CONTROLS = {
       el.setAttribute('src', 'stroke-width.svg')
       return el
     },
-    seed: (el, editor) => {
+    seed: (el, /** @type {EditorInstance} */ editor) => {
       const sel = editor.selectedElement
       el.value = (sel && sel.getAttribute('stroke-width')) || 1
     },
-    onChange: (editor) => (e) => editor.bottomPanel.changeStrokeWidth(e)
+    onChange: (/** @type {EditorInstance} */ editor) => (e) => editor.bottomPanel.changeStrokeWidth(e)
   },
   fill_color: makeColorControl('fill', 'favorites.label_fill_color', 'fill.svg'),
   stroke_color: makeColorControl('stroke', 'favorites.label_stroke_color', 'stroke.svg')
@@ -92,7 +92,7 @@ export const isValueControl = (id) =>
 
 /**
  * Resolve display + render metadata for a favorite id, or null if unknown.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @param {string} id
  * @returns {?{id:string, group:string, label:string, src:?string, kind:('trigger'|'value')}}
  */
@@ -116,7 +116,7 @@ export const getFavoriteMeta = (editor, id) => {
  * Grouped, display-ready catalog of every favoritable action, for the Favorites
  * dialog. Merges the hotkey registry with the extra triggers and value
  * controls, ordered by `GROUP_ORDER` (unknown groups appended alphabetically).
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @returns {Array<{group:string, actions:Array<{id:string, label:string}>}>}
  */
 export const buildFavoritesCatalog = (editor) => {
@@ -147,7 +147,7 @@ export const buildFavoritesCatalog = (editor) => {
 /**
  * Execute a trigger favorite through the command registry (the same path
  * hotkeys and buttons use). A disabled or unknown command is a no-op.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @param {string} id
  * @returns {void}
  */

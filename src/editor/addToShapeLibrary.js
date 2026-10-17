@@ -10,7 +10,7 @@ import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesFo
  * Handle "Add to Shape Library" context menu action.
  * Serializes the selected SVG element(s), shows a dialog for label + category,
  * saves to localStorage, and notifies the shape library component to refresh.
- * @param {object} editor The owning Editor instance
+ * @param {EditorInstance} editor The owning Editor instance
  * @returns {Promise<void>}
  */
 export const addSelectedToShapeLibrary = async (editor) => {
@@ -58,7 +58,7 @@ export const addSelectedToShapeLibrary = async (editor) => {
   const serializer = new XMLSerializer()
   const defEls = editor.svgCanvas.getReferencedDefElements?.(elems) || []
   const defsMarkup = defEls.length
-    ? `<defs>${defEls.map(d => serializer.serializeToString(d)).join('')}</defs>`
+    ? `<defs>${defEls.map((/** @type {Node} */ d) => serializer.serializeToString(d)).join('')}</defs>`
     : ''
   const svgContent = defsMarkup + serializer.serializeToString(targetElem)
 
@@ -82,7 +82,7 @@ export const addSelectedToShapeLibrary = async (editor) => {
  * library don't carry the page/canvas background. A backdrop is a *filled*
  * `<rect>` whose stroked bbox covers the whole selection bounds. Only applied
  * when other elements remain (a lone rect, or an outline-only frame, is kept).
- * @param {object} editor The owning Editor instance
+ * @param {EditorInstance} editor The owning Editor instance
  * @param {Element[]} elems - selected, live (in-DOM) elements
  * @returns {Element[]} the elements to serialize (backdrops removed)
  */
@@ -98,7 +98,7 @@ const stripBackdropRects = (editor, elems) => {
   if (!overall) return elems
 
   const eps = 1
-  const isBackdrop = (el) => {
+  const isBackdrop = (/** @type {Element} */ el) => {
     if (el.tagName !== 'rect') return false
     const fill = el.getAttribute('fill') ?? el.style?.fill
     if (fill === 'none' || fill === 'transparent') return false
@@ -121,7 +121,7 @@ const stripBackdropRects = (editor, elems) => {
 
 /**
  * Show a native <dialog> prompting for a shape label and category.
- * @param {object} editor The owning Editor instance
+ * @param {EditorInstance} editor The owning Editor instance
  * @returns {Promise<{label: string, category: string, linkedFile: ?string}|null>}
  */
 const showAddToLibraryDialog = async (editor) => {
@@ -133,7 +133,7 @@ const showAddToLibraryDialog = async (editor) => {
   const vaultFiles = hasVault ? (await window.svgEditHost.listVaultFiles()) || [] : []
   return new Promise((resolve) => {
     const userCats = getUserCategories()
-    const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
+    const capitalize = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1)
     const inputStyle = 'display:block;width:100%;margin-top:4px;padding:7px 10px;' +
       'border:1px solid var(--field-border,#DDE1E7);border-radius:7px;font-size:13px;' +
       'box-sizing:border-box;background:var(--field-bg,#FFF);color:var(--fg,#1B1F24);' +
@@ -145,7 +145,7 @@ const showAddToLibraryDialog = async (editor) => {
     const builtinOptions = shapeLibEl?.getBuiltinCategoryOptions?.() || []
     const userCatSet = new Set(userCats.map(c => c.toLowerCase()))
     // Only include built-in cats that don't already have a user category by the same name
-    const filteredBuiltin = builtinOptions.filter(b => !userCatSet.has(b.id.toLowerCase()))
+    const filteredBuiltin = builtinOptions.filter(/** @type {{ id: string; }} */ (/** @type {{ id: string; }} */ b) => !userCatSet.has(b.id.toLowerCase()))
 
     // Always show a <select>. Pre-select "Other…" when nothing is available.
     const allCats = [
@@ -240,8 +240,8 @@ const showAddToLibraryDialog = async (editor) => {
     dlg.showModal()
     dlg.querySelector('#_asl_label').focus()
 
-    const select = dlg.querySelector('#_asl_cat_select')
-    const newInput = dlg.querySelector('#_asl_cat_new')
+    const select = /** @type {HTMLSelectElement} */ (dlg.querySelector('#_asl_cat_select'))
+    const newInput = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_cat_new'))
 
     // If no existing categories, pre-select "Other…" so the text input is visible immediately
     if (noExisting) select.value = '__new__'
@@ -257,12 +257,15 @@ const showAddToLibraryDialog = async (editor) => {
     // shape names that contain the typed text so they can reuse a consistent
     // naming scheme (or notice a near-duplicate before saving).
     {
-      const labelInput = dlg.querySelector('#_asl_label')
-      const labelMenu = dlg.querySelector('#_asl_label_menu')
+      const labelInput = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_label'))
+      const labelMenu = /** @type {HTMLUListElement} */ (dlg.querySelector('#_asl_label_menu'))
       const allLabels = getAllUserShapeLabels()
-      const escText = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      const escText = (/** @type {string} */ s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
       const optStyle = 'padding:6px 10px;cursor:pointer;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;font-size:13px'
+      /**
+* @type {string[]}
+*/
       let shownLabels = []
       let labelActiveIdx = -1
 
@@ -283,7 +286,7 @@ const showAddToLibraryDialog = async (editor) => {
         labelActiveIdx = -1
         labelMenu.style.display = 'block'
       }
-      const chooseLabel = (i) => {
+      const chooseLabel = (/** @type {number} */ i) => {
         if (i < 0 || i >= shownLabels.length) return
         labelInput.value = shownLabels[i]
         closeLabelMenu()
@@ -291,7 +294,7 @@ const showAddToLibraryDialog = async (editor) => {
 
       labelInput.addEventListener('input', renderLabelMenu)
       labelInput.addEventListener('focus', renderLabelMenu)
-      labelInput.addEventListener('keydown', (e) => {
+      labelInput.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
         if (labelMenu.style.display === 'none') return
         if (e.key === 'ArrowDown') {
           e.preventDefault(); labelActiveIdx = Math.min(labelActiveIdx + 1, shownLabels.length - 1); highlightLabel()
@@ -304,11 +307,11 @@ const showAddToLibraryDialog = async (editor) => {
         }
       })
       labelMenu.addEventListener('mousedown', (e) => {
-        const li = e.target.closest('li')
+        const li = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('li'))
         if (li) { e.preventDefault(); chooseLabel(Number(li.dataset.idx)) }
       })
       labelMenu.addEventListener('mousemove', (e) => {
-        const li = e.target.closest('li')
+        const li = /** @type {HTMLElement|null} */ (/** @type {Element} */ (e.target).closest('li'))
         if (li) { labelActiveIdx = Number(li.dataset.idx); highlightLabel() }
       })
       labelInput.addEventListener('blur', () => setTimeout(closeLabelMenu, 120))
@@ -329,11 +332,14 @@ const showAddToLibraryDialog = async (editor) => {
     // host-provided order preserved (active drawing first). Selecting an entry
     // stamps its path into the input; getLinkedFile() maps it back to a link.
     if (hasVault) {
-      const linkInput = dlg.querySelector('#_asl_vault_link')
-      const menu = dlg.querySelector('#_asl_vault_menu')
-      const escText = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      const linkInput = /** @type {HTMLInputElement} */ (dlg.querySelector('#_asl_vault_link'))
+      const menu = /** @type {HTMLUListElement} */ (dlg.querySelector('#_asl_vault_menu'))
+      const escText = (/** @type {string} */ s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
       const optStyle = 'padding:6px 10px;cursor:pointer;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;font-size:13px'
+      /**
+* @type {{ path: string; link: string; }[]}
+*/
       let shown = []
       let activeIdx = -1
 
@@ -354,7 +360,7 @@ const showAddToLibraryDialog = async (editor) => {
         activeIdx = -1
         menu.style.display = 'block'
       }
-      const choose = (i) => {
+      const choose = (/** @type {number} */ i) => {
         if (i < 0 || i >= shown.length) return
         linkInput.value = shown[i].path
         closeMenu()
@@ -362,7 +368,7 @@ const showAddToLibraryDialog = async (editor) => {
 
       linkInput.addEventListener('focus', renderMenu)
       linkInput.addEventListener('input', renderMenu)
-      linkInput.addEventListener('keydown', (e) => {
+      linkInput.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
         if (menu.style.display === 'none') return
         if (e.key === 'ArrowDown') {
           e.preventDefault(); activeIdx = Math.min(activeIdx + 1, shown.length - 1); highlight()
@@ -377,17 +383,17 @@ const showAddToLibraryDialog = async (editor) => {
       })
       // mousedown (not click) fires before the input's blur hides the menu.
       menu.addEventListener('mousedown', (e) => {
-        const li = e.target.closest('li')
+        const li = /** @type {Element} */ (e.target).closest('li')
         if (li) { e.preventDefault(); choose(Number(li.dataset.idx)) }
       })
       menu.addEventListener('mousemove', (e) => {
-        const li = e.target.closest('li')
+        const li = /** @type {Element} */ (e.target).closest('li')
         if (li) { activeIdx = Number(li.dataset.idx); highlight() }
       })
       linkInput.addEventListener('blur', () => setTimeout(closeMenu, 120))
     }
 
-    const cleanup = (value) => {
+    const cleanup = (/** @type {{ label: string; category: string; linkedFile: string | null; } | PromiseLike<{ label: string; category: string; linkedFile: string | null; } | null> | null} */ value) => {
       dlg.close()
       document.body.removeChild(dlg)
       resolve(value)

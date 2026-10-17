@@ -19,6 +19,7 @@ export default class DebugSnapshotLogger {
     this._getSnapshot = getSnapshot
     this._sink = null
     this._timer = null
+    /** @type {?string} */
     this._lastJSON = null
   }
 

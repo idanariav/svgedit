@@ -1,6 +1,6 @@
 // seOffsetSettings.js — `<se-offset-settings>` — Path offset/inset popover (distance input + outset/inset toggle + Apply → `svgCanvas.offsetPath`)
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 
 const TEMPLATE_HTML = `
@@ -123,16 +123,18 @@ class SeOffsetSettings extends SeSettingsPopover {
     super(TEMPLATE_HTML)
     this._direction = 'outset'
 
-    this.$dist = this._shadowRoot.querySelector('#offset_dist')
-    this.$out = this._shadowRoot.querySelector('.dir-out')
-    this.$in = this._shadowRoot.querySelector('.dir-in')
-    this.$apply = this._shadowRoot.querySelector('.apply')
-
+    this.$dist = /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#offset_dist'))
+    this.$out = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.dir-out'))
+    this.$in = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.dir-in'))
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
     this.$out.addEventListener('click', () => this._setDirection('outset'))
     this.$in.addEventListener('click', () => this._setDirection('inset'))
     this.$apply.addEventListener('click', () => this.apply())
   }
 
+  /**
+* @param {string} dir
+*/
   _setDirection (dir) {
     this._direction = dir
     this.$out.setAttribute('aria-pressed', String(dir === 'outset'))
@@ -148,10 +150,12 @@ class SeOffsetSettings extends SeSettingsPopover {
     const dist = parseFloat(this.$dist.value)
     if (!Number.isFinite(dist) || dist <= 0) return
     const delta = this._direction === 'inset' ? -dist : dist
-    ownerEditor(this).svgCanvas.offsetPath(delta)
+    requireOwnerEditor(this).svgCanvas.offsetPath(delta)
     this.close()
   }
 }
 
 // Register
 customElements.define('se-offset-settings', SeOffsetSettings)
+
+export default SeOffsetSettings

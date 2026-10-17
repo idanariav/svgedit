@@ -23,10 +23,11 @@
 
 const name = 'connector'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -43,16 +44,31 @@ export default {
     const seNs = svgCanvas.getEditorNS()
     await loadExtensionTranslation(svgEditor)
 
+    /**
+* @type {number}
+*/
     let startX
+    /**
+* @type {number}
+*/
     let startY
+    /**
+* @type {Element | null}
+*/
     let startElem // shape under the cursor when a line draw began (pending start binding)
 
     let started = false
     let connections = []
 
     // ── Hover-highlight state ────────────────────────────────────────────────
+    /**
+* @type {SVGRectElement | null}
+*/
     let highlightRect = null
     const snapDots = {} // { n, s, e, w } → SVGCircleElement
+    /**
+* @type {Element | null}
+*/
     let currentHoverElem = null
 
     // ── Proximity snap constants ─────────────────────────────────────────────
@@ -116,10 +132,10 @@ export default {
     /**
      * Returns the midpoint of the face of `bb` that faces toward (fromX, fromY),
      * pushed outward by `offset` px. Used for clean N/S/E/W connector exits.
-     * @param {Float} fromX
-     * @param {Float} fromY
+     * @param {number} fromX
+     * @param {number} fromY
      * @param {module:utilities.BBoxObject} bb
-     * @param {Float} [offset]
+     * @param {number} [offset]
      * @returns {module:math.XYObject}
      */
     const getCardinalPoint = (fromX, fromY, bb, offset = 0) => {
@@ -151,14 +167,14 @@ export default {
      * Returns the nearest connectable SVG element within a proximity zone around
      * (clientX, clientY). Scans a ring of offsets so the user does not need to
      * click exactly on a shape — up to ~12 screen px away still binds.
-     * @param {Float} clientX  Page/screen X coordinate.
-     * @param {Float} clientY  Page/screen Y coordinate.
+     * @param {number} clientX  Page/screen X coordinate.
+     * @param {number} clientY  Page/screen Y coordinate.
      * @returns {Element|null}
      */
     const findConnectableAt = (clientX, clientY) => {
       const svgContent = svgCanvas.getSvgContent()
 
-      const isConnectable = (el) => {
+      const isConnectable = (/** @type {Element | SVGSVGElement} */ el) => {
         if (!el || el === svgContent || el.tagName === 'svg') return false
         // Exclude our own overlay and connector lines.
         if (el.id?.startsWith('conn_') || el.id?.startsWith('se_conn_')) return false
@@ -229,7 +245,7 @@ export default {
      * how zoom/pan is implemented (viewBox, transform, scroll, etc.) because
      * getScreenCTM() accounts for the full transformation chain.
      */
-    const clientToSvgRoot = (clientX, clientY) => {
+    const clientToSvgRoot = (/** @type {number} */ clientX, /** @type {number} */ clientY) => {
       const ctm = svgroot.getScreenCTM()
       if (!ctm) return { x: clientX, y: clientY }
       const pt = svgroot.createSVGPoint()
@@ -244,8 +260,8 @@ export default {
      * Positions everything using getBoundingClientRect → svgroot CTM so the
      * result is correct regardless of svgcontent's nested coordinate system.
      * @param {Element} elem  The connectable shape to highlight.
-     * @param {Float} clientX  Cursor screen X (used to pick the nearest snap dot).
-     * @param {Float} clientY  Cursor screen Y.
+     * @param {number} clientX  Cursor screen X (used to pick the nearest snap dot).
+     * @param {number} clientY  Cursor screen Y.
      */
     const showHoverHighlight = (elem, clientX, clientY) => {
       if (!highlightRect) return
@@ -296,8 +312,8 @@ export default {
 
     /**
      * Updates only the "active nearest dot" highlight without repositioning.
-     * @param {Float} clientX  Cursor screen X.
-     * @param {Float} clientY  Cursor screen Y.
+     * @param {number} clientX  Cursor screen X.
+     * @param {number} clientY  Cursor screen Y.
      * @param {Element} elem
      */
     const updateSnapHighlight = (clientX, clientY, elem) => {
@@ -340,7 +356,7 @@ export default {
      * Converts svgcontent coordinates (opts.mouse_x/zoom) to screen coordinates
      * via the svgroot CTM. Used so mouseMove can call findConnectableAt.
      */
-    const svgContentToScreen = (svgX, svgY) => {
+    const svgContentToScreen = (/** @type {number} */ svgX, /** @type {number} */ svgY) => {
       const svgContent = svgCanvas.getSvgContent()
       const ctm = svgContent.getScreenCTM()
       if (!ctm) return { x: svgX, y: svgY }
@@ -356,10 +372,10 @@ export default {
     /**
      * getBBintersect — finds the intersection of the line from bb-center to (x,y)
      * with the bounding box perimeter, optionally inflated by `offset`.
-     * @param {Float} x
-     * @param {Float} y
+     * @param {number} x
+     * @param {number} y
      * @param {module:utilities.BBoxObject} bb
-     * @param {Float} offset
+     * @param {number} offset
      * @returns {module:math.XYObject}
      */
     const getBBintersect = (x, y, bb, offset) => {
@@ -402,7 +418,7 @@ export default {
      * getOffset
      * @param {"start"|"end"} side - The side of the line where a marker may be present.
      * @param {Element} line - The line element to check for a marker.
-     * @returns {Float} - The endpoint offset if a marker is present, else 0.
+     * @returns {number} - The endpoint offset if a marker is present, else 0.
      */
     const getOffset = (side, line) => {
       // An aligned head knows exactly how far from the shape the stroke must stop.
@@ -534,7 +550,7 @@ export default {
     }
 
     /** Re-routes any connector (new line or legacy polyline) from cached bboxes. */
-    const routeAny = (line) => {
+    const routeAny = (/** @type {object} */ line) => {
       if (line.tagName === 'line') {
         routeLineBinding(line)
       } else {
@@ -546,8 +562,8 @@ export default {
     /**
      * updateLine — live-drag update (select mode). Shifts each tracked endpoint's
      * cached bbox by the drag delta and re-routes.
-     * @param {Float} diffX
-     * @param {Float} diffY
+     * @param {number} diffX
+     * @param {number} diffY
      * @returns {void}
      */
     const updateLine = (diffX, diffY) => {
@@ -685,7 +701,7 @@ export default {
 
     reset()
 
-    const handleOneChangedElement = (elem) => {
+    const handleOneChangedElement = (/** @type {object} */ elem) => {
       const dataStorage = svgCanvas.getDataStorage()
 
       // Reinitialize on document (re)load.
@@ -802,6 +818,9 @@ export default {
         }
         return undefined
       },
+      /**
+* @param {{ mouse_x: number; mouse_y: number; }} opts
+*/
       mouseMove (opts) {
         const zoom = svgCanvas.getZoom()
         const x = opts.mouse_x / zoom
@@ -898,6 +917,9 @@ export default {
       // Primary hook for keeping bound lines in sync during interactive drag,
       // because svgCanvas moves elements via SVG transforms (not attribute
       // changes) and does NOT fire 'changed' on mouseUp for move operations.
+      /**
+* @param {{ elems: { filter: (arg0: BooleanConstructor) => never[]; }; }} opts
+*/
       elementTransition (opts) {
         if (started) return // don't interfere during line drawing
         const elems = opts.elems?.filter(Boolean) || []
@@ -923,7 +945,7 @@ export default {
           if ('se:connector' in elem.attr) {
             elem.attr['se:connector'] = elem.attr['se:connector']
               .split(' ')
-              .map(function (oldID) {
+              .map(function (/** @type {string | number} */ oldID) {
                 return input.changes[oldID]
               })
               .join(' ')

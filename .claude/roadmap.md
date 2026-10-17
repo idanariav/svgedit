@@ -38,13 +38,17 @@ short: details belong in the area files.
 - **Calling the canvas from the editor:** `check-canvas-calls` (`pretest`) type-checks every `svgCanvas.x(…)` in `src/editor` against the
   facade, so a new canvas member is on the class or in a module interface before the editor calls it; an
   extension reaches the editor through `const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))`.
+- **Editor typing is a ratchet:** `check-editor-strict` (`pretest`) runs `tsc --strict` over `src/editor` and fails on any error in a file
+  listed in `src/editor/strict-files.json`. Write new editor code so it is clean and add the file to the list (`node
+  scripts/check-editor-strict.mjs --report` shows the error count per file). `$req('id')` is `$id` for an element that must exist (it throws, and the
+  type is not nullable); element types by id come from `src/editor/ui-ids.d.ts` (`npm run gen-ui-ids`) and by tag from `element-tags.d.ts`.
 - **Layering:** `packages/svgcanvas` never imports `src/editor`, reads `window.svgEditor` or defines custom elements
   (`check-layers`).
 
 ## Background tracks
 
-- **Typing** (strict JSDoc plus `.ts` for converted modules; d.ts stay hand-written, guarded by the drift test): opportunistic
-  conversion, leaves first, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
+- **Typing** (the engine is `.ts` and strict; the editor is JSDoc, typed by the `check-editor-strict` ratchet, 95 of 179 files so far): burn
+  the remaining files down, biggest wins first, see [R3](roadmap/rearchitecture.md#r3-typescript) and [infrastructure](roadmap/infrastructure.md).
 - **Plugin command access** (plugin repo): done 2026-10-12 (plugin 1.0.48): one "Run editor command…" palette picker
   over `commands.list()` plus `plugin.editorCommands(view?)` for a future CLI / MCP bridge; no per-command palette
   entries, by decision. The picker asks for a command's `params` (2026-10-15); no editor command declares any yet.

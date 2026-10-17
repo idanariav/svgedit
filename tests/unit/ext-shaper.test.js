@@ -177,6 +177,7 @@ describe('ext-shaper', () => {
     setMode = vi.fn()
     svgCanvas = {
       $id: (id) => document.getElementById(id),
+      $req: (id) => document.getElementById(id),
       insertChildAtIndex: (parent, html, index) => {
         const t = document.createElement('template')
         t.innerHTML = html

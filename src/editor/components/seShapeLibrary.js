@@ -46,6 +46,9 @@ export class SeShapeLibrary extends HTMLElement {
     // Data
     this._libPath = ''
     this._categories = [] // ordered array of category ids (user: prefixed first)
+    /**
+* @type {never[]}
+*/
     this._builtinCategories = [] // built-in category ids from index.json
     this._catalog = {} // { catId: { data: {id: path|shapeEntry}, size, fill, isUser, displayName } }
     this._userStore = { categories: [], shapes: {} } // cached user shapes data
@@ -62,7 +65,7 @@ export class SeShapeLibrary extends HTMLElement {
     return ['lib', 'src', 'title', 'pressed']
   }
 
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     if (name === 'lib') {
       this._libPath = newValue
@@ -70,13 +73,16 @@ export class SeShapeLibrary extends HTMLElement {
     } else if (name === 'src') {
       this._loadIcon(newValue)
     } else if (name === 'title') {
-      const btn = this._shadow.querySelector('.sl-tool')
+      const btn = /** @type {HTMLElement} */ (this._shadow.querySelector('.sl-tool'))
       if (btn) btn.title = newValue
     } else if (name === 'pressed') {
       this._syncToolPressed()
     }
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const imgPath = ownerEditor(this)?.configObj?.curConfig?.imgPath
@@ -155,6 +161,9 @@ export class SeShapeLibrary extends HTMLElement {
     }
   }
 
+  /**
+* @param {string} catId
+*/
   async _loadCategory (catId) {
     // The "All" tab is virtual — it has no JSON of its own; loading it means
     // making sure every real category is loaded.
@@ -186,12 +195,14 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   // ── User shapes ────────────────────────────────────────────────────────────
-  /** Read user shapes from localStorage and inject them into the catalog. */
   /**
-   * Inject user shapes into a built-in catalog entry's data map.
-   * User shape entries are objects { svgContent, bbox } — built-in shapes are strings —
-   * so they are naturally distinguishable at render time.
-   */
+* Read user shapes from localStorage and inject them into the catalog.
+* Inject user shapes into a built-in catalog entry's data map.
+* User shape entries are objects { svgContent, bbox } — built-in shapes are strings —
+* so they are naturally distinguishable at render time.
+* @param {string | number} catId
+* @param {Object<string, *>} userShapes
+*/
   _injectUserShapesIntoCatalog (catId, userShapes) {
     const cat = this._catalog[catId]
     if (!cat?.data) return
@@ -257,14 +268,20 @@ export class SeShapeLibrary extends HTMLElement {
     this._categories = [ALL_CAT, ...this._catGroups.keys()]
   }
 
-  /** Load every category id in a representative's display-merge group. */
+  /**
+* Load every category id in a representative's display-merge group.
+* @param {string} repId
+*/
   async _loadCategoryGroup (repId) {
     if (repId === ALL_CAT) { await this._loadAllCategories(); return }
     const ids = this._catGroups?.get(repId) || [repId]
-    await Promise.all(ids.map(id => this._catalog[id] ? null : this._loadCategory(id)))
+    await Promise.all(ids.map((/** @type {string | number} */ id) => this._catalog[id] ? null : this._loadCategory(id)))
   }
 
-  /** Flatten a merge-group's shapes into [shapeId, data, cat, catId] tuples. */
+  /**
+* Flatten a merge-group's shapes into [shapeId, data, cat, catId] tuples.
+* @param {string} repId
+*/
   _groupEntries (repId) {
     const ids = this._catGroups?.get(repId) || [repId]
     const out = []
@@ -337,10 +354,13 @@ export class SeShapeLibrary extends HTMLElement {
     return CAT_LABELS[id] || id
   }
 
+  /**
+* @param {string} catId
+*/
   _countCategory (catId) {
     if (catId === ALL_CAT) return this._totalCount()
     const ids = this._catGroups?.get(catId) || [catId]
-    return ids.reduce((n, id) => n + Object.keys(this._catalog[id]?.data ?? {}).length, 0)
+    return ids.reduce((/** @type {number} */ n, /** @type {string | number} */ id) => n + Object.keys(this._catalog[id]?.data ?? {}).length, 0)
   }
 
   _totalCount () {
@@ -352,6 +372,13 @@ export class SeShapeLibrary extends HTMLElement {
   // → { size, fill }). Needed because the redistributed library mixes shapes
   // authored in different coordinate spaces / fill modes within one category
   // (e.g. 32-unit filled Raphael icons sitting next to 300-unit stroked shapes).
+  /**
+* @param {string | null} path
+* @param {object | undefined} catData
+* @param {number} w
+* @param {number} h
+* @param {string} name
+*/
   _shapeThumb (path, catData, w, h, name) {
     const ov = catData?.overrides?.[name]
     const sz = ov?.size ?? catData?.size ?? 300
@@ -366,7 +393,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   /**
    * Generate an SVG thumbnail for a user-saved shape entry.
-   * @param {{ svgContent: string, bbox: {x,y,width,height} }} shapeEntry
+   * @param {{ svgContent: string, bbox: {x: number,y: number,width: number,height: number} }} shapeEntry
    * @param {number} w
    * @param {number} h
    * @returns {string} HTML string
@@ -397,11 +424,11 @@ export class SeShapeLibrary extends HTMLElement {
     const src = this.getAttribute('src')
     if (src) this._loadIcon(src)
 
-    this._shadow.querySelector('.sl-tool').addEventListener('click', e => {
+    ;/** @type {HTMLButtonElement} */ (this._shadow.querySelector('.sl-tool')).addEventListener('click', e => {
       e.stopPropagation()
       this._togglePopover()
     })
-    this._shadow.querySelector('.sl-backdrop').addEventListener('click', () => this.close())
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-backdrop')).addEventListener('click', () => this.close())
   }
 
   get pressed () { return this.hasAttribute('pressed') }
@@ -432,16 +459,19 @@ export class SeShapeLibrary extends HTMLElement {
       await this._loadCategory(this._popCatId)
     }
     this._renderPopover()
-    const popover = this._shadow.querySelector('.sl-popover')
+    const popover = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-popover'))
     popover.style.display = ''
-    this._shadow.querySelector('.sl-modal').style.display = 'none'
-    this._shadow.querySelector('.sl-backdrop').style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal')).style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-backdrop')).style.display = 'none'
     // Position after display is set so we can measure actual dimensions
     this._positionPopover(popover)
     this._attachOutsideClick()
     this._attachEscape()
   }
 
+  /**
+* @param {Element | null} popover
+*/
   _positionPopover (popover) {
     const btnRect = this.getBoundingClientRect()
     // `position: fixed` is resolved against the nearest transformed/contained
@@ -481,9 +511,9 @@ export class SeShapeLibrary extends HTMLElement {
       await this._loadCategory(this._categoryId)
     }
     this._renderModal()
-    this._shadow.querySelector('.sl-popover').style.display = 'none'
-    this._shadow.querySelector('.sl-modal').style.display = ''
-    this._shadow.querySelector('.sl-backdrop').style.display = ''
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-popover')).style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal')).style.display = ''
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-backdrop')).style.display = ''
     this._removeGlobalListeners()
     this._attachEscape()
 
@@ -498,9 +528,9 @@ export class SeShapeLibrary extends HTMLElement {
     this._selectedId = null
     this._selectedCat = null
     this._syncToolPressed()
-    this._shadow.querySelector('.sl-popover').style.display = 'none'
-    this._shadow.querySelector('.sl-modal').style.display = 'none'
-    this._shadow.querySelector('.sl-backdrop').style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-popover')).style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal')).style.display = 'none'
+    ;/** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-backdrop')).style.display = 'none'
     this._removeGlobalListeners()
   }
 
@@ -526,12 +556,12 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   _attachEscape () {
-    this._keyHandler = e => {
+    this._keyHandler = /** @type {{ key: string; }} */ (/** @type {{ key: string; }} */ e) => {
       if (e.key !== 'Escape') return
       if (this._open === 'modal' && this._query) {
         // First Esc clears search
         this._query = ''
-        const input = this._shadow.querySelector('.sl-search input')
+        const input = /** @type {HTMLInputElement} */ (this._shadow.querySelector('.sl-search input'))
         if (input) input.value = ''
         this._updateShapesArea()
         this._updateFooter()
@@ -601,7 +631,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   // ── Popover render ─────────────────────────────────────────────────────────
   _renderPopover () {
-    const popover = this._shadow.querySelector('.sl-popover')
+    const popover = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-popover'))
     const visibleCats = this._categories.slice(0, 7)
     const total = this._totalCount()
 
@@ -648,7 +678,7 @@ export class SeShapeLibrary extends HTMLElement {
 
     this._bindPopChips(popover)
 
-    const filterInput = popover.querySelector('.sl-pop-search-box input')
+    const filterInput = /** @type {HTMLInputElement} */ (popover.querySelector('.sl-pop-search-box input'))
     filterInput?.addEventListener('input', () => {
       clearTimeout(this._searchTimer)
       this._searchTimer = setTimeout(() => {
@@ -692,10 +722,13 @@ export class SeShapeLibrary extends HTMLElement {
     }).join('')
   }
 
-  /** Bind click handlers to the popover's shape chips. */
+  /**
+* Bind click handlers to the popover's shape chips.
+* @param {Element | null} popover
+*/
   _bindPopChips (popover) {
     popover.querySelectorAll('.sl-chip[data-id]').forEach(chip => {
-      chip.addEventListener('click', e => {
+      chip.addEventListener('click', /** @type {{ stopPropagation: () => void; }} */ (/** @type {{ stopPropagation: () => void; }} */ e) => {
         e.stopPropagation()
         this._selectedCat = chip.dataset.cat || this._popCatId
         this._selectedId = chip.dataset.id
@@ -706,7 +739,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   // ── Modal render ───────────────────────────────────────────────────────────
   _renderModal () {
-    const modal = this._shadow.querySelector('.sl-modal')
+    const modal = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal'))
     const total = this._totalCount()
     const placeholder = total ? `Search ${total} shapes…` : 'Search shapes…'
 
@@ -776,7 +809,7 @@ export class SeShapeLibrary extends HTMLElement {
       return this._buildAllResults()
     }
     const ids = this._catGroups?.get(this._categoryId) || [this._categoryId]
-    if (!ids.some(id => this._catalog[id])) return '<div class="sl-loading">Loading…</div>'
+    if (!ids.some((/** @type {string | number} */ id) => this._catalog[id])) return '<div class="sl-loading">Loading…</div>'
 
     const entries = this._groupEntries(this._categoryId)
     if (this._view === 'grid') {
@@ -794,7 +827,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   _buildSearchResults () {
     const q = this._query.toLowerCase()
-    const match = id => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
+    const match = (/** @type {string} */ id) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
     const groups = this._collectGroups(match)
     if (!groups.length) return `<div class="sl-empty">No shapes found for &ldquo;${this._esc(this._query)}&rdquo;</div>`
     return this._renderGroups(groups)
@@ -847,6 +880,12 @@ export class SeShapeLibrary extends HTMLElement {
       </div>`).join('')
   }
 
+  /**
+* @param {string} id
+* @param {{ svgContent: string; bbox: { x: number; y: number; width: number; height: number; }; } | null} shapeData
+* @param {string} cat
+* @param {string | undefined} catId
+*/
   _tileHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._selectedCat
     // User shapes are objects { svgContent, bbox }; built-in shapes are path strings
@@ -871,6 +910,12 @@ export class SeShapeLibrary extends HTMLElement {
       </div>`
   }
 
+  /**
+* @param {string} id
+* @param {{ svgContent: string; bbox: { x: number; y: number; width: number; height: number; }; } | null} shapeData
+* @param {string} cat
+* @param {string | undefined} catId
+*/
   _rowHtml (id, shapeData, cat, catId) {
     const sel = id === this._selectedId && catId === this._selectedCat
     const isUser = shapeData !== null && typeof shapeData === 'object' && 'svgContent' in shapeData
@@ -928,7 +973,7 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   _bindModalEvents () {
-    const modal = this._shadow.querySelector('.sl-modal')
+    const modal = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal'))
 
     modal.querySelector('.sl-head-close')?.addEventListener('click', () => this.close())
     modal.querySelector('[data-action="cancel"]')?.addEventListener('click', () => this.close())
@@ -943,7 +988,7 @@ export class SeShapeLibrary extends HTMLElement {
         this._selectedId = null
         this._selectedCat = null
         this._query = ''
-        const searchInput = modal.querySelector('.sl-search input')
+        const searchInput = /** @type {HTMLInputElement} */ (modal.querySelector('.sl-search input'))
         if (searchInput) searchInput.value = ''
         await this._loadCategoryGroup(id)
         this._refreshModalContent()
@@ -969,7 +1014,7 @@ export class SeShapeLibrary extends HTMLElement {
 
     // Search field
     const searchWrap = modal.querySelector('.sl-search')
-    const searchInput = modal.querySelector('.sl-search input')
+    const searchInput = /** @type {HTMLInputElement} */ (modal.querySelector('.sl-search input'))
     searchInput?.addEventListener('focus', () => searchWrap?.classList.add('focused'))
     searchInput?.addEventListener('blur', () => searchWrap?.classList.remove('focused'))
     searchInput?.addEventListener('input', () => {
@@ -995,7 +1040,7 @@ export class SeShapeLibrary extends HTMLElement {
       searchInput?.focus()
     })
 
-    modal.addEventListener('keydown', e => {
+    modal.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
       if (e.key === 'Enter' && this._selectedId) { e.preventDefault(); this._doInsert() }
     })
   }
@@ -1028,7 +1073,7 @@ export class SeShapeLibrary extends HTMLElement {
           {
             label: 'Rename',
             keepOpen: true,
-            onClick: dropdown => this._renderRenameInput(dropdown, label, newLabel => {
+            onClick: (/** @type {HTMLElement} */ dropdown) => this._renderRenameInput(dropdown, label, newLabel => {
               renameUserShape({ category: rawCat, oldLabel: label, newLabel })
               this._reloadUserShapes()
             })
@@ -1069,7 +1114,7 @@ export class SeShapeLibrary extends HTMLElement {
     // scroll containers (and the modal's own overflow) would otherwise clip it.
     // Anchor rect is captured now — the ⋮ button is only visible while `wrap` is
     // hovered, and the dropdown no longer lives inside `wrap`.
-    const modal = this._shadow.querySelector('.sl-modal')
+    const modal = /** @type {HTMLDivElement} */ (this._shadow.querySelector('.sl-modal'))
     const anchor = (wrap.querySelector('.sl-shape-menu, .sl-cat-menu') || wrap).getBoundingClientRect()
     modal.appendChild(dropdown)
     this._positionDropdown(dropdown, modal, anchor)
@@ -1078,7 +1123,7 @@ export class SeShapeLibrary extends HTMLElement {
     // Use composedPath() so clicks *inside* the dropdown are recognised — at the
     // document level a shadow-DOM event target is retargeted to the host, which
     // would otherwise make every click look like an outside click.
-    const closeDropdown = ev => {
+    const closeDropdown = /** @type {{ composedPath: () => HTMLDivElement[]; }} */ (/** @type {{ composedPath: () => HTMLDivElement[]; }} */ ev) => {
       if (!ev.composedPath().includes(dropdown)) {
         dropdown.remove()
         document.removeEventListener('click', closeDropdown, true)
@@ -1089,10 +1134,13 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   /**
-   * Place `dropdown` (absolutely positioned inside `modal`) just below `anchor`,
-   * right-aligned to it, flipping above / clamping so it stays inside the modal.
-   * The modal is transformed, so coordinates are made relative to its rect.
-   */
+* Place `dropdown` (absolutely positioned inside `modal`) just below `anchor`,
+* right-aligned to it, flipping above / clamping so it stays inside the modal.
+* The modal is transformed, so coordinates are made relative to its rect.
+* @param {HTMLDivElement} dropdown
+* @param {Element | null} modal
+* @param {DOMRect} anchor
+*/
   _positionDropdown (dropdown, modal, anchor) {
     const m = modal.getBoundingClientRect()
     const w = dropdown.offsetWidth
@@ -1107,7 +1155,11 @@ export class SeShapeLibrary extends HTMLElement {
     dropdown.style.top = `${top}px`
   }
 
-  /** Populate (or repopulate) a dropdown element with item buttons. */
+  /**
+* Populate (or repopulate) a dropdown element with item buttons.
+* @param {HTMLDivElement} dropdown
+* @param {{ label: string; cls?: string; keepOpen?: boolean; onClick: Function; }[] | { label: string; onClick: () => void; }[]} items
+*/
   _fillDropdown (dropdown, items) {
     dropdown.replaceChildren()
     for (const it of items) {
@@ -1161,7 +1213,7 @@ export class SeShapeLibrary extends HTMLElement {
     input.select()
 
     let done = false
-    const finish = commit => {
+    const finish = (/** @type {boolean} */ commit) => {
       if (done) return
       done = true
       const val = input.value.trim()
@@ -1176,10 +1228,13 @@ export class SeShapeLibrary extends HTMLElement {
     input.addEventListener('blur', () => finish(true))
   }
 
-  /** Bind the ⋮ menu on each category in the sidebar. */
+  /**
+* Bind the ⋮ menu on each category in the sidebar.
+* @param {Element | null} modal
+*/
   _bindCategoryMenus (modal) {
     modal.querySelectorAll('.sl-cat-menu[data-cat]').forEach(menuBtn => {
-      menuBtn.addEventListener('click', e => {
+      menuBtn.addEventListener('click', /** @type {{ stopPropagation: () => void; }} */ (/** @type {{ stopPropagation: () => void; }} */ e) => {
         e.stopPropagation()
         const id = menuBtn.dataset.cat
         const wrap = menuBtn.closest('.sl-cat-wrap')
@@ -1190,7 +1245,7 @@ export class SeShapeLibrary extends HTMLElement {
           {
             label: 'Rename',
             keepOpen: true,
-            onClick: dropdown => this._renderRenameInput(dropdown, this._catLabel(id), newLabel => {
+            onClick: (/** @type {HTMLElement} */ dropdown) => this._renderRenameInput(dropdown, this._catLabel(id), newLabel => {
               // Rename every member so the group stays merged under the new name.
               // User members rename their real key (merging on collision); built-in
               // members are read-only, so only their display label changes.
@@ -1233,16 +1288,19 @@ export class SeShapeLibrary extends HTMLElement {
     })
   }
 
-  /** Bind the "Show hidden" toggle and per-row restore buttons. */
+  /**
+* Bind the "Show hidden" toggle and per-row restore buttons.
+* @param {Element | null} modal
+*/
   _bindHiddenSection (modal) {
     modal.querySelector('.sl-hidden-toggle')?.addEventListener('click', () => {
       this._hiddenExpanded = !this._hiddenExpanded
-      const list = modal.querySelector('.sl-hidden-list')
+      const list = /** @type {HTMLElement} */ (modal.querySelector('.sl-hidden-list'))
       if (list) list.hidden = !this._hiddenExpanded
       modal.querySelector('.sl-hidden-toggle')?.classList.toggle('is-open', this._hiddenExpanded)
     })
     modal.querySelectorAll('.sl-hidden-restore[data-cat]').forEach(btn => {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', /** @type {{ stopPropagation: () => void; }} */ (/** @type {{ stopPropagation: () => void; }} */ e) => {
         e.stopPropagation()
         unhideCategory({ category: btn.dataset.cat })
         this._reloadUserShapes()
@@ -1254,7 +1312,7 @@ export class SeShapeLibrary extends HTMLElement {
   _buildHiddenSection () {
     const hidden = (this._userStore?.hidden || []).filter(id => this._builtinCategories.includes(id))
     if (!hidden.length) return ''
-    const rows = hidden.map(id => `
+    const rows = hidden.map((/** @type {string} */ id) => `
       <div class="sl-hidden-row">
         <span class="sl-hidden-name">${this._esc(this._catLabel(id))}</span>
         <button class="sl-hidden-restore" data-cat="${this._escAttr(id)}" type="button" title="Restore">Restore</button>
@@ -1301,7 +1359,7 @@ export class SeShapeLibrary extends HTMLElement {
     if (!wrap) return
     const existing = wrap.querySelector('.sl-search-clear')
     if (this._query && !existing) {
-      const btn = document.createElement('button')
+      const btn = /** @type {HTMLElement} */ (document.createElement('button'))
       btn.className = 'sl-search-clear'
       btn.type = 'button'
       btn.setAttribute('aria-label', 'Clear search')
@@ -1342,15 +1400,24 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────
+  /**
+* @param {string} id
+*/
   _fmtName (id) {
-    return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    return id.replace(/_/g, ' ').replace(/\b\w/g, (/** @type {string} */ c) => c.toUpperCase())
   }
 
+  /**
+* @param {string} str
+*/
   _esc (str) {
     return String(str)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
 
+  /**
+* @param {string} str
+*/
   _escAttr (str) {
     return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }

@@ -20,9 +20,10 @@
 const name = 'art-brush'
 const P = 'ext-art-brush'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -35,8 +36,8 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const { $id, $req } = svgCanvas
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selected = () => svgCanvas.getSelectedElements().filter(Boolean)
     const brushedSelection = () => {
@@ -57,11 +58,11 @@ export default {
     }
 
     const optionRow = (id, label, control) => `<div class="sidepanel_btn_row" id="${P}-row-${id}">${control(label)}</div>`
-    const spin = (id, min, max, step, value = 100) => (label) =>
+    const spin = (/** @type {string} */ id, /** @type {number} */ min, /** @type {number} */ max, /** @type {number} */ step, value = 100) => (label) =>
       `<se-spin-input id="${P}-${id}" label="${label}" min="${min}" max="${max}" step="${step}" value="${value}"></se-spin-input>`
-    const check = (id) => (label) =>
+    const check = (/** @type {string} */ id) => (label) =>
       `<label class="ext-live-effects-check"><input type="checkbox" id="${P}-${id}"> ${label}</label>`
-    const select = (id) => (label) => `<se-select id="${P}-${id}" label="${label}"></se-select>`
+    const select = (/** @type {string} */ id) => (label) => `<se-select id="${P}-${id}" label="${label}"></se-select>`
 
     const refresh = () => {
       const panel = $id(`${P}-panel`)
@@ -74,26 +75,26 @@ export default {
       panel.style.display = show && svgCanvas.getMode() !== 'pathedit' ? '' : 'none'
       refillPicker()
       const brush = group ? svgCanvas.getArtBrush(group) : null
-      $id(`${P}-brushed`).style.display = brush ? '' : 'none'
-      for (const type of ['art', 'pattern']) $id(`${P}-${type}-opts`).style.display = brush?.type === type ? '' : 'none'
+      $req(`${P}-brushed`).style.display = brush ? '' : 'none'
+      for (const type of ['art', 'pattern']) $req(`${P}-${type}-opts`).style.display = brush?.type === type ? '' : 'none'
       if (!brush) return
       const o = brush.opts
       if (brush.type === 'art') {
-        $id(`${P}-scale`).value = o.scale
-        $id(`${P}-width`).value = o.width
-        $id(`${P}-dir`).value = o.dir
-        $id(`${P}-flipAlong`).checked = o.flipAlong
-        $id(`${P}-flipAcross`).checked = o.flipAcross
+        $req(`${P}-scale`).value = o.scale
+        $req(`${P}-width`).value = o.width
+        $req(`${P}-dir`).value = o.dir
+        $req(`${P}-flipAlong`).checked = o.flipAlong
+        $req(`${P}-flipAcross`).checked = o.flipAcross
       } else {
-        $id(`${P}-tileScale`).value = o.scale
-        $id(`${P}-spacing`).value = o.spacing
-        $id(`${P}-fit`).value = o.fit
-        $id(`${P}-pflipAlong`).checked = o.flipAlong
-        $id(`${P}-pflipAcross`).checked = o.flipAcross
+        $req(`${P}-tileScale`).value = o.scale
+        $req(`${P}-spacing`).value = o.spacing
+        $req(`${P}-fit`).value = o.fit
+        $req(`${P}-pflipAlong`).checked = o.flipAlong
+        $req(`${P}-pflipAcross`).checked = o.flipAcross
       }
     }
 
-    const set = (changes) => {
+    const set = (/** @type {Record<string, unknown>} */ changes) => {
       svgCanvas.setArtBrushOptions(changes)
       refresh()
     }
@@ -142,49 +143,49 @@ export default {
         else (designTab || $id('tools_top')).appendChild(template.content)
 
         // se-select options go in after the elements are in the document (they are upgraded on insertion).
-        const fill = (id, pairs) => pairs.forEach(([v, key]) => $id(`${P}-${id}`).addOption(v, tr(key)))
+        const fill = (id, pairs) => pairs.forEach(([v, key]) => $req(`${P}-${id}`).addOption(v, tr(key)))
         fill('scale', [['stretch', 'scaleStretch'], ['proportional', 'scaleProportional']])
         fill('dir', [['ltr', 'dirLtr'], ['rtl', 'dirRtl'], ['ttb', 'dirTtb'], ['btt', 'dirBtt']])
         fill('fit', [['stretch', 'fitStretch'], ['addSpace', 'fitAddSpace'], ['approximate', 'fitApproximate']])
         refillPicker()
 
-        const onChange = (id, read) => $id(`${P}-${id}`).addEventListener('change', (e) => set(read(e.target)))
+        const onChange = (id, read) => $req(`${P}-${id}`).addEventListener('change', (e) => set(read(e.target)))
         onChange('scale', (t) => ({ scale: t.value }))
-        onChange('width', (t) => ({ width: parseFloat(t.value) || 100 }))
+        onChange('width', (/** @type {{ value: string; }} */ t) => ({ width: parseFloat(t.value) || 100 }))
         onChange('dir', (t) => ({ dir: t.value }))
         onChange('flipAlong', (t) => ({ flipAlong: t.checked }))
         onChange('flipAcross', (t) => ({ flipAcross: t.checked }))
-        onChange('tileScale', (t) => ({ scale: parseFloat(t.value) || 100 }))
-        onChange('spacing', (t) => ({ spacing: parseFloat(t.value) || 0 }))
+        onChange('tileScale', (/** @type {{ value: string; }} */ t) => ({ scale: parseFloat(t.value) || 100 }))
+        onChange('spacing', (/** @type {{ value: string; }} */ t) => ({ spacing: parseFloat(t.value) || 0 }))
         onChange('fit', (t) => ({ fit: t.value }))
         onChange('pflipAlong', (t) => ({ flipAlong: t.checked }))
         onChange('pflipAcross', (t) => ({ flipAcross: t.checked }))
 
         // Choosing a brush puts it on the selected path(s); with nothing to put it on it only becomes the choice.
-        $id(`${P}-pick`).addEventListener('change', (e) => {
-          const id = e.target.value
+        $req(`${P}-pick`).addEventListener('change', (e) => {
+          const id = /** @type {HTMLInputElement} */ (e.target).value
           if (id && selected().some(svgCanvas.canApplyArtBrush)) {
             svgCanvas.applyArtBrush(id)
             refresh()
           }
         })
 
-        const run = (id) => svgEditor.commands.run(id)
-        $id(`${P}-new-art`).addEventListener('click', () => run('brush_new_art'))
-        $id(`${P}-new-pattern`).addEventListener('click', () => run('brush_new_pattern'))
-        $id(`${P}-delete`).addEventListener('click', () => run('brush_delete'))
-        $id(`${P}-edit`).addEventListener('click', () => run('brush_edit_path'))
-        $id(`${P}-expand`).addEventListener('click', () => run('brush_expand'))
-        $id(`${P}-release`).addEventListener('click', () => run('brush_release'))
+        const run = (/** @type {string} */ id) => svgEditor.commands.run(id)
+        $req(`${P}-new-art`).addEventListener('click', () => run('brush_new_art'))
+        $req(`${P}-new-pattern`).addEventListener('click', () => run('brush_new_pattern'))
+        $req(`${P}-delete`).addEventListener('click', () => run('brush_delete'))
+        $req(`${P}-edit`).addEventListener('click', () => run('brush_edit_path'))
+        $req(`${P}-expand`).addEventListener('click', () => run('brush_expand'))
+        $req(`${P}-release`).addEventListener('click', () => run('brush_release'))
 
         const needArt = () => (svgCanvas.canMakeArtBrush() ? true : tr('needArt'))
-        const make = (type) => {
+        const make = (/** @type {'art'|'pattern'} */ type) => {
           const id = svgCanvas.makeArtBrush(type)
           refillPicker()
-          if (id) $id(`${P}-pick`).value = id
+          if (id) $req(`${P}-pick`).value = id
           refresh()
         }
-        const reg = (id, label, spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
+        const reg = (/** @type {string} */ id, /** @type {string} */ label, /** @type {Omit<import("../../commands.js").CommandSpec, 'id' | 'label'>} */ spec) => svgEditor.commands.register({ id, label: `${name}:${label}`, group: 'Tools', pd: true, ...spec })
         reg('brush_new_art', 'newArt', { enabled: needArt, run: () => make('art') })
         reg('brush_new_pattern', 'newPattern', { enabled: needArt, run: () => make('pattern') })
         reg('brush_delete', 'remove', {

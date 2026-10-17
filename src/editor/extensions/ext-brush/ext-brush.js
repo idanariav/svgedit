@@ -33,19 +33,23 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
+    /**
+* @type {Element | null}
+*/
     let element = null
+    /** @type {import('@svgedit/svgcanvas/core/brush-stroke.ts').BrushPoint[]} */
     let points = []
     let smoother = null
 
-    const recordPressure = (e) => {
+    const recordPressure = (/** @type {{ pressure: number; pointerType: string; }} */ e) => {
       lastPressure = e.pressure
       lastPointerType = e.pointerType
     }
     // Real pressure only for pens; mouse/finger always draw at full width.
     const pressureNow = () => (lastPointerType === 'pen' ? lastPressure : 1)
     const redraw = () => {
-      element.setAttribute('d', buildBrushOutline(points, svgCanvas.getBrushParams()))
+      element?.setAttribute('d', buildBrushOutline(points, svgCanvas.getBrushParams()))
     }
 
     // The brush as a registered tool: one undo step per stroke, rolled back on Escape
@@ -81,7 +85,7 @@ export default {
       pointerUp () {
         const el = element
         if (!el) return 'cancel'
-        el.setAttribute('d', finalizeBrushOutline(el.getAttribute('d'), svgCanvas))
+        el.setAttribute('d', finalizeBrushOutline(el.getAttribute('d') ?? '', svgCanvas))
         element = null
         points = []
         smoother = null
@@ -100,12 +104,12 @@ export default {
         const buttonTemplate = `
           <se-button id="tool_brush" command="tool_brush" title="Brush" src="brush.svg" shortcut="W"></se-button>
         `
-        svgCanvas.insertChildAtIndex($id('tools_left'), buttonTemplate, 11)
+        svgCanvas.insertChildAtIndex($req('tools_left'), buttonTemplate, 11)
         svgEditor.leftPanel.addModeCommand('tool_brush', 'brush', { label: 'Brush' })
         // Double-click to lock, matching the other drawing tools (LeftPanel.js's
         // `lockable` list) — added dynamically here since #tool_brush doesn't
         // exist yet when LeftPanel.js wires up its own static lockable buttons.
-        $id('tool_brush').addEventListener('dblclick', () => svgEditor.leftPanel.lockTool($id('tool_brush')))
+        $req('tool_brush').addEventListener('dblclick', () => svgEditor.leftPanel.lockTool($req('tool_brush')))
         // Lives in the Effects tab (not tied to the current selection, unlike
         // ext-shadow/ext-outline's panels there — it configures the brush
         // tool itself) until it finds a more permanent home.
@@ -117,7 +121,7 @@ export default {
           </div>
         `
         const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
-        host.appendChild(panelTemplate.content.cloneNode(true))
+        host?.appendChild(panelTemplate.content.cloneNode(true))
         // Passive pressure side-channel — never interferes with the mouse pipeline.
         svgCanvas.svgroot.addEventListener('pointerdown', recordPressure, { passive: true })
         svgCanvas.svgroot.addEventListener('pointermove', recordPressure, { passive: true })

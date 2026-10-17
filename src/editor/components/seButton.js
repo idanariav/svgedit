@@ -3,7 +3,7 @@ import { boundTooltipText } from '../Hotkeys.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
-import { ownerEditor } from '../domScope.js'
+import { ownerEditor, requireOwnerEditor } from '../domScope.js'
 import { onCommandClick } from './commandBinding.js'
 
 const template = document.createElement('template')
@@ -91,11 +91,13 @@ export class ToolButton extends HTMLElement {
     */
   constructor () {
     super()
+    /** @type {(() => void) | undefined} the `command=` click listener, made once */
+    this._onCommandClick = undefined
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$div = this._shadowRoot.querySelector('div')
-    this.$iconWrap = this._shadowRoot.querySelector('.icon-wrap')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.$div = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('div'))
+    this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
 
     // `.disabled`'s `pointer-events: none` only excludes the inner shadow div
     // from hit-testing — the click still lands on this host element, so an
@@ -121,7 +123,7 @@ export class ToolButton extends HTMLElement {
   /**
    * @function attributeChangedCallback
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -182,9 +184,10 @@ export class ToolButton extends HTMLElement {
   }
 
   /**
-   * Load an SVG icon by URL, injecting it inline into the shadow DOM.
-   * Falls back to an <img> if fetch fails.
-   */
+* Load an SVG icon by URL, injecting it inline into the shadow DOM.
+* Falls back to an <img> if fetch fails.
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const url = src.indexOf('data:') !== -1 ? src : `${this.imgPath}/${src}`
@@ -204,7 +207,10 @@ export class ToolButton extends HTMLElement {
     }
   }
 
-  get title () { return this.getAttribute('title') }
+  /** @returns {string} */
+  get title () { return /** @type {string} */ (this.getAttribute('title')) }
+
+  /** @param {string} value */
   set title (value) { this.setAttribute('title', value) }
 
   get pressed () { return this.hasAttribute('pressed') }
@@ -225,10 +231,16 @@ export class ToolButton extends HTMLElement {
     }
   }
 
+  /** @returns {?string} */
   get src () { return this.getAttribute('src') }
+
+  /** @param {string} value */
   set src (value) { this.setAttribute('src', value) }
 
+  /** @returns {?string} */
   get size () { return this.getAttribute('size') }
+
+  /** @param {string} value */
   set size (value) { this.setAttribute('size', value) }
 
   connectedCallback () {
@@ -253,6 +265,9 @@ export class ToolButton extends HTMLElement {
 
   disconnectedCallback () {
     this._unsubscribeHotkeys?.()
+    /**
+* @type {(() => void) | undefined}
+*/
     this._unsubscribeHotkeys = undefined
   }
 }

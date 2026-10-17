@@ -35,7 +35,7 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
     const { BatchCommand, RemoveElementCommand, InsertElementCommand } = svgCanvas.history
-    const { $id, addSVGElementsFromJson: addElem } = svgCanvas
+    const { $id, $req, addSVGElementsFromJson: addElem } = svgCanvas
     const mtypes = ['start', 'mid', 'end']
     const markerElems = ['line', 'path', 'polyline', 'polygon']
 
@@ -102,8 +102,8 @@ export default {
      * @param {boolean} on
      * @returns {void}
     */
-    const showPanel = (on, elem) => {
-      $id('marker_panel').style.display = (on) ? 'block' : 'none'
+    const showPanel = (on, /** @type {Element | null | undefined} */ elem) => {
+      $req('marker_panel').style.display = (on) ? 'block' : 'none'
       if (on && elem) {
         const align = $id('marker_align')
         align.value = svgCanvas.getArrowAlign(elem) ?? 'center'
@@ -111,9 +111,9 @@ export default {
         mtypes.forEach((pos) => {
           const marker = getLinked(elem, 'marker-' + pos)
           if (marker?.attributes?.se_type) {
-            $id(`${pos}_marker_list_opts`).setAttribute('value', marker.attributes.se_type.value)
+            $req(`${pos}_marker_list_opts`).setAttribute('value', marker.attributes.se_type.value)
           } else {
-            $id(`${pos}_marker_list_opts`).setAttribute('value', 'nomarker')
+            $req(`${pos}_marker_list_opts`).setAttribute('value', 'nomarker')
           }
         })
       }
@@ -306,7 +306,7 @@ export default {
         if (!marker || !marker.attributes.se_type) { return } // not created by this extension
         const url = el.getAttribute(markerName)
         // Mirror twins stay linked to their source and share its markers on purpose.
-        const partners = (other) => other.getAttribute('se:mirror-of') === el.id || el.getAttribute('se:mirror-of') === other.id
+        const partners = (/** @type {Element} */ other) => other.getAttribute('se:mirror-of') === el.id || el.getAttribute('se:mirror-of') === other.id
         const shared = Array.from(svgCanvas.getSvgContent().querySelectorAll('*'))
           .some((other) => other !== el && other.getAttribute(markerName) === url && !partners(other))
         const newMarkerId = 'mkr_' + pos + '_' + el.id
@@ -353,7 +353,7 @@ export default {
             designTab.appendChild(panelTemplate.content)
           }
         } else {
-          $id('tools_top').appendChild(panelTemplate.content.cloneNode(true))
+          $req('tools_top').appendChild(panelTemplate.content.cloneNode(true))
         }
         const align = $id('marker_align')
         align.addOption('center', 'Centered on the end')
@@ -361,7 +361,8 @@ export default {
         align.addOption('extend', 'Tip past the end')
         align.addEventListener('change', (evt) => {
           const el = svgCanvas.getSelectedElements()[0]
-          const mode = evt.target.value === 'center' ? null : evt.target.value
+          const picked = /** @type {HTMLInputElement} */ (evt.target).value
+          const mode = picked === 'center' ? null : /** @type {'tip'|'extend'} */ (picked)
           if (!el || svgCanvas.getArrowAlign(el) === mode) return
           svgCanvas.transact('Head position', () => svgCanvas.setArrowAlign(el, mode))
           svgCanvas.selectorManager.requestSelector(el).resize()
@@ -370,7 +371,7 @@ export default {
         // don't display the panels on start
         showPanel(false)
         mtypes.forEach((pos) => {
-          $id(`${pos}_marker_list_opts`).addEventListener('change', (evt) => {
+          $req(`${pos}_marker_list_opts`).addEventListener('change', (/** @type {CustomEvent} */ evt) => {
             setMarker(pos, evt.detail.value)
           })
         })
@@ -378,7 +379,7 @@ export default {
       selectedChanged (opts) {
         // Use this to update the current selected elements
         if (opts.elems.length === 0) showPanel(false)
-        opts.elems.forEach((elem) => {
+        opts.elems.forEach((/** @type {{ tagName: string; }} */ elem) => {
           if (elem && markerElems.includes(elem.tagName)) {
             if (opts.selectedElement && !opts.multiselected) {
               showPanel(true, elem)

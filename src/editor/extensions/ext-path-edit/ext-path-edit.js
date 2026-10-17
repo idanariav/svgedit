@@ -17,9 +17,10 @@
 
 const name = 'path-edit'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -33,15 +34,15 @@ export default {
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /** Whether the selection is `count` paths that can be joined (or closed, for one). */
-    const joinable = (count) => {
+    const joinable = (/** @type {number} */ count) => {
       const list = svgCanvas.getSelectedElements().filter(Boolean)
       return list.length === count && svgCanvas.canJoinPaths(list)
     }
 
-    const updateJoin = (elems) => {
+    const updateJoin = (/** @type {Element[]|undefined} */ elems) => {
       const list = (elems || svgCanvas.getSelectedElements()).filter(Boolean)
       const ok = svgCanvas.canJoinPaths(list)
       const single = $id('tool_join_paths')
@@ -55,7 +56,7 @@ export default {
 
       callback () {
         // Node-editing tray: Average (action menu) and Add anchor points.
-        const tray = svgEditor.$container.querySelector('.path_node_panel') // this editor's own tray (several can be mounted)
+        const tray = svgEditor.$container?.querySelector('.path_node_panel') // this editor's own tray (several can be mounted)
         const after = $id('tool_node_delete')
         if (tray) {
           const average = document.createElement('se-select')
@@ -74,12 +75,12 @@ export default {
           else tray.append(average, addAnchors)
 
           average.addEventListener('change', (e) => {
-            const axis = e.target.value
+            const axis = /** @type {HTMLInputElement} */ (e.target).value
             if (!axis) return
             // se-select assigns its own value after dispatching 'change'; reset
             // to the placeholder once that has happened.
-            setTimeout(() => { const el = $id('tool_node_average'); if (el) el.value = '' }, 0)
-            svgCanvas.pathActions.averageSelectedNodes(axis)
+            setTimeout(() => { const el = $id('tool_node_average'); if (el) /** @type {HTMLInputElement} */ (el).value = '' }, 0)
+            svgCanvas.pathActions.averageSelectedNodes(/** @type {'h'|'v'|'both'} */ (axis))
           })
           svgEditor.commands.register({
             id: 'tool_node_add_anchors',
@@ -133,13 +134,12 @@ export default {
           })
         }
       },
-
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{elems?: Element[]}} */ opts) {
         updateJoin(opts.elems?.filter(Boolean))
       },
 
       elementChanged () {
-        updateJoin()
+        updateJoin(undefined)
       }
     }
   }

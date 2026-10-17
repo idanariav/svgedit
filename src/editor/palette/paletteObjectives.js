@@ -117,7 +117,7 @@ export function scoreCandidate (candidate, hueMaxChroma, minContrast, weights, c
 export function harmonizeEqualWeight (shortlists, hueMaxChromas, minContrast, weightsPerHue, opts = {}) {
   const { hueNames = [], purpose, maxPasses = MAX_PASSES_EQUAL_WEIGHT, epsilon = CONVERGENCE_EPSILON } = opts
   const n = shortlists.length
-  const scoreOf = (candidate, i) =>
+  const scoreOf = (/** @type {object} */ candidate, /** @type {number} */ i) =>
     scoreCandidate(candidate, hueMaxChromas[i], minContrast, weightsPerHue[i], { hueName: hueNames[i], purpose })
 
   const picks = shortlists.map((list, i) =>
@@ -163,7 +163,7 @@ export function harmonizePairwiseDistinct (shortlists, opts = {}) {
   const n = shortlists.length
   const picks = shortlists.map(list => list.reduce((best, cand) => (cand.c > best.c ? cand : best), list[0]))
 
-  const globalObjective = (candidates) => {
+  const globalObjective = (/** @type {object[]} */ candidates) => {
     let minDist = Infinity
     let sumDist = 0
     let pairs = 0

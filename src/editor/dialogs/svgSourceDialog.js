@@ -1,6 +1,6 @@
 // svgSourceDialog.js — View/edit raw SVG source
 import svgSourceDialogHTML from './svgSourceDialog.html'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 import { dialogSkin } from './dialogSkin.css.js'
@@ -19,20 +19,20 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#svg_source_editor')
-    this.$copyBtn = this._shadowRoot.querySelector('#copy_save_done')
-    this.$saveBtn = this._shadowRoot.querySelector('#tool_source_save')
-    this.$cancelBtn = this._shadowRoot.querySelector('#tool_source_cancel')
-    this.$sourceTxt = this._shadowRoot.querySelector('#svg_source_textarea')
-    this.$copySec = this._shadowRoot.querySelector('#save_output_btns')
-    this.$applySec = this._shadowRoot.querySelector('#tool_source_back')
-    this.$toggleDynamic = this._shadowRoot.querySelector('#tool_source_dynamic')
-    this.$toggleDynamic.checked = ownerEditor(this).configObj.curConfig.dynamicOutput
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#svg_source_editor'))
+    this.$copyBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#copy_save_done'))
+    this.$saveBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_source_save'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#tool_source_cancel'))
+    this.$sourceTxt = /** @type {HTMLTextAreaElement} */ (this._shadowRoot.querySelector('#svg_source_textarea'))
+    this.$copySec = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#save_output_btns'))
+    this.$applySec = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#tool_source_back'))
+    this.$toggleDynamic = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#tool_source_dynamic'))
+    this.$toggleDynamic.checked = requireOwnerEditor(this).configObj.curConfig.dynamicOutput
   }
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -57,7 +57,7 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     let node
     switch (name) {
@@ -98,14 +98,13 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
         this.$cancelBtn.textContent = newValue
         break
       case 'notification-source_dialog_note':
-        node = this._shadowRoot.querySelector('#copy_save_note')
-        node.textContent = newValue
+        node = /** @type {HTMLParagraphElement} */ (this._shadowRoot.querySelector('#copy_save_note'))
+        if (node) node.textContent = newValue
         break
       case 'config-done':
         this.$copyBtn.textContent = newValue
         break
       default:
-        super.attributeChangedCallback(name, oldValue, newValue)
         break
     }
   }

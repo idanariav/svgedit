@@ -26,9 +26,10 @@ const HOVER_FILL = 'rgba(41, 98, 255, 0.28)'
 const PICK_FILL = 'rgba(41, 98, 255, 0.5)'
 const STROKE = '#2962FF'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -41,15 +42,21 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id, NS, assignAttributes } = svgCanvas
-    const svgdoc = $id('svgcanvas').ownerDocument
+    const { $id, $req, NS, assignAttributes } = svgCanvas
+    const svgdoc = $req('svgcanvas').ownerDocument
     const svgroot = svgCanvas.getSvgRoot()
 
     let active = false
     let busy = false // our own apply is mutating the document
+    /**
+* @type {SVGPathElement[]}
+*/
     let regionPaths = [] // overlay <path> per region index
     let picked = new Set()
     let started = false
+    /**
+* @type {string | Node | null}
+*/
     let hintEl = null
 
     // Overlay: a zoom-scaled group inside an svg aligned with #svgcontent.
@@ -92,12 +99,12 @@ export default {
       return hintEl
     }
 
-    const updateHintCount = (n) => {
+    const updateHintCount = (/** @type {number} */ n) => {
       ensureHint().querySelector('.sb-hint-count').textContent =
         n > 0 ? svgEditor.i18next.t(`${name}:picked`, { count: n }) : ''
     }
 
-    const renderRegions = (descs) => {
+    const renderRegions = (/** @type {{ index: number; d: string; }[]} */ descs) => {
       regionPaths = []
       const frag = svgdoc.createDocumentFragment()
       for (const { d } of descs) {
@@ -120,7 +127,7 @@ export default {
       updateHintCount(0)
     }
 
-    const paintStates = (hoverIndex) => {
+    const paintStates = (/** @type {number} */ hoverIndex) => {
       regionPaths.forEach((p, i) => {
         p.setAttribute('fill', picked.has(i)
           ? PICK_FILL
@@ -130,7 +137,7 @@ export default {
     }
 
     /** Client coords → content units (CLAUDE.md coordinate contract). */
-    const contentPoint = (evt) => {
+    const contentPoint = (/** @type {{ clientX: number; clientY: number; }} */ evt) => {
       const rootRect = svgroot.getBoundingClientRect()
       const content = svgCanvas.getSvgContent()
       const zoom = svgCanvas.getZoom()
@@ -140,7 +147,7 @@ export default {
       }
     }
 
-    const onHover = (evt) => {
+    const onHover = (/** @type {{ clientX: number; clientY: number; }} */ evt) => {
       if (!active || started) return
       const { x, y } = contentPoint(evt)
       paintStates(svgCanvas.shapeBuilder.hitTest(x, y))
@@ -159,12 +166,12 @@ export default {
     }
 
     /** (Re)start the session from the given elements; exits when impossible. */
-    const startSession = (elems) => {
+    const startSession = (/** @type {Element[]} */ elems) => {
       const descs = svgCanvas.shapeBuilder.begin(elems)
       if (!descs || descs.length === 0) {
         teardown()
         if (svgCanvas.getMode() === 'shapebuilder') svgCanvas.setMode('select')
-        if (elems?.length) svgCanvas.selectOnly(elems.filter((el) => el.parentNode), true)
+        if (elems?.length) svgCanvas.selectOnly(elems.filter((/** @type {Element} */ el) => el.parentNode), true)
         return false
       }
       active = true

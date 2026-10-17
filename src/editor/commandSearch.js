@@ -26,7 +26,7 @@ const FLASH_DURATION_MS = 900
  * Command Search popup. Thin wrapper over `buildFavoritesCatalog` so this
  * module owns its own seam (e.g. future filtering) without coupling callers
  * directly to the favorites module.
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @returns {Array<{group:string, actions:Array<{id:string, label:string}>}>}
  */
 export const buildCommandSearchCatalog = (editor) => buildFavoritesCatalog(editor)
@@ -60,7 +60,7 @@ export const filterCommandCatalog = (catalog, query) => {
     .map((g, order) => {
       const ranked = g.actions
         .map((a, i) => ({ a, r: rankLabel(a.label, q), i }))
-        .filter((x) => x.r !== null)
+        .flatMap((x) => (x.r === null ? [] : [{ ...x, r: x.r }]))
         .sort((x, y) => x.r - y.r || x.i - y.i)
       return { group: g.group, actions: ranked.map((x) => x.a), best: ranked[0]?.r ?? 3, order }
     })
@@ -79,14 +79,14 @@ const revealField = (el) => {
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   el.classList.add(FLASH_CLASS)
   setTimeout(() => el.classList.remove(FLASH_CLASS), FLASH_DURATION_MS)
-  el.focus?.()
+  ;/** @type {HTMLElement} */ (el).focus?.()
 }
 
 /**
  * Activate a Command Search result: reveal the Right Panel tab that hosts
  * the target element (if any), then either run the action (trigger) or
  * reveal the setting (value control).
- * @param {object} editor
+ * @param {EditorInstance} editor
  * @param {string} id
  * @returns {void}
  */
@@ -103,7 +103,7 @@ export const activateCommandSearchResult = (editor, id) => {
 
   if (isValueControl(id)) {
     if (COLOR_VALUE_CONTROLS.has(id)) {
-      editor.$id(id)?.openColorDialog()
+      /** @type {*} */ (editor.$id(id))?.openColorDialog()
     } else {
       revealField(editor.$id(id))
     }

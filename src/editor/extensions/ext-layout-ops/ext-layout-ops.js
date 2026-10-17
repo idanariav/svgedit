@@ -17,9 +17,10 @@ import { transformEach as transformEachOf } from '@svgedit/svgcanvas/core/transf
 
 const name = 'layout-ops'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -27,7 +28,7 @@ const loadExtensionTranslation = function (svgEditor) {
 }
 
 /** A small seeded random source, so the amounts of a Random preview do not change with every keystroke. */
-const seeded = (seed) => () => {
+const seeded = (/** @type {number} */ seed) => () => {
   seed = (seed + 0x6D2B79F5) | 0
   let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
@@ -41,11 +42,14 @@ export default {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selection = () => svgCanvas.getSelectedElements().filter(Boolean)
     const sole = () => (selection().length === 1 ? selection()[0] : null)
 
+    /**
+* @type {string | Node | null}
+*/
     let dialog = null
     const dialogElement = () => {
       if (!dialog) {
@@ -68,12 +72,15 @@ export default {
         tx?.cancel()
         tx = null
       }
-      const label = (key) => tr(`${kind}.dialog.${key}`)
+      const label = (/** @type {string} */ key) => tr(`${kind}.dialog.${key}`)
       dialogElement().open({
         title: label('title'),
         okLabel: label('ok'),
         cancelLabel: label('cancel'),
         fields: fields.map((f) => ({ ...f, label: label(f.id) })),
+        /**
+* @param {object} values
+*/
         onChange (values) {
           rollBack()
           tx = svgCanvas.beginTransaction(tr(`${kind}.undo`))
@@ -90,7 +97,7 @@ export default {
     const transformEach = () => {
       if (!selection().length) return
       const seed = Math.floor(Math.random() * 2 ** 31)
-      const num = (id, value, extra = {}) => ({ id, type: 'number', value, step: 1, ...extra })
+      const num = (/** @type {string} */ id, /** @type {number} */ value, extra = {}) => ({ id, type: 'number', value, step: 1, ...extra })
       openForm('each', [
         num('scaleH', 100, { min: 0 }),
         num('scaleV', 100, { min: 0 }),
@@ -107,7 +114,7 @@ export default {
 
     const splitIntoGrid = () => {
       if (!canSplitIntoGrid(sole())) return
-      const num = (id, value, min) => ({ id, type: 'number', value, min, step: 1 })
+      const num = (/** @type {string} */ id, /** @type {number} */ value, /** @type {number} */ min) => ({ id, type: 'number', value, min, step: 1 })
       openForm('grid', [
         num('rows', 2, 1),
         num('cols', 2, 1),

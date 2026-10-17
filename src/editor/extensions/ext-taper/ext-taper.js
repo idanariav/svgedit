@@ -15,9 +15,10 @@ import '../../components/seTaperSettings.js'
 
 const name = 'taper'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -32,7 +33,7 @@ export default {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
 
-    const updateVisibility = (elems) => {
+    const updateVisibility = (/** @type {Element[]|undefined} */ elems) => {
       const btn = $id('tool_taper')
       if (!btn) return
       const single = elems?.length === 1 ? elems[0] : null
@@ -41,7 +42,7 @@ export default {
 
     return {
       name: svgEditor.i18next.t(`${name}:name`),
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{elems?: Element[]}} */ opts) {
         updateVisibility(opts.elems?.filter(Boolean))
       },
       elementChanged () {

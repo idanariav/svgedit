@@ -48,9 +48,10 @@ const LIGHT = '#f0f0f0'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const SHAPES = ['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygon', 'text']
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -63,13 +64,13 @@ const mk = (tag, attrs) => {
   return e
 }
 
-const toMatrix = (m) => ({ a: m.a, b: m.b, c: m.c, d: m.d, e: m.e, f: m.f })
-const sub = (p, q) => ({ x: p.x - q.x, y: p.y - q.y })
+const toMatrix = (/** @type {DOMMatrix} */ m) => ({ a: m.a, b: m.b, c: m.c, d: m.d, e: m.e, f: m.f })
+const sub = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ p, /** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ q) => ({ x: p.x - q.x, y: p.y - q.y })
 const add = (p, q) => ({ x: p.x + q.x, y: p.y + q.y })
-const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y)
+const dist = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ p, /** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ q) => Math.hypot(p.x - q.x, p.y - q.y)
 
 /** `#rrggbb` for any CSS colour (named, rgb(), …); black when the browser cannot parse it. */
-const toHex = (color) => {
+const toHex = (/** @type {string | CanvasGradient | CanvasPattern} */ color) => {
   const ctx = document.createElement('canvas').getContext('2d')
   if (!ctx) return '#000000'
   ctx.fillStyle = '#000000'
@@ -82,9 +83,9 @@ export default {
   async init () {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
     await loadExtensionTranslation(svgEditor)
-    const tr = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     /**
      * The gradient being edited: the element and paint, the gradient element, its model (`readGradient`), and the
@@ -108,6 +109,9 @@ export default {
     let drag = null
     /** @type {?string} */
     let hover = null
+    /**
+* @type {import("@svgedit/svgcanvas").ToolContext | null}
+*/
     let toolCtx = null
 
     const scope = () => svgCanvas.getSvgContent()
@@ -122,13 +126,13 @@ export default {
     }
 
     /** A pointer event in document units. */
-    const docPoint = (ev) => {
+    const docPoint = (/** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev) => {
       const inv = invert(rootMatrix() ?? { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
       return inv ? applyMatrix(inv, { x: ev.screenX, y: ev.screenY }) : { x: ev.rawX, y: ev.rawY }
     }
 
     /** The element's local space → document units, through every group above it. */
-    const localToDoc = (el) => {
+    const localToDoc = (/** @type {Element} */ el) => {
       const root = rootMatrix()
       const own = el.getScreenCTM?.()
       const inv = root && invert(root)
@@ -138,7 +142,7 @@ export default {
     // ---- target ------------------------------------------------------------------
 
     /** @returns {?Target} */
-    const targetFor = (el, wanted = preferred) => {
+    const targetFor = (/** @type {Element} */ el, wanted = preferred) => {
       if (!el || !SHAPES.includes(el.tagName.toLowerCase())) return null
       const order = wanted === 'stroke' ? ['stroke', 'fill'] : ['fill', 'stroke']
       const prop = order.find((p) => gradientOf(scope(), el, p))
@@ -147,7 +151,7 @@ export default {
     }
 
     /** Read `grad` for `(el, prop)` into a target (null when the gradient cannot be edited). */
-    const read = (el, prop, grad) => {
+    const read = (/** @type {Element} */ el, /** @type {string} */ prop, /** @type {Element} */ grad) => {
       let box = null
       try {
         const b = el.getBBox()
@@ -190,7 +194,7 @@ export default {
     /** @returns {?{kind: string, index?: number, t?: number}} */
     const hit = (t, pt, zoom) => {
       const p = parts(t)
-      const near = (q, px) => dist(q, pt) <= px / zoom
+      const near = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ q, /** @type {number} */ px) => dist(q, pt) <= px / zoom
       const stops = t.model.stops
       for (let i = stops.length - 1; i >= 0; i--) {
         const q = barPoint(p, stops[i].offset)
@@ -210,14 +214,14 @@ export default {
 
     // ---- overlay ----------------------------------------------------------------------
 
-    const draw = (ctx) => {
+    const draw = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx) => {
       ctx.clearOverlays()
       const t = target
       if (!t) return
       const z = ctx.zoom
       const p = parts(t)
       const g = mk('g', { 'pointer-events': 'none' })
-      const line = (a, b, color, extra = {}) => mk('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: color, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke', ...extra })
+      const line = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ a, /** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ b, /** @type {string} */ color, extra = {}) => mk('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: color, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke', ...extra })
       if (p.radial) {
         const pts = []
         for (let i = 0; i < 64; i++) {
@@ -255,7 +259,7 @@ export default {
         )
         if (hover === `stop${i}`) g.lastChild.setAttribute('stroke-width', '2')
       })
-      const dot = (q, rad, fill, key) => mk('circle', { cx: q.x, cy: q.y, r: rad / z, fill: hover === key ? BAR : fill, stroke: BAR, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' })
+      const dot = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ q, /** @type {number} */ rad, /** @type {string} */ fill, /** @type {string | null} */ key) => mk('circle', { cx: q.x, cy: q.y, r: rad / z, fill: hover === key ? BAR : fill, stroke: BAR, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' })
       g.append(
         p.radial ? mk('circle', { cx: p.start.x, cy: p.start.y, r: 4.5 / z, fill: 'none', stroke: BAR, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }) : dot(p.start, 4.5, '#fff', 'start'),
         mk('rect', { x: p.end.x - 4 / z, y: p.end.y - 4 / z, width: 8 / z, height: 8 / z, fill: hover === 'end' ? '#fff' : BAR, stroke: '#fff', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' })
@@ -279,7 +283,7 @@ export default {
      * gradient cannot be read afterwards. The selected stop is carried over to the copy by index.
      */
     const own = (t) => {
-      const stopIndex = selectedStop ? t.model.stops.findIndex((s) => s.node === selectedStop) : -1
+      const stopIndex = selectedStop ? t.model.stops.findIndex((/** @type {{ node: Element | null; }} */ s) => s.node === selectedStop) : -1
       t.grad = ensureOwnGradient(scope(), t.el, t.prop, t.grad, () => svgCanvas.getNextId())
       const stops = ownStops(scope(), t.grad)
       if (!reread(t)) return false
@@ -293,18 +297,18 @@ export default {
       else setRadial(t.grad, p1, r, focal)
     }
 
-    const finish = (el) => {
+    const finish = (/** @type {Element} */ el) => {
       svgCanvas.call('changed', [el])
     }
 
     // ---- gestures ------------------------------------------------------------------------
 
-    const moveGesture = (ctx, ev, d) => {
+    const moveGesture = (/** @type {import("@svgedit/svgcanvas").ToolContext} */ ctx, /** @type {import("@svgedit/svgcanvas").ToolEvent} */ ev, /** @type {object} */ d) => {
       const t = target
       if (!t || !t.Tinv) return
       const cur = docPoint(ev)
       const m = d.base
-      const g = (q) => applyMatrix(t.Tinv, q)
+      const g = (/** @type {import("@svgedit/svgcanvas/core/gradient-edit.ts").Point} */ q) => applyMatrix(t.Tinv, q)
       switch (d.part.kind) {
         case 'start':
         case 'bar': {
@@ -357,7 +361,7 @@ export default {
     }
 
     /** Open the colour dialog on a stop; applying is its own undo step. */
-    const editStopColor = (stopNode) => {
+    const editStopColor = (/** @type {Element} */ stopNode) => {
       const t = target
       if (!t) return
       const stop = t.model.stops.find((s) => s.node === stopNode)
@@ -367,7 +371,7 @@ export default {
       dialog.paint = new Paint({ alpha: Math.round(stop.opacity * 100), solidColor: toHex(stop.color).slice(1) })
       dialog.type = 'fill'
       dialog.i18next = svgEditor.i18next
-      dialog.addEventListener('change', (evt) => {
+      dialog.addEventListener('change', (/** @type {CustomEvent} */ evt) => {
         const paint = evt.detail.paint
         if (paint.type !== 'solidColor' || paint.solidColor === 'none') return
         const index = t.model.stops.indexOf(stop)
@@ -546,7 +550,7 @@ export default {
         const title = `${name}:buttons.0.title`
         // Beside the other on-canvas editors: after the Distort tool.
         svgCanvas.insertChildAtIndex(
-          $id('tools_left'),
+          $req('tools_left'),
           `<se-button id="tool_gradient" command="tool_gradient" title="${title}" src="gradient-tool.svg"></se-button>`,
           6
         )

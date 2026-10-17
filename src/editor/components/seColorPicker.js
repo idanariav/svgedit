@@ -3,7 +3,7 @@ import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot, ownerEditor } from '../domScope.js'
+import { closestRoot, ownerEditor, requireOwnerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import './colorPicker/index.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
@@ -111,16 +111,19 @@ export class SeColorPicker extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$logo = this._shadowRoot.getElementById('logo')
-    this.$label = this._shadowRoot.getElementById('label')
-    this.$block = this._shadowRoot.getElementById('block')
-    this.$swatch = this._shadowRoot.getElementById('swatch')
+    this.$logo = /** @type {HTMLSpanElement} */ (this._shadowRoot.getElementById('logo'))
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.getElementById('label'))
+    this.$block = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('block'))
+    this.$swatch = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('swatch'))
     this.paintBox = null
     this.i18next = null
-    this.$picker = this._shadowRoot.getElementById('picker')
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
+    this.$picker = /** @type {HTMLDivElement} */ (this._shadowRoot.getElementById('picker'))
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     if (!src) return
     const url = `${this.imgPath}/${src}`
@@ -138,7 +141,7 @@ export class SeColorPicker extends HTMLElement {
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -161,7 +164,7 @@ export class SeColorPicker extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'src':
@@ -263,6 +266,9 @@ export class SeColorPicker extends HTMLElement {
     const editor = ownerEditor(this)
     const canvas = editor?.svgCanvas
     const originals = new Map()
+    /**
+* @type {string | Node | null}
+*/
     let previewGradient = null
     let bgOriginal = null
     const revert = () => {
@@ -283,6 +289,9 @@ export class SeColorPicker extends HTMLElement {
     // Same element set as svgCanvas.setColor: group → every non-group descendant,
     // and lines/polylines never take a fill.
     const previewTargets = () => {
+      /**
+* @type {Element[]}
+*/
       const out = []
       ;(canvas?.getSelectedElements?.() ?? []).forEach((el) => {
         if (!el) return
@@ -296,7 +305,7 @@ export class SeColorPicker extends HTMLElement {
     }
     const gradientOf = (paint) => (paint.type === 'linearGradient' || paint.type === 'radialGradient') ? paint[paint.type] : null
     if (attr === 'background') {
-      dialog.addEventListener('preview', (evt) => {
+      dialog.addEventListener('preview', (/** @type {CustomEvent} */ evt) => {
         const { paint } = evt.detail
         if (!bgOriginal) {
           bgOriginal = {
@@ -311,7 +320,7 @@ export class SeColorPicker extends HTMLElement {
       })
       dialog.addEventListener('cancel', revert)
     } else if (attr === 'fill' || attr === 'stroke') {
-      dialog.addEventListener('preview', (evt) => {
+      dialog.addEventListener('preview', (/** @type {CustomEvent} */ evt) => {
         const { paint } = evt.detail
         const grad = gradientOf(paint)
         let value
@@ -337,7 +346,7 @@ export class SeColorPicker extends HTMLElement {
       dialog.addEventListener('cancel', revert)
     }
 
-    dialog.addEventListener('change', (evt) => {
+    dialog.addEventListener('change', (/** @type {CustomEvent} */ evt) => {
       revert()
       const paint = new Paint({ copy: evt.detail.paint })
       this.setPaint(paint)

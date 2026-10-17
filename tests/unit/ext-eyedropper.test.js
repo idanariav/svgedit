@@ -16,6 +16,7 @@ describe('ext-eyedropper', () => {
 
     svgCanvas = {
       $id: vi.fn((id) => (id === 'tools_left' ? toolsLeft : document.getElementById(id))),
+      $req: vi.fn((id) => (id === 'tools_left' ? toolsLeft : document.getElementById(id))),
       insertChildAtIndex: vi.fn((parent, html) => { parent.innerHTML = html }),
       getMode: vi.fn(() => 'eyedropper'),
       getSelectedElements: vi.fn(() => []),

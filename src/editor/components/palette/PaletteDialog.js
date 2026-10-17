@@ -24,14 +24,19 @@ const PURPOSES = ['icons', 'text', 'charts', 'illustrations', 'buttons', 'notifi
  * @property {string} outputFormat - 'hex' | 'oklch'
  * @property {object} i18next
  */
+/** @typedef {'icons'|'text'|'charts'|'illustrations'|'buttons'|'notifications'} Purpose what the palette is for */
+
 export class SePaletteDialog extends HTMLElement {
   constructor () {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._backgroundHex = '#ffffff'
+    /** @type {Purpose} */
     this._purpose = 'icons'
     this._minContrast = 4.5
+    /** @type {'hex'|'oklch'} */
     this._outputFormat = 'hex'
+    /** @type {?import('i18next').i18n} */
     this._i18next = null
     this._themeObserver = null
     this._keyHandler = null
@@ -74,6 +79,10 @@ export class SePaletteDialog extends HTMLElement {
     this._themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
   }
 
+  /**
+* @param {string} key
+* @param {string} fallback
+*/
   _t (key, fallback) {
     try { return this._i18next?.t(key) || fallback } catch { return fallback }
   }
@@ -113,23 +122,23 @@ export class SePaletteDialog extends HTMLElement {
       </div>
     `
 
-    this._shadowRoot.querySelector('.pd-head-close').addEventListener('click', () => this._onClose())
-    this._shadowRoot.querySelector('.pd-backdrop').addEventListener('click', () => this._onClose())
+    ;/** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.pd-head-close')).addEventListener('click', () => this._onClose())
+    ;/** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.pd-backdrop')).addEventListener('click', () => this._onClose())
 
-    const purposeSelect = this._shadowRoot.querySelector('#pd-purpose')
+    const purposeSelect = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#pd-purpose'))
     purposeSelect.value = this._purpose
-    purposeSelect.addEventListener('change', (e) => { this.purpose = e.target.value })
+    purposeSelect.addEventListener('change', (e) => { this.purpose = /** @type {Purpose} */ (/** @type {HTMLInputElement} */ (e.target).value) })
 
-    const minContrastInput = this._shadowRoot.querySelector('#pd-min-contrast')
+    const minContrastInput = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#pd-min-contrast'))
     minContrastInput.addEventListener('change', (e) => {
-      const value = Number.parseFloat(e.target.value)
+      const value = Number.parseFloat(/** @type {HTMLInputElement} */ (e.target).value)
       this.minContrast = Number.isFinite(value) ? value : this._minContrast
     })
 
     this._shadowRoot.querySelectorAll('#pd-format button').forEach((btn) => {
       btn.addEventListener('click', () => {
         this._shadowRoot.querySelectorAll('#pd-format button').forEach((b) => b.classList.toggle('is-active', b === btn))
-        this.outputFormat = btn.dataset.format
+        this.outputFormat = /** @type {'hex'|'oklch'} */ (/** @type {HTMLElement} */ (btn).dataset.format)
       })
     })
 
@@ -148,7 +157,7 @@ export class SePaletteDialog extends HTMLElement {
     slot.replaceChildren(...palette.map((color) => this._buildSwatch(color)))
   }
 
-  _buildSwatch (color) {
+  _buildSwatch (/** @type {*} */ color) {
     const card = document.createElement('div')
     card.className = 'pd-swatch'
     card.dataset.hue = color.name
@@ -196,7 +205,7 @@ export class SePaletteDialog extends HTMLElement {
    * Copy a swatch's value to the clipboard, flashing a checkmark on the
    * triggering button as feedback.
    * @param {string} text
-   * @param {HTMLButtonElement} btn
+   * @param {HTMLButtonElement & {_copyResetTimer?: ReturnType<typeof setTimeout>}} btn
    * @returns {void}
    */
   _copyValue (text, btn) {
@@ -223,7 +232,7 @@ export class SePaletteDialog extends HTMLElement {
   }
 
   _bindKeys () {
-    this._keyHandler = (e) => {
+    this._keyHandler = (/** @type {{ key: string; preventDefault: () => void; }} */ e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this._onClose()

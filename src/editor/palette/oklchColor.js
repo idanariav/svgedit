@@ -10,6 +10,8 @@
 import { converter, formatHex, wcagContrast, clampChroma } from 'culori'
 import { warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 
+/** @typedef {{l: number, c: number, h?: number}} Oklch a culori oklch color */
+
 const toRgb = converter('rgb')
 
 /**
@@ -31,13 +33,13 @@ export function toRgbHex (oklchColor) {
 }
 
 /**
- * @param {object} oklchColor - a culori oklch color object
+ * @param {Oklch} oklchColor - a culori oklch color object
  * @returns {string} 'oklch(L C H)' CSS Color 4 string
  */
 export function toOklchString (oklchColor) {
   const l = oklchColor.l.toFixed(3)
   const c = oklchColor.c.toFixed(3)
-  const h = Number.isFinite(oklchColor.h) ? oklchColor.h.toFixed(1) : '0'
+  const h = oklchColor.h !== undefined && Number.isFinite(oklchColor.h) ? oklchColor.h.toFixed(1) : '0'
   return `oklch(${l} ${c} ${h})`
 }
 
@@ -56,7 +58,7 @@ export function contrastAgainst (oklchColor, backgroundHex) {
  * Convert an OKLCH color to Cartesian (l, a, b)-style coordinates so that a
  * plain Euclidean distance is a valid perceptual-distance metric (hue is
  * cyclic, so a naive scalar hue diff is not).
- * @param {object} oklchColor - a culori oklch color object
+ * @param {Oklch} oklchColor - a culori oklch color object
  * @returns {[number, number, number]}
  */
 export function oklchToCartesian ({ l, c, h }) {
@@ -66,8 +68,8 @@ export function oklchToCartesian ({ l, c, h }) {
 
 /**
  * Euclidean distance between two OKLCH colors in Cartesian space.
- * @param {object} a - a culori oklch color object
- * @param {object} b - a culori oklch color object
+ * @param {Oklch} a - a culori oklch color object
+ * @param {Oklch} b - a culori oklch color object
  * @returns {number}
  */
 export function oklchDistance (a, b) {

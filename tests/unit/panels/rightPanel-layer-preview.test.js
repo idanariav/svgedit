@@ -52,6 +52,7 @@ const buildEditor = (layerGroups) => {
   let nextId = 1
   const editor = {
     $id,
+    $req: $id,
     i18next: { t: (key) => key },
     topPanel: { updateContextPanel: () => {} },
     svgCanvas: {

@@ -1,6 +1,6 @@
 // seSettingsPopover.js — `SeSettingsPopover` — shared base for the seven toolbar-button-plus-popover settings components below (incl
 import { fetchSvgEl } from './svgIconLoader.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 
 /**
  * @class SeSettingsPopover
@@ -52,11 +52,10 @@ export class SeSettingsPopover extends HTMLElement {
     template.innerHTML = templateHTML
     this._shadowRoot.append(template.content.cloneNode(true))
 
-    this.imgPath = ownerEditor(this).configObj.curConfig.imgPath
-    this.$icon = this._shadowRoot.querySelector('#icon')
-    this.$trigger = this._shadowRoot.querySelector('.trigger')
-    this.$popup = this._shadowRoot.querySelector('#options-container')
-
+    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
+    this.$icon = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#icon'))
+    this.$trigger = /** @type {HTMLElement} */ (this._shadowRoot.querySelector('.trigger'))
+    this.$popup = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#options-container'))
     // Promote to a native "auto" popover for top-layer rendering plus
     // built-in light-dismiss (outside click / Escape). The UA popover
     // stylesheet otherwise imposes its own inset/size defaults that fight
@@ -98,7 +97,7 @@ export class SeSettingsPopover extends HTMLElement {
    * @param {string|null} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (name === 'src' && newValue && newValue !== oldValue) {
       this._loadIcon(newValue)
     } else if (name === 'title' && newValue && newValue !== oldValue) {
@@ -106,6 +105,9 @@ export class SeSettingsPopover extends HTMLElement {
     }
   }
 
+  /**
+* @param {string} src
+*/
   async _loadIcon (src) {
     const url = `${this.imgPath}/${src}`
     const svgEl = await fetchSvgEl(url)
@@ -145,7 +147,7 @@ export class SeSettingsPopover extends HTMLElement {
       // the native light-dismiss algorithm doesn't treat clicking it again
       // (to toggle closed) as an outside click, and Escape returns focus to
       // it — matching the previous manual handleKeyDown behavior.
-      this.$popup.showPopover({ source: this.$trigger })
+      /** @type {*} */ (this.$popup).showPopover({ source: this.$trigger })
     }
     this.$popup.style.display = 'flex'
     this.$trigger.setAttribute('aria-expanded', 'true')

@@ -1,6 +1,11 @@
 // seConfirmDialog.js — Confirm dialog (OK / Cancel)
 import SePlainAlertDialog from './SePlainAlertDialog.js'
 
+/**
+ * @param {string} text
+ * @param {string[]} [choices]
+ * @returns {Promise<string|undefined>}
+ */
 const seConfirm = async (text, choices) => {
   const dialog = new SePlainAlertDialog()
   dialog.textContent = text

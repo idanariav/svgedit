@@ -1,6 +1,6 @@
 // seTraceDialog.js — `<se-trace-dialog>` — options for tracing a raster image to vector (style, colors) before `traceImageToSvg` runs
 import traceDialogHTML from './seTraceDialog.html'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.js'
 
@@ -19,25 +19,25 @@ export class SeTraceDialog extends HTMLElement {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#trace_box')
-    this.$title = this._shadowRoot.querySelector('#trace_title')
-    this.$closeBtn = this._shadowRoot.querySelector('#trace_close')
-    this.$presetLabel = this._shadowRoot.querySelector('#trace_preset_label')
-    this.$preset = this._shadowRoot.querySelector('#trace_preset')
-    this.$colorsLabel = this._shadowRoot.querySelector('#trace_colors_label')
-    this.$colorsField = this._shadowRoot.querySelector('#trace_colors_field')
-    this.$colors = this._shadowRoot.querySelector('#trace_colors')
-    this.$colorsVal = this._shadowRoot.querySelector('#trace_colors_val')
-    this.$error = this._shadowRoot.querySelector('#trace_error')
-    this.$cancelBtn = this._shadowRoot.querySelector('#trace_cancel')
-    this.$okBtn = this._shadowRoot.querySelector('#trace_ok')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#trace_box'))
+    this.$title = /** @type {HTMLParagraphElement} */ (this._shadowRoot.querySelector('#trace_title'))
+    this.$closeBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#trace_close'))
+    this.$presetLabel = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('#trace_preset_label'))
+    this.$preset = /** @type {HTMLSelectElement} */ (this._shadowRoot.querySelector('#trace_preset'))
+    this.$colorsLabel = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('#trace_colors_label'))
+    this.$colorsField = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#trace_colors_field'))
+    this.$colors = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#trace_colors'))
+    this.$colorsVal = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#trace_colors_val'))
+    this.$error = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#trace_error'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#trace_cancel'))
+    this.$okBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#trace_ok'))
   }
 
   /**
    * @param {any} i18next
    * @returns {void}
    */
-  init (i18next) {
+  init (/** @type {import('i18next').i18n} */ i18next) {
     this.setAttribute('title', i18next.t('tools.trace_image_title'))
     this.setAttribute('preset-label', i18next.t('tools.trace_style'))
     this.setAttribute('colors-label', i18next.t('tools.trace_colors'))
@@ -56,7 +56,7 @@ export class SeTraceDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     switch (name) {
       case 'dialog':
         if (newValue === 'open') {
@@ -96,7 +96,7 @@ export class SeTraceDialog extends HTMLElement {
   }
 
   set dialog (value) {
-    this.setAttribute('dialog', value)
+    this.setAttribute('dialog', String(value))
   }
 
   /**
@@ -126,8 +126,8 @@ export class SeTraceDialog extends HTMLElement {
   setBusy (busy) {
     this.$okBtn.disabled = busy
     this.$okBtn.textContent = busy
-      ? ownerEditor(this).i18next.t('tools.trace_working')
-      : ownerEditor(this).i18next.t('tools.trace_convert')
+      ? requireOwnerEditor(this).i18next.t('tools.trace_working')
+      : requireOwnerEditor(this).i18next.t('tools.trace_convert')
   }
 
   /**

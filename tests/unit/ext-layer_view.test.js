@@ -49,6 +49,7 @@ describe('ext-layer_view', () => {
 
     svgCanvas = {
       $id: (id) => document.getElementById(id),
+      $req: (id) => document.getElementById(id),
       $click: (el, fn) => el?.addEventListener('click', fn),
       getCurrentDrawing: () => drawing,
       setLayerLocked: vi.fn((lname, locked) => {

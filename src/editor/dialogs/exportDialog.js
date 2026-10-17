@@ -18,22 +18,23 @@ export class SeExportDialog extends HTMLElement {
     // create the shadowDom and insert the template
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
-    this.$dialog = this._shadowRoot.querySelector('#export_box')
-    this.$okBtn = this._shadowRoot.querySelector('#export_ok')
-    this.$cancelBtn = this._shadowRoot.querySelector('#export_cancel')
-    this.$exportOption = this._shadowRoot.querySelector('#se-storage-pref')
-    this.$region = this._shadowRoot.querySelector('#se-export-region')
-    this.$input = this._shadowRoot.querySelector('#se-quality')
-    this.$includeBg = this._shadowRoot.querySelector('#se-include-bg')
-    this.$scale = this._shadowRoot.querySelector('#se-scale')
-    this.$qualityRow = this._shadowRoot.querySelector('#se-quality-row')
-    this.$summary = this._shadowRoot.querySelector('#export_summary')
+    this.$dialog = /** @type {HTMLDialogElement} */ (this._shadowRoot.querySelector('#export_box'))
+    this.$okBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#export_ok'))
+    this.$cancelBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('#export_cancel'))
+    this.$exportOption = /** @type {HTMLElementTagNameMap['se-select']} */ (this._shadowRoot.querySelector('#se-storage-pref'))
+    this.$region = /** @type {HTMLElementTagNameMap['se-select']} */ (this._shadowRoot.querySelector('#se-export-region'))
+    this.$input = /** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#se-quality'))
+    this.$includeBg = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('#se-include-bg'))
+    this.$scale = /** @type {HTMLElementTagNameMap['se-select']} */ (this._shadowRoot.querySelector('#se-scale'))
+    this.$qualityRow = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('#se-quality-row'))
+    this.$summary = /** @type {HTMLParagraphElement} */ (this._shadowRoot.querySelector('#export_summary'))
+    /** @type {number|string} */
     this.value = 1
   }
 
   /**
    * @function init
-   * @param {any} name
+   * @param {import('i18next').i18n} i18next
    * @returns {void}
    */
   init (i18next) {
@@ -58,7 +59,7 @@ export class SeExportDialog extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     let node
     switch (name) {
       case 'dialog':
@@ -79,8 +80,8 @@ export class SeExportDialog extends HTMLElement {
         break
       case 'ui-export_type_label':
         // Kept for API compatibility; the Format row now has a fixed short label.
-        node = this._shadowRoot.querySelector('#export_select')
-        node.title = newValue
+        node = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('#export_select'))
+        if (node) node.title = newValue
         break
       default:
       // super.attributeChangedCallback(name, oldValue, newValue);
@@ -141,8 +142,8 @@ export class SeExportDialog extends HTMLElement {
     const frameId = this.$region.value
     if (frameId) {
       const frame = canvas?.getSvgContent?.()?.querySelector(`#${CSS.escape(frameId)}`)
-      const w = parseFloat(frame?.getAttribute('width'))
-      const h = parseFloat(frame?.getAttribute('height'))
+      const w = parseFloat(frame?.getAttribute('width') ?? '')
+      const h = parseFloat(frame?.getAttribute('height') ?? '')
       if (w > 0 && h > 0) return { w, h }
     }
     const res = canvas?.getResolution?.()
@@ -173,13 +174,13 @@ export class SeExportDialog extends HTMLElement {
       el.addEventListener('change', () => this._refresh()))
     this.$input.addEventListener('change', (e) => {
       e.preventDefault()
-      this.value = e.target.value
+      this.value = /** @type {HTMLInputElement} */ (e.target).value
     })
     $click(this.$input, (e) => {
       e.preventDefault()
-      this.value = e.target.value
+      this.value = /** @type {HTMLInputElement} */ (e.target).value
     })
-    const onSubmitHandler = (e, action) => {
+    const onSubmitHandler = (/** @type {Event} */ e, /** @type {string} */ action) => {
       if (action === 'cancel') {
         this.setAttribute('dialog', 'close')
       } else {

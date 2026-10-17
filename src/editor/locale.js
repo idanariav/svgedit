@@ -20,7 +20,8 @@ import i18next from 'i18next'
  * @typedef {PlainObject<string, string>} module:locale.LocaleSelectorValue
  */
 
-let langParam
+/** @type {string} */
+let langParam = ''
 
 /**
 * The "data" property is generally set to an an array of objects with
@@ -51,7 +52,7 @@ let langParam
  * @fires module:svgcanvas.SvgCanvas#event:ext_addLangData
  * @fires module:svgcanvas.SvgCanvas#event:ext_langReady
  * @fires module:svgcanvas.SvgCanvas#event:ext_langChanged
- * @returns {Promise<module:locale.LangAndData>} Resolves to result of {@link module:locale.readLang}
+ * @returns {Promise<{langParam: string, i18next: import('i18next').i18n}>} The language in use and the i18next instance loaded with it
 */
 
 export const putLocale = async function (givenParam, goodLangs) {
@@ -69,7 +70,7 @@ export const putLocale = async function (givenParam, goodLangs) {
   }
   // UI translations are inlined into the bundle (statically resolved glob) so
   // the editor needs no runtime locale/ folder. Falls back to English.
-  const locales = import.meta.glob('./locale/lang.*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/lang.*.js', { eager: true }))
   const module = locales[`./locale/lang.${langParam}.js`] || locales['./locale/lang.en.js']
   i18next.init({
     lng: langParam,
@@ -83,6 +84,6 @@ export const putLocale = async function (givenParam, goodLangs) {
   return { langParam, i18next }
 }
 
-export const t = function (key) {
+export const t = function (/** @type {string} */ key) {
   return i18next.t(key)
 }

@@ -15,9 +15,10 @@
 
 const name = 'text-path'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -30,9 +31,9 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
 
-    const t = (key) => svgEditor.i18next.t(`${name}:${key}`)
+    const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     const updateVisibility = () => {
       const attach = $id('tool_text_on_path')
@@ -45,7 +46,7 @@ export default {
         const onPath = elem?.tagName === 'text' && elem.querySelector('textPath')
         panel.style.display = onPath ? 'block' : 'none'
         if (onPath) {
-          $id('textpath_offset').value = svgCanvas.textPathOffset() ?? 0
+          $req('textpath_offset').value = svgCanvas.textPathOffset() ?? 0
         }
       }
     }
@@ -97,8 +98,8 @@ export default {
           const anchor = tab.querySelector('.text_panel')
           if (anchor) anchor.after(section)
           else tab.append(section)
-          $id('textpath_offset').addEventListener('change', (e) => {
-            svgCanvas.textPathOffset(parseFloat(e.target.value) || 0)
+          $req('textpath_offset').addEventListener('change', (e) => {
+            svgCanvas.textPathOffset(parseFloat(/** @type {HTMLInputElement} */ (e.target).value) || 0)
           })
           svgEditor.commands.register({
             id: 'tool_text_path_release',

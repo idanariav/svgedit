@@ -9,8 +9,9 @@ const { getTypeMap } = SvgCanvas
  */
 class Rulers {
   /**
-   * @type {Module}
-  */
+* @type {Module}
+* @param {this} editor
+*/
   constructor (editor) {
     // Make [1,2,5] array
     this.rulerIntervals = []
@@ -54,7 +55,7 @@ class Rulers {
   /**
    *
    * @param {HTMLDivElement} [scanvas]
-   * @param {Float} [zoom]
+   * @param {number} [zoom]
    * @returns {void}
    */
   updateRulers (scanvas, zoom) {

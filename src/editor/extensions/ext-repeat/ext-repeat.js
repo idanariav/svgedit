@@ -27,16 +27,17 @@ const SOURCE_ATTR = 'se:repeat-source'
 const COPY_ATTR = 'se:repeat-copy'
 const PARAMS_ATTR = 'se:repeat'
 
+/** @param {EditorInstance} svgEditor */
 const loadExtensionTranslation = function (svgEditor) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true })
+  const locales = /** @type {Record<string, {default: object}>} */ (import.meta.glob('./locale/*.js', { eager: true }))
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
 }
 
-const serializeParams = (p) => {
+const serializeParams = (/** @type {Object} */ p) => {
   if (p.mode === 'radial') {
     return `radial;count=${p.count};sweep=${p.sweep};center=${p.center}` +
       (p.center === 'custom' ? `;centerX=${p.centerX};centerY=${p.centerY}` : '')
@@ -45,10 +46,10 @@ const serializeParams = (p) => {
   return `path;count=${p.count};offset=${p.offset};span=${p.span};follow=${p.follow ? 1 : 0};rail=${p.rail || ''}`
 }
 
-const parseParams = (str) => {
+const parseParams = (/** @type {string | null} */ str) => {
   if (!str) return null
   const [mode, ...pairs] = str.split(';')
-  const vals = Object.fromEntries(pairs.map((kv) => kv.split('=')))
+  const vals = Object.fromEntries(pairs.map((/** @type {string} */ kv) => kv.split('=')))
   if (mode === 'radial') {
     return {
       mode,
@@ -87,12 +88,12 @@ export default {
     const svgEditor = /** @type {import('../../Editor.js').default} */ (/** @type {unknown} */ (this))
     await loadExtensionTranslation(svgEditor)
     const { svgCanvas } = svgEditor
-    const { $id } = svgCanvas
+    const { $id, $req } = svgCanvas
 
     const allContentElems = () =>
       Array.from(svgCanvas.getSvgContent().querySelectorAll('*'))
 
-    const findByAttr = (attr, uid) =>
+    const findByAttr = (/** @type {string} */ attr, /** @type {string | null} */ uid) =>
       allContentElems().filter((el) => el.getAttribute(attr) === uid)
 
     /**
@@ -133,9 +134,12 @@ export default {
       // Path mode rides a rail: the topmost selected <path> (fresh apply) or
       // the rail id stored in the stamped params (re-edit). The rail itself
       // is never cloned or stamped.
+      /**
+* @type {Element | null}
+*/
       let rail = null
       if (params.mode === 'path') {
-        const byId = (id) => id &&
+        const byId = (/** @type {string} */ id) => id &&
           svgCanvas.getSvgContent().querySelector(`#${CSS.escape(id)}`)
         rail = byId(params.rail)
         if (!rail && uid && sources[0]) {
@@ -207,7 +211,7 @@ export default {
         const cx = bb.x + bb.width / 2
         const cy = bb.y + bb.height / 2
         const m = rail.transform?.baseVal?.consolidate?.()?.matrix || null
-        const mapPt = (p) => m
+        const mapPt = (/** @type {{ x: number; y: number; }} */ p) => m
           ? { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }
           : p
         const n = Math.max(1, params.count)
@@ -271,6 +275,9 @@ export default {
     // coordinates and returns to the select tool. A stale callback (e.g. the
     // user hits Escape before clicking) is harmless — the mode guard below
     // means it simply never fires until re-armed, which overwrites it.
+    /**
+* @type {((x: number, y: number) => void) | null}
+*/
     let pickCenterCallback = null
     svgCanvas.armRepeatCenterPick = (onPicked) => {
       pickCenterCallback = onPicked
@@ -289,7 +296,7 @@ export default {
           btn.setAttribute('title', title)
           btn.setAttribute('src', 'repeat.svg')
           btn.setAttribute('data-caption', svgEditor.i18next.t(`${name}:caption`))
-          $id('tool_path_offset').after(btn)
+          $req('tool_path_offset').after(btn)
         }
         // Multi-selection Combine section.
         const multi = $id('tool_clip_set')?.parentElement
@@ -319,7 +326,7 @@ export default {
         // popover survives; anything else that click would have done on the
         // canvas is a no-op here since the click always follows a mousedown
         // we've already fully handled.
-        const suppressTrailingClick = (e) => {
+        const suppressTrailingClick = (/** @type {{ stopPropagation: () => void; }} */ e) => {
           document.removeEventListener('click', suppressTrailingClick, true)
           e.stopPropagation()
         }

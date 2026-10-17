@@ -4,6 +4,6 @@ const supportsSvg = function () {
 }
 
 if (!supportsSvg()) {
-  window.location = './browser-not-supported.html'
+  window.location.href = './browser-not-supported.html'
 }
 export {}

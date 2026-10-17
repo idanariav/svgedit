@@ -1,6 +1,6 @@
 // seTaperSettings.js — `<se-taper-settings>` — Taper-stroke popover (start/end tip % + Apply/Update/Remove → `svgCanvas.applyTaperStroke`/`removeTaperStroke`); seeded from `svgCanvas.getTaperParams()`; injected by ext-taper
 import { SeSettingsPopover } from './seSettingsPopover.js'
-import { ownerEditor } from '../domScope.js'
+import { requireOwnerEditor } from '../domScope.js'
 import './seSpinInput.js'
 import './seSelect.js'
 import { PRESETS, presetId, presetPoints } from '@svgedit/svgcanvas/core/width-profile.ts'
@@ -134,39 +134,39 @@ class SeTaperSettings extends SeSettingsPopover {
   constructor () {
     super(TEMPLATE_HTML)
 
-    this.$apply = this._shadowRoot.querySelector('.apply')
-    this.$remove = this._shadowRoot.querySelector('.remove')
-
-    this.$preset = this._shadowRoot.querySelector('#taper_preset')
+    this.$apply = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.apply'))
+    this.$remove = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.remove'))
+    this.$preset = /** @type {HTMLElementTagNameMap['se-select']} */ (this._shadowRoot.querySelector('#taper_preset'))
     this.$preset.addEventListener('change', () => {
       const id = this.$preset.value
       if (!id) return
-      ownerEditor(this).svgCanvas.applyWidthProfile?.(presetPoints(id))
+      const points = presetPoints(id)
+      if (points) requireOwnerEditor(this).svgCanvas.applyWidthProfile?.(points)
       this.close()
     })
 
     this.$apply.addEventListener('click', () => {
-      const num = (id, fallback) => {
-        const v = parseFloat(this._shadowRoot.querySelector(id).value)
+      const num = (/** @type {string} */ id, /** @type {number} */ fallback) => {
+        const v = parseFloat(/** @type {HTMLInputElement} */ (this._shadowRoot.querySelector(id)).value)
         return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : fallback
       }
-      ownerEditor(this).svgCanvas.applyTaperStroke?.({
+      requireOwnerEditor(this).svgCanvas.applyTaperStroke?.({
         start: num('#taper_start', 100),
         end: num('#taper_end', 0)
       })
       this.close()
     })
     this.$remove.addEventListener('click', () => {
-      ownerEditor(this).svgCanvas.removeTaperStroke?.()
+      requireOwnerEditor(this).svgCanvas.removeTaperStroke?.()
       this.close()
     })
   }
 
   open () {
-    const existing = ownerEditor(this).svgCanvas.getTaperParams?.()
+    const existing = requireOwnerEditor(this).svgCanvas.getTaperParams?.()
     if (existing) {
-      this._shadowRoot.querySelector('#taper_start').value = existing.start
-      this._shadowRoot.querySelector('#taper_end').value = existing.end
+      ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#taper_start')).value = existing.start
+      ;/** @type {HTMLElementTagNameMap['se-spin-input']} */ (this._shadowRoot.querySelector('#taper_end')).value = existing.end
     }
     // The picker is upgraded once the popover is in the document (not while the template is cloned).
     if (!this._presetsReady) {
@@ -174,7 +174,7 @@ class SeTaperSettings extends SeSettingsPopover {
       for (const { id, label } of PRESETS) this.$preset.addOption(id, label)
       this._presetsReady = true
     }
-    const profile = ownerEditor(this).svgCanvas.getWidthProfile?.()
+    const profile = requireOwnerEditor(this).svgCanvas.getWidthProfile?.()
     this.$preset.value = profile ? presetId(profile) : ''
     this.$apply.textContent = existing ? 'Update' : 'Apply'
     this.$remove.style.display = existing ? '' : 'none'
@@ -184,3 +184,5 @@ class SeTaperSettings extends SeSettingsPopover {
 
 // Register
 customElements.define('se-taper-settings', SeTaperSettings)
+
+export default SeTaperSettings

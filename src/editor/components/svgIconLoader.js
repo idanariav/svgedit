@@ -79,7 +79,7 @@ export async function fetchSvgEl (url) {
           }
         })
 
-        if (OUTLINE_ICONS.has(url.split(/[?#]/)[0].split('/').pop())) {
+        if (OUTLINE_ICONS.has(url.split(/[?#]/)[0].split('/').pop() ?? '')) {
           svgEl.querySelectorAll(OUTLINE_SHAPES).forEach(el => {
             el.setAttribute('fill', 'none')
             el.setAttribute('stroke', 'currentColor')
@@ -100,8 +100,8 @@ export async function fetchSvgEl (url) {
         // render at native coordinates and, combined with overflow:visible below,
         // spill outside the icon's box (e.g. context_menu.svg overflowing the panel).
         if (!svgEl.getAttribute('viewBox')) {
-          const w = parseFloat(svgEl.getAttribute('width'))
-          const h = parseFloat(svgEl.getAttribute('height'))
+          const w = parseFloat(svgEl.getAttribute('width') ?? '')
+          const h = parseFloat(svgEl.getAttribute('height') ?? '')
           if (w && h) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`)
         }
 

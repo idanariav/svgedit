@@ -55,6 +55,7 @@ describe('Automation', () => {
     layerGroup.append(document.createElement('title'), document.createElement('rect'), document.createElement('rect'))
     editor = {
       $id: (id) => ({ svgroot: root, svgcontent: content, svgcanvas: document.getElementById('svgcanvas') })[id],
+      $req: (id) => ({ svgroot: root, svgcontent: content, svgcanvas: document.getElementById('svgcanvas') })[id],
       $container: document.body,
       workarea: { scrollLeft: 0, scrollTop: 0, getBoundingClientRect: () => ({ left: 0, top: 0, right: 1000, bottom: 800 }) },
       commands: { run: vi.fn() },

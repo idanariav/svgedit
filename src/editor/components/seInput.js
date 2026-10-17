@@ -74,10 +74,10 @@ export class SEInput extends HTMLElement {
     this._shadowRoot = this.attachShadow({ mode: 'open' })
     this._shadowRoot.append(template.content.cloneNode(true))
     // locate the component
-    this.$div = this._shadowRoot.querySelector('.field')
-    this.$label = this.shadowRoot.querySelector('.top-label')
+    this.$div = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.field'))
+    this.$label = /** @type {HTMLLabelElement} */ (this._shadowRoot.querySelector('.top-label'))
     this.$event = new CustomEvent('change')
-    this.$input = this._shadowRoot.querySelector('input')
+    this.$input = /** @type {HTMLInputElement} */ (this._shadowRoot.querySelector('input'))
   }
 
   /**
@@ -95,7 +95,7 @@ export class SEInput extends HTMLElement {
    * @param {string} newValue
    * @returns {void}
    */
-  attributeChangedCallback (name, oldValue, newValue) {
+  attributeChangedCallback (/** @type {string} */ name, /** @type {?string} */ oldValue, /** @type {string} */ newValue) {
     if (oldValue === newValue) return
     switch (name) {
       case 'title':
@@ -211,12 +211,12 @@ export class SEInput extends HTMLElement {
   connectedCallback () {
     this.$input.addEventListener('change', (e) => {
       e.preventDefault()
-      this.value = e.target.value
+      this.value = /** @type {HTMLInputElement} */ (e.target).value
       this.dispatchEvent(this.$event)
     })
     this.$input.addEventListener('keyup', (e) => {
       e.preventDefault()
-      this.value = e.target.value
+      this.value = /** @type {HTMLInputElement} */ (e.target).value
       this.dispatchEvent(this.$event)
     })
     // Release focus after a short idle period so tool shortcuts / Delete reach

@@ -59,6 +59,7 @@ const makeTopPanel = (container, elem, { angle = 0 } = {}) => {
   const $qa = (sel) => [...container.querySelectorAll(sel)]
   const editor = {
     $id,
+    $req: $id,
     $qa,
     selectedElement: elem,
     multiselected: false,
