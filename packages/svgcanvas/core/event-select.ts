@@ -108,7 +108,7 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.setRStartX(svgCanvas.getRStartX() * zoom)
       svgCanvas.setRStartY(svgCanvas.getRStartY() * zoom)
 
-      assignAttributes(svgCanvas.getRubberBox(), {
+      assignAttributes(svgCanvas.requireRubberBox(), {
         x: svgCanvas.getRStartX(),
         y: svgCanvas.getRStartY(),
         width: 0,
@@ -273,7 +273,7 @@ export const init = (canvas: SvgCanvas): {
     let { realX, realY } = ctx
     realX *= zoom
     realY *= zoom
-    assignAttributes(svgCanvas.getRubberBox(), {
+    assignAttributes(svgCanvas.requireRubberBox(), {
       x: Math.min(svgCanvas.getRStartX(), realX),
       y: Math.min(svgCanvas.getRStartY(), realY),
       width: Math.abs(realX - svgCanvas.getRStartX()),
@@ -328,7 +328,7 @@ export const init = (canvas: SvgCanvas): {
     }
     if (mode === 'resize' || mode === 'multiselect') {
       if (svgCanvas.getRubberBox()) {
-        svgCanvas.getRubberBox().setAttribute('display', 'none')
+        svgCanvas.requireRubberBox().setAttribute('display', 'none')
         svgCanvas.setCurBBoxes([])
       }
       svgCanvas.setCurrentMode('select')

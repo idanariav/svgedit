@@ -95,6 +95,9 @@ describe('event', () => {
       getrootSctm () {
         return this.rootSctm
       },
+      requireRootSctm () {
+        return this.rootSctm
+      },
       getStarted () {
         return this.started
       },
@@ -144,6 +147,9 @@ describe('event', () => {
         this.rubberBox = box
       },
       getRubberBox () {
+        return this.rubberBox
+      },
+      requireRubberBox () {
         return this.rubberBox
       },
       runExtensions () {

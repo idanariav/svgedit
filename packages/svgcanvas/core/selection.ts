@@ -359,7 +359,7 @@ export const createSelection = (canvas: SvgCanvas): SelectionApi => {
     // the rubber band in content units (from the rubber-band element's own box, or the caller's)
     let rubberBBox: BBox
     if (!rect) {
-      const box = requireBBox(svgCanvas.getRubberBox())
+      const box = requireBBox(svgCanvas.requireRubberBox())
       rubberBBox = { x: box.x / zoom, y: box.y / zoom, width: box.width / zoom, height: box.height / zoom }
     } else {
       rubberBBox = { x: rect.x, y: rect.y, width: rect.width, height: rect.height }

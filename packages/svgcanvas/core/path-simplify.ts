@@ -124,7 +124,7 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
   }
 
   const refreshSelector = (elem: Element): void => {
-    svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
+    svgCanvas.selectorManager.requestSelector(elem).resize()
     svgCanvas.call('changed', [elem])
   }
 

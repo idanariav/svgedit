@@ -33,7 +33,7 @@ describe('Smooth Path session', () => {
       getSelectedElements: vi.fn(() => [pathElement]),
       undoMgr,
       addCommandToHistory: vi.fn(),
-      gettingSelectorManager: vi.fn(() => ({ requestSelector: vi.fn(() => selector) })),
+      selectorManager: { requestSelector: vi.fn(() => selector) },
       call: vi.fn()
     }
   }

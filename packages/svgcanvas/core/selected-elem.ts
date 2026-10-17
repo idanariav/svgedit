@@ -362,7 +362,7 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
         }
 
         svgCanvas
-          .gettingSelectorManager()
+          .selectorManager
           .requestSelector(selected)
           .resize()
       }
@@ -825,7 +825,7 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
         let parent = selected.parentNode as Element | null
         let t = selected
         // this will unselect the element and remove the selectedOutline
-        svgCanvas.gettingSelectorManager().releaseSelector(t)
+        svgCanvas.selectorManager.releaseSelector(t)
         // Remove the path if present.
         svgCanvas.removePath_(t.id)
         // Get the parent if it's a single-child anchor
@@ -917,7 +917,7 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       }
 
       svgCanvas
-        .gettingSelectorManager()
+        .selectorManager
         .requestSelector(selected)
         .resize()
     })

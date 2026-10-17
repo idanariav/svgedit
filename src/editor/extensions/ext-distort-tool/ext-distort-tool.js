@@ -206,7 +206,7 @@ export default {
     }
 
     const finish = (el) => {
-      if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.gettingSelectorManager().requestSelector(el).resize()
+      if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
       svgCanvas.call('changed', [el])
     }
 

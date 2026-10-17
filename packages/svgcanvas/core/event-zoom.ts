@@ -27,7 +27,7 @@ export const init = (canvas: SvgCanvas): {
     if (!svgCanvas.getRubberBox()) {
       svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())
     }
-    assignAttributes(svgCanvas.getRubberBox(), {
+    assignAttributes(svgCanvas.requireRubberBox(), {
       x: realX * zoom,
       y: realY * zoom,
       width: 0,
@@ -41,7 +41,7 @@ export const init = (canvas: SvgCanvas): {
     let { realX, realY } = ctx
     realX *= zoom
     realY *= zoom
-    assignAttributes(svgCanvas.getRubberBox(), {
+    assignAttributes(svgCanvas.requireRubberBox(), {
       x: Math.min(svgCanvas.getRStartX() * zoom, realX),
       y: Math.min(svgCanvas.getRStartY() * zoom, realY),
       width: Math.abs(realX - svgCanvas.getRStartX() * zoom),

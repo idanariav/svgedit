@@ -1052,11 +1052,17 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   }
 
   /**
-   * The rubber-band rectangle. Typed non-null: the selector manager creates it when a rubber-band gesture starts and
-   * the handlers that read it only run inside one.
+   * The rubber-band rectangle; `null` until the selector manager has created it (path editing creates it on demand).
    */
-  getRubberBox (): Element {
-    return (this.state.selection.rubberBox as Element)
+  getRubberBox (): Element | null {
+    return this.state.selection.rubberBox
+  }
+
+  /** The rubber-band rectangle for the gesture handlers, which only run once the selector manager has made it. */
+  requireRubberBox (): Element {
+    const box = this.state.selection.rubberBox
+    if (!box) throw new Error('The rubber-band box does not exist yet')
+    return box
   }
 
   setRubberBox (rb: Element | null) {
@@ -1131,8 +1137,15 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   /**
    * The root's current transformation matrix. Typed non-null: the mouse handlers set it before they read it.
    */
-  getrootSctm (): DOMMatrix {
-    return (this.state.zoom.rootSctm as DOMMatrix)
+  getrootSctm (): DOMMatrix | null {
+    return this.state.zoom.rootSctm
+  }
+
+  /** The root matrix for the pointer handlers, which set it on the first mouse event before anything reads it. */
+  requireRootSctm (): DOMMatrix {
+    const matrix = this.state.zoom.rootSctm
+    if (!matrix) throw new Error('The root screen matrix has not been set yet')
+    return matrix
   }
 
   getStartX () {
@@ -1412,10 +1425,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
   setCurShape<K extends keyof StyleProps> (key: K, value: StyleProps[K] | null) {
     this.state.style.shape[key] = value as StyleProps[K]
-  }
-
-  gettingSelectorManager () {
-    return this.selectorManager
   }
 
   getContentW () {

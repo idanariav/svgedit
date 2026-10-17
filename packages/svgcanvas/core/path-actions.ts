@@ -953,7 +953,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           if (!seg.next && !seg.prev) return
 
           // const {item} = seg;
-          const rubberBox = svgCanvas.getRubberBox()
+          const rubberBox = svgCanvas.requireRubberBox()
           const rbb = requireBBox(rubberBox)
 
           const pt = svgCanvas.getGripPt(seg)
@@ -1055,7 +1055,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         if (!evt.shiftKey && !this.#hasMoved) {
           path.selectPt(lastPt)
         }
-      } else if (rubberBox?.getAttribute('display') !== 'none') {
+      } else if (rubberBox && rubberBox.getAttribute('display') !== 'none') {
       // Done with multi-node-select
         rubberBox.setAttribute('display', 'none')
 

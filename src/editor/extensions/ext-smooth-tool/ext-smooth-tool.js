@@ -172,7 +172,7 @@ export default {
         if (!touched.length) return 'cancel'
         const selected = svgCanvas.getSelectedElements()
         for (const { el } of touched) {
-          if (selected.includes(el)) svgCanvas.gettingSelectorManager().requestSelector(el).resize()
+          if (selected.includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
         }
         svgCanvas.call('changed', touched.map((t) => t.el))
         return undefined

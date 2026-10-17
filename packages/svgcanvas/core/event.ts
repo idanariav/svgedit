@@ -137,7 +137,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const svgRoot = svgCanvas.getSvgRoot()
     const selected = selectedElements[0]
 
-    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
+    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     const mouseX = pt.x * zoom
     const mouseY = pt.y * zoom
     const shape = svgCanvas.getElement(svgCanvas.getId())
@@ -311,7 +311,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const tempJustSelected = svgCanvas.getJustSelected()
     svgCanvas.setJustSelected(null)
 
-    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
+    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     const mouseX = pt.x * zoom
     const mouseY = pt.y * zoom
     const x = mouseX / zoom
@@ -563,7 +563,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     if (tagName === 'text' && svgCanvas.getCurrentMode() !== 'textedit') {
     // Editing an existing text (not a fresh placement) — don't let lock mode re-arm the text tool
       svgCanvas.setTextFreshCreate(false)
-      const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
+      const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
       svgCanvas.textActions.select(mouseTarget as SVGTextElement, pt.x, pt.y)
     }
 
@@ -751,7 +751,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     if (!screenCTM) { return }
     svgCanvas.setRootSctm(screenCTM.inverse())
 
-    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
+    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     const mouseX = pt.x * zoom
     const mouseY = pt.y * zoom
 
@@ -1046,8 +1046,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const editorH = parseFloat(getComputedStyle(workarea, null).height.replace('px', '')) - scrbar - rulerwidth
 
     // work area width in content pixels
-    const workareaViewW = editorW * svgCanvas.getrootSctm().a
-    const workareaViewH = editorH * svgCanvas.getrootSctm().d
+    const workareaViewW = editorW * svgCanvas.requireRootSctm().a
+    const workareaViewH = editorH * svgCanvas.requireRootSctm().d
 
     const delta = (e.wheelDelta) ? e.wheelDelta : (e.detail) ? -e.detail : 0
     if (!delta) { return }
@@ -1103,7 +1103,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const editorFullH = parseFloat(getComputedStyle(workarea, null).height.replace('px', ''))
 
     // anchor point relative to content area in content pixels
-    const pt = transformPoint(clientX, clientY, svgCanvas.getrootSctm())
+    const pt = transformPoint(clientX, clientY, svgCanvas.requireRootSctm())
 
     // content offset from canvas in screen pixels
     const wOffset = findPos(workarea as HTMLElement)
@@ -1111,7 +1111,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const wOffsetTop = wOffset.top + rulerwidth
 
     // top left of workarea in content pixels before zoom
-    const topLeftOld = transformPoint(wOffsetLeft, wOffsetTop, svgCanvas.getrootSctm())
+    const topLeftOld = transformPoint(wOffsetLeft, wOffsetTop, svgCanvas.requireRootSctm())
 
     // top left of workarea in content pixels after zoom
     const topLeftNew = {

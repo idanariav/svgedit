@@ -227,7 +227,7 @@ export const createTextPath = (canvas: SvgCanvas): TextPathApi => {
       new svgCanvas.history.ChangeElementCommand(tp, { startOffset: old })
     )
     const text = tp.closest('text')
-    svgCanvas.gettingSelectorManager().requestSelector(text)?.resize()
+    svgCanvas.selectorManager.requestSelector(text)?.resize()
     svgCanvas.call('changed', [text])
     return clamped
   }

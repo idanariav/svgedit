@@ -44,6 +44,7 @@ describe('event-select down() background click', () => {
       pathActions: { clear: () => calls.push('pathActions.clear') },
       setCurrentMode: () => calls.push('setCurrentMode'),
       getRubberBox: () => rubberBox,
+      requireRubberBox: () => rubberBox,
       selectorManager: { getRubberBandBox: () => rubberBox },
       getRStartX: () => 0,
       getRStartY: () => 0,

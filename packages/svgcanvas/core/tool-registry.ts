@@ -208,7 +208,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
    * @param tool the tool the event is for; one with `snap` gets object snapping
    */
   const toToolEvent = (evt: MouseEvent, downClient?: { x: number, y: number }, tool?: ToolDef): ToolEvent => {
-    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
+    const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     let { x, y } = pt
     if (isCreateInCurrentGroup(svgCanvas)) ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
     const raw = { x, y }

@@ -364,7 +364,7 @@ export default {
           const mode = evt.target.value === 'center' ? null : evt.target.value
           if (!el || svgCanvas.getArrowAlign(el) === mode) return
           svgCanvas.transact('Head position', () => svgCanvas.setArrowAlign(el, mode))
-          svgCanvas.gettingSelectorManager().requestSelector(el).resize()
+          svgCanvas.selectorManager.requestSelector(el).resize()
           svgCanvas.call('changed', [el])
         })
         // don't display the panels on start
@@ -394,7 +394,7 @@ export default {
         const elem = opts.elems[0]
         // Stroke width, markers or the source changed: the trimmed geometry follows.
         if (elem?.hasAttribute?.('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
-          svgCanvas.gettingSelectorManager().requestSelector(elem).resize()
+          svgCanvas.selectorManager.requestSelector(elem).resize()
         }
         if (elem && (
           elem.getAttribute('marker-start') ||

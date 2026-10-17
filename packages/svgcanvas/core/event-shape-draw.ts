@@ -284,7 +284,7 @@ export const init = (canvas: SvgCanvas): {
         if (!svgCanvas.getRubberBox()) {
           svgCanvas.setRubberBox(svgCanvas.selectorManager.getRubberBandBox())
         }
-        assignAttributes(svgCanvas.getRubberBox(), {
+        assignAttributes(svgCanvas.requireRubberBox(), {
           x: Math.min(sx, x) * zoom,
           y: Math.min(sy, y) * zoom,
           width: Math.abs(x - sx) * zoom,
